@@ -79,8 +79,17 @@ func (dc *DonutChart) SetLocation(x, y float32) Drawable {
 func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
 	// The larger is the outer radius: an inner radius past the outer one drew
 	// a ring inside out
-	dc.r1 = max(abs32(outerRadius), abs32(innerRadius))
-	dc.r2 = min(abs32(outerRadius), abs32(innerRadius))
+	// A radius that is not a number is 0, in the four ports alike
+	a := float32(0.0)
+	if isValue(outerRadius) {
+		a = abs32(outerRadius)
+	}
+	b := float32(0.0)
+	if isValue(innerRadius) {
+		b = abs32(innerRadius)
+	}
+	dc.r1 = max(a, b)
+	dc.r2 = min(a, b)
 	return dc
 }
 
@@ -276,7 +285,7 @@ func (dc *DonutChart) pointerOf(text string, xc, yc, r1, a1, a2 float32, index i
 	midAngle := float32((a1+a2)/2.0) - 90.0
 	p1 := getPoint(xc, yc, r1, midAngle)      // On the outer edge
 	p2 := getPoint(xc, yc, r1+15.0, midAngle) // The elbow
-	// A label wider than the radius, or than six of its letters, is
+	// A label wider than both the radius and six of its letters is
 	// shortened: a long one at the left ran off the page
 	if dc.f1 != nil {
 		text = shorten(dc.f1, dc.f1.size, text, max(r1, float32(6.0*dc.f1.size)))
@@ -526,7 +535,8 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		drawn++
 
 		// The percentage fits inside a slice of 15 degrees or more
-		if dc.f2 != nil && sweep >= 15.0 {
+		// and in a ring as wide as one and a half lines of it, or a pie
+		if dc.f2 != nil && sweep >= 15.0 && (dc.r2 == 0.0 || dc.r1-dc.r2 >= float32(1.5*dc.f2.bodyHeight)) {
 			pctStr := fmt.Sprintf("%d%%", percentages[i])
 			midAngle := angle - float32(sweep/2.0) - 90.0
 			midR := float32((dc.r1 + dc.r2) / 2.0)

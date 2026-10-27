@@ -324,4 +324,21 @@ class DonutChartTest {
         content = TestSupport.content(page);
         assertEquals(content.indexOf("0.12 0.23 0.37 rg"), content.lastIndexOf("0.12 0.23 0.37 rg"), content);
     }
+
+    // The third review of 26 October 2026: a radius that is not a number is
+    // 0, in the four ports alike; and the percentages are not written in a
+    // ring too thin for them.
+    @Test
+    void theThirdReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setRadii(100f, Float.NaN).add("a", 1f).add("b", 3f).drawOn(page);
+        String nan = TestSupport.content(page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setRadii(100f, 0f).add("a", 1f).add("b", 3f).drawOn(page);
+        assertEquals(TestSupport.content(page).replaceAll("/F\\d+ ", "/F "), nan.replaceAll("/F\\d+ ", "/F "));
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setRadii(200f, 196f).add("a", 1f).add("b", 3f).drawOn(page);
+        assertFalse(TestSupport.content(page).contains(TestSupport.hex("75%")), TestSupport.content(page));
+    }
 }

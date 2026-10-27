@@ -496,4 +496,75 @@ class MarkdownTest {
             }
         }
     }
+
+    // The review of the Markdown of 26 October 2026. The first block of a
+    // quote or a list item keeps the room it needs, as any other block: a
+    // short table there is not split, and a lead-in there keeps its table. A
+    // short table after a lead-in stays with it, and a heading with a table
+    // right under it.
+    @Test
+    void blocksKeepTheRoomTheyNeed() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        for (int k = 0; k <= 60; k++) {
+            String filler = fillerAndTable(k, null, 0);
+            filler = filler.substring(0, filler.indexOf("| N |"));
+            Drawn drawn = draw(filler + "> | N | V |\n> |---|---|\n> | r1 | v1 |\n> | r2 | v2 |\n> | r3 | v3 |\n", null);
+            assertEquals(pagesOf(drawn, "r1"), pagesOf(drawn, "r3"), k + " paragraphs: the table in the quote is split");
+            drawn = draw(filler + "- Sizes:\n\n  | N | V |\n  |---|---|\n  | r1 | v1 |\n", null);
+            assertEquals(pagesOf(drawn, "Sizes:"), pagesOf(drawn, "r1"), k + " paragraphs: the item's lead-in is apart");
+            drawn = draw(fillerAndTable(k, "555:", 1), null);
+            assertEquals(pagesOf(drawn, "555:"), pagesOf(drawn, "r1"), k + " paragraphs: the short table left its lead-in");
+            drawn = draw(filler + "## H7\n\n" + fillerAndTable(0, null, 8), null);
+            assertEquals(pagesOf(drawn, "H7"), pagesOf(drawn, "r1"), k + " paragraphs: the heading is apart from its table");
+        }
+    }
+
+    // A heading of two lines is kept whole on its page, with a line of the
+    // text after it; it was kept by its first line.
+    @Test
+    void aHeadingOfTwoLinesIsKeptWhole() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        StringBuilder heading = new StringBuilder("# Alpha");
+        for (int i = 0; i < 12; i++) {
+            heading.append(" word");
+        }
+        heading.append(" Omega\n\nThe text after it.\n");
+        for (int k = 0; k <= 60; k++) {
+            String filler = fillerAndTable(k, null, 0);
+            Drawn drawn = draw(filler.substring(0, filler.indexOf("| N |")) + heading, null);
+            assertEquals(pagesOf(drawn, "Alpha"), pagesOf(drawn, "Omega"), k + " paragraphs: the heading is split");
+            assertEquals(pagesOf(drawn, "Omega"), pagesOf(drawn, "The text after it."), k + " paragraphs: it ends a page");
+        }
+    }
+
+    // An empty heading takes no level: the "##" after it is the H1. A table
+    // interrupts a paragraph, as in GitHub's Markdown. An empty block of code
+    // is drawn as nothing.
+    @Test
+    void anEmptyHeadingATableAfterALineAndEmptyCode() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        Drawn drawn = draw("#\n\n## Intro\n\nText.\n", null);
+        assertEquals(1, count(drawn.pdf, "H1"));
+        assertEquals(0, count(drawn.pdf, "H2"));
+        drawn = draw("Sizes:\n| a | b |\n|---|---|\n| 1 | 2 |\n", null);
+        assertEquals(1, count(drawn.pdf, "Table"));
+        drawn = draw("Text.\n\n```\n```\n", null);
+        assertEquals(0, count(drawn.pdf, "Code"));
+    }
+
+    // A table split inside a quote has the quote's bar on every page it is on:
+    // the bar stopped where it started, and the pages between had none.
+    @Test
+    void aSplitTableInAQuoteHasItsBarOnEveryPage() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        StringBuilder text = new StringBuilder("> | N | V |\n> |---|---|\n");
+        for (int r = 1; r <= 160; r++) {
+            text.append("> | r").append(r).append(" | v").append(r).append(" |\n");
+        }
+        Drawn drawn = draw(text.toString(), null);
+        assertTrue(drawn.contents.size() >= 3, drawn.contents.size() + " pages");
+        for (int i = 0; i < drawn.contents.size(); i++) {
+            assertTrue(drawn.contents.get(i).contains("0.69 0.71 0.75 RG"), "no bar on page " + i);
+        }
+    }
 }

@@ -258,4 +258,23 @@ import Testing
         content = TestSupport.content(page)
         #expect(content.components(separatedBy: "0.12 0.23 0.37 rg").count <= 2, "\(content)")
     }
+
+    // The third review of 26 October 2026: a radius that is not a number is
+    // 0, in the four ports alike; and the percentages are not written in a
+    // ring too thin for them.
+    @Test func theThirdReviewOfTheCharts() {
+        let pdf = TestSupport.newPDF()
+        func fonts(_ content: String) -> String {
+            return content.replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression)
+        }
+        var page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setRadii(100, Float.nan).add("a", 1).add("b", 3).drawOn(page)
+        let nan = TestSupport.content(page)
+        page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setRadii(100, 0).add("a", 1).add("b", 3).drawOn(page)
+        #expect(fonts(TestSupport.content(page)) == fonts(nan))
+        page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setRadii(200, 196).add("a", 1).add("b", 3).drawOn(page)
+        #expect(!TestSupport.content(page).contains(TestSupport.hex("75%")), "\(TestSupport.content(page))")
+    }
 }

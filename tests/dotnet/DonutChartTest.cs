@@ -281,5 +281,23 @@ public class DonutChartTest {
         Assert.True(content.IndexOf("0.12 0.23 0.37 rg", System.StringComparison.Ordinal)
                 == content.LastIndexOf("0.12 0.23 0.37 rg", System.StringComparison.Ordinal), content);
     }
+
+    // The third review of 26 October 2026: a radius that is not a number is
+    // 0, in the four ports alike; and the percentages are not written in a
+    // ring too thin for them.
+    [Fact]
+    public void TheThirdReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetRadii(100f, float.NaN).Add("a", 1f).Add("b", 3f).DrawOn(page);
+        string nan = TestSupport.Content(page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetRadii(100f, 0f).Add("a", 1f).Add("b", 3f).DrawOn(page);
+        Assert.Equal(System.Text.RegularExpressions.Regex.Replace(TestSupport.Content(page), "/F\\d+ ", "/F "),
+                System.Text.RegularExpressions.Regex.Replace(nan, "/F\\d+ ", "/F "));
+        page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetRadii(200f, 196f).Add("a", 1f).Add("b", 3f).DrawOn(page);
+        Assert.DoesNotContain(TestSupport.Hex("75%"), TestSupport.Content(page));
+    }
 }
 }

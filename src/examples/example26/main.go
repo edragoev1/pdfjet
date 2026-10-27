@@ -77,8 +77,9 @@ func Example26() {
 		children, _ := strconv.ParseFloat(field[3], 32)
 		if named[field[1]] {
 			chart.AddLinked(field[0], float32(children), float32(life), worldBank(field[0])) // A navy dot, named, a link
-			data = append(data, row(f2, false, field[0], fmt.Sprintf("%.2f", float32(children)),
-				fmt.Sprintf("%.1f years", float32(life))))
+			// The figures as the file writes them, two decimals and one,
+			// not rounded again, so that every port writes them alike
+			data = append(data, row(f2, false, field[0], decimals(field[3], 2), decimals(field[2], 1)+" years"))
 		} else {
 			chart.Add(float32(children), float32(life)) // A gray dot
 		}
@@ -116,6 +117,24 @@ func Example26() {
 // data.worldbank.org/country/united-states.
 func worldBank(country string) string {
 	return "https://data.worldbank.org/country/" + strings.ReplaceAll(strings.ToLower(country), " ", "-")
+}
+
+// decimals returns the number of the text with the decimals, zeros added:
+// 1.5 is 1.50.
+func decimals(number string, count int) string {
+	point := strings.IndexByte(number, '.')
+	var sb strings.Builder
+	sb.WriteString(number)
+	have := 0
+	if point < 0 {
+		sb.WriteString(".")
+	} else {
+		have = len(number) - point - 1
+	}
+	for i := have; i < count; i++ {
+		sb.WriteByte('0')
+	}
+	return sb.String()
 }
 
 // row returns a row of cells of the font at 9 points, one for each text, in

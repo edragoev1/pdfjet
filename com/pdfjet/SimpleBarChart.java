@@ -241,7 +241,8 @@ public class SimpleBarChart implements Drawable {
 
     // The value written at the end of a bar.
     String label(float value) {
-        return ChartScale.format(value, minFractionDigits, maxFractionDigits);
+        // Its digits grouped in thousands, 23,507, as in the other charts
+        return ChartScale.groupDigits(ChartScale.format(value, minFractionDigits, maxFractionDigits));
     }
 
     // The font of the name and the value of the bar of the index.
@@ -288,13 +289,20 @@ public class SimpleBarChart implements Drawable {
         float valueWidth = 0f;
         float largest = 0f;
         for (int i = 0; i < names.size(); i++) {
-            Font font = fontOf(i);
-            shown.add(ChartScale.shorten(font, size, names.get(i), 0.4f * (w - 2f * pad)));
-            nameWidth = Math.max(nameWidth, font.stringWidth(size, shown.get(i)));
-            valueWidth = Math.max(valueWidth, font.stringWidth(size, label(values.get(i))));
+            valueWidth = Math.max(valueWidth, fontOf(i).stringWidth(size, label(values.get(i))));
             if (ChartScale.isValue(values.get(i))) {
                 largest = Math.max(largest, values.get(i));
             }
+        }
+        // The names in what the values leave of the width, two fifths of it at
+        // most: in a chart narrower than its values they were written past it
+        float nameRoom = Math.max(Math.min(0.4f * (w - 2f * pad), w - 3f * pad - valueWidth - size / 2f), 0f);
+        for (int i = 0; i < names.size(); i++) {
+            Font font = fontOf(i);
+            // No name where not even an ellipsis fits; the description has it
+            shown.add(nameRoom < font.stringWidth(size, "\u2026")
+                    ? "" : ChartScale.shorten(font, size, names.get(i), nameRoom));
+            nameWidth = Math.max(nameWidth, font.stringWidth(size, shown.get(i)));
         }
         float barX = x + pad + nameWidth + pad;
         float barRoom = Math.max(x + w - pad - (valueWidth + size / 2f) - barX, 0f);

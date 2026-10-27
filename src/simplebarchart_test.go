@@ -201,3 +201,24 @@ func TestSimpleBarChartTheSecondReviewOfTheCharts(t *testing.T) {
 		t.Errorf("-4.5e16 is %q", got)
 	}
 }
+
+// Values are grouped in thousands, as in the other charts; and in a chart
+// narrower than its names and values the names give the values room, which
+// were written past the chart (the third review of 26 October 2026).
+func TestSimpleBarChartTheThirdReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	NewSimpleBarChart(font, font).SetWidth(300).Add("a", 23507).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, testHex("23,507")) {
+		t.Errorf("not grouped: %q", content)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	narrow := NewSimpleBarChart(font, font).SetWidth(90).Add("A long name", 1234567)
+	narrow.SetLocation(0, 0)
+	narrow.DrawOn(page)
+	at := testPositionOf(t, testContent(page), "1,234,567")
+	if at[0]+font.StringWidth(font.GetSize(), "1,234,567") > 90+0.01 {
+		t.Errorf("the value at %v runs past the chart of 90", at[0])
+	}
+}

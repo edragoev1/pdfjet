@@ -183,7 +183,7 @@ import Testing
             text += leadIn + "\n\n"
         }
         text += "| N | V |\n|---|---|\n"
-        for r in 1...rows {
+        for r in stride(from: 1, through: rows, by: 1) {     // No rows for 0
             text += "| r\(r) | v\(r) |\n"
         }
         return text
@@ -403,5 +403,90 @@ import Testing
                 }
             }
         }
+    }
+
+    // The review of the Markdown of 26 October 2026. The first block of a
+    // quote or a list item keeps the room it needs, as any other block: a
+    // short table there is not split, and a lead-in there keeps its table. A
+    // short table after a lead-in stays with it, and a heading with a table
+    // right under it.
+    @Test func blocksKeepTheRoomTheyNeed() throws {
+        for k in 0...60 {
+            var filler = fillerAndTable(k, nil, 0)
+            filler = String(filler[..<filler.range(of: "| N |")!.lowerBound])
+            var drawn = try MarkdownTests.draw(filler
+                    + "> | N | V |\n> |---|---|\n> | r1 | v1 |\n> | r2 | v2 |\n> | r3 | v3 |\n", nil)
+            #expect(pagesOf(drawn, "r1") == pagesOf(drawn, "r3"), "\(k) paragraphs: the table in the quote is split")
+            drawn = try MarkdownTests.draw(filler + "- Sizes:\n\n  | N | V |\n  |---|---|\n  | r1 | v1 |\n", nil)
+            #expect(pagesOf(drawn, "Sizes:") == pagesOf(drawn, "r1"), "\(k) paragraphs: the item's lead-in is apart")
+            drawn = try MarkdownTests.draw(fillerAndTable(k, "555:", 1), nil)
+            #expect(pagesOf(drawn, "555:") == pagesOf(drawn, "r1"), "\(k) paragraphs: the short table left its lead-in")
+            drawn = try MarkdownTests.draw(filler + "## H7\n\n" + fillerAndTable(0, nil, 8), nil)
+            #expect(pagesOf(drawn, "H7") == pagesOf(drawn, "r1"), "\(k) paragraphs: the heading is apart from its table")
+        }
+    }
+
+    // A heading of two lines is kept whole on its page, with a line of the
+    // text after it; it was kept by its first line.
+    @Test func aHeadingOfTwoLinesIsKeptWhole() throws {
+        var heading = "# Alpha"
+        for _ in 0..<12 {
+            heading += " word"
+        }
+        heading += " Omega\n\nThe text after it.\n"
+        for k in 0...60 {
+            let filler = fillerAndTable(k, nil, 0)
+            let drawn = try MarkdownTests.draw(String(filler[..<filler.range(of: "| N |")!.lowerBound]) + heading, nil)
+            #expect(pagesOf(drawn, "Alpha") == pagesOf(drawn, "Omega"), "\(k) paragraphs: the heading is split")
+            #expect(pagesOf(drawn, "Omega") == pagesOf(drawn, "The text after it."), "\(k) paragraphs: it ends a page")
+        }
+    }
+
+    // An empty heading takes no level: the "##" after it is the H1. A table
+    // interrupts a paragraph, as in GitHub's Markdown. An empty block of code
+    // is drawn as nothing.
+    @Test func anEmptyHeadingATableAfterALineAndEmptyCode() throws {
+        var drawn = try MarkdownTests.draw("#\n\n## Intro\n\nText.\n", nil)
+        #expect(MarkdownTests.count(drawn.pdf, "H1") == 1)
+        #expect(MarkdownTests.count(drawn.pdf, "H2") == 0)
+        drawn = try MarkdownTests.draw("Sizes:\n| a | b |\n|---|---|\n| 1 | 2 |\n", nil)
+        #expect(MarkdownTests.count(drawn.pdf, "Table") == 1)
+        drawn = try MarkdownTests.draw("Text.\n\n```\n```\n", nil)
+        #expect(MarkdownTests.count(drawn.pdf, "Code") == 0)
+    }
+
+    // A table split inside a quote has the quote's bar on every page it is on:
+    // the bar stopped where it started, and the pages between had none.
+    @Test func aSplitTableInAQuoteHasItsBarOnEveryPage() throws {
+        var text = "> | N | V |\n> |---|---|\n"
+        for r in 1...160 {
+            text += "> | r\(r) | v\(r) |\n"
+        }
+        let drawn = try MarkdownTests.draw(text, nil)
+        #expect(drawn.contents.count >= 3, "\(drawn.contents.count) pages")
+        for i in 0..<drawn.contents.count {
+            #expect(drawn.contents[i].contains("0.69 0.71 0.75 RG"), "no bar on page \(i)")
+        }
+    }
+
+    // Swift only: a check mark with a variation selector after it, "✓️", is
+    // found by its first code point, as the other ports find it by their first
+    // code unit; the first Character of the text holds both.
+    @Test func aCheckMarkWithAVariationSelectorIsFound() throws {
+        let green = fillOf(0x1A7F37)
+        let content = try MarkdownTests.draw("| F | A |\n|---|---|\n| T | \u{2713}\u{FE0F} |", nil).contents[0]
+        #expect(content.components(separatedBy: green).count - 1 == 1, "\(content)")
+    }
+
+    // Swift only: a lead-in is trimmed as Java's String.trim() trims, of the
+    // characters up to U+0020: "555:" and an em space is no lead-in, and its
+    // table goes to the next page alone where the lead-in ends a page.
+    @Test func aLeadInIsTrimmedOfSpacesAndControlsOnly() throws {
+        var apart = false
+        for k in 0...60 {
+            let drawn = try MarkdownTests.draw(fillerAndTable(k, "555:\u{2003}", 8), nil)
+            apart = apart || pagesOf(drawn, "555:") != pagesOf(drawn, "r1")
+        }
+        #expect(apart, "the lead-in with an em space after its colon kept its table")
     }
 }

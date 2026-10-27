@@ -160,21 +160,30 @@ class SimpleLineChartTest {
     }
 
     // The labels at the ends of the lines, moved apart, stay over the plot:
-    // they were pushed down past the bottom of the panel.
+    // they were pushed down past the bottom of the panel, and with many
+    // lines up past its top. As many as the plot holds are drawn, the
+    // highlighted one first, then the others in their order.
     @Test
     void theEndLabelsStayOverThePlot() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
         SimpleLineChart chart = new SimpleLineChart(font, font).setSize(400f, 120f);
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 30; i++) {
             chart.addLine("line " + i, new float[] {10f, 0f});
         }
-        chart.addLine("top", new float[] {0f, 10f});
+        chart.addLine("top", new float[] {0f, 10f}).setHighlight(30);
         chart.drawOn(page);
         String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("top 10")) && content.contains(TestSupport.hex("line 0 0")), content);
+        assertFalse(content.contains(TestSupport.hex("line 29 0")), content);
         // The page is 792 high, the chart from 0 to 120 down from its top
-        assertTrue(TestSupport.positionOf(content, "line 7 0")[1] > 792f - 120f, content);
+        for (int i = 0; i < 30; i++) {
+            if (content.contains(TestSupport.hex("line " + i + " 0"))) {
+                float y = TestSupport.positionOf(content, "line " + i + " 0")[1];
+                assertTrue(y > 792f - 120f && y < 792f, "line " + i + " at " + y);
+            }
+        }
     }
 
     // The values are written by their points but the last of each line, which
@@ -232,5 +241,19 @@ class SimpleLineChartTest {
         assertTrue(Float.parseFloat(valueAt[1]) < Float.parseFloat(peakAt[1]),
                 "the value of the peak at the top is under it: " + valueAt[1] + " by " + peakAt[1]);
         assertNotNull(peak);
+    }
+
+    // Values under 0.01 have the digits their axis needs, where every number
+    // of the axis was 0.00 and the description said from 0 to 0 (the third
+    // review of 26 October 2026).
+    @Test
+    void tinyValuesHaveTheirDigits() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleLineChart chart = new SimpleLineChart(font, font).addLine("a", new float[] {0.001f, 0.004f});
+        chart.drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("a 0.004")), TestSupport.content(page));
+        assertTrue(chart.altDescription().contains("from 0.001 to 0.004"), chart.altDescription());
     }
 }

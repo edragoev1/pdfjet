@@ -13,12 +13,11 @@ package pdfjet
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -94,7 +93,21 @@ type Markdown struct {
 	// innermost.
 	containers []*structElement
 	// The quote bars that are drawn on the page, as [x, the top of the bar].
-	quoteBars []*[2]float32
+	quoteBars  []*[2]float32
+	allowSplit bool // The next table starts where it is, under its heading
+	// The tables and the images of the blocks, made when they are first
+	// measured and drawn as they were made: an image is in the PDF once
+	tables map[*markdownBlock]*Table
+	images map[*markdownBlock]*markdownImageOf
+}
+
+// markdownImageOf is the image of a block, scaled to the width and to a page,
+// and its height: no drawable for an image that is not read, whose text is
+// drawn in its place, or that failed the document.
+type markdownImageOf struct {
+	drawable Drawable
+	height   float32
+	failed   bool // The file could not be read, and the document failed
 }
 
 // NewMarkdown creates the Markdown of text in the fonts, each at its size: the
@@ -204,6 +217,8 @@ func (markdown *Markdown) DrawOnPages(pdf *PDF, text string, pages *[]*Page, pag
 	markdown.headingLevel = 0
 	markdown.containers = markdown.containers[:0]
 	markdown.quoteBars = markdown.quoteBars[:0]
+	markdown.tables = make(map[*markdownBlock]*Table)
+	markdown.images = make(map[*markdownBlock]*markdownImageOf)
 	if !finite(markdown.marginLeft, markdown.marginTop, markdown.marginRight, markdown.marginBottom) {
 		// Pages were made until the memory ran out (review of 12 October
 		// 2026, F4)
@@ -300,13 +315,13 @@ func (markdown *Markdown) closeContainer() {
 // where the text is.
 func (markdown *Markdown) finishQuoteBars() {
 	for _, bar := range markdown.quoteBars {
-		markdown.drawQuoteBar(bar[0], bar[1], markdown.y)
+		markdownDrawQuoteBar(markdown.page, bar[0], bar[1], markdown.y)
 	}
 }
 
-func (markdown *Markdown) drawQuoteBar(x, top, to float32) {
+func markdownDrawQuoteBar(page *Page, x, top, to float32) {
 	if to > top {
-		NewLine(x, top, x, to).SetStrokeColor(markdownQuoteBarColor).SetStrokeWidth(2).DrawOn(markdown.page)
+		NewLine(x, top, x, to).SetStrokeColor(markdownQuoteBarColor).SetStrokeWidth(2).DrawOn(page)
 	}
 }
 
@@ -314,14 +329,12 @@ func (markdown *Markdown) drawBlocks(blocks []*markdownBlock, x, width float32, 
 	for i, block := range blocks {
 		switch block.kind {
 		case markdownHeading:
-			if i+2 < len(blocks) && markdownLeadsIntoTable(blocks[i+1], blocks[i+2]) {
-				gap := float32(markdown.size() * 0.75)
-				if tight {
-					gap = float32(markdown.size() * 0.25)
-				}
-				markdown.keepHeadingWithTable(block, blocks[i+1], blocks[i+2], gap, x, width)
+			// An empty heading draws nothing, and takes no level of the
+			// tags: "#" made the next "##" an H2 with no H1 over it
+			if trimSpace(block.text) == "" {
+				break
 			}
-			markdown.drawHeading(block, x, width)
+			markdown.drawHeading(block, x, width, markdown.headingKeep(blocks, i, width, tight))
 		case markdownParagraph:
 			gap := float32(markdown.size() * 0.75)
 			if tight {
@@ -347,6 +360,182 @@ func (markdown *Markdown) drawBlocks(blocks []*markdownBlock, x, width float32, 
 		default:
 		}
 	}
+}
+
+// headingKeep returns the room a heading keeps on its page: itself and what
+// comes after it, as far as a page keeps that together, so that the heading
+// does not end a page. When the two do not fit on one page, the heading and
+// two lines, or the first rows of a table under it, or of one after its
+// lead-in, which then starts there: the table went to the next page alone.
+func (markdown *Markdown) headingKeep(blocks []*markdownBlock, i int, width float32, tight bool) float32 {
+	keep := markdown.keepHeight(blocks, i, width, tight)
+	if keep <= markdown.bottom-markdown.marginTop {
+		return keep
+	}
+	line := markdown.regular.GetBodyHeight(markdown.size())
+	heading := markdown.headingHeight(blocks[i], width)
+	if i+1 < len(blocks) && blocks[i+1].kind == markdownTable {
+		markdown.allowSplit = true
+		return heading + float32(markdown.size()*0.75) + float32(4*line)
+	}
+	if i+2 < len(blocks) && markdownLeadsIntoTable(blocks[i+1], blocks[i+2]) {
+		markdown.allowSplit = true
+		return heading + markdown.paragraphGap(tight) + markdown.paragraphHeight(blocks[i+1].text, width) +
+			float32(markdown.size()*0.75) + float32(4*line)
+	}
+	return heading + float32(2*line)
+}
+
+// firstKeep returns the room the first block of a quote or a list item needs
+// on its page, which the block does not check, drawn where the quote's bar or
+// the item's label is: a first image, code or table was drawn into the bottom
+// margin, and a short table was split.
+func (markdown *Markdown) firstKeep(blocks []*markdownBlock, width float32, tight bool) float32 {
+	if len(blocks) == 0 {
+		return markdown.regular.GetBodyHeight(markdown.size())
+	}
+	var keep float32
+	if blocks[0].kind == markdownHeading {
+		keep = markdown.headingKeep(blocks, 0, width, tight)
+	} else {
+		keep = markdown.keepHeight(blocks, 0, width, tight)
+	}
+	return min(keep, markdown.bottom-markdown.marginTop)
+}
+
+// keepHeight returns the height a block needs on its page where it starts:
+// the whole of a table, an image or a lead-in and its table that fit on a
+// page; three lines of code; a heading and what it keeps; or a line of text.
+func (markdown *Markdown) keepHeight(blocks []*markdownBlock, i int, width float32, tight bool) float32 {
+	block := blocks[i]
+	line := markdown.regular.GetBodyHeight(markdown.size())
+	room := markdown.bottom - markdown.marginTop
+	switch block.kind {
+	case markdownHeading:
+		heading := markdown.headingHeight(block, width)
+		if i+1 < len(blocks) {
+			next := blocks[i+1]
+			gap := float32(markdown.size() * 0.75)
+			if next.kind == markdownParagraph {
+				gap = markdown.paragraphGap(tight)
+			} else if next.kind == markdownHeading {
+				gap = markdown.headingGap(next)
+			}
+			return heading + max(gap+markdown.keepHeight(blocks, i+1, width, tight), float32(2*line))
+		}
+		return heading + float32(2*line)
+	case markdownParagraph:
+		if i+1 < len(blocks) && markdownLeadsIntoTable(block, blocks[i+1]) {
+			keep := markdown.paragraphHeight(block.text, width) + float32(markdown.size()*0.75) +
+				markdown.tableOf(blocks[i+1], width).getTotalHeight()
+			if keep <= room {
+				return keep
+			}
+		}
+		return line
+	case markdownTable:
+		height := markdown.tableOf(block, width).getTotalHeight()
+		if height <= room {
+			return height
+		}
+		return float32(4 * line)
+	case markdownImage:
+		image := markdown.imageOf(block, width)
+		if image.drawable == nil {
+			return line
+		}
+		return image.height
+	case markdownCode:
+		if block.text == "" {
+			return 0
+		}
+		return markdown.codeHeight(block.text, width)
+	case markdownQuote:
+		if len(block.children) == 0 {
+			return line
+		}
+		return markdown.keepHeight(block.children, 0,
+			width-markdown.indentWithin(float32(markdown.size()*1.2), width), false)
+	case markdownList:
+		if len(block.children) == 0 || len(block.children[0].children) == 0 {
+			return line
+		}
+		indent := float32(1.4)
+		if block.ordered {
+			indent = 2
+		}
+		return markdown.keepHeight(block.children[0].children, 0,
+			width-markdown.indentWithin(float32(markdown.size()*indent), width), !block.loose)
+	default:
+		return line
+	}
+}
+
+// paragraphGap returns the space before a paragraph.
+func (markdown *Markdown) paragraphGap(tight bool) float32 {
+	if tight {
+		return float32(markdown.size() * 0.25)
+	}
+	return float32(markdown.size() * 0.75)
+}
+
+// headingHeight returns the height of a heading's text at the width, of all
+// its lines: a heading of two lines was kept on its page by its first.
+func (markdown *Markdown) headingHeight(block *markdownBlock, width float32) float32 {
+	frame := NewTextFrameFromParagraphs([]*Paragraph{markdown.headingParagraph(block)}).SetParagraphGap(0)
+	frame.SetLocation(0, 0)
+	frame.SetWidth(width).SetHeight(markdown.bottom - markdown.marginTop)
+	frame.DrawOn(nil)
+	return frame.GetTextBottom()
+}
+
+// paragraphHeight returns the height of a paragraph's text at the width.
+func (markdown *Markdown) paragraphHeight(text string, width float32) float32 {
+	frame := NewTextFrameFromParagraphs([]*Paragraph{markdown.markup.Paragraph(text)}).SetParagraphGap(0)
+	frame.SetLocation(0, 0)
+	frame.SetWidth(width).SetHeight(markdown.bottom - markdown.marginTop)
+	frame.DrawOn(nil)
+	return frame.GetTextBottom()
+}
+
+// codeLines returns the lines of code at the width, each cut where the next
+// character would pass it, measured in the code font: by the count of
+// characters as wide as a "0", CJK and other wide characters ran past the
+// background. The widths of the characters are added up in one pass, so that
+// a long line is cut in linear time. A character is not cut in two, a line
+// has a character at least, and a code font with no width cuts none.
+func (markdown *Markdown) codeLines(text string, width float32) []string {
+	code := markdown.code
+	room := width - float32(float32(2*markdown.size())*0.5)
+	lines := make([]string, 0)
+	for _, line := range strings.Split(text, "\n") {
+		start := 0
+		used := float32(0)
+		i := 0
+		for i < len(line) {
+			_, n := utf8.DecodeRuneInString(line[i:])
+			next := i + n
+			advance := code.StringWidth(code.GetSize(), line[i:next])
+			if i > start && used+advance > room {
+				lines = append(lines, line[start:i])
+				start = i
+				used = 0
+			}
+			used += advance
+			i = next
+		}
+		lines = append(lines, line[start:])
+	}
+	return lines
+}
+
+// codeHeight returns the height code keeps together on a page: three lines
+// at most.
+func (markdown *Markdown) codeHeight(text string, width float32) float32 {
+	code := markdown.code
+	leading := float32(code.GetBodyHeight(code.GetSize()) * 1.2)
+	return float32(float32(min(3, len(markdown.codeLines(text, width))))*leading) +
+		float32(float32(2*markdown.size())*0.5)
 }
 
 // drawParagraph draws a paragraph in a text frame on the page, and on the
@@ -378,46 +567,17 @@ func markdownFirstLineHeight(paragraph *Paragraph) float32 {
 	return height
 }
 
-// firstBlockHeight returns the height a quote or a list item makes room for
-// on its page before it starts: a line of the text, or a heading and the two
-// lines it keeps with it, when the first of its blocks is one. The first
-// block of a quote or an item skips the check of a page's room, and a heading
-// was drawn into the bottom margin (review of 12 October 2026, F16).
-func (markdown *Markdown) firstBlockHeight(blocks []*markdownBlock) float32 {
-	for len(blocks) > 0 {
-		first := blocks[0]
-		switch first.kind {
-		case markdownHeading:
-			fontSize := float32(markdown.size() * markdownHeadingSizes[first.level-1])
-			return markdown.headingFont.GetBodyHeight(fontSize) +
-				float32(2*markdown.regular.GetBodyHeight(markdown.size()))
-		case markdownQuote:
-			blocks = first.children
-		case markdownList:
-			if len(first.children) == 0 {
-				blocks = nil
-			} else {
-				blocks = first.children[0].children
-			}
-		default:
-			blocks = nil
-		}
-	}
-	return markdown.regular.GetBodyHeight(markdown.size())
-}
-
 // drawHeading draws a heading, larger than the text, which keeps a line of
 // the text after it on its page. Its level as it is tagged is at most one
 // more than that of the heading before it, so that no level is skipped.
-func (markdown *Markdown) drawHeading(block *markdownBlock, x, width float32) {
-	fontSize := float32(markdown.size() * markdownHeadingSizes[block.level-1])
+func (markdown *Markdown) drawHeading(block *markdownBlock, x, width, keep float32) {
 	markdown.gap(markdown.headingGap(block))
 	paragraph := markdown.headingParagraph(block)
 	markdown.headingLevel = min(block.level, markdown.headingLevel+1)
 	levels := [6]structelem.StructElem{structelem.H1, structelem.H2, structelem.H3,
 		structelem.H4, structelem.H5, structelem.H6}
 	paragraph.SetStructureType(levels[markdown.headingLevel-1])
-	markdown.ensure(markdown.headingFont.GetBodyHeight(fontSize) + float32(2*markdown.regular.GetBodyHeight(markdown.size())))
+	markdown.ensure(keep)
 	markdown.drawParagraph(paragraph, x, width)
 	markdown.y += float32(markdown.size() * 0.25)
 }
@@ -451,40 +611,16 @@ func (markdown *Markdown) headingParagraph(block *markdownBlock) *Paragraph {
 
 // drawCode draws code in the code font on a light background, a line of the
 // source at a time, and a line too long for the width goes on under itself.
-// The lines are cut in Java's characters, UTF-16 code units, of which a
-// character outside the Basic Multilingual Plane is two, and never inside such
-// a character.
 func (markdown *Markdown) drawCode(text string, x, width float32) {
+	if text == "" {
+		return // An empty block of code has nothing to tag, and no background
+	}
 	code := markdown.code
 	markdown.gap(float32(markdown.size() * 0.75))
 	padding := float32(markdown.size() * 0.5)
 	leading := float32(code.GetBodyHeight(code.GetSize()) * 1.2)
-	// A code font with no width, or no size, cuts no line.
-	columns := math.MaxInt32
-	if advance := code.StringWidth(code.GetSize(), "0"); advance > 0 {
-		columns = max(1, saturatingInt((width-float32(2*padding))/advance))
-	}
-	lines := make([]string, 0)
-	for _, line := range strings.Split(text, "\n") {
-		units := utf16.Encode([]rune(line))
-		start := 0
-		for len(units)-start > columns {
-			// A surrogate pair is not cut in two: it goes on the next
-			// line, or on this one when it would be the whole line.
-			cut := start + columns
-			if markdownIsHighSurrogate(units[cut-1]) {
-				if cut-1 > start {
-					cut = cut - 1
-				} else {
-					cut = cut + 1
-				}
-			}
-			lines = append(lines, string(utf16.Decode(units[start:cut])))
-			start = cut
-		}
-		lines = append(lines, string(utf16.Decode(units[start:])))
-	}
-	markdown.ensure(float32(float32(min(3, len(lines)))*leading) + float32(2*padding))
+	lines := markdown.codeLines(text, width)
+	markdown.ensure(markdown.codeHeight(text, width))
 	// Code is an inline element, so the block is a paragraph that holds
 	// its Code: PAC warns of a Code right under the document.
 	markdown.openContainer(structelem.P)
@@ -517,15 +653,12 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 	markdown.closeContainer()
 }
 
-func markdownIsHighSurrogate(unit uint16) bool {
-	return unit >= 0xD800 && unit <= 0xDBFF
-}
-
 // drawQuote draws a quote, indented, with a bar on its left.
 func (markdown *Markdown) drawQuote(block *markdownBlock, x, width float32) {
 	markdown.gap(float32(markdown.size() * 0.75))
-	markdown.ensure(markdown.firstBlockHeight(block.children))
 	indent := markdown.indentWithin(float32(markdown.size()*1.2), width)
+	// Room for its first block, which does not check the room it has
+	markdown.ensure(markdown.firstKeep(block.children, width-indent, false))
 	bar := &[2]float32{x + 2, markdown.y}
 	markdown.quoteBars = append(markdown.quoteBars, bar)
 	markdown.openContainer(structelem.BlockQuote)
@@ -535,7 +668,7 @@ func (markdown *Markdown) drawQuote(block *markdownBlock, x, width float32) {
 	markdown.atTop = top && markdown.atTop
 	markdown.closeContainer()
 	markdown.removeQuoteBar(bar)
-	markdown.drawQuoteBar(bar[0], bar[1], markdown.y)
+	markdownDrawQuoteBar(markdown.page, bar[0], bar[1], markdown.y)
 }
 
 // indentWithin returns the indent, or less, so that the blocks inside a quote
@@ -573,7 +706,7 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 				markdown.gap(float32(markdown.size() * 0.2))
 			}
 		}
-		markdown.ensure(markdown.firstBlockHeight(item.children))
+		markdown.ensure(markdown.firstKeep(item.children, width-indent, !list.loose))
 		markdown.openContainer(structelem.LI)
 		if item.task != markdownNoTask {
 			markdown.drawTaskBox(item.task == markdownTaskDone, x, indent)
@@ -676,44 +809,20 @@ const markdownCheckMark = "\u2713"
 
 // markdownLeadsIntoTable tells if the block is a paragraph that ends in a
 // colon, which leads into the table after it.
+// The lead-in is trimmed as Java's String.trim() trims, of the characters up
+// to U+0020 only.
 func markdownLeadsIntoTable(block, next *markdownBlock) bool {
+	text := trimSpace(block.text)
 	return block.kind == markdownParagraph && next.kind == markdownTable &&
-		strings.HasSuffix(strings.TrimSpace(block.text), ":")
-}
-
-// keepHeadingWithTable starts a page for a heading over a paragraph that
-// leads into a table, as "Lines of code" over "Lines of code of each
-// program:" and its table, when the three fit on a page together but not in
-// what is left of this one: the paragraph and the table went to the next
-// page, and the heading ended this one.
-func (markdown *Markdown) keepHeadingWithTable(heading, paragraph, table *markdownBlock, gap, x, width float32) {
-	if markdown.atTop {
-		return
-	}
-	room := markdown.bottom - markdown.marginTop
-	headingGap := markdown.headingGap(heading)
-	title := NewTextFrameFromParagraphs([]*Paragraph{markdown.headingParagraph(heading)}).SetParagraphGap(0)
-	title.SetLocation(x, markdown.y+headingGap)
-	title.SetWidth(width).SetHeight(room)
-	title.DrawOn(nil)
-	below := title.GetTextBottom() + float32(markdown.size()*0.25) + gap
-	text := NewTextFrameFromParagraphs([]*Paragraph{markdown.markup.Paragraph(paragraph.text)}).SetParagraphGap(0)
-	text.SetLocation(x, below)
-	text.SetWidth(width).SetHeight(room)
-	text.DrawOn(nil)
-	needed := (text.GetTextBottom() - markdown.y) + float32(markdown.size()*0.75) +
-		markdown.tableOf(table, width).getTotalHeight()
-	if markdown.y+needed > markdown.bottom && needed-headingGap <= room {
-		markdown.newPage()
-	}
+		(strings.HasSuffix(text, ":") || strings.HasSuffix(text, "：")) // Or the full-width colon of CJK text
 }
 
 // keepWithTable starts a page for a paragraph that ends in a colon and the
 // table after it, which it leads into as "The size of the PDFs, KB:" does,
 // when the two fit on a page together but not in what is left of this one.
 func (markdown *Markdown) keepWithTable(paragraph, table *markdownBlock, gap, x, width float32) {
-	if markdown.atTop {
-		return
+	if markdown.atTop || markdown.allowSplit {
+		return // Its table starts under it, after a heading that keeps them
 	}
 	room := markdown.bottom - markdown.marginTop
 	frame := NewTextFrameFromParagraphs([]*Paragraph{markdown.markup.Paragraph(paragraph.text)}).SetParagraphGap(0)
@@ -736,21 +845,35 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	markdown.gap(float32(markdown.size() * 0.75))
 	table := markdown.tableOf(block, width)
 	// A table that fits on a page is not split: it starts the next page when
-	// it does not fit in what is left of this one.
+	// it does not fit in what is left of this one, but under a heading that
+	// keeps it, with which it does not fit on a page
 	height := table.getTotalHeight()
-	if !markdown.atTop && markdown.y+height > markdown.bottom && height <= markdown.bottom-markdown.marginTop {
+	if !markdown.atTop && !markdown.allowSplit && markdown.y+height > markdown.bottom &&
+		height <= markdown.bottom-markdown.marginTop {
 		markdown.newPage()
 	}
+	markdown.allowSplit = false
+	// Room for its header and a row where it does not fit, not where it
+	// does: a short table went to the next page alone
 	rowHeight := float32(2 * markdown.regular.GetBodyHeight(markdown.size()))
-	markdown.ensure(float32(2 * rowHeight))
+	if markdown.y+height > markdown.bottom {
+		markdown.ensure(float32(2 * rowHeight))
+	}
 	table.SetLocation(x, markdown.marginTop)
 	table.SetFirstPageTopMargin(markdown.y)
 	table.SetBottomMargin(markdown.marginBottom)
 	before := len(*markdown.pages)
 	xy := table.drawOnPages(markdown.pdf, markdown.page, markdown.pages, markdown.pageSize)
 	if len(*markdown.pages) > before {
-		// The table drew its last rows on a page of its own.
-		markdown.finishQuoteBars()
+		// The table drew its last rows on a page of its own. The bars of
+		// the quotes it is in go down to the bottom of its first page and
+		// the length of the pages between: they stopped where it started
+		for _, bar := range markdown.quoteBars {
+			markdownDrawQuoteBar(markdown.page, bar[0], bar[1], markdown.bottom)
+			for p := before; p < len(*markdown.pages)-1; p++ {
+				markdownDrawQuoteBar((*markdown.pages)[p], bar[0], markdown.marginTop, markdown.bottom)
+			}
+		}
 		markdown.page = (*markdown.pages)[len(*markdown.pages)-1]
 		markdown.page.structParent = markdown.peekContainer()
 		for _, bar := range markdown.quoteBars {
@@ -761,9 +884,20 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	markdown.atTop = false
 }
 
-// tableOf returns the table of the text of the cells, as wide as its text or
-// as the width.
+// tableOf returns the table of the block, made once: it was made to be
+// measured and made again to be drawn.
 func (markdown *Markdown) tableOf(block *markdownBlock, width float32) *Table {
+	table, ok := markdown.tables[block]
+	if !ok {
+		table = markdown.makeTable(block, width)
+		markdown.tables[block] = table
+	}
+	return table
+}
+
+// makeTable returns the table of the text of the cells, as wide as its text
+// or as the width.
+func (markdown *Markdown) makeTable(block *markdownBlock, width float32) *Table {
 	rows := make([][]*Cell, 0, len(block.rows))
 	for r := range block.rows {
 		row := make([]*Cell, 0, len(block.rows[r]))
@@ -836,8 +970,11 @@ func (markdown *Markdown) plainText(text string) string {
 // October 2026, F5).
 func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 	markdown.gap(float32(markdown.size() * 0.75))
-	path := markdown.imagePath(block.source)
-	if path == "" {
+	image := markdown.imageOf(block, width)
+	if image.failed {
+		return
+	}
+	if image.drawable == nil {
 		text := block.text
 		if text == "" {
 			text = block.source
@@ -846,42 +983,61 @@ func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 		markdown.drawParagraph(paragraph, x, width)
 		return
 	}
+	markdown.ensure(image.height)
+	image.drawable.SetLocation(x, markdown.y)
+	image.drawable.DrawOn(markdown.page)
+	markdown.y += image.height
+	markdown.atTop = false
+}
+
+// imageOf returns the image of the block, scaled to the width and to a page,
+// made when it is first measured or drawn, and its height kept; no drawable
+// for an image that is not read, whose text is drawn in its place, or for one
+// whose file could not be read, which fails the document.
+func (markdown *Markdown) imageOf(block *markdownBlock, width float32) *markdownImageOf {
+	if image, ok := markdown.images[block]; ok {
+		return image
+	}
+	image := &markdownImageOf{}
+	markdown.images[block] = image
+	path := markdown.imagePath(block.source)
+	if path == "" {
+		return image
+	}
 	alt := block.text
 	if alt == "" {
 		alt = filepath.Base(block.source)
 	}
 	var scale, imageWidth, imageHeight float32
-	var drawable Drawable
 	if strings.HasSuffix(strings.ToLower(path), ".svg") {
-		image, err := NewSVGImageFromFile(path)
+		svg, err := NewSVGImageFromFile(path)
 		if err != nil {
 			markdown.pdf.fail("The image " + block.source + " could not be read: " + err.Error())
-			return
+			image.failed = true
+			return image
 		}
-		image.SetAltDescription(alt)
-		imageWidth = image.GetWidth()
-		imageHeight = image.GetHeight()
+		svg.SetAltDescription(alt)
+		imageWidth = svg.GetWidth()
+		imageHeight = svg.GetHeight()
 		scale = min(1, min(width/imageWidth, (markdown.bottom-markdown.marginTop)/imageHeight))
-		image.ScaleBy(scale)
-		drawable = image
+		svg.ScaleBy(scale)
+		image.drawable = svg
 	} else {
-		image, err := readMarkdownImage(markdown.pdf, path)
+		raster, err := readMarkdownImage(markdown.pdf, path)
 		if err != nil {
 			markdown.pdf.fail("The image " + block.source + " could not be read: " + err.Error())
-			return
+			image.failed = true
+			return image
 		}
-		image.SetAltDescription(alt)
-		imageWidth = image.GetWidth()
-		imageHeight = image.GetHeight()
+		raster.SetAltDescription(alt)
+		imageWidth = raster.GetWidth()
+		imageHeight = raster.GetHeight()
 		scale = min(1, min(width/imageWidth, (markdown.bottom-markdown.marginTop)/imageHeight))
-		image.ScaleBy(scale)
-		drawable = image
+		raster.ScaleBy(scale)
+		image.drawable = raster
 	}
-	markdown.ensure(float32(imageHeight * scale))
-	drawable.SetLocation(x, markdown.y)
-	drawable.DrawOn(markdown.page)
-	markdown.y += float32(imageHeight * scale)
-	markdown.atTop = false
+	image.height = float32(imageHeight * scale)
+	return image
 }
 
 // readMarkdownImage returns the image of the file, or the error that reading

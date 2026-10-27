@@ -186,7 +186,8 @@ func (chart *SimpleBarChart) top() float32 {
 
 // The value written at the end of a bar.
 func (chart *SimpleBarChart) label(value float32) string {
-	return format(value, chart.minFractionDigits, chart.maxFractionDigits)
+	// Its digits grouped in thousands, 23,507, as in the other charts
+	return groupDigits(format(value, chart.minFractionDigits, chart.maxFractionDigits))
 }
 
 // The font of the name and the value of the bar of the index.
@@ -237,14 +238,25 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	nameWidth := float32(0)
 	valueWidth := float32(0)
 	largest := float32(0)
-	for i, name := range chart.names {
-		font := chart.fontOf(i)
-		shown = append(shown, shorten(font, size, name, float32(0.4*(chart.w-float32(2.0*pad)))))
-		nameWidth = max(nameWidth, font.StringWidth(size, shown[i]))
-		valueWidth = max(valueWidth, font.StringWidth(size, chart.label(chart.values[i])))
+	for i := range chart.names {
+		valueWidth = max(valueWidth, chart.fontOf(i).StringWidth(size, chart.label(chart.values[i])))
 		if isValue(chart.values[i]) {
 			largest = max(largest, chart.values[i])
 		}
+	}
+	// The names in what the values leave of the width, two fifths of it at
+	// most: in a chart narrower than its values they were written past it
+	nameRoom := max(min(float32(0.4*(chart.w-float32(2.0*pad))),
+		chart.w-float32(3.0*pad)-valueWidth-float32(size/2.0)), 0.0)
+	for i, name := range chart.names {
+		font := chart.fontOf(i)
+		// No name where not even an ellipsis fits; the description has it
+		if nameRoom < font.StringWidth(size, "…") {
+			shown = append(shown, "")
+		} else {
+			shown = append(shown, shorten(font, size, name, nameRoom))
+		}
+		nameWidth = max(nameWidth, font.StringWidth(size, shown[i]))
 	}
 	barX := chart.x + pad + nameWidth + pad
 	barRoom := max(chart.x+chart.w-pad-float32(valueWidth+float32(size/2.0))-barX, 0)

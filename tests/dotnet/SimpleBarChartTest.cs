@@ -161,5 +161,23 @@ public class SimpleBarChartTest {
         Assert.Equal("1.23e20", ChartScale.Format(1.2345e20f, 0, 2));
         Assert.Equal("-4.5e16", ChartScale.GroupDigits(ChartScale.Format(-4.5e16f, 0, 2)));
     }
+
+    // Values are grouped in thousands, as in the other charts; and in a chart
+    // narrower than its names and values the names give the values room,
+    // which were written past the chart (the third review of 26 October 2026).
+    [Fact]
+    public void TheThirdReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleBarChart(font, font).SetWidth(300f).Add("a", 23507f).DrawOn(page);
+        Assert.Contains(TestSupport.Hex("23,507"), TestSupport.Content(page));
+        page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart narrow = new SimpleBarChart(font, font).SetWidth(90f).Add("A long name", 1234567f);
+        narrow.SetLocation(0f, 0f);
+        narrow.DrawOn(page);
+        float[] at = TestSupport.PositionOf(TestSupport.Content(page), "1,234,567");
+        Assert.True(at[0] + font.StringWidth("1,234,567") <= 90f + 0.01f, at[0] + " in 90");
+    }
 }
 }   // End of namespace PDFjet.NET

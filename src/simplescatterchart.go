@@ -62,7 +62,7 @@ type SimpleScatterChart struct {
 	xRangeSet, yRangeSet   bool
 	panelColor, dotColor   int32
 	highlightColor         int32
-	maxFractionDigits      int
+	maxFractionDigits      int // As many as the steps of the axes need
 }
 
 // NewSimpleScatterChart creates a simple scatter chart, 400 by 300 points.
@@ -138,14 +138,16 @@ func (chart *SimpleScatterChart) SetTrendLine(trendLine bool) *SimpleScatterChar
 }
 
 // SetXAxisRange sets the range of the horizontal axis. Without it the range
-// is that of the points, rounded to steps.
+// is that of the points, rounded to steps. A range whose end is not past its
+// start is not set.
 func (chart *SimpleScatterChart) SetXAxisRange(lo, hi float32) *SimpleScatterChart {
 	chart.xMin, chart.xMax, chart.xRangeSet = lo, hi, hi > lo
 	return chart
 }
 
 // SetYAxisRange sets the range of the vertical axis. Without it the range is
-// that of the points, rounded to steps.
+// that of the points, rounded to steps. A range whose end is not past its
+// start is not set.
 func (chart *SimpleScatterChart) SetYAxisRange(lo, hi float32) *SimpleScatterChart {
 	chart.yMin, chart.yMax, chart.yRangeSet = lo, hi, hi > lo
 	return chart
@@ -213,7 +215,7 @@ func (chart *SimpleScatterChart) top() float32 {
 
 // label formats a number of an axis with the decimals its step needs.
 func (chart *SimpleScatterChart) label(value, step float32) string {
-	return format(value, fractionDigitsOf(step, chart.maxFractionDigits), chart.maxFractionDigits)
+	return groupDigits(format(value, fractionDigitsOf(step, chart.maxFractionDigits), chart.maxFractionDigits))
 }
 
 // The points whose x and y are numbers.
@@ -235,20 +237,39 @@ func trend(points []scatterPoint) (float64, float64, bool) {
 	if n < 2 {
 		return 0, 0, false
 	}
-	var sx, sy, sxx, sxy float64
+	// From the sums of the distances from the means, which keep their
+	// precision where the raw sums lost it, for x near 1e8 of a small spread
+	var sx, sy float64
 	for _, p := range points {
-		x, y := float64(p.x), float64(p.y)
-		sx += x
-		sy += y
-		sxx += float64(x * x)
-		sxy += float64(x * y)
+		sx += float64(p.x)
+		sy += float64(p.y)
 	}
-	d := float64(n*sxx) - float64(sx*sx)
-	if d == 0 {
+	mx := sx / n
+	my := sy / n
+	var sxx, sxy float64
+	for _, p := range points {
+		dx := float64(p.x) - mx
+		sxx += float64(dx * dx)
+		sxy += float64(dx * (float64(p.y) - my))
+	}
+	if sxx == 0 {
 		return 0, 0, false
 	}
-	slope := (float64(n*sxy) - float64(sx*sy)) / d
-	return slope, (sy - float64(slope*sx)) / n, true
+	slope := sxy / sxx
+	return slope, my - float64(slope*mx), true
+}
+
+// digits returns the digits of the numbers of the two axes of the points.
+func (chart *SimpleScatterChart) digits(points []scatterPoint) int {
+	xs := make([]float32, len(points))
+	ys := make([]float32, len(points))
+	for i, p := range points {
+		xs[i], ys[i] = p.x, p.y
+	}
+	xAxis := axisOf(xs, chart.xMin, chart.xMax, chart.xRangeSet)
+	yAxis := axisOf(ys, chart.yMin, chart.yMax, chart.yRangeSet)
+	return max(digitsOf((xAxis.max-xAxis.min)/float32(xAxis.lines)),
+		digitsOf((yAxis.max-yAxis.min)/float32(yAxis.lines)))
 }
 
 // getAltDescription returns the alternate description: the one set, or the
@@ -258,6 +279,9 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 		return chart.altDescription
 	}
 	points := chart.valid()
+	if len(points) > 0 {
+		chart.maxFractionDigits = chart.digits(points)
+	}
 	var sb strings.Builder
 	sb.WriteString(join(chart.title, chart.subtitle))
 	if sb.Len() == 0 {
@@ -277,8 +301,8 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 		} else {
 			sb.WriteString(", ")
 		}
-		sb.WriteString(p.name + " " + format(p.x, 0, chart.maxFractionDigits) + " and " +
-			format(p.y, 0, chart.maxFractionDigits))
+		sb.WriteString(p.name + " " + groupDigits(format(p.x, 0, chart.maxFractionDigits)) + " and " +
+			groupDigits(format(p.y, 0, chart.maxFractionDigits)))
 		named++
 	}
 	if chart.trendLine {
@@ -315,10 +339,14 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	for i, p := range points {
 		xs[i], ys[i] = p.x, p.y
 	}
+	if (!chart.xRangeSet && !spanFits(xs)) || (!chart.yRangeSet && !spanFits(ys)) {
+		return [2]float32{chart.x + chart.w, chart.y + chart.h} // A span past the largest float, which no axis can draw
+	}
 	xAxis := axisOf(xs, chart.xMin, chart.xMax, chart.xRangeSet)
 	yAxis := axisOf(ys, chart.yMin, chart.yMax, chart.yRangeSet)
 	xStep := (xAxis.max - xAxis.min) / float32(xAxis.lines)
 	yStep := (yAxis.max - yAxis.min) / float32(yAxis.lines)
+	chart.maxFractionDigits = max(digitsOf(xStep), digitsOf(yStep))
 
 	// The plot: right of the y title and the widest number, above the
 	// numbers and the x title
@@ -417,7 +445,17 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 
 	// The trend line, from the left of the plot to its right, within its
 	// height
-	if slope, intercept, ok := trend(points); chart.trendLine && ok {
+	slope, intercept, ok := trend(points)
+	// No line where it misses the plot, both of its ends past one edge, as
+	// a flat one over a range that is set: it was drawn outside the chart
+	if ok {
+		a := float64(slope*float64(xAxis.min)) + intercept
+		b := float64(slope*float64(xAxis.max)) + intercept
+		if (a > float64(yAxis.max) && b > float64(yAxis.max)) || (a < float64(yAxis.min) && b < float64(yAxis.min)) {
+			ok = false
+		}
+	}
+	if chart.trendLine && ok {
 		x1, x2 := float64(xAxis.min), float64(xAxis.max)
 		y1 := float64(float64(slope*x1)) + intercept
 		y2 := float64(float64(slope*x2)) + intercept

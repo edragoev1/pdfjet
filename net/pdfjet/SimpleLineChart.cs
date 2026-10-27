@@ -81,7 +81,7 @@ public class SimpleLineChart : IDrawable {
     private int panelColor = SimpleBarChart.PANEL;
     private int lineColor = LINE;
     private int highlightColor = SimpleBarChart.HIGHLIGHT;
-    private readonly int maxFractionDigits = 2;
+    private int maxFractionDigits = 2;      // As many as the step of the axis needs
 
     /// <summary>
     /// Creates a simple line chart, 400 by 300 points.
@@ -217,7 +217,8 @@ public class SimpleLineChart : IDrawable {
 
     /// <summary>
     /// Sets the range of the vertical axis. Without it the range is that of
-    /// the values, rounded to steps.
+    /// the values, rounded to steps. A range whose end is not past its start
+    /// is not set.
     /// </summary>
     /// <param name="min">the first value of the axis.</param>
     /// <param name="max">the last value of the axis.</param>
@@ -372,6 +373,19 @@ public class SimpleLineChart : IDrawable {
         if (altDescription.Length > 0) {
             return altDescription;
         }
+        // The values in the digits of the numbers of the axis
+        List<float> all = new List<float>();
+        foreach (Line line in lines) {
+            for (int j = 0; j < Count(); j++) {
+                if (line.Has(j)) {
+                    all.Add(line.values[j]);
+                }
+            }
+        }
+        if (all.Count > 0) {
+            ChartScale.Axis axis = ChartScale.AxisOf(all.ToArray(), yMin, yMax, yRangeSet);
+            maxFractionDigits = ChartScale.DigitsOf((axis.max - axis.min) / axis.lines);
+        }
         StringBuilder sb = new StringBuilder(ChartScale.Join(title, subtitle));
         if (sb.Length == 0) {
             sb.Append("Line chart");
@@ -440,8 +454,12 @@ public class SimpleLineChart : IDrawable {
         float pad = Pad();
         float ascent = f2.GetAscent(size);
 
+        if (!yRangeSet && !ChartScale.SpanFits(all.ToArray())) {
+            return new float[] {x + w, y + h};      // A span past the largest float, which no axis can draw
+        }
         ChartScale.Axis axis = ChartScale.AxisOf(all.ToArray(), yMin, yMax, yRangeSet);
         float step = (axis.max - axis.min) / axis.lines;
+        maxFractionDigits = ChartScale.DigitsOf(step);
 
         // The plot: right of the y title and the widest number, left of the
         // widest label at the end of a line, above the categories and the x
@@ -679,9 +697,28 @@ public class SimpleLineChart : IDrawable {
                 labels.Add(new EndLabel(EndText(i, last), i, end + ascent / 2f));
             }
         }
-        // By the baseline, and labels on one baseline in the order of their
-        // lines, as a stable sort leaves them
-        labels.Sort((a, b) => a.y != b.y ? a.y.CompareTo(b.y) : a.index.CompareTo(b.index));
+        // As many as the height of the plot holds, a line apart, the
+        // highlighted one first and then the others in their order: more were
+        // pushed up past the top of the chart
+        int room = (f2.GetBodyHeight() > 0f) ? (int) ((bottom - top) / f2.GetBodyHeight()) + 1 : labels.Count;
+        if (labels.Count > room) {
+            List<EndLabel> kept = new List<EndLabel>();
+            foreach (EndLabel label in labels) {
+                if (label.index == highlight) {
+                    kept.Add(label);
+                }
+            }
+            foreach (EndLabel label in labels) {
+                if (label.index != highlight && kept.Count < room) {
+                    kept.Add(label);
+                }
+            }
+            labels = kept;
+        }
+        // By the baseline, and labels on one baseline in the order they are
+        // in, as a stable sort leaves them: the highlighted one first
+        List<EndLabel> inOrder = new List<EndLabel>(labels);
+        labels.Sort((a, b) => a.y != b.y ? a.y.CompareTo(b.y) : inOrder.IndexOf(a).CompareTo(inOrder.IndexOf(b)));
         for (int k = 1; k < labels.Count; k++) {
             labels[k].y = Math.Max(labels[k].y, labels[k - 1].y + f2.GetBodyHeight());
         }

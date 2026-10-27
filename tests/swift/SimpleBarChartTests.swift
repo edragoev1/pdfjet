@@ -141,4 +141,21 @@ import Testing
         #expect(ChartScale.format(9.995e20, 0, 2) == "9.99e20")     // Its exact value is under the half
         #expect(ChartScale.format(9.9949999e15, 0, 2) == "9.99e15")
     }
+
+    // Values are grouped in thousands, as in the other charts; and in a chart
+    // narrower than its names and values the names give the values room,
+    // which were written past the chart (the third review of 26 October 2026).
+    @Test func theThirdReviewOfTheCharts() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var page = Page(pdf, Letter.PORTRAIT)
+        SimpleBarChart(font, font).setWidth(300).add("a", 23507).drawOn(page)
+        #expect(TestSupport.content(page).contains(TestSupport.hex("23,507")), "\(TestSupport.content(page))")
+        page = Page(pdf, Letter.PORTRAIT)
+        let narrow = SimpleBarChart(font, font).setWidth(90).add("A long name", 1234567)
+        narrow.setLocation(0, 0)
+        narrow.drawOn(page)
+        let at = TestSupport.positionOf(TestSupport.content(page), "1,234,567")
+        #expect(at[0] + font.stringWidth("1,234,567") <= 90 + 0.01, "\(at[0]) in 90")
+    }
 }

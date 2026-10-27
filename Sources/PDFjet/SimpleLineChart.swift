@@ -67,7 +67,7 @@ public class SimpleLineChart : Drawable {
     private var panelColor = SimpleBarChart.PANEL
     private var lineColor = SimpleLineChart.LINE
     private var highlightColor = SimpleBarChart.HIGHLIGHT
-    private let maxFractionDigits = 2
+    private var maxFractionDigits = 2       // As many as the step of the axis needs
 
     ///
     /// Creates a simple line chart, 400 by 300 points.
@@ -240,7 +240,8 @@ public class SimpleLineChart : Drawable {
 
     ///
     /// Sets the range of the vertical axis. Without it the range is that of
-    /// the values, rounded to steps.
+    /// the values, rounded to steps. A range whose end is not past its start
+    /// is not set.
     ///
     /// - Parameter min: the first value of the axis.
     /// - Parameter max: the last value of the axis.
@@ -405,6 +406,17 @@ public class SimpleLineChart : Drawable {
         if !altDescription.isEmpty {
             return altDescription
         }
+        // The values in the digits of the numbers of the axis
+        var all = [Float]()
+        for line in lines {
+            for j in 0..<count() where line.has(j) {
+                all.append(line.values[j])
+            }
+        }
+        if !all.isEmpty {
+            let axis = ChartScale.axisOf(all, yMin, yMax, yRangeSet)
+            maxFractionDigits = ChartScale.digitsOf((axis.max - axis.min) / Float(axis.lines))
+        }
         var sb = ChartScale.join(title, subtitle)
         if sb.isEmpty {
             sb = "Line chart"
@@ -469,8 +481,12 @@ public class SimpleLineChart : Drawable {
         let pad = pad()
         let ascent = f2.getAscent(size)
 
+        if !yRangeSet && !ChartScale.spanFits(all) {
+            return [x + w, y + h]       // A span past the largest float, which no axis can draw
+        }
         let axis = ChartScale.axisOf(all, yMin, yMax, yRangeSet)
         let step = (axis.max - axis.min) / Float(axis.lines)
+        maxFractionDigits = ChartScale.digitsOf(step)
 
         // The plot: right of the y title and the widest number, left of the
         // widest label at the end of a line, above the categories and the x
@@ -712,9 +728,26 @@ public class SimpleLineChart : Drawable {
                         y: end + ascent / 2.0))
             }
         }
-        // By the baseline, and labels on one baseline in the order of their
-        // lines, as a stable sort leaves them
-        labels.sort { $0.y != $1.y ? $0.y < $1.y : $0.index < $1.index }
+        // As many as the height of the plot holds, a line apart, the
+        // highlighted one first and then the others in their order: more were
+        // pushed up past the top of the chart
+        let rows = (plotBottom - top) / f2.getBodyHeight()
+        let room = rows.isFinite ? Int(rows) + 1 : Int.max
+        if labels.count > room {
+            var kept = [EndLabel]()
+            for label in labels where label.index == highlight {
+                kept.append(label)
+            }
+            for label in labels where label.index != highlight && kept.count < room {
+                kept.append(label)
+            }
+            labels = kept
+        }
+        // By the baseline, and labels on one baseline in the order they are
+        // in, as Java's stable sort leaves them
+        labels = labels.enumerated().sorted {
+            $0.element.y != $1.element.y ? $0.element.y < $1.element.y : $0.offset < $1.offset
+        }.map { $0.element }
         if labels.count > 1 {
             for k in 1..<labels.count {
                 labels[k].y = Swift.max(labels[k].y, labels[k - 1].y + f2.getBodyHeight())

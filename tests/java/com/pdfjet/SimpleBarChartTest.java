@@ -170,4 +170,22 @@ class SimpleBarChartTest {
         assertEquals("1.23e20", ChartScale.format(1.2345e20f, 0, 2));
         assertEquals("-4.5e16", ChartScale.groupDigits(ChartScale.format(-4.5e16f, 0, 2)));
     }
+
+    // Values are grouped in thousands, as in the other charts; and in a chart
+    // narrower than its names and values the names give the values room,
+    // which were written past the chart (the third review of 26 October 2026).
+    @Test
+    void theThirdReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleBarChart(font, font).setWidth(300f).add("a", 23507f).drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("23,507")), TestSupport.content(page));
+        page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart narrow = new SimpleBarChart(font, font).setWidth(90f).add("A long name", 1234567f);
+        narrow.setLocation(0f, 0f);
+        narrow.drawOn(page);
+        float[] at = TestSupport.positionOf(TestSupport.content(page), "1,234,567");
+        assertTrue(at[0] + font.stringWidth("1,234,567") <= 90f + 0.01f, at[0] + " in 90");
+    }
 }

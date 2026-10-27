@@ -314,4 +314,47 @@ class BarChartTest {
                 .addSeries("", new float[] {1e30f, 3e38f}), page);
         assertTrue(content.contains(TestSupport.hex("3e38")), content);
     }
+
+    // The third review of 26 October 2026: a set range past the largest float
+    // draws nothing, where its NaN coordinates failed the document; a line
+    // series longer than the categories does not reach the axis past them; a
+    // bar below 0 has room for its value between the plot and the
+    // categories; the gaps are kept in their ranges; a stacked sum past the
+    // largest float is not written; and a bar below a set range has no value.
+    @Test
+    void theThirdReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        draw(chart(pdf).setCategories("a").addSeries("", new float[] {1f}).setValueAxisRange(-3e38f, 3e38f), page);
+        assertEquals("", TestSupport.content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        String content = draw(chart(pdf).setCategories("a", "b").addSeries("Sold", new float[] {1f, 2f})
+                .addLineSeries("Target", new float[] {2f, 3f, 4f, 5f, 6f}), page);
+        assertFalse(content.contains("<" + TestSupport.hex("6") + ">"), content);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setHorizontal(true).setValueLabels(true).setCategories("A")
+                .addSeries("", new float[] {-1234567f}), page);
+        float label = TestSupport.positionOf(content, "-1,234,567")[0];
+        float name = TestSupport.positionOf(content, "A")[0];
+        Font font = TestSupport.helvetica(pdf);
+        assertTrue(name + font.stringWidth("A") <= label, name + " " + label);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setCategories("a").setGroupGap(1.5f).setBarGap(-2f)
+                .addSeries("", new float[] {1f}).addSeries("", new float[] {2f}), page);
+        assertFalse(content.contains(" -"), content);   // No negative width
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setCategories("a").setStacked(true).setValueLabels(true)
+                .addSeries("", new float[] {2e38f}).addSeries("", new float[] {2e38f}), page);
+        assertFalse(content.contains(TestSupport.hex("Infinity")), content);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setCategories("a", "b").setValueLabels(true).setValueAxisRange(10f, 20f)
+                .addSeries("", new float[] {5f, 15f}), page);
+        assertTrue(content.contains("<" + TestSupport.hex("15") + ">"), content);
+        assertFalse(content.contains("<" + TestSupport.hex("5") + ">"), content);
+    }
 }

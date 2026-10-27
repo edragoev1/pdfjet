@@ -61,8 +61,10 @@ public class Example_26 {
             let children = Float(field[3]) ?? 0
             if Example_26.named.contains(field[1]) {
                 chart.add(field[0], children, life, Example_26.worldBank(field[0]))   // A navy dot, named, a link
-                data.append(Example_26.row(f2, false, field[0], String(format: "%.2f", Double(children)),
-                        String(format: "%.1f years", Double(life))))
+                // The figures as the file writes them, two decimals and one,
+                // not rounded again, so that every port writes them alike
+                data.append(Example_26.row(f2, false, field[0], Example_26.decimals(field[3], 2),
+                        Example_26.decimals(field[2], 1) + " years"))
             } else {
                 chart.add(children, life)               // A gray dot
             }
@@ -92,6 +94,20 @@ public class Example_26 {
     // case, a hyphen for each space, as data.worldbank.org/country/united-states
     static func worldBank(_ country: String) -> String {
         return "https://data.worldbank.org/country/" + country.lowercased().replacingOccurrences(of: " ", with: "-")
+    }
+
+    // The number of the text with the decimals, zeros added: 1.5 is 1.50.
+    static func decimals(_ number: String, _ count: Int) -> String {
+        let units = Array(number.utf16)
+        let point = units.firstIndex(of: 0x2E)      // "."
+        var text = (point == nil) ? number + "." : number
+        let have = (point == nil) ? 0 : units.count - point! - 1
+        var i = have
+        while i < count {
+            text += "0"
+            i += 1
+        }
+        return text
     }
 
     // A row of cells of the font at 9 points, one for each text, in the

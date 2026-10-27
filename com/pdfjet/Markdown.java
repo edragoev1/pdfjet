@@ -74,6 +74,12 @@ public class Markdown {
     private final Deque<StructElement> containers = new ArrayDeque<StructElement>();
     // The quote bars that are drawn on the page, as [x, the top of the bar].
     private final List<float[]> quoteBars = new ArrayList<float[]>();
+    private boolean allowSplit;         // The next table starts where it is, under its heading
+    // The tables and the images of the blocks, made when they are first
+    // measured and drawn as they were made: an image is in the PDF once
+    private final Map<MarkdownParser.Block, Table> tables = new IdentityHashMap<MarkdownParser.Block, Table>();
+    private final Map<MarkdownParser.Block, Drawable> images = new IdentityHashMap<MarkdownParser.Block, Drawable>();
+    private final Map<MarkdownParser.Block, Float> imageHeights = new IdentityHashMap<MarkdownParser.Block, Float>();
 
     /**
      * Creates the Markdown of text in the fonts, each at its size: the size
@@ -214,6 +220,10 @@ public class Markdown {
         this.page = null;
         this.headingLevel = 0;
         containers.clear();
+        // The tables and images of this text, whose blocks are new each time
+        tables.clear();
+        images.clear();
+        imageHeights.clear();
         quoteBars.clear();
         if (!TextFrame.finite(marginLeft) || !TextFrame.finite(marginTop)
                 || !TextFrame.finite(marginRight) || !TextFrame.finite(marginBottom)) {
@@ -297,11 +307,11 @@ public class Markdown {
     // Draws the quote bars of the page, from their top down to where the text is.
     private void finishQuoteBars() throws Exception {
         for (float[] bar : quoteBars) {
-            drawQuoteBar(bar[0], bar[1], y);
+            drawQuoteBar(page, bar[0], bar[1], y);
         }
     }
 
-    private void drawQuoteBar(float x, float top, float to) throws Exception {
+    private static void drawQuoteBar(Page page, float x, float top, float to) throws Exception {
         if (to > top) {
             new Line(x, top, x, to).setStrokeColor(QUOTE_BAR_COLOR).setStrokeWidth(2f).drawOn(page);
         }
@@ -313,11 +323,12 @@ public class Markdown {
             MarkdownParser.Block block = blocks.get(i);
             switch (block.kind) {
                 case HEADING:
-                    if (i + 2 < blocks.size() && leadsIntoTable(blocks.get(i + 1), blocks.get(i + 2))) {
-                        keepHeadingWithTable(block, blocks.get(i + 1), blocks.get(i + 2),
-                                tight ? size() * 0.25f : size() * 0.75f, x, width);
+                    // An empty heading draws nothing, and takes no level of the
+                    // tags: "#" made the next "##" an H2 with no H1 over it
+                    if (block.text.trim().isEmpty()) {
+                        break;
                     }
-                    drawHeading(block, x, width);
+                    drawHeading(block, x, width, headingKeep(blocks, i, width, tight));
                     break;
                 case PARAGRAPH:
                     float gap = tight ? size() * 0.25f : size() * 0.75f;
@@ -351,6 +362,149 @@ public class Markdown {
         }
     }
 
+    // The room a heading keeps on its page: itself and what comes after it,
+    // as far as a page keeps that together, so that the heading does not end
+    // a page. When the two do not fit on one page, the heading and two lines,
+    // or the first rows of a table under it, or of one after its lead-in,
+    // which then starts there: the table went to the next page alone.
+    private float headingKeep(List<MarkdownParser.Block> blocks, int i, float width, boolean tight)
+            throws Exception {
+        float keep = keepHeight(blocks, i, width, tight);
+        if (keep <= bottom - marginTop) {
+            return keep;
+        }
+        float line = regular.getBodyHeight(size());
+        float heading = headingHeight(blocks.get(i), width);
+        if (i + 1 < blocks.size() && blocks.get(i + 1).kind == MarkdownParser.Kind.TABLE) {
+            allowSplit = true;
+            return heading + size() * 0.75f + 4f * line;
+        }
+        if (i + 2 < blocks.size() && leadsIntoTable(blocks.get(i + 1), blocks.get(i + 2))) {
+            allowSplit = true;
+            return heading + paragraphGap(tight) + paragraphHeight(blocks.get(i + 1).text, width)
+                    + size() * 0.75f + 4f * line;
+        }
+        return heading + 2f * line;
+    }
+
+    // The room the first block of a quote or a list item needs on its page,
+    // which the block does not check, drawn where the quote's bar or the
+    // item's label is: a first image, code or table was drawn into the bottom
+    // margin, and a short table was split.
+    private float firstKeep(List<MarkdownParser.Block> blocks, float width, boolean tight) throws Exception {
+        if (blocks.isEmpty()) {
+            return regular.getBodyHeight(size());
+        }
+        float keep = (blocks.get(0).kind == MarkdownParser.Kind.HEADING)
+                ? headingKeep(blocks, 0, width, tight) : keepHeight(blocks, 0, width, tight);
+        return Math.min(keep, bottom - marginTop);
+    }
+
+    // The height a block needs on its page where it starts: the whole of a
+    // table, an image or a lead-in and its table that fit on a page; three
+    // lines of code; a heading and what it keeps; or a line of text.
+    private float keepHeight(List<MarkdownParser.Block> blocks, int i, float width, boolean tight)
+            throws Exception {
+        MarkdownParser.Block block = blocks.get(i);
+        float line = regular.getBodyHeight(size());
+        float room = bottom - marginTop;
+        switch (block.kind) {
+            case HEADING: {
+                float heading = headingHeight(block, width);
+                if (i + 1 < blocks.size()) {
+                    MarkdownParser.Block next = blocks.get(i + 1);
+                    float gap = (next.kind == MarkdownParser.Kind.PARAGRAPH) ? paragraphGap(tight)
+                            : (next.kind == MarkdownParser.Kind.HEADING) ? headingGap(next) : size() * 0.75f;
+                    return heading + Math.max(gap + keepHeight(blocks, i + 1, width, tight), 2f * line);
+                }
+                return heading + 2f * line;
+            }
+            case PARAGRAPH:
+                if (i + 1 < blocks.size() && leadsIntoTable(block, blocks.get(i + 1))) {
+                    float keep = paragraphHeight(block.text, width) + size() * 0.75f
+                            + tableOf(blocks.get(i + 1), width).getTotalHeight();
+                    if (keep <= room) {
+                        return keep;
+                    }
+                }
+                return line;
+            case TABLE: {
+                float height = tableOf(block, width).getTotalHeight();
+                return (height <= room) ? height : 4f * line;
+            }
+            case IMAGE:
+                return (imageOf(block, width) == null) ? line : imageHeights.get(block);
+            case CODE:
+                return block.text.isEmpty() ? 0f : codeHeight(block.text, width);
+            case QUOTE:
+                return block.children.isEmpty() ? line
+                        : keepHeight(block.children, 0, width - indentWithin(size() * 1.2f, width), false);
+            case LIST:
+                if (block.children.isEmpty() || block.children.get(0).children.isEmpty()) {
+                    return line;
+                }
+                return keepHeight(block.children.get(0).children, 0,
+                        width - indentWithin(size() * (block.ordered ? 2f : 1.4f), width), !block.loose);
+            default:
+                return line;
+        }
+    }
+
+    // The space before a paragraph.
+    private float paragraphGap(boolean tight) {
+        return tight ? size() * 0.25f : size() * 0.75f;
+    }
+
+    // The height of a heading's text at the width, of all its lines: a
+    // heading of two lines was kept on its page by its first.
+    private float headingHeight(MarkdownParser.Block block, float width) throws Exception {
+        TextFrame frame = new TextFrame(Arrays.asList(headingParagraph(block))).setParagraphGap(0f);
+        frame.setLocation(0f, 0f).setWidth(width).setHeight(bottom - marginTop).drawOn(null);
+        return frame.getTextBottom();
+    }
+
+    // The height of a paragraph's text at the width.
+    private float paragraphHeight(String text, float width) throws Exception {
+        TextFrame frame = new TextFrame(Arrays.asList(markup.paragraph(text))).setParagraphGap(0f);
+        frame.setLocation(0f, 0f).setWidth(width).setHeight(bottom - marginTop).drawOn(null);
+        return frame.getTextBottom();
+    }
+
+    // The lines of code at the width, each cut where the next character would
+    // pass it, measured in the code font: by the count of characters as wide
+    // as a "0", CJK and other wide characters ran past the background. The
+    // widths of the characters are added up in one pass, so that a long line
+    // is cut in linear time. A surrogate pair is not cut in two, a line has a
+    // character at least, and a code font with no width cuts none.
+    private List<String> codeLines(String text, float width) {
+        float room = width - 2f * size() * 0.5f;
+        List<String> lines = new ArrayList<String>();
+        for (String line : text.split("\n", -1)) {
+            int start = 0;
+            float used = 0f;
+            int i = 0;
+            while (i < line.length()) {
+                int next = i + Character.charCount(line.codePointAt(i));
+                float advance = code.stringWidth(code.getSize(), line.substring(i, next));
+                if (i > start && used + advance > room) {
+                    lines.add(line.substring(start, i));
+                    start = i;
+                    used = 0f;
+                }
+                used += advance;
+                i = next;
+            }
+            lines.add(line.substring(start));
+        }
+        return lines;
+    }
+
+    // The height code keeps together on a page: three lines at most.
+    private float codeHeight(String text, float width) {
+        float leading = code.getBodyHeight(code.getSize()) * 1.2f;
+        return Math.min(3, codeLines(text, width).size()) * leading + 2f * size() * 0.5f;
+    }
+
     // A paragraph in a text frame on the page, and on the next pages for what
     // does not fit.
     private void drawParagraph(Paragraph paragraph, float x, float width) throws Exception {
@@ -381,15 +535,14 @@ public class Markdown {
     // A heading, larger than the text, which keeps a line of the text after
     // it on its page. Its level as it is tagged is at most one more than that
     // of the heading before it, so that no level is skipped.
-    private void drawHeading(MarkdownParser.Block block, float x, float width) throws Exception {
-        float fontSize = size() * HEADING_SIZES[block.level - 1];
+    private void drawHeading(MarkdownParser.Block block, float x, float width, float keep) throws Exception {
         gap(headingGap(block));
         Paragraph paragraph = headingParagraph(block);
         headingLevel = Math.min(block.level, headingLevel + 1);
         StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
                 StructElem.H4, StructElem.H5, StructElem.H6};
         paragraph.setStructureType(levels[headingLevel - 1]);
-        ensure(headingFont.getBodyHeight(fontSize) + 2f * regular.getBodyHeight(size()));
+        ensure(keep);
         drawParagraph(paragraph, x, width);
         y += size() * 0.25f;
     }
@@ -421,31 +574,14 @@ public class Markdown {
     // Code in the code font on a light background, a line of the source at a
     // time, and a line too long for the width goes on under itself.
     private void drawCode(String text, float x, float width) throws Exception {
+        if (text.isEmpty()) {
+            return;     // An empty block of code has nothing to tag, and no background
+        }
         gap(size() * 0.75f);
         float padding = size() * 0.5f;
         float leading = code.getBodyHeight(code.getSize()) * 1.2f;
-        // A code font with no width, or no size, cuts no line.
-        int columns = Integer.MAX_VALUE;
-        float advance = code.stringWidth(code.getSize(), "0");
-        if (advance > 0f) {
-            columns = Math.max(1, (int) ((width - 2f * padding) / advance));
-        }
-        List<String> lines = new ArrayList<String>();
-        for (String line : text.split("\n", -1)) {
-            int start = 0;
-            while (line.length() - start > columns) {
-                // A surrogate pair is not cut in two: it goes on the next
-                // line, or on this one when it would be the whole line.
-                int cut = start + columns;
-                if (Character.isHighSurrogate(line.charAt(cut - 1))) {
-                    cut = (cut - 1 > start) ? cut - 1 : cut + 1;
-                }
-                lines.add(line.substring(start, cut));
-                start = cut;
-            }
-            lines.add(line.substring(start));
-        }
-        ensure(Math.min(3, lines.size()) * leading + 2f * padding);
+        List<String> lines = codeLines(text, width);
+        ensure(codeHeight(text, width));
         // Code is an inline element, so the block is a paragraph that holds
         // its Code: PAC warns of a Code right under the document.
         openContainer(StructElem.P);
@@ -476,33 +612,12 @@ public class Markdown {
         closeContainer();
     }
 
-    // The height a quote or a list item makes room for on its page before it
-    // starts: a line of the text, or a heading and the two lines it keeps with
-    // it, when the first of its blocks is one. The first block of a quote or
-    // an item skips the check of a page's room, and a heading was drawn into
-    // the bottom margin (review of 12 October 2026, F16).
-    private float firstBlockHeight(List<MarkdownParser.Block> blocks) {
-        while (blocks != null && !blocks.isEmpty()) {
-            MarkdownParser.Block first = blocks.get(0);
-            if (first.kind == MarkdownParser.Kind.HEADING) {
-                float fontSize = size() * HEADING_SIZES[first.level - 1];
-                return headingFont.getBodyHeight(fontSize) + 2f * regular.getBodyHeight(size());
-            } else if (first.kind == MarkdownParser.Kind.QUOTE) {
-                blocks = first.children;
-            } else if (first.kind == MarkdownParser.Kind.LIST && !first.children.isEmpty()) {
-                blocks = first.children.get(0).children;
-            } else {
-                blocks = null;
-            }
-        }
-        return regular.getBodyHeight(size());
-    }
-
     // A quote, indented, with a bar on its left.
     private void drawQuote(MarkdownParser.Block block, float x, float width) throws Exception {
         gap(size() * 0.75f);
-        ensure(firstBlockHeight(block.children));
         float indent = indentWithin(size() * 1.2f, width);
+        // Room for its first block, which does not check the room it has
+        ensure(firstKeep(block.children, width - indent, false));
         float[] bar = {x + 2f, y};
         quoteBars.add(bar);
         openContainer(StructElem.BLOCKQUOTE);
@@ -512,7 +627,7 @@ public class Markdown {
         atTop = top && atTop;
         closeContainer();
         quoteBars.remove(bar);
-        drawQuoteBar(bar[0], bar[1], y);
+        drawQuoteBar(page, bar[0], bar[1], y);
     }
 
     // The indent, or less, so that the blocks inside a quote or a list are not
@@ -532,7 +647,7 @@ public class Markdown {
             if (item != list.children.get(0)) {
                 gap(list.loose ? size() * 0.5f : size() * 0.2f);
             }
-            ensure(firstBlockHeight(item.children));
+            ensure(firstKeep(item.children, width - indent, !list.loose));
             openContainer(StructElem.LI);
             if (item.task != MarkdownParser.Task.NONE) {
                 drawTaskBox(item.task == MarkdownParser.Task.DONE, x, indent);
@@ -623,31 +738,12 @@ public class Markdown {
     // Tells if the block is a paragraph that ends in a colon, which leads into
     // the table after it.
     private static boolean leadsIntoTable(MarkdownParser.Block block, MarkdownParser.Block next) {
-        return block.kind == MarkdownParser.Kind.PARAGRAPH && next.kind == MarkdownParser.Kind.TABLE
-                && block.text.trim().endsWith(":");
-    }
-
-    // A heading over a paragraph that leads into a table, as "Lines of code"
-    // over "Lines of code of each program:" and its table, starts a page with
-    // them when the three fit on a page together but not in what is left of
-    // this one: the paragraph and the table went to the next page, and the
-    // heading ended this one.
-    private void keepHeadingWithTable(MarkdownParser.Block heading, MarkdownParser.Block paragraph,
-            MarkdownParser.Block table, float gap, float x, float width) throws Exception {
-        if (atTop) {
-            return;
+        // The kinds first: a list, a quote or a rule has no text
+        if (block.kind != MarkdownParser.Kind.PARAGRAPH || next.kind != MarkdownParser.Kind.TABLE) {
+            return false;
         }
-        float room = bottom - marginTop;
-        float headingGap = headingGap(heading);
-        TextFrame title = new TextFrame(Arrays.asList(headingParagraph(heading))).setParagraphGap(0f);
-        title.setLocation(x, y + headingGap).setWidth(width).setHeight(room).drawOn(null);
-        float below = title.getTextBottom() + size() * 0.25f + gap;
-        TextFrame text = new TextFrame(Arrays.asList(markup.paragraph(paragraph.text))).setParagraphGap(0f);
-        text.setLocation(x, below).setWidth(width).setHeight(room).drawOn(null);
-        float needed = (text.getTextBottom() - y) + size() * 0.75f + tableOf(table, width).getTotalHeight();
-        if (y + needed > bottom && needed - headingGap <= room) {
-            newPage();
-        }
+        String text = block.text.trim();
+        return text.endsWith(":") || text.endsWith("\uFF1A");     // Or the full-width colon of CJK text
     }
 
     // A paragraph that ends in a colon leads into the table after it, as
@@ -655,8 +751,8 @@ public class Markdown {
     // fit on a page together but not in what is left of this one.
     private void keepWithTable(MarkdownParser.Block paragraph, MarkdownParser.Block table, float gap,
             float x, float width) throws Exception {
-        if (atTop) {
-            return;
+        if (atTop || allowSplit) {
+            return;     // Its table starts under it, after a heading that keeps them
         }
         float room = bottom - marginTop;
         TextFrame frame = new TextFrame(Arrays.asList(markup.paragraph(paragraph.text))).setParagraphGap(0f);
@@ -676,21 +772,34 @@ public class Markdown {
         gap(size() * 0.75f);
         Table table = tableOf(block, width);
         // A table that fits on a page is not split: it starts the next page
-        // when it does not fit in what is left of this one.
+        // when it does not fit in what is left of this one, but under a
+        // heading that keeps it, with which it does not fit on a page
         float height = table.getTotalHeight();
-        if (!atTop && y + height > bottom && height <= bottom - marginTop) {
+        if (!atTop && !allowSplit && y + height > bottom && height <= bottom - marginTop) {
             newPage();
         }
+        allowSplit = false;
+        // Room for its header and a row where it does not fit, not where it
+        // does: a short table went to the next page alone
         float rowHeight = 2f * regular.getBodyHeight(size());
-        ensure(2f * rowHeight);
+        if (y + height > bottom) {
+            ensure(2f * rowHeight);
+        }
         table.setLocation(x, marginTop);
         table.setFirstPageTopMargin(y);
         table.setBottomMargin(marginBottom);
         int before = pages.size();
         float[] xy = table.drawOn(pdf, page, pages, pageSize);
         if (pages.size() > before) {
-            // The table drew its last rows on a page of its own.
-            finishQuoteBars();
+            // The table drew its last rows on a page of its own. The bars of
+            // the quotes it is in go down to the bottom of its first page and
+            // the length of the pages between: they stopped where it started
+            for (float[] bar : quoteBars) {
+                drawQuoteBar(page, bar[0], bar[1], bottom);
+                for (int p = before; p < pages.size() - 1; p++) {
+                    drawQuoteBar(pages.get(p), bar[0], marginTop, bottom);
+                }
+            }
             page = pages.get(pages.size() - 1);
             page.structParent = containers.peek();
             for (float[] bar : quoteBars) {
@@ -702,7 +811,18 @@ public class Markdown {
     }
 
     // The table of the text of the cells, as wide as its text or as the width.
+    // The table of the block, made once: it was made to be measured and made
+    // again to be drawn.
     private Table tableOf(MarkdownParser.Block block, float width) {
+        Table table = tables.get(block);
+        if (table == null) {
+            table = makeTable(block, width);
+            tables.put(block, table);
+        }
+        return table;
+    }
+
+    private Table makeTable(MarkdownParser.Block block, float width) {
         List<List<Cell>> rows = new ArrayList<List<Cell>>();
         for (int r = 0; r < block.rows.size(); r++) {
             List<Cell> row = new ArrayList<Cell>();
@@ -764,40 +884,58 @@ public class Markdown {
     // as the page when it is taller; or its text, in italic, when it is not read.
     private void drawImage(MarkdownParser.Block block, float x, float width) throws Exception {
         gap(size() * 0.75f);
-        String path = imagePath(block.source);
-        if (path == null) {
+        Drawable drawable = imageOf(block, width);
+        if (drawable == null) {
             Paragraph paragraph = new Paragraph(new TextLine(italic,
                     block.text.isEmpty() ? block.source : block.text));
             drawParagraph(paragraph, x, width);
             return;
         }
-        String alt = block.text.isEmpty() ? new File(block.source).getName() : block.text;
-        float scale;
-        float imageWidth;
-        float imageHeight;
-        Drawable drawable;
-        if (path.toLowerCase(Locale.ROOT).endsWith(".svg")) {
-            SVGImage image = new SVGImage(path);
-            image.setAltDescription(alt);
-            imageWidth = image.getWidth();
-            imageHeight = image.getHeight();
-            scale = Math.min(1f, Math.min(width / imageWidth, (bottom - marginTop) / imageHeight));
-            image.scaleBy(scale);
-            drawable = image;
-        } else {
-            Image image = new Image(pdf, path);
-            image.setAltDescription(alt);
-            imageWidth = image.getWidth();
-            imageHeight = image.getHeight();
-            scale = Math.min(1f, Math.min(width / imageWidth, (bottom - marginTop) / imageHeight));
-            image.scaleBy(scale);
-            drawable = image;
-        }
-        ensure(imageHeight * scale);
+        float height = imageHeights.get(block);
+        ensure(height);
         drawable.setLocation(x, y);
         drawable.drawOn(page);
-        y += imageHeight * scale;
+        y += height;
         atTop = false;
+    }
+
+    // The image of the block, scaled to the width and to a page, made when it
+    // is first measured or drawn, and its height kept; null for an image
+    // that is not read, whose text is drawn in its place.
+    private Drawable imageOf(MarkdownParser.Block block, float width) throws Exception {
+        if (images.containsKey(block)) {
+            return images.get(block);
+        }
+        String path = imagePath(block.source);
+        Drawable drawable = null;
+        float height = 0f;
+        if (path != null) {
+            String alt = block.text.isEmpty() ? new File(block.source).getName() : block.text;
+            float scale;
+            float imageWidth;
+            float imageHeight;
+            if (path.toLowerCase(Locale.ROOT).endsWith(".svg")) {
+                SVGImage image = new SVGImage(path);
+                image.setAltDescription(alt);
+                imageWidth = image.getWidth();
+                imageHeight = image.getHeight();
+                scale = Math.min(1f, Math.min(width / imageWidth, (bottom - marginTop) / imageHeight));
+                image.scaleBy(scale);
+                drawable = image;
+            } else {
+                Image image = new Image(pdf, path);
+                image.setAltDescription(alt);
+                imageWidth = image.getWidth();
+                imageHeight = image.getHeight();
+                scale = Math.min(1f, Math.min(width / imageWidth, (bottom - marginTop) / imageHeight));
+                image.scaleBy(scale);
+                drawable = image;
+            }
+            height = imageHeight * scale;
+        }
+        images.put(block, drawable);
+        imageHeights.put(block, height);
+        return drawable;
     }
 
     // The path of an image in the image directory, or null when there is no

@@ -11,24 +11,12 @@ import java.math.*;
 /**
  * What the charts share, BarChart, DonutChart, SimpleBarChart, SimpleLineChart
  * and SimpleScatterChart: the numbers of their labels, the rounding of an axis to
- * steps, the spacing of the labels of an axis, the colors of the series that
- * have none, and the test of a value to draw. A chart uses these, not another
- * chart, so that one can go without the others.
+ * steps, the spacing of the labels of an axis, the place of a value on a plot,
+ * the shortening of a long name, and the test of a value to draw.
  */
 final class ChartScale {
     private ChartScale() {
     }
-
-    static final int[] DEFAULT_PALETTE = {
-        Color.blue,
-        Color.red,
-        Color.green,
-        Color.orange,
-        Color.purple,
-        Color.darkcyan,
-        Color.magenta,
-        Color.olive
-    };
 
     /**
      * Formats a label with minDigits to maxDigits decimal places, rounding the
@@ -299,6 +287,33 @@ final class ChartScale {
             return product / span;
         }
         return (float) ((double) d * (double) length / (double) span);
+    }
+
+    /**
+     * Returns the number of digits after the decimal point that the numbers of
+     * an axis of the step need, 2 at least and 6 at most: data under 0.01 was
+     * written 0.00 at every grid line.
+     */
+    static int digitsOf(float step) {
+        return isValue(step) && step > 0f ? Math.max(2, fractionDigitsOf(step, 6)) : 2;
+    }
+
+    /**
+     * Tells if the span of the values, the largest less the smallest, is a
+     * number: values of -3e38 and 3e38 have a span past the largest float,
+     * which no axis can draw.
+     */
+    static boolean spanFits(float[] values) {
+        if (values.length == 0) {
+            return true;
+        }
+        float lo = values[0];
+        float hi = values[0];
+        for (float value : values) {
+            lo = Math.min(lo, value);
+            hi = Math.max(hi, value);
+        }
+        return isValue(hi - lo);
     }
 
     /**

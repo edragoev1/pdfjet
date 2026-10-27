@@ -207,3 +207,42 @@ func TestSimpleScatterChartTheSecondReviewOfTheCharts(t *testing.T) {
 		t.Errorf("the name is not shortened: %q", content)
 	}
 }
+
+// The third review of 26 October 2026: no trend line where it misses the
+// plot; an empty URI is no link; values under 0.01 have the digits their axis
+// needs; numbers are grouped in thousands; and points whose span is past the
+// largest float draw nothing.
+func TestSimpleScatterChartTheThirdReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	NewSimpleScatterChart(font, font).SetYAxisRange(0, 10).Add(0, 50).Add(10, 50).SetTrendLine(true).DrawOn(page)
+	if content := testContent(page); strings.Contains(content, testHex("trend")) {
+		t.Errorf("a trend line outside the plot: %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	NewSimpleScatterChart(font, font).AddLinked("A", 1, 2, "").Add(2, 3).DrawOn(page)
+	if len(page.annots) != 0 {
+		t.Errorf("an empty URI made %d links", len(page.annots))
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	tiny := NewSimpleScatterChart(font, font).Add(0.001, 1).Add(0.004, 2)
+	tiny.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, testHex("0.001")) {
+		t.Errorf("no 0.001: %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	NewSimpleScatterChart(font, font).AddNamed("Big", 23507, 1).Add(1000, 2).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, testHex("25,000")) {
+		t.Errorf("not grouped: %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	NewSimpleScatterChart(font, font).Add(-3e38, -3e38).Add(3e38, 3e38).DrawOn(page)
+	if content := testContent(page); content != "" {
+		t.Errorf("a span past the largest float drew %q", content)
+	}
+}

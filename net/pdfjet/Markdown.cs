@@ -9,6 +9,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -77,6 +78,30 @@ public class Markdown {
     private readonly Stack<StructElement> containers = new Stack<StructElement>();
     // The quote bars that are drawn on the page, as [x, the top of the bar].
     private readonly List<float[]> quoteBars = new List<float[]>();
+    private bool allowSplit;            // The next table starts where it is, under its heading
+    // The tables and the images of the blocks, made when they are first
+    // measured and drawn as they were made: an image is in the PDF once. They
+    // are keyed by the block object, as Java's IdentityHashMap keys them.
+    private readonly Dictionary<MarkdownParser.Block, Table> tables =
+            new Dictionary<MarkdownParser.Block, Table>(BlockIdentity.Instance);
+    private readonly Dictionary<MarkdownParser.Block, IDrawable> images =
+            new Dictionary<MarkdownParser.Block, IDrawable>(BlockIdentity.Instance);
+    private readonly Dictionary<MarkdownParser.Block, float> imageHeights =
+            new Dictionary<MarkdownParser.Block, float>(BlockIdentity.Instance);
+
+    // Compares blocks by reference, as Java's IdentityHashMap does; .NET
+    // Framework 4.8 has no ReferenceEqualityComparer.
+    private sealed class BlockIdentity : IEqualityComparer<MarkdownParser.Block> {
+        internal static readonly BlockIdentity Instance = new BlockIdentity();
+
+        public bool Equals(MarkdownParser.Block a, MarkdownParser.Block b) {
+            return ReferenceEquals(a, b);
+        }
+
+        public int GetHashCode(MarkdownParser.Block block) {
+            return RuntimeHelpers.GetHashCode(block);
+        }
+    }
 
     /// <summary>
     /// Creates the Markdown of text in the fonts, each at its size: the size
@@ -208,6 +233,10 @@ public class Markdown {
         this.page = null;
         this.headingLevel = 0;
         containers.Clear();
+        // The tables and images of this text, whose blocks are new each time
+        tables.Clear();
+        images.Clear();
+        imageHeights.Clear();
         quoteBars.Clear();
         if (!TextFrame.Finite(marginLeft) || !TextFrame.Finite(marginTop)
                 || !TextFrame.Finite(marginRight) || !TextFrame.Finite(marginBottom)) {
@@ -296,11 +325,11 @@ public class Markdown {
     // Draws the quote bars of the page, from their top down to where the text is.
     private void FinishQuoteBars() {
         foreach (float[] bar in quoteBars) {
-            DrawQuoteBar(bar[0], bar[1], y);
+            DrawQuoteBar(page, bar[0], bar[1], y);
         }
     }
 
-    private void DrawQuoteBar(float x, float top, float to) {
+    private static void DrawQuoteBar(Page page, float x, float top, float to) {
         if (to > top) {
             new Line(x, top, x, to).SetStrokeColor(QUOTE_BAR_COLOR).SetStrokeWidth(2f).DrawOn(page);
         }
@@ -311,11 +340,12 @@ public class Markdown {
             MarkdownParser.Block block = blocks[i];
             switch (block.kind) {
                 case MarkdownParser.Kind.HEADING:
-                    if (i + 2 < blocks.Count && LeadsIntoTable(blocks[i + 1], blocks[i + 2])) {
-                        KeepHeadingWithTable(block, blocks[i + 1], blocks[i + 2],
-                                tight ? Size() * 0.25f : Size() * 0.75f, x, width);
+                    // An empty heading draws nothing, and takes no level of the
+                    // tags: "#" made the next "##" an H2 with no H1 over it
+                    if (Util.Trim(block.text).Length == 0) {
+                        break;
                     }
-                    DrawHeading(block, x, width);
+                    DrawHeading(block, x, width, HeadingKeep(blocks, i, width, tight));
                     break;
                 case MarkdownParser.Kind.PARAGRAPH:
                     float gap = tight ? Size() * 0.25f : Size() * 0.75f;
@@ -349,6 +379,156 @@ public class Markdown {
         }
     }
 
+    // The room a heading keeps on its page: itself and what comes after it,
+    // as far as a page keeps that together, so that the heading does not end
+    // a page. When the two do not fit on one page, the heading and two lines,
+    // or the first rows of a table under it, or of one after its lead-in,
+    // which then starts there: the table went to the next page alone.
+    private float HeadingKeep(List<MarkdownParser.Block> blocks, int i, float width, bool tight) {
+        float keep = KeepHeight(blocks, i, width, tight);
+        if (keep <= bottom - marginTop) {
+            return keep;
+        }
+        float line = regular.GetBodyHeight(Size());
+        float heading = HeadingHeight(blocks[i], width);
+        if (i + 1 < blocks.Count && blocks[i + 1].kind == MarkdownParser.Kind.TABLE) {
+            allowSplit = true;
+            return heading + Size() * 0.75f + 4f * line;
+        }
+        if (i + 2 < blocks.Count && LeadsIntoTable(blocks[i + 1], blocks[i + 2])) {
+            allowSplit = true;
+            return heading + ParagraphGap(tight) + ParagraphHeight(blocks[i + 1].text, width)
+                    + Size() * 0.75f + 4f * line;
+        }
+        return heading + 2f * line;
+    }
+
+    // The room the first block of a quote or a list item needs on its page,
+    // which the block does not check, drawn where the quote's bar or the
+    // item's label is: a first image, code or table was drawn into the bottom
+    // margin, and a short table was split.
+    private float FirstKeep(List<MarkdownParser.Block> blocks, float width, bool tight) {
+        if (blocks.Count == 0) {
+            return regular.GetBodyHeight(Size());
+        }
+        float keep = (blocks[0].kind == MarkdownParser.Kind.HEADING)
+                ? HeadingKeep(blocks, 0, width, tight) : KeepHeight(blocks, 0, width, tight);
+        return Math.Min(keep, bottom - marginTop);
+    }
+
+    // The height a block needs on its page where it starts: the whole of a
+    // table, an image or a lead-in and its table that fit on a page; three
+    // lines of code; a heading and what it keeps; or a line of text.
+    private float KeepHeight(List<MarkdownParser.Block> blocks, int i, float width, bool tight) {
+        MarkdownParser.Block block = blocks[i];
+        float line = regular.GetBodyHeight(Size());
+        float room = bottom - marginTop;
+        switch (block.kind) {
+            case MarkdownParser.Kind.HEADING: {
+                float heading = HeadingHeight(block, width);
+                if (i + 1 < blocks.Count) {
+                    MarkdownParser.Block next = blocks[i + 1];
+                    float gap = (next.kind == MarkdownParser.Kind.PARAGRAPH) ? ParagraphGap(tight)
+                            : (next.kind == MarkdownParser.Kind.HEADING) ? HeadingGap(next) : Size() * 0.75f;
+                    return heading + Math.Max(gap + KeepHeight(blocks, i + 1, width, tight), 2f * line);
+                }
+                return heading + 2f * line;
+            }
+            case MarkdownParser.Kind.PARAGRAPH:
+                if (i + 1 < blocks.Count && LeadsIntoTable(block, blocks[i + 1])) {
+                    float keep = ParagraphHeight(block.text, width) + Size() * 0.75f
+                            + TableOf(blocks[i + 1], width).GetTotalHeight();
+                    if (keep <= room) {
+                        return keep;
+                    }
+                }
+                return line;
+            case MarkdownParser.Kind.TABLE: {
+                float height = TableOf(block, width).GetTotalHeight();
+                return (height <= room) ? height : 4f * line;
+            }
+            case MarkdownParser.Kind.IMAGE:
+                return (ImageOf(block, width) == null) ? line : imageHeights[block];
+            case MarkdownParser.Kind.CODE:
+                return block.text.Length == 0 ? 0f : CodeHeight(block.text, width);
+            case MarkdownParser.Kind.QUOTE:
+                return block.children.Count == 0 ? line
+                        : KeepHeight(block.children, 0, width - IndentWithin(Size() * 1.2f, width), false);
+            case MarkdownParser.Kind.LIST:
+                if (block.children.Count == 0 || block.children[0].children.Count == 0) {
+                    return line;
+                }
+                return KeepHeight(block.children[0].children, 0,
+                        width - IndentWithin(Size() * (block.ordered ? 2f : 1.4f), width), !block.loose);
+            default:
+                return line;
+        }
+    }
+
+    // The space before a paragraph.
+    private float ParagraphGap(bool tight) {
+        return tight ? Size() * 0.25f : Size() * 0.75f;
+    }
+
+    // The height of a heading's text at the width, of all its lines: a
+    // heading of two lines was kept on its page by its first.
+    private float HeadingHeight(MarkdownParser.Block block, float width) {
+        TextFrame frame = new TextFrame(new List<Paragraph> {HeadingParagraph(block)}).SetParagraphGap(0f);
+        frame.SetLocation(0f, 0f).SetWidth(width).SetHeight(bottom - marginTop);
+        frame.DrawOn(null);
+        return frame.GetTextBottom();
+    }
+
+    // The height of a paragraph's text at the width.
+    private float ParagraphHeight(String text, float width) {
+        TextFrame frame = new TextFrame(new List<Paragraph> {markup.Paragraph(text)}).SetParagraphGap(0f);
+        frame.SetLocation(0f, 0f).SetWidth(width).SetHeight(bottom - marginTop);
+        frame.DrawOn(null);
+        return frame.GetTextBottom();
+    }
+
+    // The lines of code at the width, each cut where the next character would
+    // pass it, measured in the code font: by the count of characters as wide
+    // as a "0", CJK and other wide characters ran past the background. The
+    // widths of the characters are added up in one pass, so that a long line
+    // is cut in linear time. A surrogate pair is not cut in two, a line has a
+    // character at least, and a code font with no width cuts none.
+    private List<String> CodeLines(String text, float width) {
+        float room = width - 2f * Size() * 0.5f;
+        List<String> lines = new List<String>();
+        foreach (String line in text.Split('\n')) {
+            int start = 0;
+            float used = 0f;
+            int i = 0;
+            while (i < line.Length) {
+                int next = i + CharCountAt(line, i);
+                float advance = code.StringWidth(code.GetSize(), line.Substring(i, next - i));
+                if (i > start && used + advance > room) {
+                    lines.Add(line.Substring(start, i - start));
+                    start = i;
+                    used = 0f;
+                }
+                used += advance;
+                i = next;
+            }
+            lines.Add(line.Substring(start));
+        }
+        return lines;
+    }
+
+    // The number of chars of the code point at the index, as Java's
+    // Character.charCount(codePointAt) gives it: 2 for a surrogate pair.
+    private static int CharCountAt(String text, int index) {
+        return (Char.IsHighSurrogate(text[index]) && index + 1 < text.Length
+                && Char.IsLowSurrogate(text[index + 1])) ? 2 : 1;
+    }
+
+    // The height code keeps together on a page: three lines at most.
+    private float CodeHeight(String text, float width) {
+        float leading = code.GetBodyHeight(code.GetSize()) * 1.2f;
+        return Math.Min(3, CodeLines(text, width).Count) * leading + 2f * Size() * 0.5f;
+    }
+
     // A paragraph in a text frame on the page, and on the next pages for what
     // does not fit.
     private void DrawParagraph(Paragraph paragraph, float x, float width) {
@@ -379,15 +559,14 @@ public class Markdown {
     // A heading, larger than the text, which keeps a line of the text after
     // it on its page. Its level as it is tagged is at most one more than that
     // of the heading before it, so that no level is skipped.
-    private void DrawHeading(MarkdownParser.Block block, float x, float width) {
-        float fontSize = Size() * HEADING_SIZES[block.level - 1];
+    private void DrawHeading(MarkdownParser.Block block, float x, float width, float keep) {
         Gap(HeadingGap(block));
         Paragraph paragraph = HeadingParagraph(block);
         headingLevel = Math.Min(block.level, headingLevel + 1);
         StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
                 StructElem.H4, StructElem.H5, StructElem.H6};
         paragraph.SetStructureType(levels[headingLevel - 1]);
-        Ensure(headingFont.GetBodyHeight(fontSize) + 2f * regular.GetBodyHeight(Size()));
+        Ensure(keep);
         DrawParagraph(paragraph, x, width);
         y += Size() * 0.25f;
     }
@@ -419,31 +598,14 @@ public class Markdown {
     // Code in the code font on a light background, a line of the source at a
     // time, and a line too long for the width goes on under itself.
     private void DrawCode(String text, float x, float width) {
+        if (text.Length == 0) {
+            return;     // An empty block of code has nothing to tag, and no background
+        }
         Gap(Size() * 0.75f);
         float padding = Size() * 0.5f;
         float leading = code.GetBodyHeight(code.GetSize()) * 1.2f;
-        // A code font with no width, or no size, cuts no line.
-        int columns = Int32.MaxValue;
-        float advance = code.StringWidth(code.GetSize(), "0");
-        if (advance > 0f) {
-            columns = Math.Max(1, Util.SaturatingInt((width - 2f * padding) / advance));
-        }
-        List<String> lines = new List<String>();
-        foreach (String line in text.Split('\n')) {
-            int start = 0;
-            while (line.Length - start > columns) {
-                // A surrogate pair is not cut in two: it goes on the next
-                // line, or on this one when it would be the whole line.
-                int cut = start + columns;
-                if (Char.IsHighSurrogate(line[cut - 1])) {
-                    cut = (cut - 1 > start) ? cut - 1 : cut + 1;
-                }
-                lines.Add(line.Substring(start, cut - start));
-                start = cut;
-            }
-            lines.Add(line.Substring(start));
-        }
-        Ensure(Math.Min(3, lines.Count) * leading + 2f * padding);
+        List<String> lines = CodeLines(text, width);
+        Ensure(CodeHeight(text, width));
         // Code is an inline element, so the block is a paragraph that holds
         // its Code: PAC warns of a Code right under the document.
         OpenContainer(StructElem.P);
@@ -474,33 +636,12 @@ public class Markdown {
         CloseContainer();
     }
 
-    // The height a quote or a list item makes room for on its page before it
-    // starts: a line of the text, or a heading and the two lines it keeps with
-    // it, when the first of its blocks is one. The first block of a quote or
-    // an item skips the check of a page's room, and a heading was drawn into
-    // the bottom margin (review of 12 October 2026, F16).
-    private float FirstBlockHeight(List<MarkdownParser.Block> blocks) {
-        while (blocks != null && blocks.Count > 0) {
-            MarkdownParser.Block first = blocks[0];
-            if (first.kind == MarkdownParser.Kind.HEADING) {
-                float fontSize = Size() * HEADING_SIZES[first.level - 1];
-                return headingFont.GetBodyHeight(fontSize) + 2f * regular.GetBodyHeight(Size());
-            } else if (first.kind == MarkdownParser.Kind.QUOTE) {
-                blocks = first.children;
-            } else if (first.kind == MarkdownParser.Kind.LIST && first.children.Count > 0) {
-                blocks = first.children[0].children;
-            } else {
-                blocks = null;
-            }
-        }
-        return regular.GetBodyHeight(Size());
-    }
-
     // A quote, indented, with a bar on its left.
     private void DrawQuote(MarkdownParser.Block block, float x, float width) {
         Gap(Size() * 0.75f);
-        Ensure(FirstBlockHeight(block.children));
         float indent = IndentWithin(Size() * 1.2f, width);
+        // Room for its first block, which does not check the room it has
+        Ensure(FirstKeep(block.children, width - indent, false));
         float[] bar = {x + 2f, y};
         quoteBars.Add(bar);
         OpenContainer(StructElem.BLOCKQUOTE);
@@ -510,7 +651,7 @@ public class Markdown {
         atTop = top && atTop;
         CloseContainer();
         quoteBars.Remove(bar);
-        DrawQuoteBar(bar[0], bar[1], y);
+        DrawQuoteBar(page, bar[0], bar[1], y);
     }
 
     // Returns the indent, or less, so that the blocks inside a quote or a list
@@ -530,7 +671,7 @@ public class Markdown {
             if (item != list.children[0]) {
                 Gap(list.loose ? Size() * 0.5f : Size() * 0.2f);
             }
-            Ensure(FirstBlockHeight(item.children));
+            Ensure(FirstKeep(item.children, width - indent, !list.loose));
             OpenContainer(StructElem.LI);
             if (item.task != MarkdownParser.Task.NONE) {
                 DrawTaskBox(item.task == MarkdownParser.Task.DONE, x, indent);
@@ -541,7 +682,6 @@ public class Markdown {
                 text.SetLocation(labelX, y + regular.GetAscent(Size())).DrawOn(page);
             }
             OpenContainer(StructElem.LBODY);
-            bool top = atTop;
             atTop = true;   // The first block of the item is on the line of its label.
             DrawBlocks(item.children, x + indent, width - indent, !list.loose);
             if (atTop) {
@@ -629,21 +769,34 @@ public class Markdown {
         Gap(Size() * 0.75f);
         Table table = TableOf(block, width);
         // A table that fits on a page is not split: it starts the next page
-        // when it does not fit in what is left of this one.
+        // when it does not fit in what is left of this one, but under a
+        // heading that keeps it, with which it does not fit on a page
         float height = table.GetTotalHeight();
-        if (!atTop && y + height > bottom && height <= bottom - marginTop) {
+        if (!atTop && !allowSplit && y + height > bottom && height <= bottom - marginTop) {
             NewPage();
         }
+        allowSplit = false;
+        // Room for its header and a row where it does not fit, not where it
+        // does: a short table went to the next page alone
         float rowHeight = 2f * regular.GetBodyHeight(Size());
-        Ensure(2f * rowHeight);
+        if (y + height > bottom) {
+            Ensure(2f * rowHeight);
+        }
         table.SetLocation(x, marginTop);
         table.SetFirstPageTopMargin(y);
         table.SetBottomMargin(marginBottom);
         int before = pages.Count;
         float[] xy = table.DrawOn(pdf, page, pages, pageSize);
         if (pages.Count > before) {
-            // The table drew its last rows on a page of its own.
-            FinishQuoteBars();
+            // The table drew its last rows on a page of its own. The bars of
+            // the quotes it is in go down to the bottom of its first page and
+            // the length of the pages between: they stopped where it started
+            foreach (float[] bar in quoteBars) {
+                DrawQuoteBar(page, bar[0], bar[1], bottom);
+                for (int p = before; p < pages.Count - 1; p++) {
+                    DrawQuoteBar(pages[p], bar[0], marginTop, bottom);
+                }
+            }
             page = pages[pages.Count - 1];
             page.structParent = Innermost();
             foreach (float[] bar in quoteBars) {
@@ -657,33 +810,15 @@ public class Markdown {
     // Tells if the block is a paragraph that ends in a colon, which leads into
     // the table after it.
     private static bool LeadsIntoTable(MarkdownParser.Block block, MarkdownParser.Block next) {
-        return block.kind == MarkdownParser.Kind.PARAGRAPH && next.kind == MarkdownParser.Kind.TABLE
-                && block.text.Trim().EndsWith(":", StringComparison.Ordinal);
-    }
-
-    // A heading over a paragraph that leads into a table, as "Lines of code"
-    // over "Lines of code of each program:" and its table, starts a page with
-    // them when the three fit on a page together but not in what is left of
-    // this one: the paragraph and the table went to the next page, and the
-    // heading ended this one.
-    private void KeepHeadingWithTable(MarkdownParser.Block heading, MarkdownParser.Block paragraph,
-            MarkdownParser.Block table, float gap, float x, float width) {
-        if (atTop) {
-            return;
+        // Trimmed as Java's String.trim() trims, of the characters up to U+0020
+        // only: C# Trim() also removes a no-break space
+        // The kinds first: a list, a quote or a rule has no text
+        if (block.kind != MarkdownParser.Kind.PARAGRAPH || next.kind != MarkdownParser.Kind.TABLE) {
+            return false;
         }
-        float room = bottom - marginTop;
-        float headingGap = HeadingGap(heading);
-        TextFrame title = new TextFrame(new List<Paragraph> {HeadingParagraph(heading)}).SetParagraphGap(0f);
-        title.SetLocation(x, y + headingGap).SetWidth(width).SetHeight(room);
-        title.DrawOn(null);
-        float below = title.GetTextBottom() + Size() * 0.25f + gap;
-        TextFrame text = new TextFrame(new List<Paragraph> {markup.Paragraph(paragraph.text)}).SetParagraphGap(0f);
-        text.SetLocation(x, below).SetWidth(width).SetHeight(room);
-        text.DrawOn(null);
-        float needed = (text.GetTextBottom() - y) + Size() * 0.75f + TableOf(table, width).GetTotalHeight();
-        if (y + needed > bottom && needed - headingGap <= room) {
-            NewPage();
-        }
+        String text = Util.Trim(block.text);
+        return text.EndsWith(":", StringComparison.Ordinal)
+                || text.EndsWith("\uFF1A", StringComparison.Ordinal);     // Or the full-width colon of CJK text
     }
 
     // A paragraph that ends in a colon leads into the table after it, as
@@ -691,8 +826,8 @@ public class Markdown {
     // fit on a page together but not in what is left of this one.
     private void KeepWithTable(MarkdownParser.Block paragraph, MarkdownParser.Block table, float gap,
             float x, float width) {
-        if (atTop) {
-            return;
+        if (atTop || allowSplit) {
+            return;     // Its table starts under it, after a heading that keeps them
         }
         float room = bottom - marginTop;
         TextFrame frame = new TextFrame(new List<Paragraph> {markup.Paragraph(paragraph.text)}).SetParagraphGap(0f);
@@ -705,7 +840,18 @@ public class Markdown {
     }
 
     // The table of the text of the cells, as wide as its text or as the width.
+    // The table of the block, made once: it was made to be measured and made
+    // again to be drawn.
     private Table TableOf(MarkdownParser.Block block, float width) {
+        Table table;
+        if (!tables.TryGetValue(block, out table)) {
+            table = MakeTable(block, width);
+            tables[block] = table;
+        }
+        return table;
+    }
+
+    private Table MakeTable(MarkdownParser.Block block, float width) {
         List<List<Cell>> rows = new List<List<Cell>>();
         for (int r = 0; r < block.rows.Count; r++) {
             List<Cell> row = new List<Cell>();
@@ -767,40 +913,59 @@ public class Markdown {
     // as the page when it is taller; or its text, in italic, when it is not read.
     private void DrawImage(MarkdownParser.Block block, float x, float width) {
         Gap(Size() * 0.75f);
-        String path = ImagePath(block.source);
-        if (path == null) {
+        IDrawable drawable = ImageOf(block, width);
+        if (drawable == null) {
             Paragraph paragraph = new Paragraph(new TextLine(italic,
                     block.text.Length == 0 ? block.source : block.text));
             DrawParagraph(paragraph, x, width);
             return;
         }
-        String alt = block.text.Length == 0 ? FileName(block.source) : block.text;
-        float scale;
-        float imageWidth;
-        float imageHeight;
-        IDrawable drawable;
-        if (path.ToLowerInvariant().EndsWith(".svg", StringComparison.Ordinal)) {
-            SVGImage image = new SVGImage(path);
-            image.SetAltDescription(alt);
-            imageWidth = image.GetWidth();
-            imageHeight = image.GetHeight();
-            scale = Math.Min(1f, Math.Min(width / imageWidth, (bottom - marginTop) / imageHeight));
-            image.ScaleBy(scale);
-            drawable = image;
-        } else {
-            Image image = new Image(pdf, path);
-            image.SetAltDescription(alt);
-            imageWidth = image.GetWidth();
-            imageHeight = image.GetHeight();
-            scale = Math.Min(1f, Math.Min(width / imageWidth, (bottom - marginTop) / imageHeight));
-            image.ScaleBy(scale);
-            drawable = image;
-        }
-        Ensure(imageHeight * scale);
+        float height = imageHeights[block];
+        Ensure(height);
         drawable.SetLocation(x, y);
         drawable.DrawOn(page);
-        y += imageHeight * scale;
+        y += height;
         atTop = false;
+    }
+
+    // The image of the block, scaled to the width and to a page, made when it
+    // is first measured or drawn, and its height kept; null for an image
+    // that is not read, whose text is drawn in its place.
+    private IDrawable ImageOf(MarkdownParser.Block block, float width) {
+        IDrawable cached;
+        if (images.TryGetValue(block, out cached)) {
+            return cached;
+        }
+        String path = ImagePath(block.source);
+        IDrawable drawable = null;
+        float height = 0f;
+        if (path != null) {
+            String alt = block.text.Length == 0 ? FileName(block.source) : block.text;
+            float scale;
+            float imageWidth;
+            float imageHeight;
+            if (path.ToLowerInvariant().EndsWith(".svg", StringComparison.Ordinal)) {
+                SVGImage image = new SVGImage(path);
+                image.SetAltDescription(alt);
+                imageWidth = image.GetWidth();
+                imageHeight = image.GetHeight();
+                scale = Math.Min(1f, Math.Min(width / imageWidth, (bottom - marginTop) / imageHeight));
+                image.ScaleBy(scale);
+                drawable = image;
+            } else {
+                Image image = new Image(pdf, path);
+                image.SetAltDescription(alt);
+                imageWidth = image.GetWidth();
+                imageHeight = image.GetHeight();
+                scale = Math.Min(1f, Math.Min(width / imageWidth, (bottom - marginTop) / imageHeight));
+                image.ScaleBy(scale);
+                drawable = image;
+            }
+            height = imageHeight * scale;
+        }
+        images[block] = drawable;
+        imageHeights[block] = height;
+        return drawable;
     }
 
     // The path of an image in the image directory, or null when there is no

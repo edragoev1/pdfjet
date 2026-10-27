@@ -292,4 +292,46 @@ import Testing
                 .addSeries("", [1e30, 3e38]), page)
         #expect(content.contains(TestSupport.hex("3e38")), "\(content)")
     }
+
+    // The third review of 26 October 2026: a set range past the largest float
+    // draws nothing, where its NaN coordinates failed the document; a line
+    // series longer than the categories does not reach the axis past them; a
+    // bar below 0 has room for its value between the plot and the
+    // categories; the gaps are kept in their ranges; a stacked sum past the
+    // largest float is not written; and a bar below a set range has no value.
+    @Test func theThirdReviewOfTheCharts() {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        _ = draw(chart(pdf).setCategories("a").addSeries("", [1]).setValueAxisRange(-3e38, 3e38), page)
+        #expect(TestSupport.content(page).isEmpty)
+
+        page = Page(pdf, Letter.PORTRAIT)
+        var content = draw(chart(pdf).setCategories("a", "b").addSeries("Sold", [1, 2])
+                .addLineSeries("Target", [2, 3, 4, 5, 6]), page)
+        #expect(!content.contains("<" + TestSupport.hex("6") + ">"), "\(content)")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        content = draw(chart(pdf).setHorizontal(true).setValueLabels(true).setCategories("A")
+                .addSeries("", [-1234567]), page)
+        let label = TestSupport.positionOf(content, "-1,234,567")[0]
+        let name = TestSupport.positionOf(content, "A")[0]
+        let font = TestSupport.helvetica(pdf)
+        #expect(name + font.stringWidth("A") <= label, "\(name) \(label)")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        content = draw(chart(pdf).setCategories("a").setGroupGap(1.5).setBarGap(-2)
+                .addSeries("", [1]).addSeries("", [2]), page)
+        #expect(!content.contains(" -"), "\(content)")    // No negative width
+
+        page = Page(pdf, Letter.PORTRAIT)
+        content = draw(chart(pdf).setCategories("a").setStacked(true).setValueLabels(true)
+                .addSeries("", [2e38]).addSeries("", [2e38]), page)
+        #expect(!content.contains(TestSupport.hex("Infinity")), "\(content)")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        content = draw(chart(pdf).setCategories("a", "b").setValueLabels(true).setValueAxisRange(10, 20)
+                .addSeries("", [5, 15]), page)
+        #expect(content.contains("<" + TestSupport.hex("15") + ">"), "\(content)")
+        #expect(!content.contains("<" + TestSupport.hex("5") + ">"), "\(content)")
+    }
 }

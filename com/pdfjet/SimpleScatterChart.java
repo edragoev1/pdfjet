@@ -73,7 +73,7 @@ public class SimpleScatterChart implements Drawable {
     private int panelColor = SimpleBarChart.PANEL;
     private int dotColor = DOT;
     private int highlightColor = SimpleBarChart.HIGHLIGHT;
-    private final int maxFractionDigits = 2;
+    private int maxFractionDigits = 2;      // As many as the steps of the axes need
 
     /**
      * Creates a simple scatter chart, 400 by 300 points.
@@ -182,7 +182,8 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart add(String name, float x, float y, String uri) {
-        points.add(new Point(x, y, name, uri));
+        // An empty URI is no link, as in the Go port
+        points.add(new Point(x, y, name, (uri == null || uri.isEmpty()) ? null : uri));
         return this;
     }
 
@@ -200,7 +201,8 @@ public class SimpleScatterChart implements Drawable {
 
     /**
      * Sets the range of the horizontal axis. Without it the range is that of
-     * the points, rounded to steps.
+     * the points, rounded to steps. A range whose end is not past its start
+     * is not set.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -215,7 +217,8 @@ public class SimpleScatterChart implements Drawable {
 
     /**
      * Sets the range of the vertical axis. Without it the range is that of the
-     * points, rounded to steps.
+     * points, rounded to steps. A range whose end is not past its start is not
+     * set.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -317,7 +320,8 @@ public class SimpleScatterChart implements Drawable {
 
     // A number of an axis, with the decimals its step needs.
     private String label(float value, float step) {
-        return ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits);
+        return ChartScale.groupDigits(
+                ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits));
     }
 
     // The points whose x and y are numbers.
@@ -338,24 +342,42 @@ public class SimpleScatterChart implements Drawable {
         if (n < 2) {
             return null;
         }
+        // From the sums of the distances from the means, which keep their
+        // precision where the raw sums lost it, for x near 1e8 of a small spread
         double sx = 0;
         double sy = 0;
+        for (Point p : points) {
+            sx += p.x;
+            sy += p.y;
+        }
+        double mx = sx / n;
+        double my = sy / n;
         double sxx = 0;
         double sxy = 0;
         for (Point p : points) {
-            double x = p.x;
-            double y = p.y;
-            sx += x;
-            sy += y;
-            sxx += x * x;
-            sxy += x * y;
+            double dx = p.x - mx;
+            sxx += dx * dx;
+            sxy += dx * (p.y - my);
         }
-        double d = n * sxx - sx * sx;
-        if (d == 0) {
+        if (sxx == 0) {
             return null;
         }
-        double slope = (n * sxy - sx * sy) / d;
-        return new double[] {slope, (sy - slope * sx) / n};
+        double slope = sxy / sxx;
+        return new double[] {slope, my - slope * mx};
+    }
+
+    // The digits of the numbers of the two axes of the points.
+    private int digits(List<Point> points) {
+        float[] xs = new float[points.size()];
+        float[] ys = new float[points.size()];
+        for (int i = 0; i < points.size(); i++) {
+            xs[i] = points.get(i).x;
+            ys[i] = points.get(i).y;
+        }
+        ChartScale.Axis xAxis = ChartScale.axisOf(xs, xMin, xMax, xRangeSet);
+        ChartScale.Axis yAxis = ChartScale.axisOf(ys, yMin, yMax, yRangeSet);
+        return Math.max(ChartScale.digitsOf((xAxis.max - xAxis.min) / xAxis.lines),
+                ChartScale.digitsOf((yAxis.max - yAxis.min) / yAxis.lines));
     }
 
     // The alternate description: the one set, or the title, the number of
@@ -365,6 +387,9 @@ public class SimpleScatterChart implements Drawable {
             return altDescription;
         }
         List<Point> points = valid();
+        if (!points.isEmpty()) {
+            maxFractionDigits = digits(points);
+        }
         StringBuilder sb = new StringBuilder(ChartScale.join(title, subtitle));
         if (sb.length() == 0) {
             sb.append("Scatter chart");
@@ -379,8 +404,8 @@ public class SimpleScatterChart implements Drawable {
                 continue;
             }
             sb.append(named == 0 ? "; " : ", ");
-            sb.append(p.name).append(' ').append(ChartScale.format(p.x, 0, maxFractionDigits))
-                    .append(" and ").append(ChartScale.format(p.y, 0, maxFractionDigits));
+            sb.append(p.name).append(' ').append(ChartScale.groupDigits(ChartScale.format(p.x, 0, maxFractionDigits)))
+                    .append(" and ").append(ChartScale.groupDigits(ChartScale.format(p.y, 0, maxFractionDigits)));
             named++;
         }
         if (trendLine) {
@@ -415,10 +440,14 @@ public class SimpleScatterChart implements Drawable {
             xs[i] = points.get(i).x;
             ys[i] = points.get(i).y;
         }
+        if ((!xRangeSet && !ChartScale.spanFits(xs)) || (!yRangeSet && !ChartScale.spanFits(ys))) {
+            return new float[] {x + w, y + h};      // A span past the largest float, which no axis can draw
+        }
         final ChartScale.Axis xAxis = ChartScale.axisOf(xs, xMin, xMax, xRangeSet);
         final ChartScale.Axis yAxis = ChartScale.axisOf(ys, yMin, yMax, yRangeSet);
         float xStep = (xAxis.max - xAxis.min) / xAxis.lines;
         float yStep = (yAxis.max - yAxis.min) / yAxis.lines;
+        maxFractionDigits = Math.max(ChartScale.digitsOf(xStep), ChartScale.digitsOf(yStep));
 
         // The plot: right of the y title and the widest number, above the
         // numbers and the x title
@@ -509,6 +538,15 @@ public class SimpleScatterChart implements Drawable {
         // The trend line, from the left of the plot to its right, within its
         // height
         double[] line = trend(points);
+        // No line where it misses the plot, both of its ends past one edge, as
+        // a flat one over a range that is set: it was drawn outside the chart
+        if (line != null) {
+            double a = line[0] * xAxis.min + line[1];
+            double b = line[0] * xAxis.max + line[1];
+            if ((a > yAxis.max && b > yAxis.max) || (a < yAxis.min && b < yAxis.min)) {
+                line = null;
+            }
+        }
         if (trendLine && line != null) {
             double slope = line[0];
             double intercept = line[1];

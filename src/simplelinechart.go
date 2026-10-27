@@ -58,7 +58,7 @@ type SimpleLineChart struct {
 	yRangeSet              bool
 	panelColor, lineColor  int32
 	highlightColor         int32
-	maxFractionDigits      int
+	maxFractionDigits      int // As many as the step of the axis needs
 }
 
 // NewSimpleLineChart creates a simple line chart, 400 by 300 points.
@@ -151,7 +151,8 @@ func (chart *SimpleLineChart) SetAreaFilled(areaFilled bool) *SimpleLineChart {
 }
 
 // SetYAxisRange sets the range of the vertical axis. Without it the range is
-// that of the values, rounded to steps.
+// that of the values, rounded to steps. A range whose end is not past its
+// start is not set.
 func (chart *SimpleLineChart) SetYAxisRange(lo, hi float32) *SimpleLineChart {
 	chart.yMin, chart.yMax, chart.yRangeSet = lo, hi, hi > lo
 	return chart
@@ -294,6 +295,19 @@ func (chart *SimpleLineChart) getAltDescription() string {
 	if chart.altDescription != "" {
 		return chart.altDescription
 	}
+	// The values in the digits of the numbers of the axis
+	all := make([]float32, 0)
+	for _, line := range chart.lines {
+		for j := 0; j < chart.count(); j++ {
+			if v, ok := line.valueOf(j); ok {
+				all = append(all, v)
+			}
+		}
+	}
+	if len(all) > 0 {
+		axis := axisOf(all, chart.yMin, chart.yMax, chart.yRangeSet)
+		chart.maxFractionDigits = digitsOf((axis.max - axis.min) / float32(axis.lines))
+	}
 	var sb strings.Builder
 	sb.WriteString(join(chart.title, chart.subtitle))
 	if sb.Len() == 0 {
@@ -360,8 +374,12 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	pad := chart.pad()
 	ascent := f2.GetAscent(size)
 
+	if !chart.yRangeSet && !spanFits(values) {
+		return [2]float32{chart.x + chart.w, chart.y + chart.h} // A span past the largest float, which no axis can draw
+	}
 	axis := axisOf(values, chart.yMin, chart.yMax, chart.yRangeSet)
 	step := (axis.max - axis.min) / float32(axis.lines)
+	chart.maxFractionDigits = digitsOf(step)
 
 	// The plot: right of the y title and the widest number, left of the
 	// widest label at the end of a line, above the categories and the x title
@@ -631,6 +649,27 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 			end := max(top, min(bottom, yAt(v)))
 			labels = append(labels, endLabel{text, i, end + float32(ascent/2.0)})
 		}
+	}
+	// As many as the height of the plot holds, a line apart, the
+	// highlighted one first and then the others in their order: more were
+	// pushed up past the top of the chart
+	room := len(labels)
+	if f2.bodyHeight > 0 {
+		room = int((bottom-top)/f2.bodyHeight) + 1
+	}
+	if len(labels) > room {
+		kept := make([]endLabel, 0, room)
+		for _, label := range labels {
+			if label.index == chart.highlight {
+				kept = append(kept, label)
+			}
+		}
+		for _, label := range labels {
+			if label.index != chart.highlight && len(kept) < room {
+				kept = append(kept, label)
+			}
+		}
+		labels = kept
 	}
 	sort.SliceStable(labels, func(a, b int) bool { return labels[a].y < labels[b].y })
 	for k := 1; k < len(labels); k++ {

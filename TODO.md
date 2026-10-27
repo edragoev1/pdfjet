@@ -458,7 +458,7 @@ commit and date. The layout's format version (1) and the look's rules
     (the owner, 26 October 2026).
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
   "significantly improve all charts"). Where it stands, 26 October 2026:
-  Chart, which items 1 to 5 were written about, is deprecated, and the
+  Chart, which items 1 to 5 were written about, is removed, and the
   simple charts (7 to 9) take its place; BarChart has the simple charts'
   look, grouping on, one axis line at zero and the totals of its stacks
   (6a295afd), which is item 1 and part of 4 for it; DonutChart has its

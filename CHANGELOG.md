@@ -306,6 +306,78 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- Markdown, the four ports, from a review of 26 October 2026:
+  - The first block of a quote or a list item keeps the room it needs on its
+    page, as the other blocks do: a first image, code or table was drawn
+    into the bottom margin, a short table there was split, and a lead-in
+    there was left at the bottom of the page, its table on the next.
+  - A short table after a lead-in that ends in a colon stays with it: the
+    table went to the next page alone, for the room of a header and two
+    rows it asked for where it fit.
+  - A heading keeps on its page what comes after it, as far as a page keeps
+    that together: a table, an image, three lines of code, or a lead-in and
+    its table; it was left at the bottom of a page over each. When the two
+    do not fit on one page, the heading keeps the first rows of its table,
+    which then starts under it. A heading of two lines or more is kept
+    whole; it was kept by its first line.
+  - A table split inside a quote has the quote's bar on every page it is on;
+    the bar stopped where the table started.
+  - An empty heading, "#" with no text, draws nothing and takes no level of
+    the tags: the next "##" was an H2 with no H1 over it.
+  - A table interrupts a paragraph, as in GitHub's Markdown: "Sizes:" on the
+    line over a table's header, with no blank line between, was drawn as a
+    paragraph of pipes.
+  - A lead-in that ends in the full-width colon "：" of CJK text keeps its
+    table too.
+  - The lines of a block of code are cut by their width in the code font,
+    where they were cut by a count of characters as wide as a "0": wide
+    characters, as CJK, ran past the gray background. An empty block of
+    code draws nothing, where it made empty tags and a background.
+  - The four ports trim a lead-in alike, of spaces and control characters
+    only, and Swift finds a check mark followed by a variation selector,
+    "✓️", as the others do.
+  - A table is made once to be measured and drawn, where it was made again.
+  Behavior change: documents whose headings, quotes, list items or tables
+  fell at the bottom of a page break their pages elsewhere, as above.
+- The charts, the four ports, from a third review of 26 October 2026:
+  - BarChart: a set range past the largest float, as -3e38 to 3e38, draws
+    nothing, where its infinite steps failed the document; a line series
+    longer than the categories no longer stretches the axis past what it
+    draws; a bar below 0 has room for its value between the plot and the
+    categories, where the value was written over the category's name; the
+    gaps are kept in their ranges, `setGroupGap` from 0 to 0.9 and
+    `setBarGap` from 0 up, where a gap of 1.5 made bars of negative width
+    and -1 divided by 0; a stacked sum past the largest float is not
+    written, where it was "Infinity"; and a bar wholly outside a set range
+    has no value written by it.
+  - SimpleScatterChart: no trend line where it misses the plot, both of its
+    ends past one edge, as a flat one over a range that is set, where it was
+    drawn outside the chart; the trend is computed from the distances from
+    the means, which keep their precision for values near 1e8 of a small
+    spread; and an empty URI is no link, as in the Go port.
+  - SimpleLineChart and SimpleScatterChart: the numbers have the digits the
+    step of their axis needs, up to 6, where data under 0.01 was written 0.00
+    at every grid line and "from 0 to 0" in the description; data whose span
+    is past the largest float draws nothing, where it drew an empty plot;
+    and SimpleLineChart writes as many labels at the ends of the lines as
+    the plot holds, the highlighted one first, where more were pushed up past
+    the top of the chart.
+  - SimpleBarChart and SimpleScatterChart group the digits of their numbers
+    in thousands, 23,507, as the other charts do; in a SimpleBarChart
+    narrower than its names and values the names give the values room, and
+    a name is left out where not even an ellipsis fits.
+  - DonutChart: a radius that is not a number is 0, in the four ports alike
+    (Swift drew a ring of none where the others failed); the percentages
+    are written in a ring as wide as one and a half lines of them, or a pie,
+    where they spilled out of a thin one.
+  - The ranges set with `setXAxisRange`, `setYAxisRange` and
+    `setValueAxisRange` say that one whose end is not past its start is not
+    set; ChartScale's unused palette is gone.
+  - Example_26 writes the figures of its table as its data file does, two
+    decimals and one, where the ports rounded them each their own way.
+  Behavior change: a SimpleBarChart or SimpleScatterChart writes 23507 as
+  23,507; a line chart with more lines ending together than its plot holds
+  leaves some of their labels out.
 - Markdown, the four ports: a heading over a paragraph that ends in a colon
   and its table goes to the next page with them, when the three fit on a
   page together but not in what is left of this one. The paragraph and the

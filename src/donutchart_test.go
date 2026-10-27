@@ -333,3 +333,24 @@ func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
 		t.Errorf("two slices in navy: %q", content)
 	}
 }
+
+// The third review of 26 October 2026: a radius that is not a number is 0, in
+// the four ports alike; and the percentages are not written in a ring too thin
+// for them.
+func TestDonutChartTheThirdReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	fonts := regexp.MustCompile(`/F\d+ `)
+	page := NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).SetRadii(100, float32(math.NaN())).Add("a", 1).Add("b", 3).DrawOn(page)
+	nan := testContent(page)
+	page = NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).SetRadii(100, 0).Add("a", 1).Add("b", 3).DrawOn(page)
+	if got, want := fonts.ReplaceAllString(nan, "/F "), fonts.ReplaceAllString(testContent(page), "/F "); got != want {
+		t.Errorf("a radius of NaN is not 0:\n%s\n%s", got, want)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).SetRadii(200, 196).Add("a", 1).Add("b", 3).DrawOn(page)
+	if content := testContent(page); strings.Contains(content, testHex("75%")) {
+		t.Errorf("a percentage in a thin ring: %q", content)
+	}
+}

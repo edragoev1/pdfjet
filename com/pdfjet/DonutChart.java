@@ -78,8 +78,11 @@ public class DonutChart implements Drawable {
     public DonutChart setRadii(float outerRadius, float innerRadius) {
         // The larger is the outer radius: an inner radius past the outer one
         // drew a ring inside out
-        this.r1 = Math.max(Math.abs(outerRadius), Math.abs(innerRadius));
-        this.r2 = Math.min(Math.abs(outerRadius), Math.abs(innerRadius));
+        // A radius that is not a number is 0, in the four ports alike
+        float a = isValue(outerRadius) ? Math.abs(outerRadius) : 0f;
+        float b = isValue(innerRadius) ? Math.abs(innerRadius) : 0f;
+        this.r1 = Math.max(a, b);
+        this.r2 = Math.min(a, b);
         return this;
     }
 
@@ -320,7 +323,7 @@ public class DonutChart implements Drawable {
         float midAngle = (a1 + a2) / 2.0f - 90.0f;
         float[] p1 = getPoint(xc, yc, r1, midAngle);            // On the outer edge
         float[] p2 = getPoint(xc, yc, r1 + 15.0f, midAngle);    // The elbow
-        // A label wider than the radius, or than six of its letters, is
+        // A label wider than both the radius and six of its letters is
         // shortened: a long one at the left ran off the page
         if (f1 != null) {
             text = ChartScale.shorten(f1, f1.getSize(), text, Math.max(r1, 6f * f1.getSize()));
@@ -534,7 +537,8 @@ public class DonutChart implements Drawable {
             }
             drawn++;
             // The percentage fits inside a slice of 15 degrees or more
-            if (f2 != null && sweep >= 15.0f) {
+            // and in a ring as wide as one and a half lines of it, or a pie
+            if (f2 != null && sweep >= 15.0f && (r2 == 0.0f || r1 - r2 >= 1.5f * f2.getBodyHeight())) {
                 String pctStr = percentages[i] + "%";
                 float midAngle = angle - sweep / 2.0f - 90.0f;
                 float midR = (r1 + r2) / 2.0f;

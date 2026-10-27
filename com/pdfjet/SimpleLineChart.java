@@ -80,7 +80,7 @@ public class SimpleLineChart implements Drawable {
     private int panelColor = SimpleBarChart.PANEL;
     private int lineColor = LINE;
     private int highlightColor = SimpleBarChart.HIGHLIGHT;
-    private final int maxFractionDigits = 2;
+    private int maxFractionDigits = 2;      // As many as the step of the axis needs
 
     /**
      * Creates a simple line chart, 400 by 300 points.
@@ -230,7 +230,8 @@ public class SimpleLineChart implements Drawable {
 
     /**
      * Sets the range of the vertical axis. Without it the range is that of
-     * the values, rounded to steps.
+     * the values, rounded to steps. A range whose end is not past its start
+     * is not set.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -387,6 +388,23 @@ public class SimpleLineChart implements Drawable {
         if (!altDescription.isEmpty()) {
             return altDescription;
         }
+        // The values in the digits of the numbers of the axis
+        List<Float> all = new ArrayList<Float>();
+        for (Line line : lines) {
+            for (int j = 0; j < count(); j++) {
+                if (line.has(j)) {
+                    all.add(line.values[j]);
+                }
+            }
+        }
+        if (!all.isEmpty()) {
+            float[] data = new float[all.size()];
+            for (int i = 0; i < data.length; i++) {
+                data[i] = all.get(i);
+            }
+            ChartScale.Axis axis = ChartScale.axisOf(data, yMin, yMax, yRangeSet);
+            maxFractionDigits = ChartScale.digitsOf((axis.max - axis.min) / axis.lines);
+        }
         StringBuilder sb = new StringBuilder(ChartScale.join(title, subtitle));
         if (sb.length() == 0) {
             sb.append("Line chart");
@@ -461,8 +479,12 @@ public class SimpleLineChart implements Drawable {
         float pad = pad();
         float ascent = f2.getAscent(size);
 
+        if (!yRangeSet && !ChartScale.spanFits(values)) {
+            return new float[] {x + w, y + h};      // A span past the largest float, which no axis can draw
+        }
         ChartScale.Axis axis = ChartScale.axisOf(values, yMin, yMax, yRangeSet);
         float step = (axis.max - axis.min) / axis.lines;
+        maxFractionDigits = ChartScale.digitsOf(step);
 
         // The plot: right of the y title and the widest number, left of the
         // widest label at the end of a line, above the categories and the x
@@ -699,6 +721,24 @@ public class SimpleLineChart implements Drawable {
                 float end = Math.max(top, Math.min(bottom, yAt(line.values[last], axis, top, bottom)));
                 labels.add(new EndLabel(endText(i, last), i, end + ascent / 2f));
             }
+        }
+        // As many as the height of the plot holds, a line apart, the
+        // highlighted one first and then the others in their order: more were
+        // pushed up past the top of the chart
+        int room = (f2.getBodyHeight() > 0f) ? (int) ((bottom - top) / f2.getBodyHeight()) + 1 : labels.size();
+        if (labels.size() > room) {
+            List<EndLabel> kept = new ArrayList<EndLabel>();
+            for (EndLabel label : labels) {
+                if (label.index == highlight) {
+                    kept.add(label);
+                }
+            }
+            for (EndLabel label : labels) {
+                if (label.index != highlight && kept.size() < room) {
+                    kept.add(label);
+                }
+            }
+            labels = kept;
         }
         Collections.sort(labels, new Comparator<EndLabel>() {
             @Override public int compare(EndLabel a, EndLabel b) {

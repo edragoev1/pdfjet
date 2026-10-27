@@ -424,7 +424,10 @@ internal sealed class MarkdownParser {
                     blocks.Add(heading);
                     return j + 1;
                 }
-                if (Interrupts(line)) {
+                // A table interrupts a paragraph, as in GitHub's Markdown:
+                // "Sizes:" on the line over the table's header was a
+                // paragraph of pipes
+                if (Interrupts(line) || IsTableStart(lines, j)) {
                     break;
                 }
             }

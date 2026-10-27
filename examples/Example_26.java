@@ -67,8 +67,9 @@ public class Example_26 {
             float children = Float.parseFloat(field[3]);
             if (NAMED.contains(field[1])) {
                 chart.add(field[0], children, life, worldBank(field[0]));  // A navy dot, named, a link
-                data.add(row(f2, false, field[0], String.format(Locale.US, "%.2f", children),
-                        String.format(Locale.US, "%.1f years", life)));
+                // The figures as the file writes them, two decimals and one,
+                // not rounded again, so that every port writes them alike
+                data.add(row(f2, false, field[0], decimals(field[3], 2), decimals(field[2], 1) + " years"));
             } else {
                 chart.add(children, life);              // A gray dot
             }
@@ -120,6 +121,17 @@ public class Example_26 {
             row.add(cell);
         }
         return row;
+    }
+
+    // The number of the text with the decimals, zeros added: 1.5 is 1.50.
+    private static String decimals(String number, int count) {
+        int point = number.indexOf('.');
+        StringBuilder sb = new StringBuilder(point < 0 ? number + "." : number);
+        int have = (point < 0) ? 0 : number.length() - point - 1;
+        for (int i = have; i < count; i++) {
+            sb.append('0');
+        }
+        return sb.toString();
     }
 
     public static void main(String[] args) throws Exception {

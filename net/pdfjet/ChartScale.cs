@@ -12,22 +12,10 @@ namespace PDFjet.NET {
 /// <summary>
 /// What the charts share, BarChart, DonutChart, SimpleBarChart, SimpleLineChart
 /// and SimpleScatterChart: the numbers of their labels, the rounding of an axis to
-/// steps, the spacing of the labels of an axis, the colors of the series that
-/// have none, and the test of a value to draw. A chart uses these, not another
-/// chart, so that one can go without the others.
+/// steps, the spacing of the labels of an axis, the place of a value on a plot,
+/// the shortening of a long name, and the test of a value to draw.
 /// </summary>
 internal static class ChartScale {
-    internal static readonly int[] DEFAULT_PALETTE = {
-        Color.blue,
-        Color.red,
-        Color.green,
-        Color.orange,
-        Color.purple,
-        Color.darkcyan,
-        Color.magenta,
-        Color.olive
-    };
-
     /// <summary>
     /// Formats a label with minDigits to maxDigits decimal places, rounding the
     /// exact value half to even. The label has a "." decimal separator and no
@@ -329,6 +317,33 @@ internal static class ChartScale {
             return product / span;
         }
         return (float) ((double) d * (double) length / (double) span);
+    }
+
+    /// <summary>
+    /// Returns the number of digits after the decimal point that the numbers of
+    /// an axis of the step need, 2 at least and 6 at most: data under 0.01 was
+    /// written 0.00 at every grid line.
+    /// </summary>
+    internal static int DigitsOf(float step) {
+        return IsValue(step) && step > 0f ? Math.Max(2, FractionDigitsOf(step, 6)) : 2;
+    }
+
+    /// <summary>
+    /// Tells if the span of the values, the largest less the smallest, is a
+    /// number: values of -3e38 and 3e38 have a span past the largest float,
+    /// which no axis can draw.
+    /// </summary>
+    internal static bool SpanFits(float[] values) {
+        if (values.Length == 0) {
+            return true;
+        }
+        float lo = values[0];
+        float hi = values[0];
+        foreach (float value in values) {
+            lo = Math.Min(lo, value);
+            hi = Math.Max(hi, value);
+        }
+        return IsValue(hi - lo);
     }
 
     /// <summary>

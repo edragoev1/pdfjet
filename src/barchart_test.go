@@ -404,3 +404,60 @@ func TestBarChartTheSecondReviewOfTheCharts(t *testing.T) {
 		t.Errorf("3e38 is not written short: %q", content)
 	}
 }
+
+// The third review of 26 October 2026: a set range past the largest float
+// draws nothing, where its NaN coordinates failed the document; a line
+// series longer than the categories does not reach the axis past them; a
+// bar below 0 has room for its value between the plot and the
+// categories; the gaps are kept in their ranges; a stacked sum past the
+// largest float is not written; and a bar below a set range has no value.
+func TestBarChartTheThirdReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testDrawBarChart(t, testBarChart(pdf).SetCategories("a").AddSeries("", []float32{1}).
+		SetValueAxisRange(-3e38, 3e38), page)
+	if content := testContent(page); content != "" {
+		t.Errorf("a range past the largest float drew %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	content := testDrawBarChart(t, testBarChart(pdf).SetCategories("a", "b").AddSeries("Sold", []float32{1, 2}).
+		AddLineSeries("Target", []float32{2, 3, 4, 5, 6}), page)
+	if strings.Contains(content, "<"+testHex("6")+">") {
+		t.Errorf("the axis reaches the line past the categories: %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetHorizontal(true).SetValueLabels(true).SetCategories("A").
+		AddSeries("", []float32{-1234567}), page)
+	label := testPositionOf(t, content, "-1,234,567")[0]
+	name := testPositionOf(t, content, "A")[0]
+	font := testHelvetica(pdf)
+	if !(name+font.StringWidth(font.GetSize(), "A") <= label) {
+		t.Errorf("the value is over the name: %v %v", name, label)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a").SetGroupGap(1.5).SetBarGap(-2).
+		AddSeries("", []float32{1}).AddSeries("", []float32{2}), page)
+	if strings.Contains(content, " -") { // No negative width
+		t.Errorf("a negative width: %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a").SetStacked(true).SetValueLabels(true).
+		AddSeries("", []float32{2e38}).AddSeries("", []float32{2e38}), page)
+	if strings.Contains(content, testHex("Infinity")) || strings.Contains(content, testHex("Inf")) {
+		t.Errorf("an infinite sum is written: %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a", "b").SetValueLabels(true).
+		SetValueAxisRange(10, 20).AddSeries("", []float32{5, 15}), page)
+	if !strings.Contains(content, "<"+testHex("15")+">") {
+		t.Errorf("no 15: %q", content)
+	}
+	if strings.Contains(content, "<"+testHex("5")+">") {
+		t.Errorf("the bar below the range has its value: %q", content)
+	}
+}

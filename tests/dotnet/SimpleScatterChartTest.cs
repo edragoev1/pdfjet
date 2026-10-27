@@ -200,5 +200,36 @@ public class SimpleScatterChartTest {
         string content = TestSupport.Content(page);
         Assert.DoesNotContain(TestSupport.Hex(name), content);
     }
+
+    // The third review of 26 October 2026: no trend line where it misses the
+    // plot; an empty URI is no link; values under 0.01 have the digits their
+    // axis needs; numbers are grouped in thousands; and points whose span is
+    // past the largest float draw nothing.
+    [Fact]
+    public void TheThirdReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetYAxisRange(0f, 10f).Add(0f, 50f).Add(10f, 50f).SetTrendLine(true)
+                .DrawOn(page);
+        Assert.DoesNotContain(TestSupport.Hex("trend"), TestSupport.Content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).Add("A", 1f, 2f, "").Add(2f, 3f).DrawOn(page);
+        Assert.Empty(page.annots);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        SimpleScatterChart tiny = new SimpleScatterChart(font, font).Add(0.001f, 1f).Add(0.004f, 2f);
+        tiny.DrawOn(page);
+        Assert.Contains(TestSupport.Hex("0.001"), TestSupport.Content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).Add("Big", 23507f, 1f).Add(1000f, 2f).DrawOn(page);
+        Assert.Contains(TestSupport.Hex("25,000"), TestSupport.Content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).Add(-3e38f, -3e38f).Add(3e38f, 3e38f).DrawOn(page);
+        Assert.Equal("", TestSupport.Content(page));
+    }
 }
 }   // End of namespace PDFjet.NET

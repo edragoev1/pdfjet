@@ -316,7 +316,10 @@ public class BarChart : Drawable {
     ///
     @discardableResult
     public func setGroupGap(_ gap: Float) -> BarChart {
-        self.groupGap = gap
+        // From 0 to 0.9 of a slot: more left the bars no width, or less than none
+        if ChartScale.isValue(gap) {
+            self.groupGap = Swift.min(Swift.max(gap, 0.0), 0.9)
+        }
         return self
     }
 
@@ -329,7 +332,10 @@ public class BarChart : Drawable {
     ///
     @discardableResult
     public func setBarGap(_ gap: Float) -> BarChart {
-        self.barGap = gap
+        // 0 or more: a negative gap made bars of no width, and -1 divided by 0
+        if ChartScale.isValue(gap) {
+            self.barGap = Swift.max(gap, 0.0)
+        }
         return self
     }
 
@@ -489,17 +495,19 @@ public class BarChart : Drawable {
                     lo = Swift.min(lo, down)
                     hi = Swift.max(hi, up)
                 }
+                // The values of a line series up to the last category, which
+                // are all it draws
                 for s in lineSeries {
-                    for v in s.values where ChartScale.isValue(v) {
-                        lo = Swift.min(lo, v)
-                        hi = Swift.max(hi, v)
+                    for i in 0..<Swift.min(s.values.count, n) where ChartScale.isValue(s.values[i]) {
+                        lo = Swift.min(lo, s.values[i])
+                        hi = Swift.max(hi, s.values[i])
                     }
                 }
             } else {
                 for s in allSeries() {
-                    for v in s.values where ChartScale.isValue(v) {
-                        lo = Swift.min(lo, v)
-                        hi = Swift.max(hi, v)
+                    for i in 0..<Swift.min(s.values.count, n) where ChartScale.isValue(s.values[i]) {
+                        lo = Swift.min(lo, s.values[i])
+                        hi = Swift.max(hi, s.values[i])
                     }
                 }
             }
@@ -528,10 +536,15 @@ public class BarChart : Drawable {
             widestAxisLabel = Swift.max(widestAxisLabel, f2.stringWidth(label))
         }
         var widestValueLabel: Float = 0.0
+        var widestNegative: Float = 0.0     // Of the bars below 0, written past their ends
         if drawValueLabels {
             for s in series {
                 for v in s.values where ChartScale.isValue(v) {
-                    widestValueLabel = Swift.max(widestValueLabel, f2.stringWidth(valueLabel(v)))
+                    let width = f2.stringWidth(valueLabel(v))
+                    widestValueLabel = Swift.max(widestValueLabel, width)
+                    if v < 0.0 {
+                        widestNegative = Swift.max(widestNegative, width)
+                    }
                 }
             }
         }
@@ -567,9 +580,16 @@ public class BarChart : Drawable {
         let legendRows = legend ? drawLegend(nil, 0.0) : 0
         var topMargin = (title.isEmpty ? f1.getBodyHeight() : 2.5 * f1.getBodyHeight()) + subtitleHeight
                 + Float(legendRows) * (1.5 * bodyHeight)
-        let leftMargin = 1.5 * bodyHeight + pad + (horizontal ? widestCategory : widestAxisLabel)
+        // Room between the plot and the categories for the label of a bar
+        // below 0 that reaches the end of the axis: it was written over the
+        // category's name
+        var negative: Float = 0.0
+        if drawValueLabels && !stacked && widestNegative > 0.0 {
+            negative = horizontal ? widestNegative + pad / 2.0 : bodyHeight
+        }
+        let leftMargin = 1.5 * bodyHeight + pad + (horizontal ? widestCategory + negative : widestAxisLabel)
         var rightMargin = pad
-        let bottomMargin = 2.5 * bodyHeight
+        let bottomMargin = 2.5 * bodyHeight + (horizontal ? 0.0 : negative)
         if horizontal {
             let past: Float = totals ? widestTotal + pad : (valueLabelsInside ? 0.0 : widestValueLabel + pad)
             rightMargin += Swift.max(widestAxisLabel / 2.0, past)
@@ -580,7 +600,9 @@ public class BarChart : Drawable {
         let y5 = y1 + topMargin
         let x6 = x2 - rightMargin
         let y8 = y2 - bottomMargin
-        if x6 <= x5 || y8 <= y5 {   // No room for the plot
+        // No room for the plot, or an axis whose span is past the largest
+        // float, as a set range of -3e38 to 3e38, whose steps are infinite
+        if x6 <= x5 || y8 <= y5 || !ChartScale.isValue(step) {
             return [x1 + w, y1 + h]
         }
 
@@ -645,11 +667,11 @@ public class BarChart : Drawable {
             let groupStart = slotStart + slot * groupGap / 2.0
             let category = i < names.count ? names[i] : ""
             if horizontal {
-                BarChart.drawText(page, f2, category, x5 - pad - f2.stringWidth(category),
+                BarChart.drawText(page, f2, category, x5 - pad - negative - f2.stringWidth(category),
                         slotStart + slot / 2.0 + ascent / 2.0, BarChart.MUTED)
             } else if i % everyCategory == 0 {
                 BarChart.drawText(page, f2, category, slotStart + (slot - f2.stringWidth(category)) / 2.0,
-                        y8 + bodyHeight, BarChart.MUTED)
+                        y8 + bodyHeight + negative, BarChart.MUTED)
             }
             var up: Float = 0.0      // the stacked values above 0 so far
             var down: Float = 0.0    // the stacked values below 0 so far
@@ -666,12 +688,16 @@ public class BarChart : Drawable {
                     if to >= 0.0 { from = up; up += to } else { from = down; down += to }
                     to = from + s.values[i]
                 }
+                // A bar wholly outside a range that is set has no length,
+                // and its value is not written by it
+                let outside = Swift.min(Swift.max(from, vMin), vMax) == Swift.min(Swift.max(to, vMin), vMax)
+                        && from != to
                 from = Swift.min(Swift.max(from, vMin), vMax)
                 to = Swift.min(Swift.max(to, vMin), vMax)
                 let barStart = stacked ? groupStart : groupStart + Float(j) * barWidth * (1.0 + barGap)
                 let color = barColor(s, j, i)
                 page.setBrushColor(color)
-                let label: String? = drawValueLabels ? valueLabel(s.values[i]) : nil
+                let label: String? = (drawValueLabels && !outside) ? valueLabel(s.values[i]) : nil
                 let on = BarChart.labelColorOn(color)
                 if horizontal {
                     let x0 = x5 + ChartScale.scaled(from - vMin, x6 - x5, vMax - vMin)
@@ -708,7 +734,7 @@ public class BarChart : Drawable {
                 }
             }
             // The total of a stack above it, or past its end
-            if totals && up > 0.0 {
+            if totals && up > 0.0 && ChartScale.isValue(up) {     // A sum past the largest float is not written
                 let total = valueLabel(up)
                 let groupMiddle = groupStart + groupWidth / 2.0
                 if horizontal {

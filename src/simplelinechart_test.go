@@ -158,21 +158,34 @@ func TestSimpleLineChartASetRangeHasARoundStep(t *testing.T) {
 }
 
 // The labels at the ends of the lines, moved apart, stay over the plot: they
-// were pushed down past the bottom of the panel.
+// were pushed down past the bottom of the panel, and with many lines up past
+// its top. As many as the plot holds are drawn, the highlighted one first,
+// then the others in their order.
 func TestSimpleLineChartTheEndLabelsStayOverThePlot(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	page := NewPage(pdf, testLetterPortrait())
 	chart := NewSimpleLineChart(font, font).SetSize(400, 120)
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 30; i++ {
 		chart.AddLine("line "+strconv.Itoa(i), []float32{10, 0})
 	}
-	chart.AddLine("top", []float32{0, 10})
+	chart.AddLine("top", []float32{0, 10}).SetHighlight(30)
 	chart.DrawOn(page)
 	content := testContent(page)
+	if !strings.Contains(content, testHex("top 10")) || !strings.Contains(content, testHex("line 0 0")) {
+		t.Errorf("the highlighted label or the first is left out: %q", content)
+	}
+	if strings.Contains(content, testHex("line 29 0")) {
+		t.Errorf("more labels than the plot holds: %q", content)
+	}
 	// The page is 792 high, the chart from 0 to 120 down from its top
-	if y := testPositionOf(t, content, "line 7 0")[1]; y <= 792-120 {
-		t.Errorf("the last label is at %v, under the chart, in %q", y, content)
+	for i := 0; i < 30; i++ {
+		text := "line " + strconv.Itoa(i) + " 0"
+		if strings.Contains(content, testHex(text)) {
+			if y := testPositionOf(t, content, text)[1]; y <= 792-120 || y >= 792 {
+				t.Errorf("%s at %v", text, y)
+			}
+		}
 	}
 }
 
@@ -244,5 +257,22 @@ func TestSimpleLineChartTheSecondReviewOfTheCharts(t *testing.T) {
 	valueAt := numbers(td)
 	if !(parse(valueAt[1]) < parse(peakAt[1])) {
 		t.Errorf("the value of the peak at the top is not under it: %v by %v", valueAt[1], peakAt[1])
+	}
+}
+
+// Values under 0.01 have the digits their axis needs, where every number of
+// the axis was 0.00 and the description said from 0 to 0 (the third review of
+// 26 October 2026).
+func TestSimpleLineChartTinyValuesHaveTheirDigits(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	chart := NewSimpleLineChart(font, font).AddLine("a", []float32{0.001, 0.004})
+	chart.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, testHex("a 0.004")) {
+		t.Errorf("no a 0.004: %q", content)
+	}
+	if got := chart.getAltDescription(); !strings.Contains(got, "from 0.001 to 0.004") {
+		t.Errorf("the chart is described as %q", got)
 	}
 }

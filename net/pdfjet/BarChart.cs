@@ -272,7 +272,10 @@ public class BarChart : IDrawable {
     /// <param name="gap">the gap.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetGroupGap(float gap) {
-        this.groupGap = gap;
+        // From 0 to 0.9 of a slot: more left the bars no width, or less than none
+        if (ChartScale.IsValue(gap)) {
+            this.groupGap = Math.Min(Math.Max(gap, 0f), 0.9f);
+        }
         return this;
     }
 
@@ -283,7 +286,10 @@ public class BarChart : IDrawable {
     /// <param name="gap">the gap.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetBarGap(float gap) {
-        this.barGap = gap;
+        // 0 or more: a negative gap made bars of no width, and -1 divided by 0
+        if (ChartScale.IsValue(gap)) {
+            this.barGap = Math.Max(gap, 0f);
+        }
         return this;
     }
 
@@ -422,22 +428,23 @@ public class BarChart : IDrawable {
                     lo = Math.Min(lo, down);
                     hi = Math.Max(hi, up);
                 }
+                // The values of a line series up to the last category, which
+                // are all it draws
                 foreach (Series s in lineSeries) {
-                    foreach (float v in s.values) {
-                        if (ChartScale.IsValue(v)) {
-                            lo = Math.Min(lo, v);
-                            hi = Math.Max(hi, v);
+                    for (int i = 0; i < Math.Min(s.values.Length, n); i++) {
+                        if (ChartScale.IsValue(s.values[i])) {
+                            lo = Math.Min(lo, s.values[i]);
+                            hi = Math.Max(hi, s.values[i]);
                         }
                     }
                 }
             } else {
                 foreach (Series s in AllSeries()) {
-                    foreach (float v in s.values) {
-                        if (!ChartScale.IsValue(v)) {
-                            continue;
+                    for (int i = 0; i < Math.Min(s.values.Length, n); i++) {
+                        if (ChartScale.IsValue(s.values[i])) {
+                            lo = Math.Min(lo, s.values[i]);
+                            hi = Math.Max(hi, s.values[i]);
                         }
-                        lo = Math.Min(lo, v);
-                        hi = Math.Max(hi, v);
                     }
                 }
             }
@@ -466,13 +473,18 @@ public class BarChart : IDrawable {
             widestAxisLabel = Math.Max(widestAxisLabel, f2.StringWidth(label));
         }
         float widestValueLabel = 0f;
+        float widestNegative = 0f;      // Of the bars below 0, written past their ends
         if (drawValueLabels) {
             foreach (Series s in series) {
                 foreach (float v in s.values) {
                     if (!ChartScale.IsValue(v)) {
                         continue;
                     }
-                    widestValueLabel = Math.Max(widestValueLabel, f2.StringWidth(ValueLabel(v)));
+                    float width = f2.StringWidth(ValueLabel(v));
+                    widestValueLabel = Math.Max(widestValueLabel, width);
+                    if (v < 0f) {
+                        widestNegative = Math.Max(widestNegative, width);
+                    }
                 }
             }
         }
@@ -508,9 +520,16 @@ public class BarChart : IDrawable {
         int legendRows = legend ? DrawLegend(null, 0f) : 0;
         float topMargin = (title.Length == 0 ? f1.GetBodyHeight() : 2.5f * f1.GetBodyHeight()) + subtitleHeight
                 + legendRows * (1.5f * bodyHeight);
-        float leftMargin = 1.5f * bodyHeight + pad + (horizontal ? widestCategory : widestAxisLabel);
+        // Room between the plot and the categories for the label of a bar
+        // below 0 that reaches the end of the axis: it was written over the
+        // category's name
+        float negative = 0f;
+        if (drawValueLabels && !stacked && widestNegative > 0f) {
+            negative = horizontal ? widestNegative + pad / 2f : bodyHeight;
+        }
+        float leftMargin = 1.5f * bodyHeight + pad + (horizontal ? widestCategory + negative : widestAxisLabel);
         float rightMargin = pad;
-        float bottomMargin = 2.5f * bodyHeight;
+        float bottomMargin = 2.5f * bodyHeight + (horizontal ? 0f : negative);
         if (horizontal) {
             float past = totals ? widestTotal + pad : (valueLabelsInside ? 0f : widestValueLabel + pad);
             rightMargin += Math.Max(widestAxisLabel / 2f, past);
@@ -521,7 +540,9 @@ public class BarChart : IDrawable {
         float y5 = y1 + topMargin;
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
-        if (x6 <= x5 || y8 <= y5) {     // No room for the plot
+        // No room for the plot, or an axis whose span is past the largest
+        // float, as a set range of -3e38 to 3e38, whose steps are infinite
+        if (x6 <= x5 || y8 <= y5 || !ChartScale.IsValue(step)) {
             return new float[] {x1 + w, y1 + h};
         }
 
@@ -586,11 +607,11 @@ public class BarChart : IDrawable {
             float groupStart = slotStart + slot * groupGap / 2f;
             String category = i < names.Count ? names[i] : "";
             if (horizontal) {
-                DrawText(page, f2, category, x5 - pad - f2.StringWidth(category),
+                DrawText(page, f2, category, x5 - pad - negative - f2.StringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
             } else if (i % everyCategory == 0) {
                 DrawText(page, f2, category, slotStart + (slot - f2.StringWidth(category)) / 2f,
-                        y8 + bodyHeight, MUTED);
+                        y8 + bodyHeight + negative, MUTED);
             }
             float up = 0f;      // the stacked values above 0 so far
             float down = 0f;    // the stacked values below 0 so far
@@ -607,12 +628,16 @@ public class BarChart : IDrawable {
                     if (to >= 0f) { from = up; up += to; } else { from = down; down += to; }
                     to = from + s.values[i];
                 }
+                // A bar wholly outside a range that is set has no length,
+                // and its value is not written by it
+                bool outside = Math.Min(Math.Max(from, vMin), vMax) == Math.Min(Math.Max(to, vMin), vMax)
+                        && from != to;
                 from = Math.Min(Math.Max(from, vMin), vMax);
                 to = Math.Min(Math.Max(to, vMin), vMax);
                 float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
                 int color = BarColor(s, j, i);
                 page.SetBrushColor(color);
-                String label = drawValueLabels ? ValueLabel(s.values[i]) : null;
+                String label = (drawValueLabels && !outside) ? ValueLabel(s.values[i]) : null;
                 int on = LabelColorOn(color);
                 if (horizontal) {
                     float x0 = x5 + ChartScale.Scaled(from - vMin, x6 - x5, vMax - vMin);
@@ -648,7 +673,7 @@ public class BarChart : IDrawable {
                 }
             }
             // The total of a stack above it, or past its end
-            if (totals && up > 0f) {
+            if (totals && up > 0f && ChartScale.IsValue(up)) {     // A sum past the largest float is not written
                 String total = ValueLabel(up);
                 float groupMiddle = groupStart + groupWidth / 2f;
                 if (horizontal) {

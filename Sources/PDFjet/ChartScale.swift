@@ -9,22 +9,10 @@ import Foundation
 ///
 /// What the charts share, BarChart, DonutChart, SimpleBarChart, SimpleLineChart
 /// and SimpleScatterChart: the numbers of their labels, the rounding of an axis to
-/// steps, the spacing of the labels of an axis, the colors of the series that
-/// have none, and the test of a value to draw. A chart uses these, not another
-/// chart, so that one can go without the others.
+/// steps, the spacing of the labels of an axis, the place of a value on a plot,
+/// the shortening of a long name, and the test of a value to draw.
 ///
 enum ChartScale {
-    static let DEFAULT_PALETTE = [
-        Color.blue,
-        Color.red,
-        Color.green,
-        Color.orange,
-        Color.purple,
-        Color.darkcyan,
-        Color.magenta,
-        Color.olive
-    ]
-
     // Formats a label with minDigits to maxDigits decimal places, rounding
     // the exact value half to even. The label has a "." decimal separator and
     // no grouping whatever the locale, and a value that rounds to zero has no
@@ -327,6 +315,33 @@ enum ChartScale {
             return product / span
         }
         return Float(Double(d) * Double(length) / Double(span))
+    }
+
+    ///
+    /// Returns the number of digits after the decimal point that the numbers of
+    /// an axis of the step need, 2 at least and 6 at most: data under 0.01 was
+    /// written 0.00 at every grid line.
+    ///
+    static func digitsOf(_ step: Float) -> Int {
+        return isValue(step) && step > 0 ? Swift.max(2, fractionDigitsOf(step, 6)) : 2
+    }
+
+    ///
+    /// Tells if the span of the values, the largest less the smallest, is a
+    /// number: values of -3e38 and 3e38 have a span past the largest float,
+    /// which no axis can draw.
+    ///
+    static func spanFits(_ values: [Float]) -> Bool {
+        if values.isEmpty {
+            return true
+        }
+        var lo = values[0]
+        var hi = values[0]
+        for value in values {
+            lo = Swift.min(lo, value)
+            hi = Swift.max(hi, value)
+        }
+        return isValue(hi - lo)
     }
 
     ///

@@ -226,7 +226,8 @@ public class SimpleBarChart : IDrawable {
 
     // The value written at the end of a bar.
     internal String Label(float value) {
-        return ChartScale.Format(value, minFractionDigits, maxFractionDigits);
+        // Its digits grouped in thousands, 23,507, as in the other charts
+        return ChartScale.GroupDigits(ChartScale.Format(value, minFractionDigits, maxFractionDigits));
     }
 
     // The font of the name and the value of the bar of the index.
@@ -269,13 +270,20 @@ public class SimpleBarChart : IDrawable {
         float valueWidth = 0f;
         float largest = 0f;
         for (int i = 0; i < names.Count; i++) {
-            Font font = FontOf(i);
-            shown.Add(ChartScale.Shorten(font, size, names[i], 0.4f * (w - 2f * pad)));
-            nameWidth = Math.Max(nameWidth, font.StringWidth(size, shown[i]));
-            valueWidth = Math.Max(valueWidth, font.StringWidth(size, Label(values[i])));
+            valueWidth = Math.Max(valueWidth, FontOf(i).StringWidth(size, Label(values[i])));
             if (ChartScale.IsValue(values[i])) {
                 largest = Math.Max(largest, values[i]);
             }
+        }
+        // The names in what the values leave of the width, two fifths of it at
+        // most: in a chart narrower than its values they were written past it
+        float nameRoom = Math.Max(Math.Min(0.4f * (w - 2f * pad), w - 3f * pad - valueWidth - size / 2f), 0f);
+        for (int i = 0; i < names.Count; i++) {
+            Font font = FontOf(i);
+            // No name where not even an ellipsis fits; the description has it
+            shown.Add(nameRoom < font.StringWidth(size, "\u2026")
+                    ? "" : ChartScale.Shorten(font, size, names[i], nameRoom));
+            nameWidth = Math.Max(nameWidth, font.StringWidth(size, shown[i]));
         }
         float barX = x + pad + nameWidth + pad;
         float barRoom = Math.Max(x + w - pad - (valueWidth + size / 2f) - barX, 0f);

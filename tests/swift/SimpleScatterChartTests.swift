@@ -166,4 +166,34 @@ import Testing
         #expect(!content.contains(TestSupport.hex(name)), "\(content)")
         #expect(!content.contains("inf") && !content.contains("nan"), "\(content)")
     }
+
+    // The third review of 26 October 2026: no trend line where it misses the
+    // plot; an empty URI is no link; values under 0.01 have the digits their
+    // axis needs; numbers are grouped in thousands; and points whose span is
+    // past the largest float draw nothing.
+    @Test func theThirdReviewOfTheCharts() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var page = Page(pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setYAxisRange(0, 10).add(0, 50).add(10, 50).setTrendLine(true)
+                .drawOn(page)
+        #expect(!TestSupport.content(page).contains(TestSupport.hex("trend")), "\(TestSupport.content(page))")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).add("A", 1, 2, "").add(2, 3).drawOn(page)
+        #expect(page.annots.isEmpty)
+
+        page = Page(pdf, Letter.PORTRAIT)
+        let tiny = SimpleScatterChart(font, font).add(0.001, 1).add(0.004, 2)
+        tiny.drawOn(page)
+        #expect(TestSupport.content(page).contains(TestSupport.hex("0.001")), "\(TestSupport.content(page))")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).add("Big", 23507, 1).add(1000, 2).drawOn(page)
+        #expect(TestSupport.content(page).contains(TestSupport.hex("25,000")), "\(TestSupport.content(page))")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).add(-3e38, -3e38).add(3e38, 3e38).drawOn(page)
+        #expect(TestSupport.content(page).isEmpty)
+    }
 }

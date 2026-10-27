@@ -422,7 +422,10 @@ final class MarkdownParser {
                     blocks.add(heading);
                     return j + 1;
                 }
-                if (interrupts(line)) {
+                // A table interrupts a paragraph, as in GitHub's Markdown:
+                // "Sizes:" on the line over the table's header was a
+                // paragraph of pipes
+                if (interrupts(line) || isTableStart(lines, j)) {
                     break;
                 }
             }

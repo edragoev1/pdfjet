@@ -128,20 +128,28 @@ import Testing
     }
 
     // The labels at the ends of the lines, moved apart, stay over the plot:
-    // they were pushed down past the bottom of the panel.
+    // they were pushed down past the bottom of the panel, and with many
+    // lines up past its top. As many as the plot holds are drawn, the
+    // highlighted one first, then the others in their order.
     @Test func theEndLabelsStayOverThePlot() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = SimpleLineChart(font, font).setSize(400, 120)
-        for i in 0..<8 {
+        for i in 0..<30 {
             chart.addLine("line \(i)", [10, 0])
         }
-        chart.addLine("top", [0, 10])
+        chart.addLine("top", [0, 10]).setHighlight(30)
         chart.drawOn(page)
         let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("top 10")) && content.contains(TestSupport.hex("line 0 0")),
+                "\(content)")
+        #expect(!content.contains(TestSupport.hex("line 29 0")), "\(content)")
         // The page is 792 high, the chart from 0 to 120 down from its top
-        #expect(TestSupport.positionOf(content, "line 7 0")[1] > 792 - 120, "\(content)")
+        for i in 0..<30 where content.contains(TestSupport.hex("line \(i) 0")) {
+            let y = TestSupport.positionOf(content, "line \(i) 0")[1]
+            #expect(y > 792 - 120 && y < 792, "line \(i) at \(y)")
+        }
     }
 
     // The values are written by their points but the last of each line, which
@@ -203,5 +211,18 @@ import Testing
                 range: content.startIndex..<value.lowerBound))
         let valueAt = operands(content, td)
         #expect(valueAt[1] < peakAt[1], "the value of the peak at the top is under it: \(valueAt[1]) by \(peakAt[1])")
+    }
+
+    // Values under 0.01 have the digits their axis needs, where every number
+    // of the axis was 0.00 and the description said from 0 to 0 (the third
+    // review of 26 October 2026).
+    @Test func tinyValuesHaveTheirDigits() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = SimpleLineChart(font, font).addLine("a", [0.001, 0.004])
+        chart.drawOn(page)
+        #expect(TestSupport.content(page).contains(TestSupport.hex("a 0.004")), "\(TestSupport.content(page))")
+        #expect(chart.getAltDescription().contains("from 0.001 to 0.004"), "\(chart.getAltDescription())")
     }
 }

@@ -161,21 +161,30 @@ public sealed class SimpleLineChartTest {
     }
 
     // The labels at the ends of the lines, moved apart, stay over the plot:
-    // they were pushed down past the bottom of the panel.
+    // they were pushed down past the bottom of the panel, and with many
+    // lines up past its top. As many as the plot holds are drawn, the
+    // highlighted one first, then the others in their order.
     [Fact]
     public void TheEndLabelsStayOverThePlot() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
         SimpleLineChart chart = new SimpleLineChart(font, font).SetSize(400f, 120f);
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 30; i++) {
             chart.AddLine("line " + i, new float[] {10f, 0f});
         }
-        chart.AddLine("top", new float[] {0f, 10f});
+        chart.AddLine("top", new float[] {0f, 10f}).SetHighlight(30);
         chart.DrawOn(page);
         string content = TestSupport.Content(page);
+        Assert.True(content.Contains(TestSupport.Hex("top 10")) && content.Contains(TestSupport.Hex("line 0 0")), content);
+        Assert.DoesNotContain(TestSupport.Hex("line 29 0"), content);
         // The page is 792 high, the chart from 0 to 120 down from its top
-        Assert.True(TestSupport.PositionOf(content, "line 7 0")[1] > 792f - 120f, content);
+        for (int i = 0; i < 30; i++) {
+            if (content.Contains(TestSupport.Hex("line " + i + " 0"))) {
+                float y = TestSupport.PositionOf(content, "line " + i + " 0")[1];
+                Assert.True(y > 792f - 120f && y < 792f, "line " + i + " at " + y);
+            }
+        }
     }
 
     // The values are written by their points but the last of each line, which
@@ -236,6 +245,20 @@ public sealed class SimpleLineChartTest {
         Assert.True(float.Parse(valueAt[1], CultureInfo.InvariantCulture) < float.Parse(peakAt[1], CultureInfo.InvariantCulture),
                 "the value of the peak at the top is under it: " + valueAt[1] + " by " + peakAt[1]);
         Assert.NotNull(peak);
+    }
+
+    // Values under 0.01 have the digits their axis needs, where every number
+    // of the axis was 0.00 and the description said from 0 to 0 (the third
+    // review of 26 October 2026).
+    [Fact]
+    public void TinyValuesHaveTheirDigits() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleLineChart chart = new SimpleLineChart(font, font).AddLine("a", new float[] {0.001f, 0.004f});
+        chart.DrawOn(page);
+        Assert.Contains(TestSupport.Hex("a 0.004"), TestSupport.Content(page));
+        Assert.Contains("from 0.001 to 0.004", chart.AltDescription());
     }
 }
 }   // End of namespace PDFjet.NET

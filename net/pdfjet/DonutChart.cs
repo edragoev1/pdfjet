@@ -71,8 +71,11 @@ namespace PDFjet.NET {
         public DonutChart SetRadii(float outerRadius, float innerRadius) {
             // The larger is the outer radius: an inner radius past the outer one
             // drew a ring inside out
-            this.r1 = Math.Max(Math.Abs(outerRadius), Math.Abs(innerRadius));
-            this.r2 = Math.Min(Math.Abs(outerRadius), Math.Abs(innerRadius));
+            // A radius that is not a number is 0, in the four ports alike
+            float a = IsValue(outerRadius) ? Math.Abs(outerRadius) : 0f;
+            float b = IsValue(innerRadius) ? Math.Abs(innerRadius) : 0f;
+            this.r1 = Math.Max(a, b);
+            this.r2 = Math.Min(a, b);
             return this;
         }
 
@@ -306,7 +309,7 @@ namespace PDFjet.NET {
             float midAngle = (a1 + a2) / 2.0f - 90.0f;
             var (x1, y1) = GetPoint(xc, yc, r1, midAngle);              // On the outer edge
             var (x2, y2) = GetPoint(xc, yc, r1 + 15.0f, midAngle);      // The elbow
-            // A label wider than the radius, or than six of its letters, is
+            // A label wider than both the radius and six of its letters is
             // shortened: a long one at the left ran off the page
             if (f1 != null) {
                 text = ChartScale.Shorten(f1, f1.GetSize(), text, Math.Max(r1, 6f * f1.GetSize()));
@@ -520,7 +523,8 @@ namespace PDFjet.NET {
                 drawn++;
 
                 // The percentage fits inside a slice of 15 degrees or more
-                if (f2 != null && sweep >= 15.0f) {
+                // and in a ring as wide as one and a half lines of it, or a pie
+                if (f2 != null && sweep >= 15.0f && (r2 == 0.0f || r1 - r2 >= 1.5f * f2.GetBodyHeight())) {
                     string pctStr = percentages[i].ToString(CultureInfo.InvariantCulture) + "%";
                     float midAngle = angle - sweep / 2.0f - 90.0f;
                     float midR = (r1 + r2) / 2.0f;

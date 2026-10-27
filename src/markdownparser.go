@@ -490,7 +490,10 @@ func (p markdownParser) parseParagraph(lines []string, i int, blocks *[]*markdow
 				*blocks = append(*blocks, heading)
 				return j + 1
 			}
-			if p.interrupts(line) {
+			// A table interrupts a paragraph, as in GitHub's Markdown:
+			// "Sizes:" on the line over the table's header was a
+			// paragraph of pipes
+			if p.interrupts(line) || p.isTableStart(lines, j) {
 				break
 			}
 		}

@@ -70,8 +70,12 @@ public class DonutChart : Drawable {
     public func setRadii(_ outerRadius: Float, _ innerRadius: Float) -> DonutChart {
         // The larger is the outer radius: an inner radius past the outer one
         // drew a ring inside out
-        self.r1 = Swift.max(abs(outerRadius), abs(innerRadius))
-        self.r2 = Swift.min(abs(outerRadius), abs(innerRadius))
+        // A radius that is not a number is 0, in the four ports alike: it is
+        // made 0 before max and min, which drop a NaN otherwise than Java's
+        let a: Float = ChartScale.isValue(outerRadius) ? abs(outerRadius) : 0.0
+        let b: Float = ChartScale.isValue(innerRadius) ? abs(innerRadius) : 0.0
+        self.r1 = Swift.max(a, b)
+        self.r2 = Swift.min(a, b)
         return self
     }
 
@@ -291,7 +295,7 @@ public class DonutChart : Drawable {
         let midAngle = (a1 + a2) / 2.0 - 90.0
         let p1 = getPoint(xc, yc, r1, midAngle)            // On the outer edge
         let p2 = getPoint(xc, yc, r1 + 15.0, midAngle)     // The elbow
-        // A label wider than the radius, or than six of its letters, is
+        // A label wider than both the radius and six of its letters is
         // shortened: a long one at the left ran off the page
         var text = text
         if let f1 = f1 {
@@ -511,7 +515,8 @@ public class DonutChart : Drawable {
             }
             drawn += 1
             // The percentage fits inside a slice of 15 degrees or more
-            if f2 != nil && sweep >= 15.0 {
+            // and in a ring as wide as one and a half lines of it, or a pie
+            if f2 != nil && sweep >= 15.0 && (r2 == 0.0 || r1 - r2 >= 1.5 * f2!.getBodyHeight()) {
                 let pctStr = "\(percentages[i])%"
                 let midAngle = angle - sweep / 2.0 - 90.0
                 let midR = (r1 + r2) / 2.0

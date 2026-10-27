@@ -247,7 +247,8 @@ public class SimpleBarChart : Drawable {
 
     // The value written at the end of a bar.
     func label(_ value: Float) -> String {
-        return ChartScale.format(value, minFractionDigits, maxFractionDigits)
+        // Its digits grouped in thousands, 23,507, as in the other charts
+        return ChartScale.groupDigits(ChartScale.format(value, minFractionDigits, maxFractionDigits))
     }
 
     // The font of the name and the value of the bar of the index.
@@ -293,14 +294,21 @@ public class SimpleBarChart : Drawable {
         var nameWidth: Float = 0.0
         var valueWidth: Float = 0.0
         var largest: Float = 0.0
-        for (i, name) in names.enumerated() {
-            let font = fontOf(i)
-            shown.append(ChartScale.shorten(font, size, name, 0.4 * (w - 2.0 * pad)))
-            nameWidth = Swift.max(nameWidth, font.stringWidth(size, shown[i]))
-            valueWidth = Swift.max(valueWidth, font.stringWidth(size, label(values[i])))
+        for i in 0..<names.count {
+            valueWidth = Swift.max(valueWidth, fontOf(i).stringWidth(size, label(values[i])))
             if ChartScale.isValue(values[i]) {
                 largest = Swift.max(largest, values[i])
             }
+        }
+        // The names in what the values leave of the width, two fifths of it at
+        // most: in a chart narrower than its values they were written past it
+        let nameRoom = Swift.max(Swift.min(0.4 * (w - 2.0 * pad), w - 3.0 * pad - valueWidth - size / 2.0), 0.0)
+        for (i, name) in names.enumerated() {
+            let font = fontOf(i)
+            // No name where not even an ellipsis fits; the description has it
+            shown.append(nameRoom < font.stringWidth(size, "\u{2026}")
+                    ? "" : ChartScale.shorten(font, size, name, nameRoom))
+            nameWidth = Swift.max(nameWidth, font.stringWidth(size, shown[i]))
         }
         let barX = x + pad + nameWidth + pad
         let barRoom = Swift.max(x + w - pad - (valueWidth + size / 2.0) - barX, 0.0)

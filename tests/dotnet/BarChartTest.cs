@@ -318,6 +318,49 @@ public class BarChartTest {
         Assert.Contains(TestSupport.Hex("3e38"), content);
     }
 
+    // The third review of 26 October 2026: a set range past the largest float
+    // draws nothing, where its NaN coordinates failed the document; a line
+    // series longer than the categories does not reach the axis past them; a
+    // bar below 0 has room for its value between the plot and the
+    // categories; the gaps are kept in their ranges; a stacked sum past the
+    // largest float is not written; and a bar below a set range has no value.
+    [Fact]
+    public void TheThirdReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Draw(NewChart(pdf).SetCategories("a").AddSeries("", new float[] {1f}).SetValueAxisRange(-3e38f, 3e38f), page);
+        Assert.Equal("", TestSupport.Content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        string content = Draw(NewChart(pdf).SetCategories("a", "b").AddSeries("Sold", new float[] {1f, 2f})
+                .AddLineSeries("Target", new float[] {2f, 3f, 4f, 5f, 6f}), page);
+        Assert.DoesNotContain("<" + TestSupport.Hex("6") + ">", content);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetHorizontal(true).SetValueLabels(true).SetCategories("A")
+                .AddSeries("", new float[] {-1234567f}), page);
+        float label = TestSupport.PositionOf(content, "-1,234,567")[0];
+        float name = TestSupport.PositionOf(content, "A")[0];
+        Font font = TestSupport.Helvetica(pdf);
+        Assert.True(name + font.StringWidth("A") <= label, name + " " + label);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetCategories("a").SetGroupGap(1.5f).SetBarGap(-2f)
+                .AddSeries("", new float[] {1f}).AddSeries("", new float[] {2f}), page);
+        Assert.DoesNotContain(" -", content);   // No negative width
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetCategories("a").SetStacked(true).SetValueLabels(true)
+                .AddSeries("", new float[] {2e38f}).AddSeries("", new float[] {2e38f}), page);
+        Assert.DoesNotContain(TestSupport.Hex("Infinity"), content);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetCategories("a", "b").SetValueLabels(true).SetValueAxisRange(10f, 20f)
+                .AddSeries("", new float[] {5f, 15f}), page);
+        Assert.Contains("<" + TestSupport.Hex("15") + ">", content);
+        Assert.DoesNotContain("<" + TestSupport.Hex("5") + ">", content);
+    }
+
     // The labels round the exact value half to even, as Java's DecimalFormat
     // does, on .NET Framework too, whose ToString("F") rounds 15 digits half
     // away from zero (review of 17 October 2026). .NET 8's ToString("F")

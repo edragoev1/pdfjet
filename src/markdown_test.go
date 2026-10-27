@@ -516,3 +516,94 @@ func TestMarkdownACodeLineOfOneColumnKeepsItsSurrogatePairs(t *testing.T) {
 		t.Errorf("%d pages", len(pages))
 	}
 }
+
+// The review of the Markdown of 26 October 2026. The first block of a quote
+// or a list item keeps the room it needs, as any other block: a short table
+// there is not split, and a lead-in there keeps its table. A short table after
+// a lead-in stays with it, and a heading with a table right under it.
+func TestMarkdownBlocksKeepTheRoomTheyNeed(t *testing.T) {
+	testAllowCoreFonts(t) // What the document tags, in a core font
+	for k := 0; k <= 60; k++ {
+		filler := testFillerAndTable(k, "", 0)
+		filler = filler[:strings.Index(filler, "| N |")]
+		drawn := testDrawMarkdown(filler+"> | N | V |\n> |---|---|\n> | r1 | v1 |\n> | r2 | v2 |\n> | r3 | v3 |\n", "")
+		if !slices.Equal(testMarkdownPagesOf(drawn, "r1"), testMarkdownPagesOf(drawn, "r3")) {
+			t.Fatalf("%d paragraphs: the table in the quote is split", k)
+		}
+		drawn = testDrawMarkdown(filler+"- Sizes:\n\n  | N | V |\n  |---|---|\n  | r1 | v1 |\n", "")
+		if !slices.Equal(testMarkdownPagesOf(drawn, "Sizes:"), testMarkdownPagesOf(drawn, "r1")) {
+			t.Fatalf("%d paragraphs: the item's lead-in is apart", k)
+		}
+		drawn = testDrawMarkdown(testFillerAndTable(k, "555:", 1), "")
+		if !slices.Equal(testMarkdownPagesOf(drawn, "555:"), testMarkdownPagesOf(drawn, "r1")) {
+			t.Fatalf("%d paragraphs: the short table left its lead-in", k)
+		}
+		drawn = testDrawMarkdown(filler+"## H7\n\n"+testFillerAndTable(0, "", 8), "")
+		if !slices.Equal(testMarkdownPagesOf(drawn, "H7"), testMarkdownPagesOf(drawn, "r1")) {
+			t.Fatalf("%d paragraphs: the heading is apart from its table", k)
+		}
+	}
+}
+
+// A heading of two lines is kept whole on its page, with a line of the text
+// after it; it was kept by its first line.
+func TestMarkdownAHeadingOfTwoLinesIsKeptWhole(t *testing.T) {
+	testAllowCoreFonts(t) // What the document tags, in a core font
+	heading := "# Alpha" + strings.Repeat(" word", 12) + " Omega\n\nThe text after it.\n"
+	for k := 0; k <= 60; k++ {
+		filler := testFillerAndTable(k, "", 0)
+		drawn := testDrawMarkdown(filler[:strings.Index(filler, "| N |")]+heading, "")
+		if !slices.Equal(testMarkdownPagesOf(drawn, "Alpha"), testMarkdownPagesOf(drawn, "Omega")) {
+			t.Fatalf("%d paragraphs: the heading is split", k)
+		}
+		if !slices.Equal(testMarkdownPagesOf(drawn, "Omega"), testMarkdownPagesOf(drawn, "The text after it.")) {
+			t.Fatalf("%d paragraphs: it ends a page", k)
+		}
+	}
+}
+
+// An empty heading takes no level: the "##" after it is the H1. A table
+// interrupts a paragraph, as in GitHub's Markdown. An empty block of code is
+// drawn as nothing.
+func TestMarkdownAnEmptyHeadingATableAfterALineAndEmptyCode(t *testing.T) {
+	testAllowCoreFonts(t) // What the document tags, in a core font
+	testAssertStructures(t, testDrawMarkdown("#\n\n## Intro\n\nText.\n", ""), "H1", 1, "H2", 0)
+	testAssertStructures(t, testDrawMarkdown("Sizes:\n| a | b |\n|---|---|\n| 1 | 2 |\n", ""), "Table", 1)
+	testAssertStructures(t, testDrawMarkdown("Text.\n\n```\n```\n", ""), "Code", 0)
+}
+
+// A table split inside a quote has the quote's bar on every page it is on:
+// the bar stopped where it started, and the pages between had none.
+func TestMarkdownASplitTableInAQuoteHasItsBarOnEveryPage(t *testing.T) {
+	testAllowCoreFonts(t) // What the document tags, in a core font
+	var text strings.Builder
+	text.WriteString("> | N | V |\n> |---|---|\n")
+	for r := 1; r <= 160; r++ {
+		text.WriteString("> | r" + strconv.Itoa(r) + " | v" + strconv.Itoa(r) + " |\n")
+	}
+	drawn := testDrawMarkdown(text.String(), "")
+	if len(drawn.contents) < 3 {
+		t.Fatalf("%d pages", len(drawn.contents))
+	}
+	for i, content := range drawn.contents {
+		if !strings.Contains(content, "0.69 0.71 0.75 RG") {
+			t.Errorf("no bar on page %d", i)
+		}
+	}
+}
+
+// A lead-in is trimmed as Java's String.trim() trims, of the characters up to
+// U+0020 only: one that ends in a colon and a no-break space leads into no
+// table, in the four ports alike.
+func TestMarkdownALeadInIsTrimmedAsInJava(t *testing.T) {
+	table := &markdownBlock{kind: markdownTable}
+	if !markdownLeadsIntoTable(&markdownBlock{kind: markdownParagraph, text: "Sizes: \t"}, table) {
+		t.Error("a colon and spaces leads into no table")
+	}
+	if !markdownLeadsIntoTable(&markdownBlock{kind: markdownParagraph, text: "大小："}, table) {
+		t.Error("the full-width colon leads into no table")
+	}
+	if markdownLeadsIntoTable(&markdownBlock{kind: markdownParagraph, text: "Sizes: "}, table) {
+		t.Error("a colon and a no-break space leads into the table")
+	}
+}

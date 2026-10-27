@@ -9,6 +9,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using PDFjet.NET;
 
 /**
@@ -67,8 +68,9 @@ public class Example_26 {
             float children = float.Parse(field[3], CultureInfo.InvariantCulture);
             if (NAMED.Contains(field[1])) {
                 chart.Add(field[0], children, life, WorldBank(field[0]));  // A navy dot, named, a link
-                data.Add(Row(f2, false, field[0], children.ToString("F2", CultureInfo.InvariantCulture),
-                        life.ToString("F1", CultureInfo.InvariantCulture) + " years"));
+                // The figures as the file writes them, two decimals and one,
+                // not rounded again, so that every port writes them alike
+                data.Add(Row(f2, false, field[0], Decimals(field[3], 2), Decimals(field[2], 1) + " years"));
             } else {
                 chart.Add(children, life);              // A gray dot
             }
@@ -120,6 +122,17 @@ public class Example_26 {
             row.Add(cell);
         }
         return row;
+    }
+
+    // The number of the text with the decimals, zeros added: 1.5 is 1.50.
+    private static String Decimals(String number, int count) {
+        int point = number.IndexOf('.');
+        StringBuilder sb = new StringBuilder(point < 0 ? number + "." : number);
+        int have = (point < 0) ? 0 : number.Length - point - 1;
+        for (int i = have; i < count; i++) {
+            sb.Append('0');
+        }
+        return sb.ToString();
     }
 
     public static void Main(String[] args) {

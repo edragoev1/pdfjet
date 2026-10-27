@@ -13,17 +13,14 @@ package pdfjet
 
 // What the charts share, BarChart, DonutChart, SimpleBarChart, SimpleLineChart
 // and SimpleScatterChart: the numbers of their labels, the rounding of an axis to
-// steps, the spacing of the labels of an axis, the colors of the series that
-// have none, and the test of a value to draw. A chart uses these, not
-// another chart, so that one can go without the others.
+// steps, the spacing of the labels of an axis, the place of a value on a plot,
+// the shortening of a long name, and the test of a value to draw.
 
 import (
 	"math"
 	"strconv"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
 // roundedRange is the range of an axis and its number of grid lines.
@@ -37,18 +34,6 @@ type roundedRange struct {
 func newRoundedRange() *roundedRange {
 	round := new(roundedRange)
 	return round
-}
-
-// defaultPalette holds the stroke colors of the series that have no color.
-var defaultPalette = [...]int32{
-	color.Blue,
-	color.Red,
-	color.Green,
-	color.Orange,
-	color.Purple,
-	color.DarkCyan,
-	color.Magenta,
-	color.Olive,
 }
 
 // format formats a label with minDigits to maxDigits decimal places, rounding
@@ -391,6 +376,32 @@ func scaled(d, length, span float32) float32 {
 		return product / span
 	}
 	return float32(float64(float64(d)*float64(length)) / float64(span))
+}
+
+// digitsOf returns the number of digits after the decimal point that the
+// numbers of an axis of the step need, 2 at least and 6 at most: data under
+// 0.01 was written 0.00 at every grid line.
+func digitsOf(step float32) int {
+	if isValue(step) && step > 0.0 {
+		return max(2, fractionDigitsOf(step, 6))
+	}
+	return 2
+}
+
+// spanFits tells if the span of the values, the largest less the smallest,
+// is a number: values of -3e38 and 3e38 have a span past the largest float,
+// which no axis can draw.
+func spanFits(values []float32) bool {
+	if len(values) == 0 {
+		return true
+	}
+	lo := values[0]
+	hi := values[0]
+	for _, value := range values {
+		lo = min(lo, value)
+		hi = max(hi, value)
+	}
+	return isValue(hi - lo)
 }
 
 // join joins two parts of a chart's description, the title and the subtitle,

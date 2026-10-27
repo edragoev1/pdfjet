@@ -73,7 +73,7 @@ public class SimpleScatterChart : IDrawable {
     private int panelColor = SimpleBarChart.PANEL;
     private int dotColor = DOT;
     private int highlightColor = SimpleBarChart.HIGHLIGHT;
-    private readonly int maxFractionDigits = 2;
+    private int maxFractionDigits = 2;      // As many as the steps of the axes need
 
     /// <summary>
     /// Creates a simple scatter chart, 400 by 300 points.
@@ -172,7 +172,8 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="uri">the URI the point links to.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(String name, float x, float y, String uri) {
-        points.Add(new Point(x, y, name, uri));
+        // An empty URI is no link, as in the Go port
+        points.Add(new Point(x, y, name, (uri == null || uri.Length == 0) ? null : uri));
         return this;
     }
 
@@ -189,7 +190,8 @@ public class SimpleScatterChart : IDrawable {
 
     /// <summary>
     /// Sets the range of the horizontal axis. Without it the range is that of
-    /// the points, rounded to steps.
+    /// the points, rounded to steps. A range whose end is not past its start
+    /// is not set.
     /// </summary>
     /// <param name="min">the first value of the axis.</param>
     /// <param name="max">the last value of the axis.</param>
@@ -203,7 +205,8 @@ public class SimpleScatterChart : IDrawable {
 
     /// <summary>
     /// Sets the range of the vertical axis. Without it the range is that of the
-    /// points, rounded to steps.
+    /// points, rounded to steps. A range whose end is not past its start is not
+    /// set.
     /// </summary>
     /// <param name="min">the first value of the axis.</param>
     /// <param name="max">the last value of the axis.</param>
@@ -303,7 +306,8 @@ public class SimpleScatterChart : IDrawable {
 
     // A number of an axis, with the decimals its step needs.
     private String Label(float value, float step) {
-        return ChartScale.Format(value, ChartScale.FractionDigitsOf(step, maxFractionDigits), maxFractionDigits);
+        return ChartScale.GroupDigits(
+                ChartScale.Format(value, ChartScale.FractionDigitsOf(step, maxFractionDigits), maxFractionDigits));
     }
 
     // The points whose x and y are numbers.
@@ -324,24 +328,42 @@ public class SimpleScatterChart : IDrawable {
         if (n < 2) {
             return null;
         }
+        // From the sums of the distances from the means, which keep their
+        // precision where the raw sums lost it, for x near 1e8 of a small spread
         double sx = 0;
         double sy = 0;
+        foreach (Point p in points) {
+            sx += p.x;
+            sy += p.y;
+        }
+        double mx = sx / n;
+        double my = sy / n;
         double sxx = 0;
         double sxy = 0;
         foreach (Point p in points) {
-            double x = p.x;
-            double y = p.y;
-            sx += x;
-            sy += y;
-            sxx += x * x;
-            sxy += x * y;
+            double dx = p.x - mx;
+            sxx += dx * dx;
+            sxy += dx * (p.y - my);
         }
-        double d = n * sxx - sx * sx;
-        if (d == 0) {
+        if (sxx == 0) {
             return null;
         }
-        double slope = (n * sxy - sx * sy) / d;
-        return new double[] {slope, (sy - slope * sx) / n};
+        double slope = sxy / sxx;
+        return new double[] {slope, my - slope * mx};
+    }
+
+    // The digits of the numbers of the two axes of the points.
+    private int Digits(List<Point> points) {
+        float[] xs = new float[points.Count];
+        float[] ys = new float[points.Count];
+        for (int i = 0; i < points.Count; i++) {
+            xs[i] = points[i].x;
+            ys[i] = points[i].y;
+        }
+        ChartScale.Axis xAxis = ChartScale.AxisOf(xs, xMin, xMax, xRangeSet);
+        ChartScale.Axis yAxis = ChartScale.AxisOf(ys, yMin, yMax, yRangeSet);
+        return Math.Max(ChartScale.DigitsOf((xAxis.max - xAxis.min) / xAxis.lines),
+                ChartScale.DigitsOf((yAxis.max - yAxis.min) / yAxis.lines));
     }
 
     // The alternate description: the one set, or the title, the number of
@@ -351,6 +373,9 @@ public class SimpleScatterChart : IDrawable {
             return altDescription;
         }
         List<Point> points = Valid();
+        if (points.Count > 0) {
+            maxFractionDigits = Digits(points);
+        }
         StringBuilder sb = new StringBuilder(ChartScale.Join(title, subtitle));
         if (sb.Length == 0) {
             sb.Append("Scatter chart");
@@ -365,8 +390,8 @@ public class SimpleScatterChart : IDrawable {
                 continue;
             }
             sb.Append(named == 0 ? "; " : ", ");
-            sb.Append(p.name).Append(' ').Append(ChartScale.Format(p.x, 0, maxFractionDigits))
-                    .Append(" and ").Append(ChartScale.Format(p.y, 0, maxFractionDigits));
+            sb.Append(p.name).Append(' ').Append(ChartScale.GroupDigits(ChartScale.Format(p.x, 0, maxFractionDigits)))
+                    .Append(" and ").Append(ChartScale.GroupDigits(ChartScale.Format(p.y, 0, maxFractionDigits)));
             named++;
         }
         if (trendLine) {
@@ -399,10 +424,14 @@ public class SimpleScatterChart : IDrawable {
             xs[i] = points[i].x;
             ys[i] = points[i].y;
         }
+        if ((!xRangeSet && !ChartScale.SpanFits(xs)) || (!yRangeSet && !ChartScale.SpanFits(ys))) {
+            return new float[] {x + w, y + h};      // A span past the largest float, which no axis can draw
+        }
         ChartScale.Axis xAxis = ChartScale.AxisOf(xs, xMin, xMax, xRangeSet);
         ChartScale.Axis yAxis = ChartScale.AxisOf(ys, yMin, yMax, yRangeSet);
         float xStep = (xAxis.max - xAxis.min) / xAxis.lines;
         float yStep = (yAxis.max - yAxis.min) / yAxis.lines;
+        maxFractionDigits = Math.Max(ChartScale.DigitsOf(xStep), ChartScale.DigitsOf(yStep));
 
         // The plot: right of the y title and the widest number, above the
         // numbers and the x title
@@ -493,6 +522,15 @@ public class SimpleScatterChart : IDrawable {
         // The trend line, from the left of the plot to its right, within its
         // height
         double[] line = Trend(points);
+        // No line where it misses the plot, both of its ends past one edge, as
+        // a flat one over a range that is set: it was drawn outside the chart
+        if (line != null) {
+            double a = line[0] * xAxis.min + line[1];
+            double b = line[0] * xAxis.max + line[1];
+            if ((a > yAxis.max && b > yAxis.max) || (a < yAxis.min && b < yAxis.min)) {
+                line = null;
+            }
+        }
         if (trendLine && line != null) {
             double slope = line[0];
             double intercept = line[1];

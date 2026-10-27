@@ -204,4 +204,35 @@ class SimpleScatterChartTest {
         String content = TestSupport.content(page);
         assertFalse(content.contains(TestSupport.hex(name)), content);
     }
+
+    // The third review of 26 October 2026: no trend line where it misses the
+    // plot; an empty URI is no link; values under 0.01 have the digits their
+    // axis needs; numbers are grouped in thousands; and points whose span is
+    // past the largest float draw nothing.
+    @Test
+    void theThirdReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).setYAxisRange(0f, 10f).add(0f, 50f).add(10f, 50f).setTrendLine(true)
+                .drawOn(page);
+        assertFalse(TestSupport.content(page).contains(TestSupport.hex("trend")), TestSupport.content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).add("A", 1f, 2f, "").add(2f, 3f).drawOn(page);
+        assertTrue(page.annots.isEmpty());
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        SimpleScatterChart tiny = new SimpleScatterChart(font, font).add(0.001f, 1f).add(0.004f, 2f);
+        tiny.drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("0.001")), TestSupport.content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).add("Big", 23507f, 1f).add(1000f, 2f).drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("25,000")), TestSupport.content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).add(-3e38f, -3e38f).add(3e38f, 3e38f).drawOn(page);
+        assertEquals("", TestSupport.content(page));
+    }
 }
