@@ -25,9 +25,16 @@ namespace PDFjet.NET {
 /// in **bold**, with no space between them: the paragraph joins its text
 /// lines with Paragraph.AddJoined.
 /// <para>
+/// A line that ends in two spaces or a backslash, and a &lt;br&gt;, are hard
+/// line breaks, which TextFrame draws as the end of a row; any other line
+/// break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+/// &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
+/// &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
+/// &amp;#8212; and &amp;#x2014;, are the characters they name.
+/// </para>
+/// <para>
 /// Headings, lists, block quotes and the rest of Markdown's blocks are not
-/// read: a line break is a space, and Paragraphs splits a text into paragraphs
-/// at its empty lines. The markup is read in time linear in the length of the
+/// read: Paragraphs splits a text into paragraphs at its empty lines. The markup is read in time linear in the length of the
 /// text, so it can come from anyone. Please see Example_18.
 /// </para>
 /// </summary>
@@ -36,6 +43,29 @@ public class Markup {
     private const int ITALIC = 2;
     private const int CODE = 4;
     private const int STRIKE = 8;
+    private const int BREAK = 16;       // A hard line break
+
+    // The named entities that are read, as GitHub's Markdown reads them: the
+    // markup's own characters, the spaces and the punctuation of typeset text.
+    private static readonly Dictionary<String, int> ENTITIES = MakeEntities();
+
+    private static Dictionary<String, int> MakeEntities() {
+        String[] names = {
+            "amp", "lt", "gt", "quot", "apos", "nbsp", "copy", "reg", "trade",
+            "mdash", "ndash", "hellip", "lsquo", "rsquo", "ldquo", "rdquo",
+            "laquo", "raquo", "bull", "middot", "deg", "times", "divide",
+            "plusmn", "sect", "para", "euro", "pound", "yen", "cent", "shy"};
+        int[] codes = {
+            '&', '<', '>', '"', '\'', 0xA0, 0xA9, 0xAE, 0x2122,
+            0x2014, 0x2013, 0x2026, 0x2018, 0x2019, 0x201C, 0x201D,
+            0xAB, 0xBB, 0x2022, 0xB7, 0xB0, 0xD7, 0xF7,
+            0xB1, 0xA7, 0xB6, 0x20AC, 0xA3, 0xA5, 0xA2, 0xAD};
+        Dictionary<String, int> entities = new Dictionary<String, int>();
+        for (int i = 0; i < names.Length; i++) {
+            entities[names[i]] = codes[i];
+        }
+        return entities;
+    }
 
     private readonly Font regular;
     private readonly Font bold;
@@ -135,6 +165,19 @@ public class Markup {
         String link = null;
         bool joined = false;
         foreach (Node node in nodes) {
+            if ((node.flags & BREAK) != 0) {
+                // A hard line break: the row ends after the text before it,
+                // and the text after it is not joined to it
+                if (buf.Length > 0) {
+                    AddRun(paragraph, buf.ToString(), flags, link, joined);
+                    buf.Length = 0;
+                }
+                if (paragraph.lines.Count > 0) {
+                    paragraph.lines[paragraph.lines.Count - 1].lineBreak = true;
+                }
+                joined = false;
+                continue;
+            }
             if (buf.Length > 0 && (node.flags != flags || !String.Equals(node.link, link))) {
                 joined = AddRun(paragraph, buf.ToString(), flags, link, joined);
                 buf.Length = 0;
@@ -274,7 +317,16 @@ public class Markup {
             while (i < end) {
                 char ch = text[i];
                 int autolinkEnd;
-                if (ch == '\\' && i + 1 < end && IsASCIIPunctuation(text[i + 1])) {
+                int breakEnd = BreakEnd(i, end);
+                int[] entity;
+                if (breakEnd > i) {
+                    Flush(buf, link, nodes);
+                    nodes.Add(new Node("", BREAK, link));
+                    i = breakEnd;
+                } else if ((entity = Entity(i, end)) != null) {
+                    AppendCodePoint(buf, entity[0]);
+                    i = entity[1];
+                } else if (ch == '\\' && i + 1 < end && IsASCIIPunctuation(text[i + 1])) {
                     buf.Append(text[i + 1]);
                     i += 2;
                 } else if (ch == '`') {
@@ -338,6 +390,102 @@ public class Markup {
             }
             Flush(buf, link, nodes);
             MatchEmphasis(nodes, first);
+        }
+
+        // Returns where a hard line break at i ends, or i when there is none:
+        // a line break after two spaces, a backslash and a line break, or a
+        // <br>, <br/> or <br /> in capitals or not.
+        private int BreakEnd(int i, int end) {
+            char ch = text[i];
+            if (ch == '\n' && i >= 2 && text[i - 1] == ' ' && text[i - 2] == ' ') {
+                return i + 1;
+            }
+            if (ch == '\\' && i + 1 < end && text[i + 1] == '\n') {
+                return i + 2;
+            }
+            if (ch == '<' && i + 3 < end && (text[i + 1] == 'b' || text[i + 1] == 'B')
+                    && (text[i + 2] == 'r' || text[i + 2] == 'R')) {
+                int j = i + 3;
+                while (j < end && text[j] == ' ') {
+                    j++;
+                }
+                if (j < end && text[j] == '/') {
+                    j++;
+                }
+                if (j < end && text[j] == '>') {
+                    return j + 1;
+                }
+            }
+            return i;
+        }
+
+        // Returns the character of the entity at i and where the entity ends,
+        // or null when there is none: a name of ENTITIES, or a number of up to
+        // seven digits, or of six in hexadecimal after an x, that is a
+        // character, between & and ;.
+        private int[] Entity(int i, int end) {
+            if (text[i] != '&') {
+                return null;
+            }
+            int semicolon = -1;
+            for (int j = i + 1; j < end && j <= i + 10; j++) {
+                if (text[j] == ';') {
+                    semicolon = j;
+                    break;
+                }
+            }
+            if (semicolon == -1) {
+                return null;
+            }
+            String name = text.Substring(i + 1, semicolon - (i + 1));
+            int code;
+            if (ENTITIES.TryGetValue(name, out code)) {
+                return new int[] {code, semicolon + 1};
+            }
+            if (name.Length < 2 || name[0] != '#') {
+                return null;
+            }
+            bool hex = name[1] == 'x' || name[1] == 'X';
+            String digits = name.Substring(hex ? 2 : 1);
+            if (digits.Length == 0 || digits.Length > (hex ? 6 : 7)) {
+                return null;
+            }
+            int value = 0;
+            for (int k = 0; k < digits.Length; k++) {
+                int digit = AsciiDigit(digits[k], hex);
+                if (digit < 0) {
+                    return null;
+                }
+                value = value * (hex ? 16 : 10) + digit;
+            }
+            if (value == 0 || value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF)) {
+                return null;
+            }
+            return new int[] {value, semicolon + 1};
+        }
+
+        // The value of an ASCII digit, of 0 to 9, or of a to f and A to F in
+        // hexadecimal, or -1.
+        private static int AsciiDigit(char ch, bool hex) {
+            if (ch >= '0' && ch <= '9') {
+                return ch - '0';
+            }
+            if (hex && ch >= 'a' && ch <= 'f') {
+                return ch - 'a' + 10;
+            }
+            if (hex && ch >= 'A' && ch <= 'F') {
+                return ch - 'A' + 10;
+            }
+            return -1;
+        }
+
+        // Appends the code point, as its surrogate pair above U+FFFF.
+        private static void AppendCodePoint(StringBuilder buf, int codePoint) {
+            if (codePoint > 0xFFFF) {
+                buf.Append(Char.ConvertFromUtf32(codePoint));
+            } else {
+                buf.Append((char) codePoint);
+            }
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]

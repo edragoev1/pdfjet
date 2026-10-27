@@ -431,9 +431,12 @@ internal sealed class MarkdownParser {
                     break;
                 }
             }
-            text.Add(Util.Trim(line));
+            // Two spaces at the end of a line are kept, a hard line break
+            text.Add(Util.Trim(line) + (line.EndsWith("  ", StringComparison.Ordinal) ? "  " : ""));
             j++;
         }
+        // A break at the end of the last line breaks nothing
+        text[text.Count - 1] = Util.Trim(text[text.Count - 1]);
         String paragraph = Join(text, "\n");
         Block image = Image(paragraph);
         blocks.Add(image != null ? image : Paragraph(paragraph));

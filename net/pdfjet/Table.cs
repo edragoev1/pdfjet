@@ -1842,7 +1842,16 @@ public class Table : IDrawable {
                             maxColWidths[i] = drawableWidth;
                         }
                     } else if (cell.text != null) {
-                        float textWidth = cell.font.StringWidth(cell.fallbackFont, cell.fontSize, cell.text);
+                        float textWidth = 0f;
+                        if ((cell.properties & Cell.LINE_BREAKS) != 0) {
+                            // As wide as its widest line
+                            foreach (String line in cell.text.Split('\n')) {
+                                textWidth = Math.Max(textWidth,
+                                        cell.font.StringWidth(cell.fallbackFont, cell.fontSize, line));
+                            }
+                        } else {
+                            textWidth = cell.font.StringWidth(cell.fallbackFont, cell.fontSize, cell.text);
+                        }
                         textWidth += cell.GetLeftPadding() + cell.GetRightPadding();
                         if (textWidth > maxColWidths[i]) {
                             maxColWidths[i] = textWidth;
@@ -2024,10 +2033,23 @@ public class Table : IDrawable {
     internal List<String> WrapCellText(List<Cell> row, int index) {
         Cell cell = row[index];
         float cellWidth = GetTotalWidth(row, index) + FIT_TOLERANCE;
+        if ((cell.properties & Cell.LINE_BREAKS) != 0 && cell.text.IndexOf('\n') >= 0) {
+            // Each line of the text wrapped on its own
+            List<String> lines = new List<String>();
+            foreach (String line in cell.text.Split('\n')) {
+                lines.AddRange(WrapText(cell, line, cellWidth));
+            }
+            return lines;
+        }
+        return WrapText(cell, cell.text, cellWidth);
+    }
+
+    // The lines of the text of the cell, wrapped at the width.
+    private static List<String> WrapText(Cell cell, String text, float cellWidth) {
         List<String> lines = new List<String>();
         StringBuilder buf = new StringBuilder();
-        Func<String, float> width = text => cell.font.StringWidth(cell.fallbackFont, cell.fontSize, text);
-        foreach (String word in Util.SplitOnWhitespace(cell.text)) {
+        Func<String, float> width = s => cell.font.StringWidth(cell.fallbackFont, cell.fontSize, s);
+        foreach (String word in Util.SplitOnWhitespace(text)) {
             String token = word;
             while (true) {
                 String joined = (buf.Length > 0) ? buf.ToString() + " " + token : token;

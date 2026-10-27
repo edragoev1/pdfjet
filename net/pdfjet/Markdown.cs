@@ -21,10 +21,17 @@ namespace PDFjet.NET {
 /// document the headings are H1 to H6, with no level skipped, the lists are
 /// lists, the boxes of the tasks their labels, read as ☐ and ☑, the quotes
 /// BlockQuotes, the code Code, the tables tables and the images figures, with
-/// their text as the alternate description.
+/// their text as the alternate description. In any document the headings
+/// are its bookmarks, the outline a reader shows, unless it has bookmarks of
+/// its own.
 /// <para>
-/// It is not all of Markdown: HTML is drawn as the text it is, a line break
-/// is a space, links in a table cell are its text, and an image is drawn only
+/// A line that ends in two spaces or a backslash, and a &lt;br&gt;, break the
+/// line, in a table cell too, and the entities of Markup, as &amp;amp; and
+/// &amp;mdash;, are the characters they name.
+/// </para>
+/// <para>
+/// It is not all of Markdown: other HTML is drawn as the text it is, any
+/// other line break is a space, links in a table cell are its text, and an image is drawn only
 /// when it is alone in its paragraph, from the directory that
 /// SetImageDirectory names; with none, its text is drawn instead, so that a
 /// text from anyone reads no file. Please see Example_19.
@@ -567,6 +574,14 @@ public class Markdown {
                 StructElem.H4, StructElem.H5, StructElem.H6};
         paragraph.SetStructureType(levels[headingLevel - 1]);
         Ensure(keep);
+        if (!pdf.IsTagged()) {
+            // The bookmark of the heading, at its level as it would be
+            // tagged: a tagged document notes its headings as it draws them
+            String title = System.Text.RegularExpressions.Regex.Replace(paragraph.Text().Trim(), @"\s+", " ");
+            if (title.Length > 0) {
+                pdf.headings.Add(new Heading(headingLevel, title, page, y));
+            }
+        }
         DrawParagraph(paragraph, x, width);
         y += Size() * 0.25f;
     }
@@ -859,6 +874,7 @@ public class Markdown {
                 String text = block.rows[r][c];
                 String plain = PlainText(text);
                 Cell cell = new Cell((r == 0) ? bold : CellFont(text), plain);
+                cell.properties |= Cell.LINE_BREAKS;     // At its <br>
                 cell.SetTextAlignment(block.alignments[c]);
                 if (r > 0 && plain.StartsWith(CHECK_MARK, StringComparison.Ordinal)) {
                     cell.SetTextColor(checkColor);
@@ -896,12 +912,15 @@ public class Markdown {
         return font ?? regular;
     }
 
-    // The text of a cell, without its inline markup.
+    // The text of a cell, without its inline markup, a line break at each
+    // <br>.
     private String PlainText(String text) {
         StringBuilder buf = new StringBuilder();
         Paragraph paragraph = markup.Paragraph(text);
         for (int i = 0; i < paragraph.lines.Count; i++) {
-            if (i > 0 && !paragraph.JoinsPrevious(i)) {
+            if (i > 0 && paragraph.lines[i - 1].lineBreak) {
+                buf.Append('\n');
+            } else if (i > 0 && !paragraph.JoinsPrevious(i)) {
                 buf.Append(' ');
             }
             buf.Append(Util.Trim(paragraph.lines[i].text));

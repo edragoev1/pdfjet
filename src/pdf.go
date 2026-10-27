@@ -64,8 +64,9 @@ type PDF struct {
 	pageMode              pagemode.PageMode
 	language              string
 	toc                   *Bookmark
-	// The headings of a tagged document, in the order they are drawn, which
-	// its bookmarks are made of when it has none of its own
+	// The headings of a tagged document, and of a Markdown text in any
+	// document, in the order they are drawn, which its bookmarks are made of
+	// when it has none of its own
 	headings           []heading
 	associatedFiles    []*EmbeddedFile // The files the document carries, in the order they were added.
 	metadata           []string        // The descriptions that a standard of its own asks the metadata to carry.
@@ -2491,9 +2492,9 @@ func (pdf *PDF) complete() error {
 		pdf.addStructDocumentObject(structTreeRootObjNumber)
 	}
 
-	// A tagged document with headings and no bookmarks of its own has the
-	// bookmarks of its headings, which a reader shows as its outline, as PAC
-	// asks of a document with headings
+	// A tagged document with headings, or a document with a Markdown text,
+	// and no bookmarks of its own has the bookmarks of its headings, which a
+	// reader shows as its outline, as PAC asks of a document with headings
 	if pdf.toc == nil && len(pdf.headings) > 0 {
 		pdf.toc = pdf.bookmarksOfHeadings()
 	}

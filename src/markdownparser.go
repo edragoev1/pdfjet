@@ -497,8 +497,17 @@ func (p markdownParser) parseParagraph(lines []string, i int, blocks *[]*markdow
 				break
 			}
 		}
-		text = append(text, trimSpace(line))
+		// Two spaces at the end of a line are kept, a hard line break
+		if strings.HasSuffix(line, "  ") {
+			text = append(text, trimSpace(line)+"  ")
+		} else {
+			text = append(text, trimSpace(line))
+		}
 		j++
+	}
+	// A break at the end of the last line breaks nothing
+	if len(text) > 0 {
+		text[len(text)-1] = trimSpace(text[len(text)-1])
 	}
 	paragraph := strings.Join(text, "\n")
 	image := p.image(paragraph)

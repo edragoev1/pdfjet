@@ -339,6 +339,15 @@ public class TextFrame : Drawable {
                 tokens = nil
                 tokenIndex = 0
                 lineIndex += 1
+                if textLine.lineBreak && lineIndex < paragraph.lines.count {
+                    // A hard line break: the row ends here, as the last row
+                    // of a paragraph does, not justified, and the next text
+                    // line starts the next row
+                    drawRow(page, true)
+                    xText = x
+                    rowOpen = false
+                    nextBaseline = yText + textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
+                }
             }
             drawRow(page, true)
             xText = x

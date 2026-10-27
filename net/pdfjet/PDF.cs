@@ -97,8 +97,9 @@ public sealed class PDF {
         return compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B;
     }
     internal Bookmark toc = null;
-    // The headings of a tagged document, in the order they are drawn, which
-    // its bookmarks are made of when it has none of its own
+    // The headings of a tagged document, and of a Markdown text in any
+    // document, in the order they are drawn, which its bookmarks are made of
+    // when it has none of its own
     internal List<Heading> headings = new List<Heading>();
     internal Encryption encryption = null;
 
@@ -2524,9 +2525,10 @@ public sealed class PDF {
             AddStructDocumentObject(structTreeRootObjNumber);
         }
 
-        // A tagged document with headings and no bookmarks of its own has the
-        // bookmarks of its headings, which a reader shows as its outline, as
-        // PAC asks of a document with headings
+        // A tagged document with headings, or a document with a Markdown
+        // text, and no bookmarks of its own has the bookmarks of its headings,
+        // which a reader shows as its outline, as PAC asks of a document with
+        // headings
         if (toc == null && headings.Count > 0) {
             toc = Bookmark.OfHeadings(this);
         }

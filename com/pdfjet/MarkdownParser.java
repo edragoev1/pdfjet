@@ -429,9 +429,12 @@ final class MarkdownParser {
                     break;
                 }
             }
-            text.add(line.trim());
+            // Two spaces at the end of a line are kept, a hard line break
+            text.add(line.trim() + (line.endsWith("  ") ? "  " : ""));
             j++;
         }
+        // A break at the end of the last line breaks nothing
+        text.set(text.size() - 1, text.get(text.size() - 1).trim());
         String paragraph = join(text, "\n");
         Block image = image(paragraph);
         blocks.add(image != null ? image : paragraph(paragraph));

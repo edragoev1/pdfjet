@@ -82,8 +82,11 @@ type Cell struct {
 
 // The bits of Cell.properties that are not the borders of the cell.
 const (
-	cellUnderline uint32 = 0x00100000
-	cellStrikeout uint32 = 0x00200000
+	// A cell whose text breaks its lines at its line breaks, as Markdown's
+	// <br> in a table: the line break of any other cell is a space.
+	cellLineBreaks uint32 = 0x00008000
+	cellUnderline  uint32 = 0x00100000
+	cellStrikeout  uint32 = 0x00200000
 	// A cell that a table adds below another to hold the next line of its
 	// wrapped text, which is the same table cell in a PDF/UA document.
 	cellContinued uint32 = 0x00400000

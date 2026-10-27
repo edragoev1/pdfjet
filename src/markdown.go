@@ -50,11 +50,17 @@ const (
 // document the headings are H1 to H6, with no level skipped, the lists are
 // lists, the boxes of the tasks their labels, read as ☐ and ☑, the quotes
 // BlockQuotes, the code Code, the tables tables and the images figures, with
-// their text as the alternate description.
+// their text as the alternate description. In any document the headings are
+// its bookmarks, the outline a reader shows, unless it has bookmarks of its
+// own.
 //
-// It is not all of Markdown: HTML is drawn as the text it is, a line break is
-// a space, links in a table cell are its text, and an image is drawn only when
-// it is alone in its paragraph, from the directory that SetImageDirectory
+// A line that ends in two spaces or a backslash, and a <br>, break the line,
+// in a table cell too, and the entities of Markup, as &amp; and &mdash;, are
+// the characters they name.
+//
+// It is not all of Markdown: other HTML is drawn as the text it is, any other
+// line break is a space, links in a table cell are its text, and an image is
+// drawn only when it is alone in its paragraph, from the directory that SetImageDirectory
 // names; with none, its text is drawn instead, so that a text from anyone
 // reads no file. Please see Example_19.
 //
@@ -578,6 +584,15 @@ func (markdown *Markdown) drawHeading(block *markdownBlock, x, width, keep float
 		structelem.H4, structelem.H5, structelem.H6}
 	paragraph.SetStructureType(levels[markdown.headingLevel-1])
 	markdown.ensure(keep)
+	if !markdown.pdf.isTagged() {
+		// The bookmark of the heading, at its level as it would be tagged: a
+		// tagged document notes its headings as it draws them
+		title := strings.Join(strings.Fields(paragraph.text()), " ")
+		if title != "" {
+			markdown.pdf.headings = append(markdown.pdf.headings, heading{
+				level: markdown.headingLevel, title: title, page: markdown.page, top: markdown.y})
+		}
+	}
 	markdown.drawParagraph(paragraph, x, width)
 	markdown.y += float32(markdown.size() * 0.25)
 }
@@ -909,6 +924,7 @@ func (markdown *Markdown) makeTable(block *markdownBlock, width float32) *Table 
 			}
 			plain := markdown.plainText(text)
 			cell := NewCell(font, plain)
+			cell.properties |= cellLineBreaks // At its <br>
 			cell.SetTextAlignment(block.alignments[c])
 			if r > 0 && strings.HasPrefix(plain, markdownCheckMark) {
 				cell.SetTextColor(markdown.checkColor)
@@ -950,12 +966,15 @@ func (markdown *Markdown) cellFont(text string) *Font {
 	return font
 }
 
-// plainText returns the text of a cell, without its inline markup.
+// plainText returns the text of a cell, without its inline markup, a line
+// break at each <br>.
 func (markdown *Markdown) plainText(text string) string {
 	var buf strings.Builder
 	paragraph := markdown.markup.Paragraph(text)
 	for i, line := range paragraph.lines {
-		if i > 0 && !paragraph.joinsPrevious(i) {
+		if i > 0 && paragraph.lines[i-1].lineBreak {
+			buf.WriteByte('\n')
+		} else if i > 0 && !paragraph.joinsPrevious(i) {
 			buf.WriteByte(' ')
 		}
 		buf.WriteString(trimSpace(line.text))

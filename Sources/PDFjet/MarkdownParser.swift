@@ -460,9 +460,12 @@ final class MarkdownParser {
                     break
                 }
             }
-            text.append(trim(line))
+            // Two spaces at the end of a line are kept, a hard line break
+            text.append(trim(line) + (line.suffix(2) == [space, space] ? [space, space] : []))
             j += 1
         }
+        // A break at the end of the last line breaks nothing
+        text[text.count - 1] = trim(text[text.count - 1])
         let paragraph = join(text, lf)
         blocks.append(image(paragraph) ?? self.paragraph(paragraph))
         return j

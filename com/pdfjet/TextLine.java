@@ -37,6 +37,9 @@ public class TextLine implements BaselineDrawable {
     // extractor see the word break, but is not part of its text, so that
     // the alignment and the underline measure the line without it.
     boolean trailingSpace = false;
+    // A hard line break after the text line, of Markdown's two spaces, \ or
+    // <br> at the end of a line: TextFrame starts a new row after it.
+    boolean lineBreak = false;
 
     private int degrees = 0;
     private float[] textColor = new float[] {0f, 0f, 0f};

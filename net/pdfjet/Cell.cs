@@ -60,6 +60,9 @@ public class Cell {
     // one uint, 4 bytes instead of 6 bools and the padding they need. The four
     // borders are the bits Border gives them; only the top and the left are
     // drawn unless SetBorder says otherwise.
+    // A cell whose text breaks its lines at its line breaks, as Markdown's
+    // <br> in a table: the line break of any other cell is a space.
+    internal const uint LINE_BREAKS = 0x00008000;
     private const uint UNDERLINE = 0x00100000;
     private const uint STRIKEOUT = 0x00200000;
     // A cell that a table adds below another to hold the next line of its

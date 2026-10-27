@@ -1805,7 +1805,16 @@ func (table *Table) AutoAdjustColumnWidths() *Table {
 						maxColWidths[i] = drawableWidth
 					}
 				} else if cell.hasText {
-					textWidth := cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, cell.text)
+					var textWidth float32
+					if cell.properties&cellLineBreaks != 0 {
+						// As wide as its widest line
+						for _, line := range strings.Split(cell.text, "\n") {
+							textWidth = max(textWidth,
+								cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, line))
+						}
+					} else {
+						textWidth = cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, cell.text)
+					}
 					textWidth += cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)
 					if textWidth > maxColWidths[i] {
 						maxColWidths[i] = textWidth
@@ -1988,12 +1997,25 @@ const fitTolerance = 0.01
 func wrapCellText(row []*Cell, index int) []string {
 	cell := row[index]
 	cellWidth := getTotalWidth(row, index) + fitTolerance
+	if cell.properties&cellLineBreaks != 0 && strings.IndexByte(cell.text, '\n') >= 0 {
+		// Each line of the text wrapped on its own
+		lines := make([]string, 0)
+		for _, line := range strings.Split(cell.text, "\n") {
+			lines = append(lines, wrapText(cell, line, cellWidth)...)
+		}
+		return lines
+	}
+	return wrapText(cell, cell.text, cellWidth)
+}
+
+// wrapText returns the lines of the text of the cell, wrapped at the width.
+func wrapText(cell *Cell, text string, cellWidth float32) []string {
 	lines := make([]string, 0, 1)
 	var buf strings.Builder
 	width := func(text string) float32 {
 		return cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, text)
 	}
-	for _, token := range splitOnWhitespace(cell.text) {
+	for _, token := range splitOnWhitespace(text) {
 		for {
 			joined := token
 			if buf.Len() > 0 {

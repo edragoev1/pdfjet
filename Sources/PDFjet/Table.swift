@@ -1887,7 +1887,16 @@ public class Table : Drawable {
                             maxColWidths[i] = drawableWidth
                         }
                     } else if cell.text != nil {
-                        var textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text)
+                        var textWidth: Float = 0.0
+                        if (cell.properties & Cell.LINE_BREAKS) != 0 {
+                            // As wide as its widest line
+                            for line in Table.lines(cell.text!) {
+                                textWidth = max(textWidth,
+                                        cell.font.stringWidth(cell.fallbackFont, cell.fontSize, line))
+                            }
+                        } else {
+                            textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text)
+                        }
                         textWidth += cell.getLeftPadding() + cell.getRightPadding()
                         if textWidth > maxColWidths[i] {
                             maxColWidths[i] = textWidth
@@ -2059,12 +2068,32 @@ public class Table : Drawable {
     func wrapCellText(_ row: [Cell], _ index: Int) -> [String] {
         let cell = row[index]
         let cellWidth = getTotalWidth(row, index) + Table.FIT_TOLERANCE
+        if (cell.properties & Cell.LINE_BREAKS) != 0 && cell.text!.unicodeScalars.contains("\n") {
+            // Each line of the text wrapped on its own
+            var lines = [String]()
+            for line in Table.lines(cell.text!) {
+                lines.append(contentsOf: Table.wrapText(cell, line, cellWidth))
+            }
+            return lines
+        }
+        return Table.wrapText(cell, cell.text!, cellWidth)
+    }
+
+    // The lines of the text, split at each \n as in Java's text.split("\n", -1),
+    // at the scalar, since a \r\n is one Character.
+    private static func lines(_ text: String) -> [String] {
+        return text.unicodeScalars.split(separator: "\n", omittingEmptySubsequences: false)
+                .map { String(String.UnicodeScalarView($0)) }
+    }
+
+    // The lines of the text of the cell, wrapped at the width.
+    private static func wrapText(_ cell: Cell, _ text: String, _ cellWidth: Float) -> [String] {
         var lines = [String]()
         var buf = String()
         func width(_ text: String) -> Float {
             return cell.font.stringWidth(cell.fallbackFont, cell.fontSize, text)
         }
-        for token in cell.text!.splitOnWhitespace() {
+        for token in text.splitOnWhitespace() {
             var token = token
             while true {
                 let joined = buf.isEmpty ? token : buf + " " + token

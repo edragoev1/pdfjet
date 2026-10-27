@@ -26,9 +26,14 @@ import (
 // space between them: the paragraph joins its text lines with
 // Paragraph.AddJoined.
 //
+// A line that ends in two spaces or a backslash, and a <br>, are hard line
+// breaks, which TextFrame draws as the end of a row; any other line break is
+// a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+// &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
+// the numbers &#8212; and &#x2014;, are the characters they name.
+//
 // Headings, lists, block quotes and the rest of Markdown's blocks are not
-// read: a line break is a space, and Paragraphs splits a text into paragraphs
-// at its empty lines. The markup is read in time linear in the length of the
+// read: Paragraphs splits a text into paragraphs at its empty lines. The markup is read in time linear in the length of the
 // text, so it can come from anyone. Please see Example_18.
 //
 // The text is read as characters, as Java reads it, with the whitespace of
@@ -50,7 +55,22 @@ const (
 	markupItalic = 2
 	markupCode   = 4
 	markupStrike = 8
+	markupBreak  = 16 // A hard line break
 )
+
+// markupEntities are the named entities that are read, as GitHub's Markdown
+// reads them: the markup's own characters, the spaces and the punctuation of
+// typeset text.
+var markupEntities = map[string]rune{
+	"amp": '&', "lt": '<', "gt": '>', "quot": '"', "apos": '\'',
+	"nbsp": 0xA0, "copy": 0xA9, "reg": 0xAE, "trade": 0x2122,
+	"mdash": 0x2014, "ndash": 0x2013, "hellip": 0x2026,
+	"lsquo": 0x2018, "rsquo": 0x2019, "ldquo": 0x201C, "rdquo": 0x201D,
+	"laquo": 0xAB, "raquo": 0xBB, "bull": 0x2022, "middot": 0xB7,
+	"deg": 0xB0, "times": 0xD7, "divide": 0xF7, "plusmn": 0xB1,
+	"sect": 0xA7, "para": 0xB6, "euro": 0x20AC, "pound": 0xA3,
+	"yen": 0xA5, "cent": 0xA2, "shy": 0xAD,
+}
 
 // NewMarkup creates the markup of paragraphs in the fonts, each at its size.
 //   - regular: the font of the text.
@@ -129,6 +149,19 @@ func (markup *Markup) Paragraph(text string) *Paragraph {
 	link := ""
 	joined := false
 	for _, node := range nodes {
+		if node.flags&markupBreak != 0 {
+			// A hard line break: the row ends after the text before it, and
+			// the text after it is not joined to it
+			if buf.Len() > 0 {
+				markup.addRun(paragraph, buf.String(), flags, link, joined)
+				buf.Reset()
+			}
+			if len(paragraph.lines) > 0 {
+				paragraph.lines[len(paragraph.lines)-1].lineBreak = true
+			}
+			joined = false
+			continue
+		}
 		if buf.Len() > 0 && (node.flags != flags || node.link != link) {
 			joined = markup.addRun(paragraph, buf.String(), flags, link, joined)
 			buf.Reset()
@@ -287,7 +320,14 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 	i := start
 	for i < end {
 		ch := text[i]
-		if ch == '\\' && i+1 < end && isASCIIPunctuation(text[i+1]) {
+		if breakEnd := parser.breakEnd(i, end); breakEnd > i {
+			buf, nodes = markupFlush(buf, link, nodes)
+			nodes = append(nodes, &markupNode{flags: markupBreak, link: link})
+			i = breakEnd
+		} else if code, entityEnd := parser.entity(i, end); entityEnd > i {
+			buf = append(buf, code)
+			i = entityEnd
+		} else if ch == '\\' && i+1 < end && isASCIIPunctuation(text[i+1]) {
 			buf = append(buf, text[i+1])
 			i += 2
 		} else if ch == '`' {
@@ -361,6 +401,103 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 	_, nodes = markupFlush(buf, link, nodes)
 	markupMatchEmphasis(nodes, first)
 	return nodes
+}
+
+// breakEnd returns where a hard line break at the index ends, or i when there
+// is none: a line break after two spaces, a backslash and a line break, or a
+// <br>, <br/> or <br /> in capitals or not.
+func (parser *markupParser) breakEnd(i, end int) int {
+	text := parser.text
+	ch := text[i]
+	if ch == '\n' && i >= 2 && text[i-1] == ' ' && text[i-2] == ' ' {
+		return i + 1
+	}
+	if ch == '\\' && i+1 < end && text[i+1] == '\n' {
+		return i + 2
+	}
+	if ch == '<' && i+3 < end && (text[i+1] == 'b' || text[i+1] == 'B') &&
+		(text[i+2] == 'r' || text[i+2] == 'R') {
+		j := i + 3
+		for j < end && text[j] == ' ' {
+			j++
+		}
+		if j < end && text[j] == '/' {
+			j++
+		}
+		if j < end && text[j] == '>' {
+			return j + 1
+		}
+	}
+	return i
+}
+
+// entity returns the character of the entity at the index and where the
+// entity ends, or i when there is none: a name of markupEntities, or a number
+// of up to seven digits, or of six in hexadecimal after an x, that is a
+// character, between & and ;. The ; is looked for in the next 10 characters,
+// as Java looks for it in its UTF-16 text: the names and the numbers are
+// ASCII, so that the two find the same entities.
+func (parser *markupParser) entity(i, end int) (rune, int) {
+	text := parser.text
+	if text[i] != '&' {
+		return 0, i
+	}
+	semicolon := -1
+	for j := i + 1; j < end && j <= i+10; j++ {
+		if text[j] == ';' {
+			semicolon = j
+			break
+		}
+	}
+	if semicolon == -1 {
+		return 0, i
+	}
+	name := text[i+1 : semicolon]
+	if code, ok := markupEntities[string(name)]; ok {
+		return code, semicolon + 1
+	}
+	if len(name) < 2 || name[0] != '#' {
+		return 0, i
+	}
+	hex := name[1] == 'x' || name[1] == 'X'
+	digits := name[1:]
+	maxDigits := 7
+	base := 10
+	if hex {
+		digits = name[2:]
+		maxDigits = 6
+		base = 16
+	}
+	if len(digits) == 0 || len(digits) > maxDigits {
+		return 0, i
+	}
+	value := 0
+	for _, ch := range digits {
+		digit := markupASCIIDigit(ch, hex)
+		if digit < 0 {
+			return 0, i
+		}
+		value = value*base + digit
+	}
+	if value == 0 || value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF) {
+		return 0, i
+	}
+	return rune(value), semicolon + 1
+}
+
+// markupASCIIDigit returns the value of an ASCII digit, of 0 to 9, or of a to
+// f and A to F in hexadecimal, or -1.
+func markupASCIIDigit(ch rune, hex bool) int {
+	if ch >= '0' && ch <= '9' {
+		return int(ch - '0')
+	}
+	if hex && ch >= 'a' && ch <= 'f' {
+		return int(ch-'a') + 10
+	}
+	if hex && ch >= 'A' && ch <= 'F' {
+		return int(ch-'A') + 10
+	}
+	return -1
 }
 
 // isLink returns true when the [ at the index starts a link: its ] is before

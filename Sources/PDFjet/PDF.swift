@@ -96,8 +96,9 @@ public final class PDF {
     // build fails on the warning its name gives. It is still supported.
     static var complianceA3A: Compliance { Compliance(rawValue: 6)! }
     var toc: Bookmark?
-    // The headings of a tagged document, in the order they are drawn, which
-    // its bookmarks are made of when it has none of its own
+    // The headings of a tagged document, and of a Markdown text in any
+    // document, in the order they are drawn, which its bookmarks are made of
+    // when it has none of its own
     var headings = [Heading]()
     var importedFonts = [String]()
     var importedXObjects = [String]()
@@ -2034,9 +2035,10 @@ public final class PDF {
             addStructDocumentObject(structTreeRootObjNumber)
         }
 
-        // A tagged document with headings and no bookmarks of its own has the
-        // bookmarks of its headings, which a reader shows as its outline, as
-        // PAC asks of a document with headings
+        // A tagged document with headings, or a document with a Markdown
+        // text, and no bookmarks of its own has the bookmarks of its headings,
+        // which a reader shows as its outline, as PAC asks of a document with
+        // headings
         if toc == nil && !headings.isEmpty {
             toc = Bookmark.ofHeadings(self, headings)
         }

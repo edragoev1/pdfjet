@@ -31,6 +31,30 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   kerned), 118 in Java (69), 103 in C# (63) and 155 in Swift (98), and the
   document is 11 to 17% larger, for the moves written between the glyphs.
 
+- Markdown and Markup, the four ports, four small additions:
+  - The headings of a Markdown text are the bookmarks of the document, the
+    outline a reader shows, in a document that is not tagged too; a tagged
+    one had them already. A document with bookmarks of its own keeps them
+    alone, as before.
+  - Hard line breaks, as GitHub's Markdown has them: a line that ends in two
+    spaces or in a backslash, and `<br>`, `<br/>` or `<br />`, end the line
+    there, for an address, a signature or a verse. TextFrame draws the text
+    after a break on the next row, the row before it not justified, and the
+    paragraph is still one paragraph, and one P in a PDF/UA document.
+  - `<br>` in a Markdown table cell breaks its line, the column as wide as
+    its widest line.
+  - The entities `&amp; &lt; &gt; &quot; &apos; &nbsp; &copy; &reg; &trade;
+    &mdash; &ndash; &hellip;`, the curly quotes, `&laquo; &raquo; &bull;
+    &middot; &deg; &times; &divide; &plusmn; &sect; &para; &euro; &pound;
+    &yen; &cent; &shy;`, and the numbers `&#8212;` and `&#x2014;`, are the
+    characters they name; in code they are the text they are, and any other
+    `&` is text, as it was.
+  Behavior change: a Markdown text in a document that is not tagged gives
+  the document bookmarks of its headings; a Markup or Markdown line ending in
+  two spaces, a backslash or a `<br>`, or a text with `&amp;` and the other
+  entities above, draws differently: "Fish &amp; Chips" was drawn as it is
+  written, and is now "Fish & Chips".
+
 - The charts, the four ports, the last items of their plan:
   - `BarChart.addLineSeries(name, values)`, and with a color (Go
     `AddLineSeries`, `AddLineSeriesWithColor`): a series drawn as a line over

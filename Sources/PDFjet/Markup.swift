@@ -21,16 +21,35 @@ import Foundation
 /// its punctuation next to it in another style, as in **bold**, with no space
 /// between them: the paragraph joins its text lines with Paragraph.addJoined.
 ///
+/// A line that ends in two spaces or a backslash, and a <br>, are hard line
+/// breaks, which TextFrame draws as the end of a row; any other line break is
+/// a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+/// &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
+/// the numbers &#8212; and &#x2014;, are the characters they name.
+///
 /// Headings, lists, block quotes and the rest of Markdown's blocks are not
-/// read: a line break is a space, and paragraphs splits a text into paragraphs
-/// at its empty lines. The markup is read in time linear in the length of the
-/// text, so it can come from anyone. Please see Example_18.
+/// read: paragraphs splits a text into paragraphs at its empty lines. The
+/// markup is read in time linear in the length of the text, so it can come
+/// from anyone. Please see Example_18.
 ///
 public class Markup {
     private static let BOLD = 1
     private static let ITALIC = 2
     private static let CODE = 4
     private static let STRIKE = 8
+    private static let BREAK = 16       // A hard line break
+
+    // The named entities that are read, as GitHub's Markdown reads them: the
+    // markup's own characters, the spaces and the punctuation of typeset text.
+    private static let ENTITIES: [String: UInt32] = [
+        "amp": 0x26, "lt": 0x3C, "gt": 0x3E, "quot": 0x22, "apos": 0x27,
+        "nbsp": 0xA0, "copy": 0xA9, "reg": 0xAE, "trade": 0x2122,
+        "mdash": 0x2014, "ndash": 0x2013, "hellip": 0x2026, "lsquo": 0x2018,
+        "rsquo": 0x2019, "ldquo": 0x201C, "rdquo": 0x201D,
+        "laquo": 0xAB, "raquo": 0xBB, "bull": 0x2022, "middot": 0xB7,
+        "deg": 0xB0, "times": 0xD7, "divide": 0xF7,
+        "plusmn": 0xB1, "sect": 0xA7, "para": 0xB6, "euro": 0x20AC,
+        "pound": 0xA3, "yen": 0xA5, "cent": 0xA2, "shy": 0xAD]
 
     private let regular: Font
     private let bold: Font
@@ -147,6 +166,19 @@ public class Markup {
         var link: String? = nil
         var joined = false
         for node in nodes {
+            if (node.flags & Markup.BREAK) != 0 {
+                // A hard line break: the row ends after the text before it,
+                // and the text after it is not joined to it
+                if !buf.isEmpty {
+                    addRun(paragraph, buf, flags, link, joined)
+                    buf = ""
+                }
+                if let last = paragraph.lines.last {
+                    last.lineBreak = true
+                }
+                joined = false
+                continue
+            }
             if !buf.isEmpty && (node.flags != flags || node.link != link) {
                 joined = addRun(paragraph, buf, flags, link, joined)
                 buf = ""
@@ -316,6 +348,17 @@ public class Markup {
         private static let openParenthesis = UInt16(UInt8(ascii: "("))
         private static let closeParenthesis = UInt16(UInt8(ascii: ")"))
         private static let space = UInt16(UInt8(ascii: " "))
+        private static let newline = UInt16(UInt8(ascii: "\n"))
+        private static let slash = UInt16(UInt8(ascii: "/"))
+        private static let ampersand = UInt16(UInt8(ascii: "&"))
+        private static let semicolon = UInt16(UInt8(ascii: ";"))
+        private static let numberSign = UInt16(UInt8(ascii: "#"))
+        private static let letterB = UInt16(UInt8(ascii: "b"))
+        private static let capitalB = UInt16(UInt8(ascii: "B"))
+        private static let letterR = UInt16(UInt8(ascii: "r"))
+        private static let capitalR = UInt16(UInt8(ascii: "R"))
+        private static let letterX = UInt16(UInt8(ascii: "x"))
+        private static let capitalX = UInt16(UInt8(ascii: "X"))
 
         // Reads the text from start to end into nodes, all in the link when it
         // is not nil, with the emphasis of the runs of * matched.
@@ -325,7 +368,15 @@ public class Markup {
             var i = start
             while i < end {
                 let ch = text[i]
-                if ch == Parser.backslash && i + 1 < end && Parser.isASCIIPunctuation(text[i + 1]) {
+                let breakEnd = self.breakEnd(i, end)
+                if breakEnd > i {
+                    Parser.flush(&buf, link, &nodes)
+                    nodes.append(Node("", Markup.BREAK, link))
+                    i = breakEnd
+                } else if let entity = entity(i, end) {
+                    buf.append(contentsOf: Unicode.Scalar(entity.code)!.utf16)
+                    i = entity.end
+                } else if ch == Parser.backslash && i + 1 < end && Parser.isASCIIPunctuation(text[i + 1]) {
                     buf.append(text[i + 1])
                     i += 2
                 } else if ch == Parser.backtick {
@@ -389,6 +440,96 @@ public class Markup {
             }
             Parser.flush(&buf, link, &nodes)
             Parser.matchEmphasis(&nodes, first)
+        }
+
+        // Returns where a hard line break at i ends, or i when there is none:
+        // a line break after two spaces, a backslash and a line break, or a
+        // <br>, <br/> or <br /> in capitals or not.
+        private func breakEnd(_ i: Int, _ end: Int) -> Int {
+            let ch = text[i]
+            if ch == Parser.newline && i >= 2 && text[i - 1] == Parser.space && text[i - 2] == Parser.space {
+                return i + 1
+            }
+            if ch == Parser.backslash && i + 1 < end && text[i + 1] == Parser.newline {
+                return i + 2
+            }
+            if ch == Parser.lessThan && i + 3 < end && (text[i + 1] == Parser.letterB || text[i + 1] == Parser.capitalB)
+                    && (text[i + 2] == Parser.letterR || text[i + 2] == Parser.capitalR) {
+                var j = i + 3
+                while j < end && text[j] == Parser.space {
+                    j += 1
+                }
+                if j < end && text[j] == Parser.slash {
+                    j += 1
+                }
+                if j < end && text[j] == Parser.greaterThan {
+                    return j + 1
+                }
+            }
+            return i
+        }
+
+        // Returns the character of the entity at i and where the entity ends,
+        // or nil when there is none: a name of ENTITIES, or a number of up to
+        // seven digits, or of six in hexadecimal after an x, that is a
+        // character, between & and ;. The indexes are of UTF-16 code units,
+        // as in Java, so that the ; is looked for in the same ten.
+        private func entity(_ i: Int, _ end: Int) -> (code: UInt32, end: Int)? {
+            if text[i] != Parser.ampersand {
+                return nil
+            }
+            var semicolon = -1
+            var j = i + 1
+            while j < end && j <= i + 10 {
+                if text[j] == Parser.semicolon {
+                    semicolon = j
+                    break
+                }
+                j += 1
+            }
+            if semicolon == -1 {
+                return nil
+            }
+            let name = text[(i + 1)..<semicolon]
+            if let code = Markup.ENTITIES[Parser.string(name)] {
+                return (code, semicolon + 1)
+            }
+            if name.count < 2 || name.first != Parser.numberSign {
+                return nil
+            }
+            let second = name[name.startIndex + 1]
+            let hex = second == Parser.letterX || second == Parser.capitalX
+            let digits = name.dropFirst(hex ? 2 : 1)
+            if digits.isEmpty || digits.count > (hex ? 6 : 7) {
+                return nil
+            }
+            var value: UInt32 = 0
+            for unit in digits {
+                let digit = Parser.asciiDigit(unit, hex)
+                if digit < 0 {
+                    return nil
+                }
+                value = value * (hex ? 16 : 10) + UInt32(digit)
+            }
+            if value == 0 || value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF) {
+                return nil
+            }
+            return (value, semicolon + 1)
+        }
+
+        // The value of an ASCII digit, of 0 to 9, or of a to f and A to F in
+        // hexadecimal, or -1.
+        private static func asciiDigit(_ ch: UInt16, _ hex: Bool) -> Int {
+            if ch >= 0x30 && ch <= 0x39 {
+                return Int(ch) - 0x30
+            }
+            if hex && ch >= 0x61 && ch <= 0x66 {
+                return Int(ch) - 0x61 + 10
+            }
+            if hex && ch >= 0x41 && ch <= 0x46 {
+                return Int(ch) - 0x41 + 10
+            }
+            return -1
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]

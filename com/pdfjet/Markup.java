@@ -23,9 +23,15 @@ import java.util.*;
  * its punctuation next to it in another style, as in **bold**, with no space
  * between them: the paragraph joins its text lines with Paragraph.addJoined.
  * <p>
+ * A line that ends in two spaces or a backslash, and a &lt;br&gt;, are hard
+ * line breaks, which TextFrame draws as the end of a row; any other line
+ * break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+ * &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
+ * &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
+ * &amp;#8212; and &amp;#x2014;, are the characters they name.
+ * <p>
  * Headings, lists, block quotes and the rest of Markdown's blocks are not
- * read: a line break is a space, and paragraphs splits a text into paragraphs
- * at its empty lines. The markup is read in time linear in the length of the
+ * read: paragraphs splits a text into paragraphs at its empty lines. The markup is read in time linear in the length of the
  * text, so it can come from anyone. Please see Example_18.
  */
 public class Markup {
@@ -33,6 +39,26 @@ public class Markup {
     private static final int ITALIC = 2;
     private static final int CODE = 4;
     private static final int STRIKE = 8;
+    private static final int BREAK = 16;        // A hard line break
+
+    // The named entities that are read, as GitHub's Markdown reads them: the
+    // markup's own characters, the spaces and the punctuation of typeset text.
+    private static final Map<String, Integer> ENTITIES = new HashMap<String, Integer>();
+    static {
+        String[] names = {
+            "amp", "lt", "gt", "quot", "apos", "nbsp", "copy", "reg", "trade",
+            "mdash", "ndash", "hellip", "lsquo", "rsquo", "ldquo", "rdquo",
+            "laquo", "raquo", "bull", "middot", "deg", "times", "divide",
+            "plusmn", "sect", "para", "euro", "pound", "yen", "cent", "shy"};
+        int[] codes = {
+            '&', '<', '>', '"', '\'', 0xA0, 0xA9, 0xAE, 0x2122,
+            0x2014, 0x2013, 0x2026, 0x2018, 0x2019, 0x201C, 0x201D,
+            0xAB, 0xBB, 0x2022, 0xB7, 0xB0, 0xD7, 0xF7,
+            0xB1, 0xA7, 0xB6, 0x20AC, 0xA3, 0xA5, 0xA2, 0xAD};
+        for (int i = 0; i < names.length; i++) {
+            ENTITIES.put(names[i], codes[i]);
+        }
+    }
 
     private final Font regular;
     private final Font bold;
@@ -136,6 +162,19 @@ public class Markup {
         String link = null;
         boolean joined = false;
         for (Node node : nodes) {
+            if ((node.flags & BREAK) != 0) {
+                // A hard line break: the row ends after the text before it,
+                // and the text after it is not joined to it
+                if (buf.length() > 0) {
+                    addRun(paragraph, buf.toString(), flags, link, joined);
+                    buf.setLength(0);
+                }
+                if (!paragraph.lines.isEmpty()) {
+                    paragraph.lines.get(paragraph.lines.size() - 1).lineBreak = true;
+                }
+                joined = false;
+                continue;
+            }
             if (buf.length() > 0 && (node.flags != flags || !Objects.equals(node.link, link))) {
                 joined = addRun(paragraph, buf.toString(), flags, link, joined);
                 buf.setLength(0);
@@ -276,7 +315,16 @@ public class Markup {
             while (i < end) {
                 char ch = text.charAt(i);
                 int addressEnd;
-                if (ch == '\\' && i + 1 < end && isASCIIPunctuation(text.charAt(i + 1))) {
+                int breakEnd = breakEnd(i, end);
+                int[] entity;
+                if (breakEnd > i) {
+                    flush(buf, link, nodes);
+                    nodes.add(new Node("", BREAK, link));
+                    i = breakEnd;
+                } else if ((entity = entity(i, end)) != null) {
+                    buf.appendCodePoint(entity[0]);
+                    i = entity[1];
+                } else if (ch == '\\' && i + 1 < end && isASCIIPunctuation(text.charAt(i + 1))) {
                     buf.append(text.charAt(i + 1));
                     i += 2;
                 } else if (ch == '`') {
@@ -338,6 +386,93 @@ public class Markup {
             }
             flush(buf, link, nodes);
             matchEmphasis(nodes, first);
+        }
+
+        // Returns where a hard line break at i ends, or i when there is none:
+        // a line break after two spaces, a backslash and a line break, or a
+        // <br>, <br/> or <br /> in capitals or not.
+        private int breakEnd(int i, int end) {
+            char ch = text.charAt(i);
+            if (ch == '\n' && i >= 2 && text.charAt(i - 1) == ' ' && text.charAt(i - 2) == ' ') {
+                return i + 1;
+            }
+            if (ch == '\\' && i + 1 < end && text.charAt(i + 1) == '\n') {
+                return i + 2;
+            }
+            if (ch == '<' && i + 3 < end && (text.charAt(i + 1) == 'b' || text.charAt(i + 1) == 'B')
+                    && (text.charAt(i + 2) == 'r' || text.charAt(i + 2) == 'R')) {
+                int j = i + 3;
+                while (j < end && text.charAt(j) == ' ') {
+                    j++;
+                }
+                if (j < end && text.charAt(j) == '/') {
+                    j++;
+                }
+                if (j < end && text.charAt(j) == '>') {
+                    return j + 1;
+                }
+            }
+            return i;
+        }
+
+        // Returns the character of the entity at i and where the entity ends,
+        // or null when there is none: a name of ENTITIES, or a number of up to
+        // seven digits, or of six in hexadecimal after an x, that is a
+        // character, between & and ;.
+        private int[] entity(int i, int end) {
+            if (text.charAt(i) != '&') {
+                return null;
+            }
+            int semicolon = -1;
+            for (int j = i + 1; j < end && j <= i + 10; j++) {
+                if (text.charAt(j) == ';') {
+                    semicolon = j;
+                    break;
+                }
+            }
+            if (semicolon == -1) {
+                return null;
+            }
+            String name = text.substring(i + 1, semicolon);
+            Integer code = ENTITIES.get(name);
+            if (code != null) {
+                return new int[] {code, semicolon + 1};
+            }
+            if (name.length() < 2 || name.charAt(0) != '#') {
+                return null;
+            }
+            boolean hex = name.charAt(1) == 'x' || name.charAt(1) == 'X';
+            String digits = name.substring(hex ? 2 : 1);
+            if (digits.isEmpty() || digits.length() > (hex ? 6 : 7)) {
+                return null;
+            }
+            int value = 0;
+            for (int k = 0; k < digits.length(); k++) {
+                int digit = asciiDigit(digits.charAt(k), hex);
+                if (digit < 0) {
+                    return null;
+                }
+                value = value * (hex ? 16 : 10) + digit;
+            }
+            if (value == 0 || value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF)) {
+                return null;
+            }
+            return new int[] {value, semicolon + 1};
+        }
+
+        // The value of an ASCII digit, of 0 to 9, or of a to f and A to F in
+        // hexadecimal, or -1.
+        private static int asciiDigit(char ch, boolean hex) {
+            if (ch >= '0' && ch <= '9') {
+                return ch - '0';
+            }
+            if (hex && ch >= 'a' && ch <= 'f') {
+                return ch - 'a' + 10;
+            }
+            if (hex && ch >= 'A' && ch <= 'F') {
+                return ch - 'A' + 10;
+            }
+            return -1;
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]

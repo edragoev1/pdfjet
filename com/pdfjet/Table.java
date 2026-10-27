@@ -1875,7 +1875,16 @@ public class Table implements Drawable {
                             maxColWidths[i] = drawableWidth;
                         }
                     } else if (cell.text != null) {
-                        float textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text);
+                        float textWidth = 0f;
+                        if ((cell.properties & Cell.LINE_BREAKS) != 0) {
+                            // As wide as its widest line
+                            for (String line : cell.text.split("\n", -1)) {
+                                textWidth = Math.max(textWidth,
+                                        cell.font.stringWidth(cell.fallbackFont, cell.fontSize, line));
+                            }
+                        } else {
+                            textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text);
+                        }
                         textWidth += cell.getLeftPadding() + cell.getRightPadding();
                         if (textWidth > maxColWidths[i]) {
                             maxColWidths[i] = textWidth;
@@ -2087,9 +2096,22 @@ public class Table implements Drawable {
     private List<String> wrapCellText(List<Cell> row, int index) {
         Cell cell = row.get(index);
         float cellWidth = getTotalWidth(row, index) + FIT_TOLERANCE;
+        if ((cell.properties & Cell.LINE_BREAKS) != 0 && cell.text.indexOf('\n') >= 0) {
+            // Each line of the text wrapped on its own
+            List<String> lines = new ArrayList<String>();
+            for (String line : cell.text.split("\n", -1)) {
+                lines.addAll(wrapText(cell, line, cellWidth));
+            }
+            return lines;
+        }
+        return wrapText(cell, cell.text, cellWidth);
+    }
+
+    // The lines of the text of the cell, wrapped at the width.
+    private static List<String> wrapText(Cell cell, String text, float cellWidth) {
         List<String> lines = new ArrayList<String>();
         StringBuilder buf = new StringBuilder();
-        for (String token : Util.splitOnWhitespace(cell.text)) {
+        for (String token : Util.splitOnWhitespace(text)) {
             for (;;) {
                 String joined = (buf.length() > 0) ? buf.toString() + " " + token : token;
                 if (cellTextWidth(cell, joined) <= cellWidth) {

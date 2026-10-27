@@ -15,10 +15,16 @@ import Foundation
 /// document the headings are H1 to H6, with no level skipped, the lists are
 /// lists, the boxes of the tasks their labels, read as ☐ and ☑, the quotes
 /// BlockQuotes, the code Code, the tables tables and the images figures, with
-/// their text as the alternate description.
+/// their text as the alternate description. In any document the headings
+/// are its bookmarks, the outline a reader shows, unless it has bookmarks of
+/// its own.
 ///
-/// It is not all of Markdown: HTML is drawn as the text it is, a line break
-/// is a space, links in a table cell are its text, and an image is drawn only
+/// A line that ends in two spaces or a backslash, and a <br>, break the line,
+/// in a table cell too, and the entities of Markup, as &amp; and &mdash;, are
+/// the characters they name.
+///
+/// It is not all of Markdown: other HTML is drawn as the text it is, any
+/// other line break is a space, links in a table cell are its text, and an image is drawn only
 /// when it is alone in its paragraph, from the directory that
 /// setImageDirectory names; with none, its text is drawn instead, so that a
 /// text from anyone reads no file. Please see Example_19.
@@ -570,6 +576,19 @@ public class Markdown {
                 StructElem.H4, StructElem.H5, StructElem.H6]
         paragraph.setStructureType(levels[headingLevel - 1])
         ensure(keep)
+        if !pdf.isTagged() {
+            // The bookmark of the heading, at its level as it would be
+            // tagged: a tagged document notes its headings as it draws them.
+            // Its fields are split at the scalars that Java's Util.isSpace
+            // takes, the White_Space ones.
+            let title = paragraph.text().unicodeScalars
+                    .split(whereSeparator: { $0.properties.isWhitespace })
+                    .map { String(String.UnicodeScalarView($0)) }
+                    .joined(separator: " ")
+            if !title.isEmpty {
+                pdf.headings.append(Heading(level: headingLevel, title: title, page: page!, top: y))
+            }
+        }
         drawParagraph(paragraph, x, width)
         y += size() * 0.25
     }
@@ -867,6 +886,7 @@ public class Markdown {
                 let text = blockRows[r][c]
                 let plain = plainText(text)
                 let cell = Cell((r == 0) ? bold : cellFont(text), plain)
+                cell.properties |= Cell.LINE_BREAKS     // At its <br>
                 cell.setTextAlignment(alignments[c])
                 // The first code point, as the other ports compare the first
                 // code unit: the first Character of "✓️" holds U+FE0F too
@@ -906,12 +926,15 @@ public class Markdown {
         return font ?? regular
     }
 
-    // The text of a cell, without its inline markup.
+    // The text of a cell, without its inline markup, a line break at each
+    // <br>.
     private func plainText(_ text: String) -> String {
         var buf = ""
         let paragraph = markup.paragraph(text)
         for i in 0..<paragraph.lines.count {
-            if i > 0 && !paragraph.joinsPrevious(i) {
+            if i > 0 && paragraph.lines[i - 1].lineBreak {
+                buf += "\n"
+            } else if i > 0 && !paragraph.joinsPrevious(i) {
                 buf += " "
             }
             buf += (paragraph.lines[i].text ?? "").trim()
