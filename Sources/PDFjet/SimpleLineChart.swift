@@ -413,7 +413,8 @@ public class SimpleLineChart : Drawable {
     }
 
     ///
-    /// Draws the chart on the page.
+    /// Draws the chart on the page. A chart too small for its plot, its
+    /// numbers and its labels draws nothing.
     ///
     /// - Parameter page: the page to draw on.
     /// - Returns: the x and y coordinates of the bottom right corner of the chart.
@@ -606,6 +607,16 @@ public class SimpleLineChart : Drawable {
         if labels.count > 1 {
             for k in 1..<labels.count {
                 labels[k].y = Swift.max(labels[k].y, labels[k - 1].y + f2.getBodyHeight())
+            }
+        }
+        // and up from the bottom of the plot, when the last is pushed past it
+        if !labels.isEmpty {
+            let last = labels.count - 1
+            labels[last].y = Swift.min(labels[last].y, plotBottom + ascent / 2.0)
+            var k = last - 1
+            while k >= 0 {
+                labels[k].y = Swift.min(labels[k].y, labels[k + 1].y - f2.getBodyHeight())
+                k -= 1
             }
         }
         for label in labels {

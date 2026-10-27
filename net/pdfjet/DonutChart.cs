@@ -79,7 +79,9 @@ namespace PDFjet.NET {
         /// <summary>
         /// Sets the title, drawn at the top left of the chart's location in the bold
         /// font, the second, at the size of the labels; the circle is drawn under it.
-        /// A chart without a title has the circle at its location.
+        /// A chart without the second font, which draws no percentages, draws its
+        /// title in the first. A chart without a title has the circle at its
+        /// location.
         /// </summary>
         /// <param name="title">the title.</param>
         /// <returns>this DonutChart object.</returns>
@@ -98,8 +100,8 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Sets the alternate description of the chart, which a screen reader reads
-        /// in a PDF/UA document, where the chart is a figure. The default lists the
-        /// label and the percentage of each slice.
+        /// in a PDF/UA document, where the chart is a figure. The default is the
+        /// title and the subtitle, and the label and the percentage of each slice.
         /// </summary>
         /// <param name="altDescription">the alternate description.</param>
         /// <returns>this DonutChart object.</returns>
@@ -209,69 +211,109 @@ namespace PDFjet.NET {
             return a2;
         }
 
-        // Draws the leader line and label for a slice, and returns the box they
-        // are in: its left, top, right and bottom.
-        private float[] DrawLinePointer(
-                Page page,
-                string text,
-                float xc, float yc,
-                float r1,
-                float a1, float a2) {
-            float midAngle = (a1 + a2) / 2.0f - 90.0f;
+        // The leader line and the label of a slice: the point on the edge of the
+        // circle, the elbow 15 points past it, the y of the label's line, moved
+        // down from the elbow's when it would meet the label above it, and the
+        // side of the circle it is on.
+        private sealed class Pointer {
+            internal readonly String text;
+            internal readonly float x1;
+            internal readonly float y1;
+            internal readonly float x2;
+            internal readonly float y2;
+            internal readonly bool right;
+            internal float yEnd;
 
-            // Point on the outer edge of the donut
-            var (x1, y1) = GetPoint(xc, yc, r1, midAngle);
-
-            // Elbow point — 15pt beyond the outer edge
-            float r3 = r1 + 15.0f;
-            var (x2, y2) = GetPoint(xc, yc, r3, midAngle);
-
-            // Draw the pointer line: edge → elbow → horizontal end
-            page.SetPenColor(LEADER);
-            page.SetPenWidth(0.75f);
-            page.MoveTo(x1, y1);
-            page.LineTo(x2, y2);
-
-            if (f1 != null && !string.IsNullOrEmpty(text)) {
-                float textWidth = f1.StringWidth(text);
-                bool onRightSide = (float)Math.Cos(midAngle * Math.PI / 180.0) >= 0;
-
-                float padding = 4.0f;
-                float lineLength = textWidth + padding;
-
-                float xEnd = onRightSide ? x2 + lineLength : x2 - lineLength;
-                float yEnd = y2;
-
-                // Continue the path to the horizontal end
-                page.LineTo(xEnd, yEnd);
-                page.StrokePath();
-
-                // Draw the label text just above the horizontal line
-                float x = onRightSide ? x2 + 2.0f : xEnd + 2.0f;
-                float baseline = yEnd - f1.GetAscent() / 3.0f;
-                page.DrawString(f1, f1.GetSize(), text, x, baseline,
-                        Util.ToRGB(INK), null);
-                return new float[] {
-                        Math.Min(Math.Min(x1, x2), Math.Min(xEnd, x)),
-                        Math.Min(Math.Min(y1, y2), baseline - f1.GetAscent()),
-                        Math.Max(Math.Max(x1, x2), Math.Max(xEnd, x + textWidth)),
-                        Math.Max(Math.Max(y1, y2), baseline + f1.GetDescent())};
-            } else {
-                // No text — short horizontal stub
-                bool onRightSide = (float)Math.Cos(midAngle * Math.PI / 180.0) >= 0;
-                float xEnd = onRightSide ? x2 + 20.0f : x2 - 20.0f;
-                page.LineTo(xEnd, y2);
-                page.StrokePath();
-                return new float[] {
-                        Math.Min(Math.Min(x1, x2), xEnd), Math.Min(y1, y2),
-                        Math.Max(Math.Max(x1, x2), xEnd), Math.Max(y1, y2)};
+            internal Pointer(String text, float x1, float y1, float x2, float y2, bool right) {
+                this.text = text;
+                this.x1 = x1;
+                this.y1 = y1;
+                this.x2 = x2;
+                this.y2 = y2;
+                this.right = right;
+                this.yEnd = y2;
             }
         }
 
+        // Returns the pointer of a slice from the angle a1 to a2.
+        private Pointer PointerOf(String text, float xc, float yc, float r1, float a1, float a2) {
+            float midAngle = (a1 + a2) / 2.0f - 90.0f;
+            var (x1, y1) = GetPoint(xc, yc, r1, midAngle);              // On the outer edge
+            var (x2, y2) = GetPoint(xc, yc, r1 + 15.0f, midAngle);      // The elbow
+            return new Pointer(text, x1, y1, x2, y2, Math.Cos(midAngle * Math.PI / 180.0) >= 0);
+        }
+
+        // Moves the labels on each side of the circle apart, top to bottom, where
+        // one would meet the one above it.
+        private void MoveApart(List<Pointer> pointers) {
+            if (f1 == null) {
+                return;
+            }
+            for (int side = 0; side < 2; side++) {
+                List<Pointer> labels = new List<Pointer>();
+                foreach (Pointer pointer in pointers) {
+                    if (pointer.right == (side == 0) && pointer.text.Length > 0) {
+                        labels.Add(pointer);
+                    }
+                }
+                // Top to bottom, and labels at one height in the order of their
+                // slices: List.Sort is not stable, the order is kept by the index
+                labels.Sort((a, b) => a.yEnd != b.yEnd
+                        ? a.yEnd.CompareTo(b.yEnd) : pointers.IndexOf(a).CompareTo(pointers.IndexOf(b)));
+                for (int k = 1; k < labels.Count; k++) {
+                    labels[k].yEnd = Math.Max(labels[k].yEnd, labels[k - 1].yEnd + f1.GetBodyHeight());
+                }
+            }
+        }
+
+        // Returns the box of the leader line and the label of the pointer: its
+        // left, top, right and bottom; and draws them when there is a page.
+        private float[] DrawPointer(Page page, Pointer pointer) {
+            float x1 = pointer.x1;
+            float y1 = pointer.y1;
+            float x2 = pointer.x2;
+            float yEnd = pointer.yEnd;
+            if (page != null) {
+                // The line: edge, elbow, and along to the end, thin and gray
+                page.SetPenColor(LEADER);
+                page.SetPenWidth(0.75f);
+                page.MoveTo(x1, y1);
+                page.LineTo(x2, yEnd);
+            }
+            if (f1 != null && pointer.text.Length > 0) {
+                float textWidth = f1.StringWidth(pointer.text);
+                float lineLength = textWidth + 4.0f;
+                float xEnd = pointer.right ? x2 + lineLength : x2 - lineLength;
+                // The label just above the line
+                float x = pointer.right ? x2 + 2.0f : xEnd + 2.0f;
+                float baseline = yEnd - f1.GetAscent() / 3.0f;
+                if (page != null) {
+                    page.LineTo(xEnd, yEnd);
+                    page.StrokePath();
+                    page.DrawString(f1, f1.GetSize(), pointer.text, x, baseline, Util.ToRGB(INK), null);
+                }
+                return new float[] {
+                        Math.Min(Math.Min(x1, x2), Math.Min(xEnd, x)),
+                        Math.Min(Math.Min(y1, yEnd), baseline - f1.GetAscent()),
+                        Math.Max(Math.Max(x1, x2), Math.Max(xEnd, x + textWidth)),
+                        Math.Max(Math.Max(y1, yEnd), baseline + f1.GetDescent())};
+            }
+            // No text: a short line along
+            float end = pointer.right ? x2 + 20.0f : x2 - 20.0f;
+            if (page != null) {
+                page.LineTo(end, yEnd);
+                page.StrokePath();
+            }
+            return new float[] {
+                    Math.Min(Math.Min(x1, x2), end), Math.Min(y1, yEnd),
+                    Math.Max(Math.Max(x1, x2), end), Math.Max(y1, yEnd)};
+        }
+
         /// <summary>Draws this chart on the specified page.</summary>
-        /// <param name="page">the page to draw on.</param>
-        /// <returns>x and y coordinates of the bottom right corner of the outer circle
-        /// of this chart. The slice labels can extend past it.</returns>
+        /// <param name="page">the page to draw on, or null to measure the chart.</param>
+        /// <returns>x and y coordinates of the bottom right corner of the chart: of
+        /// its title, its circle, and its leader lines and labels, which can reach
+        /// past the circle.</returns>
         public float[] DrawOn(Page page) {
             // The title and the subtitle above the circle, when there are any
             Font titleFont = f2 ?? f1;
@@ -297,60 +339,79 @@ namespace PDFjet.NET {
             float yc = top + r1;
 
             // The slices with a value above 0 share the circle
+            float[] values = Values();
             float total = 0.0f;
-            foreach (Slice slice in slices) {
-                if (SliceDrawn(slice.value)) {
-                    total += slice.value;
-                }
+            foreach (float value in values) {
+                total += value;
             }
-            if (page == null || total <= 0.0f) {   // Measured, or nothing to draw
+            if (total <= 0.0f) {   // Nothing to draw
                 return new float[] {xc + r1, yc + r1};
             }
+            int[] percentages = Percentages(values, total);
+
+            // The leader lines and the labels, moved apart, and the box of the
+            // figure: the title, the outer circle, the leader lines and the labels
+            List<Pointer> pointers = new List<Pointer>();
+            float angle = 0.0f;
+            for (int i = 0; i < slices.Count; i++) {
+                if (values[i] > 0.0f) {
+                    float sweep = values[i] * 360.0f / total;
+                    pointers.Add(PointerOf(slices[i].text, xc, yc, r1, angle, angle + sweep));
+                    angle += sweep;
+                }
+            }
+            MoveApart(pointers);
+            float[] box = {x, y, x + 2f * r1, yc + r1};
+            if (titleBaseline > 0f) {
+                box[2] = Math.Max(box[2], x + titleFont.StringWidth(titleSize, title));
+            }
+            if (subtitleBaseline > 0f) {
+                box[2] = Math.Max(box[2], x + f1.StringWidth(subtitle));
+            }
+            foreach (Pointer pointer in pointers) {
+                box = Union(box, DrawPointer(null, pointer));
+            }
+            if (page == null) {     // Measured
+                return new float[] {box[2], box[3]};
+            }
+
             // The chart is one figure, described by its alternate description.
-            page.AddBDC(StructElem.FIGURE, null, AltDescription(total));
+            page.AddBDC(StructElem.FIGURE, null, AltDescription(values, percentages));
             // The pen, the brush and the dash pattern of the caller are
             // kept, as a Stamp keeps them: the chart left
             // the page with the black pen of its pointers and the color of
             // its last slice.
             page.SaveGraphicsState();
-            // The box of the figure: the outer circle, and the pointers and the
-            // labels, which can reach past it
-            float[] box = {x, y, x + 2f * r1, yc + r1};
             if (titleBaseline > 0f) {
                 page.DrawString(titleFont, titleSize, title, x, titleBaseline, Util.ToRGB(INK), null);
-                box[2] = Math.Max(box[2], x + titleFont.StringWidth(titleSize, title));
             }
             if (subtitleBaseline > 0f) {
                 page.DrawString(f1, f1.GetSize(), subtitle, x, subtitleBaseline, Util.ToRGB(MUTED), null);
-                box[2] = Math.Max(box[2], x + f1.StringWidth(subtitle));
             }
-            float angle = 0.0f;
+            angle = 0.0f;
             int drawn = 0;
             List<float> edges = new List<float>();
-            foreach (Slice slice in slices) {
-                if (!SliceDrawn(slice.value)) {
+            List<float> sweeps = new List<float>();
+            for (int i = 0; i < slices.Count; i++) {
+                if (values[i] <= 0.0f) {
                     continue;
                 }
+                Slice slice = slices[i];
                 int color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.Length] : slice.color;
-                drawn++;
-                float sweep = slice.value * 360.0f / total;
+                float sweep = values[i] * 360.0f / total;
                 angle = DrawSlice(
                     page, color,
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep);
                 edges.Add(angle);
-                float[] pointer = DrawLinePointer(
-                    page, slice.text,
-                    xc, yc,
-                    r1,
-                    angle - sweep, angle);
-                box = new float[] {Math.Min(box[0], pointer[0]), Math.Min(box[1], pointer[1]),
-                        Math.Max(box[2], pointer[2]), Math.Max(box[3], pointer[3])};
+                sweeps.Add(sweep);
+                DrawPointer(page, pointers[drawn]);
+                drawn++;
 
                 // The percentage fits inside a slice of 15 degrees or more
                 if (f2 != null && sweep >= 15.0f) {
-                    string pctStr = Percentage(slice, total);
+                    string pctStr = percentages[i].ToString(CultureInfo.InvariantCulture) + "%";
                     float midAngle = angle - sweep / 2.0f - 90.0f;
                     float midR = (r1 + r2) / 2.0f;
                     var (posX, posY) = GetPoint(xc, yc, midR, midAngle);
@@ -360,11 +421,17 @@ namespace PDFjet.NET {
                         Util.ToRGB(BarChart.LabelColorOn(color)), null);
                 }
             }
-            // A thin white line between the slices, from the hole to the edge
+            // A thin white line between the slices, from the hole to the edge, at
+            // most a quarter as wide as the thinner of the two slices is across
+            // the middle of the ring, so that it does not cover a thin slice
             if (drawn > 1) {
                 page.SetPenColor(Color.white);
-                page.SetPenWidth(1.5f);
-                foreach (float edge in edges) {
+                float midR = (r1 + r2) / 2.0f;
+                for (int k = 0; k < drawn; k++) {
+                    float thinner = Math.Min(sweeps[k], sweeps[(k + 1) % drawn]);
+                    float across = midR * ((float) (thinner * Math.PI / 180.0));
+                    page.SetPenWidth(Math.Min(1.5f, 0.25f * across));
+                    float edge = edges[k];
                     var (innerX, innerY) = GetPoint(xc, yc, r2, edge - 90.0f);
                     var (outerX, outerY) = GetPoint(xc, yc, r1, edge - 90.0f);
                     page.DrawLine(innerX, innerY, outerX, outerY);
@@ -373,16 +440,72 @@ namespace PDFjet.NET {
             page.RestoreGraphicsState();
             page.SetFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1]);
             page.AddEMC();
-            return new float[] {xc + r1, yc + r1};
+            return new float[] {box[2], box[3]};
         }
 
-        // Tells whether a slice of the value is drawn: a number above 0, whose
-        // 360ths are a number too. A NaN, from 0/0 in an empty category of
-        // real data, an infinity, or a value whose 360ths overflow a float
-        // made the arc's loop endless, until memory ran out (review of 11
-        // October 2026, #2).
-        private static bool SliceDrawn(float value) {
-            return value > 0.0f && IsValue(value * 360.0f);
+        // Returns the box that holds the two boxes, each left, top, right, bottom.
+        private static float[] Union(float[] a, float[] b) {
+            return new float[] {Math.Min(a[0], b[0]), Math.Min(a[1], b[1]),
+                    Math.Max(a[2], b[2]), Math.Max(a[3], b[3])};
+        }
+
+        // Returns the value of each slice that is drawn, and 0 for the others: a
+        // slice is drawn when its value is a number above 0. A NaN, from 0/0 in
+        // an empty category of real data, or an infinity made the arc's loop
+        // endless, until memory ran out (review of 11 October 2026, #2). Values
+        // whose 360ths or whose sum are past the largest float are divided by the
+        // largest of them, so that they are drawn as they compare.
+        private float[] Values() {
+            float[] values = new float[slices.Count];
+            float largest = 0.0f;
+            float total = 0.0f;
+            for (int i = 0; i < values.Length; i++) {
+                float value = slices[i].value;
+                if (value > 0.0f && IsValue(value)) {
+                    values[i] = value;
+                    largest = Math.Max(largest, value);
+                    total += value;
+                }
+            }
+            if (largest > 0.0f && (!IsValue(largest * 360.0f) || !IsValue(total))) {
+                for (int i = 0; i < values.Length; i++) {
+                    values[i] = values[i] / largest;
+                }
+            }
+            return values;
+        }
+
+        // Returns the whole percentage of each slice that is drawn, by the largest
+        // remainder, so that they add up to 100: each rounded alone, 90 and six of
+        // 1.5 were 91 and six of 2.
+        private static int[] Percentages(float[] values, float total) {
+            int[] percentages = new int[values.Length];
+            double[] remainders = new double[values.Length];
+            int sum = 0;
+            for (int i = 0; i < values.Length; i++) {
+                remainders[i] = -1.0;
+                if (values[i] > 0.0f) {
+                    double exact = (double) values[i] * 100.0 / (double) total;
+                    percentages[i] = (int) Math.Floor(exact);
+                    remainders[i] = exact - percentages[i];
+                    sum += percentages[i];
+                }
+            }
+            // The points left over to the largest remainders, the first of equal ones
+            for (; sum < 100; sum++) {
+                int largest = -1;
+                for (int i = 0; i < values.Length; i++) {
+                    if (remainders[i] >= 0.0 && (largest < 0 || remainders[i] > remainders[largest])) {
+                        largest = i;
+                    }
+                }
+                if (largest < 0) {
+                    break;
+                }
+                percentages[largest]++;
+                remainders[largest] = -1.0;
+            }
+            return percentages;
         }
 
         // Tells if the value is a number: not NaN and not infinite.
@@ -390,27 +513,28 @@ namespace PDFjet.NET {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
-        // Returns the share of the slice in the total, as a whole percentage.
-        private static String Percentage(Slice slice, float total) {
-            return ((int) Math.Round(slice.value * 100.0f / total, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture) + "%";
-        }
-
-        // Returns the alternate description, or the label and the percentage of
-        // each slice when none is set.
-        private String AltDescription(float total) {
+        // Returns the alternate description, or the title, the subtitle, and the
+        // label and the percentage of each slice when none is set.
+        private String AltDescription(float[] values, int[] percentages) {
             if (!String.IsNullOrEmpty(altDescription)) {
                 return altDescription;
             }
-            System.Text.StringBuilder sb = new System.Text.StringBuilder(title.Length > 0 ? title + ":"
-                    : (r2 > 0.0f ? "Donut chart:" : "Pie chart:"));
+            String name = title;
+            if (subtitle.Length > 0) {
+                name = (name.Length == 0) ? subtitle : name + ", " + subtitle;
+            }
+            if (name.Length == 0) {
+                name = (r2 > 0.0f) ? "Donut chart" : "Pie chart";
+            }
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(name).Append(':');
             String separator = " ";
-            foreach (Slice slice in slices) {
-                if (SliceDrawn(slice.value)) {
+            for (int i = 0; i < slices.Count; i++) {
+                if (values[i] > 0.0f) {
                     sb.Append(separator);
-                    if (slice.text.Length > 0) {
-                        sb.Append(slice.text).Append(' ');
+                    if (slices[i].text.Length > 0) {
+                        sb.Append(slices[i].text).Append(' ');
                     }
-                    sb.Append(Percentage(slice, total));
+                    sb.Append(percentages[i].ToString(CultureInfo.InvariantCulture)).Append('%');
                     separator = ", ";
                 }
             }

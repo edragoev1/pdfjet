@@ -95,4 +95,27 @@ import Testing
         SimpleBarChart(font, font).setTitle("Nothing").drawOn(page)
         #expect(TestSupport.content(page) == "")
     }
+
+    // A name wider than two fifths of the chart is shortened with an
+    // ellipsis, and the bars keep their room: in a chart narrower than its
+    // names they went to nothing, the values past the panel (review of 26
+    // October 2026). The description keeps the name whole.
+    @Test func aLongNameIsShortened() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let name = "A name far too long for the column of names of this chart"
+        let chart = SimpleBarChart(font, font).setWidth(200).add(name, 5).add("b", 3)
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains(TestSupport.hex(name)), "\(content)")
+        let shortened = ChartScale.shorten(font, font.getSize(), name, 0.4 * (200 - 2 * font.getSize()))
+        // The ellipsis is 85 in WinAnsi, the encoding of a core font
+        let start = String(String.UnicodeScalarView(shortened.unicodeScalars.dropLast()))
+        #expect(shortened.hasSuffix("\u{2026}") && content.contains(TestSupport.hex(start) + "85>"), "\(content)")
+        #expect(chart.getAltDescription().contains(name))
+        #expect(ChartScale.shorten(font, 10, "A name", font.stringWidth(10, "A n\u{2026}")) == "A n\u{2026}")
+        #expect(ChartScale.shorten(font, 10, "A name", 100) == "A name")
+        #expect(ChartScale.shorten(font, 10, "A  name", font.stringWidth(10, "A \u{2026}") - 0.1) == "A\u{2026}")
+    }
 }

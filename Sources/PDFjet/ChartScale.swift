@@ -183,7 +183,7 @@ enum ChartScale {
     ///
     static func axisOf(_ values: [Float], _ lo: Float, _ hi: Float, _ set: Bool) -> Axis {
         if set {
-            return Axis(min: lo, max: hi, lines: Swift.max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1))
+            return Axis(min: lo, max: hi, lines: roundLines(lo, hi, Swift.max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1)))
         }
         var lo = values[0]
         var hi = values[0]
@@ -196,6 +196,67 @@ enum ChartScale {
         }
         let round = roundMaxAndMinValues(hi, lo)
         return Axis(min: round.minValue, max: round.maxValue, lines: round.numOfGridLines)
+    }
+
+    ///
+    /// Returns the number of grid lines of a range that is set, from 2 to 10,
+    /// the nearest to the lines given, fewer first, whose step is a round
+    /// number, 1, 2, 2.5 or 5 times a power of ten; or the lines given when
+    /// no number is. The range 3 to 17 in the 6 lines of its rounded span was
+    /// written 3.00, 5.33, 7.67; in 7 it is 3, 5, 7.
+    ///
+    static func roundLines(_ lo: Float, _ hi: Float, _ lines: Int) -> Int {
+        let span = Double(hi) - Double(lo)
+        for d in 0...8 {
+            if isRound(span, lines - d) {
+                return lines - d
+            }
+            if isRound(span, lines + d) {
+                return lines + d
+            }
+        }
+        return lines
+    }
+
+    // Tells if the span in the lines, from 2 to 10, has a round step.
+    private static func isRound(_ span: Double, _ lines: Int) -> Bool {
+        if lines < 2 || lines > 10 {
+            return false
+        }
+        let step = span / Double(lines)
+        if !(step > 0.0) || step.isInfinite {
+            return false
+        }
+        let m = step / pow(10.0, floor(log10(step)))
+        return abs(m - 1.0) < 1e-5 || abs(m - 2.0) < 2e-5 || abs(m - 2.5) < 2.5e-5
+                || abs(m - 5.0) < 5e-5 || abs(m - 10.0) < 1e-4
+    }
+
+    ///
+    /// Returns the text, shortened with an ellipsis to fit the width in the
+    /// font at the size, or the text when it fits: a name too long for a
+    /// chart's column of names. The text is cut by code points, as in Java.
+    ///
+    static func shorten(_ font: Font, _ size: Float, _ text: String, _ width: Float) -> String {
+        if font.stringWidth(size, text) <= width {
+            return text
+        }
+        let scalars = Array(text.unicodeScalars)
+        var end = scalars.count
+        while end > 0 {
+            end -= 1
+            var cut = end
+            while cut > 0 && scalars[cut - 1] == " " {
+                cut -= 1
+            }
+            var shorter = String.UnicodeScalarView()
+            shorter.append(contentsOf: scalars[0..<cut])
+            let candidate = String(shorter) + "\u{2026}"
+            if font.stringWidth(size, candidate) <= width {
+                return candidate
+            }
+        }
+        return "\u{2026}"
     }
 
     ///

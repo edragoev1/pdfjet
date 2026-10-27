@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -125,7 +126,8 @@ public class BarChart : IDrawable {
     /// <summary>
     /// Sets the alternate description of the chart, which a screen reader reads
     /// in a PDF/UA document, where the chart is a figure. The default is the
-    /// title, or "Bar chart" without one. Describe what the chart shows.
+    /// title and the subtitle, or "Bar chart" without them, and the values of
+    /// each series by category. Describe what the chart shows.
     /// </summary>
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this BarChart object.</returns>
@@ -419,7 +421,11 @@ public class BarChart : IDrawable {
         return this;
     }
 
-    /// <summary>Draws this chart on the specified page.</summary>
+    /// <summary>
+    /// Draws this chart on the specified page. A category name wider than
+    /// two fifths of a horizontal chart is shortened with an ellipsis, and a
+    /// chart too small for its plot draws nothing.
+    /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>the bottom right corner coordinates [x, y].</returns>
     public float[] DrawOn(Page page) {
@@ -511,15 +517,23 @@ public class BarChart : IDrawable {
                 widestTotal = Math.Max(widestTotal, f2.StringWidth(ValueLabel(up)));
             }
         }
+        // The names of the categories, shortened at the left of horizontal bars
+        List<String> names = new List<String>();
         float widestCategory = 0f;
         foreach (String category in categories) {
-            widestCategory = Math.Max(widestCategory, f2.StringWidth(category));
+            String name = horizontal ? ChartScale.Shorten(f2, f2.GetSize(), category, 0.4f * w) : category;
+            names.Add(name);
+            widestCategory = Math.Max(widestCategory, f2.StringWidth(name));
         }
 
         // Margins and the plot area
-        float titleBaseline = y1 + 1.5f * f1.GetBodyHeight();
+        // The title, the subtitle and the legend, its rows wrapped at the
+        // right edge; no room for a title the chart has not
+        float titleBaseline = y1 + (title.Length == 0 ? 0f : 1.5f * f1.GetBodyHeight());
         float subtitleHeight = subtitle.Length == 0 ? 0f : bodyHeight;
-        float topMargin = 2.5f * f1.GetBodyHeight() + subtitleHeight + (legend ? 1.5f * bodyHeight : 0f);
+        int legendRows = legend ? DrawLegend(null, 0f) : 0;
+        float topMargin = (title.Length == 0 ? f1.GetBodyHeight() : 2.5f * f1.GetBodyHeight()) + subtitleHeight
+                + legendRows * (1.5f * bodyHeight);
         float leftMargin = 1.5f * bodyHeight + pad + (horizontal ? widestCategory : widestAxisLabel);
         float rightMargin = pad;
         float bottomMargin = 2.5f * bodyHeight;
@@ -600,7 +614,7 @@ public class BarChart : IDrawable {
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
-            String category = i < categories.Count ? categories[i] : "";
+            String category = i < names.Count ? names[i] : "";
             if (horizontal) {
                 DrawText(page, f2, category, x5 - pad - f2.StringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
@@ -710,12 +724,49 @@ public class BarChart : IDrawable {
         return new float[] {x1 + w, y1 + h};
     }
 
-    // Returns the alternate description, or the title when none is set.
+    // The alternate description: the one set, or the title, the subtitle and,
+    // for each series, its name and its values by category.
     private String AltDescription() {
         if (!String.IsNullOrEmpty(altDescription)) {
             return altDescription;
         }
-        return (title.Length == 0) ? "Bar chart" : title;
+        StringBuilder sb = new StringBuilder(title);
+        if (subtitle.Length > 0) {
+            if (sb.Length > 0) {
+                sb.Append(", ");
+            }
+            sb.Append(subtitle);
+        }
+        if (sb.Length == 0) {
+            sb.Append("Bar chart");
+        }
+        String separator = ": ";
+        foreach (Series s in series) {
+            StringBuilder values = new StringBuilder();
+            for (int i = 0; i < s.values.Length; i++) {
+                if (!ChartScale.IsValue(s.values[i])) {
+                    continue;
+                }
+                if (values.Length > 0) {
+                    values.Append(", ");
+                }
+                String category = i < categories.Count ? categories[i] : "";
+                if (category.Length > 0) {
+                    values.Append(category).Append(' ');
+                }
+                values.Append(ValueLabel(s.values[i]));
+            }
+            if (values.Length == 0) {
+                continue;
+            }
+            sb.Append(separator);
+            if (s.name.Length > 0) {
+                sb.Append(s.name).Append(": ");
+            }
+            sb.Append(values);
+            separator = "; ";
+        }
+        return sb.Append('.').ToString();
     }
 
     /// <summary>Returns the number of category slots: the categories or the longest series.</summary>
@@ -797,22 +848,39 @@ public class BarChart : IDrawable {
         page.DrawLine(xa, ya, xb, yb);
     }
 
-    /// <summary>Draws the legend at the left under the title, with a swatch before each series name.</summary>
-    private void DrawLegend(Page page, float baseline) {
+    /// <summary>
+    /// Draws the legend at the left under the title, with a swatch before each
+    /// series name, from the baseline of its first row, its rows wrapped at
+    /// the right edge of the chart, when there is a page; and returns the
+    /// number of rows. A series with a color per bar has the color of its
+    /// first bar.
+    /// </summary>
+    private int DrawLegend(Page page, float baseline) {
         float swatch = f2.GetAscent();
         float gap = swatch / 2f;
         float x = x1;
+        int rows = 1;
         for (int j = 0; j < series.Count; j++) {
             Series s = series[j];
             if (s.name.Length == 0) {
                 continue;
             }
-            page.SetBrushColor(BarColor(s, j, -1));
-            page.FillRect(x, baseline - swatch, swatch, swatch);
+            if (x > x1 && x + swatch + gap + f2.StringWidth(s.name) > x1 + w) {
+                x = x1;
+                baseline += 1.5f * f2.GetBodyHeight();
+                rows++;
+            }
+            if (page != null) {
+                page.SetBrushColor((s.colors != null && s.colors.Length > 0) ? s.colors[0] : BarColor(s, j, -1));
+                page.FillRect(x, baseline - swatch, swatch, swatch);
+            }
             x += swatch + gap;
-            DrawText(page, f2, s.name, x, baseline, INK);
+            if (page != null) {
+                DrawText(page, f2, s.name, x, baseline, INK);
+            }
             x += f2.StringWidth(s.name) + f2.GetBodyHeight();
         }
+        return rows;
     }
 }   // End of BarChart.cs
 }   // End of namespace PDFjet.NET

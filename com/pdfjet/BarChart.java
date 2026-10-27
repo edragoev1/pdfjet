@@ -132,7 +132,8 @@ public class BarChart implements Drawable {
     /**
      * Sets the alternate description of the chart, which a screen reader reads
      * in a PDF/UA document, where the chart is a figure. The default is the
-     * title, or "Bar chart" without one. Describe what the chart shows.
+     * title and the subtitle, or "Bar chart" without them, and the values of
+     * each series by category. Describe what the chart shows.
      *
      * @param altDescription the alternate description.
      * @return this BarChart object.
@@ -473,7 +474,9 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Draws this chart on the specified page.
+     * Draws this chart on the specified page. A category name wider than
+     * two fifths of a horizontal chart is shortened with an ellipsis, and a
+     * chart too small for its plot draws nothing.
      *
      * @param page the page to draw on.
      * @return the bottom right corner coordinates [x, y].
@@ -567,15 +570,23 @@ public class BarChart implements Drawable {
                 widestTotal = Math.max(widestTotal, f2.stringWidth(valueLabel(up)));
             }
         }
+        // The names of the categories, shortened at the left of horizontal bars
+        List<String> names = new ArrayList<>();
         float widestCategory = 0f;
         for (String category : categories) {
-            widestCategory = Math.max(widestCategory, f2.stringWidth(category));
+            String name = horizontal ? ChartScale.shorten(f2, f2.getSize(), category, 0.4f * w) : category;
+            names.add(name);
+            widestCategory = Math.max(widestCategory, f2.stringWidth(name));
         }
 
         // Margins and the plot area
-        float titleBaseline = y1 + 1.5f * f1.getBodyHeight();
+        // The title, the subtitle and the legend, its rows wrapped at the
+        // right edge; no room for a title the chart has not
+        float titleBaseline = y1 + (title.isEmpty() ? 0f : 1.5f * f1.getBodyHeight());
         float subtitleHeight = subtitle.isEmpty() ? 0f : bodyHeight;
-        float topMargin = 2.5f * f1.getBodyHeight() + subtitleHeight + (legend ? 1.5f * bodyHeight : 0f);
+        int legendRows = legend ? drawLegend(null, 0f) : 0;
+        float topMargin = (title.isEmpty() ? f1.getBodyHeight() : 2.5f * f1.getBodyHeight()) + subtitleHeight
+                + legendRows * (1.5f * bodyHeight);
         float leftMargin = 1.5f * bodyHeight + pad + (horizontal ? widestCategory : widestAxisLabel);
         float rightMargin = pad;
         float bottomMargin = 2.5f * bodyHeight;
@@ -656,7 +667,7 @@ public class BarChart implements Drawable {
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
-            String category = i < categories.size() ? categories.get(i) : "";
+            String category = i < names.size() ? names.get(i) : "";
             if (horizontal) {
                 drawText(page, f2, category, x5 - pad - f2.stringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
@@ -766,12 +777,49 @@ public class BarChart implements Drawable {
         return new float[] {x1 + w, y1 + h};
     }
 
-    // Returns the alternate description, or the title when none is set.
+    // The alternate description: the one set, or the title, the subtitle and,
+    // for each series, its name and its values by category.
     private String altDescription() {
         if (altDescription != null && !altDescription.isEmpty()) {
             return altDescription;
         }
-        return title.isEmpty() ? "Bar chart" : title;
+        StringBuilder sb = new StringBuilder(title);
+        if (!subtitle.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(subtitle);
+        }
+        if (sb.length() == 0) {
+            sb.append("Bar chart");
+        }
+        String separator = ": ";
+        for (Series s : series) {
+            StringBuilder values = new StringBuilder();
+            for (int i = 0; i < s.values.length; i++) {
+                if (!ChartScale.isValue(s.values[i])) {
+                    continue;
+                }
+                if (values.length() > 0) {
+                    values.append(", ");
+                }
+                String category = i < categories.size() ? categories.get(i) : "";
+                if (!category.isEmpty()) {
+                    values.append(category).append(' ');
+                }
+                values.append(valueLabel(s.values[i]));
+            }
+            if (values.length() == 0) {
+                continue;
+            }
+            sb.append(separator);
+            if (!s.name.isEmpty()) {
+                sb.append(s.name).append(": ");
+            }
+            sb.append(values);
+            separator = "; ";
+        }
+        return sb.append('.').toString();
     }
 
     /** Returns the number of category slots: the categories or the longest series. */
@@ -853,22 +901,36 @@ public class BarChart implements Drawable {
         page.drawLine(xa, ya, xb, yb);
     }
 
-    /** Draws the legend at the left under the title, with a swatch before each series name. */
-    private void drawLegend(Page page, float baseline) {
+    // Draws the legend from the baseline of its first row, its rows wrapped
+    // at the right edge of the chart, when there is a page; and returns the
+    // number of rows. A series with a color per bar has the color of its
+    // first bar.
+    private int drawLegend(Page page, float baseline) {
         float swatch = f2.getAscent();
         float gap = swatch / 2f;
         float x = x1;
+        int rows = 1;
         for (int j = 0; j < series.size(); j++) {
             Series s = series.get(j);
             if (s.name.isEmpty()) {
                 continue;
             }
-            page.setBrushColor(barColor(s, j, -1));
-            page.fillRect(x, baseline - swatch, swatch, swatch);
+            if (x > x1 && x + swatch + gap + f2.stringWidth(s.name) > x1 + w) {
+                x = x1;
+                baseline += 1.5f * f2.getBodyHeight();
+                rows++;
+            }
+            if (page != null) {
+                page.setBrushColor((s.colors != null && s.colors.length > 0) ? s.colors[0] : barColor(s, j, -1));
+                page.fillRect(x, baseline - swatch, swatch, swatch);
+            }
             x += swatch + gap;
-            drawText(page, f2, s.name, x, baseline, INK);
+            if (page != null) {
+                drawText(page, f2, s.name, x, baseline, INK);
+            }
             x += f2.stringWidth(s.name) + f2.getBodyHeight();
         }
+        return rows;
     }
 
 }

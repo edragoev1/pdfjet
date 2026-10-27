@@ -162,7 +162,7 @@ public class BarChartTest {
     }
 
     [Fact]
-    public void AChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
+    public void AChartIsAFigureDescribedByItsDataOrItsAlternateDescription() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart titled = NewChart(pdf).SetTitle("Sales").SetCategories("a", "b");
@@ -174,22 +174,67 @@ public class BarChartTest {
                 .SetCategories("a", "b");
         described.AddSeries("", new float[] {1f, 2f});
         Draw(described, page);
-        Assert.Equal("Sales", page.structures[0].altDescription);
+        Assert.Equal("Sales: a 1, b 2.", page.structures[0].altDescription);
         Assert.Equal("Sales rose from 1 to 2.", page.structures[1].altDescription);
     }
 
-    // A horizontal chart narrower than its categories draws nothing: its
-    // axis ran backwards, the bars over the categories (review of 26 October
-    // 2026).
+    // A category name wider than two fifths of a horizontal chart is
+    // shortened with an ellipsis, and a chart too small for its plot draws
+    // nothing: its axis ran backwards, the bars over the names (review of 26
+    // October 2026).
     [Fact]
-    public void AChartWithNoRoomForItsPlotDrawsNothing() {
+    public void ALongNameIsShortenedAndAChartWithNoRoomDrawsNothing() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
+        string name = "A very very long category name indeed, and longer";
         BarChart chart = NewChart(pdf).SetSize(200f, 200f).SetHorizontal(true)
-                .SetCategories("A very very long category name indeed, and longer")
-                .AddSeries("s", new float[] {5f});
+                .SetCategories(name).AddSeries("s", new float[] {5f});
         TestSupport.AssertXY(250f, 250f, chart.DrawOn(page));
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex(name), content);
+        string shortened = ChartScale.Shorten(TestSupport.Helvetica(pdf), TestSupport.Helvetica(pdf).GetSize(), name, 0.4f * 200f);
+        // The ellipsis is 85 in WinAnsi, the encoding of a core font
+        string start = shortened.Substring(0, shortened.Length - 1);
+        Assert.EndsWith("\u2026", shortened);
+        Assert.Contains(TestSupport.Hex(start) + "85>", content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetSize(20f, 20f).SetCategories("a").AddSeries("s", new float[] {5f}).DrawOn(page);
         Assert.Equal("", TestSupport.Content(page));
+    }
+
+    // A chart without a title has no room for one: its plot starts higher,
+    // its bars taller. The legend wraps at the right edge, and a series with
+    // a color per bar has the color of its first bar in it.
+    [Fact]
+    public void TheTopOfTheChartIsWhatItHas() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        string titled = Draw(NewChart(pdf).SetTitle("t").SetCategories("a").AddSeries("", new float[] {1f}), page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        string untitled = Draw(NewChart(pdf).SetCategories("a").AddSeries("", new float[] {1f}), page);
+        Assert.True(BarHeight(untitled) > BarHeight(titled) + 10f, BarHeight(untitled) + " " + BarHeight(titled));
+        page = new Page(pdf, Letter.PORTRAIT);
+        BarChart wide = NewChart(pdf).SetCategories("a").SetDrawLegend(true);
+        for (int i = 0; i < 8; i++) {
+            wide.AddSeries("Series number " + i, new float[] {1f});
+        }
+        string content = Draw(wide, page);
+        Assert.NotEqual(TestSupport.PositionOf(content, "Series number 0")[1],
+                TestSupport.PositionOf(content, "Series number 7")[1]);
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetCategories("a", "b").SetDrawLegend(true)
+                .AddSeries("own", new float[] {1f, 2f}, new int[] {0x123456, 0x654321}), page);
+        int swatch = content.IndexOf("0.07 0.2 0.34 rg\n", System.StringComparison.Ordinal);
+        Assert.True(swatch >= 0 && swatch < content.IndexOf(TestSupport.Hex("own"), System.StringComparison.Ordinal), content);
+    }
+
+    // The height of the first bar the content fills in navy.
+    private static float BarHeight(string content) {
+        int i = content.IndexOf(" re\n", content.IndexOf("0.12 0.23 0.37 rg\n", System.StringComparison.Ordinal),
+                System.StringComparison.Ordinal);
+        int start = content.LastIndexOf('\n', i) + 1;
+        string[] parts = content.Substring(start, i - start).Split(' ');
+        return System.Math.Abs(float.Parse(parts[3], System.Globalization.CultureInfo.InvariantCulture));
     }
 
     // Under vertical bars a category is written where it leaves the one

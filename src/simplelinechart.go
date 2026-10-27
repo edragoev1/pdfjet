@@ -313,7 +313,8 @@ func (chart *SimpleLineChart) getAltDescription() string {
 }
 
 // DrawOn draws the chart on the page and returns the x and y coordinates of
-// its bottom right corner.
+// its bottom right corner. A chart too small for its plot, its numbers and
+// its labels draws nothing.
 func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	n := chart.count()
 	values := make([]float32, 0)
@@ -512,6 +513,14 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	sort.SliceStable(labels, func(a, b int) bool { return labels[a].y < labels[b].y })
 	for k := 1; k < len(labels); k++ {
 		labels[k].y = max(labels[k].y, labels[k-1].y+f2.bodyHeight)
+	}
+	// and up from the bottom of the plot, when the last is pushed past it
+	if len(labels) > 0 {
+		last := len(labels) - 1
+		labels[last].y = min(labels[last].y, bottom+float32(ascent/2.0))
+		for k := last - 1; k >= 0; k-- {
+			labels[k].y = min(labels[k].y, labels[k+1].y-f2.bodyHeight)
+		}
 	}
 	for _, label := range labels {
 		c := simpleBarMuted

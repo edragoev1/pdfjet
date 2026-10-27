@@ -91,7 +91,9 @@ public class DonutChart implements Drawable {
     /**
      * Sets the title, drawn at the top left of the chart's location in the
      * bold font, the second, at the size of the labels; the circle is drawn
-     * under it. A chart without a title has the circle at its location.
+     * under it. A chart without the second font, which draws no
+     * percentages, draws its title in the first. A chart without a title
+     * has the circle at its location.
      *
      * @param title the title.
      * @return this DonutChart object.
@@ -114,8 +116,8 @@ public class DonutChart implements Drawable {
 
     /**
      * Sets the alternate description of the chart, which a screen reader reads
-     * in a PDF/UA document, where the chart is a figure. The default lists the
-     * label and the percentage of each slice.
+     * in a PDF/UA document, where the chart is a figure. The default is the
+     * title and the subtitle, and the label and the percentage of each slice.
      *
      * @param altDescription the alternate description.
      * @return this DonutChart object.
@@ -225,71 +227,105 @@ public class DonutChart implements Drawable {
         return a2;
     }
 
-    // Draws the leader line and label for a slice, and returns the box they
-    // are in: its left, top, right and bottom.
-    private float[] drawLinePointer(
-            Page page,
-            String text,
-            float xc, float yc,
-            float r1,
-            float a1, float a2) throws Exception {
+    // The leader line and the label of a slice: the point on the edge of the
+    // circle, the elbow 15 points past it, the y of the label's line, moved
+    // down from the elbow's when it would meet the label above it, and the
+    // side of the circle it is on.
+    private static final class Pointer {
+        final String text;
+        final float[] p1;
+        final float[] p2;
+        final boolean right;
+        float yEnd;
+
+        Pointer(String text, float[] p1, float[] p2, boolean right) {
+            this.text = text;
+            this.p1 = p1;
+            this.p2 = p2;
+            this.right = right;
+            this.yEnd = p2[1];
+        }
+    }
+
+    // Returns the pointer of a slice from the angle a1 to a2.
+    private Pointer pointerOf(String text, float xc, float yc, float r1, float a1, float a2) {
         float midAngle = (a1 + a2) / 2.0f - 90.0f;
+        float[] p1 = getPoint(xc, yc, r1, midAngle);            // On the outer edge
+        float[] p2 = getPoint(xc, yc, r1 + 15.0f, midAngle);    // The elbow
+        return new Pointer(text, p1, p2, Math.cos(midAngle * Math.PI / 180.0) >= 0);
+    }
 
-        // Point on the outer edge of the donut
-        float[] p1 = getPoint(xc, yc, r1, midAngle);
+    // Moves the labels on each side of the circle apart, top to bottom, where
+    // one would meet the one above it.
+    private void moveApart(List<Pointer> pointers) {
+        if (f1 == null) {
+            return;
+        }
+        for (int side = 0; side < 2; side++) {
+            List<Pointer> labels = new ArrayList<>();
+            for (Pointer pointer : pointers) {
+                if (pointer.right == (side == 0) && !pointer.text.isEmpty()) {
+                    labels.add(pointer);
+                }
+            }
+            // Top to bottom, and labels at one height in the order of their slices
+            Collections.sort(labels, (a, b) -> a.yEnd != b.yEnd
+                    ? Float.compare(a.yEnd, b.yEnd) : Integer.compare(pointers.indexOf(a), pointers.indexOf(b)));
+            for (int k = 1; k < labels.size(); k++) {
+                labels.get(k).yEnd = Math.max(labels.get(k).yEnd, labels.get(k - 1).yEnd + f1.getBodyHeight());
+            }
+        }
+    }
 
-        // Elbow point — 15pt beyond the outer edge
-        float r3 = r1 + 15.0f;
-        float[] p2 = getPoint(xc, yc, r3, midAngle);
-
-        // Draw the pointer line: edge → elbow → horizontal end, thin and gray
-        page.setPenColor(LEADER);
-        page.setPenWidth(0.75f);
-        page.moveTo(p1[0], p1[1]);
-        page.lineTo(p2[0], p2[1]);
-
-        if (f1 != null && !text.isEmpty()) {
-            float textWidth = f1.stringWidth(text);
-            boolean onRightSide = Math.cos(midAngle * Math.PI / 180.0) >= 0;
-
-            float padding = 4.0f;
-            float lineLength = textWidth + padding;
-
-            float xEnd = onRightSide ? p2[0] + lineLength : p2[0] - lineLength;
-            float yEnd = p2[1];
-
-            // Continue the path to the horizontal end
+    // Returns the box of the leader line and the label of the pointer: its
+    // left, top, right and bottom; and draws them when there is a page.
+    private float[] drawPointer(Page page, Pointer pointer) throws Exception {
+        float[] p1 = pointer.p1;
+        float x2 = pointer.p2[0];
+        float yEnd = pointer.yEnd;
+        if (page != null) {
+            // The line: edge, elbow, and along to the end, thin and gray
+            page.setPenColor(LEADER);
+            page.setPenWidth(0.75f);
+            page.moveTo(p1[0], p1[1]);
+            page.lineTo(x2, yEnd);
+        }
+        if (f1 != null && !pointer.text.isEmpty()) {
+            float textWidth = f1.stringWidth(pointer.text);
+            float lineLength = textWidth + 4.0f;
+            float xEnd = pointer.right ? x2 + lineLength : x2 - lineLength;
+            // The label just above the line
+            float x = pointer.right ? x2 + 2.0f : xEnd + 2.0f;
+            float baseline = yEnd - f1.getAscent() / 3.0f;
+            if (page != null) {
+                page.lineTo(xEnd, yEnd);
+                page.strokePath();
+                page.drawString(f1, f1.getSize(), pointer.text, x, baseline, Util.toRGB(INK), null);
+            }
+            return new float[] {
+                    Math.min(Math.min(p1[0], x2), Math.min(xEnd, x)),
+                    Math.min(Math.min(p1[1], yEnd), baseline - f1.getAscent()),
+                    Math.max(Math.max(p1[0], x2), Math.max(xEnd, x + textWidth)),
+                    Math.max(Math.max(p1[1], yEnd), baseline + f1.getDescent())};
+        }
+        // No text: a short line along
+        float xEnd = pointer.right ? x2 + 20.0f : x2 - 20.0f;
+        if (page != null) {
             page.lineTo(xEnd, yEnd);
             page.strokePath();
-
-            // Draw the label text just above the horizontal line
-            float x = onRightSide ? p2[0] + 2.0f : xEnd + 2.0f;
-            float baseline = yEnd - f1.getAscent() / 3.0f;
-            page.drawString(f1, f1.getSize(), text, x, baseline,
-                    Util.toRGB(INK), null);
-            return new float[] {
-                    Math.min(Math.min(p1[0], p2[0]), Math.min(xEnd, x)),
-                    Math.min(Math.min(p1[1], p2[1]), baseline - f1.getAscent()),
-                    Math.max(Math.max(p1[0], p2[0]), Math.max(xEnd, x + textWidth)),
-                    Math.max(Math.max(p1[1], p2[1]), baseline + f1.getDescent())};
-        } else {
-            // No text — short horizontal stub
-            boolean onRightSide = Math.cos(midAngle * Math.PI / 180.0) >= 0;
-            float xEnd = onRightSide ? p2[0] + 20.0f : p2[0] - 20.0f;
-            page.lineTo(xEnd, p2[1]);
-            page.strokePath();
-            return new float[] {
-                    Math.min(Math.min(p1[0], p2[0]), xEnd), Math.min(p1[1], p2[1]),
-                    Math.max(Math.max(p1[0], p2[0]), xEnd), Math.max(p1[1], p2[1])};
         }
+        return new float[] {
+                Math.min(Math.min(p1[0], x2), xEnd), Math.min(p1[1], yEnd),
+                Math.max(Math.max(p1[0], x2), xEnd), Math.max(p1[1], yEnd)};
     }
 
     /**
      * Draws this chart on the specified page.
      *
-     * @param page the page to draw on.
-     * @return x and y coordinates of the bottom right corner of the outer
-     * circle of this chart. The slice labels can extend past it.
+     * @param page the page to draw on, or null to measure the chart.
+     * @return x and y coordinates of the bottom right corner of the chart:
+     * of its title, its circle, and its leader lines and labels, which can
+     * reach past the circle.
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
@@ -317,58 +353,77 @@ public class DonutChart implements Drawable {
         float yc = top + r1;
 
         // The slices with a value above 0 share the circle
+        float[] values = values();
         float total = 0.0f;
-        for (Slice slice : slices) {
-            if (sliceDrawn(slice.value)) {
-                total += slice.value;
-            }
+        for (float value : values) {
+            total += value;
         }
-        if (page == null || total <= 0.0f) {   // Measured, or nothing to draw
+        if (total <= 0.0f) {   // Nothing to draw
             return new float[] {xc + r1, yc + r1};
         }
+        int[] percentages = percentages(values, total);
+
+        // The leader lines and the labels, moved apart, and the box of the
+        // figure: the title, the outer circle, the leader lines and the labels
+        List<Pointer> pointers = new ArrayList<>();
+        float angle = 0.0f;
+        for (int i = 0; i < slices.size(); i++) {
+            if (values[i] > 0.0f) {
+                float sweep = values[i] * 360.0f / total;
+                pointers.add(pointerOf(slices.get(i).text, xc, yc, r1, angle, angle + sweep));
+                angle += sweep;
+            }
+        }
+        moveApart(pointers);
+        float[] box = {x, y, x + 2f * r1, yc + r1};
+        if (titleBaseline > 0f) {
+            box[2] = Math.max(box[2], x + titleFont.stringWidth(titleSize, title));
+        }
+        if (subtitleBaseline > 0f) {
+            box[2] = Math.max(box[2], x + f1.stringWidth(subtitle));
+        }
+        for (Pointer pointer : pointers) {
+            box = union(box, drawPointer(null, pointer));
+        }
+        if (page == null) {     // Measured
+            return new float[] {box[2], box[3]};
+        }
+
         // The chart is one figure, described by its alternate description.
-        page.addBDC(StructElem.FIGURE, null, altDescription(total));
+        page.addBDC(StructElem.FIGURE, null, altDescription(values, percentages));
         // The pen, the brush and the dash pattern of the caller are kept, as
         // a Stamp keeps them: the chart left the page with
         // the black pen of its pointers and the color of its last slice.
         page.saveGraphicsState();
-        // The box of the figure: the title, the outer circle, and the
-        // pointers and the labels, which can reach past it
-        float[] box = {x, y, x + 2f * r1, yc + r1};
         if (titleBaseline > 0f) {
             page.drawString(titleFont, titleSize, title, x, titleBaseline, Util.toRGB(INK), null);
-            box[2] = Math.max(box[2], x + titleFont.stringWidth(titleSize, title));
         }
         if (subtitleBaseline > 0f) {
             page.drawString(f1, f1.getSize(), subtitle, x, subtitleBaseline, Util.toRGB(MUTED), null);
-            box[2] = Math.max(box[2], x + f1.stringWidth(subtitle));
         }
-        float angle = 0.0f;
+        angle = 0.0f;
         int drawn = 0;
         List<Float> edges = new ArrayList<>();
-        for (Slice slice : slices) {
-            if (!sliceDrawn(slice.value)) {
+        List<Float> sweeps = new ArrayList<>();
+        for (int i = 0; i < slices.size(); i++) {
+            if (values[i] <= 0.0f) {
                 continue;
             }
+            Slice slice = slices.get(i);
             int color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.length] : slice.color;
-            drawn++;
-            float sweep = slice.value * 360.0f / total;
+            float sweep = values[i] * 360.0f / total;
             angle = drawSlice(
                     page, color,
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep);
             edges.add(angle);
-            float[] pointer = drawLinePointer(
-                    page, slice.text,
-                    xc, yc,
-                    r1,
-                    angle - sweep, angle);
-            box = new float[] {Math.min(box[0], pointer[0]), Math.min(box[1], pointer[1]),
-                    Math.max(box[2], pointer[2]), Math.max(box[3], pointer[3])};
+            sweeps.add(sweep);
+            drawPointer(page, pointers.get(drawn));
+            drawn++;
             // The percentage fits inside a slice of 15 degrees or more
             if (f2 != null && sweep >= 15.0f) {
-                String pctStr = percentage(slice, total);
+                String pctStr = percentages[i] + "%";
                 float midAngle = angle - sweep / 2.0f - 90.0f;
                 float midR = (r1 + r2) / 2.0f;
                 float[] pos = getPoint(xc, yc, midR, midAngle);
@@ -378,11 +433,17 @@ public class DonutChart implements Drawable {
                         Util.toRGB(BarChart.labelColorOn(color)), null);
             }
         }
-        // A thin white line between the slices, from the hole to the edge
+        // A thin white line between the slices, from the hole to the edge, at
+        // most a quarter as wide as the thinner of the two slices is across
+        // the middle of the ring, so that it does not cover a thin slice
         if (drawn > 1) {
             page.setPenColor(Color.white);
-            page.setPenWidth(1.5f);
-            for (float edge : edges) {
+            float midR = (r1 + r2) / 2.0f;
+            for (int k = 0; k < drawn; k++) {
+                float thinner = Math.min(sweeps.get(k), sweeps.get((k + 1) % drawn));
+                float across = midR * ((float) (thinner * Math.PI / 180.0));
+                page.setPenWidth(Math.min(1.5f, 0.25f * across));
+                float edge = edges.get(k);
                 float[] inner = getPoint(xc, yc, r2, edge - 90.0f);
                 float[] outer = getPoint(xc, yc, r1, edge - 90.0f);
                 page.drawLine(inner[0], inner[1], outer[0], outer[1]);
@@ -391,15 +452,72 @@ public class DonutChart implements Drawable {
         page.restoreGraphicsState();
         page.setFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1]);
         page.addEMC();
-        return new float[] {xc + r1, yc + r1};
+        return new float[] {box[2], box[3]};
     }
 
-    // Tells whether a slice of the value is drawn: a number above 0, whose
-    // 360ths are a number too. A NaN, from 0/0 in an empty category of real
-    // data, an infinity, or a value whose 360ths overflow a float made the
-    // arc's loop endless, until memory ran out (review of 11 October 2026, #2).
-    private static boolean sliceDrawn(float value) {
-        return value > 0.0f && isValue(value * 360.0f);
+    // Returns the box that holds the two boxes, each left, top, right, bottom.
+    private static float[] union(float[] a, float[] b) {
+        return new float[] {Math.min(a[0], b[0]), Math.min(a[1], b[1]),
+                Math.max(a[2], b[2]), Math.max(a[3], b[3])};
+    }
+
+    // Returns the value of each slice that is drawn, and 0 for the others: a
+    // slice is drawn when its value is a number above 0. A NaN, from 0/0 in
+    // an empty category of real data, or an infinity made the arc's loop
+    // endless, until memory ran out (review of 11 October 2026, #2). Values
+    // whose 360ths or whose sum are past the largest float are divided by the
+    // largest of them, so that they are drawn as they compare.
+    private float[] values() {
+        float[] values = new float[slices.size()];
+        float largest = 0.0f;
+        float total = 0.0f;
+        for (int i = 0; i < values.length; i++) {
+            float value = slices.get(i).value;
+            if (value > 0.0f && isValue(value)) {
+                values[i] = value;
+                largest = Math.max(largest, value);
+                total += value;
+            }
+        }
+        if (largest > 0.0f && (!isValue(largest * 360.0f) || !isValue(total))) {
+            for (int i = 0; i < values.length; i++) {
+                values[i] = values[i] / largest;
+            }
+        }
+        return values;
+    }
+
+    // Returns the whole percentage of each slice that is drawn, by the largest
+    // remainder, so that they add up to 100: each rounded alone, 90 and six of
+    // 1.5 were 91 and six of 2.
+    private static int[] percentages(float[] values, float total) {
+        int[] percentages = new int[values.length];
+        double[] remainders = new double[values.length];
+        int sum = 0;
+        for (int i = 0; i < values.length; i++) {
+            remainders[i] = -1.0;
+            if (values[i] > 0.0f) {
+                double exact = (double) values[i] * 100.0 / (double) total;
+                percentages[i] = (int) Math.floor(exact);
+                remainders[i] = exact - percentages[i];
+                sum += percentages[i];
+            }
+        }
+        // The points left over to the largest remainders, the first of equal ones
+        for (; sum < 100; sum++) {
+            int largest = -1;
+            for (int i = 0; i < values.length; i++) {
+                if (remainders[i] >= 0.0 && (largest < 0 || remainders[i] > remainders[largest])) {
+                    largest = i;
+                }
+            }
+            if (largest < 0) {
+                break;
+            }
+            percentages[largest]++;
+            remainders[largest] = -1.0;
+        }
+        return percentages;
     }
 
     // Tells if the value is a number: not NaN, and not infinite.
@@ -407,27 +525,28 @@ public class DonutChart implements Drawable {
         return !Float.isNaN(value) && !Float.isInfinite(value);
     }
 
-    // Returns the share of the slice in the total, as a whole percentage.
-    private static String percentage(Slice slice, float total) {
-        return Math.round(slice.value * 100.0f / total) + "%";
-    }
-
-    // Returns the alternate description, or the label and the percentage of
-    // each slice when none is set.
-    private String altDescription(float total) {
+    // Returns the alternate description, or the title, the subtitle, and the
+    // label and the percentage of each slice when none is set.
+    private String altDescription(float[] values, int[] percentages) {
         if (altDescription != null && !altDescription.isEmpty()) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(!title.isEmpty() ? title + ":"
-                : (r2 > 0.0f ? "Donut chart:" : "Pie chart:"));
+        String name = title;
+        if (!subtitle.isEmpty()) {
+            name = name.isEmpty() ? subtitle : name + ", " + subtitle;
+        }
+        if (name.isEmpty()) {
+            name = (r2 > 0.0f) ? "Donut chart" : "Pie chart";
+        }
+        StringBuilder sb = new StringBuilder(name).append(':');
         String separator = " ";
-        for (Slice slice : slices) {
-            if (sliceDrawn(slice.value)) {
+        for (int i = 0; i < slices.size(); i++) {
+            if (values[i] > 0.0f) {
                 sb.append(separator);
-                if (!slice.text.isEmpty()) {
-                    sb.append(slice.text).append(' ');
+                if (!slices.get(i).text.isEmpty()) {
+                    sb.append(slices.get(i).text).append(' ');
                 }
-                sb.append(percentage(slice, total));
+                sb.append(percentages[i]).append('%');
                 separator = ", ";
             }
         }

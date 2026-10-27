@@ -385,7 +385,8 @@ public class SimpleScatterChart : IDrawable {
     }
 
     /// <summary>
-    /// Draws the chart on the page.
+    /// Draws the chart on the page. A chart too small for its plot and its
+    /// numbers draws nothing.
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
@@ -586,6 +587,11 @@ public class SimpleScatterChart : IDrawable {
             lx = px - big - size / 3f - width;  // At the left, not past the plot
         }
         float baseline = py + ascent / 2f;
+        // On a patch of the panel's color, which the dots and the grid do not
+        // show through
+        page.SetBrushColor(panelColor >= 0 ? panelColor : Color.white);
+        page.FillRect(lx - 1f, baseline - f1.GetAscent(size) - 1f,
+                width + 2f, f1.GetAscent(size) + f1.GetDescent(size) + 2f);
         page.DrawString(f1, size, p.name, lx, baseline, Util.ToRGB(highlightColor), null);
         float x1 = Math.Min(px - big, lx);
         float y1 = Math.Min(py - big, baseline - f1.GetAscent(size));

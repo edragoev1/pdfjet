@@ -169,5 +169,19 @@ public class SimpleScatterChartTest {
         new SimpleScatterChart(font, font).SetTitle(null).SetSubtitle(null).SetXAxisTitle(null)
                 .SetYAxisTitle(null).SetAltDescription(null).Add(null, 1f, 1f).Add(2f, 3f).DrawOn(page);
     }
+
+    // The name of a highlighted point is on a patch of the panel's color, so
+    // that the gray dots under it do not show through.
+    [Fact]
+    public void ANameIsOnAPatchOfThePanel() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).DrawOn(page);
+        string content = TestSupport.Content(page);
+        int name = content.IndexOf("<" + TestSupport.Hex("Canada"), StringComparison.Ordinal);
+        int patch = content.LastIndexOf("0.95 0.95 0.96 rg\n", name, StringComparison.Ordinal);
+        Assert.True(patch > content.IndexOf("0.12 0.23 0.37 rg\n", StringComparison.Ordinal), content);     // After the navy dot
+        Assert.Contains(" re\n", content.Substring(patch, name - patch));
+    }
 }
 }   // End of namespace PDFjet.NET

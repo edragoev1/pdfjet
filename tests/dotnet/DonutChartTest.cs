@@ -96,24 +96,26 @@ public class DonutChartTest {
     public void ATitleIsDrawnAboveTheCircle() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        TestSupport.AssertXY(300f, 300f, NewChart(pdf).AddSlice(new Slice(1f, "a")).DrawOn(page));
+        // The circle, and its label 15 under it
+        TestSupport.AssertXY(300f, 315f, NewChart(pdf).AddSlice(new Slice(1f, "a")).DrawOn(page));
         float[] xy = NewChart(pdf).SetTitle("Fruit").SetSubtitle("This week")
                 .AddSlice(new Slice(1f, "a")).DrawOn(page);
         Assert.Equal(300f, xy[0], 0.01f);
-        Assert.True(xy[1] > 300f, "the circle is under the title: " + xy[1]);
+        Assert.True(xy[1] > 315f, "the circle is under the title: " + xy[1]);
         string content = TestSupport.Content(page);
         Assert.Contains(TestSupport.Hex("Fruit"), content);
         Assert.Contains(TestSupport.Hex("This week"), content);
         Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "This week"));
-        Assert.Equal("Fruit: a 100%", page.structures[1].altDescription);
+        Assert.Equal("Fruit, This week: a 100%", page.structures[1].altDescription);
     }
 
-    // A slice that is not a number, an infinity, or a value whose 360ths
-    // overflow is not drawn, and the others are: one made the arc's loop
-    // endless (review of 11 October 2026, #2).
+    // A slice that is not a number or an infinity is not drawn, and the
+    // others are: one made the arc's loop endless (review of 11 October 2026,
+    // #2). A value whose 360ths are past the largest float is drawn, as it
+    // compares with the others (review of 26 October 2026).
     [Fact]
     public void ASliceThatIsNotANumberIsNotDrawn() {
-        foreach (float bad in new float[] {float.NaN, float.PositiveInfinity, 1e36f}) {
+        foreach (float bad in new float[] {float.NaN, float.PositiveInfinity}) {
             PDF pdf = TestSupport.NewPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             DonutChart chart = NewChart(pdf);
@@ -125,6 +127,10 @@ public class DonutChartTest {
             Assert.Contains(TestSupport.Hex("25%"), content);
             Assert.Contains(TestSupport.Hex("75%"), content);
         }
+        PDF pdf2 = TestSupport.NewPDF();
+        Page page2 = new Page(pdf2, Letter.PORTRAIT);
+        NewChart(pdf2).AddSlice(new Slice(3e38f, "a")).AddSlice(new Slice(3e38f, "b")).DrawOn(page2);
+        Assert.Contains(TestSupport.Hex("50%"), TestSupport.Content(page2));
     }
 
     // A slice is computed with the precision of Go's port, float or double
@@ -158,6 +164,34 @@ public class DonutChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         NewChart(pdf).AddSlice(null).AddSlice(new Slice(1f, "a")).DrawOn(page);
         Assert.Contains(TestSupport.Hex("a"), TestSupport.Content(page));
+    }
+
+    // The labels of thin slices side by side are moved apart, a line apart at
+    // least; the percentages add up to 100; the white line by a thin slice is
+    // narrower than it; and DrawOn returns the bottom right corner of the
+    // labels too, measured as drawn (review of 26 October 2026).
+    [Fact]
+    public void ThinSlicesKeepTheirLabelsApart() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart chart = NewChart(pdf).AddSlice(new Slice(90f, "Big"));
+        for (int i = 0; i < 6; i++) {
+            chart.AddSlice(new Slice(1.5f, "Small " + i));
+        }
+        float[] measured = chart.DrawOn(null);
+        float[] xy = chart.DrawOn(page);
+        TestSupport.AssertXY(measured[0], measured[1], xy);
+        string content = TestSupport.Content(page);
+        Font font = TestSupport.Helvetica(pdf);
+        for (int i = 1; i < 6; i++) {
+            float above = TestSupport.PositionOf(content, "Small " + (i - 1))[1];
+            float below = TestSupport.PositionOf(content, "Small " + i)[1];
+            Assert.True(System.Math.Abs(above - below) >= font.GetBodyHeight() - 0.01f, above + " " + below);
+        }
+        Assert.Equal("Donut chart: Big 91%, Small 0 2%, Small 1 2%, Small 2 2%, Small 3 1%, Small 4 1%, Small 5 1%",
+                page.structures[0].altDescription);
+        Assert.Contains("1.5 w\n", content);                                                      // By the big slice
+        Assert.True(System.Text.RegularExpressions.Regex.IsMatch(content, "\n0\\.\\d+ w\n"), content);    // Between two thin ones
     }
 }
 }

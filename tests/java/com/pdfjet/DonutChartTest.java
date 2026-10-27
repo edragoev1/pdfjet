@@ -99,23 +99,24 @@ class DonutChartTest {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart plain = chart(pdf).addSlice(new Slice(1f, "a"));
-        TestSupport.assertXY(300f, 300f, plain.drawOn(page));
+        TestSupport.assertXY(300f, 315f, plain.drawOn(page));    // The circle, and its label 15 under it
         DonutChart titled = chart(pdf).setTitle("Fruit").setSubtitle("This week").addSlice(new Slice(1f, "a"));
         float[] xy = titled.drawOn(page);
         assertEquals(300f, xy[0], 0.01f);
-        assertTrue(xy[1] > 300f, "the circle is under the title: " + xy[1]);
+        assertTrue(xy[1] > 315f, "the circle is under the title: " + xy[1]);
         String content = TestSupport.content(page);
         assertTrue(content.contains(TestSupport.hex("Fruit")) && content.contains(TestSupport.hex("This week")));
         assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "This week"));
-        assertEquals("Fruit: a 100%", page.structures.get(1).altDescription);
+        assertEquals("Fruit, This week: a 100%", page.structures.get(1).altDescription);
     }
 
-    // A slice that is not a number, an infinity, or a value whose 360ths
-    // overflow is not drawn, and the others are: one made the arc's loop
-    // endless (review of 11 October 2026, #2).
+    // A slice that is not a number or an infinity is not drawn, and the
+    // others are: one made the arc's loop endless (review of 11 October 2026,
+    // #2). A value whose 360ths are past the largest float is drawn, as it
+    // compares with the others (review of 26 October 2026).
     @Test
     void aSliceThatIsNotANumberIsNotDrawn() throws Exception {
-        for (float bad : new float[] {Float.NaN, Float.POSITIVE_INFINITY, 1e36f}) {
+        for (float bad : new float[] {Float.NaN, Float.POSITIVE_INFINITY}) {
             PDF pdf = TestSupport.newPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             DonutChart chart = chart(pdf);
@@ -127,6 +128,10 @@ class DonutChartTest {
             assertTrue(content.contains(TestSupport.hex("25%")) && content.contains(TestSupport.hex("75%")),
                     bad + ": the other slices are not 25% and 75% in " + content);
         }
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).addSlice(new Slice(3e38f, "a")).addSlice(new Slice(3e38f, "b")).drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("50%")), TestSupport.content(page));
     }
 
     // Returns the curves the chart of the radii, the location and the values
@@ -207,5 +212,33 @@ class DonutChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         chart(pdf).addSlice(null).addSlice(new Slice(1f, "a")).drawOn(page);
         assertTrue(TestSupport.content(page).contains(TestSupport.hex("a")));
+    }
+
+    // The labels of thin slices side by side are moved apart, a line apart at
+    // least; the percentages add up to 100; the white line by a thin slice is
+    // narrower than it; and drawOn returns the bottom right corner of the
+    // labels too, measured as drawn (review of 26 October 2026).
+    @Test
+    void thinSlicesKeepTheirLabelsApart() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart chart = chart(pdf).addSlice(new Slice(90f, "Big"));
+        for (int i = 0; i < 6; i++) {
+            chart.addSlice(new Slice(1.5f, "Small " + i));
+        }
+        float[] measured = chart.drawOn(null);
+        float[] xy = chart.drawOn(page);
+        TestSupport.assertXY(measured[0], measured[1], xy);
+        String content = TestSupport.content(page);
+        Font font = TestSupport.helvetica(pdf);
+        for (int i = 1; i < 6; i++) {
+            float above = TestSupport.positionOf(content, "Small " + (i - 1))[1];
+            float below = TestSupport.positionOf(content, "Small " + i)[1];
+            assertTrue(Math.abs(above - below) >= font.getBodyHeight() - 0.01f, above + " " + below);
+        }
+        assertEquals("Donut chart: Big 91%, Small 0 2%, Small 1 2%, Small 2 2%, Small 3 1%, Small 4 1%, Small 5 1%",
+                page.structures.get(0).altDescription);
+        assertTrue(content.contains("1.5 w\n"), content);                      // By the big slice
+        assertTrue(content.matches("(?s).*\n0\\.\\d+ w\n.*"), content);     // Between two thin ones
     }
 }

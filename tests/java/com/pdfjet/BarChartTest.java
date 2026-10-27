@@ -162,7 +162,7 @@ class BarChartTest {
     }
 
     @Test
-    void aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() throws Exception {
+    void aChartIsAFigureDescribedByItsDataOrItsAlternateDescription() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart titled = chart(pdf).setTitle("Sales").setCategories("a", "b");
@@ -174,22 +174,64 @@ class BarChartTest {
                 .setCategories("a", "b");
         described.addSeries("", new float[] {1f, 2f});
         draw(described, page);
-        assertEquals("Sales", page.structures.get(0).altDescription);
+        assertEquals("Sales: a 1, b 2.", page.structures.get(0).altDescription);
         assertEquals("Sales rose from 1 to 2.", page.structures.get(1).altDescription);
     }
 
-    // A horizontal chart narrower than its categories draws nothing: its
-    // axis ran backwards, the bars over the categories (review of 26 October
-    // 2026).
+    // A category name wider than two fifths of a horizontal chart is
+    // shortened with an ellipsis, and a chart too small for its plot draws
+    // nothing: its axis ran backwards, the bars over the names (review of 26
+    // October 2026).
     @Test
-    void aChartWithNoRoomForItsPlotDrawsNothing() throws Exception {
+    void aLongNameIsShortenedAndAChartWithNoRoomDrawsNothing() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
+        String name = "A very very long category name indeed, and longer";
         BarChart chart = chart(pdf).setSize(200f, 200f).setHorizontal(true)
-                .setCategories("A very very long category name indeed, and longer")
-                .addSeries("s", new float[] {5f});
+                .setCategories(name).addSeries("s", new float[] {5f});
         TestSupport.assertXY(250f, 250f, chart.drawOn(page));
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex(name)), content);
+        String shortened = ChartScale.shorten(TestSupport.helvetica(pdf), TestSupport.helvetica(pdf).getSize(), name, 0.4f * 200f);
+        // The ellipsis is 85 in WinAnsi, the encoding of a core font
+        String start = shortened.substring(0, shortened.length() - 1);
+        assertTrue(shortened.endsWith("\u2026") && content.contains(TestSupport.hex(start) + "85>"), content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setSize(20f, 20f).setCategories("a").addSeries("s", new float[] {5f}).drawOn(page);
         assertEquals("", TestSupport.content(page));
+    }
+
+    // A chart without a title has no room for one: its plot starts higher,
+    // its bars taller. The legend wraps at the right edge, and a series with
+    // a color per bar has the color of its first bar in it.
+    @Test
+    void theTopOfTheChartIsWhatItHas() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        String titled = draw(chart(pdf).setTitle("t").setCategories("a").addSeries("", new float[] {1f}), page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        String untitled = draw(chart(pdf).setCategories("a").addSeries("", new float[] {1f}), page);
+        assertTrue(barHeight(untitled) > barHeight(titled) + 10f, barHeight(untitled) + " " + barHeight(titled));
+        page = new Page(pdf, Letter.PORTRAIT);
+        BarChart wide = chart(pdf).setCategories("a").setDrawLegend(true);
+        for (int i = 0; i < 8; i++) {
+            wide.addSeries("Series number " + i, new float[] {1f});
+        }
+        String content = draw(wide, page);
+        assertNotEquals(TestSupport.positionOf(content, "Series number 0")[1],
+                TestSupport.positionOf(content, "Series number 7")[1]);
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setCategories("a", "b").setDrawLegend(true)
+                .addSeries("own", new float[] {1f, 2f}, new int[] {0x123456, 0x654321}), page);
+        int swatch = content.indexOf("0.07 0.2 0.34 rg\n");
+        assertTrue(swatch >= 0 && swatch < content.indexOf(TestSupport.hex("own")), content);
+    }
+
+    // The height of the first bar the content fills in navy.
+    private static float barHeight(String content) {
+        int i = content.indexOf(" re\n", content.indexOf("0.12 0.23 0.37 rg\n"));
+        String[] parts = content.substring(content.lastIndexOf('\n', i) + 1, i).split(" ");
+        return Math.abs(Float.parseFloat(parts[3]));
     }
 
     // Under vertical bars a category is written where it leaves the one

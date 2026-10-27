@@ -401,7 +401,8 @@ public class SimpleLineChart implements Drawable {
     }
 
     /**
-     * Draws the chart on the page.
+     * Draws the chart on the page. A chart too small for its plot, its
+     * numbers and its labels draws nothing.
      *
      * @param page the page to draw on.
      * @return the x and y coordinates of the bottom right corner of the chart.
@@ -597,6 +598,14 @@ public class SimpleLineChart implements Drawable {
         });
         for (int k = 1; k < labels.size(); k++) {
             labels.get(k).y = Math.max(labels.get(k).y, labels.get(k - 1).y + f2.getBodyHeight());
+        }
+        // and up from the bottom of the plot, when the last is pushed past it
+        if (!labels.isEmpty()) {
+            int last = labels.size() - 1;
+            labels.get(last).y = Math.min(labels.get(last).y, bottom + ascent / 2f);
+            for (int k = last - 1; k >= 0; k--) {
+                labels.get(k).y = Math.min(labels.get(k).y, labels.get(k + 1).y - f2.getBodyHeight());
+            }
         }
         for (EndLabel label : labels) {
             int color = (label.index == highlight) ? highlightColor : SimpleBarChart.MUTED;

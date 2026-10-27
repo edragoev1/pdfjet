@@ -388,7 +388,8 @@ public class SimpleLineChart : IDrawable {
     }
 
     /// <summary>
-    /// Draws the chart on the page.
+    /// Draws the chart on the page. A chart too small for its plot, its
+    /// numbers and its labels draws nothing.
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
@@ -576,6 +577,14 @@ public class SimpleLineChart : IDrawable {
         labels.Sort((a, b) => a.y != b.y ? a.y.CompareTo(b.y) : a.index.CompareTo(b.index));
         for (int k = 1; k < labels.Count; k++) {
             labels[k].y = Math.Max(labels[k].y, labels[k - 1].y + f2.GetBodyHeight());
+        }
+        // and up from the bottom of the plot, when the last is pushed past it
+        if (labels.Count > 0) {
+            int last = labels.Count - 1;
+            labels[last].y = Math.Min(labels[last].y, bottom + ascent / 2f);
+            for (int k = last - 1; k >= 0; k--) {
+                labels[k].y = Math.Min(labels[k].y, labels[k + 1].y - f2.GetBodyHeight());
+            }
         }
         foreach (EndLabel label in labels) {
             int color = (label.index == highlight) ? highlightColor : SimpleBarChart.MUTED;

@@ -7,6 +7,8 @@ package pdfjet
 
 import (
 	"math"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -125,11 +127,12 @@ func TestDonutChartATitleIsDrawnAboveTheCircle(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
-	testAssertXY(t, 300, 300, testDonutChart(pdf).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page))
+	// The circle, and its label 15 under it
+	testAssertXY(t, 300, 315, testDonutChart(pdf).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page))
 	xy := testDonutChart(pdf).SetTitle("Fruit").SetSubtitle("This week").
 		AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
 	testNear(t, "x", 300, xy[0], testDelta)
-	if xy[1] <= 300 {
+	if xy[1] <= 315 {
 		t.Errorf("the circle is not under the title: %v", xy[1])
 	}
 	content := testContent(page)
@@ -139,16 +142,17 @@ func TestDonutChartATitleIsDrawnAboveTheCircle(t *testing.T) {
 	if got := testFillColorBefore(content, "This week"); got != "0.37 0.41 0.45 rg" {
 		t.Errorf("the subtitle is drawn with %q", got)
 	}
-	if got := page.structures[1].altDescription; got != "Fruit: a 100%" {
+	if got := page.structures[1].altDescription; got != "Fruit, This week: a 100%" {
 		t.Errorf("the chart is described as %q", got)
 	}
 }
 
-// A slice that is not a number, an infinity, or a value whose 360ths
-// overflow is not drawn, and the others are: one made the arc's loop endless
-// (review of 11 October 2026, #2).
+// A slice that is not a number or an infinity is not drawn, and the others
+// are: one made the arc's loop endless (review of 11 October 2026, #2). A
+// value whose 360ths are past the largest float32 is drawn, as it compares
+// with the others (review of 26 October 2026).
 func TestDonutChartASliceThatIsNotANumberIsNotDrawn(t *testing.T) {
-	for _, bad := range []float32{float32(math.NaN()), float32(math.Inf(1)), 1e36} {
+	for _, bad := range []float32{float32(math.NaN()), float32(math.Inf(1))} {
 		pdf := testNewPDF()
 		page := NewPage(pdf, testLetterPortrait())
 		chart := testDonutChart(pdf)
@@ -161,6 +165,12 @@ func TestDonutChartASliceThatIsNotANumberIsNotDrawn(t *testing.T) {
 			t.Errorf("%v: the other slices are not 25%% and 75%% in %q", bad, content)
 		}
 	}
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).AddSlice(NewSliceInPalette(3e38, "a")).AddSlice(NewSliceInPalette(3e38, "b")).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, testHex("50%")) {
+		t.Errorf("the slices are not 50%% in %q", content)
+	}
 }
 
 // A nil slice is left out: it panicked when the chart was drawn.
@@ -170,5 +180,41 @@ func TestDonutChartANilSliceIsLeftOut(t *testing.T) {
 	testDonutChart(pdf).AddSlice(nil).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
 	if !strings.Contains(testContent(page), testHex("a")) {
 		t.Error("the slice is not drawn")
+	}
+}
+
+// The labels of thin slices side by side are moved apart, a line apart at
+// least; the percentages add up to 100; the white line by a thin slice is
+// narrower than it; and DrawOn returns the bottom right corner of the labels
+// too, measured as drawn (review of 26 October 2026).
+func TestDonutChartThinSlicesKeepTheirLabelsApart(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testDonutChart(pdf).AddSlice(NewSliceInPalette(90, "Big"))
+	for i := 0; i < 6; i++ {
+		chart.AddSlice(NewSliceInPalette(1.5, "Small "+strconv.Itoa(i)))
+	}
+	measured := chart.DrawOn(nil)
+	xy := chart.DrawOn(page)
+	testAssertXY(t, measured[0], measured[1], xy)
+	content := testContent(page)
+	font := testHelvetica(pdf)
+	for i := 1; i < 6; i++ {
+		above := testPositionOf(t, content, "Small "+strconv.Itoa(i-1))[1]
+		below := testPositionOf(t, content, "Small "+strconv.Itoa(i))[1]
+		if abs32(above-below) < font.bodyHeight-0.01 {
+			t.Errorf("the labels meet: %v %v", above, below)
+		}
+	}
+	want := "Donut chart: Big 91%, Small 0 2%, Small 1 2%, Small 2 2%, Small 3 1%, Small 4 1%, Small 5 1%"
+	if got := page.structures[0].altDescription; got != want {
+		t.Errorf("the chart is described as %q", got)
+	}
+	if !strings.Contains(content, "1.5 w\n") { // By the big slice
+		t.Errorf("no white line of 1.5 in %q", content)
+	}
+	if !regexp.MustCompile(`\n0\.\d+ w\n`).MatchString(content) { // Between two thin ones
+		t.Errorf("no thin white line in %q", content)
 	}
 }

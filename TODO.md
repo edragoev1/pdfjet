@@ -461,9 +461,10 @@ commit and date. The layout's format version (1) and the look's rules
   Chart, which items 1 to 5 were written about, is deprecated, and the
   simple charts (7 to 9) take its place; BarChart has the simple charts'
   look, grouping on, one axis line at zero and the totals of its stacks
-  (6a295afd), which is item 1 and part of 4 for it. Left: DonutChart's title,
-  legend and look (3, 4), the accessibility of item 5, and the bars with a
-  line of item 6. From a review of Example_25 to 28 and
+  (6a295afd), which is item 1 and part of 4 for it; DonutChart has its
+  title, subtitle and look (d99c0944), and the review of the charts of 26
+  October is done (item 11). Left: DonutChart's legend (3), the rest of the
+  accessibility of item 5, and the bars with a line of item 6. From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
   updated to show it, before and after screenshots for each visible change.
   In this order:
@@ -634,8 +635,10 @@ commit and date. The layout's format version (1) and the look's rules
        booklet's "line and XY charts" point to the Simple charts.
      - Removed later, recorded in util/api-removed.txt as CalendarMonth was,
        so that check-api.sh takes it.
-  11. **The smaller points of the charts review of 26 October 2026**, for
-     9.1.5 if there is time, or 9.1.7. Its bugs are fixed (CHANGELOG.md:
+  11. **The smaller points of the charts review of 26 October 2026: done
+     26 October 2026, in the four ports** (CHANGELOG.md), as below; the
+     list kept for what was decided. Was: for 9.1.5 if there is time, or
+     9.1.7. Its bugs are fixed (CHANGELOG.md:
      the label colors by contrast and a lighter sage, the room over a
      donut's title, values outside a set range, a BarChart without room,
      the month names, null in Java and C#). Left, in the four ports:

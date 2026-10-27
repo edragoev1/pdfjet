@@ -170,7 +170,7 @@ internal static class ChartScale {
     /// </summary>
     internal static Axis AxisOf(float[] values, float lo, float hi, bool set) {
         if (set) {
-            return new Axis(lo, hi, Math.Max(RoundMaxAndMinValues(hi, lo).numOfGridLines, 1));
+            return new Axis(lo, hi, RoundLines(lo, hi, Math.Max(RoundMaxAndMinValues(hi, lo).numOfGridLines, 1)));
         }
         lo = values[0];
         hi = values[0];
@@ -183,6 +183,68 @@ internal static class ChartScale {
         }
         Round round = RoundMaxAndMinValues(hi, lo);
         return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
+    }
+
+    /// <summary>
+    /// Returns the number of grid lines of a range that is set, from 2 to 10,
+    /// the nearest to the lines given, fewer first, whose step is a round
+    /// number, 1, 2, 2.5 or 5 times a power of ten; or the lines given when
+    /// no number is. The range 3 to 17 in the 6 lines of its rounded span was
+    /// written 3.00, 5.33, 7.67; in 7 it is 3, 5, 7.
+    /// </summary>
+    internal static int RoundLines(float lo, float hi, int lines) {
+        double span = (double) hi - (double) lo;
+        for (int d = 0; d <= 8; d++) {
+            if (IsRound(span, lines - d)) {
+                return lines - d;
+            }
+            if (IsRound(span, lines + d)) {
+                return lines + d;
+            }
+        }
+        return lines;
+    }
+
+    // Tells if the span in the lines, from 2 to 10, has a round step.
+    private static bool IsRound(double span, int lines) {
+        if (lines < 2 || lines > 10) {
+            return false;
+        }
+        double step = span / lines;
+        if (!(step > 0.0) || Double.IsInfinity(step)) {
+            return false;
+        }
+        double m = step / Math.Pow(10.0, Math.Floor(Math.Log10(step)));
+        return Math.Abs(m - 1.0) < 1e-5 || Math.Abs(m - 2.0) < 2e-5 || Math.Abs(m - 2.5) < 2.5e-5
+                || Math.Abs(m - 5.0) < 5e-5 || Math.Abs(m - 10.0) < 1e-4;
+    }
+
+    /// <summary>
+    /// Returns the text, shortened with an ellipsis to fit the width in the
+    /// font at the size, or the text when it fits: a name too long for a
+    /// chart's column of names.
+    /// </summary>
+    internal static String Shorten(Font font, float size, String text, float width) {
+        if (font.StringWidth(size, text) <= width) {
+            return text;
+        }
+        int end = text.Length;
+        while (end > 0) {
+            // Back one code point, a surrogate pair whole
+            end--;
+            if (end > 0 && Char.IsLowSurrogate(text[end]) && Char.IsHighSurrogate(text[end - 1])) {
+                end--;
+            }
+            int cut = end;
+            while (cut > 0 && text[cut - 1] == ' ') {
+                cut--;
+            }
+            String shorter = text.Substring(0, cut) + "\u2026";
+            if (font.StringWidth(size, shorter) <= width) {
+                return shorter;
+            }
+        }
+        return "\u2026";
     }
 
     /// <summary>

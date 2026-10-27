@@ -111,4 +111,36 @@ import Testing
         SimpleLineChart(font, font).addLine("wide", [-3e38, 3e38]).drawOn(Page(pdf, Letter.PORTRAIT))
         SimpleLineChart(font, font).setYAxisRange(-3e38, 3e38).addLine("a", [1, 2]).drawOn(Page(pdf, Letter.PORTRAIT))
     }
+
+    // A range that is set has grid lines on a round step: 3 to 17 was written
+    // 3.00, 5.33, 7.67 in 6 lines, and is 3, 5, 7 in 7; a range of no round
+    // step in 2 to 10 lines keeps its lines (review of 26 October 2026).
+    @Test func aSetRangeHasARoundStep() {
+        #expect(ChartScale.axisOf([5], 3, 17, true).lines == 7)
+        #expect(ChartScale.axisOf([5], 0, 10, true).lines == 10)
+        #expect(ChartScale.roundLines(0, 1.3 * 3.7, 6) == 6)      // No round step in 2 to 10
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        SimpleLineChart(font, font).setYAxisRange(3, 17).addLine("a", [5, 9]).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("15")) && !content.contains(TestSupport.hex("5.33")), "\(content)")
+    }
+
+    // The labels at the ends of the lines, moved apart, stay over the plot:
+    // they were pushed down past the bottom of the panel.
+    @Test func theEndLabelsStayOverThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = SimpleLineChart(font, font).setSize(400, 120)
+        for i in 0..<8 {
+            chart.addLine("line \(i)", [10, 0])
+        }
+        chart.addLine("top", [0, 10])
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        // The page is 792 high, the chart from 0 to 120 down from its top
+        #expect(TestSupport.positionOf(content, "line 7 0")[1] > 792 - 120, "\(content)")
+    }
 }

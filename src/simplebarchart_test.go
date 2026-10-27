@@ -129,3 +129,43 @@ func TestSimpleBarChartWithoutBarsDrawsNothing(t *testing.T) {
 		t.Errorf("content %q", testContent(page))
 	}
 }
+
+// A name wider than two fifths of the chart is shortened with an ellipsis,
+// and the bars keep their room: in a chart narrower than its names they went
+// to nothing, the values past the panel (review of 26 October 2026). The
+// description keeps the name whole.
+func TestSimpleBarChartALongNameIsShortened(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	name := "A name far too long for the column of names of this chart"
+	chart := NewSimpleBarChart(font, font).SetWidth(200).Add(name, 5).Add("b", 3)
+	chart.DrawOn(page)
+	content := testContent(page)
+	if strings.Contains(content, testHex(name)) {
+		t.Errorf("the name is drawn whole in %q", content)
+	}
+	shortened := shorten(font, font.size, name, float32(0.4*(200-float32(2*font.size))))
+	// The ellipsis is 85 in WinAnsi, the encoding of a core font
+	start := strings.TrimSuffix(shortened, "…")
+	if !strings.HasSuffix(shortened, "…") || !strings.Contains(content, testHex(start)+"85>") {
+		t.Errorf("%q is not drawn in %q", shortened, content)
+	}
+	if !strings.Contains(chart.getAltDescription(), name) {
+		t.Errorf("the description %q does not keep the name whole", chart.getAltDescription())
+	}
+	cases := []struct {
+		text  string
+		width float32
+		want  string
+	}{
+		{"A name", font.StringWidth(10, "A n…"), "A n…"},
+		{"A name", 100, "A name"},
+		{"A  name", font.StringWidth(10, "A …") - 0.1, "A…"}, // The spaces before the ellipsis go
+	}
+	for _, c := range cases {
+		if got := shorten(font, 10, c.text, c.width); got != c.want {
+			t.Errorf("shorten(%q, %v) = %q, want %q", c.text, c.width, got, c.want)
+		}
+	}
+}

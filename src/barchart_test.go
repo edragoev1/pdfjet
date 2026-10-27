@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"math"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -169,7 +171,7 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 	}
 }
 
-func TestBarChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *testing.T) {
+func TestBarChartAChartIsAFigureDescribedByItsDataOrItsAlternateDescription(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
@@ -183,7 +185,7 @@ func TestBarChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *
 		SetCategories("a", "b")
 	described.AddSeries("", []float32{1, 2})
 	testDrawBarChart(t, described, page)
-	if page.structures[0].altDescription != "Sales" {
+	if page.structures[0].altDescription != "Sales: a 1, b 2." {
 		t.Errorf("the first chart is described as %q", page.structures[0].altDescription)
 	}
 	if page.structures[1].altDescription != "Sales rose from 1 to 2." {
@@ -227,18 +229,71 @@ func TestBarChartAxisLabelStepIsTheFewestLinesALabelFits(t *testing.T) {
 	}
 }
 
-// A horizontal chart narrower than its categories draws nothing: its axis ran
-// backwards, the bars over the categories (review of 26 October 2026).
-func TestBarChartAChartWithNoRoomForItsPlotDrawsNothing(t *testing.T) {
+// A category name wider than two fifths of a horizontal chart is shortened
+// with an ellipsis, and a chart too small for its plot draws nothing: its axis
+// ran backwards, the bars over the names (review of 26 October 2026).
+func TestBarChartALongNameIsShortenedAndAChartWithNoRoomDrawsNothing(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
+	name := "A very very long category name indeed, and longer"
 	chart := testBarChart(pdf).SetSize(200, 200).SetHorizontal(true).
-		SetCategories("A very very long category name indeed, and longer").
-		AddSeries("s", []float32{5})
+		SetCategories(name).AddSeries("s", []float32{5})
 	testAssertXY(t, 250, 250, chart.DrawOn(page))
+	content := testContent(page)
+	if strings.Contains(content, testHex(name)) {
+		t.Errorf("the name is drawn whole in %q", content)
+	}
+	font := testHelvetica(pdf)
+	shortened := shorten(font, font.size, name, float32(0.4*200))
+	// The ellipsis is 85 in WinAnsi, the encoding of a core font
+	start := strings.TrimSuffix(shortened, "…")
+	if !strings.HasSuffix(shortened, "…") || !strings.Contains(content, testHex(start)+"85>") {
+		t.Errorf("%q is not drawn in %q", shortened, content)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	testBarChart(pdf).SetSize(20, 20).SetCategories("a").AddSeries("s", []float32{5}).DrawOn(page)
 	if content := testContent(page); content != "" {
 		t.Errorf("%q", content)
 	}
+}
+
+// A chart without a title has no room for one: its plot starts higher, its
+// bars taller. The legend wraps at the right edge, and a series with a color
+// per bar has the color of its first bar in it.
+func TestBarChartTheTopOfTheChartIsWhatItHas(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	titled := testDrawBarChart(t, testBarChart(pdf).SetTitle("t").SetCategories("a").AddSeries("", []float32{1}), page)
+	page = NewPage(pdf, testLetterPortrait())
+	untitled := testDrawBarChart(t, testBarChart(pdf).SetCategories("a").AddSeries("", []float32{1}), page)
+	if testBarHeight(untitled) <= testBarHeight(titled)+10 {
+		t.Errorf("%v %v", testBarHeight(untitled), testBarHeight(titled))
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	wide := testBarChart(pdf).SetCategories("a").SetDrawLegend(true)
+	for i := 0; i < 8; i++ {
+		wide.AddSeries("Series number "+strconv.Itoa(i), []float32{1})
+	}
+	content := testDrawBarChart(t, wide, page)
+	if testPositionOf(t, content, "Series number 0")[1] == testPositionOf(t, content, "Series number 7")[1] {
+		t.Errorf("the legend is not wrapped in %q", content)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a", "b").SetDrawLegend(true).
+		AddSeriesWithColors("own", []float32{1, 2}, []int32{0x123456, 0x654321}), page)
+	swatch := strings.Index(content, "0.07 0.2 0.34 rg\n")
+	if swatch < 0 || swatch >= strings.Index(content, testHex("own")) {
+		t.Errorf("the swatch is not the color of the first bar in %q", content)
+	}
+}
+
+// testBarHeight returns the height of the first bar the content fills in navy.
+func testBarHeight(content string) float32 {
+	navy := strings.Index(content, "0.12 0.23 0.37 rg\n")
+	i := navy + strings.Index(content[navy:], " re\n")
+	parts := strings.Split(content[strings.LastIndex(content[:i], "\n")+1:i], " ")
+	height, _ := strconv.ParseFloat(parts[3], 32)
+	return float32(math.Abs(height))
 }
 
 // Under vertical bars a category is written where it leaves the one before

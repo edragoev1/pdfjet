@@ -16,6 +16,7 @@ package pdfjet
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -85,7 +86,8 @@ func (dc *DonutChart) AddSlice(slice *Slice) *DonutChart {
 
 // SetTitle sets the title, drawn at the top left of the chart's location in the
 // bold font, the second, at the size of the labels; the circle is drawn under
-// it. A chart without a title has the circle at its location.
+// it. A chart without the second font, which draws no percentages, draws its
+// title in the first. A chart without a title has the circle at its location.
 func (dc *DonutChart) SetTitle(title string) *DonutChart {
 	dc.title = title
 	return dc
@@ -99,7 +101,8 @@ func (dc *DonutChart) SetSubtitle(subtitle string) *DonutChart {
 
 // SetAltDescription sets the alternate description of the chart, which a
 // screen reader reads in a PDF/UA document, where the chart is a figure. The
-// default lists the label and the percentage of each slice.
+// default is the title and the subtitle, and the label and the percentage of
+// each slice.
 func (dc *DonutChart) SetAltDescription(altDescription string) *DonutChart {
 	dc.altDescription = altDescription
 	return dc
@@ -207,78 +210,108 @@ func (dc *DonutChart) drawSlice(
 	return a2
 }
 
-// drawLinePointer draws the leader line and label for a slice, and returns
-// the box they are in: its left, top, right and bottom.
-func (dc *DonutChart) drawLinePointer(
-	page *Page,
-	text string,
-	xc, yc, r1, a1, a2 float32,
-) [4]float32 {
+// donutPointer is the leader line and the label of a slice: the point on the
+// edge of the circle, the elbow 15 points past it, the y of the label's line,
+// moved down from the elbow's when it would meet the label above it, and the
+// side of the circle it is on; and its index among the pointers.
+type donutPointer struct {
+	text  string
+	p1    [2]float32
+	p2    [2]float32
+	right bool
+	yEnd  float32
+	index int
+}
+
+// pointerOf returns the pointer of a slice from the angle a1 to a2.
+func (dc *DonutChart) pointerOf(text string, xc, yc, r1, a1, a2 float32, index int) *donutPointer {
 	midAngle := float32((a1+a2)/2.0) - 90.0
+	p1 := getPoint(xc, yc, r1, midAngle)      // On the outer edge
+	p2 := getPoint(xc, yc, r1+15.0, midAngle) // The elbow
+	right := math.Cos(float64(float64(float64(midAngle)*math.Pi)/180.0)) >= 0
+	return &donutPointer{text, p1, p2, right, p2[1], index}
+}
 
-	// Point on the outer edge of the donut
-	p1 := getPoint(xc, yc, r1, midAngle)
-
-	// Elbow point — 15pt beyond the outer edge
-	r3 := r1 + 15.0
-	p2 := getPoint(xc, yc, r3, midAngle)
-
-	// Draw the pointer line: edge → elbow → horizontal end, thin and gray
-	page.SetPenColor(donutLeader)
-	page.SetPenWidth(0.75)
-	page.MoveTo(p1[0], p1[1])
-	page.LineTo(p2[0], p2[1])
-
-	if dc.f1 != nil && text != "" {
-		textWidth := dc.f1.StringWidth(dc.f1.size, text)
-		onRightSide := math.Cos(float64(float64(float64(midAngle)*math.Pi)/180.0)) >= 0
-
-		padding := float32(4.0)
-		lineLength := textWidth + padding
-
-		var xEnd, yEnd float32
-		if onRightSide {
-			xEnd = p2[0] + lineLength
-		} else {
-			xEnd = p2[0] - lineLength
+// moveApart moves the labels on each side of the circle apart, top to bottom,
+// where one would meet the one above it.
+func (dc *DonutChart) moveApart(pointers []*donutPointer) {
+	if dc.f1 == nil {
+		return
+	}
+	for side := 0; side < 2; side++ {
+		labels := make([]*donutPointer, 0, len(pointers))
+		for _, pointer := range pointers {
+			if pointer.right == (side == 0) && pointer.text != "" {
+				labels = append(labels, pointer)
+			}
 		}
-		yEnd = p2[1]
-
-		// Continue the path to the horizontal end
-		page.LineTo(xEnd, yEnd)
-		page.StrokePath()
-
-		// Draw the label text just above the horizontal line
-		x := xEnd + 2.0
-		if onRightSide {
-			x = p2[0] + 2.0
+		// Top to bottom, and labels at one height in the order of their slices
+		sort.SliceStable(labels, func(a, b int) bool {
+			if labels[a].yEnd != labels[b].yEnd {
+				return labels[a].yEnd < labels[b].yEnd
+			}
+			return labels[a].index < labels[b].index
+		})
+		for k := 1; k < len(labels); k++ {
+			labels[k].yEnd = max(labels[k].yEnd, labels[k-1].yEnd+dc.f1.bodyHeight)
 		}
-		baseline := yEnd - float32(dc.f1.GetAscent(dc.f1.size)/3.0)
-		page.drawString(dc.f1, dc.f1.size, text, x, baseline,
-			colorToRGB(simpleBarInk), nil)
-		return [4]float32{
-			min(p1[0], p2[0], xEnd, x),
-			min(p1[1], p2[1], baseline-dc.f1.GetAscent(dc.f1.size)),
-			max(p1[0], p2[0], xEnd, x+textWidth),
-			max(p1[1], p2[1], baseline+dc.f1.GetDescent(dc.f1.size))}
-	} else {
-		// No text — short horizontal stub
-		onRightSide := math.Cos(float64(float64(float64(midAngle)*math.Pi)/180.0)) >= 0
-		var xEnd float32
-		if onRightSide {
-			xEnd = p2[0] + 20.0
-		} else {
-			xEnd = p2[0] - 20.0
-		}
-		page.LineTo(xEnd, p2[1])
-		page.StrokePath()
-		return [4]float32{min(p1[0], p2[0], xEnd), min(p1[1], p2[1]), max(p1[0], p2[0], xEnd), max(p1[1], p2[1])}
 	}
 }
 
-// DrawOn draws this chart on the specified page.
-// It returns the x and y coordinates of the bottom right corner of the outer
-// circle of this chart. The slice labels can extend past it.
+// drawPointer returns the box of the leader line and the label of the
+// pointer: its left, top, right and bottom; and draws them when there is a
+// page.
+func (dc *DonutChart) drawPointer(page *Page, pointer *donutPointer) [4]float32 {
+	p1 := pointer.p1
+	x2 := pointer.p2[0]
+	yEnd := pointer.yEnd
+	if page != nil {
+		// The line: edge, elbow, and along to the end, thin and gray
+		page.SetPenColor(donutLeader)
+		page.SetPenWidth(0.75)
+		page.MoveTo(p1[0], p1[1])
+		page.LineTo(x2, yEnd)
+	}
+	if dc.f1 != nil && pointer.text != "" {
+		textWidth := dc.f1.StringWidth(dc.f1.size, pointer.text)
+		lineLength := textWidth + 4.0
+		xEnd := x2 - lineLength
+		if pointer.right {
+			xEnd = x2 + lineLength
+		}
+		// The label just above the line
+		x := xEnd + 2.0
+		if pointer.right {
+			x = x2 + 2.0
+		}
+		baseline := yEnd - float32(dc.f1.GetAscent(dc.f1.size)/3.0)
+		if page != nil {
+			page.LineTo(xEnd, yEnd)
+			page.StrokePath()
+			page.drawString(dc.f1, dc.f1.size, pointer.text, x, baseline, colorToRGB(simpleBarInk), nil)
+		}
+		return [4]float32{
+			min(p1[0], x2, xEnd, x),
+			min(p1[1], yEnd, baseline-dc.f1.GetAscent(dc.f1.size)),
+			max(p1[0], x2, xEnd, x+textWidth),
+			max(p1[1], yEnd, baseline+dc.f1.GetDescent(dc.f1.size))}
+	}
+	// No text: a short line along
+	xEnd := x2 - 20.0
+	if pointer.right {
+		xEnd = x2 + 20.0
+	}
+	if page != nil {
+		page.LineTo(xEnd, yEnd)
+		page.StrokePath()
+	}
+	return [4]float32{min(p1[0], x2, xEnd), min(p1[1], yEnd), max(p1[0], x2, xEnd), max(p1[1], yEnd)}
+}
+
+// DrawOn draws this chart on the specified page, or measures it when the page
+// is nil. It returns the x and y coordinates of the bottom right corner of the
+// chart: of its title, its circle, and its leader lines and labels, which can
+// reach past the circle.
 func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	// The title and the subtitle above the circle, when there are any
 	titleFont := dc.f2
@@ -316,46 +349,67 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	yc := top + dc.r1
 
 	// The slices with a value above 0 share the circle
+	values := dc.values()
 	total := float32(0.0)
-	for _, slice := range dc.slices {
-		if sliceDrawn(slice.value) {
-			total += slice.value
-		}
+	for _, value := range values {
+		total += value
 	}
-	if page == nil || total <= 0.0 { // Measured, or nothing to draw
+	if total <= 0.0 { // Nothing to draw
 		return [2]float32{xc + dc.r1, yc + dc.r1}
 	}
+	percentages := slicePercentages(values, total)
+
+	// The leader lines and the labels, moved apart, and the box of the
+	// figure: the title, the outer circle, the leader lines and the labels
+	pointers := make([]*donutPointer, 0, len(dc.slices))
+	angle := float32(0.0)
+	for i, slice := range dc.slices {
+		if values[i] > 0.0 {
+			sweep := float32(values[i]*360.0) / total
+			pointers = append(pointers, dc.pointerOf(slice.text, xc, yc, dc.r1, angle, angle+sweep, len(pointers)))
+			angle += sweep
+		}
+	}
+	dc.moveApart(pointers)
+	box := [4]float32{dc.x, dc.y, dc.x + float32(2*dc.r1), yc + dc.r1}
+	if titleBaseline > 0.0 {
+		box[2] = max(box[2], dc.x+titleFont.StringWidth(titleSize, dc.title))
+	}
+	if subtitleBaseline > 0.0 {
+		box[2] = max(box[2], dc.x+dc.f1.StringWidth(dc.f1.size, dc.subtitle))
+	}
+	for _, pointer := range pointers {
+		box = donutUnion(box, dc.drawPointer(nil, pointer))
+	}
+	if page == nil { // Measured
+		return [2]float32{box[2], box[3]}
+	}
+
 	// The chart is one figure, described by its alternate description.
-	page.AddBDC(structelem.Figure, "", "", dc.getAltDescription(total))
+	page.AddBDC(structelem.Figure, "", "", dc.getAltDescription(values, percentages))
 	// The pen, the brush and the dash pattern of the caller are kept, as a
 	// Stamp keeps them: the chart left the page with the black pen of its
 	// pointers and the color of its last slice.
 	page.SaveGraphicsState()
-
-	// The box of the figure: the outer circle, and the pointers and the
-	// labels, which can reach past it
-	box := [4]float32{dc.x, dc.y, dc.x + float32(2*dc.r1), yc + dc.r1}
 	if titleBaseline > 0.0 {
 		page.drawString(titleFont, titleSize, dc.title, dc.x, titleBaseline, colorToRGB(simpleBarInk), nil)
-		box[2] = max(box[2], dc.x+titleFont.StringWidth(titleSize, dc.title))
 	}
 	if subtitleBaseline > 0.0 {
 		page.drawString(dc.f1, dc.f1.size, dc.subtitle, dc.x, subtitleBaseline, colorToRGB(simpleBarMuted), nil)
-		box[2] = max(box[2], dc.x+dc.f1.StringWidth(dc.f1.size, dc.subtitle))
 	}
-	angle := float32(0.0)
+	angle = 0.0
 	drawn := 0
 	edges := make([]float32, 0, len(dc.slices))
-	for _, slice := range dc.slices {
-		if !sliceDrawn(slice.value) {
+	sweeps := make([]float32, 0, len(dc.slices))
+	for i, slice := range dc.slices {
+		if values[i] <= 0.0 {
 			continue
 		}
 		sliceColor := slice.color
 		if sliceColor == slicePalette {
 			sliceColor = barChartPalette[drawn%len(barChartPalette)]
 		}
-		drawn++
-		sweep := float32(slice.value*360.0) / total
+		sweep := float32(values[i]*360.0) / total
 		angle = dc.drawSlice(
 			page, sliceColor,
 			xc, yc,
@@ -363,18 +417,13 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 			angle, angle+sweep,
 		)
 		edges = append(edges, angle)
-		pointer := dc.drawLinePointer(
-			page, slice.text,
-			xc, yc,
-			dc.r1,
-			angle-sweep, angle,
-		)
-		box = [4]float32{min(box[0], pointer[0]), min(box[1], pointer[1]),
-			max(box[2], pointer[2]), max(box[3], pointer[3])}
+		sweeps = append(sweeps, sweep)
+		dc.drawPointer(page, pointers[drawn])
+		drawn++
 
 		// The percentage fits inside a slice of 15 degrees or more
 		if dc.f2 != nil && sweep >= 15.0 {
-			pctStr := slicePercentage(slice, total)
+			pctStr := fmt.Sprintf("%d%%", percentages[i])
 			midAngle := angle - float32(sweep/2.0) - 90.0
 			midR := float32((dc.r1 + dc.r2) / 2.0)
 			pos := getPoint(xc, yc, midR, midAngle)
@@ -384,11 +433,17 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 				colorToRGB(labelColorOn(sliceColor)), nil)
 		}
 	}
-	// A thin white line between the slices, from the hole to the edge
+	// A thin white line between the slices, from the hole to the edge, at
+	// most a quarter as wide as the thinner of the two slices is across the
+	// middle of the ring, so that it does not cover a thin slice
 	if drawn > 1 {
 		page.SetPenColor(color.White)
-		page.SetPenWidth(1.5)
-		for _, edge := range edges {
+		midR := float32((dc.r1 + dc.r2) / 2.0)
+		for k := 0; k < drawn; k++ {
+			thinner := min(sweeps[k], sweeps[(k+1)%drawn])
+			across := float32(midR * float32(float64(float64(thinner)*math.Pi)/180.0))
+			page.SetPenWidth(min(1.5, float32(0.25*across)))
+			edge := edges[k]
 			inner := getPoint(xc, yc, dc.r2, edge-90.0)
 			outer := getPoint(xc, yc, dc.r1, edge-90.0)
 			page.DrawLine(inner[0], inner[1], outer[0], outer[1])
@@ -398,46 +453,107 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	page.SetFigureBoundingBox(box[0], box[1], box[2]-box[0], box[3]-box[1])
 	page.AddEMC()
 
-	return [2]float32{xc + dc.r1, yc + dc.r1}
+	return [2]float32{box[2], box[3]}
 }
 
-// sliceDrawn says whether a slice of the value is drawn: a number above 0,
-// whose 360ths are a number too. A NaN, from 0/0 in an empty category of
-// real data, an infinity, or a value whose 360ths overflow a float32 made the
-// arc's loop endless, until memory ran out (review of 11 October 2026, #2).
-func sliceDrawn(value float32) bool {
-	return value > 0 && isValue(value*360)
+// donutUnion returns the box that holds the two boxes, each left, top, right,
+// bottom.
+func donutUnion(a, b [4]float32) [4]float32 {
+	return [4]float32{min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3])}
 }
 
-// slicePercentage returns the share of the slice in the total, as a whole
-// percentage.
-func slicePercentage(slice *Slice, total float32) string {
-	return fmt.Sprintf("%d%%", int(math.Floor(float64(float32(slice.value*100.0)/total)+0.5)))
+// values returns the value of each slice that is drawn, and 0 for the others:
+// a slice is drawn when its value is a number above 0. A NaN, from 0/0 in an
+// empty category of real data, or an infinity made the arc's loop endless,
+// until memory ran out (review of 11 October 2026, #2). Values whose 360ths
+// or whose sum are past the largest float32 are divided by the largest of
+// them, so that they are drawn as they compare.
+func (dc *DonutChart) values() []float32 {
+	values := make([]float32, len(dc.slices))
+	largest := float32(0.0)
+	total := float32(0.0)
+	for i, slice := range dc.slices {
+		value := slice.value
+		if value > 0.0 && isValue(value) {
+			values[i] = value
+			largest = max(largest, value)
+			total += value
+		}
+	}
+	if largest > 0.0 && (!isValue(float32(largest*360.0)) || !isValue(total)) {
+		for i := range values {
+			values[i] = values[i] / largest
+		}
+	}
+	return values
 }
 
-// getAltDescription returns the alternate description, or the label and the
-// percentage of each slice when none is set.
-func (dc *DonutChart) getAltDescription(total float32) string {
+// slicePercentages returns the whole percentage of each slice that is drawn,
+// by the largest remainder, so that they add up to 100: each rounded alone,
+// 90 and six of 1.5 were 91 and six of 2.
+func slicePercentages(values []float32, total float32) []int {
+	percentages := make([]int, len(values))
+	remainders := make([]float64, len(values))
+	sum := 0
+	for i := range values {
+		remainders[i] = -1.0
+		if values[i] > 0.0 {
+			exact := float64(float64(values[i])*100.0) / float64(total)
+			percentages[i] = int(math.Floor(exact))
+			remainders[i] = exact - float64(percentages[i])
+			sum += percentages[i]
+		}
+	}
+	// The points left over to the largest remainders, the first of equal ones
+	for ; sum < 100; sum++ {
+		largest := -1
+		for i := range values {
+			if remainders[i] >= 0.0 && (largest < 0 || remainders[i] > remainders[largest]) {
+				largest = i
+			}
+		}
+		if largest < 0 {
+			break
+		}
+		percentages[largest]++
+		remainders[largest] = -1.0
+	}
+	return percentages
+}
+
+// getAltDescription returns the alternate description, or the title, the
+// subtitle, and the label and the percentage of each slice when none is set.
+func (dc *DonutChart) getAltDescription(values []float32, percentages []int) string {
 	if dc.altDescription != "" {
 		return dc.altDescription
 	}
-	var sb strings.Builder
-	if dc.title != "" {
-		sb.WriteString(dc.title + ":")
-	} else if dc.r2 > 0.0 {
-		sb.WriteString("Donut chart:")
-	} else {
-		sb.WriteString("Pie chart:")
+	name := dc.title
+	if dc.subtitle != "" {
+		if name == "" {
+			name = dc.subtitle
+		} else {
+			name = name + ", " + dc.subtitle
+		}
 	}
+	if name == "" {
+		if dc.r2 > 0.0 {
+			name = "Donut chart"
+		} else {
+			name = "Pie chart"
+		}
+	}
+	var sb strings.Builder
+	sb.WriteString(name)
+	sb.WriteString(":")
 	separator := " "
-	for _, slice := range dc.slices {
-		if sliceDrawn(slice.value) {
+	for i, slice := range dc.slices {
+		if values[i] > 0.0 {
 			sb.WriteString(separator)
 			if slice.text != "" {
 				sb.WriteString(slice.text)
 				sb.WriteString(" ")
 			}
-			sb.WriteString(slicePercentage(slice, total))
+			sb.WriteString(fmt.Sprintf("%d%%", percentages[i]))
 			separator = ", "
 		}
 	}

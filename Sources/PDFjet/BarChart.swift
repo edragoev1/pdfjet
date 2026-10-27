@@ -124,7 +124,8 @@ public class BarChart : Drawable {
     ///
     /// Sets the alternate description of the chart, which a screen reader reads
     /// in a PDF/UA document, where the chart is a figure. The default is the
-    /// title, or "Bar chart" without one. Describe what the chart shows.
+    /// title and the subtitle, or "Bar chart" without them, and the values of
+    /// each series by category. Describe what the chart shows.
     ///
     /// - Parameter altDescription: the alternate description.
     /// - Returns: this BarChart object.
@@ -500,7 +501,9 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Draws this chart on the specified page.
+    /// Draws this chart on the specified page. A category name wider than
+    /// two fifths of a horizontal chart is shortened with an ellipsis, and a
+    /// chart too small for its plot draws nothing.
     ///
     /// - Parameter page: the page to draw on.
     /// - Returns: the bottom right corner coordinates [x, y].
@@ -590,15 +593,23 @@ public class BarChart : Drawable {
                 }
             }
         }
+        // The names of the categories, shortened at the left of horizontal bars
+        var names = [String]()
         var widestCategory: Float = 0.0
         for category in categories {
-            widestCategory = Swift.max(widestCategory, f2.stringWidth(category))
+            let name = horizontal ? ChartScale.shorten(f2, f2.getSize(), category, 0.4 * w) : category
+            names.append(name)
+            widestCategory = Swift.max(widestCategory, f2.stringWidth(name))
         }
 
         // Margins and the plot area
-        let titleBaseline = y1 + 1.5 * f1.getBodyHeight()
+        // The title, the subtitle and the legend, its rows wrapped at the
+        // right edge; no room for a title the chart has not
+        let titleBaseline = y1 + (title.isEmpty ? 0.0 : 1.5 * f1.getBodyHeight())
         let subtitleHeight: Float = subtitle.isEmpty ? 0.0 : bodyHeight
-        var topMargin = 2.5 * f1.getBodyHeight() + subtitleHeight + (legend ? 1.5 * bodyHeight : 0.0)
+        let legendRows = legend ? drawLegend(nil, 0.0) : 0
+        var topMargin = (title.isEmpty ? f1.getBodyHeight() : 2.5 * f1.getBodyHeight()) + subtitleHeight
+                + Float(legendRows) * (1.5 * bodyHeight)
         let leftMargin = 1.5 * bodyHeight + pad + (horizontal ? widestCategory : widestAxisLabel)
         var rightMargin = pad
         let bottomMargin = 2.5 * bodyHeight
@@ -679,7 +690,7 @@ public class BarChart : Drawable {
         for i in 0..<n {
             let slotStart = (horizontal ? y5 : x5) + Float(i) * slot
             let groupStart = slotStart + slot * groupGap / 2.0
-            let category = i < categories.count ? categories[i] : ""
+            let category = i < names.count ? names[i] : ""
             if horizontal {
                 BarChart.drawText(page, f2, category, x5 - pad - f2.stringWidth(category),
                         slotStart + slot / 2.0 + ascent / 2.0, BarChart.MUTED)
@@ -793,12 +804,49 @@ public class BarChart : Drawable {
         return [x1 + w, y1 + h]
     }
 
-    // Returns the alternate description, or the title when none is set.
+    // The alternate description: the one set, or the title, the subtitle and,
+    // for each series, its name and its values by category.
     private func getAltDescription() -> String {
         if let altDescription, !altDescription.isEmpty {
             return altDescription
         }
-        return title.isEmpty ? "Bar chart" : title
+        var sb = title
+        if !subtitle.isEmpty {
+            if !sb.isEmpty {
+                sb += ", "
+            }
+            sb += subtitle
+        }
+        if sb.isEmpty {
+            sb += "Bar chart"
+        }
+        var separator = ": "
+        for s in series {
+            var values = ""
+            for i in 0..<s.values.count {
+                if !ChartScale.isValue(s.values[i]) {
+                    continue
+                }
+                if !values.isEmpty {
+                    values += ", "
+                }
+                let category = i < categories.count ? categories[i] : ""
+                if !category.isEmpty {
+                    values += category + " "
+                }
+                values += valueLabel(s.values[i])
+            }
+            if values.isEmpty {
+                continue
+            }
+            sb += separator
+            if !s.name.isEmpty {
+                sb += s.name + ": "
+            }
+            sb += values
+            separator = "; "
+        }
+        return sb + "."
     }
 
     /// Returns the number of category slots: the categories or the longest series.
@@ -879,22 +927,42 @@ public class BarChart : Drawable {
         page.drawLine(xa, ya, xb, yb)
     }
 
-    /// Draws the legend at the left under the title, with a swatch before each series name.
-    private func drawLegend(_ page: Page, _ baseline: Float) {
+    // Draws the legend from the baseline of its first row, its rows wrapped
+    // at the right edge of the chart, when there is a page; and returns the
+    // number of rows. A series with a color per bar has the color of its
+    // first bar.
+    @discardableResult
+    private func drawLegend(_ page: Page?, _ baseline: Float) -> Int {
         let swatch = f2.getAscent()
         let gap = swatch / 2.0
         var x = x1
+        var baseline = baseline
+        var rows = 1
         for j in 0..<series.count {
             let s = series[j]
             if s.name.isEmpty {
                 continue
             }
-            page.setBrushColor(barColor(s, j, -1))
-            page.fillRect(x, baseline - swatch, swatch, swatch)
+            if x > x1 && x + swatch + gap + f2.stringWidth(s.name) > x1 + w {
+                x = x1
+                baseline += 1.5 * f2.getBodyHeight()
+                rows += 1
+            }
+            if let page {
+                if let colors = s.colors, !colors.isEmpty {
+                    page.setBrushColor(colors[0])
+                } else {
+                    page.setBrushColor(barColor(s, j, -1))
+                }
+                page.fillRect(x, baseline - swatch, swatch, swatch)
+            }
             x += swatch + gap
-            BarChart.drawText(page, f2, s.name, x, baseline, BarChart.INK)
+            if let page {
+                BarChart.drawText(page, f2, s.name, x, baseline, BarChart.INK)
+            }
             x += f2.stringWidth(s.name) + f2.getBodyHeight()
         }
+        return rows
     }
 
 }   // End of BarChart.swift

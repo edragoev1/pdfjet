@@ -285,12 +285,15 @@ public class SimpleBarChart implements Drawable {
         float pad = pad();
 
         // The widest name and value, and the room left for the bars
+        // A name wider than two fifths of the chart is shortened with an ellipsis
+        List<String> shown = new ArrayList<String>();
         float nameWidth = 0f;
         float valueWidth = 0f;
         float largest = 0f;
         for (int i = 0; i < names.size(); i++) {
             Font font = fontOf(i);
-            nameWidth = Math.max(nameWidth, font.stringWidth(size, names.get(i)));
+            shown.add(ChartScale.shorten(font, size, names.get(i), 0.4f * (w - 2f * pad)));
+            nameWidth = Math.max(nameWidth, font.stringWidth(size, shown.get(i)));
             valueWidth = Math.max(valueWidth, font.stringWidth(size, label(values.get(i))));
             if (ChartScale.isValue(values.get(i))) {
                 largest = Math.max(largest, values.get(i));
@@ -326,7 +329,7 @@ public class SimpleBarChart implements Drawable {
             float top = rowTop + i * rowHeight();
             float textBaseline = top + (barHeight + ascent - f2.getDescent(size)) / 2f;
             boolean highlighted = i == highlight;
-            page.drawString(font, size, names.get(i), x + pad, textBaseline,
+            page.drawString(font, size, shown.get(i), x + pad, textBaseline,
                     Util.toRGB(highlighted ? highlightColor : INK), null);
             float length = 0f;
             if (largest > 0f && ChartScale.isValue(value) && value > 0f) {

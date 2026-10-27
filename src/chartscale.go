@@ -21,6 +21,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 )
@@ -275,7 +276,7 @@ type chartAxis struct {
 // range of the values rounded to steps.
 func axisOf(values []float32, lo, hi float32, set bool) chartAxis {
 	if set {
-		return chartAxis{lo, hi, max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1)}
+		return chartAxis{lo, hi, roundLines(lo, hi, max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1))}
 	}
 	lo, hi = values[0], values[0]
 	for _, v := range values[1:] {
@@ -286,4 +287,59 @@ func axisOf(values []float32, lo, hi float32, set bool) chartAxis {
 	}
 	round := roundMaxAndMinValues(hi, lo)
 	return chartAxis{round.minValue, round.maxValue, round.numOfGridLines}
+}
+
+// roundLines returns the number of grid lines of a range that is set, from 2
+// to 10, the nearest to the lines given, fewer first, whose step is a round
+// number, 1, 2, 2.5 or 5 times a power of ten; or the lines given when no
+// number is. The range 3 to 17 in the 6 lines of its rounded span was written
+// 3.00, 5.33, 7.67; in 7 it is 3, 5, 7.
+func roundLines(lo, hi float32, lines int) int {
+	span := float64(hi) - float64(lo)
+	for d := 0; d <= 8; d++ {
+		if isRound(span, lines-d) {
+			return lines - d
+		}
+		if isRound(span, lines+d) {
+			return lines + d
+		}
+	}
+	return lines
+}
+
+// isRound tells if the span in the lines, from 2 to 10, has a round step.
+func isRound(span float64, lines int) bool {
+	if lines < 2 || lines > 10 {
+		return false
+	}
+	step := span / float64(lines)
+	if !(step > 0.0) || math.IsInf(step, 0) {
+		return false
+	}
+	m := step / math.Pow(10.0, math.Floor(math.Log10(step)))
+	return math.Abs(m-1.0) < 1e-5 || math.Abs(m-2.0) < 2e-5 || math.Abs(m-2.5) < 2.5e-5 ||
+		math.Abs(m-5.0) < 5e-5 || math.Abs(m-10.0) < 1e-4
+}
+
+// shorten returns the text, shortened with an ellipsis to fit the width in
+// the font at the size, or the text when it fits: a name too long for a
+// chart's column of names. It shortens by runes.
+func shorten(font *Font, size float32, text string, width float32) string {
+	if font.StringWidth(size, text) <= width {
+		return text
+	}
+	end := len(text)
+	for end > 0 {
+		_, n := utf8.DecodeLastRuneInString(text[:end])
+		end -= n
+		cut := end
+		for cut > 0 && text[cut-1] == ' ' {
+			cut--
+		}
+		shorter := text[:cut] + "…"
+		if font.StringWidth(size, shorter) <= width {
+			return shorter
+		}
+	}
+	return "…"
 }

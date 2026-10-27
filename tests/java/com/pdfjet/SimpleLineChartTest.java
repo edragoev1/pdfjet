@@ -142,4 +142,38 @@ class SimpleLineChartTest {
                 .addLine(null, new float[] {1f, 2f}).addLine("b", null)
                 .drawOn(new Page(pdf, Letter.PORTRAIT));
     }
+
+    // A range that is set has grid lines on a round step: 3 to 17 was written
+    // 3.00, 5.33, 7.67 in 6 lines, and is 3, 5, 7 in 7; a range of no round
+    // step in 2 to 10 lines keeps its lines (review of 26 October 2026).
+    @Test
+    void aSetRangeHasARoundStep() throws Exception {
+        assertEquals(7, ChartScale.axisOf(new float[] {5f}, 3f, 17f, true).lines);
+        assertEquals(10, ChartScale.axisOf(new float[] {5f}, 0f, 10f, true).lines);
+        assertEquals(6, ChartScale.roundLines(0f, 1.3f * 3.7f, 6));     // No round step in 2 to 10
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).setYAxisRange(3f, 17f).addLine("a", new float[] {5f, 9f}).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("15")) && !content.contains(TestSupport.hex("5.33")), content);
+    }
+
+    // The labels at the ends of the lines, moved apart, stay over the plot:
+    // they were pushed down past the bottom of the panel.
+    @Test
+    void theEndLabelsStayOverThePlot() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleLineChart chart = new SimpleLineChart(font, font).setSize(400f, 120f);
+        for (int i = 0; i < 8; i++) {
+            chart.addLine("line " + i, new float[] {10f, 0f});
+        }
+        chart.addLine("top", new float[] {0f, 10f});
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        // The page is 792 high, the chart from 0 to 120 down from its top
+        assertTrue(TestSupport.positionOf(content, "line 7 0")[1] > 792f - 120f, content);
+    }
 }

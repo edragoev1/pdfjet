@@ -141,5 +141,40 @@ public sealed class SimpleLineChartTest {
                 .AddLine(null, new float[] {1f, 2f}).AddLine("b", null)
                 .DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
+
+    // A range that is set has grid lines on a round step: 3 to 17 was written
+    // 3.00, 5.33, 7.67 in 6 lines, and is 3, 5, 7 in 7; a range of no round
+    // step in 2 to 10 lines keeps its lines (review of 26 October 2026).
+    [Fact]
+    public void ASetRangeHasARoundStep() {
+        Assert.Equal(7, ChartScale.AxisOf(new float[] {5f}, 3f, 17f, true).lines);
+        Assert.Equal(10, ChartScale.AxisOf(new float[] {5f}, 0f, 10f, true).lines);
+        Assert.Equal(6, ChartScale.RoundLines(0f, 1.3f * 3.7f, 6));     // No round step in 2 to 10
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).SetYAxisRange(3f, 17f).AddLine("a", new float[] {5f, 9f}).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Contains(TestSupport.Hex("15"), content);
+        Assert.DoesNotContain(TestSupport.Hex("5.33"), content);
+    }
+
+    // The labels at the ends of the lines, moved apart, stay over the plot:
+    // they were pushed down past the bottom of the panel.
+    [Fact]
+    public void TheEndLabelsStayOverThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleLineChart chart = new SimpleLineChart(font, font).SetSize(400f, 120f);
+        for (int i = 0; i < 8; i++) {
+            chart.AddLine("line " + i, new float[] {10f, 0f});
+        }
+        chart.AddLine("top", new float[] {0f, 10f});
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        // The page is 792 high, the chart from 0 to 120 down from its top
+        Assert.True(TestSupport.PositionOf(content, "line 7 0")[1] > 792f - 120f, content);
+    }
 }
 }   // End of namespace PDFjet.NET

@@ -89,21 +89,23 @@ import Testing
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        TestSupport.expectXY(300, 300, chart(memory.pdf).addSlice(Slice(1, "a")).drawOn(page))
+        // The circle, and its label 15 under it
+        TestSupport.expectXY(300, 315, chart(memory.pdf).addSlice(Slice(1, "a")).drawOn(page))
         let xy = chart(memory.pdf).setTitle("Fruit").setSubtitle("This week")
                 .addSlice(Slice(1, "a")).drawOn(page)
         #expect(abs(xy[0] - 300) < 0.01)
-        #expect(xy[1] > 300, "the circle is under the title: \(xy[1])")
+        #expect(xy[1] > 315, "the circle is under the title: \(xy[1])")
         let content = TestSupport.content(page)
         #expect(content.contains(TestSupport.hex("Fruit")) && content.contains(TestSupport.hex("This week")))
         #expect(TestSupport.fillColorBefore(content, "This week") == "0.37 0.41 0.45 rg")
-        #expect(page.structures[1].altDescription == "Fruit: a 100%")
+        #expect(page.structures[1].altDescription == "Fruit, This week: a 100%")
     }
-    // A slice that is not a number, an infinity, or a value whose 360ths
-    // overflow is not drawn, and the others are: one made the arc's loop
-    // endless (review of 11 October 2026, #2).
+    // A slice that is not a number or an infinity is not drawn, and the
+    // others are: one made the arc's loop endless (review of 11 October 2026,
+    // #2). A value whose 360ths are past the largest Float is drawn, as it
+    // compares with the others (review of 26 October 2026).
     @Test func aSliceThatIsNotANumberIsNotDrawn() {
-        for bad: Float in [Float.nan, Float.infinity, 1e36] {
+        for bad: Float in [Float.nan, Float.infinity] {
             let pdf = TestSupport.newPDF()
             let page = Page(pdf, Letter.PORTRAIT)
             let chart = chart(pdf)
@@ -115,6 +117,10 @@ import Testing
             #expect(content.contains(TestSupport.hex("25%")) && content.contains(TestSupport.hex("75%")),
                     "\(bad): the other slices are not 25% and 75% in \(content)")
         }
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).addSlice(Slice(3e38, "a")).addSlice(Slice(3e38, "b")).drawOn(page)
+        #expect(TestSupport.content(page).contains(TestSupport.hex("50%")), "\(TestSupport.content(page))")
     }
 
     // A slice is computed with the precision of Go's port, float or double
@@ -138,5 +144,34 @@ import Testing
         }
         chart.setLocation(262.18466, 51.85658).drawOn(page)
         #expect(TestSupport.content(page).contains("321.01 700.28 320.71 700.28 320.4 700.26 c\n"))
+    }
+
+    // The labels of thin slices side by side are moved apart, a line apart at
+    // least; the percentages add up to 100; the white line by a thin slice is
+    // narrower than it; and drawOn returns the bottom right corner of the
+    // labels too, measured as drawn (review of 26 October 2026).
+    @Test func thinSlicesKeepTheirLabelsApart() {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let chart = chart(memory.pdf).addSlice(Slice(90, "Big"))
+        for i in 0..<6 {
+            chart.addSlice(Slice(1.5, "Small \(i)"))
+        }
+        let measured = chart.drawOn(nil)
+        let xy = chart.drawOn(page)
+        TestSupport.expectXY(measured[0], measured[1], xy)
+        let content = TestSupport.content(page)
+        let font = TestSupport.helvetica(memory.pdf)
+        for i in 1..<6 {
+            let above = TestSupport.positionOf(content, "Small \(i - 1)")[1]
+            let below = TestSupport.positionOf(content, "Small \(i)")[1]
+            #expect(abs(above - below) >= font.getBodyHeight() - 0.01, "\(above) \(below)")
+        }
+        #expect(page.structures[0].altDescription
+                == "Donut chart: Big 91%, Small 0 2%, Small 1 2%, Small 2 2%, Small 3 1%, Small 4 1%, Small 5 1%")
+        #expect(content.contains("1.5 w\n"), "\(content)")                        // By the big slice
+        #expect(content.range(of: "\n0\\.\\d+ w\n", options: .regularExpression) != nil,
+                "\(content)")                                                      // Between two thin ones
     }
 }

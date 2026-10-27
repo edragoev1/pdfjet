@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -303,7 +304,8 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 }
 
 // DrawOn draws the chart on the page and returns the x and y coordinates of
-// its bottom right corner.
+// its bottom right corner. A chart too small for its plot and its numbers
+// draws nothing.
 func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	points := chart.valid()
 	if page == nil || len(points) == 0 { // Measured, or nothing to draw
@@ -478,6 +480,15 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 			lx = px - big - float32(size/3.0) - width // At the left, not past the plot
 		}
 		baseline := py + float32(ascent/2.0)
+		// On a patch of the panel's color, which the dots and the grid do not
+		// show through
+		if chart.panelColor >= 0 {
+			page.SetBrushColor(chart.panelColor)
+		} else {
+			page.SetBrushColor(color.White)
+		}
+		page.FillRect(lx-1.0, baseline-f1.GetAscent(size)-1.0,
+			width+2.0, f1.GetAscent(size)+f1.GetDescent(size)+2.0)
 		page.drawString(f1, size, p.name, lx, baseline, colorToRGB(chart.highlightColor), nil)
 		x1 := min(px-big, lx)
 		y1 := min(py-big, baseline-f1.GetAscent(size))

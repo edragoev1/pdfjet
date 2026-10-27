@@ -13,6 +13,7 @@ package pdfjet
 
 import (
 	"math"
+	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
@@ -142,8 +143,8 @@ func (chart *BarChart) SetSubtitle(subtitle string) *BarChart {
 
 // SetAltDescription sets the alternate description of the chart, which a
 // screen reader reads in a PDF/UA document, where the chart is a figure. The
-// default is the title, or "Bar chart" without one. Describe what the chart
-// shows.
+// default is the title and the subtitle, or "Bar chart" without them, and the
+// values of each series by category. Describe what the chart shows.
 func (chart *BarChart) SetAltDescription(altDescription string) *BarChart {
 	chart.altDescription = altDescription
 	return chart
@@ -360,7 +361,10 @@ func (chart *BarChart) SetValueAxisMinMax(min, max float32, gridLines int) *BarC
 	return chart
 }
 
-// DrawOn draws this chart on the specified page and returns the bottom right corner coordinates.
+// DrawOn draws this chart on the specified page and returns the bottom right
+// corner coordinates. A category name wider than two fifths of a horizontal
+// chart is shortened with an ellipsis, and a chart too small for its plot
+// draws nothing.
 func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	n := chart.numberOfCategories()
 	if page == nil || n == 0 { // Measured, or nothing to draw
@@ -459,21 +463,38 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			widestTotal = max(widestTotal, f2.StringWidth(f2.size, chart.valueLabel(up)))
 		}
 	}
+	// The names of the categories, shortened at the left of horizontal bars
+	names := make([]string, 0, len(chart.categories))
 	widestCategory := float32(0.0)
 	for _, category := range chart.categories {
-		widestCategory = max(widestCategory, f2.StringWidth(f2.size, category))
+		name := category
+		if chart.horizontal {
+			name = shorten(f2, f2.size, category, float32(0.4*chart.w))
+		}
+		names = append(names, name)
+		widestCategory = max(widestCategory, f2.StringWidth(f2.size, name))
 	}
 
 	// Margins and the plot area
-	titleBaseline := chart.y1 + float32(1.5*f1.bodyHeight)
+	// The title, the subtitle and the legend, its rows wrapped at the right
+	// edge; no room for a title the chart has not
+	titleBaseline := chart.y1
+	if chart.title != "" {
+		titleBaseline = chart.y1 + float32(1.5*f1.bodyHeight)
+	}
 	subtitleHeight := float32(0.0)
 	if chart.subtitle != "" {
 		subtitleHeight = bodyHeight
 	}
-	topMargin := float32(2.5*f1.bodyHeight) + subtitleHeight
+	legendRows := 0
 	if legend {
-		topMargin += float32(1.5 * bodyHeight)
+		legendRows = chart.drawLegendOn(nil, 0.0)
 	}
+	topMargin := f1.bodyHeight
+	if chart.title != "" {
+		topMargin = float32(2.5 * f1.bodyHeight)
+	}
+	topMargin = topMargin + subtitleHeight + float32(float32(legendRows)*float32(1.5*bodyHeight))
 	var leftMargin float32
 	if chart.horizontal {
 		leftMargin = float32(1.5*bodyHeight) + pad + widestCategory
@@ -584,8 +605,8 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		}
 		groupStart := slotStart + float32(float32(slot*chart.groupGap)/2.0)
 		category := ""
-		if i < len(chart.categories) {
-			category = chart.categories[i]
+		if i < len(names) {
+			category = names[i]
 		}
 		if chart.horizontal {
 			barChartText(page, f2, category, x5-pad-f2.StringWidth(f2.size, category),
@@ -726,16 +747,57 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 }
 
-// getAltDescription returns the alternate description, or the title when none
-// is set.
+// getAltDescription returns the alternate description: the one set, or the
+// title, the subtitle and, for each series, its name and its values by
+// category.
 func (chart *BarChart) getAltDescription() string {
 	if chart.altDescription != "" {
 		return chart.altDescription
 	}
-	if chart.title == "" {
-		return "Bar chart"
+	var sb strings.Builder
+	sb.WriteString(chart.title)
+	if chart.subtitle != "" {
+		if sb.Len() > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(chart.subtitle)
 	}
-	return chart.title
+	if sb.Len() == 0 {
+		sb.WriteString("Bar chart")
+	}
+	separator := ": "
+	for _, s := range chart.series {
+		var values strings.Builder
+		for i, v := range s.values {
+			if !isValue(v) {
+				continue
+			}
+			if values.Len() > 0 {
+				values.WriteString(", ")
+			}
+			category := ""
+			if i < len(chart.categories) {
+				category = chart.categories[i]
+			}
+			if category != "" {
+				values.WriteString(category)
+				values.WriteString(" ")
+			}
+			values.WriteString(chart.valueLabel(v))
+		}
+		if values.Len() == 0 {
+			continue
+		}
+		sb.WriteString(separator)
+		if s.name != "" {
+			sb.WriteString(s.name)
+			sb.WriteString(": ")
+		}
+		sb.WriteString(values.String())
+		separator = "; "
+	}
+	sb.WriteString(".")
+	return sb.String()
 }
 
 // numberOfCategories returns the number of category slots: the categories or the longest series.
@@ -831,20 +893,38 @@ func (chart *BarChart) gridLine(page *Page, xa, ya, xb, yb float32) {
 }
 
 // drawLegendOn draws the legend at the left under the title, with a swatch
-// before each series name.
-func (chart *BarChart) drawLegendOn(page *Page, baseline float32) {
+// before each series name, from the baseline of its first row, its rows
+// wrapped at the right edge of the chart, when there is a page; and returns
+// the number of rows. A series with a color per bar has the color of its
+// first bar.
+func (chart *BarChart) drawLegendOn(page *Page, baseline float32) int {
 	f2 := chart.f2
 	swatch := f2.ascent
 	gap := float32(swatch / 2.0)
 	x := chart.x1
+	rows := 1
 	for j, s := range chart.series {
 		if s.name == "" {
 			continue
 		}
-		page.SetBrushColor(chart.barColor(s, j, -1))
-		page.FillRect(x, baseline-swatch, swatch, swatch)
+		if x > chart.x1 && x+swatch+gap+f2.StringWidth(f2.size, s.name) > chart.x1+chart.w {
+			x = chart.x1
+			baseline += float32(1.5 * f2.bodyHeight)
+			rows++
+		}
+		if page != nil {
+			if len(s.colors) > 0 {
+				page.SetBrushColor(s.colors[0])
+			} else {
+				page.SetBrushColor(chart.barColor(s, j, -1))
+			}
+			page.FillRect(x, baseline-swatch, swatch, swatch)
+		}
 		x += swatch + gap
-		barChartText(page, f2, s.name, x, baseline, barChartInk)
+		if page != nil {
+			barChartText(page, f2, s.name, x, baseline, barChartInk)
+		}
 		x += f2.StringWidth(f2.size, s.name) + f2.bodyHeight
 	}
+	return rows
 }

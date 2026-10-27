@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"math"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -131,4 +132,46 @@ func TestSimpleLineChartAValueOutsideTheRangeIsClipped(t *testing.T) {
 	NewSimpleLineChart(font, font).AddLine("wide", []float32{-3e38, 3e38}).DrawOn(NewPage(pdf, testLetterPortrait()))
 	NewSimpleLineChart(font, font).SetYAxisRange(-3e38, 3e38).AddLine("a", []float32{1, 2}).
 		DrawOn(NewPage(pdf, testLetterPortrait()))
+}
+
+// A range that is set has grid lines on a round step: 3 to 17 was written
+// 3.00, 5.33, 7.67 in 6 lines, and is 3, 5, 7 in 7; a range of no round step
+// in 2 to 10 lines keeps its lines (review of 26 October 2026).
+func TestSimpleLineChartASetRangeHasARoundStep(t *testing.T) {
+	if got := axisOf([]float32{5}, 3, 17, true).lines; got != 7 {
+		t.Errorf("3 to 17 in %d lines", got)
+	}
+	if got := axisOf([]float32{5}, 0, 10, true).lines; got != 10 {
+		t.Errorf("0 to 10 in %d lines", got)
+	}
+	if got := roundLines(0, float32(1.3*3.7), 6); got != 6 { // No round step in 2 to 10
+		t.Errorf("0 to 4.81 in %d lines", got)
+	}
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	NewSimpleLineChart(font, font).SetYAxisRange(3, 17).AddLine("a", []float32{5, 9}).DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("15")) || strings.Contains(content, testHex("5.33")) {
+		t.Errorf("%q", content)
+	}
+}
+
+// The labels at the ends of the lines, moved apart, stay over the plot: they
+// were pushed down past the bottom of the panel.
+func TestSimpleLineChartTheEndLabelsStayOverThePlot(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	chart := NewSimpleLineChart(font, font).SetSize(400, 120)
+	for i := 0; i < 8; i++ {
+		chart.AddLine("line "+strconv.Itoa(i), []float32{10, 0})
+	}
+	chart.AddLine("top", []float32{0, 10})
+	chart.DrawOn(page)
+	content := testContent(page)
+	// The page is 792 high, the chart from 0 to 120 down from its top
+	if y := testPositionOf(t, content, "line 7 0")[1]; y <= 792-120 {
+		t.Errorf("the last label is at %v, under the chart, in %q", y, content)
+	}
 }

@@ -294,12 +294,15 @@ public class SimpleBarChart : Drawable {
         let pad = pad()
 
         // The widest name and value, and the room left for the bars
+        // A name wider than two fifths of the chart is shortened with an ellipsis
+        var shown = [String]()
         var nameWidth: Float = 0.0
         var valueWidth: Float = 0.0
         var largest: Float = 0.0
         for (i, name) in names.enumerated() {
             let font = fontOf(i)
-            nameWidth = Swift.max(nameWidth, font.stringWidth(size, name))
+            shown.append(ChartScale.shorten(font, size, name, 0.4 * (w - 2.0 * pad)))
+            nameWidth = Swift.max(nameWidth, font.stringWidth(size, shown[i]))
             valueWidth = Swift.max(valueWidth, font.stringWidth(size, label(values[i])))
             if ChartScale.isValue(values[i]) {
                 largest = Swift.max(largest, values[i])
@@ -329,7 +332,7 @@ public class SimpleBarChart : Drawable {
         let rowTop = y + top()
         let barHeight = 1.6 * size
         let ascent = f2.getAscent(size)
-        for (i, name) in names.enumerated() {
+        for (i, name) in shown.enumerated() {
             let font = fontOf(i)
             let value = values[i]
             let top = rowTop + Float(i) * rowHeight()

@@ -271,6 +271,53 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   category name is written at every second or third bar, or more, when the
   names would run into each other, as the numbers of the axis are: twelve
   month names in full ran together.
+- The charts, the four ports, the smaller points of the same review:
+  - A range set with `setYAxisRange` or `setXAxisRange` has its grid lines
+    on a round step, from 2 to 10 lines, the nearest to those of its
+    rounded span: 3 to 17 is written 3, 5, 7 … 17, where it was 3.00, 5.33,
+    7.67 … 17.00.
+  - DonutChart: the labels of slices side by side on one side of the
+    circle are moved apart, a line apart at least, where they piled on one
+    another; the percentages add up to 100, the points left over given to
+    the largest remainders (90 and six of 1.5 are 91, 2, 2, 2, 1, 1, 1,
+    where each rounded alone they were 91 and six of 2); the white line by
+    a thin slice is at most a quarter as wide as the slice is across the
+    middle of the ring, so that it does not cover it; a slice whose value
+    times 360, or whose sum with the others, is past the largest float is
+    drawn, the values divided by the largest of them, where it was left out;
+    the description has the subtitle after the title; and a chart without
+    the font of the percentages draws its title in the font of the labels,
+    as its documentation now says.
+  - BarChart: its description, unless one is set, has its data, the name
+    and the values of each series by category ("Sales: a 1, b 2."), where it
+    was the title alone; its legend wraps at the right edge of the chart;
+    a series with a color per bar has the color of its first bar in the
+    legend, where it had the palette's; a chart without a title has no room
+    left for one, its plot higher; and a category name wider than two fifths
+    of a horizontal chart is shortened with an ellipsis.
+  - SimpleBarChart: a name wider than two fifths of the chart is shortened
+    with an ellipsis; in a chart narrower than its names the bars went to
+    nothing and the values past the panel. The description keeps the name
+    whole.
+  - SimpleLineChart: the labels at the ends of the lines, moved apart, stay
+    over the plot, moved up from its bottom, where they were pushed below
+    the panel.
+  - SimpleScatterChart: the name of a highlighted point is on a patch of
+    the panel's color, which the gray dots and the grid do not show through.
+  - SimpleLineChart, SimpleScatterChart and BarChart say in their
+    documentation that a chart too small for its plot draws nothing.
+  Behavior change: DonutChart's `drawOn` returns the bottom right corner of
+  the whole chart, its title, its circle and its labels, where it returned
+  the circle's: a chart of one slice labeled "a" at (100, 100) with a radius
+  of 100 returns (300, 315), the label's leader line 15 points under the
+  circle, where it returned (300, 300); measured with no page, it returns
+  the same.
+  Behavior change: a set axis range draws other grid lines when the lines
+  of its rounded span made an uneven step, as above; BarChart's default
+  description lists its data; a BarChart without a title is drawn higher in
+  its box, its plot taller; the percentages of a DonutChart can differ by
+  one from those it wrote, so that they add up to 100; and a scatter
+  chart's names cover what is under them.
 - Java and C#: a null title, subtitle, axis title, name, list of
   categories or values, given to SimpleBarChart, SimpleLineChart,
   SimpleScatterChart or BarChart, is empty, and a null slice given to

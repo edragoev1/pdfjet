@@ -266,12 +266,15 @@ public class SimpleBarChart : IDrawable {
         float pad = Pad();
 
         // The widest name and value, and the room left for the bars
+        // A name wider than two fifths of the chart is shortened with an ellipsis
+        List<String> shown = new List<String>();
         float nameWidth = 0f;
         float valueWidth = 0f;
         float largest = 0f;
         for (int i = 0; i < names.Count; i++) {
             Font font = FontOf(i);
-            nameWidth = Math.Max(nameWidth, font.StringWidth(size, names[i]));
+            shown.Add(ChartScale.Shorten(font, size, names[i], 0.4f * (w - 2f * pad)));
+            nameWidth = Math.Max(nameWidth, font.StringWidth(size, shown[i]));
             valueWidth = Math.Max(valueWidth, font.StringWidth(size, Label(values[i])));
             if (ChartScale.IsValue(values[i])) {
                 largest = Math.Max(largest, values[i]);
@@ -307,7 +310,7 @@ public class SimpleBarChart : IDrawable {
             float top = rowTop + i * RowHeight();
             float textBaseline = top + (barHeight + ascent - f2.GetDescent(size)) / 2f;
             bool highlighted = i == highlight;
-            page.DrawString(font, size, names[i], x + pad, textBaseline,
+            page.DrawString(font, size, shown[i], x + pad, textBaseline,
                     Util.ToRGB(highlighted ? highlightColor : INK), null);
             float length = 0f;
             if (largest > 0f && ChartScale.IsValue(value) && value > 0f) {

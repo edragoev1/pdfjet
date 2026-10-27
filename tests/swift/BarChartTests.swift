@@ -148,7 +148,7 @@ import Testing
         #expect(content.contains(TestSupport.hex("12")), "\(content)")     // too short: next to the bar
     }
 
-    @Test func aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
+    @Test func aChartIsAFigureDescribedByItsDataOrItsAlternateDescription() {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
@@ -161,21 +161,70 @@ import Testing
                 .setCategories("a", "b")
         described.addSeries("", [1, 2])
         _ = draw(described, page)
-        #expect(page.structures[0].altDescription == "Sales")
+        #expect(page.structures[0].altDescription == "Sales: a 1, b 2.")
         #expect(page.structures[1].altDescription == "Sales rose from 1 to 2.")
     }
 
-    // A horizontal chart narrower than its categories draws nothing: its
-    // axis ran backwards, the bars over the categories (review of 26 October
-    // 2026).
-    @Test func aChartWithNoRoomForItsPlotDrawsNothing() {
+    // A category name wider than two fifths of a horizontal chart is
+    // shortened with an ellipsis, and a chart too small for its plot draws
+    // nothing: its axis ran backwards, the bars over the names (review of 26
+    // October 2026).
+    @Test func aLongNameIsShortenedAndAChartWithNoRoomDrawsNothing() {
         let pdf = TestSupport.newPDF()
-        let page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.PORTRAIT)
+        let name = "A very very long category name indeed, and longer"
         let chart = chart(pdf).setSize(200, 200).setHorizontal(true)
-                .setCategories("A very very long category name indeed, and longer")
-                .addSeries("s", [5])
+                .setCategories(name).addSeries("s", [5])
         TestSupport.expectXY(250, 250, chart.drawOn(page))
+        let content = TestSupport.content(page)
+        #expect(!content.contains(TestSupport.hex(name)), "\(content)")
+        let font = TestSupport.helvetica(pdf)
+        let shortened = ChartScale.shorten(font, font.getSize(), name, 0.4 * 200)
+        // The ellipsis is 85 in WinAnsi, the encoding of a core font
+        let start = String(String.UnicodeScalarView(shortened.unicodeScalars.dropLast()))
+        #expect(shortened.hasSuffix("\u{2026}") && content.contains(TestSupport.hex(start) + "85>"), "\(content)")
+        page = Page(pdf, Letter.PORTRAIT)
+        self.chart(pdf).setSize(20, 20).setCategories("a").addSeries("s", [5]).drawOn(page)
         #expect(TestSupport.content(page) == "")
+    }
+
+    // A chart without a title has no room for one: its plot starts higher,
+    // its bars taller. The legend wraps at the right edge, and a series with
+    // a color per bar has the color of its first bar in it.
+    @Test func theTopOfTheChartIsWhatItHas() {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        let titled = draw(chart(pdf).setTitle("t").setCategories("a").addSeries("", [1]), page)
+        page = Page(pdf, Letter.PORTRAIT)
+        let untitled = draw(chart(pdf).setCategories("a").addSeries("", [1]), page)
+        #expect(barHeight(untitled) > barHeight(titled) + 10, "\(barHeight(untitled)) \(barHeight(titled))")
+        page = Page(pdf, Letter.PORTRAIT)
+        let wide = chart(pdf).setCategories("a").setDrawLegend(true)
+        for i in 0..<8 {
+            wide.addSeries("Series number \(i)", [1])
+        }
+        var content = draw(wide, page)
+        #expect(TestSupport.positionOf(content, "Series number 0")[1]
+                != TestSupport.positionOf(content, "Series number 7")[1])
+        page = Page(pdf, Letter.PORTRAIT)
+        content = draw(chart(pdf).setCategories("a", "b").setDrawLegend(true)
+                .addSeries("own", [1, 2], [0x123456, 0x654321]), page)
+        let swatch = content.range(of: "0.07 0.2 0.34 rg\n")
+        let own = content.range(of: TestSupport.hex("own"))
+        #expect(swatch != nil && own != nil && swatch!.lowerBound < own!.lowerBound, "\(content)")
+    }
+
+    // The height of the first bar the content fills in navy.
+    private func barHeight(_ content: String) -> Float {
+        guard let navy = content.range(of: "0.12 0.23 0.37 rg\n"),
+              let re = content.range(of: " re\n", range: navy.upperBound..<content.endIndex) else {
+            Issue.record("no navy bar in \(content)")
+            return 0
+        }
+        let start = content[..<re.lowerBound].lastIndex(of: "\n").map { content.index(after: $0) }
+                ?? content.startIndex
+        let parts = content[start..<re.lowerBound].components(separatedBy: " ")
+        return abs(Float(parts[3])!)
     }
 
     // Under vertical bars a category is written where it leaves the one

@@ -76,7 +76,9 @@ public class DonutChart : Drawable {
 
     /// Sets the title, drawn at the top left of the chart's location in the bold
     /// font, the second, at the size of the labels; the circle is drawn under it.
-    /// A chart without a title has the circle at its location.
+    /// A chart without the second font, which draws no percentages, draws its
+    /// title in the first. A chart without a title has the circle at its
+    /// location.
     @discardableResult
     public func setTitle(_ title: String) -> DonutChart {
         self.title = title
@@ -91,8 +93,8 @@ public class DonutChart : Drawable {
     }
 
     /// Sets the alternate description of the chart, which a screen reader reads
-    /// in a PDF/UA document, where the chart is a figure. The default lists the
-    /// label and the percentage of each slice.
+    /// in a PDF/UA document, where the chart is a figure. The default is the
+    /// title and the subtitle, and the label and the percentage of each slice.
     @discardableResult
     public func setAltDescription(_ altDescription: String) -> DonutChart {
         self.altDescription = altDescription
@@ -201,66 +203,109 @@ public class DonutChart : Drawable {
         return a2
     }
 
-    private func drawLinePointer(
-            _ page: Page,
-            _ text: String,
-            _ xc: Float, _ yc: Float,
-            _ r1: Float,
-            _ a1: Float, _ a2: Float) -> [Float] {
+    // The leader line and the label of a slice: the point on the edge of the
+    // circle, the elbow 15 points past it, the y of the label's line, moved
+    // down from the elbow's when it would meet the label above it, and the
+    // side of the circle it is on.
+    private final class Pointer {
+        let text: String
+        let p1: [Float]
+        let p2: [Float]
+        let right: Bool
+        var yEnd: Float
+
+        init(_ text: String, _ p1: [Float], _ p2: [Float], _ right: Bool) {
+            self.text = text
+            self.p1 = p1
+            self.p2 = p2
+            self.right = right
+            self.yEnd = p2[1]
+        }
+    }
+
+    // Returns the pointer of a slice from the angle a1 to a2.
+    private func pointerOf(_ text: String, _ xc: Float, _ yc: Float, _ r1: Float, _ a1: Float, _ a2: Float) -> Pointer {
         let midAngle = (a1 + a2) / 2.0 - 90.0
+        let p1 = getPoint(xc, yc, r1, midAngle)            // On the outer edge
+        let p2 = getPoint(xc, yc, r1 + 15.0, midAngle)     // The elbow
+        return Pointer(text, p1, p2, cos(Double(midAngle) * Double.pi / 180.0) >= 0)
+    }
 
-        // Point on the outer edge of the donut
-        let p1 = getPoint(xc, yc, r1, midAngle)
+    // Moves the labels on each side of the circle apart, top to bottom, where
+    // one would meet the one above it.
+    private func moveApart(_ pointers: [Pointer]) {
+        guard let f1 = f1 else {
+            return
+        }
+        for side in 0..<2 {
+            // The indexes of the pointers with a label on the side
+            var labels = [Int]()
+            for i in 0..<pointers.count {
+                if pointers[i].right == (side == 0) && !pointers[i].text.isEmpty {
+                    labels.append(i)
+                }
+            }
+            // Top to bottom, and labels at one height in the order of their
+            // slices: Swift's sort is not stable
+            labels.sort { a, b in
+                pointers[a].yEnd != pointers[b].yEnd ? pointers[a].yEnd < pointers[b].yEnd : a < b
+            }
+            if labels.count > 1 {
+                for k in 1..<labels.count {
+                    pointers[labels[k]].yEnd = Swift.max(pointers[labels[k]].yEnd,
+                            pointers[labels[k - 1]].yEnd + f1.getBodyHeight())
+                }
+            }
+        }
+    }
 
-        // Elbow point — 15pt beyond the outer edge
-        let r3 = r1 + 15.0
-        let p2 = getPoint(xc, yc, r3, midAngle)
-
-        // Draw the pointer line: edge → elbow → horizontal end
-        page.setPenColor(DonutChart.LEADER)
-        page.setPenWidth(0.75)
-        page.moveTo(p1[0], p1[1])
-        page.lineTo(p2[0], p2[1])
-
-        if f1 != nil && !text.isEmpty {
-            let textWidth = f1!.stringWidth(text)
-            let onRightSide = cos(Double(midAngle) * Double.pi / 180.0) >= 0
-
-            let padding: Float = 4.0
-            let lineLength = textWidth + padding
-
-            let xEnd: Float = onRightSide ? p2[0] + lineLength : p2[0] - lineLength
-            let yEnd: Float = p2[1]
-
-            // Continue the path to the horizontal end
+    // Returns the box of the leader line and the label of the pointer: its
+    // left, top, right and bottom; and draws them when there is a page.
+    @discardableResult
+    private func drawPointer(_ page: Page?, _ pointer: Pointer) -> [Float] {
+        let p1 = pointer.p1
+        let x2 = pointer.p2[0]
+        let yEnd = pointer.yEnd
+        if let page = page {
+            // The line: edge, elbow, and along to the end, thin and gray
+            page.setPenColor(DonutChart.LEADER)
+            page.setPenWidth(0.75)
+            page.moveTo(p1[0], p1[1])
+            page.lineTo(x2, yEnd)
+        }
+        if let f1 = f1, !pointer.text.isEmpty {
+            let textWidth = f1.stringWidth(pointer.text)
+            let lineLength = textWidth + 4.0
+            let xEnd: Float = pointer.right ? x2 + lineLength : x2 - lineLength
+            // The label just above the line
+            let x = pointer.right ? x2 + 2.0 : xEnd + 2.0
+            let baseline = yEnd - f1.getAscent() / 3.0
+            if let page = page {
+                page.lineTo(xEnd, yEnd)
+                page.strokePath()
+                page.drawString(f1, f1.getSize(), pointer.text, x, baseline, Util.toRGB(DonutChart.INK), nil)
+            }
+            return [Swift.min(p1[0], x2, xEnd, x),
+                    Swift.min(p1[1], yEnd, baseline - f1.getAscent()),
+                    Swift.max(p1[0], x2, xEnd, x + textWidth),
+                    Swift.max(p1[1], yEnd, baseline + f1.getDescent(f1.getSize()))]
+        }
+        // No text: a short line along
+        let xEnd: Float = pointer.right ? x2 + 20.0 : x2 - 20.0
+        if let page = page {
             page.lineTo(xEnd, yEnd)
             page.strokePath()
-
-            // Draw the label text just above the horizontal line
-            let x = onRightSide ? p2[0] + 2.0 : xEnd + 2.0
-            let baseline = yEnd - f1!.getAscent() / 3.0
-            page.drawString(f1!, f1!.getSize(), text, x, baseline,
-                    Util.toRGB(DonutChart.INK), nil)
-            return [Swift.min(p1[0], p2[0], xEnd, x),
-                    Swift.min(p1[1], p2[1], baseline - f1!.getAscent()),
-                    Swift.max(p1[0], p2[0], xEnd, x + textWidth),
-                    Swift.max(p1[1], p2[1], baseline + f1!.getDescent(f1!.getSize()))]
-        } else {
-            // No text — short horizontal stub
-            let onRightSide = cos(Double(midAngle) * Double.pi / 180.0) >= 0
-            let xEnd: Float = onRightSide ? p2[0] + 20.0 : p2[0] - 20.0
-            page.lineTo(xEnd, p2[1])
-            page.strokePath()
-            return [Swift.min(p1[0], p2[0], xEnd), Swift.min(p1[1], p2[1]),
-                    Swift.max(p1[0], p2[0], xEnd), Swift.max(p1[1], p2[1])]
         }
+        return [Swift.min(p1[0], x2, xEnd), Swift.min(p1[1], yEnd),
+                Swift.max(p1[0], x2, xEnd), Swift.max(p1[1], yEnd)]
     }
 
     /// Draws this chart on the specified page.
     ///
-    /// - Parameter page: the page to draw on.
-    /// - Returns: x and y coordinates of the bottom right corner of the outer
-    ///   circle of this chart. The slice labels can extend past it.
+    /// - Parameter page: the page to draw on, or nil to measure the chart.
+    /// - Returns: x and y coordinates of the bottom right corner of the chart:
+    ///   of its title, its circle, and its leader lines and labels, which can
+    ///   reach past the circle.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         // The title and the subtitle above the circle, when there are any
@@ -287,58 +332,77 @@ public class DonutChart : Drawable {
         let yc = top + r1
 
         // The slices with a value above 0 share the circle
+        let values = self.values()
         var total: Float = 0.0
-        for slice in slices! {
-            if DonutChart.sliceDrawn(slice.value) {
-                total += slice.value
+        for value in values {
+            total += value
+        }
+        if total <= 0.0 {   // Nothing to draw
+            return [xc + r1, yc + r1]
+        }
+        let percentages = DonutChart.percentages(values, total)
+
+        // The leader lines and the labels, moved apart, and the box of the
+        // figure: the title, the outer circle, the leader lines and the labels
+        var pointers = [Pointer]()
+        var angle: Float = 0.0
+        for i in 0..<slices!.count {
+            if values[i] > 0.0 {
+                let sweep = values[i] * 360.0 / total
+                pointers.append(pointerOf(slices![i].text, xc, yc, r1, angle, angle + sweep))
+                angle += sweep
             }
         }
-        guard let page = page, total > 0.0 else {
-            return [xc + r1, yc + r1]   // Measured, or nothing to draw
+        moveApart(pointers)
+        var box: [Float] = [x, y, x + 2 * r1, yc + r1]
+        if titleBaseline > 0.0, let titleFont = titleFont {
+            box[2] = Swift.max(box[2], x + titleFont.stringWidth(titleSize, title))
         }
+        if subtitleBaseline > 0.0, let f1 = f1 {
+            box[2] = Swift.max(box[2], x + f1.stringWidth(subtitle))
+        }
+        for pointer in pointers {
+            box = DonutChart.union(box, drawPointer(nil, pointer))
+        }
+        guard let page = page else {    // Measured
+            return [box[2], box[3]]
+        }
+
         // The chart is one figure, described by its alternate description.
-        page.addBDC(StructElem.FIGURE, nil, getAltDescription(total))
+        page.addBDC(StructElem.FIGURE, nil, getAltDescription(values, percentages))
         // The pen, the brush and the dash pattern of the caller are kept,
         // as a Stamp keeps them: the chart left the page
         // with the black pen of its pointers and the color of its last slice.
         page.saveGraphicsState()
-        // The box of the figure: the outer circle, and the pointers and the
-        // labels, which can reach past it
-        var box: [Float] = [x, y, x + 2 * r1, yc + r1]
         if titleBaseline > 0.0, let titleFont = titleFont {
             page.drawString(titleFont, titleSize, title, x, titleBaseline, Util.toRGB(DonutChart.INK), nil)
-            box[2] = Swift.max(box[2], x + titleFont.stringWidth(titleSize, title))
         }
         if subtitleBaseline > 0.0, let f1 = f1 {
             page.drawString(f1, f1.getSize(), subtitle, x, subtitleBaseline, Util.toRGB(DonutChart.MUTED), nil)
-            box[2] = Swift.max(box[2], x + f1.stringWidth(subtitle))
         }
-        var angle: Float = 0.0
+        angle = 0.0
         var drawn = 0
         var edges = [Float]()
-        for slice in slices! {
-            if !DonutChart.sliceDrawn(slice.value) {
+        var sweeps = [Float]()
+        for i in 0..<slices!.count {
+            if values[i] <= 0.0 {
                 continue
             }
+            let slice = slices![i]
             let color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.count] : slice.color
-            drawn += 1
-            let sweep = slice.value * 360.0 / total
+            let sweep = values[i] * 360.0 / total
             angle = drawSlice(
                     page, color,
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep)
             edges.append(angle)
-            let pointer = drawLinePointer(
-                    page, slice.text,
-                    xc, yc,
-                    r1,
-                    angle - sweep, angle)
-            box = [Swift.min(box[0], pointer[0]), Swift.min(box[1], pointer[1]),
-                    Swift.max(box[2], pointer[2]), Swift.max(box[3], pointer[3])]
+            sweeps.append(sweep)
+            drawPointer(page, pointers[drawn])
+            drawn += 1
             // The percentage fits inside a slice of 15 degrees or more
             if f2 != nil && sweep >= 15.0 {
-                let pctStr = DonutChart.percentage(slice, total)
+                let pctStr = "\(percentages[i])%"
                 let midAngle = angle - sweep / 2.0 - 90.0
                 let midR = (r1 + r2) / 2.0
                 let pos = getPoint(xc, yc, midR, midAngle)
@@ -348,11 +412,17 @@ public class DonutChart : Drawable {
                         Util.toRGB(BarChart.labelColorOn(color)), nil)
             }
         }
-        // A thin white line between the slices, from the hole to the edge
+        // A thin white line between the slices, from the hole to the edge, at
+        // most a quarter as wide as the thinner of the two slices is across
+        // the middle of the ring, so that it does not cover a thin slice
         if drawn > 1 {
             page.setPenColor(Color.white)
-            page.setPenWidth(1.5)
-            for edge in edges {
+            let midR = (r1 + r2) / 2.0
+            for k in 0..<drawn {
+                let thinner = Swift.min(sweeps[k], sweeps[(k + 1) % drawn])
+                let across = midR * Float(Double(thinner) * Double.pi / 180.0)
+                page.setPenWidth(Swift.min(1.5, 0.25 * across))
+                let edge = edges[k]
                 let inner = getPoint(xc, yc, r2, edge - 90.0)
                 let outer = getPoint(xc, yc, r1, edge - 90.0)
                 page.drawLine(inner[0], inner[1], outer[0], outer[1])
@@ -361,37 +431,96 @@ public class DonutChart : Drawable {
         page.restoreGraphicsState()
         page.setFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1])
         page.addEMC()
-        return [xc + r1, yc + r1]
+        return [box[2], box[3]]
     }
 
-    // Says whether a slice of the value is drawn: a number above 0, whose
-    // 360ths are a number too. A NaN, from 0/0 in an empty category of real
-    // data, an infinity, or a value whose 360ths overflow a Float made the
-    // arc's loop endless, until memory ran out (review of 11 October 2026, #2).
-    static func sliceDrawn(_ value: Float) -> Bool {
-        return value > 0 && ChartScale.isValue(value * 360)
+    // Returns the box that holds the two boxes, each left, top, right, bottom.
+    private static func union(_ a: [Float], _ b: [Float]) -> [Float] {
+        return [Swift.min(a[0], b[0]), Swift.min(a[1], b[1]),
+                Swift.max(a[2], b[2]), Swift.max(a[3], b[3])]
     }
 
-    // Returns the share of the slice in the total, as a whole percentage.
-    private static func percentage(_ slice: Slice, _ total: Float) -> String {
-        return "\(Int((slice.value * 100.0 / total).rounded(.toNearestOrAwayFromZero)))%"
+    // Returns the value of each slice that is drawn, and 0 for the others: a
+    // slice is drawn when its value is a number above 0. A NaN, from 0/0 in
+    // an empty category of real data, or an infinity made the arc's loop
+    // endless, until memory ran out (review of 11 October 2026, #2). Values
+    // whose 360ths or whose sum are past the largest Float are divided by the
+    // largest of them, so that they are drawn as they compare.
+    private func values() -> [Float] {
+        var values = [Float](repeating: 0.0, count: slices!.count)
+        var largest: Float = 0.0
+        var total: Float = 0.0
+        for i in 0..<values.count {
+            let value = slices![i].value
+            if value > 0.0 && ChartScale.isValue(value) {
+                values[i] = value
+                largest = Swift.max(largest, value)
+                total += value
+            }
+        }
+        if largest > 0.0 && (!ChartScale.isValue(largest * 360.0) || !ChartScale.isValue(total)) {
+            for i in 0..<values.count {
+                values[i] = values[i] / largest
+            }
+        }
+        return values
     }
 
-    // Returns the alternate description, or the label and the percentage of
-    // each slice when none is set.
-    private func getAltDescription(_ total: Float) -> String {
+    // Returns the whole percentage of each slice that is drawn, by the largest
+    // remainder, so that they add up to 100: each rounded alone, 90 and six of
+    // 1.5 were 91 and six of 2.
+    private static func percentages(_ values: [Float], _ total: Float) -> [Int] {
+        var percentages = [Int](repeating: 0, count: values.count)
+        var remainders = [Double](repeating: 0.0, count: values.count)
+        var sum = 0
+        for i in 0..<values.count {
+            remainders[i] = -1.0
+            if values[i] > 0.0 {
+                let exact = Double(values[i]) * 100.0 / Double(total)
+                percentages[i] = Int(floor(exact))
+                remainders[i] = exact - Double(percentages[i])
+                sum += percentages[i]
+            }
+        }
+        // The points left over to the largest remainders, the first of equal ones
+        while sum < 100 {
+            var largest = -1
+            for i in 0..<values.count {
+                if remainders[i] >= 0.0 && (largest < 0 || remainders[i] > remainders[largest]) {
+                    largest = i
+                }
+            }
+            if largest < 0 {
+                break
+            }
+            percentages[largest] += 1
+            remainders[largest] = -1.0
+            sum += 1
+        }
+        return percentages
+    }
+
+    // Returns the alternate description, or the title, the subtitle, and the
+    // label and the percentage of each slice when none is set.
+    private func getAltDescription(_ values: [Float], _ percentages: [Int]) -> String {
         if let altDescription, !altDescription.isEmpty {
             return altDescription
         }
-        var description = !title.isEmpty ? title + ":" : ((r2 > 0.0) ? "Donut chart:" : "Pie chart:")
+        var name = title
+        if !subtitle.isEmpty {
+            name = name.isEmpty ? subtitle : name + ", " + subtitle
+        }
+        if name.isEmpty {
+            name = (r2 > 0.0) ? "Donut chart" : "Pie chart"
+        }
+        var description = name + ":"
         var separator = " "
-        // The slices drawn, as Int of the percentage of an infinity traps
-        for slice in slices! where DonutChart.sliceDrawn(slice.value) {
+        for i in 0..<slices!.count where values[i] > 0.0 {
             description += separator
-            if !slice.text.isEmpty {
-                description += slice.text + " "
+            if !slices![i].text.isEmpty {
+                description += slices![i].text + " "
             }
-            description += DonutChart.percentage(slice, total)
+            description += "\(percentages[i])%"
             separator = ", "
         }
         return description

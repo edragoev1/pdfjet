@@ -390,7 +390,8 @@ public class SimpleScatterChart : Drawable {
     }
 
     ///
-    /// Draws the chart on the page.
+    /// Draws the chart on the page. A chart too small for its plot and its
+    /// numbers draws nothing.
     ///
     /// - Parameter page: the page to draw on.
     /// - Returns: the x and y coordinates of the bottom right corner of the chart.
@@ -557,6 +558,11 @@ public class SimpleScatterChart : Drawable {
                 lx = px - big - size / 3.0 - width  // At the left, not past the plot
             }
             let baseline = py + ascent / 2.0
+            // On a patch of the panel's color, which the dots and the grid do not
+            // show through
+            page.setBrushColor(panelColor >= 0 ? panelColor : Color.white)
+            page.fillRect(lx - 1.0, baseline - f1.getAscent(size) - 1.0,
+                    width + 2.0, f1.getAscent(size) + f1.getDescent(size) + 2.0)
             page.drawString(f1, size, p.name, lx, baseline, Util.toRGB(highlightColor), nil)
             let x1 = Swift.min(px - big, lx)
             let y1 = Swift.min(py - big, baseline - f1.getAscent(size))

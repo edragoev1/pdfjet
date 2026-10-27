@@ -171,3 +171,20 @@ func TestSimpleScatterChartAPointOutsideTheRangeIsNotDrawn(t *testing.T) {
 	}
 	NewSimpleScatterChart(font, font).Add(-3e38, -3e38).Add(3e38, 3e38).DrawOn(NewPage(pdf, testLetterPortrait()))
 }
+
+// The name of a highlighted point is on a patch of the panel's color, so that
+// the gray dots under it do not show through.
+func TestSimpleScatterChartANameIsOnAPatchOfThePanel(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testSimpleScatterChart(pdf).DrawOn(page)
+	content := testContent(page)
+	name := strings.Index(content, "<"+testHex("Canada"))
+	patch := strings.LastIndex(content[:name], "0.95 0.95 0.96 rg\n")
+	if patch <= strings.Index(content, "0.12 0.23 0.37 rg\n") { // After the navy dot
+		t.Errorf("no patch after the navy dot in %q", content)
+	}
+	if !strings.Contains(content[patch:name], " re\n") {
+		t.Errorf("no patch under the name in %q", content)
+	}
+}

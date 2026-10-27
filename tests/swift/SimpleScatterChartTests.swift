@@ -133,4 +133,22 @@ import Testing
         #expect(!content.contains(TestSupport.hex("Far")), "\(content)")
         SimpleScatterChart(font, font).add(-3e38, -3e38).add(3e38, 3e38).drawOn(Page(pdf, Letter.PORTRAIT))
     }
+
+    // The name of a highlighted point is on a patch of the panel's color, so
+    // that the gray dots under it do not show through.
+    @Test func aNameIsOnAPatchOfThePanel() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).drawOn(page)
+        let content = TestSupport.content(page)
+        guard let name = content.range(of: "<" + TestSupport.hex("Canada")),
+              let patch = content.range(of: "0.95 0.95 0.96 rg\n", options: .backwards,
+                      range: content.startIndex..<name.lowerBound),
+              let navy = content.range(of: "0.12 0.23 0.37 rg\n") else {
+            Issue.record("no name, patch or navy dot in \(content)")
+            return
+        }
+        #expect(patch.lowerBound > navy.lowerBound, "\(content)")      // After the navy dot
+        #expect(content[patch.lowerBound..<name.lowerBound].contains(" re\n"), "\(content)")
+    }
 }

@@ -115,5 +115,30 @@ public class SimpleBarChartTest {
         new SimpleBarChart(font, font).SetTitle(null).SetSubtitle(null).SetAltDescription(null)
                 .Add(null, 1f).Add("b", 2f).DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
+
+    // A name wider than two fifths of the chart is shortened with an
+    // ellipsis, and the bars keep their room: in a chart narrower than its
+    // names they went to nothing, the values past the panel (review of 26
+    // October 2026). The description keeps the name whole.
+    [Fact]
+    public void ALongNameIsShortened() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        string name = "A name far too long for the column of names of this chart";
+        SimpleBarChart chart = new SimpleBarChart(font, font).SetWidth(200f).Add(name, 5f).Add("b", 3f);
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex(name), content);
+        string shortened = ChartScale.Shorten(font, font.GetSize(), name, 0.4f * (200f - 2f * font.GetSize()));
+        // The ellipsis is 85 in WinAnsi, the encoding of a core font
+        string start = shortened.Substring(0, shortened.Length - 1);
+        Assert.EndsWith("\u2026", shortened);
+        Assert.Contains(TestSupport.Hex(start) + "85>", content);
+        Assert.Contains(name, chart.AltDescription());
+        Assert.Equal("A n\u2026", ChartScale.Shorten(font, 10f, "A name", font.StringWidth(10f, "A n\u2026")));
+        Assert.Equal("A name", ChartScale.Shorten(font, 10f, "A name", 100f));
+        Assert.Equal("A\u2026", ChartScale.Shorten(font, 10f, "A  name", font.StringWidth(10f, "A \u2026") - 0.1f));
+    }
 }
 }   // End of namespace PDFjet.NET

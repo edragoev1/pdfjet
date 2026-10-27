@@ -399,7 +399,8 @@ public class SimpleScatterChart implements Drawable {
     }
 
     /**
-     * Draws the chart on the page.
+     * Draws the chart on the page. A chart too small for its plot and its
+     * numbers draws nothing.
      *
      * @param page the page to draw on.
      * @return the x and y coordinates of the bottom right corner of the chart.
@@ -602,6 +603,11 @@ public class SimpleScatterChart implements Drawable {
             lx = px - big - size / 3f - width;  // At the left, not past the plot
         }
         float baseline = py + ascent / 2f;
+        // On a patch of the panel's color, which the dots and the grid do not
+        // show through
+        page.setBrushColor(panelColor >= 0 ? panelColor : Color.white);
+        page.fillRect(lx - 1f, baseline - f1.getAscent(size) - 1f,
+                width + 2f, f1.getAscent(size) + f1.getDescent(size) + 2f);
         page.drawString(f1, size, p.name, lx, baseline, Util.toRGB(highlightColor), null);
         float x1 = Math.min(px - big, lx);
         float y1 = Math.min(py - big, baseline - f1.getAscent(size));

@@ -125,4 +125,28 @@ class SimpleBarChartTest {
         new SimpleBarChart(font, font).setTitle(null).setSubtitle(null).setAltDescription(null)
                 .add(null, 1f).add("b", 2f).drawOn(new Page(pdf, Letter.PORTRAIT));
     }
+
+    // A name wider than two fifths of the chart is shortened with an
+    // ellipsis, and the bars keep their room: in a chart narrower than its
+    // names they went to nothing, the values past the panel (review of 26
+    // October 2026). The description keeps the name whole.
+    @Test
+    void aLongNameIsShortened() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        String name = "A name far too long for the column of names of this chart";
+        SimpleBarChart chart = new SimpleBarChart(font, font).setWidth(200f).add(name, 5f).add("b", 3f);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex(name)), content);
+        String shortened = ChartScale.shorten(font, font.getSize(), name, 0.4f * (200f - 2f * font.getSize()));
+        // The ellipsis is 85 in WinAnsi, the encoding of a core font
+        String start = shortened.substring(0, shortened.length() - 1);
+        assertTrue(shortened.endsWith("\u2026") && content.contains(TestSupport.hex(start) + "85>"), content);
+        assertTrue(chart.altDescription().contains(name));
+        assertEquals("A n\u2026", ChartScale.shorten(font, 10f, "A name", font.stringWidth(10f, "A n\u2026")));
+        assertEquals("A name", ChartScale.shorten(font, 10f, "A name", 100f));
+        assertEquals("A\u2026", ChartScale.shorten(font, 10f, "A  name", font.stringWidth(10f, "A \u2026") - 0.1f));
+    }
 }

@@ -173,4 +173,18 @@ class SimpleScatterChartTest {
         new SimpleScatterChart(font, font).setTitle(null).setSubtitle(null).setXAxisTitle(null)
                 .setYAxisTitle(null).setAltDescription(null).add(null, 1f, 1f).add(2f, 3f).drawOn(page);
     }
+
+    // The name of a highlighted point is on a patch of the panel's color, so
+    // that the gray dots under it do not show through.
+    @Test
+    void aNameIsOnAPatchOfThePanel() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).drawOn(page);
+        String content = TestSupport.content(page);
+        int name = content.indexOf("<" + TestSupport.hex("Canada"));
+        int patch = content.lastIndexOf("0.95 0.95 0.96 rg\n", name);
+        assertTrue(patch > content.indexOf("0.12 0.23 0.37 rg\n"), content);     // After the navy dot
+        assertTrue(content.substring(patch, name).contains(" re\n"), content);
+    }
 }

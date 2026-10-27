@@ -235,12 +235,15 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	pad := chart.pad()
 
 	// The widest name and value, and the room left for the bars
+	// A name wider than two fifths of the chart is shortened with an ellipsis
+	shown := make([]string, 0, len(chart.names))
 	nameWidth := float32(0)
 	valueWidth := float32(0)
 	largest := float32(0)
 	for i, name := range chart.names {
 		font := chart.fontOf(i)
-		nameWidth = max(nameWidth, font.StringWidth(size, name))
+		shown = append(shown, shorten(font, size, name, float32(0.4*(chart.w-float32(2.0*pad)))))
+		nameWidth = max(nameWidth, font.StringWidth(size, shown[i]))
 		valueWidth = max(valueWidth, font.StringWidth(size, chart.label(chart.values[i])))
 		if isValue(chart.values[i]) {
 			largest = max(largest, chart.values[i])
@@ -270,7 +273,7 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	rowTop := chart.y + chart.top()
 	barHeight := float32(1.6 * size)
 	ascent := f2.GetAscent(size)
-	for i, name := range chart.names {
+	for i, name := range shown {
 		font := chart.fontOf(i)
 		top := rowTop + float32(float32(i)*chart.rowHeight())
 		textBaseline := top + float32((barHeight+ascent-f2.GetDescent(size))/2.0)

@@ -185,7 +185,7 @@ final class ChartScale {
      */
     static Axis axisOf(float[] values, float lo, float hi, boolean set) {
         if (set) {
-            return new Axis(lo, hi, Math.max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1));
+            return new Axis(lo, hi, roundLines(lo, hi, Math.max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1)));
         }
         lo = values[0];
         hi = values[0];
@@ -198,6 +198,64 @@ final class ChartScale {
         }
         Round round = roundMaxAndMinValues(hi, lo);
         return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
+    }
+
+    /**
+     * Returns the number of grid lines of a range that is set, from 2 to 10,
+     * the nearest to the lines given, fewer first, whose step is a round
+     * number, 1, 2, 2.5 or 5 times a power of ten; or the lines given when
+     * no number is. The range 3 to 17 in the 6 lines of its rounded span was
+     * written 3.00, 5.33, 7.67; in 7 it is 3, 5, 7.
+     */
+    static int roundLines(float lo, float hi, int lines) {
+        double span = (double) hi - (double) lo;
+        for (int d = 0; d <= 8; d++) {
+            if (isRound(span, lines - d)) {
+                return lines - d;
+            }
+            if (isRound(span, lines + d)) {
+                return lines + d;
+            }
+        }
+        return lines;
+    }
+
+    // Tells if the span in the lines, from 2 to 10, has a round step.
+    private static boolean isRound(double span, int lines) {
+        if (lines < 2 || lines > 10) {
+            return false;
+        }
+        double step = span / lines;
+        if (!(step > 0.0) || Double.isInfinite(step)) {
+            return false;
+        }
+        double m = step / Math.pow(10.0, Math.floor(Math.log10(step)));
+        return Math.abs(m - 1.0) < 1e-5 || Math.abs(m - 2.0) < 2e-5 || Math.abs(m - 2.5) < 2.5e-5
+                || Math.abs(m - 5.0) < 5e-5 || Math.abs(m - 10.0) < 1e-4;
+    }
+
+    /**
+     * Returns the text, shortened with an ellipsis to fit the width in the
+     * font at the size, or the text when it fits: a name too long for a
+     * chart's column of names.
+     */
+    static String shorten(Font font, float size, String text, float width) {
+        if (font.stringWidth(size, text) <= width) {
+            return text;
+        }
+        int end = text.length();
+        while (end > 0) {
+            end = text.offsetByCodePoints(end, -1);
+            int cut = end;
+            while (cut > 0 && text.charAt(cut - 1) == ' ') {
+                cut--;
+            }
+            String shorter = text.substring(0, cut) + "\u2026";
+            if (font.stringWidth(size, shorter) <= width) {
+                return shorter;
+            }
+        }
+        return "\u2026";
     }
 
     /**
