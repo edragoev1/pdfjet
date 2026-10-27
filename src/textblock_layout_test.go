@@ -83,9 +83,9 @@ func TestTextBlockLayoutReference(t *testing.T) {
 			t.Fatalf("there is no font %s in ../fonts/%s", name, family)
 		}
 		// Kerned when the check asks for it, as PDFjet Forms kerns its text,
-		// but IBM Plex Sans TC, the fallback font of its Chinese, which it
-		// draws unkerned
-		kerned := os.Getenv("PDFJET_LAYOUT_KERNING") == "1" && family != "IBMPlexSansTC"
+		// but IBM Plex Sans KR and TC, the fallback fonts of its Korean and
+		// Chinese, which it draws unkerned
+		kerned := os.Getenv("PDFJET_LAYOUT_KERNING") == "1" && family != "IBMPlexSansKR" && family != "IBMPlexSansTC"
 		fonts[name] = NewFontFromFile(pdf, matches[0]).SetKernPairs(kerned)
 		return fonts[name]
 	}
