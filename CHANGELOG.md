@@ -341,6 +341,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- The four ports: the characters past U+FFFF that a font has, as the
+  Chinese characters of Hong Kong in IBM Plex Sans TC (𨋢, the lift, among
+  its 1,736), are drawn with their glyphs. The character map was read only
+  as far as U+FFFF, the last character the font's OS/2 table can name, which
+  says "or more" there; such a character was drawn as a box, or in the font
+  and not its fallback font, and copied out of the PDF wrong. They are in
+  the glyph map, read from the format 12 subtable, and written into the
+  ToUnicode map as UTF-16 surrogate pairs; a font is read no further than
+  65,536 of them.
 - The four ports, from a fresh review of the charts, Markdown and the
   barcodes of 27 October 2026:
   - The bookmark of a heading, and the text a tagged heading is noted by,

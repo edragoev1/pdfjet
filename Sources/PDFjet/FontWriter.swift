@@ -134,10 +134,10 @@ class FontWriter {
             // A presentation form that the Bidi class puts in maps to the letters it stands for.
             if let letters = Bidi.lettersOf(UInt32(entry.c)) {
                 for letter in letters {
-                    buf.append(toHexString(Int32(letter)))
+                    buf.append(unicodeHex(Int(letter)))
                 }
             } else {
-                buf.append(toHexString(Int32(entry.c)))
+                buf.append(unicodeHex(entry.c))
             }
             buf.append(">\n")
             list.append(buf)
@@ -311,6 +311,17 @@ class FontWriter {
                 (ch >= 0x2E80 && ch <= 0x2FDF) ||
                 (ch >= 0xE000 && ch <= 0xF8FF) ||
                 (ch >= 0xFE20 && ch <= 0xFE2F)
+    }
+
+    // Returns the character as the ToUnicode map writes it, in UTF-16: four
+    // hexadecimal digits, or eight, the two halves of a surrogate pair, for a
+    // character past U+FFFF.
+    static func unicodeHex(_ c: Int) -> String {
+        if c <= 0xFFFF {
+            return toHexString(Int32(c))
+        }
+        let v = c - 0x10000
+        return toHexString(Int32(0xD800 + (v >> 10))) + toHexString(Int32(0xDC00 + (v & 0x3FF)))
     }
 
     private static func toHexString(_ code: Int32) -> String {

@@ -7,17 +7,28 @@
 package com.pdfjet;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
- * Maps the characters of the Basic Multilingual Plane to the glyphs of a
- * font, as its cmap table does, in two levels: 256 blocks of 256 characters,
- * a block made only where the font has a character in it. A font of 1,000
+ * Maps the characters to the glyphs of a font, as its cmap table does: those
+ * of the Basic Multilingual Plane in two levels, 256 blocks of 256
+ * characters, a block made only where the font has a character in it, and
+ * the characters past U+FFFF, as the Chinese characters of Hong Kong that IBM
+ * Plex Sans TC has, in a map of their own, in their order. A font of 1,000
  * characters in a few blocks takes some kilobytes, where an array of an int
  * for each of the 65,536 characters took 256 KB for every font of every
  * document; a lookup is two reads of an array still.
  */
 class GlyphMap {
     final int[][] blocks = new int[256][];
+    // The characters past U+FFFF, in their order
+    TreeMap<Integer, Integer> astral = null;
+
+    // The most characters past U+FFFF a map takes, a font has a glyph for at
+    // most 65,535: a font of groups of a million characters each is read no
+    // further.
+    static final int MAX_ASTRAL = 0x10000;
 
     /** Receives a character and its glyph, from each. */
     interface Visitor {
@@ -26,8 +37,12 @@ class GlyphMap {
 
     // Returns the glyph of the character, or 0 for one the font does not have.
     int get(int c) {
-        if (c < 0 || c > 0xFFFF) {
+        if (c < 0 || c > 0x10FFFF) {
             return 0;
+        }
+        if (c > 0xFFFF) {
+            Integer gid = astral == null ? null : astral.get(c);
+            return gid == null ? 0 : gid;
         }
         int[] block = blocks[c >> 8];
         if (block == null) {
@@ -36,9 +51,12 @@ class GlyphMap {
         return block[c & 0xFF];
     }
 
-    // Sets the glyph of the character, which is in the Basic Multilingual
-    // Plane.
+    // Sets the glyph of the character.
     void set(int c, int gid) {
+        if (c > 0xFFFF) {
+            setAstral(c, gid, false);
+            return;
+        }
         int[] block = blocks[c >> 8];
         if (block == null) {
             if (gid == 0) {
@@ -50,11 +68,15 @@ class GlyphMap {
         block[c & 0xFF] = gid;
     }
 
-    // Sets the glyph of the character, which is in the Basic Multilingual
-    // Plane, unless it has one: as get and then set, with one lookup of its
-    // block, for the format 12 subtable of a font, which maps again the
-    // characters its format 4 subtable mapped (12 October 2026).
+    // Sets the glyph of the character unless it has one: as get and then
+    // set, with one lookup of its block, for the format 12 subtable of a
+    // font, which maps again the characters its format 4 subtable mapped
+    // (12 October 2026).
     void setIfAbsent(int c, int gid) {
+        if (c > 0xFFFF) {
+            setAstral(c, gid, true);
+            return;
+        }
         int[] block = blocks[c >> 8];
         if (block == null) {
             if (gid == 0) {
@@ -65,6 +87,29 @@ class GlyphMap {
         }
         if (block[c & 0xFF] == 0) {
             block[c & 0xFF] = gid;
+        }
+    }
+
+    // Maps a character past U+FFFF to the glyph, or only if it has none yet,
+    // within MAX_ASTRAL characters.
+    private void setAstral(int c, int gid, boolean ifAbsent) {
+        if (c > 0x10FFFF) {
+            return;
+        }
+        if (astral == null) {
+            if (gid == 0) {
+                return;
+            }
+            astral = new TreeMap<Integer, Integer>();
+        }
+        if (astral.containsKey(c)) {
+            if (!ifAbsent) {
+                astral.put(c, gid);
+            }
+            return;
+        }
+        if (gid != 0 && astral.size() < MAX_ASTRAL) {
+            astral.put(c, gid);
         }
     }
 
@@ -79,6 +124,13 @@ class GlyphMap {
             for (int i = 0; i < 256; i++) {
                 if (block[i] != 0) {
                     visitor.visit(b << 8 | i, block[i]);
+                }
+            }
+        }
+        if (astral != null) {
+            for (Map.Entry<Integer, Integer> e : astral.entrySet()) {
+                if (e.getValue() != 0) {
+                    visitor.visit(e.getKey(), e.getValue());
                 }
             }
         }
@@ -104,7 +156,14 @@ class GlyphMap {
                 }
             }
         }
-        int[] chars = new int[max + 1];
+        if (map.astral != null) {
+            for (int gid : map.astral.values()) {
+                if (gid > max) {
+                    max = gid;
+                }
+            }
+        }
+        final int[] chars = new int[max + 1];
         Arrays.fill(chars, -1);
         for (int b = 0; b < 256; b++) {
             int[] block = map.blocks[b];
@@ -117,6 +176,16 @@ class GlyphMap {
                     continue;
                 }
                 int c = b << 8 | i;
+                if (chars[gid] == -1 ||
+                        (FontWriter.isSeldomText(chars[gid]) && !FontWriter.isSeldomText(c))) {
+                    chars[gid] = c;
+                }
+            }
+        }
+        if (map.astral != null) {
+            for (Map.Entry<Integer, Integer> e : map.astral.entrySet()) {
+                int gid = e.getValue();
+                int c = e.getKey();
                 if (chars[gid] == -1 ||
                         (FontWriter.isSeldomText(chars[gid]) && !FontWriter.isSeldomText(c))) {
                     chars[gid] = c;

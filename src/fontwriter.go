@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
@@ -175,6 +176,17 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font, baseFont string, kept []bo
 	font.cidFontDictObjNumber = pdf.getObjNumber()
 }
 
+// unicodeHex returns the character as the ToUnicode map writes it, in UTF-16:
+// four hexadecimal digits, or eight, the two halves of a surrogate pair, for
+// a character past U+FFFF.
+func unicodeHex(c rune) string {
+	if c <= 0xFFFF {
+		return toHexString(int(c))
+	}
+	high, low := utf16.EncodeRune(c)
+	return toHexString(int(high)) + toHexString(int(low))
+}
+
 // toUnicodeCMap returns the ToUnicode map of the font: of every glyph that has
 // a character, or only of the glyphs kept, for a subset.
 func toUnicodeCMap(font *Font, kept []bool) string {
@@ -227,10 +239,10 @@ func toUnicodeCMap(font *Font, kept []bool) string {
 		// A presentation form that the Bidi class puts in maps to the letters it stands for.
 		if letters := lettersOf(rune(e.c)); letters != nil {
 			for _, letter := range letters {
-				buf.WriteString(toHexString(int(letter)))
+				buf.WriteString(unicodeHex(letter))
 			}
 		} else {
-			buf.WriteString(toHexString(e.c))
+			buf.WriteString(unicodeHex(rune(e.c)))
 		}
 		buf.WriteString(">\n")
 		list = append(list, buf.String())

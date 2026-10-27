@@ -216,7 +216,7 @@ class FontWriter {
             // A presentation form that the Bidi class puts in maps to the letters it stands for.
             String letters = Bidi.LettersOf(cid);
             if (letters == null) {
-                buf.Append(ToHexString(cid));
+                buf.Append(UnicodeHex(cid));
             } else {
                 foreach (char ch in letters) {
                     buf.Append(ToHexString(ch));
@@ -294,6 +294,17 @@ class FontWriter {
                 (ch >= 0x2E80 && ch <= 0x2FDF) ||
                 (ch >= 0xE000 && ch <= 0xF8FF) ||
                 (ch >= 0xFE20 && ch <= 0xFE2F);
+    }
+
+    // Returns the character as the ToUnicode map writes it, in UTF-16: four
+    // hexadecimal digits, or eight, the two halves of a surrogate pair, for a
+    // character past U+FFFF.
+    internal static String UnicodeHex(int c) {
+        if (c <= 0xFFFF) {
+            return ToHexString(c);
+        }
+        String pair = Char.ConvertFromUtf32(c);
+        return ToHexString(pair[0]) + ToHexString(pair[1]);
     }
 
     internal static String ToHexString(int code) {

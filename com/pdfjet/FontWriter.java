@@ -217,7 +217,7 @@ class FontWriter {
             // A presentation form that the Bidi class puts in maps to the letters it stands for.
             String letters = Bidi.lettersOf(cid);
             if (letters == null) {
-                buf.append(toHexString(cid));
+                buf.append(unicodeHex(cid));
             } else {
                 for (int j = 0; j < letters.length(); j++) {
                     buf.append(toHexString(letters.charAt(j)));
@@ -295,6 +295,16 @@ class FontWriter {
                 (ch >= 0x2E80 && ch <= 0x2FDF) ||
                 (ch >= 0xE000 && ch <= 0xF8FF) ||
                 (ch >= 0xFE20 && ch <= 0xFE2F);
+    }
+
+    // Returns the character as the ToUnicode map writes it, in UTF-16: four
+    // hexadecimal digits, or eight, the two halves of a surrogate pair, for a
+    // character past U+FFFF.
+    static String unicodeHex(int c) {
+        if (c <= 0xFFFF) {
+            return toHexString(c);
+        }
+        return toHexString(Character.highSurrogate(c)) + toHexString(Character.lowSurrogate(c));
     }
 
     protected static String toHexString(int code) {

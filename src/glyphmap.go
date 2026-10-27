@@ -7,21 +7,32 @@ package pdfjet
 
 import "slices"
 
-// glyphMap maps the characters of the Basic Multilingual Plane to the glyphs
-// of a font, as its cmap table does, in two levels: 256 blocks of 256
-// characters, a block made only where the font has a character in it. A
-// font of 1,000 characters in a few blocks takes some kilobytes, where an
-// array of an int for each of the 65,536 characters took 512 KB for every
-// font of every document; a lookup is two reads of an array still.
+// glyphMap maps the characters to the glyphs of a font, as its cmap table
+// does: those of the Basic Multilingual Plane in two levels, 256 blocks of
+// 256 characters, a block made only where the font has a character in it,
+// and the characters past U+FFFF, as the Chinese characters of Hong Kong
+// that IBM Plex Sans TC has, in a map of their own. A font of 1,000
+// characters in a few blocks takes some kilobytes, where an array of an int
+// for each of the 65,536 characters took 512 KB for every font of every
+// document; a lookup is two reads of an array still.
 type glyphMap struct {
 	blocks [256]*[256]int32
+	astral map[rune]int32 // The characters past U+FFFF
 }
+
+// maxAstral is the most characters past U+FFFF a map takes, a font has a
+// glyph for at most 65,535: a font of groups of a million characters each
+// is read no further.
+const maxAstral = 0x10000
 
 // get returns the glyph of the character, or 0 for one the font does not
 // have.
 func (m *glyphMap) get(c rune) int {
-	if m == nil || c < 0 || c > 0xFFFF {
+	if m == nil || c < 0 || c > 0x10FFFF {
 		return 0
+	}
+	if c > 0xFFFF {
+		return int(m.astral[c])
 	}
 	block := m.blocks[c>>8]
 	if block == nil {
@@ -33,6 +44,10 @@ func (m *glyphMap) get(c rune) int {
 // set sets the glyph of the character, which is in the Basic Multilingual
 // Plane.
 func (m *glyphMap) set(c rune, gid int) {
+	if c > 0xFFFF {
+		m.setAstral(c, gid, false)
+		return
+	}
 	block := m.blocks[c>>8]
 	if block == nil {
 		if gid == 0 {
@@ -49,6 +64,10 @@ func (m *glyphMap) set(c rune, gid int) {
 // of its block, for the format 12 subtable of a font, which maps again the
 // characters its format 4 subtable mapped (12 October 2026).
 func (m *glyphMap) setIfAbsent(c rune, gid int) {
+	if c > 0xFFFF {
+		m.setAstral(c, gid, true)
+		return
+	}
 	block := m.blocks[c>>8]
 	if block == nil {
 		if gid == 0 {
@@ -62,6 +81,29 @@ func (m *glyphMap) setIfAbsent(c rune, gid int) {
 	}
 }
 
+// setAstral maps a character past U+FFFF to the glyph, or only if it has
+// none yet, within maxAstral characters.
+func (m *glyphMap) setAstral(c rune, gid int, ifAbsent bool) {
+	if c > 0x10FFFF {
+		return
+	}
+	if m.astral == nil {
+		if gid == 0 {
+			return
+		}
+		m.astral = map[rune]int32{}
+	}
+	if _, ok := m.astral[c]; ok {
+		if !ifAbsent {
+			m.astral[c] = int32(gid)
+		}
+		return
+	}
+	if gid != 0 && len(m.astral) < maxAstral {
+		m.astral[c] = int32(gid)
+	}
+}
+
 // each calls the function for each character that has a glyph, in the order
 // of the characters.
 func (m *glyphMap) each(fn func(c rune, gid int)) {
@@ -72,6 +114,18 @@ func (m *glyphMap) each(fn func(c rune, gid int)) {
 		for i, gid := range block {
 			if gid != 0 {
 				fn(rune(b<<8|i), int(gid))
+			}
+		}
+	}
+	if len(m.astral) > 0 {
+		chars := make([]rune, 0, len(m.astral))
+		for c := range m.astral {
+			chars = append(chars, c)
+		}
+		slices.Sort(chars)
+		for _, c := range chars {
+			if gid := m.astral[c]; gid != 0 {
+				fn(c, int(gid))
 			}
 		}
 	}

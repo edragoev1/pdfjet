@@ -91,7 +91,7 @@ func newOpenTypeFont(buf []byte) *openTypeFont {
 	// A font without an OS/2 table does not say which characters it holds,
 	// so its character map is read for all of them.
 	otf.firstChar = 0
-	otf.lastChar = 0xFFFF
+	otf.lastChar = 0x10FFFF
 
 	// Extract the OTF metadata
 	version := readUint32(otf)
@@ -221,6 +221,12 @@ func getOs2Table(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset + 64
 	otf.firstChar = rune(readUint16(otf))
 	otf.lastChar = rune(readUint16(otf))
+	// The last character is 16 bits: 0xFFFF says the font may have
+	// characters past it, as IBM Plex Sans TC has the Chinese characters
+	// of Hong Kong past U+FFFF.
+	if otf.lastChar == 0xFFFF {
+		otf.lastChar = 0x10FFFF
+	}
 	// sCapHeight is in the table from its version 2 on. Where it would be in
 	// a version 0 or 1 table are the bytes after the table, often those of
 	// the next table.
@@ -358,8 +364,8 @@ func getCmapTable(otf *openTypeFont, table *fontTable) {
 	}
 }
 
-// getCmapFormat12 maps the characters of the Basic Multilingual Plane that the
-// format 4 subtable left without a glyph, from the format 12 subtable at the
+// getCmapFormat12 maps the characters that the format 4 subtable left without
+// a glyph, those past U+FFFF among them, from the format 12 subtable at the
 // offset in the table. IBM Plex Sans TC, as a .ttf, has an empty format 4
 // subtable and maps every character in its format 12 subtable. The groups go
 // up and do not overlap, and a group that goes back is passed over, so that

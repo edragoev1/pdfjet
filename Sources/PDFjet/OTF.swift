@@ -33,7 +33,7 @@ class OTF {
     // A font without an OS/2 table does not say which characters it holds,
     // so its character map is read for all of them.
     var firstChar: Int? = 0
-    var lastChar: Int? = 0xFFFF
+    var lastChar: Int? = 0x10FFFF
     var capHeight: Int16? = 0
     var hasCapHeight = false
     var indexToLocFormat = 0
@@ -185,6 +185,12 @@ class OTF {
         index = table.offset! + 64
         firstChar = Int(try readUInt16())
         lastChar  = Int(try readUInt16())
+        // The last character is 16 bits: 0xFFFF says the font may have
+        // characters past it, as IBM Plex Sans TC has the Chinese characters
+        // of Hong Kong past U+FFFF.
+        if lastChar == 0xFFFF {
+            lastChar = 0x10FFFF
+        }
         // sCapHeight is in the table from its version 2 on. Where it would be
         // in a version 0 or 1 table are the bytes after the table, often those
         // of the next table.
@@ -317,8 +323,8 @@ class OTF {
         }
     }
 
-    // Maps the characters of the Basic Multilingual Plane that the format 4
-    // subtable left without a glyph, from the format 12 subtable at the offset
+    // Maps the characters that the format 4 subtable left without a glyph,
+    // those past U+FFFF among them, from the format 12 subtable at the offset
     // in the table. IBM Plex Sans TC, as a .ttf, has an empty format 4
     // subtable and maps every character in its format 12 subtable. The groups
     // go up and do not overlap, and a group that goes back is passed over, so
