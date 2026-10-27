@@ -256,8 +256,9 @@ public class SimpleLineChart : Drawable {
     }
 
     ///
-    /// Sets the color of the panel behind the chart, or -1 for none. It is
-    /// light gray, 0xF1F3F6, unless set.
+    /// Sets the color of the panel behind the chart. It is light gray,
+    /// 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the one
+    /// color setter where it does not leave the color as it was.
     ///
     /// - Parameter color: the color.
     /// - Returns: this chart.
@@ -423,7 +424,16 @@ public class SimpleLineChart : Drawable {
         }
         let n = count()
         if n > 0 && !category(0).isEmpty {
-            sb += ", " + category(0) + " to " + category(n - 1)
+            // To the last category that has a name: one category was "2019 to
+            // 2019", and an empty last one "2019 to :"
+            var end = n - 1
+            while end > 0 && category(end).isEmpty {
+                end -= 1
+            }
+            sb += ", " + category(0)
+            if end > 0 {
+                sb += " to " + category(end)
+            }
         }
         sb += ":"
         for (i, line) in lines.enumerated() {
@@ -506,7 +516,14 @@ public class SimpleLineChart : Drawable {
         if !yAxisTitle.isEmpty {
             left += 1.8 * size      // The title, as far from the numbers as the x title is
         }
-        let right = x + w - pad - endWidth - size / 2.0
+        var right = x + w - pad - endWidth - size / 2.0
+        // Room for the halves of the first and the last category, centered
+        // under the ends of the plot: the first, "January 2026", went past
+        // the chart's left edge
+        if n > 1 {
+            left = Swift.max(left, x + pad / 2.0 + f2.stringWidth(size, category(0)) / 2.0)
+            right = Swift.min(right, x + w - pad / 2.0 - f2.stringWidth(size, category(n - 1)) / 2.0)
+        }
         let top = y + self.top() + ascent / 2.0     // Room for the top number
         var bottom = y + h - pad - 1.4 * size
         if !xAxisTitle.isEmpty {
@@ -571,9 +588,17 @@ public class SimpleLineChart : Drawable {
         if n > 1 {
             every = ChartScale.axisLabelStep((right - plotLeft) / Float(n - 1), widestCategory + pad, n - 1)
         }
+        // Each centered on its category, and inside the chart
+        var centers = [Float]()
+        var widths = [Float]()
+        for i in 0..<n {
+            centers.append(xAt(i))
+            widths.append(f2.stringWidth(size, category(i)))
+        }
+        every = ChartScale.placedStep(every, centers, widths, x + pad / 2.0, x + w - pad / 2.0, pad / 2.0)
         for i in stride(from: 0, to: n, by: every) {
-            let label = category(i)
-            page.drawString(f2, size, label, xAt(i) - f2.stringWidth(size, label) / 2.0,
+            page.drawString(f2, size, category(i),
+                    ChartScale.placed(centers[i], widths[i], x + pad / 2.0, x + w - pad / 2.0),
                     plotBottom + 1.4 * size, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
         if !xAxisTitle.isEmpty {
@@ -657,9 +682,12 @@ public class SimpleLineChart : Drawable {
             if drawing {
                 page.strokePath()
             }
-            if markers {
-                page.setBrushColor(color)
-                for j in 0..<n where line.has(j) {
+            // A dot at each value, or at a value alone between gaps, which a
+            // line of no length did not show
+            page.setBrushColor(color)
+            for j in 0..<n {
+                let alone = !(j > 0 && line.has(j - 1)) && !(j + 1 < n && line.has(j + 1))
+                if line.has(j) && (markers || alone) {
                     page.fillCircle(xAt(j), yAt(line.values[j]), 0.25 * size)
                 }
             }

@@ -267,7 +267,7 @@ public class BarChart : IDrawable {
 
     /// <summary>
     /// Sets the gap between the groups of bars as a fraction of the category
-    /// slot, from 0.0 to below 1.0. The default is 0.3.
+    /// slot, from 0.0 to 0.9. The default is 0.3.
     /// </summary>
     /// <param name="gap">the gap.</param>
     /// <returns>this BarChart object.</returns>
@@ -448,15 +448,30 @@ public class BarChart : IDrawable {
                     }
                 }
             }
-            if (hi == lo) { hi = lo + ChartScale.FlatDataSpan(lo); }
+            if (!ChartScale.IsValue(hi - lo)) {
+                // Values, or sums of a stack, whose span is past the largest
+                // float, which no axis can draw: they were drawn on 0 to 1
+                return new float[] {x1 + w, y1 + h};
+            }
+            if (hi == lo) {
+                float[] flat = ChartScale.FlatRange(lo);
+                lo = flat[0];
+                hi = flat[1];
+            }
             Round round = ChartScale.RoundMaxAndMinValues(hi, lo);
             vMin = round.minValue;
             vMax = round.maxValue;
             lines = round.numOfGridLines;
         }
-        if (vMax == vMin) { vMax = vMin + ChartScale.FlatDataSpan(vMin); }
+        if (vMax == vMin) {
+            float[] flat = ChartScale.FlatRange(vMin);
+            vMin = flat[0];
+            vMax = flat[1];
+        }
         float step = (vMax - vMin) / lines;
-        int axisDigits = Math.Max(minFractionDigits, ChartScale.FractionDigitsOf(step, maxFractionDigits));
+        // The digits of the step, which SetFractionDigits does not cap: with 0
+        // an axis of 0.25 was written 0, 0, 1, 1
+        int axisDigits = Math.Max(minFractionDigits, ChartScale.StepDigits(step));
         float baseValue = Math.Min(Math.Max(0f, vMin), vMax);
 
         float x2 = x1 + w;
@@ -474,17 +489,28 @@ public class BarChart : IDrawable {
         }
         float widestValueLabel = 0f;
         float widestNegative = 0f;      // Of the bars below 0, written past their ends
-        if (drawValueLabels) {
+        // Of the labels that are written: not those of the bars outside a
+        // range that is set, which made room for labels that were not there
+        for (int i = 0; drawValueLabels && i < n; i++) {
+            float up = 0f;
+            float down = 0f;
             foreach (Series s in series) {
-                foreach (float v in s.values) {
-                    if (!ChartScale.IsValue(v)) {
-                        continue;
-                    }
-                    float width = f2.StringWidth(ValueLabel(v));
-                    widestValueLabel = Math.Max(widestValueLabel, width);
-                    if (v < 0f) {
-                        widestNegative = Math.Max(widestNegative, width);
-                    }
+                if (i >= s.values.Length || !ChartScale.IsValue(s.values[i])) {
+                    continue;
+                }
+                float v = s.values[i];
+                float from = baseValue;
+                if (stacked) {
+                    if (v >= 0f) { from = up; up += v; } else { from = down; down += v; }
+                }
+                float to = stacked ? from + v : v;
+                if (Outside(from, to, vMin, vMax)) {
+                    continue;
+                }
+                float width = f2.StringWidth(ValueLabel(v));
+                widestValueLabel = Math.Max(widestValueLabel, width);
+                if (v < 0f) {
+                    widestNegative = Math.Max(widestNegative, width);
                 }
             }
         }
@@ -498,7 +524,7 @@ public class BarChart : IDrawable {
                     up += s.values[i];
                 }
             }
-            if (up > 0f) {
+            if (up > 0f && ChartScale.IsValue(up)) {    // A sum past the largest float is not written
                 widestTotal = Math.Max(widestTotal, f2.StringWidth(ValueLabel(up)));
             }
         }
@@ -571,6 +597,17 @@ public class BarChart : IDrawable {
         int every = horizontal
                 ? ChartScale.AxisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
                 : ChartScale.AxisLabelStep((y8 - y5) / lines, bodyHeight, lines);
+        if (horizontal) {
+            // Inside the chart, and apart when the first and the last are moved in
+            float[] centers = new float[lines + 1];
+            float[] widths = new float[lines + 1];
+            for (int i = 0; i <= lines; i++) {
+                float v = vMin + step * i;
+                centers[i] = x5 + ChartScale.Scaled(v - vMin, x6 - x5, vMax - vMin);
+                widths[i] = f2.StringWidth(AxisLabel(v, axisDigits));
+            }
+            every = ChartScale.PlacedStep(every, centers, widths, x1, x2, pad / 2f);
+        }
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
             String label = AxisLabel(v, axisDigits);
@@ -581,7 +618,8 @@ public class BarChart : IDrawable {
                     GridLine(page, x, y5, x, y8);
                 }
                 if (labeled) {
-                    DrawText(page, f2, label, x - f2.StringWidth(label) / 2f, y8 + bodyHeight, MUTED);
+                    DrawText(page, f2, label, ChartScale.Placed(x, f2.StringWidth(label), x1, x2),
+                            y8 + bodyHeight, MUTED);
                 }
             } else {
                 float y = y8 - ChartScale.Scaled(v - vMin, y8 - y5, vMax - vMin);
@@ -602,6 +640,16 @@ public class BarChart : IDrawable {
         // Under vertical bars a category is written where it leaves the one
         // before it room: at every second or third bar, or more
         int everyCategory = horizontal ? 1 : ChartScale.AxisLabelStep(slot, widestCategory + pad, n);
+        if (!horizontal) {
+            // Inside the chart, and apart when the first and the last are moved in
+            float[] centers = new float[n];
+            float[] widths = new float[n];
+            for (int i = 0; i < n; i++) {
+                centers[i] = x5 + i * slot + slot / 2f;
+                widths[i] = i < names.Count ? f2.StringWidth(names[i]) : 0f;
+            }
+            everyCategory = ChartScale.PlacedStep(everyCategory, centers, widths, x1, x2, pad / 2f);
+        }
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
@@ -610,7 +658,9 @@ public class BarChart : IDrawable {
                 DrawText(page, f2, category, x5 - pad - negative - f2.StringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
             } else if (i % everyCategory == 0) {
-                DrawText(page, f2, category, slotStart + (slot - f2.StringWidth(category)) / 2f,
+                // Centered under its slot, inside the chart: the last one
+                // went past the chart's right edge
+                DrawText(page, f2, category, ChartScale.Placed(slotStart + slot / 2f, f2.StringWidth(category), x1, x2),
                         y8 + bodyHeight + negative, MUTED);
             }
             float up = 0f;      // the stacked values above 0 so far
@@ -630,8 +680,7 @@ public class BarChart : IDrawable {
                 }
                 // A bar wholly outside a range that is set has no length,
                 // and its value is not written by it
-                bool outside = Math.Min(Math.Max(from, vMin), vMax) == Math.Min(Math.Max(to, vMin), vMax)
-                        && from != to;
+                bool outside = Outside(from, to, vMin, vMax);
                 from = Math.Min(Math.Max(from, vMin), vMax);
                 to = Math.Min(Math.Max(to, vMin), vMax);
                 float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
@@ -798,6 +847,11 @@ public class BarChart : IDrawable {
         return sb.Append('.').ToString();
     }
 
+    /// <summary>Tells if a bar from one value to another is wholly outside the axis, which gives it no length.</summary>
+    private static bool Outside(float from, float to, float vMin, float vMax) {
+        return Math.Min(Math.Max(from, vMin), vMax) == Math.Min(Math.Max(to, vMin), vMax) && from != to;
+    }
+
     /// <summary>Returns the number of category slots: the categories or the longest series.</summary>
     private int NumberOfCategories() {
         int n = categories.Count;
@@ -847,7 +901,7 @@ public class BarChart : IDrawable {
 
     /// <summary>Formats a label of the value axis.</summary>
     private String AxisLabel(float value, int digits) {
-        return Group(ChartScale.Format(value, digits, maxFractionDigits));
+        return Group(ChartScale.Format(value, digits, digits));
     }
 
     /// <summary>Groups the digits before the decimal point in thousands with commas, if grouping is used.</summary>

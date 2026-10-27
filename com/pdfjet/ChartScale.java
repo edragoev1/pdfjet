@@ -58,7 +58,10 @@ final class ChartScale {
             // rint, a double, as the other ports round: round is a long, which
             // stops at 2^63, so a step of 1e19 had fraction digits (review of
             // 17 October 2026)
-            if (Math.abs(scaled - Math.rint(scaled)) < 1e-4) {
+            // A whole number that is not 0: a step under 0.0001 was within
+            // the tolerance of 0, and had no digits (the review of 26 October
+            // 2026, the fourth)
+            if (Math.rint(scaled) != 0 && Math.abs(scaled - Math.rint(scaled)) < 1e-4) {
                 return digits;
             }
         }
@@ -148,6 +151,19 @@ final class ChartScale {
     }
 
     /**
+     * Returns the range of flat data at the value, {lo, hi}: from the value up
+     * by its flat data span, or up to the value when that is past the largest
+     * float. Data of the largest float was drawn on an axis of 0 to 1.
+     */
+    static float[] flatRange(float value) {
+        float span = flatDataSpan(value);
+        if (isValue(value + span)) {
+            return new float[] {value, value + span};
+        }
+        return new float[] {value - span, value};
+    }
+
+    /**
      * Returns how many grid lines apart the labels of the value axis are
      * drawn: 1 when a label fits the spacing of the lines, and more when it
      * needs more room, so that no two labels meet.
@@ -158,6 +174,43 @@ final class ChartScale {
             every++;
         }
         return every;
+    }
+
+    /**
+     * Returns where a label under an axis starts: centered on its place, but
+     * inside lo to hi. A first category or a last number was written past the
+     * chart's edge.
+     */
+    static float placed(float center, float width, float lo, float hi) {
+        return Math.max(lo, Math.min(center - width / 2f, hi - width));
+    }
+
+    /**
+     * Returns how many places apart the labels under an axis are drawn: every
+     * places, or more when a label held inside lo to hi would come nearer to
+     * the one before it than the gap. The labels are centered on their
+     * places, of the widths.
+     */
+    static int placedStep(int every, float[] centers, float[] widths, float lo, float hi, float gap) {
+        every = Math.max(every, 1);
+        while (every < centers.length && !fits(every, centers, widths, lo, hi, gap)) {
+            every++;
+        }
+        return every;
+    }
+
+    // Tells if the labels at every places, held inside lo to hi, are apart by
+    // the gap.
+    private static boolean fits(int every, float[] centers, float[] widths, float lo, float hi, float gap) {
+        float end = Float.NEGATIVE_INFINITY;
+        for (int i = 0; i < centers.length; i += every) {
+            float at = placed(centers[i], widths[i], lo, hi);
+            if (at < end) {
+                return false;
+            }
+            end = at + widths[i] + gap;
+        }
+        return true;
     }
 
     // Tells if the value is a number to draw: a value that is NaN or infinite
@@ -196,7 +249,9 @@ final class ChartScale {
             hi = Math.max(hi, values[i]);
         }
         if (hi == lo) {
-            hi = lo + flatDataSpan(lo);
+            float[] flat = flatRange(lo);
+            lo = flat[0];
+            hi = flat[1];
         }
         Round round = roundMaxAndMinValues(hi, lo);
         return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
@@ -291,11 +346,25 @@ final class ChartScale {
 
     /**
      * Returns the number of digits after the decimal point that the numbers of
-     * an axis of the step need, 2 at least and 6 at most: data under 0.01 was
-     * written 0.00 at every grid line.
+     * an axis of the step need, 2 at least: data under 0.01 was written 0.00
+     * at every grid line.
      */
     static int digitsOf(float step) {
-        return isValue(step) && step > 0f ? Math.max(2, fractionDigitsOf(step, 6)) : 2;
+        return Math.max(2, stepDigits(step));
+    }
+
+    /**
+     * Returns the number of digits after the decimal point that write the step
+     * of an axis: as many as it has, or six significant digits of a step that
+     * is not round. They were six at most, and data under 0.000001 was
+     * written 0.000000.
+     */
+    static int stepDigits(float step) {
+        if (!isValue(step) || step <= 0f) {
+            return 0;
+        }
+        int significant = 5 - (int) Math.floor(Math.log10(step));
+        return fractionDigitsOf(step, Math.max(6, significant));
     }
 
     /**
@@ -370,8 +439,11 @@ final class ChartScale {
      * commas: 23507 is 23,507.
      */
     static String groupDigits(String label) {
-        if (label.indexOf('e') >= 0) {
-            return label;   // A power of ten has no thousands
+        for (int i = 0; i < label.length(); i++) {
+            char c = label.charAt(i);
+            if ((c < '0' || c > '9') && c != '-' && c != '.') {
+                return label;   // A power of ten has no thousands, and Infinity no digits
+            }
         }
         int start = label.startsWith("-") ? 1 : 0;
         int end = label.indexOf('.');

@@ -79,10 +79,11 @@ public class ReviewCodesTest {
         }
     }
 
-    // Stacked bars whose sums overflow a float are drawn on the range from 0
-    // to 1.
+    // Stacked bars whose sums overflow a float draw nothing, as the line and
+    // scatter charts of such a span: they were drawn on an axis of 0 to 1
+    // (the review of 26 October 2026, the fourth).
     [Fact]
-    public void ABarChartOfStackedBarsPastTheLargestFloatIsDrawn() {
+    public void ABarChartOfStackedBarsPastTheLargestFloatDrawsNothing() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         Font font = TestSupport.Helvetica(pdf);
@@ -91,7 +92,7 @@ public class ReviewCodesTest {
         chart.AddSeries("", new float[] {3e38f});
         chart.AddSeries("", new float[] {3e38f});
         chart.DrawOn(page);
-        Assert.Contains(TestSupport.Hex("1"), TestSupport.Content(page));
+        Assert.Empty(page.GetContent());
         pdf.Complete();
     }
 

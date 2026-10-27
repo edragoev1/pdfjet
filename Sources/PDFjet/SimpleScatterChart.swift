@@ -230,8 +230,9 @@ public class SimpleScatterChart : Drawable {
     }
 
     ///
-    /// Sets the color of the panel behind the chart, or -1 for none. It is
-    /// light gray, 0xF1F3F6, unless set.
+    /// Sets the color of the panel behind the chart. It is light gray,
+    /// 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the one
+    /// color setter where it does not leave the color as it was.
     ///
     /// - Parameter color: the color.
     /// - Returns: this chart.
@@ -363,12 +364,26 @@ public class SimpleScatterChart : Drawable {
         return (slope, my - slope * mx)
     }
 
-    // The digits of the numbers of the two axes of the points.
-    private func digits(_ points: [Point]) -> Int {
-        let xAxis = ChartScale.axisOf(points.map { $0.x }, xMin, xMax, xRangeSet)
-        let yAxis = ChartScale.axisOf(points.map { $0.y }, yMin, yMax, yRangeSet)
-        return Swift.max(ChartScale.digitsOf((xAxis.max - xAxis.min) / Float(xAxis.lines)),
-                ChartScale.digitsOf((yAxis.max - yAxis.min) / Float(yAxis.lines)))
+    // The horizontal and the vertical axis of the points.
+    private func axes(_ points: [Point]) -> (x: ChartScale.Axis, y: ChartScale.Axis) {
+        return (ChartScale.axisOf(points.map { $0.x }, xMin, xMax, xRangeSet),
+                ChartScale.axisOf(points.map { $0.y }, yMin, yMax, yRangeSet))
+    }
+
+    // The trend of the points as it is drawn: none where it misses the plot,
+    // both of its ends past one edge, as a flat one over a range that is set,
+    // which was drawn outside the chart.
+    private static func shownTrend(_ points: [Point], _ xAxis: ChartScale.Axis, _ yAxis: ChartScale.Axis)
+            -> (slope: Double, intercept: Double)? {
+        if let line = trend(points) {
+            let a = line.slope * Double(xAxis.min) + line.intercept
+            let b = line.slope * Double(xAxis.max) + line.intercept
+            if (a > Double(yAxis.max) && b > Double(yAxis.max)) || (a < Double(yAxis.min) && b < Double(yAxis.min)) {
+                return nil
+            }
+            return line
+        }
+        return nil
     }
 
     // The alternate description: the one set, or the title, the number of
@@ -378,25 +393,33 @@ public class SimpleScatterChart : Drawable {
             return altDescription
         }
         let points = valid()
-        if !points.isEmpty {
-            maxFractionDigits = digits(points)
+        let axes = points.isEmpty ? nil : self.axes(points)
+        if let axes = axes {
+            maxFractionDigits = Swift.max(ChartScale.digitsOf((axes.x.max - axes.x.min) / Float(axes.x.lines)),
+                    ChartScale.digitsOf((axes.y.max - axes.y.min) / Float(axes.y.lines)))
+        }
+        // The points that are drawn: not those outside a range that is set
+        var shown = [Point]()
+        if let axes = axes {
+            shown = points.filter { ChartScale.onAxis($0.x, axes.x) && ChartScale.onAxis($0.y, axes.y) }
         }
         var text = ChartScale.join(title, subtitle)
         if text.isEmpty {
             text = "Scatter chart"
         }
-        text += ": \(points.count) points"
+        text += ": \(shown.count) points"
         if !xAxisTitle.isEmpty && !yAxisTitle.isEmpty {
             text += ", " + yAxisTitle + " against " + xAxisTitle
         }
         var named = 0
-        for p in points where !p.name.isEmpty {
+        for p in shown where !p.name.isEmpty {
             text += (named == 0) ? "; " : ", "
             text += p.name + " " + ChartScale.groupDigits(ChartScale.format(p.x, 0, maxFractionDigits))
                     + " and " + ChartScale.groupDigits(ChartScale.format(p.y, 0, maxFractionDigits))
             named += 1
         }
-        if trendLine, let line = SimpleScatterChart.trend(points) {
+        // Not one that is not drawn
+        if trendLine, let axes = axes, let line = SimpleScatterChart.shownTrend(points, axes.x, axes.y) {
             text += line.slope > 0 ? "; the trend rises" : line.slope < 0 ? "; the trend falls" : "; the trend is flat"
         }
         return text + "."
@@ -424,8 +447,7 @@ public class SimpleScatterChart : Drawable {
         if (!xRangeSet && !ChartScale.spanFits(xs)) || (!yRangeSet && !ChartScale.spanFits(ys)) {
             return [x + w, y + h]       // A span past the largest float, which no axis can draw
         }
-        let xAxis = ChartScale.axisOf(xs, xMin, xMax, xRangeSet)
-        let yAxis = ChartScale.axisOf(ys, yMin, yMax, yRangeSet)
+        let (xAxis, yAxis) = axes(points)
         let xStep = (xAxis.max - xAxis.min) / Float(xAxis.lines)
         let yStep = (yAxis.max - yAxis.min) / Float(yAxis.lines)
         maxFractionDigits = Swift.max(ChartScale.digitsOf(xStep), ChartScale.digitsOf(yStep))
@@ -440,7 +462,12 @@ public class SimpleScatterChart : Drawable {
         if !yAxisTitle.isEmpty {
             left += 1.8 * size      // The title, as far from the numbers as the x title is
         }
-        let right = x + w - pad
+        // Room for the halves of the first and the last number under the plot,
+        // centered on its edges: the last, "1,000,000", went past the chart
+        let firstWidth = f2.stringWidth(size, label(xAxis.min, xStep))
+        let lastWidth = f2.stringWidth(size, label(xAxis.min + xStep * Float(xAxis.lines), xStep))
+        left = Swift.max(left, x + pad / 2.0 + firstWidth / 2.0)
+        let right = Swift.min(x + w - pad, x + w - pad / 2.0 - lastWidth / 2.0)
         let top = y + self.top() + ascent / 2.0     // Room for the top number
         var bottom = y + h - pad - 1.4 * size
         if !xAxisTitle.isEmpty {
@@ -509,10 +536,17 @@ public class SimpleScatterChart : Drawable {
             xWidest = Swift.max(xWidest, f2.stringWidth(size, label(xAxis.min + xStep * Float(i), xStep)))
         }
         every = ChartScale.axisLabelStep((right - plotLeft) / Float(xAxis.lines), xWidest + pad, xAxis.lines)
+        // Each centered on its line, and inside the chart
+        var centers = [Float]()
+        var widths = [Float]()
+        for i in 0...xAxis.lines {
+            centers.append(xAt(xAxis.min + xStep * Float(i)))
+            widths.append(f2.stringWidth(size, label(xAxis.min + xStep * Float(i), xStep)))
+        }
+        every = ChartScale.placedStep(every, centers, widths, x + pad / 2.0, x + w - pad / 2.0, pad / 2.0)
         for i in stride(from: 0, through: xAxis.lines, by: every) {
-            let v = xAxis.min + xStep * Float(i)
-            let label = self.label(v, xStep)
-            page.drawString(f2, size, label, xAt(v) - f2.stringWidth(size, label) / 2.0,
+            let label = self.label(xAxis.min + xStep * Float(i), xStep)
+            page.drawString(f2, size, label, ChartScale.placed(centers[i], widths[i], x + pad / 2.0, x + w - pad / 2.0),
                     plotBottom + 1.4 * size, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
         if !xAxisTitle.isEmpty {
@@ -529,17 +563,7 @@ public class SimpleScatterChart : Drawable {
 
         // The trend line, from the left of the plot to its right, within its
         // height
-        var line = SimpleScatterChart.trend(points)
-        // No line where it misses the plot, both of its ends past one edge, as
-        // a flat one over a range that is set: it was drawn outside the chart
-        if let l = line {
-            let a = l.slope * Double(xAxis.min) + l.intercept
-            let b = l.slope * Double(xAxis.max) + l.intercept
-            if (a > Double(yAxis.max) && b > Double(yAxis.max)) || (a < Double(yAxis.min) && b < Double(yAxis.min)) {
-                line = nil
-            }
-        }
-        if trendLine, let line = line {
+        if trendLine, let line = SimpleScatterChart.shownTrend(points, xAxis, yAxis) {
             let p1 = SimpleScatterChart.clip(Double(xAxis.min), line.slope * Double(xAxis.min) + line.intercept,
                     line.slope, line.intercept, yAxis)
             let p2 = SimpleScatterChart.clip(Double(xAxis.max), line.slope * Double(xAxis.max) + line.intercept,
@@ -559,7 +583,9 @@ public class SimpleScatterChart : Drawable {
             if x2 > x1 && y2 > y1 {
                 lift += width * ((y2 - y1) / (x2 - x1))
             }
-            page.drawString(f2, subtitleSize(), label, x2 - width, y2 - lift, Util.toRGB(SimpleScatterChart.TREND), nil)
+            // Not left of the plot, where a short steep line put it
+            page.drawString(f2, subtitleSize(), label, Swift.max(plotLeft, x2 - width), y2 - lift,
+                    Util.toRGB(SimpleScatterChart.TREND), nil)
         }
 
         // The dots, then the highlighted points and their names over them

@@ -231,8 +231,9 @@ public class SimpleLineChart : IDrawable {
     }
 
     /// <summary>
-    /// Sets the color of the panel behind the chart, or -1 for none. It is
-    /// light gray, 0xF1F3F6, unless set.
+    /// Sets the color of the panel behind the chart. It is light gray,
+    /// 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the one
+    /// color setter where it does not leave the color as it was.
     /// </summary>
     /// <param name="color">the color.</param>
     /// <returns>this chart.</returns>
@@ -392,7 +393,16 @@ public class SimpleLineChart : IDrawable {
         }
         int n = Count();
         if (n > 0 && Category(0).Length > 0) {
-            sb.Append(", ").Append(Category(0)).Append(" to ").Append(Category(n - 1));
+            // To the last category that has a name: one category was "2019 to
+            // 2019", and an empty last one "2019 to :"
+            int end = n - 1;
+            while (end > 0 && Category(end).Length == 0) {
+                end--;
+            }
+            sb.Append(", ").Append(Category(0));
+            if (end > 0) {
+                sb.Append(" to ").Append(Category(end));
+            }
         }
         sb.Append(':');
         for (int i = 0; i < lines.Count; i++) {
@@ -481,6 +491,13 @@ public class SimpleLineChart : IDrawable {
             left += 1.8f * size;    // The title, as far from the numbers as the x title is
         }
         float right = x + w - pad - endWidth - size / 2f;
+        // Room for the halves of the first and the last category, centered
+        // under the ends of the plot: the first, "January 2026", went past
+        // the chart's left edge
+        if (n > 1) {
+            left = Math.Max(left, x + pad / 2f + f2.StringWidth(size, Category(0)) / 2f);
+            right = Math.Min(right, x + w - pad / 2f - f2.StringWidth(size, Category(n - 1)) / 2f);
+        }
         float top = y + Top() + ascent / 2f;     // Room for the top number
         float bottom = y + h - pad - 1.4f * size;
         if (xAxisTitle.Length > 0) {
@@ -533,9 +550,16 @@ public class SimpleLineChart : IDrawable {
         if (n > 1) {
             every = ChartScale.AxisLabelStep((right - left) / (n - 1), widestCategory + pad, n - 1);
         }
+        // Each centered on its category, and inside the chart
+        float[] centers = new float[n];
+        float[] widths = new float[n];
+        for (int i = 0; i < n; i++) {
+            centers[i] = XAt(i, n, left, right);
+            widths[i] = f2.StringWidth(size, Category(i));
+        }
+        every = ChartScale.PlacedStep(every, centers, widths, x + pad / 2f, x + w - pad / 2f, pad / 2f);
         for (int i = 0; i < n; i += every) {
-            String label = Category(i);
-            page.DrawString(f2, size, label, XAt(i, n, left, right) - f2.StringWidth(size, label) / 2f,
+            page.DrawString(f2, size, Category(i), ChartScale.Placed(centers[i], widths[i], x + pad / 2f, x + w - pad / 2f),
                     bottom + 1.4f * size, Util.ToRGB(SimpleBarChart.MUTED), null);
         }
         if (xAxisTitle.Length > 0) {
@@ -624,12 +648,13 @@ public class SimpleLineChart : IDrawable {
             if (drawing) {
                 page.StrokePath();
             }
-            if (markers) {
-                page.SetBrushColor(color);
-                for (int j = 0; j < n; j++) {
-                    if (line.Has(j)) {
-                        page.FillCircle(XAt(j, n, left, right), YAt(line.values[j], axis, top, bottom), 0.25f * size);
-                    }
+            // A dot at each value, or at a value alone between gaps, which a
+            // line of no length did not show
+            page.SetBrushColor(color);
+            for (int j = 0; j < n; j++) {
+                bool alone = !(j > 0 && line.Has(j - 1)) && !(j + 1 < n && line.Has(j + 1));
+                if (line.Has(j) && (markers || alone)) {
+                    page.FillCircle(XAt(j, n, left, right), YAt(line.values[j], axis, top, bottom), 0.25f * size);
                 }
             }
         }

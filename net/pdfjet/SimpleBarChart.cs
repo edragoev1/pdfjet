@@ -89,7 +89,9 @@ public class SimpleBarChart : IDrawable {
 
     /// <summary>
     /// Adds a bar: its name and its value. A value below zero is drawn as no
-    /// bar, with its value written.
+    /// bar, with its value written. A value that is NaN or infinite has no
+    /// bar and no value, as in the other charts, and the description leaves
+    /// it out.
     /// </summary>
     /// <param name="name">the name of the bar.</param>
     /// <param name="value">its value.</param>
@@ -125,8 +127,9 @@ public class SimpleBarChart : IDrawable {
     }
 
     /// <summary>
-    /// Sets the color of the panel behind the chart, or -1 for none. It is
-    /// light gray, 0xF1F3F6, unless set.
+    /// Sets the color of the panel behind the chart. It is light gray,
+    /// 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the one
+    /// color setter where it does not leave the color as it was.
     /// </summary>
     /// <param name="color">the color.</param>
     /// <returns>this chart.</returns>
@@ -226,6 +229,9 @@ public class SimpleBarChart : IDrawable {
 
     // The value written at the end of a bar.
     internal String Label(float value) {
+        if (!ChartScale.IsValue(value)) {
+            return "";      // No value, as in the other charts: it was written NaN or In,fin,ity
+        }
         // Its digits grouped in thousands, 23,507, as in the other charts
         return ChartScale.GroupDigits(ChartScale.Format(value, minFractionDigits, maxFractionDigits));
     }
@@ -245,9 +251,13 @@ public class SimpleBarChart : IDrawable {
         if (sb.Length == 0) {
             sb.Append("Bar chart");
         }
+        String separator = ": ";
         for (int i = 0; i < names.Count; i++) {
-            sb.Append(i == 0 ? ": " : ", ");
-            sb.Append(names[i]).Append(' ').Append(Label(values[i]));
+            if (!ChartScale.IsValue(values[i])) {
+                continue;
+            }
+            sb.Append(separator).Append(names[i]).Append(' ').Append(Label(values[i]));
+            separator = ", ";
         }
         return sb.Append('.').ToString();
     }

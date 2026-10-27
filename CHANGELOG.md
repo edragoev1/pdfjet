@@ -306,6 +306,43 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- The charts, the four ports, from a fourth review of 26 October 2026:
+  - BarChart: the numbers of the value axis have the digits of its step
+    whatever `setFractionDigits` says, where with 0 an axis in steps of 0.25
+    was written 0, 0, 1, 1 and data under 0.01 was written 0.00; values whose
+    span, or a stack's, is past the largest float draw nothing, as in the
+    line and scatter charts, where they were drawn on an axis of 0 to 1; and
+    the margins make room only for the values written, not for those of bars
+    outside a set range or totals past the largest float.
+  - The axes of all the charts: a step under 0.0001 has the digits it needs,
+    where it had none, and a step under 0.000001 too, where the digits
+    stopped at 6; data at the largest float has an axis of its own, where it
+    was drawn on 0 to 1.
+  - The names and the numbers under the plots stay inside the chart: the
+    first category of a SimpleLineChart, as "January 2026", the last number
+    under a SimpleScatterChart, as "1,000,000", and the last category under
+    vertical bars went past its edges. The line and scatter charts leave
+    room for them at the ends of the plot.
+  - SimpleBarChart: a value that is NaN or infinite has no bar and no value,
+    as in the other charts, where it was written "NaN" or "In,fin,ity", and
+    the description leaves it out.
+  - SimpleLineChart: a value alone between gaps, or the only one, is drawn as
+    a dot, where a line of no length drew nothing without markers; the
+    description of one category is "2019", where it was "2019 to 2019", and
+    it ends at the last category that has a name, where an empty one made
+    "2019 to :".
+  - SimpleScatterChart: the description counts and names only the points
+    drawn, not those outside a set range, and tells the trend only when its
+    line is drawn; the "trend" label stays over the plot, where a short steep
+    line put it left of it.
+  - The documentation of `BarChart.setGroupGap` gives its range as 0 to 0.9,
+    as the code keeps it, and that of `setPanelColor` in the three simple
+    charts calls Color.transparent, -1, for no panel the one exception to
+    the rule that it leaves a color as it was.
+  Behavior change: BarChart axes written with `setFractionDigits(0)` keep the
+  decimals of their step, 0.25 and not 0; the plots of the line and scatter
+  charts are narrower by up to half a label when a first or last label is
+  wider than the padding.
 - Markdown, the four ports, from a review of 26 October 2026:
   - The first block of a quote or a list item keeps the room it needs on its
     page, as the other blocks do: a first image, code or table was drawn

@@ -250,7 +250,7 @@ func (chart *BarChart) SetStacked(stacked bool) *BarChart {
 }
 
 // SetGroupGap sets the gap between the groups of bars as a fraction of the
-// category slot, from 0.0 to below 1.0. The default is 0.3.
+// category slot, from 0.0 to 0.9. The default is 0.3.
 func (chart *BarChart) SetGroupGap(gap float32) *BarChart {
 	// From 0 to 0.9 of a slot: more left the bars no width, or less than none
 	if isValue(gap) {
@@ -400,8 +400,13 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				}
 			}
 		}
+		if !isValue(hi - lo) {
+			// Values, or sums of a stack, whose span is past the largest
+			// float32, which no axis can draw: they were drawn on 0 to 1
+			return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+		}
 		if hi == lo {
-			hi = lo + flatDataSpan(lo)
+			lo, hi = flatRange(lo)
 		}
 		round := roundMaxAndMinValues(hi, lo)
 		vMin = round.minValue
@@ -409,10 +414,12 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		lines = round.numOfGridLines
 	}
 	if vMax == vMin {
-		vMax = vMin + flatDataSpan(vMin)
+		vMin, vMax = flatRange(vMin)
 	}
 	step := (vMax - vMin) / float32(lines)
-	axisDigits := max(chart.minFractionDigits, fractionDigitsOf(step, chart.maxFractionDigits))
+	// The digits of the step, which SetFractionDigits does not cap: with 0
+	// an axis of 0.25 was written 0, 0, 1, 1
+	axisDigits := max(chart.minFractionDigits, stepDigits(step))
 	base := min(max(0.0, vMin), vMax)
 
 	x2 := chart.x1 + chart.w
@@ -430,17 +437,37 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 	widestValueLabel := float32(0.0)
 	widestNegative := float32(0.0) // Of the bars below 0, written past their ends
-	if chart.drawValueLabels {
+	// Of the labels that are written: not those of the bars outside a range
+	// that is set, which made room for labels that were not there
+	for i := 0; chart.drawValueLabels && i < n; i++ {
+		up := float32(0.0)
+		down := float32(0.0)
 		for _, s := range chart.series {
-			for _, v := range s.values {
-				if !isValue(v) {
-					continue
+			if i >= len(s.values) || !isValue(s.values[i]) {
+				continue
+			}
+			v := s.values[i]
+			from := base
+			if chart.stacked {
+				if v >= 0.0 {
+					from = up
+					up += v
+				} else {
+					from = down
+					down += v
 				}
-				width := f2.StringWidth(f2.size, chart.valueLabel(v))
-				widestValueLabel = max(widestValueLabel, width)
-				if v < 0.0 {
-					widestNegative = max(widestNegative, width)
-				}
+			}
+			to := v
+			if chart.stacked {
+				to = from + v
+			}
+			if outsideAxis(from, to, vMin, vMax) {
+				continue
+			}
+			width := f2.StringWidth(f2.size, chart.valueLabel(v))
+			widestValueLabel = max(widestValueLabel, width)
+			if v < 0.0 {
+				widestNegative = max(widestNegative, width)
 			}
 		}
 	}
@@ -454,7 +481,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				up += s.values[i]
 			}
 		}
-		if up > 0.0 {
+		if up > 0.0 && isValue(up) { // A sum past the largest float32 is not written
 			widestTotal = max(widestTotal, f2.StringWidth(f2.size, chart.valueLabel(up)))
 		}
 	}
@@ -563,6 +590,17 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	} else {
 		every = axisLabelStep((y8-y5)/float32(lines), bodyHeight, lines)
 	}
+	if chart.horizontal {
+		// Inside the chart, and apart when the first and the last are moved in
+		centers := make([]float32, lines+1)
+		widths := make([]float32, lines+1)
+		for i := 0; i <= lines; i++ {
+			v := vMin + float32(step*float32(i))
+			centers[i] = x5 + scaled(v-vMin, x6-x5, vMax-vMin)
+			widths[i] = f2.StringWidth(f2.size, chart.axisLabel(v, axisDigits))
+		}
+		every = placedStep(every, centers, widths, chart.x1, x2, float32(pad/2.0))
+	}
 	for i := 0; i <= lines; i++ {
 		v := vMin + float32(step*float32(i))
 		label := chart.axisLabel(v, axisDigits)
@@ -573,7 +611,8 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				chart.gridLine(page, x, y5, x, y8)
 			}
 			if labeled {
-				barChartText(page, f2, label, x-float32(f2.StringWidth(f2.size, label)/2.0), y8+bodyHeight, barChartMuted)
+				barChartText(page, f2, label, placed(x, f2.StringWidth(f2.size, label), chart.x1, x2),
+					y8+bodyHeight, barChartMuted)
 			}
 		} else {
 			y := y8 - scaled(v-vMin, y8-y5, vMax-vMin)
@@ -604,6 +643,16 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	everyCategory := 1
 	if !chart.horizontal {
 		everyCategory = axisLabelStep(slot, widestCategory+pad, n)
+		// Inside the chart, and apart when the first and the last are moved in
+		centers := make([]float32, n)
+		widths := make([]float32, n)
+		for i := 0; i < n; i++ {
+			centers[i] = x5 + float32(float32(i)*slot) + float32(slot/2.0)
+			if i < len(names) {
+				widths[i] = f2.StringWidth(f2.size, names[i])
+			}
+		}
+		everyCategory = placedStep(everyCategory, centers, widths, chart.x1, x2, float32(pad/2.0))
 	}
 	for i := 0; i < n; i++ {
 		var slotStart float32
@@ -621,7 +670,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			barChartText(page, f2, category, x5-pad-negative-f2.StringWidth(f2.size, category),
 				slotStart+float32(slot/2.0)+float32(ascent/2.0), barChartMuted)
 		} else if i%everyCategory == 0 {
-			barChartText(page, f2, category, slotStart+float32((slot-f2.StringWidth(f2.size, category))/2.0),
+			// Centered under its slot, inside the chart: the last one went
+			// past the chart's right edge
+			barChartText(page, f2, category, placed(slotStart+float32(slot/2.0), f2.StringWidth(f2.size, category), chart.x1, x2),
 				y8+bodyHeight+negative, barChartMuted)
 		}
 		up := float32(0.0)   // the stacked values above 0 so far
@@ -647,7 +698,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			}
 			// A bar wholly outside a range that is set has no length,
 			// and its value is not written by it
-			outside := min(max(from, vMin), vMax) == min(max(to, vMin), vMax) && from != to
+			outside := outsideAxis(from, to, vMin, vMax)
 			from = min(max(from, vMin), vMax)
 			to = min(max(to, vMin), vMax)
 			barStart := groupStart
@@ -874,6 +925,12 @@ func (chart *BarChart) getAltDescription() string {
 	return sb.String()
 }
 
+// outsideAxis tells if a bar from one value to another is wholly outside the
+// axis, which gives it no length.
+func outsideAxis(from, to, vMin, vMax float32) bool {
+	return min(max(from, vMin), vMax) == min(max(to, vMin), vMax) && from != to
+}
+
 // numberOfCategories returns the number of category slots: the categories or the longest series.
 func (chart *BarChart) numberOfCategories() int {
 	n := len(chart.categories)
@@ -926,7 +983,7 @@ func (chart *BarChart) valueLabel(value float32) string {
 
 // axisLabel formats a label of the value axis.
 func (chart *BarChart) axisLabel(value float32, digits int) string {
-	return chart.group(format(value, digits, chart.maxFractionDigits))
+	return chart.group(format(value, digits, digits))
 }
 
 // group groups the digits before the decimal point in thousands with commas,

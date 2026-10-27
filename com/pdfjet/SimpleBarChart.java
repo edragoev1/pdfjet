@@ -97,7 +97,9 @@ public class SimpleBarChart implements Drawable {
 
     /**
      * Adds a bar: its name and its value. A value below zero is drawn as no
-     * bar, with its value written.
+     * bar, with its value written. A value that is NaN or infinite has no
+     * bar and no value, as in the other charts, and the description leaves
+     * it out.
      *
      * @param name the name of the bar.
      * @param value its value.
@@ -136,8 +138,9 @@ public class SimpleBarChart implements Drawable {
     }
 
     /**
-     * Sets the color of the panel behind the chart, or -1 for none. It is
-     * light gray, 0xF1F3F6, unless set.
+     * Sets the color of the panel behind the chart. It is light gray,
+     * 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the one
+     * color setter where it does not leave the color as it was.
      *
      * @param color the color.
      * @return this chart.
@@ -241,6 +244,9 @@ public class SimpleBarChart implements Drawable {
 
     // The value written at the end of a bar.
     String label(float value) {
+        if (!ChartScale.isValue(value)) {
+            return "";      // No value, as in the other charts: it was written NaN or In,fin,ity
+        }
         // Its digits grouped in thousands, 23,507, as in the other charts
         return ChartScale.groupDigits(ChartScale.format(value, minFractionDigits, maxFractionDigits));
     }
@@ -260,9 +266,13 @@ public class SimpleBarChart implements Drawable {
         if (sb.length() == 0) {
             sb.append("Bar chart");
         }
+        String separator = ": ";
         for (int i = 0; i < names.size(); i++) {
-            sb.append(i == 0 ? ": " : ", ");
-            sb.append(names.get(i)).append(' ').append(label(values.get(i)));
+            if (!ChartScale.isValue(values.get(i))) {
+                continue;
+            }
+            sb.append(separator).append(names.get(i)).append(' ').append(label(values.get(i)));
+            separator = ", ";
         }
         return sb.append('.').toString();
     }

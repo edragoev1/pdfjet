@@ -86,7 +86,8 @@ func (chart *SimpleBarChart) SetAltDescription(altDescription string) *SimpleBar
 }
 
 // Add adds a bar: its name and its value. A value below zero is drawn as no
-// bar, with its value written.
+// bar, with its value written. A value that is NaN or infinite has no bar and
+// no value, as in the other charts, and the description leaves it out.
 func (chart *SimpleBarChart) Add(name string, value float32) *SimpleBarChart {
 	chart.names = append(chart.names, name)
 	chart.values = append(chart.values, value)
@@ -110,8 +111,9 @@ func (chart *SimpleBarChart) SetFractionDigits(digits int) *SimpleBarChart {
 	return chart
 }
 
-// SetPanelColor sets the color of the panel behind the chart, or -1 for
-// none. It is light gray, 0xF1F3F6, unless set.
+// SetPanelColor sets the color of the panel behind the chart. It is light
+// gray, 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the
+// one color setter where it does not leave the color as it was.
 func (chart *SimpleBarChart) SetPanelColor(c int32) *SimpleBarChart {
 	chart.panelColor = c
 	return chart
@@ -186,6 +188,9 @@ func (chart *SimpleBarChart) top() float32 {
 
 // The value written at the end of a bar.
 func (chart *SimpleBarChart) label(value float32) string {
+	if !isValue(value) {
+		return "" // No value, as in the other charts: it was written NaN or In,fin,ity
+	}
 	// Its digits grouped in thousands, 23,507, as in the other charts
 	return groupDigits(format(value, chart.minFractionDigits, chart.maxFractionDigits))
 }
@@ -209,13 +214,13 @@ func (chart *SimpleBarChart) getAltDescription() string {
 	if sb.Len() == 0 {
 		sb.WriteString("Bar chart")
 	}
+	separator := ": "
 	for i, name := range chart.names {
-		if i == 0 {
-			sb.WriteString(": ")
-		} else {
-			sb.WriteString(", ")
+		if !isValue(chart.values[i]) {
+			continue
 		}
-		sb.WriteString(name + " " + chart.label(chart.values[i]))
+		sb.WriteString(separator + name + " " + chart.label(chart.values[i]))
+		separator = ", "
 	}
 	sb.WriteString(".")
 	return sb.String()

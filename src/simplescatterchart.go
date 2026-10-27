@@ -153,8 +153,9 @@ func (chart *SimpleScatterChart) SetYAxisRange(lo, hi float32) *SimpleScatterCha
 	return chart
 }
 
-// SetPanelColor sets the color of the panel behind the chart, or -1 for
-// none. It is light gray, 0xF1F3F6, unless set.
+// SetPanelColor sets the color of the panel behind the chart. It is light
+// gray, 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the
+// one color setter where it does not leave the color as it was.
 func (chart *SimpleScatterChart) SetPanelColor(c int32) *SimpleScatterChart {
 	chart.panelColor = c
 	return chart
@@ -259,17 +260,35 @@ func trend(points []scatterPoint) (float64, float64, bool) {
 	return slope, my - float64(slope*mx), true
 }
 
-// digits returns the digits of the numbers of the two axes of the points.
-func (chart *SimpleScatterChart) digits(points []scatterPoint) int {
+// axes returns the horizontal and the vertical axis of the points.
+func (chart *SimpleScatterChart) axes(points []scatterPoint) (chartAxis, chartAxis) {
 	xs := make([]float32, len(points))
 	ys := make([]float32, len(points))
 	for i, p := range points {
 		xs[i], ys[i] = p.x, p.y
 	}
-	xAxis := axisOf(xs, chart.xMin, chart.xMax, chart.xRangeSet)
-	yAxis := axisOf(ys, chart.yMin, chart.yMax, chart.yRangeSet)
-	return max(digitsOf((xAxis.max-xAxis.min)/float32(xAxis.lines)),
-		digitsOf((yAxis.max-yAxis.min)/float32(yAxis.lines)))
+	return axisOf(xs, chart.xMin, chart.xMax, chart.xRangeSet), axisOf(ys, chart.yMin, chart.yMax, chart.yRangeSet)
+}
+
+// shownTrend returns the trend of the points as it is drawn: none where it
+// misses the plot, both of its ends past one edge, as a flat one over a range
+// that is set, which was drawn outside the chart.
+func shownTrend(points []scatterPoint, xAxis, yAxis chartAxis) (float64, float64, bool) {
+	slope, intercept, ok := trend(points)
+	if ok {
+		a := float64(slope*float64(xAxis.min)) + intercept
+		b := float64(slope*float64(xAxis.max)) + intercept
+		if (a > float64(yAxis.max) && b > float64(yAxis.max)) || (a < float64(yAxis.min) && b < float64(yAxis.min)) {
+			return slope, intercept, false
+		}
+	}
+	return slope, intercept, ok
+}
+
+// onPlot tells if the point is on the plot of the axes: a point outside a
+// range that is set is not drawn.
+func onPlot(p scatterPoint, xAxis, yAxis chartAxis) bool {
+	return onAxis(p.x, xAxis) && onAxis(p.y, yAxis)
 }
 
 // getAltDescription returns the alternate description: the one set, or the
@@ -279,20 +298,30 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 		return chart.altDescription
 	}
 	points := chart.valid()
+	var xAxis, yAxis chartAxis
 	if len(points) > 0 {
-		chart.maxFractionDigits = chart.digits(points)
+		xAxis, yAxis = chart.axes(points)
+		chart.maxFractionDigits = max(digitsOf((xAxis.max-xAxis.min)/float32(xAxis.lines)),
+			digitsOf((yAxis.max-yAxis.min)/float32(yAxis.lines)))
+	}
+	// The points that are drawn: not those outside a range that is set
+	var shown []scatterPoint
+	for _, p := range points {
+		if onPlot(p, xAxis, yAxis) {
+			shown = append(shown, p)
+		}
 	}
 	var sb strings.Builder
 	sb.WriteString(join(chart.title, chart.subtitle))
 	if sb.Len() == 0 {
 		sb.WriteString("Scatter chart")
 	}
-	sb.WriteString(": " + strconv.Itoa(len(points)) + " points")
+	sb.WriteString(": " + strconv.Itoa(len(shown)) + " points")
 	if chart.xAxisTitle != "" && chart.yAxisTitle != "" {
 		sb.WriteString(", " + chart.yAxisTitle + " against " + chart.xAxisTitle)
 	}
 	named := 0
-	for _, p := range points {
+	for _, p := range shown {
 		if p.name == "" {
 			continue
 		}
@@ -305,8 +334,8 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 			groupDigits(format(p.y, 0, chart.maxFractionDigits)))
 		named++
 	}
-	if chart.trendLine {
-		if slope, _, ok := trend(points); ok {
+	if chart.trendLine && len(points) > 0 {
+		if slope, _, ok := shownTrend(points, xAxis, yAxis); ok { // Not one that is not drawn
 			switch {
 			case slope > 0:
 				sb.WriteString("; the trend rises")
@@ -342,8 +371,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	if (!chart.xRangeSet && !spanFits(xs)) || (!chart.yRangeSet && !spanFits(ys)) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h} // A span past the largest float, which no axis can draw
 	}
-	xAxis := axisOf(xs, chart.xMin, chart.xMax, chart.xRangeSet)
-	yAxis := axisOf(ys, chart.yMin, chart.yMax, chart.yRangeSet)
+	xAxis, yAxis := chart.axes(points)
 	xStep := (xAxis.max - xAxis.min) / float32(xAxis.lines)
 	yStep := (yAxis.max - yAxis.min) / float32(yAxis.lines)
 	chart.maxFractionDigits = max(digitsOf(xStep), digitsOf(yStep))
@@ -358,7 +386,12 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	if chart.yAxisTitle != "" {
 		left += float32(1.8 * size) // The title, as far from the numbers as the x title is
 	}
-	right := chart.x + chart.w - pad
+	// Room for the halves of the first and the last number under the plot,
+	// centered on its edges: the last, "1,000,000", went past the chart
+	firstWidth := f2.StringWidth(size, chart.label(xAxis.min, xStep))
+	lastWidth := f2.StringWidth(size, chart.label(xAxis.min+float32(xStep*float32(xAxis.lines)), xStep))
+	left = max(left, chart.x+float32(pad/2.0)+float32(firstWidth/2.0))
+	right := min(chart.x+chart.w-pad, chart.x+chart.w-float32(pad/2.0)-float32(lastWidth/2.0))
 	top := chart.y + chart.top() + float32(ascent/2.0) // Room for the top number
 	bottom := chart.y + chart.h - pad - float32(1.4*size)
 	if chart.xAxisTitle != "" {
@@ -366,11 +399,6 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	}
 	if right <= left || bottom <= top || !drawable(xAxis) || !drawable(yAxis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
-	}
-	// onPlot tells if the point is on the plot: a point outside a range that
-	// is set is not drawn
-	onPlot := func(p scatterPoint) bool {
-		return onAxis(p.x, xAxis) && onAxis(p.y, yAxis)
 	}
 	xAt := func(v float32) float32 {
 		return left + scaled(v-xAxis.min, right-left, xAxis.max-xAxis.min)
@@ -425,10 +453,20 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		xWidest = max(xWidest, f2.StringWidth(size, chart.label(xAxis.min+float32(xStep*float32(i)), xStep)))
 	}
 	every = axisLabelStep((right-left)/float32(xAxis.lines), xWidest+pad, xAxis.lines)
-	for i := 0; i <= xAxis.lines; i += every {
+	// Each centered on its line, and inside the chart
+	centers := make([]float32, xAxis.lines+1)
+	widths := make([]float32, xAxis.lines+1)
+	for i := 0; i <= xAxis.lines; i++ {
 		v := xAxis.min + float32(xStep*float32(i))
-		label := chart.label(v, xStep)
-		page.drawString(f2, size, label, xAt(v)-float32(f2.StringWidth(size, label)/2.0),
+		centers[i] = xAt(v)
+		widths[i] = f2.StringWidth(size, chart.label(v, xStep))
+	}
+	lo := chart.x + float32(pad/2.0)
+	hi := chart.x + chart.w - float32(pad/2.0)
+	every = placedStep(every, centers, widths, lo, hi, float32(pad/2.0))
+	for i := 0; i <= xAxis.lines; i += every {
+		label := chart.label(xAxis.min+float32(xStep*float32(i)), xStep)
+		page.drawString(f2, size, label, placed(centers[i], widths[i], lo, hi),
 			bottom+float32(1.4*size), colorToRGB(simpleBarMuted), nil)
 	}
 	if chart.xAxisTitle != "" {
@@ -445,16 +483,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 
 	// The trend line, from the left of the plot to its right, within its
 	// height
-	slope, intercept, ok := trend(points)
-	// No line where it misses the plot, both of its ends past one edge, as
-	// a flat one over a range that is set: it was drawn outside the chart
-	if ok {
-		a := float64(slope*float64(xAxis.min)) + intercept
-		b := float64(slope*float64(xAxis.max)) + intercept
-		if (a > float64(yAxis.max) && b > float64(yAxis.max)) || (a < float64(yAxis.min) && b < float64(yAxis.min)) {
-			ok = false
-		}
-	}
+	slope, intercept, ok := shownTrend(points, xAxis, yAxis)
 	if chart.trendLine && ok {
 		x1, x2 := float64(xAxis.min), float64(xAxis.max)
 		y1 := float64(float64(slope*x1)) + intercept
@@ -483,7 +512,9 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		if px2 > px1 && py2 > py1 {
 			lift += float32(width * ((py2 - py1) / (px2 - px1)))
 		}
-		page.drawString(f2, chart.subtitleSize(), label, px2-width, py2-lift, colorToRGB(simpleScatterTrend), nil)
+		// Not left of the plot, where a short steep line put it
+		page.drawString(f2, chart.subtitleSize(), label, max(left, px2-width), py2-lift,
+			colorToRGB(simpleScatterTrend), nil)
 	}
 
 	// The dots, then the highlighted points and their names over them
@@ -496,7 +527,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	page.SetBrushColor(chart.dotColor)
 	r := float32(0.3 * size)
 	for _, p := range points {
-		if p.name == "" && onPlot(p) {
+		if p.name == "" && onPlot(p, xAxis, yAxis) {
 			page.FillCircle(xAt(p.x), yAt(p.y), r)
 		}
 	}
@@ -535,7 +566,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	}
 	var linked []scatterPoint
 	for _, p := range points {
-		if p.name == "" || !onPlot(p) {
+		if p.name == "" || !onPlot(p, xAxis, yAxis) {
 			continue
 		}
 		if p.uri != "" && linksApart {

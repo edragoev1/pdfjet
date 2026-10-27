@@ -86,16 +86,18 @@ func TestChartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne(t *testing.T) {
 	}
 }
 
-// Stacked bars whose sums overflow a float32 are drawn on the range from 0
-// to 1.
-func TestBarChartStackedBarsPastTheLargestFloatAreDrawn(t *testing.T) {
+// Stacked bars whose sums overflow a float32 draw nothing, as the line and
+// scatter charts of such a span: they were drawn on an axis of 0 to 1 (the
+// review of 26 October 2026, the fourth).
+func TestBarChartStackedBarsPastTheLargestFloatDrawNothing(t *testing.T) {
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, testLetterPortrait())
 	chart := testBarChart(doc.pdf).SetCategories("a").SetStacked(true)
 	chart.AddSeries("", []float32{3e38})
 	chart.AddSeries("", []float32{3e38})
-	if content := testDrawBarChart(t, chart, page); !strings.Contains(content, testHex("1")) {
-		t.Errorf("the axis is not from 0 to 1: %q", content)
+	testDrawBarChart(t, chart, page)
+	if len(page.GetContent()) != 0 {
+		t.Errorf("content %q", testContent(page))
 	}
 	if err := doc.pdf.Complete(); err != nil {
 		t.Error(err)

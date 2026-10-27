@@ -158,8 +158,9 @@ func (chart *SimpleLineChart) SetYAxisRange(lo, hi float32) *SimpleLineChart {
 	return chart
 }
 
-// SetPanelColor sets the color of the panel behind the chart, or -1 for
-// none. It is light gray, 0xF1F3F6, unless set.
+// SetPanelColor sets the color of the panel behind the chart. It is light
+// gray, 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the
+// one color setter where it does not leave the color as it was.
 func (chart *SimpleLineChart) SetPanelColor(c int32) *SimpleLineChart {
 	chart.panelColor = c
 	return chart
@@ -315,7 +316,16 @@ func (chart *SimpleLineChart) getAltDescription() string {
 	}
 	n := chart.count()
 	if n > 0 && chart.category(0) != "" {
-		sb.WriteString(", " + chart.category(0) + " to " + chart.category(n-1))
+		// To the last category that has a name: one category was "2019 to
+		// 2019", and an empty last one "2019 to :"
+		end := n - 1
+		for end > 0 && chart.category(end) == "" {
+			end--
+		}
+		sb.WriteString(", " + chart.category(0))
+		if end > 0 {
+			sb.WriteString(" to " + chart.category(end))
+		}
 	}
 	sb.WriteString(":")
 	for i, line := range chart.lines {
@@ -398,6 +408,13 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		left += float32(1.8 * size) // The title, as far from the numbers as the x title is
 	}
 	right := chart.x + chart.w - pad - endWidth - float32(size/2.0)
+	// Room for the halves of the first and the last category, centered under
+	// the ends of the plot: the first, "January 2026", went past the chart's
+	// left edge
+	if n > 1 {
+		left = max(left, chart.x+float32(pad/2.0)+float32(f2.StringWidth(size, chart.category(0))/2.0))
+		right = min(right, chart.x+chart.w-float32(pad/2.0)-float32(f2.StringWidth(size, chart.category(n-1))/2.0))
+	}
 	top := chart.y + chart.top() + float32(ascent/2.0) // Room for the top number
 	bottom := chart.y + chart.h - pad - float32(1.4*size)
 	if chart.xAxisTitle != "" {
@@ -461,9 +478,18 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	if n > 1 {
 		every = axisLabelStep((right-left)/float32(n-1), widestCategory+pad, n-1)
 	}
+	// Each centered on its category, and inside the chart
+	centers := make([]float32, n)
+	widths := make([]float32, n)
+	for i := 0; i < n; i++ {
+		centers[i] = xAt(i)
+		widths[i] = f2.StringWidth(size, chart.category(i))
+	}
+	lo := chart.x + float32(pad/2.0)
+	hi := chart.x + chart.w - float32(pad/2.0)
+	every = placedStep(every, centers, widths, lo, hi, float32(pad/2.0))
 	for i := 0; i < n; i += every {
-		label := chart.category(i)
-		page.drawString(f2, size, label, xAt(i)-float32(f2.StringWidth(size, label)/2.0),
+		page.drawString(f2, size, chart.category(i), placed(centers[i], widths[i], lo, hi),
 			bottom+float32(1.4*size), colorToRGB(simpleBarMuted), nil)
 	}
 	if chart.xAxisTitle != "" {
@@ -562,12 +588,18 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		if drawing {
 			page.StrokePath()
 		}
-		if chart.markers {
-			page.SetBrushColor(c)
-			for j := 0; j < n; j++ {
-				if v, ok := line.valueOf(j); ok {
-					page.FillCircle(xAt(j), yAt(v), float32(0.25*size))
-				}
+		// A dot at each value, or at a value alone between gaps, which a line
+		// of no length did not show
+		page.SetBrushColor(c)
+		for j := 0; j < n; j++ {
+			before := false
+			if j > 0 {
+				_, before = line.valueOf(j - 1)
+			}
+			_, after := line.valueOf(j + 1)
+			alone := !before && !(j+1 < n && after)
+			if v, ok := line.valueOf(j); ok && (chart.markers || alone) {
+				page.FillCircle(xAt(j), yAt(v), float32(0.25*size))
 			}
 		}
 	}

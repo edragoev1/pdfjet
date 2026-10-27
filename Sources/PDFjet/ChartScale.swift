@@ -85,7 +85,10 @@ enum ChartScale {
         var digits = 0
         while digits < maxDigits {
             let scaled = Double(step) * pow(10.0, Double(digits))
-            if abs(scaled - scaled.rounded()) < 1e-4 {
+            // A whole number that is not 0: a step under 0.0001 was within
+            // the tolerance of 0, and had no digits (the review of 26 October
+            // 2026, the fourth)
+            if scaled.rounded() != 0 && abs(scaled - scaled.rounded()) < 1e-4 {
                 return digits
             }
             digits += 1
@@ -100,6 +103,19 @@ enum ChartScale {
     ///
     static func flatDataSpan(_ value: Float) -> Float {
         return Swift.max(1.0, abs(value)*1e-5)
+    }
+
+    ///
+    /// Returns the range of flat data at the value, (lo, hi): from the value up
+    /// by its flat data span, or up to the value when that is past the largest
+    /// Float. Data of the largest Float was drawn on an axis of 0 to 1.
+    ///
+    static func flatRange(_ value: Float) -> (lo: Float, hi: Float) {
+        let span = flatDataSpan(value)
+        if isValue(value + span) {
+            return (value, value + span)
+        }
+        return (value - span, value)
     }
 
     ///
@@ -193,6 +209,45 @@ enum ChartScale {
         return every
     }
 
+    ///
+    /// Returns where a label under an axis starts: centered on its place, but
+    /// inside lo to hi. A first category or a last number was written past the
+    /// chart's edge.
+    ///
+    static func placed(_ center: Float, _ width: Float, _ lo: Float, _ hi: Float) -> Float {
+        return Swift.max(lo, Swift.min(center - width / 2, hi - width))
+    }
+
+    ///
+    /// Returns how many places apart the labels under an axis are drawn: every
+    /// places, or more when a label held inside lo to hi would come nearer to
+    /// the one before it than the gap. The labels are centered on their
+    /// places, of the widths.
+    ///
+    static func placedStep(_ every: Int, _ centers: [Float], _ widths: [Float],
+            _ lo: Float, _ hi: Float, _ gap: Float) -> Int {
+        var every = Swift.max(every, 1)
+        while every < centers.count && !fits(every, centers, widths, lo, hi, gap) {
+            every += 1
+        }
+        return every
+    }
+
+    // Tells if the labels at every places, held inside lo to hi, are apart by
+    // the gap.
+    private static func fits(_ every: Int, _ centers: [Float], _ widths: [Float],
+            _ lo: Float, _ hi: Float, _ gap: Float) -> Bool {
+        var end = -Float.infinity
+        for i in stride(from: 0, to: centers.count, by: every) {
+            let at = placed(centers[i], widths[i], lo, hi)
+            if at < end {
+                return false
+            }
+            end = at + widths[i] + gap
+        }
+        return true
+    }
+
     // Tells if the value is a number to draw: a value that is NaN or infinite
     // has no bar, like a value missing at the end of a series.
     static func isValue(_ value: Float) -> Bool {
@@ -222,7 +277,7 @@ enum ChartScale {
             hi = Swift.max(hi, v)
         }
         if hi == lo {
-            hi = lo + flatDataSpan(lo)
+            (lo, hi) = flatRange(lo)
         }
         let round = roundMaxAndMinValues(hi, lo)
         return Axis(min: round.minValue, max: round.maxValue, lines: round.numOfGridLines)
@@ -319,11 +374,25 @@ enum ChartScale {
 
     ///
     /// Returns the number of digits after the decimal point that the numbers of
-    /// an axis of the step need, 2 at least and 6 at most: data under 0.01 was
-    /// written 0.00 at every grid line.
+    /// an axis of the step need, 2 at least: data under 0.01 was written 0.00
+    /// at every grid line.
     ///
     static func digitsOf(_ step: Float) -> Int {
-        return isValue(step) && step > 0 ? Swift.max(2, fractionDigitsOf(step, 6)) : 2
+        return Swift.max(2, stepDigits(step))
+    }
+
+    ///
+    /// Returns the number of digits after the decimal point that write the step
+    /// of an axis: as many as it has, or six significant digits of a step that
+    /// is not round. They were six at most, and data under 0.000001 was
+    /// written 0.000000.
+    ///
+    static func stepDigits(_ step: Float) -> Int {
+        if !isValue(step) || step <= 0 {
+            return 0
+        }
+        let significant = 5 - Int(floor(log10(Double(step))))
+        return fractionDigitsOf(step, Swift.max(6, significant))
     }
 
     ///
@@ -397,8 +466,8 @@ enum ChartScale {
     /// commas: 23507 is 23,507.
     ///
     static func groupDigits(_ label: String) -> String {
-        if label.contains("e") {
-            return label    // A power of ten has no thousands
+        for c in label.unicodeScalars where (c < "0" || c > "9") && c != "-" && c != "." {
+            return label    // A power of ten has no thousands, and Infinity no digits
         }
         var chars = Array(label)
         let start = chars.first == "-" ? 1 : 0

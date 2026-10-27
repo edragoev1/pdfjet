@@ -98,7 +98,9 @@ public class SimpleBarChart : Drawable {
 
     ///
     /// Adds a bar: its name and its value. A value below zero is drawn as no
-    /// bar, with its value written.
+    /// bar, with its value written. A value that is NaN or infinite has no
+    /// bar and no value, as in the other charts, and the description leaves
+    /// it out.
     ///
     /// - Parameter name: the name of the bar.
     /// - Parameter value: its value.
@@ -140,8 +142,9 @@ public class SimpleBarChart : Drawable {
     }
 
     ///
-    /// Sets the color of the panel behind the chart, or -1 for none. It is
-    /// light gray, 0xF1F3F6, unless set.
+    /// Sets the color of the panel behind the chart. It is light gray,
+    /// 0xF1F3F6, unless set. Color.transparent, -1, draws no panel: the one
+    /// color setter where it does not leave the color as it was.
     ///
     /// - Parameter color: the color.
     /// - Returns: this chart.
@@ -247,6 +250,9 @@ public class SimpleBarChart : Drawable {
 
     // The value written at the end of a bar.
     func label(_ value: Float) -> String {
+        if !ChartScale.isValue(value) {
+            return ""       // No value, as in the other charts: it was written NaN or In,fin,ity
+        }
         // Its digits grouped in thousands, 23,507, as in the other charts
         return ChartScale.groupDigits(ChartScale.format(value, minFractionDigits, maxFractionDigits))
     }
@@ -266,9 +272,10 @@ public class SimpleBarChart : Drawable {
         if text.isEmpty {
             text = "Bar chart"
         }
-        for (i, name) in names.enumerated() {
-            text += (i == 0) ? ": " : ", "
-            text += name + " " + label(values[i])
+        var separator = ": "
+        for (i, name) in names.enumerated() where ChartScale.isValue(values[i]) {
+            text += separator + name + " " + label(values[i])
+            separator = ", "
         }
         return text + "."
     }

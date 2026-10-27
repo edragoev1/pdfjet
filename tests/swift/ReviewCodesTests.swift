@@ -65,9 +65,10 @@ import Testing
         }
     }
 
-    // Stacked bars whose sums overflow a Float are drawn on the range from 0
-    // to 1.
-    @Test func barChartStackedBarsPastTheLargestFloatAreDrawn() throws {
+    // Stacked bars whose sums overflow a Float draw nothing, as the line and
+    // scatter charts of such a span: they were drawn on an axis of 0 to 1
+    // (the review of 26 October 2026, the fourth).
+    @Test func barChartStackedBarsPastTheLargestFloatDrawNothing() throws {
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let font = TestSupport.helvetica(memory.pdf)
@@ -76,7 +77,7 @@ import Testing
         chart.addSeries("", [3e38])
         chart.addSeries("", [3e38])
         chart.drawOn(page)
-        #expect(TestSupport.content(page).contains(TestSupport.hex("1")))
+        #expect(page.getContent().isEmpty)
         try memory.pdf.complete()
     }
 

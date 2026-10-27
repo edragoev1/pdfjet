@@ -84,7 +84,10 @@ func format(value float32, minDigits, maxDigits int) string {
 func fractionDigitsOf(step float32, maxDigits int) int {
 	for digits := 0; digits < maxDigits; digits++ {
 		scaled := float64(float64(step) * math.Pow(10, float64(digits)))
-		if math.Abs(scaled-math.Round(scaled)) < 1e-4 {
+		// A whole number that is not 0: a step under 0.0001 was within the
+		// tolerance of 0, and had no digits (the review of 26 October 2026,
+		// the fourth)
+		if math.Round(scaled) != 0 && math.Abs(scaled-math.Round(scaled)) < 1e-4 {
 			return digits
 		}
 	}
@@ -96,6 +99,17 @@ func fractionDigitsOf(step float32, maxDigits int) int {
 // float32 has no room for 1 more, and the range would stay flat.
 func flatDataSpan(value float32) float32 {
 	return max(1.0, float32(abs32(value)*1e-5))
+}
+
+// flatRange returns the range of flat data at the value, lo and hi: from the
+// value up by its flat data span, or up to the value when that is past the
+// largest float32. Data of the largest float32 was drawn on an axis of 0 to 1.
+func flatRange(value float32) (float32, float32) {
+	span := flatDataSpan(value)
+	if isValue(value + span) {
+		return value, value + span
+	}
+	return value - span, value
 }
 
 // roundMaxAndMinValues rounds the axis range to "nice" values for clean grid lines.
@@ -216,6 +230,39 @@ func axisLabelStep(spacing, needed float32, lines int) int {
 	return every
 }
 
+// placed returns where a label under an axis starts: centered on its place,
+// but inside lo to hi. A first category or a last number was written past the
+// chart's edge.
+func placed(center, width, lo, hi float32) float32 {
+	return max(lo, min(center-float32(width/2), hi-width))
+}
+
+// placedStep returns how many places apart the labels under an axis are
+// drawn: every places, or more when a label held inside lo to hi would come
+// nearer to the one before it than the gap. The labels are centered on their
+// places, of the widths.
+func placedStep(every int, centers, widths []float32, lo, hi, gap float32) int {
+	every = max(every, 1)
+	for every < len(centers) && !fits(every, centers, widths, lo, hi, gap) {
+		every++
+	}
+	return every
+}
+
+// fits tells if the labels at every places, held inside lo to hi, are apart
+// by the gap.
+func fits(every int, centers, widths []float32, lo, hi, gap float32) bool {
+	end := float32(math.Inf(-1))
+	for i := 0; i < len(centers); i += every {
+		at := placed(centers[i], widths[i], lo, hi)
+		if at < end {
+			return false
+		}
+		end = at + widths[i] + gap
+	}
+	return true
+}
+
 // isValue tells if the value is a number to draw: a value that is NaN or
 // infinite has no bar, like a value missing at the end of a series.
 func isValue(value float32) bool {
@@ -253,8 +300,10 @@ func drawable(axis chartAxis) bool {
 // groupDigits groups the digits of a number before its decimal point in
 // thousands with commas: 23507 is 23,507.
 func groupDigits(label string) string {
-	if strings.IndexByte(label, 'e') >= 0 {
-		return label // A power of ten has no thousands
+	for i := 0; i < len(label); i++ {
+		if c := label[i]; (c < '0' || c > '9') && c != '-' && c != '.' {
+			return label // A power of ten has no thousands, and Infinity no digits
+		}
 	}
 	start := 0
 	if strings.HasPrefix(label, "-") {
@@ -287,7 +336,7 @@ func axisOf(values []float32, lo, hi float32, set bool) chartAxis {
 		lo, hi = min(lo, v), max(hi, v)
 	}
 	if hi == lo {
-		hi = lo + flatDataSpan(lo)
+		lo, hi = flatRange(lo)
 	}
 	round := roundMaxAndMinValues(hi, lo)
 	return chartAxis{round.minValue, round.maxValue, round.numOfGridLines}
@@ -379,13 +428,22 @@ func scaled(d, length, span float32) float32 {
 }
 
 // digitsOf returns the number of digits after the decimal point that the
-// numbers of an axis of the step need, 2 at least and 6 at most: data under
-// 0.01 was written 0.00 at every grid line.
+// numbers of an axis of the step need, 2 at least: data under 0.01 was
+// written 0.00 at every grid line.
 func digitsOf(step float32) int {
-	if isValue(step) && step > 0.0 {
-		return max(2, fractionDigitsOf(step, 6))
+	return max(2, stepDigits(step))
+}
+
+// stepDigits returns the number of digits after the decimal point that write
+// the step of an axis: as many as it has, or six significant digits of a step
+// that is not round. They were six at most, and data under 0.000001 was
+// written 0.000000.
+func stepDigits(step float32) int {
+	if !isValue(step) || step <= 0.0 {
+		return 0
 	}
-	return 2
+	significant := 5 - int(math.Floor(math.Log10(float64(step))))
+	return fractionDigitsOf(step, max(6, significant))
 }
 
 // spanFits tells if the span of the values, the largest less the smallest,

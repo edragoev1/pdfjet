@@ -97,10 +97,11 @@ class ReviewCodesTest {
         }
     }
 
-    // Stacked bars whose sums overflow a float are drawn on the range from 0
-    // to 1.
+    // Stacked bars whose sums overflow a float draw nothing, as the line and
+    // scatter charts of such a span: they were drawn on an axis of 0 to 1
+    // (the review of 26 October 2026, the fourth).
     @Test
-    void barChartStackedBarsPastTheLargestFloatAreDrawn() throws Exception {
+    void barChartStackedBarsPastTheLargestFloatDrawNothing() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         Font font = TestSupport.helvetica(pdf);
@@ -109,7 +110,7 @@ class ReviewCodesTest {
         chart.addSeries("", new float[] {3e38f});
         chart.addSeries("", new float[] {3e38f});
         chart.drawOn(page);
-        assertTrue(TestSupport.content(page).contains(TestSupport.hex("1")), "the axis is not from 0 to 1");
+        assertEquals(0, page.getContent().length);
         pdf.complete();
     }
 

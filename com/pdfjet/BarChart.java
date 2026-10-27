@@ -296,7 +296,7 @@ public class BarChart implements Drawable {
 
     /**
      * Sets the gap between the groups of bars as a fraction of the category
-     * slot, from 0.0 to below 1.0. The default is 0.3.
+     * slot, from 0.0 to 0.9. The default is 0.3.
      *
      * @param gap the gap.
      * @return this BarChart object.
@@ -490,15 +490,30 @@ public class BarChart implements Drawable {
                     }
                 }
             }
-            if (hi == lo) { hi = lo + ChartScale.flatDataSpan(lo); }
+            if (!ChartScale.isValue(hi - lo)) {
+                // Values, or sums of a stack, whose span is past the largest
+                // float, which no axis can draw: they were drawn on 0 to 1
+                return new float[] {x1 + w, y1 + h};
+            }
+            if (hi == lo) {
+                float[] flat = ChartScale.flatRange(lo);
+                lo = flat[0];
+                hi = flat[1];
+            }
             Round round = ChartScale.roundMaxAndMinValues(hi, lo);
             vMin = round.minValue;
             vMax = round.maxValue;
             lines = round.numOfGridLines;
         }
-        if (vMax == vMin) { vMax = vMin + ChartScale.flatDataSpan(vMin); }
+        if (vMax == vMin) {
+            float[] flat = ChartScale.flatRange(vMin);
+            vMin = flat[0];
+            vMax = flat[1];
+        }
         float step = (vMax - vMin) / lines;
-        int axisDigits = Math.max(minFractionDigits, ChartScale.fractionDigitsOf(step, maxFractionDigits));
+        // The digits of the step, which setFractionDigits does not cap: with 0
+        // an axis of 0.25 was written 0, 0, 1, 1
+        int axisDigits = Math.max(minFractionDigits, ChartScale.stepDigits(step));
         float base = Math.min(Math.max(0f, vMin), vMax);
 
         float x2 = x1 + w;
@@ -516,17 +531,28 @@ public class BarChart implements Drawable {
         }
         float widestValueLabel = 0f;
         float widestNegative = 0f;      // Of the bars below 0, written past their ends
-        if (drawValueLabels) {
+        // Of the labels that are written: not those of the bars outside a
+        // range that is set, which made room for labels that were not there
+        for (int i = 0; drawValueLabels && i < n; i++) {
+            float up = 0f;
+            float down = 0f;
             for (Series s : series) {
-                for (float v : s.values) {
-                    if (!ChartScale.isValue(v)) {
-                        continue;
-                    }
-                    float width = f2.stringWidth(valueLabel(v));
-                    widestValueLabel = Math.max(widestValueLabel, width);
-                    if (v < 0f) {
-                        widestNegative = Math.max(widestNegative, width);
-                    }
+                if (i >= s.values.length || !ChartScale.isValue(s.values[i])) {
+                    continue;
+                }
+                float v = s.values[i];
+                float from = base;
+                if (stacked) {
+                    if (v >= 0f) { from = up; up += v; } else { from = down; down += v; }
+                }
+                float to = stacked ? from + v : v;
+                if (outside(from, to, vMin, vMax)) {
+                    continue;
+                }
+                float width = f2.stringWidth(valueLabel(v));
+                widestValueLabel = Math.max(widestValueLabel, width);
+                if (v < 0f) {
+                    widestNegative = Math.max(widestNegative, width);
                 }
             }
         }
@@ -540,7 +566,7 @@ public class BarChart implements Drawable {
                     up += s.values[i];
                 }
             }
-            if (up > 0f) {
+            if (up > 0f && ChartScale.isValue(up)) {    // A sum past the largest float is not written
                 widestTotal = Math.max(widestTotal, f2.stringWidth(valueLabel(up)));
             }
         }
@@ -613,6 +639,17 @@ public class BarChart implements Drawable {
         int every = horizontal
                 ? ChartScale.axisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
                 : ChartScale.axisLabelStep((y8 - y5) / lines, bodyHeight, lines);
+        if (horizontal) {
+            // Inside the chart, and apart when the first and the last are moved in
+            float[] centers = new float[lines + 1];
+            float[] widths = new float[lines + 1];
+            for (int i = 0; i <= lines; i++) {
+                float v = vMin + step * i;
+                centers[i] = x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin);
+                widths[i] = f2.stringWidth(axisLabel(v, axisDigits));
+            }
+            every = ChartScale.placedStep(every, centers, widths, x1, x2, pad / 2f);
+        }
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
             String label = axisLabel(v, axisDigits);
@@ -623,7 +660,8 @@ public class BarChart implements Drawable {
                     gridLine(page, x, y5, x, y8);
                 }
                 if (labeled) {
-                    drawText(page, f2, label, x - f2.stringWidth(label) / 2f, y8 + bodyHeight, MUTED);
+                    drawText(page, f2, label, ChartScale.placed(x, f2.stringWidth(label), x1, x2),
+                            y8 + bodyHeight, MUTED);
                 }
             } else {
                 float y = y8 - ChartScale.scaled(v - vMin, y8 - y5, vMax - vMin);
@@ -644,6 +682,16 @@ public class BarChart implements Drawable {
         // Under vertical bars a category is written where it leaves the one
         // before it room: at every second or third bar, or more
         int everyCategory = horizontal ? 1 : ChartScale.axisLabelStep(slot, widestCategory + pad, n);
+        if (!horizontal) {
+            // Inside the chart, and apart when the first and the last are moved in
+            float[] centers = new float[n];
+            float[] widths = new float[n];
+            for (int i = 0; i < n; i++) {
+                centers[i] = x5 + i * slot + slot / 2f;
+                widths[i] = i < names.size() ? f2.stringWidth(names.get(i)) : 0f;
+            }
+            everyCategory = ChartScale.placedStep(everyCategory, centers, widths, x1, x2, pad / 2f);
+        }
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
@@ -652,7 +700,9 @@ public class BarChart implements Drawable {
                 drawText(page, f2, category, x5 - pad - negative - f2.stringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
             } else if (i % everyCategory == 0) {
-                drawText(page, f2, category, slotStart + (slot - f2.stringWidth(category)) / 2f,
+                // Centered under its slot, inside the chart: the last one
+                // went past the chart's right edge
+                drawText(page, f2, category, ChartScale.placed(slotStart + slot / 2f, f2.stringWidth(category), x1, x2),
                         y8 + bodyHeight + negative, MUTED);
             }
             float up = 0f;      // the stacked values above 0 so far
@@ -672,8 +722,7 @@ public class BarChart implements Drawable {
                 }
                 // A bar wholly outside a range that is set has no length,
                 // and its value is not written by it
-                boolean outside = Math.min(Math.max(from, vMin), vMax) == Math.min(Math.max(to, vMin), vMax)
-                        && from != to;
+                boolean outside = outside(from, to, vMin, vMax);
                 from = Math.min(Math.max(from, vMin), vMax);
                 to = Math.min(Math.max(to, vMin), vMax);
                 float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
@@ -840,6 +889,11 @@ public class BarChart implements Drawable {
         return sb.append('.').toString();
     }
 
+    /** Tells if a bar from one value to another is wholly outside the axis, which gives it no length. */
+    private static boolean outside(float from, float to, float vMin, float vMax) {
+        return Math.min(Math.max(from, vMin), vMax) == Math.min(Math.max(to, vMin), vMax) && from != to;
+    }
+
     /** Returns the number of category slots: the categories or the longest series. */
     private int numberOfCategories() {
         int n = categories.size();
@@ -889,7 +943,7 @@ public class BarChart implements Drawable {
 
     /** Formats a label of the value axis. */
     private String axisLabel(float value, int digits) {
-        return group(ChartScale.format(value, digits, maxFractionDigits));
+        return group(ChartScale.format(value, digits, digits));
     }
 
     /** Groups the digits before the decimal point in thousands with commas, if grouping is used. */

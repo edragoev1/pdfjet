@@ -72,7 +72,10 @@ internal static class ChartScale {
     internal static int FractionDigitsOf(float step, int maxDigits) {
         for (int digits = 0; digits < maxDigits; digits++) {
             double scaled = step * Math.Pow(10, digits);
-            if (Math.Abs(scaled - Math.Round(scaled)) < 1e-4) {
+            // A whole number that is not 0: a step under 0.0001 was within
+            // the tolerance of 0, and had no digits (the review of 26 October
+            // 2026, the fourth)
+            if (Math.Round(scaled) != 0 && Math.Abs(scaled - Math.Round(scaled)) < 1e-4) {
                 return digits;
             }
         }
@@ -160,6 +163,19 @@ internal static class ChartScale {
     }
 
     /// <summary>
+    /// Returns the range of flat data at the value, {lo, hi}: from the value up
+    /// by its flat data span, or up to the value when that is past the largest
+    /// float. Data of the largest float was drawn on an axis of 0 to 1.
+    /// </summary>
+    internal static float[] FlatRange(float value) {
+        float span = FlatDataSpan(value);
+        if (IsValue(value + span)) {
+            return new float[] {value, value + span};
+        }
+        return new float[] {value - span, value};
+    }
+
+    /// <summary>
     /// Returns how many grid lines apart the labels of the value axis are
     /// drawn: 1 when a label fits the spacing of the lines, and more when it
     /// needs more room, so that no two labels meet.
@@ -170,6 +186,43 @@ internal static class ChartScale {
             every++;
         }
         return every;
+    }
+
+    /// <summary>
+    /// Returns where a label under an axis starts: centered on its place, but
+    /// inside lo to hi. A first category or a last number was written past the
+    /// chart's edge.
+    /// </summary>
+    internal static float Placed(float center, float width, float lo, float hi) {
+        return Math.Max(lo, Math.Min(center - width / 2f, hi - width));
+    }
+
+    /// <summary>
+    /// Returns how many places apart the labels under an axis are drawn: every
+    /// places, or more when a label held inside lo to hi would come nearer to
+    /// the one before it than the gap. The labels are centered on their
+    /// places, of the widths.
+    /// </summary>
+    internal static int PlacedStep(int every, float[] centers, float[] widths, float lo, float hi, float gap) {
+        every = Math.Max(every, 1);
+        while (every < centers.Length && !Fits(every, centers, widths, lo, hi, gap)) {
+            every++;
+        }
+        return every;
+    }
+
+    // Tells if the labels at every places, held inside lo to hi, are apart by
+    // the gap.
+    private static bool Fits(int every, float[] centers, float[] widths, float lo, float hi, float gap) {
+        float end = float.NegativeInfinity;
+        for (int i = 0; i < centers.Length; i += every) {
+            float at = Placed(centers[i], widths[i], lo, hi);
+            if (at < end) {
+                return false;
+            }
+            end = at + widths[i] + gap;
+        }
+        return true;
     }
 
     // Tells if the value is a number to draw: a value that is NaN or infinite
@@ -208,7 +261,9 @@ internal static class ChartScale {
             hi = Math.Max(hi, values[i]);
         }
         if (hi == lo) {
-            hi = lo + FlatDataSpan(lo);
+            float[] flat = FlatRange(lo);
+            lo = flat[0];
+            hi = flat[1];
         }
         Round round = RoundMaxAndMinValues(hi, lo);
         return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
@@ -321,11 +376,25 @@ internal static class ChartScale {
 
     /// <summary>
     /// Returns the number of digits after the decimal point that the numbers of
-    /// an axis of the step need, 2 at least and 6 at most: data under 0.01 was
-    /// written 0.00 at every grid line.
+    /// an axis of the step need, 2 at least: data under 0.01 was written 0.00
+    /// at every grid line.
     /// </summary>
     internal static int DigitsOf(float step) {
-        return IsValue(step) && step > 0f ? Math.Max(2, FractionDigitsOf(step, 6)) : 2;
+        return Math.Max(2, StepDigits(step));
+    }
+
+    /// <summary>
+    /// Returns the number of digits after the decimal point that write the step
+    /// of an axis: as many as it has, or six significant digits of a step that
+    /// is not round. They were six at most, and data under 0.000001 was
+    /// written 0.000000.
+    /// </summary>
+    internal static int StepDigits(float step) {
+        if (!IsValue(step) || step <= 0f) {
+            return 0;
+        }
+        int significant = 5 - (int) Math.Floor(Math.Log10(step));
+        return FractionDigitsOf(step, Math.Max(6, significant));
     }
 
     /// <summary>
@@ -398,8 +467,10 @@ internal static class ChartScale {
     /// commas: 23507 is 23,507.
     /// </summary>
     internal static String GroupDigits(String label) {
-        if (label.IndexOf('e') >= 0) {
-            return label;   // A power of ten has no thousands
+        foreach (char c in label) {
+            if ((c < '0' || c > '9') && c != '-' && c != '.') {
+                return label;   // A power of ten has no thousands, and Infinity no digits
+            }
         }
         int start = label.StartsWith("-", StringComparison.Ordinal) ? 1 : 0;
         int end = label.IndexOf('.');
