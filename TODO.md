@@ -718,10 +718,11 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
      written uncompressed: a price list of 3,000 rows of 6 columns is
      4.7 MB. First the structure elements written in fewer bytes, measured,
      with the xref table as it is. Object streams would shrink it a third or
-     more, but are not planned (the owner, 25 October 2026: keep the xref
+     more, but not by default (the owner, 25 October 2026: keep the xref
      table, which can be read when debugging, and do not complicate
      things): a classic xref table cannot point into one, only a
      cross-reference stream or a hybrid file can, and PDF/A-1 forbids them.
+     They come as an option, off by default (below, 28 October 2026).
   2. PDF/A and tagged documents at any size (third review, W1, W2, W3, W5,
      W6). 9.0.7 refuses a PDF/A-1 document past its limits; this writes
      one within them at any size: a balanced page tree, a parent tree of
@@ -809,6 +810,24 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   PDF/UA asks: the citation a Lbl linked to its Note, read where it is
   cited. Markdown's footnotes ([^1]) drawn by the same code. The four ports
   alike; done after widows and orphans, as both decide where a page breaks.
+- **For v9.2.1: object streams, an option off by default** (the owner, 28
+  October 2026, after the benchmark: PDFjet's PDFs are the largest of the
+  four in four of its five documents, the invoice 25 KB to PDFBox's 19,
+  the statement 64 to 42; PDFBox writes object streams by default, iText
+  and OpenPDF as an option). With PDF.SetObjectStreams(true), the objects
+  that are not streams, the structure elements, annotations, fonts'
+  dictionaries and the like, are written compressed in object streams,
+  and the cross-reference table becomes a cross-reference stream, as a
+  classic table cannot point into an object stream. Off by default, so a
+  PDF is written as today, with the xref table that can be read when
+  debugging (the owner's reason of 25 October, above). Refused for
+  PDF/A-1, which forbids both; allowed for PDF/A-2 and -3 and PDF/UA. The
+  encryption dictionary, the document's trailer values and the objects a
+  signature covers stay as ISO 32000 asks. Measured on the five documents
+  of the benchmark and on a tagged price list, the large documents item's
+  case, before and after; checked with qpdf --check and in Acrobat. The
+  four ports alike, and the benchmark run with the option on, as its
+  documentation would then show.
 - **After v9.2.1: chart polish** (the owner, 28 October 2026: "BFO
   definitely have more polished charts but for now ours are pretty good").
   The scales are done; what is left is finish, on SimpleBarChart first.
