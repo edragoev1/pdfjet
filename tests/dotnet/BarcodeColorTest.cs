@@ -40,6 +40,81 @@ public class BarcodeColorTest {
         Assert.True(content.Contains("0 0 0 RG"), content);
     }
 
+    // The stroke and fill colors the content sets, as their operators, for
+    // example "1 1 1 rg", in their order.
+    private static System.Collections.Generic.List<string> Colors(string content) {
+        var colors = new System.Collections.Generic.List<string>();
+        foreach (string line in content.Split('\n')) {
+            if (line.EndsWith(" RG") || line.EndsWith(" rg")) {
+                colors.Add(line);
+            }
+        }
+        return colors;
+    }
+
+    // Draws each linear barcode but Code 128 in each direction, with its text,
+    // on a page of its own, in the module color when it is not null, and
+    // returns the names and the contents of the pages.
+    private static System.Collections.Generic.List<string[]> DrawLinearBarcodes(int? moduleColor) {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        object[][] cases = {
+            new object[] {"UPC-A", Barcode.UPC_A, "01234567890"},
+            new object[] {"EAN-13", Barcode.EAN_13, "012345678901"},
+            new object[] {"Code 39", Barcode.CODE_39, "HELLO-39"},
+            new object[] {"ITF-14", Barcode.ITF_14, "1540014128876"},
+        };
+        var drawn = new System.Collections.Generic.List<string[]>();
+        foreach (object[] c in cases) {
+            foreach (Direction direction in Enum.GetValues<Direction>()) {
+                PDF pdf = TestSupport.NewPDF();
+                Page page = new Page(pdf, Letter.PORTRAIT);
+                Barcode barcode = new Barcode((int) c[1], (string) c[2]).SetFont(TestSupport.Helvetica(pdf));
+                barcode.SetDirection(direction);
+                barcode.SetLocation(50f, 50f);
+                if (moduleColor != null) {
+                    barcode.SetModuleColor(moduleColor.Value);
+                }
+                barcode.DrawOn(page);
+                drawn.Add(new string[] {c[0] + ", " + direction, TestSupport.Content(page)});
+            }
+        }
+        return drawn;
+    }
+
+    // UPC-A, EAN-13, Code 39 and ITF-14 draw their bars and their text in
+    // their color in every direction, as Code 128 does: only Code 128, from
+    // left to right, was tested (the review of 28 October 2026).
+    [Fact]
+    public void EveryLinearBarcodeDrawsInItsColorInEveryDirection() {
+        foreach (string[] drawn in DrawLinearBarcodes(NAVY)) {
+            System.Collections.Generic.List<string> colors = Colors(drawn[1]);
+            Assert.True(colors.Contains(NAVY_STROKE) && colors.Contains(NAVY_FILL) && drawn[1].Contains("] TJ"),
+                    drawn[0] + ": not drawn in navy with its text: " + string.Join(", ", colors));
+            foreach (string op in colors) {
+                Assert.True(op == NAVY_STROKE || op == NAVY_FILL, drawn[0] + ": " + op);
+            }
+        }
+    }
+
+    // Unless their color is set, they are black: drawn as they are with black
+    // set.
+    [Fact]
+    public void EveryLinearBarcodeIsBlackUnlessSet() {
+        System.Collections.Generic.List<string[]> unset = DrawLinearBarcodes(null);
+        foreach (string[] drawn in unset) {
+            System.Collections.Generic.List<string> colors = Colors(drawn[1]);
+            Assert.True(colors.Contains("0 0 0 RG") && colors.Contains("0 0 0 rg"),
+                    drawn[0] + ": not drawn in black: " + string.Join(", ", colors));
+            foreach (string op in colors) {
+                Assert.True(op == "0 0 0 RG" || op == "0 0 0 rg", drawn[0] + ": " + op);
+            }
+        }
+        System.Collections.Generic.List<string[]> black = DrawLinearBarcodes(Color.black);
+        for (int i = 0; i < unset.Count; i++) {
+            Assert.True(unset[i][1] == black[i][1], unset[i][0] + ": black set draws another barcode");
+        }
+    }
+
     [Fact]
     public void APDF417DrawsInItsColor() {
         PDF pdf = TestSupport.NewPDF();

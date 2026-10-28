@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/datamatrix"
+	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pdf417"
@@ -76,6 +78,91 @@ func TestBarcodeColorALinearBarcodeIsBlackUnlessSet(t *testing.T) {
 	if content := string(page.GetContent()); !strings.Contains(content, "0 0 0 RG") {
 		t.Errorf("no %q in %s", "0 0 0 RG", content)
 	}
+}
+
+// testBarcodeColors returns the stroke and fill colors the content sets, as
+// their operators, for example "1 1 1 rg", in their order.
+func testBarcodeColors(content string) []string {
+	var colors []string
+	for _, line := range strings.Split(content, "\n") {
+		if strings.HasSuffix(line, " RG") || strings.HasSuffix(line, " rg") {
+			colors = append(colors, line)
+		}
+	}
+	return colors
+}
+
+// testDrawLinearBarcodes draws each linear barcode but Code 128 in each
+// direction, with its text, on a page of its own, in the module color when
+// it is not nil, and calls check with the content of the page.
+func testDrawLinearBarcodes(moduleColor *int32, check func(name string, content string)) {
+	for _, c := range []struct {
+		name        string
+		barcodeType int
+		text        string
+	}{
+		{"UPC-A", pdfjet.UPC_A, "01234567890"},
+		{"EAN-13", pdfjet.EAN_13, "012345678901"},
+		{"Code 39", pdfjet.CODE_39, "HELLO-39"},
+		{"ITF-14", pdfjet.ITF_14, "1540014128876"},
+	} {
+		for _, d := range []direction.Direction{direction.LeftToRight, direction.TopToBottom, direction.BottomToTop} {
+			pdf := pdfjet.NewPDF(bufio.NewWriter(new(bytes.Buffer)))
+			page := pdfjet.NewPage(pdf, letter.Portrait())
+			barcode := pdfjet.NewBarcode(c.barcodeType, c.text).SetFont(pdfjet.NewCoreFont(pdf, corefont.Helvetica()))
+			barcode.SetDirection(d)
+			barcode.SetLocation(50, 50)
+			if moduleColor != nil {
+				barcode.SetModuleColor(*moduleColor)
+			}
+			barcode.DrawOn(page)
+			check(fmt.Sprintf("%s, direction %d", c.name, d), string(page.GetContent()))
+		}
+	}
+}
+
+// UPC-A, EAN-13, Code 39 and ITF-14 draw their bars and their text in their
+// color in every direction, as Code 128 does: only Code 128, from left to
+// right, was tested (the review of 28 October 2026).
+func TestBarcodeColorEveryLinearBarcodeDrawsInItsColorInEveryDirection(t *testing.T) {
+	navy := int32(testNavy)
+	testDrawLinearBarcodes(&navy, func(name, content string) {
+		colors := testBarcodeColors(content)
+		if !slices.Contains(colors, testNavyStroke) || !slices.Contains(colors, testNavyFill) ||
+			!strings.Contains(content, "] TJ") {
+			t.Errorf("%s: not drawn in navy with its text: %q", name, colors)
+		}
+		for _, operator := range colors {
+			if operator != testNavyStroke && operator != testNavyFill {
+				t.Errorf("%s: %q", name, operator)
+			}
+		}
+	})
+}
+
+// Unless their color is set, they are black: drawn as they are with black set.
+func TestBarcodeColorEveryLinearBarcodeIsBlackUnlessSet(t *testing.T) {
+	var contents []string
+	testDrawLinearBarcodes(nil, func(name, content string) {
+		contents = append(contents, content)
+		colors := testBarcodeColors(content)
+		if !slices.Contains(colors, "0 0 0 RG") || !slices.Contains(colors, "0 0 0 rg") {
+			t.Errorf("%s: not drawn in black: %q", name, colors)
+		}
+		for _, operator := range colors {
+			if operator != "0 0 0 RG" && operator != "0 0 0 rg" {
+				t.Errorf("%s: %q", name, operator)
+			}
+		}
+	})
+	black := int32(color.Black)
+	i := 0
+	testDrawLinearBarcodes(&black, func(name, content string) {
+		if content != contents[i] {
+			t.Errorf("%s: black set draws another barcode", name)
+		}
+		i++
+	})
 }
 
 func TestBarcodeColorAPDF417DrawsInItsColor(t *testing.T) {

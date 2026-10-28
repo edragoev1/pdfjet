@@ -819,6 +819,92 @@ import Testing
         }
     }
 
+    /// The PDF of a page that draws the PngSuite images of the names.
+    private func pngSuiteDocument(_ names: String...) throws -> [UInt8] {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        for name in names {
+            _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG")).drawOn(page)
+        }
+        try memory.pdf.complete()
+        return memory.bytes
+    }
+
+    // An image copied from a PDF that was read keeps its stencil mask, a /Mask
+    // that refers to an image of one bit with /ImageMask true, copied with it
+    // as its soft mask is: only the soft mask and the color key mask were
+    // tested (the review of 28 October 2026). PDFjet draws no image with a
+    // stencil mask, so the PDF read is one of two PNGs of 32 by 32 pixels, its
+    // objects edited after they were read: the gray image of one bit made the
+    // stencil mask of the color one.
+    @Test func anImageCopiedFromAPDFThatWasReadKeepsItsStencilMask() throws {
+        let read = imageObjects(try TestSupport.read(try pngSuiteDocument("BASN2C08", "BASN0G01")))
+        try #require(read.count == 2)
+        let drawn = read[0]
+        let stencil = read[1]
+        let i = try #require(stencil.dict.firstIndex(of: "/ColorSpace"))
+        try #require(stencil.dict[i + 1] == "/DeviceGray", "\(stencil.dict.joined(separator: " "))")
+        try #require(stencil.getValue("/BitsPerComponent") == "1")
+        stencil.dict[i] = "/ImageMask"
+        stencil.dict[i + 1] = "true"
+        let open = try #require(drawn.dict.firstIndex(of: "<<"))
+        drawn.dict.insert(contentsOf: ["/Mask", String(stencil.number), "0", "R"], at: open + 1)
+
+        for encrypted in [false, true] {
+            let copied = MemoryPDF()
+            if encrypted {
+                _ = copied.pdf.setEncryption(Encryption(copied.pdf, Passwords(), Permissions()))
+            }
+            _ = try Image(copied.pdf, drawn).drawOn(Page(copied.pdf, Letter.PORTRAIT))
+            try copied.pdf.complete()
+            let objects = try TestSupport.read(copied.bytes, "")
+            var copies = [Int: PDFobj]()
+            for obj in objects {
+                copies[obj.number] = obj
+            }
+            let image = try #require(imageObjects(objects).last { $0.getValue("/ImageMask") == "" },
+                    "encrypted \(encrypted)")
+            let tokens = image.valueTokens("/Mask")
+            try #require(tokens.count == 3 && tokens[2] == "R",
+                    "encrypted \(encrypted): /Mask \(tokens.joined(separator: " "))")
+            let mask = try #require(copies[image.getObjectNumbers("/Mask")[0]], "encrypted \(encrypted)")
+            #expect(mask.getValue("/Subtype") == "/Image", "encrypted \(encrypted)")
+            #expect(mask.getValue("/ImageMask") == "true", "encrypted \(encrypted)")
+            #expect(mask.getValue("/ColorSpace") == "", "encrypted \(encrypted)")
+            #expect(mask.getValue("/Width") == "32", "encrypted \(encrypted)")
+            #expect(mask.stream == stencil.stream, "encrypted \(encrypted)")
+            #expect(mask.getValue("/DecodeParms") == stencil.getValue("/DecodeParms"), "encrypted \(encrypted)")
+        }
+    }
+
+    // The soft mask of an image copied from a PDF that was read keeps its
+    // /Matte, the color the image was blended with (the review of 28 October
+    // 2026). PDFjet writes no /Matte, so the soft mask of a PNG with alpha has
+    // one added after it was read.
+    @Test func theSoftMaskOfACopiedImageKeepsItsMatte() throws {
+        let read = try TestSupport.read(try pngSuiteDocument("BASN6A08"))
+        let drawn = try #require(imageObjects(read).last { $0.getValue("/SMask") != "" },
+                "the PNG is not drawn with an /SMask")
+        let number = drawn.getObjectNumbers("/SMask")[0]
+        let softMask = try #require(read.first { $0.number == number })
+        let open = try #require(softMask.dict.firstIndex(of: "<<"))
+        softMask.dict.insert(contentsOf: ["/Matte", "[", "1", "1", "1", "]"], at: open + 1)
+
+        let copied = MemoryPDF()
+        _ = try Image(copied.pdf, drawn).drawOn(Page(copied.pdf, Letter.PORTRAIT))
+        try copied.pdf.complete()
+        let objects = try TestSupport.read(copied.bytes)
+        var copies = [Int: PDFobj]()
+        for obj in objects {
+            copies[obj.number] = obj
+        }
+        let image = try #require(imageObjects(objects).last { $0.getValue("/SMask") != "" },
+                "the copy has no /SMask")
+        let mask = try #require(copies[image.getObjectNumbers("/SMask")[0]])
+        #expect(mask.getValue("/Matte") == "[ 1 1 1 ]")
+        #expect(mask.stream == softMask.stream)
+    }
+
     @Test func theDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() throws {
         var embedded = 0
         for (name, width, height, colorType, bitDepth, _, _, _, _) in PNGImageTests.suite {

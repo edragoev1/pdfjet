@@ -56,6 +56,43 @@ public sealed class JPGImageTest {
         Assert.DoesNotContain("/Decode [", raw);
     }
 
+    // A CMYK JPEG of Adobe software copied from a PDF that was read keeps the
+    // /Decode array that inverts its inks back: without it, the copy would be
+    // drawn as a negative (the review of 28 October 2026).
+    [Fact]
+    public void ACmykJpegCopiedFromAPDFThatWasReadKeepsItsDecodeArray() {
+        if (!File.Exists(TestSupport.RepoPath(CMYK))) {
+            return;     // The images directory is not here.
+        }
+        byte[] jpeg = File.ReadAllBytes(TestSupport.RepoPath(CMYK));
+        string want = "[ 1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0 ]";
+        System.Collections.Generic.List<PDFobj> read =
+                ImageObjects(TestSupport.Read(System.Text.Encoding.Latin1.GetBytes(PdfWith(jpeg))));
+        Assert.Single(read);
+        Assert.Equal(want, read[0].GetValue("/Decode"));
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        new Image(pdf, read[0]).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        System.Collections.Generic.List<PDFobj> copies = ImageObjects(TestSupport.Read(output.ToArray()));
+        Assert.Single(copies);
+        Assert.Equal(want, copies[0].GetValue("/Decode"));
+        Assert.Equal("/DeviceCMYK", copies[0].GetValue("/ColorSpace"));
+        Assert.True(jpeg.AsSpan().SequenceEqual(copies[0].stream));
+    }
+
+    // The image objects, in the order of their numbers.
+    private static System.Collections.Generic.List<PDFobj> ImageObjects(
+            System.Collections.Generic.List<PDFobj> objects) {
+        var images = new System.Collections.Generic.List<PDFobj>();
+        foreach (PDFobj obj in objects) {
+            if (obj.GetValue("/Subtype") == "/Image") {
+                images.Add(obj);
+            }
+        }
+        return images;
+    }
+
     // The frame header of the JPEG is what PDFjet reads it for, so a marker
     // before it that is read as one more segment hides it.
 
@@ -315,27 +352,52 @@ public sealed class JPGImageTest {
             }
         }
     }
-    // The PDF of one image drawn on a page, the image made from the bytes of
-    // its file or from a stream of them, without its ID, a new one for each
-    // document, and the time it was made.
-    private static string PdfOf(byte[] file, bool fromBytes) {
+    // The PDF of one image drawn on a page, the image made from a copy of the
+    // bytes of its file, which are overwritten after the image is made, before
+    // it is drawn and the PDF completed, when asked.
+    private static byte[] ImagePDF(byte[] file, bool overwrite) {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output);
-        Image image = fromBytes ? new Image(pdf, file) : new Image(pdf, new MemoryStream(file));
+        byte[] buf = (byte[]) file.Clone();
+        Image image = new Image(pdf, buf);
+        if (overwrite) {
+            Array.Fill(buf, (byte) 0xA5);
+        }
         image.DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
-        byte[] bytes = output.ToArray();
+        return output.ToArray();
+    }
+
+    // The PDF of ImagePDF without its ID, a new one for each document, and the
+    // time it was made.
+    private static string PdfOf(byte[] file, bool overwrite) {
+        byte[] bytes = ImagePDF(file, overwrite);
         return System.Text.RegularExpressions.Regex.Replace(
                 TestSupport.Latin1(bytes).Replace(TestSupport.TrailerID(bytes), ""),
                 @"\d{4}-?\d\d-?\d\dT?\d\d:?\d\d:?\d\dZ|/CreationDate <[0-9a-f]*>", "");
     }
 
+    // The bytes given to the constructor are the caller's to reuse after it:
+    // overwritten then, the PDF is the one of bytes left as they were, and its
+    // image is the image of the file, a JPEG as it is and the indexes of the
+    // palette of a PNG, f147fd07 their CRC-32 as Go's image/png decodes them.
+    // This test compared the PDF of the bytes with the one of a stream of
+    // them, which the constructor of a stream makes with the one of bytes, so
+    // it compared a code path with itself (the review of 28 October 2026).
     [Fact]
-    public void TheBytesOfAnImageFileMakeTheSamePDFAsAStreamOfThem() {
+    public void TheBytesOfAnImageFileCanBeReusedAfterTheImageIsMade() {
         foreach (string name in new[] {"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
                 "tests/data/jpeg/restart.jpg"}) {
             byte[] file = File.ReadAllBytes(TestSupport.RepoPath(name));
             Assert.Equal(PdfOf(file, false), PdfOf(file, true));
+            System.Collections.Generic.List<PDFobj> images = ImageObjects(TestSupport.Read(ImagePDF(file, true)));
+            Assert.Single(images);
+            if (name.EndsWith(".jpg")) {
+                Assert.Equal("/DCTDecode", images[0].GetValue("/Filter"));
+                Assert.True(file.AsSpan().SequenceEqual(images[0].stream), name);
+            } else {
+                Assert.Equal("f147fd07", TestSupport.Crc32(images[0].GetData()));
+            }
         }
         // A JPEG with bytes after its end marker, as cameras append, is read
         // past the last two bytes, as it was.

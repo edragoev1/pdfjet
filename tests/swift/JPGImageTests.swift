@@ -48,6 +48,34 @@ import Testing
         #expect(!raw.contains("/Decode ["))
     }
 
+    // A CMYK JPEG of Adobe software copied from a PDF that was read keeps the
+    // /Decode array that inverts its inks back: without it, the copy would be
+    // drawn as a negative (the review of 28 October 2026).
+    @Test(.enabled(if: TestSupport.exists(cmyk), "the images directory is not here"))
+    func aCmykJpegCopiedFromAPDFThatWasReadKeepsItsDecodeArray() throws {
+        let jpeg = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path(JPGImageTests.cmyk))))
+        let want = "[ 1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0 ]"
+        let memory = MemoryPDF()
+        _ = try Image(memory.pdf, jpeg).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        let read = imageObjects(try TestSupport.read(memory.bytes))
+        try #require(read.count == 1)
+        #expect(read[0].getValue("/Decode") == want)
+        let copied = MemoryPDF()
+        _ = try Image(copied.pdf, read[0]).drawOn(Page(copied.pdf, Letter.PORTRAIT))
+        try copied.pdf.complete()
+        let copies = imageObjects(try TestSupport.read(copied.bytes))
+        try #require(copies.count == 1)
+        #expect(copies[0].getValue("/Decode") == want)
+        #expect(copies[0].getValue("/ColorSpace") == "/DeviceCMYK")
+        #expect(copies[0].stream == jpeg)
+    }
+
+    /// The image objects, in the order of their numbers.
+    private func imageObjects(_ objects: [PDFobj]) -> [PDFobj] {
+        return objects.filter { $0.getValue("/Subtype") == "/Image" }
+    }
+
     // The frame header of the JPEG is what PDFjet reads it for, so a marker
     // before it that is read as one more segment hides it.
 
@@ -268,27 +296,52 @@ import Testing
         #expect(raw.contains("/Width 1200\n"), "the image object lost the pixels of the image")
         #expect(raw.contains("/Height 800\n"), "the image object lost the pixels of the image")
     }
-    // The PDF of one image drawn on a page, the image made from the bytes of
-    // its file or from a stream of them, without its ID, a new one for each
-    // document, and the time it was made.
-    private func pdfOf(_ file: [UInt8], _ fromBytes: Bool) throws -> String {
+    // The PDF of one image drawn on a page, the image made from a copy of the
+    // bytes of its file, which are overwritten after the image is made, before
+    // it is drawn and the PDF completed, when asked.
+    private func imagePDF(_ file: [UInt8], _ overwrite: Bool) throws -> [UInt8] {
         let memory = MemoryPDF()
-        let image = fromBytes
-                ? try Image(memory.pdf, file)
-                : try Image(memory.pdf, InputStream(data: Data(file)))
+        var buf = file
+        let image = try Image(memory.pdf, buf)
+        if overwrite {
+            for i in buf.indices {
+                buf[i] = 0xA5
+            }
+        }
         image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
-        let raw = TestSupport.latin1(memory.bytes)
-                .replacingOccurrences(of: TestSupport.trailerID(memory.bytes), with: "")
+        return memory.bytes
+    }
+
+    // The PDF of imagePDF without its ID, a new one for each document, and the
+    // time it was made.
+    private func pdfOf(_ file: [UInt8], _ overwrite: Bool) throws -> String {
+        let bytes = try imagePDF(file, overwrite)
+        let raw = TestSupport.latin1(bytes).replacingOccurrences(of: TestSupport.trailerID(bytes), with: "")
         return raw.replacingOccurrences(of: #"\d{4}-?\d\d-?\d\dT?\d\d:?\d\d:?\d\dZ|/CreationDate <[0-9a-f]*>"#,
                 with: "", options: .regularExpression)
     }
 
+    // The bytes given to the initializer are the caller's to reuse after it:
+    // overwritten then, the PDF is the one of bytes left as they were, and its
+    // image is the image of the file, a JPEG as it is and the indexes of the
+    // palette of a PNG, f147fd07 their CRC-32 as Go's image/png decodes them.
+    // This test compared the PDF of the bytes with the one of a stream of
+    // them, which the initializer of a stream makes with the one of bytes, so
+    // it compared a code path with itself (the review of 28 October 2026).
     @Test(.enabled(if: TestSupport.exists("images/italy-admin.jpg"), "the images directory is not here"),
           arguments: ["images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png", "tests/data/jpeg/restart.jpg"])
-    func theBytesOfAnImageFileMakeTheSamePDFAsAStreamOfThem(_ name: String) throws {
+    func theBytesOfAnImageFileCanBeReusedAfterTheImageIsMade(_ name: String) throws {
         let file = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path(name))))
         #expect(try pdfOf(file, false) == pdfOf(file, true))
+        let images = imageObjects(try TestSupport.read(try imagePDF(file, true)))
+        try #require(images.count == 1)
+        if name.hasSuffix(".jpg") {
+            #expect(images[0].getValue("/Filter") == "/DCTDecode")
+            #expect(images[0].stream == file)
+        } else {
+            #expect(TestSupport.crc32(images[0].getData()) == "f147fd07")
+        }
     }
 
     @Test func aJPEGWithBytesAfterItsEndMarkerIsReadPastTheLastTwoBytes() throws {

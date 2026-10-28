@@ -8,6 +8,8 @@ package pdfjet
 import (
 	"bytes"
 	"errors"
+	"image"
+	"image/png"
 	"math"
 	"os"
 	"path/filepath"
@@ -60,6 +62,33 @@ func TestJPGImageTheInksOfACmykJpegAreInvertedBackOnlyWhenAdobeSoftwareWroteIt(t
 	raw := testPDFWith(plain)
 	if !strings.Contains(raw, "/DeviceCMYK") || strings.Contains(raw, "/Decode [") {
 		t.Error("an image without the marker has its inks inverted")
+	}
+}
+
+// A CMYK JPEG of Adobe software copied from a PDF that was read keeps the
+// /Decode array that inverts its inks back: without it, the copy would be
+// drawn as a negative (the review of 28 October 2026).
+func TestJPGImageACmykJpegCopiedFromAPDFThatWasReadKeepsItsDecodeArray(t *testing.T) {
+	jpeg, err := os.ReadFile(testRepoPath(t, "images/cmyk.jpg"))
+	if err != nil {
+		t.Skip("the images directory is not here")
+	}
+	want := "[ 1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0 ]"
+	read := testImageObjects(testRead(t, []byte(testPDFWith(jpeg))))
+	if len(read) != 1 || read[0].GetValue("/Decode") != want {
+		t.Fatalf("the image drawn has no /Decode %s", want)
+	}
+	doc := testNewDoc()
+	NewImageFromPDFobj(doc.pdf, read[0]).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	copies := testImageObjects(testRead(t, doc.complete()))
+	if len(copies) != 1 {
+		t.Fatalf("%d images", len(copies))
+	}
+	if got := copies[0].GetValue("/Decode"); got != want {
+		t.Errorf("/Decode %q", got)
+	}
+	if copies[0].GetValue("/ColorSpace") != "/DeviceCMYK" || !bytes.Equal(copies[0].stream, jpeg) {
+		t.Errorf("the copy is %q", strings.Join(copies[0].dict, " "))
 	}
 }
 
@@ -354,32 +383,66 @@ func TestJPGImageWithoutItsEndMarkerIsDrawnWhenItsScanIsWhole(t *testing.T) {
 	}
 }
 
-// testPDFOf returns the PDF of one image drawn on a page, the image made from
-// the bytes of its file or from a reader of them, without its ID, a new one for
-// each document, and the time it was made.
-func testPDFOf(file []byte, fromBytes bool) string {
+// testImagePDF returns the PDF of one image drawn on a page, the image made
+// from a copy of the bytes of its file, which are overwritten after the image
+// is made, before it is drawn and the PDF completed, when asked.
+func testImagePDF(file []byte, overwrite bool) []byte {
 	doc := testNewDoc()
-	var image *Image
-	if fromBytes {
-		image = NewImageFromBytes(doc.pdf, file)
-	} else {
-		image = NewImage(doc.pdf, bytes.NewReader(file))
+	buf := append([]byte(nil), file...)
+	image := NewImageFromBytes(doc.pdf, buf)
+	if overwrite {
+		for i := range buf {
+			buf[i] = 0xA5
+		}
 	}
 	image.DrawOn(NewPage(doc.pdf, letter.Portrait()))
-	pdf := doc.complete()
+	return doc.complete()
+}
+
+// testPDFOf returns the PDF of testImagePDF without its ID, a new one for each
+// document, and the time it was made.
+func testPDFOf(file []byte, overwrite bool) string {
+	pdf := testImagePDF(file, overwrite)
 	raw := strings.ReplaceAll(string(pdf), testTrailerID(pdf), "")
 	return regexp.MustCompile(`\d{4}-?\d\d-?\d\dT?\d\d:?\d\d:?\d\dZ|/CreationDate <[0-9a-f]*>`).ReplaceAllString(raw, "")
 }
 
-func TestJPGImageTheBytesOfAnImageFileMakeTheSamePDFAsAReaderOfThem(t *testing.T) {
+// The bytes given to NewImageFromBytes are the caller's to reuse after the
+// call: overwritten then, the PDF is the one of bytes left as they were, and
+// its image is the image of the file, a JPEG as it is and the indexes of the
+// palette of a PNG. This test compared the PDF of the bytes with the one of a
+// reader of them, which NewImage makes with NewImageFromBytes, so it compared
+// a code path with itself (the review of 28 October 2026).
+func TestJPGImageTheBytesOfAnImageFileCanBeReusedAfterTheImageIsMade(t *testing.T) {
 	for _, name := range []string{"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
 		"tests/data/jpeg/restart.jpg"} {
 		file, err := os.ReadFile(testRepoPath(t, name))
 		if err != nil {
 			t.Skip("the images directory is not here")
 		}
-		if testPDFOf(file, false) != testPDFOf(file, true) {
+		if testPDFOf(file, true) != testPDFOf(file, false) {
 			t.Errorf("%s: the PDFs differ", name)
+		}
+		images := testImageObjects(testRead(t, testImagePDF(file, true)))
+		if len(images) != 1 {
+			t.Fatalf("%s: %d images", name, len(images))
+		}
+		if strings.HasSuffix(name, ".jpg") {
+			if images[0].GetValue("/Filter") != "/DCTDecode" || !bytes.Equal(images[0].stream, file) {
+				t.Errorf("%s: the image is not the JPEG", name)
+			}
+			continue
+		}
+		decoded, err := png.Decode(bytes.NewReader(file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		paletted, ok := decoded.(*image.Paletted)
+		if !ok || paletted.Stride != paletted.Rect.Dx() {
+			t.Fatalf("%s is not a PNG of a palette of 8 bits", name)
+		}
+		if !bytes.Equal(images[0].GetData(), paletted.Pix) {
+			t.Errorf("%s: the image is not the indexes of the PNG", name)
 		}
 	}
 	// A JPEG with bytes after its end marker, as cameras append, is read past

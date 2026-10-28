@@ -891,6 +891,113 @@ public class PNGImageTest {
         Assert.Contains("/SMask 5 0 R", e.Message);
     }
 
+    // The PDF of a page that draws the PngSuite images of the names.
+    private static byte[] PngSuiteDocument(params string[] names) {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        foreach (string name in names) {
+            using (Stream png = TestSupport.Open("PngSuite/" + name + ".PNG")) {
+                new Image(pdf, png).DrawOn(page);
+            }
+        }
+        pdf.Complete();
+        return stream.ToArray();
+    }
+
+    // An image copied from a PDF that was read keeps its stencil mask, a /Mask
+    // that refers to an image of one bit with /ImageMask true, copied with it
+    // as its soft mask is: only the soft mask and the color key mask were
+    // tested (the review of 28 October 2026). PDFjet draws no image with a
+    // stencil mask, so the PDF read is one of two PNGs of 32 by 32 pixels, its
+    // objects edited after they were read: the gray image of one bit made the
+    // stencil mask of the color one.
+    [Fact]
+    public void AnImageCopiedFromAPDFThatWasReadKeepsItsStencilMask() {
+        System.Collections.Generic.List<PDFobj> read =
+                ImageObjects(TestSupport.Read(PngSuiteDocument("BASN2C08", "BASN0G01")));
+        Assert.Equal(2, read.Count);
+        PDFobj drawn = read[0];
+        PDFobj stencil = read[1];
+        int i = stencil.dict.IndexOf("/ColorSpace");
+        Assert.True(i != -1 && stencil.dict[i + 1] == "/DeviceGray", string.Join(" ", stencil.dict));
+        Assert.Equal("1", stencil.GetValue("/BitsPerComponent"));
+        stencil.dict[i] = "/ImageMask";
+        stencil.dict[i + 1] = "true";
+        int open = drawn.dict.IndexOf("<<");
+        drawn.dict.InsertRange(open + 1, new string[] {"/Mask", stencil.number.ToString(), "0", "R"});
+
+        foreach (bool encrypted in new bool[] {false, true}) {
+            MemoryStream output = new MemoryStream();
+            PDF copied = new PDF(output);
+            if (encrypted) {
+                copied.SetEncryption(new Encryption(copied, new Passwords(), new Permissions()));
+            }
+            new Image(copied, drawn).DrawOn(new Page(copied, Letter.PORTRAIT));
+            copied.Complete();
+            System.Collections.Generic.List<PDFobj> objects = TestSupport.Read(output.ToArray(), "");
+            var copies = new System.Collections.Generic.Dictionary<int, PDFobj>();
+            foreach (PDFobj obj in objects) {
+                copies[obj.number] = obj;
+            }
+            PDFobj image = null;
+            foreach (PDFobj obj in ImageObjects(objects)) {
+                if (obj.GetValue("/ImageMask") == "") {
+                    image = obj;
+                }
+            }
+            Assert.NotNull(image);
+            System.Collections.Generic.List<string> tokens = image.ValueTokens("/Mask");
+            Assert.True(tokens.Count == 3 && tokens[2] == "R",
+                    "encrypted " + encrypted + ": /Mask " + string.Join(" ", tokens));
+            Assert.True(copies.TryGetValue(image.GetObjectNumbers("/Mask")[0], out PDFobj mask));
+            Assert.Equal("/Image", mask.GetValue("/Subtype"));
+            Assert.Equal("true", mask.GetValue("/ImageMask"));
+            Assert.Equal("", mask.GetValue("/ColorSpace"));
+            Assert.Equal("32", mask.GetValue("/Width"));
+            Assert.Equal(stencil.stream, mask.stream);
+            Assert.Equal(stencil.GetValue("/DecodeParms"), mask.GetValue("/DecodeParms"));
+        }
+    }
+
+    // The soft mask of an image copied from a PDF that was read keeps its
+    // /Matte, the color the image was blended with (the review of 28 October
+    // 2026). PDFjet writes no /Matte, so the soft mask of a PNG with alpha has
+    // one added after it was read.
+    [Fact]
+    public void TheSoftMaskOfACopiedImageKeepsItsMatte() {
+        PDFobj drawn = null;
+        foreach (PDFobj obj in ImageObjects(TestSupport.Read(PngSuiteDocument("BASN6A08")))) {
+            if (obj.GetValue("/SMask") != "") {
+                drawn = obj;
+            }
+        }
+        Assert.NotNull(drawn);
+        PDFobj softMask = drawn.readObjects[drawn.GetObjectNumbers("/SMask")[0]];
+        int open = softMask.dict.IndexOf("<<");
+        softMask.dict.InsertRange(open + 1, new string[] {"/Matte", "[", "1", "1", "1", "]"});
+
+        MemoryStream output = new MemoryStream();
+        PDF copied = new PDF(output);
+        new Image(copied, drawn).DrawOn(new Page(copied, Letter.PORTRAIT));
+        copied.Complete();
+        System.Collections.Generic.List<PDFobj> objects = TestSupport.Read(output.ToArray());
+        var copies = new System.Collections.Generic.Dictionary<int, PDFobj>();
+        foreach (PDFobj obj in objects) {
+            copies[obj.number] = obj;
+        }
+        PDFobj image = null;
+        foreach (PDFobj obj in ImageObjects(objects)) {
+            if (obj.GetValue("/SMask") != "") {
+                image = obj;
+            }
+        }
+        Assert.NotNull(image);
+        PDFobj mask = copies[image.GetObjectNumbers("/SMask")[0]];
+        Assert.Equal("[ 1 1 1 ]", mask.GetValue("/Matte"));
+        Assert.Equal(softMask.stream, mask.stream);
+    }
+
     [Fact]
     public void TheDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() {
         int embedded = 0;

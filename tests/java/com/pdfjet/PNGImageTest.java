@@ -929,6 +929,116 @@ class PNGImageTest {
         assertTrue(e.getMessage().contains("/SMask 5 0 R"), e.getMessage());
     }
 
+    // The PDF of a page that draws the PngSuite images of the names.
+    private static byte[] pngSuiteDocument(String... names) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        for (String name : names) {
+            InputStream in = TestSupport.open("PngSuite/" + name + ".PNG");
+            try {
+                new Image(pdf, in).drawOn(page);
+            } finally {
+                in.close();
+            }
+        }
+        pdf.complete();
+        return bos.toByteArray();
+    }
+
+    // An image copied from a PDF that was read keeps its stencil mask, a /Mask
+    // that refers to an image of one bit with /ImageMask true, copied with it
+    // as its soft mask is: only the soft mask and the color key mask were
+    // tested (the review of 28 October 2026). PDFjet draws no image with a
+    // stencil mask, so the PDF read is one of two PNGs of 32 by 32 pixels, its
+    // objects edited after they were read: the gray image of one bit made the
+    // stencil mask of the color one.
+    @Test
+    void anImageCopiedFromAPDFThatWasReadKeepsItsStencilMask() throws Exception {
+        java.util.List<PDFobj> read = imageObjects(TestSupport.read(pngSuiteDocument("BASN2C08", "BASN0G01")));
+        assertEquals(2, read.size());
+        PDFobj drawn = read.get(0);
+        PDFobj stencil = read.get(1);
+        int i = stencil.dict.indexOf("/ColorSpace");
+        assertTrue(i != -1 && stencil.dict.get(i + 1).equals("/DeviceGray"), String.join(" ", stencil.dict));
+        assertEquals("1", stencil.getValue("/BitsPerComponent"));
+        stencil.dict.set(i, "/ImageMask");
+        stencil.dict.set(i + 1, "true");
+        int open = drawn.dict.indexOf("<<");
+        drawn.dict.addAll(open + 1, java.util.Arrays.asList("/Mask", String.valueOf(stencil.number), "0", "R"));
+
+        for (boolean encrypted : new boolean[] {false, true}) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PDF copied = new PDF(out);
+            if (encrypted) {
+                copied.setEncryption(new Encryption(copied, new Passwords(), new Permissions()));
+            }
+            new Image(copied, drawn).drawOn(new Page(copied, Letter.PORTRAIT));
+            copied.complete();
+            java.util.List<PDFobj> objects = TestSupport.read(out.toByteArray(), "");
+            java.util.Map<Integer, PDFobj> copies = new java.util.HashMap<Integer, PDFobj>();
+            for (PDFobj obj : objects) {
+                copies.put(obj.number, obj);
+            }
+            PDFobj image = null;
+            for (PDFobj obj : imageObjects(objects)) {
+                if (obj.getValue("/ImageMask").isEmpty()) {
+                    image = obj;
+                }
+            }
+            String message = "encrypted " + encrypted;
+            assertTrue(image != null, message);
+            java.util.List<String> tokens = image.valueTokens("/Mask");
+            assertTrue(tokens.size() == 3 && tokens.get(2).equals("R"), message + ": /Mask " + tokens);
+            PDFobj mask = copies.get(image.getObjectNumbers("/Mask").get(0));
+            assertTrue(mask != null, message);
+            assertEquals("/Image", mask.getValue("/Subtype"), message);
+            assertEquals("true", mask.getValue("/ImageMask"), message);
+            assertEquals("", mask.getValue("/ColorSpace"), message);
+            assertEquals("32", mask.getValue("/Width"), message);
+            assertArrayEquals(stencil.stream, mask.stream, message);
+            assertEquals(stencil.getValue("/DecodeParms"), mask.getValue("/DecodeParms"), message);
+        }
+    }
+
+    // The soft mask of an image copied from a PDF that was read keeps its
+    // /Matte, the color the image was blended with (the review of 28 October
+    // 2026). PDFjet writes no /Matte, so the soft mask of a PNG with alpha has
+    // one added after it was read.
+    @Test
+    void theSoftMaskOfACopiedImageKeepsItsMatte() throws Exception {
+        PDFobj drawn = null;
+        for (PDFobj obj : imageObjects(TestSupport.read(pngSuiteDocument("BASN6A08")))) {
+            if (!obj.getValue("/SMask").isEmpty()) {
+                drawn = obj;
+            }
+        }
+        assertTrue(drawn != null, "the PNG is not drawn with an /SMask");
+        PDFobj softMask = drawn.readObjects.get(drawn.getObjectNumbers("/SMask").get(0));
+        int open = softMask.dict.indexOf("<<");
+        softMask.dict.addAll(open + 1, java.util.Arrays.asList("/Matte", "[", "1", "1", "1", "]"));
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PDF copied = new PDF(out);
+        new Image(copied, drawn).drawOn(new Page(copied, Letter.PORTRAIT));
+        copied.complete();
+        java.util.List<PDFobj> objects = TestSupport.read(out.toByteArray());
+        java.util.Map<Integer, PDFobj> copies = new java.util.HashMap<Integer, PDFobj>();
+        for (PDFobj obj : objects) {
+            copies.put(obj.number, obj);
+        }
+        PDFobj image = null;
+        for (PDFobj obj : imageObjects(objects)) {
+            if (!obj.getValue("/SMask").isEmpty()) {
+                image = obj;
+            }
+        }
+        assertTrue(image != null, "the copy has no /SMask");
+        PDFobj mask = copies.get(image.getObjectNumbers("/SMask").get(0));
+        assertEquals("[ 1 1 1 ]", mask.getValue("/Matte"));
+        assertArrayEquals(softMask.stream, mask.stream);
+    }
+
     @Test
     void theDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() throws Exception {
         int embedded = 0;

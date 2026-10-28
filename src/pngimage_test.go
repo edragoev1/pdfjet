@@ -12,6 +12,7 @@ import (
 	"hash/crc32"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -1133,5 +1134,129 @@ func TestPNGImageAMaskThatCannotBeCopiedIsRefused(t *testing.T) {
 	message, panicked := testPanic(func() { NewImageFromPDFobj(testNewPDF(), obj) })
 	if !panicked || !strings.Contains(message, "/SMask 5 0 R") {
 		t.Errorf("%v: %q", panicked, message)
+	}
+}
+
+// An image copied from a PDF that was read keeps its stencil mask, a /Mask
+// that refers to an image of one bit with /ImageMask true, copied with it as
+// its soft mask is: only the soft mask and the color key mask were tested
+// (the review of 28 October 2026). PDFjet draws no image with a stencil
+// mask, so the PDF read is one of two PNGs of 32 by 32 pixels, its objects
+// edited after they were read: the gray image of one bit made the stencil
+// mask of the color one.
+func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsStencilMask(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	for _, name := range []string{"BASN2C08", "BASN0G01"} {
+		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		NewImage(doc.pdf, bytes.NewReader(png)).DrawOn(page)
+	}
+	read := testImageObjects(testRead(t, doc.complete()))
+	if len(read) != 2 {
+		t.Fatalf("%d images", len(read))
+	}
+	drawn, stencil := read[0], read[1]
+	i := slices.Index(stencil.dict, "/ColorSpace")
+	if i == -1 || stencil.dict[i+1] != "/DeviceGray" || stencil.GetValue("/BitsPerComponent") != "1" {
+		t.Fatalf("the second image is not gray of one bit: %q", strings.Join(stencil.dict, " "))
+	}
+	stencil.dict[i], stencil.dict[i+1] = "/ImageMask", "true"
+	open := slices.Index(drawn.dict, "<<")
+	drawn.dict = slices.Insert(drawn.dict, open+1, "/Mask", strconv.Itoa(stencil.number), "0", "R")
+
+	for _, encrypted := range []bool{false, true} {
+		copied := testNewDoc()
+		if encrypted {
+			enc, err := NewEncryption(copied.pdf, encryption.NewPasswords(), encryption.NewPermissions())
+			if err != nil {
+				t.Fatal(err)
+			}
+			copied.pdf.SetEncryption(enc)
+		}
+		NewImageFromPDFobj(copied.pdf, drawn).DrawOn(NewPage(copied.pdf, letter.Portrait()))
+		objects, err := testNewPDF().ReadWithPassword(copied.complete(), "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		copies := make(map[int]*PDFobj)
+		for _, obj := range objects {
+			copies[obj.number] = obj
+		}
+		var image *PDFobj
+		for _, obj := range testImageObjects(objects) {
+			if obj.GetValue("/ImageMask") == "" {
+				image = obj
+			}
+		}
+		if image == nil {
+			t.Fatalf("encrypted %v: the image is not copied", encrypted)
+		}
+		tokens := image.valueTokens("/Mask")
+		if len(tokens) != 3 || tokens[2] != "R" {
+			t.Fatalf("encrypted %v: /Mask %q", encrypted, strings.Join(tokens, " "))
+		}
+		mask := copies[image.getObjectNumbers("/Mask")[0]]
+		if mask == nil || mask.GetValue("/Subtype") != "/Image" || mask.GetValue("/ImageMask") != "true" ||
+			mask.GetValue("/ColorSpace") != "" || mask.GetValue("/Width") != "32" {
+			t.Fatalf("encrypted %v: the stencil mask is not the one copied", encrypted)
+		}
+		if !bytes.Equal(mask.stream, stencil.stream) {
+			t.Errorf("encrypted %v: the stream of the stencil mask is not the one copied", encrypted)
+		}
+		if got, want := mask.GetValue("/DecodeParms"), stencil.GetValue("/DecodeParms"); got != want {
+			t.Errorf("encrypted %v: /DecodeParms %s, not %s", encrypted, got, want)
+		}
+	}
+}
+
+// The soft mask of an image copied from a PDF that was read keeps its /Matte,
+// the color the image was blended with (the review of 28 October 2026).
+// PDFjet writes no /Matte, so the soft mask of a PNG with alpha has one
+// added after it was read.
+func TestPNGImageTheSoftMaskOfACopiedImageKeepsItsMatte(t *testing.T) {
+	png, err := os.ReadFile(testRepoPath(t, "PngSuite/BASN6A08.PNG"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := testNewDoc()
+	NewImage(doc.pdf, bytes.NewReader(png)).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	var drawn *PDFobj
+	for _, obj := range testImageObjects(testRead(t, doc.complete())) {
+		if obj.GetValue("/SMask") != "" {
+			drawn = obj
+		}
+	}
+	if drawn == nil {
+		t.Fatal("the PNG is not drawn with an /SMask")
+	}
+	softMask := drawn.readObjects[drawn.getObjectNumbers("/SMask")[0]]
+	open := slices.Index(softMask.dict, "<<")
+	softMask.dict = slices.Insert(softMask.dict, open+1, "/Matte", "[", "1", "1", "1", "]")
+
+	copied := testNewDoc()
+	NewImageFromPDFobj(copied.pdf, drawn).DrawOn(NewPage(copied.pdf, letter.Portrait()))
+	objects := testRead(t, copied.complete())
+	copies := make(map[int]*PDFobj)
+	for _, obj := range objects {
+		copies[obj.number] = obj
+	}
+	var image *PDFobj
+	for _, obj := range testImageObjects(objects) {
+		if obj.GetValue("/SMask") != "" {
+			image = obj
+		}
+	}
+	if image == nil {
+		t.Fatal("the copy has no /SMask")
+	}
+	mask := copies[image.getObjectNumbers("/SMask")[0]]
+	if got := mask.GetValue("/Matte"); got != "[ 1 1 1 ]" {
+		t.Errorf("/Matte %q", got)
+	}
+	if !bytes.Equal(mask.stream, softMask.stream) {
+		t.Error("the stream of the soft mask is not the one copied")
 	}
 }

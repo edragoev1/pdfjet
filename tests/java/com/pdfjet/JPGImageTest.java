@@ -63,6 +63,39 @@ class JPGImageTest {
         assertFalse(raw.contains("/Decode ["));
     }
 
+    // A CMYK JPEG of Adobe software copied from a PDF that was read keeps the
+    // /Decode array that inverts its inks back: without it, the copy would be
+    // drawn as a negative (the review of 28 October 2026).
+    @Test
+    void aCmykJpegCopiedFromAPDFThatWasReadKeepsItsDecodeArray() throws Exception {
+        assumeTrue(TestSupport.file(CMYK).exists(), "the images directory is not here");
+        byte[] jpeg = Files.readAllBytes(TestSupport.file(CMYK).toPath());
+        String want = "[ 1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0 ]";
+        java.util.List<PDFobj> read = imageObjects(TestSupport.read(pdfWith(jpeg).getBytes("ISO-8859-1")));
+        assertEquals(1, read.size());
+        assertEquals(want, read.get(0).getValue("/Decode"));
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        new Image(pdf, read.get(0)).drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        java.util.List<PDFobj> copies = imageObjects(TestSupport.read(bos.toByteArray()));
+        assertEquals(1, copies.size());
+        assertEquals(want, copies.get(0).getValue("/Decode"));
+        assertEquals("/DeviceCMYK", copies.get(0).getValue("/ColorSpace"));
+        assertTrue(java.util.Arrays.equals(jpeg, copies.get(0).stream));
+    }
+
+    // The image objects, in the order of their numbers.
+    private static java.util.List<PDFobj> imageObjects(java.util.List<PDFobj> objects) {
+        java.util.List<PDFobj> images = new java.util.ArrayList<PDFobj>();
+        for (PDFobj obj : objects) {
+            if (obj.getValue("/Subtype").equals("/Image")) {
+                images.add(obj);
+            }
+        }
+        return images;
+    }
+
     // The frame header of the JPEG is what PDFjet reads it for, so a marker
     // before it that is read as one more segment hides it.
 
@@ -328,28 +361,55 @@ class JPGImageTest {
         assertTrue(raw.contains("/Width 1200\n"), "the image object lost the pixels of the image");
         assertTrue(raw.contains("/Height 800\n"), "the image object lost the pixels of the image");
     }
-    // The PDF of one image drawn on a page, the image made from the bytes of
-    // its file or from a stream of them.
-    private static String pdfOf(byte[] file, boolean fromBytes) throws Exception {
+    // The PDF of one image drawn on a page, the image made from a copy of the
+    // bytes of its file, which are overwritten after the image is made, before
+    // it is drawn and the PDF completed, when asked.
+    private static byte[] imagePDF(byte[] file, boolean overwrite) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        Image image = fromBytes ? new Image(pdf, file) : new Image(pdf, new ByteArrayInputStream(file));
+        byte[] buf = file.clone();
+        Image image = new Image(pdf, buf);
+        if (overwrite) {
+            java.util.Arrays.fill(buf, (byte) 0xA5);
+        }
         image.drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
-        // Without its ID, a new one for each document, and the time it was made
-        byte[] bytes = bos.toByteArray();
+        return bos.toByteArray();
+    }
+
+    // The PDF of imagePDF without its ID, a new one for each document, and the
+    // time it was made.
+    private static String pdfOf(byte[] file, boolean overwrite) throws Exception {
+        byte[] bytes = imagePDF(file, overwrite);
         return TestSupport.latin1(bytes).replace(TestSupport.trailerID(bytes), "")
                 .replaceAll("\\d{4}-?\\d\\d-?\\d\\dT?\\d\\d:?\\d\\d:?\\d\\dZ", "")
                 .replaceAll("/CreationDate <[0-9a-f]*>", "");
     }
 
+    // The bytes given to the constructor are the caller's to reuse after it:
+    // overwritten then, the PDF is the one of bytes left as they were, and its
+    // image is the image of the file, a JPEG as it is and the indexes of the
+    // palette of a PNG, f147fd07 their CRC-32 as Go's image/png decodes them.
+    // This test compared the PDF of the bytes with the one of a stream of
+    // them, which the constructor of a stream makes with the one of bytes, so
+    // it compared a code path with itself (the review of 28 October 2026).
     @Test
-    void theBytesOfAnImageFileMakeTheSamePDFAsAStreamOfThem() throws Exception {
+    void theBytesOfAnImageFileCanBeReusedAfterTheImageIsMade() throws Exception {
         for (String name : new String[] {"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
                 "tests/data/jpeg/restart.jpg"}) {
             assumeTrue(TestSupport.file(name).exists(), "the images directory is not here");
             byte[] file = Files.readAllBytes(TestSupport.file(name).toPath());
             assertEquals(pdfOf(file, false), pdfOf(file, true), name);
+            java.util.List<PDFobj> images = imageObjects(TestSupport.read(imagePDF(file, true)));
+            assertEquals(1, images.size(), name);
+            if (name.endsWith(".jpg")) {
+                assertEquals("/DCTDecode", images.get(0).getValue("/Filter"), name);
+                assertTrue(java.util.Arrays.equals(file, images.get(0).stream), name);
+            } else {
+                java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+                crc.update(images.get(0).getData());
+                assertEquals("f147fd07", String.format("%08x", crc.getValue()), name);
+            }
         }
         // A JPEG with bytes after its end marker, as cameras append, is read
         // past the last two bytes, as it was.
