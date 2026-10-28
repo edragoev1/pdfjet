@@ -213,3 +213,94 @@ func TestKerningPairSetsOutOfOrderKeepTheFirstRecordOfAPair(t *testing.T) {
 		t.Errorf("%v, not %v", seconds, want)
 	}
 }
+
+// testKernTable returns a GPOS table whose kern feature has the lookups, all
+// one lookup of the subtables, all one PairPos subtable of the format, which
+// moves the glyph after itself by -50: the pair of the glyph, or the pair of
+// its class 1.
+func testKernTable(lookups, subtables, format, glyph int) []byte {
+	var b []byte
+	put := func(values ...int) {
+		for _, v := range values {
+			b = append(b, byte(v>>8), byte(v))
+		}
+	}
+	put(1, 0, 10, 30, 42+2*lookups)
+	put(1, 0x4446, 0x4C54, 8) // DFLT
+	put(4, 0, 0, 0xFFFF, 1, 0)
+	put(1, 0x6B65, 0x726E, 8) // kern
+	put(0, lookups)
+	for i := 0; i < lookups; i++ {
+		put(i)
+	}
+	put(lookups)
+	for i := 0; i < lookups; i++ {
+		put(2 + 2*lookups)
+	}
+	put(2, 0, subtables)
+	for i := 0; i < subtables; i++ {
+		put(6 + 2*subtables)
+	}
+	if format == 1 {
+		put(1, 12, 4, 0, 1, 18) // The coverage at 12, the pair set at 18
+		put(1, 1, glyph)
+		put(1, glyph, -50)
+	} else {
+		put(2, 24, 4, 0, 30, 30, 2, 2) // The coverage at 24, the classes at 30
+		put(0, 0, 0, -50)
+		put(1, 1, glyph)
+		put(1, glyph, 1, 1)
+	}
+	return b
+}
+
+// testKernRoom returns the room the arrays of the kerning take, in words of
+// 64 bits.
+func testKernRoom(k *kerning) int {
+	room := 0
+	for _, subtables := range k.lookups {
+		for _, s := range subtables {
+			room += len(s.covered) + (len(s.pairSets)+1)/2 + (len(s.firstClass)+3)/4 + (len(s.secondClass)+3)/4
+		}
+	}
+	return room
+}
+
+// A table of a few kilobytes whose subtables named glyph 65535 again and again
+// made gigabytes of arrays by glyph; the room they make is work, and a
+// subtable a lookup names again is read once (the review of 28 October 2026).
+func TestKerningOfATableThatNamesGlyph65535AgainIsBounded(t *testing.T) {
+	for _, c := range []struct {
+		name                       string
+		lookups, subtables, format int
+	}{
+		{"a subtable named again", 1, 400, 1},
+		{"pairs in many lookups", 400, 1, 1},
+		{"classes in many lookups", 400, 1, 2},
+	} {
+		buf := testKernTable(c.lookups, c.subtables, c.format, 65535)
+		k := newKerning(buf, &fontTable{offset: 0, length: len(buf)}, 0)
+		if room := testKernRoom(k.read(nil)); room > maxGposWork {
+			t.Errorf("%s: %d words, more than the %d of the work", c.name, room, maxGposWork)
+		}
+	}
+	buf := testKernTable(1, 400, 1, 65535)
+	k := newKerning(buf, &fontTable{offset: 0, length: len(buf)}, 0)
+	if v := k.read(nil).pair(65535, 65535); v != -50 {
+		t.Errorf("the subtable named again kerns %d, not -50", v)
+	}
+	// A glyph past the glyphs of the font is left out; a glyph of the font
+	// kerns as before.
+	for _, format := range []int{1, 2} {
+		buf := testKernTable(1, 1, format, 65535)
+		k := newKerning(buf, &fontTable{offset: 0, length: len(buf)}, 1000)
+		if room := testKernRoom(k.read(nil)); room > 0 || k.pair(65535, 65535) != 0 {
+			t.Errorf("format %d: %d words for a glyph the font does not have", format, room)
+		}
+		buf = testKernTable(1, 1, format, 7)
+		k = newKerning(buf, &fontTable{offset: 0, length: len(buf)}, 1000)
+		if v := k.read(nil).pair(7, 7); v != -50 {
+			t.Errorf("format %d: glyph 7 kerns %d, not -50", format, v)
+		}
+	}
+}

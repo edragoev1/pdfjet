@@ -200,4 +200,63 @@ import Testing
             #expect(font.textKerning(c.text) == c.unitsOf, "\(c.path): \(c.text) in font units")
         }
     }
+
+    // Returns a GPOS table whose kern feature has the lookups, all one lookup
+    // of the subtables, all one PairPos subtable of the format, which moves
+    // the glyph after itself by -50: the pair of the glyph, or the pair of its
+    // class 1.
+    private func kernTable(_ lookups: Int, _ subtables: Int, _ format: Int, _ glyph: Int) -> [UInt8] {
+        var v = [1, 0, 10, 30, 42 + 2*lookups]
+        v += [1, 0x4446, 0x4C54, 8]     // DFLT
+        v += [4, 0, 0, 0xFFFF, 1, 0]
+        v += [1, 0x6B65, 0x726E, 8]     // kern
+        v += [0, lookups]
+        v += Array(0..<lookups)
+        v += [lookups]
+        v += [Int](repeating: 2 + 2*lookups, count: lookups)
+        v += [2, 0, subtables]
+        v += [Int](repeating: 6 + 2*subtables, count: subtables)
+        if format == 1 {
+            v += [1, 12, 4, 0, 1, 18]       // The coverage at 12, the pair set at 18
+            v += [1, 1, glyph]
+            v += [1, glyph, -50]
+        } else {
+            v += [2, 24, 4, 0, 30, 30, 2, 2]    // The coverage at 24, the classes at 30
+            v += [0, 0, 0, -50]
+            v += [1, 1, glyph]
+            v += [1, glyph, 1, 1]
+        }
+        var buf = [UInt8]()
+        for value in v {
+            buf.append(UInt8(truncatingIfNeeded: value >> 8))
+            buf.append(UInt8(truncatingIfNeeded: value))
+        }
+        return buf
+    }
+
+    private func kerning(_ buf: [UInt8], _ numGlyphs: Int) -> Kerning {
+        return Kerning.of(GPOS.of(buf, 0, buf.count, numGlyphs, false))!.readTables(nil)
+    }
+
+    // A table of a few kilobytes whose subtables named glyph 65535 again and
+    // again made gigabytes of arrays by glyph; the room they make is work,
+    // and a subtable a lookup names again is read once (the review of 28
+    // October 2026).
+    @Test func kerningOfATableThatNamesGlyph65535AgainIsBounded() {
+        for (lookups, subtables, format) in [(1, 400, 1), (400, 1, 1), (400, 1, 2)] {
+            let room = kerning(kernTable(lookups, subtables, format, 65535), 0).room()
+            #expect(room <= GPOS.maxGposWork,
+                    "\(lookups) lookups, \(subtables) subtables, format \(format): \(room) words")
+        }
+        let v = kerning(kernTable(1, 400, 1, 65535), 0).pair(65535, 65535)
+        #expect(v == -50, "the subtable named again kerns \(v)")
+        // A glyph past the glyphs of the font is left out; a glyph of the
+        // font kerns as before.
+        for format in [1, 2] {
+            let k = kerning(kernTable(1, 1, format, 65535), 1000)
+            #expect(k.room() == 0 && k.pair(65535, 65535) == 0, "format \(format): a glyph the font does not have")
+            let v = kerning(kernTable(1, 1, format, 7), 1000).pair(7, 7)
+            #expect(v == -50, "format \(format): glyph 7 kerns \(v)")
+        }
+    }
 }

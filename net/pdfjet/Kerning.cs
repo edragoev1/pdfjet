@@ -54,10 +54,6 @@ internal class Kerning {
             return HasBit(covered, gid);
         }
 
-        internal void Cover(int gid) {
-            covered = WithBit(covered, gid);
-        }
-
         // Returns true if the pair set of the first glyph has the second, with
         // its move, found by halves in its second glyphs, which are in order.
         internal bool PairValue(int first, int second, out int value) {
@@ -77,14 +73,6 @@ internal class Kerning {
 
     private static bool HasBit(ulong[] bits, int i) {
         return i >= 0 && (i >> 6) < bits.Length && (bits[i >> 6] & (1UL << (i & 63))) != 0;
-    }
-
-    private static ulong[] WithBit(ulong[] bits, int i) {
-        if ((i >> 6) >= bits.Length) {
-            Array.Resize(ref bits, Math.Max((i >> 6) + 1, 2*bits.Length));
-        }
-        bits[i >> 6] |= 1UL << (i & 63);
-        return bits;
     }
 
     private Kerning(GPOS gpos) {
@@ -247,6 +235,10 @@ internal class Kerning {
             int lookupType = g.GetUInt16(lookup);
             int subTableCount = g.GetUInt16(lookup + 4);
             List<PairSubtable> subtables = new List<PairSubtable>();
+            // A subtable the lookup names again is read once: the second time
+            // it kerns no pair the first did not (the review of 28 October
+            // 2026).
+            HashSet<int> offsetsRead = new HashSet<int>();
             for (int j = 0; j < subTableCount && g.gposWork > 0; j++) {
                 g.gposWork--;
                 int subTable = lookup + g.GetUInt16(lookup + 6 + 2*j);
@@ -261,7 +253,7 @@ internal class Kerning {
                     }
                     subTable += (int) extension;
                 }
-                if (subTableType != 2) {
+                if (subTableType != 2 || !offsetsRead.Add(subTable)) {
                     continue;
                 }
                 int format = g.GetUInt16(subTable);
@@ -326,7 +318,8 @@ internal class Kerning {
 
     // Reads a PairPos subtable of format 1: for each first glyph it covers, a
     // set of second glyphs, each with how far it moves, put in order, the first
-    // record of a pair kept, as it is the one applied.
+    // record of a pair kept, as it is the one applied. A glyph past the glyphs
+    // of the font is left out.
     private PairSubtable PairsSubtable(int subTable) {
         GPOS g = gpos;
         int[] firstGlyphs = g.Coverage(subTable + g.GetUInt16(subTable + 2));
@@ -336,11 +329,8 @@ internal class Kerning {
         int size2 = ValueSize(g.GetUInt16(subTable + 6), out unused);
         int pairSetCount = g.GetUInt16(subTable + 8);
         PairSubtable s = new PairSubtable();
-        int maxFirst = -1;
-        for (int i = 0; i < firstGlyphs.Length && i < pairSetCount; i++) {
-            maxFirst = Math.Max(maxFirst, firstGlyphs[i]);
-        }
-        s.pairSets = new int[maxFirst + 1];
+        s.pairSets = new int[0];
+        int pairSetsLength = 0;     // To the last first glyph, as Go's array is
         List<int[]> seconds = new List<int[]>();
         List<short[]> values = new List<short[]>();
         for (int i = 0; i < firstGlyphs.Length; i++) {
@@ -348,7 +338,21 @@ internal class Kerning {
                 break;
             }
             int first = firstGlyphs[i];
-            s.Cover(first);
+            if (!IsGlyph(first)) {
+                continue;
+            }
+            if (!Cover(s, first)) {
+                break;
+            }
+            if (first >= pairSetsLength) {
+                if (!Grow(pairSetsLength, first + 1, 2)) {
+                    break;
+                }
+                pairSetsLength = first + 1;
+                if (first >= s.pairSets.Length) {
+                    Array.Resize(ref s.pairSets, Math.Max(first + 1, 2*s.pairSets.Length));
+                }
+            }
             int pairSet = subTable + g.GetUInt16(subTable + 10 + 2*i);
             int pairCount = Math.Min(g.GetUInt16(pairSet), g.gposWork);
             g.gposWork -= pairCount;
@@ -387,7 +391,7 @@ internal class Kerning {
 
     // Reads a PairPos subtable of format 2: the first glyphs it covers, the
     // class of each first and second glyph, and how far each pair of classes
-    // moves the second glyph.
+    // moves the second glyph. A glyph past the glyphs of the font is left out.
     private PairSubtable ClassesSubtable(int subTable) {
         GPOS g = gpos;
         int[] firstGlyphs = g.Coverage(subTable + g.GetUInt16(subTable + 2));
@@ -400,7 +404,9 @@ internal class Kerning {
         PairSubtable s = new PairSubtable();
         s.secondCount = secondClasses;
         foreach (int first in firstGlyphs) {
-            s.Cover(first);
+            if (IsGlyph(first) && !Cover(s, first)) {
+                break;
+            }
         }
         s.firstClass = ClassDef(subTable + g.GetUInt16(subTable + 8));
         s.secondClass = ClassDef(subTable + g.GetUInt16(subTable + 10));
@@ -420,10 +426,12 @@ internal class Kerning {
     }
 
     // Reads a class definition table: the class of each glyph it gives one,
-    // every other glyph of class 0.
+    // every other glyph of class 0. The room the classes take is work, as the
+    // glyphs of a coverage table are.
     private ushort[] ClassDef(int offset) {
         GPOS g = gpos;
         ushort[] classes = new ushort[0];
+        int length = 0;     // To the last glyph of a class, as Go's array is
         int limit = 0x10000;
         if (g.numGlyphs > 0) {
             limit = g.numGlyphs;
@@ -433,9 +441,10 @@ internal class Kerning {
             int start = g.GetUInt16(offset + 2);
             int count = Math.Min(Math.Min(g.GetUInt16(offset + 4), g.gposWork), limit);
             g.gposWork -= count;
-            for (int i = 0; i < count && start + i < limit; i++) {
+            for (int i = 0; i < count && start + i < limit && g.gposWork > 0; i++) {
                 int glyphClass = g.GetUInt16(offset + 6 + 2*i);
-                if (glyphClass != 0) {
+                if (glyphClass != 0 && (start + i < length || Grow(length, start + i + 1, 4))) {
+                    length = Math.Max(length, start + i + 1);
                     classes = WithClass(classes, start + i, glyphClass);
                 }
             }
@@ -449,7 +458,8 @@ internal class Kerning {
                 int glyphClass = g.GetUInt16(record + 4);
                 for (int glyph = start; glyph <= end && g.gposWork > 0; glyph++) {
                     g.gposWork--;
-                    if (glyphClass != 0) {
+                    if (glyphClass != 0 && (glyph < length || Grow(length, glyph + 1, 4))) {
+                        length = Math.Max(length, glyph + 1);
                         classes = WithClass(classes, glyph, glyphClass);
                     }
                 }
@@ -465,6 +475,59 @@ internal class Kerning {
         }
         classes[glyph] = (ushort) glyphClass;
         return classes;
+    }
+
+    // Marks the glyph covered, and returns false, with nothing marked, when
+    // there is not the work left for the words it adds to the bits.
+    private bool Cover(PairSubtable s, int gid) {
+        if ((gid >> 6) >= s.covered.Length) {
+            if (!Grow(s.covered.Length, (gid >> 6) + 1, 1)) {
+                return false;
+            }
+            Array.Resize(ref s.covered, (gid >> 6) + 1);
+        }
+        s.covered[gid >> 6] |= 1UL << (gid & 63);
+        return true;
+    }
+
+    // Takes the work of an array grown from its length to the new one, with
+    // so many of its elements to a word of 64 bits, a word each, and returns
+    // true, or, when there is not that much work left, stops the reading, with
+    // no work left, and returns false. The arrays of the kerning, by glyph
+    // number, grow as far as the glyphs its subtables name, and the room they
+    // make is work: a table of a few kilobytes whose subtables all named glyph
+    // 65535 made gigabytes of them (the review of 28 October 2026). Of the 261
+    // fonts PDFjet ships the kerning of IBM Plex Sans SC takes the most work,
+    // 192,235.
+    private bool Grow(int length, int grown, int perWord) {
+        int work = (grown + perWord - 1)/perWord - (length + perWord - 1)/perWord;
+        if (work > gpos.gposWork) {
+            gpos.gposWork = 0;
+            return false;
+        }
+        gpos.gposWork -= work;
+        return true;
+    }
+
+    // Returns true if the glyph is one of the font's, or the font does not say
+    // how many glyphs it has.
+    private bool IsGlyph(int gid) {
+        return gpos.numGlyphs <= 0 || gid < gpos.numGlyphs;
+    }
+
+    // Returns the room the arrays of the subtables take, in words of 64 bits,
+    // for the tests.
+    internal int Room() {
+        int room = 0;
+        foreach (PairSubtable[] subtables in lookups) {
+            foreach (PairSubtable s in subtables) {
+                room += s.covered.Length;
+                room += (s.pairSets == null) ? 0 : (s.pairSets.Length + 1)/2;
+                room += (s.firstClass == null) ? 0 : (s.firstClass.Length + 3)/4;
+                room += (s.secondClass == null) ? 0 : (s.secondClass.Length + 3)/4;
+            }
+        }
+        return room;
     }
 }
 }   // End of namespace PDFjet.NET

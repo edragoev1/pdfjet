@@ -9,7 +9,9 @@ package com.pdfjet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * How far apart pairs of glyphs go, from the font: the PairPos lookups of the
@@ -231,6 +233,10 @@ class Kerning {
             int lookupType = g.getUInt16(lookup);
             int subTableCount = g.getUInt16(lookup + 4);
             List<PairSubtable> subtables = new ArrayList<PairSubtable>();
+            // A subtable the lookup names again is read once: the second time
+            // it kerns no pair the first did not (the review of 28 October
+            // 2026).
+            Set<Integer> offsetsRead = new HashSet<Integer>();
             for (int j = 0; j < subTableCount && g.gposWork > 0; j++) {
                 g.gposWork--;
                 int subTable = lookup + g.getUInt16(lookup + 6 + 2*j);
@@ -245,7 +251,7 @@ class Kerning {
                     }
                     subTable += (int) extension;
                 }
-                if (subTableType != 2) {
+                if (subTableType != 2 || !offsetsRead.add(subTable)) {
                     continue;
                 }
                 int format = g.getUInt16(subTable);
@@ -312,7 +318,8 @@ class Kerning {
     }
 
     // Reads a PairPos subtable of format 1: for each first glyph it covers, a
-    // set of second glyphs, each with how far it moves.
+    // set of second glyphs, each with how far it moves. A glyph past the glyphs
+    // of the font is left out.
     private PairSubtable pairsSubtable(int subTable) {
         GPOS g = gpos;
         int[] firstGlyphs = g.coverage(subTable + g.getUInt16(subTable + 2));
@@ -322,11 +329,8 @@ class Kerning {
         int size2 = valueSize(g.getUInt16(subTable + 6))[0];
         int pairSetCount = g.getUInt16(subTable + 8);
         PairSubtable s = new PairSubtable();
-        int maxFirst = -1;
-        for (int i = 0; i < firstGlyphs.length && i < pairSetCount; i++) {
-            maxFirst = Math.max(maxFirst, firstGlyphs[i]);
-        }
-        s.pairSets = new int[maxFirst + 1];
+        s.pairSets = new int[0];
+        int pairSetsLength = 0;     // To the last first glyph, as Go's array is
         List<int[]> seconds = new ArrayList<int[]>();
         List<short[]> values = new ArrayList<short[]>();
         for (int i = 0; i < firstGlyphs.length; i++) {
@@ -334,7 +338,21 @@ class Kerning {
                 break;
             }
             int first = firstGlyphs[i];
-            s.covered.set(first);
+            if (!isGlyph(first)) {
+                continue;
+            }
+            if (!cover(s, first)) {
+                break;
+            }
+            if (first >= pairSetsLength) {
+                if (!grow(pairSetsLength, first + 1, 2)) {
+                    break;
+                }
+                pairSetsLength = first + 1;
+                if (first >= s.pairSets.length) {
+                    s.pairSets = Arrays.copyOf(s.pairSets, Math.max(first + 1, 2*s.pairSets.length));
+                }
+            }
             int pairSet = subTable + g.getUInt16(subTable + 10 + 2*i);
             int pairCount = Math.min(g.getUInt16(pairSet), g.gposWork);
             g.gposWork -= pairCount;
@@ -372,7 +390,7 @@ class Kerning {
 
     // Reads a PairPos subtable of format 2: the first glyphs it covers, the
     // class of each first and second glyph, and how far each pair of classes
-    // moves the second glyph.
+    // moves the second glyph. A glyph past the glyphs of the font is left out.
     private PairSubtable classesSubtable(int subTable) {
         GPOS g = gpos;
         int[] firstGlyphs = g.coverage(subTable + g.getUInt16(subTable + 2));
@@ -385,7 +403,9 @@ class Kerning {
         PairSubtable s = new PairSubtable();
         s.secondCount = secondClasses;
         for (int first : firstGlyphs) {
-            s.covered.set(first);
+            if (isGlyph(first) && !cover(s, first)) {
+                break;
+            }
         }
         s.firstClass = classDef(subTable + g.getUInt16(subTable + 8));
         s.secondClass = classDef(subTable + g.getUInt16(subTable + 10));
@@ -406,19 +426,22 @@ class Kerning {
     }
 
     // Reads a class definition table: the class of each glyph it gives one,
-    // every other glyph of class 0.
+    // every other glyph of class 0. The room the classes take is work, as the
+    // glyphs of a coverage table are.
     private char[] classDef(int offset) {
         GPOS g = gpos;
         char[] classes = new char[0];
+        int length = 0;     // To the last glyph of a class, as Go's array is
         int limit = (g.numGlyphs > 0) ? g.numGlyphs : 0x10000;
         int format = g.getUInt16(offset);
         if (format == 1) {
             int start = g.getUInt16(offset + 2);
             int count = Math.min(Math.min(g.getUInt16(offset + 4), g.gposWork), limit);
             g.gposWork -= count;
-            for (int i = 0; i < count && start + i < limit; i++) {
+            for (int i = 0; i < count && start + i < limit && g.gposWork > 0; i++) {
                 int glyphClass = g.getUInt16(offset + 6 + 2*i);
-                if (glyphClass != 0) {
+                if (glyphClass != 0 && (start + i < length || grow(length, start + i + 1, 4))) {
+                    length = Math.max(length, start + i + 1);
                     classes = setClass(classes, start + i, glyphClass);
                 }
             }
@@ -432,7 +455,8 @@ class Kerning {
                 int glyphClass = g.getUInt16(record + 4);
                 for (int glyph = start; glyph <= end && g.gposWork > 0; glyph++) {
                     g.gposWork--;
-                    if (glyphClass != 0) {
+                    if (glyphClass != 0 && (glyph < length || grow(length, glyph + 1, 4))) {
+                        length = Math.max(length, glyph + 1);
                         classes = setClass(classes, glyph, glyphClass);
                     }
                 }
@@ -448,5 +472,56 @@ class Kerning {
         }
         classes[glyph] = (char) glyphClass;
         return classes;
+    }
+
+    // Marks the glyph covered, and returns false, with nothing marked, when
+    // there is not the work left for the words it adds to the bits.
+    private boolean cover(PairSubtable s, int gid) {
+        int words = (s.covered.length() + 63) >>> 6;
+        if ((gid >> 6) >= words && !grow(words, (gid >> 6) + 1, 1)) {
+            return false;
+        }
+        s.covered.set(gid);
+        return true;
+    }
+
+    // Takes the work of an array grown from its length to the new one, with
+    // so many of its elements to a word of 64 bits, a word each, and returns
+    // true, or, when there is not that much work left, stops the reading, with
+    // no work left, and returns false. The arrays of the kerning, by glyph
+    // number, grow as far as the glyphs its subtables name, and the room they
+    // make is work: a table of a few kilobytes whose subtables all named glyph
+    // 65535 made gigabytes of them (the review of 28 October 2026). Of the 261
+    // fonts PDFjet ships the kerning of IBM Plex Sans SC takes the most work,
+    // 192,235.
+    private boolean grow(int length, int grown, int perWord) {
+        int work = (grown + perWord - 1)/perWord - (length + perWord - 1)/perWord;
+        if (work > gpos.gposWork) {
+            gpos.gposWork = 0;
+            return false;
+        }
+        gpos.gposWork -= work;
+        return true;
+    }
+
+    // Returns true if the glyph is one of the font's, or the font does not say
+    // how many glyphs it has.
+    private boolean isGlyph(int gid) {
+        return gpos.numGlyphs <= 0 || gid < gpos.numGlyphs;
+    }
+
+    // Returns the room the arrays of the subtables take, in words of 64 bits,
+    // for the tests.
+    int room() {
+        int room = 0;
+        for (PairSubtable[] subtables : lookups) {
+            for (PairSubtable s : subtables) {
+                room += (s.covered.length() + 63)/64;
+                room += (s.pairSets == null) ? 0 : (s.pairSets.length + 1)/2;
+                room += (s.firstClass == null) ? 0 : (s.firstClass.length + 3)/4;
+                room += (s.secondClass == null) ? 0 : (s.secondClass.length + 3)/4;
+            }
+        }
+        return room;
     }
 }   // End of Kerning.java

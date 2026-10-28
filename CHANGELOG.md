@@ -725,6 +725,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   Behavior change: a BarChart without `setFractionDigits` writes 0.00012
   as 0.00012, where it wrote 0; values that do not fit their bars, and
   names of horizontal categories that do not fit their slots, are left out.
+- Kerning, the four ports: a crafted GPOS table no longer makes
+  `setKernPairs(true)` take gigabytes of memory. The arrays of the kerning,
+  by glyph number, grew as far as the glyphs its subtables named, uncounted,
+  and a table of 8 KB whose 4,000 subtables all named glyph 65535 made 4.8
+  GB of them. The room they take now counts against the same limit of work
+  that bounds the rest of the GPOS table, a glyph past the glyphs of the
+  font is left out of a coverage table, and a subtable that a lookup names
+  again is read once. The kerning of the fonts PDFjet ships, and of a Linux
+  system's, is the same as before (the review of 28 October 2026).
 
 ## v9.1.1 — 2026-10-20
 

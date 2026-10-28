@@ -53,13 +53,6 @@ final class Kerning {
             return Kerning.hasBit(covered, gid)
         }
 
-        mutating func cover(_ gid: Int) {
-            while gid >> 6 >= covered.count {
-                covered.append(0)
-            }
-            covered[gid >> 6] |= 1 << UInt64(gid & 63)
-        }
-
         // Returns the move of the pair, or nil when the pair set of the first
         // glyph has not the second, found by halves in its second glyphs,
         // which are in order.
@@ -263,6 +256,10 @@ final class Kerning {
                 let lookupType = gpos.uint16(at: lookup)
                 let subTableCount = gpos.uint16(at: lookup + 4)
                 var subtables = [PairSubtable]()
+                // A subtable the lookup names again is read once: the second
+                // time it kerns no pair the first did not (the review of 28
+                // October 2026).
+                var offsetsRead = Set<Int>()
                 var j = 0
                 while j < subTableCount && gpos.gposWork > 0 {
                     gpos.gposWork -= 1
@@ -280,7 +277,7 @@ final class Kerning {
                         }
                         subTable += Int(offset32)
                     }
-                    if subTableType != 2 {
+                    if subTableType != 2 || !offsetsRead.insert(subTable).inserted {
                         continue
                     }
                     switch gpos.uint16(at: subTable) {
@@ -348,20 +345,31 @@ final class Kerning {
         }
 
         // Reads a PairPos subtable of format 1: for each first glyph it
-        // covers, a set of second glyphs, each with how far it moves.
+        // covers, a set of second glyphs, each with how far it moves. A glyph
+        // past the glyphs of the font is left out.
         mutating func pairsSubtable(_ subTable: Int) -> PairSubtable {
             let firstGlyphs = gpos.coverage(subTable + gpos.uint16(at: subTable + 2))
             let (size1, xAdvance) = Reader.valueSize(gpos.uint16(at: subTable + 4))
             let size2 = Reader.valueSize(gpos.uint16(at: subTable + 6)).size
             let pairSetCount = gpos.uint16(at: subTable + 8)
             var s = PairSubtable()
-            let maxFirst = firstGlyphs.prefix(pairSetCount).max() ?? -1
-            var pairSets = [Int32](repeating: 0, count: maxFirst + 1)
+            var pairSets = [Int32]()
             for (i, first) in firstGlyphs.enumerated() {
                 if i >= pairSetCount || gpos.gposWork == 0 {
                     break
                 }
-                s.cover(first)
+                if !isGlyph(first) {
+                    continue
+                }
+                if !cover(&s, first) {
+                    break
+                }
+                if first >= pairSets.count {
+                    if !grow(pairSets.count, first + 1, 2) {
+                        break
+                    }
+                    pairSets += [Int32](repeating: 0, count: first + 1 - pairSets.count)
+                }
                 let pairSet = subTable + gpos.uint16(at: subTable + 10 + 2*i)
                 let pairCount = min(gpos.uint16(at: pairSet), gpos.gposWork)
                 gpos.gposWork -= pairCount
@@ -397,7 +405,8 @@ final class Kerning {
 
         // Reads a PairPos subtable of format 2: the first glyphs it covers, the
         // class of each first and second glyph, and how far each pair of
-        // classes moves the second glyph.
+        // classes moves the second glyph. A glyph past the glyphs of the font
+        // is left out.
         mutating func classesSubtable(_ subTable: Int) -> PairSubtable {
             let firstGlyphs = gpos.coverage(subTable + gpos.uint16(at: subTable + 2))
             let (size1, xAdvance) = Reader.valueSize(gpos.uint16(at: subTable + 4))
@@ -406,8 +415,10 @@ final class Kerning {
             let secondClasses = gpos.uint16(at: subTable + 14)
             var s = PairSubtable()
             s.secondCount = secondClasses
-            for first in firstGlyphs {
-                s.cover(first)
+            for first in firstGlyphs where isGlyph(first) {
+                if !cover(&s, first) {
+                    break
+                }
             }
             s.firstClass = classDef(subTable + gpos.uint16(at: subTable + 8))
             s.secondClass = classDef(subTable + gpos.uint16(at: subTable + 10))
@@ -428,12 +439,16 @@ final class Kerning {
         }
 
         // Reads a class definition table: the class of each glyph it gives
-        // one, every other glyph of class 0.
+        // one, every other glyph of class 0. The room the classes take is
+        // work, as the glyphs of a coverage table are.
         mutating func classDef(_ offset: Int) -> [UInt16] {
             var classes = [UInt16]()
             func set(_ glyph: Int, _ glyphClass: Int) {
-                while glyph >= classes.count {
-                    classes.append(0)
+                if glyph >= classes.count {
+                    if !grow(classes.count, glyph + 1, 4) {
+                        return
+                    }
+                    classes += [UInt16](repeating: 0, count: glyph + 1 - classes.count)
                 }
                 classes[glyph] = UInt16(truncatingIfNeeded: glyphClass)
             }
@@ -443,7 +458,7 @@ final class Kerning {
                 let start = gpos.uint16(at: offset + 2)
                 let count = min(gpos.uint16(at: offset + 4), gpos.gposWork, limit)
                 gpos.gposWork -= count
-                for i in 0..<count where start + i < limit {
+                for i in 0..<count where start + i < limit && gpos.gposWork > 0 {
                     let glyphClass = gpos.uint16(at: offset + 6 + 2*i)
                     if glyphClass != 0 {
                         set(start + i, glyphClass)
@@ -473,5 +488,56 @@ final class Kerning {
             }
             return classes
         }
+
+        // Marks the glyph covered, and returns false, with nothing marked,
+        // when there is not the work left for the words it adds to the bits.
+        mutating func cover(_ s: inout PairSubtable, _ gid: Int) -> Bool {
+            if gid >> 6 >= s.covered.count {
+                if !grow(s.covered.count, (gid >> 6) + 1, 1) {
+                    return false
+                }
+                s.covered += [UInt64](repeating: 0, count: (gid >> 6) + 1 - s.covered.count)
+            }
+            s.covered[gid >> 6] |= 1 << UInt64(gid & 63)
+            return true
+        }
+
+        // Takes the work of an array grown from its length to the new one,
+        // with so many of its elements to a word of 64 bits, a word each, and
+        // returns true, or, when there is not that much work left, stops the
+        // reading, with no work left, and returns false. The arrays of the
+        // kerning, by glyph number, grow as far as the glyphs its subtables
+        // name, and the room they make is work: a table of a few kilobytes
+        // whose subtables all named glyph 65535 made gigabytes of them (the
+        // review of 28 October 2026). Of the 261 fonts PDFjet ships the
+        // kerning of IBM Plex Sans SC takes the most work, 192,235.
+        mutating func grow(_ length: Int, _ grown: Int, _ perWord: Int) -> Bool {
+            let work = (grown + perWord - 1)/perWord - (length + perWord - 1)/perWord
+            if work > gpos.gposWork {
+                gpos.gposWork = 0
+                return false
+            }
+            gpos.gposWork -= work
+            return true
+        }
+
+        // Returns true if the glyph is one of the font's, or the font does
+        // not say how many glyphs it has.
+        func isGlyph(_ gid: Int) -> Bool {
+            return gpos.numGlyphs <= 0 || gid < gpos.numGlyphs
+        }
+    }
+
+    // Returns the room the arrays of the subtables take, in words of 64 bits,
+    // for the tests.
+    func room() -> Int {
+        var room = 0
+        for subtables in lookups {
+            for s in subtables {
+                room += s.covered.count + ((s.pairSets?.count ?? 0) + 1)/2
+                room += (s.firstClass.count + 3)/4 + (s.secondClass.count + 3)/4
+            }
+        }
+        return room
     }
 }

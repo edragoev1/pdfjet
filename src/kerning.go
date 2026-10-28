@@ -57,12 +57,41 @@ func (s *pairSubtable) covers(gid int) bool {
 	return gid>>6 < len(s.covered) && s.covered[gid>>6]&(1<<(gid&63)) != 0
 }
 
-// cover marks the glyph covered.
-func (s *pairSubtable) cover(gid int) {
-	for gid>>6 >= len(s.covered) {
-		s.covered = append(s.covered, 0)
+// cover marks the glyph covered, and returns false, with nothing marked, when
+// there is not the work left for the words it adds to the bits.
+func (s *pairSubtable) cover(g *gpos, gid int) bool {
+	if gid>>6 >= len(s.covered) {
+		if !g.grow(len(s.covered), gid>>6+1, 1) {
+			return false
+		}
+		s.covered = append(s.covered, make([]uint64, gid>>6+1-len(s.covered))...)
 	}
 	s.covered[gid>>6] |= 1 << (gid & 63)
+	return true
+}
+
+// grow takes the work of an array grown from its length to the new one, with
+// so many of its elements to a word of 64 bits, a word each, and returns
+// true, or, when there is not that much work left, stops the reading, with no
+// work left, and returns false. The arrays of the kerning, by glyph number,
+// grow as far as the glyphs its subtables name, and the room they make is
+// work: a table of a few kilobytes whose subtables all named glyph 65535 made
+// gigabytes of them (the review of 28 October 2026). Of the 261 fonts PDFjet
+// ships the kerning of IBM Plex Sans SC takes the most work, 192,235.
+func (g *gpos) grow(length, grown, perWord int) bool {
+	work := (grown+perWord-1)/perWord - (length+perWord-1)/perWord
+	if work > g.gposWork {
+		g.gposWork = 0
+		return false
+	}
+	g.gposWork -= work
+	return true
+}
+
+// isGlyph returns true if the glyph is one of the font's, or the font does not
+// say how many glyphs it has.
+func (g *gpos) isGlyph(gid int) bool {
+	return g.numGlyphs <= 0 || gid < g.numGlyphs
 }
 
 // classOf returns the class of the glyph, 0 for a glyph the classes do not
@@ -244,6 +273,9 @@ func (k *kerning) readKernFeature() {
 		lookupType := g.uint16At(lookup)
 		subTableCount := g.uint16At(lookup + 4)
 		var subtables []pairSubtable
+		// A subtable the lookup names again is read once: the second time it
+		// kerns no pair the first did not (the review of 28 October 2026).
+		offsetsRead := make(map[int]bool)
 		for j := 0; j < subTableCount && g.gposWork > 0; j++ {
 			g.gposWork--
 			subTable := lookup + g.uint16At(lookup+6+2*j)
@@ -258,9 +290,10 @@ func (k *kerning) readKernFeature() {
 				}
 				subTable += int(extension)
 			}
-			if subTableType != 2 {
+			if subTableType != 2 || offsetsRead[subTable] {
 				continue
 			}
+			offsetsRead[subTable] = true
 			switch g.uint16At(subTable) {
 			case 1:
 				subtables = append(subtables, k.pairsSubtable(subTable))
@@ -323,7 +356,7 @@ func valueSize(format int) (size, xAdvance int) {
 // pairsSubtable reads a PairPos subtable of format 1: for each first glyph it
 // covers, a set of second glyphs, each with how far it moves. The second
 // glyphs of a set are put in order, the first record of a pair kept, as it is
-// the one applied.
+// the one applied. A glyph past the glyphs of the font is left out.
 func (k *kerning) pairsSubtable(subTable int) pairSubtable {
 	g := &k.gpos
 	firstGlyphs := g.coverageGlyphs(subTable + g.uint16At(subTable+2))
@@ -335,7 +368,18 @@ func (k *kerning) pairsSubtable(subTable int) pairSubtable {
 		if i >= pairSetCount || g.gposWork == 0 {
 			break
 		}
-		s.cover(first)
+		if !g.isGlyph(first) {
+			continue
+		}
+		if !s.cover(g, first) {
+			break
+		}
+		if first >= len(s.pairSets) {
+			if !g.grow(len(s.pairSets), first+1, 2) {
+				break
+			}
+			s.pairSets = append(s.pairSets, make([]int32, first+1-len(s.pairSets))...)
+		}
 		pairSet := subTable + g.uint16At(subTable+10+2*i)
 		pairCount := min(g.uint16At(pairSet), g.gposWork)
 		g.gposWork -= pairCount
@@ -351,9 +395,6 @@ func (k *kerning) pairsSubtable(subTable int) pairSubtable {
 			values = append(values, int16(v))
 		}
 		seconds, values = sortedPairs(seconds, values)
-		for first >= len(s.pairSets) {
-			s.pairSets = append(s.pairSets, 0)
-		}
 		if s.pairSets[first] == 0 { // A glyph covered twice: its first pair set
 			s.seconds = append(s.seconds, seconds)
 			s.values = append(s.values, values)
@@ -399,7 +440,8 @@ func sortedPairs(seconds []int32, values []int16) ([]int32, []int16) {
 
 // classesSubtable reads a PairPos subtable of format 2: the first glyphs it
 // covers, the class of each first and second glyph, and how far each pair of
-// classes moves the second glyph.
+// classes moves the second glyph. A glyph past the glyphs of the font is
+// left out.
 func (k *kerning) classesSubtable(subTable int) pairSubtable {
 	g := &k.gpos
 	firstGlyphs := g.coverageGlyphs(subTable + g.uint16At(subTable+2))
@@ -409,7 +451,9 @@ func (k *kerning) classesSubtable(subTable int) pairSubtable {
 	secondClasses := g.uint16At(subTable + 14)
 	s := pairSubtable{secondCount: secondClasses}
 	for _, first := range firstGlyphs {
-		s.cover(first)
+		if g.isGlyph(first) && !s.cover(g, first) {
+			break
+		}
 	}
 	s.firstClass = k.classDef(subTable + g.uint16At(subTable+8))
 	s.secondClass = k.classDef(subTable + g.uint16At(subTable+10))
@@ -430,7 +474,8 @@ func (k *kerning) classesSubtable(subTable int) pairSubtable {
 
 // classDef reads a class definition table: the class of each glyph it gives
 // one, by glyph number, as far as the last glyph of a class other than 0;
-// every other glyph is of class 0.
+// every other glyph is of class 0. The room the classes take is work, as the
+// glyphs of a coverage table are.
 func (k *kerning) classDef(offset int) []uint16 {
 	g := &k.gpos
 	var classes []uint16
@@ -438,8 +483,11 @@ func (k *kerning) classDef(offset int) []uint16 {
 		if class == 0 {
 			return
 		}
-		for glyph >= len(classes) {
-			classes = append(classes, 0)
+		if glyph >= len(classes) {
+			if !g.grow(len(classes), glyph+1, 4) {
+				return
+			}
+			classes = append(classes, make([]uint16, glyph+1-len(classes))...)
 		}
 		classes[glyph] = uint16(class)
 	}
@@ -452,7 +500,7 @@ func (k *kerning) classDef(offset int) []uint16 {
 		start := g.uint16At(offset + 2)
 		count := min(g.uint16At(offset+4), g.gposWork, limit)
 		g.gposWork -= count
-		for i := 0; i < count && start+i < limit; i++ {
+		for i := 0; i < count && start+i < limit && g.gposWork > 0; i++ {
 			set(start+i, g.uint16At(offset+6+2*i))
 		}
 	case 2:

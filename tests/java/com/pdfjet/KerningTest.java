@@ -215,4 +215,76 @@ class KerningTest {
             threads.shutdown();
         }
     }
+
+    // Returns a GPOS table whose kern feature has the lookups, all one lookup
+    // of the subtables, all one PairPos subtable of the format, which moves
+    // the glyph after itself by -50: the pair of the glyph, or the pair of its
+    // class 1.
+    private static byte[] kernTable(int lookups, int subtables, int format, int glyph) {
+        List<Integer> v = new ArrayList<Integer>();
+        put(v, 1, 0, 10, 30, 42 + 2*lookups);
+        put(v, 1, 0x4446, 0x4C54, 8);   // DFLT
+        put(v, 4, 0, 0, 0xFFFF, 1, 0);
+        put(v, 1, 0x6B65, 0x726E, 8);   // kern
+        put(v, 0, lookups);
+        for (int i = 0; i < lookups; i++) {
+            put(v, i);
+        }
+        put(v, lookups);
+        for (int i = 0; i < lookups; i++) {
+            put(v, 2 + 2*lookups);
+        }
+        put(v, 2, 0, subtables);
+        for (int i = 0; i < subtables; i++) {
+            put(v, 6 + 2*subtables);
+        }
+        if (format == 1) {
+            put(v, 1, 12, 4, 0, 1, 18);     // The coverage at 12, the pair set at 18
+            put(v, 1, 1, glyph);
+            put(v, 1, glyph, -50);
+        } else {
+            put(v, 2, 24, 4, 0, 30, 30, 2, 2);  // The coverage at 24, the classes at 30
+            put(v, 0, 0, 0, -50);
+            put(v, 1, 1, glyph);
+            put(v, 1, glyph, 1, 1);
+        }
+        byte[] buf = new byte[2*v.size()];
+        for (int i = 0; i < v.size(); i++) {
+            buf[2*i] = (byte) (v.get(i) >> 8);
+            buf[2*i + 1] = (byte) (int) v.get(i);
+        }
+        return buf;
+    }
+
+    private static void put(List<Integer> v, int... values) {
+        for (int value : values) {
+            v.add(value);
+        }
+    }
+
+    private static Kerning kerning(byte[] buf, int numGlyphs) {
+        return Kerning.of(GPOS.of(buf, 0, buf.length, numGlyphs, false)).read(null);
+    }
+
+    // A table of a few kilobytes whose subtables named glyph 65535 again and
+    // again made gigabytes of arrays by glyph; the room they make is work,
+    // and a subtable a lookup names again is read once (the review of 28
+    // October 2026). The arrays grow to twice what they hold at most.
+    @Test
+    void kerningOfATableThatNamesGlyph65535AgainIsBounded() {
+        int[][] cases = {{1, 400, 1}, {400, 1, 1}, {400, 1, 2}};
+        for (int[] c : cases) {
+            int room = kerning(kernTable(c[0], c[1], c[2], 65535), 0).room();
+            assertTrue(room <= 2*GPOS.MAX_GPOS_WORK, c[0] + " lookups, " + c[1] + " subtables, format " + c[2] + ": " + room + " words");
+        }
+        assertEquals(-50, kerning(kernTable(1, 400, 1, 65535), 0).pair(65535, 65535), "the subtable named again");
+        // A glyph past the glyphs of the font is left out; a glyph of the
+        // font kerns as before.
+        for (int format = 1; format <= 2; format++) {
+            Kerning k = kerning(kernTable(1, 1, format, 65535), 1000);
+            assertEquals(0, k.room(), "format " + format + ": words for a glyph the font does not have");
+            assertEquals(0, k.pair(65535, 65535), "format " + format + ": a glyph the font does not have");
+            assertEquals(-50, kerning(kernTable(1, 1, format, 7), 1000).pair(7, 7), "format " + format + ": glyph 7");
+        }
+    }
 }
