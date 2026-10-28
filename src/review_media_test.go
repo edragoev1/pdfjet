@@ -213,6 +213,59 @@ func TestReviewMediaAPDFADocumentHoldsNoImageItsLevelHasNot(t *testing.T) {
 	testWant(t, "", testPDFAError(t, compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"))
 }
 
+// testPDFACopyError draws the image of a file into a document, reads it back,
+// and copies the image into a document of the level, returning the error of
+// its Complete, or "".
+func testPDFACopyError(t *testing.T, level compliance.Compliance, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(testRepoPath(t, path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := testNewDoc()
+	NewImage(doc.pdf, bytes.NewReader(data)).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	var drawn *PDFobj
+	for _, obj := range testImageObjects(testRead(t, doc.complete())) {
+		// The image drawn, not its soft mask
+		if drawn == nil || obj.GetValue("/SMask") != "" {
+			drawn = obj
+		}
+	}
+	pdf := NewPDF(bufio.NewWriter(io.Discard))
+	pdf.SetCompliance(level)
+	pdf.SetTitle("Title")
+	font := testTrueTypeFont(t, pdf)
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "Text").SetLocation(50, 50).DrawOn(page)
+	NewImageFromPDFobj(pdf, drawn).SetAltDescription("An image").SetLocation(50, 100).DrawOn(page)
+	if err := pdf.Complete(); err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
+// A PDF/A document refuses an image copied from another PDF that it cannot
+// hold, as it does one made from a file: a soft mask went into PDF/A-1 once
+// masks were copied, and a CMYK image, or one of 16 bits, always had (the
+// review of 28 October 2026).
+func TestReviewMediaAPDFADocumentHoldsNoCopiedImageItsLevelHasNot(t *testing.T) {
+	failed := "The PDF was not completed because of an earlier error: "
+	testWant(t, failed+"A document of PDF_A_2B cannot hold a CMYK image: "+
+		"its output intent is sRGB, so its images are gray or RGB.",
+		testPDFACopyError(t, compliance.PDF_A_2B, "images/cmyk.jpg"))
+	testWant(t, failed+"A document of PDF_A_1B cannot hold an image with transparency: "+
+		"PDF/A-1 has no soft masks, so its images are opaque.",
+		testPDFACopyError(t, compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"))
+	testWant(t, failed+"A document of PDF_A_1A cannot hold an image of 16 bits per component: "+
+		"PDF/A-1 has 8 at most.",
+		testPDFACopyError(t, compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"))
+	// PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_UA_1, "images/cmyk.jpg"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"))
+}
+
 // testPDFADrawError returns the error of completing a document of the
 // compliance that draws, and the content of its page.
 func testPDFADrawError(t *testing.T, level compliance.Compliance, draw func(pdf *PDF, page *Page)) (string, string) {

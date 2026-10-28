@@ -209,6 +209,22 @@ public class Image : IDrawable {
     public Image(PDF pdf, PDFobj obj) {
         this.pdf = pdf;
         SetPixels(PixelsOf(SizeOf(obj, "/Width")), PixelsOf(SizeOf(obj, "/Height")));
+        // A PDF/A document refuses a copied image it cannot hold, as it does
+        // an image made from a file: a soft mask went into PDF/A-1 once masks
+        // were copied, and a CMYK image, or one of 16 bits, always had (the
+        // review of 28 October 2026)
+        List<String> softMaskTokens = obj.ValueTokens("/SMask");
+        bool hasSoftMask = softMaskTokens.Count > 0
+                && !(softMaskTokens.Count == 1 && softMaskTokens[0] == "/None");
+        int bits;
+        if (!Int32.TryParse(obj.GetValue("/BitsPerComponent"), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out bits)) {
+            bits = 0;
+        }
+        if (!IsPDFA(pdf, hasSoftMask ? new byte[0] : null,
+                obj.ValueTokens("/ColorSpace").Contains("/DeviceCMYK") ? "DeviceCMYK" : "", bits)) {
+            return;
+        }
         int softMask = CopiedMask(pdf, obj, "/SMask");
         int mask = 0;
         List<String> maskArray = obj.ValueTokens("/Mask");

@@ -207,6 +207,60 @@ import Testing
         #expect(try pdfAError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG") == "")
     }
 
+    // The error of completing a document of the compliance that holds the
+    // image of the file, drawn into another PDF, read back and copied into
+    // it, or "" when it completes.
+    func pdfACopyError(_ level: Compliance, _ path: String) throws -> String {
+        let source = MemoryPDF()
+        try Image(source.pdf, TestSupport.open(path)).drawOn(Page(source.pdf, Letter.PORTRAIT))
+        try source.pdf.complete()
+        var drawn: PDFobj?
+        let read = try TestSupport.read(source.bytes)
+        for obj in read where obj.getValue("/Subtype") == "/Image" {
+            // The image drawn, not its soft mask
+            if drawn == nil || obj.getValue("/SMask") != "" {
+                drawn = obj
+            }
+        }
+        let memory = MemoryPDF(level)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(ReviewMediaTests.trueTypeFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "Text").setLocation(50, 50).drawOn(page)
+        try Image(pdf, try #require(drawn)).setAltDescription("An image")
+                .setLocation(50, 100).drawOn(page)
+        do {
+            try pdf.complete()
+        } catch {
+            return TestSupport.message(error)
+        }
+        return ""
+    }
+
+    // A PDF/A document refuses an image copied from another PDF that it cannot
+    // hold, as it does one made from a file: a soft mask went into PDF/A-1
+    // once masks were copied, and a CMYK image, or one of 16 bits, always had
+    // (the review of 28 October 2026).
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    func aPDFADocumentHoldsNoCopiedImageItsLevelHasNot() throws {
+        let failed = "The PDF was not completed because of an earlier error: "
+        #expect(try pdfACopyError(Compliance.PDF_A_2B, "images/cmyk.jpg") == failed
+                + "A document of PDF_A_2B cannot hold a CMYK image: "
+                + "its output intent is sRGB, so its images are gray or RGB.")
+        #expect(try pdfACopyError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG") == failed
+                + "A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.")
+        #expect(try pdfACopyError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG") == failed
+                + "A document of PDF_A_1A cannot hold an image of 16 bits per component: "
+                + "PDF/A-1 has 8 at most.")
+        // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
+        #expect(try pdfACopyError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG") == "")
+        #expect(try pdfACopyError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG") == "")
+        #expect(try pdfACopyError(Compliance.PDF_UA_1, "images/cmyk.jpg") == "")
+        #expect(try pdfACopyError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG") == "")
+    }
+
     // The error of completing a document of the compliance that draws, or ""
     // when it completes, and the content of its page.
     static func pdfADrawError(_ level: Compliance, _ draw: (PDF, Page) throws -> Void) throws -> (String, String) {

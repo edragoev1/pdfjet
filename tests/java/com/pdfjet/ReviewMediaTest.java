@@ -234,6 +234,65 @@ class ReviewMediaTest {
         assertEquals("", pdfaError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
     }
 
+    // The message that a document of the compliance fails with when the image
+    // of the file, drawn into another PDF and read back, is copied into it, or
+    // "" when it is completed.
+    private static String pdfaCopyError(Compliance level, String path) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF source = new PDF(bos);
+        InputStream in = TestSupport.open(path);
+        try {
+            new Image(source, in).drawOn(new Page(source, Letter.PORTRAIT));
+        } finally {
+            in.close();
+        }
+        source.complete();
+        PDFobj drawn = null;
+        for (PDFobj obj : TestSupport.read(bos.toByteArray())) {
+            // The image drawn, not its soft mask
+            if (obj.getValue("/Subtype").equals("/Image")
+                    && (drawn == null || !obj.getValue("/SMask").equals(""))) {
+                drawn = obj;
+            }
+        }
+        PDF pdf = new PDF(new ByteArrayOutputStream(), level);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
+        try {
+            Image image = new Image(pdf, drawn);
+            image.setAltDescription("An image").setLocation(50f, 100f);
+            image.drawOn(page);
+            pdf.complete();
+        } catch (IllegalStateException e) {
+            return e.getMessage();
+        }
+        return "";
+    }
+
+    // A PDF/A document refuses an image copied from another PDF that it cannot
+    // hold, as it does one made from a file: a soft mask went into PDF/A-1
+    // once masks were copied, and a CMYK image, or one of 16 bits, always had
+    // (the review of 28 October 2026).
+    @Test
+    void aPDFADocumentHoldsNoCopiedImageItsLevelHasNot() throws Exception {
+        assertEquals("A document of PDF_A_2B cannot hold a CMYK image: "
+                + "its output intent is sRGB, so its images are gray or RGB.",
+                pdfaCopyError(Compliance.PDF_A_2B, "images/cmyk.jpg"));
+        assertEquals("A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.",
+                pdfaCopyError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"));
+        assertEquals("A document of PDF_A_1A cannot hold an image of 16 bits per component: "
+                + "PDF/A-1 has 8 at most.",
+                pdfaCopyError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"));
+        // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
+        assertEquals("", pdfaCopyError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"));
+        assertEquals("", pdfaCopyError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"));
+        assertEquals("", pdfaCopyError(Compliance.PDF_UA_1, "images/cmyk.jpg"));
+        assertEquals("", pdfaCopyError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
+    }
+
     interface Drawing {
         void draw(PDF pdf, Page page) throws Exception;
     }

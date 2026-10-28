@@ -206,6 +206,16 @@ final public class Image implements Drawable {
         // stencil, are copied with the image: they were left out, and a logo
         // on a transparent background was drawn on a solid box (22 October
         // 2026)
+        // A PDF/A document refuses a copied image it cannot hold, as it does
+        // an image made from a file: a soft mask went into PDF/A-1 once masks
+        // were copied, and a CMYK image, or one of 16 bits, always had (the
+        // review of 28 October 2026)
+        List<String> softMaskTokens = obj.valueTokens("/SMask");
+        boolean hasSoftMask = !softMaskTokens.isEmpty()
+                && !(softMaskTokens.size() == 1 && softMaskTokens.get(0).equals("/None"));
+        checkPDFA(pdf, hasSoftMask ? new byte[0] : null,
+                obj.valueTokens("/ColorSpace").contains("/DeviceCMYK") ? "DeviceCMYK" : "",
+                bitsOf(obj));
         int softMask = copiedMask(pdf, obj, "/SMask");
         int mask = 0;
         List<String> maskArray = obj.valueTokens("/Mask");
@@ -216,6 +226,15 @@ final public class Image implements Drawable {
         appendImageObject(pdf, obj, softMask, mask, maskArray);
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
+    }
+
+    // The bits per component of an image copied from another PDF, or 0.
+    private static int bitsOf(PDFobj obj) {
+        try {
+            return Integer.parseInt(obj.getValue("/BitsPerComponent"));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     // Copies the image that the key of the image refers to, its soft mask or

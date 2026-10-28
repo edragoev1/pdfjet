@@ -243,6 +243,59 @@ public class ReviewMediaTest {
         Assert.Equal("", PDFAError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
     }
 
+    // The message a document of the compliance fails with when the image of
+    // the file, drawn into another PDF and read back, is copied into it, or ""
+    // when the document holds it.
+    private static string PDFACopyError(Compliance compliance, string path) {
+        MemoryStream stream = new MemoryStream();
+        PDF source = new PDF(stream);
+        using (Stream file = TestSupport.Open(path)) {
+            new Image(source, file).DrawOn(new Page(source, Letter.PORTRAIT));
+        }
+        source.Complete();
+        PDFobj drawn = null;
+        foreach (PDFobj obj in TestSupport.Read(stream.ToArray())) {
+            // The image drawn, not its soft mask
+            if (obj.GetValue("/Subtype") == "/Image" && (drawn == null || obj.GetValue("/SMask") != "")) {
+                drawn = obj;
+            }
+        }
+        PDF pdf = new PDF(new MemoryStream(), compliance);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.RepoPath(THAI));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Text").SetLocation(50f, 50f).DrawOn(page);
+        try {
+            new Image(pdf, drawn).SetAltDescription("An image").SetLocation(50f, 100f).DrawOn(page);
+            pdf.Complete();
+        } catch (InvalidOperationException e) {
+            return e.Message;
+        }
+        return "";
+    }
+
+    // A PDF/A document refuses an image copied from another PDF that it cannot
+    // hold, as it does one made from a file: a soft mask went into PDF/A-1
+    // once masks were copied, and a CMYK image, or one of 16 bits, always had
+    // (the review of 28 October 2026).
+    [Fact]
+    public void APDFADocumentHoldsNoCopiedImageItsLevelHasNot() {
+        Assert.Equal("A document of PDF_A_2B cannot hold a CMYK image: "
+                + "its output intent is sRGB, so its images are gray or RGB.",
+                PDFACopyError(Compliance.PDF_A_2B, "images/cmyk.jpg"));
+        Assert.Equal("A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.",
+                PDFACopyError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"));
+        Assert.Equal("A document of PDF_A_1A cannot hold an image of 16 bits per component: "
+                + "PDF/A-1 has 8 at most.",
+                PDFACopyError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"));
+        // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
+        Assert.Equal("", PDFACopyError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"));
+        Assert.Equal("", PDFACopyError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"));
+        Assert.Equal("", PDFACopyError(Compliance.PDF_UA_1, "images/cmyk.jpg"));
+        Assert.Equal("", PDFACopyError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
+    }
+
     // The message that a document of the compliance that draws fails with, or
     // "" when it is completed, and the content of its page.
     internal static string[] PDFADrawError(Compliance compliance, Action<PDF, Page> draw) {

@@ -183,6 +183,17 @@ public class Image : Drawable {
         setPixels(Image.pixels(try Image.sizeOf(obj, "/Width")), Image.pixels(try Image.sizeOf(obj, "/Height")))
         // They were left out, and a logo on a transparent background was
         // drawn on a solid box (22 October 2026)
+        // A PDF/A document refuses a copied image it cannot hold, as it does
+        // an image made from a file: a soft mask went into PDF/A-1 once masks
+        // were copied, and a CMYK image, or one of 16 bits, always had (the
+        // review of 28 October 2026)
+        let softMaskTokens = obj.valueTokens("/SMask")
+        let hasSoftMask = !softMaskTokens.isEmpty && softMaskTokens != ["/None"]
+        if !isPDFA(pdf, hasSoftMask ? [0] : [],
+                obj.valueTokens("/ColorSpace").contains("/DeviceCMYK") ? "DeviceCMYK" : "",
+                Int(obj.getValue("/BitsPerComponent")) ?? 0) {
+            return
+        }
         let softMask = try Image.copiedMask(pdf, obj, "/SMask")
         var mask = 0
         var maskArray = obj.valueTokens("/Mask")

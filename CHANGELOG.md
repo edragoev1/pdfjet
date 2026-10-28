@@ -642,6 +642,13 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   solid box. Its /Decode and /Matte are copied too. A mask that cannot be
   copied, of an object that was not read from a PDF, is an error, as a
   color space that refers to another object is.
+  A document of PDF/A refuses a copied image it cannot hold, as it does an
+  image made from a file: one with a soft mask in PDF/A-1, a CMYK image in
+  any PDF/A, and one of 16 bits per component in PDF/A-1. A CMYK image, or
+  one of 16 bits, went in unchecked before, and the document was not PDF/A.
+  Behavior change: a CMYK JPEG copied from a PDF into a PDF/A-2B document
+  now fails it, "A document of PDF_A_2B cannot hold a CMYK image", where
+  the document was completed.
 - BarChart's value axis labels no longer run into each other, in the four
   ports. With many steps, or with fraction digits, on a narrow chart, they
   were drawn at every grid line, "0.0 10.020.030.0" on a chart 330 points

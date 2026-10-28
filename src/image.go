@@ -218,6 +218,14 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image.pdf = pdf
 
 	image.setPixels(pixelsOf(imageSizeOf(obj, "/Width")), pixelsOf(imageSizeOf(obj, "/Height")))
+	// A PDF/A document refuses a copied image it cannot hold, as it does an
+	// image made from a file: a soft mask went into PDF/A-1 once masks were
+	// copied, and a CMYK image, or one of 16 bits, always had (the review of
+	// 28 October 2026)
+	alpha, colorSpace, bitsPerComponent := copiedLook(obj)
+	if !image.isPDFA(pdf, alpha, colorSpace, bitsPerComponent) {
+		return image
+	}
 	softMask := copiedMask(pdf, obj, "/SMask")
 	mask := 0
 	maskArray := obj.valueTokens("/Mask")
@@ -230,6 +238,24 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image.objNumber = pdf.getObjNumber()
 
 	return image
+}
+
+// copiedLook returns what a PDF/A document asks of an image copied from
+// another PDF: a soft mask, as alpha that is not nil; DeviceCMYK, if its
+// color space is, or is the base of an indexed one; and its bits per
+// component.
+func copiedLook(obj *PDFobj) ([]byte, string, int) {
+	var alpha []byte
+	softMask := obj.valueTokens("/SMask")
+	if len(softMask) > 0 && !(len(softMask) == 1 && softMask[0] == "/None") {
+		alpha = []byte{}
+	}
+	colorSpace := ""
+	if slices.Contains(obj.valueTokens("/ColorSpace"), "/"+device.CMYK) {
+		colorSpace = device.CMYK
+	}
+	bitsPerComponent, _ := strconv.Atoi(obj.GetValue("/BitsPerComponent"))
+	return alpha, colorSpace, bitsPerComponent
 }
 
 // copiedMask copies the image that the key of the image refers to, its soft
