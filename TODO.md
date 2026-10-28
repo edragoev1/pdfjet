@@ -88,6 +88,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   replacement shows one subject in English and Simplified Chinese, each
   tagged with its language, in the four ports; the reference PDFs and the
   booklet follow. After the 9.1.5 tag unless the owner moves it in.
+  ✅ Done for 9.1.5 (the owner, 28 October 2026: "do Example_13 in
+  9.1.5"): the Chinese is the English paragraph about Switzerland,
+  translated, still tagged zh-Hans; the layout is unchanged.
 
 - ✅ Done for 9.1.5, 26 October 2026 (the owner: "let's start implementing
   these"): setVerticalPadding, setHeaderColor, setFooterFontSize and

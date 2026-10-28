@@ -40,10 +40,10 @@ public class Example_13 {
 "The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."));
         column.addParagraph(p1);
 
-        String chinese = "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。";
+        String chinese = "瑞士联邦于1291年作为三个州之间的防御联盟而建立。此后数年间，其他地区陆续加入了最初的三个州。1499年，瑞士联邦脱离神圣罗马帝国，获得独立。长期以来，欧洲各大国一直尊重瑞士的主权和中立地位，瑞士也没有卷入两次世界大战。过去半个世纪欧洲的政治和经济一体化，以及瑞士在许多联合国机构和国际组织中的作用，加强了瑞士与邻国的联系。然而，瑞士直到2002年才正式成为联合国会员国。";
         float[] xy = column.drawOn(page);
 
-        // The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
+        // The same paragraph in Chinese, in a column of its own, set tighter: IBM Plex Sans SC has a
         // line gap of a whole em, which the lines of a paragraph are set with.
         TextColumn column2 = new TextColumn();
         column2.setLocation(70f, xy[1] + 12f);
