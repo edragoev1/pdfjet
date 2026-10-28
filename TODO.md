@@ -809,6 +809,18 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   PDF/UA asks: the citation a Lbl linked to its Note, read where it is
   cited. Markdown's footnotes ([^1]) drawn by the same code. The four ports
   alike; done after widows and orphans, as both decide where a page breaks.
+- **After v9.2.1: chart polish** (the owner, 28 October 2026: "BFO
+  definitely have more polished charts but for now ours are pretty good").
+  The scales are done; what is left is finish, on SimpleBarChart first.
+  The value of a long bar in white inside its end, where a narrow chart has
+  no room after it; the highlight chosen by the chart, the lowest or the
+  highest value (the benchmark report picks its best by hand today); an
+  option of slightly rounded bar ends; and a dashed line at a reference
+  value, as a target or an average, labeled at its end. The line and
+  scatter charts already have their light grid and their labels at the
+  line ends, and BarChart its grid, legend and grayscale-safe palette, so
+  these are additions, not changes: a chart drawn today draws the same.
+  The four ports alike.
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
   1. ✅ The first step done for 9.1.5, 26 October 2026 (the owner: "bring
