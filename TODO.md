@@ -786,7 +786,19 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   patterns checked for their license before they ship, English first.
   About 3 to 4 days: a day for Go, a day for the other three ports, one or
   two for the patterns, the cross-port tests and an example.
-- **For v9.2.1: two things learned from common business documents** (an
+- **For v9.2.1: widows and orphans in TextFrame** (the owner, 28 October
+  2026). Text that a TextFrame flows from page to page with DrawOnPages, or
+  from frame to frame, can leave the first line of a paragraph alone at the
+  bottom of a page (an orphan) or carry its last line alone to the top of
+  the next (a widow), and a heading can end a page with its text on the
+  next; Example_17's novel surely has some of each. Markdown already keeps
+  a heading with what follows it, and Table has KeepRowWithNext; TextFrame
+  has neither. At least two lines of a paragraph on each side of a break,
+  a paragraph of three lines or fewer kept whole, and a heading (H1 to H6)
+  kept with the first two lines after it; on by default or not, to decide,
+  as a page that breaks a line earlier changes where every later page
+  breaks. The four ports alike, tested by where the pages break, and
+  Example_17's page count noted before and after.
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
   1. ✅ The first step done for 9.1.5, 26 October 2026 (the owner: "bring
