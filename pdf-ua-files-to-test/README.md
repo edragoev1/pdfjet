@@ -59,11 +59,12 @@ PAC's AI-assisted check also takes the two file attachment lines for a list
 (score 0.69). Tagging them as one would put their `Annot` elements in list
 items, which, by the table, trades the warning for another.
 
-**Example_42 and Example_45: an email address in a form.** PAC's PDF/UA and
-WCAG checks pass; its Quality check reports the value of the Email field
-(jsmith12345@gmail.ca, anna.lindqvist@example.com) as "Link in text does not
-have a Link element". A `Form` field holds text and cannot be a `mailto:`
-link, and the API is frozen, so both stay as they are (29 September 2026).
+**Example_44: an email address in a form.** PAC's PDF/UA and WCAG checks
+pass; its Quality check reports the value of the Email field
+(anna.lindqvist@example.com) as "Link in text does not have a Link element".
+A `Form` field holds text and cannot be a `mailto:` link, and the API is
+frozen, so it stays as it is (29 September 2026; seen again at 9.1.5 on
+28 October 2026, when the other 40 files passed every check).
 
 **PDFjet Forms: an email address typed into a field.** The same Quality
 check, "Completeness of Link elements: Link in text does not have a Link
