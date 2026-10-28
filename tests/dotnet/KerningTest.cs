@@ -18,7 +18,7 @@ namespace PDFjet.NET {
 /// </summary>
 public class KerningTest {
     // Opens a font of the repository, with its kerning on or off.
-    private static Font KernedFont(PDF pdf, string path, bool kerned) {
+    internal static Font KernedFont(PDF pdf, string path, bool kerned) {
         Font font = new Font(pdf, TestSupport.RepoPath(path));
         font.SetKernPairs(kerned);
         return font;

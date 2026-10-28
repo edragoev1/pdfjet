@@ -577,5 +577,83 @@ public class TextFrameTest {
             }
         }
     }
+
+    // Returns the rows of text that a core font drew on the page, one text line
+    // each, in the order they were drawn: the baseline of each, from the top
+    // of the page, and its text.
+    private static List<(float y, string text)> RowsOf(Page page) {
+        List<(float y, string text)> rows = new List<(float y, string text)>();
+        foreach (Match m in Regex.Matches(TestSupport.Content(page), "([0-9.]+) ([0-9.]+) Td\n\\[<([0-9A-F]*)>\\] TJ")) {
+            System.Text.StringBuilder text = new System.Text.StringBuilder();
+            string hex = m.Groups[3].Value;
+            for (int i = 0; i + 2 <= hex.Length; i += 2) {
+                text.Append((char) Convert.ToInt32(hex.Substring(i, 2), 16));
+            }
+            rows.Add((page.GetHeight() - float.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture), text.ToString()));
+        }
+        return rows;
+    }
+
+    // A frame that breaks inside a text line ends below the last row it drew
+    // of it: GetTextBottom gave the bottom of the last whole text line, here
+    // the top of the frame, as if nothing were drawn (the review of 28 October
+    // 2026).
+    [Fact]
+    public void GetTextBottomIsTheBottomOfTheLastRowWhenTheFrameBreaksInsideATextLine() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<string> words = new List<string>();
+        for (int i = 1; i <= 400; i++) {
+            words.Add(i.ToString(CultureInfo.InvariantCulture));
+        }
+        TextFrame frame = new TextFrame(font, new List<string> {string.Join(" ", words)}).SetWidth(200f).SetHeight(100f);
+        float descent = font.GetDescent(font.GetSize());
+        int next = 1;   // The number of the word the frame draws next
+        foreach (float y in new float[] {100f, 300f}) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            frame.SetLocation(10f, y).DrawOn(page);
+            List<(float y, string text)> rows = RowsOf(page);
+            Assert.True(rows.Count >= 2, "at " + y + ": " + rows.Count + " rows");
+            // The frame goes on with the word after the last one it drew.
+            Assert.Equal(next.ToString(CultureInfo.InvariantCulture), rows[0].text.Trim().Split(' ')[0]);
+            (float y, string text) last = rows[rows.Count - 1];
+            TestSupport.AssertNear(last.y + descent, frame.GetTextBottom(), TestSupport.DELTA, "the bottom of the last row");
+            Assert.True(frame.GetTextBottom() > y + 90f && frame.GetTextBottom() <= y + 100f,
+                    "at " + y + ": the text of the frame ends at " + frame.GetTextBottom());
+            string[] lastWords = last.text.Trim().Split(' ');
+            next = int.Parse(lastWords[lastWords.Length - 1], CultureInfo.InvariantCulture) + 1;
+        }
+    }
+
+    // A font that kerns a space with the letters beside it, as Source Serif 4
+    // does T, V, W and Y, made a justified row too wide: it was measured whole,
+    // with the kerning, and its words placed one by one, without it, so the
+    // rows ended past the right edge (the review of 28 October 2026).
+    [Fact]
+    public void AJustifiedRowInAKernedFontEndsAtTheRightEdge() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = KerningTest.KernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        font.SetSize(14f);
+        string text = "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: "
+                + "We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday.";
+        Paragraph paragraph = new Paragraph().Add(new TextLine(font, text)).SetTextAlignment(Alignment.JUSTIFY);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(40f, 40f).SetWidth(300f).DrawOn(page);
+        // Each word of a justified row is drawn at a location of its own, and
+        // the last row whole, at one: the last location of a row is its last
+        // word's.
+        string[] words = text.Split(' ');
+        MatchCollection locations = Regex.Matches(TestSupport.Content(page), "([0-9.]+) ([0-9.]+) Td");
+        int rows = 0;
+        for (int i = 0; i < locations.Count - 1; i++) {
+            if (locations[i + 1].Groups[2].Value != locations[i].Groups[2].Value) {
+                float x = float.Parse(locations[i].Groups[1].Value, CultureInfo.InvariantCulture);
+                TestSupport.AssertNear(340f, x + font.StringWidth(14f, words[i]), TestSupport.DELTA,
+                        "the end of the row of " + words[i]);
+                rows++;
+            }
+        }
+        Assert.True(rows >= 2, rows + " justified rows");
+    }
 }
 }

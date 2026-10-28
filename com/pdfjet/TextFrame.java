@@ -51,6 +51,7 @@ public class TextFrame implements Drawable {
     private boolean rowPlaced;
     private float nextBaseline;
     private boolean startsParagraph;    // The next row starts a paragraph
+    private float rowBottom;            // The bottom of the last row drawn
     // True when the row has room for the first word of the next text line,
     // which goes on from the last word of this one: see Paragraph.addJoined.
     private boolean joinReserved;
@@ -375,7 +376,9 @@ public class TextFrame implements Drawable {
     }
 
     // Draws the text that is left, as much of it as fits in the height of the
-    // frame, and returns the bottom of the text drawn.
+    // frame, and returns the bottom of the text drawn: of the last row, also
+    // when the frame breaks inside a text line, whose rows drawn are below the
+    // last whole text line (the review of 28 October 2026).
     private float drawParagraphs(Page page) throws Exception {
         xText = x;
         rowOpen = false;
@@ -385,6 +388,7 @@ public class TextFrame implements Drawable {
         leadingSpace = false;
         rowEndSpace = false;
         row.clear();
+        rowBottom = y;
         float bottom = y;
         while (paragraphIndex < paragraphs.size()) {
             Paragraph paragraph = paragraphs.get(paragraphIndex);
@@ -392,7 +396,7 @@ public class TextFrame implements Drawable {
                 TextLine textLine = paragraph.lines.get(lineIndex);
                 if (!rowOpen && !openRow(textLine)) {
                     drawRow(page, false);
-                    return bottom;
+                    return Math.max(bottom, rowBottom);
                 }
                 if (tokens == null) {
                     if (lineIndex == 0) {
@@ -406,7 +410,7 @@ public class TextFrame implements Drawable {
                 }
                 if (!drawTokens(page, paragraph, textLine)) {
                     drawRow(page, false);
-                    return bottom;
+                    return Math.max(bottom, rowBottom);
                 }
                 paragraph.x2 = xText;
                 paragraph.y2 = yText + textLine.font.getDescent(textLine.fontSize);
@@ -441,7 +445,7 @@ public class TextFrame implements Drawable {
             paragraphIndex++;
             lineIndex = 0;
         }
-        return bottom;
+        return Math.max(bottom, rowBottom);
     }
 
     // Starts a row of text for the text line, below the previous row or at the
@@ -755,13 +759,18 @@ public class TextFrame implements Drawable {
         if (row.isEmpty()) {
             return;
         }
+        for (RowPart part : row) {
+            if (!part.text.isEmpty()) {
+                rowBottom = Math.max(rowBottom, yText + part.textLine.font.getDescent(part.textLine.fontSize));
+            }
+        }
         Paragraph paragraph = row.get(0).paragraph;
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT;
         RowPart last = row.get(row.size() - 1);
         float rowWidth = last.x + width(last.textLine, trimTrailingSpaces(last.text)) - x;
 
         if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
-            drawJustifiedRow(page, rowWidth, endSpace);
+            drawJustifiedRow(page, endSpace);
         } else {
             float shift = 0f;
             if (alignment == Alignment.RIGHT) {
@@ -802,8 +811,12 @@ public class TextFrame implements Drawable {
     }
 
     // Draws the words of the row one by one, with the width left in the row shared
-    // out among the spaces between them.
-    private void drawJustifiedRow(Page page, float rowWidth, boolean endSpace) throws Exception {
+    // out among the spaces between them. The width of the row is measured as its
+    // words are placed, a word and a space at a time: measured whole, it has the
+    // kerning between a space and the letters beside it, which the words placed
+    // one by one do not, and a row in a font that kerns them ran past the right
+    // edge (the review of 28 October 2026).
+    private void drawJustifiedRow(Page page, boolean endSpace) throws Exception {
         int spaces = 0;
         for (int i = 0; i < row.size(); i++) {
             String text = row.get(i).text;
@@ -813,8 +826,16 @@ public class TextFrame implements Drawable {
                 }
             }
         }
-        float dx = (spaces > 0) ? (w - rowWidth) / spaces : 0f;
+        float dx = (spaces > 0) ? ((x + w) - placeWords(page, 0f, endSpace, false)) / spaces : 0f;
+        placeWords(page, dx, endSpace, true);
+    }
+
+    // Places the words of the row from the left edge of the frame, dx further
+    // apart at each space with a word after it, and draws them when draw is
+    // true. Returns where the last word ends.
+    private float placeWords(Page page, float dx, boolean endSpace, boolean draw) throws Exception {
         float xWord = x;
+        float wordEnd = x;
         for (int i = 0; i < row.size(); i++) {
             RowPart part = row.get(i);
             String text = part.text;
@@ -824,7 +845,10 @@ public class TextFrame implements Drawable {
                 if (end == -1) {
                     end = text.length();
                 }
-                if (end > start) {
+                if (end > start && !draw) {
+                    xWord += width(part.textLine, text.substring(start, end));
+                    wordEnd = xWord;
+                } else if (end > start) {
                     String word = text.substring(start, end);
                     beginParagraphElement(page, part.paragraph, xWord, yText);
                     // The space after the word may be the first character of
@@ -847,6 +871,7 @@ public class TextFrame implements Drawable {
                     }
                     endParagraphElement(page);
                     xWord += width(part.textLine, word);
+                    wordEnd = xWord;
                 }
                 if (end < text.length()) {
                     xWord += width(part.textLine, Single.space);
@@ -856,10 +881,11 @@ public class TextFrame implements Drawable {
                 }
                 start = end + 1;
             }
-            if (part.endsTextLine) {
+            if (draw && part.endsTextLine) {
                 part.paragraph.x2 = xWord;
             }
         }
+        return wordEnd;
     }
 
     // Returns the last part of the row that has text: a text line whose first

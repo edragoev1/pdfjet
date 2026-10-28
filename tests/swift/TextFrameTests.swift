@@ -546,4 +546,79 @@ import Testing
             }
         }
     }
+
+    // Returns the rows of text that a core font drew on the page, one text line
+    // each, in the order they were drawn: the baseline of each, from the top
+    // of the page, and its text.
+    private func rowsOf(_ page: Page) -> [(y: Float, text: String)] {
+        var rows = [(y: Float, text: String)]()
+        for m in TestSupport.content(page).matches(of: /([0-9.]+) ([0-9.]+) Td\n\[<([0-9A-F]*)>\] TJ/) {
+            let hex = Array(m.3)
+            var text = ""
+            var i = 0
+            while i + 2 <= hex.count {
+                text.unicodeScalars.append(Unicode.Scalar(UInt8(String(hex[i..<(i + 2)]), radix: 16)!))
+                i += 2
+            }
+            rows.append((page.getHeight() - Float(String(m.2))!, text))
+        }
+        return rows
+    }
+
+    // A frame that breaks inside a text line ends below the last row it drew
+    // of it: getTextBottom gave the bottom of the last whole text line, here
+    // the top of the frame, as if nothing were drawn (the review of 28 October
+    // 2026).
+    @Test func getTextBottomIsTheBottomOfTheLastRowWhenTheFrameBreaksInsideATextLine() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let words = (1...400).map { String($0) }.joined(separator: " ")
+        let frame = TextFrame(font, [words]).setWidth(200).setHeight(100)
+        let descent = font.getDescent(font.getSize())
+        var next = 1    // The number of the word the frame draws next
+        for y: Float in [100, 300] {
+            let page = Page(pdf, Letter.PORTRAIT)
+            frame.setLocation(10, y).drawOn(page)
+            let rows = rowsOf(page)
+            try #require(rows.count >= 2, "at \(y): \(rows.count) rows")
+            // The frame goes on with the word after the last one it drew.
+            #expect(rows[0].text.split(separator: " ").first.map(String.init) == String(next))
+            let last = rows[rows.count - 1]
+            TestSupport.expectNear(last.y + descent, frame.getTextBottom(), TestSupport.delta,
+                    "the bottom of the last row")
+            #expect(frame.getTextBottom() > y + 90 && frame.getTextBottom() <= y + 100,
+                    "at \(y): the text of the frame ends at \(frame.getTextBottom())")
+            next = Int(String(last.text.split(separator: " ").last!))! + 1
+        }
+    }
+
+    // A font that kerns a space with the letters beside it, as Source Serif 4
+    // does T, V, W and Y, made a justified row too wide: it was measured whole,
+    // with the kerning, and its words placed one by one, without it, so the
+    // rows ended past the right edge (the review of 28 October 2026).
+    @Test func aJustifiedRowInAKernedFontEndsAtTheRightEdge() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/SourceSerif4/SourceSerif4-Regular.ttf"))
+        font.setKernPairs(true)
+        font.setSize(14)
+        let text = "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: " +
+                "We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday."
+        let paragraph = Paragraph().add(TextLine(font, text)).setTextAlignment(Alignment.JUSTIFY)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextFrame([paragraph]).setLocation(40, 40).setWidth(300).drawOn(page)
+        // Each word of a justified row is drawn at a location of its own, and
+        // the last row whole, at one: the last location of a row is its last
+        // word's.
+        let words = text.components(separatedBy: " ")
+        let locations = TestSupport.content(page).matches(of: /([0-9.]+) ([0-9.]+) Td/).map {
+            (x: Float(String($0.1))!, y: String($0.2))
+        }
+        var rows = 0
+        for i in 0..<(locations.count - 1) where locations[i + 1].y != locations[i].y {
+            TestSupport.expectNear(340, locations[i].x + font.stringWidth(14, words[i]), TestSupport.delta,
+                    "the end of the row of \(words[i])")
+            rows += 1
+        }
+        #expect(rows >= 2, "\(rows) justified rows")
+    }
 }

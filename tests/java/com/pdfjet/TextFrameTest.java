@@ -597,4 +597,86 @@ class TextFrameTest {
             }
         }
     }
+
+    // Returns the rows of text that a core font drew on the page, one text line
+    // each, in the order they were drawn: the baseline of each, from the top
+    // of the page, and its text.
+    private static List<Object[]> rowsOf(Page page) {
+        List<Object[]> rows = new ArrayList<>();
+        Matcher m = Pattern.compile("([0-9.]+) ([0-9.]+) Td\n\\[<([0-9A-F]*)>\\] TJ").matcher(TestSupport.content(page));
+        while (m.find()) {
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i + 2 <= m.group(3).length(); i += 2) {
+                text.append((char) Integer.parseInt(m.group(3).substring(i, i + 2), 16));
+            }
+            rows.add(new Object[] {page.getHeight() - Float.parseFloat(m.group(2)), text.toString()});
+        }
+        return rows;
+    }
+
+    // A frame that breaks inside a text line ends below the last row it drew
+    // of it: getTextBottom gave the bottom of the last whole text line, here
+    // the top of the frame, as if nothing were drawn (the review of 28 October
+    // 2026).
+    @Test
+    void getTextBottomIsTheBottomOfTheLastRowWhenTheFrameBreaksInsideATextLine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder words = new StringBuilder();
+        for (int i = 1; i <= 400; i++) {
+            words.append(i == 1 ? "" : " ").append(i);
+        }
+        TextFrame frame = new TextFrame(font, Arrays.asList(words.toString())).setWidth(200f).setHeight(100f);
+        float descent = font.getDescent(font.getSize());
+        int next = 1;   // The number of the word the frame draws next
+        for (float y : new float[] {100f, 300f}) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            frame.setLocation(10f, y).drawOn(page);
+            List<Object[]> rows = rowsOf(page);
+            assertTrue(rows.size() >= 2, "at " + y + ": " + rows.size() + " rows");
+            // The frame goes on with the word after the last one it drew.
+            assertEquals(String.valueOf(next), ((String) rows.get(0)[1]).trim().split(" ")[0]);
+            Object[] last = rows.get(rows.size() - 1);
+            assertEquals((Float) last[0] + descent, frame.getTextBottom(), TestSupport.DELTA);
+            assertTrue(frame.getTextBottom() > y + 90f && frame.getTextBottom() <= y + 100f,
+                    "at " + y + ": the text of the frame ends at " + frame.getTextBottom());
+            String[] lastWords = ((String) last[1]).trim().split(" ");
+            next = Integer.parseInt(lastWords[lastWords.length - 1]) + 1;
+        }
+    }
+
+    // A font that kerns a space with the letters beside it, as Source Serif 4
+    // does T, V, W and Y, made a justified row too wide: it was measured whole,
+    // with the kerning, and its words placed one by one, without it, so the
+    // rows ended past the right edge (the review of 28 October 2026).
+    @Test
+    void aJustifiedRowInAKernedFontEndsAtTheRightEdge() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = KerningTest.kernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        font.setSize(14f);
+        String text = "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: "
+                + "We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday.";
+        Paragraph paragraph = new Paragraph().add(new TextLine(font, text)).setTextAlignment(Alignment.JUSTIFY);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(Arrays.asList(paragraph)).setLocation(40f, 40f).setWidth(300f).drawOn(page);
+        // Each word of a justified row is drawn at a location of its own, and
+        // the last row whole, at one: the last location of a row is its last
+        // word's.
+        String[] words = text.split(" ");
+        List<String[]> locations = new ArrayList<>();
+        Matcher m = Pattern.compile("([0-9.]+) ([0-9.]+) Td").matcher(TestSupport.content(page));
+        while (m.find()) {
+            locations.add(new String[] {m.group(1), m.group(2)});
+        }
+        int rows = 0;
+        for (int i = 0; i < locations.size() - 1; i++) {
+            if (!locations.get(i + 1)[1].equals(locations.get(i)[1])) {
+                float x = Float.parseFloat(locations.get(i)[0]);
+                assertEquals(340f, x + font.stringWidth(14f, words[i]), TestSupport.DELTA,
+                        "the end of the row of " + words[i]);
+                rows++;
+            }
+        }
+        assertTrue(rows >= 2, rows + " justified rows");
+    }
 }

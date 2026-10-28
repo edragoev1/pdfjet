@@ -49,6 +49,7 @@ public class TextFrame : Drawable {
     private var rowPlaced = false
     private var nextBaseline: Float = 0.0
     private var startsParagraph = false     // The next row starts a paragraph
+    private var rowBottom: Float = 0.0      // The bottom of the last row drawn
     // True when the row has room for the first word of the next text line,
     // which goes on from the last word of this one: see Paragraph.addJoined.
     private var joinReserved = false
@@ -300,7 +301,9 @@ public class TextFrame : Drawable {
     }
 
     // Draws the text that is left, as much of it as fits in the height of the
-    // frame, and returns the bottom of the text drawn.
+    // frame, and returns the bottom of the text drawn: of the last row, also
+    // when the frame breaks inside a text line, whose rows drawn are below the
+    // last whole text line (the review of 28 October 2026).
     private func drawParagraphs(_ page: Page?) -> Float {
         xText = x
         rowOpen = false
@@ -310,6 +313,7 @@ public class TextFrame : Drawable {
         leadingSpace = false
         rowEndSpace = false
         row.removeAll()
+        rowBottom = y
         var bottom = y
         while paragraphIndex < paragraphs.count {
             let paragraph = paragraphs[paragraphIndex]
@@ -317,7 +321,7 @@ public class TextFrame : Drawable {
                 let textLine = paragraph.lines[lineIndex]
                 if !rowOpen && !openRow(textLine) {
                     drawRow(page, false)
-                    return bottom
+                    return max(bottom, rowBottom)
                 }
                 if tokens == nil {
                     if lineIndex == 0 {
@@ -331,7 +335,7 @@ public class TextFrame : Drawable {
                 }
                 if !drawTokens(page, paragraph, textLine) {
                     drawRow(page, false)
-                    return bottom
+                    return max(bottom, rowBottom)
                 }
                 paragraph.x2 = xText
                 paragraph.y2 = yText + textLine.font!.getDescent(textLine.fontSize)
@@ -365,7 +369,7 @@ public class TextFrame : Drawable {
             paragraphIndex += 1
             lineIndex = 0
         }
-        return bottom
+        return max(bottom, rowBottom)
     }
 
     // Starts a row of text for the text line, below the previous row or at the
@@ -710,13 +714,16 @@ public class TextFrame : Drawable {
         if row.isEmpty {
             return
         }
+        for part in row where !part.text.isEmpty {
+            rowBottom = max(rowBottom, yText + part.textLine.font!.getDescent(part.textLine.fontSize))
+        }
         let paragraph = row[0].paragraph
         let alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT
         let last = row[row.count - 1]
         let rowWidth = last.x + TextFrame.width(last.textLine, TextFrame.trimTrailingSpaces(last.text)) - x
 
         if alignment == Alignment.JUSTIFY && !lastRowOfParagraph {
-            drawJustifiedRow(page, rowWidth, endSpace)
+            drawJustifiedRow(page, endSpace)
         } else {
             var shift: Float = 0.0
             if alignment == Alignment.RIGHT {
@@ -757,8 +764,12 @@ public class TextFrame : Drawable {
     }
 
     // Draws the words of the row one by one, with the width left in the row shared
-    // out among the spaces between them.
-    private func drawJustifiedRow(_ page: Page?, _ rowWidth: Float, _ endSpace: Bool) {
+    // out among the spaces between them. The width of the row is measured as its
+    // words are placed, a word and a space at a time: measured whole, it has the
+    // kerning between a space and the letters beside it, which the words placed
+    // one by one do not, and a row in a font that kerns them ran past the right
+    // edge (the review of 28 October 2026).
+    private func drawJustifiedRow(_ page: Page?, _ endSpace: Bool) {
         let texts = row.map { Array($0.text.unicodeScalars) }
         var spaces = 0
         for i in 0..<texts.count {
@@ -766,8 +777,19 @@ public class TextFrame : Drawable {
                 spaces += 1
             }
         }
-        let dx: Float = (spaces > 0) ? (w - rowWidth) / Float(spaces) : 0.0
+        let dx: Float = (spaces > 0) ?
+                ((x + w) - placeWords(page, texts, 0.0, endSpace, false)) / Float(spaces) : 0.0
+        placeWords(page, texts, dx, endSpace, true)
+    }
+
+    // Places the words of the row from the left edge of the frame, dx further
+    // apart at each space with a word after it, and draws them when draw is
+    // true. Returns where the last word ends.
+    @discardableResult
+    private func placeWords(_ page: Page?, _ texts: [[Unicode.Scalar]], _ dx: Float,
+            _ endSpace: Bool, _ draw: Bool) -> Float {
         var xWord = x
+        var wordEnd = x
         for i in 0..<row.count {
             let part = row[i]
             let text = texts[i]
@@ -777,7 +799,10 @@ public class TextFrame : Drawable {
                 while end < text.count && text[end] != " " {
                     end += 1
                 }
-                if end > start {
+                if end > start && !draw {
+                    xWord += TextFrame.width(part.textLine, String(String.UnicodeScalarView(text[start..<end])))
+                    wordEnd = xWord
+                } else if end > start {
                     let word = String(String.UnicodeScalarView(text[start..<end]))
                     beginParagraphElement(page, part.paragraph, xWord, yText)
                     // The space after the word may be the first character of
@@ -805,6 +830,7 @@ public class TextFrame : Drawable {
                     }
                     endParagraphElement(page)
                     xWord += TextFrame.width(part.textLine, word)
+                    wordEnd = xWord
                 }
                 if end < text.count {
                     xWord += TextFrame.width(part.textLine, Single.space)
@@ -814,10 +840,11 @@ public class TextFrame : Drawable {
                 }
                 start = end + 1
             }
-            if part.endsTextLine {
+            if draw && part.endsTextLine {
                 part.paragraph.x2 = xWord
             }
         }
+        return wordEnd
     }
 
     // Returns true when a word follows this position of the row.

@@ -568,10 +568,7 @@ public class TextLine : IBaselineDrawable {
         if (underline) {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize));
             page.SetPenColor(decorationColor);
-            double lineLength = font.StringWidth(fallbackFont, fontSize, text);
-            if (this.isLastToken) {
-                lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
-            }
+            double lineLength = GetDecorationLength();
             double xAdjust = font.GetUnderlinePosition(fontSize) * Math.Sin(radians);
             double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
@@ -588,10 +585,7 @@ public class TextLine : IBaselineDrawable {
         if (strikeout) {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize));
             page.SetPenColor(decorationColor);
-            double lineLength = font.StringWidth(fallbackFont, fontSize, text);
-            if (this.isLastToken) {
-                lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
-            }
+            double lineLength = GetDecorationLength();
             double xAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Sin(radians);
             double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
@@ -692,6 +686,19 @@ public class TextLine : IBaselineDrawable {
         float start = font.StringWidth(fallbackFont, fontSize, text.Substring(0, first));
         float end = font.StringWidth(fallbackFont, fontSize, text.Substring(0, last));
         return new float[] {start, end};
+    }
+
+    // Returns the length of the underline and of the strikeout: the width of the
+    // text, and of the last token without the space after it. The token is
+    // measured without the space and not as its width less that of a space,
+    // which left out the kerning between the space and the letter before it, so
+    // the line stopped short of the word (the review of 28 October 2026).
+    private float GetDecorationLength() {
+        String drawn = text;
+        if (isLastToken && drawn.EndsWith(Single.space, StringComparison.Ordinal)) {
+            drawn = drawn.Substring(0, drawn.Length - 1);
+        }
+        return font.StringWidth(fallbackFont, fontSize, drawn);
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

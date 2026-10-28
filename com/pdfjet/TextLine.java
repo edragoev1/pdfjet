@@ -704,10 +704,7 @@ public class TextLine implements BaselineDrawable {
         if (underline) {
             page.setPenWidth(font.getUnderlineThickness(fontSize));
             page.setPenColor(decorationColor);
-            double lineLength = font.stringWidth(fallbackFont, fontSize, text);
-            if (this.isLastToken) {
-                lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
-            }
+            double lineLength = getDecorationLength();
             double xAdjust = font.getUnderlinePosition(fontSize) * Math.sin(radians);
             double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians) + verticalOffset;
             double x2 = x + (lineLength * Math.cos(radians));
@@ -724,10 +721,7 @@ public class TextLine implements BaselineDrawable {
         if (strikeout) {
             page.setPenWidth(font.getUnderlineThickness(fontSize));
             page.setPenColor(decorationColor);
-            double lineLength = font.stringWidth(fallbackFont, fontSize, text);
-            if (this.isLastToken) {
-                lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
-            }
+            double lineLength = getDecorationLength();
             double xAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.sin(radians);
             double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
@@ -828,6 +822,19 @@ public class TextLine implements BaselineDrawable {
         float start = font.stringWidth(fallbackFont, fontSize, text.substring(0, first));
         float end = font.stringWidth(fallbackFont, fontSize, text.substring(0, last));
         return new float[] {start, end};
+    }
+
+    // Returns the length of the underline and of the strikeout: the width of the
+    // text, and of the last token without the space after it. The token is
+    // measured without the space and not as its width less that of a space,
+    // which left out the kerning between the space and the letter before it, so
+    // the line stopped short of the word (the review of 28 October 2026).
+    private float getDecorationLength() {
+        String drawn = text;
+        if (isLastToken && drawn.endsWith(Single.space)) {
+            drawn = drawn.substring(0, drawn.length() - 1);
+        }
+        return font.stringWidth(fallbackFont, fontSize, drawn);
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

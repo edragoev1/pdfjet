@@ -52,6 +52,7 @@ public class TextFrame : IDrawable {
     private bool rowPlaced;
     private float nextBaseline;
     private bool startsParagraph;   // The next row starts a paragraph
+    private float rowBottom;        // The bottom of the last row drawn
     // True when the row has room for the first word of the next text line,
     // which goes on from the last word of this one: see Paragraph.AddJoined.
     private bool joinReserved;
@@ -307,7 +308,9 @@ public class TextFrame : IDrawable {
     }
 
     // Draws the text that is left, as much of it as fits in the height of the
-    // frame, and returns the bottom of the text drawn.
+    // frame, and returns the bottom of the text drawn: of the last row, also
+    // when the frame breaks inside a text line, whose rows drawn are below the
+    // last whole text line (the review of 28 October 2026).
     private float DrawParagraphs(Page page) {
         xText = x;
         rowOpen = false;
@@ -317,6 +320,7 @@ public class TextFrame : IDrawable {
         leadingSpace = false;
         rowEndSpace = false;
         row.Clear();
+        rowBottom = y;
         float bottom = y;
         while (paragraphIndex < paragraphs.Count) {
             Paragraph paragraph = paragraphs[paragraphIndex];
@@ -324,7 +328,7 @@ public class TextFrame : IDrawable {
                 TextLine textLine = paragraph.lines[lineIndex];
                 if (!rowOpen && !OpenRow(textLine)) {
                     DrawRow(page, false);
-                    return bottom;
+                    return Math.Max(bottom, rowBottom);
                 }
                 if (tokens == null) {
                     if (lineIndex == 0) {
@@ -338,7 +342,7 @@ public class TextFrame : IDrawable {
                 }
                 if (!DrawTokens(page, paragraph, textLine)) {
                     DrawRow(page, false);
-                    return bottom;
+                    return Math.Max(bottom, rowBottom);
                 }
                 paragraph.x2 = xText;
                 paragraph.y2 = yText + textLine.font.GetDescent(textLine.fontSize);
@@ -373,7 +377,7 @@ public class TextFrame : IDrawable {
             paragraphIndex++;
             lineIndex = 0;
         }
-        return bottom;
+        return Math.Max(bottom, rowBottom);
     }
 
     // Starts a row of text for the text line, below the previous row or at the
@@ -683,13 +687,18 @@ public class TextFrame : IDrawable {
         if (row.Count == 0) {
             return;
         }
+        foreach (RowPart part in row) {
+            if (part.text.Length > 0) {
+                rowBottom = Math.Max(rowBottom, yText + part.textLine.font.GetDescent(part.textLine.fontSize));
+            }
+        }
         Paragraph paragraph = row[0].paragraph;
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT;
         RowPart last = row[row.Count - 1];
         float rowWidth = last.x + Width(last.textLine, TrimTrailingSpaces(last.text)) - x;
 
         if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
-            DrawJustifiedRow(page, rowWidth, endSpace);
+            DrawJustifiedRow(page, endSpace);
         } else {
             float shift = 0f;
             if (alignment == Alignment.RIGHT) {
@@ -727,8 +736,12 @@ public class TextFrame : IDrawable {
     }
 
     // Draws the words of the row one by one, with the width left in the row shared
-    // out among the spaces between them.
-    private void DrawJustifiedRow(Page page, float rowWidth, bool endSpace) {
+    // out among the spaces between them. The width of the row is measured as its
+    // words are placed, a word and a space at a time: measured whole, it has the
+    // kerning between a space and the letters beside it, which the words placed
+    // one by one do not, and a row in a font that kerns them ran past the right
+    // edge (the review of 28 October 2026).
+    private void DrawJustifiedRow(Page page, bool endSpace) {
         int spaces = 0;
         for (int i = 0; i < row.Count; i++) {
             String text = row[i].text;
@@ -738,8 +751,16 @@ public class TextFrame : IDrawable {
                 }
             }
         }
-        float dx = (spaces > 0) ? (w - rowWidth) / spaces : 0f;
+        float dx = (spaces > 0) ? ((x + w) - PlaceWords(page, 0f, endSpace, false)) / spaces : 0f;
+        PlaceWords(page, dx, endSpace, true);
+    }
+
+    // Places the words of the row from the left edge of the frame, dx further
+    // apart at each space with a word after it, and draws them when draw is
+    // true. Returns where the last word ends.
+    private float PlaceWords(Page page, float dx, bool endSpace, bool draw) {
         float xWord = x;
+        float wordEnd = x;
         for (int i = 0; i < row.Count; i++) {
             RowPart part = row[i];
             String text = part.text;
@@ -749,7 +770,10 @@ public class TextFrame : IDrawable {
                 if (end == -1) {
                     end = text.Length;
                 }
-                if (end > start) {
+                if (end > start && !draw) {
+                    xWord += Width(part.textLine, text.Substring(start, end - start));
+                    wordEnd = xWord;
+                } else if (end > start) {
                     String word = text.Substring(start, end - start);
                     BeginParagraphElement(page, part.paragraph, xWord, yText);
                     // The space after the word may be the first character of
@@ -772,6 +796,7 @@ public class TextFrame : IDrawable {
                     }
                     EndParagraphElement(page);
                     xWord += Width(part.textLine, word);
+                    wordEnd = xWord;
                 }
                 if (end < text.Length) {
                     xWord += Width(part.textLine, Single.space);
@@ -781,10 +806,11 @@ public class TextFrame : IDrawable {
                 }
                 start = end + 1;
             }
-            if (part.endsTextLine) {
+            if (draw && part.endsTextLine) {
                 part.paragraph.x2 = xWord;
             }
         }
+        return wordEnd;
     }
 
     // Returns the last part of the row that has text: a text line whose first

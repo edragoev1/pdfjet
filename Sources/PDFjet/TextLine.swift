@@ -624,10 +624,7 @@ public class TextLine : BaselineDrawable {
         if underline {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(decorationColor)
-            var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
-            if self.isLastToken {
-                lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
-            }
+            let lineLength = getDecorationLength()
             let xAdjust = Double(font!.getUnderlinePosition(fontSize)) * sin(radians)
             let yAdjust = Double(font!.getUnderlinePosition(fontSize)) * cos(radians) + Double(verticalOffset)
             let x2 = Double(x) + Double(lineLength) * cos(radians)
@@ -644,10 +641,7 @@ public class TextLine : BaselineDrawable {
         if strikeout {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(decorationColor)
-            var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
-            if self.isLastToken {
-                lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
-            }
+            let lineLength = getDecorationLength()
             let xAdjust = Double(font!.getBodyHeight(fontSize) / 4.0) * sin(radians)
             let yAdjust = Double(font!.getBodyHeight(fontSize) / 4.0) * cos(radians) + Double(verticalOffset)
             let x2 = Double(x) + Double(lineLength) * cos(radians)
@@ -749,6 +743,19 @@ public class TextLine : BaselineDrawable {
         let start = font!.stringWidth(fallbackFont, fontSize, String(before))
         let end = font!.stringWidth(fallbackFont, fontSize, String(through))
         return (start, end)
+    }
+
+    // Returns the length of the underline and of the strikeout: the width of the
+    // text, and of the last token without the space after it. The token is
+    // measured without the space and not as its width less that of a space,
+    // which left out the kerning between the space and the letter before it, so
+    // the line stopped short of the word (the review of 28 October 2026).
+    private func getDecorationLength() -> Float {
+        var drawn = text!
+        if isLastToken && drawn.unicodeScalars.last == " " {
+            drawn = String(drawn.unicodeScalars.dropLast())
+        }
+        return font!.stringWidth(fallbackFont, fontSize, drawn)
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

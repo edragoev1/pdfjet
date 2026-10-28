@@ -75,7 +75,8 @@ type TextFrame struct {
 	rowOpen         bool
 	rowPlaced       bool
 	nextBaseline    float32
-	startsParagraph bool // The next row starts a paragraph
+	startsParagraph bool    // The next row starts a paragraph
+	rowBottom       float32 // The bottom of the last row drawn
 	// True when the row has room for the first word of the next text line,
 	// which goes on from the last word of this one: see Paragraph.AddJoined.
 	joinReserved bool
@@ -300,7 +301,9 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 }
 
 // drawParagraphs draws the text that is left, as much of it as fits in the
-// height of the frame, and returns the bottom of the text drawn.
+// height of the frame, and returns the bottom of the text drawn: of the last
+// row, also when the frame breaks inside a text line, whose rows drawn are
+// below the last whole text line (the review of 28 October 2026).
 func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.xText = tf.x
 	tf.rowOpen = false
@@ -310,6 +313,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.leadingSpace = false
 	tf.rowEndSpace = false
 	tf.row = tf.row[:0]
+	tf.rowBottom = tf.y
 	bottom := tf.y
 	for tf.paragraphIndex < len(tf.paragraphs) {
 		paragraph := tf.paragraphs[tf.paragraphIndex]
@@ -317,7 +321,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 			textLine := paragraph.lines[tf.lineIndex]
 			if !tf.rowOpen && !tf.openRow(textLine) {
 				tf.drawRow(page, false)
-				return bottom
+				return max(bottom, tf.rowBottom)
 			}
 			if tf.tokens == nil {
 				if tf.lineIndex == 0 {
@@ -331,7 +335,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 			}
 			if !tf.drawTokens(page, paragraph, textLine) {
 				tf.drawRow(page, false)
-				return bottom
+				return max(bottom, tf.rowBottom)
 			}
 			paragraph.x2 = tf.xText
 			paragraph.y2 = tf.yText + textLine.font.GetDescent(textLine.fontSize)
@@ -366,7 +370,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 		tf.paragraphIndex++
 		tf.lineIndex = 0
 	}
-	return bottom
+	return max(bottom, tf.rowBottom)
 }
 
 // openRow starts a row of text for the text line, below the previous row or at
@@ -603,6 +607,11 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 	if len(tf.row) == 0 {
 		return
 	}
+	for _, part := range tf.row {
+		if part.text != "" {
+			tf.rowBottom = max(tf.rowBottom, tf.yText+part.textLine.font.GetDescent(part.textLine.fontSize))
+		}
+	}
 	paragraph := tf.row[0].paragraph
 	textAlignment := alignment.Left
 	if paragraph.explicitAlignment {
@@ -612,7 +621,7 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 	rowWidth := last.x + textWidth(last.textLine, trimTrailingSpaces(last.text)) - tf.x
 
 	if textAlignment == alignment.Justify && !lastRowOfParagraph {
-		tf.drawJustifiedRow(page, rowWidth, endSpace)
+		tf.drawJustifiedRow(page, endSpace)
 	} else {
 		var shift float32
 		if textAlignment == alignment.Right {
@@ -718,8 +727,12 @@ func (tf *TextFrame) closeList(page *Page) {
 }
 
 // drawJustifiedRow draws the words of the row one by one, with the width left
-// in the row shared out among the spaces between them.
-func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32, endSpace bool) {
+// in the row shared out among the spaces between them. The width of the row is
+// measured as its words are placed, a word and a space at a time: measured
+// whole, it has the kerning between a space and the letters beside it, which
+// the words placed one by one do not, and a row in a font that kerns them ran
+// past the right edge (the review of 28 October 2026).
+func (tf *TextFrame) drawJustifiedRow(page *Page, endSpace bool) {
 	spaces := 0
 	for i, part := range tf.row {
 		for j := 0; j < len(part.text); j++ {
@@ -730,9 +743,17 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32, endSpace boo
 	}
 	var dx float32
 	if spaces > 0 {
-		dx = (tf.w - rowWidth) / float32(spaces)
+		dx = ((tf.x + tf.w) - tf.placeWords(page, 0, endSpace, false)) / float32(spaces)
 	}
+	tf.placeWords(page, dx, endSpace, true)
+}
+
+// placeWords places the words of the row from the left edge of the frame, dx
+// further apart at each space with a word after it, and draws them when draw
+// is true. It returns where the last word ends.
+func (tf *TextFrame) placeWords(page *Page, dx float32, endSpace, draw bool) float32 {
 	xWord := tf.x
+	wordEnd := tf.x
 	for i, part := range tf.row {
 		text := part.text
 		start := 0
@@ -743,7 +764,10 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32, endSpace boo
 			} else {
 				end += start
 			}
-			if end > start {
+			if end > start && !draw {
+				xWord += textWidth(part.textLine, text[start:end])
+				wordEnd = xWord
+			} else if end > start {
 				word := text[start:end]
 				line := part.textLine.copyWithText(word)
 				// The space after the word may be the first character of the
@@ -771,6 +795,7 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32, endSpace boo
 				line.DrawOn(page)
 				restore()
 				xWord += textWidth(part.textLine, word)
+				wordEnd = xWord
 			}
 			if end < len(text) {
 				xWord += textWidth(part.textLine, single.Space)
@@ -780,10 +805,11 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32, endSpace boo
 			}
 			start = end + 1
 		}
-		if part.endsTextLine {
+		if draw && part.endsTextLine {
 			part.paragraph.x2 = xWord
 		}
 	}
+	return wordEnd
 }
 
 // hasWordAfter returns true when a word follows this position of the row.

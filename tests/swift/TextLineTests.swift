@@ -133,4 +133,27 @@ import Testing
         TestSupport.expectNear(100.0 + TextLine(font, "  ").getWidth(), annot.x1, TestSupport.delta, "left")
         TestSupport.expectNear(TextLine(font, "link").getWidth(), annot.x2 - annot.x1, TestSupport.delta, "width")
     }
+
+    // The underline and the strikeout of a token drawn with the space after it
+    // stop at the end of the token: they were as long as the token with its
+    // space, less a space, which left out the kerning between the space and
+    // the letter before it (the review of 28 October 2026).
+    @Test func theUnderlineOfALastTokenIsAsLongAsTheKernedToken() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/SourceSerif4/SourceSerif4-Regular.ttf"))
+        font.setKernPairs(true)
+        font.setSize(14)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let line = TextLine(font, "WAY ").setUnderline(true).setStrikeout(true)
+        line.isLastToken = true
+        line.setLocation(10, 20).drawOn(page)
+        let content = TestSupport.content(page)
+        let lines = content.matches(of: /([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l/)
+        try #require(lines.count == 2, "not an underline and a strikeout:\n\(content)")
+        for (i, what) in ["the underline", "the strikeout"].enumerated() {
+            let x1 = try #require(Float(String(lines[i].1)))
+            let x2 = try #require(Float(String(lines[i].2)))
+            TestSupport.expectNear(font.stringWidth(14, "WAY"), x2 - x1, TestSupport.delta, "\(what)")
+        }
+    }
 }

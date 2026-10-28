@@ -674,6 +674,24 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   SimpleScatterChart, the four ports, add no comma or colon after a title
   that ends in ".", "?" or "!": "Sales.: a 5" is now "Sales. a 5". A line of
   one value is described by that value, "a 5", where it was "a from 5 to 5".
+- TextFrame, the four ports: `getTextBottom()` (Go `GetTextBottom`) gives
+  the bottom of the last row drawn when the frame breaks inside a text
+  line. It gave the bottom of the last whole text line, or the top of the
+  frame for one long text line, the usual case of `new TextFrame(font,
+  strings)` with a height: a frame at y 100, 100 high, drew rows down to 197
+  and returned 100. Markdown measures a paragraph or a heading longer than a
+  page by it, which it measured too short (the review of 28 October 2026).
+- TextFrame, the four ports: a justified row ends at the right edge of the
+  frame in a font that kerns the space with the letters beside it, as Source
+  Serif 4 does T, V, W and Y. The row was measured whole, with that kerning,
+  and its words placed one by one, without it: a 300 point frame at x 40
+  ended rows at 342.94 in 14 point Source Serif 4. The width is now measured
+  as the words are placed. Example_17 draws its justified rows a little
+  narrower.
+- TextLine, the four ports: the underline and the strike-out of a word
+  drawn with the space after it reach the end of the word in a kerned font;
+  "WAY " in 14 point Source Serif 4 was underlined 30.10 points of its
+  30.44. The word is measured without its space.
 
 ## v9.1.1 — 2026-10-20
 

@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -168,5 +170,29 @@ func TestTextLineSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T) 
 	line.SetFallbackFont(helvetica).SetFont(NewCoreFont(pdf, corefont.TimesRoman()))
 	if line.GetFallbackFont() != helvetica {
 		t.Error("setting the font replaced the fallback font that was set")
+	}
+}
+
+// The underline and the strikeout of a token drawn with the space after it
+// stop at the end of the token: they were as long as the token with its space,
+// less a space, which left out the kerning between the space and the letter
+// before it (the review of 28 October 2026).
+func TestTextLineTheUnderlineOfALastTokenIsAsLongAsTheKernedToken(t *testing.T) {
+	pdf := testNewPDF()
+	font := testKernedFont(t, pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true)
+	font.SetSize(14)
+	page := NewPage(pdf, letter.Portrait())
+	line := NewTextLine(font, "WAY ").SetUnderline(true).SetStrikeout(true)
+	line.isLastToken = true
+	line.SetLocation(10, 20)
+	line.DrawOn(page)
+	lines := regexp.MustCompile(`([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l`).FindAllStringSubmatch(testContent(page), -1)
+	if len(lines) != 2 {
+		t.Fatalf("not an underline and a strikeout:\n%s", testContent(page))
+	}
+	for i, m := range lines {
+		x1, _ := strconv.ParseFloat(m[1], 32)
+		x2, _ := strconv.ParseFloat(m[2], 32)
+		testNear(t, []string{"the underline", "the strikeout"}[i], font.StringWidth(14, "WAY"), float32(x2-x1), testDelta)
 	}
 }

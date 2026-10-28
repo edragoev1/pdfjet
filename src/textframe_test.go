@@ -687,3 +687,91 @@ func TestTextFrameBreaksAWordAtASoftHyphen(t *testing.T) {
 		}
 	}
 }
+
+// testRow is a row of text that a core font drew: its baseline, from the top
+// of the page, and its text.
+type testRow struct {
+	y    float32
+	text string
+}
+
+// testRowsOf returns the rows of text that a core font drew on the page, one
+// text line each, in the order they were drawn.
+func testRowsOf(page *Page) []testRow {
+	var rows []testRow
+	pattern := regexp.MustCompile(`([0-9.]+) ([0-9.]+) Td\n\[<([0-9A-F]*)>\] TJ`)
+	for _, m := range pattern.FindAllStringSubmatch(testContent(page), -1) {
+		y, _ := strconv.ParseFloat(m[2], 32)
+		text, _ := hex.DecodeString(m[3])
+		rows = append(rows, testRow{page.height - float32(y), string(text)})
+	}
+	return rows
+}
+
+// A frame that breaks inside a text line ends below the last row it drew of
+// it: GetTextBottom gave the bottom of the last whole text line, here the top
+// of the frame, as if nothing were drawn (the review of 28 October 2026).
+func TestTextFrameGetTextBottomIsTheBottomOfTheLastRowWhenTheFrameBreaksInsideATextLine(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	words := make([]string, 400)
+	for i := range words {
+		words[i] = strconv.Itoa(i + 1)
+	}
+	frame := NewTextFrame(font, []string{strings.Join(words, " ")}).SetWidth(200).SetHeight(100)
+	descent := font.GetDescent(font.GetSize())
+	next := 1 // The number of the word the frame draws next
+	for _, y := range []float32{100, 300} {
+		page := NewPage(pdf, letter.Portrait())
+		frame.SetLocation(10, y)
+		frame.DrawOn(page)
+		rows := testRowsOf(page)
+		if len(rows) < 2 {
+			t.Fatalf("at %v: %d rows", y, len(rows))
+		}
+		// The frame goes on with the word after the last one it drew.
+		if first := strings.Fields(rows[0].text)[0]; first != strconv.Itoa(next) {
+			t.Errorf("at %v: the first word is %s, not %d", y, first, next)
+		}
+		last := rows[len(rows)-1]
+		testNear(t, "the bottom of the last row", last.y+descent, frame.GetTextBottom(), testDelta)
+		if frame.GetTextBottom() <= y+90 || frame.GetTextBottom() > y+100 {
+			t.Errorf("at %v: the text of the frame ends at %v", y, frame.GetTextBottom())
+		}
+		lastWords := strings.Fields(last.text)
+		next, _ = strconv.Atoi(lastWords[len(lastWords)-1])
+		next++
+	}
+}
+
+// A font that kerns a space with the letters beside it, as Source Serif 4 does
+// T, V, W and Y, made a justified row too wide: it was measured whole, with
+// the kerning, and its words placed one by one, without it, so the rows ended
+// past the right edge (the review of 28 October 2026).
+func TestTextFrameAJustifiedRowInAKernedFontEndsAtTheRightEdge(t *testing.T) {
+	pdf := testNewPDF()
+	font := testKernedFont(t, pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true)
+	font.SetSize(14)
+	text := "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: " +
+		"We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday."
+	paragraph := NewParagraph().Add(NewTextLine(font, text)).SetTextAlignment(alignment.Justify)
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+	frame.SetLocation(40, 40)
+	page := NewPage(pdf, letter.Portrait())
+	frame.DrawOn(page)
+	// Each word of a justified row is drawn at a location of its own, and the
+	// last row whole, at one: the last location of a row is its last word's.
+	words := strings.Fields(text)
+	locations := regexp.MustCompile(`([0-9.]+) ([0-9.]+) Td`).FindAllStringSubmatch(testContent(page), -1)
+	rows := 0
+	for i := 0; i < len(locations)-1; i++ {
+		if locations[i+1][2] != locations[i][2] {
+			x, _ := strconv.ParseFloat(locations[i][1], 32)
+			testNear(t, "the end of the row of "+words[i], 340, float32(x)+font.StringWidth(14, words[i]), testDelta)
+			rows++
+		}
+	}
+	if rows < 2 {
+		t.Errorf("%d justified rows", rows)
+	}
+}

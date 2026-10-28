@@ -156,4 +156,28 @@ class TextLineTest {
         assertEquals(100f + new TextLine(font, "  ").getWidth(), annot.x1, TestSupport.DELTA);
         assertEquals(new TextLine(font, "link").getWidth(), annot.x2 - annot.x1, TestSupport.DELTA);
     }
+
+    // The underline and the strikeout of a token drawn with the space after it
+    // stop at the end of the token: they were as long as the token with its
+    // space, less a space, which left out the kerning between the space and
+    // the letter before it (the review of 28 October 2026).
+    @Test
+    void theUnderlineOfALastTokenIsAsLongAsTheKernedToken() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = KerningTest.kernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        font.setSize(14f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine line = new TextLine(font, "WAY ").setUnderline(true).setStrikeout(true);
+        line.isLastToken = true;
+        line.setLocation(10f, 20f).drawOn(page);
+        String content = TestSupport.content(page);
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l")
+                .matcher(content);
+        for (String what : new String[] {"the underline", "the strikeout"}) {
+            assertTrue(m.find(), "no " + what + ":\n" + content);
+            float x1 = Float.parseFloat(m.group(1));
+            float x2 = Float.parseFloat(m.group(2));
+            assertEquals(font.stringWidth(14f, "WAY"), x2 - x1, TestSupport.DELTA, what);
+        }
+    }
 }

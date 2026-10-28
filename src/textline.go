@@ -525,10 +525,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if textLine.underline {
 		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
 		page.SetPenColorRGB(textLine.decorationColor)
-		lineLength := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
-		if textLine.isLastToken {
-			lineLength -= textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, single.Space)
-		}
+		lineLength := textLine.decorationLength()
 		underlinePosition := float64(textLine.font.GetUnderlinePosition(textLine.fontSize))
 		xAdjust := float64(underlinePosition * math.Sin(radians))
 		yAdjust := float64(underlinePosition*math.Cos(radians)) + float64(verticalOffset)
@@ -546,10 +543,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if textLine.strikeout {
 		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
 		page.SetPenColorRGB(textLine.decorationColor)
-		lineLength := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
-		if textLine.isLastToken {
-			lineLength -= textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, single.Space)
-		}
+		lineLength := textLine.decorationLength()
 		bodyHeight := float64(textLine.font.GetBodyHeight(textLine.fontSize))
 		xAdjust := float64((float64(bodyHeight / 4.0)) * math.Sin(radians))
 		yAdjust := float64((float64(bodyHeight/4.0))*math.Cos(radians)) + float64(verticalOffset)
@@ -589,6 +583,19 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	page.SetTextRotation(0)
 
 	return textLine.corner(verticalOffset)
+}
+
+// decorationLength returns the length of the underline and of the strikeout:
+// the width of the text, and of the last token without the space after it.
+// The token is measured without the space and not as its width less that of a
+// space, which left out the kerning between the space and the letter before
+// it, so the line stopped short of the word (the review of 28 October 2026).
+func (textLine *TextLine) decorationLength() float32 {
+	text := textLine.text
+	if textLine.isLastToken {
+		text = strings.TrimSuffix(text, single.Space)
+	}
+	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
 }
 
 // corner returns the right end of the baseline, or its lower end when the text

@@ -32,7 +32,7 @@ class KerningTest {
     private static final Pattern DRAWN_TEXT = Pattern.compile("<([0-9A-F]*)> Tj|\\[(-?[0-9.]+)\\] TJ");
 
     // Opens a font of the repository, with its kerning on or off.
-    private static Font kernedFont(PDF pdf, String path, boolean kerned) throws Exception {
+    static Font kernedFont(PDF pdf, String path, boolean kerned) throws Exception {
         assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
         try (InputStream in = TestSupport.open(path)) {
             Font font = new Font(pdf, in);

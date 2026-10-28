@@ -144,5 +144,30 @@ public class TextLineTest {
         TestSupport.AssertNear(100f + new TextLine(font, "  ").GetWidth(), annot.x1, TestSupport.DELTA, "left");
         TestSupport.AssertNear(new TextLine(font, "link").GetWidth(), annot.x2 - annot.x1, TestSupport.DELTA, "width");
     }
+
+    // The underline and the strikeout of a token drawn with the space after it
+    // stop at the end of the token: they were as long as the token with its
+    // space, less a space, which left out the kerning between the space and
+    // the letter before it (the review of 28 October 2026).
+    [Fact]
+    public void TheUnderlineOfALastTokenIsAsLongAsTheKernedToken() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = KerningTest.KernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        font.SetSize(14f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine line = new TextLine(font, "WAY ").SetUnderline(true).SetStrikeout(true);
+        line.isLastToken = true;
+        line.SetLocation(10f, 20f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        System.Text.RegularExpressions.MatchCollection lines = System.Text.RegularExpressions.Regex.Matches(
+                content, "([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l");
+        Assert.True(lines.Count == 2, "not an underline and a strikeout:\n" + content);
+        string[] what = {"the underline", "the strikeout"};
+        for (int i = 0; i < 2; i++) {
+            float x1 = float.Parse(lines[i].Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+            float x2 = float.Parse(lines[i].Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
+            TestSupport.AssertNear(font.StringWidth(14f, "WAY"), x2 - x1, TestSupport.DELTA, what[i]);
+        }
+    }
 }
 }
