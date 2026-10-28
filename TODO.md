@@ -98,18 +98,19 @@ commit and date. The layout's format version (1) and the look's rules
   (above), and PDFjet Pro 9.1.5 the same day. The font subsetters were
   fuzzed 8 hours each on 25 October 2026. Was: 9.1.3 in early December
   2026 on its own, 9.1.5 the charts in 2027.
-  **In November 2026** (the owner, 26 October 2026: "will release 9.1.5 in
-  November"), after the Forms launch of 9 and 10 November. The chart items
-  of 9.1.5 below that are not done by then go to 9.1.7; SimpleBarChart is
-  done and goes in 9.1.5.
+  **First, then the Forms launch** (the owner, 27 October 2026: "9.1.5
+  first, then the Forms launch"): 9.1.5 about 3 November 2026, the Forms
+  launch about 16 and 17 November on it. Was: in November, after the Forms
+  launch (26 October 2026). The chart items of 9.1.5 below that are not done
+  by then go to 9.1.7; SimpleBarChart is done and goes in 9.1.5.
   **9.1.5 is the long-term support version, and nothing more is added to
   it** (the owner, 27 October 2026: "I really don't want to add anything
   more to 9.1.5 - it will be our LTS version"): only the fixes of the
   review below; new work goes after it.
   **A complete code review before the release** (the owner, 27 October
   2026: "another complete code review before we release 9.1.5 but not
-  now"): the four ports, everything changed since v9.1.1, after the Forms
-  launch and before the release checks.
+  now"): the four ports, everything changed since v9.1.1, before the
+  release checks, so before the Forms launch too.
 
 - ✅ Done for 9.1.5, 26 October 2026 (the owner: "let's start implementing
   these"): setVerticalPadding, setHeaderColor, setFooterFontSize and
