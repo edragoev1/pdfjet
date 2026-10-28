@@ -721,6 +721,14 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   change and bounds checks in tight loops. A profile of Example_24 first
   (perf on Linux, Instruments on a Mac), then the changes where the time
   is, each measured against the last tag.
+- **After 9.1.5: the library takes what belongs to the PDF format, new
+  features go to PDFjet Pro** (the owner, 28 October 2026: "9.1.5 could be
+  the last major update of PDFjet. From now on we should work on the Pro.
+  The only code that will go into PDFjet will be the one that logically
+  should be there - like object streams. Everything else goes into the
+  Pro. That is also fair for our paying customers."). The test for an item:
+  is it part of writing a correct, compact PDF? Fixes always are. The items
+  below are the ones that pass it; others were moved out the same day.
 - **For v9.2.1, about two years out: large documents** (the owner, 25
   October 2026: the size of tagged documents and documents at any size
   "are kind of related - we should do them together"). Two parts:
@@ -762,65 +770,6 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   named on purpose, breaking at spaces, with a test of each case, the ranges
   of Chinese brought up to date, and the PDF the same for every text it
   draws well today. Not before 9.1.5, whose scope is closed.
-- **For v9.2.1: PDF/UA-2** (ISO 14289-2:2024; the owner, 26 October 2026),
-  with the large tagged documents, as both touch the structure tree. A new
-  level, `Compliance.PDF_UA_2`, that writes `%PDF-2.0`; PDF/UA-1 stays as it
-  is. veraPDF's ua2 check of the 50 examples on 26 October 2026: none
-  passes, and the 44 tagged ones fail six rules alone:
-  1. The Document element in the PDF 2.0 namespace (44 examples).
-  2. The XMP metadata `pdfuaid:part` 2 and `pdfuaid:rev` 2024 (43).
-  3. Every destination within the document a structure destination, the
-     element a link, a bookmark or a go-to lands on, beside its page (41).
-  4. A ListNumbering attribute on a list whose items have labels (4).
-  5. A Caption the first or last child of its Figure: TextFlow's caption of
-     an image goes into the image's figure (1).
-  6. An AFRelationship in the file specification of a file attachment (1).
-  The other failures are of the six examples that are not tagged. Then the
-  structure types PDF 2.0 renamed, such as Note, mapped, as testing shows.
-  The four ports alike, and veraPDF checking UA-1 and UA-2 in CI. About a
-  week.
-- **For v9.2.1: hyphenation by dictionary** (the owner, 26 October 2026,
-  from the fair test's list of what the other libraries have). Today a
-  word breaks at a line's end only at a soft hyphen the text carries.
-  Hyphenation patterns, of the TeX kind, for English first, then the other
-  languages of IBM Plex Sans, chosen by the text line's language; used by
-  TextBlock, TextColumn, TextFrame and TextFlow when asked, off by
-  default so that no document changes. The patterns are data, kept out of
-  the library jar the way the fonts are, or in a small file of their own:
-  to decide. The four ports alike, tested by the words they break.
-  Worked out on 27 October 2026: the simplest way puts soft hyphens into
-  the text before layout, as Hyphenate(text, language) would, so the
-  breaking, the drawn hyphen and the kerned widths are the soft hyphen
-  code already reviewed, and no layout code changes. The algorithm from
-  Frank Liang's thesis (1983), the one TeX uses: about 150 lines a port.
-  At least two letters before a break and three after; no breaks in words
-  with capitals, digits or a URL; a list of exceptions. Each language's
-  patterns checked for their license before they ship, English first.
-  About 3 to 4 days: a day for Go, a day for the other three ports, one or
-  two for the patterns, the cross-port tests and an example.
-- **For v9.2.1: widows and orphans in TextFrame** (the owner, 28 October
-  2026). Text that a TextFrame flows from page to page with DrawOnPages, or
-  from frame to frame, can leave the first line of a paragraph alone at the
-  bottom of a page (an orphan) or carry its last line alone to the top of
-  the next (a widow), and a heading can end a page with its text on the
-  next; Example_17's novel surely has some of each. Markdown already keeps
-  a heading with what follows it, and Table has KeepRowWithNext; TextFrame
-  has neither. At least two lines of a paragraph on each side of a break,
-  a paragraph of three lines or fewer kept whole, and a heading (H1 to H6)
-  kept with the first two lines after it; on by default or not, to decide,
-  as a page that breaks a line earlier changes where every later page
-  breaks. The four ports alike, tested by where the pages break, and
-  Example_17's page count noted before and after.
-- **For v9.2.1: footnotes** (the owner, 28 October 2026, from what Apache
-  FOP does well). PDFjet has none today, in TextFrame or in Markdown. A
-  note marked in the text, a superscript number by default, and its text
-  at the bottom of the page where it is cited, under a short rule, numbered
-  through the document. The space the notes take is kept from the text of
-  that page, so a page that a note does not fit moves the citing line and
-  its note to the next; a long note continues on the next page. Tagged as
-  PDF/UA asks: the citation a Lbl linked to its Note, read where it is
-  cited. Markdown's footnotes ([^1]) drawn by the same code. The four ports
-  alike; done after widows and orphans, as both decide where a page breaks.
 - **Later, not a top concern: object streams, an option off by default**
   (the owner, 28 October 2026: "nice but users never think in this way";
   since the font tables are written smaller, PDFjet's PDFs are a few KB
@@ -842,18 +791,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   case, before and after; checked with qpdf --check and in Acrobat. The
   four ports alike, and the benchmark run with the option on, as its
   documentation would then show.
-- **After v9.2.1: chart polish** (the owner, 28 October 2026: "BFO
-  definitely have more polished charts but for now ours are pretty good").
-  The scales are done; what is left is finish, on SimpleBarChart first.
-  The value of a long bar in white inside its end, where a narrow chart has
-  no room after it; the highlight chosen by the chart, the lowest or the
-  highest value (the benchmark report picks its best by hand today); an
-  option of slightly rounded bar ends; and a dashed line at a reference
-  value, as a target or an average, labeled at its end. The line and
-  scatter charts already have their light grid and their labels at the
-  line ends, and BarChart its grid, legend and grayscale-safe palette, so
-  these are additions, not changes: a chart drawn today draws the same.
-  The four ports alike.
+- **For v9.2.1: four things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
   1. ✅ The first step done for 9.1.5, 26 October 2026 (the owner: "bring
