@@ -59,15 +59,21 @@ go run ./src/examples/example24                                # Go: 7 times, th
 
 Each prints the time of the document in milliseconds; the PDF is checked
 too: 2,546 pages, the last footer "Page 2546 of 2546". The figures of
-15 October 2026, at d040076b, on the machine of the results below, with
-nothing else running:
+28 October 2026, for 9.1.5 at 53565d6f0, and of v9.1.1 run again from its
+tag the same hour, on the machine of the results below, with nothing else
+running:
 
-| Port | Example_24 |
-|---|---|
-| Go | 905 ms |
-| Java | 1,694 ms |
-| C# | 2,296 ms |
-| Swift | 2,672 ms |
+| Port | v9.1.1 | 9.1.5 |
+|---|---|---|
+| Go | 896 ms | 918 ms |
+| Java | 1,691 ms | 1,270 ms |
+| C# | 2,273 ms | 2,244 ms |
+| Swift | 2,624 ms | 2,309 ms |
+
+Go is 2.5% slower, within the 5%; Java is faster by its compression at
+level 5 (26 October 2026), for a PDF 6.5% larger, 12.2 MB where it was
+11.4 MB; Swift by the ToUnicode map of f511f9768. The figures of v9.1.1 on
+15 October, at d040076b, were 905, 1,694, 2,296 and 2,672 ms.
 
 The figures of another machine are not compared with these: the release
 before is run on it as well, from its tag in a worktree.
@@ -86,6 +92,12 @@ PDF() 55 ms in Java before it):
 | C# | 39 ms |
 | Swift | 3 ms |
 | Go | 1.5 ms |
+
+The figures of 28 October 2026, for 9.1.5 at 53565d6f0: Java 47.7 ms, C#
+39.6, Swift 3.3, Go 1.7. Java's v9.1.1, built from its tag and run in turn
+with 9.1.5 the same hour, took 47.4 and 47.6 ms to 9.1.5's 47.7 and 47.9:
+the same, a JVM that starts more slowly on that day than on 15 October,
+not a change of PDFjet.
 
 ## Method
 
