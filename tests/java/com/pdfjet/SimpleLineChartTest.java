@@ -325,4 +325,20 @@ class SimpleLineChartTest {
         chart = new SimpleLineChart(font, font).setTitle("Vehicles?").addLine("a", new float[] {1f, 2f});
         assertEquals("Vehicles? a from 1 to 2.", chart.altDescription());
     }
+
+    // The numbers of an axis written with a power of ten have the significant
+    // digits that write them apart: an axis of 4.84e15 to 4.85e15 was written
+    // 4.84e15 at each line (the review of 28 October 2026).
+    @Test
+    void largeNumbersOfAnAxisAreApart() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setYAxisRange(4.84e15f, 4.85e15f).drawOn(page);
+        String content = TestSupport.content(page);
+        for (String label : new String[] {"4.84e15", "4.841e15", "4.849e15"}) {
+            assertEquals(1, drawn(content, label), label + ": " + content);
+        }
+        assertEquals(4, ChartScale.stepSignificant(4.84e15f, 2e12f));
+        assertEquals(3, ChartScale.stepSignificant(12345f, 1000f));
+    }
 }

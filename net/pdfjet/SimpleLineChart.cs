@@ -342,8 +342,9 @@ public class SimpleLineChart : IDrawable {
     // A number of the axis, with the decimals its step needs, its digits
     // grouped.
     private String Label(float value, float step) {
-        return ChartScale.GroupDigits(
-                ChartScale.Format(value, ChartScale.FractionDigitsOf(step, maxFractionDigits), maxFractionDigits));
+        int digits = ChartScale.FractionDigitsOf(step, maxFractionDigits);
+        return ChartScale.GroupDigits(ChartScale.Format(
+                value, digits, maxFractionDigits, ChartScale.StepSignificant(value, step)));
     }
 
     // A value of a line, as its label writes it.

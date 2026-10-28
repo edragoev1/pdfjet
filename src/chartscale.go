@@ -121,6 +121,34 @@ func axisSignificant(lo, step float32, lines, digits int) int {
 	return 9
 }
 
+// stepSignificant returns the significant digits of a number of an axis written with a power of ten
+// that show it apart from the next, a step away: three, or more, up to nine,
+// one more for each power of ten between the number and the step. The simple
+// charts wrote an axis of 4.84e15 to 4.85e15 as 4.84e15 at each line (the
+// review of 28 October 2026).
+func stepSignificant(value, step float32) int {
+	return min(9, max(3, powerOfTen(float64(value))-powerOfTen(float64(step))+1))
+}
+
+// powerOfTen returns the power of ten of the number's first digit, 0 for 0 or
+// a number that is not one, counted by division, so that the ports agree.
+func powerOfTen(value float64) int {
+	value = math.Abs(value)
+	if value == 0 || math.IsNaN(value) || math.IsInf(value, 0) {
+		return 0
+	}
+	power := 0
+	for value >= 10 {
+		value /= 10
+		power++
+	}
+	for value < 1 {
+		value *= 10
+		power--
+	}
+	return power
+}
+
 // flatDataSpan returns the span of the range of flat data at the value: 1,
 // or a hundred thousandth of the value when that is more, since above 2^24 a
 // float32 has no room for 1 more, and the range would stay flat.

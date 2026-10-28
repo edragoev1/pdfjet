@@ -216,7 +216,8 @@ func (chart *SimpleScatterChart) top() float32 {
 
 // label formats a number of an axis with the decimals its step needs.
 func (chart *SimpleScatterChart) label(value, step float32) string {
-	return groupDigits(format(value, fractionDigitsOf(step, chart.maxFractionDigits), chart.maxFractionDigits))
+	digits := fractionDigitsOf(step, chart.maxFractionDigits)
+	return groupDigits(formatSignificant(value, digits, chart.maxFractionDigits, stepSignificant(value, step)))
 }
 
 // The points whose x and y are numbers.

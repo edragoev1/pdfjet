@@ -78,6 +78,36 @@ final class ChartScale {
     }
 
     /**
+     * Returns the significant digits of a number of an axis written with a power of ten
+     * that show it apart from the next, a step away: three, or more, up to nine,
+     * one more for each power of ten between the number and the step. The simple
+     * charts wrote an axis of 4.84e15 to 4.85e15 as 4.84e15 at each line (the
+     * review of 28 October 2026).
+     */
+    static int stepSignificant(float value, float step) {
+        return Math.min(9, Math.max(3, powerOfTen(value) - powerOfTen(step) + 1));
+    }
+
+    // The power of ten of the number's first digit, 0 for 0 or a number that
+    // is not one, counted by division, so that the ports agree.
+    private static int powerOfTen(double value) {
+        value = Math.abs(value);
+        if (value == 0.0 || Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0;
+        }
+        int power = 0;
+        while (value >= 10.0) {
+            value /= 10.0;
+            power++;
+        }
+        while (value < 1.0) {
+            value *= 10.0;
+            power--;
+        }
+        return power;
+    }
+
+    /**
      * Returns the significant digits of the numbers of an axis written with a
      * power of ten, from lo up by the lines of the step, with the digits:
      * three, or more, up to nine, as many as write them apart. An axis of

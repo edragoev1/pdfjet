@@ -363,8 +363,9 @@ public class SimpleLineChart : Drawable {
     // A number of the axis, with the decimals its step needs, its digits
     // grouped.
     private func label(_ value: Float, _ step: Float) -> String {
-        return ChartScale.groupDigits(
-                ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits))
+        let digits = ChartScale.fractionDigitsOf(step, maxFractionDigits)
+        return ChartScale.groupDigits(ChartScale.format(
+                value, digits, maxFractionDigits, ChartScale.stepSignificant(value, step)))
     }
 
     // A value of a line, as its label writes it.

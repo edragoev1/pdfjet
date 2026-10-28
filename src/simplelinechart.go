@@ -244,7 +244,8 @@ func (line *simpleLine) valueOf(i int) (float32, bool) {
 
 // The number of an axis, with the decimals its step needs, its digits grouped.
 func (chart *SimpleLineChart) label(value, step float32) string {
-	return groupDigits(format(value, fractionDigitsOf(step, chart.maxFractionDigits), chart.maxFractionDigits))
+	digits := fractionDigitsOf(step, chart.maxFractionDigits)
+	return groupDigits(formatSignificant(value, digits, chart.maxFractionDigits, stepSignificant(value, step)))
 }
 
 // A value of a line, as its label writes it.

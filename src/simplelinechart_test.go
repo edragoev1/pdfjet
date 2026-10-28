@@ -327,3 +327,24 @@ func TestSimpleLineChartTheDescriptionReadsWell(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+// The numbers of an axis written with a power of ten have the significant
+// digits that write them apart: an axis of 4.84e15 to 4.85e15 was written
+// 4.84e15 at each line (the review of 28 October 2026).
+func TestSimpleLineChartLargeNumbersOfAnAxisAreApart(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testSimpleLineChart(pdf).SetYAxisRange(4.84e15, 4.85e15).DrawOn(page)
+	content := testContent(page)
+	for _, label := range []string{"4.84e15", "4.841e15", "4.849e15"} {
+		if got := strings.Count(content, "<"+testHex(label)+">"); got != 1 {
+			t.Errorf("%s drawn %d times: %q", label, got, content)
+		}
+	}
+	if got := stepSignificant(4.84e15, 2e12); got != 4 {
+		t.Errorf("%d significant digits", got)
+	}
+	if got := stepSignificant(12345, 1000); got != 3 {
+		t.Errorf("%d significant digits", got)
+	}
+}

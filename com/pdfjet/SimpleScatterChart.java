@@ -321,8 +321,9 @@ public class SimpleScatterChart implements Drawable {
 
     // A number of an axis, with the decimals its step needs.
     private String label(float value, float step) {
-        return ChartScale.groupDigits(
-                ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits));
+        int digits = ChartScale.fractionDigitsOf(step, maxFractionDigits);
+        return ChartScale.groupDigits(ChartScale.format(
+                value, digits, maxFractionDigits, ChartScale.stepSignificant(value, step)));
     }
 
     // The points whose x and y are numbers.

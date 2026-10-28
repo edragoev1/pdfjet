@@ -272,4 +272,18 @@ import Testing
         chart = SimpleLineChart(font, font).setTitle("Vehicles?").addLine("a", [1, 2])
         #expect(chart.getAltDescription() == "Vehicles? a from 1 to 2.")
     }
+    // The numbers of an axis written with a power of ten have the significant
+    // digits that write them apart: an axis of 4.84e15 to 4.85e15 was written
+    // 4.84e15 at each line (the review of 28 October 2026).
+    @Test func largeNumbersOfAnAxisAreApart() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setYAxisRange(4.84e15, 4.85e15).drawOn(page)
+        let content = TestSupport.content(page)
+        for label in ["4.84e15", "4.841e15", "4.849e15"] {
+            #expect(SimpleLineChartTests.drawn(content, label) == 1, "\(label): \(content)")
+        }
+        #expect(ChartScale.stepSignificant(4.84e15, 2e12) == 4)
+        #expect(ChartScale.stepSignificant(12345, 1000) == 3)
+    }
 }

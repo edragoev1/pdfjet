@@ -324,8 +324,9 @@ public class SimpleScatterChart : Drawable {
 
     // A number of an axis, with the decimals its step needs.
     private func label(_ value: Float, _ step: Float) -> String {
-        return ChartScale.groupDigits(
-                ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits))
+        let digits = ChartScale.fractionDigitsOf(step, maxFractionDigits)
+        return ChartScale.groupDigits(ChartScale.format(
+                value, digits, maxFractionDigits, ChartScale.stepSignificant(value, step)))
     }
 
     // The points whose x and y are numbers.

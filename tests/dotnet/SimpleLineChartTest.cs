@@ -330,5 +330,21 @@ public sealed class SimpleLineChartTest {
         chart = new SimpleLineChart(font, font).SetTitle("Vehicles?").AddLine("a", new float[] {1f, 2f});
         Assert.Equal("Vehicles? a from 1 to 2.", chart.AltDescription());
     }
+
+    // The numbers of an axis written with a power of ten have the significant
+    // digits that write them apart: an axis of 4.84e15 to 4.85e15 was written
+    // 4.84e15 at each line (the review of 28 October 2026).
+    [Fact]
+    public void LargeNumbersOfAnAxisAreApart() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetYAxisRange(4.84e15f, 4.85e15f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        foreach (string label in new string[] {"4.84e15", "4.841e15", "4.849e15"}) {
+            Assert.Equal(1, Drawn(content, label));
+        }
+        Assert.Equal(4, ChartScale.StepSignificant(4.84e15f, 2e12f));
+        Assert.Equal(3, ChartScale.StepSignificant(12345f, 1000f));
+    }
 }
 }   // End of namespace PDFjet.NET

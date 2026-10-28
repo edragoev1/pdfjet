@@ -307,8 +307,9 @@ public class SimpleScatterChart : IDrawable {
 
     // A number of an axis, with the decimals its step needs.
     private String Label(float value, float step) {
-        return ChartScale.GroupDigits(
-                ChartScale.Format(value, ChartScale.FractionDigitsOf(step, maxFractionDigits), maxFractionDigits));
+        int digits = ChartScale.FractionDigitsOf(step, maxFractionDigits);
+        return ChartScale.GroupDigits(ChartScale.Format(
+                value, digits, maxFractionDigits, ChartScale.StepSignificant(value, step)));
     }
 
     // The points whose x and y are numbers.

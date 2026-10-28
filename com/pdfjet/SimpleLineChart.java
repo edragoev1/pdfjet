@@ -357,8 +357,9 @@ public class SimpleLineChart implements Drawable {
     // A number of the axis, with the decimals its step needs, its digits
     // grouped.
     private String label(float value, float step) {
-        return ChartScale.groupDigits(
-                ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits));
+        int digits = ChartScale.fractionDigitsOf(step, maxFractionDigits);
+        return ChartScale.groupDigits(ChartScale.format(
+                value, digits, maxFractionDigits, ChartScale.stepSignificant(value, step)));
     }
 
     // A value of a line, as its label writes it.

@@ -734,6 +734,10 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   font is left out of a coverage table, and a subtable that a lookup names
   again is read once. The kerning of the fonts PDFjet ships, and of a Linux
   system's, is the same as before (the review of 28 October 2026).
+- SimpleLineChart and SimpleScatterChart, the four ports: the numbers of an
+  axis of 1e15 and more have the significant digits that set them apart, as
+  BarChart's do: an axis of 4.84e15 to 4.85e15 was written 4.84e15 at each
+  line, and is now 4.84e15, 4.841e15 and on (the review of 28 October 2026).
 
 ## v9.1.1 — 2026-10-20
 
