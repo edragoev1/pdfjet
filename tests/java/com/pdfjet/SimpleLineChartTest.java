@@ -256,4 +256,73 @@ class SimpleLineChartTest {
         assertTrue(TestSupport.content(page).contains(TestSupport.hex("a 0.004")), TestSupport.content(page));
         assertTrue(chart.altDescription().contains("from 0.001 to 0.004"), chart.altDescription());
     }
+
+    // The number of times the text is drawn in a core font at the start of a
+    // string.
+    static int drawn(String content, String text) {
+        String hex = "<" + TestSupport.hex(text);
+        int count = 0;
+        for (int i = content.indexOf(hex); i >= 0; i = content.indexOf(hex, i + 1)) {
+            count++;
+        }
+        return count;
+    }
+
+    // An axis title longer than the plot is shortened as the other texts of
+    // the chart are: the y title of a chart 250 points high ran past its top
+    // and its bottom (the review of 28 October 2026).
+    @Test
+    void aLongAxisTitleIsShortened() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        String title = "Number of battery electric vehicles registered in the state, thousands, by county";
+        chart(pdf).setSize(400f, 250f).setXAxisTitle(title).setYAxisTitle(title).drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex(title)), content);
+        assertEquals(2, drawn(content, "Number of battery"), content);
+    }
+
+    // The chart keeps copies of its categories and its values: a caller that
+    // reused one array for every line drew every line with the last values
+    // (the review of 28 October 2026).
+    @Test
+    void keepsCopiesOfItsData() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        String[] categories = {"2021", "2022"};
+        float[] values = {11f, 12f};
+        SimpleLineChart chart = new SimpleLineChart(font, font).setCategories(categories).addLine("a", values);
+        values[0] = 21f;
+        values[1] = 22f;
+        chart.addLine("b", values);
+        categories[0] = "1999";
+        assertEquals("Line chart, 2021 to 2022: a from 11 to 12; b from 21 to 22.", chart.altDescription());
+    }
+
+    // A null category is an empty one, which crashed drawOn (the review of
+    // 28 October 2026).
+    @Test
+    void aNullCategoryIsAnEmptyOne() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleLineChart chart = new SimpleLineChart(font, font).setCategories(null, "2022", null)
+                .addLine("a", new float[] {1f, 2f, 3f});
+        chart.drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("2022")), TestSupport.content(page));
+        assertEquals("Line chart: a from 1 to 3.", chart.altDescription());
+    }
+
+    // A title that ends a sentence is not followed by a comma, and a line of
+    // one value is described by it alone, where they were "Sales., 2019 to
+    // 2024:" and "a from 5 to 5" (the review of 28 October 2026).
+    @Test
+    void theDescriptionReadsWell() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        SimpleLineChart chart = new SimpleLineChart(font, font).setTitle("Sales.").setCategories("2019", "2024")
+                .addLine("a", new float[] {5f, Float.NaN}).addLine("b", new float[] {1f, 2f});
+        assertEquals("Sales. 2019 to 2024: a 5; b from 1 to 2.", chart.altDescription());
+        chart = new SimpleLineChart(font, font).setTitle("Vehicles?").addLine("a", new float[] {1f, 2f});
+        assertEquals("Vehicles? a from 1 to 2.", chart.altDescription());
+    }
 }

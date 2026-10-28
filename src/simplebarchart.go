@@ -214,7 +214,7 @@ func (chart *SimpleBarChart) getAltDescription() string {
 	if sb.Len() == 0 {
 		sb.WriteString("Bar chart")
 	}
-	separator := ": "
+	separator := punctuationAfter(sb.String(), ":") + " "
 	for i, name := range chart.names {
 		if !isValue(chart.values[i]) {
 			continue
@@ -222,8 +222,22 @@ func (chart *SimpleBarChart) getAltDescription() string {
 		sb.WriteString(separator + name + " " + chart.label(chart.values[i]))
 		separator = ", "
 	}
-	sb.WriteString(".")
+	sb.WriteString(punctuationAfter(sb.String(), "."))
 	return sb.String()
+}
+
+// punctuationAfter returns the mark to write after the text of a description,
+// or nothing when the text ends a sentence already, in ".", "?" or "!": a
+// title "Sales." was described as "Sales.: a 5", and in a line chart as
+// "Sales., 2019 to 2024:" (the review of 28 October 2026).
+func punctuationAfter(text, mark string) string {
+	if text != "" {
+		end := text[len(text)-1]
+		if end == '.' || end == '?' || end == '!' {
+			return ""
+		}
+	}
+	return mark
 }
 
 // DrawOn draws the chart on the page and returns the x and y coordinates of

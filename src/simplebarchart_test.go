@@ -222,3 +222,13 @@ func TestSimpleBarChartTheThirdReviewOfTheCharts(t *testing.T) {
 		t.Errorf("the value at %v runs past the chart of 90", at[0])
 	}
 }
+
+// A title that ends a sentence is not followed by a colon, where it was
+// "Sales.: a 5" (the review of 28 October 2026).
+func TestSimpleBarChartTheDescriptionAfterATitleThatEndsASentence(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	chart := NewSimpleBarChart(font, font).SetTitle("Sales.").Add("a", 5).Add("b", 6)
+	if got, want := chart.getAltDescription(), "Sales. a 5, b 6."; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}

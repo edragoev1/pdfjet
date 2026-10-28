@@ -188,4 +188,13 @@ class SimpleBarChartTest {
         float[] at = TestSupport.positionOf(TestSupport.content(page), "1,234,567");
         assertTrue(at[0] + font.stringWidth("1,234,567") <= 90f + 0.01f, at[0] + " in 90");
     }
+
+    // A title that ends a sentence is not followed by a colon, where it was
+    // "Sales.: a 5" (the review of 28 October 2026).
+    @Test
+    void theDescriptionAfterATitleThatEndsASentence() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        SimpleBarChart chart = new SimpleBarChart(font, font).setTitle("Sales.").add("a", 5f).add("b", 6f);
+        assertEquals("Sales. a 5, b 6.", chart.altDescription());
+    }
 }

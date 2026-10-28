@@ -153,26 +153,36 @@ public class SimpleLineChart implements Drawable {
 
     /**
      * Sets the categories, the years or the months, in their order left to
-     * right.
+     * right. The chart keeps a copy of them, a null category an empty one,
+     * which crashed drawOn (the review of 28 October 2026).
      *
      * @param categories the categories.
      * @return this chart.
      */
     public SimpleLineChart setCategories(String... categories) {
-        this.categories = (categories == null) ? new String[0] : categories;
+        if (categories == null) {
+            this.categories = new String[0];
+            return this;
+        }
+        this.categories = new String[categories.length];
+        for (int i = 0; i < categories.length; i++) {
+            this.categories[i] = (categories[i] == null) ? "" : categories[i];
+        }
         return this;
     }
 
     /**
      * Adds a line: its name, and a value for each category, NaN where it has
-     * none.
+     * none. The chart keeps a copy of the values: a caller that reused one
+     * array for every line drew every line with the last values (the review
+     * of 28 October 2026).
      *
      * @param name the name of the line.
      * @param values its values.
      * @return this chart.
      */
     public SimpleLineChart addLine(String name, float[] values) {
-        lines.add(new Line(name == null ? "" : name, values == null ? new float[0] : values));
+        lines.add(new Line(name == null ? "" : name, values == null ? new float[0] : values.clone()));
         return this;
     }
 
@@ -418,12 +428,12 @@ public class SimpleLineChart implements Drawable {
             while (end > 0 && category(end).isEmpty()) {
                 end--;
             }
-            sb.append(", ").append(category(0));
+            sb.append(SimpleBarChart.punctuationAfter(sb, ",")).append(' ').append(category(0));
             if (end > 0) {
                 sb.append(" to ").append(category(end));
             }
         }
-        sb.append(':');
+        sb.append(SimpleBarChart.punctuationAfter(sb, ":"));
         for (int i = 0; i < lines.size(); i++) {
             Line line = lines.get(i);
             int first = -1;
@@ -449,6 +459,10 @@ public class SimpleLineChart implements Drawable {
                 sb.append(" has no values");
                 continue;
             }
+            if (first == last) {    // One value, which was "from 5 to 5"
+                sb.append(' ').append(value(line.values[first]));
+                continue;
+            }
             sb.append(" from ").append(value(line.values[first])).append(" to ").append(value(line.values[last]));
             if (high != first && high != last) {
                 sb.append(", highest ").append(value(line.values[high]));
@@ -457,7 +471,7 @@ public class SimpleLineChart implements Drawable {
                 }
             }
         }
-        return sb.append('.').toString();
+        return sb.append(SimpleBarChart.punctuationAfter(sb, ".")).toString();
     }
 
     /**
@@ -587,14 +601,18 @@ public class SimpleLineChart implements Drawable {
             page.drawString(f2, size, category(i), ChartScale.placed(centers[i], widths[i], x + pad / 2f, x + w - pad / 2f),
                     bottom + 1.4f * size, Util.toRGB(SimpleBarChart.MUTED), null);
         }
+        // The axis titles, shortened to the width and the height of the plot:
+        // a long one ran past the chart (the review of 28 October 2026)
         if (!xAxisTitle.isEmpty()) {
-            page.drawString(f2, size, xAxisTitle, left + (right - left - f2.stringWidth(size, xAxisTitle)) / 2f,
+            String xTitle = ChartScale.shorten(f2, size, xAxisTitle, right - left);
+            page.drawString(f2, size, xTitle, left + (right - left - f2.stringWidth(size, xTitle)) / 2f,
                     bottom + 2.8f * size, Util.toRGB(SimpleBarChart.INK), null);
         }
         if (!yAxisTitle.isEmpty()) {
+            String yTitle = ChartScale.shorten(f2, size, yAxisTitle, bottom - top);
             page.setTextRotation(-90);
-            page.drawString(f2, size, yAxisTitle, x + pad + ascent,
-                    bottom - (bottom - top - f2.stringWidth(size, yAxisTitle)) / 2f,
+            page.drawString(f2, size, yTitle, x + pad + ascent,
+                    bottom - (bottom - top - f2.stringWidth(size, yTitle)) / 2f,
                     Util.toRGB(SimpleBarChart.INK), null);
             page.setTextRotation(0);
         }

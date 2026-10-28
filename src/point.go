@@ -80,12 +80,6 @@ func NewControlPointY(x, y float32) *Point {
 	return point
 }
 
-// copyPoint returns a copy of the point, including its marker and its URI action.
-func copyPoint(point *Point) *Point {
-	copied := *point
-	return &copied
-}
-
 // SetLocation sets the location (x, y) of this point.
 //   - x: the x coordinate of this point when drawn on the page.
 //   - y: the y coordinate of this point when drawn on the page.
@@ -217,11 +211,10 @@ func (point *Point) SetURIAction(uri string) *Point {
 	return point
 }
 
-// SetAltDescription sets what a point that is a link stands for, like the
-// country a point of a chart is, for a screen reader: in a tagged document,
-// PDF/UA or a PDF/A of level A, a point of a chart that is a link is a
-// figure of its own in the Link, described by it. Without one it is
-// described by its URI.
+// SetAltDescription sets what a point that is a link stands for, like a
+// country, for a screen reader: in a tagged document, PDF/UA or a PDF/A of
+// level A, a point that is a link is a figure of its own in the Link,
+// described by it. Without one it is described by its URI.
 //   - altDescription: what the point stands for.
 func (point *Point) SetAltDescription(altDescription string) *Point {
 	point.altDescription = altDescription
@@ -250,8 +243,8 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 
 	// A point is a marker and carries no text, so it is decorative content;
 	// a point that is a link is a figure of its own in the Link, described by
-	// what it stands for or by its URI, as a point of a chart is. Its link
-	// was not made (review of 12 October 2026, F15).
+	// what it stands for or by its URI, as PDF/UA asks. Its link was not made
+	// (review of 12 October 2026, F15).
 	var link *structElement
 	description := point.altDescription
 	if point.uri != "" {

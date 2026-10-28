@@ -266,7 +266,7 @@ public class SimpleBarChart implements Drawable {
         if (sb.length() == 0) {
             sb.append("Bar chart");
         }
-        String separator = ": ";
+        String separator = punctuationAfter(sb, ":") + " ";
         for (int i = 0; i < names.size(); i++) {
             if (!ChartScale.isValue(values.get(i))) {
                 continue;
@@ -274,7 +274,21 @@ public class SimpleBarChart implements Drawable {
             sb.append(separator).append(names.get(i)).append(' ').append(label(values.get(i)));
             separator = ", ";
         }
-        return sb.append('.').toString();
+        return sb.append(punctuationAfter(sb, ".")).toString();
+    }
+
+    // The mark to write after the text of a description, or nothing when the
+    // text ends a sentence already, in ".", "?" or "!": a title "Sales." was
+    // described as "Sales.: a 5", and in a line chart as "Sales., 2019 to
+    // 2024:" (the review of 28 October 2026).
+    static String punctuationAfter(CharSequence text, String mark) {
+        if (text.length() > 0) {
+            char end = text.charAt(text.length() - 1);
+            if (end == '.' || end == '?' || end == '!') {
+                return "";
+            }
+        }
+        return mark;
     }
 
     /**

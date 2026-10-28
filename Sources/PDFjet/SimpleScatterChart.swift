@@ -409,7 +409,7 @@ public class SimpleScatterChart : Drawable {
         if text.isEmpty {
             text = "Scatter chart"
         }
-        text += ": \(shown.count) points"
+        text += SimpleBarChart.punctuationAfter(text, ":") + " \(shown.count) points"
         if !xAxisTitle.isEmpty && !yAxisTitle.isEmpty {
             text += ", " + yAxisTitle + " against " + xAxisTitle
         }
@@ -424,7 +424,7 @@ public class SimpleScatterChart : Drawable {
         if trendLine, let axes = axes, let line = SimpleScatterChart.shownTrend(points, axes.x, axes.y) {
             text += line.slope > 0 ? "; the trend rises" : line.slope < 0 ? "; the trend falls" : "; the trend is flat"
         }
-        return text + "."
+        return text + SimpleBarChart.punctuationAfter(text, ".")
     }
 
     ///
@@ -551,14 +551,18 @@ public class SimpleScatterChart : Drawable {
             page.drawString(f2, size, label, ChartScale.placed(centers[i], widths[i], x + pad / 2.0, x + w - pad / 2.0),
                     plotBottom + 1.4 * size, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
+        // The axis titles, shortened to the width and the height of the plot:
+        // a long one ran past the chart (the review of 28 October 2026)
         if !xAxisTitle.isEmpty {
-            page.drawString(f2, size, xAxisTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xAxisTitle)) / 2.0,
+            let xTitle = ChartScale.shorten(f2, size, xAxisTitle, right - plotLeft)
+            page.drawString(f2, size, xTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xTitle)) / 2.0,
                     plotBottom + 2.8 * size, Util.toRGB(SimpleBarChart.INK), nil)
         }
         if !yAxisTitle.isEmpty {
+            let yTitle = ChartScale.shorten(f2, size, yAxisTitle, plotBottom - top)
             page.setTextRotation(-90)
-            page.drawString(f2, size, yAxisTitle, x + pad + ascent,
-                    plotBottom - (plotBottom - top - f2.stringWidth(size, yAxisTitle)) / 2.0,
+            page.drawString(f2, size, yTitle, x + pad + ascent,
+                    plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2.0,
                     Util.toRGB(SimpleBarChart.INK), nil)
             page.setTextRotation(0)
         }

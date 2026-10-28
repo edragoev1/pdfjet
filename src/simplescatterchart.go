@@ -323,7 +323,7 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 	if sb.Len() == 0 {
 		sb.WriteString("Scatter chart")
 	}
-	sb.WriteString(": " + strconv.Itoa(len(shown)) + " points")
+	sb.WriteString(punctuationAfter(sb.String(), ":") + " " + strconv.Itoa(len(shown)) + " points")
 	if chart.xAxisTitle != "" && chart.yAxisTitle != "" {
 		sb.WriteString(", " + chart.yAxisTitle + " against " + chart.xAxisTitle)
 	}
@@ -353,7 +353,7 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 			}
 		}
 	}
-	sb.WriteString(".")
+	sb.WriteString(punctuationAfter(sb.String(), "."))
 	return sb.String()
 }
 
@@ -476,15 +476,18 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		page.drawString(f2, size, label, placed(centers[i], widths[i], lo, hi),
 			bottom+float32(1.4*size), colorToRGB(simpleBarMuted), nil)
 	}
+	// The axis titles, shortened to the width and the height of the plot: a
+	// long one ran past the chart (the review of 28 October 2026)
 	if chart.xAxisTitle != "" {
-		page.drawString(f2, size, chart.xAxisTitle,
-			left+float32((right-left-f2.StringWidth(size, chart.xAxisTitle))/2.0),
+		title := shorten(f2, size, chart.xAxisTitle, right-left)
+		page.drawString(f2, size, title, left+float32((right-left-f2.StringWidth(size, title))/2.0),
 			bottom+float32(2.8*size), colorToRGB(simpleBarInk), nil)
 	}
 	if chart.yAxisTitle != "" {
+		title := shorten(f2, size, chart.yAxisTitle, bottom-top)
 		page.SetTextRotation(-90)
-		page.drawString(f2, size, chart.yAxisTitle, chart.x+pad+ascent,
-			bottom-float32((bottom-top-f2.StringWidth(size, chart.yAxisTitle))/2.0), colorToRGB(simpleBarInk), nil)
+		page.drawString(f2, size, title, chart.x+pad+ascent,
+			bottom-float32((bottom-top-f2.StringWidth(size, title))/2.0), colorToRGB(simpleBarInk), nil)
 		page.SetTextRotation(0)
 	}
 

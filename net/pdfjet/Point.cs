@@ -243,10 +243,10 @@ public class Point : IDrawable {
     }
 
     /// <summary>
-    /// Sets what a point that is a link stands for, like the country a point of
-    /// a chart is, for a screen reader: in a tagged document, PDF/UA or a PDF/A
-    /// of level A, a point of a chart that is a link is a figure of its own in
-    /// the Link, described by it. Without one it is described by its URI.
+    /// Sets what a point that is a link stands for, like a country, for a screen
+    /// reader: in a tagged document, PDF/UA or a PDF/A of level A, a point that
+    /// is a link is a figure of its own in the Link, described by it. Without
+    /// one it is described by its URI.
     /// </summary>
     /// <param name="altDescription">what the point stands for.</param>
     /// <returns>this Point object.</returns>
@@ -283,8 +283,8 @@ public class Point : IDrawable {
 
         // A point is a marker and carries no text, so it is decorative content;
         // a point that is a link is a figure of its own in the Link, described
-        // by what it stands for or by its URI, as a point of a chart is. Its
-        // link was not made (review of 12 October 2026, F15).
+        // by what it stands for or by its URI, as PDF/UA asks. Its link was not
+        // made (review of 12 October 2026, F15).
         StructElement link = null;
         String description = altDescription;
         if (!String.IsNullOrEmpty(uri)) {

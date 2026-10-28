@@ -426,7 +426,7 @@ public class SimpleScatterChart implements Drawable {
         if (sb.length() == 0) {
             sb.append("Scatter chart");
         }
-        sb.append(": ").append(shown.size()).append(" points");
+        sb.append(SimpleBarChart.punctuationAfter(sb, ":")).append(' ').append(shown.size()).append(" points");
         if (!xAxisTitle.isEmpty() && !yAxisTitle.isEmpty()) {
             sb.append(", ").append(yAxisTitle).append(" against ").append(xAxisTitle);
         }
@@ -446,7 +446,7 @@ public class SimpleScatterChart implements Drawable {
                 sb.append(line[0] > 0 ? "; the trend rises" : line[0] < 0 ? "; the trend falls" : "; the trend is flat");
             }
         }
-        return sb.append('.').toString();
+        return sb.append(SimpleBarChart.punctuationAfter(sb, ".")).toString();
     }
 
     /**
@@ -568,14 +568,18 @@ public class SimpleScatterChart implements Drawable {
             page.drawString(f2, size, label, ChartScale.placed(centers[i], widths[i], x + pad / 2f, x + w - pad / 2f),
                     plotBottom + 1.4f * size, Util.toRGB(SimpleBarChart.MUTED), null);
         }
+        // The axis titles, shortened to the width and the height of the plot:
+        // a long one ran past the chart (the review of 28 October 2026)
         if (!xAxisTitle.isEmpty()) {
-            page.drawString(f2, size, xAxisTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xAxisTitle)) / 2f,
+            String xTitle = ChartScale.shorten(f2, size, xAxisTitle, right - plotLeft);
+            page.drawString(f2, size, xTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xTitle)) / 2f,
                     plotBottom + 2.8f * size, Util.toRGB(SimpleBarChart.INK), null);
         }
         if (!yAxisTitle.isEmpty()) {
+            String yTitle = ChartScale.shorten(f2, size, yAxisTitle, plotBottom - top);
             page.setTextRotation(-90);
-            page.drawString(f2, size, yAxisTitle, x + pad + ascent,
-                    plotBottom - (plotBottom - top - f2.stringWidth(size, yAxisTitle)) / 2f,
+            page.drawString(f2, size, yTitle, x + pad + ascent,
+                    plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2f,
                     Util.toRGB(SimpleBarChart.INK), null);
             page.setTextRotation(0);
         }

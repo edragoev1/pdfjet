@@ -251,7 +251,7 @@ public class SimpleBarChart : IDrawable {
         if (sb.Length == 0) {
             sb.Append("Bar chart");
         }
-        String separator = ": ";
+        String separator = PunctuationAfter(sb, ":") + " ";
         for (int i = 0; i < names.Count; i++) {
             if (!ChartScale.IsValue(values[i])) {
                 continue;
@@ -259,7 +259,21 @@ public class SimpleBarChart : IDrawable {
             sb.Append(separator).Append(names[i]).Append(' ').Append(Label(values[i]));
             separator = ", ";
         }
-        return sb.Append('.').ToString();
+        return sb.Append(PunctuationAfter(sb, ".")).ToString();
+    }
+
+    // The mark to write after the text of a description, or nothing when the
+    // text ends a sentence already, in ".", "?" or "!": a title "Sales." was
+    // described as "Sales.: a 5", and in a line chart as "Sales., 2019 to
+    // 2024:" (the review of 28 October 2026).
+    internal static String PunctuationAfter(StringBuilder text, String mark) {
+        if (text.Length > 0) {
+            char end = text[text.Length - 1];
+            if (end == '.' || end == '?' || end == '!') {
+                return "";
+            }
+        }
+        return mark;
     }
 
     /// <summary>Draws the chart on the page.</summary>

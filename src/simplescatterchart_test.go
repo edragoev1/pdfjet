@@ -246,3 +246,28 @@ func TestSimpleScatterChartTheThirdReviewOfTheCharts(t *testing.T) {
 		t.Errorf("a span past the largest float drew %q", content)
 	}
 }
+
+// An axis title longer than the plot is shortened as the other texts of the
+// chart are, and the description keeps it whole; a title that ends a sentence
+// is not followed by a colon (the review of 28 October 2026).
+func TestSimpleScatterChartALongAxisTitleIsShortened(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	title := "Number of battery electric vehicles registered in the state, thousands, by county"
+	chart := testSimpleScatterChart(pdf).SetSize(400, 250).SetXAxisTitle(title).SetYAxisTitle(title)
+	chart.DrawOn(page)
+	content := testContent(page)
+	if strings.Contains(content, testHex(title)) {
+		t.Errorf("the axis titles are not shortened: %q", content)
+	}
+	if strings.Count(content, "<"+testHex("Number of battery")) != 2 {
+		t.Errorf("the axis titles are not drawn: %q", content)
+	}
+	if got := chart.getAltDescription(); !strings.Contains(got, title+" against "+title) {
+		t.Errorf("the description does not keep the titles whole: %q", got)
+	}
+	chart = NewSimpleScatterChart(chart.f1, chart.f2).SetTitle("Life expectancy?").Add(1, 2).Add(2, 3)
+	if got, want := chart.getAltDescription(), "Life expectancy? 2 points."; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}

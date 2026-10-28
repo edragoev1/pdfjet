@@ -145,9 +145,9 @@ import Testing
         let font = TestSupport.helvetica(pdf)
         let chart = SimpleLineChart(font, font).setTitle("Sales")
                 .setCategories("2019").addLine("a", [4])
-        #expect(chart.getAltDescription().hasPrefix("Sales, 2019: a from"), "\(chart.getAltDescription())")
+        #expect(chart.getAltDescription().hasPrefix("Sales, 2019: a 4."), "\(chart.getAltDescription())")
         chart.setCategories("2019", "2020", "")
-        #expect(chart.getAltDescription().hasPrefix("Sales, 2019 to 2020: a from"), "\(chart.getAltDescription())")
+        #expect(chart.getAltDescription().hasPrefix("Sales, 2019 to 2020: a 4."), "\(chart.getAltDescription())")
     }
 
     @Test func lineChartDrawsAValueAloneBetweenGaps() {

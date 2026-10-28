@@ -196,11 +196,11 @@ func TestSimpleLineChartDescriptionOfOneCategory(t *testing.T) {
 	font := testHelvetica(pdf)
 	chart := NewSimpleLineChart(font, font).SetTitle("Sales").
 		SetCategories("2019").AddLine("a", []float32{4})
-	if got := chart.getAltDescription(); !strings.HasPrefix(got, "Sales, 2019: a from") {
+	if got := chart.getAltDescription(); !strings.HasPrefix(got, "Sales, 2019: a 4.") {
 		t.Errorf("description %q", got)
 	}
 	chart.SetCategories("2019", "2020", "")
-	if got := chart.getAltDescription(); !strings.HasPrefix(got, "Sales, 2019 to 2020: a from") {
+	if got := chart.getAltDescription(); !strings.HasPrefix(got, "Sales, 2019 to 2020: a 4.") {
 		t.Errorf("description %q", got)
 	}
 }

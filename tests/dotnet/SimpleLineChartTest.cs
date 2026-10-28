@@ -260,5 +260,75 @@ public sealed class SimpleLineChartTest {
         Assert.Contains(TestSupport.Hex("a 0.004"), TestSupport.Content(page));
         Assert.Contains("from 0.001 to 0.004", chart.AltDescription());
     }
+
+    // The number of times the text is drawn in a core font at the start of a
+    // string.
+    internal static int Drawn(string content, string text) {
+        string hex = "<" + TestSupport.Hex(text);
+        int count = 0;
+        for (int i = content.IndexOf(hex, StringComparison.Ordinal); i >= 0;
+                i = content.IndexOf(hex, i + 1, StringComparison.Ordinal)) {
+            count++;
+        }
+        return count;
+    }
+
+    // An axis title longer than the plot is shortened as the other texts of
+    // the chart are: the y title of a chart 250 points high ran past its top
+    // and its bottom (the review of 28 October 2026).
+    [Fact]
+    public void ALongAxisTitleIsShortened() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        string title = "Number of battery electric vehicles registered in the state, thousands, by county";
+        NewChart(pdf).SetSize(400f, 250f).SetXAxisTitle(title).SetYAxisTitle(title).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex(title), content);
+        Assert.Equal(2, Drawn(content, "Number of battery"));
+    }
+
+    // The chart keeps copies of its categories and its values: a caller that
+    // reused one array for every line drew every line with the last values
+    // (the review of 28 October 2026).
+    [Fact]
+    public void KeepsCopiesOfItsData() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        string[] categories = {"2021", "2022"};
+        float[] values = {11f, 12f};
+        SimpleLineChart chart = new SimpleLineChart(font, font).SetCategories(categories).AddLine("a", values);
+        values[0] = 21f;
+        values[1] = 22f;
+        chart.AddLine("b", values);
+        categories[0] = "1999";
+        Assert.Equal("Line chart, 2021 to 2022: a from 11 to 12; b from 21 to 22.", chart.AltDescription());
+    }
+
+    // A null category is an empty one, which crashed DrawOn (the review of 28
+    // October 2026).
+    [Fact]
+    public void ANullCategoryIsAnEmptyOne() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleLineChart chart = new SimpleLineChart(font, font).SetCategories(null, "2022", null)
+                .AddLine("a", new float[] {1f, 2f, 3f});
+        chart.DrawOn(page);
+        Assert.Contains(TestSupport.Hex("2022"), TestSupport.Content(page));
+        Assert.Equal("Line chart: a from 1 to 3.", chart.AltDescription());
+    }
+
+    // A title that ends a sentence is not followed by a comma, and a line of
+    // one value is described by it alone, where they were "Sales., 2019 to
+    // 2024:" and "a from 5 to 5" (the review of 28 October 2026).
+    [Fact]
+    public void TheDescriptionReadsWell() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        SimpleLineChart chart = new SimpleLineChart(font, font).SetTitle("Sales.").SetCategories("2019", "2024")
+                .AddLine("a", new float[] {5f, float.NaN}).AddLine("b", new float[] {1f, 2f});
+        Assert.Equal("Sales. 2019 to 2024: a 5; b from 1 to 2.", chart.AltDescription());
+        chart = new SimpleLineChart(font, font).SetTitle("Vehicles?").AddLine("a", new float[] {1f, 2f});
+        Assert.Equal("Vehicles? a from 1 to 2.", chart.AltDescription());
+    }
 }
 }   // End of namespace PDFjet.NET

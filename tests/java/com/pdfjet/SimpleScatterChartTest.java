@@ -235,4 +235,23 @@ class SimpleScatterChartTest {
         new SimpleScatterChart(font, font).add(-3e38f, -3e38f).add(3e38f, 3e38f).drawOn(page);
         assertEquals("", TestSupport.content(page));
     }
+
+    // An axis title longer than the plot is shortened as the other texts of
+    // the chart are, and the description keeps it whole; a title that ends a
+    // sentence is not followed by a colon (the review of 28 October 2026).
+    @Test
+    void aLongAxisTitleIsShortened() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        String title = "Number of battery electric vehicles registered in the state, thousands, by county";
+        SimpleScatterChart chart = chart(pdf).setSize(400f, 250f).setXAxisTitle(title).setYAxisTitle(title);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex(title)), content);
+        assertEquals(2, SimpleLineChartTest.drawn(content, "Number of battery"), content);
+        assertTrue(chart.altDescription().contains(title + " against " + title), chart.altDescription());
+        Font font = TestSupport.helvetica(pdf);
+        chart = new SimpleScatterChart(font, font).setTitle("Life expectancy?").add(1f, 2f).add(2f, 3f);
+        assertEquals("Life expectancy? 2 points.", chart.altDescription());
+    }
 }

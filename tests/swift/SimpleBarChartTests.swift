@@ -158,4 +158,12 @@ import Testing
         let at = TestSupport.positionOf(TestSupport.content(page), "1,234,567")
         #expect(at[0] + font.stringWidth("1,234,567") <= 90 + 0.01, "\(at[0]) in 90")
     }
+
+    // A title that ends a sentence is not followed by a colon, where it was
+    // "Sales.: a 5" (the review of 28 October 2026).
+    @Test func theDescriptionAfterATitleThatEndsASentence() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let chart = SimpleBarChart(font, font).setTitle("Sales.").add("a", 5).add("b", 6)
+        #expect(chart.getAltDescription() == "Sales. a 5, b 6.")
+    }
 }

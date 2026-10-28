@@ -659,6 +659,21 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   Behavior change: a chart whose axis labels would meet shows fewer of them;
   a horizontal chart of 0 to 80 in steps of 10 with one decimal, 120 points
   wide, labels 0.0, 20.0 to 80.0 and leaves 10.0, 30.0 and the others out.
+- SimpleLineChart and SimpleScatterChart, the four ports: the axis titles
+  are shortened with an ellipsis, as the title and the names are, to the
+  width of the plot for the x title and to its height for the y title; a y
+  title 310 points long on a chart 250 points high ran past its top and its
+  bottom. The PDF/UA description keeps the titles whole (the review of 28
+  October 2026).
+- SimpleLineChart, Go, Java and C#: the chart keeps a copy of the
+  categories and of each line's values; a caller that reused one array for
+  every line drew every line with the last values. Swift arrays are values,
+  copied already. A null category is an empty one in Java and C#, where it
+  failed the drawing.
+- The PDF/UA descriptions of SimpleLineChart, SimpleBarChart and
+  SimpleScatterChart, the four ports, add no comma or colon after a title
+  that ends in ".", "?" or "!": "Sales.: a 5" is now "Sales. a 5". A line of
+  one value is described by that value, "a 5", where it was "a from 5 to 5".
 
 ## v9.1.1 — 2026-10-20
 

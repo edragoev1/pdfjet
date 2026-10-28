@@ -105,16 +105,18 @@ func (chart *SimpleLineChart) SetAltDescription(altDescription string) *SimpleLi
 }
 
 // SetCategories sets the categories, the years or the months, in their order
-// left to right.
+// left to right. The chart keeps a copy of them.
 func (chart *SimpleLineChart) SetCategories(categories ...string) *SimpleLineChart {
-	chart.categories = categories
+	chart.categories = append([]string(nil), categories...)
 	return chart
 }
 
 // AddLine adds a line: its name, and a value for each category, NaN where it
-// has none.
+// has none. The chart keeps a copy of the values: a caller that reused one
+// slice for every line drew every line with the last values (the review of 28
+// October 2026).
 func (chart *SimpleLineChart) AddLine(name string, values []float32) *SimpleLineChart {
-	chart.lines = append(chart.lines, &simpleLine{name, values})
+	chart.lines = append(chart.lines, &simpleLine{name, append([]float32(nil), values...)})
 	return chart
 }
 
@@ -322,12 +324,12 @@ func (chart *SimpleLineChart) getAltDescription() string {
 		for end > 0 && chart.category(end) == "" {
 			end--
 		}
-		sb.WriteString(", " + chart.category(0))
+		sb.WriteString(punctuationAfter(sb.String(), ",") + " " + chart.category(0))
 		if end > 0 {
 			sb.WriteString(" to " + chart.category(end))
 		}
 	}
-	sb.WriteString(":")
+	sb.WriteString(punctuationAfter(sb.String(), ":"))
 	for i, line := range chart.lines {
 		first, last, high := -1, -1, -1
 		for j := 0; j < n; j++ {
@@ -351,6 +353,10 @@ func (chart *SimpleLineChart) getAltDescription() string {
 			sb.WriteString(" has no values")
 			continue
 		}
+		if first == last { // One value, which was "from 5 to 5"
+			sb.WriteString(" " + chart.value(line.values[first]))
+			continue
+		}
 		sb.WriteString(" from " + chart.value(line.values[first]) + " to " + chart.value(line.values[last]))
 		if high != first && high != last {
 			sb.WriteString(", highest " + chart.value(line.values[high]))
@@ -359,7 +365,7 @@ func (chart *SimpleLineChart) getAltDescription() string {
 			}
 		}
 	}
-	sb.WriteString(".")
+	sb.WriteString(punctuationAfter(sb.String(), "."))
 	return sb.String()
 }
 
@@ -492,15 +498,18 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		page.drawString(f2, size, chart.category(i), placed(centers[i], widths[i], lo, hi),
 			bottom+float32(1.4*size), colorToRGB(simpleBarMuted), nil)
 	}
+	// The axis titles, shortened to the width and the height of the plot: a
+	// long one ran past the chart (the review of 28 October 2026)
 	if chart.xAxisTitle != "" {
-		page.drawString(f2, size, chart.xAxisTitle,
-			left+float32((right-left-f2.StringWidth(size, chart.xAxisTitle))/2.0),
+		title := shorten(f2, size, chart.xAxisTitle, right-left)
+		page.drawString(f2, size, title, left+float32((right-left-f2.StringWidth(size, title))/2.0),
 			bottom+float32(2.8*size), colorToRGB(simpleBarInk), nil)
 	}
 	if chart.yAxisTitle != "" {
+		title := shorten(f2, size, chart.yAxisTitle, bottom-top)
 		page.SetTextRotation(-90)
-		page.drawString(f2, size, chart.yAxisTitle, chart.x+pad+ascent,
-			bottom-float32((bottom-top-f2.StringWidth(size, chart.yAxisTitle))/2.0), colorToRGB(simpleBarInk), nil)
+		page.drawString(f2, size, title, chart.x+pad+ascent,
+			bottom-float32((bottom-top-f2.StringWidth(size, title))/2.0), colorToRGB(simpleBarInk), nil)
 		page.SetTextRotation(0)
 	}
 

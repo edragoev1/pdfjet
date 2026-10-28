@@ -179,5 +179,14 @@ public class SimpleBarChartTest {
         float[] at = TestSupport.PositionOf(TestSupport.Content(page), "1,234,567");
         Assert.True(at[0] + font.StringWidth("1,234,567") <= 90f + 0.01f, at[0] + " in 90");
     }
+
+    // A title that ends a sentence is not followed by a colon, where it was
+    // "Sales.: a 5" (the review of 28 October 2026).
+    [Fact]
+    public void TheDescriptionAfterATitleThatEndsASentence() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        SimpleBarChart chart = new SimpleBarChart(font, font).SetTitle("Sales.").Add("a", 5f).Add("b", 6f);
+        Assert.Equal("Sales. a 5, b 6.", chart.AltDescription());
+    }
 }
 }   // End of namespace PDFjet.NET

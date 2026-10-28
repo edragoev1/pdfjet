@@ -170,7 +170,7 @@ public class SimpleLineChart : Drawable {
 
     ///
     /// Adds a line: its name, and a value for each category, NaN where it has
-    /// none.
+    /// none. The chart keeps a copy of the values, as a Swift array is a value.
     ///
     /// - Parameter name: the name of the line.
     /// - Parameter values: its values.
@@ -430,12 +430,12 @@ public class SimpleLineChart : Drawable {
             while end > 0 && category(end).isEmpty {
                 end -= 1
             }
-            sb += ", " + category(0)
+            sb += SimpleBarChart.punctuationAfter(sb, ",") + " " + category(0)
             if end > 0 {
                 sb += " to " + category(end)
             }
         }
-        sb += ":"
+        sb += SimpleBarChart.punctuationAfter(sb, ":")
         for (i, line) in lines.enumerated() {
             var first = -1
             var last = -1
@@ -457,6 +457,10 @@ public class SimpleLineChart : Drawable {
                 sb += " has no values"
                 continue
             }
+            if first == last {  // One value, which was "from 5 to 5"
+                sb += " " + value(line.values[first])
+                continue
+            }
             sb += " from " + value(line.values[first]) + " to " + value(line.values[last])
             if high != first && high != last {
                 sb += ", highest " + value(line.values[high])
@@ -465,7 +469,7 @@ public class SimpleLineChart : Drawable {
                 }
             }
         }
-        return sb + "."
+        return sb + SimpleBarChart.punctuationAfter(sb, ".")
     }
 
     ///
@@ -601,14 +605,18 @@ public class SimpleLineChart : Drawable {
                     ChartScale.placed(centers[i], widths[i], x + pad / 2.0, x + w - pad / 2.0),
                     plotBottom + 1.4 * size, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
+        // The axis titles, shortened to the width and the height of the plot:
+        // a long one ran past the chart (the review of 28 October 2026)
         if !xAxisTitle.isEmpty {
-            page.drawString(f2, size, xAxisTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xAxisTitle)) / 2.0,
+            let xTitle = ChartScale.shorten(f2, size, xAxisTitle, right - plotLeft)
+            page.drawString(f2, size, xTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xTitle)) / 2.0,
                     plotBottom + 2.8 * size, Util.toRGB(SimpleBarChart.INK), nil)
         }
         if !yAxisTitle.isEmpty {
+            let yTitle = ChartScale.shorten(f2, size, yAxisTitle, plotBottom - top)
             page.setTextRotation(-90)
-            page.drawString(f2, size, yAxisTitle, x + pad + ascent,
-                    plotBottom - (plotBottom - top - f2.stringWidth(size, yAxisTitle)) / 2.0,
+            page.drawString(f2, size, yTitle, x + pad + ascent,
+                    plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2.0,
                     Util.toRGB(SimpleBarChart.INK), nil)
             page.setTextRotation(0)
         }

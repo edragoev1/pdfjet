@@ -412,7 +412,7 @@ public class SimpleScatterChart : IDrawable {
         if (sb.Length == 0) {
             sb.Append("Scatter chart");
         }
-        sb.Append(": ").Append(shown.Count).Append(" points");
+        sb.Append(SimpleBarChart.PunctuationAfter(sb, ":")).Append(' ').Append(shown.Count).Append(" points");
         if (xAxisTitle.Length > 0 && yAxisTitle.Length > 0) {
             sb.Append(", ").Append(yAxisTitle).Append(" against ").Append(xAxisTitle);
         }
@@ -432,7 +432,7 @@ public class SimpleScatterChart : IDrawable {
                 sb.Append(line[0] > 0 ? "; the trend rises" : line[0] < 0 ? "; the trend falls" : "; the trend is flat");
             }
         }
-        return sb.Append('.').ToString();
+        return sb.Append(SimpleBarChart.PunctuationAfter(sb, ".")).ToString();
     }
 
     /// <summary>
@@ -552,14 +552,18 @@ public class SimpleScatterChart : IDrawable {
             page.DrawString(f2, size, label, ChartScale.Placed(centers[i], widths[i], x + pad / 2f, x + w - pad / 2f),
                     plotBottom + 1.4f * size, Util.ToRGB(SimpleBarChart.MUTED), null);
         }
+        // The axis titles, shortened to the width and the height of the plot:
+        // a long one ran past the chart (the review of 28 October 2026)
         if (xAxisTitle.Length > 0) {
-            page.DrawString(f2, size, xAxisTitle, plotLeft + (right - plotLeft - f2.StringWidth(size, xAxisTitle)) / 2f,
+            String xTitle = ChartScale.Shorten(f2, size, xAxisTitle, right - plotLeft);
+            page.DrawString(f2, size, xTitle, plotLeft + (right - plotLeft - f2.StringWidth(size, xTitle)) / 2f,
                     plotBottom + 2.8f * size, Util.ToRGB(SimpleBarChart.INK), null);
         }
         if (yAxisTitle.Length > 0) {
+            String yTitle = ChartScale.Shorten(f2, size, yAxisTitle, plotBottom - top);
             page.SetTextRotation(-90);
-            page.DrawString(f2, size, yAxisTitle, x + pad + ascent,
-                    plotBottom - (plotBottom - top - f2.StringWidth(size, yAxisTitle)) / 2f,
+            page.DrawString(f2, size, yTitle, x + pad + ascent,
+                    plotBottom - (plotBottom - top - f2.StringWidth(size, yTitle)) / 2f,
                     Util.ToRGB(SimpleBarChart.INK), null);
             page.SetTextRotation(0);
         }

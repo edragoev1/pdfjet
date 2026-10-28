@@ -272,12 +272,23 @@ public class SimpleBarChart : Drawable {
         if text.isEmpty {
             text = "Bar chart"
         }
-        var separator = ": "
+        var separator = SimpleBarChart.punctuationAfter(text, ":") + " "
         for (i, name) in names.enumerated() where ChartScale.isValue(values[i]) {
             text += separator + name + " " + label(values[i])
             separator = ", "
         }
-        return text + "."
+        return text + SimpleBarChart.punctuationAfter(text, ".")
+    }
+
+    // The mark to write after the text of a description, or nothing when the
+    // text ends a sentence already, in ".", "?" or "!": a title "Sales." was
+    // described as "Sales.: a 5", and in a line chart as "Sales., 2019 to
+    // 2024:" (the review of 28 October 2026).
+    static func punctuationAfter(_ text: String, _ mark: String) -> String {
+        if let end = text.unicodeScalars.last, end == "." || end == "?" || end == "!" {
+            return ""
+        }
+        return mark
     }
 
     ///

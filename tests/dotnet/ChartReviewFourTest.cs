@@ -163,10 +163,10 @@ public class ChartReviewFourTest {
         Font font = TestSupport.Helvetica(pdf);
         SimpleLineChart chart = new SimpleLineChart(font, font).SetTitle("Sales")
                 .SetCategories("2019").AddLine("a", new float[] {4f});
-        Assert.True(chart.AltDescription().StartsWith("Sales, 2019: a from", StringComparison.Ordinal),
+        Assert.True(chart.AltDescription().StartsWith("Sales, 2019: a 4.", StringComparison.Ordinal),
                 chart.AltDescription());
         chart.SetCategories("2019", "2020", "");
-        Assert.True(chart.AltDescription().StartsWith("Sales, 2019 to 2020: a from", StringComparison.Ordinal),
+        Assert.True(chart.AltDescription().StartsWith("Sales, 2019 to 2020: a 4.", StringComparison.Ordinal),
                 chart.AltDescription());
     }
 

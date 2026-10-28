@@ -146,24 +146,34 @@ public class SimpleLineChart : IDrawable {
 
     /// <summary>
     /// Sets the categories, the years or the months, in their order left to
-    /// right.
+    /// right. The chart keeps a copy of them, a null category an empty one,
+    /// which crashed DrawOn (the review of 28 October 2026).
     /// </summary>
     /// <param name="categories">the categories.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart SetCategories(params String[] categories) {
-        this.categories = categories ?? new String[0];
+        if (categories == null) {
+            this.categories = new String[0];
+            return this;
+        }
+        this.categories = new String[categories.Length];
+        for (int i = 0; i < categories.Length; i++) {
+            this.categories[i] = categories[i] ?? "";
+        }
         return this;
     }
 
     /// <summary>
     /// Adds a line: its name, and a value for each category, NaN where it has
-    /// none.
+    /// none. The chart keeps a copy of the values: a caller that reused one
+    /// array for every line drew every line with the last values (the review
+    /// of 28 October 2026).
     /// </summary>
     /// <param name="name">the name of the line.</param>
     /// <param name="values">its values.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart AddLine(String name, float[] values) {
-        lines.Add(new Line(name ?? "", values ?? new float[0]));
+        lines.Add(new Line(name ?? "", values == null ? new float[0] : (float[]) values.Clone()));
         return this;
     }
 
@@ -399,12 +409,12 @@ public class SimpleLineChart : IDrawable {
             while (end > 0 && Category(end).Length == 0) {
                 end--;
             }
-            sb.Append(", ").Append(Category(0));
+            sb.Append(SimpleBarChart.PunctuationAfter(sb, ",")).Append(' ').Append(Category(0));
             if (end > 0) {
                 sb.Append(" to ").Append(Category(end));
             }
         }
-        sb.Append(':');
+        sb.Append(SimpleBarChart.PunctuationAfter(sb, ":"));
         for (int i = 0; i < lines.Count; i++) {
             Line line = lines[i];
             int first = -1;
@@ -430,6 +440,10 @@ public class SimpleLineChart : IDrawable {
                 sb.Append(" has no values");
                 continue;
             }
+            if (first == last) {    // One value, which was "from 5 to 5"
+                sb.Append(' ').Append(Value(line.values[first]));
+                continue;
+            }
             sb.Append(" from ").Append(Value(line.values[first])).Append(" to ").Append(Value(line.values[last]));
             if (high != first && high != last) {
                 sb.Append(", highest ").Append(Value(line.values[high]));
@@ -438,7 +452,7 @@ public class SimpleLineChart : IDrawable {
                 }
             }
         }
-        return sb.Append('.').ToString();
+        return sb.Append(SimpleBarChart.PunctuationAfter(sb, ".")).ToString();
     }
 
     /// <summary>
@@ -562,14 +576,18 @@ public class SimpleLineChart : IDrawable {
             page.DrawString(f2, size, Category(i), ChartScale.Placed(centers[i], widths[i], x + pad / 2f, x + w - pad / 2f),
                     bottom + 1.4f * size, Util.ToRGB(SimpleBarChart.MUTED), null);
         }
+        // The axis titles, shortened to the width and the height of the plot:
+        // a long one ran past the chart (the review of 28 October 2026)
         if (xAxisTitle.Length > 0) {
-            page.DrawString(f2, size, xAxisTitle, left + (right - left - f2.StringWidth(size, xAxisTitle)) / 2f,
+            String xTitle = ChartScale.Shorten(f2, size, xAxisTitle, right - left);
+            page.DrawString(f2, size, xTitle, left + (right - left - f2.StringWidth(size, xTitle)) / 2f,
                     bottom + 2.8f * size, Util.ToRGB(SimpleBarChart.INK), null);
         }
         if (yAxisTitle.Length > 0) {
+            String yTitle = ChartScale.Shorten(f2, size, yAxisTitle, bottom - top);
             page.SetTextRotation(-90);
-            page.DrawString(f2, size, yAxisTitle, x + pad + ascent,
-                    bottom - (bottom - top - f2.StringWidth(size, yAxisTitle)) / 2f,
+            page.DrawString(f2, size, yTitle, x + pad + ascent,
+                    bottom - (bottom - top - f2.StringWidth(size, yTitle)) / 2f,
                     Util.ToRGB(SimpleBarChart.INK), null);
             page.SetTextRotation(0);
         }

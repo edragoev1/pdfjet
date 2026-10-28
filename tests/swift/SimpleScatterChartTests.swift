@@ -196,4 +196,22 @@ import Testing
         SimpleScatterChart(font, font).add(-3e38, -3e38).add(3e38, 3e38).drawOn(page)
         #expect(TestSupport.content(page).isEmpty)
     }
+
+    // An axis title longer than the plot is shortened as the other texts of
+    // the chart are, and the description keeps it whole; a title that ends a
+    // sentence is not followed by a colon (the review of 28 October 2026).
+    @Test func aLongAxisTitleIsShortened() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let title = "Number of battery electric vehicles registered in the state, thousands, by county"
+        var chart = chart(pdf).setSize(400, 250).setXAxisTitle(title).setYAxisTitle(title)
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains(TestSupport.hex(title)), "\(content)")
+        #expect(SimpleLineChartTests.drawn(content, "Number of battery") == 2, "\(content)")
+        #expect(chart.getAltDescription().contains(title + " against " + title), "\(chart.getAltDescription())")
+        let font = TestSupport.helvetica(pdf)
+        chart = SimpleScatterChart(font, font).setTitle("Life expectancy?").add(1, 2).add(2, 3)
+        #expect(chart.getAltDescription() == "Life expectancy? 2 points.")
+    }
 }

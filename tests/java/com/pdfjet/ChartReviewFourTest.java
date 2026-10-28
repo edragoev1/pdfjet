@@ -164,9 +164,9 @@ class ChartReviewFourTest {
         Font font = TestSupport.helvetica(pdf);
         SimpleLineChart chart = new SimpleLineChart(font, font).setTitle("Sales")
                 .setCategories("2019").addLine("a", new float[] {4f});
-        assertTrue(chart.altDescription().startsWith("Sales, 2019: a from"), chart.altDescription());
+        assertTrue(chart.altDescription().startsWith("Sales, 2019: a 4."), chart.altDescription());
         chart.setCategories("2019", "2020", "");
-        assertTrue(chart.altDescription().startsWith("Sales, 2019 to 2020: a from"), chart.altDescription());
+        assertTrue(chart.altDescription().startsWith("Sales, 2019 to 2020: a 4."), chart.altDescription());
     }
 
     @Test

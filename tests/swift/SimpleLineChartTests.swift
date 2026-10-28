@@ -225,4 +225,51 @@ import Testing
         #expect(TestSupport.content(page).contains(TestSupport.hex("a 0.004")), "\(TestSupport.content(page))")
         #expect(chart.getAltDescription().contains("from 0.001 to 0.004"), "\(chart.getAltDescription())")
     }
+
+    // The number of times the text is drawn in a core font at the start of a
+    // string.
+    static func drawn(_ content: String, _ text: String) -> Int {
+        return content.components(separatedBy: "<" + TestSupport.hex(text)).count - 1
+    }
+
+    // An axis title longer than the plot is shortened as the other texts of
+    // the chart are: the y title of a chart 250 points high ran past its top
+    // and its bottom (the review of 28 October 2026).
+    @Test func aLongAxisTitleIsShortened() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let title = "Number of battery electric vehicles registered in the state, thousands, by county"
+        chart(pdf).setSize(400, 250).setXAxisTitle(title).setYAxisTitle(title).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains(TestSupport.hex(title)), "\(content)")
+        #expect(SimpleLineChartTests.drawn(content, "Number of battery") == 2, "\(content)")
+    }
+
+    // The chart keeps copies of its categories and its values, which a Swift
+    // array is: in the other ports a caller that reused one array for every
+    // line drew every line with the last values (the review of 28 October
+    // 2026).
+    @Test func keepsCopiesOfItsData() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        var categories = ["2021", "2022"]
+        var values: [Float] = [11, 12]
+        let chart = SimpleLineChart(font, font).setCategories(categories).addLine("a", values)
+        values[0] = 21
+        values[1] = 22
+        chart.addLine("b", values)
+        categories[0] = "1999"
+        #expect(chart.getAltDescription() == "Line chart, 2021 to 2022: a from 11 to 12; b from 21 to 22.")
+    }
+
+    // A title that ends a sentence is not followed by a comma, and a line of
+    // one value is described by it alone, where they were "Sales., 2019 to
+    // 2024:" and "a from 5 to 5" (the review of 28 October 2026).
+    @Test func theDescriptionReadsWell() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        var chart = SimpleLineChart(font, font).setTitle("Sales.").setCategories("2019", "2024")
+                .addLine("a", [5, Float.nan]).addLine("b", [1, 2])
+        #expect(chart.getAltDescription() == "Sales. 2019 to 2024: a 5; b from 1 to 2.")
+        chart = SimpleLineChart(font, font).setTitle("Vehicles?").addLine("a", [1, 2])
+        #expect(chart.getAltDescription() == "Vehicles? a from 1 to 2.")
+    }
 }

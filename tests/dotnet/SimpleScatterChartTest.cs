@@ -231,5 +231,24 @@ public class SimpleScatterChartTest {
         new SimpleScatterChart(font, font).Add(-3e38f, -3e38f).Add(3e38f, 3e38f).DrawOn(page);
         Assert.Equal("", TestSupport.Content(page));
     }
+
+    // An axis title longer than the plot is shortened as the other texts of
+    // the chart are, and the description keeps it whole; a title that ends a
+    // sentence is not followed by a colon (the review of 28 October 2026).
+    [Fact]
+    public void ALongAxisTitleIsShortened() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        string title = "Number of battery electric vehicles registered in the state, thousands, by county";
+        SimpleScatterChart chart = NewChart(pdf).SetSize(400f, 250f).SetXAxisTitle(title).SetYAxisTitle(title);
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex(title), content);
+        Assert.Equal(2, SimpleLineChartTest.Drawn(content, "Number of battery"));
+        Assert.Contains(title + " against " + title, chart.AltDescription());
+        Font font = TestSupport.Helvetica(pdf);
+        chart = new SimpleScatterChart(font, font).SetTitle("Life expectancy?").Add(1f, 2f).Add(2f, 3f);
+        Assert.Equal("Life expectancy? 2 points.", chart.AltDescription());
+    }
 }
 }   // End of namespace PDFjet.NET

@@ -276,3 +276,54 @@ func TestSimpleLineChartTinyValuesHaveTheirDigits(t *testing.T) {
 		t.Errorf("the chart is described as %q", got)
 	}
 }
+
+// An axis title longer than the plot is shortened as the other texts of the
+// chart are: the y title of a chart 250 points high ran past its top and its
+// bottom (the review of 28 October 2026).
+func TestSimpleLineChartALongAxisTitleIsShortened(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	title := "Number of battery electric vehicles registered in the state, thousands, by county"
+	chart := testSimpleLineChart(pdf).SetSize(400, 250).SetXAxisTitle(title).SetYAxisTitle(title)
+	chart.DrawOn(page)
+	content := testContent(page)
+	if strings.Contains(content, testHex(title)) {
+		t.Errorf("the axis titles are not shortened: %q", content)
+	}
+	if strings.Count(content, "<"+testHex("Number of battery")) != 2 {
+		t.Errorf("the axis titles are not drawn: %q", content)
+	}
+}
+
+// The chart keeps copies of its categories and its values: a caller that
+// reused one slice for every line drew every line with the last values (the
+// review of 28 October 2026).
+func TestSimpleLineChartKeepsCopiesOfItsData(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	categories := []string{"2021", "2022"}
+	values := []float32{11, 12}
+	chart := NewSimpleLineChart(font, font).SetCategories(categories...).AddLine("a", values)
+	values[0], values[1] = 21, 22
+	chart.AddLine("b", values)
+	categories[0] = "1999"
+	want := "Line chart, 2021 to 2022: a from 11 to 12; b from 21 to 22."
+	if got := chart.getAltDescription(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+// A title that ends a sentence is not followed by a comma, and a line of one
+// value is described by it alone, where they were "Sales., 2019 to 2024:" and
+// "a from 5 to 5" (the review of 28 October 2026).
+func TestSimpleLineChartTheDescriptionReadsWell(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	chart := NewSimpleLineChart(font, font).SetTitle("Sales.").SetCategories("2019", "2024").
+		AddLine("a", []float32{5, float32(math.NaN())}).AddLine("b", []float32{1, 2})
+	if got, want := chart.getAltDescription(), "Sales. 2019 to 2024: a 5; b from 1 to 2."; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	chart = NewSimpleLineChart(font, font).SetTitle("Vehicles?").AddLine("a", []float32{1, 2})
+	if got, want := chart.getAltDescription(), "Vehicles? a from 1 to 2."; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
