@@ -478,21 +478,21 @@ import Testing
         let images = TestSupport.path("images")
         let markdown = Markdown(font, font, font, font, font).setImageDirectory(images)
         let sources: [String: Bool] = [
-            "linux-logo.png": true,
-            "./linux-logo.png": true,
-            ".//linux-logo.png": true,
-            "linux-logo.png/": false,
-            "linux-logo.png/.": false,
-            "../images/linux-logo.png": false,
-            "x/../linux-logo.png": false,
+            "circles.png": true,
+            "./circles.png": true,
+            ".//circles.png": true,
+            "circles.png/": false,
+            "circles.png/.": false,
+            "../images/circles.png": false,
+            "x/../circles.png": false,
             "": false,
             ".": false,
-            "\u{301}/../linux-logo.png": false,
-            "/\u{301}linux-logo.png": false,
-            "../\u{301}images/linux-logo.png": false,
-            "c:linux-logo.png": false,
-            "linux-logo.png\\..\\x.png": false,
-            "%2E%2E/images/linux-logo.p": false,
+            "\u{301}/../circles.png": false,
+            "/\u{301}circles.png": false,
+            "../\u{301}images/circles.png": false,
+            "c:circles.png": false,
+            "circles.png\\..\\x.png": false,
+            "%2E%2E/images/circles.p": false,
         ]
         for (source, read) in sources {
             #expect((markdown.imagePath(source) != nil) == read, "\(source.debugDescription)")
@@ -503,7 +503,7 @@ import Testing
         if URL(fileURLWithPath: FileManager.default.currentDirectoryPath).standardizedFileURL.path
                 == TestSupport.root.standardizedFileURL.path {
             #expect(Markdown(font, font, font, font, font).setImageDirectory("")
-                    .imagePath("images/linux-logo.png") == "images/linux-logo.png")
+                    .imagePath("images/circles.png") == "images/circles.png")
         }
     }
 }

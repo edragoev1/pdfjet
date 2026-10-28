@@ -60,7 +60,7 @@ func FuzzMarkdown(f *testing.F) {
 		"# Title\n\nText with **bold**.\n\n- one\n- two\n\n> quoted\n\n" +
 			"```\ncode\n```\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n---\n\n## Next",
 		"### Three\n\n##### Five\n\n# One", "<b>not bold</b>",
-		"![Not read](../images/linux-logo.png)", "![x](/etc/passwd)", "![x](https://pdfjet.com/logo.png)",
+		"![Not read](../images/circles.png)", "![x](/etc/passwd)", "![x](https://pdfjet.com/logo.png)",
 		// Hard on the parser and the drawing: quotes and lists nested deeper
 		// than markdownMaxDepth, so that the text is narrower than nothing, a
 		// table of many columns and rows, fences never closed, tabs, carriage

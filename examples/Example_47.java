@@ -39,7 +39,7 @@ public class Example_47 {
 
         Image image = new Image(pdf, "images/ee-map.png");
 
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/circles.png", false);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

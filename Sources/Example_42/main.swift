@@ -24,7 +24,7 @@ public class Example_42 {
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
         f2.setSize(14.0)
 
-        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
+        let file1 = try EmbeddedFile(pdf, "images/circles.png", false)
         let file2 = try EmbeddedFile(pdf, "Sources/Example_02/main.swift", true)
 
         let page = Page(pdf, Letter.PORTRAIT)
@@ -51,7 +51,7 @@ public class Example_42 {
         attachment.setContents(
                 "Right mouse click on the icon to save the attached file.")
         attachment.drawOn(page)
-        TextLine(f1, "linux-logo.png, an image, with a push pin icon")
+        TextLine(f1, "circles.png, an image, with a push pin icon")
                 .setLocation(105.0, 192.0).drawOn(page)
 
         attachment = FileAttachment(file2)

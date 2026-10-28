@@ -294,21 +294,21 @@ import Testing
     }
 
     @Test func imagesAreReadOnlyFromTheImageDirectory() throws {
-        let text = "![Tux](linux-logo.png)"
+        let text = "![Circles](circles.png)"
         // With no directory, the image's text is drawn instead.
         var drawn = try MarkdownTests.draw(text, nil)
         #expect(MarkdownTests.count(drawn.pdf, "Figure") == 0)
-        #expect(drawn.text.contains(TestSupport.hex("Tux")))
+        #expect(drawn.text.contains(TestSupport.hex("Circles")))
         // From the directory, the image is a figure.
         let images = TestSupport.path("images")
         drawn = try MarkdownTests.draw(text, images)
         #expect(MarkdownTests.count(drawn.pdf, "Figure") == 1)
         let alt = MarkdownTests.groups("/Alt <([0-9A-Fa-f]+)>", drawn.pdf)
-        #expect(!alt.isEmpty && TestSupport.utf16Hex(alt[0]) == "Tux",
+        #expect(!alt.isEmpty && TestSupport.utf16Hex(alt[0]) == "Circles",
                 "the text of the image is its description")
         // Not above it, not an absolute path, not a URL.
-        for source in ["../images/linux-logo.png", "/etc/passwd",
-                TestSupport.path("images/linux-logo.png"), "https://pdfjet.com/logo.png",
+        for source in ["../images/circles.png", "/etc/passwd",
+                TestSupport.path("images/circles.png"), "https://pdfjet.com/logo.png",
                 "missing.png"] {
             drawn = try MarkdownTests.draw("![Not read](" + source + ")", images)
             #expect(MarkdownTests.count(drawn.pdf, "Figure") == 0, "\(source)")
@@ -534,13 +534,13 @@ import Testing
         #expect(mkfifo(directory + "/fifo.png", 0o600) == 0)
         try FileManager.default.createSymbolicLink(atPath: directory + "/fifo-link.png",
                 withDestinationPath: directory + "/fifo.png")
-        try FileManager.default.createSymbolicLink(atPath: directory + "/tux.png",
-                withDestinationPath: TestSupport.path("images/linux-logo.png"))
+        try FileManager.default.createSymbolicLink(atPath: directory + "/circles.png",
+                withDestinationPath: TestSupport.path("images/circles.png"))
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let markdown = Markdown(font, font, font, font, font).setImageDirectory(directory)
         #expect(markdown.imagePath("fifo.png") == nil)
         #expect(markdown.imagePath("fifo-link.png") == nil)
-        #expect(markdown.imagePath("tux.png") == directory + "/tux.png")
+        #expect(markdown.imagePath("circles.png") == directory + "/circles.png")
     }
 }

@@ -333,21 +333,21 @@ public class MarkdownTest {
     [Fact]
     public void ImagesAreReadOnlyFromTheImageDirectory() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();
-        String text = "![Tux](linux-logo.png)";
+        String text = "![Circles](circles.png)";
         // With no directory, the image's text is drawn instead.
         Drawn drawn = Draw(text, null);
         Assert.Equal(0, Count(drawn.pdf, "Figure"));
-        Assert.Contains(TestSupport.Hex("Tux"), drawn.text, StringComparison.Ordinal);
+        Assert.Contains(TestSupport.Hex("Circles"), drawn.text, StringComparison.Ordinal);
         // From the directory, the image is a figure.
         String images = TestSupport.RepoPath("images");
         drawn = Draw(text, images);
         Assert.Equal(1, Count(drawn.pdf, "Figure"));
         Match alt = Regex.Match(drawn.pdf, "/Alt <([0-9A-Fa-f]+)>");
-        Assert.True(alt.Success && TestSupport.Utf16Hex(alt.Groups[1].Value) == "Tux",
+        Assert.True(alt.Success && TestSupport.Utf16Hex(alt.Groups[1].Value) == "Circles",
                 "the text of the image is its description");
         // Not above it, not an absolute path, not a URL.
-        foreach (String source in new String[] {"../images/linux-logo.png", "/etc/passwd",
-                System.IO.Path.GetFullPath(TestSupport.RepoPath("images/linux-logo.png")),
+        foreach (String source in new String[] {"../images/circles.png", "/etc/passwd",
+                System.IO.Path.GetFullPath(TestSupport.RepoPath("images/circles.png")),
                 "https://pdfjet.com/logo.png", "missing.png"}) {
             drawn = Draw("![Not read](" + source + ")", images);
             Assert.True(Count(drawn.pdf, "Figure") == 0, source);
@@ -426,7 +426,7 @@ public class MarkdownTest {
         String directory = System.IO.Path.Combine(
                 System.IO.Path.GetTempPath(), "pdfjet-markdown-" + Guid.NewGuid().ToString("N"));
         String fifo = System.IO.Path.Combine(directory, "fifo.png");
-        String tux = System.IO.Path.Combine(directory, "tux.png");
+        String circles = System.IO.Path.Combine(directory, "circles.png");
         Directory.CreateDirectory(directory);
         try {
             using (System.Diagnostics.Process mkfifo = System.Diagnostics.Process.Start("mkfifo", fifo)) {
@@ -434,13 +434,13 @@ public class MarkdownTest {
                 Assert.Equal(0, mkfifo.ExitCode);
             }
             File.CreateSymbolicLink(System.IO.Path.Combine(directory, "fifo-link.png"), fifo);
-            File.CreateSymbolicLink(tux, System.IO.Path.GetFullPath(TestSupport.RepoPath("images/linux-logo.png")));
+            File.CreateSymbolicLink(circles, System.IO.Path.GetFullPath(TestSupport.RepoPath("images/circles.png")));
             PDF pdf = new PDF(new MemoryStream());
             Font font = new Font(pdf, CoreFont.HELVETICA);
             Markdown markdown = new Markdown(font, font, font, font, font).SetImageDirectory(directory);
             Assert.Null(markdown.ImagePath("fifo.png"));
             Assert.Null(markdown.ImagePath("fifo-link.png"));
-            Assert.Equal(tux, markdown.ImagePath("tux.png"));
+            Assert.Equal(circles, markdown.ImagePath("circles.png"));
         } finally {
             Directory.Delete(directory, true);
         }

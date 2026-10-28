@@ -47,7 +47,7 @@ func Example47() {
 
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
-	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/circles.png", false)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 

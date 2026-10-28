@@ -605,28 +605,28 @@ class ReviewLayoutTest {
         String images = TestSupport.file("images").getPath();
         Markdown markdown = new Markdown(font, font, font, font, font).setImageDirectory(images);
         Map<String, Boolean> sources = new LinkedHashMap<String, Boolean>();
-        sources.put("linux-logo.png", true);
-        sources.put("./linux-logo.png", true);
-        sources.put(".//linux-logo.png", true);
-        sources.put("linux-logo.png/", false);
-        sources.put("linux-logo.png/.", false);
-        sources.put("../images/linux-logo.png", false);
-        sources.put("x/../linux-logo.png", false);
+        sources.put("circles.png", true);
+        sources.put("./circles.png", true);
+        sources.put(".//circles.png", true);
+        sources.put("circles.png/", false);
+        sources.put("circles.png/.", false);
+        sources.put("../images/circles.png", false);
+        sources.put("x/../circles.png", false);
         sources.put("", false);
         sources.put(".", false);
-        sources.put("́/../linux-logo.png", false);
-        sources.put("/́linux-logo.png", false);
-        sources.put("c:linux-logo.png", false);
-        sources.put("linux-logo.png\\..\\x.png", false);
-        sources.put("%2E%2E/images/linux-logo.p", false);
+        sources.put("́/../circles.png", false);
+        sources.put("/́circles.png", false);
+        sources.put("c:circles.png", false);
+        sources.put("circles.png\\..\\x.png", false);
+        sources.put("%2E%2E/images/circles.p", false);
         for (Map.Entry<String, Boolean> source : sources.entrySet()) {
             assertEquals(source.getValue(), markdown.imagePath(source.getKey()) != null, source.getKey());
         }
         // An empty directory is the working directory.
         Markdown here = new Markdown(font, font, font, font, font).setImageDirectory("");
-        if (new File("images/linux-logo.png").isFile()) {
-            assertNotNull(here.imagePath("images/linux-logo.png"));
+        if (new File("images/circles.png").isFile()) {
+            assertNotNull(here.imagePath("images/circles.png"));
         }
-        assertNull(here.imagePath("linux-logo.png/"));
+        assertNull(here.imagePath("circles.png/"));
     }
 }

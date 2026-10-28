@@ -27,7 +27,7 @@ public class Example_42 {
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
         f2.SetSize(14f);
 
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/circles.png", false);
         EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02/Example_02.cs", true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -54,7 +54,7 @@ public class Example_42 {
         attachment.SetContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.DrawOn(page);
-        new TextLine(f1, "linux-logo.png, an image, with a push pin icon")
+        new TextLine(f1, "circles.png, an image, with a push pin icon")
                 .SetLocation(105f, 192f).DrawOn(page);
 
         attachment = new FileAttachment(file2);

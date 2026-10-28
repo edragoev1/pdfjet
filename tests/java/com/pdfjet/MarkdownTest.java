@@ -351,21 +351,21 @@ class MarkdownTest {
     @Test
     void imagesAreReadOnlyFromTheImageDirectory() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font
-        String text = "![Tux](linux-logo.png)";
+        String text = "![Circles](circles.png)";
         // With no directory, the image's text is drawn instead.
         Drawn drawn = draw(text, null);
         assertEquals(0, count(drawn.pdf, "Figure"));
-        assertTrue(drawn.text.contains(TestSupport.hex("Tux")));
+        assertTrue(drawn.text.contains(TestSupport.hex("Circles")));
         // From the directory, the image is a figure.
         String images = TestSupport.file("images").getPath();
         drawn = draw(text, images);
         assertEquals(1, count(drawn.pdf, "Figure"));
         java.util.regex.Matcher alt = java.util.regex.Pattern.compile("/Alt <([0-9A-Fa-f]+)>").matcher(drawn.pdf);
-        assertTrue(alt.find() && TestSupport.utf16Hex(alt.group(1)).equals("Tux"),
+        assertTrue(alt.find() && TestSupport.utf16Hex(alt.group(1)).equals("Circles"),
                 "the text of the image is its description");
         // Not above it, not an absolute path, not a URL.
-        for (String source : new String[] {"../images/linux-logo.png", "/etc/passwd",
-                TestSupport.file("images/linux-logo.png").getAbsolutePath(), "https://pdfjet.com/logo.png",
+        for (String source : new String[] {"../images/circles.png", "/etc/passwd",
+                TestSupport.file("images/circles.png").getAbsolutePath(), "https://pdfjet.com/logo.png",
                 "missing.png"}) {
             drawn = draw("![Not read](" + source + ")", images);
             assertEquals(0, count(drawn.pdf, "Figure"), source);

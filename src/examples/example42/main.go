@@ -34,7 +34,7 @@ func Example42() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	f2.SetSize(14.0)
 
-	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/circles.png", false)
 	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", true)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
@@ -61,7 +61,7 @@ func Example42() {
 	attachment.SetContents(
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
-	pdfjet.NewTextLine(f1, "linux-logo.png, an image, with a push pin icon").
+	pdfjet.NewTextLine(f1, "circles.png, an image, with a push pin icon").
 		SetLocation(105.0, 192.0).DrawOn(page)
 
 	attachment = pdfjet.NewFileAttachment(file2)

@@ -76,8 +76,8 @@ public class Snippets {
                 .SetLocation(50f, 50f).DrawOn(page);
         new TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
                 .SetLocation(50f, 70f).SetWidth(400f).DrawOn(page);
-        Image image = new Image(pdf, "images/linux-logo.png");
-        image.SetAltDescription("Tux, the penguin of Linux");
+        Image image = new Image(pdf, "images/circles.png");
+        image.SetAltDescription("Three circles that overlap");
         image.SetLocation(50f, 110f).DrawOn(page);
         pdf.Complete();
     }
@@ -408,8 +408,8 @@ public class Snippets {
 
     // @snippet cell-content
     static void CellContent(PDF pdf, Font font) {
-        Image image = new Image(pdf, "images/linux-logo.png").ScaleBy(0.25f);
-        image.SetAltDescription("Tux");
+        Image image = new Image(pdf, "images/circles.png").ScaleBy(0.25f);
+        image.SetAltDescription("Circles");
         Cell imageCell = new Cell(font).SetImage(image);
         Cell barcodeCell = new Cell(font).SetBarcode(new Barcode(Barcode.CODE_128, "PDFjet"));
         Cell textCell = new Cell(font).SetTextBlock(

@@ -521,20 +521,20 @@ public sealed class ReviewLayoutTest : IDisposable {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         Markdown markdown = new Markdown(font, font, font, font, font).SetImageDirectory(images);
         Dictionary<string, bool> sources = new Dictionary<string, bool> {
-            {"linux-logo.png", true},
-            {"./linux-logo.png", true},
-            {".//linux-logo.png", true},
-            {"linux-logo.png/", false},
-            {"linux-logo.png/.", false},
-            {"../images/linux-logo.png", false},
-            {"x/../linux-logo.png", false},
+            {"circles.png", true},
+            {"./circles.png", true},
+            {".//circles.png", true},
+            {"circles.png/", false},
+            {"circles.png/.", false},
+            {"../images/circles.png", false},
+            {"x/../circles.png", false},
             {"", false},
             {".", false},
-            {"́/../linux-logo.png", false},
-            {"/́linux-logo.png", false},
-            {"c:linux-logo.png", false},
-            {"linux-logo.png\\..\\x.png", false},
-            {"%2E%2E/images/linux-logo.p", false},
+            {"́/../circles.png", false},
+            {"/́circles.png", false},
+            {"c:circles.png", false},
+            {"circles.png\\..\\x.png", false},
+            {"%2E%2E/images/circles.p", false},
         };
         foreach (KeyValuePair<string, bool> source in sources) {
             Assert.True((markdown.ImagePath(source.Key) != null) == source.Value, source.Key);

@@ -70,8 +70,8 @@ func accessibleDocument() throws {
             .setLocation(50, 50).drawOn(page)
     TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
             .setLocation(50, 70).setWidth(400).drawOn(page)
-    let image = try Image(pdf, "images/linux-logo.png")
-    image.setAltDescription("Tux, the penguin of Linux")
+    let image = try Image(pdf, "images/circles.png")
+    image.setAltDescription("Three circles that overlap")
     image.setLocation(50, 110).drawOn(page)
     try pdf.complete()
 }
@@ -401,8 +401,8 @@ func cells(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet cell-content
 func cellContent(_ pdf: PDF, _ font: Font) throws {
-    let image = try Image(pdf, "images/linux-logo.png").scaleBy(0.25)
-    image.setAltDescription("Tux")
+    let image = try Image(pdf, "images/circles.png").scaleBy(0.25)
+    image.setAltDescription("Circles")
     let imageCell = Cell(font).setImage(image)
     let barcodeCell = try Cell(font).setBarcode(Barcode(Barcode.CODE_128, "PDFjet"))
     let textCell = Cell(font).setTextBlock(

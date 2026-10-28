@@ -84,8 +84,8 @@ public class Snippets {
                 .setLocation(50f, 50f).drawOn(page);
         new TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
                 .setLocation(50f, 70f).setWidth(400f).drawOn(page);
-        Image image = new Image(pdf, "images/linux-logo.png");
-        image.setAltDescription("Tux, the penguin of Linux");
+        Image image = new Image(pdf, "images/circles.png");
+        image.setAltDescription("Three circles that overlap");
         image.setLocation(50f, 110f).drawOn(page);
         pdf.complete();
     }
@@ -414,8 +414,8 @@ public class Snippets {
 
     // @snippet cell-content
     static void cellContent(PDF pdf, Font font) throws Exception {
-        Image image = new Image(pdf, "images/linux-logo.png").scaleBy(0.25f);
-        image.setAltDescription("Tux");
+        Image image = new Image(pdf, "images/circles.png").scaleBy(0.25f);
+        image.setAltDescription("Circles");
         Cell imageCell = new Cell(font).setImage(image);
         Cell barcodeCell = new Cell(font).setBarcode(new Barcode(Barcode.CODE_128, "PDFjet"));
         Cell textCell = new Cell(font).setTextBlock(

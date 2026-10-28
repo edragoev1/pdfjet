@@ -69,7 +69,7 @@ func copiedImage(path string) {
 	buf := new(bytes.Buffer)
 	w := bufio.NewWriter(buf)
 	first := pdfjet.NewPDF(w)
-	png, err := os.ReadFile("images/linux-logo.png")
+	png, err := os.ReadFile("images/circles.png")
 	if err != nil {
 		log.Fatal(err)
 	}

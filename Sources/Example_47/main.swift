@@ -34,7 +34,7 @@ public class Example_47 {
 
         let image = try Image(pdf, "images/ee-map.png")
 
-        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
+        let file1 = try EmbeddedFile(pdf, "images/circles.png", false)
 
         let page = Page(pdf, Letter.PORTRAIT)
 

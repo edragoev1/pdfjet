@@ -28,7 +28,7 @@ public class Example_42 {
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
         f2.setSize(14f);
 
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/circles.png", false);
         EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02.java", true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -55,7 +55,7 @@ public class Example_42 {
         attachment.setContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.drawOn(page);
-        new TextLine(f1, "linux-logo.png, an image, with a push pin icon")
+        new TextLine(f1, "circles.png, an image, with a push pin icon")
                 .setLocation(105f, 192f).drawOn(page);
 
         attachment = new FileAttachment(file2);

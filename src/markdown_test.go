@@ -387,11 +387,11 @@ func TestMarkdownATableGoesOnOnTheNextPageWithItsHeaderRow(t *testing.T) {
 
 func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
 	testAllowCoreFonts(t)
-	text := "![Tux](linux-logo.png)"
+	text := "![Circles](circles.png)"
 	// With no directory, the image's text is drawn instead.
 	drawn := testDrawMarkdown(text, "")
 	testAssertStructures(t, drawn, "Figure", 0)
-	if !strings.Contains(drawn.text, testHex("Tux")) {
+	if !strings.Contains(drawn.text, testHex("Circles")) {
 		t.Error("the text of the image is not drawn")
 	}
 	// From the directory, the image is a figure.
@@ -399,12 +399,12 @@ func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
 	drawn = testDrawMarkdown(text, images)
 	testAssertStructures(t, drawn, "Figure", 1)
 	alt := regexp.MustCompile(`/Alt <([0-9A-Fa-f]+)>`).FindStringSubmatch(drawn.pdf)
-	if alt == nil || testUTF16Hex(t, alt[1]) != "Tux" {
+	if alt == nil || testUTF16Hex(t, alt[1]) != "Circles" {
 		t.Error("the text of the image is not its description")
 	}
 	// Not above it, not an absolute path, not a URL.
-	for _, source := range []string{"../images/linux-logo.png", "/etc/passwd",
-		testRepoPath(t, "images/linux-logo.png"), "https://pdfjet.com/logo.png",
+	for _, source := range []string{"../images/circles.png", "/etc/passwd",
+		testRepoPath(t, "images/circles.png"), "https://pdfjet.com/logo.png",
 		"missing.png"} {
 		drawn = testDrawMarkdown("![Not read]("+source+")", images)
 		if n := testCountStructures(drawn.pdf, "Figure"); n != 0 {

@@ -107,8 +107,8 @@ func accessibleDocument() {
 		SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextBlock(font, "A paragraph, which a screen reader reads after the heading.").
 		SetWidth(400).SetLocation(50, 70).DrawOn(page)
-	image := pdfjet.NewImageFromFile(pdf, "images/linux-logo.png")
-	image.SetAltDescription("Tux, the penguin of Linux")
+	image := pdfjet.NewImageFromFile(pdf, "images/circles.png")
+	image.SetAltDescription("Three circles that overlap")
 	image.SetLocation(50, 110).DrawOn(page)
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
@@ -453,8 +453,8 @@ func cells(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet cell-content
 func cellContent(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	image := pdfjet.NewImageFromFile(pdf, "images/linux-logo.png").ScaleBy(0.25)
-	image.SetAltDescription("Tux")
+	image := pdfjet.NewImageFromFile(pdf, "images/circles.png").ScaleBy(0.25)
+	image.SetAltDescription("Circles")
 	imageCell := pdfjet.NewEmptyCell(font).SetImage(image)
 	barcodeCell := pdfjet.NewEmptyCell(font).
 		SetBarcode(pdfjet.NewBarcode(pdfjet.CODE_128, "PDFjet"))
