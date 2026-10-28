@@ -257,8 +257,14 @@ public class TextFlow {
                     continue;   // No text to draw
                 }
                 if (isHeading(item.paragraphs.get(item.paragraphs.size() - 1))) {
-                    // The heading, and the first line or the image after it
-                    float withNext = textHeight(item, width) + nextHeight(i + 1, width, height);
+                    // The heading and what it keeps after it, when the two fit
+                    // on a page, or else the heading and the first line or the
+                    // image after it
+                    float textHeight = textHeight(item, width);
+                    float withNext = textHeight + nextHeight(i + 1, width, height, true);
+                    if (withNext > height) {
+                        withNext = textHeight + nextHeight(i + 1, width, height, false);
+                    }
                     if (withNext <= height) {
                         needed = withNext;
                     }
@@ -306,10 +312,18 @@ public class TextFlow {
 
     // The height that has to fit below a heading so that it does not end a
     // page: the spaces after it, and the first line of the paragraphs or the
-    // image that comes next.
-    private float nextHeight(int index, float width, float height) {
+    // image that comes next. With whole, what the heading keeps after it: a
+    // heading that comes next counts whole, with what it keeps in turn, and an
+    // image with its caption when the two fit on a page. A heading kept only
+    // the first line of a heading after it, which then went to the next page
+    // with its paragraph, or an image without its caption, which went with
+    // it, and was left at the bottom of a page (the review of 28 October
+    // 2026). The sum stops once it is more than the height of a page, so that
+    // a run of headings is measured in linear time.
+    private float nextHeight(int index, float width, float height, boolean whole) throws Exception {
         float total = 0f;
-        for (Item item : items.subList(index, items.size())) {
+        for (int i = index; i < items.size() && total <= height; i++) {
+            Item item = items.get(i);
             if (item.space > 0f) {
                 total += item.space;
             } else if (item.image != null) {
@@ -318,10 +332,19 @@ public class TextFlow {
                 if (w > width) {
                     h = h * (width / w);
                 }
-                return total + Math.min(h, height);
+                h = Math.min(h, height);
+                if (whole) {
+                    float withCaption = h + captionHeight(i + 1, width);
+                    if (withCaption <= height) {
+                        h = withCaption;
+                    }
+                }
+                return total + h;
             } else {
                 float line = firstLineHeight(item.paragraphs);
-                if (line > 0f) {
+                if (line > 0f && whole && item.paragraphs.size() == 1 && isHeading(item.paragraphs.get(0))) {
+                    total += textHeight(item, width);
+                } else if (line > 0f) {
                     return total + line;
                 }
             }

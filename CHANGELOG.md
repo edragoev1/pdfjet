@@ -747,6 +747,28 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   2026).
   Behavior change: Helvetica "Y." with the "Y" highlighted draws the period
   140 units closer, `[140<2E>] TJ`, as the same text uncolored always did.
+- Markdown and TextFlow, the four ports (the review of 28 October 2026):
+  - Markdown lays out a run of headings in linear time. Each heading
+    measured the headings after it to the end of the run, so that 5,000
+    "# h" lines took 40 seconds in Go and 16 in C#, and overflowed the stack
+    in Java; they take a fifth of a second. Each heading's room is measured
+    once; the pages break where they did.
+  - TextFlow keeps a heading with a heading after it, and with an image and
+    its caption: it kept the first line of the next heading, or the image
+    alone, and was left at the bottom of a page when they went on to the
+    next. When the heading and all it keeps do not fit on a page, it keeps
+    the first line or the image after it, as before.
+  - A Markdown heading that draws nothing, as "# <br>", takes no level and
+    no space: "# <br>" then "### Intro" tagged Intro an H2, with no H1
+    drawn.
+  - Swift: a Markdown paragraph leads into the table after it by its last
+    scalar being a colon, as in the other ports.
+  - Swift and C#: Markdown reads an image only from a regular file, its
+    links followed, as Go and Java do: a FIFO in the image directory was
+    read, and blocked the drawing. In C#, which cannot tell a FIFO from a
+    file, a file of no bytes is not read either, and its text is drawn.
+  Behavior change: a TextFlow heading that ended a page alone goes to the
+  next page with what follows it, so a document may gain a page.
 
 ## v9.1.1 — 2026-10-20
 

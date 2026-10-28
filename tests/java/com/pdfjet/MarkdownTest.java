@@ -417,6 +417,22 @@ class MarkdownTest {
         assertTrue(milliseconds < 5000, milliseconds + " ms");
     }
 
+    // A run of headings is laid out in linear time: each heading measured the
+    // headings after it to the end of the run, in a call for each, and 5,000
+    // overflowed the stack (the review of 28 October 2026).
+    @Test
+    void aRunOfHeadingsIsLaidOutInLinearTime() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 5000; i++) {
+            text.append("# h\n");
+        }
+        final Drawn[] drawn = new Drawn[1];
+        long milliseconds = TestSupport.shortestMillis(5000, () -> drawn[0] = draw(text.toString(), null));
+        assertTrue(drawn[0].pages.size() > 1);
+        assertTrue(milliseconds < 5000, milliseconds + " ms");
+    }
+
     @Test
     void aCodeLineOfOneColumnKeepsItsSurrogatePairs() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -546,6 +562,13 @@ class MarkdownTest {
         Drawn drawn = draw("#\n\n## Intro\n\nText.\n", null);
         assertEquals(1, count(drawn.pdf, "H1"));
         assertEquals(0, count(drawn.pdf, "H2"));
+        // Nor does one whose text draws nothing: it took the H1 that was not
+        // drawn (the review of 28 October 2026)
+        for (String text : new String[] {"# <br>\n### Intro\n", "# &#32;\n### Intro\n"}) {
+            drawn = draw(text, null);
+            assertEquals(1, count(drawn.pdf, "H1"), text);
+            assertEquals(0, count(drawn.pdf, "H2"), text);
+        }
         drawn = draw("Sizes:\n| a | b |\n|---|---|\n| 1 | 2 |\n", null);
         assertEquals(1, count(drawn.pdf, "Table"));
         drawn = draw("Text.\n\n```\n```\n", null);

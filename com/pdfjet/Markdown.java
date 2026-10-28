@@ -86,6 +86,12 @@ public class Markdown {
     private final Map<MarkdownParser.Block, Table> tables = new IdentityHashMap<MarkdownParser.Block, Table>();
     private final Map<MarkdownParser.Block, Drawable> images = new IdentityHashMap<MarkdownParser.Block, Drawable>();
     private final Map<MarkdownParser.Block, Float> imageHeights = new IdentityHashMap<MarkdownParser.Block, Float>();
+    // The room each heading keeps, by the heading, the width and whether it
+    // is in a tight list, measured once: measured for every heading again,
+    // down to the end of the headings after it, a run of headings took time
+    // that grew as its square, and a long one overflowed the stack, a call
+    // for each heading (the review of 28 October 2026)
+    private final Map<List<Object>, Float> keeps = new HashMap<List<Object>, Float>();
 
     /**
      * Creates the Markdown of text in the fonts, each at its size: the size
@@ -230,6 +236,7 @@ public class Markdown {
         tables.clear();
         images.clear();
         imageHeights.clear();
+        keeps.clear();
         quoteBars.clear();
         if (!TextFrame.finite(marginLeft) || !TextFrame.finite(marginTop)
                 || !TextFrame.finite(marginRight) || !TextFrame.finite(marginBottom)) {
@@ -416,14 +423,31 @@ public class Markdown {
         float room = bottom - marginTop;
         switch (block.kind) {
             case HEADING: {
-                float heading = headingHeight(block, width);
-                if (i + 1 < blocks.size()) {
-                    MarkdownParser.Block next = blocks.get(i + 1);
-                    float gap = (next.kind == MarkdownParser.Kind.PARAGRAPH) ? paragraphGap(tight)
-                            : (next.kind == MarkdownParser.Kind.HEADING) ? headingGap(next) : size() * 0.75f;
-                    return heading + Math.max(gap + keepHeight(blocks, i + 1, width, tight), 2f * line);
+                Float kept = keeps.get(Arrays.<Object>asList(block, width, tight));
+                if (kept != null) {
+                    return kept;
                 }
-                return heading + 2f * line;
+                // The headings that follow it and the block after them,
+                // measured from the last back, each heading keeping what is
+                // after it
+                int end = i + 1;
+                while (end < blocks.size() && blocks.get(end).kind == MarkdownParser.Kind.HEADING) {
+                    end++;
+                }
+                float keep = (end < blocks.size()) ? keepHeight(blocks, end, width, tight) : 0f;
+                for (int j = end - 1; j >= i; j--) {
+                    float heading = headingHeight(blocks.get(j), width);
+                    if (j + 1 < blocks.size()) {
+                        MarkdownParser.Block next = blocks.get(j + 1);
+                        float gap = (next.kind == MarkdownParser.Kind.PARAGRAPH) ? paragraphGap(tight)
+                                : (next.kind == MarkdownParser.Kind.HEADING) ? headingGap(next) : size() * 0.75f;
+                        keep = heading + Math.max(gap + keep, 2f * line);
+                    } else {
+                        keep = heading + 2f * line;
+                    }
+                    keeps.put(Arrays.<Object>asList(blocks.get(j), width, tight), keep);
+                }
+                return keep;
             }
             case PARAGRAPH:
                 if (i + 1 < blocks.size() && leadsIntoTable(block, blocks.get(i + 1))) {
@@ -542,8 +566,14 @@ public class Markdown {
     // it on its page. Its level as it is tagged is at most one more than that
     // of the heading before it, so that no level is skipped.
     private void drawHeading(MarkdownParser.Block block, float x, float width, float keep) throws Exception {
-        gap(headingGap(block));
         Paragraph paragraph = headingParagraph(block);
+        if (paragraph.lines.isEmpty()) {
+            // A heading of no text, such as "# <br>", draws nothing and takes
+            // no level: the heading after it was tagged a level below one
+            // that was not drawn (the review of 28 October 2026)
+            return;
+        }
+        gap(headingGap(block));
         headingLevel = Math.min(block.level, headingLevel + 1);
         StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
                 StructElem.H4, StructElem.H5, StructElem.H6};

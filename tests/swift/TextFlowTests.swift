@@ -144,6 +144,43 @@ import Testing
         }
     }
 
+    // A heading keeps a heading after it whole, with what that one keeps, and
+    // an image with its caption: it kept the first line of the heading, or
+    // the image alone, and was left at the bottom of the page when they went
+    // to the next (the review of 28 October 2026).
+    @Test func aHeadingKeepsTheHeadingOrTheCaptionedImageAfterIt() throws {
+        var pdf = TestSupport.newPDF()
+        var font = TestSupport.helvetica(pdf)
+        var h1 = Paragraph(TextLine(font, "Chapter").setFontSize(22)).setStructureType(StructElem.H1)
+        let h2 = Paragraph(TextLine(font, "Section").setFontSize(16)).setStructureType(StructElem.H2)
+        let text = paragraph(font, "The text under the headings")
+        let h1Height = font.getAscent(22) + font.getDescent(22)
+        let h2Height = font.getAscent(16) + font.getDescent(16)
+        // Room below the image for the two headings, 2 points more, but not
+        // for a line after them too
+        var filler = try image(pdf, height - h1Height - 6 - h2Height - 6 - 2)
+        var pages = [Page]()
+        flow(pdf).add(filler).add(h1).addSpace(6).add(h2).addSpace(6).add(text).drawOn(&pages)
+        TestSupport.expectNear(margin, h1.getY1())     // on the next page
+        TestSupport.expectNear(h1.getY2() + 6, h2.getY1())
+        TestSupport.expectNear(h2.getY2() + 6, text.getY1())
+
+        pdf = TestSupport.newPDF()
+        font = TestSupport.helvetica(pdf)
+        h1 = Paragraph(TextLine(font, "Figures").setFontSize(22)).setStructureType(StructElem.H1)
+        let caption = paragraph(font, "Figure 1: the image above").setStructureType(StructElem.CAPTION)
+        let picture = try image(pdf, 300)
+        // Room below the filler for the heading and the image, 2 points more,
+        // but not for the caption too
+        filler = try image(pdf, height - h1Height - 300 - 2)
+        pages = [Page]()
+        flow(pdf).add(filler).add(h1).add(picture).addSpace(4).add(caption).drawOn(&pages)
+        TestSupport.expectNear(margin, h1.getY1())     // on the next page
+        TestSupport.expectNear(h1.getY2(), picture.y)
+        TestSupport.expectNear(picture.y + 300 + 4, caption.getY1())
+        #expect(pages.count == 2)
+    }
+
     @Test func aSpaceAtTheTopOfAPageIsLeftOut() throws {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)

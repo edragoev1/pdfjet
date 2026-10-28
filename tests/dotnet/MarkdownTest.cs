@@ -399,6 +399,53 @@ public class MarkdownTest {
         Assert.True(milliseconds < 5000, milliseconds + " ms");
     }
 
+    // A run of headings is laid out in linear time: each heading measured the
+    // headings after it to the end of the run, and 5,000 took 16 seconds (the
+    // review of 28 October 2026).
+    [Fact]
+    public void ARunOfHeadingsIsLaidOutInLinearTime() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 5000; i++) {
+            text.Append("# h\n");
+        }
+        Drawn drawn = null;
+        long milliseconds = TestSupport.ShortestMillis(5000, () => drawn = Draw(text.ToString(), null));
+        Assert.True(drawn.pages.Count > 1);
+        Assert.True(milliseconds < 5000, milliseconds + " ms");
+    }
+
+    // Only a regular file of the image directory is read: a FIFO there was
+    // read too, and blocked the reading until something wrote to it (the
+    // review of 28 October 2026). A link to an image is followed.
+    [Fact]
+    public void OnlyARegularFileIsReadAsAnImage() {
+        if (OperatingSystem.IsWindows()) {
+            return;     // Windows has no FIFOs
+        }
+        String directory = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(), "pdfjet-markdown-" + Guid.NewGuid().ToString("N"));
+        String fifo = System.IO.Path.Combine(directory, "fifo.png");
+        String tux = System.IO.Path.Combine(directory, "tux.png");
+        Directory.CreateDirectory(directory);
+        try {
+            using (System.Diagnostics.Process mkfifo = System.Diagnostics.Process.Start("mkfifo", fifo)) {
+                mkfifo.WaitForExit();
+                Assert.Equal(0, mkfifo.ExitCode);
+            }
+            File.CreateSymbolicLink(System.IO.Path.Combine(directory, "fifo-link.png"), fifo);
+            File.CreateSymbolicLink(tux, System.IO.Path.GetFullPath(TestSupport.RepoPath("images/linux-logo.png")));
+            PDF pdf = new PDF(new MemoryStream());
+            Font font = new Font(pdf, CoreFont.HELVETICA);
+            Markdown markdown = new Markdown(font, font, font, font, font).SetImageDirectory(directory);
+            Assert.Null(markdown.ImagePath("fifo.png"));
+            Assert.Null(markdown.ImagePath("fifo-link.png"));
+            Assert.Equal(tux, markdown.ImagePath("tux.png"));
+        } finally {
+            Directory.Delete(directory, true);
+        }
+    }
+
     [Fact]
     public void ACodeLineOfOneColumnKeepsItsSurrogatePairs() {
         PDF pdf = new PDF(new MemoryStream());
@@ -516,6 +563,13 @@ public class MarkdownTest {
         Drawn drawn = Draw("#\n\n## Intro\n\nText.\n", null);
         Assert.Equal(1, Count(drawn.pdf, "H1"));
         Assert.Equal(0, Count(drawn.pdf, "H2"));
+        // Nor does one whose text draws nothing: it took the H1 that was not
+        // drawn (the review of 28 October 2026)
+        foreach (String empty in new String[] {"# <br>\n### Intro\n", "# &#32;\n### Intro\n"}) {
+            drawn = Draw(empty, null);
+            Assert.True(Count(drawn.pdf, "H1") == 1, empty);
+            Assert.True(Count(drawn.pdf, "H2") == 0, empty);
+        }
         drawn = Draw("Sizes:\n| a | b |\n|---|---|\n| 1 | 2 |\n", null);
         Assert.Equal(1, Count(drawn.pdf, "Table"));
         drawn = Draw("Text.\n\n```\n```\n", null);

@@ -105,6 +105,18 @@ type Markdown struct {
 	// measured and drawn as they were made: an image is in the PDF once
 	tables map[*markdownBlock]*Table
 	images map[*markdownBlock]*markdownImageOf
+	// The room each heading keeps, measured once: measured for every heading
+	// again, down to the end of the headings after it, a run of headings took
+	// time that grew as its square (the review of 28 October 2026)
+	keeps map[markdownKeep]float32
+}
+
+// markdownKeep is a heading at a width, in a list that is tight or not: the
+// key of the room it keeps.
+type markdownKeep struct {
+	block *markdownBlock
+	width float32
+	tight bool
 }
 
 // markdownImageOf is the image of a block, scaled to the width and to a page,
@@ -225,6 +237,7 @@ func (markdown *Markdown) DrawOnPages(pdf *PDF, text string, pages *[]*Page, pag
 	markdown.quoteBars = markdown.quoteBars[:0]
 	markdown.tables = make(map[*markdownBlock]*Table)
 	markdown.images = make(map[*markdownBlock]*markdownImageOf)
+	markdown.keeps = make(map[markdownKeep]float32)
 	if !finite(markdown.marginLeft, markdown.marginTop, markdown.marginRight, markdown.marginBottom) {
 		// Pages were made until the memory ran out (review of 12 October
 		// 2026, F4)
@@ -418,18 +431,36 @@ func (markdown *Markdown) keepHeight(blocks []*markdownBlock, i int, width float
 	room := markdown.bottom - markdown.marginTop
 	switch block.kind {
 	case markdownHeading:
-		heading := markdown.headingHeight(block, width)
-		if i+1 < len(blocks) {
-			next := blocks[i+1]
-			gap := float32(markdown.size() * 0.75)
-			if next.kind == markdownParagraph {
-				gap = markdown.paragraphGap(tight)
-			} else if next.kind == markdownHeading {
-				gap = markdown.headingGap(next)
-			}
-			return heading + max(gap+markdown.keepHeight(blocks, i+1, width, tight), float32(2*line))
+		if keep, ok := markdown.keeps[markdownKeep{block, width, tight}]; ok {
+			return keep
 		}
-		return heading + float32(2*line)
+		// The headings that follow it and the block after them, measured
+		// from the last back, each heading keeping what is after it
+		end := i + 1
+		for end < len(blocks) && blocks[end].kind == markdownHeading {
+			end++
+		}
+		var keep float32
+		if end < len(blocks) {
+			keep = markdown.keepHeight(blocks, end, width, tight)
+		}
+		for j := end - 1; j >= i; j-- {
+			heading := markdown.headingHeight(blocks[j], width)
+			if j+1 < len(blocks) {
+				next := blocks[j+1]
+				gap := float32(markdown.size() * 0.75)
+				if next.kind == markdownParagraph {
+					gap = markdown.paragraphGap(tight)
+				} else if next.kind == markdownHeading {
+					gap = markdown.headingGap(next)
+				}
+				keep = heading + max(gap+keep, float32(2*line))
+			} else {
+				keep = heading + float32(2*line)
+			}
+			markdown.keeps[markdownKeep{blocks[j], width, tight}] = keep
+		}
+		return keep
 	case markdownParagraph:
 		if i+1 < len(blocks) && markdownLeadsIntoTable(block, blocks[i+1]) {
 			keep := markdown.paragraphHeight(block.text, width) + float32(markdown.size()*0.75) +
@@ -577,8 +608,14 @@ func markdownFirstLineHeight(paragraph *Paragraph) float32 {
 // the text after it on its page. Its level as it is tagged is at most one
 // more than that of the heading before it, so that no level is skipped.
 func (markdown *Markdown) drawHeading(block *markdownBlock, x, width, keep float32) {
-	markdown.gap(markdown.headingGap(block))
 	paragraph := markdown.headingParagraph(block)
+	if len(paragraph.lines) == 0 {
+		// A heading of no text, such as "# <br>", draws nothing and takes no
+		// level: the heading after it was tagged a level below one that was
+		// not drawn (the review of 28 October 2026)
+		return
+	}
+	markdown.gap(markdown.headingGap(block))
 	markdown.headingLevel = min(block.level, markdown.headingLevel+1)
 	levels := [6]structelem.StructElem{structelem.H1, structelem.H2, structelem.H3,
 		structelem.H4, structelem.H5, structelem.H6}

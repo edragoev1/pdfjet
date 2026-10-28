@@ -504,6 +504,22 @@ func TestMarkdownLongCodeLinesAreCutInLinearTime(t *testing.T) {
 	}
 }
 
+// A run of headings is laid out in linear time: each heading measured the
+// headings after it to the end of the run, and 5,000 took 40 seconds (the
+// review of 28 October 2026).
+func TestMarkdownARunOfHeadingsIsLaidOutInLinearTime(t *testing.T) {
+	testAllowCoreFonts(t)
+	text := strings.Repeat("# h\n", 5000)
+	var drawn *testMarkdownDrawn
+	elapsed := testShortest(5*time.Second, func() { drawn = testDrawMarkdown(text, "") })
+	if len(drawn.pages) <= 1 {
+		t.Errorf("%d pages", len(drawn.pages))
+	}
+	if elapsed > 5*time.Second {
+		t.Errorf("%v", elapsed)
+	}
+}
+
 func TestMarkdownACodeLineOfOneColumnKeepsItsSurrogatePairs(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
@@ -568,6 +584,10 @@ func TestMarkdownAHeadingOfTwoLinesIsKeptWhole(t *testing.T) {
 func TestMarkdownAnEmptyHeadingATableAfterALineAndEmptyCode(t *testing.T) {
 	testAllowCoreFonts(t) // What the document tags, in a core font
 	testAssertStructures(t, testDrawMarkdown("#\n\n## Intro\n\nText.\n", ""), "H1", 1, "H2", 0)
+	// Nor does one whose text draws nothing: it took the H1 that was not
+	// drawn (the review of 28 October 2026)
+	testAssertStructures(t, testDrawMarkdown("# <br>\n### Intro\n", ""), "H1", 1, "H2", 0)
+	testAssertStructures(t, testDrawMarkdown("# &#32;\n### Intro\n", ""), "H1", 1, "H2", 0)
 	testAssertStructures(t, testDrawMarkdown("Sizes:\n| a | b |\n|---|---|\n| 1 | 2 |\n", ""), "Table", 1)
 	testAssertStructures(t, testDrawMarkdown("Text.\n\n```\n```\n", ""), "Code", 0)
 }

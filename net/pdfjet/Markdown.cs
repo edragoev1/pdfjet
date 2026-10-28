@@ -95,6 +95,13 @@ public class Markdown {
             new Dictionary<MarkdownParser.Block, IDrawable>(BlockIdentity.Instance);
     private readonly Dictionary<MarkdownParser.Block, float> imageHeights =
             new Dictionary<MarkdownParser.Block, float>(BlockIdentity.Instance);
+    // The room each heading keeps, by the heading, the width and whether it
+    // is in a tight list, measured once: measured for every heading again,
+    // down to the end of the headings after it, a run of headings took time
+    // that grew as its square (the review of 28 October 2026). A block, which
+    // does not override Equals, is compared by reference.
+    private readonly Dictionary<(MarkdownParser.Block block, float width, bool tight), float> keeps =
+            new Dictionary<(MarkdownParser.Block block, float width, bool tight), float>();
 
     // Compares blocks by reference, as Java's IdentityHashMap does; .NET
     // Framework 4.8 has no ReferenceEqualityComparer.
@@ -244,6 +251,7 @@ public class Markdown {
         tables.Clear();
         images.Clear();
         imageHeights.Clear();
+        keeps.Clear();
         quoteBars.Clear();
         if (!TextFrame.Finite(marginLeft) || !TextFrame.Finite(marginTop)
                 || !TextFrame.Finite(marginRight) || !TextFrame.Finite(marginBottom)) {
@@ -432,14 +440,31 @@ public class Markdown {
         float room = bottom - marginTop;
         switch (block.kind) {
             case MarkdownParser.Kind.HEADING: {
-                float heading = HeadingHeight(block, width);
-                if (i + 1 < blocks.Count) {
-                    MarkdownParser.Block next = blocks[i + 1];
-                    float gap = (next.kind == MarkdownParser.Kind.PARAGRAPH) ? ParagraphGap(tight)
-                            : (next.kind == MarkdownParser.Kind.HEADING) ? HeadingGap(next) : Size() * 0.75f;
-                    return heading + Math.Max(gap + KeepHeight(blocks, i + 1, width, tight), 2f * line);
+                float keep;
+                if (keeps.TryGetValue((block, width, tight), out keep)) {
+                    return keep;
                 }
-                return heading + 2f * line;
+                // The headings that follow it and the block after them,
+                // measured from the last back, each heading keeping what is
+                // after it
+                int end = i + 1;
+                while (end < blocks.Count && blocks[end].kind == MarkdownParser.Kind.HEADING) {
+                    end++;
+                }
+                keep = (end < blocks.Count) ? KeepHeight(blocks, end, width, tight) : 0f;
+                for (int j = end - 1; j >= i; j--) {
+                    float heading = HeadingHeight(blocks[j], width);
+                    if (j + 1 < blocks.Count) {
+                        MarkdownParser.Block next = blocks[j + 1];
+                        float gap = (next.kind == MarkdownParser.Kind.PARAGRAPH) ? ParagraphGap(tight)
+                                : (next.kind == MarkdownParser.Kind.HEADING) ? HeadingGap(next) : Size() * 0.75f;
+                        keep = heading + Math.Max(gap + keep, 2f * line);
+                    } else {
+                        keep = heading + 2f * line;
+                    }
+                    keeps[(blocks[j], width, tight)] = keep;
+                }
+                return keep;
             }
             case MarkdownParser.Kind.PARAGRAPH:
                 if (i + 1 < blocks.Count && LeadsIntoTable(block, blocks[i + 1])) {
@@ -567,8 +592,14 @@ public class Markdown {
     // it on its page. Its level as it is tagged is at most one more than that
     // of the heading before it, so that no level is skipped.
     private void DrawHeading(MarkdownParser.Block block, float x, float width, float keep) {
-        Gap(HeadingGap(block));
         Paragraph paragraph = HeadingParagraph(block);
+        if (paragraph.lines.Count == 0) {
+            // A heading of no text, such as "# <br>", draws nothing and takes
+            // no level: the heading after it was tagged a level below one
+            // that was not drawn (the review of 28 October 2026)
+            return;
+        }
+        Gap(HeadingGap(block));
         headingLevel = Math.Min(block.level, headingLevel + 1);
         StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
                 StructElem.H4, StructElem.H5, StructElem.H6};
@@ -1026,7 +1057,18 @@ public class Markdown {
                 file = (file.Length == 0) ? part : System.IO.Path.Combine(file, part);
             }
         }
-        return (File.Exists(file) && !Directory.Exists(file)) ? file : null;
+        // Only a file that has bytes, its links followed: any that was not a
+        // directory was read, and a FIFO there blocked the reading, where Go
+        // reads only a regular file (the review of 28 October 2026). .NET does
+        // not tell a FIFO, a socket or a device from a regular file, and they
+        // have a length of 0, as an empty file, which has no image either.
+        try {
+            FileSystemInfo info = new FileInfo(file);
+            info = info.ResolveLinkTarget(true) ?? info;
+            return (info is FileInfo target && target.Exists && target.Length > 0) ? file : null;
+        } catch (IOException) {
+            return null;    // No file, or a loop of links
+        }
     }
 
     // The source as Java's File reads it: with one / where it has more, and

@@ -166,6 +166,44 @@ class TextFlowTest {
         }
     }
 
+    // A heading keeps a heading after it whole, with what that one keeps, and
+    // an image with its caption: it kept the first line of the heading, or
+    // the image alone, and was left at the bottom of the page when they went
+    // to the next (the review of 28 October 2026).
+    @Test
+    void aHeadingKeepsTheHeadingOrTheCaptionedImageAfterIt() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph h1 = new Paragraph(new TextLine(font, "Chapter").setFontSize(22f)).setStructureType(StructElem.H1);
+        Paragraph h2 = new Paragraph(new TextLine(font, "Section").setFontSize(16f)).setStructureType(StructElem.H2);
+        Paragraph text = paragraph(font, "The text under the headings");
+        float h1Height = font.getAscent(22f) + font.getDescent(22f);
+        float h2Height = font.getAscent(16f) + font.getDescent(16f);
+        // Room below the image for the two headings, 2 points more, but not
+        // for a line after them too
+        Image filler = image(pdf, HEIGHT - h1Height - 6f - h2Height - 6f - 2f);
+        List<Page> pages = new ArrayList<Page>();
+        flow(pdf).add(filler).add(h1).addSpace(6f).add(h2).addSpace(6f).add(text).drawOn(pages);
+        assertEquals(MARGIN, h1.getY1(), TestSupport.DELTA);   // on the next page
+        assertEquals(h1.getY2() + 6f, h2.getY1(), TestSupport.DELTA);
+        assertEquals(h2.getY2() + 6f, text.getY1(), TestSupport.DELTA);
+
+        pdf = TestSupport.newPDF();
+        font = TestSupport.helvetica(pdf);
+        h1 = new Paragraph(new TextLine(font, "Figures").setFontSize(22f)).setStructureType(StructElem.H1);
+        Paragraph caption = paragraph(font, "Figure 1: the image above").setStructureType(StructElem.CAPTION);
+        Image image = image(pdf, 300f);
+        // Room below the filler for the heading and the image, 2 points more,
+        // but not for the caption too
+        filler = image(pdf, HEIGHT - h1Height - 300f - 2f);
+        pages = new ArrayList<Page>();
+        flow(pdf).add(filler).add(h1).add(image).addSpace(4f).add(caption).drawOn(pages);
+        assertEquals(MARGIN, h1.getY1(), TestSupport.DELTA);   // on the next page
+        assertEquals(h1.getY2(), image.y, TestSupport.DELTA);
+        assertEquals(image.y + 300f + 4f, caption.getY1(), TestSupport.DELTA);
+        assertEquals(2, pages.size());
+    }
+
     @Test
     void aSpaceAtTheTopOfAPageIsLeftOut() throws Exception {
         PDF pdf = TestSupport.newPDF();

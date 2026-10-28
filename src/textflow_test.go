@@ -177,6 +177,46 @@ func TestTextFlowAHeadingKeepsWithTheFirstLineAfterIt(t *testing.T) {
 	}
 }
 
+// A heading keeps a heading after it whole, with what that one keeps, and an
+// image with its caption: it kept the first line of the heading, or the image
+// alone, and was left at the bottom of the page when they went to the next
+// (the review of 28 October 2026).
+func TestTextFlowAHeadingKeepsTheHeadingOrTheCaptionedImageAfterIt(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	h1 := NewParagraph().Add(NewTextLine(font, "Chapter").SetFontSize(22)).SetStructureType(structelem.H1)
+	h2 := NewParagraph().Add(NewTextLine(font, "Section").SetFontSize(16)).SetStructureType(structelem.H2)
+	text := testFlowParagraph(font, "The text under the headings")
+	h1Height := firstLineHeight([]*Paragraph{h1})
+	h2Height := firstLineHeight([]*Paragraph{h2})
+	// Room below the image for the two headings, 2 points more, but not for a
+	// line after them too
+	filler := testFlowImage(t, pdf, testFlowHeight-h1Height-6-h2Height-6-2)
+	pages := make([]*Page, 0)
+	testFlow(pdf).AddImage(filler).Add(h1).AddSpace(6).Add(h2).AddSpace(6).Add(text).DrawOnPages(&pages)
+	testNear(t, "the first heading, on the next page", testFlowMargin, h1.GetY1(), testDelta)
+	testNear(t, "the second, under it", h1.GetY2()+6, h2.GetY1(), testDelta)
+	testNear(t, "the text, under that", h2.GetY2()+6, text.GetY1(), testDelta)
+
+	pdf = testNewPDF()
+	font = testHelvetica(pdf)
+	h1 = NewParagraph().Add(NewTextLine(font, "Figures").SetFontSize(22)).SetStructureType(structelem.H1)
+	h1Height = firstLineHeight([]*Paragraph{h1})
+	caption := testFlowParagraph(font, "Figure 1: the image above").SetStructureType(structelem.Caption)
+	image := testFlowImage(t, pdf, 300)
+	// Room below the filler for the heading and the image, 2 points more, but
+	// not for the caption too
+	filler = testFlowImage(t, pdf, testFlowHeight-h1Height-300-2)
+	pages = make([]*Page, 0)
+	testFlow(pdf).AddImage(filler).Add(h1).AddImage(image).AddSpace(4).Add(caption).DrawOnPages(&pages)
+	testNear(t, "the heading, on the next page", testFlowMargin, h1.GetY1(), testDelta)
+	testNear(t, "the image, under it", h1.GetY2(), image.y, testDelta)
+	testNear(t, "the caption, under that", image.y+300+4, caption.GetY1(), testDelta)
+	if len(pages) != 2 {
+		t.Errorf("%d pages, not 2", len(pages))
+	}
+}
+
 func TestTextFlowASpaceAtTheTopOfAPageIsLeftOut(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)

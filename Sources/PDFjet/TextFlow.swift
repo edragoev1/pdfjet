@@ -238,8 +238,14 @@ public class TextFlow {
                     continue    // No text to draw
                 }
                 if let last = item.paragraphs.last, isHeading(last) {
-                    // The heading, and the first line or the image after it
-                    let withNext = textHeight(item, width) + nextHeight(i + 1, width, height)
+                    // The heading and what it keeps after it, when the two fit
+                    // on a page, or else the heading and the first line or the
+                    // image after it
+                    let textHeight = self.textHeight(item, width)
+                    var withNext = textHeight + nextHeight(i + 1, width, height, true)
+                    if withNext > height {
+                        withNext = textHeight + nextHeight(i + 1, width, height, false)
+                    }
                     if withNext <= height {
                         needed = withNext
                     }
@@ -287,10 +293,19 @@ public class TextFlow {
 
     // The height that has to fit below a heading so that it does not end a
     // page: the spaces after it, and the first line of the paragraphs or the
-    // image that comes next.
-    private func nextHeight(_ index: Int, _ width: Float, _ height: Float) -> Float {
+    // image that comes next. With whole, what the heading keeps after it: a
+    // heading that comes next counts whole, with what it keeps in turn, and an
+    // image with its caption when the two fit on a page. A heading kept only
+    // the first line of a heading after it, which then went to the next page
+    // with its paragraph, or an image without its caption, which went with
+    // it, and was left at the bottom of a page (the review of 28 October
+    // 2026). The sum stops once it is more than the height of a page, so that
+    // a run of headings is measured in linear time.
+    private func nextHeight(_ index: Int, _ width: Float, _ height: Float, _ whole: Bool) -> Float {
         var total: Float = 0.0
-        for item in items[index...] {
+        var i = index
+        while i < items.count && total <= height {
+            let item = items[i]
             if item.space > 0.0 {
                 total += item.space
             } else if let image = item.image {
@@ -299,13 +314,23 @@ public class TextFlow {
                 if w > width {
                     h = h * (width / w)
                 }
-                return total + min(h, height)
+                h = min(h, height)
+                if whole {
+                    let withCaption = h + captionHeight(i + 1, width)
+                    if withCaption <= height {
+                        h = withCaption
+                    }
+                }
+                return total + h
             } else {
                 let line = firstLineHeight(item.paragraphs)
-                if line > 0.0 {
+                if line > 0.0 && whole && item.paragraphs.count == 1 && isHeading(item.paragraphs[0]) {
+                    total += textHeight(item, width)
+                } else if line > 0.0 {
                     return total + line
                 }
             }
+            i += 1
         }
         return total
     }

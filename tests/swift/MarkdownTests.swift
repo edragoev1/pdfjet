@@ -449,6 +449,13 @@ import Testing
         var drawn = try MarkdownTests.draw("#\n\n## Intro\n\nText.\n", nil)
         #expect(MarkdownTests.count(drawn.pdf, "H1") == 1)
         #expect(MarkdownTests.count(drawn.pdf, "H2") == 0)
+        // Nor does one whose text draws nothing: it took the H1 that was not
+        // drawn (the review of 28 October 2026)
+        for empty in ["# <br>\n### Intro\n", "# &#32;\n### Intro\n"] {
+            drawn = try MarkdownTests.draw(empty, nil)
+            #expect(MarkdownTests.count(drawn.pdf, "H1") == 1, "\(empty.debugDescription)")
+            #expect(MarkdownTests.count(drawn.pdf, "H2") == 0, "\(empty.debugDescription)")
+        }
         drawn = try MarkdownTests.draw("Sizes:\n| a | b |\n|---|---|\n| 1 | 2 |\n", nil)
         #expect(MarkdownTests.count(drawn.pdf, "Table") == 1)
         drawn = try MarkdownTests.draw("Text.\n\n```\n```\n", nil)
@@ -488,5 +495,52 @@ import Testing
             apart = apart || pagesOf(drawn, "555:") != pagesOf(drawn, "r1")
         }
         #expect(apart, "the lead-in with an em space after its colon kept its table")
+    }
+
+    // Swift only: a lead-in ends in a colon by its last scalar, as in the
+    // other ports: hasSuffix compared whole characters, and a colon that
+    // U+0600, a prepended mark, joins into one was not seen (the review of 28
+    // October 2026).
+    @Test func aLeadInEndsInAColonByItsLastScalar() throws {
+        for k in 0...60 {
+            let drawn = try MarkdownTests.draw(fillerAndTable(k, "555 \u{0600}:", 8), nil)
+            #expect(pagesOf(drawn, "555") == pagesOf(drawn, "r1"), "\(k) paragraphs: the lead-in is apart")
+        }
+    }
+
+    // A run of headings is laid out in linear time: each heading measured the
+    // headings after it to the end of the run, and 5,000 took four and a half
+    // minutes in a debug build (the review of 28 October 2026).
+    @Test func aRunOfHeadingsIsLaidOutInLinearTime() throws {
+        let text = String(repeating: "# h\n", count: 5000)
+        var drawn = Drawn()
+        let elapsed = try shortestTime(.seconds(10)) {
+            drawn = try MarkdownTests.draw(text, nil)
+        }
+        #expect(drawn.pages.count > 1)
+        #expect(elapsed < .seconds(10), "\(elapsed)")
+    }
+
+    // Only a regular file of the image directory is read: a FIFO there was
+    // read too, and blocked the reading until something wrote to it (the
+    // review of 28 October 2026). A link to an image is followed.
+    @Test func onlyARegularFileIsReadAsAnImage() throws {
+        let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pdfjet-markdown-" + UUID().uuidString).path
+        try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(atPath: directory)
+        }
+        #expect(mkfifo(directory + "/fifo.png", 0o600) == 0)
+        try FileManager.default.createSymbolicLink(atPath: directory + "/fifo-link.png",
+                withDestinationPath: directory + "/fifo.png")
+        try FileManager.default.createSymbolicLink(atPath: directory + "/tux.png",
+                withDestinationPath: TestSupport.path("images/linux-logo.png"))
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let markdown = Markdown(font, font, font, font, font).setImageDirectory(directory)
+        #expect(markdown.imagePath("fifo.png") == nil)
+        #expect(markdown.imagePath("fifo-link.png") == nil)
+        #expect(markdown.imagePath("tux.png") == directory + "/tux.png")
     }
 }

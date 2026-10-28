@@ -86,6 +86,18 @@ public class Markdown {
     private var tables = [ObjectIdentifier: Table]()
     private var images = [ObjectIdentifier: (any Drawable)?]()
     private var imageHeights = [ObjectIdentifier: Float]()
+    // The room each heading keeps, measured once: measured for every heading
+    // again, down to the end of the headings after it, a run of headings took
+    // time that grew as its square (the review of 28 October 2026)
+    private var keeps = [Keep: Float]()
+
+    // A heading at a width, in a list that is tight or not: the key of the
+    // room it keeps.
+    private struct Keep: Hashable {
+        let block: ObjectIdentifier
+        let width: Float
+        let tight: Bool
+    }
 
     private final class QuoteBar {
         let x: Float
@@ -250,6 +262,7 @@ public class Markdown {
         tables.removeAll()
         images.removeAll()
         imageHeights.removeAll()
+        keeps.removeAll()
         // The pages drawn go to the list, also when an image could not be read.
         defer {
             pages = self.pages
@@ -428,15 +441,32 @@ public class Markdown {
         let room = bottom - marginTop
         switch block.kind {
         case .HEADING:
-            let heading = headingHeight(block, width)
-            if i + 1 < blocks.count {
-                let next = blocks[i + 1]
-                let gap = (next.kind == .PARAGRAPH) ? paragraphGap(tight)
-                        : (next.kind == .HEADING) ? headingGap(next) : size() * 0.75
-                let after = try keepHeight(blocks, i + 1, width, tight)
-                return heading + max(gap + after, 2.0 * line)
+            if let keep = keeps[Keep(block: ObjectIdentifier(block), width: width, tight: tight)] {
+                return keep
             }
-            return heading + 2.0 * line
+            // The headings that follow it and the block after them, measured
+            // from the last back, each heading keeping what is after it
+            var end = i + 1
+            while end < blocks.count && blocks[end].kind == .HEADING {
+                end += 1
+            }
+            var keep: Float = 0.0
+            if end < blocks.count {
+                keep = try keepHeight(blocks, end, width, tight)
+            }
+            for j in stride(from: end - 1, through: i, by: -1) {
+                let heading = headingHeight(blocks[j], width)
+                if j + 1 < blocks.count {
+                    let next = blocks[j + 1]
+                    let gap = (next.kind == .PARAGRAPH) ? paragraphGap(tight)
+                            : (next.kind == .HEADING) ? headingGap(next) : size() * 0.75
+                    keep = heading + max(gap + keep, 2.0 * line)
+                } else {
+                    keep = heading + 2.0 * line
+                }
+                keeps[Keep(block: ObjectIdentifier(blocks[j]), width: width, tight: tight)] = keep
+            }
+            return keep
         case .PARAGRAPH:
             if i + 1 < blocks.count && Markdown.leadsIntoTable(block, blocks[i + 1]) {
                 let keep = paragraphHeight(block.text!, width) + size() * 0.75
@@ -569,8 +599,14 @@ public class Markdown {
     // it on its page. Its level as it is tagged is at most one more than that
     // of the heading before it, so that no level is skipped.
     private func drawHeading(_ block: MarkdownParser.Block, _ x: Float, _ width: Float, _ keep: Float) {
-        gap(headingGap(block))
         let paragraph = headingParagraph(block)
+        if paragraph.lines.isEmpty {
+            // A heading of no text, such as "# <br>", draws nothing and takes
+            // no level: the heading after it was tagged a level below one
+            // that was not drawn (the review of 28 October 2026)
+            return
+        }
+        gap(headingGap(block))
         headingLevel = min(block.level, headingLevel + 1)
         let levels = [StructElem.H1, StructElem.H2, StructElem.H3,
                 StructElem.H4, StructElem.H5, StructElem.H6]
@@ -841,8 +877,11 @@ public class Markdown {
         if block.kind != .PARAGRAPH || next.kind != .TABLE {
             return false
         }
-        let text = block.text!.trim()
-        return text.hasSuffix(":") || text.hasSuffix("\u{FF1A}")     // Or the full-width colon of CJK text
+        // The last scalar, as the other ports compare it: hasSuffix compares
+        // whole characters, and a colon after a character that it joins, such
+        // as U+0600, led into no table (the review of 28 October 2026)
+        let last = block.text!.trim().unicodeScalars.last
+        return last == ":" || last == "\u{FF1A}"    // Or the full-width colon of CJK text
     }
 
     // A paragraph that ends in a colon leads into the table after it, as
@@ -1055,8 +1094,12 @@ public class Markdown {
         if !imageDirectory.isEmpty {
             path = (imageDirectory as NSString).appendingPathComponent(path)
         }
-        var isDirectory: ObjCBool = false
-        if !FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) || isDirectory.boolValue {
+        // Only a regular file, as in Go, its links followed: any other that
+        // is not a directory was read, and a FIFO there blocked the reading
+        // (the review of 28 October 2026)
+        let target = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+        guard let type = (try? FileManager.default.attributesOfItem(atPath: target))?[.type] as? FileAttributeType,
+                type == .typeRegular else {
             return nil
         }
         return path

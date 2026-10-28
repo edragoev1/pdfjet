@@ -187,10 +187,16 @@ func (flow *TextFlow) DrawOnPagesFrom(first *Page, pages *[]*Page) [2]float32 {
 			}
 			needed := firstLineHeight(item.paragraphs)
 			if isHeading(item.paragraphs[len(item.paragraphs)-1]) {
-				// The heading, and the first line or the image after it
+				// The heading and what it keeps after it, when the two fit on
+				// a page, or else the heading and the first line or the image
+				// after it
 				textHeight := flow.textHeight(item, width)
-				if textHeight+flow.nextHeight(i+1, width, height) <= height {
-					needed = textHeight + flow.nextHeight(i+1, width, height)
+				withNext := textHeight + flow.nextHeight(i+1, width, height, true)
+				if withNext > height {
+					withNext = textHeight + flow.nextHeight(i+1, width, height, false)
+				}
+				if withNext <= height {
+					needed = withNext
 				}
 			}
 			if page == nil || (!atTop && y+needed > limit) {
@@ -233,10 +239,18 @@ func (flow *TextFlow) textHeight(item flowItem, width float32) float32 {
 
 // nextHeight returns the height that has to fit below a heading so that it
 // does not end a page: the spaces after it, and the first line of the
-// paragraphs or the image that comes next.
-func (flow *TextFlow) nextHeight(index int, width, height float32) float32 {
+// paragraphs or the image that comes next. With whole, what the heading keeps
+// after it: a heading that comes next counts whole, with what it keeps in
+// turn, and an image with its caption when the two fit on a page. A heading
+// kept only the first line of a heading after it, which then went to the next
+// page with its paragraph, or an image without its caption, which went with
+// it, and was left at the bottom of a page (the review of 28 October 2026).
+// The sum stops once it is more than the height of a page, so that a run of
+// headings is measured in linear time.
+func (flow *TextFlow) nextHeight(index int, width, height float32, whole bool) float32 {
 	total := float32(0)
-	for _, item := range flow.items[index:] {
+	for i := index; i < len(flow.items) && total <= height; i++ {
+		item := flow.items[i]
 		switch {
 		case item.space > 0:
 			total += item.space
@@ -248,9 +262,17 @@ func (flow *TextFlow) nextHeight(index int, width, height float32) float32 {
 			if h > height {
 				h = height
 			}
+			if whole {
+				if withCaption := h + flow.captionHeight(i+1, width); withCaption <= height {
+					h = withCaption
+				}
+			}
 			return total + h
 		default:
-			if line := firstLineHeight(item.paragraphs); line > 0 {
+			line := firstLineHeight(item.paragraphs)
+			if line > 0 && whole && len(item.paragraphs) == 1 && isHeading(item.paragraphs[0]) {
+				total += flow.textHeight(item, width)
+			} else if line > 0 {
 				return total + line
 			}
 		}

@@ -131,6 +131,12 @@ internal static class Net48Extensions {
         }
     }
 
+    extension(FileSystemInfo info) {
+        // The link is not followed: the Markdown follows the links of its
+        // images to keep FIFOs out, and Windows has none
+        public FileSystemInfo ResolveLinkTarget(bool returnFinalTarget) => null;
+    }
+
     extension(Stream stream) {
         public void Write(System.ReadOnlySpan<byte> bytes) {
             byte[] array = bytes.ToArray();
