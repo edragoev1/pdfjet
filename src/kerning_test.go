@@ -110,6 +110,76 @@ func TestKerningOfColoredTextIsDrawnAsItIsMeasured(t *testing.T) {
 	testNear(t, "colored, shaped", font.StringWidth(12, shaped), testDrawnWidth(font, string(page.buf[start:]), 12), 0.01)
 }
 
+var drawnCoreText = regexp.MustCompile(`\[([^\]]*)\] TJ`)
+var drawnCorePiece = regexp.MustCompile(`<([0-9A-F]*)>|(-?[0-9.]+)`)
+
+// testCoreDrawnWidth returns how wide the text drawn in a core font is as the
+// page draws it, at the size: the widths of its characters, with the moves of
+// the TJ arrays before and between them, from the content of the page. The
+// end of its last character is then where StringWidth says the text ends.
+func testCoreDrawnWidth(font *Font, content string, size float32) float32 {
+	var units float32
+	for _, tj := range drawnCoreText.FindAllStringSubmatch(content, -1) {
+		for _, m := range drawnCorePiece.FindAllStringSubmatch(tj[1], -1) {
+			if m[2] != "" {
+				v, _ := strconv.ParseFloat(m[2], 32)
+				units -= float32(v)
+				continue
+			}
+			for i := 0; i+2 <= len(m[1]); i += 2 {
+				code, _ := strconv.ParseInt(m[1][i:i+2], 16, 32)
+				units += float32(font.metrics[code-32][1])
+			}
+		}
+	}
+	return units * size / 1000
+}
+
+// Colored text in a core font kerns the pairs across its words and its color
+// changes, as StringWidth measures them: Helvetica kerns "Y." (KPX Y period),
+// and a red "Y" before the period was drawn without it (the review of
+// 28 October 2026). A color changes only between words, so a pair inside a
+// word, as "AV", is never split by one.
+func TestKerningOfColoredCoreFontTextIsDrawnAsItIsMeasured(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	font.SetKernPairs(true)
+	colors := map[string]int32{"Y": 0xFF0000, "To": 0x0000FF}
+	for _, text := range []string{
+		"Y.",
+		"AVATAR Y. To \"Wally\", LT: P.V. said.",
+		"T\u00adoo, Y\u00ad.",
+	} {
+		page := NewPage(pdf, letter.Portrait())
+		start := len(page.buf)
+		page.drawColoredString(font, text, [3]float32{}, colors)
+		content := string(page.buf[start:])
+		testNear(t, text, font.StringWidth(12, text), testCoreDrawnWidth(font, content, 12), 0.001)
+	}
+	// "Y." kerns by 140 units, the period moved as the TJ array it starts
+	page := NewPage(pdf, letter.Portrait())
+	start := len(page.buf)
+	page.drawColoredString(font, "Y.", [3]float32{}, colors)
+	if content := string(page.buf[start:]); !strings.Contains(content, "[140<2E>] TJ") {
+		t.Errorf("the period is not kerned:\n%s", content)
+	}
+}
+
+// Text in a core font that is not colored is drawn as before the kerning of
+// colored text across its words: one TJ array, kerned inside it.
+func TestKerningOfCoreFontTextNotColoredIsUnchanged(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	font.SetKernPairs(true)
+	page := NewPage(pdf, letter.Portrait())
+	start := len(page.buf)
+	page.DrawStringUsingFontSize(font, 12, "AV Y. To", 50, 50)
+	want := "BT\n/F1 12 Tf\n50 742 Td\n0 0 0 rg\n[<41>70<5620>90<59>140<2E>60<20>50<54>120<6F>] TJ\nET\n"
+	if content := string(page.buf[start:]); content != want {
+		t.Errorf("want %q, got %q", want, content)
+	}
+}
+
 func TestKerningIsOffUnlessAskedFor(t *testing.T) {
 	pdf := testNewPDF()
 	font := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", false)

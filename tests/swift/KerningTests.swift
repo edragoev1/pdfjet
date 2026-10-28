@@ -129,6 +129,85 @@ import Testing
                 drawnWidth(font, Array(page.buf[shapedStart...]), 12), 0.01, "colored, shaped")
     }
 
+    // Returns how wide the text drawn in a core font is as the page draws it,
+    // at the size: the widths of its characters, with the moves of the TJ
+    // arrays before and between them, from the content of the page. It reads
+    // the <([0-9A-F]*)> and (-?[0-9.]+) in each \[([^\]]*)\] TJ, as the other
+    // ports do. The end of its last character is then where stringWidth says
+    // the text ends.
+    private func coreDrawnWidth(_ font: Font, _ content: String, _ size: Float) -> Float {
+        var units: Float = 0
+        let metrics = font.metrics!
+        for piece in content.components(separatedBy: "] TJ").dropLast() {
+            guard let open = piece.lastIndex(of: "[") else {
+                continue
+            }
+            let array = Array(piece[piece.index(after: open)...].unicodeScalars)
+            var i = 0
+            while i < array.count {
+                if array[i] == "<" {
+                    var j = i + 1
+                    while j + 2 <= array.count && array[j] != ">" {
+                        let hex = String(String.UnicodeScalarView(array[j..<(j + 2)]))
+                        units += Float(metrics[Int(hex, radix: 16)! - 32][1])
+                        j += 2
+                    }
+                    i = j + 1
+                } else {
+                    var j = i
+                    while j < array.count && array[j] != "<" {
+                        j += 1
+                    }
+                    units -= Float(String(String.UnicodeScalarView(array[i..<j])))!
+                    i = j
+                }
+            }
+        }
+        return units * size / 1000
+    }
+
+    // Colored text in a core font kerns the pairs across its words and its
+    // color changes, as stringWidth measures them: Helvetica kerns "Y." (KPX Y
+    // period), and a red "Y" before the period was drawn without it (the
+    // review of 28 October 2026). A color changes only between words, so a
+    // pair inside a word, as "AV", is never split by one.
+    @Test func kerningOfColoredCoreFontTextIsDrawnAsItIsMeasured() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        font.setKernPairs(true)
+        let colors: [String : Int32] = ["Y": 0xFF0000, "To": 0x0000FF]
+        for text in [
+            "Y.",
+            "AVATAR Y. To \"Wally\", LT: P.V. said.",
+            "T\u{00ad}oo, Y\u{00ad}.",
+        ] {
+            let page = Page(pdf, Letter.PORTRAIT)
+            let start = TestSupport.content(page).count
+            page.drawColoredString(font, text, [0, 0, 0], colors)
+            let content = String(TestSupport.content(page).dropFirst(start))
+            TestSupport.expectNear(font.stringWidth(12, text), coreDrawnWidth(font, content, 12), 0.001, "\(text)")
+        }
+        // "Y." kerns by 140 units, the period moved as the TJ array it starts
+        let page = Page(pdf, Letter.PORTRAIT)
+        let start = TestSupport.content(page).count
+        page.drawColoredString(font, "Y.", [0, 0, 0], colors)
+        let content = String(TestSupport.content(page).dropFirst(start))
+        #expect(content.contains("[140<2E>] TJ"), "the period is not kerned:\n\(content)")
+    }
+
+    // Text in a core font that is not colored is drawn as before the kerning
+    // of colored text across its words: one TJ array, kerned inside it.
+    @Test func kerningOfCoreFontTextNotColoredIsUnchanged() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        font.setKernPairs(true)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let start = TestSupport.content(page).count
+        page.drawString(font, 12, "AV Y. To", 50, 50)
+        #expect(String(TestSupport.content(page).dropFirst(start))
+                == "BT\n/F1 12 Tf\n50 742 Td\n0 0 0 rg\n[<41>70<5620>90<59>140<2E>60<20>50<54>120<6F>] TJ\nET\n")
+    }
+
     @Test func kerningIsOffUnlessAskedFor() throws {
         let pdf = TestSupport.newPDF()
         let font = try font(pdf, plexTTF, false)

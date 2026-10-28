@@ -123,7 +123,8 @@ public class Page {
     private var textRise: Float = 0.0
     // The font of the string of glyphs being drawn when it kerns, and the
     // glyph drawn last, or -1: appendGlyph puts the kerning of each pair
-    // between the two glyphs.
+    // between the two glyphs. For a core font, the code of the character
+    // drawn last.
     private var kernFont: Font?
     private var kernPrevious = -1
     // True while colored text is drawn, word by word: the kerning goes on from
@@ -2611,9 +2612,7 @@ public class Page {
             }
 
             if font.isCoreFont {
-                append("[<")
-                drawASCIIString(font, str)
-                append(">] TJ\n")
+                drawASCIIWord(font, str)
             } else {
                 append("<")
                 drawUnicodeString(font, str)
@@ -2621,6 +2620,32 @@ public class Page {
             }
             str = ""
         }
+    }
+
+    // Draws a word of colored text in a core font in a TJ array of its own,
+    // moved first by the kerning of the pair it starts with the last character
+    // of the word before it: stringWidth measures the whole text, and "Y."
+    // with a colored "Y" was drawn wider than it measured, as each word was
+    // kerned on its own (the review of 28 October 2026).
+    private func drawASCIIWord(_ font: Font, _ text: String) {
+        append("[")
+        if font.kernPairs {
+            let scalars = font.withoutIgnorables(Array(text.unicodeScalars))
+            if let first = scalars.first, let last = scalars.last {
+                let c1 = font.coreFontCode(first.value)
+                if kernFont === font && kernPrevious >= 0 {
+                    let kerning = font.kerning(kernPrevious, c1)
+                    if kerning != 0 {
+                        append(-kerning)
+                    }
+                }
+                kernFont = font
+                kernPrevious = font.coreFontCode(last.value)
+            }
+        }
+        append("<")
+        drawASCIIString(font, text)
+        append(">] TJ\n")
     }
 
     func drawColoredString(

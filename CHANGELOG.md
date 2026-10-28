@@ -738,6 +738,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   axis of 1e15 and more have the significant digits that set them apart, as
   BarChart's do: an axis of 4.84e15 to 4.85e15 was written 4.84e15 at each
   line, and is now 4.84e15, 4.841e15 and on (the review of 28 October 2026).
+- The four ports: colored text in the 14 standard fonts with
+  `setKernPairs(true)` is kerned across its words and colors, as
+  `stringWidth` measures it. A highlighted "Y" before a period, or a word
+  after a space, was kerned only inside each word, so right-aligned and
+  centered colored text ended past the place it measured. Text that is not
+  colored is drawn as before. Also in v9.1.1 (the review of 28 October
+  2026).
+  Behavior change: Helvetica "Y." with the "Y" highlighted draws the period
+  140 units closer, `[140<2E>] TJ`, as the same text uncolored always did.
 
 ## v9.1.1 — 2026-10-20
 

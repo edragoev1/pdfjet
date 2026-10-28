@@ -108,6 +108,73 @@ public class KerningTest {
                 DrawnWidth(font, TestSupport.Content(page).Substring(start), 12f), 0.01f, "colored, shaped");
     }
 
+    private static readonly Regex DrawnCoreText = new Regex(@"\[([^\]]*)\] TJ");
+    private static readonly Regex DrawnCorePiece = new Regex(@"<([0-9A-F]*)>|(-?[0-9.]+)");
+
+    // Returns how wide the text drawn in a core font is as the page draws it,
+    // at the size: the widths of its characters, with the moves of the TJ
+    // arrays before and between them, from the content of the page. The end of
+    // its last character is then where StringWidth says the text ends.
+    private static float CoreDrawnWidth(Font font, string content, float size) {
+        float units = 0f;
+        foreach (Match tj in DrawnCoreText.Matches(content)) {
+            foreach (Match m in DrawnCorePiece.Matches(tj.Groups[1].Value)) {
+                if (m.Groups[2].Success) {
+                    units -= float.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+                    continue;
+                }
+                string hex = m.Groups[1].Value;
+                for (int i = 0; i + 2 <= hex.Length; i += 2) {
+                    units += font.metrics[Convert.ToInt32(hex.Substring(i, 2), 16) - 32][1];
+                }
+            }
+        }
+        return units*size/1000f;
+    }
+
+    // Colored text in a core font kerns the pairs across its words and its
+    // color changes, as StringWidth measures them: Helvetica kerns "Y." (KPX Y
+    // period), and a red "Y" before the period was drawn without it (the
+    // review of 28 October 2026). A color changes only between words, so a
+    // pair inside a word, as "AV", is never split by one.
+    [Fact]
+    public void KerningOfColoredCoreFontTextIsDrawnAsItIsMeasured() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        font.SetKernPairs(true);
+        Dictionary<string, int> colors = new Dictionary<string, int> {{"Y", 0xFF0000}, {"To", 0x0000FF}};
+        foreach (string text in new string[] {
+                "Y.",
+                "AVATAR Y. To \"Wally\", LT: P.V. said.",
+                "T\u00adoo, Y\u00ad."}) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            int start = TestSupport.Content(page).Length;
+            page.DrawColoredString(font, text, new float[] {0f, 0f, 0f}, colors);
+            TestSupport.AssertNear(font.StringWidth(12f, text),
+                    CoreDrawnWidth(font, TestSupport.Content(page).Substring(start), 12f), 0.001f, text);
+        }
+        // "Y." kerns by 140 units, the period moved as the TJ array it starts
+        Page yPage = new Page(pdf, Letter.PORTRAIT);
+        int yStart = TestSupport.Content(yPage).Length;
+        yPage.DrawColoredString(font, "Y.", new float[] {0f, 0f, 0f}, colors);
+        string content = TestSupport.Content(yPage).Substring(yStart);
+        Assert.True(content.Contains("[140<2E>] TJ"), "the period is not kerned:\n" + content);
+    }
+
+    // Text in a core font that is not colored is drawn as before the kerning
+    // of colored text across its words: one TJ array, kerned inside it.
+    [Fact]
+    public void KerningOfCoreFontTextNotColoredIsUnchanged() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        font.SetKernPairs(true);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        int start = TestSupport.Content(page).Length;
+        page.DrawString(font, 12f, "AV Y. To", 50f, 50f);
+        Assert.Equal("BT\n/F1 12 Tf\n50 742 Td\n0 0 0 rg\n[<41>70<5620>90<59>140<2E>60<20>50<54>120<6F>] TJ\nET\n",
+                TestSupport.Content(page).Substring(start));
+    }
+
     [Fact]
     public void KerningIsOffUnlessAskedFor() {
         PDF pdf = TestSupport.NewPDF();

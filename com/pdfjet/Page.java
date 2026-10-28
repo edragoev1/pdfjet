@@ -69,7 +69,8 @@ final public class Page {
     private float textRise = 0f;
     // The font of the string of glyphs being drawn when it kerns, and the
     // glyph drawn last, or -1: appendGlyph puts the kerning of each pair
-    // between the two glyphs.
+    // between the two glyphs. For a core font, the code of the character
+    // drawn last.
     private Font kernFont;
     private int kernPrevious = -1;
     // True while colored text is drawn, word by word: the kerning goes on
@@ -2794,9 +2795,7 @@ final public class Page {
             }
 
             if (font.isCoreFont) {
-                append("[<");
-                drawASCIIString(font, str);
-                append(">] TJ\n");
+                drawASCIIWord(font, str);
             } else {
                 append("<");
                 drawUnicodeString(font, str);
@@ -2805,6 +2804,32 @@ final public class Page {
 
             buf.setLength(0);
         }
+    }
+
+    // Draws a word of colored text in a core font in a TJ array of its own,
+    // moved first by the kerning of the pair it starts with the last character
+    // of the word before it: stringWidth measures the whole text, and "Y."
+    // with a colored "Y" was drawn wider than it measured, as each word was
+    // kerned on its own (the review of 28 October 2026).
+    private void drawASCIIWord(Font font, String str) {
+        append("[");
+        if (font.kernPairs) {
+            String drawn = font.withoutIgnorables(str);
+            if (!drawn.isEmpty()) {
+                int c1 = font.coreFontCode(drawn.codePointAt(0));
+                if (kernFont == font && kernPrevious >= 0) {
+                    int kerning = font.kerning(kernPrevious, c1);
+                    if (kerning != 0) {
+                        append(-kerning);
+                    }
+                }
+                kernFont = font;
+                kernPrevious = font.coreFontCode(drawn.codePointBefore(drawn.length()));
+            }
+        }
+        append("<");
+        drawASCIIString(font, str);
+        append(">] TJ\n");
     }
 
     private void drawColoredString(

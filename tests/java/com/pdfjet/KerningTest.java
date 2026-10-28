@@ -120,6 +120,77 @@ class KerningTest {
         assertEquals(font.stringWidth(12f, shaped), drawnWidth(font, content, 12f), 0.01f, "colored, shaped");
     }
 
+    private static final Pattern DRAWN_CORE_TEXT = Pattern.compile("\\[([^\\]]*)\\] TJ");
+    private static final Pattern DRAWN_CORE_PIECE = Pattern.compile("<([0-9A-F]*)>|(-?[0-9.]+)");
+
+    // Returns how wide the text drawn in a core font is as the page draws it,
+    // at the size: the widths of its characters, with the moves of the TJ
+    // arrays before and between them, from the content of the page. The end of
+    // its last character is then where stringWidth says the text ends.
+    private static float coreDrawnWidth(Font font, String content, float size) {
+        float units = 0f;
+        Matcher tj = DRAWN_CORE_TEXT.matcher(content);
+        while (tj.find()) {
+            Matcher m = DRAWN_CORE_PIECE.matcher(tj.group(1));
+            while (m.find()) {
+                if (m.group(2) != null) {
+                    units -= Float.parseFloat(m.group(2));
+                    continue;
+                }
+                String hex = m.group(1);
+                for (int i = 0; i + 2 <= hex.length(); i += 2) {
+                    units += font.metrics[Integer.parseInt(hex.substring(i, i + 2), 16) - 32][1];
+                }
+            }
+        }
+        return units*size/1000f;
+    }
+
+    // Colored text in a core font kerns the pairs across its words and its
+    // color changes, as stringWidth measures them: Helvetica kerns "Y." (KPX Y
+    // period), and a red "Y" before the period was drawn without it (the
+    // review of 28 October 2026). A color changes only between words, so a
+    // pair inside a word, as "AV", is never split by one.
+    @Test
+    void kerningOfColoredCoreFontTextIsDrawnAsItIsMeasured() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        font.setKernPairs(true);
+        Map<String, Integer> colors = new HashMap<String, Integer>();
+        colors.put("Y", 0xFF0000);
+        colors.put("To", 0x0000FF);
+        for (String text : new String[] {
+                "Y.",
+                "AVATAR Y. To \"Wally\", LT: P.V. said.",
+                "T\u00adoo, Y\u00ad."}) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            int start = TestSupport.content(page).length();
+            page.drawString(font, 12f, text, 50f, 50f, new float[] {0f, 0f, 0f}, colors);
+            String content = TestSupport.content(page).substring(start);
+            assertEquals(font.stringWidth(12f, text), coreDrawnWidth(font, content, 12f), 0.001f, text);
+        }
+        // "Y." kerns by 140 units, the period moved as the TJ array it starts
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        int start = TestSupport.content(page).length();
+        page.drawString(font, 12f, "Y.", 50f, 50f, new float[] {0f, 0f, 0f}, colors);
+        String content = TestSupport.content(page).substring(start);
+        assertTrue(content.contains("[140<2E>] TJ"), "the period is not kerned:\n" + content);
+    }
+
+    // Text in a core font that is not colored is drawn as before the kerning
+    // of colored text across its words: one TJ array, kerned inside it.
+    @Test
+    void kerningOfCoreFontTextNotColoredIsUnchanged() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        font.setKernPairs(true);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        int start = TestSupport.content(page).length();
+        page.drawString(font, 12f, "AV Y. To", 50f, 50f);
+        assertEquals("BT\n/F1 12 Tf\n50 742 Td\n0 0 0 rg\n[<41>70<5620>90<59>140<2E>60<20>50<54>120<6F>] TJ\nET\n",
+                TestSupport.content(page).substring(start));
+    }
+
     @Test
     void kerningIsOffUnlessAskedFor() throws Exception {
         PDF pdf = TestSupport.newPDF();

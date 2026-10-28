@@ -88,7 +88,8 @@ type Page struct {
 	textRise     float32
 	// The font of the string of glyphs being drawn when it kerns, and the
 	// glyph drawn last, or -1: appendGlyph puts the kerning of each pair
-	// between the two glyphs.
+	// between the two glyphs. For a core font, the code of the character
+	// drawn last.
 	kernFont     *Font
 	kernPrevious int
 	// kernChain is true while colored text is drawn, word by word: the
@@ -2348,9 +2349,7 @@ func (page *Page) drawWord(font *Font, buf *strings.Builder, brush [3]float32, c
 		}
 
 		if font.isCoreFont {
-			page.appendString("[<")
-			page.drawASCIIString(font, buf.String())
-			page.appendString(">] TJ\n")
+			page.drawASCIIWord(font, buf.String())
 		} else {
 			page.appendString("<")
 			page.drawUnicodeString(font, buf.String())
@@ -2359,6 +2358,31 @@ func (page *Page) drawWord(font *Font, buf *strings.Builder, brush [3]float32, c
 
 		buf.Reset()
 	}
+}
+
+// drawASCIIWord draws a word of colored text in a core font in a TJ array of
+// its own, moved first by the kerning of the pair it starts with the last
+// character of the word before it: StringWidth measures the whole text, and
+// "Y." with a colored "Y" was drawn wider than it measured, as each word was
+// kerned on its own (the review of 28 October 2026).
+func (page *Page) drawASCIIWord(font *Font, text string) {
+	page.appendString("[")
+	if font.kernPairs {
+		runes := font.withoutIgnorables([]rune(text))
+		if len(runes) > 0 {
+			c1 := font.coreFontCode(runes[0])
+			if page.kernFont == font && page.kernPrevious >= 0 {
+				if kerning := font.kerning(page.kernPrevious, c1); kerning != 0 {
+					page.appendInteger(-kerning)
+				}
+			}
+			page.kernFont = font
+			page.kernPrevious = font.coreFontCode(runes[len(runes)-1])
+		}
+	}
+	page.appendString("<")
+	page.drawASCIIString(font, text)
+	page.appendString(">] TJ\n")
 }
 
 func (page *Page) drawColoredString(font *Font, str string, brush [3]float32, colors map[string]int32) {

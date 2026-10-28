@@ -76,7 +76,8 @@ public class Page {
     private float textRise = 0f;
     // The font of the string of glyphs being drawn when it kerns, and the
     // glyph drawn last, or -1: AppendGlyph puts the kerning of each pair
-    // between the two glyphs.
+    // between the two glyphs. For a core font, the code of the character
+    // drawn last.
     private Font kernFont = null;
     private int kernPrevious = -1;
     // True while colored text is drawn, word by word: the kerning goes on
@@ -2732,9 +2733,7 @@ public class Page {
                 SetBrushColor(color);
             }
             if (font.isCoreFont) {
-                Append("[<");
-                DrawASCIIString(font, str);
-                Append(">] TJ\n");
+                DrawASCIIWord(font, str);
             } else {
                 Append("<");
                 DrawUnicodeString(font, str);
@@ -2742,6 +2741,36 @@ public class Page {
             }
             buf.Length = 0;
         }
+    }
+
+    // Draws a word of colored text in a core font in a TJ array of its own,
+    // moved first by the kerning of the pair it starts with the last character
+    // of the word before it: StringWidth measures the whole text, and "Y."
+    // with a colored "Y" was drawn wider than it measured, as each word was
+    // kerned on its own (the review of 28 October 2026).
+    private void DrawASCIIWord(Font font, String str) {
+        Append("[");
+        if (font.kernPairs) {
+            String drawn = font.WithoutIgnorables(str);
+            if (drawn.Length > 0) {
+                int c1 = font.CoreFontCode(Util.CodePointAt(drawn, 0));
+                if (kernFont == font && kernPrevious >= 0) {
+                    int kerning = font.Kerning(kernPrevious, c1);
+                    if (kerning != 0) {
+                        Append(-kerning);
+                    }
+                }
+                int last = drawn.Length - 1;
+                if (last > 0 && Char.IsSurrogatePair(drawn, last - 1)) {
+                    last--;
+                }
+                kernFont = font;
+                kernPrevious = font.CoreFontCode(Util.CodePointAt(drawn, last));
+            }
+        }
+        Append("<");
+        DrawASCIIString(font, str);
+        Append(">] TJ\n");
     }
 
     internal void DrawColoredString(
