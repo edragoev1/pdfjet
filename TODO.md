@@ -722,7 +722,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
      table, which can be read when debugging, and do not complicate
      things): a classic xref table cannot point into one, only a
      cross-reference stream or a hybrid file can, and PDF/A-1 forbids them.
-     They come as an option, off by default (below, 28 October 2026).
+     An option, off by default, is kept for later (below, 28 October 2026).
   2. PDF/A and tagged documents at any size (third review, W1, W2, W3, W5,
      W6). 9.0.7 refuses a PDF/A-1 document past its limits; this writes
      one within them at any size: a balanced page tree, a parent tree of
@@ -810,8 +810,11 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   PDF/UA asks: the citation a Lbl linked to its Note, read where it is
   cited. Markdown's footnotes ([^1]) drawn by the same code. The four ports
   alike; done after widows and orphans, as both decide where a page breaks.
-- **For v9.2.1: object streams, an option off by default** (the owner, 28
-  October 2026, after the benchmark: PDFjet's PDFs are the largest of the
+- **Later, not a top concern: object streams, an option off by default**
+  (the owner, 28 October 2026: "nice but users never think in this way";
+  since the font tables are written smaller, PDFjet's PDFs are a few KB
+  larger at most, the report with photos under 1%). Kept for the future,
+  after the v9.2.1 items. After the benchmark: PDFjet's PDFs are the largest of the
   four in four of its five documents, the invoice 25 KB to PDFBox's 19,
   the statement 64 to 42; PDFBox writes object streams by default, iText
   and OpenPDF as an option). With PDF.SetObjectStreams(true), the objects
