@@ -799,6 +799,16 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   as a page that breaks a line earlier changes where every later page
   breaks. The four ports alike, tested by where the pages break, and
   Example_17's page count noted before and after.
+- **For v9.2.1: footnotes** (the owner, 28 October 2026, from what Apache
+  FOP does well). PDFjet has none today, in TextFrame or in Markdown. A
+  note marked in the text, a superscript number by default, and its text
+  at the bottom of the page where it is cited, under a short rule, numbered
+  through the document. The space the notes take is kept from the text of
+  that page, so a page that a note does not fit moves the citing line and
+  its note to the next; a long note continues on the next page. Tagged as
+  PDF/UA asks: the citation a Lbl linked to its Note, read where it is
+  cited. Markdown's footnotes ([^1]) drawn by the same code. The four ports
+  alike; done after widows and orphans, as both decide where a page breaks.
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
   1. ✅ The first step done for 9.1.5, 26 October 2026 (the owner: "bring
