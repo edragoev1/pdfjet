@@ -776,6 +776,16 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   default so that no document changes. The patterns are data, kept out of
   the library jar the way the fonts are, or in a small file of their own:
   to decide. The four ports alike, tested by the words they break.
+  Worked out on 27 October 2026: the simplest way puts soft hyphens into
+  the text before layout, as Hyphenate(text, language) would, so the
+  breaking, the drawn hyphen and the kerned widths are the soft hyphen
+  code already reviewed, and no layout code changes. The algorithm from
+  Frank Liang's thesis (1983), the one TeX uses: about 150 lines a port.
+  At least two letters before a break and three after; no breaks in words
+  with capitals, digits or a URL; a list of exceptions. Each language's
+  patterns checked for their license before they ship, English first.
+  About 3 to 4 days: a day for Go, a day for the other three ports, one or
+  two for the patterns, the cross-port tests and an example.
 - **For v9.2.1: two things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
