@@ -524,12 +524,16 @@ namespace PDFjet.NET {
                 }
                 drawn++;
 
-                // The percentage fits inside a slice of 15 degrees or more
-                // and in a ring as wide as one and a half lines of it, or a pie
-                if (f2 != null && sweep >= 15.0f && (r2 == 0.0f || r1 - r2 >= 1.5f * f2.GetBodyHeight())) {
-                    string pctStr = percentages[i].ToString(CultureInfo.InvariantCulture) + "%";
+                // The percentage fits inside a slice of 15 degrees or more, as
+                // long across the middle of the ring as it is wide, and in a
+                // ring as wide as one and a half lines of it, or a pie. A
+                // small pie's slices had percentages wider than they were (the
+                // review of 28 October 2026)
+                string pctStr = percentages[i].ToString(CultureInfo.InvariantCulture) + "%";
+                float midR = (r1 + r2) / 2.0f;
+                if (f2 != null && sweep >= 15.0f && (r2 == 0.0f || r1 - r2 >= 1.5f * f2.GetBodyHeight())
+                        && f2.StringWidth(pctStr) <= midR * ((float) (sweep * Math.PI / 180.0))) {
                     float midAngle = angle - sweep / 2.0f - 90.0f;
-                    float midR = (r1 + r2) / 2.0f;
                     var (posX, posY) = GetPoint(xc, yc, midR, midAngle);
                     page.DrawString(f2, f2.GetSize(), pctStr,
                         posX - f2.StringWidth(pctStr) / 2.0f,

@@ -516,12 +516,16 @@ public class DonutChart : Drawable {
                 drawPointer(page, pointers[drawn])
             }
             drawn += 1
-            // The percentage fits inside a slice of 15 degrees or more
-            // and in a ring as wide as one and a half lines of it, or a pie
-            if f2 != nil && sweep >= 15.0 && (r2 == 0.0 || r1 - r2 >= 1.5 * f2!.getBodyHeight()) {
-                let pctStr = "\(percentages[i])%"
+            // The percentage fits inside a slice of 15 degrees or more, as
+            // long across the middle of the ring as it is wide, and in a ring
+            // as wide as one and a half lines of it, or a pie. A small pie's
+            // slices had percentages wider than they were (the review of 28
+            // October 2026)
+            let pctStr = "\(percentages[i])%"
+            let midR = (r1 + r2) / 2.0
+            if f2 != nil && sweep >= 15.0 && (r2 == 0.0 || r1 - r2 >= 1.5 * f2!.getBodyHeight()) &&
+                    f2!.stringWidth(pctStr) <= midR * Float(Double(sweep) * Double.pi / 180.0) {
                 let midAngle = angle - sweep / 2.0 - 90.0
-                let midR = (r1 + r2) / 2.0
                 let pos = getPoint(xc, yc, midR, midAngle)
                 page.drawString(f2!, f2!.getSize(), pctStr,
                         pos[0] - f2!.stringWidth(pctStr) / 2.0,

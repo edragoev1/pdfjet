@@ -692,6 +692,39 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   drawn with the space after it reach the end of the word in a kerned font;
   "WAY " in 14 point Source Serif 4 was underlined 30.10 points of its
   30.44. The word is measured without its space.
+- BarChart, DonutChart and the numbers of an axis, the four ports (the
+  review of 28 October 2026):
+  - BarChart: the total of a stack below a range that is set is not
+    written; it was written under the plot, or left of it by horizontal
+    bars, as the "20" of a stack of 10 and 10 over a range of 50 to 100.
+  - BarChart: without `setFractionDigits`, the values have the digits of
+    the step of the axis, two at least, as in the simple charts, and the
+    description gives each value two significant digits at least: values of
+    0.00012 and 0.00034 were written "0", and described "A 0, B 0". Values
+    such as 12.5 and 1,234 are written as before.
+  - BarChart: a value is written inside a bar only when the bar is as wide
+    as the value, or as thick as a line of it by horizontal bars: a stacked
+    one is left out, and one inside a grouped bar is written past its end.
+    The values past the ends of narrow bars, and the totals of narrow
+    stacks, are written where they leave the one before them room, as the
+    numbers of the axis are, and over all the bars, where the next bar cut
+    them.
+  - BarChart: by horizontal bars a category is written where it leaves the
+    one before it room, as under vertical bars; forty of them on a chart 200
+    points high ran into each other.
+  - DonutChart: a slice's percentage is written only when the slice is as
+    long across the middle of the ring as the percentage is wide.
+  - BarChart: the numbers of an axis of 1e15 and more have the significant
+    digits that set them apart: an axis of 4.84e15 to 4.85e15 was written
+    4.84e15 at each line.
+  - Swift: the smaller and the larger of two numbers of an axis are NaN
+    when one is, as in Go; Swift.min and Swift.max dropped a NaN that was not
+    the first.
+  - C# and Java: a null category of BarChart is an empty one; it failed the
+    drawing.
+  Behavior change: a BarChart without `setFractionDigits` writes 0.00012
+  as 0.00012, where it wrote 0; values that do not fit their bars, and
+  names of horizontal categories that do not fit their slots, are left out.
 
 ## v9.1.1 — 2026-10-20
 

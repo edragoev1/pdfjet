@@ -25,13 +25,22 @@ final class ChartScale {
      * has no minus sign.
      */
     static String format(float value, int minDigits, int maxDigits) {
+        return format(value, minDigits, maxDigits, 3);
+    }
+
+    /**
+     * Formats a label as format does, a number of 16 digits or more with the
+     * significant digits and a power of ten.
+     */
+    static String format(float value, int minDigits, int maxDigits, int significant) {
         if (Float.isNaN(value) || Float.isInfinite(value)) {
             return String.valueOf(value);
         }
         // A number of 16 digits or more as three significant digits and a
         // power of ten, 3e38 and 1.23e20, where it was written out in full
         if (Math.abs(value) >= 1e15f) {
-            BigDecimal round = new BigDecimal(value).round(new MathContext(3, RoundingMode.HALF_EVEN));
+            BigDecimal round = new BigDecimal(value).round(
+                    new MathContext(Math.max(significant, 1), RoundingMode.HALF_EVEN));
             int exponent = round.precision() - round.scale() - 1;
             BigDecimal mantissa = round.movePointLeft(exponent).stripTrailingZeros();
             return mantissa.toPlainString() + "e" + exponent;
@@ -66,6 +75,29 @@ final class ChartScale {
             }
         }
         return Math.max(maxDigits, 0);
+    }
+
+    /**
+     * Returns the significant digits of the numbers of an axis written with a
+     * power of ten, from lo up by the lines of the step, with the digits:
+     * three, or more, up to nine, as many as write them apart. An axis of
+     * 4.84e15 to 4.85e15 was written 4.84e15 at each line (the review of 28
+     * October 2026).
+     */
+    static int axisSignificant(float lo, float step, int lines, int digits) {
+        for (int significant = 3; significant < 9; significant++) {
+            boolean apart = true;
+            String last = "";
+            for (int i = 0; i <= lines && apart; i++) {
+                String label = format(lo + step * i, digits, digits, significant);
+                apart = i == 0 || !label.equals(last);
+                last = label;
+            }
+            if (apart) {
+                return significant;
+            }
+        }
+        return 9;
     }
 
     /**

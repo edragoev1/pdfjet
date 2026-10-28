@@ -18,6 +18,12 @@ enum ChartScale {
     // no grouping whatever the locale, and a value that rounds to zero has no
     // minus sign.
     static func format(_ value: Float, _ minDigits: Int, _ maxDigits: Int) -> String {
+        return format(value, minDigits, maxDigits, 3)
+    }
+
+    // Formats a label as format does, a number of 16 digits or more with the
+    // significant digits and a power of ten.
+    static func format(_ value: Float, _ minDigits: Int, _ maxDigits: Int, _ significant: Int) -> String {
         if value.isNaN {
             return "NaN"
         }
@@ -27,7 +33,7 @@ enum ChartScale {
         // A number of 16 digits or more as three significant digits and a
         // power of ten, 3e38 and 1.23e20, where it was written out in full
         if abs(value) >= 1e15 {
-            return shortForm(value)
+            return shortForm(value, max(significant, 1))
         }
         // A minimum above the maximum is lowered to it, as in Java's NumberFormat
         let maxDigits = max(maxDigits, 0)
@@ -49,27 +55,31 @@ enum ChartScale {
     }
 
     // The value, a whole number of 16 digits or more, as its exact digits
-    // rounded half to even to three significant digits, its trailing zeros
-    // left out, and a power of ten: 3e38, 1.23e20, -4.5e16. As Java's
-    // BigDecimal(value).round(MathContext(3, HALF_EVEN)), the precision less
-    // the scale less 1 the exponent.
-    private static func shortForm(_ value: Float) -> String {
+    // rounded half to even to its significant digits, three in a label, its
+    // trailing zeros left out, and a power of ten: 3e38, 1.23e20, -4.5e16. As
+    // Java's BigDecimal(value).round(MathContext(3, HALF_EVEN)), the
+    // precision less the scale less 1 the exponent.
+    private static func shortForm(_ value: Float, _ significant: Int) -> String {
         // A Float of 2^24 or more is a whole number, written exactly
         let digits = Array(String(format: "%.0f", Double(abs(value))).utf8).map { Int($0) - 48 }
-        var head = digits[0] * 100 + digits[1] * 10 + digits[2]
+        var unit = 1    // 10 to the significant digits less 1
+        for _ in 1..<significant {
+            unit *= 10
+        }
+        var head = digits[0..<significant].reduce(0) { $0 * 10 + $1 }
         var exponent = digits.count - 1
-        let rest = digits[3...]
+        let rest = digits[significant...]
         let first = rest.first ?? 0
         let more = rest.dropFirst().contains { $0 != 0 }
         if first > 5 || (first == 5 && (more || head % 2 == 1)) {
             head += 1
-            if head == 1000 {
-                head = 100
+            if head == unit * 10 {
+                head = unit
                 exponent += 1
             }
         }
-        var mantissa = String(head / 100)
-        var fraction = String(format: "%02d", head % 100)
+        var mantissa = String(head / unit)
+        var fraction = String(String(head % unit + unit).dropFirst())
         while fraction.hasSuffix("0") {
             fraction.removeLast()
         }
@@ -96,13 +106,36 @@ enum ChartScale {
         return max(maxDigits, 0)
     }
 
+    // Returns the significant digits of the numbers of an axis written with a
+    // power of ten, from lo up by the lines of the step, with the digits:
+    // three, or more, up to nine, as many as write them apart. An axis of
+    // 4.84e15 to 4.85e15 was written 4.84e15 at each line (the review of 28
+    // October 2026).
+    static func axisSignificant(_ lo: Float, _ step: Float, _ lines: Int, _ digits: Int) -> Int {
+        for significant in 3..<9 {
+            var apart = true
+            var last = ""
+            var i = 0
+            while i <= lines && apart {
+                let label = format(lo + step * Float(i), digits, digits, significant)
+                apart = i == 0 || label != last
+                last = label
+                i += 1
+            }
+            if apart {
+                return significant
+            }
+        }
+        return 9
+    }
+
     ///
     /// Returns the span of the range of flat data at the value: 1, or a hundred
     /// thousandth of the value when that is more, since above 2^24 a Float has
     /// no room for 1 more, and the range would stay flat.
     ///
     static func flatDataSpan(_ value: Float) -> Float {
-        return Swift.max(1.0, abs(value)*1e-5)
+        return larger(1.0, abs(value)*1e-5)
     }
 
     ///
@@ -215,7 +248,7 @@ enum ChartScale {
     /// chart's edge.
     ///
     static func placed(_ center: Float, _ width: Float, _ lo: Float, _ hi: Float) -> Float {
-        return Swift.max(lo, Swift.min(center - width / 2, hi - width))
+        return larger(lo, smaller(center - width / 2, hi - width))
     }
 
     ///
@@ -273,8 +306,8 @@ enum ChartScale {
         var lo = values[0]
         var hi = values[0]
         for v in values.dropFirst() {
-            lo = Swift.min(lo, v)
-            hi = Swift.max(hi, v)
+            lo = smaller(lo, v)
+            hi = larger(hi, v)
         }
         if hi == lo {
             (lo, hi) = flatRange(lo)
@@ -407,8 +440,8 @@ enum ChartScale {
         var lo = values[0]
         var hi = values[0]
         for value in values {
-            lo = Swift.min(lo, value)
-            hi = Swift.max(hi, value)
+            lo = smaller(lo, value)
+            hi = larger(hi, value)
         }
         return isValue(hi - lo)
     }
@@ -421,7 +454,25 @@ enum ChartScale {
     ///
     static func held(_ value: Float, _ axis: Axis) -> Float {
         let span = Double(axis.max) - Double(axis.min)
-        return Float(Swift.max(Double(axis.min) - span, Swift.min(Double(axis.max) + span, Double(value))))
+        return Float(larger(Double(axis.min) - span, smaller(Double(axis.max) + span, Double(value))))
+    }
+
+    ///
+    /// Returns the smaller of two numbers, or NaN when one is NaN, as Go's min
+    /// does: Swift.min drops a NaN that is not its first argument, and an axis
+    /// of a NaN could differ from the other ports' (the review of 28 October
+    /// 2026).
+    ///
+    static func smaller<T: BinaryFloatingPoint>(_ a: T, _ b: T) -> T {
+        return (a.isNaN || b.isNaN) ? T.nan : Swift.min(a, b)
+    }
+
+    ///
+    /// Returns the larger of two numbers, or NaN when one is NaN, as Go's max
+    /// does.
+    ///
+    static func larger<T: BinaryFloatingPoint>(_ a: T, _ b: T) -> T {
+        return (a.isNaN || b.isNaN) ? T.nan : Swift.max(a, b)
     }
 
     /// Tells if the value is on the axis, its ends included.

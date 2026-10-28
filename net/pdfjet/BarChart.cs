@@ -32,6 +32,20 @@ public class BarChart : IDrawable {
         }
     }
 
+    /// <summary>A value written by a bar, at its place, in its color.</summary>
+    private sealed class Label {
+        internal readonly String text;
+        internal readonly float x;
+        internal readonly float y;
+        internal readonly int color;
+        internal Label(String text, float x, float y, int color) {
+            this.text = text;
+            this.x = x;
+            this.y = y;
+            this.color = color;
+        }
+    }
+
     private const int NO_COLOR = -1;
 
     // The look of the simple charts: ink for the title and the values, a
@@ -83,6 +97,7 @@ public class BarChart : IDrawable {
 
     private int minFractionDigits = 0;
     private int maxFractionDigits = 2;
+    private bool fractionDigitsSet = false;
 
     // The range of the value axis, from the data unless it is set
     private float min;
@@ -157,7 +172,11 @@ public class BarChart : IDrawable {
     public BarChart SetCategories(params String[] categories) {
         this.categories.Clear();
         if (categories != null) {
-            this.categories.AddRange(categories);
+            // A null category is an empty one: it failed the drawing with a
+            // NullReferenceException (the review of 28 October 2026)
+            foreach (String category in categories) {
+                this.categories.Add(category ?? "");
+            }
         }
         return this;
     }
@@ -364,14 +383,15 @@ public class BarChart : IDrawable {
     /// <summary>
     /// Sets the number of digits after the decimal point of the values written
     /// by the bars, all of them alike, as SimpleBarChart's. Without it a value
-    /// has as many as it needs, two at most. The numbers of the value axis have
-    /// the digits of its step.
+    /// has as many as it needs, two at most, or as many as the step of the value
+    /// axis has. The numbers of the value axis have the digits of its step.
     /// </summary>
     /// <param name="digits">the number of digits.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetFractionDigits(int digits) {
         this.minFractionDigits = digits;
         this.maxFractionDigits = digits;
+        this.fractionDigitsSet = true;
         return this;
     }
 
@@ -472,6 +492,13 @@ public class BarChart : IDrawable {
         // The digits of the step, which SetFractionDigits does not cap: with 0
         // an axis of 0.25 was written 0, 0, 1, 1
         int axisDigits = Math.Max(minFractionDigits, ChartScale.StepDigits(step));
+        // The significant digits of the numbers of the axis written with a
+        // power of ten, as many as write them apart
+        int significant = ChartScale.AxisSignificant(vMin, step, lines, axisDigits);
+        // The digits of the values: those set, or as many as the step has, two
+        // at least, as the simple charts write them. Values under 0.01 were
+        // written 0 (the review of 28 October 2026)
+        int digits = fractionDigitsSet ? maxFractionDigits : Math.Max(maxFractionDigits, ChartScale.StepDigits(step));
         float baseValue = Math.Min(Math.Max(0f, vMin), vMax);
 
         float x2 = x1 + w;
@@ -484,7 +511,7 @@ public class BarChart : IDrawable {
         // Widest labels on the value axis and next to the bars
         float widestAxisLabel = 0f;
         for (int i = 0; i <= lines; i++) {
-            String label = AxisLabel(vMin + step * i, axisDigits);
+            String label = AxisLabel(vMin + step * i, axisDigits, significant);
             widestAxisLabel = Math.Max(widestAxisLabel, f2.StringWidth(label));
         }
         float widestValueLabel = 0f;
@@ -507,7 +534,7 @@ public class BarChart : IDrawable {
                 if (Outside(from, to, vMin, vMax)) {
                     continue;
                 }
-                float width = f2.StringWidth(ValueLabel(v));
+                float width = f2.StringWidth(ValueLabel(v, digits));
                 widestValueLabel = Math.Max(widestValueLabel, width);
                 if (v < 0f) {
                     widestNegative = Math.Max(widestNegative, width);
@@ -524,8 +551,10 @@ public class BarChart : IDrawable {
                     up += s.values[i];
                 }
             }
-            if (up > 0f && ChartScale.IsValue(up)) {    // A sum past the largest float is not written
-                widestTotal = Math.Max(widestTotal, f2.StringWidth(ValueLabel(up)));
+            // A sum past the largest float, or below a range that is set, is
+            // not written
+            if (up > 0f && ChartScale.IsValue(up) && up >= vMin) {
+                widestTotal = Math.Max(widestTotal, f2.StringWidth(ValueLabel(up, digits)));
             }
         }
         // The names of the categories, shortened at the left of horizontal bars
@@ -573,7 +602,7 @@ public class BarChart : IDrawable {
         }
 
         // The chart is one figure, described by its alternate description.
-        page.AddBDC(StructElem.FIGURE, null, AltDescription());
+        page.AddBDC(StructElem.FIGURE, null, AltDescription(digits));
         // The pen, the brush and the dash pattern of the caller are kept,
         // as a Stamp keeps them.
         page.SaveGraphicsState();
@@ -604,13 +633,13 @@ public class BarChart : IDrawable {
             for (int i = 0; i <= lines; i++) {
                 float v = vMin + step * i;
                 centers[i] = x5 + ChartScale.Scaled(v - vMin, x6 - x5, vMax - vMin);
-                widths[i] = f2.StringWidth(AxisLabel(v, axisDigits));
+                widths[i] = f2.StringWidth(AxisLabel(v, axisDigits, significant));
             }
             every = ChartScale.PlacedStep(every, centers, widths, x1, x2, pad / 2f);
         }
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
-            String label = AxisLabel(v, axisDigits);
+            String label = AxisLabel(v, axisDigits, significant);
             bool labeled = i % every == 0;
             if (horizontal) {
                 float x = x5 + ChartScale.Scaled(v - vMin, x6 - x5, vMax - vMin);
@@ -637,9 +666,11 @@ public class BarChart : IDrawable {
         float slot = (horizontal ? (y8 - y5) : (x6 - x5)) / n;
         float groupWidth = slot * (1f - groupGap);
         float barWidth = (m == 0 || stacked) ? groupWidth : groupWidth / (m + (m - 1) * barGap);
-        // Under vertical bars a category is written where it leaves the one
-        // before it room: at every second or third bar, or more
-        int everyCategory = horizontal ? 1 : ChartScale.AxisLabelStep(slot, widestCategory + pad, n);
+        // A category is written where it leaves the one before it room: at
+        // every second or third bar, or more. By horizontal bars every name
+        // was written, and forty of them ran into each other (the review of
+        // 28 October 2026)
+        int everyCategory = ChartScale.AxisLabelStep(slot, horizontal ? bodyHeight : widestCategory + pad, n);
         if (!horizontal) {
             // Inside the chart, and apart when the first and the last are moved in
             float[] centers = new float[n];
@@ -650,14 +681,29 @@ public class BarChart : IDrawable {
             }
             everyCategory = ChartScale.PlacedStep(everyCategory, centers, widths, x1, x2, pad / 2f);
         }
+        // The values past the ends of grouped bars and the totals of the
+        // stacks are written, as the categories are, where they leave the one
+        // before them room, the nearest bars apart: at every second or third
+        // bar, or more. Over narrow bars they ran into each other (the review
+        // of 28 October 2026)
+        float apart = slot;
+        if (m > 1 && !stacked) {
+            float barStep = barWidth * (1f + barGap);
+            apart = Math.Min(barStep, slot - (m - 1) * barStep);
+        }
+        int everyLabel = ChartScale.AxisLabelStep(apart, horizontal ? bodyHeight : widestValueLabel + pad, n * m);
+        int everyTotal = ChartScale.AxisLabelStep(slot, horizontal ? bodyHeight : widestTotal + pad, n);
+        // The values are written over all the bars: a label wider than its
+        // bar was covered by the bar after it
+        List<Label> labels = new List<Label>();
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
             String category = i < names.Count ? names[i] : "";
-            if (horizontal) {
+            if (horizontal && i % everyCategory == 0) {
                 DrawText(page, f2, category, x5 - pad - negative - f2.StringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
-            } else if (i % everyCategory == 0) {
+            } else if (!horizontal && i % everyCategory == 0) {
                 // Centered under its slot, inside the chart: the last one
                 // went past the chart's right edge
                 DrawText(page, f2, category, ChartScale.Placed(slotStart + slot / 2f, f2.StringWidth(category), x1, x2),
@@ -686,53 +732,67 @@ public class BarChart : IDrawable {
                 float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
                 int color = BarColor(s, j, i);
                 page.SetBrushColor(color);
-                String label = (drawValueLabels && !outside) ? ValueLabel(s.values[i]) : null;
+                String label = (drawValueLabels && !outside) ? ValueLabel(s.values[i], digits) : null;
                 int on = LabelColorOn(color);
                 if (horizontal) {
                     float x0 = x5 + ChartScale.Scaled(from - vMin, x6 - x5, vMax - vMin);
                     float x = x5 + ChartScale.Scaled(to - vMin, x6 - x5, vMax - vMin);
                     page.FillRect(Math.Min(x0, x), barStart, Math.Abs(x - x0), barWidth);
                     float baseline = barStart + barWidth / 2f + ascent / 2f;
+                    // A label inside a bar as thick as a line of it: a stacked
+                    // one is left out, and one past the end is written instead
                     if (label != null && stacked) {
-                        if (Math.Abs(x - x0) >= f2.StringWidth(label) + pad) {
-                            DrawText(page, f2, label,
-                                    Math.Min(x0, x) + (Math.Abs(x - x0) - f2.StringWidth(label)) / 2f, baseline, on);
+                        if (Math.Abs(x - x0) >= f2.StringWidth(label) + pad && barWidth >= bodyHeight) {
+                            labels.Add(new Label(label,
+                                    Math.Min(x0, x) + (Math.Abs(x - x0) - f2.StringWidth(label)) / 2f, baseline, on));
                         }
-                    } else if (label != null && valueLabelsInside && Math.Abs(x - x0) >= f2.StringWidth(label) + pad) {
-                        DrawText(page, f2, label,
-                                to >= baseValue ? x - pad / 2f - f2.StringWidth(label) : x + pad / 2f, baseline, on);
-                    } else if (label != null) {
-                        DrawText(page, f2, label,
-                                to >= baseValue ? x + pad / 2f : x - pad / 2f - f2.StringWidth(label), baseline, INK);
+                    } else if (label != null && valueLabelsInside && Math.Abs(x - x0) >= f2.StringWidth(label) + pad
+                            && barWidth >= bodyHeight) {
+                        labels.Add(new Label(label,
+                                to >= baseValue ? x - pad / 2f - f2.StringWidth(label) : x + pad / 2f, baseline, on));
+                    } else if (label != null && (i * m + j) % everyLabel == 0) {
+                        labels.Add(new Label(label,
+                                to >= baseValue ? x + pad / 2f : x - pad / 2f - f2.StringWidth(label), baseline, INK));
                     }
                 } else {
                     float y0 = y8 - ChartScale.Scaled(from - vMin, y8 - y5, vMax - vMin);
                     float y = y8 - ChartScale.Scaled(to - vMin, y8 - y5, vMax - vMin);
                     page.FillRect(barStart, Math.Min(y0, y), barWidth, Math.Abs(y - y0));
                     float x = barStart + (barWidth - (label != null ? f2.StringWidth(label) : 0f)) / 2f;
+                    // A label inside a bar as wide as it: a stacked one is left
+                    // out, and one past the end is written instead. Labels
+                    // wider than their bars were written over the bars next
+                    // to them (the review of 28 October 2026)
                     if (label != null && stacked) {
-                        if (Math.Abs(y - y0) >= bodyHeight) {
-                            DrawText(page, f2, label, x, (y + y0) / 2f + ascent / 2f, on);
+                        if (Math.Abs(y - y0) >= bodyHeight && barWidth >= f2.StringWidth(label)) {
+                            labels.Add(new Label(label, x, (y + y0) / 2f + ascent / 2f, on));
                         }
-                    } else if (label != null && valueLabelsInside && Math.Abs(y - y0) >= bodyHeight + pad) {
-                        DrawText(page, f2, label, x, to >= baseValue ? y + ascent + pad / 2f : y - pad / 2f, on);
-                    } else if (label != null) {
-                        DrawText(page, f2, label, x, to >= baseValue ? y - pad / 2f : y + ascent + pad / 2f, INK);
+                    } else if (label != null && valueLabelsInside && Math.Abs(y - y0) >= bodyHeight + pad
+                            && barWidth >= f2.StringWidth(label)) {
+                        labels.Add(new Label(label, x, to >= baseValue ? y + ascent + pad / 2f : y - pad / 2f, on));
+                    } else if (label != null && (i * m + j) % everyLabel == 0) {
+                        labels.Add(new Label(label, x, to >= baseValue ? y - pad / 2f : y + ascent + pad / 2f, INK));
                     }
                 }
             }
-            // The total of a stack above it, or past its end
-            if (totals && up > 0f && ChartScale.IsValue(up)) {     // A sum past the largest float is not written
-                String total = ValueLabel(up);
+            // The total of a stack above it, or past its end. A sum past the
+            // largest float is not written, nor one below a range that is
+            // set, which was written under the plot (the review of 28
+            // October 2026)
+            if (totals && up > 0f && ChartScale.IsValue(up) && up >= vMin && i % everyTotal == 0) {
+                String total = ValueLabel(up, digits);
                 float groupMiddle = groupStart + groupWidth / 2f;
                 if (horizontal) {
                     float x = x5 + ChartScale.Scaled(Math.Min(up, vMax) - vMin, x6 - x5, vMax - vMin);
-                    DrawText(page, f2, total, x + pad / 2f, groupMiddle + ascent / 2f, INK);
+                    labels.Add(new Label(total, x + pad / 2f, groupMiddle + ascent / 2f, INK));
                 } else {
                     float y = y8 - ChartScale.Scaled(Math.Min(up, vMax) - vMin, y8 - y5, vMax - vMin);
-                    DrawText(page, f2, total, groupMiddle - f2.StringWidth(total) / 2f, y - pad / 2f, INK);
+                    labels.Add(new Label(total, groupMiddle - f2.StringWidth(total) / 2f, y - pad / 2f, INK));
                 }
             }
+        }
+        foreach (Label label in labels) {
+            DrawText(page, f2, label.text, label.x, label.y, label.color);
         }
 
         // The axis line at the base of the bars, which is the zero line of
@@ -826,8 +886,10 @@ public class BarChart : IDrawable {
     }
 
     // The alternate description: the one set, or the title, the subtitle and,
-    // for each series, its name and its values by category.
-    private String AltDescription() {
+    // for each series, its name and its values by category, with the digits
+    // of the labels, or, without SetFractionDigits, with two significant
+    // digits at least.
+    private String AltDescription(int digits) {
         if (!String.IsNullOrEmpty(altDescription)) {
             return altDescription;
         }
@@ -849,7 +911,7 @@ public class BarChart : IDrawable {
                 if (category.Length > 0) {
                     values.Append(category).Append(' ');
                 }
-                values.Append(ValueLabel(s.values[i]));
+                values.Append(ValueLabel(s.values[i], DescribedDigits(s.values[i], digits)));
             }
             if (values.Length == 0) {
                 continue;
@@ -913,14 +975,30 @@ public class BarChart : IDrawable {
         return s.color == NO_COLOR ? PALETTE[seriesIndex % PALETTE.Length] : s.color;
     }
 
-    /// <summary>Formats the value written at the end of a bar.</summary>
-    private String ValueLabel(float value) {
-        return Group(ChartScale.Format(value, minFractionDigits, maxFractionDigits));
+    /// <summary>Formats the value written at the end of a bar, with the digits at most.</summary>
+    private String ValueLabel(float value, int digits) {
+        return Group(ChartScale.Format(value, minFractionDigits, digits));
     }
 
-    /// <summary>Formats a label of the value axis.</summary>
-    private String AxisLabel(float value, int digits) {
-        return Group(ChartScale.Format(value, digits, digits));
+    /// <summary>
+    /// Returns the digits of the value in the description: those of the
+    /// labels, or, without SetFractionDigits, more for a small value, two
+    /// significant digits. A value of 0.00012 on an axis of 1,000 was
+    /// described as 0 (the review of 28 October 2026).
+    /// </summary>
+    private int DescribedDigits(float value, int digits) {
+        if (fractionDigitsSet || value == 0f) {
+            return digits;
+        }
+        return Math.Max(digits, 1 - (int) Math.Floor(Math.Log10(Math.Abs(value))));
+    }
+
+    /// <summary>
+    /// Formats a label of the value axis, with the significant digits when it
+    /// is written with a power of ten.
+    /// </summary>
+    private String AxisLabel(float value, int digits, int significant) {
+        return Group(ChartScale.Format(value, digits, digits, significant));
     }
 
     /// <summary>Groups the digits before the decimal point in thousands with commas, if grouping is used.</summary>

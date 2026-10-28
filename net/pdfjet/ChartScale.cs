@@ -23,10 +23,18 @@ internal static class ChartScale {
     /// has no minus sign.
     /// </summary>
     internal static String Format(float value, int minDigits, int maxDigits) {
+        return Format(value, minDigits, maxDigits, 3);
+    }
+
+    /// <summary>
+    /// Formats a label as Format does, a number of 16 digits or more with the
+    /// significant digits and a power of ten.
+    /// </summary>
+    internal static String Format(float value, int minDigits, int maxDigits, int significant) {
         // A number of 16 digits or more as three significant digits and a
         // power of ten, 3e38 and 1.23e20, where it was written out in full
         if (IsValue(value) && Math.Abs(value) >= 1e15f) {
-            return Short(value);
+            return Short(value, Math.Max(significant, 1));
         }
         // A minimum above the maximum is lowered to it, as in NumberFormat
         maxDigits = Math.Max(maxDigits, 0);
@@ -37,11 +45,11 @@ internal static class ChartScale {
         return nf.Format(value);
     }
 
-    // The value as three significant digits, rounded half to even from its
-    // exact binary value, and a power of ten, as Java's
+    // The value as its significant digits, three in a label, rounded half to
+    // even from its exact binary value, and a power of ten, as Java's
     // new BigDecimal(value).round(new MathContext(3, RoundingMode.HALF_EVEN))
     // gives: 3e38, 1.23e20, -4.5e16. A float of 1e15 or more is an integer.
-    private static String Short(float value) {
+    private static String Short(float value, int significant) {
         int bits = BitConverter.ToInt32(BitConverter.GetBytes(value), 0);
         bool negative = bits < 0;
         int exponent = (bits >> 23) & 0xFF;
@@ -49,15 +57,15 @@ internal static class ChartScale {
         BigInteger exact = new BigInteger(mantissa) << (exponent - 150);
         String digits = exact.ToString(CultureInfo.InvariantCulture);
         int power = digits.Length - 1;
-        BigInteger kept = BigInteger.Parse(digits.Substring(0, 3), CultureInfo.InvariantCulture);
-        BigInteger unit = BigInteger.Pow(10, digits.Length - 3);
+        BigInteger kept = BigInteger.Parse(digits.Substring(0, significant), CultureInfo.InvariantCulture);
+        BigInteger unit = BigInteger.Pow(10, digits.Length - significant);
         BigInteger rest = exact - kept * unit;
         int half = (rest * 2).CompareTo(unit);
         if (half > 0 || (half == 0 && !kept.IsEven)) {
             kept += 1;
         }
-        if (kept == 1000) {
-            kept = 100;
+        if (kept == BigInteger.Pow(10, significant)) {
+            kept = BigInteger.Pow(10, significant - 1);
             power++;
         }
         String mantissaText = kept.ToString(CultureInfo.InvariantCulture);
@@ -80,6 +88,29 @@ internal static class ChartScale {
             }
         }
         return Math.Max(maxDigits, 0);
+    }
+
+    /// <summary>
+    /// Returns the significant digits of the numbers of an axis written with a
+    /// power of ten, from lo up by the lines of the step, with the digits:
+    /// three, or more, up to nine, as many as write them apart. An axis of
+    /// 4.84e15 to 4.85e15 was written 4.84e15 at each line (the review of 28
+    /// October 2026).
+    /// </summary>
+    internal static int AxisSignificant(float lo, float step, int lines, int digits) {
+        for (int significant = 3; significant < 9; significant++) {
+            bool apart = true;
+            String last = "";
+            for (int i = 0; i <= lines && apart; i++) {
+                String label = Format(lo + step * i, digits, digits, significant);
+                apart = i == 0 || label != last;
+                last = label;
+            }
+            if (apart) {
+                return significant;
+            }
+        }
+        return 9;
     }
 
     /// <summary>

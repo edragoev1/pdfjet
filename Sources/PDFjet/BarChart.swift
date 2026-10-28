@@ -21,6 +21,14 @@ public class BarChart : Drawable {
         let colors: [Int32]?    // nil unless each bar has its own color
     }
 
+    /// A value written by a bar, at its place, in its color.
+    private struct Label {
+        let text: String
+        let x: Float
+        let y: Float
+        let color: Int32
+    }
+
     private static let NO_COLOR: Int32 = -1
 
     // The look of the simple charts: ink for the title and the values, a
@@ -72,6 +80,7 @@ public class BarChart : Drawable {
 
     private var minFractionDigits = 0
     private var maxFractionDigits = 2
+    private var fractionDigitsSet = false
 
     // The range of the value axis, from the data unless it is set
     private var min: Float = 0.0
@@ -424,8 +433,8 @@ public class BarChart : Drawable {
     ///
     /// Sets the number of digits after the decimal point of the values written
     /// by the bars, all of them alike, as SimpleBarChart's. Without it a value
-    /// has as many as it needs, two at most. The numbers of the value axis have
-    /// the digits of its step.
+    /// has as many as it needs, two at most, or as many as the step of the value
+    /// axis has. The numbers of the value axis have the digits of its step.
     ///
     /// - Parameter digits: the number of digits.
     /// - Returns: this BarChart object.
@@ -434,6 +443,7 @@ public class BarChart : Drawable {
     public func setFractionDigits(_ digits: Int) -> BarChart {
         self.minFractionDigits = digits
         self.maxFractionDigits = digits
+        self.fractionDigitsSet = true
         return self
     }
 
@@ -527,6 +537,13 @@ public class BarChart : Drawable {
         // The digits of the step, which setFractionDigits does not cap: with 0
         // an axis of 0.25 was written 0, 0, 1, 1
         let axisDigits = Swift.max(minFractionDigits, ChartScale.stepDigits(step))
+        // The significant digits of the numbers of the axis written with a
+        // power of ten, as many as write them apart
+        let significant = ChartScale.axisSignificant(vMin, step, lines, axisDigits)
+        // The digits of the values: those set, or as many as the step has, two
+        // at least, as the simple charts write them. Values under 0.01 were
+        // written 0 (the review of 28 October 2026)
+        let digits = fractionDigitsSet ? maxFractionDigits : Swift.max(maxFractionDigits, ChartScale.stepDigits(step))
         let base = Swift.min(Swift.max(0.0, vMin), vMax)
 
         let x2 = x1 + w
@@ -539,7 +556,7 @@ public class BarChart : Drawable {
         // Widest labels on the value axis and next to the bars
         var widestAxisLabel: Float = 0.0
         for i in 0...lines {
-            let label = axisLabel(vMin + step * Float(i), axisDigits)
+            let label = axisLabel(vMin + step * Float(i), axisDigits, significant)
             widestAxisLabel = Swift.max(widestAxisLabel, f2.stringWidth(label))
         }
         var widestValueLabel: Float = 0.0
@@ -562,7 +579,7 @@ public class BarChart : Drawable {
                 if BarChart.outside(from, to, vMin, vMax) {
                     continue
                 }
-                let width = f2.stringWidth(valueLabel(v))
+                let width = f2.stringWidth(valueLabel(v, digits))
                 widestValueLabel = Swift.max(widestValueLabel, width)
                 if v < 0.0 {
                     widestNegative = Swift.max(widestNegative, width)
@@ -578,8 +595,10 @@ public class BarChart : Drawable {
                 for s in series where i < s.values.count && ChartScale.isValue(s.values[i]) && s.values[i] >= 0.0 {
                     up += s.values[i]
                 }
-                if up > 0.0 && ChartScale.isValue(up) {     // A sum past the largest Float is not written
-                    widestTotal = Swift.max(widestTotal, f2.stringWidth(valueLabel(up)))
+                // A sum past the largest Float, or below a range that is set,
+                // is not written
+                if up > 0.0 && ChartScale.isValue(up) && up >= vMin {
+                    widestTotal = Swift.max(widestTotal, f2.stringWidth(valueLabel(up, digits)))
                 }
             }
         }
@@ -628,7 +647,7 @@ public class BarChart : Drawable {
         }
 
         // The chart is one figure, described by its alternate description.
-        page.addBDC(StructElem.FIGURE, nil, getAltDescription())
+        page.addBDC(StructElem.FIGURE, nil, getAltDescription(digits))
         // The pen, the brush and the dash pattern of the caller are kept,
         // as a Stamp keeps them.
         page.saveGraphicsState()
@@ -659,13 +678,13 @@ public class BarChart : Drawable {
             for i in 0...lines {
                 let v = vMin + step * Float(i)
                 centers.append(x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin))
-                widths.append(f2.stringWidth(axisLabel(v, axisDigits)))
+                widths.append(f2.stringWidth(axisLabel(v, axisDigits, significant)))
             }
             every = ChartScale.placedStep(every, centers, widths, x1, x2, pad / 2.0)
         }
         for i in 0...lines {
             let v = vMin + step * Float(i)
-            let label = axisLabel(v, axisDigits)
+            let label = axisLabel(v, axisDigits, significant)
             let labeled = i % every == 0
             if horizontal {
                 let x = x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin)
@@ -692,9 +711,11 @@ public class BarChart : Drawable {
         let slot = (horizontal ? (y8 - y5) : (x6 - x5)) / Float(n)
         let groupWidth = slot * (1.0 - groupGap)
         let barWidth = (m == 0 || stacked) ? groupWidth : groupWidth / (Float(m) + Float(m - 1) * barGap)
-        // Under vertical bars a category is written where it leaves the one
-        // before it room: at every second or third bar, or more
-        var everyCategory = horizontal ? 1 : ChartScale.axisLabelStep(slot, widestCategory + pad, n)
+        // A category is written where it leaves the one before it room: at
+        // every second or third bar, or more. By horizontal bars every name
+        // was written, and forty of them ran into each other (the review of
+        // 28 October 2026)
+        var everyCategory = ChartScale.axisLabelStep(slot, horizontal ? bodyHeight : widestCategory + pad, n)
         if !horizontal {
             // Inside the chart, and apart when the first and the last are moved in
             var centers = [Float]()
@@ -705,14 +726,29 @@ public class BarChart : Drawable {
             }
             everyCategory = ChartScale.placedStep(everyCategory, centers, widths, x1, x2, pad / 2.0)
         }
+        // The values past the ends of grouped bars and the totals of the
+        // stacks are written, as the categories are, where they leave the one
+        // before them room, the nearest bars apart: at every second or third
+        // bar, or more. Over narrow bars they ran into each other (the review
+        // of 28 October 2026)
+        var apart = slot
+        if m > 1 && !stacked {
+            let barStep = barWidth * (1.0 + barGap)
+            apart = Swift.min(barStep, slot - Float(m - 1) * barStep)
+        }
+        let everyLabel = ChartScale.axisLabelStep(apart, horizontal ? bodyHeight : widestValueLabel + pad, n * m)
+        let everyTotal = ChartScale.axisLabelStep(slot, horizontal ? bodyHeight : widestTotal + pad, n)
+        // The values are written over all the bars: a label wider than its
+        // bar was covered by the bar after it
+        var labels = [Label]()
         for i in 0..<n {
             let slotStart = (horizontal ? y5 : x5) + Float(i) * slot
             let groupStart = slotStart + slot * groupGap / 2.0
             let category = i < names.count ? names[i] : ""
-            if horizontal {
+            if horizontal && i % everyCategory == 0 {
                 BarChart.drawText(page, f2, category, x5 - pad - negative - f2.stringWidth(category),
                         slotStart + slot / 2.0 + ascent / 2.0, BarChart.MUTED)
-            } else if i % everyCategory == 0 {
+            } else if !horizontal && i % everyCategory == 0 {
                 // Centered under its slot, inside the chart: the last one
                 // went past the chart's right edge
                 BarChart.drawText(page, f2, category,
@@ -742,55 +778,74 @@ public class BarChart : Drawable {
                 let barStart = stacked ? groupStart : groupStart + Float(j) * barWidth * (1.0 + barGap)
                 let color = barColor(s, j, i)
                 page.setBrushColor(color)
-                let label: String? = (drawValueLabels && !outside) ? valueLabel(s.values[i]) : nil
+                let label: String? = (drawValueLabels && !outside) ? valueLabel(s.values[i], digits) : nil
                 let on = BarChart.labelColorOn(color)
                 if horizontal {
                     let x0 = x5 + ChartScale.scaled(from - vMin, x6 - x5, vMax - vMin)
                     let x = x5 + ChartScale.scaled(to - vMin, x6 - x5, vMax - vMin)
                     page.fillRect(Swift.min(x0, x), barStart, abs(x - x0), barWidth)
                     let baseline = barStart + barWidth / 2.0 + ascent / 2.0
+                    // A label inside a bar as thick as a line of it: a stacked
+                    // one is left out, and one past the end is written instead
                     if let label = label, stacked {
-                        if abs(x - x0) >= f2.stringWidth(label) + pad {
-                            BarChart.drawText(page, f2, label,
-                                    Swift.min(x0, x) + (abs(x - x0) - f2.stringWidth(label)) / 2.0, baseline, on)
+                        if abs(x - x0) >= f2.stringWidth(label) + pad && barWidth >= bodyHeight {
+                            labels.append(Label(text: label,
+                                    x: Swift.min(x0, x) + (abs(x - x0) - f2.stringWidth(label)) / 2.0, y: baseline,
+                                    color: on))
                         }
-                    } else if let label = label, valueLabelsInside && abs(x - x0) >= f2.stringWidth(label) + pad {
-                        BarChart.drawText(page, f2, label,
-                                to >= base ? x - pad / 2.0 - f2.stringWidth(label) : x + pad / 2.0, baseline, on)
-                    } else if let label = label {
-                        BarChart.drawText(page, f2, label,
-                                to >= base ? x + pad / 2.0 : x - pad / 2.0 - f2.stringWidth(label), baseline, BarChart.INK)
+                    } else if let label = label, valueLabelsInside && abs(x - x0) >= f2.stringWidth(label) + pad
+                            && barWidth >= bodyHeight {
+                        labels.append(Label(text: label,
+                                x: to >= base ? x - pad / 2.0 - f2.stringWidth(label) : x + pad / 2.0, y: baseline,
+                                color: on))
+                    } else if let label = label, (i * m + j) % everyLabel == 0 {
+                        labels.append(Label(text: label,
+                                x: to >= base ? x + pad / 2.0 : x - pad / 2.0 - f2.stringWidth(label), y: baseline,
+                                color: BarChart.INK))
                     }
                 } else {
                     let y0 = y8 - ChartScale.scaled(from - vMin, y8 - y5, vMax - vMin)
                     let y = y8 - ChartScale.scaled(to - vMin, y8 - y5, vMax - vMin)
                     page.fillRect(barStart, Swift.min(y0, y), barWidth, abs(y - y0))
                     let x = barStart + (barWidth - (label != nil ? f2.stringWidth(label!) : 0.0)) / 2.0
+                    // A label inside a bar as wide as it: a stacked one is left
+                    // out, and one past the end is written instead. Labels
+                    // wider than their bars were written over the bars next
+                    // to them (the review of 28 October 2026)
                     if let label = label, stacked {
-                        if abs(y - y0) >= bodyHeight {
-                            BarChart.drawText(page, f2, label, x, (y + y0) / 2.0 + ascent / 2.0, on)
+                        if abs(y - y0) >= bodyHeight && barWidth >= f2.stringWidth(label) {
+                            labels.append(Label(text: label, x: x, y: (y + y0) / 2.0 + ascent / 2.0, color: on))
                         }
-                    } else if let label = label, valueLabelsInside && abs(y - y0) >= bodyHeight + pad {
-                        BarChart.drawText(page, f2, label, x, to >= base ? y + ascent + pad / 2.0 : y - pad / 2.0, on)
-                    } else if let label = label {
-                        BarChart.drawText(page, f2, label, x, to >= base ? y - pad / 2.0 : y + ascent + pad / 2.0,
-                                BarChart.INK)
+                    } else if let label = label, valueLabelsInside && abs(y - y0) >= bodyHeight + pad
+                            && barWidth >= f2.stringWidth(label) {
+                        labels.append(Label(text: label, x: x,
+                                y: to >= base ? y + ascent + pad / 2.0 : y - pad / 2.0, color: on))
+                    } else if let label = label, (i * m + j) % everyLabel == 0 {
+                        labels.append(Label(text: label, x: x,
+                                y: to >= base ? y - pad / 2.0 : y + ascent + pad / 2.0, color: BarChart.INK))
                     }
                 }
             }
-            // The total of a stack above it, or past its end
-            if totals && up > 0.0 && ChartScale.isValue(up) {     // A sum past the largest float is not written
-                let total = valueLabel(up)
+            // The total of a stack above it, or past its end. A sum past the
+            // largest float is not written, nor one below a range that is
+            // set, which was written under the plot (the review of 28
+            // October 2026)
+            if totals && up > 0.0 && ChartScale.isValue(up) && up >= vMin && i % everyTotal == 0 {
+                let total = valueLabel(up, digits)
                 let groupMiddle = groupStart + groupWidth / 2.0
                 if horizontal {
                     let x = x5 + ChartScale.scaled(Swift.min(up, vMax) - vMin, x6 - x5, vMax - vMin)
-                    BarChart.drawText(page, f2, total, x + pad / 2.0, groupMiddle + ascent / 2.0, BarChart.INK)
+                    labels.append(Label(text: total, x: x + pad / 2.0, y: groupMiddle + ascent / 2.0,
+                            color: BarChart.INK))
                 } else {
                     let y = y8 - ChartScale.scaled(Swift.min(up, vMax) - vMin, y8 - y5, vMax - vMin)
-                    BarChart.drawText(page, f2, total, groupMiddle - f2.stringWidth(total) / 2.0, y - pad / 2.0,
-                            BarChart.INK)
+                    labels.append(Label(text: total, x: groupMiddle - f2.stringWidth(total) / 2.0, y: y - pad / 2.0,
+                            color: BarChart.INK))
                 }
             }
+        }
+        for label in labels {
+            BarChart.drawText(page, f2, label.text, label.x, label.y, label.color)
         }
 
         // The axis line at the base of the bars, which is the zero line of
@@ -886,8 +941,10 @@ public class BarChart : Drawable {
     }
 
     // The alternate description: the one set, or the title, the subtitle and,
-    // for each series, its name and its values by category.
-    private func getAltDescription() -> String {
+    // for each series, its name and its values by category, with the digits
+    // of the labels, or, without setFractionDigits, with two significant
+    // digits at least.
+    private func getAltDescription(_ digits: Int) -> String {
         if let altDescription, !altDescription.isEmpty {
             return altDescription
         }
@@ -909,7 +966,7 @@ public class BarChart : Drawable {
                 if !category.isEmpty {
                     values += category + " "
                 }
-                values += valueLabel(s.values[i])
+                values += valueLabel(s.values[i], describedDigits(s.values[i], digits))
             }
             if values.isEmpty {
                 continue
@@ -971,14 +1028,28 @@ public class BarChart : Drawable {
         return s.color == BarChart.NO_COLOR ? BarChart.PALETTE[seriesIndex % BarChart.PALETTE.count] : s.color
     }
 
-    /// Formats the value written at the end of a bar.
-    private func valueLabel(_ value: Float) -> String {
-        return group(ChartScale.format(value, minFractionDigits, maxFractionDigits))
+    /// Formats the value written at the end of a bar, with the digits at most.
+    private func valueLabel(_ value: Float, _ digits: Int) -> String {
+        return group(ChartScale.format(value, minFractionDigits, digits))
     }
 
-    /// Formats a label of the value axis.
-    private func axisLabel(_ value: Float, _ digits: Int) -> String {
-        return group(ChartScale.format(value, digits, digits))
+    ///
+    /// Returns the digits of the value in the description: those of the
+    /// labels, or, without setFractionDigits, more for a small value, two
+    /// significant digits. A value of 0.00012 on an axis of 1,000 was
+    /// described as 0 (the review of 28 October 2026).
+    ///
+    private func describedDigits(_ value: Float, _ digits: Int) -> Int {
+        if fractionDigitsSet || value == 0.0 {
+            return digits
+        }
+        return Swift.max(digits, 1 - Int(floor(log10(Double(abs(value))))))
+    }
+
+    /// Formats a label of the value axis, with the significant digits when it
+    /// is written with a power of ten.
+    private func axisLabel(_ value: Float, _ digits: Int, _ significant: Int) -> String {
+        return group(ChartScale.format(value, digits, digits, significant))
     }
 
     /// Groups the digits before the decimal point in thousands with commas, if grouping is used.

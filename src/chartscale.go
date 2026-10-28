@@ -40,6 +40,12 @@ func newRoundedRange() *roundedRange {
 // the exact value half to even. The label has a "." decimal separator and no
 // grouping, and a value that rounds to zero has no minus sign.
 func format(value float32, minDigits, maxDigits int) string {
+	return formatSignificant(value, minDigits, maxDigits, 3)
+}
+
+// formatSignificant formats a label as format does, a number of 16 digits or
+// more with the significant digits and a power of ten.
+func formatSignificant(value float32, minDigits, maxDigits, significant int) string {
 	if math.IsNaN(float64(value)) {
 		return "NaN"
 	}
@@ -53,7 +59,7 @@ func format(value float32, minDigits, maxDigits int) string {
 	// power of ten, 3e38 and 1.23e20, where it was written out in full; 'e'
 	// rounds the exact value half to even, as Java's BigDecimal does
 	if abs32(value) >= 1e15 {
-		short := strconv.FormatFloat(float64(value), 'e', 2, 64)
+		short := strconv.FormatFloat(float64(value), 'e', max(significant, 1)-1, 64)
 		e := strings.IndexByte(short, 'e')
 		mantissa := strings.TrimRight(strings.TrimRight(short[:e], "0"), ".")
 		exponent, _ := strconv.Atoi(short[e+1:])
@@ -92,6 +98,27 @@ func fractionDigitsOf(step float32, maxDigits int) int {
 		}
 	}
 	return max(maxDigits, 0)
+}
+
+// axisSignificant returns the significant digits of the numbers of an axis
+// written with a power of ten, from lo up by the lines of the step, with the
+// digits: three, or more, up to nine, as many as write them apart. An axis of
+// 4.84e15 to 4.85e15 was written 4.84e15 at each line (the review of 28
+// October 2026).
+func axisSignificant(lo, step float32, lines, digits int) int {
+	for significant := 3; significant < 9; significant++ {
+		apart := true
+		last := ""
+		for i := 0; i <= lines && apart; i++ {
+			label := formatSignificant(lo+float32(step*float32(i)), digits, digits, significant)
+			apart = i == 0 || label != last
+			last = label
+		}
+		if apart {
+			return significant
+		}
+	}
+	return 9
 }
 
 // flatDataSpan returns the span of the range of flat data at the value: 1,

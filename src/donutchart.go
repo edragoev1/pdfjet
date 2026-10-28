@@ -535,12 +535,15 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		}
 		drawn++
 
-		// The percentage fits inside a slice of 15 degrees or more
-		// and in a ring as wide as one and a half lines of it, or a pie
-		if dc.f2 != nil && sweep >= 15.0 && (dc.r2 == 0.0 || dc.r1-dc.r2 >= float32(1.5*dc.f2.bodyHeight)) {
-			pctStr := fmt.Sprintf("%d%%", percentages[i])
+		// The percentage fits inside a slice of 15 degrees or more, as long
+		// across the middle of the ring as it is wide, and in a ring as wide
+		// as one and a half lines of it, or a pie. A small pie's slices had
+		// percentages wider than they were (the review of 28 October 2026)
+		pctStr := fmt.Sprintf("%d%%", percentages[i])
+		midR := float32((dc.r1 + dc.r2) / 2.0)
+		if dc.f2 != nil && sweep >= 15.0 && (dc.r2 == 0.0 || dc.r1-dc.r2 >= float32(1.5*dc.f2.bodyHeight)) &&
+			dc.f2.StringWidth(dc.f2.size, pctStr) <= float32(midR*float32(float64(float64(sweep)*math.Pi)/180.0)) {
 			midAngle := angle - float32(sweep/2.0) - 90.0
-			midR := float32((dc.r1 + dc.r2) / 2.0)
 			pos := getPoint(xc, yc, midR, midAngle)
 			page.drawString(dc.f2, dc.f2.size, pctStr,
 				pos[0]-float32(dc.f2.StringWidth(dc.f2.size, pctStr)/2.0),

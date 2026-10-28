@@ -87,6 +87,7 @@ type BarChart struct {
 
 	minFractionDigits int
 	maxFractionDigits int
+	fractionDigitsSet bool
 
 	// The range of the value axis, from the data unless it is set
 	min      float32
@@ -320,11 +321,13 @@ func (chart *BarChart) SetGridLineColor(c int32) *BarChart {
 
 // SetFractionDigits sets the number of digits after the decimal point of the
 // values written by the bars, all of them alike, as SimpleBarChart's. Without
-// it a value has as many as it needs, two at most. The numbers of the value
-// axis have the digits of its step.
+// it a value has as many as it needs, two at most, or as many as the step of
+// the value axis has. The numbers of the value axis have the digits of its
+// step.
 func (chart *BarChart) SetFractionDigits(digits int) *BarChart {
 	chart.minFractionDigits = digits
 	chart.maxFractionDigits = digits
+	chart.fractionDigitsSet = true
 	return chart
 }
 
@@ -420,6 +423,16 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	// The digits of the step, which SetFractionDigits does not cap: with 0
 	// an axis of 0.25 was written 0, 0, 1, 1
 	axisDigits := max(chart.minFractionDigits, stepDigits(step))
+	// The significant digits of the numbers of the axis written with a power
+	// of ten, as many as write them apart
+	significant := axisSignificant(vMin, step, lines, axisDigits)
+	// The digits of the values: those set, or as many as the step has, two
+	// at least, as the simple charts write them. Values under 0.01 were
+	// written 0 (the review of 28 October 2026)
+	digits := chart.maxFractionDigits
+	if !chart.fractionDigitsSet {
+		digits = max(digits, stepDigits(step))
+	}
 	base := min(max(0.0, vMin), vMax)
 
 	x2 := chart.x1 + chart.w
@@ -432,7 +445,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	// Widest labels on the value axis and next to the bars
 	widestAxisLabel := float32(0.0)
 	for i := 0; i <= lines; i++ {
-		label := chart.axisLabel(vMin+float32(step*float32(i)), axisDigits)
+		label := chart.axisLabel(vMin+float32(step*float32(i)), axisDigits, significant)
 		widestAxisLabel = max(widestAxisLabel, f2.StringWidth(f2.size, label))
 	}
 	widestValueLabel := float32(0.0)
@@ -464,7 +477,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			if outsideAxis(from, to, vMin, vMax) {
 				continue
 			}
-			width := f2.StringWidth(f2.size, chart.valueLabel(v))
+			width := f2.StringWidth(f2.size, chart.valueLabel(v, digits))
 			widestValueLabel = max(widestValueLabel, width)
 			if v < 0.0 {
 				widestNegative = max(widestNegative, width)
@@ -481,8 +494,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				up += s.values[i]
 			}
 		}
-		if up > 0.0 && isValue(up) { // A sum past the largest float32 is not written
-			widestTotal = max(widestTotal, f2.StringWidth(f2.size, chart.valueLabel(up)))
+		// A sum past the largest float32, or below a range that is set, is
+		// not written
+		if up > 0.0 && isValue(up) && up >= vMin {
+			widestTotal = max(widestTotal, f2.StringWidth(f2.size, chart.valueLabel(up, digits)))
 		}
 	}
 	// The names of the categories, shortened at the left of horizontal bars
@@ -563,7 +578,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 
 	// The chart is one figure, described by its alternate description.
-	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
+	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription(digits))
 	// The pen, the brush and the dash pattern of the caller are kept, as a
 	// Stamp keeps them.
 	page.SaveGraphicsState()
@@ -597,13 +612,13 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		for i := 0; i <= lines; i++ {
 			v := vMin + float32(step*float32(i))
 			centers[i] = x5 + scaled(v-vMin, x6-x5, vMax-vMin)
-			widths[i] = f2.StringWidth(f2.size, chart.axisLabel(v, axisDigits))
+			widths[i] = f2.StringWidth(f2.size, chart.axisLabel(v, axisDigits, significant))
 		}
 		every = placedStep(every, centers, widths, chart.x1, x2, float32(pad/2.0))
 	}
 	for i := 0; i <= lines; i++ {
 		v := vMin + float32(step*float32(i))
-		label := chart.axisLabel(v, axisDigits)
+		label := chart.axisLabel(v, axisDigits, significant)
 		labeled := i%every == 0
 		if chart.horizontal {
 			x := x5 + scaled(v-vMin, x6-x5, vMax-vMin)
@@ -638,9 +653,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	if m != 0 && !chart.stacked {
 		barWidth = groupWidth / (float32(m) + float32(float32(m-1)*chart.barGap))
 	}
-	// Under vertical bars a category is written where it leaves the one before
-	// it room: at every second or third bar, or more
-	everyCategory := 1
+	// A category is written where it leaves the one before it room: at every
+	// second or third bar, or more. By horizontal bars every name was written,
+	// and forty of them ran into each other (the review of 28 October 2026)
+	everyCategory := axisLabelStep(slot, bodyHeight, n)
 	if !chart.horizontal {
 		everyCategory = axisLabelStep(slot, widestCategory+pad, n)
 		// Inside the chart, and apart when the first and the last are moved in
@@ -654,6 +670,25 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		}
 		everyCategory = placedStep(everyCategory, centers, widths, chart.x1, x2, float32(pad/2.0))
 	}
+	// The values past the ends of grouped bars and the totals of the stacks
+	// are written, as the categories are, where they leave the one before
+	// them room, the nearest bars apart: at every second or third bar, or
+	// more. Over narrow bars they ran into each other (the review of 28
+	// October 2026)
+	apart := slot
+	if m > 1 && !chart.stacked {
+		barStep := float32(barWidth * (1.0 + chart.barGap))
+		apart = min(barStep, slot-float32(float32(m-1)*barStep))
+	}
+	everyLabel := axisLabelStep(apart, bodyHeight, n*m)
+	everyTotal := axisLabelStep(slot, bodyHeight, n)
+	if !chart.horizontal {
+		everyLabel = axisLabelStep(apart, widestValueLabel+pad, n*m)
+		everyTotal = axisLabelStep(slot, widestTotal+pad, n)
+	}
+	// The values are written over all the bars: a label wider than its bar
+	// was covered by the bar after it
+	labels := make([]barChartLabel, 0)
 	for i := 0; i < n; i++ {
 		var slotStart float32
 		if chart.horizontal {
@@ -666,10 +701,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		if i < len(names) {
 			category = names[i]
 		}
-		if chart.horizontal {
+		if chart.horizontal && i%everyCategory == 0 {
 			barChartText(page, f2, category, x5-pad-negative-f2.StringWidth(f2.size, category),
 				slotStart+float32(slot/2.0)+float32(ascent/2.0), barChartMuted)
-		} else if i%everyCategory == 0 {
+		} else if !chart.horizontal && i%everyCategory == 0 {
 			// Centered under its slot, inside the chart: the last one went
 			// past the chart's right edge
 			barChartText(page, f2, category, placed(slotStart+float32(slot/2.0), f2.StringWidth(f2.size, category), chart.x1, x2),
@@ -710,7 +745,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			hasLabel := chart.drawValueLabels && !outside
 			label := ""
 			if hasLabel {
-				label = chart.valueLabel(s.values[i])
+				label = chart.valueLabel(s.values[i], digits)
 			}
 			on := labelColorOn(barColor)
 			if chart.horizontal {
@@ -718,62 +753,74 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				x := x5 + scaled(to-vMin, x6-x5, vMax-vMin)
 				page.FillRect(min(x0, x), barStart, abs32(x-x0), barWidth)
 				baseline := barStart + float32(barWidth/2.0) + float32(ascent/2.0)
+				// A label inside a bar as thick as a line of it: a stacked
+				// one is left out, and one past the end is written instead
 				if hasLabel && chart.stacked {
-					if abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad {
-						barChartText(page, f2, label,
-							min(x0, x)+float32((abs32(x-x0)-f2.StringWidth(f2.size, label))/2.0), baseline, on)
+					if abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad && barWidth >= bodyHeight {
+						labels = append(labels, barChartLabel{label,
+							min(x0, x) + float32((abs32(x-x0)-f2.StringWidth(f2.size, label))/2.0), baseline, on})
 					}
 				} else if hasLabel && chart.valueLabelsInside &&
-					abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad {
+					abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad && barWidth >= bodyHeight {
 					lx := x + float32(pad/2.0)
 					if to >= base {
 						lx = x - float32(pad/2.0) - f2.StringWidth(f2.size, label)
 					}
-					barChartText(page, f2, label, lx, baseline, on)
-				} else if hasLabel {
+					labels = append(labels, barChartLabel{label, lx, baseline, on})
+				} else if hasLabel && (i*m+j)%everyLabel == 0 {
 					lx := x - float32(pad/2.0) - f2.StringWidth(f2.size, label)
 					if to >= base {
 						lx = x + float32(pad/2.0)
 					}
-					barChartText(page, f2, label, lx, baseline, barChartInk)
+					labels = append(labels, barChartLabel{label, lx, baseline, barChartInk})
 				}
 			} else {
 				y0 := y8 - scaled(from-vMin, y8-y5, vMax-vMin)
 				y := y8 - scaled(to-vMin, y8-y5, vMax-vMin)
 				page.FillRect(barStart, min(y0, y), barWidth, abs32(y-y0))
 				lx := barStart + float32((barWidth-f2.StringWidth(f2.size, label))/2.0)
+				// A label inside a bar as wide as it: a stacked one is left
+				// out, and one past the end is written instead. Labels wider
+				// than their bars were written over the bars next to them
+				// (the review of 28 October 2026)
 				if hasLabel && chart.stacked {
-					if abs32(y-y0) >= bodyHeight {
-						barChartText(page, f2, label, lx, float32((y+y0)/2.0)+float32(ascent/2.0), on)
+					if abs32(y-y0) >= bodyHeight && barWidth >= f2.StringWidth(f2.size, label) {
+						labels = append(labels, barChartLabel{label, lx, float32((y+y0)/2.0) + float32(ascent/2.0), on})
 					}
-				} else if hasLabel && chart.valueLabelsInside && abs32(y-y0) >= bodyHeight+pad {
+				} else if hasLabel && chart.valueLabelsInside && abs32(y-y0) >= bodyHeight+pad &&
+					barWidth >= f2.StringWidth(f2.size, label) {
 					ly := y - float32(pad/2.0)
 					if to >= base {
 						ly = y + ascent + float32(pad/2.0)
 					}
-					barChartText(page, f2, label, lx, ly, on)
-				} else if hasLabel {
+					labels = append(labels, barChartLabel{label, lx, ly, on})
+				} else if hasLabel && (i*m+j)%everyLabel == 0 {
 					ly := y + ascent + float32(pad/2.0)
 					if to >= base {
 						ly = y - float32(pad/2.0)
 					}
-					barChartText(page, f2, label, lx, ly, barChartInk)
+					labels = append(labels, barChartLabel{label, lx, ly, barChartInk})
 				}
 			}
 		}
-		// The total of a stack above it, or past its end
-		if totals && up > 0.0 && isValue(up) { // A sum past the largest float is not written
-			total := chart.valueLabel(up)
+		// The total of a stack above it, or past its end. A sum past the
+		// largest float is not written, nor one below a range that is set,
+		// which was written under the plot (the review of 28 October 2026)
+		if totals && up > 0.0 && isValue(up) && up >= vMin && i%everyTotal == 0 {
+			total := chart.valueLabel(up, digits)
 			groupMiddle := groupStart + float32(groupWidth/2.0)
 			if chart.horizontal {
 				x := x5 + scaled(min(up, vMax)-vMin, x6-x5, vMax-vMin)
-				barChartText(page, f2, total, x+float32(pad/2.0), groupMiddle+float32(ascent/2.0), barChartInk)
+				labels = append(labels, barChartLabel{total, x + float32(pad/2.0), groupMiddle + float32(ascent/2.0), barChartInk})
 			} else {
 				y := y8 - scaled(min(up, vMax)-vMin, y8-y5, vMax-vMin)
-				barChartText(page, f2, total, groupMiddle-float32(f2.StringWidth(f2.size, total)/2.0),
-					y-float32(pad/2.0), barChartInk)
+				labels = append(labels, barChartLabel{total, groupMiddle - float32(f2.StringWidth(f2.size, total)/2.0),
+					y - float32(pad/2.0), barChartInk})
 			}
 		}
+	}
+	for _, label := range labels {
+		barChartText(page, f2, label.text, label.x, label.y, label.color)
 	}
 
 	// The axis line at the base of the bars, which is the zero line of
@@ -888,8 +935,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 // getAltDescription returns the alternate description: the one set, or the
 // title, the subtitle and, for each series, its name and its values by
-// category.
-func (chart *BarChart) getAltDescription() string {
+// category, with the digits of the labels, or, without SetFractionDigits, with
+// two significant digits at least.
+func (chart *BarChart) getAltDescription(digits int) string {
 	if chart.altDescription != "" {
 		return chart.altDescription
 	}
@@ -920,7 +968,7 @@ func (chart *BarChart) getAltDescription() string {
 				values.WriteString(category)
 				values.WriteString(" ")
 			}
-			values.WriteString(chart.valueLabel(v))
+			values.WriteString(chart.valueLabel(v, chart.describedDigits(v, digits)))
 		}
 		if values.Len() == 0 {
 			continue
@@ -995,14 +1043,27 @@ func (chart *BarChart) barColor(s *barSeries, seriesIndex, index int) int32 {
 	return s.color
 }
 
-// valueLabel formats the value written at the end of a bar.
-func (chart *BarChart) valueLabel(value float32) string {
-	return chart.group(format(value, chart.minFractionDigits, chart.maxFractionDigits))
+// valueLabel formats the value written at the end of a bar, with the digits
+// at most.
+func (chart *BarChart) valueLabel(value float32, digits int) string {
+	return chart.group(format(value, chart.minFractionDigits, digits))
 }
 
-// axisLabel formats a label of the value axis.
-func (chart *BarChart) axisLabel(value float32, digits int) string {
-	return chart.group(format(value, digits, digits))
+// describedDigits returns the digits of the value in the description: those
+// of the labels, or, without SetFractionDigits, more for a small value, two
+// significant digits. A value of 0.00012 on an axis of 1,000 was described
+// as 0 (the review of 28 October 2026).
+func (chart *BarChart) describedDigits(value float32, digits int) int {
+	if chart.fractionDigitsSet || value == 0.0 {
+		return digits
+	}
+	return max(digits, 1-int(math.Floor(math.Log10(float64(abs32(value))))))
+}
+
+// axisLabel formats a label of the value axis, with the significant digits
+// when it is written with a power of ten.
+func (chart *BarChart) axisLabel(value float32, digits, significant int) string {
+	return chart.group(formatSignificant(value, digits, digits, significant))
 }
 
 // group groups the digits before the decimal point in thousands with commas,
@@ -1012,6 +1073,13 @@ func (chart *BarChart) group(label string) string {
 		return label
 	}
 	return groupDigits(label)
+}
+
+// barChartLabel is a value written by a bar, at its place, in its color.
+type barChartLabel struct {
+	text  string
+	x, y  float32
+	color int32
 }
 
 // barChartText draws the text in the font at its size, in the color.
