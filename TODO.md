@@ -512,9 +512,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
              .setTitle("Statement, 12 pages")
              .setSubtitle("warm ms")
              .add("PDFjet", 7.3f)
-             .add("iText", 72.6f)
-             .add("OpenPDF", 18.4f)
-             .add("PDFBox", 44.1f)
+             .add("Library A", 72.6f)
+             .add("Library B", 18.4f)
+             .add("Library C", 44.1f)
              .setHighlight(0)          // navy bar, bold name and value
              .setFractionDigits(1);
      chart.setLocation(50f, 80f).setWidth(330f);   // the height from the bars
@@ -531,7 +531,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
        best is the lowest value or the highest, which the chart cannot
        know. None by default.
      - PDF/UA: one figure, described from its data ("Statement, 12 pages,
-       warm ms: PDFjet 7.3, iText 72.6, ...") unless an alternate
+       warm ms: PDFjet 7.3, Library A 72.6, ...") unless an alternate
        description is set.
      - Meant to stand beside a Table of the same numbers, the chart for
        the picture, the table for the record and for a screen reader; the
@@ -775,9 +775,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   since the font tables are written smaller, PDFjet's PDFs are a few KB
   larger at most, the report with photos under 1%). Kept for the future,
   after the v9.2.1 items. After the benchmark: PDFjet's PDFs are the largest of the
-  four in four of its five documents, the invoice 25 KB to PDFBox's 19,
-  the statement 64 to 42; PDFBox writes object streams by default, iText
-  and OpenPDF as an option). With PDF.SetObjectStreams(true), the objects
+  four in four of its five documents, the invoice 25 KB to another's 19,
+  the statement 64 to 42; one other library writes object streams by
+  default, two as an option). With PDF.SetObjectStreams(true), the objects
   that are not streams, the structure elements, annotations, fonts'
   dictionaries and the like, are written compressed in object streams,
   and the cross-reference table becomes a cross-reference stream, as a
@@ -797,7 +797,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   1. ✅ The first step done for 9.1.5, 26 October 2026 (the owner: "bring
      it forward to 9.1.5"): `cmap` and `name` left out of the subsets in the
      four ports. A profile of a one-page letter showed three quarters of
-     it in zlib compressing the two subsets (33 KB, where OpenPDF's are
+     it in zlib compressing the two subsets (33 KB, where another library's are
      22); 0.82 ms to 0.58, 22.2 KB to 15.5. Renumbering the glyphs is still
      for v9.2.1, if it is worth it.
      Was: Smaller font subsets. A subset keeps every glyph number of the font,
