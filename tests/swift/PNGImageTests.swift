@@ -772,6 +772,32 @@ import Testing
         }
     }
 
+    // Copied after the list read() returned was let go, the image keeps its
+    // masks, which were held weakly and lost (the review of 28 October 2026).
+    @Test func anImageCopiedAfterTheObjectsReadAreLetGoKeepsItsMasks() throws {
+        func readImages() throws -> [PDFobj] {
+            let memory = MemoryPDF()
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            for name in ["BASN6A08", "TBRN2C08"] {
+                _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG")).drawOn(page)
+            }
+            try memory.pdf.complete()
+            return drawnImages(try TestSupport.read(memory.bytes))
+        }
+        let drawn = try readImages()
+        try #require(drawn.count == 2)
+        let copied = MemoryPDF()
+        let page = Page(copied.pdf, Letter.PORTRAIT)
+        for obj in drawn {
+            _ = try Image(copied.pdf, obj).drawOn(page)
+        }
+        try copied.pdf.complete()
+        let images = drawnImages(try TestSupport.read(copied.bytes))
+        try #require(images.count == 2)
+        #expect(images[0].getValue("/SMask") != "")
+        #expect(images[1].getValue("/Mask") == drawn[1].getValue("/Mask"))
+    }
+
     // The images drawn, not their soft masks.
     private func drawnImages(_ objects: [PDFobj]) -> [PDFobj] {
         return imageObjects(objects).filter { $0.getValue("/ColorSpace") != "/DeviceGray" }

@@ -2492,6 +2492,19 @@ public final class PDF {
         for obj in sorted {
             obj.readObjects = readObjects
         }
+        // Each image holds its masks; not a mask with a mask of its own, which
+        // is not copied, so that two images that name each other do not hold
+        // each other
+        for obj in sorted where obj.getValue("/Subtype") == "/Image" {
+            for key in ["/SMask", "/Mask"] {
+                let tokens = obj.valueTokens(key)
+                if tokens.count == 3, tokens[2] == "R", let number = Int(tokens[0]),
+                        number != obj.number, let mask = readObjects.object(number),
+                        mask.valueTokens("/SMask").isEmpty, mask.valueTokens("/Mask").isEmpty {
+                    obj.masks[number] = mask
+                }
+            }
+        }
         return sorted
     }
 

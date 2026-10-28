@@ -40,6 +40,10 @@ public final class PDFobj {
     // The objects of the PDF it was read from, by number, for the masks of an
     // image copied into another PDF; nil for an object not read
     var readObjects: ReadObjects?
+    // The soft mask and the stencil mask of an image that was read, held by
+    // the image, as the other objects are held weakly: copied after the list
+    // read() returned was let go, it lost them (the review of 28 October 2026)
+    var masks = [Int: PDFobj]()
 
     /// Creates an empty PDF object.
     init() {

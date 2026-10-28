@@ -207,7 +207,7 @@ public class Image : Drawable {
             throw PDFjetError(message: "The " + key + " of the image is not a reference to an image: "
                     + tokens.joined(separator: " "))
         }
-        guard let mask = obj.readObjects?.object(number) else {
+        guard let mask = obj.masks[number] ?? (number == obj.number ? obj : obj.readObjects?.object(number)) else {
             throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
                     + "which is not copied with it: " + key + " " + tokens.joined(separator: " "))
         }
