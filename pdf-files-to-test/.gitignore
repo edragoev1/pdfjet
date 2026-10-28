@@ -1,0 +1,3 @@
+# The PDFs put here to check by hand, with PAC and in viewers, which are not
+# kept in the repository
+*.pdf

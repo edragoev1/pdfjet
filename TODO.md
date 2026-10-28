@@ -36,15 +36,15 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   signature changes but those util/api-removed.txt lists, each with the
   owner's word and a line of CHANGELOG.md, and what is added is what
   CHANGELOG.md lists.
-- **The manual viewer pass.** The PDFs in `viewer-files-to-test`, opened by
+- **The manual viewer pass.** The PDFs in `pdf-files-to-test`, opened by
   hand in Acrobat Reader, and with NVDA where a file is tagged; see the README
   there for the files of each release. One question is open from the pass of
   9.0.3: Example_42's shapes have their opacity in an ExtGState and in the
   annotation's `/CA`, and ISO 32000 applies `/CA` to the appearance, so a
   strict viewer could draw them at 25% where MuPDF, PDFium, Poppler and pdf.js
   draw them at 50%.
-- **PAC.** The PDF/UA files in `pdf-ua-files-to-test`, checked with PAC on
-  Windows; see the README there for which files go in.
+- **PAC.** The PDF/UA files in `pdf-files-to-test`, checked with PAC in
+  Wine on Ubuntu; see the README there for which files go in.
 - **Windows and macOS.** The Windows and macOS workflows, started by hand
   from the Actions tab on the commit to tag: Windows builds and runs the
   examples of the four ports, macOS the examples and the unit tests of Go.

@@ -3,7 +3,7 @@
 // version of each viewer, and lines for notes after it. It is PDF/UA, as the
 // examples are.
 //
-//	go run ./.github/scripts/viewer-checklist viewer-files-to-test/Checklist.pdf
+//	go run ./.github/scripts/viewer-checklist pdf-files-to-test/Checklist.pdf
 //
 // Run it from the root of the repository, which has the fonts.
 package main
@@ -32,7 +32,7 @@ var sections = []section{
 		"Example_47 opens with the owner password world, and then copying is allowed.",
 		"Encrypted_Cyrillic opens with the password пароль (a Russian keyboard, or pasted).",
 		"Encrypted_200_Bytes opens with 0123456789 typed 20 times, 200 characters (paste it).",
-		"Example_42: the push pin and the paperclip open linux-logo.png and Example_02.java, and each can be saved.",
+		"Example_42: the push pin and the paperclip open circles.png and Example_02.java, and each can be saved.",
 		"Example_42: the note icon shows \"Please check the figures on page 2.\", the link opens pdfjet.com, " +
 			"and the triangle, square and circle are half transparent.",
 		"Example_40: each of the 8 entries of the contents jumps to its page.",
@@ -181,7 +181,7 @@ func main() {
 	title.DrawOn(page)
 	y += 30
 
-	intro := textBlock(regular, 10, "The manual viewer pass of TODO.md. The files are in viewer-files-to-test: the Java "+
+	intro := textBlock(regular, 10, "The manual viewer pass of TODO.md. The files are in pdf-files-to-test: the Java "+
 		"examples built from main, Example_47 with the user password hello and the owner password world, "+
 		"Encrypted_Cyrillic and Encrypted_200_Bytes, and Kerning and Copied_Image, of the code new in 9.1.5. Tick each box when it holds; when it does not, "+
 		"write what you see on the lines below the viewer.", marginX, 612-2*marginX, soft)
