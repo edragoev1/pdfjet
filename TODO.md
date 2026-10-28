@@ -743,7 +743,10 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   out the newer CJK characters and the extensions (𨋢, U+282E2), and a line
   is CJK only when more than half of it is, so a long run of Chinese in a
   line mostly English is cut where the line is full, without the kinsoku
-  rules. Once the proofreader has said whether keep-all is right: Korean
+  rules; and a line more than half Chinese breaks between any two
+  characters, so a Latin word in it is broken too: "電郵或 W" and
+  "hatsApp 交回" (a Forms customer registration form, 27 October 2026).
+  Once the proofreader has said whether keep-all is right: Korean
   named on purpose, breaking at spaces, with a test of each case, the ranges
   of Chinese brought up to date, and the PDF the same for every text it
   draws well today. Not before 9.1.5, whose scope is closed.
