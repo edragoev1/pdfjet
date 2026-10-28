@@ -4,48 +4,17 @@ The library work that is open, in the four ports (Java, C#, Go and Swift),
 and the checks that hold before each release. What each release brought is in
 CHANGELOG.md.
 
-## v9.0.7
+## The numbers
 
-The first public release since 9.0.3. v9.0.5 was tagged on 12 October 2026
-as an internal release, not published (the owner: "We will label v9.0.5
-internal release and focus on v9.0.7"); nothing more is backported to it,
-and 9.0.7 carries all of it: subsets of every embedded font, TrueType and
-CFF, fonts added to an existing PDF included; the `.ttf` and `.otf` fonts
-read directly, with no `.stream` files; `ImageSize`; the EXIF orientation of
-JPEGs; the public XML parser; `Table.setCellPadding`; `addCJKParagraph` with
-a language; the fixes of the code review of 11 October 2026 (#1 to #38),
-passwords prepared with SASLprep among them; and, new in 9.0.7, fonts that
-forbid embedding refused and the stroke width of an Arc. Only a major issue
-holds it; anything else goes into 9.0.9.
-
-The version is 9.0.7 in the four ports since 12 October 2026, after a
-last review of the day's changes and an hour of fuzzing the font and text
-targets. Left before the tag: the items for 9.0.7 below, the manual viewer
-pass (below) on the files of the new code, then the release.
-
-PDFjet Pro is released with it, its first release, on the same day, with
-the same number (the owner, 11 October 2026: the two move together), the
-Swiss QR-bill in it (merged on 12 October 2026). Right after the library's
-tag: in pdfjet-pro, `./set-version.sh 9.0.7`, the tests against the release
-(`PDFJET=published`), CHANGELOG.md, the tag v9.0.7 and push; then
-pdfjet-pro made public, on the owner's go-ahead. Its CI builds against the
-library's main branch until then, and on a tag against the library's tag of
-the same number.
-
-And pdfjet-server to the release: its go.mod requires a snapshot of the
-library of 9 October (v9.0.4-0.20261009203557-ed6b1c9bcec8), which its CI
-and the Forms that is deployed build with, so they have none of the fixes
-since, the reader's limits among them, until it requires v9.0.7:
-`go get github.com/edragoev1/pdfjet/v9@v9.0.7 && go mod tidy` in
-pdfjet-server, its tests, commit and push. Locally its go.work uses the
-library beside it, which has them already.
-
-PDFjet Forms takes the number too (the owner, 11 October 2026): Forms is
-9.0.7 when it is built on the library's 9.0.7, and tags pdfjet-server and
-pdfjet-client v9.0.7 with the deploy that moves it there. Deploys of Forms
-alone between the library's releases keep its number, told apart by their
-commit and date. The layout's format version (1) and the look's rules
-(rules 1) are not these numbers, and never move with them.
+PDFjet Pro is released with the library, the same day, with the same
+number (the owner, 11 October 2026: the two move together); see the checks
+below. PDFjet Forms takes the number too: Forms is 9.1.5 when it is built
+on the library's 9.1.5, and deploys of Forms between the library's releases
+keep its number, told apart by their commit and date. The layout's format
+version (1) and the look's rules (rules 1) are not these numbers, and never
+move with them. Releases are odd: 9.1.1, 9.1.5 (9.1.3 skipped), 9.1.7. What
+each one brought is in CHANGELOG.md; the plan of 9.0.7, the first public
+release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Checks before each release
 
@@ -62,7 +31,7 @@ commit and date. The layout's format version (1) and the look's rules
   Poppler, and compares the snippets of the booklet in the four ports. The
   Build workflow runs the same checks on every push, but for the snippets,
   which it compiles and does not compare.
-- **The public API.** `./check-api.sh v9.0.9` (the last release) lists what
+- **The public API.** `./check-api.sh v9.1.1` (the last release) lists what
   was added and what was removed in each port: nothing is removed and no
   signature changes but those util/api-removed.txt lists, each with the
   owner's word and a line of CHANGELOG.md, and what is added is what
@@ -241,9 +210,9 @@ commit and date. The layout's format version (1) and the look's rules
     float[] {x, y}. Designed on 17 October 2026 (ComponentEnd,
     drawAndGetEnd, one method a port), then dropped by the owner: "xy[0]
     and xy[1] are not difficult to decypher", and a public API is kept for
-    good. Not to be proposed again unless more people ask. The reply to
-    the developer, who was told it would come in 9.1.1, says so when 9.1.1
-    is out.
+    good. Not to be proposed again unless more people ask. The developer,
+    who had been told it would come in 9.1.1, was told it would not, in
+    Discussion #5 (19 October 2026).
   - (Done 17 October 2026, as a Cell's: a Cell already refused one since
     the third review of 12 October, so the setters stay as they are and a
     TextBlock is refused when drawn, in the four ports.)
@@ -1011,8 +980,9 @@ The release (scripts and the checklist):
       subpackages.
 - [x] TODO's check-api line: v9.0.9; windows.yml checks only that a PDF
       is not empty (and build.yml: %%EOF now).
-- [ ] Pro's library.sh comment of GONOSUMDB: with the Pro fixes, after the
-      reset.
+- [x] Pro's library.sh comment of GONOSUMDB: no GONOSUMDB at all since
+      27 October 2026, as proxy.golang.org serves the library's releases and
+      the checksum database checks them (pdfjet-pro 27db1f4).
 
 ## Known and accepted (document, do not fix)
 
