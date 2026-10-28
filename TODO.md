@@ -81,6 +81,14 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   now"): the four ports, everything changed since v9.1.1, before the
   release checks, so before the Forms launch too.
 
+- **Replace Example_13** (the owner, 28 October 2026: "looks like very weak
+  example - mark for replacement"). Its title is "Switzerland, in English and
+  Chinese", but the Chinese is a company's legal disclaimer about an
+  attachment selector, unrelated to the English and naming the company. A
+  replacement shows one subject in English and Simplified Chinese, each
+  tagged with its language, in the four ports; the reference PDFs and the
+  booklet follow. After the 9.1.5 tag unless the owner moves it in.
+
 - ✅ Done for 9.1.5, 26 October 2026 (the owner: "let's start implementing
   these"): setVerticalPadding, setHeaderColor, setFooterFontSize and
   setFooterOffset in the
