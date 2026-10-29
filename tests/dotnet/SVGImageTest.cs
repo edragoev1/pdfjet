@@ -665,33 +665,36 @@ public class SVGImageTest {
     }
 
     // The text of a chart: text and tspan elements, placed as a browser
-    // places them, in Helvetica unless a font is set.
+    // places them, in the fonts PDFjet carries unless a font is set.
 
     [Fact]
     public void DrawsATextAtItsXAndY() {
         string content = Draw("<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></svg>");
-        Assert.True(content.Contains(" 12 Tf\n1 0 0 1 10 772 Tm\n[<4869>] TJ\nET\n"), content);
+        Assert.True(content.Contains(" 12 Tf\n1 0 0 1 10 772 Tm\n<"), content);
+        Assert.True(content.Contains("> Tj\nET\n"), content);     // IBM Plex Sans, embedded
         Assert.False(content.Contains("W\n"), content);     // Inside the image: nothing is cut off
     }
 
     [Fact]
     public void AnAnchorMovesTheTextByItsWidthAndDyIsInEm() {
-        // Hi is 944 thousandths of an em wide in Helvetica: 11.328 at 12.
+        // Hi is 957 thousandths of an em wide in IBM Plex Sans: 11.484 at 12.
         string content = Draw("<svg width=\"200\" height=\"100\"><text x=\"100\" y=\"20\" dy=\"0.5em\" "
                 + "font-size=\"12\" text-anchor=\"end\">Hi</text></svg>");
-        Assert.True(content.Contains("1 0 0 1 88.67 766 Tm\n"), content);
+        Assert.True(content.Contains("1 0 0 1 88.52 766 Tm\n"), content);
     }
 
     [Fact]
     public void TheTextAndTheTspansAreDrawnInTheOrderOfTheDocument() {
         string content = Draw("<svg width=\"200\" height=\"100\"><text x=\"0\" y=\"20\">"
                 + " A <tspan font-weight=\"bold\">B</tspan>C<title>not drawn</title></text></svg>");
-        int a = content.IndexOf("[<4120>] TJ", StringComparison.Ordinal);    // "A ": the space at the start is left out
-        int b = content.IndexOf("[<42>] TJ", StringComparison.Ordinal);
-        int c = content.IndexOf("[<43>] TJ", StringComparison.Ordinal);
-        Assert.True(a > 0 && b > a && c > b, content);
-        Assert.False(content.Contains("<6E6F74"), content);
-        Assert.True(content.Contains("/F2 16 Tf\n") && content.Contains("/F3 16 Tf\n"), content);   // The bold B in another font
+        // Three runs: "A " (the space at the start left out), the bold B in
+        // IBM Plex Sans Bold, and C; the title is not drawn
+        Assert.Equal(3, Count(content, " Tj\n"));
+        string[] fonts = content.Split(" 16 Tf\n");
+        Assert.Equal(4, fonts.Length);
+        string regular = fonts[0].Substring(fonts[0].LastIndexOf('/'));
+        Assert.False(fonts[1].EndsWith(regular, StringComparison.Ordinal), content);
+        Assert.True(fonts[2].EndsWith(regular, StringComparison.Ordinal), content);
     }
 
     [Fact]
@@ -699,9 +702,9 @@ public class SVGImageTest {
         string content = Draw("<svg width=\"200\" height=\"100\"><text text-anchor=\"middle\" "
                 + "transform=\"translate(100,50)\" font-size=\"10\"><tspan y=\"-0.4em\">Go</tspan>"
                 + "<tspan x=\"0\" y=\"0.7em\">12%</tspan></text></svg>");
-        // Go is 1334 thousandths of an em, and 12% 2001.
-        Assert.True(content.Contains("1 0 0 1 93.33 746 Tm\n"), content);
-        Assert.True(content.Contains("1 0 0 1 90 735 Tm\n"), content);
+        // Go is 1255 thousandths of an em, and 12% 2127.
+        Assert.True(content.Contains("1 0 0 1 93.72 746 Tm\n"), content);
+        Assert.True(content.Contains("1 0 0 1 89.36 735 Tm\n"), content);
     }
 
     [Fact]
@@ -714,8 +717,42 @@ public class SVGImageTest {
 
     [Fact]
     public void ACoreFontDrawsTheMinusSignAsAHyphenMinus() {
-        string content = Draw("<svg width=\"200\" height=\"100\"><text y=\"20\">−5</text></svg>");
-        Assert.True(content.Contains("[<2D35>] TJ"), content);
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Parse("<svg width=\"200\" height=\"100\"><text y=\"20\">\u22125</text></svg>")
+                .SetFont(new Font(pdf, CoreFont.HELVETICA)).DrawOn(page);
+        Assert.True(TestSupport.Content(page).Contains("[<2D35>] TJ"), TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void TheFamilyTheWeightAndTheStyleChooseTheFontPDFjetCarries() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Parse("<svg width=\"200\" height=\"100\">"
+                + "<text y=\"10\" font-family=\"'Times New Roman', serif\" font-weight=\"600\" font-style=\"italic\">a</text>"
+                + "<text y=\"20\" style=\"font: bold 10px Courier, monospace\">b</text>"
+                + "<text y=\"30\" font-family=\"Unknown, Arial\">c</text>"
+                + "<text y=\"40\" font-family=\"Unknown\" font-weight=\"bolder\">d</text></svg>").DrawOn(page);
+        // Another image draws in the same fonts of the document, not new ones
+        Parse("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
+                + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").DrawOn(page);
+        Assert.Equal(new System.Collections.Generic.SortedSet<string>(new[] {
+                "SourceSerif4-SemiBoldItalic.ttf", "JetBrainsMono-Bold.ttf",
+                "IBMPlexSans-Regular.ttf", "IBMPlexSans-Bold.ttf"}, StringComparer.Ordinal),
+                new System.Collections.Generic.SortedSet<string>(pdf.bundledFonts.Keys, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void TheTextOfADocumentOfPDFAOrPDFUAIsInEmbeddedFonts() {
+        // The fonts PDFjet carries are embedded, so the text needs no font set
+        string svg = "<svg width=\"200\" height=\"100\"><text y=\"20\">A</text></svg>";
+        foreach (Compliance compliance in new Compliance[] {Compliance.PDF_A_3B, Compliance.PDF_UA_1}) {
+            PDF pdf = new PDF(new MemoryStream(), compliance);
+            pdf.SetTitle("SVG");
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            Parse(svg).SetAltDescription("A").DrawOn(page);
+            pdf.Complete();
+        }
     }
 
     [Fact]

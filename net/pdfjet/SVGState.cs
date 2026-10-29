@@ -38,7 +38,9 @@ internal class SVGState {
     internal float dashOffset = 0f;
     internal bool strokeFirst = false;          // paint-order: the stroke drawn before the fill
     internal float fontSize = 16f;              // In the user space; medium, as a browser has it
-    internal bool bold = false;                 // A font-weight of bold, 600 or more
+    internal int fontWeight = 400;              // normal 400, bold 700
+    internal bool italic = false;               // A font-style of italic or oblique
+    internal int fontFamily = BundledFonts.SANS;    // The family of the bundled fonts its names stand for
     internal int textAnchor = 0;                // 0 start, 1 middle, 2 end
     internal int baseline = 0;                  // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
     internal String markerStart = null;         // The ids of the markers, inherited
@@ -181,10 +183,20 @@ internal class SVGState {
                 }
                 break;
             case "font-weight":
-                bool weight;
-                if (ParseFontWeight(value, out weight)) {
-                    bold = weight;
+                int weight;
+                if (ParseFontWeight(value, fontWeight, out weight)) {
+                    fontWeight = weight;
                 }
+                break;
+            case "font-style":
+                if (value.Equals("italic") || value.StartsWith("oblique", StringComparison.Ordinal)) {
+                    italic = true;
+                } else if (value.Equals("normal")) {
+                    italic = false;
+                }
+                break;
+            case "font-family":
+                fontFamily = BundledFonts.FamilyOf(value);
                 break;
             case "font":
                 SetFont(value);
@@ -317,30 +329,43 @@ internal class SVGState {
         return ok;
     }
 
-    // Reads a font-weight: true for bold, bolder and 600 or more, false for
-    // normal, lighter and less; returns false for a weight it cannot read.
-    internal static bool ParseFontWeight(String value, out bool bold) {
-        bold = false;
-        if (value.Equals("bold") || value.Equals("bolder")) {
-            bold = true;
+    // Reads a font-weight, from 1 to 1000: normal is 400 and bold 700, and
+    // bolder and lighter are those of CSS, from the weight of the parent. It
+    // returns false for a weight it cannot read.
+    internal static bool ParseFontWeight(String value, int parentWeight, out int weight) {
+        weight = 0;
+        if (value.Equals("normal")) {
+            weight = 400;
             return true;
-        } else if (value.Equals("normal") || value.Equals("lighter")) {
+        } else if (value.Equals("bold")) {
+            weight = 700;
+            return true;
+        } else if (value.Equals("bolder")) {
+            weight = (parentWeight < 350) ? 400 : (parentWeight < 550) ? 700 : 900;
+            return true;
+        } else if (value.Equals("lighter")) {
+            weight = (parentWeight < 550) ? 100 : (parentWeight < 750) ? 400 : 700;
             return true;
         }
-        float weight;
-        if (!ParseFactor(value, out weight) || weight < 1f || weight > 1000f) {
+        float number;
+        if (!ParseFactor(value, out number) || number < 1f || number > 1000f) {
             return false;
         }
-        bold = weight >= 600f;
+        // Rounded half up, as Java's Math.round
+        weight = (int) Math.Floor((double) number + 0.5);
         return true;
     }
 
-    // Sets the size and the weight of the font shorthand, such as "bold 10px
-    // sans-serif": the words before the size, then the size, which may have
-    // a line height after a slash. A shorthand without a weight is normal.
+    // Sets the size, the weight, the style and the family of the font
+    // shorthand, such as "bold 10px sans-serif": the words before the size,
+    // then the size, which may have a line height after a slash, then the
+    // family. A shorthand without a weight is normal.
     private void SetFont(String value) {
-        bool isBold = false;
-        foreach (String field in Fields(value)) {
+        int weight = 400;
+        bool isItalic = false;
+        List<String> fields = Fields(value);
+        for (int i = 0; i < fields.Count; i++) {
+            String field = fields[i];
             int slash = field.IndexOf('/');
             String size = (slash < 0) ? field : field.Substring(0, slash);
             // A size has a unit or is a keyword; a number alone is a weight.
@@ -348,15 +373,49 @@ internal class SVGState {
                 float newSize;
                 if (ParseFontSize(size, fontSize, out newSize)) {
                     fontSize = newSize;
-                    bold = isBold;
+                    fontWeight = weight;
+                    italic = isItalic;
+                    // The family after the size, and a line height after a
+                    // slash written apart from it
+                    int from = i + 1;
+                    if (slash < 0 && from < fields.Count && fields[from].StartsWith("/", StringComparison.Ordinal)) {
+                        from += fields[from].Equals("/") ? 2 : 1;
+                    }
+                    StringBuilder family = new StringBuilder();
+                    for (int j = from; j < fields.Count; j++) {
+                        family.Append(j > from ? " " : "").Append(fields[j]);
+                    }
+                    fontFamily = BundledFonts.FamilyOf(family.ToString());
                     return;
                 }
             }
-            bool weight;
-            if (ParseFontWeight(field, out weight)) {
-                isBold = weight;
+            if (field.Equals("italic") || field.Equals("oblique")) {
+                isItalic = true;
+                continue;
+            }
+            int w;
+            if (ParseFontWeight(field, fontWeight, out w)) {
+                weight = w;
             }
         }
+    }
+
+    // Returns the text in lower case, a code point at a time, whatever the
+    // culture, as the Java port's Character.toLowerCase and the Go port's
+    // strings.ToLower do: İ is i, its simple lower case, which .NET's
+    // invariant culture leaves as it is.
+    internal static String ToLower(String text) {
+        StringBuilder buf = new StringBuilder(text.Length);
+        for (int i = 0; i < text.Length; i++) {
+            char ch = text[i];
+            if (char.IsHighSurrogate(ch) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1])) {
+                buf.Append(text.Substring(i, 2).ToLowerInvariant());
+                i++;
+            } else {
+                buf.Append((ch == '\u0130') ? 'i' : char.ToLowerInvariant(ch));
+            }
+        }
+        return buf.ToString();
     }
 
     // Reads the value of a fill or a stroke: none, currentColor, a color, or a

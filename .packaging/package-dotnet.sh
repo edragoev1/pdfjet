@@ -110,7 +110,7 @@ mkdir -p "$STAGE" .commercial-packages
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/dotnet-pro LICENSE \
-    net net48 PDFjet.csproj examples images PngSuite docfx \
+    net net48 PDFjet.csproj src/bundledfonts examples images PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
 tar -x -C "$STAGE" -f "$TAR"
 
@@ -149,6 +149,9 @@ dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
     -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
     -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
 cp bin/release/net8.0/PDFjet.dll .
+# The licenses of the fonts built into PDFjet.dll, which SVG text is drawn
+# in, beside it, as the SIL Open Font License asks that it go with every copy
+cp src/bundledfonts/*-OFL.txt .
 
 # The same library for .NET Framework 4.8, from the same sources, strong-named
 # with the same key and version: net48/PDFjet.dll and the System.Memory DLLs
@@ -164,7 +167,7 @@ mv net48-dll net48
 # The same docfx command as generate-documentation.sh; it writes docs/dotnet.
 docfx docfx/docfx.json
 
-rm -rf net PDFjet.csproj bin obj docfx
+rm -rf net PDFjet.csproj src bin obj docfx
 
 # The example projects reference the PDFjet.dll of the package.
 # perl, as sed -i is not the same in GNU sed and in the sed of macOS.
@@ -218,7 +221,7 @@ zip_sorted "$CORE_ZIP" "$CORE_NAME"
 cd "$NAME"
 PRO_TAR=$PWD/../pro.tar
 mkdir pro-src
-git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj
+git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj src/bundledfonts
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD net/pdfjet/Sign net/pdfjet/Invoice \
     net/pdfjet/Hyphenation src/hyphenation/patterns \

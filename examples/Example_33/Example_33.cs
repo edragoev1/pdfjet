@@ -62,8 +62,8 @@ public class Example_33 {
         xy = textBlock.DrawOn(page);
 
         // A chart made with D3, as a browser draws it, by util/make-d3-chart.mjs:
-        // its text is drawn in the fonts set, embedded, as PDF/UA asks; on a
-        // page of its own
+        // its text, in sans-serif, is drawn in IBM Plex Sans, which PDFjet
+        // carries and embeds, as PDF/UA asks; on a page of its own
         page = new Page(pdf, A4.PORTRAIT);
         new TextLine(f2, "A Chart Made with D3")
                 .SetStructureType(StructElem.H2)
@@ -72,9 +72,10 @@ public class Example_33 {
                 .DrawOn(page);
 
         textBlock = new TextBlock(f1,
-                "SVGImage draws the charts of D3 and the like, their text in the "
-                + "fonts set with setFont and setBoldFont, which are embedded. This chart "
-                + "was made by D3 in util/make-d3-chart.mjs.");
+                "SVGImage draws the charts of D3 and the like, their text in the fonts "
+                + "PDFjet carries, those of PDFjet Forms, embedded: IBM Plex Sans for "
+                + "sans-serif, Source Serif 4 for serif and JetBrains Mono for monospace. "
+                + "This chart was made by D3 in util/make-d3-chart.mjs.");
         textBlock.SetFontSize(12f);
         textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 95f);
@@ -82,8 +83,6 @@ public class Example_33 {
         xy = textBlock.DrawOn(page);
 
         SVGImage chart = new SVGImage("images/svg/d3-life-expectancy-by-region.svg");
-        chart.SetFont(f1);
-        chart.SetBoldFont(f2);
         chart.SetAltDescription("A bar chart of the life expectancy at birth of the World Bank's "
                 + "regions in 2023: North America 78.7 years, Europe and Central Asia 78.4, "
                 + "East Asia and Pacific 76.7, Latin America and the Caribbean 75.6, South Asia 72.3, "

@@ -20,6 +20,8 @@
     <Compile Include="*.cs" />
     <!-- The category table of the .NET Framework build, held to .NET 8's own. -->
     <Compile Include="../../net48/Compat/UnicodeCategories.cs" />
+    <!-- The fonts PDFjet carries, as PDFjet.csproj has them -->
+    <EmbeddedResource Include="../../src/bundledfonts/*" LogicalName="PDFjet.BundledFonts.%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />

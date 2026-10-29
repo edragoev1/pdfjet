@@ -134,13 +134,19 @@ public class BarChartTest {
         Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "t"));
         Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "s"));
         // A label on a dark bar is white, on a light one ink: whichever
-        // contrasts more. On sage and on the old sage, which a rule by
-        // brightness gave white, ink contrasts more; on slate white.
+        // contrasts more. On sage, which a rule by brightness gave white, ink
+        // contrasts more; on slate white. Where neither contrasts 4.5:1, as
+        // on the old sage, ink 4.26:1, and on the red, the purple and the
+        // brown of the palette, a near black does.
         Assert.Equal(Color.white, BarChart.LabelColorOn(0x1F3A5F));
         Assert.Equal(0x22262B, BarChart.LabelColorOn(0x6F95C2));
         Assert.Equal(0x22262B, BarChart.LabelColorOn(0x76987C));
-        Assert.Equal(0x22262B, BarChart.LabelColorOn(0x6B8F71));
         Assert.Equal(Color.white, BarChart.LabelColorOn(0x4F7A8C));
+        Assert.Equal(Color.white, BarChart.LabelColorOn(0x4E79A7));     // blue
+        Assert.Equal(0x22262B, BarChart.LabelColorOn(0xF28E2C));        // orange
+        foreach (int color in new int[] {0x6B8F71, 0xE15759, 0xAF7AA1, 0x9C755F}) {
+            Assert.Equal(0x111111, BarChart.LabelColorOn(color));
+        }
     }
 
     [Fact]
@@ -157,7 +163,7 @@ public class BarChartTest {
         Assert.Contains(TestSupport.Hex("sub"), content);
         Assert.Contains("1 0 0 rg", content);   // the first bar
         Assert.Contains("0 0 1 rg", content);   // the second bar
-        Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "6,650"));    // inside the first bar
+        Assert.Equal("0.07 0.07 0.07 rg", TestSupport.FillColorBefore(content, "6,650"));    // inside the red bar, on which white contrasts 4:1
         Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "sub"));
         Assert.Contains(TestSupport.Hex("12"), content);    // too short: next to the bar
     }

@@ -157,7 +157,8 @@ and JetBrains Mono, regular, semibold and bold, upright and italic, which it
 embeds in the text of SVG images; they are licensed under the SIL Open Font
 License, Version 1.1, whose text, with the copyright of each, is beside them
 in src/bundledfonts and in the library (com/pdfjet/bundledfonts in the Java
-jar):
+jar; the resources PDFjet.BundledFonts.* of the .NET PDFjet.dll, and beside
+it in the .NET package):
 
     ============================================================================
     IBM Plex Sans: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"

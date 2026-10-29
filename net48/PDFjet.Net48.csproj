@@ -36,6 +36,9 @@
   <ItemGroup>
     <Compile Include="../net/pdfjet/**/*.cs" Exclude="@(Cut)" />
     <Compile Include="Compat/*.cs" />
+    <!-- The fonts PDFjet carries, which SVG text is drawn in, and their
+         licenses, as PDFjet.csproj has them -->
+    <EmbeddedResource Include="../src/bundledfonts/*" LogicalName="PDFjet.BundledFonts.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

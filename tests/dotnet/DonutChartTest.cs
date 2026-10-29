@@ -60,7 +60,7 @@ public class DonutChartTest {
         Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
         Assert.EndsWith("EMC\n", content);
         Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "Apples"));
-        Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "25%"));
+        Assert.Equal("0.07 0.07 0.07 rg", TestSupport.FillColorBefore(content, "25%"));    // On red, which white contrasts 4:1
         DonutChart pie = NewChart(pdf).SetRadii(100f, 0f).Add("", 1f, Color.red);
         pie.DrawOn(page);
         DonutChart described = NewChart(pdf).SetAltDescription("Most are oranges.")

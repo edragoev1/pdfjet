@@ -19,6 +19,8 @@ public sealed class PDF {
     internal List<Image> images = new List<Image>();
     internal List<OptionalContentGroup> groups = new List<OptionalContentGroup>();
     internal Dictionary<String, Int32> states = new Dictionary<String, Int32>();
+    // The fonts PDFjet carries that the document draws in, by their files
+    internal readonly Dictionary<String, Font> bundledFonts = new Dictionary<String, Font>();
     internal List<Stamp> stamps = new List<Stamp>();
     internal Compliance compliance = Compliance.PDF_1_7;
 

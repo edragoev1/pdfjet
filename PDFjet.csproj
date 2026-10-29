@@ -24,5 +24,8 @@
     <Compile Include="net/pdfjet/CoreFonts/*.cs" />
     <Compile Include="net/pdfjet/Fonts/*.cs" />
     <Compile Include="net/pdfjet/Encryption/*.cs" />
+    <!-- The fonts PDFjet carries, which SVG text is drawn in, and their
+         licenses: PDFjet.BundledFonts. and the name of the file -->
+    <EmbeddedResource Include="src/bundledfonts/*" LogicalName="PDFjet.BundledFonts.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

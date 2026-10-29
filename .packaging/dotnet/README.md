@@ -21,6 +21,7 @@ for .NET Framework 4.8.
 | `data/`, `images/`, `PngSuite/` | The files the examples read. |
 | `CHANGELOG.md` | What changed in each release. |
 | `LICENSE`, `THIRD-PARTIES.TXT` | The license of PDFjet and of the work it includes. |
+| `*-OFL.txt` | The licenses of IBM Plex Sans, Source Serif 4 and JetBrains Mono, which `PDFjet.dll` carries for the text of SVG images. |
 
 ## Quick start
 
