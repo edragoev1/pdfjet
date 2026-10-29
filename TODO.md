@@ -13,10 +13,10 @@ on the library's 9.1.5, and deploys of Forms between the library's releases
 keep its number, told apart by their commit and date. The layout's format
 version (1) and the look's rules (rules 1) are not these numbers, and never
 move with them. Releases are odd: 9.1.1, 9.1.5 (9.1.3 skipped), 9.1.7. What
-each one brought is in CHANGELOG.md; 9.1.7 comes with PDFjet Pro's next
-release, likely early 2027, with the fixes made since 9.1.5, unless a bug
-a customer meets brings a 9.1.7 of that fix sooner (the owner, 29 October
-2026); the plan of 9.0.7, the first public
+each one brought is in CHANGELOG.md; 9.1.7 is the next release, with PDFjet
+Pro's long-term signatures (PAdES B-LT and B-LTA), its date set by them
+being right, not by the calendar (the owner, 29 October 2026; was early
+2027); the plan of 9.0.7, the first public
 release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Checks before each release
