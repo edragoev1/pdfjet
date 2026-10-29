@@ -126,6 +126,26 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   `resources/data` has a `go.mod` of its own, so that the Go module, which
   `go get` downloads, leaves the data files out. The Java and .NET zips
   have them in `resources/data` too.
+- Example_24, the four ports, draws the 10-page sample,
+  `resources/data/Electric_Vehicle_Population_10_Pages.csv`, 12 pages, by
+  default, and the CSV file given as its first argument, such as the full
+  Electric Vehicle Population Data, 2,546 pages, for performance testing.
+  The commented-out line that chose the sample is gone.
+- Behavior change: Example_24 run with no argument draws 12 pages, where it
+  drew 2,546. Example: `go run ./src/examples/example24
+  path/to/Electric_Vehicle_Population_Data.csv` draws the 2,546 pages as
+  before.
+- Example_25, the four ports, reads its counts from
+  `resources/data/Electric_Vehicles_by_Model_Year.csv`, the vehicles of the
+  Washington State Electric Vehicle Population Data by model year and by
+  kind, written once from the full data by `util/make-ev-by-model-year.py`,
+  where they were written into the example. The chart is the same, with the
+  same numbers; its text names the summary, not the full data file.
+- The full data file, `resources/data/Electric_Vehicle_Population_Data.csv`,
+  30 MB, is no longer in the repository or the packages.
+  `benchmarks/run.sh table` reads it from
+  `../pdfjet-test/Electric_Vehicle_Population_Data.csv`, or from the path in
+  `EV_CSV`, and says what to do when it is missing.
 
 ## v9.1.5 — 2026-10-28
 

@@ -30,5 +30,13 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
   World Bank region of each, as its API gave it on 29 October 2026. Source:
   World Bank, World Development Indicators, licensed under
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- `Electric_Vehicle_Population_10_Pages.csv` is the header and the first
+  549 rows of the Washington State Electric Vehicle Population Data, the
+  state's open data on data.wa.gov, 124,716 rows in the copy the examples
+  were made with; Example_24 draws it as a table, and the full file when it
+  is given its path. The full file, 30 MB, is not in the repository.
+  `Electric_Vehicles_by_Model_Year.csv` is its vehicles counted by model
+  year and by kind, battery electric and plug-in hybrid, which Example_25
+  draws, written from the full file by `util/make-ev-by-model-year.py`.
 - The other files are sample data for the examples: the tables they draw, an
   invoice in the Factur-X format, and a form they read pages from.

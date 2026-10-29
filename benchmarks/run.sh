@@ -7,6 +7,11 @@
 #   benchmarks/run.sh table        Example_24's big table only
 #   benchmarks/run.sh all --quick  a short run that checks that everything works
 #
+# The table benchmark reads ../pdfjet-test/Electric_Vehicle_Population_Data.csv,
+# next to this checkout, or the file in the EV_CSV environment variable:
+#
+#   EV_CSV=/path/to/Electric_Vehicle_Population_Data.csv benchmarks/run.sh table
+#
 # Needs a JDK (21 was used) and GNU time; mutool for the checks
 # of the sample files, if it is installed. Nothing else should run meanwhile.
 
@@ -16,6 +21,18 @@ ROOT=$(pwd)
 B=benchmarks/build
 WHAT=${1:-all}
 QUICK=${2:-}
+
+# The full data file of Example_24, 124,716 rows and 30 MB, is not in the
+# repository: the table benchmark reads it from the folder pdfjet-test next to
+# this one, or from the path in EV_CSV. The quick run draws the 10-page sample.
+EV_CSV=${EV_CSV:-$ROOT/../pdfjet-test/Electric_Vehicle_Population_Data.csv}
+if { [ "$WHAT" = all ] || [ "$WHAT" = table ]; } && [ -z "$QUICK" ] && [ ! -f "$EV_CSV" ]; then
+    echo "The table benchmark needs the full data file, which was not found at" >&2
+    echo "$EV_CSV." >&2
+    echo "Set EV_CSV to its path, or run \"benchmarks/run.sh table --quick\", which draws" >&2
+    echo "resources/data/Electric_Vehicle_Population_10_Pages.csv; EV_CSV can name that file too." >&2
+    exit 1
+fi
 mkdir -p "$B/pdf"
 LOG="$B/results-$(date +%Y-%m-%d-%H%M).log"
 
@@ -76,7 +93,7 @@ peak() {
 
     if [ "$WHAT" = all ] || [ "$WHAT" = table ]; then
         CONFIGS=${TABLE_CONFIGS:-"jet jet-table jet-page jet-page-stream"}
-        CSV="$ROOT/resources/data/Electric_Vehicle_Population_Data.csv"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
+        CSV="$EV_CSV"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
         if [ -n "$QUICK" ]; then CSV="$ROOT/resources/data/Electric_Vehicle_Population_10_Pages.csv"; RUNS=1; HEAPS="32m 64m"; fi
         J="java -Xmx8g $PROPS -cp $CP BigTableBench"
         echo "== table: Example_24, $(basename "$CSV")"

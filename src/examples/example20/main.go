@@ -86,7 +86,7 @@ func Example20() {
 	title.SetLocation(50.0, 70.0)
 	title.DrawOn(page)
 	intro := []*pdfjet.Paragraph{pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f2, "The "+strconv.Itoa(total)+
-		" electric vehicles of the first rows of the data file that Example_24 draws whole: the five makes "+
+		" electric vehicles of the first rows of the data file that Example_24 draws as a table: the five makes "+
 		"with the most cars, and the cars of each model year from "+strconv.Itoa(firstYear)+" to "+
 		strconv.Itoa(lastYear)+", with the numbers in the table under the charts.").SetFontSize(10.0))}
 	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)

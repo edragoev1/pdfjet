@@ -486,9 +486,10 @@ file, or with `setTableData(header, rows)` from an `Iterable` in Java, an
 `IEnumerable` in C#, a sequence in Swift or an `iter.Seq` in Go
 (`SetTableRows`). It goes through the rows twice, once to measure the columns
 and once to draw them, keeps none of them and writes each page when it is full,
-so its memory stays flat; Example_24 draws 2,546 pages that way. A tagged
-document, PDF/UA or PDF/A of level A, keeps a little of each row until
-`complete()`, for the structure tree it writes at the end.
+so its memory stays flat; Example_24, given the full data file of its sample,
+draws 2,546 pages that way. A tagged document, PDF/UA or PDF/A of level A,
+keeps a little of each row until `complete()`, for the structure tree it
+writes at the end.
 
 **Table or BigTable?** Use `BigTable` for a table of plain one-line rows,
 however long: statements, transaction lists, reports and exports. Every row

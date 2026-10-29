@@ -156,7 +156,8 @@ A 50,000-row table is 1,072 pages, and about 9.7 MB in Java and C#.
 ## At the size of Example_24
 
 The release plan asks how `Table` fares on the table `BigTable` draws in
-Example_24, the whole `resources/data/Electric_Vehicle_Population_Data.csv`. That is
+Example_24 with the whole Electric Vehicle Population Data,
+`Electric_Vehicle_Population_Data.csv`, which is not in the repository. That is
 124,716 rows, so 1.12 million `Cell` objects, and 2,673 pages here:
 
 ```

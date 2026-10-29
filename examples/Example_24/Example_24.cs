@@ -13,22 +13,18 @@ using PDFjet.NET;
  * Example_24.cs
  */
 public class Example_24 {
-    public Example_24() {
+    public Example_24(String fileName) {
         PDF pdf = new PDF(
             new BufferedStream(new FileStream("Example_24.pdf", FileMode.Create)));
         // Uncomment the line below to make this a PDF/UA document. A BigTable
         // is tagged as a table: a TR for each row, holding a TH or a TD with
         // the text of each cell, which is what a screen reader reads a table
-        // from. It is off here because of what it costs at this size: every
-        // tagged cell is an object of its own, so this document goes from
-        // 5,108 objects and 11.8 MB to 1.25 million objects and 249 MB. The
-        // 10-page file below is the size to see the tagging at.
+        // from. It is off here because of what it costs with the full data
+        // file: every tagged cell is an object of its own, so that document
+        // goes from 5,108 objects and 11.8 MB to 1.25 million objects and
+        // 249 MB. The 10-page sample is the size to see the tagging at.
         // pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Electric Vehicle Population Data");    // Required for PDF/UA !
-
-        // Used for performance testing. Results in 2000+ pages PDF.
-        String fileName = "resources/data/Electric_Vehicle_Population_Data.csv";
-        // String fileName = "resources/data/Electric_Vehicle_Population_10_Pages.csv";
 
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
         f1.SetSize(10f);
@@ -47,9 +43,14 @@ public class Example_24 {
     }
 
     public static void Main(String[] args) {
+        // The 10-page sample, or the file given as the first argument: the
+        // full Electric Vehicle Population Data, 124,716 rows, makes 2,546
+        // pages and is used for performance testing.
+        String fileName = (args.Length > 0) ?
+                args[0] : "resources/data/Electric_Vehicle_Population_10_Pages.csv";
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_24();
+        new Example_24(fileName);
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
         Console.WriteLine($"Example_24 => {time1 - time0,4} ms");

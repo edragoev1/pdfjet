@@ -6,7 +6,9 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using PDFjet.NET;
 
 /**
@@ -20,19 +22,15 @@ using PDFjet.NET;
  * under the line filled and each count written above its year.
  */
 public class Example_25 {
-    // The vehicles of resources/data/Electric_Vehicle_Population_Data.csv by model year
-    // and kind, which Example_24 draws as a table: the rows of the file whose
-    // "Electric Vehicle Type" begins with "Battery Electric" and with
-    // "Plug-in Hybrid", counted by the "Model Year" column. The file holds
+    // The vehicles of the Washington State Electric Vehicle Population Data
+    // by model year and kind, summarized in
+    // resources/data/Electric_Vehicles_by_Model_Year.csv: the rows of the data
+    // whose "Electric Vehicle Type" begins with "Battery Electric" and with
+    // "Plug-in Hybrid", counted by the "Model Year" column. The data holds
     // 124,716 rows, of which 124,419 are registered in Washington State, and
     // model years from 1997; the years before 2011 are a few dozen vehicles
     // in all and are left out here.
-    private static readonly int[] YEARS =
-            {2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023};
-    private static readonly float[] BATTERY =
-            { 753,  798, 2936, 1805, 3612, 3891, 4458, 9946, 8576, 9315, 14755, 23507, 11853};
-    private static readonly float[] HYBRID =
-            {  75,  870, 1645, 1804, 1323, 1811, 4100, 4278, 1874, 1611,  3541,  4015,  1500};
+    private const int FIRST_YEAR = 2011;
 
     public Example_25() {
         PDF pdf = new PDF(new BufferedStream(
@@ -59,9 +57,9 @@ public class Example_25 {
                 "of setMarkers show the count for each model year. In a PDF/UA " +
                 "document the chart describes itself from its data: each line's first " +
                 "and last values and its highest.\n\n" +
-                "The counts are the vehicles of " +
-                "resources/data/Electric_Vehicle_Population_Data.csv, the file Example_24 draws " +
-                "as a table of 2,546 pages, by model year and by kind.");
+                "The counts are of the Washington State Electric Vehicle Population " +
+                "Data, summarized by model year and by kind in " +
+                "resources/data/Electric_Vehicles_by_Model_Year.csv.");
         textBlock.SetFontSize(11f);
         textBlock.SetLineSpacing(1.4f);
         textBlock.SetLocation(50f, 72f);
@@ -71,17 +69,30 @@ public class Example_25 {
         f1.SetSize(12f);
         f2.SetSize(9f);
 
-        String[] years = new String[YEARS.Length];
-        for (int i = 0; i < YEARS.Length; i++) {
-            years[i] = YEARS[i].ToString();
+        // The model years from FIRST_YEAR on, after the header line
+        List<String[]> rows = new List<String[]>();
+        List<String> lines = Content.LinesOfTextFile("resources/data/Electric_Vehicles_by_Model_Year.csv");
+        for (int n = 1; n < lines.Count; n++) {
+            String[] field = lines[n].Split(',');
+            if (int.Parse(field[0], CultureInfo.InvariantCulture) >= FIRST_YEAR) {
+                rows.Add(field);
+            }
+        }
+        String[] years = new String[rows.Count];
+        float[] battery = new float[rows.Count];
+        float[] hybrid = new float[rows.Count];
+        for (int i = 0; i < rows.Count; i++) {
+            years[i] = rows[i][0];
+            battery[i] = float.Parse(rows[i][1], CultureInfo.InvariantCulture);
+            hybrid[i] = float.Parse(rows[i][2], CultureInfo.InvariantCulture);
         }
         new SimpleLineChart(f1, f2)
                 .SetTitle("Battery electric and plug-in hybrid vehicles")
                 .SetSubtitle("By model year, in the Washington State data file")
                 .SetYAxisTitle("Vehicles")
                 .SetCategories(years)
-                .AddLine("Battery electric", BATTERY)
-                .AddLine("Plug-in hybrid", HYBRID)
+                .AddLine("Battery electric", battery)
+                .AddLine("Plug-in hybrid", hybrid)
                 .SetHighlight(0)
                 .SetMarkers(true)
                 .SetLocation(50f, xy[1] + 30f)
@@ -94,7 +105,7 @@ public class Example_25 {
                 .SetSubtitle("By model year, the area under the line filled and each count written")
                 .SetYAxisTitle("Vehicles")
                 .SetCategories(years)
-                .AddLine("Plug-in hybrid", HYBRID)
+                .AddLine("Plug-in hybrid", hybrid)
                 .SetHighlight(0)
                 .SetMarkers(true)
                 .SetAreaFilled(true)

@@ -77,7 +77,7 @@ public class Example_20 {
                 .setLocation(50f, 70f).drawOn(page);
         List<Paragraph> intro = new ArrayList<Paragraph>();
         intro.add(new Paragraph(new TextLine(f2, "The " + total + " electric vehicles of the first rows of "
-                + "the data file that Example_24 draws whole: the five makes with the most cars, and the "
+                + "the data file that Example_24 draws as a table: the five makes with the most cars, and the "
                 + "cars of each model year from " + FIRST_YEAR + " to " + LAST_YEAR + ", with the numbers "
                 + "in the table under the charts.").setFontSize(10f)));
         TextFrame frame = new TextFrame(intro).setLocation(50f, 84f).setWidth(512f);

@@ -105,7 +105,7 @@ def render(path, password):
                     for span in line['spans']:
                         spans.append((i + 1, span['text'], span['font'], round(span['size'], 2),
                                       span['color'], tuple(round(v, 2) for v in span['bbox'])))
-        # Only hashes are kept, because Example_24 has thousands of pages.
+        # Only hashes are kept, because Example_24 can have thousands of pages.
         content = [hashlib.sha256(b' '.join(doc[i].read_contents().split())).digest()
                    for i in range(doc.page_count)]
         return doc.page_count, pages, spans, content

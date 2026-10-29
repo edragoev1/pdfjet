@@ -70,7 +70,7 @@ public class Example_20 {
                 .setStructureType(StructElem.H1).setFontSize(20.0)
                 .setLocation(50.0, 70.0).drawOn(page)
         let intro = [Paragraph(TextLine(f2, "The \(total) electric vehicles of the first rows of "
-                + "the data file that Example_24 draws whole: the five makes with the most cars, and the "
+                + "the data file that Example_24 draws as a table: the five makes with the most cars, and the "
                 + "cars of each model year from \(Example_20.firstYear) to \(Example_20.lastYear), with the numbers "
                 + "in the table under the charts.").setFontSize(10.0))]
         let frame = TextFrame(intro).setLocation(50.0, 84.0).setWidth(512.0)
