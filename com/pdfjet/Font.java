@@ -354,6 +354,24 @@ final public class Font {
     }
 
     /**
+     * Constructor for OpenType and TrueType fonts, .otf and .ttf files, added
+     * to the objects of an existing PDF. A path to one of the fonts PDFjet
+     * carries, such as the constants of com.pdfjet.fonts, is read from the
+     * library when there is no such file, as by the constructor that takes a
+     * PDF and a path.
+     *
+     * @param objects  the list of objects
+     * @param fontPath the font path
+     * @throws Exception is the font is not found
+     */
+    public Font(List<PDFobj> objects, String fontPath) throws Exception {
+        try (InputStream inputStream = open(fontFileOf(fontPath))) {
+            OpenTypeFont.register(objects, this, inputStream);
+        }
+        setSize(size);
+    }
+
+    /**
      * Constructor for OpenType and TrueType fonts, .otf and .ttf.
      *
      * @param pdf         the PDF object that requires this font.

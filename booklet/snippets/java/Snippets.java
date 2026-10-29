@@ -804,9 +804,8 @@ public class Snippets {
     static void existingPages() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("stamped.pdf")));
         List<PDFobj> objects = pdf.read(new FileInputStream("data/testPDFs/rc65-16e.pdf"));
-        // IBM Plex Sans, from PDFjet.jar, which carries it
-        Font font = new Font(objects,
-                Font.class.getResourceAsStream("/com/pdfjet/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).setSize(24f);
+        // IBM Plex Sans, which PDFjet carries
+        Font font = new Font(objects, IBMPlexSans.Regular).setSize(24f);
         for (PDFobj pageObj : pdf.getPageObjects(objects)) {
             Page page = new Page(pdf, pageObj);
             page.addResource(font, objects);

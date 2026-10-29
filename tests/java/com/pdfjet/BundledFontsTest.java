@@ -8,12 +8,14 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
@@ -65,5 +67,23 @@ class BundledFontsTest {
             }
         }
         assertEquals(carried, constants);
+    }
+
+    @Test
+    void aFontAddedToAnExistingPDFIsReadFromTheLibraryByItsPath() throws Exception {
+        // The objects of a PDF of one page, and the constant of a font PDFjet
+        // carries, with no fonts folder: the font is read from the library,
+        // as Font(pdf, path) reads it
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+        Font font = new Font(objects, com.pdfjet.fonts.IBMPlexSans.Bold);
+        assertEquals("IBMPlexSans-Bold", font.name);
+        // A font it does not carry says where the fonts it came with are
+        java.io.FileNotFoundException e = assertThrows(java.io.FileNotFoundException.class,
+                () -> new Font(objects, "fonts/NotoSans/NotoSans-Regular.ttf"));
+        assertTrue(e.getMessage().contains(BundledFonts.PDFJET_FONTS), e.getMessage());
     }
 }   // End of BundledFontsTest.java

@@ -41,15 +41,12 @@ class Example_50 {
         image.scaleBy(0.40f);
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF. IBM Plex Sans is read here from PDFjet.jar,
-        // which carries it; a font file of your own is read with a
-        // FileInputStream.
-        Font f1 = new Font(objects,
-                Font.class.getResourceAsStream("/com/pdfjet/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        // drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+        // from the library; the path of a font file of your own reads that file.
+        Font f1 = new Font(objects, IBMPlexSans.Regular);
         f1.setSize(12f);
 
-        Font f2 = new Font(objects,
-                Font.class.getResourceAsStream("/com/pdfjet/fonts/IBMPlexSans/IBMPlexSans-Bold.ttf"));
+        Font f2 = new Font(objects, IBMPlexSans.Bold);
         f2.setSize(12f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);
