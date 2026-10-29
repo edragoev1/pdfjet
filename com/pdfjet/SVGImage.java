@@ -1475,6 +1475,13 @@ public class SVGImage implements Drawable {
         Font bold = boldFont;
         for (SVGPath path : paths) {
             if (path.text != null) {
+                // A document of PDF/A or PDF/UA embeds every font, which
+                // Helvetica is not: the text needs a font set, which the
+                // message names, where complete() named only Helvetica
+                if (font == null && page.pdf.compliance != Compliance.PDF_1_7 && !PDF.coreFontsInCompliance) {
+                    page.pdf.fail(new IllegalStateException("The SVG image has text, which a document of "
+                            + page.pdf.compliance + " needs drawn in an embedded font: set one with setFont."));
+                }
                 if (regular == null) {
                     regular = coreFont(page.pdf, CoreFont.HELVETICA);
                 }

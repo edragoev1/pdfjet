@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
@@ -742,6 +743,21 @@ class SVGImageTest {
         String content = TestSupport.content(page);
         assertTrue(content.contains("> Tj\n"), content);
         assertFalse(content.contains("TJ"), content);
+    }
+
+    @Test
+    void theTextOfADocumentOfPDFAOrPDFUANeedsAFontSet() throws Exception {
+        String svg = "<svg width=\"200\" height=\"100\"><text y=\"20\">A</text></svg>";
+        for (Compliance compliance : new Compliance[] {Compliance.PDF_A_3B, Compliance.PDF_UA_1}) {
+            PDF pdf = new PDF(new ByteArrayOutputStream(), compliance);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            IllegalStateException e = assertThrows(IllegalStateException.class, () -> image(svg).setAltDescription("A").drawOn(page));
+            assertTrue(e.getMessage().contains("setFont"), e.getMessage());
+            // With a font set, it is drawn; and an image without text needs none
+            Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+            image(svg).setFont(font).setAltDescription("A").drawOn(page);
+            image("<svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\"/></svg>").setAltDescription("A box").drawOn(page);
+        }
     }
 
     @Test
