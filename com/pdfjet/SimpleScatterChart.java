@@ -338,7 +338,10 @@ public class SimpleScatterChart implements Drawable {
         if (!title.isEmpty() || !subtitle.isEmpty()) {
             top += f2.getSize();
         }
-        return top + drawLegend(null, 0f)*LEGEND_ROW*f2.getSize();
+        // The legend, and half a size of the numbers under it, so that the
+        // top number of the axis is not against its last row
+        int rows = drawLegend(null, 0f);
+        return top + rows*LEGEND_ROW*f2.getSize() + ((rows > 0) ? 0.5f*f2.getSize() : 0f);
     }
 
     // The shapes of the series, in turn, as D3 draws its symbols.

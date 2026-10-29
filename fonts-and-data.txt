@@ -4,4 +4,4 @@
 # the build, run and test scripts run those. To move a folder to a newer
 # commit, push the commit to its repository and write it here.
 fonts https://github.com/edragoev1/pdfjet-fonts dfd87ff39a25b4f26a863b9c1ac947976e6142af
-data https://github.com/edragoev1/pdfjet-data d9f39c4b0ca04a1b37827796dff85a09854f23af
+data https://github.com/edragoev1/pdfjet-data 2fcb907995ca8967e96c9edc8577b8cc07d9dc71
