@@ -343,7 +343,11 @@ public class SimpleScatterChart : Drawable {
         if !title.isEmpty || !subtitle.isEmpty {
             top += f2.getSize()
         }
-        return top + Float(drawLegend(nil, 0.0)) * SimpleScatterChart.LEGEND_ROW * f2.getSize()
+        // The legend, and half a size of the numbers under it, so that the
+        // top number of the axis is not against its last row
+        let rows = drawLegend(nil, 0.0)
+        return top + Float(rows) * SimpleScatterChart.LEGEND_ROW * f2.getSize()
+                + ((rows > 0) ? 0.5 * f2.getSize() : 0.0)
     }
 
     // The shapes of the series, in turn, as D3 draws its symbols.
@@ -753,8 +757,11 @@ public class SimpleScatterChart : Drawable {
             page.fillCircle(xAt(p.x), yAt(p.y), r)
         }
         page.restoreGraphicsState()
-        // The points of the series, the outlines of their shapes, opaque
-        page.setPenWidth(0.12 * size)
+        // The points of the series, the outlines of their shapes, opaque;
+        // a chart without series draws as it did
+        if !series.isEmpty {
+            page.setPenWidth(0.12 * size)
+        }
         for p in points where p.series >= 0 && p.name.isEmpty && onPlot(p) {
             page.setPenColor(SimpleScatterChart.seriesColor(p.series))
             SimpleScatterChart.drawShape(page, p.series % SimpleScatterChart.SHAPES, xAt(p.x), yAt(p.y),
