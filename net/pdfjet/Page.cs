@@ -707,6 +707,33 @@ public class Page {
         Append("ET\n");
     }
 
+    // Draws the string of an SVG image with the text matrix, in the brush
+    // color, or stroked in the pen color and width for the rendering mode 1.
+    internal void DrawSVGText(Font font, float fontSize, String str, float[] tm, int mode) {
+        Append("BT\n");
+        SetTextFont(font, fontSize);
+        if (mode != 0 || renderingModeSet) {
+            renderingModeSet = true;
+            Append(mode);
+            Append(" Tr\n");
+        }
+        for (int i = 0; i < 6; i++) {
+            Append(tm[i]);
+            Append(' ');
+        }
+        Append("Tm\n");
+        if (font.isCoreFont) {
+            Append("[<");
+            DrawASCIIString(font, str);
+            Append(">] TJ\n");
+        } else {
+            Append("<");
+            DrawUnicodeString(font, str);
+            Append("> Tj\n");
+        }
+        Append("ET\n");
+    }
+
     private void AppendByteAsHex(int b) {
         Span<byte> digits = stackalloc byte[2];
         digits[0] = HEX[(b >> 4) & 0xF];

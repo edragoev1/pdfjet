@@ -39,6 +39,7 @@ public class SimpleScatterChart : IDrawable {
         internal readonly float y;
         internal readonly String name;
         internal readonly String uri;      // The link of a highlighted point, or null
+        internal int series = -1;          // The index of its series, or -1 for none
 
         internal Point(float x, float y, String name) : this(x, y, name, null) {
         }
@@ -63,6 +64,7 @@ public class SimpleScatterChart : IDrawable {
     private String yAxisTitle = "";
     private String altDescription = "";
     private readonly List<Point> points = new List<Point>();
+    private readonly List<String> series = new List<String>();     // The names of the series
     private bool trendLine = false;
     private float xMin;
     private float xMax;
@@ -144,7 +146,28 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="y">the y of the point.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(float x, float y) {
-        points.Add(new Point(x, y, ""));
+        return AddPoint(new Point(x, y, ""));
+    }
+
+    // Adds the point to the series added last, if any.
+    private SimpleScatterChart AddPoint(Point p) {
+        p.series = series.Count - 1;
+        points.Add(p);
+        return this;
+    }
+
+    /// <summary>
+    /// Starts a series: the points added after it are its points, drawn in its
+    /// color and its shape, and its name is in the legend over the plot. The
+    /// series take the colors of the palette of BarChart, blue, orange, red,
+    /// teal and so on, and the shapes circle, square, triangle, star, diamond
+    /// and cross, in turn. The points added before the first series are gray
+    /// dots, as those of a chart without series.
+    /// </summary>
+    /// <param name="name">the name of the series, in the legend.</param>
+    /// <returns>this chart.</returns>
+    public SimpleScatterChart AddSeries(String name) {
+        series.Add(name ?? "");
         return this;
     }
 
@@ -156,8 +179,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="y">the y of the point.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(String name, float x, float y) {
-        points.Add(new Point(x, y, name));
-        return this;
+        return AddPoint(new Point(x, y, name));
     }
 
     /// <summary>
@@ -173,8 +195,7 @@ public class SimpleScatterChart : IDrawable {
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(String name, float x, float y, String uri) {
         // An empty URI is no link, as in the Go port
-        points.Add(new Point(x, y, name, (uri == null || uri.Length == 0) ? null : uri));
-        return this;
+        return AddPoint(new Point(x, y, name, (uri == null || uri.Length == 0) ? null : uri));
     }
 
     /// <summary>
@@ -302,7 +323,106 @@ public class SimpleScatterChart : IDrawable {
         if (title.Length > 0 || subtitle.Length > 0) {
             top += f2.GetSize();
         }
-        return top;
+        return top + DrawLegend(null, 0f)*LEGEND_ROW*f2.GetSize();
+    }
+
+    // The shapes of the series, in turn, as D3 draws its symbols.
+    internal const int CIRCLE = 0;
+    internal const int SQUARE = 1;
+    internal const int TRIANGLE = 2;
+    internal const int STAR = 3;
+    internal const int DIAMOND = 4;
+    internal const int CROSS = 5;
+    internal const int SHAPES = 6;
+    // The height of a row of the legend, in sizes of the numbers.
+    private const float LEGEND_ROW = 1.5f;
+
+    // The color of a series.
+    private static int SeriesColor(int index) {
+        return BarChart.PALETTE[index % BarChart.PALETTE.Length];
+    }
+
+    // Draws the legend, the shape and the name of each series, from the
+    // baseline of its first row, its rows wrapped at the right of the chart,
+    // when there is a page; and returns the number of its rows, 0 for a chart
+    // without series.
+    private int DrawLegend(Page page, float baseline) {
+        if (series.Count == 0) {
+            return 0;
+        }
+        float size = f2.GetSize();
+        float pad = Pad();
+        float r = 0.35f*size;
+        float gap = size/2f;
+        float left = x + pad;
+        float px = left;
+        int rows = 1;
+        for (int i = 0; i < series.Count; i++) {
+            String name = ChartScale.Shorten(f2, size, series[i], w - 2f*pad - 2f*r - gap);
+            float width = 2f*r + gap + f2.StringWidth(size, name);
+            if (px > left && px + width > x + w - pad) {
+                px = left;
+                baseline += LEGEND_ROW*size;
+                rows++;
+            }
+            if (page != null) {
+                page.SetPenColor(SeriesColor(i));
+                page.SetPenWidth(0.12f*size);
+                DrawShape(page, i % SHAPES, px + r, baseline - f2.GetAscent(size)/2f, r, false);
+                page.DrawString(f2, size, name, px + 2f*r + gap, baseline, Util.ToRGB(SimpleBarChart.INK), null);
+            }
+            px += width + size;
+        }
+        return rows;
+    }
+
+    // Draws a shape of a series centered on cx, cy, of about the area of a
+    // circle of radius r, its outline in the pen color, or filled in the
+    // brush color.
+    internal static void DrawShape(Page page, int shape, float cx, float cy, float r, bool fill) {
+        if (shape == CIRCLE) {
+            if (fill) {
+                page.FillCircle(cx, cy, r);
+            } else {
+                page.DrawCircle(cx, cy, r);
+            }
+            return;
+        }
+        float[] xy;
+        if (shape == SQUARE) {
+            float a = 0.886f*r;
+            xy = new float[] {-a, -a, a, -a, a, a, -a, a};
+        } else if (shape == TRIANGLE) {
+            // Pointing up, its center halfway down its height
+            float a = 1.35f*r;
+            xy = new float[] {0f, -a, 0.866f*a, 0.5f*a, -0.866f*a, 0.5f*a};
+        } else if (shape == STAR) {
+            xy = new float[20];
+            for (int i = 0; i < 10; i++) {
+                double angle = Math.PI*i/5.0;
+                float radius = (i % 2 == 0) ? 1.3f*r : 0.5f*r;
+                xy[2*i] = (float) (radius*Math.Sin(angle));
+                xy[2*i + 1] = (float) (-radius*Math.Cos(angle));
+            }
+        } else if (shape == DIAMOND) {
+            float a = 1.15f*r;
+            float b = 0.75f*r;
+            xy = new float[] {0f, -a, b, 0f, 0f, a, -b, 0f};
+        } else {
+            // A cross of five squares, as wide as three
+            float a = 1.1f*r;
+            float b = a/3f;
+            xy = new float[] {-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b};
+        }
+        page.MoveTo(cx + xy[0], cy + xy[1]);
+        for (int i = 2; i < xy.Length; i += 2) {
+            page.LineTo(cx + xy[i], cy + xy[i + 1]);
+        }
+        if (fill) {
+            page.FillPath();
+        } else {
+            page.ClosePath();   // Closed and stroked
+        }
     }
 
     // A number of an axis, with the decimals its step needs.
@@ -417,6 +537,16 @@ public class SimpleScatterChart : IDrawable {
         if (xAxisTitle.Length > 0 && yAxisTitle.Length > 0) {
             sb.Append(", ").Append(yAxisTitle).Append(" against ").Append(xAxisTitle);
         }
+        if (series.Count > 0) {
+            // in the series A, B and C
+            sb.Append(", in the series ");
+            for (int i = 0; i < series.Count; i++) {
+                if (i > 0) {
+                    sb.Append((i == series.Count - 1) ? " and " : ", ");
+                }
+                sb.Append(series[i]);
+            }
+        }
         int named = 0;
         foreach (Point p in shown) {
             if (p.name.Length == 0) {
@@ -519,6 +649,12 @@ public class SimpleScatterChart : IDrawable {
             page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
                     x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
         }
+        if (series.Count > 0) {
+            if (title.Length > 0 || subtitle.Length > 0) {
+                baseline += f2.GetSize();
+            }
+            DrawLegend(page, baseline + LEGEND_ROW*size - (LEGEND_ROW*size - ascent)/2f);
+        }
 
         // The horizontal grid and the numbers of both axes, each where it
         // leaves the one before it room
@@ -607,11 +743,20 @@ public class SimpleScatterChart : IDrawable {
         page.SetBrushColor(dotColor);
         float r = 0.3f * size;
         foreach (Point p in points) {
-            if (p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
+            if (p.series < 0 && p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
                 page.FillCircle(XAt(p.x, xAxis, plotLeft, right), YAt(p.y, yAxis, top, plotBottom), r);
             }
         }
         page.RestoreGraphicsState();
+        // The points of the series, the outlines of their shapes, opaque
+        page.SetPenWidth(0.12f * size);
+        foreach (Point p in points) {
+            if (p.series >= 0 && p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
+                page.SetPenColor(SeriesColor(p.series));
+                DrawShape(page, p.series % SHAPES, XAt(p.x, xAxis, plotLeft, right),
+                        YAt(p.y, yAxis, top, plotBottom), 0.35f * size, false);
+            }
+        }
         List<Point> linked = new List<Point>();
         foreach (Point p in points) {
             if (p.name.Length == 0 || !OnPlot(p, xAxis, yAxis)) {
@@ -656,8 +801,13 @@ public class SimpleScatterChart : IDrawable {
         float big = 0.42f * size;
         float px = XAt(p.x, xAxis, left, right);
         float py = YAt(p.y, yAxis, top, bottom);
-        page.SetBrushColor(highlightColor);
-        page.FillCircle(px, py, big);
+        int color = (p.series >= 0) ? SeriesColor(p.series) : highlightColor;
+        page.SetBrushColor(color);
+        if (p.series >= 0) {
+            DrawShape(page, p.series % SHAPES, px, py, big, true);
+        } else {
+            page.FillCircle(px, py, big);
+        }
         // A name of two fifths of the plot at most, and in the plot
         String name = ChartScale.Shorten(f1, size, p.name, 0.4f * (right - left));
         float width = f1.StringWidth(size, name);
@@ -672,7 +822,10 @@ public class SimpleScatterChart : IDrawable {
         page.SetBrushColor(panelColor >= 0 ? panelColor : Color.white);
         page.FillRect(lx - 1f, baseline - f1.GetAscent(size) - 1f,
                 width + 2f, f1.GetAscent(size) + f1.GetDescent(size) + 2f);
-        page.DrawString(f1, size, name, lx, baseline, Util.ToRGB(highlightColor), null);
+        // The name of a point of a series in ink, which reads on the panel
+        // whatever the color of the series
+        page.DrawString(f1, size, name, lx, baseline,
+                Util.ToRGB((p.series >= 0) ? SimpleBarChart.INK : highlightColor), null);
         float x1 = Math.Min(px - big, lx);
         float y1 = Math.Min(py - big, baseline - f1.GetAscent(size));
         float x2 = Math.Max(px + big, lx + width);

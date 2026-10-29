@@ -34,6 +34,19 @@ internal class SVGState {
     internal float ownOpacity = 1f;             // The opacity of the element itself, not inherited
     internal double[] matrix = IDENTITY;        // Replaced, never changed in place
     internal bool hidden = false;               // In <defs> and the like, or under display="none": not drawn
+    internal float[] dashArray = null;          // stroke-dasharray, in the user space; null is a solid line
+    internal float dashOffset = 0f;
+    internal bool strokeFirst = false;          // paint-order: the stroke drawn before the fill
+    internal float fontSize = 16f;              // In the user space; medium, as a browser has it
+    internal bool bold = false;                 // A font-weight of bold, 600 or more
+    internal int textAnchor = 0;                // 0 start, 1 middle, 2 end
+    internal int baseline = 0;                  // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
+    internal String markerStart = null;         // The ids of the markers, inherited
+    internal String markerMid = null;
+    internal String markerEnd = null;
+    internal String clipPath = null;            // The id of the clip path of the element itself, not inherited
+    internal List<SVGPath> clips = null;        // The clip paths of the element and of its ancestors
+    internal Dictionary<String, int> paints = null;     // The colors of the gradients, by id, shared by every state
 
     // The state of the svg element before its attributes: an SVG fills black,
     // strokes nothing, and a stroke is one unit wide.
@@ -73,7 +86,7 @@ internal class SVGState {
             case "stroke":
                 int paint;
                 bool current;
-                if (!ParsePaint(name, value, out paint, out current)) {
+                if (!ParsePaint(paints, name, value, out paint, out current)) {
                     return;
                 }
                 if (name.Equals("fill")) {
@@ -144,14 +157,216 @@ internal class SVGState {
                     hidden = true;
                 }
                 break;
+            case "stroke-dasharray":
+                dashArray = ParseDashArray(value);
+                break;
+            case "stroke-dashoffset":
+                float offset;
+                if (!value.EndsWith("%", StringComparison.Ordinal) && ParseLength(value, out offset)) {
+                    dashOffset = offset;
+                }
+                break;
+            case "paint-order":
+                // The stroke is drawn first when it comes before the fill, and
+                // the markers, which PDFjet draws last, are left out.
+                List<String> order = Fields(value);
+                int strokeIndex = order.IndexOf("stroke");
+                int fillIndex = order.IndexOf("fill");
+                strokeFirst = strokeIndex >= 0 && (fillIndex < 0 || strokeIndex < fillIndex);
+                break;
+            case "font-size":
+                float size;
+                if (ParseFontSize(value, fontSize, out size)) {
+                    fontSize = size;
+                }
+                break;
+            case "font-weight":
+                bool weight;
+                if (ParseFontWeight(value, out weight)) {
+                    bold = weight;
+                }
+                break;
+            case "font":
+                SetFont(value);
+                break;
+            case "text-anchor":
+                if (value.Equals("start")) {
+                    textAnchor = 0;
+                } else if (value.Equals("middle")) {
+                    textAnchor = 1;
+                } else if (value.Equals("end")) {
+                    textAnchor = 2;
+                }
+                break;
+            case "dominant-baseline":
+            case "alignment-baseline":
+                if (value.Equals("middle") || value.Equals("central")) {
+                    baseline = 1;
+                } else if (value.Equals("hanging") || value.Equals("text-before-edge")) {
+                    baseline = 2;
+                } else if (value.Equals("auto") || value.Equals("alphabetic") || value.Equals("baseline")) {
+                    baseline = 0;
+                }
+                break;
+            case "marker-start":
+                markerStart = UrlId(value);
+                break;
+            case "marker-mid":
+                markerMid = UrlId(value);
+                break;
+            case "marker-end":
+                markerEnd = UrlId(value);
+                break;
+            case "marker":
+                markerStart = UrlId(value);
+                markerMid = markerStart;
+                markerEnd = markerStart;
+                break;
+            case "clip-path":
+                clipPath = UrlId(value);
+                break;
+        }
+    }
+
+    // Returns the id of a reference, url(#id), with or without quotes, and
+    // null for none or for a value of another kind.
+    internal static String UrlId(String value) {
+        value = Trim(value);
+        if (!value.StartsWith("url(", StringComparison.Ordinal)) {
+            return null;
+        }
+        int end = value.IndexOf(')');
+        if (end < 0) {
+            return null;
+        }
+        String id = Trim(value.Substring(4, end - 4));
+        if (id.Length >= 2 && (id[0] == '"' || id[0] == '\'') && id[id.Length - 1] == id[0]) {
+            id = Trim(id.Substring(1, id.Length - 2));
+        }
+        if (id.Length < 2 || id[0] != '#') {
+            return null;
+        }
+        return id.Substring(1);
+    }
+
+    // Reads a stroke-dasharray: the lengths of the dashes and the gaps, as
+    // many again when they are an odd number. It returns null, a solid line,
+    // for none, for a length below zero or one it cannot read, and for
+    // lengths that are all zero.
+    internal static float[] ParseDashArray(String value) {
+        if (value.Equals("none")) {
+            return null;
+        }
+        List<float> lengths = new List<float>();
+        foreach (String field in Fields(value.Replace(',', ' '))) {
+            float length;
+            if (field.EndsWith("%", StringComparison.Ordinal) || !ParseLength(field, out length)
+                    || length < 0f || float.IsNaN(length) || float.IsInfinity(length)) {
+                return null;
+            }
+            lengths.Add(length);
+        }
+        float sum = 0f;
+        foreach (float length in lengths) {
+            sum += length;
+        }
+        if (lengths.Count == 0 || sum == 0f) {
+            return null;
+        }
+        int count = lengths.Count;
+        float[] dashes = new float[(count % 2 == 0) ? count : 2*count];
+        for (int i = 0; i < dashes.Length; i++) {
+            dashes[i] = lengths[i % count];
+        }
+        return dashes;
+    }
+
+    // The font sizes of the keywords, as a browser has them.
+    private static readonly String[] SIZE_NAMES = {
+        "xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"};
+    private static readonly float[] SIZES = {9f, 10f, 13f, 16f, 18f, 24f, 32f};
+
+    // Reads a font-size: a length, a number of em or a percentage of the
+    // font size of the parent, or a keyword. It returns false for a size it
+    // cannot read or one below zero.
+    internal static bool ParseFontSize(String value, float parentSize, out float size) {
+        for (int i = 0; i < SIZE_NAMES.Length; i++) {
+            if (value.Equals(SIZE_NAMES[i])) {
+                size = SIZES[i];
+                return true;
+            }
+        }
+        bool ok;
+        if (value.EndsWith("em", StringComparison.Ordinal) && !value.EndsWith("rem", StringComparison.Ordinal)) {
+            ok = ParseFactor(value.Substring(0, value.Length - 2), out size);
+            size = size*parentSize;
+        } else if (value.EndsWith("%", StringComparison.Ordinal)) {
+            ok = ParseFactor(value.Substring(0, value.Length - 1), out size);
+            size = size*parentSize/100f;
+        } else {
+            ok = ParseLength(value, out size);
+        }
+        return ok && size >= 0f && !float.IsNaN(size) && !float.IsInfinity(size);
+    }
+
+    // Reads a number, or returns false.
+    private static bool ParseFactor(String text, out float factor) {
+        double number;
+        bool ok = ParseNumber(Trim(text), true, out number);
+        factor = ok ? (float) number : 0f;
+        return ok;
+    }
+
+    // Reads a font-weight: true for bold, bolder and 600 or more, false for
+    // normal, lighter and less; returns false for a weight it cannot read.
+    internal static bool ParseFontWeight(String value, out bool bold) {
+        bold = false;
+        if (value.Equals("bold") || value.Equals("bolder")) {
+            bold = true;
+            return true;
+        } else if (value.Equals("normal") || value.Equals("lighter")) {
+            return true;
+        }
+        float weight;
+        if (!ParseFactor(value, out weight) || weight < 1f || weight > 1000f) {
+            return false;
+        }
+        bold = weight >= 600f;
+        return true;
+    }
+
+    // Sets the size and the weight of the font shorthand, such as "bold 10px
+    // sans-serif": the words before the size, then the size, which may have
+    // a line height after a slash. A shorthand without a weight is normal.
+    private void SetFont(String value) {
+        bool isBold = false;
+        foreach (String field in Fields(value)) {
+            int slash = field.IndexOf('/');
+            String size = (slash < 0) ? field : field.Substring(0, slash);
+            // A size has a unit or is a keyword; a number alone is a weight.
+            if (size.Length > 0 && !char.IsDigit(size[size.Length - 1])) {
+                float newSize;
+                if (ParseFontSize(size, fontSize, out newSize)) {
+                    fontSize = newSize;
+                    bold = isBold;
+                    return;
+                }
+            }
+            bool weight;
+            if (ParseFontWeight(field, out weight)) {
+                isBold = weight;
+            }
         }
     }
 
     // Reads the value of a fill or a stroke: none, currentColor, a color, or a
-    // url of a gradient or a pattern, which PDFjet does not draw, and the color
-    // after it, if any, which SVG draws when it cannot. Returns false for a
-    // value that leaves the paint as it is inherited.
-    private static bool ParsePaint(String name, String value, out int paint, out bool current) {
+    // url of a gradient, which PDFjet draws in the mean color of its stops. A
+    // url of anything else, a pattern or an element that is not there, is the
+    // color after it, which SVG draws when it cannot draw the url, or none, as
+    // a browser draws it. Returns false for a value that leaves the paint as
+    // it is inherited.
+    private static bool ParsePaint(Dictionary<String, int> paints, String name, String value,
+            out int paint, out bool current) {
         paint = 0;
         current = false;
         if (value.StartsWith("url(", StringComparison.Ordinal)) {
@@ -159,9 +374,13 @@ internal class SVGState {
             if (end < 0) {
                 return false;
             }
-            value = value.Substring(end + 1).Trim();
+            String id = UrlId(value.Substring(0, end + 1));
+            if (id != null && paints != null && paints.TryGetValue(id, out paint)) {
+                return true;
+            }
+            value = Trim(value.Substring(end + 1));
             if (value.Equals("")) {
-                return false;
+                value = "none";
             }
         }
         if (value.Equals("none")) {
@@ -364,6 +583,78 @@ internal class SVGState {
 
     private static bool IsSpace(char ch) {
         return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+    }
+
+    // Returns the text without the white space of XML at its ends: spaces,
+    // tabs and line breaks, and no other characters.
+    internal static String Trim(String text) {
+        int start = 0;
+        int end = text.Length;
+        while (start < end && IsSpace(text[start])) {
+            start++;
+        }
+        while (end > start && IsSpace(text[end - 1])) {
+            end--;
+        }
+        return text.Substring(start, end - start);
+    }
+
+    // Returns the words of the text, separated by the white space of XML.
+    internal static List<String> Fields(String text) {
+        List<String> fields = new List<String>();
+        int start = -1;
+        for (int i = 0; i <= text.Length; i++) {
+            if (i == text.Length || IsSpace(text[i])) {
+                if (start >= 0) {
+                    fields.Add(text.Substring(start, i - start));
+                    start = -1;
+                }
+            } else if (start < 0) {
+                start = i;
+            }
+        }
+        return fields;
+    }
+
+    // Reads a number as the Java port's parseNumber does: inf or infinity
+    // with or without a sign, nan without one, whatever the case of their
+    // letters, or digits with a sign, a point and an exponent, read as a
+    // float when single is true. Returns false for anything else and for a
+    // number too large.
+    internal static bool ParseNumber(String text, bool single, out double number) {
+        number = 0.0;
+        int start = (text.StartsWith("+", StringComparison.Ordinal) || text.StartsWith("-", StringComparison.Ordinal)) ? 1 : 0;
+        StringBuilder buf = new StringBuilder(text.Length);
+        for (int i = start; i < text.Length; i++) {
+            char ch = text[i];
+            buf.Append((ch >= 'A' && ch <= 'Z') ? (char) (ch + 32) : ch);
+        }
+        String name = buf.ToString();
+        if (name.Equals("inf") || name.Equals("infinity")) {
+            number = text.StartsWith("-", StringComparison.Ordinal) ? double.NegativeInfinity : double.PositiveInfinity;
+            return true;
+        }
+        if (start == 0 && name.Equals("nan")) {
+            number = double.NaN;
+            return true;
+        }
+        if (text.Length == 0) {
+            return false;
+        }
+        foreach (char ch in text) {
+            if ("0123456789.eE+-".IndexOf(ch) < 0) {
+                return false;
+            }
+        }
+        if (single) {
+            float f;
+            if (!ParseFloat(text, out f)) {
+                return false;
+            }
+            number = f;
+            return true;
+        }
+        return ParseDouble(text, out number);
     }
 
     // Reads a list of numbers, as the points of a polygon or the arguments of

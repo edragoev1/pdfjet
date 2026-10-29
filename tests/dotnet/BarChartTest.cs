@@ -119,15 +119,15 @@ public class BarChartTest {
 
     [Fact]
     public void TheDefaultLookIsQuiet() {
-        // The first series in navy, the grid lines light gray and solid, the
+        // The first series in blue, the grid lines light gray and solid, the
         // text gray or ink, and no black line or text.
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = NewChart(pdf).SetCategories("a", "b").SetTitle("t").SetSubtitle("s");
         chart.AddSeries("one", new float[] {20f, 75f}).AddSeries("two", new float[] {30f, 10f});
         string content = Draw(chart, page);
-        Assert.Contains("0.12 0.23 0.37 rg", content);
-        Assert.Contains("0.44 0.58 0.76 rg", content);
+        Assert.Contains("0.31 0.47 0.65 rg", content);     // blue
+        Assert.Contains("0.95 0.56 0.17 rg", content);     // orange
         Assert.Contains("0.88 0.89 0.91 RG\n0.5 w\n", content);    // Thin and solid
         Assert.DoesNotContain("0 0 0 RG", content);
         Assert.DoesNotContain("0 0 0 rg", content);
@@ -229,9 +229,9 @@ public class BarChartTest {
         Assert.True(swatch >= 0 && swatch < content.IndexOf(TestSupport.Hex("own"), System.StringComparison.Ordinal), content);
     }
 
-    // The height of the first bar the content fills in navy.
+    // The height of the first bar the content fills in blue.
     private static float BarHeight(string content) {
-        int i = content.IndexOf(" re\n", content.IndexOf("0.12 0.23 0.37 rg\n", System.StringComparison.Ordinal),
+        int i = content.IndexOf(" re\n", content.IndexOf("0.31 0.47 0.65 rg\n", System.StringComparison.Ordinal),
                 System.StringComparison.Ordinal);
         int start = content.LastIndexOf('\n', i) + 1;
         string[] parts = content.Substring(start, i - start).Split(' ');

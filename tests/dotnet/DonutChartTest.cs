@@ -71,17 +71,17 @@ public class DonutChartTest {
         Assert.Equal("Most are oranges.", page.structures[2].altDescription);
     }
 
-    // Slices in the palette, navy first; thin white lines between them; thin
-    // gray leader lines; the percentage white on navy, ink on the light steel
-    // blue; and no black line or text.
+    // Slices in the palette, blue first; thin white lines between them; thin
+    // gray leader lines; the percentage white on blue, ink on the light
+    // orange; and no black line or text.
     [Fact]
     public void TheDefaultLookIsQuiet() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         NewChart(pdf).Add("a", 60f).Add("b", 40f).DrawOn(page);
         string content = TestSupport.Content(page);
-        Assert.Contains("0.12 0.23 0.37 rg", content);       // navy
-        Assert.Contains("0.44 0.58 0.76 rg", content);       // steel blue
+        Assert.Contains("0.31 0.47 0.65 rg", content);       // blue
+        Assert.Contains("0.95 0.56 0.17 rg", content);       // orange
         Assert.Contains("1 1 1 RG\n1.5 w\n", content);       // the white lines between
         Assert.Contains("0.55 0.59 0.64 RG\n0.75 w\n", content);   // the leader lines
         Assert.DoesNotContain("0 0 0 RG", content);
@@ -272,14 +272,14 @@ public class DonutChartTest {
                 System.Text.RegularExpressions.Regex.Replace(TestSupport.Content(page), "/F\\d+ ", "/F "));
 
         page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart nine = NewChart(pdf);
-        for (int i = 0; i < 9; i++) {
-            nine.Add("", 1f);
+        DonutChart eleven = NewChart(pdf);
+        for (int i = 0; i < 11; i++) {
+            eleven.Add("", 1f);
         }
-        nine.DrawOn(page);
+        eleven.DrawOn(page);
         content = TestSupport.Content(page);
-        Assert.True(content.IndexOf("0.12 0.23 0.37 rg", System.StringComparison.Ordinal)
-                == content.LastIndexOf("0.12 0.23 0.37 rg", System.StringComparison.Ordinal), content);
+        Assert.True(content.IndexOf("0.31 0.47 0.65 rg", System.StringComparison.Ordinal)
+                == content.LastIndexOf("0.31 0.47 0.65 rg", System.StringComparison.Ordinal), content);
     }
 
     // The third review of 26 October 2026: a radius that is not a number is

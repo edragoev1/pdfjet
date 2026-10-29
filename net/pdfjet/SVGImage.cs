@@ -12,6 +12,20 @@ using System.Text;
 namespace PDFjet.NET {
 /// <summary>
 /// Used to embed SVG images in the PDF document.
+/// <para>
+/// It draws the path, rect, circle, ellipse, line, polyline and polygon
+/// elements, in groups or not, with their transforms, and the fill, stroke,
+/// stroke-width, stroke-dasharray, stroke-dashoffset, fill-rule,
+/// stroke-linecap, stroke-linejoin, opacity, fill-opacity, stroke-opacity,
+/// paint-order, clip-path and markers they have or inherit, as attributes, in a
+/// style attribute or in rules for their classes in a style element that comes
+/// before them. It draws the elements a use element names, and text and tspan
+/// elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
+/// dominant-baseline, in the font set with SetFont and SetBoldFont, or in
+/// Helvetica. A gradient is drawn in the mean color of its stops. The width,
+/// height, viewBox and preserveAspectRatio of the svg element give the size of
+/// the image, and what is drawn outside it is cut off, as a browser does.
+/// </para>
 /// </summary>
 public class SVGImage : IDrawable {
     float x = 0f;
@@ -29,6 +43,20 @@ public class SVGImage : IDrawable {
     private String language = null;
     private String actualText = null;
     private String altDescription = null;
+    private Font font = null;
+    private Font boldFont = null;
+
+    // While the file is read: the elements by their ids, the clip paths of
+    // the image, and the elements drawn again by a use element or as a
+    // marker, which are not drawn inside themselves.
+    private Dictionary<String, XMLNode> ids;
+    private List<SVGPath> clipShapes = new List<SVGPath>();
+    private HashSet<XMLNode> reusing;
+    private long reused = 0;
+    // The elements drawn again, by use elements and as markers, at most: a
+    // use of a group of uses, and so on, draws ten to the power of the
+    // number of groups, as an XML of entities in entities does.
+    internal const long MAX_REUSED = 1000000;
 
     /// <summary>
     /// Used to embed SVG images in the PDF document.
@@ -55,33 +83,135 @@ public class SVGImage : IDrawable {
         "marker", "linearGradient", "radialGradient",
     };
 
-    // Draws the <path>, <rect>, <circle>, <ellipse>, <line>, <polyline> and
-    // <polygon> elements, in groups or not, with their transforms, and the
-    // fill, stroke, stroke-width, fill-rule, stroke-linecap, stroke-linejoin,
-    // opacity, fill-opacity and stroke-opacity they have or inherit, as
-    // attributes, in a style attribute or in rules for their classes in a
-    // <style> element that comes before them. The width, height, viewBox and
-    // preserveAspectRatio of the <svg> element give the size of the image.
     private void Read(Stream stream) {
         paths = new List<SVGPath>();
         SVGStyleSheet rules = new SVGStyleSheet();
-        List<SVGState> stack = new List<SVGState>();
-        stack.Add(new SVGState());
         XMLNode document;
         try {
             document = XMLParser.ParseSkippingDoctype(stream);
         } catch (XMLException e) {
             throw new InvalidDataException("parsing SVG: " + e.Message, e);
         }
+        ids = new Dictionary<String, XMLNode>();
+        reusing = new HashSet<XMLNode>();
+        List<XMLNode> elements = new List<XMLNode>();
+        elements.Add(document);
+        for (int i = 0; i < elements.Count; i++) {
+            XMLNode element = elements[i];
+            String id = element.GetAttribute("id");
+            if (id != null && !ids.ContainsKey(id)) {
+                ids[id] = element;  // The first element of an id is the one it names
+            }
+            elements.AddRange(element.GetChildren());
+        }
+        SVGState svg = new SVGState();
+        svg.paints = GradientColors();
+        List<SVGState> stack = new List<SVGState>();
+        stack.Add(svg);
         bool root = true;
-        Draw(document, stack, rules, ref root);
+        Draw(document, stack, rules, ref root, false);
         ProcessPaths(paths);
+        ids = null;
+        reusing = null;
+    }
+
+    // Returns the element of the id, or null for none.
+    private XMLNode ElementOf(String id) {
+        XMLNode element;
+        return (id != null && ids.TryGetValue(id, out element)) ? element : null;
+    }
+
+    // Returns the colors the gradients are drawn in, by their ids: the mean
+    // of the colors of their stops, or of the stops of the gradient they name
+    // with href when they have none. A gradient without stops is none, and
+    // is left out.
+    private Dictionary<String, int> GradientColors() {
+        Dictionary<String, int> colors = new Dictionary<String, int>();
+        foreach (KeyValuePair<String, XMLNode> entry in ids) {
+            XMLNode gradient = entry.Value;
+            // Up to ten gradients along the hrefs, which may go round in a circle.
+            for (int i = 0; i < 10 && gradient != null && IsGradient(gradient); i++) {
+                long r = 0;
+                long g = 0;
+                long b = 0;
+                int count = 0;
+                foreach (XMLNode stop in gradient.GetChildren()) {
+                    if (!stop.GetLocalName().Equals("stop")) {
+                        continue;
+                    }
+                    SVGState state = new SVGState();
+                    state.fill = Color.black;   // stop-color is black unless given
+                    String color = stop.GetAttribute("stop-color");
+                    if (color != null) {
+                        state.SetProperty("fill", color);
+                    }
+                    foreach (String[] declaration in SVGRule.ParseDeclarations(Attribute(stop, "style"))) {
+                        if (declaration[0].Equals("stop-color")) {
+                            state.SetProperty("fill", declaration[1]);
+                        }
+                    }
+                    int c = (state.fill == Color.transparent) ? Color.black : state.fill;
+                    r += (c >> 16) & 0xFF;
+                    g += (c >> 8) & 0xFF;
+                    b += c & 0xFF;
+                    count++;
+                }
+                if (count > 0) {
+                    colors[entry.Key] = (int) (
+                            (r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count);
+                    break;
+                }
+                gradient = ElementOf(Href(gradient));
+            }
+        }
+        return colors;
+    }
+
+    private static bool IsGradient(XMLNode node) {
+        String name = node.GetLocalName();
+        return name.Equals("linearGradient") || name.Equals("radialGradient");
+    }
+
+    // Returns the attribute of the element, or an empty value.
+    private static String Attribute(XMLNode node, String name) {
+        String value = node.GetAttribute(name);
+        return (value == null) ? "" : value;
+    }
+
+    // Returns the id that the href of an element names, #id, with or without
+    // the xlink prefix, or null.
+    private static String Href(XMLNode node) {
+        String href = null;
+        foreach (KeyValuePair<String, String> attribute in node.GetAttributes()) {
+            String name = attribute.Key;
+            if (name.Equals("href") || (href == null && XMLNode.LocalNameOf(name).Equals("href"))) {
+                href = attribute.Value;
+            }
+        }
+        if (href == null) {
+            return null;
+        }
+        href = SVGState.Trim(href);
+        return (href.Length > 1 && href[0] == '#') ? href.Substring(1) : null;
+    }
+
+    // Counts an element drawn again, and throws when there are too many.
+    private void CountReused() {
+        if (++reused > MAX_REUSED) {
+            throw new ArgumentException(
+                    "The SVG draws more than " + MAX_REUSED + " elements again, with use elements or markers.");
+        }
     }
 
     // Draws the element, then the ones in it, in the order of the document;
-    // the rules of a <style> element apply from its end.
-    private void Draw(XMLNode node, List<SVGState> stack, SVGStyleSheet rules, ref bool root) {
+    // the rules of a <style> element apply from its end. An element that is
+    // used, by a use element or as a marker, is drawn even where it is a
+    // template, as a symbol or a marker is.
+    private void Draw(XMLNode node, List<SVGState> stack, SVGStyleSheet rules, ref bool root, bool used) {
         String name = node.GetLocalName();
+        if (reusing.Count > 0) {
+            CountReused();
+        }
         // The attributes of no namespace, in the order of the element:
         // xlink:href, xml:space and the namespaces' own declarations,
         // xmlns:..., are not read.
@@ -94,8 +224,11 @@ public class SVGImage : IDrawable {
             }
         }
         SVGState state = ElementState(stack[stack.Count - 1], rules, attributes, order);
-        if (TEMPLATES.Contains(name)) {
+        if (TEMPLATES.Contains(name) && !used) {
             state.hidden = true;
+        }
+        if (state.clipPath != null && !state.hidden) {
+            Clip(state);
         }
         stack.Add(state);
 
@@ -110,15 +243,49 @@ public class SVGImage : IDrawable {
             }
             attributes.TryGetValue("preserveAspectRatio", out this.preserveAspectRatio);
         }
+        if (name.Equals("text")) {
+            if (!state.hidden) {
+                AddText(node, rules, state, attributes);
+            }
+            stack.RemoveAt(stack.Count - 1);
+            return;
+        }
+        if (name.Equals("use")) {
+            XMLNode target = ElementOf(Href(node));
+            if (target != null && !state.hidden && !reusing.Contains(target)) {
+                // The element is drawn as a child of the use element, moved
+                // by its x and y.
+                SVGState parent = state.Copy();
+                parent.matrix = SVGState.Multiply(state.matrix, new double[] {
+                    1.0, 0.0, 0.0, 1.0, Number(attributes, "x"), Number(attributes, "y")});
+                stack.Add(parent);
+                reusing.Add(target);
+                Draw(target, stack, rules, ref root, true);
+                reusing.Remove(target);
+                stack.RemoveAt(stack.Count - 1);
+            }
+            stack.RemoveAt(stack.Count - 1);
+            return;
+        }
         List<PathOp> operations = ShapeOperations(name, attributes);
         if (name.Equals("line")) {
+            state = state.Copy();
             state.fill = Color.transparent;     // A line has no inside to fill
             state.fillCurrent = false;
         }
+        List<double[]> vertices = null;
+        if (!state.hidden && operations.Count > 0
+                && (state.markerStart != null || state.markerMid != null || state.markerEnd != null)
+                && (name.Equals("path") || name.Equals("line") || name.Equals("polyline") || name.Equals("polygon"))) {
+            vertices = Vertices(operations);    // Before AddPath moves the points
+        }
         AddPath(state, operations);
+        if (vertices != null) {
+            DrawMarkers(state, vertices, rules, stack, ref root);
+        }
 
         foreach (XMLNode child in node.GetChildren()) {
-            Draw(child, stack, rules, ref root);
+            Draw(child, stack, rules, ref root, false);
         }
         if (name.Equals("style")) {
             rules.Add(SVGRule.ParseStyleSheet(node.GetText()));
@@ -140,6 +307,7 @@ public class SVGImage : IDrawable {
             Dictionary<String, String> attributes, List<String> order) {
         SVGState state = parent.Copy();
         state.ownOpacity = 1f;
+        state.clipPath = null;
         foreach (String name in order) {
             state.SetProperty(name, attributes[name]);
         }
@@ -339,26 +507,406 @@ public class SVGImage : IDrawable {
         if (path.fill == Color.transparent && path.stroke == Color.transparent) {
             return;
         }
-        path.strokeWidth = (float) (((double) state.strokeWidth) * Math.Sqrt(Math.Abs(det)));
+        double scale = Math.Sqrt(Math.Abs(det));
+        path.strokeWidth = (float) (((double) state.strokeWidth) * scale);
         path.evenOdd = state.evenOdd;
         path.lineCap = state.lineCap;
         path.lineJoin = state.lineJoin;
-        if (!SVGState.IsIdentity(m)) {
-            foreach (PathOp op in operations) {
-                float x = op.x;
-                op.x = (float) (m[0]*x + m[2]*op.y + m[4]);
-                op.y = (float) (m[1]*x + m[3]*op.y + m[5]);
-                if (op.cmd == 'C') {
-                    float x1 = op.x1;
-                    op.x1 = (float) (m[0]*x1 + m[2]*op.y1 + m[4]);
-                    op.y1 = (float) (m[1]*x1 + m[3]*op.y1 + m[5]);
-                    float x2 = op.x2;
-                    op.x2 = (float) (m[0]*x2 + m[2]*op.y2 + m[4]);
-                    op.y2 = (float) (m[1]*x2 + m[3]*op.y2 + m[5]);
+        if (state.dashArray != null) {
+            path.dashArray = new float[state.dashArray.Length];
+            for (int i = 0; i < path.dashArray.Length; i++) {
+                path.dashArray[i] = (float) (((double) state.dashArray[i]) * scale);
+            }
+            path.dashOffset = (float) (((double) state.dashOffset) * scale);
+        }
+        path.clips = state.clips;
+        Transform(m, operations);
+        paths.Add(path);
+    }
+
+    // Moves the points of the operations by the matrix.
+    private static void Transform(double[] m, List<PathOp> operations) {
+        if (SVGState.IsIdentity(m)) {
+            return;
+        }
+        foreach (PathOp op in operations) {
+            float[] point = Transform(m, op.x, op.y);
+            op.x = point[0];
+            op.y = point[1];
+            if (op.cmd == 'C') {
+                point = Transform(m, op.x1, op.y1);
+                op.x1 = point[0];
+                op.y1 = point[1];
+                point = Transform(m, op.x2, op.y2);
+                op.x2 = point[0];
+                op.y2 = point[1];
+            }
+        }
+    }
+
+    // Returns the point that the matrix takes the point to.
+    private static float[] Transform(double[] m, float x, float y) {
+        return new float[] {
+            (float) (m[0]*x + m[2]*y + m[4]),
+            (float) (m[1]*x + m[3]*y + m[5]),
+        };
+    }
+
+    // The attributes of no namespace of the element, and their order.
+    private static Dictionary<String, String> Attributes(XMLNode node, List<String> order) {
+        Dictionary<String, String> attributes = new Dictionary<String, String>();
+        foreach (KeyValuePair<String, String> attribute in node.GetAttributes()) {
+            if (attribute.Key.IndexOf(':') == -1) {
+                attributes[attribute.Key] = attribute.Value;
+                order.Add(attribute.Key);
+            }
+        }
+        return attributes;
+    }
+
+    // Sets the clip paths of the element: those of its ancestors and the one
+    // its clip-path names, the shapes of the clipPath element in the user
+    // space of the element. A clip path that is not there, or one in
+    // objectBoundingBox units, which PDFjet does not draw, is left out; one
+    // with no shape in it hides the element, as SVG clips all of it away.
+    private void Clip(SVGState state) {
+        XMLNode clipPath = ElementOf(state.clipPath);
+        if (clipPath == null || !clipPath.GetLocalName().Equals("clipPath")
+                || SVGState.Trim(Attribute(clipPath, "clipPathUnits")).Equals("objectBoundingBox")) {
+            return;
+        }
+        double[] m = state.matrix;
+        double[] own = SVGState.ParseTransform(Attribute(clipPath, "transform"));
+        if (own != null) {
+            m = SVGState.Multiply(m, own);
+        }
+        SVGPath clip = new SVGPath();
+        clip.operations = new List<PathOp>();
+        foreach (XMLNode child in clipPath.GetChildren()) {
+            Dictionary<String, String> attributes = Attributes(child, new List<String>());
+            double[] shape = m;
+            String transform;
+            if (attributes.TryGetValue("transform", out transform)) {
+                double[] matrix = SVGState.ParseTransform(transform);
+                if (matrix != null) {
+                    shape = SVGState.Multiply(m, matrix);
+                }
+            }
+            List<PathOp> operations = ShapeOperations(child.GetLocalName(), attributes);
+            Transform(shape, operations);
+            clip.operations.AddRange(operations);
+        }
+        if (clip.operations.Count == 0) {
+            state.hidden = true;
+            return;
+        }
+        clipShapes.Add(clip);
+        List<SVGPath> clips = (state.clips == null) ? new List<SVGPath>() : new List<SVGPath>(state.clips);
+        clips.Add(clip);
+        state.clips = clips;
+    }
+
+    // The length of the vector x, y. Its coordinates come from floats, whose
+    // squares a double holds without overflow or underflow.
+    private static double Hypot(double x, double y) {
+        return Math.Sqrt(x*x + y*y);
+    }
+
+    // An angle in radians in degrees, and one in degrees in radians, as the
+    // Java port's Math.toDegrees and Math.toRadians have them.
+    private static double ToDegrees(double radians) {
+        return radians * 57.29577951308232;
+    }
+
+    private static double ToRadians(double degrees) {
+        return degrees * 0.017453292519943295;
+    }
+
+    // Returns the vertices of the path, where its markers are drawn, in its
+    // user space: x, y and the angle of the path there, in degrees, which is
+    // halfway between the directions in and out of a vertex in the middle.
+    private static List<double[]> Vertices(List<PathOp> operations) {
+        List<double[]> vertices = new List<double[]>();     // x, y, in x, in y, out x, out y
+        double x = 0.0;
+        double y = 0.0;
+        int start = 0;      // The vertex where the subpath starts
+        foreach (PathOp op in operations) {
+            double[] into;
+            double[] outOf;
+            if (op.cmd == 'M') {
+                start = vertices.Count;
+                vertices.Add(new double[] {op.x, op.y, 0.0, 0.0, 0.0, 0.0});
+                x = op.x;
+                y = op.y;
+                continue;
+            } else if (op.cmd == 'C') {
+                outOf = Direction(x, y, op.x1, op.y1, op.x2, op.y2, op.x, op.y);
+                into = Direction(op.x, op.y, op.x2, op.y2, op.x1, op.y1, x, y);
+                into = new double[] {-into[0], -into[1]};
+            } else {
+                // A line, or Z, the line back to the start of the subpath.
+                outOf = new double[] {op.x - x, op.y - y};
+                into = outOf;
+            }
+            if (vertices.Count == 0) {
+                continue;
+            }
+            double[] last = vertices[vertices.Count - 1];
+            if (last[4] == 0.0 && last[5] == 0.0) {
+                last[4] = outOf[0];
+                last[5] = outOf[1];
+            }
+            vertices.Add(new double[] {op.x, op.y, into[0], into[1], 0.0, 0.0});
+            if (op.cmd == 'Z') {
+                // The vertex that closes the subpath goes on as its start does.
+                double[] first = vertices[start];
+                double[] closing = vertices[vertices.Count - 1];
+                closing[4] = first[4];
+                closing[5] = first[5];
+            }
+            x = op.x;
+            y = op.y;
+        }
+        List<double[]> result = new List<double[]>();
+        foreach (double[] v in vertices) {
+            double inLength = Hypot(v[2], v[3]);
+            double outLength = Hypot(v[4], v[5]);
+            double dx = 0.0;
+            double dy = 0.0;
+            if (inLength > 0.0) {
+                dx += v[2]/inLength;
+                dy += v[3]/inLength;
+            }
+            if (outLength > 0.0) {
+                dx += v[4]/outLength;
+                dy += v[5]/outLength;
+            }
+            if (dx == 0.0 && dy == 0.0 && inLength > 0.0) {
+                dx = v[2];      // A path that turns back: the direction in
+                dy = v[3];
+            }
+            result.Add(new double[] {v[0], v[1], ToDegrees(Math.Atan2(dy, dx))});
+        }
+        return result;
+    }
+
+    // Returns the direction from x, y to the first of the points that is not
+    // there, as a curve leaves its start.
+    private static double[] Direction(double x, double y, params double[] points) {
+        for (int i = 0; i + 1 < points.Length; i += 2) {
+            if (points[i] != x || points[i + 1] != y) {
+                return new double[] {points[i] - x, points[i + 1] - y};
+            }
+        }
+        return new double[] {0.0, 0.0};
+    }
+
+    // Draws the markers of a path at its vertices: the start marker at the
+    // first, the end marker at the last and the mid marker at the others.
+    private void DrawMarkers(SVGState state, List<double[]> vertices, SVGStyleSheet rules,
+            List<SVGState> stack, ref bool root) {
+        int last = vertices.Count - 1;
+        for (int i = 0; i <= last; i++) {
+            if (i == 0) {
+                DrawMarker(state.markerStart, state, vertices[i], true, rules, stack, ref root);
+            }
+            if (i > 0 && i < last) {
+                DrawMarker(state.markerMid, state, vertices[i], false, rules, stack, ref root);
+            }
+            if (i == last) {
+                DrawMarker(state.markerEnd, state, vertices[i], false, rules, stack, ref root);
+            }
+        }
+    }
+
+    // Draws the marker at the vertex: its refX, refY there, turned as its
+    // orient says, and its viewBox fitted to its markerWidth and
+    // markerHeight, which are in units of the stroke width unless its
+    // markerUnits are userSpaceOnUse.
+    private void DrawMarker(String id, SVGState state, double[] vertex, bool start,
+            SVGStyleSheet rules, List<SVGState> stack, ref bool root) {
+        XMLNode marker = ElementOf(id);
+        if (marker == null || !marker.GetLocalName().Equals("marker") || reusing.Contains(marker)) {
+            return;
+        }
+        String orient = SVGState.Trim(Attribute(marker, "orient"));
+        double angle = 0.0;
+        if (orient.Equals("auto")) {
+            angle = vertex[2];
+        } else if (orient.Equals("auto-start-reverse")) {
+            angle = start ? vertex[2] + 180.0 : vertex[2];
+        } else {
+            if (orient.EndsWith("deg", StringComparison.Ordinal)) {
+                orient = orient.Substring(0, orient.Length - 3);
+            }
+            if (!SVGState.ParseNumber(SVGState.Trim(orient), false, out angle)) {
+                angle = 0.0;
+            }
+            if (double.IsNaN(angle) || double.IsInfinity(angle)) {
+                angle = 0.0;
+            }
+        }
+        double units = SVGState.Trim(Attribute(marker, "markerUnits")).Equals("userSpaceOnUse")
+                ? 1.0 : state.strokeWidth;
+        double width = MarkerSize(Attribute(marker, "markerWidth"));
+        double height = MarkerSize(Attribute(marker, "markerHeight"));
+        double sx = 1.0;
+        double sy = 1.0;
+        List<double> box = SVGState.ParseNumbers(Attribute(marker, "viewBox"));
+        if (box != null && box.Count == 4) {
+            if (box[2] <= 0.0 || box[3] <= 0.0) {
+                return;     // A viewBox of no size draws nothing
+            }
+            sx = width/box[2];
+            sy = height/box[3];
+            if (!SVGState.Trim(Attribute(marker, "preserveAspectRatio")).Equals("none")) {
+                sx = Math.Min(sx, sy);
+                sy = sx;
+            }
+        }
+        double radians = ToRadians(angle);
+        double cos = Math.Cos(radians);
+        double sin = Math.Sin(radians);
+        double[] m = SVGState.Multiply(state.matrix, new double[] {cos, sin, -sin, cos, vertex[0], vertex[1]});
+        m = SVGState.Multiply(m, new double[] {units*sx, 0.0, 0.0, units*sy, 0.0, 0.0});
+        m = SVGState.Multiply(m, new double[] {
+            1.0, 0.0, 0.0, 1.0, -SVGState.ParseCoordinate(Attribute(marker, "refX")),
+            -SVGState.ParseCoordinate(Attribute(marker, "refY"))});
+        // The marker inherits from the svg element, not from the path.
+        SVGState svg = new SVGState();
+        svg.paints = state.paints;
+        svg.clips = state.clips;
+        svg.matrix = m;
+        stack.Add(svg);
+        reusing.Add(marker);
+        Draw(marker, stack, rules, ref root, true);
+        reusing.Remove(marker);
+        stack.RemoveAt(stack.Count - 1);
+    }
+
+    // Reads the markerWidth or the markerHeight: 3 unless given.
+    private static double MarkerSize(String value) {
+        if (SVGState.Trim(value).Length == 0) {
+            return 3.0;
+        }
+        double size = SVGState.ParseCoordinate(value);
+        return (size > 0.0) ? size : 0.0;
+    }
+
+    // Adds a text element, with its tspan elements, as the runs of its
+    // characters.
+    private void AddText(XMLNode node, SVGStyleSheet rules, SVGState state, Dictionary<String, String> attributes) {
+        SVGText text = new SVGText();
+        text.matrix = state.matrix;
+        AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0});
+        text.CollapseSpaces();
+        bool empty = true;
+        foreach (SVGText.Run run in text.runs) {
+            if (run.text.Length > 0) {
+                empty = false;
+            }
+        }
+        double[] m = state.matrix;
+        if (empty || m[0]*m[3] - m[1]*m[2] == 0.0) {
+            return;
+        }
+        SVGPath path = new SVGPath();
+        path.operations = new List<PathOp>();
+        path.text = text;
+        path.clips = state.clips;
+        paths.Add(path);
+    }
+
+    // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
+    // its first character, which may be in a tspan in it; they are kept in
+    // pending until then.
+    private void AddRuns(SVGText text, XMLNode node, SVGStyleSheet rules,
+            SVGState state, Dictionary<String, String> attributes, double[] pending) {
+        double x = TextLength(Attribute(attributes, "x"), state.fontSize);
+        double y = TextLength(Attribute(attributes, "y"), state.fontSize);
+        double dx = TextLength(Attribute(attributes, "dx"), state.fontSize);
+        double dy = TextLength(Attribute(attributes, "dy"), state.fontSize);
+        if (!double.IsNaN(x)) {
+            pending[0] = x;
+            pending[2] = 0.0;
+        }
+        if (!double.IsNaN(y)) {
+            pending[1] = y;
+            pending[3] = 0.0;
+        }
+        if (!double.IsNaN(dx)) {
+            pending[2] += dx;
+        }
+        if (!double.IsNaN(dy)) {
+            pending[3] += dy;
+        }
+        foreach (object item in node.GetContent()) {
+            String characters = item as String;
+            if (characters != null) {
+                SVGText.Run run = new SVGText.Run();
+                run.text = characters;
+                run.x = pending[0];
+                run.y = pending[1];
+                run.dx = pending[2];
+                run.dy = pending[3];
+                pending[0] = double.NaN;
+                pending[1] = double.NaN;
+                pending[2] = 0.0;
+                pending[3] = 0.0;
+                run.fontSize = state.fontSize;
+                run.bold = state.bold;
+                run.anchor = state.textAnchor;
+                run.baseline = state.baseline;
+                run.fill = state.fillCurrent ? state.color : state.fill;
+                run.stroke = state.strokeCurrent ? state.color : state.stroke;
+                run.fillAlpha = state.fillOpacity * state.opacity;
+                run.strokeAlpha = state.strokeOpacity * state.opacity;
+                run.strokeWidth = state.strokeWidth;
+                run.strokeFirst = state.strokeFirst;
+                run.lineJoin = state.lineJoin;
+                text.runs.Add(run);
+            } else {
+                XMLNode child = (XMLNode) item;
+                String name = child.GetLocalName();
+                if (!name.Equals("tspan") && !name.Equals("a")) {
+                    continue;   // A title or a desc is not drawn
+                }
+                List<String> childOrder = new List<String>();
+                Dictionary<String, String> childAttributes = Attributes(child, childOrder);
+                SVGState childState = ElementState(state, rules, childAttributes, childOrder);
+                childState.matrix = state.matrix;   // A tspan has no transform
+                if (!childState.hidden) {
+                    AddRuns(text, child, rules, childState, childAttributes, pending);
                 }
             }
         }
-        paths.Add(path);
+    }
+
+    // Reads the first length of an x, y, dx or dy of a text, which may be in
+    // em of its font size, and returns NaN for none.
+    private static double TextLength(String value, float fontSize) {
+        List<String> fields = SVGState.Fields(value.Replace(',', ' '));
+        if (fields.Count == 0) {
+            return double.NaN;
+        }
+        String first = fields[0];
+        double length;
+        if (first.EndsWith("em", StringComparison.Ordinal)) {
+            double number;
+            if (!SVGState.ParseNumber(first.Substring(0, first.Length - 2), false, out number)) {
+                return double.NaN;
+            }
+            length = number*fontSize;
+        } else if (first.EndsWith("%", StringComparison.Ordinal)) {
+            return double.NaN;
+        } else {
+            float points;
+            if (!SVGState.ParseLength(first, out points)) {
+                return double.NaN;
+            }
+            length = points;
+        }
+        return double.IsInfinity(length) ? double.NaN : length;
     }
 
     // Returns the width or the height of the svg element in points, and 0 for
@@ -440,8 +988,25 @@ public class SVGImage : IDrawable {
             ty = AlignOffset(align.Substring(5, 3), h - box[3]*scale);
         }
         float strokeScale = (float) Math.Sqrt(((double) sx) * ((double) sy));
-        foreach (SVGPath path in paths) {
+        List<SVGPath> all = new List<SVGPath>(paths);
+        all.AddRange(clipShapes);
+        foreach (SVGPath path in all) {
             path.strokeWidth *= strokeScale;
+            if (path.dashArray != null) {
+                for (int i = 0; i < path.dashArray.Length; i++) {
+                    path.dashArray[i] *= strokeScale;
+                }
+                path.dashOffset *= strokeScale;
+            }
+            if (path.text != null) {
+                double[] m = path.text.matrix;
+                double ax = uniform ? sx : w/box[2];
+                double ay = uniform ? sy : h/box[3];
+                double ox = uniform ? tx : 0.0;
+                double oy = uniform ? ty : 0.0;
+                path.text.matrix = new double[] {
+                    m[0]*ax, m[1]*ay, m[2]*ax, m[3]*ay, (m[4] - box[0])*ax + ox, (m[5] - box[1])*ay + oy};
+            }
             foreach (PathOp op in path.operations) {
                 if (uniform) {
                     op.x = (op.x - box[0])*sx + tx;
@@ -487,8 +1052,21 @@ public class SVGImage : IDrawable {
 
     /// <summary>Scales this SVG image by the specified factor.</summary>
     public SVGImage ScaleBy(float factor) {
-        foreach (SVGPath path in paths) {
+        List<SVGPath> all = new List<SVGPath>(paths);
+        all.AddRange(clipShapes);
+        foreach (SVGPath path in all) {
             path.strokeWidth *= factor;
+            if (path.dashArray != null) {
+                for (int i = 0; i < path.dashArray.Length; i++) {
+                    path.dashArray[i] *= factor;
+                }
+                path.dashOffset *= factor;
+            }
+            if (path.text != null) {
+                double[] m = path.text.matrix;
+                path.text.matrix = new double[] {
+                    m[0]*factor, m[1]*factor, m[2]*factor, m[3]*factor, m[4]*factor, m[5]*factor};
+            }
             foreach (PathOp op in path.operations) {
                 op.x1 *= factor;
                 op.y1 *= factor;
@@ -531,6 +1109,55 @@ public class SVGImage : IDrawable {
     public SVGImage SetLanguage(String language) {
         this.language = language;
         return this;
+    }
+
+    /// <summary>
+    /// Sets the font of the text of the image. Unless set, the text is drawn
+    /// in Helvetica, which is not embedded and has the characters of Western
+    /// European languages only; a document of PDF/A or PDF/UA needs a font
+    /// that is embedded.
+    /// </summary>
+    /// <param name="font">the font.</param>
+    /// <returns>this SVGImage object.</returns>
+    public SVGImage SetFont(Font font) {
+        this.font = font;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the font of the bold text of the image, whose font-weight is bold
+    /// or 600 or more. Unless set, it is the font set with SetFont, or
+    /// Helvetica Bold when neither is set.
+    /// </summary>
+    /// <param name="font">the bold font.</param>
+    /// <returns>this SVGImage object.</returns>
+    public SVGImage SetBoldFont(Font font) {
+        this.boldFont = font;
+        return this;
+    }
+
+    // The core fonts the text is drawn in unless a font is set, one of each
+    // for a document, made when a text is first drawn in it.
+    private PDF corePDF = null;
+    private Font helvetica = null;
+    private Font helveticaBold = null;
+
+    private Font CoreFontOf(PDF pdf, int coreFont) {
+        if (corePDF != pdf) {
+            corePDF = pdf;
+            helvetica = null;
+            helveticaBold = null;
+        }
+        if (coreFont == CoreFont.HELVETICA) {
+            if (helvetica == null) {
+                helvetica = new Font(pdf, coreFont);
+            }
+            return helvetica;
+        }
+        if (helveticaBold == null) {
+            helveticaBold = new Font(pdf, coreFont);
+        }
+        return helveticaBold;
     }
 
     /// <summary>Returns the width of this SVG image.</summary>
@@ -578,9 +1205,23 @@ public class SVGImage : IDrawable {
         bool alpha = !page.pdf.IsPDFA1() && ((fill && path.fillAlpha < 1f) || (stroke && path.strokeAlpha < 1f));
         bool lineCap = stroke && path.lineCap != CapStyle.BUTT;
         bool lineJoin = stroke && path.lineJoin != JoinStyle.MITER;
-        bool state = alpha || lineCap || lineJoin;
+        bool dash = stroke && path.dashArray != null;
+        bool state = alpha || lineCap || lineJoin || dash || path.clips != null;
         if (state) {
             page.SaveGraphicsState();
+            Clip(path, page);
+            if (dash) {
+                page.Append('[');
+                for (int i = 0; i < path.dashArray.Length; i++) {
+                    if (i > 0) {
+                        page.Append(' ');
+                    }
+                    page.Append(path.dashArray[i]);
+                }
+                page.Append("] ");
+                page.Append(path.dashOffset);
+                page.Append(" d\n");
+            }
             if (alpha) {
                 GraphicsState gs = new GraphicsState();
                 gs.SetAlphaNonStroking(path.fillAlpha);
@@ -643,6 +1284,137 @@ public class SVGImage : IDrawable {
         }
     }
 
+    // Clips what is drawn next to the clip paths of the path, each in turn.
+    private void Clip(SVGPath path, Page page) {
+        if (path.clips == null) {
+            return;
+        }
+        foreach (SVGPath clip in path.clips) {
+            foreach (PathOp op in clip.operations) {
+                if (op.cmd == 'M') {
+                    page.MoveTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'L') {
+                    page.LineTo(op.x + x, op.y + y);
+                } else if (op.cmd == 'C') {
+                    page.CurveTo(op.x1 + x, op.y1 + y, op.x2 + x, op.y2 + y, op.x + x, op.y + y);
+                } else if (op.cmd == 'Z') {
+                    page.Append("h\n");
+                }
+            }
+            page.ClipPath();
+        }
+    }
+
+    // Draws a text: each run filled and then stroked, or stroked first when
+    // its paint-order says, with the text matrix that takes its glyphs, whose
+    // y goes up, to where the run is on the page.
+    private void DrawText(SVGText text, List<SVGPath> clips, Page page) {
+        double[] m = text.matrix;
+        double scale = Math.Sqrt(Math.Abs(m[0]*m[3] - m[1]*m[2]));
+        foreach (SVGText.Run run in text.runs) {
+            String str = SVGText.Text(run);
+            if (str.Length == 0 || !(run.fontSize > 0f)) {
+                continue;
+            }
+            float[] tm = {
+                (float) m[0],
+                (float) -m[1],
+                (float) -m[2],
+                (float) m[3],
+                (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
+                page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
+            bool writable = true;
+            foreach (float value in tm) {
+                writable = writable && FastFloat.IsWritable(value);
+            }
+            float strokeWidth = (float) (run.strokeWidth*scale);
+            bool fill = run.fill != Color.transparent && run.fillAlpha > 0f;
+            bool stroke = run.stroke != Color.transparent && run.strokeAlpha > 0f
+                    && strokeWidth > 0f && FastFloat.IsWritable(strokeWidth);
+            if (!writable || (!fill && !stroke)) {
+                continue;
+            }
+            bool alpha = !page.pdf.IsPDFA1() && ((fill && run.fillAlpha < 1f) || (stroke && run.strokeAlpha < 1f));
+            bool lineJoin = stroke && run.lineJoin != JoinStyle.MITER;
+            bool state = alpha || lineJoin || clips != null;
+            if (state) {
+                page.SaveGraphicsState();
+                SVGPath clipped = new SVGPath();
+                clipped.clips = clips;
+                Clip(clipped, page);
+                if (alpha) {
+                    GraphicsState gs = new GraphicsState();
+                    gs.SetAlphaNonStroking(run.fillAlpha);
+                    gs.SetAlphaStroking(run.strokeAlpha);
+                    page.SetGraphicsState(gs);
+                }
+                if (lineJoin) {
+                    page.SetLineJoinStyle(run.lineJoin);
+                }
+            }
+            for (int pass = 0; pass < 2; pass++) {
+                bool strokePass = (pass == 0) == run.strokeFirst;
+                if (strokePass && stroke) {
+                    page.SetPenColor(run.stroke);
+                    page.SetPenWidth(strokeWidth);
+                    page.DrawSVGText(run.font, run.fontSize, str, tm, 1);
+                } else if (!strokePass && fill) {
+                    page.SetBrushColor(run.fill);
+                    page.DrawSVGText(run.font, run.fontSize, str, tm, 0);
+                }
+            }
+            if (state) {
+                page.RestoreGraphicsState();
+            }
+        }
+    }
+
+    // Returns true when something of the image is drawn outside its size,
+    // which is cut off then: a point of a path, wider by half its stroke, or
+    // the box of a run of a text, from its ascent to its descent.
+    private bool Overflows(Page page) {
+        if (w <= 0f || h <= 0f) {
+            return false;
+        }
+        foreach (SVGPath path in paths) {
+            if (path.text != null) {
+                double[] m = path.text.matrix;
+                foreach (SVGText.Run run in path.text.runs) {
+                    float[][] corners = {
+                        new float[] {run.px, run.py - run.fontSize},
+                        new float[] {run.px + run.width, run.py - run.fontSize},
+                        new float[] {run.px, run.py + 0.3f*run.fontSize},
+                        new float[] {run.px + run.width, run.py + 0.3f*run.fontSize}};
+                    foreach (float[] corner in corners) {
+                        float[] point = Transform(m, corner[0], corner[1]);
+                        if (Outside(point[0], point[1], 0f)) {
+                            return true;
+                        }
+                    }
+                }
+                continue;
+            }
+            if (!IsWritable(path, page)) {
+                continue;   // Not drawn
+            }
+            float margin = (path.stroke != Color.transparent) ? path.strokeWidth/2f : 0f;
+            foreach (PathOp op in path.operations) {
+                if (Outside(op.x, op.y, margin) || (op.cmd == 'C'
+                        && (Outside(op.x1, op.y1, margin) || Outside(op.x2, op.y2, margin)))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Returns true for a point outside the size of the image, by more than a
+    // hundredth of a point and the margin.
+    private bool Outside(float px, float py, float margin) {
+        float e = 0.01f + margin;
+        return px < -e || py < -e || px > w + e || py > h + e;
+    }
+
     /// <summary>Draws this SVG image on the specified page.</summary>
     public float[] DrawOn(Page page) {
         if (page == null) {
@@ -654,8 +1426,33 @@ public class SVGImage : IDrawable {
             link = page.BeginLink();
         }
         page.AddBDC(StructElem.FIGURE, language, actualText, altDescription);
+        Font regular = font;
+        Font bold = boldFont;
         foreach (SVGPath path in paths) {
-            drawPath(path, page);
+            if (path.text != null) {
+                if (regular == null) {
+                    regular = CoreFontOf(page.pdf, CoreFont.HELVETICA);
+                }
+                if (bold == null) {
+                    bold = (font != null) ? font : CoreFontOf(page.pdf, CoreFont.HELVETICA_BOLD);
+                }
+                path.text.Place(regular, bold);
+            }
+        }
+        bool clip = Overflows(page);
+        if (clip) {
+            page.SaveGraphicsState();
+            page.ClipRect(x, y, w, h);
+        }
+        foreach (SVGPath path in paths) {
+            if (path.text != null) {
+                DrawText(path.text, path.clips, page);
+            } else {
+                drawPath(path, page);
+            }
+        }
+        if (clip) {
+            page.RestoreGraphicsState();
         }
         page.SetFigureBoundingBox(x, y, w, h);
         page.AddEMC();

@@ -105,12 +105,24 @@ public class SVGImageTest {
     }
 
     [Fact]
-    public void APathWithoutColorsOrWithAnUnknownFillIsFilledBlack() {
+    public void APathWithoutColorsIsFilledBlackAndOneOfAnUnknownURLIsNotFilled() {
         string unset = Draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\"/></svg>");
         Assert.StartsWith("0 0 0 rg\n", unset);
         Assert.EndsWith("\nf\n", unset);
-        string gradient = Draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/></svg>");
-        Assert.Equal(unset, gradient);
+        // A url of an element that is not there is none, as a browser draws it.
+        string unknown = Draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/></svg>");
+        Assert.Equal("", unknown);
+    }
+
+    [Fact]
+    public void AGradientIsDrawnInTheMeanColorOfItsStops() {
+        string stops = "<stop offset=\"0\" stop-color=\"#ff0000\"/><stop offset=\"1\" style=\"stop-color: blue\"/>";
+        string content = Draw("<svg width=\"100\" height=\"50\"><defs><linearGradient id=\"g\">" + stops
+                + "</linearGradient><radialGradient id=\"h\" href=\"#g\"/></defs>"
+                + "<path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/><path d=\"M10 10 L90 40\" stroke=\"url('#h')\"/></svg>");
+        // 255/2 rounds half up; the second gradient takes the stops of the first.
+        Assert.True(content.StartsWith("0.5 0 0.5 rg\n"), content);
+        Assert.True(content.Contains("0.5 0 0.5 RG\n"), content);
     }
     // The numbers of path data are written as SVG 1.1 section 8.3.9 gives them:
     // a sign, digits, a point and an exponent, and a sign or a point starts the
@@ -428,7 +440,6 @@ public class SVGImageTest {
             new string[] {"fill=\"currentColor\" color=\"red\"", "1 0 0 rg"},
             new string[] {"fill=\"currentColor\"", "0 0 0 rg"},
             new string[] {"fill=\"url(#gradient) red\"", "1 0 0 rg"},
-            new string[] {"fill=\"url(#gradient)\"", "0 0 0 rg"},   // Not drawn: as if not given
             new string[] {"fill=\"unknown\"", "0 0 0 rg"},
             new string[] {"fill=\"rgb(nan, 0, 0)\"", "0 0 0 rg"}, // Not a number: as if not given
             new string[] {"fill=\"rgb(inf, 0, 0)\"", "0 0 0 rg"},
@@ -632,6 +643,156 @@ public class SVGImageTest {
         object[] lime = {"fill", "lime", 0};
         parse.Invoke(null, lime);
         Assert.Equal(lime[2], args[2]);
+    }
+
+    [Fact]
+    public void DrawsTheSeedOfTheFuzzTestOfGroupsTransformsShapesAndStyles() {
+        // The seed of the Go port's fuzz test for what drawing programs write.
+        string content = Draw("<svg width=\"100\" height=\"50\" viewBox=\"0 0 200 100\" preserveAspectRatio=\"xMinYMax slice\">"
+                + "<style>.a{fill:rgb(10%,20,30);stroke:currentColor;stroke-width:2px} .b{opacity:.5}</style>"
+                + "<g transform=\"translate(10,5) rotate(30 5 5) skewX(10)\" color=\"blue\" class=\"a\" fill-rule=\"evenodd\">"
+                + "<rect x=\"1\" y=\"2\" width=\"30\" height=\"20\" rx=\"4\" class=\"b\"/><circle cx=\"50\" cy=\"20\" r=\"8\"/>"
+                + "<ellipse cx=\"80\" cy=\"20\" rx=\"10\" ry=\"5\" style=\"fill-opacity:0.3;stroke-linecap:round\"/>"
+                + "<line x1=\"0\" y1=\"40\" x2=\"90\" y2=\"45\" stroke-linejoin=\"bevel\"/>"
+                + "<polyline points=\"0,50 10,60 20,50\"/><polygon points=\"30 50 40 60 50 50\"/></g>"
+                + "<defs><path d=\"M0 0 L5 5\"/></defs><g display=\"none\"><rect width=\"5\" height=\"5\"/></g></svg>");
+        // Every shape but the line, which has no inside, is filled with the
+        // even-odd rule; the first in a graphics state of its opacity.
+        Assert.Equal(5, Count(content, "\nf*\n"));
+        // The slice draws past the size of the image, which cuts it off.
+        Assert.True(content.StartsWith("q\n0 792 m\n100 792 l\n100 742 l\n0 742 l\nW\nn\n"
+                + "q\n/GS1 gs\n0.1 0.08 0.12 rg\n8.4 788.21 m\n17.93 782.71 l\n"), content);
+    }
+
+    // The text of a chart: text and tspan elements, placed as a browser
+    // places them, in Helvetica unless a font is set.
+
+    [Fact]
+    public void DrawsATextAtItsXAndY() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></svg>");
+        Assert.True(content.Contains(" 12 Tf\n1 0 0 1 10 772 Tm\n[<4869>] TJ\nET\n"), content);
+        Assert.False(content.Contains("W\n"), content);     // Inside the image: nothing is cut off
+    }
+
+    [Fact]
+    public void AnAnchorMovesTheTextByItsWidthAndDyIsInEm() {
+        // Hi is 944 thousandths of an em wide in Helvetica: 11.328 at 12.
+        string content = Draw("<svg width=\"200\" height=\"100\"><text x=\"100\" y=\"20\" dy=\"0.5em\" "
+                + "font-size=\"12\" text-anchor=\"end\">Hi</text></svg>");
+        Assert.True(content.Contains("1 0 0 1 88.67 766 Tm\n"), content);
+    }
+
+    [Fact]
+    public void TheTextAndTheTspansAreDrawnInTheOrderOfTheDocument() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><text x=\"0\" y=\"20\">"
+                + " A <tspan font-weight=\"bold\">B</tspan>C<title>not drawn</title></text></svg>");
+        int a = content.IndexOf("[<4120>] TJ", StringComparison.Ordinal);    // "A ": the space at the start is left out
+        int b = content.IndexOf("[<42>] TJ", StringComparison.Ordinal);
+        int c = content.IndexOf("[<43>] TJ", StringComparison.Ordinal);
+        Assert.True(a > 0 && b > a && c > b, content);
+        Assert.False(content.Contains("<6E6F74"), content);
+        Assert.True(content.Contains("/F2 16 Tf\n") && content.Contains("/F3 16 Tf\n"), content);   // The bold B in another font
+    }
+
+    [Fact]
+    public void ATspanWithAnXOrAYStartsAChunkAnchoredOnItsOwn() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><text text-anchor=\"middle\" "
+                + "transform=\"translate(100,50)\" font-size=\"10\"><tspan y=\"-0.4em\">Go</tspan>"
+                + "<tspan x=\"0\" y=\"0.7em\">12%</tspan></text></svg>");
+        // Go is 1334 thousandths of an em, and 12% 2001.
+        Assert.True(content.Contains("1 0 0 1 93.33 746 Tm\n"), content);
+        Assert.True(content.Contains("1 0 0 1 90 735 Tm\n"), content);
+    }
+
+    [Fact]
+    public void TheFontShorthandSetsTheSizeAndTheWeight() {
+        string content = Draw("<svg width=\"200\" height=\"100\" style=\"font: bold 10px sans-serif\">"
+                + "<text y=\"20\">A</text><text y=\"40\" font-weight=\"400\">B</text></svg>");
+        Assert.Equal(2, Count(content, " 10 Tf\n"));
+        Assert.True(content.IndexOf("/F", StringComparison.Ordinal) != content.LastIndexOf("/F", StringComparison.Ordinal), content);
+    }
+
+    [Fact]
+    public void ACoreFontDrawsTheMinusSignAsAHyphenMinus() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><text y=\"20\">−5</text></svg>");
+        Assert.True(content.Contains("[<2D35>] TJ"), content);
+    }
+
+    [Fact]
+    public void AStrokeBeforeTheFillDrawsAHaloUnderTheText() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><text y=\"20\" stroke=\"white\" stroke-width=\"3\" "
+                + "stroke-linejoin=\"round\" paint-order=\"stroke\">A</text></svg>");
+        int stroke = content.IndexOf("1 Tr\n", StringComparison.Ordinal);
+        int fill = content.IndexOf("0 Tr\n", StringComparison.Ordinal);
+        Assert.True(stroke > 0 && fill > stroke, content);
+        Assert.True(content.Contains("1 1 1 RG\n3 w\n"), content);
+    }
+
+    [Fact]
+    public void ASetFontDrawsTheText() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SVGImage image = Parse("<svg width=\"200\" height=\"100\"><text y=\"20\" font-weight=\"bold\">Hi</text></svg>");
+        image.SetFont(font);    // The bold text too, as no bold font is set
+        image.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.True(content.Contains("> Tj\n"), content);
+        Assert.False(content.Contains("TJ"), content);
+    }
+
+    [Fact]
+    public void ADashArrayOfAnOddNumberOfLengthsIsRepeated() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" "
+                + "stroke-dasharray=\"4, 2 1\" stroke-dashoffset=\"1\"/>"
+                + "<path d=\"M0 20 L100 20\" stroke=\"red\" stroke-dasharray=\"0 0\"/>"
+                + "<path d=\"M0 30 L100 30\" stroke=\"red\" stroke-dasharray=\"4 -2\"/></svg>");
+        Assert.True(content.Contains("q\n[4 2 1 4 2 1] 1 d\n"), content);
+        Assert.Equal(1, Count(content, " d\n"));    // The others are solid
+    }
+
+    [Fact]
+    public void AUseDrawsTheElementItNamesMovedByItsXAndY() {
+        string content = Draw("<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"200\" height=\"100\">"
+                + "<defs><rect id=\"r\" width=\"10\" height=\"10\"/><symbol id=\"s\"><circle r=\"2\"/></symbol></defs>"
+                + "<use href=\"#r\" x=\"20\" y=\"30\" fill=\"red\"/><use xlink:href=\"#s\" x=\"50\" y=\"50\"/>"
+                + "<g id=\"loop\"><use href=\"#loop\"/></g></svg>");
+        Assert.True(content.StartsWith("1 0 0 rg\n20 762 m\n30 762 l\n"), content);
+        Assert.True(content.Contains("\n52 742 m\n"), content);
+    }
+
+    [Fact]
+    public void UsesOfUsesThatDrawTooManyElementsThrow() {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><rect id=\"g0\" width=\"1\" height=\"1\"/>");
+        for (int level = 1; level <= 7; level++) {
+            svg.Append("<g id=\"g").Append(level).Append("\">");
+            for (int i = 0; i < 10; i++) {
+                svg.Append("<use href=\"#g").Append(level - 1).Append("\"/>");
+            }
+            svg.Append("</g>");
+        }
+        svg.Append("</svg>");
+        Assert.Throws<ArgumentException>(() => Parse(svg.ToString()));
+    }
+
+    [Fact]
+    public void AMarkerIsDrawnAtTheEndTurnedWithThePath() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><defs><marker id=\"m\" markerWidth=\"4\" "
+                + "markerHeight=\"4\" orient=\"auto\" refX=\"1\"><rect width=\"2\" height=\"1\"/></marker></defs>"
+                + "<path d=\"M10 10 L10 50\" stroke=\"black\" stroke-width=\"2\" marker-end=\"url(#m)\"/></svg>");
+        // Turned 90 degrees down the path and twice the size, for the stroke
+        // width: from 10, 48 to 8, 52.
+        Assert.True(content.Contains("S\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\n"), content);
+    }
+
+    [Fact]
+    public void AClipPathCutsOffWhatIsOutsideIt() {
+        string content = Draw("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/>"
+                + "</clipPath><g clip-path=\"url(#c)\" transform=\"translate(10,0)\"><rect x=\"10\" y=\"10\" width=\"80\" "
+                + "height=\"20\"/></g><clipPath id=\"none\"/><rect width=\"5\" height=\"5\" clip-path=\"url(#none)\"/></svg>");
+        // The clip path is in the user space of the group, moved with it.
+        Assert.Equal("q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
+                + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", content);
     }
 }
 }
