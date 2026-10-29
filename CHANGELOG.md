@@ -31,16 +31,43 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
     font-family, font-weight, font-style and the `font` shorthand,
     text-anchor for each chunk, dominant-baseline, and a stroke drawn under
     the text with `paint-order: stroke`, the white halo of a label. The
-    text is drawn in the fonts PDFjet now carries, those of PDFjet Forms,
-    embedded, so that a PDF/A or PDF/UA document needs nothing set: IBM
-    Plex Sans for sans-serif, Helvetica, Arial and the like, Source Serif 4
-    for serif, Times and the like, JetBrains Mono for monospace, Courier and
-    the like, each regular, semibold and bold, upright and italic, 3.5 MB
-    in all, under the SIL Open Font License (THIRD-PARTIES.TXT). A font of
-    one's own, for Chinese for instance, is set with `setFont()` and
-    `setBoldFont()`. A stroke drawn under text is a second copy of its
-    characters in the content, which copying the text from the PDF gives
-    twice.
+    text is drawn in the fonts PDFjet carries (below), embedded, so that a
+    PDF/A or PDF/UA document needs nothing set: IBM Plex Sans for
+    sans-serif, Helvetica, Arial and the like, Source Serif 4 for serif,
+    Times and the like, Cascadia Mono for monospace, Courier and the like,
+    in the weight and the style the text asks for; monospace text of weight
+    400 is drawn in Cascadia Mono SemiLight, whose strokes match IBM Plex
+    Sans Regular. A font of one's own, for Chinese for instance, is set
+    with `setFont()` and `setBoldFont()`. A stroke drawn under text is a
+    second copy of its characters in the content, which copying the text
+    from the PDF gives twice.
+- The fonts PDFjet carries, all four ports, for every language it draws,
+  so that it works out of the box: IBM Plex Sans and Serif (Thin to Bold,
+  and Text), Source Serif 4 and Cascadia Mono (Light to Bold), each upright
+  and italic; IBM Plex Sans Arabic, Hebrew and Thai (Thin to Bold); IBM
+  Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and
+  Bold, as .otf. 82 faces, under the SIL Open Font License, each family
+  with its license in `resources/fonts` (THIRD-PARTIES.TXT). A font path,
+  such as the constant `IBMPlexSans.Regular`, is read from the file of the
+  path, else from the folder `resources/fonts`, else from the library, with
+  the same API in every case:
+  - Java: the jar of Maven Central carries the fonts, about 47 MB; the
+    `PDFjet.jar` of the release packages on GitHub, and the one built from
+    the repository, does not, 0.7 MB, its package having `resources/fonts`.
+  - .NET: the package of NuGet carries them in `PDFjet.dll`, about 70 MB;
+    the `PDFjet.dll` of the release packages on GitHub does not, 0.9 MB.
+  - Go: a program built with PDFjet carries the fonts of every script but
+    Chinese, Japanese and Korean, about 23 MB in all; `import _
+    "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"` adds those, 48
+    MB more.
+  - Swift: the fonts come with the product `PDFjetFonts`, about 66 MB in
+    an app that adds it; the library alone has none.
+  New: `IBMPlexSerif` and `CascadiaMono` constants, and `Font(objects,
+  path)`, a font added to an existing PDF by its path. A font PDFjet does
+  not carry throws, saying so. Every face carried has a constant, and every
+  face for Latin text has all of Greek and of the Cyrillic of Russian,
+  Ukrainian, Belarusian, Bulgarian, Serbian and Macedonian, which tests
+  check.
   - `use` elements, of symbols too, and `marker-start`, `marker-mid` and
     `marker-end`, the arrowheads of a graph. A file that draws more than a
     million elements again through them throws.
@@ -52,6 +79,15 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   circle, square, triangle, star, diamond and cross in turn, with a legend
   under the title; a highlighted point of a series is its shape filled.
   Points added before the first series are gray dots, as before.
+
+### Deprecated
+- `NotoSans`, `IBMPlexMono` (no Greek) and `JetBrainsMono` (no Ѐ Ѝ ѐ ѝ),
+  and the ExtraLight and Black weights and, of IBM Plex Sans JP, KR, SC and
+  TC, Thin, Light, Text and Medium: PDFjet does not carry them. Their
+  constants read the font file when it is there; the release packages
+  before 9.1.7 have them.
+- The CJK constants Regular, SemiBold and Bold name the .otf of the font,
+  where they named the .ttf; the same font, with smaller subsets.
 
 ### Changed
 - Behavior change: BarChart and DonutChart draw their series and slices in
