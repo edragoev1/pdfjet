@@ -221,12 +221,13 @@ mkdir pro-src
 git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD net/pdfjet/Sign net/pdfjet/Invoice \
+    net/pdfjet/Hyphenation src/hyphenation/patterns \
     examples/package/dotnet tests/data/rsa-signer.p12
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
-perl -0pi -e 's|(    <Compile Include="net/pdfjet/Encryption/\*\.cs" />\n)|$1    <Compile Include="net/pdfjet/Sign/*.cs" />\n    <Compile Include="net/pdfjet/Invoice/*.cs" />\n|' \
+perl -0pi -e 's|(    <Compile Include="net/pdfjet/Encryption/\*\.cs" />\n)|$1    <Compile Include="net/pdfjet/Sign/*.cs" />\n    <Compile Include="net/pdfjet/Invoice/*.cs" />\n    <Compile Include="net/pdfjet/Hyphenation/*.cs" />\n    <EmbeddedResource Include="src/hyphenation/patterns/*.txt" LogicalName="PDFjet.Hyphenation.%(Filename)%(Extension)" />\n|' \
     pro-src/PDFjet.csproj
-if ! grep -q 'net/pdfjet/Invoice/\*\.cs' pro-src/PDFjet.csproj; then
+if ! grep -q 'net/pdfjet/Hyphenation/\*\.cs' pro-src/PDFjet.csproj; then
     echo "The sources of PDFjet Pro could not be added to PDFjet.csproj"
     exit 1
 fi
@@ -238,6 +239,9 @@ cp pro-out/PDFjet.dll PDFjet.dll
 mkdir -p examples/pro
 cp -r pro-src/examples/package/dotnet/* examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
+# The licenses of the hyphenation patterns built into PDFjet.dll, beside it,
+# as their MIT licenses ask that the notice go with every copy
+cp pro-src/src/hyphenation/patterns/LICENSES.txt HYPHENATION-PATTERNS-LICENSES.txt
 rm -rf pro-src pro-out
 mv ../dotnet-pro/build-pro.sh ../dotnet-pro/build-pro.cmd .
 cat ../dotnet-pro/README-PRO.md >> README.md

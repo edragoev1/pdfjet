@@ -210,6 +210,7 @@ mkdir pro-src
 git -C "$REPO" archive -o "$PRO_TAR" HEAD com
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD com/pdfjet/sign com/pdfjet/invoice \
+    com/pdfjet/hyphenation src/hyphenation/patterns \
     examples/package/java tests/data/rsa-signer.p12
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
@@ -224,7 +225,14 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     pro-src/com/pdfjet/encryption/*.java \
     pro-src/com/pdfjet/sign/*.java \
     pro-src/com/pdfjet/invoice/*.java \
+    pro-src/com/pdfjet/hyphenation/*.java \
     -d out/library
+# The hyphenation patterns, resources of com.pdfjet.hyphenation, with their
+# licenses; and those beside the jar too, as their MIT licenses ask that the
+# notice go with every copy
+mkdir -p out/library/com/pdfjet/hyphenation/patterns
+cp pro-src/src/hyphenation/patterns/*.txt out/library/com/pdfjet/hyphenation/patterns/
+cp pro-src/src/hyphenation/patterns/LICENSES.txt HYPHENATION-PATTERNS-LICENSES.txt
 stamp out/library
 printf 'Implementation-Title: PDFjet Pro\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
     "${VERSION#v}" > pro-manifest.txt
@@ -248,6 +256,7 @@ javadoc -quiet -notimestamp -public -doctitle "PDFjet Pro for Java" -windowtitle
     pro-src/com/pdfjet/datamatrix/*.java \
     pro-src/com/pdfjet/sign/*.java \
     pro-src/com/pdfjet/invoice/*.java \
+    pro-src/com/pdfjet/hyphenation/*.java \
     -d docs/java
 mkdir -p examples/pro
 cp pro-src/examples/package/java/*.java examples/pro/
