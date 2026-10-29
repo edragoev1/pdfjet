@@ -323,7 +323,10 @@ public class SimpleScatterChart : IDrawable {
         if (title.Length > 0 || subtitle.Length > 0) {
             top += f2.GetSize();
         }
-        return top + DrawLegend(null, 0f)*LEGEND_ROW*f2.GetSize();
+        // The legend, and half a size of the numbers under it, so that the
+        // top number of the axis is not against its last row
+        int rows = DrawLegend(null, 0f);
+        return top + rows*LEGEND_ROW*f2.GetSize() + ((rows > 0) ? 0.5f*f2.GetSize() : 0f);
     }
 
     // The shapes of the series, in turn, as D3 draws its symbols.
@@ -748,8 +751,11 @@ public class SimpleScatterChart : IDrawable {
             }
         }
         page.RestoreGraphicsState();
-        // The points of the series, the outlines of their shapes, opaque
-        page.SetPenWidth(0.12f * size);
+        // The points of the series, the outlines of their shapes, opaque;
+        // a chart without series draws as it did
+        if (series.Count > 0) {
+            page.SetPenWidth(0.12f * size);
+        }
         foreach (Point p in points) {
             if (p.series >= 0 && p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
                 page.SetPenColor(SeriesColor(p.series));

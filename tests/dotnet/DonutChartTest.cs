@@ -72,8 +72,8 @@ public class DonutChartTest {
     }
 
     // Slices in the palette, blue first; thin white lines between them; thin
-    // gray leader lines; the percentage white on blue, ink on the light
-    // orange; and no black line or text.
+    // gray leader lines; the percentage white on blue, ink on orange; and
+    // no black line or text.
     [Fact]
     public void TheDefaultLookIsQuiet() {
         PDF pdf = TestSupport.NewPDF();
