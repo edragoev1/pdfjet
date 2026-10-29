@@ -6,7 +6,7 @@
 package pdfjet
 
 import (
-	"os"
+	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,15 +15,17 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// testKernedFont opens a font of the repository, with its kerning on or off.
+// testKerningSerif is Source Serif 4, whose kern feature has Extension
+// lookups of its pairs and a chained one, with LookupFlag 8, as Noto Sans,
+// which these tests read before 9.1.7, has; the lookups of IBM Plex Sans are
+// pairs alone.
+const testKerningSerif = "fonts/SourceSerif4/SourceSerif4-Regular.ttf"
+
+// testKernedFont opens a font of the repository, or one PDFjet carries, with
+// its kerning on or off.
 func testKernedFont(t *testing.T, pdf *PDF, path string, kerned bool) *Font {
 	t.Helper()
-	file, err := os.Open(testRepoPath(t, path))
-	if err != nil {
-		t.Skip("the fonts directory is not here")
-	}
-	defer file.Close()
-	font := NewFont(pdf, file)
+	font := NewFont(pdf, bytes.NewReader(testFontBytes(t, path)))
 	font.SetKernPairs(kerned)
 	return font
 }
@@ -77,8 +79,8 @@ func TestKerningIsDrawnAsItIsMeasured(t *testing.T) {
 	pdf := testNewPDF()
 	for _, path := range []string{
 		"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
-		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-		"fonts/NotoSans/NotoSans-Regular.ttf",
+		"tests/fonts/IBMPlexSans-Regular.otf",
+		testKerningSerif,
 	} {
 		font := testKernedFont(t, pdf, path, true)
 		for _, text := range []string{
@@ -190,9 +192,11 @@ func TestKerningIsOffUnlessAskedFor(t *testing.T) {
 
 func TestKerningLeavesMarksAndRightToLeftTextAlone(t *testing.T) {
 	pdf := testNewPDF()
+	// IBM Plex Sans Hebrew kerns שלום עולם by 20 units without its marks, as
+	// Noto Sans Hebrew, which this test read before 9.1.7, kerned it by 10.
 	for _, path := range []string{
-		"fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf",
-		"fonts/NotoSansArabic/NotoSansArabic-Regular.ttf",
+		"fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf",
+		"fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf",
 	} {
 		kerned := testKernedFont(t, pdf, path, true)
 		plain := testKernedFont(t, pdf, path, false)
@@ -247,10 +251,12 @@ func TestKerningWidthsAreThoseOfTheOtherPorts(t *testing.T) {
 		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "AVATAR To Wally", 75.14, -302},
 		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "Тъй ТАТЯНА", 55.94, -165},
 		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "ΑΥΤΟ", 24.44, -70},
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14, -302},
-		{"fonts/NotoSans/NotoSans-Regular.ttf", "AVATAR To Wally", 75.83, -310},
-		{"fonts/NotoSans/NotoSans-Regular.ttf", "Тъй ТАТЯНА", 56.79, -150},
-		{"fonts/NotoSans/NotoSans-Regular.ttf", "ΑΥΤΟ", 24.62, -80},
+		{"tests/fonts/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14, -302},
+		// Source Serif 4, from its hmtx and kern lookups (Noto Sans, before
+		// 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)
+		{testKerningSerif, "AVATAR To Wally", 80.43, -599},
+		{testKerningSerif, "Тъй ТАТЯНА", 61.50, -215},
+		{testKerningSerif, "ΑΥΤΟ", 26.34, -115},
 	} {
 		font := testKernedFont(t, pdf, c.path, true)
 		testNear(t, c.path+": "+c.text, c.kerned, font.StringWidth(10, c.text), 0.005)

@@ -12,21 +12,19 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/CascadiaMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
-	"github.com/edragoev1/pdfjet/v9/src/JetBrainsMono"
 	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
@@ -138,19 +136,19 @@ func archivalDocument() {
 func fonts(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	serif := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular).SetSize(14)
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	mono := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(10)
+	mono := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(10)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(serif, "Source Serif 4 at 14 points").SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextLine(bold, "IBM Plex Sans Bold at 12 points").SetLocation(50, 75).DrawOn(page)
-	pdfjet.NewTextLine(mono, "JetBrains Mono at 10 points").SetLocation(50, 100).DrawOn(page)
+	pdfjet.NewTextLine(mono, "Cascadia Mono at 10 points").SetLocation(50, 100).DrawOn(page)
 	pdfjet.NewTextLine(bold, "The same font at 24 points").SetFontSize(24).
 		SetLocation(50, 135).DrawOn(page)
 }
 
 // @snippet font-files
 func fontFiles(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	otf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
-	ttf := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf")
+	otf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
+	ttf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(otf, "An OpenType font").SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextLine(ttf, "A TrueType font").SetLocation(50, 75).DrawOn(page)
@@ -274,7 +272,7 @@ func markup(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
 	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
-	code := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(11)
+	code := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(11)
 	markup := pdfjet.NewMarkup(font, bold, italic, boldItalic, code)
 	paragraphs := markup.Paragraphs(
 		"Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n" +
@@ -288,7 +286,7 @@ func markdown(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
 	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
-	code := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(10)
+	code := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(10)
 	markdown := pdfjet.NewMarkdown(font, bold, italic, boldItalic, code)
 	pages := make([]*pdfjet.Page, 0)
 	markdown.DrawOnPages(pdf, "# A heading\n"+
@@ -881,12 +879,8 @@ func existingPages() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	file, err := os.Open(IBMPlexSans.Regular)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	font := pdfjet.NewFontForObjects(&objects, bufio.NewReader(file)).SetSize(24)
+	// IBM Plex Sans, which PDFjet carries
+	font := pdfjet.NewFontFromFileForObjects(&objects, IBMPlexSans.Regular).SetSize(24)
 	for _, pageObj := range pdf.GetPageObjects(objects) {
 		page := pdfjet.NewPageFromObject(pdf, pageObj)
 		page.AddFontResource(font, &objects)

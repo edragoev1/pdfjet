@@ -90,11 +90,11 @@ var svgTemplates = map[string]bool{
 // comes before them. It draws the elements a <use> element names, and <text>
 // and <tspan> elements with their x, y, dx, dy, font-size, font-weight,
 // text-anchor and dominant-baseline, in the font set with SetFont and
-// SetBoldFont, or else in the fonts PDFjet carries, those of PDFjet Forms,
-// embedded: IBM Plex Sans for sans-serif, Helvetica, Arial and the like,
-// Source Serif 4 for serif, Times and the like, JetBrains Mono for monospace,
-// Courier and the like, regular, semibold or bold, upright or italic, as the
-// font-family, font-weight and font-style of the text ask. A gradient is
+// SetBoldFont, or else in the fonts PDFjet carries, embedded: IBM Plex Sans
+// for sans-serif, Helvetica, Arial and the like, Source Serif 4 for serif,
+// Times and the like, Cascadia Mono for monospace, Courier and the like, in
+// the face of the weight CSS matches to the font-weight, upright or italic, as
+// the font-family, font-weight and font-style of the text ask. A gradient is
 // drawn in the mean color of its stops. The width, height, viewBox and
 // preserveAspectRatio of the <svg> element give the size of the image, and
 // what is drawn outside it is cut off, as a browser does.

@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
@@ -264,12 +265,7 @@ func testPageNumbers(t *testing.T, pdf []byte) []string {
 
 func testTrueTypeFont(t *testing.T, pdf *PDF) *Font {
 	t.Helper()
-	file, err := os.Open(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
-	if err != nil {
-		t.Skip("the fonts directory is not here")
-	}
-	defer file.Close()
-	return NewFont(pdf, file)
+	return NewFont(pdf, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
 }
 
 func TestPDFADetachedPageThatIsNeverAddedLeavesNoTrace(t *testing.T) {

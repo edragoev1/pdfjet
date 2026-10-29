@@ -188,10 +188,15 @@ func TestReview3TheRowsPastTheTableLimitAreNotKept(t *testing.T) {
 
 // Two characters copy as the same text, as a letter and its presentation
 // form, need no actual text for the second: Arabic text had three times the
-// spans it needed, its content 27% larger (T2).
+// spans it needed, its content 27% larger (T2). Noto Sans Arabic, which this
+// test read before 9.1.7, draws ل and its isolated form ﻝ with one glyph, and
+// ١ and ۱ with one; IBM Plex Sans Arabic draws each with its own, so its
+// character map is made to draw them as Noto Sans Arabic's does.
 func TestReview3ACharacterCopiedAsTheFirstHasNoActualText(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+	font := NewFont(pdf, bytes.NewReader(testWithSharedGlyphs(t,
+		testFontBytes(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+		[][2]rune{{0x0644, 0xFEDD}, {0x0661, 0x06F1}})))
 	if font.unicodeToGID.get(0x0644) != font.unicodeToGID.get(0xFEDD) {
 		t.Fatal("the font draws ل and its isolated form with two glyphs")
 	}
@@ -211,7 +216,7 @@ func TestReview3ACharacterCopiedAsTheFirstHasNoActualText(t *testing.T) {
 // and "ةِمى" was copied as "ىمِ ة" (T1).
 func TestReview3AWordWithMarksIsCopiedWithoutASpaceInside(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
 	page := NewPage(pdf, testLetterPortrait())
 	NewTextLine(font, "\u0628").SetLocation(50, 50).DrawOn(page)
 	// The glyph of ة as drawn first for another character, which no two
@@ -275,7 +280,9 @@ func TestReview3ACJKFontFitsAllOfATextInAHugeWidth(t *testing.T) {
 // it was left out (T7).
 func TestReview3AJoinerInARunIsInItsActualText(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+	// IBM Plex Sans JP, the .otf PDFjet carries, has no glyph for the joiners
+	// or the LRM, as Noto Sans JP, before 9.1.7, had none.
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"))
 	if font.unicodeToGID.get(0x200D) != 0 {
 		t.Fatal("the font has a glyph for the ZWJ")
 	}
@@ -911,10 +918,7 @@ func TestReview3AFontChecksumLeavesOutEmptyBlocks(t *testing.T) {
 // copied a font of 200 KB several times, about half of what a document of
 // three embedded fonts allocated.
 func TestReview3AFontIsReadIntoABufferOfItsSize(t *testing.T) {
-	data, err := os.ReadFile(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
 	var before, after runtime.MemStats
 	runtime.GC()
 	runtime.ReadMemStats(&before)

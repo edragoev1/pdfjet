@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -421,7 +422,21 @@ func TestWriterTheProducerIsTheVersionOfTheLibrary(t *testing.T) {
 func TestWriterTheFontFileRefersToItsMetadataWhoseNoticeIsEscaped(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_A_2B)
-	font := NewFontFromFile(doc.pdf, testRepoPath(t, "fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+	// Noto Sans JP, which this test read before 9.1.7, has "&" in its
+	// designer and its description; no font PDFjet carries has one in its
+	// names, so the license of IBM Plex Sans is made to say "with & FAQ" in
+	// place of "with a FAQ", a character for a character.
+	ttf := testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	var withA []byte
+	for _, c := range " with a FAQ" {
+		withA = append(withA, 0, byte(c))
+	}
+	at := bytes.Index(ttf, withA)
+	if at == -1 {
+		t.Fatal(`the license of the font has no "with a FAQ"`)
+	}
+	ttf[at+2*len(" with ")+1] = '&'
+	font := NewFont(doc.pdf, bytes.NewReader(ttf))
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewTextLine(font, "Hello").SetLocation(50, 50).DrawOn(page)
 	raw := string(doc.complete())

@@ -30,7 +30,6 @@ func Example10() {
 	pdf.SetTitle("Text block with highlighted keywords")
 
 	// f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	// f1 := pdfjet.NewFontFromFile(pdf, NotoSans.Regular)
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(15.0)
 

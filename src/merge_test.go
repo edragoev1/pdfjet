@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"slices"
@@ -418,12 +419,7 @@ func TestMergeAFontAddedToTheObjectsIsWritten(t *testing.T) {
 	// was left empty when the objects were merged rather than added (the
 	// review of 9 October 2026), and its text was lost.
 	objects := testRead(t, testMergeDocument("Existing"))
-	file, err := os.Open(testRepoPath(t, "fonts/NotoSans/NotoSans-Regular.ttf"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer file.Close()
-	font := NewFontForObjects(&objects, file)
+	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
 	doc := testNewDoc()
 	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
 	page.AddFontResource(font, &objects)
@@ -438,12 +434,12 @@ func TestMergeAFontAddedToTheObjectsIsWritten(t *testing.T) {
 	}
 	found := false
 	for _, obj := range merged {
-		if obj.GetValue("/Subtype") == "/Type0" && strings.HasSuffix(obj.GetValue("/BaseFont"), "+NotoSans-Regular") {
+		if obj.GetValue("/Subtype") == "/Type0" && strings.HasSuffix(obj.GetValue("/BaseFont"), "+IBMPlexSans") {
 			found = true
 		}
 	}
 	if !found {
-		t.Error("no Type0 font of a subset of Noto Sans")
+		t.Error("no Type0 font of a subset of IBM Plex Sans")
 	}
 }
 

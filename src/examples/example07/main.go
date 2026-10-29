@@ -12,7 +12,8 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/NotoSans"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
 	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -45,8 +46,8 @@ func Example07() {
 	textBlock := pdfjet.NewTextBlock(f1,
 		"PDFjet reads OpenType and TrueType fonts as they are: pass the path "+
 			"of any .otf or .ttf file on the computer to the Font constructor. "+
-			"The IBMPlexSans and NotoSans constants are the paths of the fonts "+
-			"that come with PDFjet. A font is embedded with only the "+
+			"The constants of com.pdfjet.fonts, such as IBMPlexSans and IBMPlexSansJP, "+
+			"are the paths of the fonts that come with PDFjet. A font is embedded with only the "+
 			"glyphs the document draws, which keeps the file small, whatever its "+
 			"outlines. The paragraph below is drawn four times.")
 	textBlock.SetFontSize(12.0)
@@ -56,10 +57,10 @@ func Example07() {
 	xy := textBlock.DrawOn(page)
 
 	files := []string{
-		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+		IBMPlexSansJP.Regular,
 		IBMPlexSans.Regular,
 		SourceSerif4.Regular,
-		NotoSans.Regular,
+		IBMPlexSerif.Regular,
 	}
 	kinds := []string{
 		"OpenType with CFF outlines, from the .otf file, embedded as a subset",

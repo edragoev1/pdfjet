@@ -409,7 +409,7 @@ func TestMisuseTheObjectsOfAnExistingPdfComeBeforeTheContent(t *testing.T) {
 	// An embedded font only reserves its number, written at Complete: the
 	// objects could take it too (the review of 9 October 2026).
 	pdf3 := testNewPDF()
-	NewFontFromFile(pdf3, testRepoPath(t, "fonts/NotoSans/NotoSans-Regular.ttf"))
+	NewFontFromFile(pdf3, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	if err := pdf3.AddObjects(objects); err == nil || err.Error() != message {
 		t.Errorf("AddObjects after an embedded font: %v", err)
 	}

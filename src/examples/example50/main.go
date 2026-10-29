@@ -14,6 +14,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
@@ -56,23 +57,12 @@ func Example50(fileName string) {
 	image1.ScaleBy(0.40)
 
 	// A font added to an existing PDF is embedded as a subset of the glyphs
-	// drawn, as in a new PDF.
-	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader = bufio.NewReader(file2)
-	font1 := pdfjet.NewFontForObjects(&objects, reader)
+	// drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+	// from the library; the path of a font file of your own reads that file.
+	font1 := pdfjet.NewFontFromFileForObjects(&objects, IBMPlexSans.Regular)
 	font1.SetSize(12.0)
 
-	file3, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file3.Close()
-	reader = bufio.NewReader(file3)
-	font2 := pdfjet.NewFontForObjects(&objects, reader)
+	font2 := pdfjet.NewFontFromFileForObjects(&objects, IBMPlexSans.Bold)
 	font2.SetSize(12.0)
 
 	pages := pdf.GetPageObjects(objects)

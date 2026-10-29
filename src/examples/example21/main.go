@@ -13,7 +13,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexMono"
+	"github.com/edragoev1/pdfjet/v9/src/CascadiaMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
@@ -148,7 +148,7 @@ func drawHeaderRows(pdf *pdfjet.PDF) {
 }
 
 func drawSpans(pdf *pdfjet.PDF) {
-	font := pdfjet.NewFontFromFile(pdf, IBMPlexMono.Regular)
+	font := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular)
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 

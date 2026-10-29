@@ -71,7 +71,7 @@ func TestReviewMediaAGposTableOfSubtablesThatAreOneAnotherLoadsAtOnce(t *testing
 	// The coverage index of the one glyph makes room for 65,536 glyphs, and
 	// each of the 20,000 subtables went through all of them: 40 KB of GPOS
 	// table kept a font from loading for a minute.
-	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	font = testOpenTypeWithTable(t, font, "GPOS", testGposBomb(20000))
 	start := time.Now()
 	testWant(t, "(no panic)", testOpenTypeFontDraws(font))
@@ -121,7 +121,7 @@ func TestReviewMediaTheCharacterMapIsReadInOnePassOverItsSegments(t *testing.T) 
 	// 32,766 segments of the character 0xFFFE alone, before the last one: a
 	// search of every segment for every character took 2^31 comparisons. The
 	// font has no OS/2 table, so that every character is looked up.
-	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	font = testOpenTypeWithout(t, font, "OS/2")
 	starts := make([]int, 32766)
 	ends := make([]int, 32766)
@@ -154,7 +154,7 @@ func TestReviewMediaAFontWithoutAnOS2TableHasItsCharacters(t *testing.T) {
 	// The OS/2 table says the first and the last character of the font; a
 	// font without one has every character of its character map, where it
 	// had none and drew every character as .notdef.
-	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	with := newOpenTypeFont(font)
 	without := newOpenTypeFont(testOpenTypeWithout(t, font, "OS/2"))
 	for _, ch := range []rune{'A', 'z', 'ก'} {
@@ -529,7 +529,7 @@ func TestReviewMediaTheLinkOfATurnedImageCoversItAsItIsDrawn(t *testing.T) {
 
 func TestReviewMediaTextFitsInAnyWidthAtAFontSizeOfZero(t *testing.T) {
 	// Text of no size has no width; the size divided the width.
-	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf"))
+	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"))
 	for _, f := range []*Font{testHelvetica(testNewPDF()), font} {
 		f.SetSize(0)
 		if got := f.GetFitChars("Hello", 10); got != 5 {
@@ -543,7 +543,7 @@ func TestReviewMediaTextFitsInAnyWidthAtAFontSizeOfZero(t *testing.T) {
 
 func TestReviewMediaAFontIsEmbeddedOnceWhenItIsAddedTwice(t *testing.T) {
 	doc := testNewDoc()
-	path := testRepoPath(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	path := testRepoPath(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	font1 := NewFontFromFile(doc.pdf, path)
 	font2 := NewFontFromFile(doc.pdf, path)
 	page := NewPage(doc.pdf, letter.Portrait())
