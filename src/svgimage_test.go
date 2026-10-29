@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 func testNewSVG(t *testing.T, svg string) *SVGImage {
@@ -126,14 +128,26 @@ func TestSVGImageNoneOnThePathWinsOverTheColorsOfTheSvgElement(t *testing.T) {
 	}
 }
 
-func TestSVGImageAPathWithoutColorsOrWithAnUnknownFillIsFilledBlack(t *testing.T) {
+func TestSVGImageAPathWithoutColorsIsFilledBlackAndOneOfAnUnknownURLIsNotFilled(t *testing.T) {
 	unset := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 L10 40 Z"/></svg>`)
 	if !strings.HasPrefix(unset, "0 0 0 rg\n") || !strings.HasSuffix(unset, "\nf\n") {
 		t.Errorf("content %q", unset)
 	}
-	gradient := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 L10 40 Z" fill="url(#g)"/></svg>`)
-	if gradient != unset {
-		t.Errorf("%q != %q", gradient, unset)
+	// A url of an element that is not there is none, as a browser draws it.
+	unknown := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 L10 40 Z" fill="url(#g)"/></svg>`)
+	if unknown != "" {
+		t.Errorf("content %q", unknown)
+	}
+}
+
+func TestSVGImageAGradientIsDrawnInTheMeanColorOfItsStops(t *testing.T) {
+	stops := `<stop offset="0" stop-color="#ff0000"/><stop offset="1" style="stop-color: blue"/>`
+	content := testDrawSVG(t, `<svg width="100" height="50"><defs><linearGradient id="g">`+stops+
+		`</linearGradient><radialGradient id="h" href="#g"/></defs>`+
+		`<path d="M10 10 L90 40 L10 40 Z" fill="url(#g)"/><path d="M10 10 L90 40" stroke="url('#h')"/></svg>`)
+	// 255/2 rounds half up; the second gradient takes the stops of the first.
+	if !strings.HasPrefix(content, "0.5 0 0.5 rg\n") || !strings.Contains(content, "0.5 0 0.5 RG\n") {
+		t.Errorf("content %q", content)
 	}
 }
 
@@ -496,7 +510,6 @@ func TestSVGImageColorsAreHexadecimalRGBNamesOrTheCurrentColor(t *testing.T) {
 		`fill="currentColor" color="red"`:            "1 0 0 rg",
 		`fill="currentColor"`:                        "0 0 0 rg",
 		`fill="url(#gradient) red"`:                  "1 0 0 rg",
-		`fill="url(#gradient)"`:                      "0 0 0 rg", // Not drawn: as if not given
 		`fill="unknown"`:                             "0 0 0 rg",
 		`fill="rgb(nan, 0, 0)"`:                      "0 0 0 rg", // Not a number: as if not given
 		`fill="rgb(inf, 0, 0)"`:                      "0 0 0 rg",
@@ -627,6 +640,28 @@ func TestSVGImageValuesThatCannotBeReadAreLeftOut(t *testing.T) {
 	}
 }
 
+func TestSVGImageDrawsTheSeedOfTheFuzzTestOfGroupsTransformsShapesAndStyles(t *testing.T) {
+	// The seed of FuzzSVGImage for what drawing programs write.
+	content := testDrawSVG(t, `<svg width="100" height="50" viewBox="0 0 200 100" preserveAspectRatio="xMinYMax slice">`+
+		`<style>.a{fill:rgb(10%,20,30);stroke:currentColor;stroke-width:2px} .b{opacity:.5}</style>`+
+		`<g transform="translate(10,5) rotate(30 5 5) skewX(10)" color="blue" class="a" fill-rule="evenodd">`+
+		`<rect x="1" y="2" width="30" height="20" rx="4" class="b"/><circle cx="50" cy="20" r="8"/>`+
+		`<ellipse cx="80" cy="20" rx="10" ry="5" style="fill-opacity:0.3;stroke-linecap:round"/>`+
+		`<line x1="0" y1="40" x2="90" y2="45" stroke-linejoin="bevel"/>`+
+		`<polyline points="0,50 10,60 20,50"/><polygon points="30 50 40 60 50 50"/></g>`+
+		`<defs><path d="M0 0 L5 5"/></defs><g display="none"><rect width="5" height="5"/></g></svg>`)
+	// Every shape but the line, which has no inside, is filled with the
+	// even-odd rule; the first in a graphics state of its opacity.
+	if n := strings.Count(content, "\nf*\n"); n != 5 {
+		t.Errorf("%d shapes filled in %q", n, content)
+	}
+	// The slice draws past the size of the image, which cuts it off.
+	if !strings.HasPrefix(content, "q\n0 792 m\n100 792 l\n100 742 l\n0 742 l\nW\nn\n"+
+		"q\n/GS1 gs\n0.1 0.08 0.12 rg\n8.4 788.21 m\n17.93 782.71 l\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
 func TestSVGImageASizeOrATransformTooLargeForAFloatDrawsNothing(t *testing.T) {
 	// A PDF holds numbers below 2^31 and no infinity: a size of inf is no
 	// size, and a path a transform takes out of that range is not drawn.
@@ -721,5 +756,157 @@ func TestANumberOfAnAttributeIsWrittenInDecimal(t *testing.T) {
 	}
 	if n, err := parseSVGFloat("-inf", 64); err != nil || !math.IsInf(n, -1) {
 		t.Errorf("-inf: %v %v", n, err)
+	}
+}
+
+// The text of a chart: text and tspan elements, placed as a browser places
+// them, in Helvetica unless a font is set.
+
+func TestSVGImageDrawsATextAtItsXAndY(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text x="10" y="20" font-size="12">Hi</text></svg>`)
+	if !strings.Contains(content, " 12 Tf\n1 0 0 1 10 772 Tm\n[<4869>] TJ\nET\n") {
+		t.Errorf("content %q", content)
+	}
+	if strings.Contains(content, "W\n") { // Inside the image: nothing is cut off
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAnAnchorMovesTheTextByItsWidthAndDyIsInEm(t *testing.T) {
+	// Hi is 944 thousandths of an em wide in Helvetica: 11.328 at 12.
+	content := testDrawSVG(t, `<svg width="200" height="100"><text x="100" y="20" dy="0.5em" `+
+		`font-size="12" text-anchor="end">Hi</text></svg>`)
+	if !strings.Contains(content, "1 0 0 1 88.67 766 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheTextAndTheTspansAreDrawnInTheOrderOfTheDocument(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text x="0" y="20">`+
+		` A <tspan font-weight="bold">B</tspan>C<title>not drawn</title></text></svg>`)
+	a := strings.Index(content, "[<4120>] TJ") // "A ": the space at the start is left out
+	b := strings.Index(content, "[<42>] TJ")
+	c := strings.Index(content, "[<43>] TJ")
+	if !(a > 0 && b > a && c > b) {
+		t.Errorf("content %q", content)
+	}
+	if strings.Contains(content, "<6E6F74") {
+		t.Errorf("content %q", content)
+	}
+	// The bold B in another font
+	if !strings.Contains(content, "/F2 16 Tf\n") || !strings.Contains(content, "/F3 16 Tf\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageATspanWithAnXOrAYStartsAChunkAnchoredOnItsOwn(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text text-anchor="middle" `+
+		`transform="translate(100,50)" font-size="10"><tspan y="-0.4em">Go</tspan>`+
+		`<tspan x="0" y="0.7em">12%</tspan></text></svg>`)
+	// Go is 1334 thousandths of an em, and 12% 2001.
+	if !strings.Contains(content, "1 0 0 1 93.33 746 Tm\n") || !strings.Contains(content, "1 0 0 1 90 735 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheFontShorthandSetsTheSizeAndTheWeight(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100" style="font: bold 10px sans-serif">`+
+		`<text y="20">A</text><text y="40" font-weight="400">B</text></svg>`)
+	if strings.Count(content, " 10 Tf\n") != 2 {
+		t.Errorf("content %q", content)
+	}
+	if strings.Index(content, "/F") == strings.LastIndex(content, "/F") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageACoreFontDrawsTheMinusSignAsAHyphenMinus(t *testing.T) {
+	content := testDrawSVG(t, "<svg width=\"200\" height=\"100\"><text y=\"20\">−5</text></svg>")
+	if !strings.Contains(content, "[<2D35>] TJ") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAStrokeBeforeTheFillDrawsAHaloUnderTheText(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text y="20" stroke="white" stroke-width="3" `+
+		`stroke-linejoin="round" paint-order="stroke">A</text></svg>`)
+	stroke := strings.Index(content, "1 Tr\n")
+	fill := strings.Index(content, "0 Tr\n")
+	if !(stroke > 0 && fill > stroke) || !strings.Contains(content, "1 1 1 RG\n3 w\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASetFontDrawsTheText(t *testing.T) {
+	pdf := testNewPDF()
+	font := testPlexSans(pdf)
+	page := NewPage(pdf, letter.Portrait())
+	image := testNewSVG(t, `<svg width="200" height="100"><text y="20" font-weight="bold">Hi</text></svg>`)
+	image.SetFont(font) // The bold text too, as no bold font is set
+	image.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, "> Tj\n") || strings.Contains(content, "TJ") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageADashArrayOfAnOddNumberOfLengthsIsRepeated(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><path d="M0 10 L100 10" stroke="red" `+
+		`stroke-dasharray="4, 2 1" stroke-dashoffset="1"/>`+
+		`<path d="M0 20 L100 20" stroke="red" stroke-dasharray="0 0"/>`+
+		`<path d="M0 30 L100 30" stroke="red" stroke-dasharray="4 -2"/></svg>`)
+	if !strings.Contains(content, "q\n[4 2 1 4 2 1] 1 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if strings.Count(content, " d\n") != 1 { // The others are solid
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAUseDrawsTheElementItNamesMovedByItsXAndY(t *testing.T) {
+	content := testDrawSVG(t, `<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="100">`+
+		`<defs><rect id="r" width="10" height="10"/><symbol id="s"><circle r="2"/></symbol></defs>`+
+		`<use href="#r" x="20" y="30" fill="red"/><use xlink:href="#s" x="50" y="50"/>`+
+		`<g id="loop"><use href="#loop"/></g></svg>`)
+	if !strings.HasPrefix(content, "1 0 0 rg\n20 762 m\n30 762 l\n") || !strings.Contains(content, "\n52 742 m\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageUsesOfUsesThatDrawTooManyElementsFail(t *testing.T) {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10"><rect id="g0" width="1" height="1"/>`)
+	for level := 1; level <= 7; level++ {
+		svg.WriteString(`<g id="g` + strconv.Itoa(level) + `">`)
+		for i := 0; i < 10; i++ {
+			svg.WriteString(`<use href="#g` + strconv.Itoa(level-1) + `"/>`)
+		}
+		svg.WriteString("</g>")
+	}
+	svg.WriteString("</svg>")
+	if _, err := NewSVGImage(strings.NewReader(svg.String())); err == nil {
+		t.Error("ten million elements drawn again were read")
+	}
+}
+
+func TestSVGImageAMarkerIsDrawnAtTheEndTurnedWithThePath(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><defs><marker id="m" markerWidth="4" `+
+		`markerHeight="4" orient="auto" refX="1"><rect width="2" height="1"/></marker></defs>`+
+		`<path d="M10 10 L10 50" stroke="black" stroke-width="2" marker-end="url(#m)"/></svg>`)
+	// Turned 90 degrees down the path and twice the size, for the stroke
+	// width: from 10, 48 to 8, 52.
+	if !strings.Contains(content, "S\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAClipPathCutsOffWhatIsOutsideIt(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><clipPath id="c"><rect width="50" height="50"/>`+
+		`</clipPath><g clip-path="url(#c)" transform="translate(10,0)"><rect x="10" y="10" width="80" `+
+		`height="20"/></g><clipPath id="none"/><rect width="5" height="5" clip-path="url(#none)"/></svg>`)
+	// The clip path is in the user space of the group, moved with it.
+	if content != "q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"+
+		"0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
 	}
 }

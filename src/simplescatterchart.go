@@ -12,6 +12,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"math"
 	"strconv"
 	"strings"
 
@@ -32,9 +33,10 @@ const (
 // scatterPoint is a point of a simple scatter chart, highlighted when it has
 // a name.
 type scatterPoint struct {
-	x, y float32
-	name string
-	uri  string // The link of a highlighted point, or ""
+	x, y   float32
+	name   string
+	uri    string // The link of a highlighted point, or ""
+	series int    // The index of its series, or -1 for none
 }
 
 // SimpleScatterChart is a chart of points on two axes that shows how two
@@ -57,6 +59,7 @@ type SimpleScatterChart struct {
 	xAxisTitle, yAxisTitle string
 	altDescription         string
 	points                 []scatterPoint
+	series                 []string // The names of the series
 	trendLine              bool
 	xMin, xMax, yMin, yMax float32
 	xRangeSet, yRangeSet   bool
@@ -110,15 +113,32 @@ func (chart *SimpleScatterChart) SetAltDescription(altDescription string) *Simpl
 // Add adds a point, drawn as a small gray dot. A point whose x or y is not a
 // number is left out.
 func (chart *SimpleScatterChart) Add(x, y float32) *SimpleScatterChart {
-	chart.points = append(chart.points, scatterPoint{x: x, y: y})
+	return chart.addPoint(scatterPoint{x: x, y: y})
+}
+
+// addPoint adds the point to the series added last, if any.
+func (chart *SimpleScatterChart) addPoint(p scatterPoint) *SimpleScatterChart {
+	p.series = len(chart.series) - 1
+	chart.points = append(chart.points, p)
+	return chart
+}
+
+// AddSeries starts a series: the points added after it are its points, drawn
+// in its color and its shape, and its name is in the legend over the plot.
+// The series take the colors of the palette of BarChart, blue, orange, red,
+// teal and so on, and the shapes circle, square, triangle, star, diamond and
+// cross, in turn. The points added before the first series are gray dots, as
+// those of a chart without series.
+//   - name: the name of the series, in the legend.
+func (chart *SimpleScatterChart) AddSeries(name string) *SimpleScatterChart {
+	chart.series = append(chart.series, name)
 	return chart
 }
 
 // AddNamed adds a point that is highlighted: a navy dot with its name beside
 // it.
 func (chart *SimpleScatterChart) AddNamed(name string, x, y float32) *SimpleScatterChart {
-	chart.points = append(chart.points, scatterPoint{x: x, y: y, name: name})
-	return chart
+	return chart.addPoint(scatterPoint{x: x, y: y, name: name})
 }
 
 // AddLinked adds a point that is highlighted and is a link: a navy dot with
@@ -126,8 +146,7 @@ func (chart *SimpleScatterChart) AddNamed(name string, x, y float32) *SimpleScat
 // each such point is a figure of its own, described by its name, in the Link
 // that holds its annotation, as PDF/UA asks.
 func (chart *SimpleScatterChart) AddLinked(name string, x, y float32, uri string) *SimpleScatterChart {
-	chart.points = append(chart.points, scatterPoint{x: x, y: y, name: name, uri: uri})
-	return chart
+	return chart.addPoint(scatterPoint{x: x, y: y, name: name, uri: uri})
 }
 
 // SetTrendLine draws the trend line of the points, their least squares line,
@@ -211,7 +230,115 @@ func (chart *SimpleScatterChart) top() float32 {
 	if chart.title != "" || chart.subtitle != "" {
 		top += chart.f2.size
 	}
-	return top
+	return top + float32(float32(float32(chart.drawLegend(nil, 0.0))*scatterLegendRow)*chart.f2.size)
+}
+
+// The shapes of the series, in turn, as D3 draws its symbols.
+const (
+	scatterCircle = iota
+	scatterSquare
+	scatterTriangle
+	scatterStar
+	scatterDiamond
+	scatterCross
+	scatterShapes
+)
+
+// scatterLegendRow is the height of a row of the legend, in sizes of the
+// numbers.
+const scatterLegendRow float32 = 1.5
+
+// scatterSeriesColor returns the color of a series.
+func scatterSeriesColor(index int) int32 {
+	return barChartPalette[index%len(barChartPalette)]
+}
+
+// drawLegend draws the legend, the shape and the name of each series, from
+// the baseline of its first row, its rows wrapped at the right of the chart,
+// when there is a page; and returns the number of its rows, 0 for a chart
+// without series.
+func (chart *SimpleScatterChart) drawLegend(page *Page, baseline float32) int {
+	if len(chart.series) == 0 {
+		return 0
+	}
+	f2 := chart.f2
+	size := f2.size
+	pad := chart.pad()
+	r := float32(0.35 * size)
+	gap := float32(size / 2.0)
+	left := chart.x + pad
+	px := left
+	rows := 1
+	for i, series := range chart.series {
+		name := shorten(f2, size, series, chart.w-float32(2.0*pad)-float32(2.0*r)-gap)
+		width := float32(2.0*r) + gap + f2.StringWidth(size, name)
+		if px > left && px+width > chart.x+chart.w-pad {
+			px = left
+			baseline += float32(scatterLegendRow * size)
+			rows++
+		}
+		if page != nil {
+			page.SetPenColor(scatterSeriesColor(i))
+			page.SetPenWidth(float32(0.12 * size))
+			drawScatterShape(page, i%scatterShapes, px+r, baseline-float32(f2.GetAscent(size)/2.0), r, false)
+			page.drawString(f2, size, name, px+float32(2.0*r)+gap, baseline, colorToRGB(simpleBarInk), nil)
+		}
+		px += width + size
+	}
+	return rows
+}
+
+// drawScatterShape draws a shape of a series centered on cx, cy, of about the
+// area of a circle of radius r, its outline in the pen color, or filled in
+// the brush color.
+func drawScatterShape(page *Page, shape int, cx, cy, r float32, fill bool) {
+	if shape == scatterCircle {
+		if fill {
+			page.FillCircle(cx, cy, r)
+		} else {
+			page.DrawCircle(cx, cy, r)
+		}
+		return
+	}
+	var xy []float32
+	switch shape {
+	case scatterSquare:
+		a := float32(0.886 * r)
+		xy = []float32{-a, -a, a, -a, a, a, -a, a}
+	case scatterTriangle:
+		// Pointing up, its center halfway down its height
+		a := float32(1.35 * r)
+		xy = []float32{0.0, -a, float32(0.866 * a), float32(0.5 * a), float32(-0.866 * a), float32(0.5 * a)}
+	case scatterStar:
+		xy = make([]float32, 20)
+		for i := 0; i < 10; i++ {
+			angle := float64(math.Pi*float64(i)) / 5.0
+			radius := float32(0.5 * r)
+			if i%2 == 0 {
+				radius = float32(1.3 * r)
+			}
+			xy[2*i] = float32(float64(radius) * math.Sin(angle))
+			xy[2*i+1] = float32(float64(-radius) * math.Cos(angle))
+		}
+	case scatterDiamond:
+		a := float32(1.15 * r)
+		b := float32(0.75 * r)
+		xy = []float32{0.0, -a, b, 0.0, 0.0, a, -b, 0.0}
+	default:
+		// A cross of five squares, as wide as three
+		a := float32(1.1 * r)
+		b := a / 3.0
+		xy = []float32{-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b}
+	}
+	page.MoveTo(cx+xy[0], cy+xy[1])
+	for i := 2; i < len(xy); i += 2 {
+		page.LineTo(cx+xy[i], cy+xy[i+1])
+	}
+	if fill {
+		page.FillPath()
+	} else {
+		page.ClosePath() // Closed and stroked
+	}
 }
 
 // label formats a number of an axis with the decimals its step needs.
@@ -328,6 +455,18 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 	if chart.xAxisTitle != "" && chart.yAxisTitle != "" {
 		sb.WriteString(", " + chart.yAxisTitle + " against " + chart.xAxisTitle)
 	}
+	if len(chart.series) > 0 {
+		// in the series A, B and C
+		sb.WriteString(", in the series ")
+		for i, series := range chart.series {
+			if i == len(chart.series)-1 && i > 0 {
+				sb.WriteString(" and ")
+			} else if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(series)
+		}
+	}
 	named := 0
 	for _, p := range shown {
 		if p.name == "" {
@@ -440,6 +579,13 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		page.drawString(f2, chart.subtitleSize(), shorten(f2, chart.subtitleSize(), chart.subtitle, chart.w-float32(2.0*pad)),
 			chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
 	}
+	if len(chart.series) > 0 {
+		if chart.title != "" || chart.subtitle != "" {
+			baseline += f2.size
+		}
+		row := float32(scatterLegendRow * size)
+		chart.drawLegend(page, baseline+row-float32((row-ascent)/2.0))
+	}
 
 	// The horizontal grid and the numbers of both axes, each where it
 	// leaves the one before it room
@@ -538,18 +684,31 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	page.SetBrushColor(chart.dotColor)
 	r := float32(0.3 * size)
 	for _, p := range points {
-		if p.name == "" && onPlot(p, xAxis, yAxis) {
+		if p.series < 0 && p.name == "" && onPlot(p, xAxis, yAxis) {
 			page.FillCircle(xAt(p.x), yAt(p.y), r)
 		}
 	}
 	page.RestoreGraphicsState()
+	// The points of the series, the outlines of their shapes, opaque
+	page.SetPenWidth(float32(0.12 * size))
+	for _, p := range points {
+		if p.series >= 0 && p.name == "" && onPlot(p, xAxis, yAxis) {
+			page.SetPenColor(scatterSeriesColor(p.series))
+			drawScatterShape(page, p.series%scatterShapes, xAt(p.x), yAt(p.y), float32(0.35*size), false)
+		}
+	}
 	big := float32(0.42 * size)
 	// named draws a highlighted point and its name, and returns the box of the
 	// two: x, y, w, h
 	named := func(p scatterPoint) [4]float32 {
 		px, py := xAt(p.x), yAt(p.y)
-		page.SetBrushColor(chart.highlightColor)
-		page.FillCircle(px, py, big)
+		if p.series >= 0 {
+			page.SetBrushColor(scatterSeriesColor(p.series))
+			drawScatterShape(page, p.series%scatterShapes, px, py, big, true)
+		} else {
+			page.SetBrushColor(chart.highlightColor)
+			page.FillCircle(px, py, big)
+		}
 		// A name of two fifths of the plot at most, and in the plot
 		name := shorten(f1, size, p.name, float32(0.4*(right-left)))
 		width := f1.StringWidth(size, name)
@@ -568,7 +727,13 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		}
 		page.FillRect(lx-1.0, baseline-f1.GetAscent(size)-1.0,
 			width+2.0, f1.GetAscent(size)+f1.GetDescent(size)+2.0)
-		page.drawString(f1, size, name, lx, baseline, colorToRGB(chart.highlightColor), nil)
+		// The name of a point of a series in ink, which reads on the panel
+		// whatever the color of the series
+		ink := chart.highlightColor
+		if p.series >= 0 {
+			ink = simpleBarInk
+		}
+		page.drawString(f1, size, name, lx, baseline, colorToRGB(ink), nil)
 		x1 := min(px-big, lx)
 		y1 := min(py-big, baseline-f1.GetAscent(size))
 		x2 := max(px+big, lx+width)

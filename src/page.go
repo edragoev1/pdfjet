@@ -527,6 +527,33 @@ func (page *Page) drawString(
 	page.appendString("ET\n")
 }
 
+// drawSVGText draws the string of an SVG image with the text matrix, in the
+// brush color, or stroked in the pen color and width for the rendering mode 1.
+func (page *Page) drawSVGText(font *Font, fontSize float32, str string, tm [6]float32, mode int) {
+	page.appendString("BT\n")
+	page.setTextFont(font, fontSize)
+	if mode != 0 || page.renderingModeSet {
+		page.renderingModeSet = true
+		page.appendInteger(mode)
+		page.appendString(" Tr\n")
+	}
+	for _, value := range tm {
+		page.appendFloat32(value)
+		page.appendString(" ")
+	}
+	page.appendString("Tm\n")
+	if font.isCoreFont {
+		page.appendString("[<")
+		page.drawASCIIString(font, str)
+		page.appendString(">] TJ\n")
+	} else {
+		page.appendString("<")
+		page.drawUnicodeString(font, str)
+		page.appendString("> Tj\n")
+	}
+	page.appendString("ET\n")
+}
+
 // The hooks that a build with the texttrace tag sets, in texttrace.go, to
 // record the text the examples draw: .github/scripts/check-example-text.py
 // compares it with the text extracted from the PDFs. They are nil otherwise.

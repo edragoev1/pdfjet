@@ -42,7 +42,20 @@ type svgState struct {
 	opacity       float32 // The opacities of the element and its ancestors, multiplied
 	ownOpacity    float32 // The opacity of the element itself, not inherited
 	matrix        [6]float64
-	hidden        bool // In <defs> and the like, or under display="none": not drawn
+	hidden        bool      // In <defs> and the like, or under display="none": not drawn
+	dashArray     []float32 // stroke-dasharray, in the user space; nil is a solid line
+	dashOffset    float32
+	strokeFirst   bool    // paint-order: the stroke drawn before the fill
+	fontSize      float32 // In the user space; medium, as a browser has it
+	bold          bool    // A font-weight of bold, 600 or more
+	textAnchor    int     // 0 start, 1 middle, 2 end
+	baseline      int     // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
+	markerStart   string  // The ids of the markers, inherited; "" for none
+	markerMid     string
+	markerEnd     string
+	clipPath      string           // The id of the clip path of the element itself, not inherited
+	clips         []*svgPath       // The clip paths of the element and of its ancestors; never changed in place
+	paints        map[string]int32 // The colors of the gradients, by id, shared by every state
 }
 
 // newSVGState returns the state of the svg element before its attributes: an
@@ -60,6 +73,7 @@ func newSVGState() svgState {
 		opacity:       1.0,
 		ownOpacity:    1.0,
 		matrix:        svgIdentity,
+		fontSize:      16.0,
 	}
 }
 
@@ -203,7 +217,7 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 	}
 	switch name {
 	case "fill", "stroke":
-		paint, current, ok, err := parseSVGPaint(colorMap, value)
+		paint, current, ok, err := parseSVGPaint(colorMap, state.paints, value)
 		if err != nil {
 			return fmt.Errorf("invalid SVG %s: %w", name, err)
 		}
@@ -273,23 +287,233 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 		if value == "none" {
 			state.hidden = true
 		}
+	case "stroke-dasharray":
+		state.dashArray = parseSVGDashArray(value)
+	case "stroke-dashoffset":
+		if strings.HasSuffix(value, "%") {
+			return nil
+		}
+		if offset, err := parseSVGLength(value); err == nil {
+			state.dashOffset = offset
+		}
+	case "paint-order":
+		// The stroke is drawn first when it comes before the fill, and the
+		// markers, which PDFjet draws last, are left out.
+		order := strings.Fields(value)
+		stroke := slices.Index(order, "stroke")
+		fill := slices.Index(order, "fill")
+		state.strokeFirst = stroke >= 0 && (fill < 0 || stroke < fill)
+	case "font-size":
+		if size, ok := parseSVGFontSize(value, state.fontSize); ok {
+			state.fontSize = size
+		}
+	case "font-weight":
+		if bold, ok := parseSVGFontWeight(value); ok {
+			state.bold = bold
+		}
+	case "font":
+		state.setFont(value)
+	case "text-anchor":
+		switch value {
+		case "start":
+			state.textAnchor = 0
+		case "middle":
+			state.textAnchor = 1
+		case "end":
+			state.textAnchor = 2
+		}
+	case "dominant-baseline", "alignment-baseline":
+		switch value {
+		case "middle", "central":
+			state.baseline = 1
+		case "hanging", "text-before-edge":
+			state.baseline = 2
+		case "auto", "alphabetic", "baseline":
+			state.baseline = 0
+		}
+	case "marker-start":
+		state.markerStart = svgURLId(value)
+	case "marker-mid":
+		state.markerMid = svgURLId(value)
+	case "marker-end":
+		state.markerEnd = svgURLId(value)
+	case "marker":
+		state.markerStart = svgURLId(value)
+		state.markerMid = state.markerStart
+		state.markerEnd = state.markerStart
+	case "clip-path":
+		state.clipPath = svgURLId(value)
 	}
 	return nil
 }
 
+// svgURLId returns the id of a reference, url(#id), with or without quotes,
+// and "" for none or for a value of another kind.
+func svgURLId(value string) string {
+	value = strings.TrimSpace(value)
+	if !strings.HasPrefix(value, "url(") {
+		return ""
+	}
+	end := strings.Index(value, ")")
+	if end < 0 {
+		return ""
+	}
+	id := strings.TrimSpace(value[4:end])
+	if len(id) >= 2 && (id[0] == '"' || id[0] == '\'') && id[len(id)-1] == id[0] {
+		id = strings.TrimSpace(id[1 : len(id)-1])
+	}
+	if len(id) < 2 || id[0] != '#' {
+		return ""
+	}
+	return id[1:]
+}
+
+// parseSVGDashArray reads a stroke-dasharray: the lengths of the dashes and
+// the gaps, as many again when they are an odd number. It returns nil, a
+// solid line, for none, for a length below zero or one it cannot read, and
+// for lengths that are all zero.
+func parseSVGDashArray(value string) []float32 {
+	if value == "none" {
+		return nil
+	}
+	lengths := make([]float32, 0)
+	for _, field := range strings.Fields(strings.ReplaceAll(value, ",", " ")) {
+		if strings.HasSuffix(field, "%") {
+			return nil
+		}
+		length, err := parseSVGLength(field)
+		if err != nil || length < 0.0 || math.IsNaN(float64(length)) || math.IsInf(float64(length), 0) {
+			return nil
+		}
+		lengths = append(lengths, length)
+	}
+	sum := float32(0.0)
+	for _, length := range lengths {
+		sum += length
+	}
+	if len(lengths) == 0 || sum == 0.0 {
+		return nil
+	}
+	count := len(lengths)
+	dashes := make([]float32, count)
+	if count%2 != 0 {
+		dashes = make([]float32, 2*count)
+	}
+	for i := range dashes {
+		dashes[i] = lengths[i%count]
+	}
+	return dashes
+}
+
+// svgFontSizes are the font sizes of the keywords, as a browser has them.
+var svgFontSizes = map[string]float32{
+	"xx-small": 9.0, "x-small": 10.0, "small": 13.0, "medium": 16.0,
+	"large": 18.0, "x-large": 24.0, "xx-large": 32.0,
+}
+
+// parseSVGFontSize reads a font-size: a length, a number of em or a
+// percentage of the font size of the parent, or a keyword. ok is false for a
+// size it cannot read or one below zero.
+func parseSVGFontSize(value string, parentSize float32) (float32, bool) {
+	if size, ok := svgFontSizes[value]; ok {
+		return size, true
+	}
+	var size float32
+	if strings.HasSuffix(value, "em") && !strings.HasSuffix(value, "rem") {
+		factor, ok := parseSVGFactor(value[:len(value)-2])
+		if !ok {
+			return 0.0, false
+		}
+		size = float32(factor * parentSize)
+	} else if strings.HasSuffix(value, "%") {
+		factor, ok := parseSVGFactor(value[:len(value)-1])
+		if !ok {
+			return 0.0, false
+		}
+		size = float32(factor*parentSize) / 100.0
+	} else {
+		length, err := parseSVGLength(value)
+		if err != nil {
+			return 0.0, false
+		}
+		size = length
+	}
+	if size < 0.0 || math.IsNaN(float64(size)) || math.IsInf(float64(size), 0) {
+		return 0.0, false
+	}
+	return size, true
+}
+
+// parseSVGFactor reads a number; ok is false for one it cannot read.
+func parseSVGFactor(text string) (float32, bool) {
+	number, err := parseSVGFloat(strings.TrimSpace(text), 32)
+	if err != nil {
+		return 0.0, false
+	}
+	return float32(number), true
+}
+
+// parseSVGFontWeight reads a font-weight: bold is true for bold, bolder and
+// 600 or more, false for normal, lighter and less; ok is false for a weight
+// it cannot read.
+func parseSVGFontWeight(value string) (bold, ok bool) {
+	switch value {
+	case "bold", "bolder":
+		return true, true
+	case "normal", "lighter":
+		return false, true
+	}
+	weight, ok := parseSVGFactor(value)
+	if !ok || weight < 1.0 || weight > 1000.0 {
+		return false, false
+	}
+	return weight >= 600.0, true
+}
+
+// setFont sets the size and the weight of the font shorthand, such as "bold
+// 10px sans-serif": the words before the size, then the size, which may have
+// a line height after a slash. A shorthand without a weight is normal.
+func (state *svgState) setFont(value string) {
+	bold := false
+	for _, field := range strings.Fields(value) {
+		size := field
+		if slash := strings.Index(field, "/"); slash >= 0 {
+			size = field[:slash]
+		}
+		// A size has a unit or is a keyword; a number alone is a weight.
+		if size != "" && (size[len(size)-1] < '0' || size[len(size)-1] > '9') {
+			if fontSize, ok := parseSVGFontSize(size, state.fontSize); ok {
+				state.fontSize = fontSize
+				state.bold = bold
+				return
+			}
+		}
+		if weight, ok := parseSVGFontWeight(field); ok {
+			bold = weight
+		}
+	}
+}
+
 // parseSVGPaint reads the value of a fill or a stroke: none, currentColor, a
-// color, or a url of a gradient or a pattern, which PDFjet does not draw, and
-// the color after it, if any, which SVG draws when it cannot. ok is false for
-// a value that leaves the paint as it is inherited.
-func parseSVGPaint(colorMap map[string]int32, value string) (paint int32, current, ok bool, err error) {
+// color, or a url of a gradient, which PDFjet draws in the mean color of its
+// stops, its color in the paints. A url of anything else, a pattern or an
+// element that is not there, is the color after it, which SVG draws when it
+// cannot draw the url, or none, as a browser draws it. ok is false for a
+// value that leaves the paint as it is inherited.
+func parseSVGPaint(colorMap, paints map[string]int32, value string) (paint int32, current, ok bool, err error) {
 	if strings.HasPrefix(value, "url(") {
 		end := strings.Index(value, ")")
 		if end < 0 {
 			return 0, false, false, nil
 		}
+		if id := svgURLId(value[:end+1]); id != "" {
+			if gradient, found := paints[id]; found {
+				return gradient, false, true, nil
+			}
+		}
 		value = strings.TrimSpace(value[end+1:])
 		if value == "" {
-			return 0, false, false, nil
+			value = "none"
 		}
 	}
 	switch value {

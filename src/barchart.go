@@ -33,9 +33,9 @@ type barSeries struct {
 const noColor int32 = -1
 
 // The look of the simple charts: ink for the title and the values, a muted gray
-// for the rest of the text, light grid lines, and a palette whose colors differ
-// in lightness, so that they stay apart in grayscale and for a reader who does
-// not tell red from green.
+// for the rest of the text, light grid lines, and the colors of the series from
+// the Tableau 10 palette, which D3 draws its charts with: ten colors chosen to
+// stay apart from one another.
 const (
 	barChartInk      = simpleBarInk
 	barChartMuted    = simpleBarMuted
@@ -44,14 +44,16 @@ const (
 )
 
 var barChartPalette = []int32{
-	0x1F3A5F, // navy
-	0x6F95C2, // steel blue
-	0xD08C3C, // amber
-	0x76987C, // sage
-	0xA7AFB8, // gray
-	0x9C5B5B, // brick
-	0x4F7A8C, // slate
-	0xC9B458, // ochre
+	0x4E79A7, // blue
+	0xF28E2C, // orange
+	0xE15759, // red
+	0x76B7B2, // teal
+	0x59A14F, // green
+	0xEDC949, // yellow
+	0xAF7AA1, // purple
+	0xFF9DA7, // pink
+	0x9C755F, // brown
+	0xBAB0AB, // gray
 }
 
 // BarChart is a bar chart renderer for PDF pages: one slot per category, the

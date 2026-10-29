@@ -92,17 +92,17 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 	}
 }
 
-// Slices in the palette, navy first; thin white lines between them; thin
-// gray leader lines; the percentage white on navy, ink on the light steel
-// blue; and no black line or text.
+// Slices in the palette, blue first; thin white lines between them; thin
+// gray leader lines; the percentage white on blue, ink on orange; and no
+// black line or text.
 func TestDonutChartTheDefaultLookIsQuiet(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
 	testDonutChart(pdf).Add("a", 60).Add("b", 40).DrawOn(page)
 	content := testContent(page)
 	for _, want := range []string{
-		"0.12 0.23 0.37 rg",           // navy
-		"0.44 0.58 0.76 rg",           // steel blue
+		"0.31 0.47 0.65 rg",           // blue
+		"0.95 0.56 0.17 rg",           // orange
 		"1 1 1 RG\n1.5 w\n",           // the white lines between
 		"0.55 0.59 0.64 RG\n0.75 w\n", // the leader lines
 	} {
@@ -323,14 +323,14 @@ func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
 	}
 
 	page = NewPage(pdf, testLetterPortrait())
-	nine := testDonutChart(pdf)
-	for i := 0; i < 9; i++ {
-		nine.Add("", 1)
+	eleven := testDonutChart(pdf)
+	for i := 0; i < 11; i++ {
+		eleven.Add("", 1)
 	}
-	nine.DrawOn(page)
+	eleven.DrawOn(page)
 	content = testContent(page)
-	if strings.Index(content, "0.12 0.23 0.37 rg") != strings.LastIndex(content, "0.12 0.23 0.37 rg") {
-		t.Errorf("two slices in navy: %q", content)
+	if strings.Index(content, "0.31 0.47 0.65 rg") != strings.LastIndex(content, "0.31 0.47 0.65 rg") {
+		t.Errorf("two slices in blue: %q", content)
 	}
 }
 

@@ -129,7 +129,7 @@ func TestBarChartStackedBarsUseTheSumsOfTheCategoriesForTheValueAxis(t *testing.
 	}
 }
 
-// The first series in navy, the grid lines light gray and solid, the text gray
+// The first series in blue, the grid lines light gray and solid, the text gray
 // or ink, and no black line or text.
 func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 	pdf := testNewPDF()
@@ -137,7 +137,7 @@ func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 	chart := testBarChart(pdf).SetCategories("a", "b").SetTitle("t").SetSubtitle("s")
 	chart.AddSeries("one", []float32{20, 75}).AddSeries("two", []float32{30, 10})
 	content := testDrawBarChart(t, chart, page)
-	for _, want := range []string{"0.12 0.23 0.37 rg", "0.44 0.58 0.76 rg", "0.88 0.89 0.91 RG\n0.5 w\n"} {
+	for _, want := range []string{"0.31 0.47 0.65 rg", "0.95 0.56 0.17 rg", "0.88 0.89 0.91 RG\n0.5 w\n"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("%q missing from %q", want, content)
 		}
@@ -305,10 +305,10 @@ func TestBarChartTheTopOfTheChartIsWhatItHas(t *testing.T) {
 	}
 }
 
-// testBarHeight returns the height of the first bar the content fills in navy.
+// testBarHeight returns the height of the first bar the content fills in blue.
 func testBarHeight(content string) float32 {
-	navy := strings.Index(content, "0.12 0.23 0.37 rg\n")
-	i := navy + strings.Index(content[navy:], " re\n")
+	blue := strings.Index(content, "0.31 0.47 0.65 rg\n")
+	i := blue + strings.Index(content[blue:], " re\n")
 	parts := strings.Split(content[strings.LastIndex(content[:i], "\n")+1:i], " ")
 	height, _ := strconv.ParseFloat(parts[3], 32)
 	return float32(math.Abs(height))
