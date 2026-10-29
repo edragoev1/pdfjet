@@ -31,9 +31,9 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     -d out/production
-# The fonts PDFjet carries, resources of com.pdfjet, with their licenses
-mkdir -p out/production/com/pdfjet/bundledfonts
-cp src/bundledfonts/* out/production/com/pdfjet/bundledfonts/
+# The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
+mkdir -p out/production/com/pdfjet/fonts
+cp -R resources/fonts/* out/production/com/pdfjet/fonts/
 jar cf PDFjet.jar -C out/production .
 
 for i in $(seq 1 50);

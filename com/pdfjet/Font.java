@@ -9,6 +9,8 @@ package com.pdfjet;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -366,8 +368,11 @@ final public class Font {
 
     /**
      * Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
-     * to a .ttf.stream or .otf.stream file, the fonts PDFjet shipped before
-     * 9.0.5, opens the .ttf or else the .otf file of the same name beside it.
+     * to one of the fonts PDFjet carries, such as the constants of
+     * com.pdfjet.fonts, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is
+     * read from the library when there is no such file. A path to a
+     * .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
+     * opens the .ttf or else the .otf file of the same name beside it.
      *
      * @param pdf      the pdf object.
      * @param fontPath the font path.
@@ -376,10 +381,31 @@ final public class Font {
     public Font(PDF pdf, String fontPath) throws Exception {
         this.pdf = pdf;
         fontPath = fontFileOf(fontPath);
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fontPath))) {
+        try (InputStream inputStream = open(fontPath)) {
             OpenTypeFont.register(pdf, this, inputStream);
         }
         setSize(size);
+    }
+
+    // Opens the font file of the path, or, when there is no such file, the
+    // font of that name that PDFjet carries; a font it does not carry, such
+    // as one of the fonts of pdfjet-fonts it left out, throws, saying where
+    // to get it.
+    static InputStream open(String fontPath) throws IOException {
+        File file = new File(fontPath);
+        if (!file.exists()) {
+            InputStream bundled = BundledFonts.open(fontPath);
+            if (bundled != null) {
+                return new BufferedInputStream(bundled);
+            }
+            String path = fontPath.replace('\\', '/');
+            if (path.startsWith("fonts/") || path.contains("/fonts/")) {
+                throw new FileNotFoundException(fontPath + " is not a file, nor one of the fonts PDFjet carries; "
+                        + "the fonts it came with before 9.1.7, Noto Sans among them, are at "
+                        + BundledFonts.PDFJET_FONTS);
+            }
+        }
+        return new BufferedInputStream(new FileInputStream(file));
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream
@@ -394,6 +420,16 @@ final public class Font {
                 for (String ext : new String[] {".ttf", ".otf"}) {
                     if (new File(base + ext).exists()) {
                         return base + ext;
+                    }
+                }
+                // The font PDFjet carries of that name, when there is no file
+                for (String ext : new String[] {".ttf", ".otf"}) {
+                    try (InputStream bundled = BundledFonts.open(base + ext)) {
+                        if (bundled != null) {
+                            return base + ext;
+                        }
+                    } catch (IOException e) {
+                        // Not carried
                     }
                 }
             }

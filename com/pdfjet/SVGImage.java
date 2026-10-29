@@ -1182,7 +1182,7 @@ public class SVGImage implements Drawable {
         if (bundled == null) {
             pdf.fail(new IllegalStateException("The font "
                     + BundledFonts.fileName(run.family, run.weight, run.italic)
-                    + " is not in the library, which was built without the fonts of src/bundledfonts: "
+                    + " is not in the library, which was built without the fonts of resources/fonts: "
                     + "build it with build-java.sh, or set a font with setFont."));
         }
         return bundled;

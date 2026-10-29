@@ -40,8 +40,14 @@ public final class TestSupport {
         return new File(System.getProperty("pdfjet.root", "."), path);
     }
 
+    // A file of the repository, or a font PDFjet carries, as the Font
+    // constructor that takes a path reads it.
     public static InputStream open(String path) throws IOException {
-        return new BufferedInputStream(new FileInputStream(file(path)));
+        File file = file(path);
+        if (!file.exists() && path.startsWith("fonts/")) {
+            return Font.open(path);
+        }
+        return new BufferedInputStream(new FileInputStream(file));
     }
 
     public static PDF newPDF() throws Exception {
