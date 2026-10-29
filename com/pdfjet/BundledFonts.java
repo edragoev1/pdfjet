@@ -54,11 +54,20 @@ final class BundledFonts {
     static final int SERIF = 1;
     static final int MONO = 2;
     private static final String[] FAMILIES = {"IBMPlexSans", "SourceSerif4", "CascadiaMono"};
-    // The weights of the faces of each family, by the names of their files.
+    // The CSS weights the faces of each family stand for, and their styles.
+    // Cascadia Mono's strokes are heavier than IBM Plex Sans's at the same
+    // weight: its SemiLight is as thick as Plex Sans Regular, so it stands
+    // for 400, and its Regular for 500, as in PDFjet Forms (the owner, 29
+    // October 2026); its SemiBold and Bold match Plex Sans's as they are.
     private static final int[][] WEIGHTS = {
         {100, 300, 400, 450, 500, 600, 700},
         {300, 400, 500, 600, 700},
-        {300, 350, 400, 600, 700},
+        {300, 400, 500, 600, 700},
+    };
+    private static final String[][] STYLES = {
+        {"Thin", "Light", "Regular", "Text", "Medium", "SemiBold", "Bold"},
+        {"Light", "Regular", "Medium", "SemiBold", "Bold"},
+        {"Light", "SemiLight", "Regular", "SemiBold", "Bold"},
     };
 
     // Returns the name of a face of an SVG family, Family/File: the weight
@@ -66,13 +75,16 @@ final class BundledFonts {
     // italic or upright.
     static String fileName(int family, int weight, boolean italic) {
         int w = match(WEIGHTS[family], weight);
-        String style = (w == 100) ? "Thin" : (w == 300) ? "Light" : (w == 350) ? "SemiLight"
-                : (w == 450) ? "Text" : (w == 500) ? "Medium" : (w == 600) ? "SemiBold"
-                : (w == 700) ? "Bold" : "";
-        if (italic) {
-            style += "Italic";
+        String style = "Regular";
+        for (int i = 0; i < WEIGHTS[family].length; i++) {
+            if (WEIGHTS[family][i] == w) {
+                style = STYLES[family][i];
+            }
         }
-        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + (style.isEmpty() ? "Regular" : style) + ".ttf";
+        if (italic) {
+            style = style.equals("Regular") ? "Italic" : style + "Italic";
+        }
+        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + style + ".ttf";
     }
 
     // Returns the weight CSS matches to the one asked for, of the weights a

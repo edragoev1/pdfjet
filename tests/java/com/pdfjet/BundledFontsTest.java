@@ -86,4 +86,28 @@ class BundledFontsTest {
                 () -> new Font(objects, "fonts/NotoSans/NotoSans-Regular.ttf"));
         assertTrue(e.getMessage().contains(BundledFonts.PDFJET_FONTS), e.getMessage());
     }
+
+    @Test
+    void cssWeightsMatchFacesThatLookAlikeAcrossTheFamilies() {
+        // Cascadia Mono SemiLight is as thick as IBM Plex Sans Regular: it
+        // stands for 400, and Regular for 500
+        String[][] cases = {
+            {"0", "400", "IBMPlexSans/IBMPlexSans-Regular.ttf"},
+            {"0", "200", "IBMPlexSans/IBMPlexSans-Thin.ttf"},
+            {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.ttf"},
+            {"1", "100", "SourceSerif4/SourceSerif4-Light.ttf"},
+            {"1", "900", "SourceSerif4/SourceSerif4-Bold.ttf"},
+            {"2", "400", "CascadiaMono/CascadiaMono-SemiLight.ttf"},
+            {"2", "500", "CascadiaMono/CascadiaMono-Regular.ttf"},
+            {"2", "600", "CascadiaMono/CascadiaMono-SemiBold.ttf"},
+            {"2", "700", "CascadiaMono/CascadiaMono-Bold.ttf"},
+        };
+        for (String[] c : cases) {
+            assertEquals(c[2], BundledFonts.fileName(Integer.parseInt(c[0]), Integer.parseInt(c[1]), false),
+                    c[0] + " " + c[1]);
+        }
+        assertEquals("CascadiaMono/CascadiaMono-SemiLightItalic.ttf", BundledFonts.fileName(2, 400, true));
+        assertEquals("CascadiaMono/CascadiaMono-Italic.ttf", BundledFonts.fileName(2, 500, true));
+        assertEquals("IBMPlexSans/IBMPlexSans-Italic.ttf", BundledFonts.fileName(0, 400, true));
+    }
 }   // End of BundledFontsTest.java
