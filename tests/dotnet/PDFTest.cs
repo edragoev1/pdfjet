@@ -653,20 +653,23 @@ public class PDFTest {
         Assert.Empty(new PDF().GetPageObjects(objects));
     }
 
+    // /UF is the name of an embedded file as a text string, and /F is the file
+    // specification string of bytes, its characters from space to tilde as they
+    // are and each other one, a pair of surrogates in UTF-16 too, an underscore.
     [Fact]
-    public void TheNameOfAnEmbeddedFileIsATextStringInFAndUF() {
+    public void TheNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt",
+        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt",
                 new MemoryStream(Encoding.ASCII.GetBytes("Hello")), false);
         new FileAttachment(file).SetLocation(100f, 100f).DrawOn(page);
         pdf.Complete();
         PDFobj spec = TestSupport.FindObject(TestSupport.Read(stream.ToArray()), "/UF");
         Assert.NotNull(spec);
         Assert.Equal("/Filespec", spec.GetValue("/Type"));
-        Assert.Equal("\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
-        Assert.Equal(spec.GetValue("/UF"), spec.GetValue("/F"));
+        Assert.Equal("\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
+        Assert.Equal("<5f6265727369636874205f20725f73756d5f205f2e747874>", spec.GetValue("/F").ToLowerInvariant());
     }
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads

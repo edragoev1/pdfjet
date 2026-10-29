@@ -647,17 +647,20 @@ import Testing
         }
     }
 
-    @Test func theNameOfAnEmbeddedFileIsATextStringInFAndUF() throws {
+    // /UF is the name of an embedded file as a text string, and /F is the file
+    // specification string of bytes, its characters from space to tilde as they
+    // are and each other one, a pair of surrogates in UTF-16 too, an underscore.
+    @Test func theNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF() throws {
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        let file = try EmbeddedFile(memory.pdf, "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9}.txt",
+        let file = try EmbeddedFile(memory.pdf, "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9} \u{1F600}.txt",
                 InputStream(data: Data("Hello".utf8)), false)
         FileAttachment(file).setLocation(100, 100).drawOn(page)
         try memory.pdf.complete()
         let spec = try #require(TestSupport.findObject(try TestSupport.read(memory.bytes), "/UF"))
         #expect(spec.getValue("/Type") == "/Filespec")
-        #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9}.txt")
-        #expect(spec.getValue("/F") == spec.getValue("/UF"))
+        #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9} \u{1F600}.txt")
+        #expect(spec.getValue("/F").lowercased() == "<5f6265727369636874205f20725f73756d5f205f2e747874>")
     }
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads

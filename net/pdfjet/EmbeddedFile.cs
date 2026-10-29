@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -97,11 +98,12 @@ public class EmbeddedFile {
         pdf.Append(Token.BeginDictionary);
         pdf.Append("/Type /Filespec\n");
 
-        // The file name as a text string, which every reader decodes the same
-        // way. /UF is the name that readers of PDF 1.7 look for first, and /F
-        // is the one that older readers know; PDF/A-3 requires both.
+        // /UF is the file name as a text string, the one that readers of PDF
+        // 1.7 use, and /F is the file specification string that older readers
+        // know, a string of bytes (ISO 32000-2, 7.11.3, Table 43); PDF/A-3
+        // requires both.
         pdf.Append("/F ");
-        pdf.AppendTextString(fileName);
+        pdf.AppendByteString(FileSpecBytes(fileName));
         pdf.Append("\n");
         pdf.Append("/UF ");
         pdf.AppendTextString(fileName);
@@ -127,6 +129,28 @@ public class EmbeddedFile {
         pdf.EndObj();
 
         this.objNumber = pdf.GetObjNumber();
+    }
+
+    // The file name as the bytes of /F: each character from space to tilde
+    // (0x20 to 0x7E) as it is, and each other character, one Unicode code
+    // point, as an underscore, so that "résumé.txt" is "r_sum_.txt". The full
+    // name is in /UF.
+    internal static byte[] FileSpecBytes(String fileName) {
+        List<byte> bytes = new List<byte>(fileName.Length);
+        for (int i = 0; i < fileName.Length; i++) {
+            char ch = fileName[i];
+            if (ch >= 0x20 && ch <= 0x7E) {
+                bytes.Add((byte) ch);
+            } else {
+                // A pair of surrogates is one code point.
+                if (Char.IsHighSurrogate(ch) && i + 1 < fileName.Length &&
+                        Char.IsLowSurrogate(fileName[i + 1])) {
+                    i++;
+                }
+                bytes.Add((byte) '_');
+            }
+        }
+        return bytes.ToArray();
     }
 
     // The media type as a name of PDF: the characters a name cannot hold

@@ -404,18 +404,21 @@ func TestPDFObjectsWithoutAPageTreeHaveNoPages(t *testing.T) {
 	}
 }
 
-func TestPDFTheNameOfAnEmbeddedFileIsATextStringInFAndUF(t *testing.T) {
+// /UF is the name of an embedded file as a text string, and /F is the file
+// specification string of bytes, its characters from space to tilde as they
+// are and each other one, a pair of surrogates in UTF-16 too, an underscore.
+func TestPDFTheNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF(t *testing.T) {
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, letter.Portrait())
-	file := NewEmbeddedFile(doc.pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", strings.NewReader("Hello"), false)
+	file := NewEmbeddedFile(doc.pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt", strings.NewReader("Hello"), false)
 	NewFileAttachment(file).SetLocation(100, 100).DrawOn(page)
 	spec := testFindObject(testRead(t, doc.complete()), "/UF")
 	if spec == nil {
 		t.Fatal("no /UF")
 	}
 	testWant(t, "/Filespec", spec.GetValue("/Type"))
-	testWant(t, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", testUTF16Hex(t, spec.GetValue("/UF")))
-	testWant(t, spec.GetValue("/UF"), spec.GetValue("/F"))
+	testWant(t, "\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt", testUTF16Hex(t, spec.GetValue("/UF")))
+	testWant(t, "<5f6265727369636874205f20725f73756d5f205f2e747874>", strings.ToLower(spec.GetValue("/F")))
 }
 
 func TestPDFAPointIsAnArtifact(t *testing.T) {

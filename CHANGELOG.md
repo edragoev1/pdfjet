@@ -150,6 +150,17 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   `../pdfjet-test/Electric_Vehicle_Population_Data.csv`, or from the path in
   `EV_CSV`, and says what to do when it is missing.
 
+### Fixed
+- The four ports: the `/F` of an embedded file's file specification is a
+  string of bytes, as ISO 32000-2, 7.11.3, Table 43, asks of a file
+  specification string; it was the name in UTF-16, as `/UF` is. Each
+  character from space to tilde is written as it is, and each other one, a
+  Unicode code point, as an underscore: `résumé.txt` is `r_sum_.txt` in
+  `/F`. `/UF` keeps the full name in UTF-16, the one readers of PDF 1.7 and
+  later use, and the name tree of `/EmbeddedFiles` is the same. Example:
+  for `notes.txt`, `/F` is `<6e6f7465732e747874>`, where it was
+  `<feff006e006f007400650073002e007400780074>`.
+
 ## v9.1.5 — 2026-10-28
 
 There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October

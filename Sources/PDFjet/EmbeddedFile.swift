@@ -120,12 +120,13 @@ public class EmbeddedFile {
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Filespec\n")
-        // The file name as a text string, which every reader decodes the same
-        // way. /UF is the name that readers of PDF 1.7 look for first, and /F
-        // is the one that older readers know; PDF/A-3 requires both.
-        pdf.append("/F <")
-        pdf.append(pdf.textString(fileName))
-        pdf.append(">\n")
+        // /UF is the file name as a text string, the one that readers of PDF
+        // 1.7 use, and /F is the file specification string that older readers
+        // know, a string of bytes (ISO 32000-2, 7.11.3, Table 43); PDF/A-3
+        // requires both.
+        pdf.append("/F ")
+        pdf.appendByteString(EmbeddedFile.fileSpecBytes(fileName))
+        pdf.append("\n")
         pdf.append("/UF <")
         pdf.append(pdf.textString(fileName))
         pdf.append(">\n")
@@ -150,6 +151,22 @@ public class EmbeddedFile {
         pdf.endObj()
 
         self.objNumber = pdf.getObjNumber()
+    }
+
+    // The file name as the bytes of /F: each character from space to tilde
+    // (0x20 to 0x7E) as it is, and each other character, one Unicode code
+    // point, as an underscore, so that "résumé.txt" is "r_sum_.txt". The full
+    // name is in /UF.
+    static func fileSpecBytes(_ fileName: String) -> [UInt8] {
+        var bytes = [UInt8]()
+        for scalar in fileName.unicodeScalars {
+            if scalar.value >= 0x20 && scalar.value <= 0x7E {
+                bytes.append(UInt8(scalar.value))
+            } else {
+                bytes.append(UInt8(ascii: "_"))
+            }
+        }
+        return bytes
     }
 
     // The media type as a name of PDF: the characters a name cannot hold

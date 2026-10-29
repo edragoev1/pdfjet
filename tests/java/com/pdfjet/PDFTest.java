@@ -676,20 +676,23 @@ class PDFTest {
         assertEquals(0, new PDF().getPageObjects(objects).size());
     }
 
+    // /UF is the name of an embedded file as a text string, and /F is the file
+    // specification string of bytes, its characters from space to tilde as they
+    // are and each other one, a pair of surrogates in UTF-16 too, an underscore.
     @Test
-    void theNameOfAnEmbeddedFileIsATextStringInFAndUF() throws Exception {
+    void theNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt",
+        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9 \ud83d\ude00.txt",
                 new java.io.ByteArrayInputStream("Hello".getBytes(StandardCharsets.US_ASCII)), false);
         new FileAttachment(file).setLocation(100f, 100f).drawOn(page);
         pdf.complete();
         PDFobj spec = TestSupport.findObject(TestSupport.read(bos.toByteArray()), "/UF");
         assertNotNull(spec);
         assertEquals("/Filespec", spec.getValue("/Type"));
-        assertEquals("\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", TestSupport.utf16Hex(spec.getValue("/UF")));
-        assertEquals(spec.getValue("/UF"), spec.getValue("/F"));
+        assertEquals("\u00dcbersicht \u2013 r\u00e9sum\u00e9 \ud83d\ude00.txt", TestSupport.utf16Hex(spec.getValue("/UF")));
+        assertEquals("<5f6265727369636874205f20725f73756d5f205f2e747874>", spec.getValue("/F").toLowerCase(Locale.ROOT));
     }
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads
