@@ -586,6 +586,33 @@ public class Page {
         append(Token.endText)
     }
 
+    // Draws the string of an SVG image with the text matrix, in the brush
+    // color, or stroked in the pen color and width for the rendering mode 1.
+    final func drawSVGText(_ font: Font, _ fontSize: Float, _ text: String, _ tm: [Float], _ mode: Int) {
+        append(Token.beginText)
+        setTextFont(font, fontSize)
+        if mode != 0 || self.renderingModeSet {
+            self.renderingModeSet = true
+            append(mode)
+            append(" Tr\n")
+        }
+        for i in 0..<6 {
+            append(tm[i])
+            append(Token.space)
+        }
+        append("Tm\n")
+        if font.isCoreFont {
+            append("[<")
+            drawASCIIString(font, text)
+            append(">] TJ\n")
+        } else {
+            append("<")
+            drawUnicodeString(font, text)
+            append("> Tj\n")
+        }
+        append(Token.endText)
+    }
+
     private final func drawASCIIString(_ font: Font, _ text: String) {
         let scalars = font.withoutIgnorables(Array(text.unicodeScalars))
         if scalars.isEmpty {

@@ -28,6 +28,19 @@ struct SVGState {
     var ownOpacity: Float = 1.0             // The opacity of the element itself, not inherited
     var matrix = SVGState.identity
     var hidden = false                      // In <defs> and the like, or under display="none": not drawn
+    var dashArray: [Float]? = nil           // stroke-dasharray, in the user space; nil is a solid line
+    var dashOffset: Float = 0.0
+    var strokeFirst = false                 // paint-order: the stroke drawn before the fill
+    var fontSize: Float = 16.0              // In the user space; medium, as a browser has it
+    var bold = false                        // A font-weight of bold, 600 or more
+    var textAnchor = 0                      // 0 start, 1 middle, 2 end
+    var baseline = 0                        // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
+    var markerStart: String? = nil          // The ids of the markers, inherited
+    var markerMid: String? = nil
+    var markerEnd: String? = nil
+    var clipPath: String? = nil             // The id of the clip path of the element itself, not inherited
+    var clips: [SVGPath]? = nil             // The clip paths of the element and of its ancestors
+    var paints: [[UInt8]: Int32]? = nil     // The colors of the gradients, by the bytes of their ids
 
     // The matrices of transforms are [a b c d e f], which take x, y to
     // a*x + c*y + e, b*x + d*y + f, as SVG writes them.
@@ -59,7 +72,7 @@ struct SVGState {
         case "fill", "stroke":
             let paint: (Int32, Bool)?
             do {
-                paint = try SVGState.parsePaint(value)
+                paint = try SVGState.parsePaint(value, paints)
             } catch let error as PDFjetError {
                 throw PDFjetError(message: "invalid SVG " + name + ": " + error.description)
             }
@@ -123,26 +136,205 @@ struct SVGState {
             if value == "none" {
                 hidden = true
             }
+        case "stroke-dasharray":
+            dashArray = SVGState.parseDashArray(value)
+        case "stroke-dashoffset":
+            if !SVGState.hasSuffix(value, "%"), let offset = SVGState.parseLength(value) {
+                dashOffset = offset
+            }
+        case "paint-order":
+            // The stroke is drawn first when it comes before the fill, and
+            // the markers, which PDFjet draws last, are left out.
+            let order = SVGState.fields(value)
+            if let stroke = order.firstIndex(of: "stroke") {
+                let fill = order.firstIndex(of: "fill")
+                strokeFirst = fill == nil || stroke < fill!
+            } else {
+                strokeFirst = false
+            }
+        case "font-size":
+            if let size = SVGState.parseFontSize(value, fontSize) {
+                fontSize = size
+            }
+        case "font-weight":
+            if let weight = SVGState.parseFontWeight(value) {
+                bold = weight
+            }
+        case "font":
+            setFont(value)
+        case "text-anchor":
+            switch value {
+            case "start": textAnchor = 0
+            case "middle": textAnchor = 1
+            case "end": textAnchor = 2
+            default: break
+            }
+        case "dominant-baseline", "alignment-baseline":
+            switch value {
+            case "middle", "central": baseline = 1
+            case "hanging", "text-before-edge": baseline = 2
+            case "auto", "alphabetic", "baseline": baseline = 0
+            default: break
+            }
+        case "marker-start":
+            markerStart = SVGState.urlId(value)
+        case "marker-mid":
+            markerMid = SVGState.urlId(value)
+        case "marker-end":
+            markerEnd = SVGState.urlId(value)
+        case "marker":
+            markerStart = SVGState.urlId(value)
+            markerMid = markerStart
+            markerEnd = markerStart
+        case "clip-path":
+            clipPath = SVGState.urlId(value)
         default:
             break
         }
     }
 
+    /// Returns the id of a reference, url(#id), with or without quotes, and
+    /// nil for none or for a value of another kind.
+    static func urlId(_ value: String) -> String? {
+        let value = trimSpace(value)
+        if !hasPrefix(value, "url(") {
+            return nil
+        }
+        let scalars = Array(value.unicodeScalars)
+        guard let end = scalars.firstIndex(of: ")") else {
+            return nil
+        }
+        var id = Array(trimSpace(string(scalars[4..<end])).unicodeScalars)
+        if id.count >= 2 && (id[0] == "\"" || id[0] == "'") && id[id.count - 1] == id[0] {
+            id = Array(trimSpace(string(id[1..<(id.count - 1)])).unicodeScalars)
+        }
+        if id.count < 2 || id[0] != "#" {
+            return nil
+        }
+        return string(id[1...])
+    }
+
+    /// Reads a stroke-dasharray: the lengths of the dashes and the gaps, as
+    /// many again when they are an odd number. Returns nil, a solid line, for
+    /// none, for a length below zero or one it cannot read, and for lengths
+    /// that are all zero.
+    static func parseDashArray(_ value: String) -> [Float]? {
+        if value == "none" {
+            return nil
+        }
+        var lengths = [Float]()
+        for field in fields(string(value.unicodeScalars.map { $0 == "," ? " " : $0 })) {
+            guard !hasSuffix(field, "%"), let length = parseLength(field),
+                  length >= 0.0, length.isFinite else {
+                return nil
+            }
+            lengths.append(length)
+        }
+        var sum: Float = 0.0
+        for length in lengths {
+            sum += length
+        }
+        if lengths.isEmpty || sum == 0.0 {
+            return nil
+        }
+        let count = lengths.count
+        var dashes = [Float]()
+        for i in 0..<((count % 2 == 0) ? count : 2*count) {
+            dashes.append(lengths[i % count])
+        }
+        return dashes
+    }
+
+    // The font sizes of the keywords, as a browser has them.
+    private static let sizeNames = ["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]
+    private static let sizes: [Float] = [9.0, 10.0, 13.0, 16.0, 18.0, 24.0, 32.0]
+
+    /// Reads a font-size: a length, a number of em or a percentage of the
+    /// font size of the parent, or a keyword. Returns nil for a size it
+    /// cannot read or one below zero.
+    static func parseFontSize(_ value: String, _ parentSize: Float) -> Float? {
+        for (i, name) in sizeNames.enumerated() where value == name {
+            return sizes[i]
+        }
+        var size: Float?
+        if hasSuffix(value, "em") && !hasSuffix(value, "rem") {
+            if let factor = parseFactor(string(value.unicodeScalars.dropLast(2))) {
+                size = factor * parentSize
+            }
+        } else if hasSuffix(value, "%") {
+            if let factor = parseFactor(string(value.unicodeScalars.dropLast(1))) {
+                size = factor * parentSize / 100.0
+            }
+        } else {
+            size = parseLength(value)
+        }
+        guard let fontSize = size, fontSize >= 0.0, fontSize.isFinite else {
+            return nil
+        }
+        return fontSize
+    }
+
+    // Reads a number, or returns nil.
+    private static func parseFactor(_ text: String) -> Float? {
+        return parseFloat(trimSpace(text))
+    }
+
+    /// Reads a font-weight: true for bold, bolder and 600 or more, false for
+    /// normal, lighter and less, nil for a weight it cannot read.
+    static func parseFontWeight(_ value: String) -> Bool? {
+        if value == "bold" || value == "bolder" {
+            return true
+        } else if value == "normal" || value == "lighter" {
+            return false
+        }
+        guard let weight = parseFactor(value), weight >= 1.0, weight <= 1000.0 else {
+            return nil
+        }
+        return weight >= 600.0
+    }
+
+    // Sets the size and the weight of the font shorthand, such as "bold 10px
+    // sans-serif": the words before the size, then the size, which may have
+    // a line height after a slash. A shorthand without a weight is normal.
+    private mutating func setFont(_ value: String) {
+        var bold = false
+        for field in SVGState.fields(value) {
+            let size = SVGState.string(field.unicodeScalars.prefix(while: { $0 != "/" }))
+            // A size has a unit or is a keyword; a number alone is a weight.
+            // A digit is a decimal digit of one UTF-16 code unit, as Java's
+            // Character.isDigit reads a char.
+            if let last = size.unicodeScalars.last,
+                    !(last.value <= 0xFFFF && last.properties.generalCategory == .decimalNumber),
+                    let fontSize = SVGState.parseFontSize(size, self.fontSize) {
+                self.fontSize = fontSize
+                self.bold = bold
+                return
+            }
+            if let weight = SVGState.parseFontWeight(field) {
+                bold = weight
+            }
+        }
+    }
+
     // Reads the value of a fill or a stroke: none, currentColor, a color, or a
-    // url of a gradient or a pattern, which PDFjet does not draw, and the
-    // color after it, if any, which SVG draws when it cannot. Returns the
-    // paint and whether it is currentColor, or nil for a value that leaves
-    // the paint as it is inherited.
-    private static func parsePaint(_ value: String) throws -> (Int32, Bool)? {
+    // url of a gradient, which PDFjet draws in the mean color of its stops. A
+    // url of anything else, a pattern or an element that is not there, is the
+    // color after it, which SVG draws when it cannot draw the url, or none, as
+    // a browser draws it. Returns the paint and whether it is currentColor, or
+    // nil for a value that leaves the paint as it is inherited.
+    private static func parsePaint(_ value: String, _ paints: [[UInt8]: Int32]?) throws -> (Int32, Bool)? {
         var value = value
         if hasPrefix(value, "url(") {
             let scalars = Array(value.unicodeScalars)
             guard let end = scalars.firstIndex(of: ")") else {
                 return nil
             }
+            if let id = urlId(string(scalars[...end])), let gradient = paints?[Array(id.utf8)] {
+                return (gradient, false)
+            }
             value = trimSpace(string(scalars[(end + 1)...]))
             if value.isEmpty {
-                return nil
+                value = "none"
             }
         }
         if value == "none" {

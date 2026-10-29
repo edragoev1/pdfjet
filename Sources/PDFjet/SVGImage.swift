@@ -22,6 +22,25 @@ public class SVGImage : Drawable {
     var language: String?
     var actualText: String?
     var altDescription: String?
+    private var font: Font?
+    private var boldFont: Font?
+
+    // While the file is read: the elements by the bytes of their ids, the
+    // clip paths of the image, and the elements drawn again by a use element
+    // or as a marker, which are not drawn inside themselves; the rules of its
+    // style sheet, the states of the elements open, and whether the svg
+    // element of the document is still to come.
+    private var ids = [[UInt8]: PDFjetXMLNode]()
+    private var clipShapes = [SVGPath]()
+    private var reusing = Set<ObjectIdentifier>()
+    private var reused = 0
+    private var rules = SVGStyleSheet()
+    private var stack = [SVGState]()
+    private var root = true
+    // The elements drawn again, by use elements and as markers, at most: a
+    // use of a group of uses, and so on, draws ten to the power of the
+    // number of groups, as an XML of entities in entities does.
+    static let MAX_REUSED = 1000000
 
     // The elements whose content is not drawn where it is, but used by other
     // elements, which PDFjet does not draw.
@@ -52,12 +71,18 @@ public class SVGImage : Drawable {
      *
      * It draws the <path>, <rect>, <circle>, <ellipse>, <line>, <polyline>
      * and <polygon> elements, in groups or not, with their transforms, and
-     * the fill, stroke, stroke-width, fill-rule, stroke-linecap,
-     * stroke-linejoin, opacity, fill-opacity and stroke-opacity they have or
+     * the fill, stroke, stroke-width, stroke-dasharray, stroke-dashoffset,
+     * fill-rule, stroke-linecap, stroke-linejoin, opacity, fill-opacity,
+     * stroke-opacity, paint-order, clip-path and markers they have or
      * inherit, as attributes, in a style attribute or in rules for their
-     * classes in a <style> element that comes before them. The width, height,
-     * viewBox and preserveAspectRatio of the <svg> element give the size of
-     * the image.
+     * classes in a <style> element that comes before them. It draws the
+     * elements a <use> element names, and <text> and <tspan> elements with
+     * their x, y, dx, dy, font-size, font-weight, text-anchor and
+     * dominant-baseline, in the font set with setFont and setBoldFont, or in
+     * Helvetica. A gradient is drawn in the mean color of its stops. The
+     * width, height, viewBox and preserveAspectRatio of the <svg> element
+     * give the size of the image, and what is drawn outside it is cut off, as
+     * a browser does.
      *
      * - Parameter stream: the input stream.
      */
@@ -86,66 +111,209 @@ public class SVGImage : Drawable {
         } catch let error as PDFjetXMLError {
             throw PDFjetError(message: "parsing SVG: " + error.message)
         }
-        var rules = SVGStyleSheet()
-        var stack = [SVGState()]
-        var root = true
-        // The elements are drawn in the order of the document: an element,
-        // then the ones in it, and the rules of a <style> element apply from
-        // its end.
-        func draw(_ node: PDFjetXMLNode) throws {
-            let name = node.getLocalName()
-            var values = [String: String]()
-            var order = [String]()
-            for (attributeName, value) in node.getAttributes() {
-                // The attributes of no namespace: xlink:href, xml:space and
-                // the namespaces' own declarations, xmlns:..., are not read.
-                if !attributeName.contains(":") {
-                    values[attributeName] = value
-                    order.append(attributeName)
+        var elements = [document]
+        var i = 0
+        while i < elements.count {
+            let element = elements[i]
+            if let id = element.getAttribute("id"), ids[Array(id.utf8)] == nil {
+                ids[Array(id.utf8)] = element   // The first element of an id is the one it names
+            }
+            elements.append(contentsOf: element.getChildren())
+            i += 1
+        }
+        var svg = SVGState()
+        svg.paints = try gradientColors()
+        stack = [svg]
+        try draw(document, false)
+        try processPaths(paths)
+        ids = [:]
+        reusing = []
+        rules = SVGStyleSheet()
+        stack = []
+    }
+
+    // Returns the colors the gradients are drawn in, by the bytes of their
+    // ids: the mean of the colors of their stops, or of the stops of the
+    // gradient they name with href when they have none. A gradient without
+    // stops is none, and is left out.
+    private func gradientColors() throws -> [[UInt8]: Int32] {
+        var colors = [[UInt8]: Int32]()
+        for (id, element) in ids {
+            var gradient: PDFjetXMLNode? = element
+            var i = 0
+            // Up to ten gradients along the hrefs, which may go round in a circle.
+            while i < 10, let node = gradient, SVGImage.isGradient(node) {
+                var red: Int64 = 0
+                var green: Int64 = 0
+                var blue: Int64 = 0
+                var count: Int64 = 0
+                for stop in node.getChildren() where stop.getLocalName() == "stop" {
+                    var state = SVGState()
+                    state.fill = Color.black    // stop-color is black unless given
+                    if let color = stop.getAttribute("stop-color") {
+                        try state.setProperty("fill", color)
+                    }
+                    for (name, value) in SVGRule.parseDeclarations(stop.getAttribute("style") ?? "")
+                            where name == "stop-color" {
+                        try state.setProperty("fill", value)
+                    }
+                    let c = (state.fill == Color.transparent) ? Color.black : state.fill
+                    red += Int64((c >> 16) & 0xFF)
+                    green += Int64((c >> 8) & 0xFF)
+                    blue += Int64(c & 0xFF)
+                    count += 1
                 }
+                if count > 0 {
+                    let half = count / 2
+                    colors[id] = Int32(truncatingIfNeeded: (((red + half) / count) << 16)
+                            | (((green + half) / count) << 8) | ((blue + half) / count))
+                    break
+                }
+                gradient = SVGImage.href(node).flatMap { ids[Array($0.utf8)] }
+                i += 1
             }
-            var state = try SVGImage.elementState(stack[stack.count - 1], &rules, values, order)
-            if SVGImage.templates.contains(name) {
-                state.hidden = true
-            }
-            stack.append(state)
+        }
+        return colors
+    }
 
-            if name == "svg" && root {
-                root = false
-                w = SVGImage.parseLength(values["width"] ?? "")
-                h = SVGImage.parseLength(values["height"] ?? "")
-                // viewbox in lower case when there is no viewBox, as an
-                // HTML page's parser reads an inline svg, whose files keep it
-                viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
-                preserveAspectRatio = values["preserveAspectRatio"] ?? ""
-            }
-            let operations = try SVGImage.shapeOperations(name, values)
-            if name == "line" {
-                state.fill = Color.transparent  // A line has no inside to fill
-                state.fillCurrent = false
-            }
-            addPath(state, operations)
+    private static func isGradient(_ node: PDFjetXMLNode) -> Bool {
+        let name = node.getLocalName()
+        return name == "linearGradient" || name == "radialGradient"
+    }
 
-            for child in node.getChildren() {
-                try draw(child)
+    // Returns the id that the href of an element names, #id, with or without
+    // the xlink prefix, or nil.
+    private static func href(_ node: PDFjetXMLNode) -> String? {
+        var href: String?
+        for (name, value) in node.getAttributes() {
+            if name == "href" || href == nil && localName(name) == "href" {
+                href = value
             }
-            if name == "style" {
-                rules.add(SVGRule.parseStyleSheet(node.getText()))
-            }
+        }
+        guard let reference = href else {
+            return nil
+        }
+        let scalars = Array(SVGState.trimSpace(reference).unicodeScalars)
+        return (scalars.count > 1 && scalars[0] == "#") ? SVGState.string(scalars[1...]) : nil
+    }
+
+    // The name without its prefix, the part after its colon.
+    private static func localName(_ name: String) -> String {
+        let scalars = name.unicodeScalars
+        guard let colon = scalars.firstIndex(of: ":") else {
+            return name
+        }
+        return String(scalars[scalars.index(after: colon)...])
+    }
+
+    // Counts an element drawn again, and throws when there are too many.
+    private func countReused() throws {
+        reused += 1
+        if reused > SVGImage.MAX_REUSED {
+            throw PDFjetError(message:
+                "The SVG draws more than \(SVGImage.MAX_REUSED) elements again, with use elements or markers.")
+        }
+    }
+
+    // The attributes of no namespace of the element, and their order:
+    // xlink:href, xml:space and the namespaces' own declarations, xmlns:...,
+    // are not read.
+    private static func attributes(_ node: PDFjetXMLNode, _ order: inout [String]) -> [String: String] {
+        var attributes = [String: String]()
+        for (name, value) in node.getAttributes() where !name.unicodeScalars.contains(":") {
+            attributes[name] = value
+            order.append(name)
+        }
+        return attributes
+    }
+
+    // Draws the element, then the ones in it, in the order of the document;
+    // the rules of a <style> element apply from its end. An element that is
+    // used, by a use element or as a marker, is drawn even where it is a
+    // template, as a symbol or a marker is.
+    private func draw(_ node: PDFjetXMLNode, _ used: Bool) throws {
+        let name = node.getLocalName()
+        if !reusing.isEmpty {
+            try countReused()
+        }
+        var order = [String]()
+        let values = SVGImage.attributes(node, &order)
+        var state = try elementState(stack[stack.count - 1], values, order)
+        if SVGImage.templates.contains(name) && !used {
+            state.hidden = true
+        }
+        if state.clipPath != nil && !state.hidden {
+            try clip(&state)
+        }
+        stack.append(state)
+        defer {
             stack.removeLast()
         }
-        try draw(document)
-        try processPaths(paths)
+
+        if name == "svg" && root {
+            root = false
+            w = SVGImage.parseLength(values["width"] ?? "")
+            h = SVGImage.parseLength(values["height"] ?? "")
+            // viewbox in lower case when there is no viewBox, as an
+            // HTML page's parser reads an inline svg, whose files keep it
+            viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
+            preserveAspectRatio = values["preserveAspectRatio"] ?? ""
+        }
+        if name == "text" {
+            if !state.hidden {
+                try addText(node, state, values)
+            }
+            return
+        }
+        if name == "use" {
+            if let target = SVGImage.href(node).flatMap({ ids[Array($0.utf8)] }), !state.hidden,
+                    !reusing.contains(ObjectIdentifier(target)) {
+                // The element is drawn as a child of the use element, moved
+                // by its x and y.
+                var parent = state
+                parent.matrix = SVGState.multiply(state.matrix, [
+                        1.0, 0.0, 0.0, 1.0, SVGImage.number(values, "x"), SVGImage.number(values, "y")])
+                stack.append(parent)
+                reusing.insert(ObjectIdentifier(target))
+                try draw(target, true)
+                reusing.remove(ObjectIdentifier(target))
+                stack.removeLast()
+            }
+            return
+        }
+        let operations = try SVGImage.shapeOperations(name, values)
+        if name == "line" {
+            state.fill = Color.transparent  // A line has no inside to fill
+            state.fillCurrent = false
+        }
+        var vertices: [[Double]]?
+        if !state.hidden && !operations.isEmpty
+                && (state.markerStart != nil || state.markerMid != nil || state.markerEnd != nil)
+                && (name == "path" || name == "line" || name == "polyline" || name == "polygon") {
+            vertices = SVGImage.vertices(operations)    // Before addPath moves the points
+        }
+        addPath(state, operations)
+        if let vertices = vertices {
+            try drawMarkers(state, vertices)
+        }
+
+        for child in node.getChildren() {
+            try draw(child, false)
+        }
+        if name == "style" {
+            rules.add(SVGRule.parseStyleSheet(node.getText()))
+        }
     }
 
     // Returns the state of an element whose parent has the given one: its
     // presentation attributes, in their order, then the rules of the style
     // sheet for its classes, in the order of the style sheet, then its style
     // attribute, and its transform.
-    private static func elementState(_ parent: SVGState, _ rules: inout SVGStyleSheet,
+    private func elementState(_ parent: SVGState,
             _ attributes: [String: String], _ order: [String]) throws -> SVGState {
         var state = parent
         state.ownOpacity = 1.0
+        state.clipPath = nil
         for name in order {
             try state.setProperty(name, attributes[name]!)
         }
@@ -214,7 +382,7 @@ public class SVGImage : Drawable {
     private static func shapeOperations(
             _ name: String, _ attributes: [String: String]) throws -> [PathOp] {
         func number(_ name: String) -> Double {
-            return SVGState.parseCoordinate(attributes[name] ?? "")
+            return SVGImage.number(attributes, name)
         }
         var b = Builder()
         switch name {
@@ -301,6 +469,11 @@ public class SVGImage : Drawable {
         return b.operations
     }
 
+    // Returns a coordinate or a size of a shape.
+    private static func number(_ attributes: [String: String], _ name: String) -> Double {
+        return SVGState.parseCoordinate(attributes[name] ?? "")
+    }
+
     // Reads the rx or the ry of a rectangle; nil when it is not given, is
     // auto or is not a length of zero or more.
     private static func radius(_ value: String) -> Double? {
@@ -340,20 +513,345 @@ public class SVGImage : Drawable {
         if path.fill == Color.transparent && path.stroke == Color.transparent {
             return
         }
-        path.strokeWidth = Float(Double(state.strokeWidth) * abs(det).squareRoot())
+        let scale = abs(det).squareRoot()
+        path.strokeWidth = Float(Double(state.strokeWidth) * scale)
         path.evenOdd = state.evenOdd
         path.lineCap = state.lineCap
         path.lineJoin = state.lineJoin
-        if m != SVGState.identity {
-            for op in operations {
-                (op.x, op.y) = SVGImage.transform(m, op.x, op.y)
-                if op.cmd == "C" {
-                    (op.x1, op.y1) = SVGImage.transform(m, op.x1, op.y1)
-                    (op.x2, op.y2) = SVGImage.transform(m, op.x2, op.y2)
+        if let dashArray = state.dashArray {
+            path.dashArray = dashArray.map { Float(Double($0) * scale) }
+            path.dashOffset = Float(Double(state.dashOffset) * scale)
+        }
+        path.clips = state.clips
+        SVGImage.transform(m, operations)
+        paths.append(path)
+    }
+
+    // Moves the points of the operations by the matrix.
+    private static func transform(_ m: [Double], _ operations: [PathOp]) {
+        if m == SVGState.identity {
+            return
+        }
+        for op in operations {
+            (op.x, op.y) = SVGImage.transform(m, op.x, op.y)
+            if op.cmd == "C" {
+                (op.x1, op.y1) = SVGImage.transform(m, op.x1, op.y1)
+                (op.x2, op.y2) = SVGImage.transform(m, op.x2, op.y2)
+            }
+        }
+    }
+
+    // Sets the clip paths of the element: those of its ancestors and the one
+    // its clip-path names, the shapes of the clipPath element in the user
+    // space of the element. A clip path that is not there, or one in
+    // objectBoundingBox units, which PDFjet does not draw, is left out; one
+    // with no shape in it hides the element, as SVG clips all of it away.
+    private func clip(_ state: inout SVGState) throws {
+        guard let id = state.clipPath, let clipPath = ids[Array(id.utf8)],
+              clipPath.getLocalName() == "clipPath",
+              SVGState.trimSpace(clipPath.getAttribute("clipPathUnits") ?? "") != "objectBoundingBox" else {
+            return
+        }
+        var m = state.matrix
+        if let own = SVGState.parseTransform(clipPath.getAttribute("transform") ?? "") {
+            m = SVGState.multiply(m, own)
+        }
+        let clip = SVGPath()
+        for child in clipPath.getChildren() {
+            var order = [String]()
+            let attributes = SVGImage.attributes(child, &order)
+            var shape = m
+            if let transform = attributes["transform"], let matrix = SVGState.parseTransform(transform) {
+                shape = SVGState.multiply(m, matrix)
+            }
+            let operations = try SVGImage.shapeOperations(child.getLocalName(), attributes)
+            SVGImage.transform(shape, operations)
+            clip.operations.append(contentsOf: operations)
+        }
+        if clip.operations.isEmpty {
+            state.hidden = true
+            return
+        }
+        clipShapes.append(clip)
+        state.clips = (state.clips ?? []) + [clip]
+    }
+
+    // The degrees of a radian, and the radians of a degree, as Java's
+    // Math.toDegrees and Math.toRadians multiply by them.
+    private static let degreesPerRadian = 57.29577951308232
+    private static let radiansPerDegree = 0.017453292519943295
+
+    // Returns the vertices of the path, where its markers are drawn, in its
+    // user space: x, y and the angle of the path there, in degrees, which is
+    // halfway between the directions in and out of a vertex in the middle.
+    private static func vertices(_ operations: [PathOp]) -> [[Double]] {
+        var vertices = [[Double]]()     // x, y, in x, in y, out x, out y
+        var x = 0.0
+        var y = 0.0
+        var start = 0       // The vertex where the subpath starts
+        for op in operations {
+            let inward: [Double]
+            let out: [Double]
+            if op.cmd == "M" {
+                start = vertices.count
+                vertices.append([Double(op.x), Double(op.y), 0.0, 0.0, 0.0, 0.0])
+                x = Double(op.x)
+                y = Double(op.y)
+                continue
+            } else if op.cmd == "C" {
+                out = direction(x, y, [Double(op.x1), Double(op.y1), Double(op.x2), Double(op.y2),
+                        Double(op.x), Double(op.y)])
+                let back = direction(Double(op.x), Double(op.y), [Double(op.x2), Double(op.y2),
+                        Double(op.x1), Double(op.y1), x, y])
+                inward = [-back[0], -back[1]]
+            } else {
+                // A line, or Z, the line back to the start of the subpath.
+                out = [Double(op.x) - x, Double(op.y) - y]
+                inward = out
+            }
+            if vertices.isEmpty {
+                continue
+            }
+            let last = vertices.count - 1
+            if vertices[last][4] == 0.0 && vertices[last][5] == 0.0 {
+                vertices[last][4] = out[0]
+                vertices[last][5] = out[1]
+            }
+            vertices.append([Double(op.x), Double(op.y), inward[0], inward[1], 0.0, 0.0])
+            if op.cmd == "Z" {
+                // The vertex that closes the subpath goes on as its start does.
+                let closing = vertices.count - 1
+                vertices[closing][4] = vertices[start][4]
+                vertices[closing][5] = vertices[start][5]
+            }
+            x = Double(op.x)
+            y = Double(op.y)
+        }
+        var result = [[Double]]()
+        for v in vertices {
+            let inLength = hypot(v[2], v[3])
+            let outLength = hypot(v[4], v[5])
+            var dx = 0.0
+            var dy = 0.0
+            if inLength > 0.0 {
+                dx += v[2] / inLength
+                dy += v[3] / inLength
+            }
+            if outLength > 0.0 {
+                dx += v[4] / outLength
+                dy += v[5] / outLength
+            }
+            if dx == 0.0 && dy == 0.0 && inLength > 0.0 {
+                dx = v[2]       // A path that turns back: the direction in
+                dy = v[3]
+            }
+            result.append([v[0], v[1], atan2(dy, dx) * degreesPerRadian])
+        }
+        return result
+    }
+
+    // Returns the direction from x, y to the first of the points that is not
+    // there, as a curve leaves its start.
+    private static func direction(_ x: Double, _ y: Double, _ points: [Double]) -> [Double] {
+        var i = 0
+        while i + 1 < points.count {
+            if points[i] != x || points[i + 1] != y {
+                return [points[i] - x, points[i + 1] - y]
+            }
+            i += 2
+        }
+        return [0.0, 0.0]
+    }
+
+    // Draws the markers of a path at its vertices: the start marker at the
+    // first, the end marker at the last and the mid marker at the others.
+    private func drawMarkers(_ state: SVGState, _ vertices: [[Double]]) throws {
+        let last = vertices.count - 1
+        for i in 0..<vertices.count {
+            if i == 0 {
+                try drawMarker(state.markerStart, state, vertices[i], true)
+            }
+            if i > 0 && i < last {
+                try drawMarker(state.markerMid, state, vertices[i], false)
+            }
+            if i == last {
+                try drawMarker(state.markerEnd, state, vertices[i], false)
+            }
+        }
+    }
+
+    // Draws the marker at the vertex: its refX, refY there, turned as its
+    // orient says, and its viewBox fitted to its markerWidth and
+    // markerHeight, which are in units of the stroke width unless its
+    // markerUnits are userSpaceOnUse.
+    private func drawMarker(_ id: String?, _ state: SVGState, _ vertex: [Double], _ start: Bool) throws {
+        guard let id = id, let marker = ids[Array(id.utf8)], marker.getLocalName() == "marker",
+              !reusing.contains(ObjectIdentifier(marker)) else {
+            return
+        }
+        var orient = SVGState.trimSpace(marker.getAttribute("orient") ?? "")
+        var angle = 0.0
+        if orient == "auto" {
+            angle = vertex[2]
+        } else if orient == "auto-start-reverse" {
+            angle = start ? vertex[2] + 180.0 : vertex[2]
+        } else {
+            if SVGState.hasSuffix(orient, "deg") {
+                orient = SVGState.string(orient.unicodeScalars.dropLast(3))
+            }
+            angle = SVGState.parseDouble(SVGState.trimSpace(orient)) ?? 0.0
+            if !angle.isFinite {
+                angle = 0.0
+            }
+        }
+        let units = SVGState.trimSpace(marker.getAttribute("markerUnits") ?? "") == "userSpaceOnUse"
+                ? 1.0 : Double(state.strokeWidth)
+        let width = SVGImage.markerSize(marker.getAttribute("markerWidth") ?? "")
+        let height = SVGImage.markerSize(marker.getAttribute("markerHeight") ?? "")
+        var sx = 1.0
+        var sy = 1.0
+        if let box = SVGState.parseNumbers(marker.getAttribute("viewBox") ?? ""), box.count == 4 {
+            if box[2] <= 0.0 || box[3] <= 0.0 {
+                return      // A viewBox of no size draws nothing
+            }
+            sx = width / box[2]
+            sy = height / box[3]
+            if SVGState.trimSpace(marker.getAttribute("preserveAspectRatio") ?? "") != "none" {
+                sx = SVGState.goMin(sx, sy)
+                sy = sx
+            }
+        }
+        let radians = angle * SVGImage.radiansPerDegree
+        let cosine = cos(radians)
+        let sine = sin(radians)
+        var m = SVGState.multiply(state.matrix, [cosine, sine, -sine, cosine, vertex[0], vertex[1]])
+        m = SVGState.multiply(m, [units * sx, 0.0, 0.0, units * sy, 0.0, 0.0])
+        m = SVGState.multiply(m, [
+                1.0, 0.0, 0.0, 1.0, -SVGState.parseCoordinate(marker.getAttribute("refX") ?? ""),
+                -SVGState.parseCoordinate(marker.getAttribute("refY") ?? "")])
+        // The marker inherits from the svg element, not from the path.
+        var base = SVGState()
+        base.paints = state.paints
+        base.clips = state.clips
+        base.matrix = m
+        stack.append(base)
+        reusing.insert(ObjectIdentifier(marker))
+        try draw(marker, true)
+        reusing.remove(ObjectIdentifier(marker))
+        stack.removeLast()
+    }
+
+    // Reads the markerWidth or the markerHeight: 3 unless given.
+    private static func markerSize(_ value: String) -> Double {
+        if SVGState.trimSpace(value).isEmpty {
+            return 3.0
+        }
+        let size = SVGState.parseCoordinate(value)
+        return (size > 0.0) ? size : 0.0
+    }
+
+    // Adds a text element, with its tspan elements, as the runs of its
+    // characters.
+    private func addText(_ node: PDFjetXMLNode, _ state: SVGState, _ attributes: [String: String]) throws {
+        let text = SVGText()
+        text.matrix = state.matrix
+        var pending = [Double.nan, Double.nan, 0.0, 0.0]
+        try addRuns(text, node, state, attributes, &pending)
+        text.collapseSpaces()
+        let empty = text.runs.allSatisfy { $0.text.isEmpty }
+        let m = state.matrix
+        if empty || m[0]*m[3] - m[1]*m[2] == 0.0 {
+            return
+        }
+        let path = SVGPath()
+        path.text = text
+        path.clips = state.clips
+        paths.append(path)
+    }
+
+    // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
+    // its first character, which may be in a tspan in it; they are kept in
+    // pending until then.
+    private func addRuns(_ text: SVGText, _ node: PDFjetXMLNode, _ state: SVGState,
+            _ attributes: [String: String], _ pending: inout [Double]) throws {
+        let x = SVGImage.textLength(attributes["x"] ?? "", state.fontSize)
+        let y = SVGImage.textLength(attributes["y"] ?? "", state.fontSize)
+        let dx = SVGImage.textLength(attributes["dx"] ?? "", state.fontSize)
+        let dy = SVGImage.textLength(attributes["dy"] ?? "", state.fontSize)
+        if !x.isNaN {
+            pending[0] = x
+            pending[2] = 0.0
+        }
+        if !y.isNaN {
+            pending[1] = y
+            pending[3] = 0.0
+        }
+        if !dx.isNaN {
+            pending[2] += dx
+        }
+        if !dy.isNaN {
+            pending[3] += dy
+        }
+        for item in node.getContent() {
+            switch item {
+            case .text(let characters):
+                let run = SVGText.Run()
+                run.text = characters
+                run.x = pending[0]
+                run.y = pending[1]
+                run.dx = pending[2]
+                run.dy = pending[3]
+                pending = [Double.nan, Double.nan, 0.0, 0.0]
+                run.fontSize = state.fontSize
+                run.bold = state.bold
+                run.anchor = state.textAnchor
+                run.baseline = state.baseline
+                run.fill = state.fillCurrent ? state.color : state.fill
+                run.stroke = state.strokeCurrent ? state.color : state.stroke
+                run.fillAlpha = state.fillOpacity * state.opacity
+                run.strokeAlpha = state.strokeOpacity * state.opacity
+                run.strokeWidth = state.strokeWidth
+                run.strokeFirst = state.strokeFirst
+                run.lineJoin = state.lineJoin
+                text.runs.append(run)
+            case .element(let child):
+                let name = child.getLocalName()
+                if name != "tspan" && name != "a" {
+                    continue    // A title or a desc is not drawn
+                }
+                var childOrder = [String]()
+                let childAttributes = SVGImage.attributes(child, &childOrder)
+                var childState = try elementState(state, childAttributes, childOrder)
+                childState.matrix = state.matrix    // A tspan has no transform
+                if !childState.hidden {
+                    try addRuns(text, child, childState, childAttributes, &pending)
                 }
             }
         }
-        paths.append(path)
+    }
+
+    // Reads the first length of an x, y, dx or dy of a text, which may be in
+    // em of its font size, and returns NaN for none.
+    private static func textLength(_ value: String, _ fontSize: Float) -> Double {
+        let fields = SVGState.fields(SVGState.string(value.unicodeScalars.map { $0 == "," ? " " : $0 }))
+        guard let first = fields.first else {
+            return Double.nan
+        }
+        let length: Double
+        if SVGState.hasSuffix(first, "em") {
+            guard let number = SVGState.parseDouble(SVGState.string(first.unicodeScalars.dropLast(2))) else {
+                return Double.nan
+            }
+            length = number * Double(fontSize)
+        } else if SVGState.hasSuffix(first, "%") {
+            return Double.nan
+        } else {
+            guard let points = SVGState.parseLength(first) else {
+                return Double.nan
+            }
+            length = Double(points)
+        }
+        return length.isInfinite ? Double.nan : length
     }
 
     // Returns the point that the matrix takes the point to.
@@ -451,8 +949,22 @@ public class SVGImage : Drawable {
             ty = SVGImage.alignOffset(align[5..<8], h - box[3]*scale)
         }
         let strokeScale = Float((Double(sx) * Double(sy)).squareRoot())
-        for path in paths {
+        for path in paths + clipShapes {
             path.strokeWidth *= strokeScale
+            if let dashArray = path.dashArray {
+                path.dashArray = dashArray.map { $0 * strokeScale }
+                path.dashOffset *= strokeScale
+            }
+            if let text = path.text {
+                let m = text.matrix
+                let ax = Double(uniform ? sx : w / box[2])
+                let ay = Double(uniform ? sy : h / box[3])
+                let ox = uniform ? Double(tx) : 0.0
+                let oy = uniform ? Double(ty) : 0.0
+                text.matrix = [
+                        m[0]*ax, m[1]*ay, m[2]*ax, m[3]*ay,
+                        (m[4] - Double(box[0]))*ax + ox, (m[5] - Double(box[1]))*ay + oy]
+            }
             for op in path.operations {
                 if uniform {
                     op.x = (op.x - box[0])*sx + tx
@@ -502,8 +1014,17 @@ public class SVGImage : Drawable {
     /// Scales this SVG image by the specified factor.
     @discardableResult
     public func scaleBy(_ factor: Float) -> SVGImage {
-        for path in paths {
+        for path in paths + clipShapes {
             path.strokeWidth *= factor
+            if let dashArray = path.dashArray {
+                path.dashArray = dashArray.map { $0 * factor }
+                path.dashOffset *= factor
+            }
+            if let text = path.text {
+                let m = text.matrix
+                let f = Double(factor)
+                text.matrix = [m[0]*f, m[1]*f, m[2]*f, m[3]*f, m[4]*f, m[5]*f]
+            }
             for op in path.operations {
                 op.x1 *= factor
                 op.y1 *= factor
@@ -553,6 +1074,60 @@ public class SVGImage : Drawable {
         return self
     }
 
+    ///
+    /// Sets the font of the text of the image. Unless set, the text is drawn
+    /// in Helvetica, which is not embedded and has the characters of Western
+    /// European languages only; a document of PDF/A or PDF/UA needs a font
+    /// that is embedded.
+    ///
+    /// - Parameter font: the font.
+    /// - Returns: this SVGImage object.
+    ///
+    @discardableResult
+    public func setFont(_ font: Font) -> SVGImage {
+        self.font = font
+        return self
+    }
+
+    ///
+    /// Sets the font of the bold text of the image, whose font-weight is bold
+    /// or 600 or more. Unless set, it is the font set with setFont, or
+    /// Helvetica Bold when neither is set.
+    ///
+    /// - Parameter font: the bold font.
+    /// - Returns: this SVGImage object.
+    ///
+    @discardableResult
+    public func setBoldFont(_ font: Font) -> SVGImage {
+        self.boldFont = font
+        return self
+    }
+
+    // The core fonts the text is drawn in unless a font is set, one of each
+    // for a document, made when a text is first drawn in it.
+    private var corePDF: PDF?
+    private var helvetica: Font?
+    private var helveticaBold: Font?
+
+    private func coreFont(_ pdf: PDF, _ coreFont: Int) -> Font {
+        if corePDF !== pdf {
+            corePDF = pdf
+            helvetica = nil
+            helveticaBold = nil
+        }
+        // A core font of the fourteen, which Font makes without failing
+        if coreFont == CoreFont.HELVETICA {
+            if helvetica == nil {
+                helvetica = try! Font(pdf, coreFont)
+            }
+            return helvetica!
+        }
+        if helveticaBold == nil {
+            helveticaBold = try! Font(pdf, coreFont)
+        }
+        return helveticaBold!
+    }
+
     /// Returns the width of this SVG image.
     public func getWidth() -> Float {
         return self.w
@@ -576,9 +1151,23 @@ public class SVGImage : Drawable {
         let alpha = !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0)
         let lineCap = stroke && path.lineCap != CapStyle.BUTT
         let lineJoin = stroke && path.lineJoin != JoinStyle.MITER
-        let state = alpha || lineCap || lineJoin
+        let dash = stroke && path.dashArray != nil
+        let state = alpha || lineCap || lineJoin || dash || path.clips != nil
         if state {
             page.saveGraphicsState()
+            clip(path.clips, page)
+            if dash {
+                page.append("[")
+                for (i, length) in path.dashArray!.enumerated() {
+                    if i > 0 {
+                        page.append(Token.space)
+                    }
+                    page.append(length)
+                }
+                page.append("] ")
+                page.append(path.dashOffset)
+                page.append(" d\n")
+            }
             if alpha {
                 let gs = GraphicsState()
                 gs.setAlphaNonStroking(path.fillAlpha)
@@ -662,6 +1251,134 @@ public class SVGImage : Drawable {
         return true
     }
 
+    // Clips what is drawn next to the clip paths, each in turn.
+    private func clip(_ clips: [SVGPath]?, _ page: Page) {
+        guard let clips = clips else {
+            return
+        }
+        for clip in clips {
+            for op in clip.operations {
+                if op.cmd == "M" {
+                    page.moveTo(op.x + x, op.y + y)
+                } else if op.cmd == "L" {
+                    page.lineTo(op.x + x, op.y + y)
+                } else if op.cmd == "C" {
+                    page.curveTo(op.x1 + x, op.y1 + y, op.x2 + x, op.y2 + y, op.x + x, op.y + y)
+                } else if op.cmd == "Z" {
+                    page.append("h\n")
+                }
+            }
+            page.clipPath()
+        }
+    }
+
+    // Draws a text: each run filled and then stroked, or stroked first when
+    // its paint-order says, with the text matrix that takes its glyphs, whose
+    // y goes up, to where the run is on the page.
+    private func drawText(_ text: SVGText, _ clips: [SVGPath]?, _ page: Page) {
+        let m = text.matrix
+        let scale = abs(m[0]*m[3] - m[1]*m[2]).squareRoot()
+        for run in text.runs {
+            let str = SVGText.text(run)
+            if str.isEmpty || !(run.fontSize > 0.0) {
+                continue
+            }
+            let px = Double(run.px)
+            let py = Double(run.py)
+            let tm: [Float] = [
+                Float(m[0]),
+                Float(-m[1]),
+                Float(-m[2]),
+                Float(m[3]),
+                Float(m[0]*px + m[2]*py + m[4]) + x,
+                page.height - (Float(m[1]*px + m[3]*py + m[5]) + y)]
+            let writable = tm.allSatisfy { FastFloat.isWritable($0) }
+            let strokeWidth = Float(Double(run.strokeWidth) * scale)
+            let fill = run.fill != Color.transparent && run.fillAlpha > 0.0
+            let stroke = run.stroke != Color.transparent && run.strokeAlpha > 0.0
+                    && strokeWidth > 0.0 && FastFloat.isWritable(strokeWidth)
+            if !writable || !fill && !stroke {
+                continue
+            }
+            let alpha = !page.pdf.isPDFA1() && (fill && run.fillAlpha < 1.0 || stroke && run.strokeAlpha < 1.0)
+            let lineJoin = stroke && run.lineJoin != JoinStyle.MITER
+            let state = alpha || lineJoin || clips != nil
+            if state {
+                page.saveGraphicsState()
+                clip(clips, page)
+                if alpha {
+                    let gs = GraphicsState()
+                    gs.setAlphaNonStroking(run.fillAlpha)
+                    gs.setAlphaStroking(run.strokeAlpha)
+                    page.setGraphicsState(gs)
+                }
+                if lineJoin {
+                    page.setLineJoinStyle(run.lineJoin)
+                }
+            }
+            for pass in 0..<2 {
+                let strokePass = (pass == 0) == run.strokeFirst
+                if strokePass && stroke {
+                    page.setPenColor(run.stroke)
+                    page.setPenWidth(strokeWidth)
+                    page.drawSVGText(run.font!, run.fontSize, str, tm, 1)
+                } else if !strokePass && fill {
+                    page.setBrushColor(run.fill)
+                    page.drawSVGText(run.font!, run.fontSize, str, tm, 0)
+                }
+            }
+            if state {
+                page.restoreGraphicsState()
+            }
+        }
+    }
+
+    // Returns true when something of the image is drawn outside its size,
+    // which is cut off then: a point of a path, wider by half its stroke, or
+    // the box of a run of a text, from its ascent to its descent.
+    private func overflows(_ page: Page) -> Bool {
+        if w <= 0.0 || h <= 0.0 {
+            return false
+        }
+        for path in paths {
+            if let text = path.text {
+                let m = text.matrix
+                for run in text.runs {
+                    let corners: [(Float, Float)] = [
+                        (run.px, run.py - run.fontSize),
+                        (run.px + run.width, run.py - run.fontSize),
+                        (run.px, run.py + 0.3 * run.fontSize),
+                        (run.px + run.width, run.py + 0.3 * run.fontSize)]
+                    for (cx, cy) in corners {
+                        let (px, py) = SVGImage.transform(m, cx, cy)
+                        if outside(px, py, 0.0) {
+                            return true
+                        }
+                    }
+                }
+                continue
+            }
+            if !isWritable(path, page) {
+                continue    // Not drawn
+            }
+            let margin: Float = (path.stroke != Color.transparent) ? path.strokeWidth / 2.0 : 0.0
+            for op in path.operations {
+                if outside(op.x, op.y, margin) || op.cmd == "C"
+                        && (outside(op.x1, op.y1, margin) || outside(op.x2, op.y2, margin)) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    // Returns true for a point outside the size of the image, by more than a
+    // hundredth of a point and the margin.
+    private func outside(_ px: Float, _ py: Float, _ margin: Float) -> Bool {
+        let e: Float = 0.01 + margin
+        return px < -e || py < -e || px > w + e || py > h + e
+    }
+
     /// Draws this SVG image on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -674,8 +1391,33 @@ public class SVGImage : Drawable {
             link = page.beginLink()
         }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription)
+        var regular = font
+        var bold = boldFont
         for path in paths {
-            drawPath(path, page)
+            if let text = path.text {
+                if regular == nil {
+                    regular = coreFont(page.pdf, CoreFont.HELVETICA)
+                }
+                if bold == nil {
+                    bold = font ?? coreFont(page.pdf, CoreFont.HELVETICA_BOLD)
+                }
+                text.place(regular!, bold!)
+            }
+        }
+        let clip = overflows(page)
+        if clip {
+            page.saveGraphicsState()
+            page.clipRect(x, y, w, h)
+        }
+        for path in paths {
+            if let text = path.text {
+                drawText(text, path.clips, page)
+            } else {
+                drawPath(path, page)
+            }
+        }
+        if clip {
+            page.restoreGraphicsState()
         }
         page.setFigureBoundingBox(x, y, w, h)
         page.addEMC()

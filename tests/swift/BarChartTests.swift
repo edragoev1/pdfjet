@@ -109,7 +109,7 @@ import Testing
         #expect(stacked.contains(TestSupport.hex("50")) && stacked.contains(TestSupport.hex("85")), "\(stacked)")
     }
 
-    // The first series in navy, the grid lines light gray and solid, the text
+    // The first series in blue, the grid lines light gray and solid, the text
     // gray or ink, and no black line or text.
     @Test func theDefaultLookIsQuiet() {
         let pdf = TestSupport.newPDF()
@@ -117,8 +117,8 @@ import Testing
         let chart = self.chart(pdf).setCategories("a", "b").setTitle("t").setSubtitle("s")
         chart.addSeries("one", [20.0, 75.0]).addSeries("two", [30.0, 10.0])
         let content = draw(chart, page)
-        #expect(content.contains("0.12 0.23 0.37 rg"))
-        #expect(content.contains("0.44 0.58 0.76 rg"))
+        #expect(content.contains("0.31 0.47 0.65 rg"))     // blue
+        #expect(content.contains("0.95 0.56 0.17 rg"))     // orange
         #expect(content.contains("0.88 0.89 0.91 RG\n0.5 w\n"))     // Thin and solid
         #expect(!content.contains("0 0 0 RG") && !content.contains("0 0 0 rg"))
         #expect(TestSupport.fillColorBefore(content, "t") == "0.13 0.15 0.17 rg")
@@ -217,11 +217,11 @@ import Testing
         #expect(swatch != nil && own != nil && swatch!.lowerBound < own!.lowerBound, "\(content)")
     }
 
-    // The height of the first bar the content fills in navy.
+    // The height of the first bar the content fills in blue.
     private func barHeight(_ content: String) -> Float {
-        guard let navy = content.range(of: "0.12 0.23 0.37 rg\n"),
-              let re = content.range(of: " re\n", range: navy.upperBound..<content.endIndex) else {
-            Issue.record("no navy bar in \(content)")
+        guard let blue = content.range(of: "0.31 0.47 0.65 rg\n"),
+              let re = content.range(of: " re\n", range: blue.upperBound..<content.endIndex) else {
+            Issue.record("no blue bar in \(content)")
             return 0
         }
         let start = content[..<re.lowerBound].lastIndex(of: "\n").map { content.index(after: $0) }

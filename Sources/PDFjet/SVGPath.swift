@@ -18,4 +18,8 @@ class SVGPath {
     var lineJoin = JoinStyle.MITER
     var fillAlpha: Float = 1.0
     var strokeAlpha: Float = 1.0
+    var dashArray: [Float]? = nil           // The dashes and the gaps, in the space of the svg element; nil is solid
+    var dashOffset: Float = 0.0
+    var clips: [SVGPath]? = nil             // The clip paths it is drawn inside, all of them
+    var text: SVGText? = nil                // A text, drawn instead of the operations
 }

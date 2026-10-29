@@ -67,16 +67,16 @@ import Testing
         #expect(page.structures[2].altDescription == "Most are oranges.")
     }
 
-    // Slices in the palette, navy first; thin white lines between them; thin
-    // gray leader lines; the percentage white on navy, ink on the light steel
-    // blue; and no black line or text.
+    // Slices in the palette, blue first; thin white lines between them; thin
+    // gray leader lines; the percentage white on blue, ink on orange; and no
+    // black line or text.
     @Test func theDefaultLookIsQuiet() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
         chart(pdf).add("a", 60).add("b", 40).drawOn(page)
         let content = TestSupport.content(page)
-        #expect(content.contains("0.12 0.23 0.37 rg"), "\(content)")       // navy
-        #expect(content.contains("0.44 0.58 0.76 rg"), "\(content)")       // steel blue
+        #expect(content.contains("0.31 0.47 0.65 rg"), "\(content)")       // blue
+        #expect(content.contains("0.95 0.56 0.17 rg"), "\(content)")       // orange
         #expect(content.contains("1 1 1 RG\n1.5 w\n"), "\(content)")       // the white lines between
         #expect(content.contains("0.55 0.59 0.64 RG\n0.75 w\n"), "\(content)")   // the leader lines
         #expect(!content.contains("0 0 0 RG") && !content.contains("0 0 0 rg"), "\(content)")
@@ -250,13 +250,13 @@ import Testing
                 == TestSupport.content(page).replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression))
 
         page = Page(pdf, Letter.PORTRAIT)
-        let nine = chart(pdf)
-        for _ in 0..<9 {
-            nine.add("", 1)
+        let eleven = chart(pdf)
+        for _ in 0..<11 {
+            eleven.add("", 1)
         }
-        nine.drawOn(page)
+        eleven.drawOn(page)
         content = TestSupport.content(page)
-        #expect(content.components(separatedBy: "0.12 0.23 0.37 rg").count <= 2, "\(content)")
+        #expect(content.components(separatedBy: "0.31 0.47 0.65 rg").count <= 2, "\(content)")
     }
 
     // The third review of 26 October 2026: a radius that is not a number is

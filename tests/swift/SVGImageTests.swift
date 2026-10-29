@@ -90,11 +90,22 @@ import Testing
         #expect(content.components(separatedBy: "\nh\nS\n").count - 1 == 1, "\(content)")
     }
 
-    @Test func aPathWithoutColorsOrWithAnUnknownFillIsFilledBlack() throws {
+    @Test func aPathWithoutColorsIsFilledBlackAndOneOfAnUnknownURLIsNotFilled() throws {
         let unset = try draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\"/></svg>")
         #expect(unset.hasPrefix("0 0 0 rg\n") && unset.hasSuffix("\nf\n"), "\(unset)")
-        let gradient = try draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/></svg>")
-        #expect(gradient == unset)
+        // A url of an element that is not there is none, as a browser draws it.
+        let unknown = try draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/></svg>")
+        #expect(unknown == "")
+    }
+
+    @Test func aGradientIsDrawnInTheMeanColorOfItsStops() throws {
+        let stops = "<stop offset=\"0\" stop-color=\"#ff0000\"/><stop offset=\"1\" style=\"stop-color: blue\"/>"
+        let content = try draw("<svg width=\"100\" height=\"50\"><defs><linearGradient id=\"g\">" + stops
+                + "</linearGradient><radialGradient id=\"h\" href=\"#g\"/></defs>"
+                + "<path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/><path d=\"M10 10 L90 40\" stroke=\"url('#h')\"/></svg>")
+        // 255/2 rounds half up; the second gradient takes the stops of the first.
+        #expect(content.hasPrefix("0.5 0 0.5 rg\n"), "\(content)")
+        #expect(content.contains("0.5 0 0.5 RG\n"), "\(content)")
     }
     // The numbers of path data are written as SVG 1.1 section 8.3.9 gives them:
     // a sign, digits, a point and an exponent, and a sign or a point starts the
@@ -414,7 +425,6 @@ import Testing
             ("fill=\"currentColor\" color=\"red\"", "1 0 0 rg"),
             ("fill=\"currentColor\"", "0 0 0 rg"),
             ("fill=\"url(#gradient) red\"", "1 0 0 rg"),
-            ("fill=\"url(#gradient)\"", "0 0 0 rg"),    // Not drawn: as if not given
             ("fill=\"unknown\"", "0 0 0 rg"),
             ("fill=\"rgb(nan, 0, 0)\"", "0 0 0 rg"),   // Not a number: as if not given
             ("fill=\"rgb(inf, 0, 0)\"", "0 0 0 rg"),
@@ -561,6 +571,21 @@ import Testing
         _ = svgImage.setLocation(10, 10)
         svgImage.drawOn(page)
         #expect(svgImage.paths.count == 6)
+        // Drawn at 0, 0: every shape but the line, which has no inside, is
+        // filled with the even-odd rule; the first in a graphics state of its
+        // opacity. The slice draws past the size of the image, which cuts it
+        // off.
+        let content = try draw("<svg width=\"100\" height=\"50\" viewBox=\"0 0 200 100\" preserveAspectRatio=\"xMinYMax slice\">"
+                + "<style>.a{fill:rgb(10%,20,30);stroke:currentColor;stroke-width:2px} .b{opacity:.5}</style>"
+                + "<g transform=\"translate(10,5) rotate(30 5 5) skewX(10)\" color=\"blue\" class=\"a\" fill-rule=\"evenodd\">"
+                + "<rect x=\"1\" y=\"2\" width=\"30\" height=\"20\" rx=\"4\" class=\"b\"/><circle cx=\"50\" cy=\"20\" r=\"8\"/>"
+                + "<ellipse cx=\"80\" cy=\"20\" rx=\"10\" ry=\"5\" style=\"fill-opacity:0.3;stroke-linecap:round\"/>"
+                + "<line x1=\"0\" y1=\"40\" x2=\"90\" y2=\"45\" stroke-linejoin=\"bevel\"/>"
+                + "<polyline points=\"0,50 10,60 20,50\"/><polygon points=\"30 50 40 60 50 50\"/></g>"
+                + "<defs><path d=\"M0 0 L5 5\"/></defs><g display=\"none\"><rect width=\"5\" height=\"5\"/></g></svg>")
+        #expect(content.components(separatedBy: "\nf*\n").count - 1 == 5, "\(content)")
+        #expect(content.hasPrefix("q\n0 792 m\n100 792 l\n100 742 l\n0 742 l\nW\nn\n"
+                + "q\n/GS1 gs\n0.1 0.08 0.12 rg\n8.4 788.21 m\n17.93 782.71 l\n"), "\(content)")
     }
 
     private func curves(_ content: String) -> Int {
@@ -604,5 +629,132 @@ import Testing
         }
         #expect(SVGState.parseDouble("1e3") == 1000)
         #expect(SVGState.parseDouble("-inf") == -Double.infinity)
+    }
+
+    // The text of a chart: text and tspan elements, placed as a browser
+    // places them, in Helvetica unless a font is set.
+
+    @Test func drawsATextAtItsXAndY() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></svg>")
+        #expect(content.contains(" 12 Tf\n1 0 0 1 10 772 Tm\n[<4869>] TJ\nET\n"), "\(content)")
+        #expect(!content.contains("W\n"), "\(content)")    // Inside the image: nothing is cut off
+    }
+
+    @Test func anAnchorMovesTheTextByItsWidthAndDyIsInEm() throws {
+        // Hi is 944 thousandths of an em wide in Helvetica: 11.328 at 12.
+        let content = try draw("<svg width=\"200\" height=\"100\"><text x=\"100\" y=\"20\" dy=\"0.5em\" "
+                + "font-size=\"12\" text-anchor=\"end\">Hi</text></svg>")
+        #expect(content.contains("1 0 0 1 88.67 766 Tm\n"), "\(content)")
+    }
+
+    @Test func theTextAndTheTspansAreDrawnInTheOrderOfTheDocument() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><text x=\"0\" y=\"20\">"
+                + " A <tspan font-weight=\"bold\">B</tspan>C<title>not drawn</title></text></svg>")
+        // "A ": the space at the start is left out
+        let a = content.range(of: "[<4120>] TJ")
+        let b = content.range(of: "[<42>] TJ")
+        let c = content.range(of: "[<43>] TJ")
+        #expect(a != nil && b != nil && c != nil, "\(content)")
+        if let a = a, let b = b, let c = c {
+            #expect(a.lowerBound < b.lowerBound && b.lowerBound < c.lowerBound, "\(content)")
+        }
+        #expect(!content.contains("<6E6F74"), "\(content)")
+        // The bold B in another font
+        #expect(content.contains("/F2 16 Tf\n") && content.contains("/F3 16 Tf\n"), "\(content)")
+    }
+
+    @Test func aTspanWithAnXOrAYStartsAChunkAnchoredOnItsOwn() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><text text-anchor=\"middle\" "
+                + "transform=\"translate(100,50)\" font-size=\"10\"><tspan y=\"-0.4em\">Go</tspan>"
+                + "<tspan x=\"0\" y=\"0.7em\">12%</tspan></text></svg>")
+        // Go is 1334 thousandths of an em, and 12% 2001.
+        #expect(content.contains("1 0 0 1 93.33 746 Tm\n"), "\(content)")
+        #expect(content.contains("1 0 0 1 90 735 Tm\n"), "\(content)")
+    }
+
+    @Test func theFontShorthandSetsTheSizeAndTheWeight() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\" style=\"font: bold 10px sans-serif\">"
+                + "<text y=\"20\">A</text><text y=\"40\" font-weight=\"400\">B</text></svg>")
+        #expect(content.components(separatedBy: " 10 Tf\n").count - 1 == 2, "\(content)")
+        #expect(content.range(of: "/F")?.lowerBound != content.range(of: "/F", options: .backwards)?.lowerBound,
+                "\(content)")
+    }
+
+    @Test func aCoreFontDrawsTheMinusSignAsAHyphenMinus() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><text y=\"20\">\u{2212}5</text></svg>")
+        #expect(content.contains("[<2D35>] TJ"), "\(content)")
+    }
+
+    @Test func aStrokeBeforeTheFillDrawsAHaloUnderTheText() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><text y=\"20\" stroke=\"white\" stroke-width=\"3\" "
+                + "stroke-linejoin=\"round\" paint-order=\"stroke\">A</text></svg>")
+        let stroke = content.range(of: "1 Tr\n")
+        let fill = content.range(of: "0 Tr\n")
+        #expect(stroke != nil && fill != nil && stroke!.lowerBound < fill!.lowerBound, "\(content)")
+        #expect(content.contains("1 1 1 RG\n3 w\n"), "\(content)")
+    }
+
+    @Test func aSetFontDrawsTheText() throws {
+        let page = TestSupport.newPage()
+        let font = try TestSupport.plexSans(page.pdf)
+        let svgImage = try image("<svg width=\"200\" height=\"100\"><text y=\"20\" font-weight=\"bold\">Hi</text></svg>")
+        svgImage.setFont(font)  // The bold text too, as no bold font is set
+        svgImage.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("> Tj\n"), "\(content)")
+        #expect(!content.contains("TJ"), "\(content)")
+    }
+
+    @Test func aDashArrayOfAnOddNumberOfLengthsIsRepeated() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" "
+                + "stroke-dasharray=\"4, 2 1\" stroke-dashoffset=\"1\"/>"
+                + "<path d=\"M0 20 L100 20\" stroke=\"red\" stroke-dasharray=\"0 0\"/>"
+                + "<path d=\"M0 30 L100 30\" stroke=\"red\" stroke-dasharray=\"4 -2\"/></svg>")
+        #expect(content.contains("q\n[4 2 1 4 2 1] 1 d\n"), "\(content)")
+        #expect(content.components(separatedBy: " d\n").count - 1 == 1, "\(content)")   // The others are solid
+    }
+
+    @Test func aUseDrawsTheElementItNamesMovedByItsXAndY() throws {
+        let content = try draw("<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"200\" height=\"100\">"
+                + "<defs><rect id=\"r\" width=\"10\" height=\"10\"/><symbol id=\"s\"><circle r=\"2\"/></symbol></defs>"
+                + "<use href=\"#r\" x=\"20\" y=\"30\" fill=\"red\"/><use xlink:href=\"#s\" x=\"50\" y=\"50\"/>"
+                + "<g id=\"loop\"><use href=\"#loop\"/></g></svg>")
+        #expect(content.hasPrefix("1 0 0 rg\n20 762 m\n30 762 l\n"), "\(content)")
+        #expect(content.contains("\n52 742 m\n"), "\(content)")
+    }
+
+    @Test func usesOfUsesThatDrawTooManyElementsThrow() {
+        var svg = "<svg width=\"10\" height=\"10\"><rect id=\"g0\" width=\"1\" height=\"1\"/>"
+        for level in 1...7 {
+            svg += "<g id=\"g\(level)\">"
+            for _ in 0..<10 {
+                svg += "<use href=\"#g\(level - 1)\"/>"
+            }
+            svg += "</g>"
+        }
+        svg += "</svg>"
+        let error = #expect(throws: (any Error).self) {
+            _ = try image(svg)
+        }
+        #expect(TestSupport.message(error)
+                == "The SVG draws more than 1000000 elements again, with use elements or markers.")
+    }
+
+    @Test func aMarkerIsDrawnAtTheEndTurnedWithThePath() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><defs><marker id=\"m\" markerWidth=\"4\" "
+                + "markerHeight=\"4\" orient=\"auto\" refX=\"1\"><rect width=\"2\" height=\"1\"/></marker></defs>"
+                + "<path d=\"M10 10 L10 50\" stroke=\"black\" stroke-width=\"2\" marker-end=\"url(#m)\"/></svg>")
+        // Turned 90 degrees down the path and twice the size, for the stroke
+        // width: from 10, 48 to 8, 52.
+        #expect(content.contains("S\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\n"), "\(content)")
+    }
+
+    @Test func aClipPathCutsOffWhatIsOutsideIt() throws {
+        let content = try draw("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/>"
+                + "</clipPath><g clip-path=\"url(#c)\" transform=\"translate(10,0)\"><rect x=\"10\" y=\"10\" width=\"80\" "
+                + "height=\"20\"/></g><clipPath id=\"none\"/><rect width=\"5\" height=\"5\" clip-path=\"url(#none)\"/></svg>")
+        // The clip path is in the user space of the group, moved with it.
+        #expect(content == "q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
+                + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", "\(content)")
     }
 }

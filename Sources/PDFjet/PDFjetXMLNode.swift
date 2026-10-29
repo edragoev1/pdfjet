@@ -29,6 +29,16 @@ public final class PDFjetXMLNode {
     private var attributes = [(name: String, value: String)]()
     private var children = [PDFjetXMLNode]()
     private var text = [UInt16]()
+    // Where the text after a child starts, for an element with both: the
+    // number of children before it and its offset in the text, one pair after
+    // the other; empty for the many elements without, as an SVG's text has.
+    private var marks = [Int]()
+
+    /// A piece of the content of an element: a text or an element.
+    enum Content {
+        case text(String)
+        case element(PDFjetXMLNode)
+    }
 
     init(_ name: String, _ namespace: String) {
         self.name = name
@@ -47,7 +57,36 @@ public final class PDFjetXMLNode {
     }
 
     func addText<S: Sequence>(_ characters: S) where S.Element == UInt16 {
+        if !children.isEmpty {
+            marks.append(children.count)
+            marks.append(text.count)
+        }
         text.append(contentsOf: characters)
+    }
+
+    // Returns the text and the elements in this one in the order of the
+    // document: a text for each piece of text, an element for each element.
+    func getContent() -> [Content] {
+        var content = [Content]()
+        var child = 0
+        var from = 0
+        var i = 0
+        while i <= marks.count {
+            // The text up to the next mark, or to the end, then the children
+            // before the text after the mark.
+            let nextChild = (i < marks.count) ? marks[i] : children.count
+            let to = (i < marks.count) ? marks[i + 1] : text.count
+            if to > from {
+                content.append(.text(PDFjetXMLNode.string(text[from..<to])))
+                from = to
+            }
+            while child < nextChild {
+                content.append(.element(children[child]))
+                child += 1
+            }
+            i += 2
+        }
+        return content
     }
 
     ///

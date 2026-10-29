@@ -36,6 +36,7 @@ public class SimpleScatterChart : Drawable {
         let y: Float
         let name: String
         var uri: String? = nil      // The link of a highlighted point, or nil
+        var series = -1             // The index of its series, or -1 for none
     }
 
     private let f1: Font    // The title and the names
@@ -50,6 +51,7 @@ public class SimpleScatterChart : Drawable {
     private var yAxisTitle = ""
     private var altDescription = ""
     private var points = [Point]()
+    private var series = [String]()     // The names of the series
     private var trendLine = false
     private var xMin: Float = 0.0
     private var xMax: Float = 0.0
@@ -145,7 +147,31 @@ public class SimpleScatterChart : Drawable {
     ///
     @discardableResult
     public func add(_ x: Float, _ y: Float) -> SimpleScatterChart {
-        points.append(Point(x: x, y: y, name: ""))
+        return addPoint(Point(x: x, y: y, name: ""))
+    }
+
+    // Adds the point to the series added last, if any.
+    private func addPoint(_ point: Point) -> SimpleScatterChart {
+        var p = point
+        p.series = series.count - 1
+        points.append(p)
+        return self
+    }
+
+    ///
+    /// Starts a series: the points added after it are its points, drawn in its
+    /// color and its shape, and its name is in the legend over the plot. The
+    /// series take the colors of the palette of BarChart, blue, orange, red,
+    /// teal and so on, and the shapes circle, square, triangle, star, diamond
+    /// and cross, in turn. The points added before the first series are gray
+    /// dots, as those of a chart without series.
+    ///
+    /// - Parameter name: the name of the series, in the legend.
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func addSeries(_ name: String) -> SimpleScatterChart {
+        series.append(name)
         return self
     }
 
@@ -159,8 +185,7 @@ public class SimpleScatterChart : Drawable {
     ///
     @discardableResult
     public func add(_ name: String, _ x: Float, _ y: Float) -> SimpleScatterChart {
-        points.append(Point(x: x, y: y, name: name))
-        return self
+        return addPoint(Point(x: x, y: y, name: name))
     }
 
     ///
@@ -178,8 +203,7 @@ public class SimpleScatterChart : Drawable {
     @discardableResult
     public func add(_ name: String, _ x: Float, _ y: Float, _ uri: String) -> SimpleScatterChart {
         // An empty URI is no link, as in the Go port
-        points.append(Point(x: x, y: y, name: name, uri: uri.isEmpty ? nil : uri))
-        return self
+        return addPoint(Point(x: x, y: y, name: name, uri: uri.isEmpty ? nil : uri))
     }
 
     ///
@@ -319,7 +343,111 @@ public class SimpleScatterChart : Drawable {
         if !title.isEmpty || !subtitle.isEmpty {
             top += f2.getSize()
         }
-        return top
+        return top + Float(drawLegend(nil, 0.0)) * SimpleScatterChart.LEGEND_ROW * f2.getSize()
+    }
+
+    // The shapes of the series, in turn, as D3 draws its symbols.
+    static let CIRCLE = 0
+    static let SQUARE = 1
+    static let TRIANGLE = 2
+    static let STAR = 3
+    static let DIAMOND = 4
+    static let CROSS = 5
+    static let SHAPES = 6
+    // The height of a row of the legend, in sizes of the numbers.
+    private static let LEGEND_ROW: Float = 1.5
+
+    // The color of a series.
+    private static func seriesColor(_ index: Int) -> Int32 {
+        return BarChart.PALETTE[index % BarChart.PALETTE.count]
+    }
+
+    // Draws the legend, the shape and the name of each series, from the
+    // baseline of its first row, its rows wrapped at the right of the chart,
+    // when there is a page; and returns the number of its rows, 0 for a chart
+    // without series.
+    @discardableResult
+    private func drawLegend(_ page: Page?, _ baseline: Float) -> Int {
+        if series.isEmpty {
+            return 0
+        }
+        let size = f2.getSize()
+        let pad = pad()
+        let r = 0.35 * size
+        let gap = size / 2.0
+        let left = x + pad
+        var px = left
+        var baseline = baseline
+        var rows = 1
+        for i in 0..<series.count {
+            let name = ChartScale.shorten(f2, size, series[i], w - 2.0 * pad - 2.0 * r - gap)
+            let width = 2.0 * r + gap + f2.stringWidth(size, name)
+            if px > left && px + width > x + w - pad {
+                px = left
+                baseline += SimpleScatterChart.LEGEND_ROW * size
+                rows += 1
+            }
+            if let page = page {
+                page.setPenColor(SimpleScatterChart.seriesColor(i))
+                page.setPenWidth(0.12 * size)
+                SimpleScatterChart.drawShape(page, i % SimpleScatterChart.SHAPES, px + r,
+                        baseline - f2.getAscent(size) / 2.0, r, false)
+                page.drawString(f2, size, name, px + 2.0 * r + gap, baseline, Util.toRGB(SimpleBarChart.INK), nil)
+            }
+            px += width + size
+        }
+        return rows
+    }
+
+    // Draws a shape of a series centered on cx, cy, of about the area of a
+    // circle of radius r, its outline in the pen color, or filled in the
+    // brush color.
+    static func drawShape(_ page: Page, _ shape: Int, _ cx: Float, _ cy: Float, _ r: Float, _ fill: Bool) {
+        if shape == CIRCLE {
+            if fill {
+                page.fillCircle(cx, cy, r)
+            } else {
+                page.drawCircle(cx, cy, r)
+            }
+            return
+        }
+        var xy: [Float]
+        if shape == SQUARE {
+            let a = 0.886 * r
+            xy = [-a, -a, a, -a, a, a, -a, a]
+        } else if shape == TRIANGLE {
+            // Pointing up, its center halfway down its height
+            let a = 1.35 * r
+            xy = [0.0, -a, 0.866 * a, 0.5 * a, -0.866 * a, 0.5 * a]
+        } else if shape == STAR {
+            xy = [Float](repeating: 0.0, count: 20)
+            for i in 0..<10 {
+                let angle = Double.pi * Double(i) / 5.0
+                let radius: Float = (i % 2 == 0) ? 1.3 * r : 0.5 * r
+                xy[2*i] = Float(Double(radius) * sin(angle))
+                xy[2*i + 1] = Float(Double(-radius) * cos(angle))
+            }
+        } else if shape == DIAMOND {
+            let a = 1.15 * r
+            let b = 0.75 * r
+            xy = [0.0, -a, b, 0.0, 0.0, a, -b, 0.0]
+        } else {
+            // A cross of five squares, as wide as three
+            let a = 1.1 * r
+            let b = a / 3.0
+            xy = [-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b]
+        }
+        page.moveTo(cx + xy[0], cy + xy[1])
+        var i = 2
+        while i < xy.count {
+            page.lineTo(cx + xy[i], cy + xy[i + 1])
+            i += 2
+        }
+        if fill {
+            page.fillPath()
+        } else {
+            page.closePath()    // Closed and stroked
+        }
     }
 
     // A number of an axis, with the decimals its step needs.
@@ -413,6 +541,16 @@ public class SimpleScatterChart : Drawable {
         text += SimpleBarChart.punctuationAfter(text, ":") + " \(shown.count) points"
         if !xAxisTitle.isEmpty && !yAxisTitle.isEmpty {
             text += ", " + yAxisTitle + " against " + xAxisTitle
+        }
+        if !series.isEmpty {
+            // in the series A, B and C
+            text += ", in the series "
+            for (i, name) in series.enumerated() {
+                if i > 0 {
+                    text += (i == series.count - 1) ? " and " : ", "
+                }
+                text += name
+            }
         }
         var named = 0
         for p in shown where !p.name.isEmpty {
@@ -518,6 +656,13 @@ public class SimpleScatterChart : Drawable {
             page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2.0 * pad),
                     x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
+        if !series.isEmpty {
+            if !title.isEmpty || !subtitle.isEmpty {
+                baseline += f2.getSize()
+            }
+            let row = SimpleScatterChart.LEGEND_ROW * size
+            drawLegend(page, baseline + row - (row - ascent) / 2.0)
+        }
 
         // The horizontal grid and the numbers of both axes, each where it
         // leaves the one before it room
@@ -604,18 +749,29 @@ public class SimpleScatterChart : Drawable {
         }
         page.setBrushColor(dotColor)
         let r = 0.3 * size
-        for p in points where p.name.isEmpty && onPlot(p) {
+        for p in points where p.series < 0 && p.name.isEmpty && onPlot(p) {
             page.fillCircle(xAt(p.x), yAt(p.y), r)
         }
         page.restoreGraphicsState()
+        // The points of the series, the outlines of their shapes, opaque
+        page.setPenWidth(0.12 * size)
+        for p in points where p.series >= 0 && p.name.isEmpty && onPlot(p) {
+            page.setPenColor(SimpleScatterChart.seriesColor(p.series))
+            SimpleScatterChart.drawShape(page, p.series % SimpleScatterChart.SHAPES, xAt(p.x), yAt(p.y),
+                    0.35 * size, false)
+        }
         let big = 0.42 * size
         // Draws a highlighted point and its name, and returns the box of the
         // two: x, y, w, h
         func named(_ p: Point) -> [Float] {
             let px = xAt(p.x)
             let py = yAt(p.y)
-            page.setBrushColor(highlightColor)
-            page.fillCircle(px, py, big)
+            page.setBrushColor((p.series >= 0) ? SimpleScatterChart.seriesColor(p.series) : highlightColor)
+            if p.series >= 0 {
+                SimpleScatterChart.drawShape(page, p.series % SimpleScatterChart.SHAPES, px, py, big, true)
+            } else {
+                page.fillCircle(px, py, big)
+            }
             // A name of two fifths of the plot at most, and in the plot
             let name = ChartScale.shorten(f1, size, p.name, 0.4 * (right - plotLeft))
             let width = f1.stringWidth(size, name)
@@ -630,7 +786,10 @@ public class SimpleScatterChart : Drawable {
             page.setBrushColor(panelColor >= 0 ? panelColor : Color.white)
             page.fillRect(lx - 1.0, baseline - f1.getAscent(size) - 1.0,
                     width + 2.0, f1.getAscent(size) + f1.getDescent(size) + 2.0)
-            page.drawString(f1, size, name, lx, baseline, Util.toRGB(highlightColor), nil)
+            // The name of a point of a series in ink, which reads on the panel
+            // whatever the color of the series
+            page.drawString(f1, size, name, lx, baseline,
+                    Util.toRGB((p.series >= 0) ? SimpleBarChart.INK : highlightColor), nil)
             let x1 = Swift.min(px - big, lx)
             let y1 = Swift.min(py - big, baseline - f1.getAscent(size))
             let x2 = Swift.max(px + big, lx + width)
