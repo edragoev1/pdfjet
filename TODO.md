@@ -794,6 +794,18 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   case, before and after; checked with qpdf --check and in Acrobat. The
   four ports alike, and the benchmark run with the option on, as its
   documentation would then show.
+  **Memory, written in batches** (the owner, 29 October 2026, on the cost of
+  holding the objects until their object stream is written: "this is
+  important"). Only objects that are not streams go into an object stream,
+  so the page contents, fonts, images and files are still written at once,
+  as today. An object stream is closed every 100 to 200 objects and a new
+  one started, so that one batch of small dictionaries is held at a time,
+  some 30 to 80 KB of structure elements, never the whole document; the
+  structure tree, the largest share, is held until complete() already. The
+  cross-reference stream needs, for each object, its object stream and its
+  place in it, a few bytes more than the offset kept today. Measured: the
+  peak memory of Example_24 and of the tagged price list of 3,000 rows,
+  with the option off and on, in the four ports.
 - **For v9.2.1: four things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
