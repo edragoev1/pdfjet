@@ -14,6 +14,7 @@ Pro.
 | `examples/pro/WriteInvoice/` | Writes an electronic invoice of Factur-X and ZUGFeRD. |
 | `examples/pro/DrawSwissQRBill/` | Draws the Swiss QR-bill of an invoice. |
 | `examples/pro/DrawEPCQRCode/` | Draws the EPC QR code of a SEPA credit transfer. |
+| `examples/pro/HyphenateText/` | Hyphenates a paragraph, in English and German, beside the same without. |
 | `examples/pro/demo-signer.p12` | A certificate for the signing example alone, which no one trusts. |
 | `Pro_*.pdf` | The PDFs the examples create. |
 | `build-pro.sh`, `build-pro.cmd` | Build and run the examples of PDFjet Pro. |
@@ -24,6 +25,10 @@ Pro.
 - **PDFjet Invoice**: ZUGFeRD and Factur-X in every profile, and XRechnung,
   written into a PDF/A-3 document and read back; the Swiss QR-bill; the EPC QR
   code of a SEPA transfer.
+- **Hyphenation** (`Hyphenator`): soft hyphens where the words of a text may
+  break, for American and British English, French, Spanish and German, which
+  TextBlock, TextFrame and the table cells break at. The licenses of its
+  patterns are in `HYPHENATION-PATTERNS-LICENSES.txt`.
 
 PDFjet Pro is built for .NET 8: `net48/PDFjet.dll`, for .NET Framework 4.8, is
 the library without it.

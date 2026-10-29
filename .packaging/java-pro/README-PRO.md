@@ -11,6 +11,7 @@ code. The API reference, `docs/java/index.html`, covers them.
 | `examples/pro/WriteInvoice.java` | Writes an electronic invoice of Factur-X and ZUGFeRD. |
 | `examples/pro/DrawSwissQRBill.java` | Draws the Swiss QR-bill of an invoice. |
 | `examples/pro/DrawEPCQRCode.java` | Draws the EPC QR code of a SEPA credit transfer. |
+| `examples/pro/HyphenateText.java` | Hyphenates a paragraph, in English and German, beside the same without. |
 | `examples/pro/demo-signer.p12` | A certificate for the signing example alone, which no one trusts. |
 | `Pro_*.pdf` | The PDFs the examples create. |
 | `build-pro.sh`, `build-pro.cmd` | Compile and run the examples of PDFjet Pro. |
@@ -22,6 +23,10 @@ code. The API reference, `docs/java/index.html`, covers them.
 - **PDFjet Invoice** (`com.pdfjet.invoice`): ZUGFeRD and Factur-X in every
   profile, and XRechnung, written into a PDF/A-3 document and read back; the
   Swiss QR-bill; the EPC QR code of a SEPA transfer.
+- **Hyphenation** (`com.pdfjet.hyphenation`): soft hyphens where the words
+  of a text may break, for American and British English, French, Spanish and
+  German, which TextBlock, TextFrame and the table cells break at. The
+  licenses of its patterns are in `HYPHENATION-PATTERNS-LICENSES.txt`.
 
 The manifest of this `PDFjet.jar` names it PDFjet Pro, as the jar of PDFjet
 Core, of the same name, is not.
