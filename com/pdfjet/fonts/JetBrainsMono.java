@@ -7,11 +7,16 @@
 package com.pdfjet.fonts;
 
 /**
- * The JetBrains Mono fonts. Each constant is the path of a font file,
- * embedded as a subset of the glyphs a document draws; pass it to the Font
- * constructor that takes a font path. PDFjet carries these fonts in itself:
- * the path is read from the library when there is no such file.
+ * The JetBrains Mono fonts, which PDFjet does not carry from 9.1.7: each constant
+ * is the path of a font file of pdfjet-fonts,
+ * https://github.com/edragoev1/pdfjet-fonts, which the Font constructor that
+ * takes a font path reads when the file is there.
+ *
+ * @deprecated PDFjet carries Cascadia Mono, which has all of Greek and of
+ * Cyrillic in every face, as JetBrains Mono does not, and which every constant
+ * of CascadiaMono reads with nothing to download.
  */
+@Deprecated
 public class JetBrainsMono {
     private JetBrainsMono() {
     }
@@ -20,23 +25,9 @@ public class JetBrainsMono {
     public static final String Bold             = "fonts/JetBrainsMono/JetBrainsMono-Bold.ttf";
     /** JetBrains Mono BoldItalic */
     public static final String BoldItalic       = "fonts/JetBrainsMono/JetBrainsMono-BoldItalic.ttf";
-
-    /**
-     * JetBrains Mono ExtraLight, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
-     *
-     * @deprecated PDFjet carries the other weights of the family.
-     */
-    @Deprecated
+    /** JetBrains Mono ExtraLight */
     public static final String ExtraLight       = "fonts/JetBrainsMono/JetBrainsMono-ExtraLight.ttf";
-
-    /**
-     * JetBrains Mono ExtraLightItalic, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
-     *
-     * @deprecated PDFjet carries the other weights of the family.
-     */
-    @Deprecated
+    /** JetBrains Mono ExtraLightItalic */
     public static final String ExtraLightItalic = "fonts/JetBrainsMono/JetBrainsMono-ExtraLightItalic.ttf";
     /** JetBrains Mono Italic */
     public static final String Italic           = "fonts/JetBrainsMono/JetBrainsMono-Italic.ttf";

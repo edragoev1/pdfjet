@@ -10,9 +10,9 @@ import java.io.InputStream;
 
 /**
  * The fonts PDFjet carries in itself, in resources/fonts, each family in a
- * folder of its name, as in the folder fonts of pdfjet-fonts: IBM Plex Sans,
- * Serif and Mono, Source Serif 4 and JetBrains Mono, from Thin or Light to
- * Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to
+ * folder of its name, as in the folder fonts of pdfjet-fonts: IBM Plex Sans
+ * and Serif, from Thin to Bold, Source Serif 4 and Cascadia Mono, from
+ * Light to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to
  * Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
  * SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
  * A path to one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf,
@@ -53,12 +53,12 @@ final class BundledFonts {
     static final int SANS = 0;
     static final int SERIF = 1;
     static final int MONO = 2;
-    private static final String[] FAMILIES = {"IBMPlexSans", "SourceSerif4", "JetBrainsMono"};
+    private static final String[] FAMILIES = {"IBMPlexSans", "SourceSerif4", "CascadiaMono"};
     // The weights of the faces of each family, by the names of their files.
     private static final int[][] WEIGHTS = {
         {100, 300, 400, 450, 500, 600, 700},
         {300, 400, 500, 600, 700},
-        {300, 400, 500, 600, 700},
+        {300, 350, 400, 600, 700},
     };
 
     // Returns the name of a face of an SVG family, Family/File: the weight
@@ -66,8 +66,9 @@ final class BundledFonts {
     // italic or upright.
     static String fileName(int family, int weight, boolean italic) {
         int w = match(WEIGHTS[family], weight);
-        String style = (w == 100) ? "Thin" : (w == 300) ? "Light" : (w == 450) ? "Text"
-                : (w == 500) ? "Medium" : (w == 600) ? "SemiBold" : (w == 700) ? "Bold" : "";
+        String style = (w == 100) ? "Thin" : (w == 300) ? "Light" : (w == 350) ? "SemiLight"
+                : (w == 450) ? "Text" : (w == 500) ? "Medium" : (w == 600) ? "SemiBold"
+                : (w == 700) ? "Bold" : "";
         if (italic) {
             style += "Italic";
         }
@@ -156,6 +157,6 @@ final class BundledFonts {
                 "source serif pro"},
         {"monospace", "courier", "courier new", "consolas", "menlo", "monaco", "ui-monospace",
                 "sfmono-regular", "lucida console", "liberation mono", "dejavu sans mono",
-                "jetbrains mono", "ibm plex mono", "source code pro"},
+                "jetbrains mono", "ibm plex mono", "source code pro", "cascadia mono", "cascadia code"},
     };
 }   // End of BundledFonts.java

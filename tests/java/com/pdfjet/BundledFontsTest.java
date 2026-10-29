@@ -27,7 +27,7 @@ class BundledFontsTest {
     private static final String[] CLASSES = {
         "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
         "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
-        "IBMPlexSerif", "JetBrainsMono", "SourceSerif4", "NotoSans",
+        "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
     };
 
     @Test
@@ -41,7 +41,7 @@ class BundledFontsTest {
                 }
             }
         }
-        assertEquals(96, carried.size());
+        assertEquals(82, carried.size());
         Set<String> constants = new TreeSet<String>();
         for (String name : CLASSES) {
             Class<?> c = Class.forName("com.pdfjet.fonts." + name);
