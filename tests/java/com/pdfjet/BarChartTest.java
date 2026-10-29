@@ -121,15 +121,15 @@ class BarChartTest {
 
     @Test
     void theDefaultLookIsQuiet() throws Exception {
-        // The first series in navy, the grid lines light gray and solid, the
+        // The first series in blue, the grid lines light gray and solid, the
         // text gray or ink, and no black line or text.
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = chart(pdf).setCategories("a", "b").setTitle("t").setSubtitle("s");
         chart.addSeries("one", new float[] {20f, 75f}).addSeries("two", new float[] {30f, 10f});
         String content = draw(chart, page);
-        assertTrue(content.contains("0.12 0.23 0.37 rg"), content);     // navy
-        assertTrue(content.contains("0.44 0.58 0.76 rg"), content);     // steel blue
+        assertTrue(content.contains("0.31 0.47 0.65 rg"), content);     // blue
+        assertTrue(content.contains("0.95 0.56 0.17 rg"), content);     // orange
         assertTrue(content.contains("0.88 0.89 0.91 RG\n0.5 w\n"), content);     // Thin and solid
         assertFalse(content.contains("0 0 0 RG") || content.contains("0 0 0 rg"), content);
         assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "t"));
@@ -229,9 +229,9 @@ class BarChartTest {
         assertTrue(swatch >= 0 && swatch < content.indexOf(TestSupport.hex("own")), content);
     }
 
-    // The height of the first bar the content fills in navy.
+    // The height of the first bar the content fills in blue.
     private static float barHeight(String content) {
-        int i = content.indexOf(" re\n", content.indexOf("0.12 0.23 0.37 rg\n"));
+        int i = content.indexOf(" re\n", content.indexOf("0.31 0.47 0.65 rg\n"));
         String[] parts = content.substring(content.lastIndexOf('\n', i) + 1, i).split(" ");
         return Math.abs(Float.parseFloat(parts[3]));
     }

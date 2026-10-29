@@ -76,15 +76,15 @@ class DonutChartTest {
 
     @Test
     void theDefaultLookIsQuiet() throws Exception {
-        // Slices in the palette, navy first; thin white lines between them;
-        // thin gray leader lines; the percentage white on navy, ink on the
-        // light steel blue; and no black line or text.
+        // Slices in the palette, blue first; thin white lines between them;
+        // thin gray leader lines; the percentage white on blue, ink on
+        // orange; and no black line or text.
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         chart(pdf).add("a", 60f).add("b", 40f).drawOn(page);
         String content = TestSupport.content(page);
-        assertTrue(content.contains("0.12 0.23 0.37 rg"), content);     // navy
-        assertTrue(content.contains("0.44 0.58 0.76 rg"), content);     // steel blue
+        assertTrue(content.contains("0.31 0.47 0.65 rg"), content);     // blue
+        assertTrue(content.contains("0.95 0.56 0.17 rg"), content);     // orange
         assertTrue(content.contains("1 1 1 RG\n1.5 w\n"), content);    // the white lines between
         assertTrue(content.contains("0.55 0.59 0.64 RG\n0.75 w\n"), content);   // the leader lines
         assertFalse(content.contains("0 0 0 RG") || content.contains("0 0 0 rg"), content);
@@ -316,13 +316,13 @@ class DonutChartTest {
         assertEquals(outer.replaceAll("/F\\d+ ", "/F "), TestSupport.content(page).replaceAll("/F\\d+ ", "/F "));
 
         page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart nine = chart(pdf);
-        for (int i = 0; i < 9; i++) {
-            nine.add("", 1f);
+        DonutChart eleven = chart(pdf);
+        for (int i = 0; i < 11; i++) {
+            eleven.add("", 1f);
         }
-        nine.drawOn(page);
+        eleven.drawOn(page);
         content = TestSupport.content(page);
-        assertEquals(content.indexOf("0.12 0.23 0.37 rg"), content.lastIndexOf("0.12 0.23 0.37 rg"), content);
+        assertEquals(content.indexOf("0.31 0.47 0.65 rg"), content.lastIndexOf("0.31 0.47 0.65 rg"), content);
     }
 
     // The third review of 26 October 2026: a radius that is not a number is

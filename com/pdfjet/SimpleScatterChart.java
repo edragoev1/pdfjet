@@ -768,8 +768,11 @@ public class SimpleScatterChart implements Drawable {
             }
         }
         page.restoreGraphicsState();
-        // The points of the series, the outlines of their shapes, opaque
-        page.setPenWidth(0.12f * size);
+        // The points of the series, the outlines of their shapes, opaque;
+        // a chart without series draws as it did
+        if (!series.isEmpty()) {
+            page.setPenWidth(0.12f * size);
+        }
         for (Point p : points) {
             if (p.series >= 0 && p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
                 page.setPenColor(seriesColor(p.series));

@@ -245,7 +245,7 @@ public class SVGImage implements Drawable {
         }
         if (name.equals("text")) {
             if (!state.hidden) {
-                addText(node, colorMap, rules, state, attributes, order);
+                addText(node, colorMap, rules, state, attributes);
             }
             stack.remove(stack.size() - 1);
             return;
@@ -657,10 +657,16 @@ public class SVGImage implements Drawable {
                 dx = v[2];      // A path that turns back: the direction in
                 dy = v[3];
             }
-            result.add(new double[] {v[0], v[1], Math.toDegrees(Math.atan2(dy, dx))});
+            result.add(new double[] {v[0], v[1], Math.atan2(dy, dx)*DEGREES});
         }
         return result;
     }
+
+    // The degrees of a radian and the radians of a degree, which Java 8's
+    // Math.toDegrees and toRadians computed in another order, and so in
+    // another last bit than the other ports.
+    private static final double DEGREES = 57.29577951308232;
+    private static final double RADIANS = 0.017453292519943295;
 
     // Returns the direction from x, y to the first of the points that is not
     // there, as a curve leaves its start.
@@ -738,7 +744,7 @@ public class SVGImage implements Drawable {
                 sy = sx;
             }
         }
-        double radians = Math.toRadians(angle);
+        double radians = angle*RADIANS;
         double cos = Math.cos(radians);
         double sin = Math.sin(radians);
         double[] m = SVGState.multiply(state.matrix, new double[] {cos, sin, -sin, cos, vertex[0], vertex[1]});
@@ -770,7 +776,7 @@ public class SVGImage implements Drawable {
     // Adds a text element, with its tspan elements, as the runs of its
     // characters.
     private void addText(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
-            SVGState state, Map<String, String> attributes, List<String> order) {
+            SVGState state, Map<String, String> attributes) {
         SVGText text = new SVGText();
         text.matrix = state.matrix;
         addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0});
@@ -1342,7 +1348,7 @@ public class SVGImage implements Drawable {
     // Draws a text: each run filled and then stroked, or stroked first when
     // its paint-order says, with the text matrix that takes its glyphs, whose
     // y goes up, to where the run is on the page.
-    private void drawText(SVGText text, List<SVGPath> clips, Font regular, Font bold, Page page) {
+    private void drawText(SVGText text, List<SVGPath> clips, Page page) {
         double[] m = text.matrix;
         double scale = Math.sqrt(Math.abs(m[0]*m[3] - m[1]*m[2]));
         for (SVGText.Run run : text.runs) {
@@ -1485,7 +1491,7 @@ public class SVGImage implements Drawable {
         }
         for (SVGPath path : paths) {
             if (path.text != null) {
-                drawText(path.text, path.clips, regular, bold, page);
+                drawText(path.text, path.clips, page);
             } else {
                 drawPath(path, page);
             }
