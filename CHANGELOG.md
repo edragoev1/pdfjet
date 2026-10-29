@@ -135,6 +135,9 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   drew 2,546. Example: `go run ./src/examples/example24
   path/to/Electric_Vehicle_Population_Data.csv` draws the 2,546 pages as
   before.
+- Example_24's sample is now a PDF/UA document, its table tagged for screen
+  readers. A file given as the argument is drawn as before, without PDF/UA,
+  so that the benchmark stays comparable with earlier releases.
 - Example_25, the four ports, reads its counts from
   `resources/data/Electric_Vehicles_by_Model_Year.csv`, the vehicles of the
   Washington State Electric Vehicle Population Data by model year and by

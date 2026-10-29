@@ -13,24 +13,26 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example24 draws the rows of a CSV file as a table of as many pages as it
-// takes, thousands for the full data file.
-func Example24(fileName string) {
+// takes, thousands for the full data file, a PDF/UA document if pdfUA is true.
+func Example24(fileName string, pdfUA bool) {
 	pdf, err := pdfjet.NewPDFFile("Example_24.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Uncomment the line below to make this a PDF/UA document. A BigTable is
-	// tagged as a table: a TR for each row, holding a TH or a TD with the
-	// text of each cell, which is what a screen reader reads a table from.
-	// It is off here because of what it costs with the full data file: every
-	// tagged cell is an object of its own, so that document goes from 5,108
-	// objects and 11.8 MB to 1.25 million objects and 249 MB. The 10-page
-	// sample is the size to see the tagging at.
-	// pdf.SetCompliance(compliance.PDF_UA_1)
+	// The sample is a PDF/UA document: a BigTable is tagged as a table, a TR for
+	// each row holding a TH or a TD with the text of each cell, which is what a
+	// screen reader reads a table from. A file given as the argument is left
+	// untagged, so that the benchmark stays comparable with earlier releases:
+	// every tagged cell is an object of its own, and the full data file goes
+	// from 5,108 objects and 11.8 MB to 1.25 million objects and 249 MB.
+	if pdfUA {
+		pdf.SetCompliance(compliance.PDF_UA_1)
+	}
 	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
@@ -68,7 +70,7 @@ func main() {
 		fileName = os.Args[1]
 	}
 	time0 := time.Now().UnixMilli()
-	Example24(fileName)
+	Example24(fileName, len(os.Args) == 1)
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_24 => %4d ms\n", time1-time0)
 }
