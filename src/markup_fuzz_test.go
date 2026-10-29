@@ -70,7 +70,10 @@ func FuzzMarkup(f *testing.F) {
 			pdf := NewPDF(bufio.NewWriter(io.Discard))
 			markup, _ := testMarkup(pdf)
 			paragraph := markup.Paragraph(text)
-			if !strings.ContainsAny(text, "*_~`[]()<\\") && !strings.Contains(text, "://") {
+			// Two spaces before a line break make a hard line break, which
+			// ends the text line.
+			if !strings.ContainsAny(text, "*_~`[]()<\\") && !strings.Contains(text, "://") &&
+				!strings.Contains(text, "  \n") && !strings.Contains(text, "  \r\n") {
 				fuzzCheckPlainMarkup(t, text, paragraph)
 			}
 			paragraphs := append(markup.Paragraphs(text), paragraph)
