@@ -106,11 +106,23 @@ class SVGImageTest {
     }
 
     @Test
-    void aPathWithoutColorsOrWithAnUnknownFillIsFilledBlack() throws Exception {
+    void aPathWithoutColorsIsFilledBlackAndOneOfAnUnknownURLIsNotFilled() throws Exception {
         String unset = draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\"/></svg>");
         assertTrue(unset.startsWith("0 0 0 rg\n") && unset.endsWith("\nf\n"), unset);
-        String gradient = draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/></svg>");
-        assertEquals(unset, gradient);
+        // A url of an element that is not there is none, as a browser draws it.
+        String unknown = draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/></svg>");
+        assertEquals("", unknown);
+    }
+
+    @Test
+    void aGradientIsDrawnInTheMeanColorOfItsStops() throws Exception {
+        String stops = "<stop offset=\"0\" stop-color=\"#ff0000\"/><stop offset=\"1\" style=\"stop-color: blue\"/>";
+        String content = draw("<svg width=\"100\" height=\"50\"><defs><linearGradient id=\"g\">" + stops
+                + "</linearGradient><radialGradient id=\"h\" href=\"#g\"/></defs>"
+                + "<path d=\"M10 10 L90 40 L10 40 Z\" fill=\"url(#g)\"/><path d=\"M10 10 L90 40\" stroke=\"url('#h')\"/></svg>");
+        // 255/2 rounds half up; the second gradient takes the stops of the first.
+        assertTrue(content.startsWith("0.5 0 0.5 rg\n"), content);
+        assertTrue(content.contains("0.5 0 0.5 RG\n"), content);
     }
     // The numbers of path data are written as SVG 1.1 section 8.3.9 gives them:
     // a sign, digits, a point and an exponent, and a sign or a point starts the
@@ -420,7 +432,6 @@ class SVGImageTest {
             {"fill=\"currentColor\" color=\"red\"", "1 0 0 rg"},
             {"fill=\"currentColor\"", "0 0 0 rg"},
             {"fill=\"url(#gradient) red\"", "1 0 0 rg"},
-            {"fill=\"url(#gradient)\"", "0 0 0 rg"},     // Not drawn: as if not given
             {"fill=\"unknown\"", "0 0 0 rg"},
             {"fill=\"rgb(nan, 0, 0)\"", "0 0 0 rg"},
             {"fill=\"rgb(inf, 0, 0)\"", "0 0 0 rg"},
@@ -555,7 +566,9 @@ class SVGImageTest {
         // Every shape but the line, which has no inside, is filled with the
         // even-odd rule; the first in a graphics state of its opacity.
         assertEquals(5, content.split("\nf\\*\n", -1).length - 1, content);
-        assertTrue(content.startsWith("q\n/GS1 gs\n0.1 0.08 0.12 rg\n8.4 788.21 m\n17.93 782.71 l\n"), content);
+        // The slice draws past the size of the image, which cuts it off.
+        assertTrue(content.startsWith("q\n0 792 m\n100 792 l\n100 742 l\n0 742 l\nW\nn\n"
+                + "q\n/GS1 gs\n0.1 0.08 0.12 rg\n8.4 788.21 m\n17.93 782.71 l\n"), content);
     }
 
     @Test
@@ -652,5 +665,136 @@ class SVGImageTest {
         assertEquals(0.5, SVGState.parseNumber("+.5", false));
         assertEquals(Double.NEGATIVE_INFINITY, SVGState.parseNumber("-inf", false));
         assertTrue(Double.isNaN(SVGState.parseNumber("NaN", false)));
+    }
+
+    // The text of a chart: text and tspan elements, placed as a browser
+    // places them, in Helvetica unless a font is set.
+
+    @Test
+    void drawsATextAtItsXAndY() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></svg>");
+        assertTrue(content.contains(" 12 Tf\n1 0 0 1 10 772 Tm\n[<4869>] TJ\nET\n"), content);
+        assertFalse(content.contains("W\n"), content);   // Inside the image: nothing is cut off
+    }
+
+    @Test
+    void anAnchorMovesTheTextByItsWidthAndDyIsInEm() throws Exception {
+        // Hi is 944 thousandths of an em wide in Helvetica: 11.328 at 12.
+        String content = draw("<svg width=\"200\" height=\"100\"><text x=\"100\" y=\"20\" dy=\"0.5em\" "
+                + "font-size=\"12\" text-anchor=\"end\">Hi</text></svg>");
+        assertTrue(content.contains("1 0 0 1 88.67 766 Tm\n"), content);
+    }
+
+    @Test
+    void theTextAndTheTspansAreDrawnInTheOrderOfTheDocument() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><text x=\"0\" y=\"20\">"
+                + " A <tspan font-weight=\"bold\">B</tspan>C<title>not drawn</title></text></svg>");
+        int a = content.indexOf("[<4120>] TJ");     // "A ": the space at the start is left out
+        int b = content.indexOf("[<42>] TJ");
+        int c = content.indexOf("[<43>] TJ");
+        assertTrue(a > 0 && b > a && c > b, content);
+        assertFalse(content.contains("<6E6F74"), content);
+        assertTrue(content.contains("/F2 16 Tf\n") && content.contains("/F3 16 Tf\n"), content);    // The bold B in another font
+    }
+
+    @Test
+    void aTspanWithAnXOrAYStartsAChunkAnchoredOnItsOwn() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><text text-anchor=\"middle\" "
+                + "transform=\"translate(100,50)\" font-size=\"10\"><tspan y=\"-0.4em\">Go</tspan>"
+                + "<tspan x=\"0\" y=\"0.7em\">12%</tspan></text></svg>");
+        // Go is 1334 thousandths of an em, and 12% 2001.
+        assertTrue(content.contains("1 0 0 1 93.33 746 Tm\n"), content);
+        assertTrue(content.contains("1 0 0 1 90 735 Tm\n"), content);
+    }
+
+    @Test
+    void theFontShorthandSetsTheSizeAndTheWeight() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\" style=\"font: bold 10px sans-serif\">"
+                + "<text y=\"20\">A</text><text y=\"40\" font-weight=\"400\">B</text></svg>");
+        assertEquals(2, content.split(" 10 Tf\n", -1).length - 1, content);
+        assertTrue(content.indexOf("/F") != content.lastIndexOf("/F"), content);
+    }
+
+    @Test
+    void aCoreFontDrawsTheMinusSignAsAHyphenMinus() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><text y=\"20\">\u22125</text></svg>");
+        assertTrue(content.contains("[<2D35>] TJ"), content);
+    }
+
+    @Test
+    void aStrokeBeforeTheFillDrawsAHaloUnderTheText() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><text y=\"20\" stroke=\"white\" stroke-width=\"3\" "
+                + "stroke-linejoin=\"round\" paint-order=\"stroke\">A</text></svg>");
+        int stroke = content.indexOf("1 Tr\n");
+        int fill = content.indexOf("0 Tr\n");
+        assertTrue(stroke > 0 && fill > stroke, content);
+        assertTrue(content.contains("1 1 1 RG\n3 w\n"), content);
+    }
+
+    @Test
+    void aSetFontDrawsTheText() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SVGImage image = image("<svg width=\"200\" height=\"100\"><text y=\"20\" font-weight=\"bold\">Hi</text></svg>");
+        image.setFont(font);    // The bold text too, as no bold font is set
+        image.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("> Tj\n"), content);
+        assertFalse(content.contains("TJ"), content);
+    }
+
+    @Test
+    void aDashArrayOfAnOddNumberOfLengthsIsRepeated() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" "
+                + "stroke-dasharray=\"4, 2 1\" stroke-dashoffset=\"1\"/>"
+                + "<path d=\"M0 20 L100 20\" stroke=\"red\" stroke-dasharray=\"0 0\"/>"
+                + "<path d=\"M0 30 L100 30\" stroke=\"red\" stroke-dasharray=\"4 -2\"/></svg>");
+        assertTrue(content.contains("q\n[4 2 1 4 2 1] 1 d\n"), content);
+        assertEquals(1, content.split(" d\n", -1).length - 1, content);    // The others are solid
+    }
+
+    @Test
+    void aUseDrawsTheElementItNamesMovedByItsXAndY() throws Exception {
+        String content = draw("<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"200\" height=\"100\">"
+                + "<defs><rect id=\"r\" width=\"10\" height=\"10\"/><symbol id=\"s\"><circle r=\"2\"/></symbol></defs>"
+                + "<use href=\"#r\" x=\"20\" y=\"30\" fill=\"red\"/><use xlink:href=\"#s\" x=\"50\" y=\"50\"/>"
+                + "<g id=\"loop\"><use href=\"#loop\"/></g></svg>");
+        assertTrue(content.startsWith("1 0 0 rg\n20 762 m\n30 762 l\n"), content);
+        assertTrue(content.contains("\n52 742 m\n"), content);
+    }
+
+    @Test
+    void usesOfUsesThatDrawTooManyElementsThrow() {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><rect id=\"g0\" width=\"1\" height=\"1\"/>");
+        for (int level = 1; level <= 7; level++) {
+            svg.append("<g id=\"g").append(level).append("\">");
+            for (int i = 0; i < 10; i++) {
+                svg.append("<use href=\"#g").append(level - 1).append("\"/>");
+            }
+            svg.append("</g>");
+        }
+        svg.append("</svg>");
+        assertThrows(IllegalArgumentException.class, () -> image(svg.toString()));
+    }
+
+    @Test
+    void aMarkerIsDrawnAtTheEndTurnedWithThePath() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><defs><marker id=\"m\" markerWidth=\"4\" "
+                + "markerHeight=\"4\" orient=\"auto\" refX=\"1\"><rect width=\"2\" height=\"1\"/></marker></defs>"
+                + "<path d=\"M10 10 L10 50\" stroke=\"black\" stroke-width=\"2\" marker-end=\"url(#m)\"/></svg>");
+        // Turned 90 degrees down the path and twice the size, for the stroke
+        // width: from 10, 48 to 8, 52.
+        assertTrue(content.contains("S\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\n"), content);
+    }
+
+    @Test
+    void aClipPathCutsOffWhatIsOutsideIt() throws Exception {
+        String content = draw("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/>"
+                + "</clipPath><g clip-path=\"url(#c)\" transform=\"translate(10,0)\"><rect x=\"10\" y=\"10\" width=\"80\" "
+                + "height=\"20\"/></g><clipPath id=\"none\"/><rect width=\"5\" height=\"5\" clip-path=\"url(#none)\"/></svg>");
+        // The clip path is in the user space of the group, moved with it.
+        assertEquals("q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
+                + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", content);
     }
 }

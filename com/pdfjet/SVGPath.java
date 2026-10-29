@@ -26,4 +26,8 @@ class SVGPath {
     JoinStyle lineJoin = JoinStyle.MITER;
     float fillAlpha = 1f;
     float strokeAlpha = 1f;
+    float[] dashArray = null;       // The dashes and the gaps, in the space of the svg element; null is solid
+    float dashOffset = 0f;
+    List<SVGPath> clips = null;     // The clip paths it is drawn inside, all of them
+    SVGText text = null;            // A text, drawn instead of the operations
 }

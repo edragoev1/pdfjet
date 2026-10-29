@@ -38,6 +38,7 @@ public class SimpleScatterChart implements Drawable {
         final float y;
         final String name;
         final String uri;       // The link of a highlighted point, or null
+        int series = -1;        // The index of its series, or -1 for none
 
         Point(float x, float y, String name) {
             this(x, y, name, null);
@@ -63,6 +64,7 @@ public class SimpleScatterChart implements Drawable {
     private String yAxisTitle = "";
     private String altDescription = "";
     private final List<Point> points = new ArrayList<Point>();
+    private final List<String> series = new ArrayList<String>();   // The names of the series
     private boolean trendLine = false;
     private float xMin;
     private float xMax;
@@ -152,7 +154,29 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart add(float x, float y) {
-        points.add(new Point(x, y, ""));
+        return addPoint(new Point(x, y, ""));
+    }
+
+    // Adds the point to the series added last, if any.
+    private SimpleScatterChart addPoint(Point p) {
+        p.series = series.size() - 1;
+        points.add(p);
+        return this;
+    }
+
+    /**
+     * Starts a series: the points added after it are its points, drawn in its
+     * color and its shape, and its name is in the legend over the plot. The
+     * series take the colors of the palette of BarChart, blue, orange, red,
+     * teal and so on, and the shapes circle, square, triangle, star, diamond
+     * and cross, in turn. The points added before the first series are gray
+     * dots, as those of a chart without series.
+     *
+     * @param name the name of the series, in the legend.
+     * @return this chart.
+     */
+    public SimpleScatterChart addSeries(String name) {
+        series.add((name == null) ? "" : name);
         return this;
     }
 
@@ -165,8 +189,7 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart add(String name, float x, float y) {
-        points.add(new Point(x, y, name));
-        return this;
+        return addPoint(new Point(x, y, name));
     }
 
     /**
@@ -183,8 +206,7 @@ public class SimpleScatterChart implements Drawable {
      */
     public SimpleScatterChart add(String name, float x, float y, String uri) {
         // An empty URI is no link, as in the Go port
-        points.add(new Point(x, y, name, (uri == null || uri.isEmpty()) ? null : uri));
-        return this;
+        return addPoint(new Point(x, y, name, (uri == null || uri.isEmpty()) ? null : uri));
     }
 
     /**
@@ -316,7 +338,106 @@ public class SimpleScatterChart implements Drawable {
         if (!title.isEmpty() || !subtitle.isEmpty()) {
             top += f2.getSize();
         }
-        return top;
+        return top + drawLegend(null, 0f)*LEGEND_ROW*f2.getSize();
+    }
+
+    // The shapes of the series, in turn, as D3 draws its symbols.
+    static final int CIRCLE = 0;
+    static final int SQUARE = 1;
+    static final int TRIANGLE = 2;
+    static final int STAR = 3;
+    static final int DIAMOND = 4;
+    static final int CROSS = 5;
+    static final int SHAPES = 6;
+    // The height of a row of the legend, in sizes of the numbers.
+    private static final float LEGEND_ROW = 1.5f;
+
+    // The color of a series.
+    private static int seriesColor(int index) {
+        return BarChart.PALETTE[index % BarChart.PALETTE.length];
+    }
+
+    // Draws the legend, the shape and the name of each series, from the
+    // baseline of its first row, its rows wrapped at the right of the chart,
+    // when there is a page; and returns the number of its rows, 0 for a chart
+    // without series.
+    private int drawLegend(Page page, float baseline) {
+        if (series.isEmpty()) {
+            return 0;
+        }
+        float size = f2.getSize();
+        float pad = pad();
+        float r = 0.35f*size;
+        float gap = size/2f;
+        float left = x + pad;
+        float px = left;
+        int rows = 1;
+        for (int i = 0; i < series.size(); i++) {
+            String name = ChartScale.shorten(f2, size, series.get(i), w - 2f*pad - 2f*r - gap);
+            float width = 2f*r + gap + f2.stringWidth(size, name);
+            if (px > left && px + width > x + w - pad) {
+                px = left;
+                baseline += LEGEND_ROW*size;
+                rows++;
+            }
+            if (page != null) {
+                page.setPenColor(seriesColor(i));
+                page.setPenWidth(0.12f*size);
+                drawShape(page, i % SHAPES, px + r, baseline - f2.getAscent(size)/2f, r, false);
+                page.drawString(f2, size, name, px + 2f*r + gap, baseline, Util.toRGB(SimpleBarChart.INK), null);
+            }
+            px += width + size;
+        }
+        return rows;
+    }
+
+    // Draws a shape of a series centered on cx, cy, of about the area of a
+    // circle of radius r, its outline in the pen color, or filled in the
+    // brush color.
+    static void drawShape(Page page, int shape, float cx, float cy, float r, boolean fill) {
+        if (shape == CIRCLE) {
+            if (fill) {
+                page.fillCircle(cx, cy, r);
+            } else {
+                page.drawCircle(cx, cy, r);
+            }
+            return;
+        }
+        float[] xy;
+        if (shape == SQUARE) {
+            float a = 0.886f*r;
+            xy = new float[] {-a, -a, a, -a, a, a, -a, a};
+        } else if (shape == TRIANGLE) {
+            // Pointing up, its center halfway down its height
+            float a = 1.35f*r;
+            xy = new float[] {0f, -a, 0.866f*a, 0.5f*a, -0.866f*a, 0.5f*a};
+        } else if (shape == STAR) {
+            xy = new float[20];
+            for (int i = 0; i < 10; i++) {
+                double angle = Math.PI*i/5.0;
+                float radius = (i % 2 == 0) ? 1.3f*r : 0.5f*r;
+                xy[2*i] = (float) (radius*Math.sin(angle));
+                xy[2*i + 1] = (float) (-radius*Math.cos(angle));
+            }
+        } else if (shape == DIAMOND) {
+            float a = 1.15f*r;
+            float b = 0.75f*r;
+            xy = new float[] {0f, -a, b, 0f, 0f, a, -b, 0f};
+        } else {
+            // A cross of five squares, as wide as three
+            float a = 1.1f*r;
+            float b = a/3f;
+            xy = new float[] {-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b};
+        }
+        page.moveTo(cx + xy[0], cy + xy[1]);
+        for (int i = 2; i < xy.length; i += 2) {
+            page.lineTo(cx + xy[i], cy + xy[i + 1]);
+        }
+        if (fill) {
+            page.fillPath();
+        } else {
+            page.closePath();   // Closed and stroked
+        }
     }
 
     // A number of an axis, with the decimals its step needs.
@@ -431,6 +552,16 @@ public class SimpleScatterChart implements Drawable {
         if (!xAxisTitle.isEmpty() && !yAxisTitle.isEmpty()) {
             sb.append(", ").append(yAxisTitle).append(" against ").append(xAxisTitle);
         }
+        if (!series.isEmpty()) {
+            // in the series A, B and C
+            sb.append(", in the series ");
+            for (int i = 0; i < series.size(); i++) {
+                if (i > 0) {
+                    sb.append((i == series.size() - 1) ? " and " : ", ");
+                }
+                sb.append(series.get(i));
+            }
+        }
         int named = 0;
         for (Point p : shown) {
             if (p.name.isEmpty()) {
@@ -535,6 +666,12 @@ public class SimpleScatterChart implements Drawable {
             page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
                     x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
         }
+        if (!series.isEmpty()) {
+            if (!title.isEmpty() || !subtitle.isEmpty()) {
+                baseline += f2.getSize();
+            }
+            drawLegend(page, baseline + LEGEND_ROW*size - (LEGEND_ROW*size - ascent)/2f);
+        }
 
         // The horizontal grid and the numbers of both axes, each where it
         // leaves the one before it room
@@ -623,11 +760,20 @@ public class SimpleScatterChart implements Drawable {
         page.setBrushColor(dotColor);
         float r = 0.3f * size;
         for (Point p : points) {
-            if (p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
+            if (p.series < 0 && p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
                 page.fillCircle(xAt(p.x, xAxis, plotLeft, right), yAt(p.y, yAxis, top, plotBottom), r);
             }
         }
         page.restoreGraphicsState();
+        // The points of the series, the outlines of their shapes, opaque
+        page.setPenWidth(0.12f * size);
+        for (Point p : points) {
+            if (p.series >= 0 && p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
+                page.setPenColor(seriesColor(p.series));
+                drawShape(page, p.series % SHAPES, xAt(p.x, xAxis, plotLeft, right),
+                        yAt(p.y, yAxis, top, plotBottom), 0.35f * size, false);
+            }
+        }
         List<Point> linked = new ArrayList<Point>();
         for (Point p : points) {
             if (p.name.isEmpty() || !onPlot(p, xAxis, yAxis)) {
@@ -672,8 +818,13 @@ public class SimpleScatterChart implements Drawable {
         float big = 0.42f * size;
         float px = xAt(p.x, xAxis, left, right);
         float py = yAt(p.y, yAxis, top, bottom);
-        page.setBrushColor(highlightColor);
-        page.fillCircle(px, py, big);
+        int color = (p.series >= 0) ? seriesColor(p.series) : highlightColor;
+        page.setBrushColor(color);
+        if (p.series >= 0) {
+            drawShape(page, p.series % SHAPES, px, py, big, true);
+        } else {
+            page.fillCircle(px, py, big);
+        }
         // A name of two fifths of the plot at most, and in the plot
         String name = ChartScale.shorten(f1, size, p.name, 0.4f * (right - left));
         float width = f1.stringWidth(size, name);
@@ -688,7 +839,10 @@ public class SimpleScatterChart implements Drawable {
         page.setBrushColor(panelColor >= 0 ? panelColor : Color.white);
         page.fillRect(lx - 1f, baseline - f1.getAscent(size) - 1f,
                 width + 2f, f1.getAscent(size) + f1.getDescent(size) + 2f);
-        page.drawString(f1, size, name, lx, baseline, Util.toRGB(highlightColor), null);
+        // The name of a point of a series in ink, which reads on the panel
+        // whatever the color of the series
+        page.drawString(f1, size, name, lx, baseline,
+                Util.toRGB((p.series >= 0) ? SimpleBarChart.INK : highlightColor), null);
         float x1 = Math.min(px - big, lx);
         float y1 = Math.min(py - big, baseline - f1.getAscent(size));
         float x2 = Math.max(px + big, lx + width);

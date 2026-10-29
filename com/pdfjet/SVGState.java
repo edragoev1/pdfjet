@@ -36,6 +36,19 @@ class SVGState {
     float ownOpacity = 1f;              // The opacity of the element itself, not inherited
     double[] matrix = IDENTITY;         // Never changed in place: a new transform is a new array
     boolean hidden = false;             // In <defs> and the like, or under display="none": not drawn
+    float[] dashArray = null;           // stroke-dasharray, in the user space; null is a solid line
+    float dashOffset = 0f;
+    boolean strokeFirst = false;        // paint-order: the stroke drawn before the fill
+    float fontSize = 16f;               // In the user space; medium, as a browser has it
+    boolean bold = false;               // A font-weight of bold, 600 or more
+    int textAnchor = 0;                 // 0 start, 1 middle, 2 end
+    int baseline = 0;                   // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
+    String markerStart = null;          // The ids of the markers, inherited
+    String markerMid = null;
+    String markerEnd = null;
+    String clipPath = null;             // The id of the clip path of the element itself, not inherited
+    List<SVGPath> clips = null;         // The clip paths of the element and of its ancestors
+    Map<String, Integer> paints = null; // The colors of the gradients, by id, shared by every state
 
     /**
      * The state of the svg element before its attributes: an SVG fills black,
@@ -61,6 +74,18 @@ class SVGState {
         this.ownOpacity = parent.ownOpacity;
         this.matrix = parent.matrix;
         this.hidden = parent.hidden;
+        this.dashArray = parent.dashArray;
+        this.dashOffset = parent.dashOffset;
+        this.strokeFirst = parent.strokeFirst;
+        this.fontSize = parent.fontSize;
+        this.bold = parent.bold;
+        this.textAnchor = parent.textAnchor;
+        this.baseline = parent.baseline;
+        this.markerStart = parent.markerStart;
+        this.markerMid = parent.markerMid;
+        this.markerEnd = parent.markerEnd;
+        this.clips = parent.clips;
+        this.paints = parent.paints;
     }
 
     /**
@@ -276,27 +301,219 @@ class SVGState {
             if (value.equals("none")) {
                 this.hidden = true;
             }
+        } else if (name.equals("stroke-dasharray")) {
+            this.dashArray = parseDashArray(value);
+        } else if (name.equals("stroke-dashoffset")) {
+            Float offset = value.endsWith("%") ? null : parseLength(value);
+            if (offset != null) {
+                this.dashOffset = offset;
+            }
+        } else if (name.equals("paint-order")) {
+            // The stroke is drawn first when it comes before the fill, and
+            // the markers, which PDFjet draws last, are left out.
+            List<String> order = fields(value);
+            int stroke = order.indexOf("stroke");
+            int fill = order.indexOf("fill");
+            this.strokeFirst = stroke >= 0 && (fill < 0 || stroke < fill);
+        } else if (name.equals("font-size")) {
+            Float size = parseFontSize(value, this.fontSize);
+            if (size != null) {
+                this.fontSize = size;
+            }
+        } else if (name.equals("font-weight")) {
+            Boolean bold = parseFontWeight(value);
+            if (bold != null) {
+                this.bold = bold;
+            }
+        } else if (name.equals("font")) {
+            setFont(value);
+        } else if (name.equals("text-anchor")) {
+            if (value.equals("start")) {
+                this.textAnchor = 0;
+            } else if (value.equals("middle")) {
+                this.textAnchor = 1;
+            } else if (value.equals("end")) {
+                this.textAnchor = 2;
+            }
+        } else if (name.equals("dominant-baseline") || name.equals("alignment-baseline")) {
+            if (value.equals("middle") || value.equals("central")) {
+                this.baseline = 1;
+            } else if (value.equals("hanging") || value.equals("text-before-edge")) {
+                this.baseline = 2;
+            } else if (value.equals("auto") || value.equals("alphabetic") || value.equals("baseline")) {
+                this.baseline = 0;
+            }
+        } else if (name.equals("marker-start")) {
+            this.markerStart = urlId(value);
+        } else if (name.equals("marker-mid")) {
+            this.markerMid = urlId(value);
+        } else if (name.equals("marker-end")) {
+            this.markerEnd = urlId(value);
+        } else if (name.equals("marker")) {
+            this.markerStart = urlId(value);
+            this.markerMid = this.markerStart;
+            this.markerEnd = this.markerStart;
+        } else if (name.equals("clip-path")) {
+            this.clipPath = urlId(value);
+        }
+    }
+
+    // Returns the id of a reference, url(#id), with or without quotes, and
+    // null for none or for a value of another kind.
+    static String urlId(String value) {
+        value = trim(value);
+        if (!value.startsWith("url(")) {
+            return null;
+        }
+        int end = value.indexOf(')');
+        if (end < 0) {
+            return null;
+        }
+        String id = trim(value.substring(4, end));
+        if (id.length() >= 2 && (id.charAt(0) == '"' || id.charAt(0) == '\'')
+                && id.charAt(id.length() - 1) == id.charAt(0)) {
+            id = trim(id.substring(1, id.length() - 1));
+        }
+        if (id.length() < 2 || id.charAt(0) != '#') {
+            return null;
+        }
+        return id.substring(1);
+    }
+
+    // Reads a stroke-dasharray: the lengths of the dashes and the gaps, as
+    // many again when they are an odd number. It returns null, a solid line,
+    // for none, for a length below zero or one it cannot read, and for
+    // lengths that are all zero.
+    static float[] parseDashArray(String value) {
+        if (value.equals("none")) {
+            return null;
+        }
+        List<Float> lengths = new ArrayList<Float>();
+        for (String field : fields(value.replace(',', ' '))) {
+            Float length = field.endsWith("%") ? null : parseLength(field);
+            if (length == null || length < 0f || Float.isNaN(length) || Float.isInfinite(length)) {
+                return null;
+            }
+            lengths.add(length);
+        }
+        float sum = 0f;
+        for (float length : lengths) {
+            sum += length;
+        }
+        if (lengths.isEmpty() || sum == 0f) {
+            return null;
+        }
+        int count = lengths.size();
+        float[] dashes = new float[(count % 2 == 0) ? count : 2*count];
+        for (int i = 0; i < dashes.length; i++) {
+            dashes[i] = lengths.get(i % count);
+        }
+        return dashes;
+    }
+
+    // The font sizes of the keywords, as a browser has them.
+    private static final String[] SIZE_NAMES = {
+            "xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"};
+    private static final float[] SIZES = {9f, 10f, 13f, 16f, 18f, 24f, 32f};
+
+    // Reads a font-size: a length, a number of em or a percentage of the
+    // font size of the parent, or a keyword. It returns null for a size it
+    // cannot read or one below zero.
+    static Float parseFontSize(String value, float parentSize) {
+        for (int i = 0; i < SIZE_NAMES.length; i++) {
+            if (value.equals(SIZE_NAMES[i])) {
+                return SIZES[i];
+            }
+        }
+        Float size;
+        if (value.endsWith("em") && !value.endsWith("rem")) {
+            size = parseFactor(value.substring(0, value.length() - 2));
+            size = (size == null) ? null : size*parentSize;
+        } else if (value.endsWith("%")) {
+            size = parseFactor(value.substring(0, value.length() - 1));
+            size = (size == null) ? null : size*parentSize/100f;
+        } else {
+            size = parseLength(value);
+        }
+        if (size == null || size < 0f || Float.isNaN(size) || Float.isInfinite(size)) {
+            return null;
+        }
+        return size;
+    }
+
+    // Reads a number, or returns null.
+    private static Float parseFactor(String text) {
+        try {
+            return (float) parseNumber(trim(text), true);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    // Reads a font-weight: true for bold, bolder and 600 or more, false for
+    // normal, lighter and less, null for a weight it cannot read.
+    static Boolean parseFontWeight(String value) {
+        if (value.equals("bold") || value.equals("bolder")) {
+            return true;
+        } else if (value.equals("normal") || value.equals("lighter")) {
+            return false;
+        }
+        Float weight = parseFactor(value);
+        if (weight == null || weight < 1f || weight > 1000f) {
+            return null;
+        }
+        return weight >= 600f;
+    }
+
+    // Sets the size and the weight of the font shorthand, such as "bold 10px
+    // sans-serif": the words before the size, then the size, which may have
+    // a line height after a slash. A shorthand without a weight is normal.
+    private void setFont(String value) {
+        boolean bold = false;
+        for (String field : fields(value)) {
+            int slash = field.indexOf('/');
+            String size = (slash < 0) ? field : field.substring(0, slash);
+            // A size has a unit or is a keyword; a number alone is a weight.
+            if (!size.isEmpty() && !Character.isDigit(size.charAt(size.length() - 1))) {
+                Float fontSize = parseFontSize(size, this.fontSize);
+                if (fontSize != null) {
+                    this.fontSize = fontSize;
+                    this.bold = bold;
+                    return;
+                }
+            }
+            Boolean weight = parseFontWeight(field);
+            if (weight != null) {
+                bold = weight;
+            }
         }
     }
 
     // Sets the fill or the stroke: none, currentColor, a color, or a url of a
-    // gradient or a pattern, which PDFjet does not draw, and the color after
-    // it, if any, which SVG draws when it cannot. A value it cannot read
-    // leaves the paint as it is inherited.
+    // gradient, which PDFjet draws in the mean color of its stops. A url of
+    // anything else, a pattern or an element that is not there, is the color
+    // after it, which SVG draws when it cannot draw the url, or none, as a
+    // browser draws it. A value it cannot read leaves the paint as it is
+    // inherited.
     private void setPaint(ColorMap colorMap, String name, String value) {
+        Integer gradient = null;
         if (value.startsWith("url(")) {
             int end = value.indexOf(')');
             if (end < 0) {
                 return;
             }
+            String id = urlId(value.substring(0, end + 1));
+            gradient = (id == null || paints == null) ? null : paints.get(id);
             value = trim(value.substring(end + 1));
             if (value.isEmpty()) {
-                return;
+                value = "none";
             }
         }
         int paint = 0;
         boolean current = false;
-        if (value.equals("none")) {
+        if (gradient != null) {
+            paint = gradient;
+        } else if (value.equals("none")) {
             paint = Color.transparent;
         } else if (value.equals("currentColor")) {
             current = true;
