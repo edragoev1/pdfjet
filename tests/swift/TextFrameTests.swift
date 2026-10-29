@@ -506,8 +506,7 @@ import Testing
     // cuts one: never before a Thai vowel that stays with the letter before
     // it, nor after one written before its letter. TextFrame cut after any
     // code point and drew a row "าษาไ" (review of 11 October 2026, #14).
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func cutsAWordWhereTextBlockDoes() throws {
         let font = try Font(TestSupport.newPDF(), TestSupport.path("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"))
         font.setSize(12)

@@ -17,7 +17,6 @@ public class Example_10 {
         pdf.setTitle("Text block with highlighted keywords")
 
         // let f1 = try Font(pdf, SourceSerif4.Regular)
-        // let f1 = try Font(pdf, NotoSans.Regular)
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(15.0)
 

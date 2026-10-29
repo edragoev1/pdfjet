@@ -307,10 +307,29 @@ public class Font {
         setSize(size)
     }
 
+    /// Creates a font from an OpenType or TrueType font file, a .otf or a .ttf,
+    /// and adds it to the objects of an existing PDF. A path to one of the
+    /// fonts PDFjet carries, such as the constants of the font structs, is
+    /// read from the library when there is no such file, as by the
+    /// initializer that takes a PDF and a path.
+    ///
+    /// - Parameter objects: the objects of the PDF.
+    /// - Parameter fontPath: the font path.
+    /// - Throws: an error if the font cannot be read.
+    ///
+    public init(_ objects: inout [PDFobj], _ fontPath: String) throws {
+        let bytes = try Font.open(Font.fontFileOf(fontPath))
+        try OpenTypeFont.register(&objects, self, bytes)
+        setSize(size)
+    }
+
     ///
     /// Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
-    /// to a .ttf.stream or .otf.stream file, the fonts PDFjet shipped before
-    /// 9.0.5, opens the .ttf or else the .otf file of the same name beside it.
+    /// to one of the fonts PDFjet carries, such as the constants of the font
+    /// structs, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from
+    /// the library when there is no such file. A path to a .ttf.stream or
+    /// .otf.stream file, the fonts PDFjet shipped before 9.0.5, opens the .ttf
+    /// or else the .otf file of the same name beside it.
     ///
     /// - Parameter pdf: the pdf object.
     /// - Parameter fontPath: the font path.
@@ -319,24 +338,47 @@ public class Font {
     public init(_ pdf: PDF, _ fontPath: String) throws {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance
-        let fontPath = Font.fontFileOf(fontPath)
-        // The file in one read, as Java, C# and Go read it, at its size
+        let bytes = try Font.open(Font.fontFileOf(fontPath))
+        try OpenTypeFont.register(pdf, self, bytes)
+        setSize(size)
+    }
+
+    // Returns the bytes of the font file of the path, in one read, as Java, C#
+    // and Go read it, or, when there is no such file, of the font of that
+    // name that PDFjet carries; a font it does not carry, such as one of the
+    // fonts of pdfjet-fonts it left out, throws, saying where to get it.
+    static func open(_ fontPath: String) throws -> [UInt8] {
+        if !FileManager.default.fileExists(atPath: fontPath) {
+            if let url = BundledFonts.url(fontPath), let data = try? Data(contentsOf: url) {
+                return [UInt8](data)
+            }
+            let path = fontPath.replacingOccurrences(of: "\\", with: "/")
+            if path.hasPrefix("fonts/") || path.contains("/fonts/") {
+                throw PDFjetError(message: fontPath + " is not a file, nor one of the fonts PDFjet carries; "
+                        + "the fonts it came with before 9.1.7, Noto Sans among them, are at "
+                        + BundledFonts.PDFJET_FONTS)
+            }
+        }
         guard let data = FileManager.default.contents(atPath: fontPath) else {
             throw PDFjetError(message: "Font file not found: " + fontPath)
         }
-        try OpenTypeFont.register(pdf, self, [UInt8](data))
-        setSize(size)
+        return [UInt8](data)
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream
     // or .otf.stream file, the .ttf or else the .otf file of the same name
-    // beside it. PDFjet reads .otf and .ttf fonts alone from 9.0.5, and its
-    // fonts are subset from their .ttf files: a path written for the .stream
-    // files PDFjet shipped before is the same font.
+    // beside it, or else the font PDFjet carries of that name. PDFjet reads
+    // .otf and .ttf fonts alone from 9.0.5, and its fonts are subset from
+    // their .ttf files: a path written for the .stream files PDFjet shipped
+    // before is the same font.
     static func fontFileOf(_ fontPath: String) -> String {
         for stream in [".ttf.stream", ".otf.stream"] where fontPath.hasSuffix(stream) {
             let base = String(fontPath.dropLast(stream.count))
             for ext in [".ttf", ".otf"] where FileManager.default.fileExists(atPath: base + ext) {
+                return base + ext
+            }
+            // The font PDFjet carries of that name, when there is no file
+            for ext in [".ttf", ".otf"] where BundledFonts.url(base + ext) != nil {
                 return base + ext
             }
         }

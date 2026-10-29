@@ -11,11 +11,13 @@ import Testing
 // The fonts, images and SVG images of the review: each test is one of
 // review_media_test.go in the Go port.
 @Suite struct ReviewMediaTests {
-    private let thai = "fonts/NotoSansThai/NotoSansThai-Regular.ttf"
+    // IBM Plex Sans Thai, a TrueType font of Latin and Thai with a GPOS
+    // table, as Noto Sans Thai, which these tests read before 9.1.7, is.
+    private let thai = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"
     static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     private func font(_ path: String) -> [UInt8] {
-        return [UInt8](FileManager.default.contents(atPath: TestSupport.path(path))!)
+        return try! TestSupport.fontBytes(path)
     }
 
     private func uint16(_ font: [UInt8], _ offset: Int) -> Int {
@@ -186,7 +188,7 @@ import Testing
         return ""
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aPDFADocumentHoldsNoImageItsLevelHasNot() throws {
         // The output intent of PDF/A is sRGB, so its images are not CMYK;
         // PDF/A-1 has no soft masks, and 8 bits per component at most.
@@ -242,7 +244,7 @@ import Testing
     // hold, as it does one made from a file: a soft mask went into PDF/A-1
     // once masks were copied, and a CMYK image, or one of 16 bits, always had
     // (the review of 28 October 2026).
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aPDFADocumentHoldsNoCopiedImageItsLevelHasNot() throws {
         let failed = "The PDF was not completed because of an earlier error: "
         #expect(try pdfACopyError(Compliance.PDF_A_2B, "images/cmyk.jpg") == failed
@@ -284,7 +286,7 @@ import Testing
     // in documents of PDF_A_1A and PDF_A_1B (review of 12 October 2026, R9,
     // R10): a graphics state of an opacity below 1, and an optional content
     // group, are refused, and an SVG is drawn opaque, as an annotation is.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func pdfA1HasNoTransparencyAndNoOptionalContent() throws {
         let failed = "The PDF was not completed because of an earlier error: "
         let alpha: (PDF, Page) throws -> Void = { _, page in
@@ -594,7 +596,7 @@ import Testing
         #expect(TestSupport.latin1(memory.bytes).components(separatedBy: "/Length1 ").count - 1 == 1)
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aFontFileIsToldByItsFirstBytesAndNotByItsName() throws {
         // A font file whose name ends in neither .otf nor .ttf is read as the
         // font it is.

@@ -10,9 +10,32 @@ let package = Package(
         .library(name: "PDFjet", targets: ["PDFjet"]),
     ],
     targets: [
-        // The fonts PDFjet carries, with their licenses: copies of those of
-        // src/bundledfonts, as the resources of a target are in its folder
-        .target(name: "PDFjet", resources: [.copy("Resources/bundledfonts")]),
+        // The fonts PDFjet carries, resources/fonts, each family in a folder
+        // with its license: the one copy of them in the repository, which
+        // the other ports read too. SwiftPM takes the resources of a target in
+        // its folder alone, so they are a target of their own, whose
+        // PDFjetFonts.swift finds them; fonts.go is the Go port's.
+        .target(
+            name: "PDFjetFonts",
+            path: "resources/fonts",
+            exclude: ["fonts.go"],
+            sources: ["PDFjetFonts.swift"],
+            resources: [
+                .copy("CascadiaMono"),
+                .copy("IBMPlexMath"),
+                .copy("IBMPlexSans"),
+                .copy("IBMPlexSansArabic"),
+                .copy("IBMPlexSansHebrew"),
+                .copy("IBMPlexSansJP"),
+                .copy("IBMPlexSansKR"),
+                .copy("IBMPlexSansSC"),
+                .copy("IBMPlexSansTC"),
+                .copy("IBMPlexSansThai"),
+                .copy("IBMPlexSerif"),
+                .copy("SourceSerif4"),
+            ]
+        ),
+        .target(name: "PDFjet", dependencies: ["PDFjetFonts"]),
         .executableTarget(name: "Example_01", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_02", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_03", dependencies: ["PDFjet"]),

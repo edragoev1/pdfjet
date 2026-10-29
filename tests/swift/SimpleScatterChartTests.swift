@@ -79,7 +79,7 @@ import Testing
     // In a PDF/UA document a highlighted point that is a link is a figure of
     // its own, described by its name, in the Link that holds its annotation;
     // a point that is not a link stays in the chart's figure.
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"), "the fonts directory is not here"))
+    @Test
     func aLinkedPointIsAFigureInItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")

@@ -258,7 +258,7 @@ import Testing
         }
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -304,7 +304,7 @@ import Testing
     // A text line that is a link is the Link of its paragraph, holding its
     // text and its annotation both, as PDF/UA asks and PAC checks: a Link that
     // holds only the annotation is read as a link of no text.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkedTextLineIsTheLinkOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -329,7 +329,7 @@ import Testing
 
     // A word of a paragraph that is a link is a Link among the words, in its
     // place, holding its text and its annotation.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkedWordIsALinkAmongTheWordsOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -360,7 +360,7 @@ import Testing
     }
 
     // A linked image is the Figure of its Link, which holds its annotation too.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkedImageIsTheFigureOfItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -387,7 +387,7 @@ import Testing
 
     // In a document that is not tagged, a link is drawn as before, and a
     // linked image leaves the structure elements begun around it as they were.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkOfADocumentNotTaggedIsNoElement() throws {
         let memory = MemoryPDF()
         let pdf = memory.pdf
@@ -422,7 +422,7 @@ import Testing
     // the Document, stands as a block and says so, as PAC asks of an element
     // that PDF makes inline; one in a paragraph, or a figure in its link, does
     // not.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func anInlineElementStandingAsABlockSaysSo() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -451,7 +451,7 @@ import Testing
 
     // The text of a cell is drawn whole, and has no description of its own,
     // which PAC warns of on text.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func theTextOfACellHasNoAlt() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -488,7 +488,7 @@ import Testing
     // An annotation that is not a link has an element described by what it
     // says, or by its title, so that it has text, which PAC reads as only
     // whitespace without it; a file attached is described by its own.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func anAnnotationIsDescribedByWhatItSays() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -515,7 +515,7 @@ import Testing
         }
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -539,7 +539,7 @@ import Testing
         #expect(try dest.first == pageNumbers(memory.bytes)[1])
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func theStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")

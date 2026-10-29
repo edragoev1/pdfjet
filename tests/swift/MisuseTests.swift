@@ -162,8 +162,7 @@ import Testing
     // glyph and no character in it; in Go, the race detector found 9 data
     // races when one font was drawn on 4 PDFs at once (review of 12 October
     // 2026, R23).
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aFontOfAnotherPDFIsNotChanged() throws {
         let other = TestSupport.newPDF()
         let font = try TestSupport.plexSans(other)
@@ -356,7 +355,7 @@ import Testing
         // An embedded font only reserves its number, written at complete():
         // the objects could take it too (the review of 9 October 2026).
         let pdf3 = TestSupport.newPDF()
-        _ = try Font(pdf3, TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf"))
+        _ = try Font(pdf3, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
         do {
             try pdf3.addObjects(objects)
             Issue.record("addObjects after an embedded font did not throw")

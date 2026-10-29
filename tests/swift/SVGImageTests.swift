@@ -698,31 +698,8 @@ import Testing
         try image("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
                 + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").drawOn(page)
         #expect(Set(page.pdf.bundledFonts.keys) == [
-                "SourceSerif4-SemiBoldItalic.ttf", "JetBrainsMono-Bold.ttf",
-                "IBMPlexSans-Regular.ttf", "IBMPlexSans-Bold.ttf"])
-    }
-
-    // The fonts the module carries are copies of those of src/bundledfonts,
-    // as the resources of a target are in its folder: the same bytes.
-    @Test func theBundledFontsAreThoseOfSrcBundledFonts() throws {
-        let source = TestSupport.path("src/bundledfonts")
-        let names = try FileManager.default.contentsOfDirectory(atPath: source).sorted()
-        #expect(names.count == 21, "\(names)")
-        for name in names {
-            let url = BundledFonts.url(name)
-            #expect(url != nil, "\(name) is not among the resources")
-            if let url = url {
-                #expect(try Data(contentsOf: url) == Data(contentsOf: URL(fileURLWithPath: source + "/" + name)),
-                        "\(name) differs from src/bundledfonts")
-            }
-        }
-        for family in 0..<3 {
-            for weight in [400, 600, 700] {
-                for italic in [false, true] {
-                    #expect(names.contains(BundledFonts.fileName(family, weight, italic)))
-                }
-            }
-        }
+                "SourceSerif4/SourceSerif4-SemiBoldItalic.ttf", "CascadiaMono/CascadiaMono-Bold.ttf",
+                "IBMPlexSans/IBMPlexSans-Regular.ttf", "IBMPlexSans/IBMPlexSans-Bold.ttf"])
     }
 
     @Test func theTextOfADocumentOfPDFAOrPDFUAIsInEmbeddedFonts() throws {

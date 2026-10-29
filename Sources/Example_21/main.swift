@@ -134,7 +134,7 @@ public class Example_21 {
     }
 
     private func drawSpans(_ pdf: PDF) throws {
-        let font = try Font(pdf, IBMPlexMono.Regular)
+        let font = try Font(pdf, CascadiaMono.Regular)
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         let f2 = try Font(pdf, IBMPlexSans.Regular)
         let page = Page(pdf, Letter.LANDSCAPE)

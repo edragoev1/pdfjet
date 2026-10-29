@@ -359,7 +359,26 @@ import Testing
 
     @Test func theFontFileRefersToItsMetadataWhoseNoticeIsEscaped() throws {
         let memory = MemoryPDF(Compliance.PDF_A_2B)
-        let font = try Font(memory.pdf, TestSupport.path("fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+        // Noto Sans JP, which this test read before 9.1.7, has "&" in its
+        // designer and its description; no font PDFjet carries has one in
+        // its names, so the license of IBM Plex Sans is made to say "with &
+        // FAQ" in place of "with a FAQ", a character for a character.
+        var ttf = try TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        var withA = [UInt8]()
+        for unit in " with a FAQ".utf16 {
+            withA += [UInt8(unit >> 8), UInt8(unit & 0xFF)]
+        }
+        var at = -1
+        var i = 0
+        while at == -1 && i + withA.count <= ttf.count {
+            if ttf[i..<(i + withA.count)].elementsEqual(withA) {
+                at = i
+            }
+            i += 1
+        }
+        try #require(at != -1, "the license of the font has no \"with a FAQ\"")
+        ttf[at + 2 * " with ".utf16.count + 1] = UInt8(ascii: "&")
+        let font = try Font(memory.pdf, InputStream(data: Data(ttf)))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         _ = TextLine(font, "Hello").setLocation(50, 50).drawOn(page)
         try memory.pdf.complete()

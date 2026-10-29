@@ -94,19 +94,19 @@ func archivalDocument() throws {
 func fonts(_ pdf: PDF, _ font: Font) throws {
     let serif = try Font(pdf, SourceSerif4.Regular).setSize(14)
     let bold = try Font(pdf, IBMPlexSans.Bold)
-    let mono = try Font(pdf, JetBrainsMono.Regular).setSize(10)
+    let mono = try Font(pdf, CascadiaMono.Regular).setSize(10)
     let page = Page(pdf, Letter.PORTRAIT)
     TextLine(serif, "Source Serif 4 at 14 points").setLocation(50, 50).drawOn(page)
     TextLine(bold, "IBM Plex Sans Bold at 12 points").setLocation(50, 75).drawOn(page)
-    TextLine(mono, "JetBrains Mono at 10 points").setLocation(50, 100).drawOn(page)
+    TextLine(mono, "Cascadia Mono at 10 points").setLocation(50, 100).drawOn(page)
     TextLine(bold, "The same font at 24 points").setFontSize(24)
             .setLocation(50, 135).drawOn(page)
 }
 
 // @snippet font-files
 func fontFiles(_ pdf: PDF, _ font: Font) throws {
-    let otf = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
-    let ttf = try Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf")
+    let otf = try Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
+    let ttf = try Font(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")
     let page = Page(pdf, Letter.PORTRAIT)
     TextLine(otf, "An OpenType font").setLocation(50, 50).drawOn(page)
     TextLine(ttf, "A TrueType font").setLocation(50, 75).drawOn(page)
@@ -227,7 +227,7 @@ func markup(_ pdf: PDF, _ font: Font) throws {
     let bold = try Font(pdf, IBMPlexSans.Bold)
     let italic = try Font(pdf, IBMPlexSans.Italic)
     let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic)
-    let code = try Font(pdf, JetBrainsMono.Regular).setSize(11)
+    let code = try Font(pdf, CascadiaMono.Regular).setSize(11)
     let markup = Markup(font, bold, italic, boldItalic, code)
     let paragraphs = markup.paragraphs(
             "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
@@ -241,7 +241,7 @@ func markdown(_ pdf: PDF, _ font: Font) throws {
     let bold = try Font(pdf, IBMPlexSans.Bold)
     let italic = try Font(pdf, IBMPlexSans.Italic)
     let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic)
-    let code = try Font(pdf, JetBrainsMono.Regular).setSize(10)
+    let code = try Font(pdf, CascadiaMono.Regular).setSize(10)
     let markdown = Markdown(font, bold, italic, boldItalic, code)
     var pages = [Page]()
     try markdown.drawOn(pdf, "# A heading\n"
@@ -791,7 +791,8 @@ func split() throws {
 func existingPages() throws {
     let pdf = PDF(OutputStream(toFileAtPath: "stamped.pdf", append: false)!)
     var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/rc65-16e.pdf")!)
-    let font = try Font(&objects, InputStream(fileAtPath: IBMPlexSans.Regular)!).setSize(24)
+    // IBM Plex Sans, which PDFjet carries
+    let font = try Font(&objects, IBMPlexSans.Regular).setSize(24)
     for pageObj in pdf.getPageObjects(from: objects) {
         let page = Page(pdf, pageObj)
         page.addResource(font, &objects)

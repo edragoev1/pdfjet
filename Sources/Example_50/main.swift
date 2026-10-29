@@ -35,14 +35,11 @@ public class Example_50 {
         image.scaleBy(0.40)
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
-        let f1 = try Font(
-                &objects,
-                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")!).setSize(12.0)
+        // drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+        // from the library; the path of a font file of your own reads that file.
+        let f1 = try Font(&objects, IBMPlexSans.Regular).setSize(12.0)
 
-        let f2 = try Font(
-                &objects,
-                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")!).setSize(12.0)
+        let f2 = try Font(&objects, IBMPlexSans.Bold).setSize(12.0)
 
         let pages = pdf.getPageObjects(from: objects)
         let page = Page(pdf, pages[0])

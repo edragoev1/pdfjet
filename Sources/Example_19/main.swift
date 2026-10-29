@@ -25,7 +25,7 @@ public class Example_19 {
         let bold = try Font(pdf, IBMPlexSans.Bold).setSize(11.0)
         let italic = try Font(pdf, IBMPlexSans.Italic).setSize(11.0)
         let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic).setSize(11.0)
-        let code = try Font(pdf, IBMPlexMono.Regular).setSize(9.5)
+        let code = try Font(pdf, CascadiaMono.Regular).setSize(9.5)
 
         let markdown = Markdown(regular, bold, italic, boldItalic, code)
         markdown.setImageDirectory("data/markdown")

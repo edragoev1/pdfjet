@@ -343,7 +343,7 @@ import Testing
         // was left empty when the objects were merged rather than added (the
         // review of 9 October 2026), and its text was lost.
         var objects = try TestSupport.read(document("Existing"))
-        let font = try Font(&objects, TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf"))
+        let font = try Font(&objects, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
         let memory = MemoryPDF()
         let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
         page.addResource(font, &objects)
@@ -354,8 +354,8 @@ import Testing
         let merged = try TestSupport.read(memory.bytes)
         #expect(TestSupport.findObject(merged, "/Length1") != nil, "no font program")
         #expect(merged.contains {
-            $0.getValue("/Subtype") == "/Type0" && $0.getValue("/BaseFont").hasSuffix("+NotoSans-Regular")
-        }, "no Type0 font of a subset of Noto Sans")
+            $0.getValue("/Subtype") == "/Type0" && $0.getValue("/BaseFont").hasSuffix("+IBMPlexSans")
+        }, "no Type0 font of a subset of IBM Plex Sans")
         expectReferencesResolve(merged)
     }
 

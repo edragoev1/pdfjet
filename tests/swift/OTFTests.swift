@@ -12,11 +12,17 @@ import Testing
 // of the font loaders found them: each throws with a message, and none reads
 // past the font, allocates what the font does not have or traps.
 @Suite struct OTFTests {
-    private let thai = "fonts/NotoSansThai/NotoSansThai-Regular.ttf"
-    private let plex = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
+    // IBM Plex Sans Thai: TrueType outlines, the short offsets of loca, a
+    // format 4 character map with a glyph ID array, and GPOS lookups, as Noto
+    // Sans Thai, which these tests read before 9.1.7, has.
+    private let thai = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"
+    // IBM Plex Sans TC, as the .otf PDFjet carries: the same character map
+    // as its .ttf, of which these tests read the format 12 subtable.
+    private let tc = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"
+    private let plex = "tests/fonts/IBMPlexSans-Regular.otf"
 
     private func font(_ path: String) -> [UInt8] {
-        return [UInt8](FileManager.default.contents(atPath: TestSupport.path(path))!)
+        return try! TestSupport.fontBytes(path)
     }
 
     // The message that loading the font throws with.
@@ -184,34 +190,36 @@ import Testing
 
     @Test func theCapHeightIsReadOnlyFromAnOS2TableThatHasIt() throws {
         // The cap height of both fonts, sCapHeight in OS/2 and the top of the
-        // H, is 714, so sCapHeight is changed to 999 to tell the two apart.
-        // Noto Sans Thai has the short offsets of loca, and Noto Sans the long
-        // ones.
-        for path in [thai, "fonts/NotoSans/NotoSans-Regular.ttf"] {
+        // H, is 698 (714 in Noto Sans Thai and Noto Sans, which this test read
+        // before 9.1.7), so sCapHeight is changed to 999 to tell the two
+        // apart. IBM Plex Sans Thai has the short offsets of loca, and IBM
+        // Plex Math the long ones, as Noto Sans had.
+        for path in [thai, "fonts/IBMPlexMath/IBMPlexMath-Regular.ttf"] {
             var data = font(path)
             let os2 = table(data, "OS/2")
             data = with(data, os2 + 88, 999)
             #expect(try capHeight(data) == 999, "\(path), version 4")
             // A version 1 table ends before sCapHeight: the 999 is not its own.
-            #expect(try capHeight(with(data, os2, 1)) == 714, "\(path), version 1")
+            #expect(try capHeight(with(data, os2, 1)) == 698, "\(path), version 1")
             // Nor is it of a version 2 table that ends before it.
-            #expect(try capHeight(length(data, "OS/2", 88)) == 714, "\(path), a table of 88 bytes")
+            #expect(try capHeight(length(data, "OS/2", 88)) == 698, "\(path), a table of 88 bytes")
         }
     }
 
     @Test func aFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() throws {
         // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
-        // of the H in; its ascent is 1025. Noto Sans Thai without its loca
-        // table has no offset for its H; its ascent is 1061.
+        // of the H in; its ascent is 1025. IBM Plex Sans Thai without its
+        // loca table has no offset for its H; its ascent is 1116 (Noto Sans
+        // Thai's, before 9.1.7, 1061).
         let otf = font(plex)
         #expect(try capHeight(with(otf, table(otf, "OS/2"), 1)) == 1025, "CFF outlines")
         var ttf = font(thai)
         ttf = with(ttf, table(ttf, "OS/2"), 1)
-        #expect(try capHeight(without(ttf, "loca")) == 1061, "no loca table")
+        #expect(try capHeight(without(ttf, "loca")) == 1116, "no loca table")
         // A loca table that ends before the offsets of the H, and a glyf table
         // that ends before the header of the H.
-        #expect(try capHeight(length(ttf, "loca", 4)) == 1061, "a loca table of 4 bytes")
-        #expect(try capHeight(length(ttf, "glyf", 4)) == 1061, "a glyf table of 4 bytes")
+        #expect(try capHeight(length(ttf, "loca", 4)) == 1116, "a loca table of 4 bytes")
+        #expect(try capHeight(length(ttf, "glyf", 4)) == 1116, "a glyf table of 4 bytes")
     }
 
     // The font with the entries of two tables swapped in its directory, the
@@ -242,21 +250,42 @@ import Testing
         }
     }
 
+    // The font with its format 4 subtable of the Windows platform made empty,
+    // as IBM Plex Sans TC's .ttf has it: one segment, the 0xFFFF that ends
+    // every format 4 subtable, of 24 bytes, written over the start of the
+    // one it had.
+    private func emptyFormat4(_ font: [UInt8]) -> [UInt8] {
+        var patched = font
+        let subtable = cmap4(font)
+        let empty = [4, 24, 0, 2, 2, 0, 0, 0xFFFF, 0, 0xFFFF, 1, 0]
+        for (i, value) in empty.enumerated() {
+            patched = with(patched, subtable + 2*i, value)
+        }
+        return patched
+    }
+
     @Test func aFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map() throws {
         // IBM Plex Sans TC, as a .ttf, maps its characters in its format 12
-        // subtable alone.
-        let font = try Font(TestSupport.newPDF(), TestSupport.path("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+        // subtable alone: its format 4 subtable is empty. PDFjet carries the
+        // .otf, whose format 4 subtable maps the characters of the Basic
+        // Multilingual Plane too, so the test empties it as the .ttf has it.
+        let tc = emptyFormat4(font(self.tc))
+        #expect(uint16(tc, cmap4(tc) + 6) == 2, "one segment")
+        let font = try Font(TestSupport.newPDF(), InputStream(data: Data(tc)))
         for ch in "繁體中文A".unicodeScalars {
             #expect(font.unicodeToGID[Int(ch.value)] != 0, "\(ch) has no glyph")
         }
     }
 
     @Test func aFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs() throws {
-        // IBM Plex Sans TC maps every character in its format 12 subtable. With
-        // its first character raised past the start of a group, the glyphs of
-        // the group were counted from the first character, not from the group's
-        // own start, and every one was off (the review of 9 October 2026).
-        let ttf = font("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf")
+        // IBM Plex Sans TC maps every character in its format 12 subtable, its
+        // first group U+0020 to U+007E. With its first character raised past
+        // the start of a group, the glyphs of the group were counted from the
+        // first character, not from the group's own start, and every one was
+        // off (the review of 9 October 2026). The .otf PDFjet carries has its
+        // format 4 subtable emptied, as the .ttf has it, so that the glyphs
+        // come from the format 12 subtable alone.
+        let ttf = emptyFormat4(font(tc))
         let want = try OTF(InputStream(data: Data(ttf)))
         let raised = with(ttf, table(ttf, "OS/2") + 64, Int(("0" as Unicode.Scalar).value))
         let got = try OTF(InputStream(data: Data(raised)))
@@ -272,10 +301,10 @@ import Testing
     // allows Preview and Print too is embedded, as the least restrictive bit
     // applies.
     @Test func aFontWhoseLicenseForbidsEmbeddingIsRefused() throws {
-        let ttf = font("fonts/NotoSans/NotoSans-Regular.ttf")
+        let ttf = font("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
         let os2 = table(ttf, "OS/2")
         let message = error(with(ttf, os2 + 8, 0x0002))
-        #expect(message.contains("may not be embedded") && message.contains("NotoSans"), "\(message)")
+        #expect(message.contains("may not be embedded") && message.contains("IBMPlexSans"), "\(message)")
         var objects = [PDFobj]()
         #expect(throws: PDFjetError.self) {
             _ = try Font(&objects, InputStream(data: Data(with(ttf, os2 + 8, 0x0002))))

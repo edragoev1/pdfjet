@@ -7,25 +7,52 @@
 import Foundation
 
 ///
-/// The IBM Plex Sans KR fonts. Each constant is the path of a font file in the
-/// TrueType (.ttf) format, embedded as a subset of the glyphs a document
-/// draws; pass it to the Font constructor that takes a font path.
+/// The IBM Plex Sans KR fonts. Each constant is the path of a font file,
+/// embedded as a subset of the glyphs a document draws; pass it to the Font
+/// constructor that takes a font path. PDFjet carries these fonts in itself:
+/// the path is read from the library when there is no such file.
 ///
 public struct IBMPlexSansKR {
     /// IBM Plex Sans KR Bold
-    public static let Bold          = "fonts/IBMPlexSansKR/IBMPlexSansKR-Bold.ttf";
-    /// IBM Plex Sans KR ExtraLight
-    public static let ExtraLight    = "fonts/IBMPlexSansKR/IBMPlexSansKR-ExtraLight.ttf";
-    /// IBM Plex Sans KR Light
-    public static let Light         = "fonts/IBMPlexSansKR/IBMPlexSansKR-Light.ttf";
-    /// IBM Plex Sans KR Medium
-    public static let Medium        = "fonts/IBMPlexSansKR/IBMPlexSansKR-Medium.ttf";
+    public static let Bold       = "fonts/IBMPlexSansKR/IBMPlexSansKR-Bold.otf"
+
+    ///
+    /// IBM Plex Sans KR ExtraLight, which PDFjet does not carry
+    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    ///
+    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    public static let ExtraLight = "fonts/IBMPlexSansKR/IBMPlexSansKR-ExtraLight.ttf"
+
+    ///
+    /// IBM Plex Sans KR Light, which PDFjet does not carry
+    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    ///
+    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    public static let Light      = "fonts/IBMPlexSansKR/IBMPlexSansKR-Light.ttf"
+
+    ///
+    /// IBM Plex Sans KR Medium, which PDFjet does not carry
+    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    ///
+    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    public static let Medium     = "fonts/IBMPlexSansKR/IBMPlexSansKR-Medium.ttf"
+
     /// IBM Plex Sans KR Regular
-    public static let Regular       = "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.ttf";
+    public static let Regular    = "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf"
     /// IBM Plex Sans KR SemiBold
-    public static let SemiBold      = "fonts/IBMPlexSansKR/IBMPlexSansKR-SemiBold.ttf";
-    /// IBM Plex Sans KR Text
-    public static let Text          = "fonts/IBMPlexSansKR/IBMPlexSansKR-Text.ttf";
-    /// IBM Plex Sans KR Thin
-    public static let Thin          = "fonts/IBMPlexSansKR/IBMPlexSansKR-Thin.ttf";
+    public static let SemiBold   = "fonts/IBMPlexSansKR/IBMPlexSansKR-SemiBold.otf"
+
+    ///
+    /// IBM Plex Sans KR Text, which PDFjet does not carry
+    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    ///
+    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    public static let Text       = "fonts/IBMPlexSansKR/IBMPlexSansKR-Text.ttf"
+
+    ///
+    /// IBM Plex Sans KR Thin, which PDFjet does not carry
+    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    ///
+    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    public static let Thin       = "fonts/IBMPlexSansKR/IBMPlexSansKR-Thin.ttf"
 }

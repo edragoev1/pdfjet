@@ -98,9 +98,15 @@ import Testing
     /// Two characters copied as the same text, as a letter and its
     /// presentation form, need no actual text for the second: Arabic text
     /// had three times the spans it needed, its content 27% larger (T2).
+    // Noto Sans Arabic, which this test read before 9.1.7, draws ل and its
+    // isolated form ﻝ with one glyph, and ١ and ۱ with one; IBM Plex Sans
+    // Arabic draws each with its own, so its character map is made to draw
+    // them as Noto Sans Arabic's does.
     @Test func aCharacterCopiedAsTheFirstHasNoActualText() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+        let font = try Font(pdf, InputStream(data: Data(TestSupport.withSharedGlyphs(
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                [[0x0644, 0xFEDD], [0x0661, 0x06F1]]))))
         try #require(font.unicodeToGID[0x0644] == font.unicodeToGID[0xFEDD])
         font.useChar(0xFEDD, font.unicodeToGID[0xFEDD])
         #expect(!font.drawnAsAnother(0x0644))
@@ -114,7 +120,7 @@ import Testing
     /// stands for it, and "ةِمى" was copied as "ىمِ ة" (T1).
     @Test func aWordWithMarksIsCopiedWithoutASpaceInside() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(font, "\u{0628}").setLocation(50, 50).drawOn(page)
         // The glyph of ة as drawn first for another character, which no two
@@ -161,7 +167,9 @@ import Testing
     /// it: it was left out (T7).
     @Test func aJoinerInARunIsInItsActualText() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+        // IBM Plex Sans JP, the .otf PDFjet carries, has no glyph for the
+        // joiners or the LRM, as Noto Sans JP, before 9.1.7, had none.
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"))
         try #require(font.unicodeToGID[0x200D] == 0)
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(font, "d\u{200D}\u{200E}\u{200C}e\u{200D}").setLocation(50, 50).drawOn(page)

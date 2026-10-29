@@ -1121,7 +1121,7 @@ public class SVGImage : Drawable {
             return bundled
         }
         pdf.fail("The font " + BundledFonts.fileName(run.family, run.weight, run.italic)
-                + " is not in the library, which was built without the fonts of src/bundledfonts: "
+                + " is not in the library, which was built without the fonts of resources/fonts: "
                 + "build it with build-swift.sh, or set a font with setFont.")
         return nil
     }
