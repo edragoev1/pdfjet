@@ -7,6 +7,24 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.1.7 — not released yet
+
+Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
+
+### Changed
+- Swift: less memory for every document with fonts. The font program and
+  the ToUnicode map of each font were compressed with Deflate tables of
+  their own, about 450 KB a stream, made again for each: 1.8 MB for a
+  document in two fonts. They now use the tables the PDF keeps for the
+  content of its pages, one stream after another. And
+  `Content.getFromStream` keeps the pieces of a stream as they are read and
+  joins them once, instead of an array copied each time it grew: 0.8 MB
+  less for a font of the size of Noto Sans. An invoice of one page in IBM
+  Plex Sans allocates 4.0 MB instead of 5.9, the same in Noto Sans 6.9
+  instead of 10.3. The PDFs are the same, byte for byte, but for their date
+  and document ID. The other three ports compress with the Deflate of
+  their platform, and were not changed.
+
 ## v9.1.5 — 2026-10-28
 
 There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
