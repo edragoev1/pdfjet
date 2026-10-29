@@ -92,14 +92,49 @@ import Testing
         var objects = try TestSupport.read(memory.bytes)
         let font = try Font(&objects, IBMPlexSans.Bold)
         #expect(font.name == "IBMPlexSans-Bold")
-        // A font it does not carry says where the fonts it came with are
+        // A font it does not carry says so, and to use a font of one's own
         do {
             _ = try Font(&objects, "fonts/NotoSans/NotoSans-Regular.ttf")
             Issue.record("a font PDFjet does not carry was read")
         } catch {
             let message = TestSupport.message(error)
-            #expect(message.contains(BundledFonts.PDFJET_FONTS), "\(message)")
+            #expect(message.contains("nor one of the fonts PDFjet carries"), "\(message)")
+            #expect(message.contains("use a font file of your own"), "\(message)")
+            #expect(!message.contains("pdfjet-fonts"), "\(message)")
         }
+    }
+
+    @Test func aFontIsReadFromResourcesFontsElseFromTheBundleOfPDFjetFonts() throws {
+        // The tests depend on PDFjetFonts: its bundle is found by its name
+        let bundle = try #require(BundledFonts.bundle)
+        #expect(bundle.bundleURL.lastPathComponent.hasPrefix("PDFjet_PDFjetFonts."))
+        // From the working directory, the repository, resources/fonts first
+        let onDisk = try #require(BundledFonts.url(IBMPlexSans.Regular))
+        #expect(onDisk.path.hasSuffix("resources/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"), "\(onDisk.path)")
+        #expect(!onDisk.path.contains("PDFjet_PDFjetFonts"), "\(onDisk.path)")
+        // With no such folder, as in an app, the bundle
+        let missing = "no-such-folder/resources/fonts/"
+        let inBundle = try #require(BundledFonts.url(IBMPlexSans.Regular, missing))
+        #expect(inBundle.path.contains("PDFjet_PDFjetFonts"), "\(inBundle.path)")
+        #expect(try Data(contentsOf: inBundle) == Data(contentsOf: onDisk))
+        #expect(BundledFonts.url(IBMPlexSansJP.Bold, missing) != nil)
+        #expect(BundledFonts.url("fonts/NotoSans/NotoSans-Regular.ttf", missing) == nil)
+        #expect(BundledFonts.available(missing))
+        // The fonts and their licenses, without the Go port's files
+        let files = try FileManager.default.subpathsOfDirectory(atPath: bundle.bundleURL.path)
+        #expect(files.filter { $0.hasSuffix(".ttf") || $0.hasSuffix(".otf") }.count == 82)
+        #expect(!files.contains { $0.hasSuffix(".go") }, "\(files.filter { $0.hasSuffix(".go") })")
+        for license in ["license.txt", "LICENSE", "OFL.txt"] {
+            #expect(files.contains { $0.hasSuffix(license) }, "\(license)")
+        }
+        // With neither, as in an app without PDFjetFonts, nothing, and the
+        // error says to add the product, with its line for Package.swift
+        #expect(BundledFonts.url(IBMPlexSans.Regular, missing, nil) == nil)
+        #expect(!BundledFonts.available(missing, nil))
+        let message = Font.notCarried(IBMPlexSans.Regular, false)
+        #expect(message.contains("add the product PDFjetFonts"), "\(message)")
+        #expect(message.contains(".product(name: \"PDFjetFonts\", package: \"pdfjet\")"), "\(message)")
+        #expect(!message.contains("pdfjet-fonts"), "\(message)")
     }
 
     @Test func cssWeightsMatchFacesThatLookAlikeAcrossTheFamilies() {

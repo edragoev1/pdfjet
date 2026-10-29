@@ -326,10 +326,12 @@ public class Font {
     ///
     /// Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
     /// to one of the fonts PDFjet carries, such as the constants of the font
-    /// structs, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from
-    /// the library when there is no such file. A path to a .ttf.stream or
-    /// .otf.stream file, the fonts PDFjet shipped before 9.0.5, opens the .ttf
-    /// or else the .otf file of the same name beside it.
+    /// structs, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read,
+    /// when there is no such file, from the folder resources/fonts of the
+    /// working directory, or else from the product PDFjetFonts, which a
+    /// program that wants the fonts built in depends on. A path to a
+    /// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
+    /// opens the .ttf or else the .otf file of the same name beside it.
     ///
     /// - Parameter pdf: the pdf object.
     /// - Parameter fontPath: the font path.
@@ -345,8 +347,9 @@ public class Font {
 
     // Returns the bytes of the font file of the path, in one read, as Java, C#
     // and Go read it, or, when there is no such file, of the font of that
-    // name that PDFjet carries; a font it does not carry, such as one of the
-    // fonts of pdfjet-fonts it left out, throws, saying where to get it.
+    // name that PDFjet carries, from resources/fonts or the bundle of
+    // PDFjetFonts; a font it does not carry throws, and so does one it
+    // carries when neither is there, saying to add PDFjetFonts.
     static func open(_ fontPath: String) throws -> [UInt8] {
         if !FileManager.default.fileExists(atPath: fontPath) {
             if let url = BundledFonts.url(fontPath), let data = try? Data(contentsOf: url) {
@@ -354,15 +357,24 @@ public class Font {
             }
             let path = fontPath.replacingOccurrences(of: "\\", with: "/")
             if path.hasPrefix("fonts/") || path.contains("/fonts/") {
-                throw PDFjetError(message: fontPath + " is not a file, nor one of the fonts PDFjet carries; "
-                        + "the fonts it came with before 9.1.7, Noto Sans among them, are at "
-                        + BundledFonts.PDFJET_FONTS)
+                throw PDFjetError(message: notCarried(fontPath, BundledFonts.available()))
             }
         }
         guard let data = FileManager.default.contents(atPath: fontPath) else {
             throw PDFjetError(message: "Font file not found: " + fontPath)
         }
         return [UInt8](data)
+    }
+
+    // The message of a font path that is not a file, nor a font in
+    // resources/fonts or the bundle of PDFjetFonts: with the fonts there, one
+    // PDFjet does not carry; without them, what to add.
+    static func notCarried(_ fontPath: String, _ available: Bool) -> String {
+        if available {
+            return fontPath + " is not a file, nor one of the fonts PDFjet carries: use a font file of your own."
+        }
+        return fontPath + " is not a file, and the fonts PDFjet carries are not in this program: "
+                + BundledFonts.ADD_PDFJET_FONTS + "."
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream

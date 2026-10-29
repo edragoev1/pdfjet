@@ -20,14 +20,14 @@ public struct IBMPlexSans {
 
     ///
     /// IBM Plex Sans ExtraLightItalic, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let ExtraLightItalic = "fonts/IBMPlexSans/IBMPlexSans-ExtraLightItalic.ttf"
 
     ///
     /// IBM Plex Sans ExtraLight, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let ExtraLight       = "fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf"

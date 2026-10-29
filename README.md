@@ -265,14 +265,26 @@ Add PDFjet to the `Package.swift` of your package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.5"),
+    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.7"),
 ],
 targets: [
     .executableTarget(name: "App", dependencies: [
         .product(name: "PDFjet", package: "pdfjet"),
+        .product(name: "PDFjetFonts", package: "pdfjet"),   // The fonts, about 66 MB
     ]),
 ]
 ```
+
+**The fonts come with the `PDFjetFonts` product, not with `PDFjet`.** A Swift
+program is often an iPhone or Mac app, which should not carry about 66 MB of
+fonts unless you choose it. With the `PDFjetFonts` line above, every font
+PDFjet carries is built into your app, and the constants such as
+`IBMPlexSans.Regular` work anywhere; no code is needed, as PDFjet finds the
+fonts' bundle on its own. Without that line, PDFjet reads the same fonts from
+the folder `resources/fonts` of the working directory, as in this repository
+and the release packages, or you give it font files of your own, such as only
+the fonts you use, by their paths. A constant of a font that is in neither
+place throws an error that says to add `PDFjetFonts`.
 
 ```swift
 import Foundation

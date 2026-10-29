@@ -15,14 +15,14 @@ import Foundation
 public struct SourceSerif4 {
     ///
     /// Source Serif 4 Black, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let Black            = "fonts/SourceSerif4/SourceSerif4-Black.ttf"
 
     ///
     /// Source Serif 4 BlackItalic, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let BlackItalic      = "fonts/SourceSerif4/SourceSerif4-BlackItalic.ttf"
@@ -34,14 +34,14 @@ public struct SourceSerif4 {
 
     ///
     /// Source Serif 4 ExtraLight, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let ExtraLight       = "fonts/SourceSerif4/SourceSerif4-ExtraLight.ttf"
 
     ///
     /// Source Serif 4 ExtraLightItalic, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let ExtraLightItalic = "fonts/SourceSerif4/SourceSerif4-ExtraLightItalic.ttf"

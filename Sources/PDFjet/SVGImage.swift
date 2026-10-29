@@ -1110,8 +1110,8 @@ public class SVGImage : Drawable {
 
     // Returns the font of a run: the one set, the bold one for a weight of 600
     // or more when it is set, or else the face of the fonts PDFjet carries of
-    // its family, weight and style. A face that is not among the resources,
-    // of a library built without them, is refused: nil, and the document
+    // its family, weight and style. A face that is neither in resources/fonts
+    // nor in the bundle of PDFjetFonts is refused: nil, and the document
     // records why, as no core font is drawn in its place.
     private func fontOf(_ run: SVGText.Run, _ pdf: PDF) -> Font? {
         if let font = font {
@@ -1121,8 +1121,8 @@ public class SVGImage : Drawable {
             return bundled
         }
         pdf.fail("The font " + BundledFonts.fileName(run.family, run.weight, run.italic)
-                + " is not in the library, which was built without the fonts of resources/fonts: "
-                + "build it with build-swift.sh, or set a font with setFont.")
+                + " is not in this program: " + BundledFonts.ADD_PDFJET_FONTS
+                + ", or set a font with setFont.")
         return nil
     }
 

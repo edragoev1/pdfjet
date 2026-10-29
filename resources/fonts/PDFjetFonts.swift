@@ -9,7 +9,13 @@ import Foundation
 /// The fonts PDFjet carries, the folders of resources/fonts, each family in a
 /// folder of its name with its license: the resources of this module, which
 /// SwiftPM copies as they are, so that the one copy of them in the repository
-/// serves Java, C#, Go and Swift alike. PDFjet reads them through it.
+/// serves Java, C#, Go and Swift alike. An app that wants the fonts built in,
+/// about 66 MB, adds the product PDFjetFonts to the dependencies of its
+/// target, .product(name: "PDFjetFonts", package: "pdfjet"); no code is
+/// needed, as PDFjet, which does not depend on this module, finds its bundle,
+/// PDFjet_PDFjetFonts, by its name. The bundle has the files of the family
+/// folders side by side, as .process puts them, and the license of IBM Plex
+/// once.
 public enum PDFjetFonts {
     /// Returns the URL of a font PDFjet carries, by its name under
     /// resources/fonts, Family/File, such as IBMPlexSans/IBMPlexSans-Regular.ttf,
@@ -21,7 +27,6 @@ public enum PDFjetFonts {
             return nil
         }
         let file = String(parts[1]) as NSString
-        return Bundle.module.url(forResource: file.deletingPathExtension,
-                withExtension: file.pathExtension, subdirectory: String(parts[0]))
+        return Bundle.module.url(forResource: file.deletingPathExtension, withExtension: file.pathExtension)
     }
 }

@@ -18,21 +18,21 @@ public struct IBMPlexSansJP {
 
     ///
     /// IBM Plex Sans JP ExtraLight, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let ExtraLight = "fonts/IBMPlexSansJP/IBMPlexSansJP-ExtraLight.ttf"
 
     ///
     /// IBM Plex Sans JP Light, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let Light      = "fonts/IBMPlexSansJP/IBMPlexSansJP-Light.ttf"
 
     ///
     /// IBM Plex Sans JP Medium, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let Medium     = "fonts/IBMPlexSansJP/IBMPlexSansJP-Medium.ttf"
@@ -44,14 +44,14 @@ public struct IBMPlexSansJP {
 
     ///
     /// IBM Plex Sans JP Text, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let Text       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Text.ttf"
 
     ///
     /// IBM Plex Sans JP Thin, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let Thin       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"

@@ -8,13 +8,21 @@ let package = Package(
     // executable targets that only this package builds.
     products: [
         .library(name: "PDFjet", targets: ["PDFjet"]),
+        // The fonts PDFjet carries, about 66 MB, for an app that wants them
+        // built in: .product(name: "PDFjetFonts", package: "pdfjet").
+        .library(name: "PDFjetFonts", targets: ["PDFjetFonts"]),
     ],
     targets: [
         // The fonts PDFjet carries, resources/fonts, each family in a folder
         // with its license: the one copy of them in the repository, which
         // the other ports read too. SwiftPM takes the resources of a target in
-        // its folder alone, so they are a target of their own, whose
-        // PDFjetFonts.swift finds them; fonts.go is the Go port's.
+        // its folder alone, so they are a target of their own, the product
+        // PDFjetFonts, which PDFjet does not depend on: it finds their bundle
+        // in an app that has it (29 October 2026). .process puts the files
+        // of the family folders in the bundle side by side, and leaves out
+        // what exclude names, as .copy of a folder does not: the .go files,
+        // the Go port's, and the license of IBM Plex but one, the same text
+        // in each IBM Plex folder.
         .target(
             name: "PDFjetFonts",
             path: "resources/fonts",
@@ -25,24 +33,33 @@ let package = Package(
                 "IBMPlexSansKR/ibmplexsanskr.go",
                 "IBMPlexSansSC/ibmplexsanssc.go",
                 "IBMPlexSansTC/ibmplexsanstc.go",
+                "IBMPlexMath/license.txt",
+                "IBMPlexSansArabic/license.txt",
+                "IBMPlexSansHebrew/license.txt",
+                "IBMPlexSansJP/license.txt",
+                "IBMPlexSansKR/license.txt",
+                "IBMPlexSansSC/license.txt",
+                "IBMPlexSansTC/license.txt",
+                "IBMPlexSansThai/license.txt",
+                "IBMPlexSerif/license.txt",
             ],
             sources: ["PDFjetFonts.swift"],
             resources: [
-                .copy("CascadiaMono"),
-                .copy("IBMPlexMath"),
-                .copy("IBMPlexSans"),
-                .copy("IBMPlexSansArabic"),
-                .copy("IBMPlexSansHebrew"),
-                .copy("IBMPlexSansJP"),
-                .copy("IBMPlexSansKR"),
-                .copy("IBMPlexSansSC"),
-                .copy("IBMPlexSansTC"),
-                .copy("IBMPlexSansThai"),
-                .copy("IBMPlexSerif"),
-                .copy("SourceSerif4"),
+                .process("CascadiaMono"),
+                .process("IBMPlexMath"),
+                .process("IBMPlexSans"),
+                .process("IBMPlexSansArabic"),
+                .process("IBMPlexSansHebrew"),
+                .process("IBMPlexSansJP"),
+                .process("IBMPlexSansKR"),
+                .process("IBMPlexSansSC"),
+                .process("IBMPlexSansTC"),
+                .process("IBMPlexSansThai"),
+                .process("IBMPlexSerif"),
+                .process("SourceSerif4"),
             ]
         ),
-        .target(name: "PDFjet", dependencies: ["PDFjetFonts"]),
+        .target(name: "PDFjet"),
         .executableTarget(name: "Example_01", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_02", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_03", dependencies: ["PDFjet"]),
@@ -98,7 +115,9 @@ let package = Package(
         .executableTarget(name: "CorpusSwift", dependencies: ["PDFjet"], path: "tests/corpus/swift"),
         // The Swift side of tests/crossport/check-crossport.sh.
         .executableTarget(name: "CrossPortSwift", dependencies: ["PDFjet"], path: "tests/crossport/swift"),
-        // The unit tests, run with ./test-swift.sh or swift test.
-        .testTarget(name: "PDFjetTests", dependencies: ["PDFjet"], path: "tests/swift"),
+        // The unit tests, run with ./test-swift.sh or swift test, which read
+        // the fonts from resources/fonts and from the bundle of PDFjetFonts.
+        // The examples run in the repository, and read resources/fonts.
+        .testTarget(name: "PDFjetTests", dependencies: ["PDFjet", "PDFjetFonts"], path: "tests/swift"),
     ]
 )

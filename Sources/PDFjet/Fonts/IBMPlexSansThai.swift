@@ -18,7 +18,7 @@ public struct IBMPlexSansThai {
 
     ///
     /// IBM Plex Sans Thai ExtraLight, which PDFjet does not carry
-    /// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+    /// from 9.1.7: a font file of its packages before, read when the file is there.
     ///
     @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
     public static let ExtraLight = "fonts/IBMPlexSansThai/IBMPlexSansThai-ExtraLight.ttf"
