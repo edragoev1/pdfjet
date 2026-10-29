@@ -1172,8 +1172,8 @@ public class SVGImage implements Drawable {
 
     // Returns the font of a run: the one set, the bold one for a weight of 600
     // or more when it is set, or else the face of the fonts PDFjet carries of
-    // its family, weight and style. A library built without them, which no
-    // build script makes, throws: the text is never drawn in a core font.
+    // its family, weight and style, from resources/fonts or the jar; when it
+    // is in neither, it throws: the text is never drawn in a core font.
     private Font fontOf(SVGText.Run run, PDF pdf) {
         if (font != null) {
             return (run.weight >= 600 && boldFont != null) ? boldFont : font;
@@ -1182,8 +1182,8 @@ public class SVGImage implements Drawable {
         if (bundled == null) {
             pdf.fail(new IllegalStateException("The font "
                     + BundledFonts.fileName(run.family, run.weight, run.italic)
-                    + " is not in the library, which was built without the fonts of resources/fonts: "
-                    + "build it with build-java.sh, or set a font with setFont."));
+                    + " is not one of the fonts PDFjet carries, in resources/fonts or in PDFjet.jar: "
+                    + "set a font with setFont."));
         }
         return bundled;
     }
