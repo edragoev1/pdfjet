@@ -7,11 +7,13 @@ package pdfjet
 
 import (
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -760,11 +762,14 @@ func TestANumberOfAnAttributeIsWrittenInDecimal(t *testing.T) {
 }
 
 // The text of a chart: text and tspan elements, placed as a browser places
-// them, in Helvetica unless a font is set.
+// them, in the fonts PDFjet carries unless a font is set.
 
 func TestSVGImageDrawsATextAtItsXAndY(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="200" height="100"><text x="10" y="20" font-size="12">Hi</text></svg>`)
-	if !strings.Contains(content, " 12 Tf\n1 0 0 1 10 772 Tm\n[<4869>] TJ\nET\n") {
+	if !strings.Contains(content, " 12 Tf\n1 0 0 1 10 772 Tm\n<") {
+		t.Errorf("content %q", content)
+	}
+	if !strings.Contains(content, "> Tj\nET\n") { // IBM Plex Sans, embedded
 		t.Errorf("content %q", content)
 	}
 	if strings.Contains(content, "W\n") { // Inside the image: nothing is cut off
@@ -773,10 +778,10 @@ func TestSVGImageDrawsATextAtItsXAndY(t *testing.T) {
 }
 
 func TestSVGImageAnAnchorMovesTheTextByItsWidthAndDyIsInEm(t *testing.T) {
-	// Hi is 944 thousandths of an em wide in Helvetica: 11.328 at 12.
+	// Hi is 957 thousandths of an em wide in IBM Plex Sans: 11.484 at 12.
 	content := testDrawSVG(t, `<svg width="200" height="100"><text x="100" y="20" dy="0.5em" `+
 		`font-size="12" text-anchor="end">Hi</text></svg>`)
-	if !strings.Contains(content, "1 0 0 1 88.67 766 Tm\n") {
+	if !strings.Contains(content, "1 0 0 1 88.52 766 Tm\n") {
 		t.Errorf("content %q", content)
 	}
 }
@@ -784,17 +789,17 @@ func TestSVGImageAnAnchorMovesTheTextByItsWidthAndDyIsInEm(t *testing.T) {
 func TestSVGImageTheTextAndTheTspansAreDrawnInTheOrderOfTheDocument(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="200" height="100"><text x="0" y="20">`+
 		` A <tspan font-weight="bold">B</tspan>C<title>not drawn</title></text></svg>`)
-	a := strings.Index(content, "[<4120>] TJ") // "A ": the space at the start is left out
-	b := strings.Index(content, "[<42>] TJ")
-	c := strings.Index(content, "[<43>] TJ")
-	if !(a > 0 && b > a && c > b) {
+	// Three runs: "A " (the space at the start left out), the bold B in IBM
+	// Plex Sans Bold, and C; the title is not drawn
+	if strings.Count(content, " Tj\n") != 3 {
 		t.Errorf("content %q", content)
 	}
-	if strings.Contains(content, "<6E6F74") {
-		t.Errorf("content %q", content)
+	fonts := strings.Split(content, " 16 Tf\n")
+	if len(fonts) != 4 {
+		t.Fatalf("content %q", content)
 	}
-	// The bold B in another font
-	if !strings.Contains(content, "/F2 16 Tf\n") || !strings.Contains(content, "/F3 16 Tf\n") {
+	regular := fonts[0][strings.LastIndex(fonts[0], "/"):]
+	if strings.HasSuffix(fonts[1], regular) || !strings.HasSuffix(fonts[2], regular) {
 		t.Errorf("content %q", content)
 	}
 }
@@ -803,8 +808,8 @@ func TestSVGImageATspanWithAnXOrAYStartsAChunkAnchoredOnItsOwn(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="200" height="100"><text text-anchor="middle" `+
 		`transform="translate(100,50)" font-size="10"><tspan y="-0.4em">Go</tspan>`+
 		`<tspan x="0" y="0.7em">12%</tspan></text></svg>`)
-	// Go is 1334 thousandths of an em, and 12% 2001.
-	if !strings.Contains(content, "1 0 0 1 93.33 746 Tm\n") || !strings.Contains(content, "1 0 0 1 90 735 Tm\n") {
+	// Go is 1255 thousandths of an em, and 12% 2127.
+	if !strings.Contains(content, "1 0 0 1 93.72 746 Tm\n") || !strings.Contains(content, "1 0 0 1 89.36 735 Tm\n") {
 		t.Errorf("content %q", content)
 	}
 }
@@ -821,9 +826,35 @@ func TestSVGImageTheFontShorthandSetsTheSizeAndTheWeight(t *testing.T) {
 }
 
 func TestSVGImageACoreFontDrawsTheMinusSignAsAHyphenMinus(t *testing.T) {
-	content := testDrawSVG(t, "<svg width=\"200\" height=\"100\"><text y=\"20\">−5</text></svg>")
-	if !strings.Contains(content, "[<2D35>] TJ") {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	testNewSVG(t, "<svg width=\"200\" height=\"100\"><text y=\"20\">−5</text></svg>").
+		SetFont(testHelvetica(pdf)).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "[<2D35>] TJ") {
 		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheFamilyTheWeightAndTheStyleChooseTheFontPDFjetCarries(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	testNewSVG(t, `<svg width="200" height="100">`+
+		`<text y="10" font-family="'Times New Roman', serif" font-weight="600" font-style="italic">a</text>`+
+		`<text y="20" style="font: bold 10px Courier, monospace">b</text>`+
+		`<text y="30" font-family="Unknown, Arial">c</text>`+
+		`<text y="40" font-family="Unknown" font-weight="bolder">d</text></svg>`).DrawOn(page)
+	// Another image draws in the same fonts of the document, not new ones
+	testNewSVG(t, `<svg width="200" height="100"><text y="10" font-family="Georgia" `+
+		`font-weight="600" font-style="oblique">e</text></svg>`).DrawOn(page)
+	names := make([]string, 0)
+	for name := range pdf.bundledFonts {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	want := []string{"IBMPlexSans-Bold.ttf", "IBMPlexSans-Regular.ttf",
+		"JetBrainsMono-Bold.ttf", "SourceSerif4-SemiBoldItalic.ttf"}
+	if strings.Join(names, " ") != strings.Join(want, " ") {
+		t.Errorf("the fonts %v", names)
 	}
 }
 
@@ -847,6 +878,21 @@ func TestSVGImageASetFontDrawsTheText(t *testing.T) {
 	content := testContent(page)
 	if !strings.Contains(content, "> Tj\n") || strings.Contains(content, "TJ") {
 		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheTextOfADocumentOfPDFAOrPDFUAIsInEmbeddedFonts(t *testing.T) {
+	// The fonts PDFjet carries are embedded, so the text needs no font set
+	svg := `<svg width="200" height="100"><text y="20">A</text></svg>`
+	for _, c := range []compliance.Compliance{compliance.PDF_A_3B, compliance.PDF_UA_1} {
+		pdf := testNewPDF()
+		pdf.SetCompliance(c)
+		pdf.SetTitle("SVG")
+		page := NewPage(pdf, letter.Portrait())
+		testNewSVG(t, svg).SetAltDescription("A").DrawOn(page)
+		if err := pdf.Complete(); err != nil {
+			t.Errorf("%v: %v", c, err)
+		}
 	}
 }
 

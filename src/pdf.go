@@ -48,6 +48,7 @@ type PDF struct {
 	groups                []*OptionalContentGroup
 	states                map[string]int
 	stamps                []*Stamp
+	bundledFonts          map[string]*Font // The fonts PDFjet carries that the document draws in, by their files
 	metadataObjNumber     int
 	outputIntentObjNumber int
 	compliance            compliance.Compliance

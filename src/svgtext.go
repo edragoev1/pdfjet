@@ -37,7 +37,9 @@ type svgTextRun struct {
 	x, y        float64 // Where the run starts, if it says, or NaN: a new chunk
 	dx, dy      float64 // How far it moves from where the run before it ends
 	fontSize    float32
-	bold        bool
+	weight      int // The font-weight, 400 normal and 700 bold
+	italic      bool
+	family      int // bundledSans, bundledSerif or bundledMono
 	anchor      int // 0 start, 1 middle, 2 end
 	baseline    int // 0 alphabetic, 1 middle, 2 hanging
 	fill        int32
@@ -87,11 +89,11 @@ func (text *svgText) collapseSpaces() {
 	}
 }
 
-// place places the runs, in the user space of the text element: each where
-// it says or after the run before it, and each chunk, the runs from one that
-// says where it starts to the next, moved by its width as its text-anchor
-// asks.
-func (text *svgText) place(regular, bold *Font) {
+// place places the runs, in the user space of the text element, in the fonts
+// they are given: each where it says or after the run before it, and each
+// chunk, the runs from one that says where it starts to the next, moved by
+// its width as its text-anchor asks.
+func (text *svgText) place() {
 	x := 0.0
 	y := 0.0
 	chunk := 0 // The first run of the chunk
@@ -108,10 +110,6 @@ func (text *svgText) place(regular, bold *Font) {
 		}
 		x += run.dx
 		y += run.dy
-		run.font = regular
-		if run.bold {
-			run.font = bold
-		}
 		run.width = run.font.StringWidth(run.fontSize, run.drawn())
 		run.px = float32(x)
 		run.py = float32(y)

@@ -47,7 +47,9 @@ type svgState struct {
 	dashOffset    float32
 	strokeFirst   bool    // paint-order: the stroke drawn before the fill
 	fontSize      float32 // In the user space; medium, as a browser has it
-	bold          bool    // A font-weight of bold, 600 or more
+	fontWeight    int     // normal 400, bold 700
+	italic        bool    // A font-style of italic or oblique
+	fontFamily    int     // The family of the bundled fonts its names stand for
 	textAnchor    int     // 0 start, 1 middle, 2 end
 	baseline      int     // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
 	markerStart   string  // The ids of the markers, inherited; "" for none
@@ -74,6 +76,8 @@ func newSVGState() svgState {
 		ownOpacity:    1.0,
 		matrix:        svgIdentity,
 		fontSize:      16.0,
+		fontWeight:    400,
+		fontFamily:    bundledSans,
 	}
 }
 
@@ -308,9 +312,17 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 			state.fontSize = size
 		}
 	case "font-weight":
-		if bold, ok := parseSVGFontWeight(value); ok {
-			state.bold = bold
+		if weight, ok := parseSVGFontWeight(value, state.fontWeight); ok {
+			state.fontWeight = weight
 		}
+	case "font-style":
+		if value == "italic" || strings.HasPrefix(value, "oblique") {
+			state.italic = true
+		} else if value == "normal" {
+			state.italic = false
+		}
+	case "font-family":
+		state.fontFamily = bundledFamilyOf(value)
 	case "font":
 		state.setFont(value)
 	case "text-anchor":
@@ -453,43 +465,81 @@ func parseSVGFactor(text string) (float32, bool) {
 	return float32(number), true
 }
 
-// parseSVGFontWeight reads a font-weight: bold is true for bold, bolder and
-// 600 or more, false for normal, lighter and less; ok is false for a weight
-// it cannot read.
-func parseSVGFontWeight(value string) (bold, ok bool) {
+// parseSVGFontWeight reads a font-weight, from 1 to 1000: normal is 400 and
+// bold 700, and bolder and lighter are those of CSS, from the weight of the
+// parent. ok is false for a weight it cannot read.
+func parseSVGFontWeight(value string, parentWeight int) (int, bool) {
 	switch value {
-	case "bold", "bolder":
-		return true, true
-	case "normal", "lighter":
-		return false, true
+	case "normal":
+		return 400, true
+	case "bold":
+		return 700, true
+	case "bolder":
+		if parentWeight < 350 {
+			return 400, true
+		} else if parentWeight < 550 {
+			return 700, true
+		}
+		return 900, true
+	case "lighter":
+		if parentWeight < 550 {
+			return 100, true
+		} else if parentWeight < 750 {
+			return 400, true
+		}
+		return 700, true
 	}
 	weight, ok := parseSVGFactor(value)
 	if !ok || weight < 1.0 || weight > 1000.0 {
-		return false, false
+		return 0, false
 	}
-	return weight >= 600.0, true
+	return int(math.Floor(float64(weight) + 0.5)), true // As Java's Math.round
 }
 
-// setFont sets the size and the weight of the font shorthand, such as "bold
-// 10px sans-serif": the words before the size, then the size, which may have
-// a line height after a slash. A shorthand without a weight is normal.
+// setFont sets the size, the weight, the style and the family of the font
+// shorthand, such as "bold 10px sans-serif": the words before the size, then
+// the size, which may have a line height after a slash, then the family. A
+// shorthand without a weight is normal.
 func (state *svgState) setFont(value string) {
-	bold := false
-	for _, field := range strings.Fields(value) {
+	weight := 400
+	italic := false
+	fields := strings.Fields(value)
+	for i, field := range fields {
 		size := field
-		if slash := strings.Index(field, "/"); slash >= 0 {
+		slash := strings.Index(field, "/")
+		if slash >= 0 {
 			size = field[:slash]
 		}
 		// A size has a unit or is a keyword; a number alone is a weight.
 		if size != "" && (size[len(size)-1] < '0' || size[len(size)-1] > '9') {
 			if fontSize, ok := parseSVGFontSize(size, state.fontSize); ok {
 				state.fontSize = fontSize
-				state.bold = bold
+				state.fontWeight = weight
+				state.italic = italic
+				// The family after the size, and a line height after a
+				// slash written apart from it
+				from := i + 1
+				if slash < 0 && from < len(fields) && strings.HasPrefix(fields[from], "/") {
+					if fields[from] == "/" {
+						from += 2
+					} else {
+						from++
+					}
+				}
+				family := ""
+				if from < len(fields) {
+					family = strings.Join(fields[from:], " ")
+				}
+				state.fontFamily = bundledFamilyOf(family)
 				return
 			}
 		}
-		if weight, ok := parseSVGFontWeight(field); ok {
-			bold = weight
+		if field == "italic" || field == "oblique" {
+			italic = true
+			continue
+		}
+		if w, ok := parseSVGFontWeight(field, state.fontWeight); ok {
+			weight = w
 		}
 	}
 }

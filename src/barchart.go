@@ -1089,16 +1089,28 @@ func barChartText(page *Page, font *Font, text string, x, y float32, c int32) {
 	page.drawString(font, font.size, text, x, y, colorToRGB(c), nil)
 }
 
+// barChartDark is the label on a color that neither white nor ink contrasts
+// with as WCAG asks, 4.5:1: the red, the purple and the brown of the palette.
+const barChartDark int32 = 0x111111
+
 // labelColorOn returns the color of a label on a bar of the color: white or
-// ink, whichever contrasts more with it, by the WCAG contrast ratio.
+// ink, whichever contrasts more with it, by the WCAG contrast ratio, or a near
+// black when that is less than 4.5:1.
 func labelColorOn(c int32) int32 {
 	// White contrasts more when (1 + 0.05) / (L + 0.05) is the larger of the
 	// two ratios, (L + 0.05) / (ink + 0.05) the other
 	l := luminance(c) + 0.05
-	if float64(l*l) <= float64(1.05*(luminance(barChartInk)+0.05)) {
-		return color.White
+	ink := luminance(barChartInk) + 0.05
+	if float64(l*l) <= float64(1.05*ink) {
+		if 1.05/l >= 4.5 {
+			return color.White
+		}
+		return barChartDark
 	}
-	return barChartInk
+	if l/ink >= 4.5 {
+		return barChartInk
+	}
+	return barChartDark
 }
 
 // luminance returns the relative luminance of the color, as WCAG defines it.

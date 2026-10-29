@@ -152,11 +152,16 @@ func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 		t.Errorf("the subtitle is drawn with %q", got)
 	}
 	// A label on a dark bar is white, on a light one ink: whichever contrasts
-	// more. On sage and on the old sage, which a rule by brightness gave
-	// white, ink contrasts more; on slate white.
+	// more. On sage, which a rule by brightness gave white, ink contrasts
+	// more; on slate white. Where neither contrasts 4.5:1, as on the old
+	// sage, ink 4.26:1, and on the red, the purple and the brown of the
+	// palette, a near black does.
 	for c, want := range map[int32]int32{
 		0x1F3A5F: color.White, 0x6F95C2: 0x22262B, 0x76987C: 0x22262B,
-		0x6B8F71: 0x22262B, 0x4F7A8C: color.White,
+		0x4F7A8C: color.White,
+		0x4E79A7: color.White, // blue
+		0xF28E2C: 0x22262B,    // orange
+		0x6B8F71: 0x111111, 0xE15759: 0x111111, 0xAF7AA1: 0x111111, 0x9C755F: 0x111111,
 	} {
 		if got := labelColorOn(c); got != want {
 			t.Errorf("the label on %06X is %06X", c, got)
@@ -180,7 +185,8 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 			t.Errorf("%q missing from %q", want, content)
 		}
 	}
-	if got := testFillColorBefore(content, "6,650"); got != "1 1 1 rg" {
+	// Inside the red bar, on which white contrasts 4:1
+	if got := testFillColorBefore(content, "6,650"); got != "0.07 0.07 0.07 rg" {
 		t.Errorf("the label inside the first bar is drawn with %q", got)
 	}
 	if got := testFillColorBefore(content, "sub"); got != "0.37 0.41 0.45 rg" {

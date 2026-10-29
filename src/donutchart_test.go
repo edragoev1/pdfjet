@@ -79,7 +79,8 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 	if got := testFillColorBefore(content, "Apples"); got != "0.13 0.15 0.17 rg" {
 		t.Errorf("the label is drawn with %q", got)
 	}
-	if got := testFillColorBefore(content, "25%"); got != "1 1 1 rg" {
+	// On red, which white contrasts 4:1
+	if got := testFillColorBefore(content, "25%"); got != "0.07 0.07 0.07 rg" {
 		t.Errorf("the percentage is drawn with %q", got)
 	}
 	testDonutChart(pdf).SetRadii(100, 0).AddWithColor("", 1, color.Red).DrawOn(page)

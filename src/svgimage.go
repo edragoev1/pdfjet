@@ -21,7 +21,6 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
@@ -42,12 +41,6 @@ type SVGImage struct {
 	font                *Font
 	boldFont            *Font
 	clipShapes          []*svgPath // The clip paths of the image
-
-	// The core fonts the text is drawn in unless a font is set, one of each
-	// for a document, made when a text is first drawn in it.
-	corePDF       *PDF
-	helvetica     *Font
-	helveticaBold *Font
 }
 
 // maxSVGReused is the most elements drawn again, by use elements and as
@@ -97,10 +90,14 @@ var svgTemplates = map[string]bool{
 // comes before them. It draws the elements a <use> element names, and <text>
 // and <tspan> elements with their x, y, dx, dy, font-size, font-weight,
 // text-anchor and dominant-baseline, in the font set with SetFont and
-// SetBoldFont, or in Helvetica. A gradient is drawn in the mean color of its
-// stops. The width, height, viewBox and preserveAspectRatio of the <svg>
-// element give the size of the image, and what is drawn outside it is cut
-// off, as a browser does.
+// SetBoldFont, or else in the fonts PDFjet carries, those of PDFjet Forms,
+// embedded: IBM Plex Sans for sans-serif, Helvetica, Arial and the like,
+// Source Serif 4 for serif, Times and the like, JetBrains Mono for monospace,
+// Courier and the like, regular, semibold or bold, upright or italic, as the
+// font-family, font-weight and font-style of the text ask. A gradient is
+// drawn in the mean color of its stops. The width, height, viewBox and
+// preserveAspectRatio of the <svg> element give the size of the image, and
+// what is drawn outside it is cut off, as a browser does.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
 	image.paths = make([]*svgPath, 0)
@@ -893,7 +890,9 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				dx:          pending[2],
 				dy:          pending[3],
 				fontSize:    state.fontSize,
-				bold:        state.bold,
+				weight:      state.fontWeight,
+				italic:      state.italic,
+				family:      state.fontFamily,
 				anchor:      state.textAnchor,
 				baseline:    state.baseline,
 				fill:        state.fill,
@@ -1203,41 +1202,33 @@ func (image *SVGImage) SetLanguage(language string) *SVGImage {
 	return image
 }
 
-// SetFont sets the font of the text of the image. Unless set, the text is
-// drawn in Helvetica, which is not embedded and has the characters of Western
-// European languages only; a document of PDF/A or PDF/UA needs a font that is
-// embedded.
+// SetFont sets the font of the text of the image, in place of the fonts
+// PDFjet carries: for the text of a language they do not have, such as
+// Chinese, or for a font of one's own.
 func (image *SVGImage) SetFont(font *Font) *SVGImage {
 	image.font = font
 	return image
 }
 
 // SetBoldFont sets the font of the bold text of the image, whose font-weight
-// is bold or 600 or more. Unless set, it is the font set with SetFont, or
-// Helvetica Bold when neither is set.
+// is bold or 600 or more, when a font is set with SetFont; unless set, that
+// font draws the bold text too.
 func (image *SVGImage) SetBoldFont(font *Font) *SVGImage {
 	image.boldFont = font
 	return image
 }
 
-// coreFont returns Helvetica, or Helvetica Bold when bold is true, made once
-// for the document.
-func (image *SVGImage) coreFont(pdf *PDF, bold bool) *Font {
-	if image.corePDF != pdf {
-		image.corePDF = pdf
-		image.helvetica = nil
-		image.helveticaBold = nil
-	}
-	if !bold {
-		if image.helvetica == nil {
-			image.helvetica = NewCoreFont(pdf, corefont.Helvetica())
+// fontOf returns the font of a run: the one set, the bold one for a weight of
+// 600 or more when it is set, or else the face of the fonts PDFjet carries of
+// its family, weight and style, which the Go port always has, embedded in it.
+func (image *SVGImage) fontOf(run *svgTextRun, pdf *PDF) *Font {
+	if image.font != nil {
+		if run.weight >= 600 && image.boldFont != nil {
+			return image.boldFont
 		}
-		return image.helvetica
+		return image.font
 	}
-	if image.helveticaBold == nil {
-		image.helveticaBold = NewCoreFont(pdf, corefont.HelveticaBold())
-	}
-	return image.helveticaBold
+	return bundledFont(pdf, run.family, run.weight, run.italic)
 }
 
 // GetWidth returns the width of this svgParser image.
@@ -1504,20 +1495,12 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 		link = page.beginLink()
 	}
 	page.AddBDC(structelem.Figure, image.language, image.actualText, image.altDescription)
-	regular := image.font
-	bold := image.boldFont
 	for _, path := range image.paths {
 		if path.text != nil {
-			if regular == nil {
-				regular = image.coreFont(page.pdf, false)
+			for _, run := range path.text.runs {
+				run.font = image.fontOf(run, page.pdf)
 			}
-			if bold == nil {
-				bold = image.font
-				if bold == nil {
-					bold = image.coreFont(page.pdf, true)
-				}
-			}
-			path.text.place(regular, bold)
+			path.text.place()
 		}
 	}
 	clip := image.overflows(page)
