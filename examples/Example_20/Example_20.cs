@@ -90,14 +90,17 @@ public class Example_20 {
         }
         byMake.SetLocation(50f, y).SetWidth(248f).DrawOn(page);
 
+        // The chart highlights the busiest year itself, and marks the
+        // average, in whole cars, with a dashed line; its bars are rounded
         SimpleBarChart byYear = new SimpleBarChart(f1, f2)
-                .SetTitle("By model year").SetSubtitle("cars");
-        int busiest = 0;
+                .SetTitle("By model year").SetSubtitle("cars")
+                .SetHighlightHighest().SetRoundedBars(true);
+        int allYears = 0;
         for (int i = 0; i < years.Length; i++) {
             byYear.Add((FIRST_YEAR + i).ToString(CultureInfo.InvariantCulture), years[i]);
-            busiest = (years[i] > years[busiest]) ? i : busiest;
+            allYears += years[i];
         }
-        byYear.SetHighlight(busiest);
+        byYear.SetReferenceLine(allYears / years.Length, "Average");
         byYear.SetLocation(314f, y).SetWidth(248f).DrawOn(page);
         y += Math.Max(byMake.GetHeight(), byYear.GetHeight()) + 30f;
 

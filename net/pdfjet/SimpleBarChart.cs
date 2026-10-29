@@ -13,8 +13,11 @@ namespace PDFjet.NET {
 /// A small chart of horizontal bars that compares a few values: a name at the
 /// left of each bar, the value at its end, and no axis, grid or legend, on a
 /// light panel, with a title and a subtitle at the top. One bar can be
-/// highlighted, in navy, its name and value bold, as the best of the values.
-/// Each bar is as long as its share of the largest value.
+/// highlighted, in navy, its name and value bold, as the best of the values:
+/// the bar of an index, or the lowest or the highest value, which the chart
+/// finds. Each bar is as long as its share of the largest value. A dashed line
+/// can mark a value across the bars, a target or an average, and the bars can
+/// have rounded ends.
 ///
 /// It is meant to stand beside a Table of the same numbers: the chart for the
 /// picture, the table for the record and for a screen reader. In a PDF/UA
@@ -42,6 +45,12 @@ public class SimpleBarChart : IDrawable {
     private readonly List<String> names = new List<String>();
     private readonly List<float> values = new List<float>();
     private int highlight = -1;     // The index of the highlighted bar, or -1
+    // The bar the chart highlights itself: 0 none, -1 the lowest value, 1 the
+    // highest
+    private int highlightValue = 0;
+    private float reference = float.NaN;    // The value of the reference line, or NaN
+    private String referenceLabel = "";
+    private bool roundedBars = false;
     private int minFractionDigits = 0;
     private int maxFractionDigits = 2;
     private int panelColor = PANEL;
@@ -111,7 +120,85 @@ public class SimpleBarChart : IDrawable {
     /// <returns>this chart.</returns>
     public SimpleBarChart SetHighlight(int index) {
         this.highlight = index;
+        this.highlightValue = 0;
         return this;
+    }
+
+    /// <summary>
+    /// Highlights the bar of the lowest value, the best of times or prices;
+    /// the first of them when two are lowest. Bars added later count too, as
+    /// the chart finds the bar when it is drawn.
+    /// </summary>
+    /// <returns>this chart.</returns>
+    public SimpleBarChart SetHighlightLowest() {
+        this.highlightValue = -1;
+        return this;
+    }
+
+    /// <summary>
+    /// Highlights the bar of the highest value, the best of sales or scores;
+    /// the first of them when two are highest. Bars added later count too, as
+    /// the chart finds the bar when it is drawn.
+    /// </summary>
+    /// <returns>this chart.</returns>
+    public SimpleBarChart SetHighlightHighest() {
+        this.highlightValue = 1;
+        return this;
+    }
+
+    /// <summary>
+    /// Draws a thin dashed line across the bars at a value, a target or an
+    /// average, with its label and value under the bars: "Target 50". The
+    /// bars are scaled so that the line fits, should it be past the largest
+    /// value. A value that is NaN or infinite draws no line.
+    /// </summary>
+    /// <param name="value">the value of the line.</param>
+    /// <param name="label">the label written before the value, or "".</param>
+    /// <returns>this chart.</returns>
+    public SimpleBarChart SetReferenceLine(float value, String label) {
+        this.reference = value;
+        this.referenceLabel = label ?? "";
+        return this;
+    }
+
+    /// <summary>
+    /// Draws the bars with slightly rounded ends. They are square unless set.
+    /// </summary>
+    /// <param name="roundedBars">true for rounded ends.</param>
+    /// <returns>this chart.</returns>
+    public SimpleBarChart SetRoundedBars(bool roundedBars) {
+        this.roundedBars = roundedBars;
+        return this;
+    }
+
+    // The index of the highlighted bar: the one set, or the one of the lowest
+    // or highest value, or -1.
+    internal int Highlighted() {
+        if (highlightValue == 0) {
+            return highlight;
+        }
+        int best = -1;
+        for (int i = 0; i < values.Count; i++) {
+            float value = values[i];
+            if (!ChartScale.IsValue(value)) {
+                continue;
+            }
+            if (best < 0 || (highlightValue < 0 ? value < values[best] : value > values[best])) {
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    // True when a reference line is drawn.
+    private bool HasReference() {
+        return ChartScale.IsValue(reference);
+    }
+
+    // The text under the reference line: its label and its value, "Target 50",
+    // or its value alone.
+    internal String ReferenceText() {
+        return referenceLabel.Length == 0 ? Label(reference) : referenceLabel + " " + Label(reference);
     }
 
     /// <summary>
@@ -194,7 +281,11 @@ public class SimpleBarChart : IDrawable {
         if (f1 == null || f2 == null) {
             return 0f;      // Without its fonts the chart draws nothing
         }
-        return Top() + values.Count * RowHeight() + Pad();
+        float h = Top() + values.Count * RowHeight() + Pad();
+        if (HasReference()) {
+            h += 1.4f * SubtitleSize();     // The line's label under the bars
+        }
+        return h;
     }
 
     // The space around the chart's content, a size of the text of the bars.
@@ -238,7 +329,7 @@ public class SimpleBarChart : IDrawable {
 
     // The font of the name and the value of the bar of the index.
     private Font FontOf(int index) {
-        return index == highlight ? f1 : f2;
+        return index == Highlighted() ? f1 : f2;
     }
 
     // The alternate description: the one set, or the title, the subtitle and
@@ -258,6 +349,9 @@ public class SimpleBarChart : IDrawable {
             }
             sb.Append(separator).Append(names[i]).Append(' ').Append(Label(values[i]));
             separator = ", ";
+        }
+        if (HasReference()) {
+            sb.Append("; ").Append(referenceLabel.Length == 0 ? "reference line at " + Label(reference) : ReferenceText());
         }
         return sb.Append(PunctuationAfter(sb, ".")).ToString();
     }
@@ -299,6 +393,9 @@ public class SimpleBarChart : IDrawable {
                 largest = Math.Max(largest, values[i]);
             }
         }
+        if (HasReference()) {
+            largest = Math.Max(largest, reference);     // The line within the bars' room
+        }
         // The names in what the values leave of the width, two fifths of it at
         // most: in a chart narrower than its values they were written past it
         float nameRoom = Math.Max(Math.Min(0.4f * (w - 2f * pad), w - 3f * pad - valueWidth - size / 2f), 0f);
@@ -334,6 +431,7 @@ public class SimpleBarChart : IDrawable {
         float rowTop = y + Top();
         float barHeight = 1.6f * size;
         float ascent = f2.GetAscent(size);
+        int highlight = Highlighted();
         for (int i = 0; i < names.Count; i++) {
             Font font = FontOf(i);
             float value = values[i];
@@ -348,10 +446,52 @@ public class SimpleBarChart : IDrawable {
             }
             if (length > 0f) {
                 page.SetBrushColor(highlighted ? highlightColor : barColor);
-                page.FillRect(barX, top, Math.Max(length, 1.5f), barHeight);
+                float barW = Math.Max(length, 1.5f);
+                // The radius a fifth of the bar's height, or half a short bar
+                float r = Math.Min(barHeight / 5f, barW / 2f);
+                if (roundedBars && r > 0.25f) {
+                    page.FillRoundedRect(barX, top, barW, barHeight, r, r);
+                } else {
+                    page.FillRect(barX, top, barW, barHeight);
+                }
             }
             page.DrawString(font, size, Label(value), barX + length + size / 2f, textBaseline,
                     Util.ToRGB(highlighted ? INK : MUTED), null);
+        }
+
+        // The reference line, dashed, over the bars, from a little above the
+        // first to a little below the last, and its label under it. It leaves
+        // out the rows where it would cross a bar's value.
+        if (HasReference() && largest > 0f && reference >= 0f) {
+            float lineX = barX + barRoom * (reference / largest);
+            float lineBottom = rowTop + (names.Count - 1) * RowHeight() + barHeight + size / 4f;
+            page.SetPenColor(INK);
+            page.SetPenWidth(0.75f);
+            page.SetStrokeDashPattern("[2 2] 0");
+            float from = rowTop - size / 4f;
+            for (int i = 0; i < names.Count; i++) {
+                float value = values[i];
+                float length = (ChartScale.IsValue(value) && value > 0f) ? barRoom * (value / largest) : 0f;
+                float labelX = barX + length + size / 2f;
+                float labelW = FontOf(i).StringWidth(size, Label(value));
+                if (labelW > 0f && lineX > labelX - size / 2f && lineX < labelX + labelW + size / 2f) {
+                    float top = rowTop + i * RowHeight();
+                    if (top > from) {
+                        page.DrawLine(lineX, from, lineX, top);
+                    }
+                    from = top + barHeight;
+                }
+            }
+            if (lineBottom > from) {
+                page.DrawLine(lineX, from, lineX, lineBottom);
+            }
+            page.SetDefaultStrokeDashPattern();
+            String text = ReferenceText();
+            float width = f2.StringWidth(SubtitleSize(), text);
+            // Centered under the line, within the chart
+            float textX = Math.Max(x + pad, Math.Min(lineX - width / 2f, x + w - pad - width));
+            page.DrawString(f2, SubtitleSize(), text, textX, lineBottom + 1.2f * SubtitleSize(),
+                    Util.ToRGB(INK), null);
         }
 
         page.RestoreGraphicsState();

@@ -12,8 +12,11 @@ import java.util.*;
  * A small chart of horizontal bars that compares a few values: a name at the
  * left of each bar, the value at its end, and no axis, grid or legend, on a
  * light panel, with a title and a subtitle at the top. One bar can be
- * highlighted, in navy, its name and value bold, as the best of the values.
- * Each bar is as long as its share of the largest value.
+ * highlighted, in navy, its name and value bold, as the best of the values:
+ * the bar of an index, or the lowest or the highest value, which the chart
+ * finds. Each bar is as long as its share of the largest value. A dashed line
+ * can mark a value across the bars, a target or an average, and the bars can
+ * have rounded ends.
  * <p>
  * It is meant to stand beside a Table of the same numbers: the chart for the
  * picture, the table for the record and for a screen reader. In a PDF/UA
@@ -41,6 +44,12 @@ public class SimpleBarChart implements Drawable {
     private final List<String> names = new ArrayList<String>();
     private final List<Float> values = new ArrayList<Float>();
     private int highlight = -1;     // The index of the highlighted bar, or -1
+    // The bar the chart highlights itself: 0 none, -1 the lowest value, 1 the
+    // highest
+    private int highlightValue = 0;
+    private float reference = Float.NaN;    // The value of the reference line, or NaN
+    private String referenceLabel = "";
+    private boolean roundedBars = false;
     private int minFractionDigits = 0;
     private int maxFractionDigits = 2;
     private int panelColor = PANEL;
@@ -121,7 +130,89 @@ public class SimpleBarChart implements Drawable {
      */
     public SimpleBarChart setHighlight(int index) {
         this.highlight = index;
+        this.highlightValue = 0;
         return this;
+    }
+
+    /**
+     * Highlights the bar of the lowest value, the best of times or prices; the
+     * first of them when two are lowest. Bars added later count too, as the
+     * chart finds the bar when it is drawn.
+     *
+     * @return this chart.
+     */
+    public SimpleBarChart setHighlightLowest() {
+        this.highlightValue = -1;
+        return this;
+    }
+
+    /**
+     * Highlights the bar of the highest value, the best of sales or scores;
+     * the first of them when two are highest. Bars added later count too, as
+     * the chart finds the bar when it is drawn.
+     *
+     * @return this chart.
+     */
+    public SimpleBarChart setHighlightHighest() {
+        this.highlightValue = 1;
+        return this;
+    }
+
+    /**
+     * Draws a thin dashed line across the bars at a value, a target or an
+     * average, with its label and value under the bars: "Target 50". The bars
+     * are scaled so that the line fits, should it be past the largest value.
+     * A value that is NaN or infinite draws no line.
+     *
+     * @param value the value of the line.
+     * @param label the label written before the value, or "".
+     * @return this chart.
+     */
+    public SimpleBarChart setReferenceLine(float value, String label) {
+        this.reference = value;
+        this.referenceLabel = (label == null) ? "" : label;
+        return this;
+    }
+
+    /**
+     * Draws the bars with slightly rounded ends. They are square unless set.
+     *
+     * @param roundedBars true for rounded ends.
+     * @return this chart.
+     */
+    public SimpleBarChart setRoundedBars(boolean roundedBars) {
+        this.roundedBars = roundedBars;
+        return this;
+    }
+
+    // The index of the highlighted bar: the one set, or the one of the lowest
+    // or highest value, or -1.
+    int highlighted() {
+        if (highlightValue == 0) {
+            return highlight;
+        }
+        int best = -1;
+        for (int i = 0; i < values.size(); i++) {
+            float value = values.get(i);
+            if (!ChartScale.isValue(value)) {
+                continue;
+            }
+            if (best < 0 || (highlightValue < 0 ? value < values.get(best) : value > values.get(best))) {
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    // True when a reference line is drawn.
+    private boolean hasReference() {
+        return ChartScale.isValue(reference);
+    }
+
+    // The text under the reference line: its label and its value, "Target 50",
+    // or its value alone.
+    String referenceText() {
+        return referenceLabel.isEmpty() ? label(reference) : referenceLabel + " " + label(reference);
     }
 
     /**
@@ -209,7 +300,11 @@ public class SimpleBarChart implements Drawable {
         if (f1 == null || f2 == null) {
             return 0f;      // Without its fonts the chart draws nothing
         }
-        return top() + values.size() * rowHeight() + pad();
+        float h = top() + values.size() * rowHeight() + pad();
+        if (hasReference()) {
+            h += 1.4f * subtitleSize();     // The line's label under the bars
+        }
+        return h;
     }
 
     // The space around the chart's content, a size of the text of the bars.
@@ -253,7 +348,7 @@ public class SimpleBarChart implements Drawable {
 
     // The font of the name and the value of the bar of the index.
     private Font fontOf(int index) {
-        return index == highlight ? f1 : f2;
+        return index == highlighted() ? f1 : f2;
     }
 
     // The alternate description: the one set, or the title, the subtitle and
@@ -273,6 +368,9 @@ public class SimpleBarChart implements Drawable {
             }
             sb.append(separator).append(names.get(i)).append(' ').append(label(values.get(i)));
             separator = ", ";
+        }
+        if (hasReference()) {
+            sb.append("; ").append(referenceLabel.isEmpty() ? "reference line at " + label(reference) : referenceText());
         }
         return sb.append(punctuationAfter(sb, ".")).toString();
     }
@@ -318,6 +416,9 @@ public class SimpleBarChart implements Drawable {
                 largest = Math.max(largest, values.get(i));
             }
         }
+        if (hasReference()) {
+            largest = Math.max(largest, reference);     // The line within the bars' room
+        }
         // The names in what the values leave of the width, two fifths of it at
         // most: in a chart narrower than its values they were written past it
         float nameRoom = Math.max(Math.min(0.4f * (w - 2f * pad), w - 3f * pad - valueWidth - size / 2f), 0f);
@@ -353,6 +454,7 @@ public class SimpleBarChart implements Drawable {
         float rowTop = y + top();
         float barHeight = 1.6f * size;
         float ascent = f2.getAscent(size);
+        int highlight = highlighted();
         for (int i = 0; i < names.size(); i++) {
             Font font = fontOf(i);
             float value = values.get(i);
@@ -367,10 +469,52 @@ public class SimpleBarChart implements Drawable {
             }
             if (length > 0f) {
                 page.setBrushColor(highlighted ? highlightColor : barColor);
-                page.fillRect(barX, top, Math.max(length, 1.5f), barHeight);
+                float barW = Math.max(length, 1.5f);
+                // The radius a fifth of the bar's height, or half a short bar
+                float r = Math.min(barHeight / 5f, barW / 2f);
+                if (roundedBars && r > 0.25f) {
+                    page.fillRoundedRect(barX, top, barW, barHeight, r, r);
+                } else {
+                    page.fillRect(barX, top, barW, barHeight);
+                }
             }
             page.drawString(font, size, label(value), barX + length + size / 2f, textBaseline,
                     Util.toRGB(highlighted ? INK : MUTED), null);
+        }
+
+        // The reference line, dashed, over the bars, from a little above the
+        // first to a little below the last, and its label under it. It leaves
+        // out the rows where it would cross a bar's value.
+        if (hasReference() && largest > 0f && reference >= 0f) {
+            float lineX = barX + barRoom * (reference / largest);
+            float lineBottom = rowTop + (names.size() - 1) * rowHeight() + barHeight + size / 4f;
+            page.setPenColor(INK);
+            page.setPenWidth(0.75f);
+            page.setStrokeDashPattern("[2 2] 0");
+            float from = rowTop - size / 4f;
+            for (int i = 0; i < names.size(); i++) {
+                float value = values.get(i);
+                float length = (ChartScale.isValue(value) && value > 0f) ? barRoom * (value / largest) : 0f;
+                float labelX = barX + length + size / 2f;
+                float labelW = fontOf(i).stringWidth(size, label(value));
+                if (labelW > 0f && lineX > labelX - size / 2f && lineX < labelX + labelW + size / 2f) {
+                    float top = rowTop + i * rowHeight();
+                    if (top > from) {
+                        page.drawLine(lineX, from, lineX, top);
+                    }
+                    from = top + barHeight;
+                }
+            }
+            if (lineBottom > from) {
+                page.drawLine(lineX, from, lineX, lineBottom);
+            }
+            page.setDefaultStrokeDashPattern();
+            String text = referenceText();
+            float width = f2.stringWidth(subtitleSize(), text);
+            // Centered under the line, within the chart
+            float textX = Math.max(x + pad, Math.min(lineX - width / 2f, x + w - pad - width));
+            page.drawString(f2, subtitleSize(), text, textX, lineBottom + 1.2f * subtitleSize(),
+                    Util.toRGB(INK), null);
         }
 
         page.restoreGraphicsState();

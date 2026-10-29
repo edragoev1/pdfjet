@@ -12,6 +12,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"math"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
@@ -31,7 +32,10 @@ const (
 // values: a name at the left of each bar, the value at its end, and no axis,
 // grid or legend, on a light panel, with a title and a subtitle at the top.
 // One bar can be highlighted, in navy, its name and value bold, as the best
-// of the values. Each bar is as long as its share of the largest value.
+// of the values: the bar of an index, or the lowest or the highest value,
+// which the chart finds. Each bar is as long as its share of the largest
+// value. A dashed line can mark a value across the bars, a target or an
+// average, and the bars can have rounded ends.
 //
 // It is meant to stand beside a Table of the same numbers: the chart for the
 // picture, the table for the record and for a screen reader. In a PDF/UA
@@ -45,7 +49,11 @@ type SimpleBarChart struct {
 	altDescription    string
 	names             []string
 	values            []float32
-	highlight         int // the index of the highlighted bar, or -1
+	highlight         int     // the index of the highlighted bar, or -1
+	highlightValue    int     // the bar the chart highlights itself: 0 none, -1 the lowest value, 1 the highest
+	reference         float32 // the value of the reference line, or NaN
+	referenceLabel    string
+	roundedBars       bool
 	minFractionDigits int
 	maxFractionDigits int
 	panelColor        int32
@@ -59,7 +67,7 @@ type SimpleBarChart struct {
 //   - f2: the font of the subtitle and of the other names and values.
 func NewSimpleBarChart(f1, f2 *Font) *SimpleBarChart {
 	return &SimpleBarChart{
-		f1: f1, f2: f2, w: 300, highlight: -1, maxFractionDigits: 2,
+		f1: f1, f2: f2, w: 300, highlight: -1, maxFractionDigits: 2, reference: float32(math.NaN()),
 		panelColor: simpleBarPanel, barColor: simpleBarBar, highlightColor: simpleBarHighlight,
 	}
 }
@@ -99,7 +107,74 @@ func (chart *SimpleBarChart) Add(name string, value float32) *SimpleBarChart {
 // the best, the lowest value or the highest, is the caller's to say.
 func (chart *SimpleBarChart) SetHighlight(index int) *SimpleBarChart {
 	chart.highlight = index
+	chart.highlightValue = 0
 	return chart
+}
+
+// SetHighlightLowest highlights the bar of the lowest value, the best of times
+// or prices; the first of them when two are lowest. Bars added later count
+// too, as the chart finds the bar when it is drawn.
+func (chart *SimpleBarChart) SetHighlightLowest() *SimpleBarChart {
+	chart.highlightValue = -1
+	return chart
+}
+
+// SetHighlightHighest highlights the bar of the highest value, the best of
+// sales or scores; the first of them when two are highest. Bars added later
+// count too, as the chart finds the bar when it is drawn.
+func (chart *SimpleBarChart) SetHighlightHighest() *SimpleBarChart {
+	chart.highlightValue = 1
+	return chart
+}
+
+// SetReferenceLine draws a thin dashed line across the bars at a value, a
+// target or an average, with its label and value under the bars: "Target 50".
+// The bars are scaled so that the line fits, should it be past the largest
+// value. A value that is NaN or infinite draws no line.
+func (chart *SimpleBarChart) SetReferenceLine(value float32, label string) *SimpleBarChart {
+	chart.reference = value
+	chart.referenceLabel = label
+	return chart
+}
+
+// SetRoundedBars draws the bars with slightly rounded ends. They are square
+// unless set.
+func (chart *SimpleBarChart) SetRoundedBars(roundedBars bool) *SimpleBarChart {
+	chart.roundedBars = roundedBars
+	return chart
+}
+
+// The index of the highlighted bar: the one set, or the one of the lowest or
+// highest value, or -1.
+func (chart *SimpleBarChart) highlighted() int {
+	if chart.highlightValue == 0 {
+		return chart.highlight
+	}
+	best := -1
+	for i, value := range chart.values {
+		if !isValue(value) {
+			continue
+		}
+		if best < 0 || (chart.highlightValue < 0 && value < chart.values[best]) ||
+			(chart.highlightValue > 0 && value > chart.values[best]) {
+			best = i
+		}
+	}
+	return best
+}
+
+// True when a reference line is drawn.
+func (chart *SimpleBarChart) hasReference() bool {
+	return isValue(chart.reference)
+}
+
+// The text under the reference line: its label and its value, "Target 50", or
+// its value alone.
+func (chart *SimpleBarChart) referenceText() string {
+	if chart.referenceLabel == "" {
+		return chart.label(chart.reference)
+	}
+	return chart.referenceLabel + " " + chart.label(chart.reference)
 }
 
 // SetFractionDigits sets the number of digits after the decimal point of the
@@ -153,7 +228,11 @@ func (chart *SimpleBarChart) GetHeight() float32 {
 	if chart.f1 == nil || chart.f2 == nil {
 		return 0 // Without its fonts the chart draws nothing
 	}
-	return chart.top() + float32(float32(len(chart.values))*chart.rowHeight()) + chart.pad()
+	h := chart.top() + float32(float32(len(chart.values))*chart.rowHeight()) + chart.pad()
+	if chart.hasReference() {
+		h += float32(1.4 * chart.subtitleSize()) // The line's label under the bars
+	}
+	return h
 }
 
 // The space around the chart's content, a size of the text of the bars.
@@ -197,7 +276,7 @@ func (chart *SimpleBarChart) label(value float32) string {
 
 // The font of the name and the value of the bar of the index.
 func (chart *SimpleBarChart) fontOf(index int) *Font {
-	if index == chart.highlight {
+	if index == chart.highlighted() {
 		return chart.f1
 	}
 	return chart.f2
@@ -221,6 +300,13 @@ func (chart *SimpleBarChart) getAltDescription() string {
 		}
 		sb.WriteString(separator + name + " " + chart.label(chart.values[i]))
 		separator = ", "
+	}
+	if chart.hasReference() {
+		if chart.referenceLabel == "" {
+			sb.WriteString("; reference line at " + chart.label(chart.reference))
+		} else {
+			sb.WriteString("; " + chart.referenceText())
+		}
 	}
 	sb.WriteString(punctuationAfter(sb.String(), "."))
 	return sb.String()
@@ -263,6 +349,9 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 			largest = max(largest, chart.values[i])
 		}
 	}
+	if chart.hasReference() {
+		largest = max(largest, chart.reference) // The line within the bars' room
+	}
 	// The names in what the values leave of the width, two fifths of it at
 	// most: in a chart narrower than its values they were written past it
 	nameRoom := max(min(float32(0.4*(chart.w-float32(2.0*pad))),
@@ -303,6 +392,7 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	rowTop := chart.y + chart.top()
 	barHeight := float32(1.6 * size)
 	ascent := f2.GetAscent(size)
+	highlight := chart.highlighted()
 	for i, name := range shown {
 		font := chart.fontOf(i)
 		top := rowTop + float32(float32(i)*chart.rowHeight())
@@ -310,7 +400,7 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 		nameColor := simpleBarInk
 		valueColor := simpleBarMuted
 		bar := chart.barColor
-		if i == chart.highlight {
+		if i == highlight {
 			nameColor = chart.highlightColor
 			valueColor = simpleBarInk
 			bar = chart.highlightColor
@@ -322,10 +412,55 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 		}
 		if length > 0 {
 			page.SetBrushColor(bar)
-			page.FillRect(barX, top, max(length, 1.5), barHeight)
+			barW := max(length, 1.5)
+			// The radius a fifth of the bar's height, or half a short bar
+			r := min(float32(barHeight/5.0), float32(barW/2.0))
+			if chart.roundedBars && r > 0.25 {
+				page.FillRoundedRect(barX, top, barW, barHeight, r, r)
+			} else {
+				page.FillRect(barX, top, barW, barHeight)
+			}
 		}
 		page.drawString(font, size, chart.label(chart.values[i]), barX+length+float32(size/2.0), textBaseline,
 			colorToRGB(valueColor), nil)
+	}
+
+	// The reference line, dashed, over the bars, from a little above the first
+	// to a little below the last, and its label under it. It leaves out the
+	// rows where it would cross a bar's value.
+	if chart.hasReference() && largest > 0 && chart.reference >= 0 {
+		lineX := barX + float32(barRoom*(chart.reference/largest))
+		lineBottom := rowTop + float32(float32(len(chart.names)-1)*chart.rowHeight()) + barHeight + float32(size/4.0)
+		page.SetPenColor(simpleBarInk)
+		page.SetPenWidth(0.75)
+		page.SetStrokeDashPattern("[2 2] 0")
+		from := rowTop - float32(size/4.0)
+		for i := range chart.names {
+			value := chart.values[i]
+			length := float32(0)
+			if isValue(value) && value > 0 {
+				length = float32(barRoom * (value / largest))
+			}
+			labelX := barX + length + float32(size/2.0)
+			labelW := chart.fontOf(i).StringWidth(size, chart.label(value))
+			if labelW > 0 && lineX > labelX-float32(size/2.0) && lineX < labelX+labelW+float32(size/2.0) {
+				top := rowTop + float32(float32(i)*chart.rowHeight())
+				if top > from {
+					page.DrawLine(lineX, from, lineX, top)
+				}
+				from = top + barHeight
+			}
+		}
+		if lineBottom > from {
+			page.DrawLine(lineX, from, lineX, lineBottom)
+		}
+		page.SetDefaultStrokeDashPattern()
+		text := chart.referenceText()
+		width := f2.StringWidth(chart.subtitleSize(), text)
+		// Centered under the line, within the chart
+		textX := max(chart.x+pad, min(lineX-float32(width/2.0), chart.x+chart.w-pad-width))
+		page.drawString(f2, chart.subtitleSize(), text, textX, lineBottom+float32(1.2*chart.subtitleSize()),
+			colorToRGB(simpleBarInk), nil)
 	}
 
 	page.RestoreGraphicsState()

@@ -102,15 +102,16 @@ func Example20() {
 	byMake.SetLocation(50.0, y)
 	byMake.DrawOn(page)
 
-	byYear := pdfjet.NewSimpleBarChart(f1, f2).SetTitle("By model year").SetSubtitle("cars")
-	busiest := 0
+	// The chart highlights the busiest year itself, and marks the average,
+	// in whole cars, with a dashed line; its bars are rounded
+	byYear := pdfjet.NewSimpleBarChart(f1, f2).SetTitle("By model year").SetSubtitle("cars").
+		SetHighlightHighest().SetRoundedBars(true)
+	allYears := 0
 	for i := range years {
 		byYear.Add(strconv.Itoa(firstYear+i), float32(years[i]))
-		if years[i] > years[busiest] {
-			busiest = i
-		}
+		allYears += years[i]
 	}
-	byYear.SetHighlight(busiest)
+	byYear.SetReferenceLine(float32(allYears/len(years)), "Average")
 	byYear.SetWidth(248.0)
 	byYear.SetLocation(314.0, y)
 	byYear.DrawOn(page)

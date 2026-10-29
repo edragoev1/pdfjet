@@ -91,14 +91,17 @@ public class Example_20 {
         }
         byMake.setLocation(50f, y).setWidth(248f).drawOn(page);
 
+        // The chart highlights the busiest year itself, and marks the
+        // average, in whole cars, with a dashed line; its bars are rounded
         SimpleBarChart byYear = new SimpleBarChart(f1, f2)
-                .setTitle("By model year").setSubtitle("cars");
-        int busiest = 0;
+                .setTitle("By model year").setSubtitle("cars")
+                .setHighlightHighest().setRoundedBars(true);
+        int allYears = 0;
         for (int i = 0; i < years.length; i++) {
             byYear.add(String.valueOf(FIRST_YEAR + i), years[i]);
-            busiest = (years[i] > years[busiest]) ? i : busiest;
+            allYears += years[i];
         }
-        byYear.setHighlight(busiest);
+        byYear.setReferenceLine(allYears / years.length, "Average");
         byYear.setLocation(314f, y).setWidth(248f).drawOn(page);
         y += Math.max(byMake.getHeight(), byYear.getHeight()) + 30f;
 

@@ -83,13 +83,16 @@ public class Example_20 {
         }
         byMake.setLocation(50.0, y).setWidth(248.0).drawOn(page)
 
+        // The chart highlights the busiest year itself, and marks the
+        // average, in whole cars, with a dashed line; its bars are rounded
         let byYear = SimpleBarChart(f1, f2).setTitle("By model year").setSubtitle("cars")
-        var busiest = 0
+                .setHighlightHighest().setRoundedBars(true)
+        var allYears = 0
         for i in 0..<years.count {
             byYear.add(String(Example_20.firstYear + i), Float(years[i]))
-            busiest = (years[i] > years[busiest]) ? i : busiest
+            allYears += years[i]
         }
-        byYear.setHighlight(busiest)
+        byYear.setReferenceLine(Float(allYears / years.count), "Average")
         byYear.setLocation(314.0, y).setWidth(248.0).drawOn(page)
         y += max(byMake.getHeight(), byYear.getHeight()) + 30.0
 

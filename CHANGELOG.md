@@ -11,6 +11,21 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
 
+### Added
+- SimpleBarChart, all four ports, three additions, each off unless set, so
+  that a chart drawn before draws the same (checked against 9.1.5, byte for
+  byte but for the date and the document ID):
+  - `setHighlightLowest()` and `setHighlightHighest()`: the chart
+    highlights the bar of the lowest or the highest value itself, the first
+    of them on a tie, values that are NaN or infinite left out; bars added
+    later count. `setHighlight(index)` and these take each other's place.
+  - `setReferenceLine(value, label)`: a thin dashed line across the bars at
+    a value, a target or an average, labeled under them ("Average 1,234"),
+    the bars scaled so that it fits; it leaves out the rows where it would
+    cross a bar's value, and the PDF/UA description ends with it.
+  - `setRoundedBars(true)`: bars with slightly rounded ends.
+  Example_20's chart by model year uses all three.
+
 ### Changed
 - Swift: less memory for every document with fonts. The font program and
   the ToUnicode map of each font were compressed with Deflate tables of
