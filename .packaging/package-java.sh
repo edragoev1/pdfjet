@@ -145,7 +145,7 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     -d out/library
 # The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
 mkdir -p out/library/com/pdfjet/fonts
-cp -R "$REPO"/resources/fonts/* out/library/com/pdfjet/fonts/
+for family in "$REPO"/resources/fonts/*/; do cp -R "${family%/}" out/library/com/pdfjet/fonts/; done
 # The entries of the jar have the time of the release too, the manifest that
 # jar writes as well, with --date, which JDK 17 and later have.
 stamp out/library
@@ -232,7 +232,7 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     -d out/library
 # The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
 mkdir -p out/library/com/pdfjet/fonts
-cp -R "$REPO"/resources/fonts/* out/library/com/pdfjet/fonts/
+for family in "$REPO"/resources/fonts/*/; do cp -R "${family%/}" out/library/com/pdfjet/fonts/; done
 # The hyphenation patterns, resources of com.pdfjet.hyphenation, with their
 # licenses; and those beside the jar too, as their MIT licenses ask that the
 # notice go with every copy

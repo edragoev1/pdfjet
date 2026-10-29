@@ -37,6 +37,9 @@ class BundledFontsTest {
         Set<String> carried = new TreeSet<String>();
         File root = TestSupport.file("resources/fonts");
         for (File family : root.listFiles()) {
+            if (!family.isDirectory()) {
+                continue;   // The Go and Swift files that carry the fonts in those ports
+            }
             for (File font : family.listFiles()) {
                 if (font.getName().endsWith(".ttf") || font.getName().endsWith(".otf")) {
                     carried.add("fonts/" + family.getName() + "/" + font.getName());

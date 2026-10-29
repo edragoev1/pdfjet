@@ -38,7 +38,7 @@ public class Example_07 {
         TextBlock textBlock = new TextBlock(f1,
                 "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
                 + "of any .otf or .ttf file on the computer to the Font constructor. "
-                + "The constants of com.pdfjet.fonts, such as IBMPlexSans and IBMPlexSansJP, "
+                + "The font constants, such as IBMPlexSans and IBMPlexSansJP, "
                 + "are the paths of the fonts that come with PDFjet. A font is embedded with only the "
                 + "glyphs the document draws, which keeps the file small, whatever its "
                 + "outlines. The paragraph below is drawn four times.");

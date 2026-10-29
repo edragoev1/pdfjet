@@ -28,9 +28,9 @@ import java.util.Set;
  * before them. It draws the elements a use element names, and text and tspan
  * elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
  * dominant-baseline, in the font set with setFont and setBoldFont, or else
- * in the fonts PDFjet carries, those of PDFjet Forms, embedded: IBM Plex
+ * in the fonts PDFjet carries, embedded: IBM Plex
  * Sans for sans-serif, Helvetica, Arial and the like, Source Serif 4 for
- * serif, Times and the like, JetBrains Mono for monospace, Courier and the
+ * serif, Times and the like, Cascadia Mono for monospace, Courier and the
  * like, regular, semibold or bold, upright or italic, as the font-family,
  * font-weight and font-style of the text ask. A gradient is drawn in the
  * mean color of its stops. The width,

@@ -73,8 +73,8 @@ public class Example_33 {
 
         textBlock = new TextBlock(f1,
                 "SVGImage draws the charts of D3 and the like, their text in the fonts "
-                + "PDFjet carries, those of PDFjet Forms, embedded: IBM Plex Sans for "
-                + "sans-serif, Source Serif 4 for serif and JetBrains Mono for monospace. "
+                + "PDFjet carries, embedded: IBM Plex Sans for "
+                + "sans-serif, Source Serif 4 for serif and Cascadia Mono for monospace. "
                 + "This chart was made by D3 in util/make-d3-chart.mjs.");
         textBlock.SetFontSize(12f);
         textBlock.SetLineSpacing(1.5f);
