@@ -524,12 +524,14 @@ class TextFrameTest {
     // many lines take about four times the time, not sixteen; the two times
     // are measured in the same run, the shortest of three each, so that a
     // busy computer slows both (a limit of 3 s failed under a fuzzer's load,
-    // 9 October 2026).
+    // 9 October 2026). At most twelve times: a limit of ten failed at 10.4 on
+    // a slow runner of the CI (29 October 2026), and measuring over and over
+    // again would take sixteen.
     @Test
     void manyJoinedTextLinesAreMeasuredInLinearTime() throws Exception {
         long small = joinedLinesTime(5000);
         long large = joinedLinesTime(20000);
-        assertTrue(large <= 10 * small, "20000 joined lines took " + large / 1000000
+        assertTrue(large <= 12 * small, "20000 joined lines took " + large / 1000000
                 + " ms, and 5000 " + small / 1000000 + " ms");
     }
 

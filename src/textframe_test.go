@@ -616,11 +616,13 @@ func TestTextFrameTheUnderlineOfTheLastWordStopsAtTheWord(t *testing.T) {
 // lines take about four times the time, not sixteen; the two times are
 // measured in the same run, the shortest of three each, so that a busy
 // computer slows both (a limit of 3 s failed under a fuzzer's load,
-// 9 October 2026).
+// 9 October 2026). At most twelve times: a limit of ten failed at 10.4 on a
+// slow runner of the CI (29 October 2026), and measuring over and over again
+// would take sixteen.
 func TestTextFrameManyJoinedTextLinesAreMeasuredInLinearTime(t *testing.T) {
 	small := testJoinedLinesTime(5000)
 	large := testJoinedLinesTime(20000)
-	if large > 10*small {
+	if large > 12*small {
 		t.Errorf("20000 joined lines took %v, and 5000 %v", large, small)
 	}
 }

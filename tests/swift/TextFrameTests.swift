@@ -473,11 +473,13 @@ import Testing
     // busy computer slows both (a limit of 3 s failed under a fuzzer's load,
     // 9 October 2026). Half the lines of the other ports, as a debug build
     // takes about 4 seconds for 20000; without the measure in linear time
-    // it took 704.
+    // it took 704. At most twelve times, as in the other ports: a limit of
+    // ten failed at 10.4 on a slow runner of the CI (29 October 2026), and
+    // measuring over and over again would take sixteen.
     @Test func manyJoinedTextLinesAreMeasuredInLinearTime() {
         let small = joinedLinesTime(2500)
         let large = joinedLinesTime(10000)
-        #expect(large <= small * 8, "10000 joined lines took \(large), and 2500 \(small)")
+        #expect(large <= small * 12, "10000 joined lines took \(large), and 2500 \(small)")
     }
 
     // The shortest of three times a paragraph of the joined lines is drawn.

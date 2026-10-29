@@ -506,12 +506,14 @@ public class TextFrameTest {
     // many lines take about four times the time, not sixteen; the two times
     // are measured in the same run, the shortest of three each, so that a
     // busy computer slows both (a limit of 3 s failed under a fuzzer's load,
-    // 9 October 2026).
+    // 9 October 2026). At most twelve times: a limit of ten failed at 10.4 on
+    // a slow runner of the CI (29 October 2026), and measuring over and over
+    // again would take sixteen.
     [Fact]
     public void ManyJoinedTextLinesAreMeasuredInLinearTime() {
         TimeSpan small = JoinedLinesTime(5000);
         TimeSpan large = JoinedLinesTime(20000);
-        Assert.True(large.Ticks <= 10 * small.Ticks, "20000 joined lines took "
+        Assert.True(large.Ticks <= 12 * small.Ticks, "20000 joined lines took "
                 + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
     }
 
