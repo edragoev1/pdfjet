@@ -25,8 +25,49 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
     cross a bar's value, and the PDF/UA description ends with it.
   - `setRoundedBars(true)`: bars with slightly rounded ends.
   Example_20's chart by model year uses all three.
+- SVGImage, all four ports, draws the charts of D3 and the like as a
+  browser does:
+  - `text` and `tspan` elements: x, y, dx and dy (in em too), font-size,
+    font-family, font-weight, font-style and the `font` shorthand,
+    text-anchor for each chunk, dominant-baseline, and a stroke drawn under
+    the text with `paint-order: stroke`, the white halo of a label. The
+    text is drawn in the fonts PDFjet now carries, those of PDFjet Forms,
+    embedded, so that a PDF/A or PDF/UA document needs nothing set: IBM
+    Plex Sans for sans-serif, Helvetica, Arial and the like, Source Serif 4
+    for serif, Times and the like, JetBrains Mono for monospace, Courier and
+    the like, each regular, semibold and bold, upright and italic, 3.5 MB
+    in all, under the SIL Open Font License (THIRD-PARTIES.TXT). A font of
+    one's own, for Chinese for instance, is set with `setFont()` and
+    `setBoldFont()`. A stroke drawn under text is a second copy of its
+    characters in the content, which copying the text from the PDF gives
+    twice.
+  - `use` elements, of symbols too, and `marker-start`, `marker-mid` and
+    `marker-end`, the arrowheads of a graph. A file that draws more than a
+    million elements again through them throws.
+  - `stroke-dasharray` and `stroke-dashoffset`, and `clip-path`.
+  - What is drawn outside the size of the image is cut off.
+  - A gradient is drawn in one color, the mean of its stops.
+- SimpleScatterChart, all four ports: `addSeries(name)`. The points added
+  after it are its points, drawn as the outlines of its shape in its color,
+  circle, square, triangle, star, diamond and cross in turn, with a legend
+  under the title; a highlighted point of a series is its shape filled.
+  Points added before the first series are gray dots, as before.
 
 ### Changed
+- Behavior change: BarChart and DonutChart draw their series and slices in
+  the Tableau 10 palette, the colors of D3's charts: blue #4E79A7, orange
+  #F28E2C, red #E15759, teal #76B7B2, green #59A14F, yellow #EDC949, purple
+  #AF7AA1, pink #FF9DA7, brown #9C755F and gray #BAB0AB. A chart that sets
+  no colors looks different from 9.1.5: its first series was navy #1F3A5F,
+  and is blue.
+- Bars and slices label their values in white or ink, whichever contrasts
+  more, as before, and in a near black, #111111, where neither contrasts
+  4.5:1, as WCAG asks: on the red, the purple and the brown of the palette,
+  and on a color as pure red.
+- Behavior change: in SVGImage, a fill or a stroke of `url(#id)` that names
+  no gradient, with no color after it, is none, as a browser draws it; it
+  was the inherited color, black unless set. Example: `fill="url(#missing)"`
+  drew a black shape and now draws nothing.
 - Swift: less memory for every document with fonts. The font program and
   the ToUnicode map of each font were compressed with Deflate tables of
   their own, about 450 KB a stream, made again for each: 1.8 MB for a

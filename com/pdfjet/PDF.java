@@ -101,6 +101,8 @@ final public class PDF {
     List<Image> images = new ArrayList<Image>();
     List<OptionalContentGroup> groups = new ArrayList<OptionalContentGroup>();
     Map<String, Integer> states = new LinkedHashMap<String, Integer>();
+    // The fonts PDFjet carries that the document draws in, by their files
+    final Map<String, Font> bundledFonts = new HashMap<String, Font>();
     List<Stamp> stamps = new ArrayList<Stamp>();
     Encryption encryption = null;
 

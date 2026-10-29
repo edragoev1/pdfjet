@@ -40,7 +40,9 @@ class SVGState {
     float dashOffset = 0f;
     boolean strokeFirst = false;        // paint-order: the stroke drawn before the fill
     float fontSize = 16f;               // In the user space; medium, as a browser has it
-    boolean bold = false;               // A font-weight of bold, 600 or more
+    int fontWeight = 400;               // normal 400, bold 700
+    boolean italic = false;             // A font-style of italic or oblique
+    int fontFamily = BundledFonts.SANS; // The family of the bundled fonts its names stand for
     int textAnchor = 0;                 // 0 start, 1 middle, 2 end
     int baseline = 0;                   // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
     String markerStart = null;          // The ids of the markers, inherited
@@ -78,7 +80,9 @@ class SVGState {
         this.dashOffset = parent.dashOffset;
         this.strokeFirst = parent.strokeFirst;
         this.fontSize = parent.fontSize;
-        this.bold = parent.bold;
+        this.fontWeight = parent.fontWeight;
+        this.italic = parent.italic;
+        this.fontFamily = parent.fontFamily;
         this.textAnchor = parent.textAnchor;
         this.baseline = parent.baseline;
         this.markerStart = parent.markerStart;
@@ -321,10 +325,18 @@ class SVGState {
                 this.fontSize = size;
             }
         } else if (name.equals("font-weight")) {
-            Boolean bold = parseFontWeight(value);
-            if (bold != null) {
-                this.bold = bold;
+            Integer weight = parseFontWeight(value, this.fontWeight);
+            if (weight != null) {
+                this.fontWeight = weight;
             }
+        } else if (name.equals("font-style")) {
+            if (value.equals("italic") || value.startsWith("oblique")) {
+                this.italic = true;
+            } else if (value.equals("normal")) {
+                this.italic = false;
+            }
+        } else if (name.equals("font-family")) {
+            this.fontFamily = BundledFonts.familyOf(value);
         } else if (name.equals("font")) {
             setFont(value);
         } else if (name.equals("text-anchor")) {
@@ -450,27 +462,35 @@ class SVGState {
         }
     }
 
-    // Reads a font-weight: true for bold, bolder and 600 or more, false for
-    // normal, lighter and less, null for a weight it cannot read.
-    static Boolean parseFontWeight(String value) {
-        if (value.equals("bold") || value.equals("bolder")) {
-            return true;
-        } else if (value.equals("normal") || value.equals("lighter")) {
-            return false;
+    // Reads a font-weight, from 1 to 1000: normal is 400 and bold 700, and
+    // bolder and lighter are those of CSS, from the weight of the parent. It
+    // returns null for a weight it cannot read.
+    static Integer parseFontWeight(String value, int parentWeight) {
+        if (value.equals("normal")) {
+            return 400;
+        } else if (value.equals("bold")) {
+            return 700;
+        } else if (value.equals("bolder")) {
+            return (parentWeight < 350) ? 400 : (parentWeight < 550) ? 700 : 900;
+        } else if (value.equals("lighter")) {
+            return (parentWeight < 550) ? 100 : (parentWeight < 750) ? 400 : 700;
         }
         Float weight = parseFactor(value);
         if (weight == null || weight < 1f || weight > 1000f) {
             return null;
         }
-        return weight >= 600f;
+        return Math.round(weight);
     }
 
     // Sets the size and the weight of the font shorthand, such as "bold 10px
     // sans-serif": the words before the size, then the size, which may have
     // a line height after a slash. A shorthand without a weight is normal.
     private void setFont(String value) {
-        boolean bold = false;
-        for (String field : fields(value)) {
+        int weight = 400;
+        boolean italic = false;
+        List<String> fields = fields(value);
+        for (int i = 0; i < fields.size(); i++) {
+            String field = fields.get(i);
             int slash = field.indexOf('/');
             String size = (slash < 0) ? field : field.substring(0, slash);
             // A size has a unit or is a keyword; a number alone is a weight.
@@ -478,13 +498,29 @@ class SVGState {
                 Float fontSize = parseFontSize(size, this.fontSize);
                 if (fontSize != null) {
                     this.fontSize = fontSize;
-                    this.bold = bold;
+                    this.fontWeight = weight;
+                    this.italic = italic;
+                    // The family after the size, and a line height after a
+                    // slash written apart from it
+                    int from = i + 1;
+                    if (slash < 0 && from < fields.size() && fields.get(from).startsWith("/")) {
+                        from += fields.get(from).equals("/") ? 2 : 1;
+                    }
+                    StringBuilder family = new StringBuilder();
+                    for (int j = from; j < fields.size(); j++) {
+                        family.append(j > from ? " " : "").append(fields.get(j));
+                    }
+                    this.fontFamily = BundledFonts.familyOf(family.toString());
                     return;
                 }
             }
-            Boolean weight = parseFontWeight(field);
-            if (weight != null) {
-                bold = weight;
+            if (field.equals("italic") || field.equals("oblique")) {
+                italic = true;
+                continue;
+            }
+            Integer w = parseFontWeight(field, this.fontWeight);
+            if (w != null) {
+                weight = w;
             }
         }
     }

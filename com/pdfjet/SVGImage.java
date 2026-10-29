@@ -27,8 +27,13 @@ import java.util.Set;
  * style attribute or in rules for their classes in a style element that comes
  * before them. It draws the elements a use element names, and text and tspan
  * elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
- * dominant-baseline, in the font set with setFont and setBoldFont, or in
- * Helvetica. A gradient is drawn in the mean color of its stops. The width,
+ * dominant-baseline, in the font set with setFont and setBoldFont, or else
+ * in the fonts PDFjet carries, those of PDFjet Forms, embedded: IBM Plex
+ * Sans for sans-serif, Helvetica, Arial and the like, Source Serif 4 for
+ * serif, Times and the like, JetBrains Mono for monospace, Courier and the
+ * like, regular, semibold or bold, upright or italic, as the font-family,
+ * font-weight and font-style of the text ask. A gradient is drawn in the
+ * mean color of its stops. The width,
  * height, viewBox and preserveAspectRatio of the svg element give the size of
  * the image, and what is drawn outside it is cut off, as a browser does.
  */
@@ -834,7 +839,9 @@ public class SVGImage implements Drawable {
                 pending[2] = 0.0;
                 pending[3] = 0.0;
                 run.fontSize = state.fontSize;
-                run.bold = state.bold;
+                run.weight = state.fontWeight;
+                run.italic = state.italic;
+                run.family = state.fontFamily;
                 run.anchor = state.textAnchor;
                 run.baseline = state.baseline;
                 run.fill = state.fillCurrent ? state.color : state.fill;
@@ -1138,10 +1145,9 @@ public class SVGImage implements Drawable {
     }
 
     /**
-     * Sets the font of the text of the image. Unless set, the text is drawn
-     * in Helvetica, which is not embedded and has the characters of Western
-     * European languages only; a document of PDF/A or PDF/UA needs a font
-     * that is embedded.
+     * Sets the font of the text of the image, in place of the fonts PDFjet
+     * carries: for the text of a language they do not have, such as Chinese,
+     * or for a font of one's own.
      *
      * @param font the font.
      * @return this SVGImage object.
@@ -1153,8 +1159,8 @@ public class SVGImage implements Drawable {
 
     /**
      * Sets the font of the bold text of the image, whose font-weight is bold
-     * or 600 or more. Unless set, it is the font set with setFont, or
-     * Helvetica Bold when neither is set.
+     * or 600 or more, when a font is set with setFont; unless set, that font
+     * draws the bold text too.
      *
      * @param font the bold font.
      * @return this SVGImage object.
@@ -1164,32 +1170,36 @@ public class SVGImage implements Drawable {
         return this;
     }
 
-    // The core fonts the text is drawn in unless a font is set, one of each
-    // for a document, made when a text is first drawn in it.
-    private PDF corePDF = null;
-    private Font helvetica = null;
-    private Font helveticaBold = null;
-
-    private Font coreFont(PDF pdf, int coreFont) {
-        if (corePDF != pdf) {
-            corePDF = pdf;
-            helvetica = null;
-            helveticaBold = null;
+    // Returns the font of a run: the one set, the bold one for a weight of 600
+    // or more when it is set, or else the face of the fonts PDFjet carries of
+    // its family, weight and style; Helvetica, which is not embedded, when
+    // the library was built without them.
+    private Font fontOf(SVGText.Run run, PDF pdf) {
+        if (font != null) {
+            return (run.weight >= 600 && boldFont != null) ? boldFont : font;
         }
-        try {
-            if (coreFont == CoreFont.HELVETICA) {
-                if (helvetica == null) {
-                    helvetica = new Font(pdf, coreFont);
-                }
-                return helvetica;
-            }
-            if (helveticaBold == null) {
-                helveticaBold = new Font(pdf, coreFont);
-            }
-            return helveticaBold;
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+        Font bundled = BundledFonts.get(pdf, run.family, run.weight, run.italic);
+        if (bundled != null) {
+            return bundled;
         }
+        // A document of PDF/A or PDF/UA embeds every font, which Helvetica
+        // is not: the message names setFont, where complete() named only
+        // Helvetica
+        if (pdf.compliance != Compliance.PDF_1_7 && !PDF.coreFontsInCompliance) {
+            pdf.fail(new IllegalStateException("The SVG image has text, which a document of "
+                    + pdf.compliance + " needs drawn in an embedded font: set one with setFont."));
+        }
+        String key = (run.weight >= 600) ? "Helvetica-Bold" : "Helvetica";
+        Font core = pdf.bundledFonts.get(key);
+        if (core == null) {
+            try {
+                core = new Font(pdf, (run.weight >= 600) ? CoreFont.HELVETICA_BOLD : CoreFont.HELVETICA);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            pdf.bundledFonts.put(key, core);
+        }
+        return core;
     }
 
     /**
@@ -1471,24 +1481,12 @@ public class SVGImage implements Drawable {
             link = page.beginLink();
         }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription);
-        Font regular = font;
-        Font bold = boldFont;
         for (SVGPath path : paths) {
             if (path.text != null) {
-                // A document of PDF/A or PDF/UA embeds every font, which
-                // Helvetica is not: the text needs a font set, which the
-                // message names, where complete() named only Helvetica
-                if (font == null && page.pdf.compliance != Compliance.PDF_1_7 && !PDF.coreFontsInCompliance) {
-                    page.pdf.fail(new IllegalStateException("The SVG image has text, which a document of "
-                            + page.pdf.compliance + " needs drawn in an embedded font: set one with setFont."));
+                for (SVGText.Run run : path.text.runs) {
+                    run.font = fontOf(run, page.pdf);
                 }
-                if (regular == null) {
-                    regular = coreFont(page.pdf, CoreFont.HELVETICA);
-                }
-                if (bold == null) {
-                    bold = (font != null) ? font : coreFont(page.pdf, CoreFont.HELVETICA_BOLD);
-                }
-                path.text.place(regular, bold);
+                path.text.place();
             }
         }
         boolean clip = overflows(page);

@@ -150,3 +150,21 @@ images/svg/LICENSE-2.0.txt.
 All the fonts included in the project are licensed under the SIL Open Font License, Version 1.1.
 You can obtain a copy of the license at:
 http://scripts.sil.org/OFL
+
+
+This software includes, unmodified, the fonts IBM Plex Sans, Source Serif 4
+and JetBrains Mono, regular, semibold and bold, upright and italic, which it
+embeds in the text of SVG images; they are licensed under the SIL Open Font
+License, Version 1.1, whose text, with the copyright of each, is beside them
+in src/bundledfonts and in the library (com/pdfjet/bundledfonts in the Java
+jar):
+
+    ============================================================================
+    IBM Plex Sans: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
+    Source Serif 4: (c) 2014 - 2021 Adobe Systems Incorporated
+        (http://www.adobe.com/), with Reserved Font Name 'Source'.
+    JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors
+        (https://github.com/JetBrains/JetBrainsMono)
+
+    This Font Software is licensed under the SIL Open Font License, Version 1.1.
+    This license is available with a FAQ at: https://openfontlicense.org

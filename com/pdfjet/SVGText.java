@@ -30,7 +30,9 @@ class SVGText {
         double dx = 0.0;            // How far it moves from where the run before it ends
         double dy = 0.0;
         float fontSize;
-        boolean bold;
+        int weight;                 // The font-weight, 400 normal and 700 bold
+        boolean italic;
+        int family;                 // BundledFonts.SANS, SERIF or MONO
         int anchor;                 // 0 start, 1 middle, 2 end
         int baseline;               // 0 alphabetic, 1 middle, 2 hanging
         int fill;
@@ -81,11 +83,11 @@ class SVGText {
         }
     }
 
-    // Places the runs, in the user space of the text element: each where it
-    // says or after the run before it, and each chunk, the runs from one that
-    // says where it starts to the next, moved by its width as its text-anchor
-    // asks.
-    void place(Font regular, Font bold) {
+    // Places the runs, in the user space of the text element, in the fonts
+    // they are given: each where it says or after the run before it, and each
+    // chunk, the runs from one that says where it starts to the next, moved
+    // by its width as its text-anchor asks.
+    void place() {
         double x = 0.0;
         double y = 0.0;
         int chunk = 0;      // The first run of the chunk
@@ -103,7 +105,6 @@ class SVGText {
             }
             x += run.dx;
             y += run.dy;
-            run.font = run.bold ? bold : regular;
             run.width = run.font.stringWidth(run.fontSize, text(run));
             run.px = (float) x;
             run.py = (float) y;
