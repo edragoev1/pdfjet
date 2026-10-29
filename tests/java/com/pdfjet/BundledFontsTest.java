@@ -41,7 +41,7 @@ class BundledFontsTest {
                 }
             }
         }
-        assertEquals(98, carried.size());
+        assertEquals(96, carried.size());
         Set<String> constants = new TreeSet<String>();
         for (String name : CLASSES) {
             Class<?> c = Class.forName("com.pdfjet.fonts." + name);

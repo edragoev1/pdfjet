@@ -48,10 +48,6 @@ public class IBMPlexSans {
     public static final String MediumItalic     = "fonts/IBMPlexSans/IBMPlexSans-MediumItalic.ttf";
     /** IBM Plex Sans Medium */
     public static final String Medium           = "fonts/IBMPlexSans/IBMPlexSans-Medium.ttf";
-    /** IBM Plex Sans Italic, with CFF outlines (.otf) */
-    public static final String ItalicOTF        = "fonts/IBMPlexSans/IBMPlexSans-Italic.otf";
-    /** IBM Plex Sans Regular, with CFF outlines (.otf) */
-    public static final String RegularOTF       = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
     /** IBM Plex Sans Regular */
     public static final String Regular          = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
     /** IBM Plex Sans SemiBoldItalic */

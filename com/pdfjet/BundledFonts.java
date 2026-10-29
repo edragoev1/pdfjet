@@ -13,10 +13,8 @@ import java.io.InputStream;
  * folder of its name, as in the folder fonts of pdfjet-fonts: IBM Plex Sans,
  * Serif and Mono, Source Serif 4 and JetBrains Mono, from Thin or Light to
  * Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to
- * Bold; IBM Plex Math; IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold
- * and Bold, as .otf; and IBM Plex Sans Regular and Italic as .otf too, a
- * font with CFF outlines of names, as most .otf fonts have. All are under
- * the SIL Open Font License 1.1.
+ * Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
+ * SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
  * A path to one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf,
  * the constants of com.pdfjet.fonts, is read from the library when there is
  * no such file, and the text of an SVG image is drawn in them unless a font
