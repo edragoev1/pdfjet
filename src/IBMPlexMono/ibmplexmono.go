@@ -5,7 +5,7 @@
 
 // Package IBMPlexMono has the paths to the IBM Plex Mono fonts, which
 // PDFjet does not carry from 9.1.7: each constant is the path of a font
-// file of pdfjet-fonts, https://github.com/edragoev1/pdfjet-fonts, which
+// file of the packages of PDFjet before 9.1.7, which
 // NewFontFromFile reads when the file is there.
 //
 // Deprecated: PDFjet carries Cascadia Mono, which has all of Greek and of

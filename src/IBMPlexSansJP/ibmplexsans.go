@@ -5,8 +5,10 @@
 
 // Package IBMPlexSansJP has the paths to the IBM Plex Sans JP fonts. Each
 // constant is the path of a font file, embedded as a subset of the glyphs a
-// document draws; pass it to NewFontFromFile. PDFjet carries these fonts in
-// itself: the path is read from the library when there is no such file.
+// document draws; pass it to NewFontFromFile. PDFjet carries these fonts: the
+// path is read, when there is no such file, from the folder resources/fonts,
+// else from the library when the program imports
+// github.com/edragoev1/pdfjet/v9/resources/fonts/cjk.
 package IBMPlexSansJP
 
 // The paths of the font files.
@@ -15,19 +17,19 @@ const (
 	Bold = "fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.otf"
 
 	// ExtraLight is IBM Plex Sans JP ExtraLight, which PDFjet does not carry
-	// from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+	// from 9.1.7: a font file of its packages before, read when the file is there.
 	//
 	// Deprecated: PDFjet carries the other weights of the family.
 	ExtraLight = "fonts/IBMPlexSansJP/IBMPlexSansJP-ExtraLight.ttf"
 
 	// Light is IBM Plex Sans JP Light, which PDFjet does not carry from 9.1.7:
-	// a font file of pdfjet-fonts, read when the file is there.
+	// a font file of its packages before, read when the file is there.
 	//
 	// Deprecated: PDFjet carries the other weights of the family.
 	Light = "fonts/IBMPlexSansJP/IBMPlexSansJP-Light.ttf"
 
 	// Medium is IBM Plex Sans JP Medium, which PDFjet does not carry from
-	// 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+	// 9.1.7: a font file of its packages before, read when the file is there.
 	//
 	// Deprecated: PDFjet carries the other weights of the family.
 	Medium = "fonts/IBMPlexSansJP/IBMPlexSansJP-Medium.ttf"
@@ -37,13 +39,13 @@ const (
 	SemiBold = "fonts/IBMPlexSansJP/IBMPlexSansJP-SemiBold.otf"
 
 	// Text is IBM Plex Sans JP Text, which PDFjet does not carry from 9.1.7: a
-	// font file of pdfjet-fonts, read when the file is there.
+	// font file of its packages before, read when the file is there.
 	//
 	// Deprecated: PDFjet carries the other weights of the family.
 	Text = "fonts/IBMPlexSansJP/IBMPlexSansJP-Text.ttf"
 
 	// Thin is IBM Plex Sans JP Thin, which PDFjet does not carry from 9.1.7: a
-	// font file of pdfjet-fonts, read when the file is there.
+	// font file of its packages before, read when the file is there.
 	//
 	// Deprecated: PDFjet carries the other weights of the family.
 	Thin = "fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"

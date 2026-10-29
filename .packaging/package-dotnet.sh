@@ -123,6 +123,10 @@ rm "$TAR"
 # and images are not needed, but Example_42 attaches Example_02.java.
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
 rm -f "$STAGE/images/go.mod" "$STAGE/resources/data/go.mod"
+# Every .go file of resources/fonts, which embed the fonts for Go, and the
+# folder of the package cjk, left empty.
+find "$STAGE/resources/fonts" -name '*.go' -delete
+find "$STAGE/resources/fonts" -type d -empty -delete
 
 cd "$STAGE"
 

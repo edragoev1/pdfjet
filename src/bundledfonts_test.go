@@ -19,7 +19,14 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/resources/fonts"
+	// The CJK fonts, built in for the tests that draw in them, as a program
+	// builds them in
+	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -112,9 +119,16 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 						t.Errorf("%s is not carried", constant)
 						continue
 					}
-					// In the library, as the module has it, not only in the folder
-					if buf, err := fonts.FS.ReadFile(bundledFontName(path)); err != nil || len(buf) == 0 {
+					// In the library, as the module has it, not only in the folder:
+					// the CJK fonts registered by the package cjk, which this
+					// test imports, and the others built in always
+					if buf, err := fonts.ReadFile(bundledFontName(path)); err != nil || len(buf) == 0 {
 						t.Errorf("%s is not in the library: %v", constant, err)
+					}
+					family, _, _ := strings.Cut(bundledFontName(path), "/")
+					_, err = fonts.FS.ReadFile(bundledFontName(path))
+					if builtIn := err == nil; builtIn == slices.Contains(cjkFamilies, family) {
+						t.Errorf("%s built in always: %v", constant, builtIn)
 					}
 					constants = append(constants, path)
 				}
@@ -144,15 +158,32 @@ func TestBundledFontsAFontAddedToAnExistingPDFIsReadFromTheLibraryByItsPath(t *t
 	objects := testRead(t, doc.complete())
 	font := NewFontFromFileForObjects(&objects, IBMPlexSans.Bold)
 	testWant(t, "IBMPlexSans-Bold", font.GetName())
-	// A font it does not carry says where the fonts it came with are
+	// A font it does not carry says to use a font file of one's own
 	defer func() {
 		err, ok := recover().(error)
-		if !ok || !errors.Is(err, fs.ErrNotExist) || !strings.Contains(err.Error(), pdfjetFonts) {
+		if !ok || !errors.Is(err, fs.ErrNotExist) || !strings.Contains(err.Error(), "use a font file of your own") {
 			t.Errorf("%v", err)
 		}
 	}()
 	NewFontFromFileForObjects(&objects, "fonts/NotoSans/NotoSans-Regular.ttf")
 	t.Error("a font PDFjet does not carry was read")
+}
+
+func TestBundledFontsTheCJKFontsAreReadFromTheLibraryWhenTheProgramImportsThePackageCJK(t *testing.T) {
+	// A working directory with no folder resources/fonts: the font is the
+	// one the package cjk, which this test imports, builds in
+	t.Chdir(t.TempDir())
+	doc := testNewDoc()
+	for _, path := range []string{IBMPlexSansJP.Regular, IBMPlexSansKR.SemiBold, IBMPlexSansSC.Bold, IBMPlexSansTC.Regular} {
+		font := NewFontFromFile(doc.pdf, path)
+		if family := filepath.Base(filepath.Dir(path)); !strings.HasPrefix(font.GetName(), family) {
+			t.Errorf("%s: the font %s", path, font.GetName())
+		}
+	}
+	// A weight PDFjet does not carry is not one of them
+	if bundledCJKMissing(IBMPlexSansJP.Regular) || bundledCJKMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf") {
+		t.Error("a CJK font is missing")
+	}
 }
 
 func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testing.T) {

@@ -3,10 +3,11 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-// Package IBMPlexSans has the paths to the IBM Plex Sans fonts. Each
-// constant is the path of a font file, embedded as a subset of the glyphs a
-// document draws; pass it to NewFontFromFile. PDFjet carries these fonts in
-// itself: the path is read from the library when there is no such file.
+// Package IBMPlexSans has the paths to the IBM Plex Sans fonts. Each constant
+// is the path of a font file, embedded as a subset of the glyphs a document
+// draws; pass it to NewFontFromFile. PDFjet carries these fonts in itself: the
+// path is read from the folder resources/fonts when there is no such file,
+// else from the library.
 package IBMPlexSans
 
 // The paths of the font files.
@@ -17,14 +18,14 @@ const (
 	Bold = "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf"
 
 	// ExtraLightItalic is IBM Plex Sans ExtraLightItalic, which PDFjet does
-	// not carry from 9.1.7: a font file of pdfjet-fonts, read when the file is
+	// not carry from 9.1.7: a font file of its packages before, read when the file is
 	// there.
 	//
 	// Deprecated: PDFjet carries the other weights of the family.
 	ExtraLightItalic = "fonts/IBMPlexSans/IBMPlexSans-ExtraLightItalic.ttf"
 
 	// ExtraLight is IBM Plex Sans ExtraLight, which PDFjet does not carry from
-	// 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+	// 9.1.7: a font file of its packages before, read when the file is there.
 	//
 	// Deprecated: PDFjet carries the other weights of the family.
 	ExtraLight = "fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf"

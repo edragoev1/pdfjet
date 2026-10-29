@@ -322,12 +322,15 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // NewFontFromFile creates a font from the .otf or .ttf file at the path and
 // adds it to the PDF. A path to one of the fonts PDFjet carries, such as the
 // constants of the packages IBMPlexSans and the others,
-// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from the library
-// when there is no such file. A path to a .ttf.stream or .otf.stream file, the
-// fonts PDFjet shipped before 9.0.5, opens the .ttf or else the .otf file of
-// the same name beside it. It panics if the font cannot be read: for a font
-// PDFjet does not carry, with an error that is fs.ErrNotExist and names where
-// to get it.
+// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from the folder
+// resources/fonts when there is no such file, or else from the library, which
+// has the CJK fonts, IBMPlexSansJP and the others, when the program imports
+// the package github.com/edragoev1/pdfjet/v9/resources/fonts/cjk. A path to a
+// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
+// opens the .ttf or else the .otf file of the same name beside it. It panics
+// if the font cannot be read: for a font PDFjet does not carry, or a CJK font
+// it has not built in, with an error that is fs.ErrNotExist and says what to
+// do.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	buf, err := readFontFile(fontFileOf(filePath))
 	if err != nil {
@@ -343,8 +346,8 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 // NewFontFromFileForObjects creates a font from the .otf or .ttf file at the
 // path and adds it to the objects of an existing PDF. A path to one of the
 // fonts PDFjet carries, such as the constants of the packages IBMPlexSans and
-// the others, is read from the library when there is no such file, as by
-// NewFontFromFile. It panics if the font cannot be read.
+// the others, is read from the folder resources/fonts when there is no such
+// file, or else from the library, as by NewFontFromFile. It panics if the font cannot be read.
 func NewFontFromFileForObjects(objects *[]*PDFobj, filePath string) *Font {
 	buf, err := readFontFile(fontFileOf(filePath))
 	if err != nil {
@@ -357,8 +360,8 @@ func NewFontFromFileForObjects(objects *[]*PDFobj, filePath string) *Font {
 }
 
 // fontNotFoundError is the error of a path that is neither a file nor one of
-// the fonts PDFjet carries: fs.ErrNotExist, with a message that says where
-// the fonts PDFjet no longer carries are.
+// the fonts PDFjet carries: fs.ErrNotExist, with a message that says what
+// to do.
 type fontNotFoundError struct {
 	message string
 }
@@ -372,18 +375,24 @@ func (e *fontNotFoundError) Is(target error) bool {
 }
 
 // readFontFile returns the font file of the path in one read, or, when there
-// is no such file, the font of that name that PDFjet carries; a font it does
-// not carry, such as one of the fonts of pdfjet-fonts it left out, is an
-// error that says where to get it.
+// is no such file, the font of that name that PDFjet carries, from the folder
+// resources/fonts or else from the library; a font it does not carry is an
+// error, and so is a CJK font of a program that does not import the package
+// cjk, which says so.
 func readFontFile(fontPath string) ([]byte, error) {
 	if _, err := os.Stat(fontPath); err != nil {
 		if buf := bundledFontData(fontPath); buf != nil {
 			return buf, nil
 		}
+		if bundledCJKMissing(fontPath) {
+			return nil, &fontNotFoundError{fontPath + " is not a file, nor in resources/fonts; " +
+				"PDFjet builds its Chinese, Japanese and Korean fonts into a program that imports them: " +
+				cjkImport}
+		}
 		path := strings.ReplaceAll(fontPath, "\\", "/")
 		if strings.HasPrefix(path, "fonts/") || strings.Contains(path, "/fonts/") {
-			return nil, &fontNotFoundError{fontPath + " is not a file, nor one of the fonts PDFjet carries; " +
-				"the fonts it came with before 9.1.7, Noto Sans among them, are at " + pdfjetFonts}
+			return nil, &fontNotFoundError{fontPath + " is not a file, nor one of the fonts PDFjet carries, " +
+				"in resources/fonts or in the library: use a font file of your own."}
 		}
 	}
 	return os.ReadFile(fontPath)

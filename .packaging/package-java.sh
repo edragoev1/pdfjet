@@ -110,7 +110,11 @@ rm "$TAR"
 # are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 rm -f "$STAGE/images/go.mod" "$STAGE/resources/data/go.mod" \
-    "$STAGE/resources/fonts/fonts.go" "$STAGE/resources/fonts/PDFjetFonts.swift"
+    "$STAGE/resources/fonts/PDFjetFonts.swift"
+# Every .go file of resources/fonts: fonts.go, the package cjk and the
+# packages of the CJK families that embed them for Go.
+find "$STAGE/resources/fonts" -name '*.go' -delete
+find "$STAGE/resources/fonts" -type d -empty -delete
 
 cd "$STAGE"
 

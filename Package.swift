@@ -18,7 +18,14 @@ let package = Package(
         .target(
             name: "PDFjetFonts",
             path: "resources/fonts",
-            exclude: ["fonts.go"],
+            exclude: [
+                "fonts.go",
+                "cjk",
+                "IBMPlexSansJP/ibmplexsansjp.go",
+                "IBMPlexSansKR/ibmplexsanskr.go",
+                "IBMPlexSansSC/ibmplexsanssc.go",
+                "IBMPlexSansTC/ibmplexsanstc.go",
+            ],
             sources: ["PDFjetFonts.swift"],
             resources: [
                 .copy("CascadiaMono"),

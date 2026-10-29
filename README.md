@@ -232,11 +232,24 @@ func main() {
 
 The module path carries the major version, as Go requires from v2 on. The Go
 module has the source of the library and the examples, and the fonts PDFjet
-carries, in `resources/fonts`, which the library embeds. The data files of
-the examples, in `resources/data`, and the images, in `images`, are not in
-it: each folder has a `go.mod` of its own, which keeps it out. The module of
-9.1.5 has no fonts: use the font files of its package from the release on
-GitHub.
+carries, in `resources/fonts`. The data files of the examples, in
+`resources/data`, and the images, in `images`, are not in it: each folder has
+a `go.mod` of its own, which keeps it out. The module of 9.1.5 has no fonts:
+use the font files of its package from the release on GitHub.
+
+Go builds the fonts a program embeds into the program itself, uncompressed.
+So the fonts of every script but Chinese, Japanese and Korean are built in,
+17.5 MB: a program like the one above is about 23 MB. The Chinese, Japanese
+and Korean fonts, IBM Plex Sans JP, KR, SC and TC, are 48 MB more, built in
+only when the program has this line, which makes it about 73 MB:
+
+```go
+import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
+```
+
+Without it, `IBMPlexSansJP.Regular` and the other CJK fonts are read from the
+folder `resources/fonts` of the working directory when it has them, and are an
+error that names this line when it does not.
 </details>
 
 <details>

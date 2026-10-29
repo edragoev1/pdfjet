@@ -4,8 +4,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root.
 
 // Package NotoSans has the paths to the Noto Sans fonts, which PDFjet does
-// not carry from 9.1.7: each constant is the path of a font file of
-// pdfjet-fonts, https://github.com/edragoev1/pdfjet-fonts, which
+// not carry from 9.1.7: each constant is the path of a font file of the
+// packages of PDFjet before 9.1.7, which
 // NewFontFromFile reads when the file is there.
 //
 // Deprecated: PDFjet carries IBM Plex Sans, which every constant of

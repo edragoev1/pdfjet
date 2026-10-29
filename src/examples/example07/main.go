@@ -10,6 +10,9 @@ import (
 	"log"
 	"time"
 
+	// The Chinese, Japanese and Korean fonts PDFjet carries, built into
+	// the program
+	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"

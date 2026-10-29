@@ -36,6 +36,10 @@ unzip -q -j -o "$zip" "$top/PDFjet.jar" -d "$work"
 cp "$work/PDFjet.jar" "$base.jar"
 mkdir -p "$work/fonts/com/pdfjet/fonts"
 git archive "v$version" resources/fonts | tar -x -C "$work/fonts"
+# The .go files embed the fonts for Go; the folder of the package cjk is
+# left empty.
+find "$work/fonts/resources/fonts" -name '*.go' -delete
+find "$work/fonts/resources/fonts" -type d -empty -delete
 for family in "$work"/fonts/resources/fonts/*/; do
     mv "${family%/}" "$work/fonts/com/pdfjet/fonts/"
 done

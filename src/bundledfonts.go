@@ -6,26 +6,37 @@
 package pdfjet
 
 import (
-	"io/fs"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/resources/fonts"
 )
 
 // The fonts PDFjet carries in itself, in resources/fonts, each family in a
-// folder of its name, as in the folder fonts of pdfjet-fonts: IBM Plex Sans
-// and Serif, from Thin to Bold, Source Serif 4 and Cascadia Mono, from Light
-// to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to
-// Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold
-// and Bold, as .otf. All are under the SIL Open Font License 1.1. The package
-// fonts of resources/fonts embeds them. A path to one of them, such as
+// folder of its name, with its license: IBM Plex Sans and Serif, from Thin to
+// Bold, Source Serif 4 and Cascadia Mono, from Light to Bold, upright and
+// italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; IBM Plex Math;
+// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
+// All are under the SIL Open Font License 1.1. A path to one of them, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the packages
-// IBMPlexSans and the others, is read from the library when there is no such
-// file, and the text of an SVG image is drawn in them unless a font is set.
+// IBMPlexSans and the others, is read from the folder resources/fonts of the
+// working directory when there is no such file, or else from the library,
+// and the text of an SVG image is drawn in them unless a font is set. The
+// package fonts of resources/fonts embeds all but the CJK fonts, which a
+// program builds in by importing the package cjk (cjkImport): Go builds the
+// files embedded into every program, uncompressed, and they are 48 MB.
 
-// pdfjetFonts is the repository of the fonts PDFjet came with before 9.1.7,
-// which has those it does not carry, such as Noto Sans.
-const pdfjetFonts = "https://github.com/edragoev1/pdfjet-fonts"
+// bundledFolder is the folder of the fonts PDFjet carries, in the working
+// directory, as in the repository and the packages of the releases.
+const bundledFolder = "resources/fonts"
+
+// cjkFamilies are the families that the package cjk builds in.
+var cjkFamilies = []string{"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"}
+
+// cjkImport is the line that builds the CJK fonts into a program.
+const cjkImport = `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"`
 
 // bundledFontName returns the name of a font under resources/fonts,
 // Family/File, of a path to it, such as
@@ -41,26 +52,51 @@ func bundledFontName(fontPath string) string {
 	return path[family+1:]
 }
 
-// bundledFontData returns the font of the path that PDFjet carries, or nil.
+// bundledFontData returns the font of the path that PDFjet carries, from the
+// folder resources/fonts or else from the library, or nil.
 func bundledFontData(fontPath string) []byte {
-	if !bundledFontHas(fontPath) {
+	name := bundledFontName(fontPath)
+	if name == "" || strings.Contains(name, "..") {
 		return nil
 	}
-	buf, err := fonts.FS.ReadFile(bundledFontName(fontPath))
-	if err != nil {
-		return nil
+	if buf, err := os.ReadFile(filepath.Join(bundledFolder, filepath.FromSlash(name))); err == nil {
+		return buf
 	}
-	return buf
+	if buf, err := fonts.ReadFile(name); err == nil {
+		return buf
+	}
+	return nil
 }
 
-// bundledFontHas tells if PDFjet carries the font of the path.
+// bundledFontHas tells if PDFjet carries the font of the path, in the folder
+// resources/fonts or in the library.
 func bundledFontHas(fontPath string) bool {
 	name := bundledFontName(fontPath)
 	if name == "" || strings.Contains(name, "..") {
 		return false
 	}
-	_, err := fs.Stat(fonts.FS, name)
+	if info, err := os.Stat(filepath.Join(bundledFolder, filepath.FromSlash(name))); err == nil && info.Mode().IsRegular() {
+		return true
+	}
+	_, err := fonts.Stat(name)
 	return err == nil
+}
+
+// bundledCJKMissing tells if the font of the path is one of the CJK fonts
+// PDFjet carries, Regular, SemiBold or Bold, which neither the folder
+// resources/fonts nor the program has: the program does not import the
+// package cjk.
+func bundledCJKMissing(fontPath string) bool {
+	family, file, _ := strings.Cut(bundledFontName(fontPath), "/")
+	if !slices.Contains(cjkFamilies, family) || bundledFontHas(fontPath) {
+		return false
+	}
+	for _, style := range []string{"Regular", "SemiBold", "Bold"} {
+		if file == family+"-"+style+".otf" {
+			return true
+		}
+	}
+	return false
 }
 
 // The families of the fonts PDFjet carries that SVG text is drawn in.
@@ -153,9 +189,9 @@ func bundledFont(pdf *PDF, family, weight int, italic bool) *Font {
 	if font, ok := pdf.bundledFonts[name]; ok {
 		return font
 	}
-	buf, err := fonts.FS.ReadFile(name)
-	if err != nil {
-		panic("Reading the font " + name + ": " + err.Error())
+	buf := bundledFontData(name)
+	if buf == nil {
+		panic("Reading the font " + name + ": not in resources/fonts nor in the library")
 	}
 	font := new(Font)
 	font.pdf = pdf
