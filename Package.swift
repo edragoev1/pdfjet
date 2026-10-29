@@ -10,7 +10,9 @@ let package = Package(
         .library(name: "PDFjet", targets: ["PDFjet"]),
     ],
     targets: [
-        .target(name: "PDFjet"),
+        // The fonts PDFjet carries, with their licenses: copies of those of
+        // src/bundledfonts, as the resources of a target are in its folder
+        .target(name: "PDFjet", resources: [.copy("Resources/bundledfonts")]),
         .executableTarget(name: "Example_01", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_02", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_03", dependencies: ["PDFjet"]),

@@ -124,13 +124,19 @@ import Testing
         #expect(TestSupport.fillColorBefore(content, "t") == "0.13 0.15 0.17 rg")
         #expect(TestSupport.fillColorBefore(content, "s") == "0.37 0.41 0.45 rg")
         // A label on a dark bar is white, on a light one ink: whichever
-        // contrasts more. On sage and on the old sage, which a rule by
-        // brightness gave white, ink contrasts more; on slate white.
+        // contrasts more. On sage, which a rule by brightness gave white, ink
+        // contrasts more; on slate white. Where neither contrasts 4.5:1, as
+        // on the old sage, ink 4.26:1, and on the red, the purple and the
+        // brown of the palette, a near black does.
         #expect(BarChart.labelColorOn(0x1F3A5F) == Color.white)
         #expect(BarChart.labelColorOn(0x6F95C2) == 0x22262B)
         #expect(BarChart.labelColorOn(0x76987C) == 0x22262B)
-        #expect(BarChart.labelColorOn(0x6B8F71) == 0x22262B)
         #expect(BarChart.labelColorOn(0x4F7A8C) == Color.white)
+        #expect(BarChart.labelColorOn(0x4E79A7) == Color.white)     // blue
+        #expect(BarChart.labelColorOn(0xF28E2C) == 0x22262B)        // orange
+        for color: Int32 in [0x6B8F71, 0xE15759, 0xAF7AA1, 0x9C755F] {
+            #expect(BarChart.labelColorOn(color) == 0x111111)
+        }
     }
 
     @Test func barsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits() {
@@ -146,7 +152,8 @@ import Testing
         #expect(content.contains(TestSupport.hex("sub")), "\(content)")
         #expect(content.contains("1 0 0 rg"), "\(content)")    // the first bar
         #expect(content.contains("0 0 1 rg"), "\(content)")    // the second bar
-        #expect(TestSupport.fillColorBefore(content, "6,650") == "1 1 1 rg")    // inside the first bar
+        // inside the red bar, on which white contrasts 4:1
+        #expect(TestSupport.fillColorBefore(content, "6,650") == "0.07 0.07 0.07 rg")
         #expect(TestSupport.fillColorBefore(content, "sub") == "0.37 0.41 0.45 rg")
         #expect(content.contains(TestSupport.hex("12")), "\(content)")     // too short: next to the bar
     }

@@ -58,7 +58,7 @@ import Testing
         #expect(content.hasPrefix("/Figure <</MCID 0>>\nBDC\n"), "\(content)")
         #expect(content.hasSuffix("EMC\n"), "\(content)")
         #expect(TestSupport.fillColorBefore(content, "Apples") == "0.13 0.15 0.17 rg")
-        #expect(TestSupport.fillColorBefore(content, "25%") == "1 1 1 rg")
+        #expect(TestSupport.fillColorBefore(content, "25%") == "0.07 0.07 0.07 rg")    // On red, which white contrasts 4:1
         chart(memory.pdf).setRadii(100, 0).add("", 1, Color.red).drawOn(page)
         chart(memory.pdf).setAltDescription("Most are oranges.")
                 .add("Apples", 1, Color.red).drawOn(page)

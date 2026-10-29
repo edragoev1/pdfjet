@@ -155,6 +155,8 @@ public final class PDF {
     // otherwise. A property of the document, not a static, so that the tests
     // that run at the same time do not share it. Never set outside the tests.
     var coreFontsInCompliance = false
+    // The fonts PDFjet carries that the document draws in, by their files
+    var bundledFonts = [String: Font]()
     // The descriptions that a standard of its own asks the metadata to carry.
     private var metadata = [String]()
     private var prevPage: Page?

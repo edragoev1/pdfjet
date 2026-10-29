@@ -25,7 +25,9 @@ class SVGText {
         var dx = 0.0                // How far it moves from where the run before it ends
         var dy = 0.0
         var fontSize: Float = 0.0
-        var bold = false
+        var weight = 400            // The font-weight, 400 normal and 700 bold
+        var italic = false
+        var family = BundledFonts.SANS  // BundledFonts.SANS, SERIF or MONO
         var anchor = 0              // 0 start, 1 middle, 2 end
         var baseline = 0            // 0 alphabetic, 1 middle, 2 hanging
         var fill: Int32 = 0
@@ -74,11 +76,11 @@ class SVGText {
         }
     }
 
-    // Places the runs, in the user space of the text element: each where it
-    // says or after the run before it, and each chunk, the runs from one that
-    // says where it starts to the next, moved by its width as its text-anchor
-    // asks.
-    func place(_ regular: Font, _ bold: Font) {
+    // Places the runs, in the user space of the text element, in the fonts
+    // they are given: each where it says or after the run before it, and each
+    // chunk, the runs from one that says where it starts to the next, moved
+    // by its width as its text-anchor asks.
+    func place() {
         var x = 0.0
         var y = 0.0
         var chunk = 0       // The first run of the chunk
@@ -95,7 +97,6 @@ class SVGText {
             }
             x += run.dx
             y += run.dy
-            run.font = run.bold ? bold : regular
             run.width = run.font!.stringWidth(run.fontSize, SVGText.text(run))
             run.px = Float(x)
             run.py = Float(y)

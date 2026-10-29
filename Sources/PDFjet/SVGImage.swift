@@ -78,9 +78,13 @@ public class SVGImage : Drawable {
      * classes in a <style> element that comes before them. It draws the
      * elements a <use> element names, and <text> and <tspan> elements with
      * their x, y, dx, dy, font-size, font-weight, text-anchor and
-     * dominant-baseline, in the font set with setFont and setBoldFont, or in
-     * Helvetica. A gradient is drawn in the mean color of its stops. The
-     * width, height, viewBox and preserveAspectRatio of the <svg> element
+     * dominant-baseline, in the font set with setFont and setBoldFont, or
+     * else in the fonts PDFjet carries, those of PDFjet Forms, embedded: IBM
+     * Plex Sans for sans-serif, Helvetica, Arial and the like, Source Serif 4
+     * for serif, Times and the like, JetBrains Mono for monospace, Courier and
+     * the like, regular, semibold or bold, upright or italic, as the
+     * font-family, font-weight and font-style of the text ask. A gradient is
+     * drawn in the mean color of its stops. The width, height, viewBox and preserveAspectRatio of the <svg> element
      * give the size of the image, and what is drawn outside it is cut off, as
      * a browser does.
      *
@@ -803,7 +807,9 @@ public class SVGImage : Drawable {
                 run.dy = pending[3]
                 pending = [Double.nan, Double.nan, 0.0, 0.0]
                 run.fontSize = state.fontSize
-                run.bold = state.bold
+                run.weight = state.fontWeight
+                run.italic = state.italic
+                run.family = state.fontFamily
                 run.anchor = state.textAnchor
                 run.baseline = state.baseline
                 run.fill = state.fillCurrent ? state.color : state.fill
@@ -1075,10 +1081,9 @@ public class SVGImage : Drawable {
     }
 
     ///
-    /// Sets the font of the text of the image. Unless set, the text is drawn
-    /// in Helvetica, which is not embedded and has the characters of Western
-    /// European languages only; a document of PDF/A or PDF/UA needs a font
-    /// that is embedded.
+    /// Sets the font of the text of the image, in place of the fonts PDFjet
+    /// carries: for the text of a language they do not have, such as Chinese,
+    /// or for a font of one's own.
     ///
     /// - Parameter font: the font.
     /// - Returns: this SVGImage object.
@@ -1091,8 +1096,8 @@ public class SVGImage : Drawable {
 
     ///
     /// Sets the font of the bold text of the image, whose font-weight is bold
-    /// or 600 or more. Unless set, it is the font set with setFont, or
-    /// Helvetica Bold when neither is set.
+    /// or 600 or more, when a font is set with setFont; unless set, that font
+    /// draws the bold text too.
     ///
     /// - Parameter font: the bold font.
     /// - Returns: this SVGImage object.
@@ -1103,29 +1108,22 @@ public class SVGImage : Drawable {
         return self
     }
 
-    // The core fonts the text is drawn in unless a font is set, one of each
-    // for a document, made when a text is first drawn in it.
-    private var corePDF: PDF?
-    private var helvetica: Font?
-    private var helveticaBold: Font?
-
-    private func coreFont(_ pdf: PDF, _ coreFont: Int) -> Font {
-        if corePDF !== pdf {
-            corePDF = pdf
-            helvetica = nil
-            helveticaBold = nil
+    // Returns the font of a run: the one set, the bold one for a weight of 600
+    // or more when it is set, or else the face of the fonts PDFjet carries of
+    // its family, weight and style. A face that is not among the resources,
+    // of a library built without them, is refused: nil, and the document
+    // records why, as no core font is drawn in its place.
+    private func fontOf(_ run: SVGText.Run, _ pdf: PDF) -> Font? {
+        if let font = font {
+            return (run.weight >= 600 && boldFont != nil) ? boldFont! : font
         }
-        // A core font of the fourteen, which Font makes without failing
-        if coreFont == CoreFont.HELVETICA {
-            if helvetica == nil {
-                helvetica = try! Font(pdf, coreFont)
-            }
-            return helvetica!
+        if let bundled = BundledFonts.get(pdf, run.family, run.weight, run.italic) {
+            return bundled
         }
-        if helveticaBold == nil {
-            helveticaBold = try! Font(pdf, coreFont)
-        }
-        return helveticaBold!
+        pdf.fail("The font " + BundledFonts.fileName(run.family, run.weight, run.italic)
+                + " is not in the library, which was built without the fonts of src/bundledfonts: "
+                + "build it with build-swift.sh, or set a font with setFont.")
+        return nil
     }
 
     /// Returns the width of this SVG image.
@@ -1391,17 +1389,19 @@ public class SVGImage : Drawable {
             link = page.beginLink()
         }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription)
-        var regular = font
-        var bold = boldFont
+        // A font that is missing is refused, and nothing is drawn, as the
+        // other ports throw; the figure is closed, empty
         for path in paths {
             if let text = path.text {
-                if regular == nil {
-                    regular = coreFont(page.pdf, CoreFont.HELVETICA)
+                for run in text.runs {
+                    guard let font = fontOf(run, page.pdf) else {
+                        page.addEMC()
+                        page.endLink(link)
+                        return [self.x + self.w, self.y + self.h]
+                    }
+                    run.font = font
                 }
-                if bold == nil {
-                    bold = font ?? coreFont(page.pdf, CoreFont.HELVETICA_BOLD)
-                }
-                text.place(regular!, bold!)
+                text.place()
             }
         }
         let clip = overflows(page)

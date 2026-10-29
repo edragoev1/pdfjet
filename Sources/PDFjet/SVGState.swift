@@ -32,7 +32,9 @@ struct SVGState {
     var dashOffset: Float = 0.0
     var strokeFirst = false                 // paint-order: the stroke drawn before the fill
     var fontSize: Float = 16.0              // In the user space; medium, as a browser has it
-    var bold = false                        // A font-weight of bold, 600 or more
+    var fontWeight = 400                    // normal 400, bold 700
+    var italic = false                      // A font-style of italic or oblique
+    var fontFamily = BundledFonts.SANS      // The family of the bundled fonts its names stand for
     var textAnchor = 0                      // 0 start, 1 middle, 2 end
     var baseline = 0                        // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
     var markerStart: String? = nil          // The ids of the markers, inherited
@@ -157,9 +159,17 @@ struct SVGState {
                 fontSize = size
             }
         case "font-weight":
-            if let weight = SVGState.parseFontWeight(value) {
-                bold = weight
+            if let weight = SVGState.parseFontWeight(value, fontWeight) {
+                fontWeight = weight
             }
+        case "font-style":
+            if value == "italic" || SVGState.hasPrefix(value, "oblique") {
+                italic = true
+            } else if value == "normal" {
+                italic = false
+            }
+        case "font-family":
+            fontFamily = BundledFonts.familyOf(value)
         case "font":
             setFont(value)
         case "text-anchor":
@@ -279,26 +289,35 @@ struct SVGState {
         return parseFloat(trimSpace(text))
     }
 
-    /// Reads a font-weight: true for bold, bolder and 600 or more, false for
-    /// normal, lighter and less, nil for a weight it cannot read.
-    static func parseFontWeight(_ value: String) -> Bool? {
-        if value == "bold" || value == "bolder" {
-            return true
-        } else if value == "normal" || value == "lighter" {
-            return false
+    /// Reads a font-weight, from 1 to 1000: normal is 400 and bold 700, and
+    /// bolder and lighter are those of CSS, from the weight of the parent.
+    /// Returns nil for a weight it cannot read.
+    static func parseFontWeight(_ value: String, _ parentWeight: Int) -> Int? {
+        if value == "normal" {
+            return 400
+        } else if value == "bold" {
+            return 700
+        } else if value == "bolder" {
+            return (parentWeight < 350) ? 400 : (parentWeight < 550) ? 700 : 900
+        } else if value == "lighter" {
+            return (parentWeight < 550) ? 100 : (parentWeight < 750) ? 400 : 700
         }
         guard let weight = parseFactor(value), weight >= 1.0, weight <= 1000.0 else {
             return nil
         }
-        return weight >= 600.0
+        return Int((weight + 0.5).rounded(.down))     // Java's Math.round
     }
 
-    // Sets the size and the weight of the font shorthand, such as "bold 10px
-    // sans-serif": the words before the size, then the size, which may have
-    // a line height after a slash. A shorthand without a weight is normal.
+    // Sets the size, the weight, the style and the family of the font
+    // shorthand, such as "bold 10px sans-serif": the words before the size,
+    // then the size, which may have a line height after a slash, then the
+    // family. A shorthand without a weight is normal.
     private mutating func setFont(_ value: String) {
-        var bold = false
-        for field in SVGState.fields(value) {
+        var weight = 400
+        var italic = false
+        let fields = SVGState.fields(value)
+        for (i, field) in fields.enumerated() {
+            let slash = field.unicodeScalars.contains("/")
             let size = SVGState.string(field.unicodeScalars.prefix(while: { $0 != "/" }))
             // A size has a unit or is a keyword; a number alone is a weight.
             // A digit is a decimal digit of one UTF-16 code unit, as Java's
@@ -307,11 +326,24 @@ struct SVGState {
                     !(last.value <= 0xFFFF && last.properties.generalCategory == .decimalNumber),
                     let fontSize = SVGState.parseFontSize(size, self.fontSize) {
                 self.fontSize = fontSize
-                self.bold = bold
+                self.fontWeight = weight
+                self.italic = italic
+                // The family after the size, and a line height after a slash
+                // written apart from it
+                var from = i + 1
+                if !slash && from < fields.count && SVGState.hasPrefix(fields[from], "/") {
+                    from += (fields[from] == "/") ? 2 : 1
+                }
+                self.fontFamily = BundledFonts.familyOf(
+                        (from < fields.count) ? fields[from...].joined(separator: " ") : "")
                 return
             }
-            if let weight = SVGState.parseFontWeight(field) {
-                bold = weight
+            if field == "italic" || field == "oblique" {
+                italic = true
+                continue
+            }
+            if let w = SVGState.parseFontWeight(field, self.fontWeight) {
+                weight = w
             }
         }
     }
@@ -594,7 +626,7 @@ struct SVGState {
     }
 
     // Returns the text in lower case, a code point at a time.
-    private static func toLower(_ text: String) -> String {
+    static func toLower(_ text: String) -> String {
         var lower = String.UnicodeScalarView()
         for scalar in text.unicodeScalars {
             if scalar == "\u{130}" {

@@ -632,44 +632,44 @@ import Testing
     }
 
     // The text of a chart: text and tspan elements, placed as a browser
-    // places them, in Helvetica unless a font is set.
+    // places them, in the fonts PDFjet carries unless a font is set.
 
     @Test func drawsATextAtItsXAndY() throws {
         let content = try draw("<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></svg>")
-        #expect(content.contains(" 12 Tf\n1 0 0 1 10 772 Tm\n[<4869>] TJ\nET\n"), "\(content)")
+        #expect(content.contains(" 12 Tf\n1 0 0 1 10 772 Tm\n<"), "\(content)")
+        #expect(content.contains("> Tj\nET\n"), "\(content)")     // IBM Plex Sans, embedded
         #expect(!content.contains("W\n"), "\(content)")    // Inside the image: nothing is cut off
     }
 
     @Test func anAnchorMovesTheTextByItsWidthAndDyIsInEm() throws {
-        // Hi is 944 thousandths of an em wide in Helvetica: 11.328 at 12.
+        // Hi is 957 thousandths of an em wide in IBM Plex Sans: 11.484 at 12.
         let content = try draw("<svg width=\"200\" height=\"100\"><text x=\"100\" y=\"20\" dy=\"0.5em\" "
                 + "font-size=\"12\" text-anchor=\"end\">Hi</text></svg>")
-        #expect(content.contains("1 0 0 1 88.67 766 Tm\n"), "\(content)")
+        #expect(content.contains("1 0 0 1 88.52 766 Tm\n"), "\(content)")
     }
 
     @Test func theTextAndTheTspansAreDrawnInTheOrderOfTheDocument() throws {
         let content = try draw("<svg width=\"200\" height=\"100\"><text x=\"0\" y=\"20\">"
                 + " A <tspan font-weight=\"bold\">B</tspan>C<title>not drawn</title></text></svg>")
-        // "A ": the space at the start is left out
-        let a = content.range(of: "[<4120>] TJ")
-        let b = content.range(of: "[<42>] TJ")
-        let c = content.range(of: "[<43>] TJ")
-        #expect(a != nil && b != nil && c != nil, "\(content)")
-        if let a = a, let b = b, let c = c {
-            #expect(a.lowerBound < b.lowerBound && b.lowerBound < c.lowerBound, "\(content)")
+        // Three runs: "A " (the space at the start left out), the bold B in
+        // IBM Plex Sans Bold, and C; the title is not drawn
+        #expect(content.components(separatedBy: " Tj\n").count - 1 == 3, "\(content)")
+        let fonts = content.components(separatedBy: " 16 Tf\n")
+        #expect(fonts.count == 4, "\(content)")
+        if fonts.count == 4, let slash = fonts[0].range(of: "/", options: .backwards) {
+            let regular = String(fonts[0][slash.lowerBound...])
+            #expect(!fonts[1].hasSuffix(regular), "\(content)")
+            #expect(fonts[2].hasSuffix(regular), "\(content)")
         }
-        #expect(!content.contains("<6E6F74"), "\(content)")
-        // The bold B in another font
-        #expect(content.contains("/F2 16 Tf\n") && content.contains("/F3 16 Tf\n"), "\(content)")
     }
 
     @Test func aTspanWithAnXOrAYStartsAChunkAnchoredOnItsOwn() throws {
         let content = try draw("<svg width=\"200\" height=\"100\"><text text-anchor=\"middle\" "
                 + "transform=\"translate(100,50)\" font-size=\"10\"><tspan y=\"-0.4em\">Go</tspan>"
                 + "<tspan x=\"0\" y=\"0.7em\">12%</tspan></text></svg>")
-        // Go is 1334 thousandths of an em, and 12% 2001.
-        #expect(content.contains("1 0 0 1 93.33 746 Tm\n"), "\(content)")
-        #expect(content.contains("1 0 0 1 90 735 Tm\n"), "\(content)")
+        // Go is 1255 thousandths of an em, and 12% 2127.
+        #expect(content.contains("1 0 0 1 93.72 746 Tm\n"), "\(content)")
+        #expect(content.contains("1 0 0 1 89.36 735 Tm\n"), "\(content)")
     }
 
     @Test func theFontShorthandSetsTheSizeAndTheWeight() throws {
@@ -681,8 +681,60 @@ import Testing
     }
 
     @Test func aCoreFontDrawsTheMinusSignAsAHyphenMinus() throws {
-        let content = try draw("<svg width=\"200\" height=\"100\"><text y=\"20\">\u{2212}5</text></svg>")
-        #expect(content.contains("[<2D35>] TJ"), "\(content)")
+        let page = TestSupport.newPage()
+        try image("<svg width=\"200\" height=\"100\"><text y=\"20\">\u{2212}5</text></svg>")
+                .setFont(TestSupport.helvetica(page.pdf)).drawOn(page)
+        #expect(TestSupport.content(page).contains("[<2D35>] TJ"), "\(TestSupport.content(page))")
+    }
+
+    @Test func theFamilyTheWeightAndTheStyleChooseTheFontPDFjetCarries() throws {
+        let page = TestSupport.newPage()
+        try image("<svg width=\"200\" height=\"100\">"
+                + "<text y=\"10\" font-family=\"'Times New Roman', serif\" font-weight=\"600\" font-style=\"italic\">a</text>"
+                + "<text y=\"20\" style=\"font: bold 10px Courier, monospace\">b</text>"
+                + "<text y=\"30\" font-family=\"Unknown, Arial\">c</text>"
+                + "<text y=\"40\" font-family=\"Unknown\" font-weight=\"bolder\">d</text></svg>").drawOn(page)
+        // Another image draws in the same fonts of the document, not new ones
+        try image("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
+                + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").drawOn(page)
+        #expect(Set(page.pdf.bundledFonts.keys) == [
+                "SourceSerif4-SemiBoldItalic.ttf", "JetBrainsMono-Bold.ttf",
+                "IBMPlexSans-Regular.ttf", "IBMPlexSans-Bold.ttf"])
+    }
+
+    // The fonts the module carries are copies of those of src/bundledfonts,
+    // as the resources of a target are in its folder: the same bytes.
+    @Test func theBundledFontsAreThoseOfSrcBundledFonts() throws {
+        let source = TestSupport.path("src/bundledfonts")
+        let names = try FileManager.default.contentsOfDirectory(atPath: source).sorted()
+        #expect(names.count == 21, "\(names)")
+        for name in names {
+            let url = BundledFonts.url(name)
+            #expect(url != nil, "\(name) is not among the resources")
+            if let url = url {
+                #expect(try Data(contentsOf: url) == Data(contentsOf: URL(fileURLWithPath: source + "/" + name)),
+                        "\(name) differs from src/bundledfonts")
+            }
+        }
+        for family in 0..<3 {
+            for weight in [400, 600, 700] {
+                for italic in [false, true] {
+                    #expect(names.contains(BundledFonts.fileName(family, weight, italic)))
+                }
+            }
+        }
+    }
+
+    @Test func theTextOfADocumentOfPDFAOrPDFUAIsInEmbeddedFonts() throws {
+        // The fonts PDFjet carries are embedded, so the text needs no font set
+        let svg = "<svg width=\"200\" height=\"100\"><text y=\"20\">A</text></svg>"
+        for compliance in [Compliance.PDF_A_3B, Compliance.PDF_UA_1] {
+            let pdf = PDF(OutputStream(toMemory: ()), compliance)
+            pdf.setTitle("SVG")
+            let page = Page(pdf, Letter.PORTRAIT)
+            try image(svg).setAltDescription("A").drawOn(page)
+            try pdf.complete()
+        }
     }
 
     @Test func aStrokeBeforeTheFillDrawsAHaloUnderTheText() throws {
