@@ -1144,30 +1144,20 @@ public class SVGImage : IDrawable {
 
     // Returns the font of a run: the one set, the bold one for a weight of 600
     // or more when it is set, or else the face of the fonts PDFjet carries of
-    // its family, weight and style; Helvetica, which is not embedded, when
-    // the library was built without them.
+    // its family, weight and style. A library built without them, which no
+    // build script makes, throws: the text is never drawn in a core font.
     private Font FontOf(SVGText.Run run, PDF pdf) {
         if (font != null) {
             return (run.weight >= 600 && boldFont != null) ? boldFont : font;
         }
         Font bundled = BundledFonts.Get(pdf, run.family, run.weight, run.italic);
-        if (bundled != null) {
-            return bundled;
+        if (bundled == null) {
+            pdf.Fail(new InvalidOperationException("The font "
+                    + BundledFonts.FileName(run.family, run.weight, run.italic)
+                    + " is not in the library, which was built without the fonts of src/bundledfonts: "
+                    + "build it with build-dotnet.sh, or set a font with SetFont."));
         }
-        // A document of PDF/A or PDF/UA embeds every font, which Helvetica
-        // is not: the message names SetFont, where Complete() named only
-        // Helvetica
-        if (pdf.compliance != Compliance.PDF_1_7 && !PDF.coreFontsInCompliance) {
-            pdf.Fail(new InvalidOperationException("The SVG image has text, which a document of "
-                    + pdf.compliance + " needs drawn in an embedded font: set one with SetFont."));
-        }
-        String key = (run.weight >= 600) ? "Helvetica-Bold" : "Helvetica";
-        Font core;
-        if (!pdf.bundledFonts.TryGetValue(key, out core)) {
-            core = new Font(pdf, (run.weight >= 600) ? CoreFont.HELVETICA_BOLD : CoreFont.HELVETICA);
-            pdf.bundledFonts[key] = core;
-        }
-        return core;
+        return bundled;
     }
 
     /// <summary>Returns the width of this SVG image.</summary>

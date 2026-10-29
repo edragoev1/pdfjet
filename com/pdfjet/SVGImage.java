@@ -1172,34 +1172,20 @@ public class SVGImage implements Drawable {
 
     // Returns the font of a run: the one set, the bold one for a weight of 600
     // or more when it is set, or else the face of the fonts PDFjet carries of
-    // its family, weight and style; Helvetica, which is not embedded, when
-    // the library was built without them.
+    // its family, weight and style. A library built without them, which no
+    // build script makes, throws: the text is never drawn in a core font.
     private Font fontOf(SVGText.Run run, PDF pdf) {
         if (font != null) {
             return (run.weight >= 600 && boldFont != null) ? boldFont : font;
         }
         Font bundled = BundledFonts.get(pdf, run.family, run.weight, run.italic);
-        if (bundled != null) {
-            return bundled;
+        if (bundled == null) {
+            pdf.fail(new IllegalStateException("The font "
+                    + BundledFonts.fileName(run.family, run.weight, run.italic)
+                    + " is not in the library, which was built without the fonts of src/bundledfonts: "
+                    + "build it with build-java.sh, or set a font with setFont."));
         }
-        // A document of PDF/A or PDF/UA embeds every font, which Helvetica
-        // is not: the message names setFont, where complete() named only
-        // Helvetica
-        if (pdf.compliance != Compliance.PDF_1_7 && !PDF.coreFontsInCompliance) {
-            pdf.fail(new IllegalStateException("The SVG image has text, which a document of "
-                    + pdf.compliance + " needs drawn in an embedded font: set one with setFont."));
-        }
-        String key = (run.weight >= 600) ? "Helvetica-Bold" : "Helvetica";
-        Font core = pdf.bundledFonts.get(key);
-        if (core == null) {
-            try {
-                core = new Font(pdf, (run.weight >= 600) ? CoreFont.HELVETICA_BOLD : CoreFont.HELVETICA);
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-            pdf.bundledFonts.put(key, core);
-        }
-        return core;
+        return bundled;
     }
 
     /**
