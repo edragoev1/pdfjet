@@ -38,5 +38,10 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
   `Electric_Vehicles_by_Model_Year.csv` is its vehicles counted by model
   year and by kind, battery electric and plug-in hybrid, which Example_25
   draws, written from the full file by `util/make-ev-by-model-year.py`.
+  Source: Washington State Department of Licensing, [Electric Vehicle
+  Population Data](https://data.wa.gov/d/f6w7-q2d2), licensed under the
+  [Open Data Commons Open Database License (ODbL)
+  1.0](https://opendatacommons.org/licenses/odbl/1-0/); the two files, a
+  part of it and counts made from it, are under the same license.
 - The other files are sample data for the examples: the tables they draw, an
   invoice in the Factur-X format, and a form they read pages from.

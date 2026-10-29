@@ -152,20 +152,37 @@ You can obtain a copy of the license at:
 http://scripts.sil.org/OFL
 
 
-This software includes, unmodified, the fonts IBM Plex Sans, Source Serif 4
-and JetBrains Mono, regular, semibold and bold, upright and italic, which it
-embeds in the text of SVG images; they are licensed under the SIL Open Font
-License, Version 1.1, whose text, with the copyright of each, is beside them
-in src/bundledfonts and in the library (com/pdfjet/bundledfonts in the Java
-jar; the resources PDFjet.BundledFonts.* of the .NET PDFjet.dll, and beside
-it in the .NET package):
+This software includes, unmodified, the fonts in resources/fonts: IBM Plex
+Sans, Sans Arabic, Sans Hebrew, Sans Thai, Sans JP, Sans KR, Sans SC, Sans TC,
+Serif and Math, Source Serif 4, and Cascadia Mono. A font path names one of
+them, and the text of SVG images is drawn in them. They are licensed under the
+SIL Open Font License, Version 1.1, whose text, with the copyright of each, is
+beside each family in resources/fonts, and goes with them wherever they are
+carried: in the Maven jar, in the PDFjet.dll of the NuGet package, built into
+Go programs, and in the Swift product PDFjetFonts.
 
     ============================================================================
-    IBM Plex Sans: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
+    IBM Plex: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
     Source Serif 4: (c) 2014 - 2021 Adobe Systems Incorporated
         (http://www.adobe.com/), with Reserved Font Name 'Source'.
-    JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors
-        (https://github.com/JetBrains/JetBrainsMono)
+    Cascadia Mono: Copyright (c) 2019 - Present, Microsoft Corporation,
+        with Reserved Font Name Cascadia Code.
 
     This Font Software is licensed under the SIL Open Font License, Version 1.1.
     This license is available with a FAQ at: https://openfontlicense.org
+
+
+This software includes data of the Washington State Department of Licensing,
+Electric Vehicle Population Data (https://data.wa.gov/d/f6w7-q2d2), in
+resources/data: Electric_Vehicle_Population_10_Pages.csv, a part of it, and
+Electric_Vehicles_by_Model_Year.csv, counts made from it. Both are licensed
+under the Open Data Commons Open Database License (ODbL) 1.0,
+https://opendatacommons.org/licenses/odbl/1-0/, as the data they come from.
+
+
+This software includes data of the World Bank, World Development Indicators
+(SP.DYN.LE00.IN, SP.DYN.TFRT.IN and the region of each country), in
+resources/data/life-expectancy-and-fertility-2023.txt and the chart drawn from
+it in images/svg/d3-life-expectancy-by-region.svg, licensed under the Creative
+Commons Attribution 4.0 International License (CC BY 4.0),
+https://creativecommons.org/licenses/by/4.0/.
