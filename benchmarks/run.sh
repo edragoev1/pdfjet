@@ -24,6 +24,9 @@ rm -rf "$B/jet-classes" "$B/classes"
 javac -O -encoding utf-8 --release 8 -nowarn -d "$B/jet-classes" \
     com/pdfjet/*.java com/pdfjet/barcodes/*.java com/pdfjet/pdf417/*.java com/pdfjet/qrcode/*.java \
     com/pdfjet/datamatrix/*.java com/pdfjet/internal/*.java com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java 2>&1 | grep -v '^Note:' || true
+# The fonts PDFjet carries, resources of com.pdfjet.fonts, as build-java.sh copies them
+mkdir -p "$B/jet-classes/com/pdfjet/fonts"
+cp -R resources/fonts/* "$B/jet-classes/com/pdfjet/fonts/"
 jar cf "$B/PDFjet.jar" -C "$B/jet-classes" .
 
 CP="$B/PDFjet.jar"
@@ -48,7 +51,7 @@ peak() {
     git log --oneline -1 | cat
 
     if [ "$WHAT" = all ] || [ "$WHAT" = text ]; then
-        CONFIGS="jet-plex jet-noto"
+        CONFIGS="jet-plex jet-serif"
         SIZES="50 100 200 500"; COLD=20; PEAK_PAGES=500; RUNS=3
         if [ -n "$QUICK" ]; then SIZES="50"; COLD=5; PEAK_PAGES=50; RUNS=1; fi
         J="java -Xmx4g $PROPS -cp $CP TextBench"

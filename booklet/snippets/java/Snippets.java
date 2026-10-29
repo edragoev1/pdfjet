@@ -108,19 +108,19 @@ public class Snippets {
     static void fonts(PDF pdf, Font font) throws Exception {
         Font serif = new Font(pdf, SourceSerif4.Regular).setSize(14f);
         Font bold = new Font(pdf, IBMPlexSans.Bold);
-        Font mono = new Font(pdf, JetBrainsMono.Regular).setSize(10f);
+        Font mono = new Font(pdf, CascadiaMono.Regular).setSize(10f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(serif, "Source Serif 4 at 14 points").setLocation(50f, 50f).drawOn(page);
         new TextLine(bold, "IBM Plex Sans Bold at 12 points").setLocation(50f, 75f).drawOn(page);
-        new TextLine(mono, "JetBrains Mono at 10 points").setLocation(50f, 100f).drawOn(page);
+        new TextLine(mono, "Cascadia Mono at 10 points").setLocation(50f, 100f).drawOn(page);
         new TextLine(bold, "The same font at 24 points").setFontSize(24f)
                 .setLocation(50f, 135f).drawOn(page);
     }
 
     // @snippet font-files
     static void fontFiles(PDF pdf, Font font) throws Exception {
-        Font otf = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf");
-        Font ttf = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf");
+        Font otf = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        Font ttf = new Font(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(otf, "An OpenType font").setLocation(50f, 50f).drawOn(page);
         new TextLine(ttf, "A TrueType font").setLocation(50f, 75f).drawOn(page);
@@ -241,7 +241,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).setSize(11f);
+        Font code = new Font(pdf, CascadiaMono.Regular).setSize(11f);
         Markup markup = new Markup(font, bold, italic, boldItalic, code);
         List<Paragraph> paragraphs = markup.paragraphs(
                 "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
@@ -255,7 +255,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).setSize(10f);
+        Font code = new Font(pdf, CascadiaMono.Regular).setSize(10f);
         Markdown markdown = new Markdown(font, bold, italic, boldItalic, code);
         List<Page> pages = new ArrayList<Page>();
         markdown.drawOn(pdf, "# A heading\n"
@@ -804,7 +804,9 @@ public class Snippets {
     static void existingPages() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("stamped.pdf")));
         List<PDFobj> objects = pdf.read(new FileInputStream("data/testPDFs/rc65-16e.pdf"));
-        Font font = new Font(objects, new FileInputStream(IBMPlexSans.Regular)).setSize(24f);
+        // IBM Plex Sans, from PDFjet.jar, which carries it
+        Font font = new Font(objects,
+                Font.class.getResourceAsStream("/com/pdfjet/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).setSize(24f);
         for (PDFobj pageObj : pdf.getPageObjects(objects)) {
             Page page = new Page(pdf, pageObj);
             page.addResource(font, objects);

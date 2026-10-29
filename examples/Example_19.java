@@ -30,7 +30,7 @@ public class Example_19 {
         Font bold = new Font(pdf, IBMPlexSans.Bold).setSize(11f);
         Font italic = new Font(pdf, IBMPlexSans.Italic).setSize(11f);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic).setSize(11f);
-        Font code = new Font(pdf, IBMPlexMono.Regular).setSize(9.5f);
+        Font code = new Font(pdf, CascadiaMono.Regular).setSize(9.5f);
 
         Markdown markdown = new Markdown(regular, bold, italic, boldItalic, code);
         markdown.setImageDirectory("data/markdown");

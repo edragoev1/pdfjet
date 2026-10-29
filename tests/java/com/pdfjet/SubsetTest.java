@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,8 +25,12 @@ import org.junit.jupiter.api.Test;
 
 class SubsetTest {
     private static byte[] fontBytes(String path) throws Exception {
-        return Files.readAllBytes(TestSupport.file(path).toPath());
+        return TestSupport.fontBytes(path);
     }
+
+    // IBM Plex Sans, which has the short offsets of loca; the subsets of a
+    // font with the long ones read Cascadia Mono or IBM Plex Math.
+    private static final String PLEX = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
 
     private static int u16(byte[] font, int at) {
         return (font[at] & 0xFF) << 8 | (font[at + 1] & 0xFF);
@@ -80,13 +83,17 @@ class SubsetTest {
 
     @Test
     void keepsTheGlyphsUsedAndThePartsOfTheComposites() throws Exception {
-        // In Noto Sans, Ä (134) is made of A (36) and the dieresis (106), and
-        // ǅ (913) of D (39), z (93) and the caron (331).
-        byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        // In Cascadia Mono, whose loca has the long offsets, as that of Noto
+        // Sans, which this test read before 9.1.7, had: Ä (16) is made of A
+        // (1) and the dieresis of capitals (3051), and ặ (229) of a (225),
+        // the dot below (3029) and the breve (3020); 4,319 glyphs. Noto Sans
+        // had Ä (134) of A (36) and the dieresis (106), and ǅ (913) of three.
+        byte[] ttf = fontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf");
+        assertEquals(1, u16(ttf, table(ttf, "head") + 50));
         boolean[][] kept = new boolean[1][];
-        byte[] subset = Subset.subsetTrueType(ttf, used(134, 913), kept);
-        assertEquals(4503, kept[0].length);
-        Set<Integer> want = new HashSet<Integer>(Arrays.asList(0, 134, 36, 106, 913, 39, 93, 331));
+        byte[] subset = Subset.subsetTrueType(ttf, used(16, 229), kept);
+        assertEquals(4319, kept[0].length);
+        Set<Integer> want = new HashSet<Integer>(Arrays.asList(0, 16, 1, 3051, 229, 225, 3029, 3020));
         for (int gid = 0; gid < kept[0].length; gid++) {
             assertEquals(want.contains(gid), kept[0][gid], "glyph " + gid);
             byte[] glyph = glyph(subset, gid);
@@ -119,7 +126,9 @@ class SubsetTest {
 
     @Test
     void subsetsAFontWithShortOffsets() throws Exception {
-        byte[] ttf = fontBytes("fonts/NotoSansThai/NotoSansThai-Regular.ttf");
+        // IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
+        // Thai's had.
+        byte[] ttf = fontBytes("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf");
         assertEquals(0, u16(ttf, table(ttf, "head") + 50));
         byte[] subset = Subset.subsetTrueType(ttf, used(5), new boolean[1][]);
         byte[] whole = glyph(ttf, 5);
@@ -129,7 +138,7 @@ class SubsetTest {
 
     @Test
     void isRefusedByAFontWhoseLicenseForbidsIt() throws Exception {
-        byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        byte[] ttf = fontBytes(PLEX);
         int os2 = table(ttf, "OS/2");
         ttf[os2 + 8] = 0x01;
         ttf[os2 + 9] = 0x00;
@@ -182,21 +191,24 @@ class SubsetTest {
         return n;
     }
 
-    private static final Pattern TAGGED = Pattern.compile("/BaseFont /([A-Z]{6}\\+NotoSans-Regular)\n");
+    private static final Pattern TAGGED = Pattern.compile("/BaseFont /([A-Z]{6}\\+IBMPlexSans)\n");
 
     @Test
     void aTrueTypeFontIsEmbeddedAsASubsetUnderATaggedName() throws Exception {
-        for (String path : new String[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
+        for (String path : new String[] {PLEX}) {
             String raw = doc(Compliance.PDF_1_7, path, true, "Ä");
             Matcher m = TAGGED.matcher(raw);
             assertTrue(m.find(), path);
             assertTrue(raw.contains("/FontName /" + m.group(1) + "\n"), path);
             assertEquals(2, count(TAGGED, raw), path);
             byte[] program = program(raw);
-            assertTrue(glyph(program, 134).length > 0 && glyph(program, 36).length > 0, path);
-            assertEquals(0, glyph(program, 37).length, path);
-            // The widths of the glyphs kept: .notdef, A, the dieresis and Ä.
-            assertTrue(Pattern.compile("/W \\[\n0\\[\\d+ \\]\n36\\[\\d+ \\]\n106\\[\\d+ \\]\n134\\[\\d+ \\]\\]\n")
+            // In IBM Plex Sans, Ä (395) is made of A (33) and the dieresis
+            // of capitals (971), and B is 34. Noto Sans had Ä (134), A (36),
+            // the dieresis (106) and B (37).
+            assertTrue(glyph(program, 395).length > 0 && glyph(program, 33).length > 0, path);
+            assertEquals(0, glyph(program, 34).length, path);
+            // The widths of the glyphs kept: .notdef, A, Ä and the dieresis.
+            assertTrue(Pattern.compile("/W \\[\n0\\[\\d+ \\]\n33\\[\\d+ \\]\n395\\[\\d+ \\]\n971\\[\\d+ \\]\\]\n")
                     .matcher(raw).find(), path + ": the widths");
             assertFalse(raw.contains("/CIDSet"), path);
         }
@@ -204,27 +216,28 @@ class SubsetTest {
 
     @Test
     void aFontSetToStayWholeIsEmbeddedWhole() throws Exception {
-        byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
-        for (String path : new String[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
+        byte[] ttf = fontBytes(PLEX);
+        for (String path : new String[] {PLEX}) {
             String raw = doc(Compliance.PDF_1_7, path, false, "Ä");
-            assertTrue(raw.contains("/BaseFont /NotoSans-Regular\n") && !raw.contains("+NotoSans"), path);
+            assertTrue(raw.contains("/BaseFont /IBMPlexSans\n") && !raw.contains("+IBMPlexSans"), path);
             assertArrayEquals(ttf, program(raw), path);
         }
     }
 
     @Test
     void twoFontsOfOneFileShareOneSubset() throws Exception {
-        String raw = doc(Compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B");
+        String raw = doc(Compliance.PDF_1_7, PLEX, true, "A", "B");
         assertEquals(1, count(Pattern.compile("/Length1 "), raw));
         byte[] program = program(raw);
-        assertTrue(glyph(program, 36).length > 0 && glyph(program, 37).length > 0);
+        // A and B, 33 and 34 in IBM Plex Sans; 36 and 37 in Noto Sans.
+        assertTrue(glyph(program, 33).length > 0 && glyph(program, 34).length > 0);
         // Two Type0 fonts and their CID font.
         assertEquals(3, count(TAGGED, raw));
     }
 
     @Test
     void aPDFA1HasTheCIDSetOfTheGlyphsKept() throws Exception {
-        String raw = doc(Compliance.PDF_A_1B, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A");
+        String raw = doc(Compliance.PDF_A_1B, PLEX, true, "A");
         Matcher m = Pattern.compile("/CIDSet (\\d+) 0 R\n").matcher(raw);
         assertTrue(m.find(), "no CIDSet");
         int at = raw.indexOf("\n" + m.group(1) + " 0 obj\n");
@@ -232,10 +245,11 @@ class SubsetTest {
         Matcher s = Pattern.compile("/Length (\\d+)\n>>\nstream\n").matcher(raw);
         assertTrue(s.find(at));
         byte[] bits = inflate(raw, s.end(), Integer.parseInt(s.group(1)));
-        // Glyphs 0 and 36 of 4503.
-        byte[] want = new byte[(4503 + 7) / 8];
+        // Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A
+        // at 36 of 4,503.
+        byte[] want = new byte[(1019 + 7) / 8];
         want[0] = (byte) 0x80;
-        want[36 / 8] |= (byte) (0x80 >> (36 % 8));
+        want[33 / 8] |= (byte) (0x80 >> (33 % 8));
         assertArrayEquals(want, bits);
         assertNotNull(bits);
     }
@@ -271,11 +285,11 @@ class SubsetTest {
 
     @Test
     void subsetOfATrueTypeFontAddedToAnExistingPDF() throws Exception {
-        String path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        String path = PLEX;
         int whole = fontBytes(path).length;
         java.util.List<PDFobj> objects = subsetInExistingPDF(path, true);
         String name = subsetFontName(objects);
-        assertTrue(name.matches("/[A-Z]{6}\\+NotoSans-Regular"), name);
+        assertTrue(name.matches("/[A-Z]{6}\\+IBMPlexSans"), name);
         assertEquals(name, TestSupport.findObject(objects, "/FontName").getValue("/FontName"));
         assertEquals(name, TestSupport.findObject(objects, "/CIDToGIDMap").getValue("/BaseFont"));
         PDFobj file = TestSupport.findObject(objects, "/Length1");
@@ -296,7 +310,7 @@ class SubsetTest {
 
     @Test
     void subsetOfACFFFontAddedToAnExistingPDF() throws Exception {
-        java.util.List<PDFobj> objects = subsetInExistingPDF("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true);
+        java.util.List<PDFobj> objects = subsetInExistingPDF("tests/fonts/IBMPlexSans-Regular.otf", true);
         String name = subsetFontName(objects);
         assertTrue(name.matches("/[A-Z]{6}\\+IBMPlexSans"), name);
         assertNotNull(TestSupport.findObject(objects, "/FontFile3"));
@@ -304,9 +318,9 @@ class SubsetTest {
 
     @Test
     void setSubsetFalseKeepsAFontAddedToAnExistingPDFWhole() throws Exception {
-        String path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        String path = PLEX;
         java.util.List<PDFobj> objects = subsetInExistingPDF(path, false);
-        assertEquals("/NotoSans-Regular", subsetFontName(objects));
+        assertEquals("/IBMPlexSans", subsetFontName(objects));
         assertEquals(fontBytes(path).length,
                 Integer.parseInt(TestSupport.findObject(objects, "/Length1").getValue("/Length1")));
     }
@@ -334,7 +348,7 @@ class SubsetTest {
         // The gasp table's entry made a second head table of 8 bytes, whose
         // checksum adjustment the subset wrote past its end (the review of
         // 9 October 2026).
-        byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        byte[] ttf = fontBytes(PLEX);
         int gasp = entry(ttf, "gasp");
         System.arraycopy("head".getBytes(StandardCharsets.ISO_8859_1), 0, ttf, gasp, 4);
         putU32(ttf, gasp + 12, 8);
@@ -343,7 +357,7 @@ class SubsetTest {
 
     @Test
     void aLocaFormatOtherThan0Or1IsRefused() throws Exception {
-        byte[] ttf = fontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf");
+        byte[] ttf = fontBytes("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf");
         putU16(ttf, table(ttf, "head") + 50, 0xFFFF);
         assertRefused(ttf, used(36));
     }
@@ -352,8 +366,9 @@ class SubsetTest {
     void anOffsetPast2To31OfAGlyphNotKeptIsNotRefused() throws Exception {
         // A glyph whose loca offset is past 2^31 - 1 cannot be read, and is
         // refused only if it is kept, as the other ports do (the review of
-        // 9 October 2026).
-        byte[] ttf = fontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf");
+        // 9 October 2026). IBM Plex Math has the long offsets of loca, as IBM
+        // Plex Sans JP's .ttf, which this test read before 9.1.7, had.
+        byte[] ttf = fontBytes("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf");
         assertEquals(1, u16(ttf, table(ttf, "head") + 50));
         int numGlyphs = u16(ttf, table(ttf, "maxp") + 4);
         putU32(ttf, table(ttf, "loca") + 4 * numGlyphs, 0xFFFFFFF0L);
@@ -367,7 +382,7 @@ class SubsetTest {
         // them copied it again for each (the review of 9 October 2026: 112 KB
         // made into 384 MB). A subset is never larger than the glyf table and the
         // padding of its glyphs.
-        byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        byte[] ttf = fontBytes(PLEX);
         int head = table(ttf, "head");
         int loca = table(ttf, "loca");
         int glyfLength = u32(ttf, entry(ttf, "glyf") + 12);

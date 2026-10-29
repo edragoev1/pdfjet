@@ -371,7 +371,7 @@ class MergeTest {
         // review of 9 October 2026), and its text was lost.
         List<PDFobj> objects = TestSupport.read(document("Existing"));
         Font font;
-        try (java.io.InputStream in = TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf")) {
+        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
             font = new Font(objects, in);
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -386,11 +386,11 @@ class MergeTest {
         assertNotNull(TestSupport.findObject(merged, "/Length1"), "no font program");
         boolean found = false;
         for (PDFobj obj : merged) {
-            if ("/Type0".equals(obj.getValue("/Subtype")) && obj.getValue("/BaseFont").endsWith("+NotoSans-Regular")) {
+            if ("/Type0".equals(obj.getValue("/Subtype")) && obj.getValue("/BaseFont").endsWith("+IBMPlexSans")) {
                 found = true;
             }
         }
-        assertTrue(found, "no Type0 font of a subset of Noto Sans");
+        assertTrue(found, "no Type0 font of a subset of IBM Plex Sans");
     }
 
     // Returns a PDF of the objects, numbered from 1, with a table of them.

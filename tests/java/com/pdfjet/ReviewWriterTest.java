@@ -452,7 +452,21 @@ class ReviewWriterTest {
     void theFontFileRefersToItsMetadataWhoseNoticeIsEscaped() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_A_2B);
-        Font font = new Font(pdf, TestSupport.file("fonts/NotoSansJP/NotoSansJP-Regular.ttf").getPath());
+        // Noto Sans JP, which this test read before 9.1.7, has "&" in its
+        // designer and its description; no font PDFjet carries has one in
+        // its names, so the license of IBM Plex Sans is made to say "with &
+        // FAQ" in place of "with a FAQ", a character for a character.
+        byte[] ttf = TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] withA = " with a FAQ".getBytes(StandardCharsets.UTF_16BE);
+        int at = -1;
+        for (int i = 0; at == -1 && i + withA.length <= ttf.length; i++) {
+            if (java.util.Arrays.equals(withA, java.util.Arrays.copyOfRange(ttf, i, i + withA.length))) {
+                at = i;
+            }
+        }
+        assertTrue(at != -1, "the license of the font has no \"with a FAQ\"");
+        ttf[at + 2 * " with ".length() + 1] = '&';
+        Font font = new Font(pdf, new java.io.ByteArrayInputStream(ttf));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Hello").setLocation(50f, 50f).drawOn(page);
         pdf.complete();

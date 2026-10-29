@@ -23,17 +23,14 @@ public class Example_04 {
 
         // Thai font, whose GPOS table places the tone marks above the upper
         // vowels.
-        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
         Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
         f1.setSize(12f);
 
         // Hebrew font
-        // Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf");
         Font f2 = new Font(pdf, IBMPlexSansHebrew.Regular);
         f2.setSize(12f);
 
         // Arabic font
-        // Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf");
         Font f3 = new Font(pdf, IBMPlexSansArabic.Regular);
         f3.setSize(12f);
 

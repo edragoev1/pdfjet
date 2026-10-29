@@ -141,7 +141,7 @@ public class CommonBench {
         Font bold = new Font(pdf, ROOT + IBMPlexSans.Bold).setSize(11f);
         Font italic = new Font(pdf, ROOT + IBMPlexSans.Italic).setSize(11f);
         Font boldItalic = new Font(pdf, ROOT + IBMPlexSans.BoldItalic).setSize(11f);
-        Font code = new Font(pdf, ROOT + IBMPlexMono.Regular).setSize(9.5f);
+        Font code = new Font(pdf, ROOT + CascadiaMono.Regular).setSize(9.5f);
         long t1 = System.nanoTime();
 
         String text = new String(Files.readAllBytes(Paths.get(ROOT + "README.md")), StandardCharsets.UTF_8);

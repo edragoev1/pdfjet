@@ -27,7 +27,9 @@ import java.util.zip.CRC32;
 import org.junit.jupiter.api.Test;
 
 class ReviewMediaTest {
-    private static final String THAI = "fonts/NotoSansThai/NotoSansThai-Regular.ttf";
+    // IBM Plex Sans Thai, a TrueType font of Latin and Thai with a GPOS
+    // table, as Noto Sans Thai, which these tests read before 9.1.7, is.
+    private static final String THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
 
     private static byte[] font(String path) throws Exception {
         return TestSupport.readAll(TestSupport.open(path));
@@ -670,8 +672,7 @@ class ReviewMediaTest {
         // font it is.
         java.io.File copy = java.io.File.createTempFile("pdfjet", ".font");
         try {
-            java.nio.file.Files.copy(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").toPath(),
-                    copy.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            java.nio.file.Files.write(copy.toPath(), TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
             Font font = new Font(TestSupport.newPDF(), copy.getPath());
             assertEquals(new Font(TestSupport.newPDF(), TestSupport.open(
                     "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).name, font.name);

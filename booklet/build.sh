@@ -66,4 +66,7 @@ javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -d build/booklet \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     booklet/Booklet.java || exit 1
+# The fonts PDFjet carries, resources of com.pdfjet.fonts, as build-java.sh copies them
+mkdir -p build/booklet/com/pdfjet/fonts
+cp -R resources/fonts/* build/booklet/com/pdfjet/fonts/ || exit 1
 java -cp build/booklet Booklet "$@"

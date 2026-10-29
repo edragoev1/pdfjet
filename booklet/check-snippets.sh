@@ -38,6 +38,9 @@ javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -d "$WORK/java/cla
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     booklet/snippets/java/Snippets.java || exit 1
+# The fonts PDFjet carries, resources of com.pdfjet.fonts, as build-java.sh copies them
+mkdir -p "$WORK/java/classes/com/pdfjet/fonts"
+cp -R resources/fonts/* "$WORK/java/classes/com/pdfjet/fonts/" || exit 1
 (cd "$WORK/java/out" && java -cp "$WORK/java/classes" Snippets) || exit 1
 
 echo "Building and running the csharp snippets"

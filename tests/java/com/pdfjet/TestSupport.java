@@ -50,6 +50,53 @@ public final class TestSupport {
         return new BufferedInputStream(new FileInputStream(file));
     }
 
+    // The bytes of a file of the repository, or of a font PDFjet carries, as
+    // open reads them: for the tests that read or patch a font file itself.
+    public static byte[] fontBytes(String path) throws IOException {
+        try (InputStream in = open(path)) {
+            return readAll(in);
+        }
+    }
+
+    /**
+     * Returns the font with its character map rewritten so that the second
+     * character of each pair is drawn with the glyph of the first, as Noto
+     * Sans Arabic draws ١ and ۱, and ل and its isolated form ﻝ, with one
+     * glyph, which no font PDFjet carries does in Arabic. The map is a format
+     * 12 subtable of the Windows platform, of every character of the font to
+     * its glyph, put at the end of the font in place of its cmap table, which
+     * PDFjet reads as it reads any font's.
+     */
+    public static byte[] withSharedGlyphs(byte[] font, int[][] pairs) throws Exception {
+        final java.util.TreeMap<Integer, Integer> map = new java.util.TreeMap<Integer, Integer>();
+        new OTF(new ByteArrayInputStream(font)).unicodeToGID.each((c, gid) -> map.put(c, gid));
+        for (int[] pair : pairs) {
+            Integer gid = map.get(pair[0]);
+            if (gid == null) {
+                throw new IllegalArgumentException(String.format("the font has no U+%04X", pair[0]));
+            }
+            map.put(pair[1], gid);
+        }
+        java.nio.ByteBuffer cmap = java.nio.ByteBuffer.allocate(12 + 16 + 12 * map.size());
+        cmap.putShort((short) 0).putShort((short) 1);                   // The version, one record
+        cmap.putShort((short) 3).putShort((short) 10).putInt(12);       // Windows, Unicode full
+        cmap.putShort((short) 12).putShort((short) 0).putInt(16 + 12 * map.size()).putInt(0).putInt(map.size());
+        for (java.util.Map.Entry<Integer, Integer> e : map.entrySet()) {
+            cmap.putInt(e.getKey()).putInt(e.getKey()).putInt(e.getValue());
+        }
+        byte[] patched = java.util.Arrays.copyOf(font, font.length + cmap.capacity());
+        System.arraycopy(cmap.array(), 0, patched, font.length, cmap.capacity());
+        int tables = (font[4] & 0xFF) << 8 | (font[5] & 0xFF);
+        for (int i = 0; i < tables; i++) {
+            int entry = 12 + 16 * i;
+            if (new String(font, entry, 4, StandardCharsets.ISO_8859_1).equals("cmap")) {
+                java.nio.ByteBuffer.wrap(patched, entry + 8, 8).putInt(font.length).putInt(cmap.capacity());
+                return patched;
+            }
+        }
+        throw new IllegalArgumentException("the font has no cmap table");
+    }
+
     public static PDF newPDF() throws Exception {
         return new PDF(new ByteArrayOutputStream());
     }

@@ -378,7 +378,7 @@ class MisuseTest {
         // An embedded font only reserves its number, written at complete: the
         // objects could take it too (the review of 9 October 2026).
         final PDF pdf4 = TestSupport.newPDF();
-        new Font(pdf4, TestSupport.file("fonts/NotoSans/NotoSans-Regular.ttf").getPath());
+        new Font(pdf4, TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").getPath());
         assertEquals(message, fails(IllegalStateException.class, new Executable() {
             public void execute() throws Throwable { pdf4.addObjects(objects); }
         }));

@@ -29,9 +29,12 @@ Each run writes its own `build/results-<date>-<time>.log`, and `build/` is not
 tracked.
 
 The text document has two configurations: `jet-plex`, with IBM Plex Sans
-(`IBMPlexSans-Regular.ttf`), and `jet-noto`, with Noto Sans
-(`NotoSans-Regular.ttf`), both embedded as subsets from 9.0.5; the runs
-before used the `.otf.stream` and `.ttf.stream` files. The table has four:
+(`IBMPlexSans-Regular.ttf`), and `jet-serif`, with Source Serif 4
+(`SourceSerif4-Regular.ttf`), both embedded as subsets from 9.0.5; the runs
+before used the `.otf.stream` and `.ttf.stream` files. Up to 9.1.5 the second
+was `jet-noto`, with Noto Sans (`NotoSans-Regular.ttf`), which PDFjet does not
+come with from 9.1.7: the results below with Noto Sans were measured
+with it. The table has four:
 
 | Configuration | What it draws with |
 |---|---|

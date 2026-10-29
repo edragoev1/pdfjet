@@ -20,10 +20,12 @@ class Example_48 {
         List<PDFobj> objects = pdf.read(new FileInputStream(fileName));
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
+        // drawn, as in a new PDF. IBM Plex Sans is read here from PDFjet.jar,
+        // which carries it; a font file of your own is read with a
+        // FileInputStream.
         Font f1 = new Font(
                 objects,
-                new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+                Font.class.getResourceAsStream("/com/pdfjet/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         f1.setSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");
