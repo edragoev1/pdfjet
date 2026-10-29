@@ -332,9 +332,7 @@ public class Font {
     }
 
     // Opens the font file of the path, or, when there is no such file, the
-    // font of that name that PDFjet carries; a font it does not carry, such
-    // as one of the fonts of pdfjet-fonts it left out, throws, saying where
-    // to get it.
+    // font of that name that PDFjet carries; a font it does not carry throws.
     internal static Stream Open(String fontPath) {
         if (!File.Exists(fontPath)) {
             Stream bundled = BundledFonts.Open(fontPath);
@@ -343,9 +341,8 @@ public class Font {
             }
             String path = fontPath.Replace('\\', '/');
             if (path.StartsWith("fonts/", StringComparison.Ordinal) || path.Contains("/fonts/")) {
-                throw new FileNotFoundException(fontPath + " is not a file, nor one of the fonts PDFjet carries; "
-                        + "the fonts it came with before 9.1.7, Noto Sans among them, are at "
-                        + BundledFonts.PDFJET_FONTS, fontPath);
+                throw new FileNotFoundException(fontPath + " is not a file, nor one of the fonts PDFjet carries, "
+                        + "in resources/fonts or in PDFjet.dll: use a font file of your own.", fontPath);
             }
         }
         return new FileStream(fontPath, FileMode.Open, FileAccess.Read);

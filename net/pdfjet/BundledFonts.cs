@@ -10,24 +10,27 @@ using System.IO;
 namespace PDFjet.NET {
 /// <summary>
 /// The fonts PDFjet carries in itself, in resources/fonts, each family in a
-/// folder of its name, as in the folder fonts of pdfjet-fonts: IBM Plex Sans
+/// folder of its name, with its license: IBM Plex Sans
 /// and Serif, from Thin to Bold, Source Serif 4 and Cascadia Mono, from
 /// Light to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai,
 /// Thin to Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
 /// SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
 /// A path to one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf,
-/// the constants of the font classes, is read from the library when there is
-/// no such file, and the text of an SVG image is drawn in them unless a font
-/// is set. They are resources of the assembly, named PDFjet.Fonts/ and
-/// Family/File.
+/// the constants of the font classes, is read from the folder resources/fonts
+/// when there is no such file, or else from the resources of the assembly,
+/// named PDFjet.Fonts/ and Family/File, and the text of an SVG image is drawn
+/// in them unless a font is set. The PDFjet.dll of the NuGet package carries
+/// them; that of the releases on GitHub does not, and is small, its package
+/// having them in resources/fonts.
 /// </summary>
 internal static class BundledFonts {
+    // Where the fonts are: the folder resources/fonts of the working
+    // directory, as in the repository and the packages of the releases on
+    // GitHub, whose PDFjet.dll is small; or else the resources of the
+    // assembly, as in the PDFjet.dll of NuGet, built with -p:PDFjetFonts=true.
+    internal const String FOLDER = "resources/fonts/";
     // The prefix of the names of the resources, before Family/File.
     internal const String RESOURCE_PREFIX = "PDFjet.Fonts/";
-
-    // The repository of the fonts PDFjet came with before 9.1.7, which has
-    // those it does not carry, such as Noto Sans.
-    internal const String PDFJET_FONTS = "https://github.com/edragoev1/pdfjet-fonts";
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
@@ -42,11 +45,30 @@ internal static class BundledFonts {
         return path.Substring(family + 1);
     }
 
-    // Opens the font of the path that PDFjet carries, or returns null.
+    // Opens the font of the path that PDFjet carries, or returns null: from
+    // the folder resources/fonts, or else from the assembly.
     internal static Stream Open(String fontPath) {
         String name = NameOf(fontPath);
-        return (name == null || name.IndexOf("..", StringComparison.Ordinal) >= 0)
-                ? null : typeof(BundledFonts).Assembly.GetManifestResourceStream(RESOURCE_PREFIX + name);
+        if (name == null || name.IndexOf("..", StringComparison.Ordinal) >= 0) {
+            return null;
+        }
+        String file = FOLDER + name;
+        if (File.Exists(file)) {
+            try {
+                return new FileStream(file, FileMode.Open, FileAccess.Read);
+            } catch (IOException) {
+                // Read from the assembly then
+            } catch (UnauthorizedAccessException) {
+                // Read from the assembly then
+            }
+        }
+        return OpenResource(name);
+    }
+
+    // Opens the font of the name, Family/File, among the resources of the
+    // assembly, or returns null when it was built without the fonts.
+    internal static Stream OpenResource(String name) {
+        return typeof(BundledFonts).Assembly.GetManifestResourceStream(RESOURCE_PREFIX + name);
     }
 
     internal const int SANS = 0;
@@ -116,15 +138,15 @@ internal static class BundledFonts {
         return (heavier >= 0) ? heavier : lighter;
     }
 
-    // Returns the face for the document, read once for it, or null when the
-    // library was built without it.
+    // Returns the face for the document, read once for it, or null when it is
+    // neither in resources/fonts nor in the library.
     internal static Font Get(PDF pdf, int family, int weight, bool italic) {
         String name = FileName(family, weight, italic);
         Font font;
         if (pdf.bundledFonts.TryGetValue(name, out font)) {
             return font;
         }
-        using (Stream stream = typeof(BundledFonts).Assembly.GetManifestResourceStream(RESOURCE_PREFIX + name)) {
+        using (Stream stream = Open(name)) {
             if (stream == null) {
                 return null;
             }

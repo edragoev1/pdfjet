@@ -21,14 +21,14 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// IBM Plex Sans ExtraLightItalic, which PDFjet does not carry from
-        /// 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+        /// 9.1.7: a font file of its packages before, read when the file is there.
         /// </summary>
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string ExtraLightItalic = "fonts/IBMPlexSans/IBMPlexSans-ExtraLightItalic.ttf";
 
         /// <summary>
         /// IBM Plex Sans ExtraLight, which PDFjet does not carry from 9.1.7: a
-        /// font file of pdfjet-fonts, read when the file is there.
+        /// font file of its packages before, read when the file is there.
         /// </summary>
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string ExtraLight       = "fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf";

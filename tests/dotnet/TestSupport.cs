@@ -14,13 +14,23 @@ namespace PDFjet.NET {
 /// <summary>
 /// Helpers shared by the unit tests, as in the Java TestSupport. The tests read
 /// the PngSuite images and the fonts from the repository root, found by walking
-/// up from the test assembly, or from the PDFJET_ROOT environment variable.
+/// up from the test assembly, or from the PDFJET_ROOT environment variable,
+/// which is the working directory of the tests too.
 /// </summary>
 public static class TestSupport {
     /// <summary>The tolerance for coordinates and widths, a hundredth of a point.</summary>
     public const float DELTA = 0.01f;
 
     private static readonly string Root = FindRoot();
+
+    /// <summary>
+    /// The tests run in the repository root, as the examples do, where the
+    /// small library reads the fonts PDFjet carries, from resources/fonts.
+    /// </summary>
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RunInTheRoot() {
+        Directory.SetCurrentDirectory(Root);
+    }
 
     private static string FindRoot() {
         string env = Environment.GetEnvironmentVariable("PDFJET_ROOT");

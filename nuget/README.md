@@ -35,12 +35,20 @@ pdf.Complete();
 ```
 
 The core fonts, such as Helvetica, need no files. For text in other scripts,
-`PDFjet.dll` carries IBM Plex Sans and Serif, Source Serif 4, Cascadia Mono,
-IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, all
-under the SIL Open Font License: their constants, such as
-`IBMPlexSans.Regular`, need no files. Any other .ttf or .otf font is read by
-its path; Noto Sans and the other fonts PDFjet came with before 9.1.7 are at
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts).
+the `PDFjet.dll` of this package carries IBM Plex Sans and Serif, Source
+Serif 4, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC,
+and IBM Plex Math, all under the SIL Open Font License, with their licenses
+in the package: their constants, such as `IBMPlexSans.Regular`, work out of
+the box, with nothing else to download. Only the glyphs a document draws are
+embedded in it. Any other .ttf or .otf font is read by its path.
+
+The fonts make its `PDFjet.dll` large, about 70 MB, and the package about
+95 MB, as it has one for .NET 8 and one for .NET Framework 4.8. Want a much
+smaller DLL? The `PDFjet.dll` of the
+[releases on GitHub](https://github.com/edragoev1/pdfjet/releases) is under
+1 MB: it reads the same fonts from the folder `resources/fonts`, which its
+package has as files; keep that folder next to your program, or only the
+fonts you use.
 
 ## More
 

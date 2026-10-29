@@ -24,6 +24,10 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Built with the fonts, -p:PDFjetFonts=true, the library has this
+         constant too, which none of its code reads: a change of it compiles
+         the DLL again, where a change of its resources alone would not. -->
+    <DefineConstants Condition="'$(PDFjetFonts)' == 'true'">$(DefineConstants);PDFJET_FONTS</DefineConstants>
   </PropertyGroup>
 
   <!-- The methods cut, by the line that begins each, which must be found once:
@@ -37,9 +41,14 @@
     <Compile Include="../net/pdfjet/**/*.cs" Exclude="@(Cut)" />
     <Compile Include="Compat/*.cs" />
     <!-- The fonts PDFjet carries, which a font path is read from when there
-         is no such file and SVG text is drawn in, and their licenses:
-         PDFjet.Fonts/ and Family/File, with / on Windows too -->
-    <EmbeddedResource Include="../resources/fonts/*/**" Exclude="../resources/fonts/**/*.go" LogicalName="PDFjet.Fonts/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+         is no such file and SVG text is drawn in, and their licenses, as
+         resources PDFjet.Fonts/Family/File, with / on Windows too: only when
+         built with -p:PDFjetFonts=true, as for the NuGet package
+         (package-nuget.sh). Otherwise the DLL is small and reads them from the
+         folder resources/fonts, as in the repository and the release packages
+         on GitHub. The font files and the licenses alone, not the Go and Swift
+         files beside them. -->
+    <EmbeddedResource Condition="'$(PDFjetFonts)' == 'true'" Include="../resources/fonts/*/**/*.ttf;../resources/fonts/*/**/*.otf;../resources/fonts/*/**/*.txt;../resources/fonts/*/**/LICENSE" LogicalName="PDFjet.Fonts/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

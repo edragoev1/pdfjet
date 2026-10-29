@@ -6,4 +6,12 @@
 # library has no dependencies. Warnings fail the build, as in build-dotnet.sh.
 cd "$(dirname "$0")" || exit 1
 
+# The tests run with the small library, which reads the fonts PDFjet carries
+# from resources/fonts, as built from the repository and for the releases on
+# GitHub; then those of BundledFontsTest again with the fonts inside the
+# library, as the DLL of NuGet is built (-p:PDFjetFonts=true). The constant
+# PDFJET_FONTS it then has rebuilds the test assembly at each switch.
+set -e
 dotnet test tests/dotnet/PDFjet.Tests.csproj -c release -p:TreatWarningsAsErrors=true
+dotnet test tests/dotnet/PDFjet.Tests.csproj -c release -p:TreatWarningsAsErrors=true -p:PDFjetFonts=true \
+    --filter "FullyQualifiedName~BundledFontsTest"

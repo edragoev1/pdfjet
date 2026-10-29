@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The NuGet package PDFjet, made by package-nuget.sh from the PDFjet.dll of
-     a release's PDFjet-For.NET-Core zip, as released and strong-name signed:
+<!-- The NuGet package PDFjet, made by package-nuget.sh: the PDFjet.dll of a
+     release's tag, built with the fonts PDFjet carries inside it and
+     strong-name signed, which the small PDFjet.dll of the release zips is not;
      $version$ and $commit$ are written in by the script. -->
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>

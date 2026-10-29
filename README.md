@@ -60,7 +60,7 @@ same output come in four languages, and none of them needs a third-party library
   starting, takes up to about 250 ms), and each page is written out and freed
   as soon as the next one starts.
 - **No third-party dependencies.** The Java library is a single 0.6 MB jar, and the .NET
-  library a single 0.8 MB DLL.
+  library a single 0.9 MB DLL.
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns and charts.
 - **Charts that read at a glance.** SimpleBarChart compares a few values in
@@ -304,7 +304,8 @@ is that of the whole process writing the 500-page document, runtime included.
 ## Examples
 
 The [examples](examples) folder has 50 examples, the same in every port. They
-draw in the fonts PDFjet carries, which the library reads from itself, and
+draw in the fonts PDFjet carries, which the library reads from
+`resources/fonts` or from itself, and
 read the data files of `resources/data`, so they need nothing fetched. Build
 a port and run all of its examples, or run one example by its number:
 

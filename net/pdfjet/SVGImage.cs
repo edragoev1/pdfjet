@@ -1144,8 +1144,9 @@ public class SVGImage : IDrawable {
 
     // Returns the font of a run: the one set, the bold one for a weight of 600
     // or more when it is set, or else the face of the fonts PDFjet carries of
-    // its family, weight and style. A library built without them, which no
-    // build script makes, throws: the text is never drawn in a core font.
+    // its family, weight and style, from resources/fonts or the library. With
+    // neither, as the small DLL run away from resources/fonts, it throws: the
+    // text is never drawn in a core font.
     private Font FontOf(SVGText.Run run, PDF pdf) {
         if (font != null) {
             return (run.weight >= 600 && boldFont != null) ? boldFont : font;
@@ -1154,8 +1155,8 @@ public class SVGImage : IDrawable {
         if (bundled == null) {
             pdf.Fail(new InvalidOperationException("The font "
                     + BundledFonts.FileName(run.family, run.weight, run.italic)
-                    + " is not in the library, which was built without the fonts of resources/fonts: "
-                    + "build it with build-dotnet.sh, or set a font with SetFont."));
+                    + " is not one of the fonts PDFjet carries, in resources/fonts or in PDFjet.dll: "
+                    + "set a font with SetFont."));
         }
         return bundled;
     }

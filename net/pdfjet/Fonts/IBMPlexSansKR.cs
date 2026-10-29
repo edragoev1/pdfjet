@@ -19,21 +19,21 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// IBM Plex Sans KR ExtraLight, which PDFjet does not carry from 9.1.7:
-        /// a font file of pdfjet-fonts, read when the file is there.
+        /// a font file of its packages before, read when the file is there.
         /// </summary>
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string ExtraLight = "fonts/IBMPlexSansKR/IBMPlexSansKR-ExtraLight.ttf";
 
         /// <summary>
         /// IBM Plex Sans KR Light, which PDFjet does not carry from 9.1.7: a
-        /// font file of pdfjet-fonts, read when the file is there.
+        /// font file of its packages before, read when the file is there.
         /// </summary>
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string Light      = "fonts/IBMPlexSansKR/IBMPlexSansKR-Light.ttf";
 
         /// <summary>
         /// IBM Plex Sans KR Medium, which PDFjet does not carry from 9.1.7: a
-        /// font file of pdfjet-fonts, read when the file is there.
+        /// font file of its packages before, read when the file is there.
         /// </summary>
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string Medium     = "fonts/IBMPlexSansKR/IBMPlexSansKR-Medium.ttf";
@@ -44,14 +44,14 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// IBM Plex Sans KR Text, which PDFjet does not carry from 9.1.7: a
-        /// font file of pdfjet-fonts, read when the file is there.
+        /// font file of its packages before, read when the file is there.
         /// </summary>
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string Text       = "fonts/IBMPlexSansKR/IBMPlexSansKR-Text.ttf";
 
         /// <summary>
         /// IBM Plex Sans KR Thin, which PDFjet does not carry from 9.1.7: a
-        /// font file of pdfjet-fonts, read when the file is there.
+        /// font file of its packages before, read when the file is there.
         /// </summary>
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string Thin       = "fonts/IBMPlexSansKR/IBMPlexSansKR-Thin.ttf";

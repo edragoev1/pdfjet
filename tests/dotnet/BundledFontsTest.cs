@@ -49,7 +49,7 @@ public class BundledFontsTest {
                     Assert.True(!carried.Contains(path), name + "." + field.Name + " is carried");
                 } else {
                     Assert.True(carried.Contains(path), name + "." + field.Name + " is not carried");
-                    // In the library, as the DLL has it, not only in the folder
+                    // Found by its path, in resources/fonts or in the library
                     using (Stream stream = BundledFonts.Open(path)) {
                         Assert.True(stream != null, path);
                     }
@@ -72,10 +72,56 @@ public class BundledFontsTest {
         List<PDFobj> objects = TestSupport.Read(bos.ToArray());
         Font font = new Font(objects, IBMPlexSans.Bold);
         Assert.Equal("IBMPlexSans-Bold", font.name);
-        // A font it does not carry says where the fonts it came with are
+        // A font it does not carry says so
         FileNotFoundException e = Assert.Throws<FileNotFoundException>(
                 () => new Font(objects, "fonts/NotoSans/NotoSans-Regular.ttf"));
-        Assert.True(e.Message.Contains(BundledFonts.PDFJET_FONTS), e.Message);
+        Assert.True(e.Message.Contains("nor one of the fonts PDFjet carries"), e.Message);
+    }
+
+    [Fact]
+    public void TheFontsAreInTheLibraryOnlyWhenBuiltWithThem() {
+        // test-dotnet.sh runs the tests with the small library, which reads
+        // the fonts from resources/fonts, then these with -p:PDFjetFonts=true,
+        // as the DLL of NuGet is built, which reads them from itself
+        SortedSet<String> resources = new SortedSet<String>(StringComparer.Ordinal);
+        foreach (String name in typeof(BundledFonts).Assembly.GetManifestResourceNames()) {
+            if (name.StartsWith(BundledFonts.RESOURCE_PREFIX, StringComparison.Ordinal)) {
+                resources.Add(name.Substring(BundledFonts.RESOURCE_PREFIX.Length));
+            }
+        }
+        SortedSet<String> files = new SortedSet<String>(StringComparer.Ordinal);
+        foreach (String family in Directory.GetDirectories(TestSupport.RepoPath("resources/fonts"))) {
+            foreach (String file in Directory.GetFiles(family)) {
+                String name = System.IO.Path.GetFileName(file);
+                if (name.EndsWith(".ttf", StringComparison.Ordinal) || name.EndsWith(".otf", StringComparison.Ordinal)
+                        || name.EndsWith(".txt", StringComparison.Ordinal) || name.Equals("LICENSE")) {
+                    files.Add(System.IO.Path.GetFileName(family) + "/" + name);
+                }
+            }
+        }
+#if PDFJET_FONTS
+        // The fonts and their licenses, Family/File, and nothing else
+        Assert.Equal(files, resources);
+        Assert.Contains("IBMPlexSans/license.txt", resources);
+        foreach (String name in resources) {
+            Assert.True(name.EndsWith(".ttf", StringComparison.Ordinal) || name.EndsWith(".otf", StringComparison.Ordinal)
+                    || name.EndsWith(".txt", StringComparison.Ordinal) || name.EndsWith("/LICENSE", StringComparison.Ordinal), name);
+        }
+        // Read from the library, as with no resources/fonts folder, and drawn
+        foreach (String path in new String[] {IBMPlexSans.Regular, IBMPlexSansSC.Regular, CascadiaMono.Regular}) {
+            using (Stream stream = BundledFonts.OpenResource(BundledFonts.NameOf(path))) {
+                Assert.True(stream != null, path);
+                PDF pdf = new PDF(new MemoryStream());
+                Font font = new Font(pdf, stream);
+                Assert.True(font.GetAscent() > 0f, path);
+            }
+        }
+#else
+        // The small library, as built from the repository and for GitHub
+        Assert.Empty(resources);
+        Assert.Null(BundledFonts.OpenResource(BundledFonts.NameOf(IBMPlexSans.Regular)));
+        Assert.True(files.Count > 82);
+#endif
     }
 
     [Fact]

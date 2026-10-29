@@ -17,10 +17,10 @@ for .NET Framework 4.8.
 | `Example_*.pdf` | The PDFs the examples create. |
 | `build-dotnet.sh`, `build-dotnet.cmd` | Build and run all the examples. |
 | `run-dotnet.sh`, `run-dotnet.cmd` | Build and run one example. |
+| `resources/fonts/` | The fonts PDFjet carries, each family in a folder of its name with its license, which `PDFjet.dll` reads from there. |
 | `resources/data/`, `images/`, `PngSuite/` | The files the examples read; `resources/data/README.md` says where the data comes from. |
 | `CHANGELOG.md` | What changed in each release. |
 | `LICENSE`, `THIRD-PARTIES.TXT` | The license of PDFjet and of the work it includes. |
-| `*-license.txt`, `*-OFL.txt`, `*-LICENSE` | The licenses of the fonts `PDFjet.dll` carries, one for each family, such as `IBMPlexSans-license.txt`. |
 
 ## Quick start
 
@@ -52,7 +52,8 @@ public class Hello {
 }
 ```
 
-Run it with `dotnet run`: IBM Plex Sans is one of the fonts `PDFjet.dll`
+Run it with `dotnet run` from a folder that has `resources/fonts`, or copy
+that folder next to your program: IBM Plex Sans is one of the fonts PDFjet
 carries, as described below.
 
 ## .NET Framework 4.8
@@ -76,16 +77,20 @@ put `net48/PDFjet.dll` (with its four DLLs) in `lib/net48/` and `PDFjet.dll` in
 
 ## Fonts
 
-`PDFjet.dll` carries IBM Plex Sans and Serif, Source Serif 4 and Cascadia
-Mono, from Light or Thin to Bold, upright and italic; IBM Plex Sans Arabic,
-Hebrew and Thai; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC. Their
+PDFjet carries IBM Plex Sans and Serif, Source Serif 4 and Cascadia Mono,
+from Light or Thin to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew
+and Thai; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC. They are in
+`resources/fonts` of this package, each family with its license. Their
 constants, such as `IBMPlexSans.Regular`, are paths like
-`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, which the `Font` constructor
-reads from `PDFjet.dll` when there is no such file: they need no files. A font
-can also be read from any `.otf` or `.ttf` file by its path; the fonts PDFjet
-came with before 9.1.7, Noto Sans among them, are at
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts). The 14 core PDF
-fonts, such as `CoreFont.HELVETICA`, need no files either.
+`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`: the `Font` constructor reads the
+file of that path if there is one, else the font from the folder
+`resources/fonts` of the working directory, else from `PDFjet.dll` itself.
+The `PDFjet.dll` of this package is small, under 1 MB, and does not carry
+them: keep `resources/fonts` next to your program, or only the fonts you
+use. The `PDFjet.dll` of the NuGet package `PDFjet` carries them inside, about
+70 MB, and needs no folder. A font can also be read from any `.otf` or `.ttf`
+file by its path. The 14 core PDF fonts, such as `CoreFont.HELVETICA`, need no
+files.
 
 Every font is embedded as a subset, only the glyphs a document draws: a page
 of English embeds a few dozen KB of IBM Plex Sans, and a page of Chinese a
