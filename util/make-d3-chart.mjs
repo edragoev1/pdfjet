@@ -102,16 +102,14 @@ svg.append("g")
     .attr("transform", `translate(${margin.left},0)`)
     .call(d3.axisLeft(y).tickSizeOuter(0));
 
-// The world's value, its label under the bars
+// The world's value, its label under the bars, in a darker red, which
+// contrasts with the white page 4.5:1 or more, as WCAG asks of text
 svg.append("text")
     .attr("x", x(world))
     .attr("y", height - margin.bottom + 18)
-    .attr("fill", d3.schemeTableau10[2])
+    .attr("fill", d3.color(d3.schemeTableau10[2]).darker(0.6))
     .attr("text-anchor", "middle")
     .attr("font-weight", "bold")
-    .attr("stroke", "white")
-    .attr("stroke-width", 3)
-    .attr("paint-order", "stroke")
     .text(`World ${world.toFixed(1)}`);
 
 const out = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "images", "svg",

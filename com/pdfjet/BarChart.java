@@ -1055,15 +1055,24 @@ public class BarChart implements Drawable {
         page.drawString(font, font.getSize(), text, x, y, Util.toRGB(color), null);
     }
 
+    // The label on a color that neither white nor ink contrasts with as WCAG
+    // asks, 4.5:1: the red, the purple and the brown of the palette.
+    static final int DARK = 0x111111;
+
     /**
      * Returns the color of a label on a bar of the color: white or ink,
-     * whichever contrasts more with it, by the WCAG contrast ratio.
+     * whichever contrasts more with it, by the WCAG contrast ratio, or a
+     * near black when that is less than 4.5:1.
      */
     static int labelColorOn(int color) {
         // White contrasts more when (1 + 0.05) / (L + 0.05) is the larger of
         // the two ratios, (L + 0.05) / (ink + 0.05) the other
         double l = luminance(color) + 0.05;
-        return l * l <= 1.05 * (luminance(INK) + 0.05) ? Color.white : INK;
+        double ink = luminance(INK) + 0.05;
+        if (l * l <= 1.05 * ink) {
+            return (1.05 / l >= 4.5) ? Color.white : DARK;
+        }
+        return (l / ink >= 4.5) ? INK : DARK;
     }
 
     /** Returns the relative luminance of the color, as WCAG defines it. */

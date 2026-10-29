@@ -135,13 +135,19 @@ class BarChartTest {
         assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "t"));
         assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "s"));
         // A label on a dark bar is white, on a light one ink: whichever
-        // contrasts more. On sage and on the old sage, which a rule by
-        // brightness gave white, ink contrasts more; on slate white.
+        // contrasts more. On sage, which a rule by brightness gave white, ink
+        // contrasts more; on slate white. Where neither contrasts 4.5:1, as
+        // on the old sage, ink 4.26:1, and on the red, the purple and the
+        // brown of the palette, a near black does.
         assertEquals(Color.white, BarChart.labelColorOn(0x1F3A5F));
         assertEquals(0x22262B, BarChart.labelColorOn(0x6F95C2));
         assertEquals(0x22262B, BarChart.labelColorOn(0x76987C));
-        assertEquals(0x22262B, BarChart.labelColorOn(0x6B8F71));
         assertEquals(Color.white, BarChart.labelColorOn(0x4F7A8C));
+        assertEquals(Color.white, BarChart.labelColorOn(0x4E79A7));     // blue
+        assertEquals(0x22262B, BarChart.labelColorOn(0xF28E2C));        // orange
+        for (int color : new int[] {0x6B8F71, 0xE15759, 0xAF7AA1, 0x9C755F}) {
+            assertEquals(0x111111, BarChart.labelColorOn(color));
+        }
     }
 
     @Test
@@ -158,7 +164,7 @@ class BarChartTest {
         assertTrue(content.contains(TestSupport.hex("sub")), content);
         assertTrue(content.contains("1 0 0 rg"), content);     // the first bar
         assertTrue(content.contains("0 0 1 rg"), content);     // the second bar
-        assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "6,650"));  // inside the first bar
+        assertEquals("0.07 0.07 0.07 rg", TestSupport.fillColorBefore(content, "6,650"));  // inside the red bar, on which white contrasts 4:1
         assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "sub"));
         assertTrue(content.contains(TestSupport.hex("12")), content);  // too short: next to the bar
     }

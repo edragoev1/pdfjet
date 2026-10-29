@@ -63,7 +63,7 @@ class DonutChartTest {
         assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n"), content);
         assertTrue(content.endsWith("EMC\n"), content);
         assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "Apples"));
-        assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "25%"));
+        assertEquals("0.07 0.07 0.07 rg", TestSupport.fillColorBefore(content, "25%"));    // On red, which white contrasts 4:1
         DonutChart pie = chart(pdf).setRadii(100f, 0f).add("", 1f, Color.red);
         pie.drawOn(page);
         DonutChart described = chart(pdf).setAltDescription("Most are oranges.")
