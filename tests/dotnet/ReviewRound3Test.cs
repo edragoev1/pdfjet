@@ -94,10 +94,16 @@ public class ReviewRound3Test {
     // Two characters copied as the same text, as a letter and its
     // presentation form, need no actual text for the second: Arabic text had
     // three times the spans it needed, its content 27% larger (T2).
+    // Noto Sans Arabic, which this test read before 9.1.7, draws ل and its
+    // isolated form ﻝ with one glyph, and ١ and ۱ with one; IBM Plex Sans
+    // Arabic draws each with its own, so its character map is made to draw
+    // them as Noto Sans Arabic's does.
     [Fact]
     public void ACharacterCopiedAsTheFirstHasNoActualText() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, new MemoryStream(TestSupport.WithSharedGlyphs(
+                TestSupport.FontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                new int[][] {new int[] {0x0644, 0xFEDD}, new int[] {0x0661, 0x06F1}})));
         Assert.Equal(font.unicodeToGID.Get(0x0644), font.unicodeToGID.Get(0xFEDD));
         font.UseChar(0xFEDD, font.unicodeToGID.Get(0xFEDD));
         Assert.False(font.DrawnAsAnother(0x0644));
@@ -112,7 +118,7 @@ public class ReviewRound3Test {
     [Fact]
     public void AWordWithMarksIsCopiedWithoutASpaceInside() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "\u0628").SetLocation(50f, 50f).DrawOn(page);
         // The glyph of ة as drawn first for another character, which no two
@@ -165,7 +171,9 @@ public class ReviewRound3Test {
     [Fact]
     public void AJoinerInARunIsInItsActualText() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansJP/NotoSansJP-Regular.ttf"));
+        // IBM Plex Sans JP, the .otf PDFjet carries, has no glyph for the
+        // joiners or the LRM, as Noto Sans JP, before 9.1.7, had none.
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"));
         Assert.Equal(0, font.unicodeToGID.Get(0x200D));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "d\u200D\u200E\u200Ce\u200D").SetLocation(50f, 50f).DrawOn(page);

@@ -29,8 +29,7 @@
     <file src="lib/net48/PDFjet.dll" target="lib/net48" />
     <file src="README.md" target="" />
     <file src="icon.png" target="" />
-    <file src="IBMPlexSans-OFL.txt" target="" />
-    <file src="SourceSerif4-OFL.txt" target="" />
-    <file src="JetBrainsMono-OFL.txt" target="" />
+    <!-- The licenses of the fonts PDFjet.dll carries, one a family -->
+    <file src="font-licenses/*" target="" />
   </files>
 </package>

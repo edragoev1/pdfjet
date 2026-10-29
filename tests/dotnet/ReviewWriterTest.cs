@@ -423,7 +423,21 @@ public class ReviewWriterTest {
     public void TheFontFileRefersToItsMetadataWhoseNoticeIsEscaped() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_A_2B);
-        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansJP/NotoSansJP-Regular.ttf"));
+        // Noto Sans JP, which this test read before 9.1.7, has "&" in its
+        // designer and its description; no font PDFjet carries has one in
+        // its names, so the license of IBM Plex Sans is made to say "with &
+        // FAQ" in place of "with a FAQ", a character for a character.
+        byte[] ttf = TestSupport.FontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] withA = Encoding.BigEndianUnicode.GetBytes(" with a FAQ");
+        int at = -1;
+        for (int i = 0; at == -1 && i + withA.Length <= ttf.Length; i++) {
+            if (new ReadOnlySpan<byte>(ttf, i, withA.Length).SequenceEqual(withA)) {
+                at = i;
+            }
+        }
+        Assert.True(at != -1, "the license of the font has no \"with a FAQ\"");
+        ttf[at + 2 * " with ".Length + 1] = (byte) '&';
+        Font font = new Font(pdf, new MemoryStream(ttf));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Hello").SetLocation(50f, 50f).DrawOn(page);
         pdf.Complete();

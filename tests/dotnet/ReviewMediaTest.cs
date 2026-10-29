@@ -15,10 +15,12 @@ using Xunit;
 
 namespace PDFjet.NET {
 public class ReviewMediaTest {
-    private const string THAI = "fonts/NotoSansThai/NotoSansThai-Regular.ttf";
+    // IBM Plex Sans Thai, a TrueType font of Latin and Thai with a GPOS
+    // table, as Noto Sans Thai, which these tests read before 9.1.7, is.
+    private const string THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
 
     private static byte[] FontBytes(string path) {
-        return File.ReadAllBytes(TestSupport.RepoPath(path));
+        return TestSupport.FontBytes(path);
     }
 
     private static int UInt16(byte[] font, int offset) {

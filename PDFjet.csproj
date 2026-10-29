@@ -24,8 +24,9 @@
     <Compile Include="net/pdfjet/CoreFonts/*.cs" />
     <Compile Include="net/pdfjet/Fonts/*.cs" />
     <Compile Include="net/pdfjet/Encryption/*.cs" />
-    <!-- The fonts PDFjet carries, which SVG text is drawn in, and their
-         licenses: PDFjet.BundledFonts. and the name of the file -->
-    <EmbeddedResource Include="src/bundledfonts/*" LogicalName="PDFjet.BundledFonts.%(Filename)%(Extension)" />
+    <!-- The fonts PDFjet carries, which a font path is read from when there
+         is no such file and SVG text is drawn in, and their licenses:
+         PDFjet.Fonts/ and Family/File, with / on Windows too -->
+    <EmbeddedResource Include="resources/fonts/**" LogicalName="PDFjet.Fonts/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

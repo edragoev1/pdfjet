@@ -38,8 +38,77 @@ public static class TestSupport {
         return System.IO.Path.Combine(Root, path);
     }
 
+    /// <summary>
+    /// Opens a file of the repository, or a font PDFjet carries, as the Font
+    /// constructor that takes a path reads it.
+    /// </summary>
     public static Stream Open(string path) {
-        return new FileStream(RepoPath(path), FileMode.Open, FileAccess.Read);
+        string file = RepoPath(path);
+        if (!File.Exists(file) && path.StartsWith("fonts/", StringComparison.Ordinal)) {
+            return Font.Open(path);
+        }
+        return new FileStream(file, FileMode.Open, FileAccess.Read);
+    }
+
+    /// <summary>
+    /// The bytes of a file of the repository, or of a font PDFjet carries, as
+    /// Open reads them: for the tests that read or patch a font file itself.
+    /// </summary>
+    public static byte[] FontBytes(string path) {
+        using (Stream stream = Open(path)) {
+            MemoryStream bytes = new MemoryStream();
+            stream.CopyTo(bytes);
+            return bytes.ToArray();
+        }
+    }
+
+    /// <summary>
+    /// Returns the font with its character map rewritten so that the second
+    /// character of each pair is drawn with the glyph of the first, as Noto
+    /// Sans Arabic draws ١ and ۱, and ل and its isolated form ﻝ, with one
+    /// glyph, which no font PDFjet carries does in Arabic. The map is a format
+    /// 12 subtable of the Windows platform, of every character of the font to
+    /// its glyph, put at the end of the font in place of its cmap table, which
+    /// PDFjet reads as it reads any font's.
+    /// </summary>
+    public static byte[] WithSharedGlyphs(byte[] font, int[][] pairs) {
+        SortedDictionary<int, int> map = new SortedDictionary<int, int>();
+        new OTF(new MemoryStream(font)).unicodeToGID.Each((c, gid) => map[c] = gid);
+        foreach (int[] pair in pairs) {
+            int gid;
+            if (!map.TryGetValue(pair[0], out gid)) {
+                throw new ArgumentException(string.Format("the font has no U+{0:X4}", pair[0]));
+            }
+            map[pair[1]] = gid;
+        }
+        List<byte> cmap = new List<byte>();
+        Action<int> u16 = v => { cmap.Add((byte) (v >> 8)); cmap.Add((byte) v); };
+        Action<int> u32 = v => { u16(v >> 16); u16(v & 0xFFFF); };
+        u16(0); u16(1);                     // The version, one record
+        u16(3); u16(10); u32(12);           // Windows, Unicode full
+        u16(12); u16(0); u32(16 + 12 * map.Count); u32(0); u32(map.Count);
+        foreach (KeyValuePair<int, int> e in map) {
+            u32(e.Key); u32(e.Key); u32(e.Value);
+        }
+        byte[] patched = new byte[font.Length + cmap.Count];
+        Array.Copy(font, patched, font.Length);
+        cmap.CopyTo(patched, font.Length);
+        int tables = (font[4] & 0xFF) << 8 | (font[5] & 0xFF);
+        for (int i = 0; i < tables; i++) {
+            int entry = 12 + 16 * i;
+            if (Encoding.Latin1.GetString(font, entry, 4) == "cmap") {
+                int[] values = {font.Length, cmap.Count};
+                for (int k = 0; k < 2; k++) {
+                    int at = entry + 8 + 4 * k;
+                    patched[at] = (byte) (values[k] >> 24);
+                    patched[at + 1] = (byte) (values[k] >> 16);
+                    patched[at + 2] = (byte) (values[k] >> 8);
+                    patched[at + 3] = (byte) values[k];
+                }
+                return patched;
+            }
+        }
+        throw new ArgumentException("the font has no cmap table");
     }
 
     public static PDF NewPDF() {

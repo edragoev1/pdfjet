@@ -150,7 +150,7 @@ public class Example_21 {
     }
 
     private void DrawSpans(PDF pdf) {
-        font = new Font(pdf, IBMPlexMono.Regular);
+        font = new Font(pdf, CascadiaMono.Regular);
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
 

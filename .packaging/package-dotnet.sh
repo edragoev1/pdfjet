@@ -1,8 +1,9 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-For.NET-Pro-vX.Y.Z.zip, a self-contained
 # package for .NET clients: PDFjet.dll, the DocFX reference, the example
-# projects with the PDFs they create, the files they read (data, the fonts,
-# images, PngSuite), and scripts that build and run the examples against PDFjet.dll.
+# projects with the PDFs they create, the files they read (data, images,
+# PngSuite), and scripts that build and run the examples against PDFjet.dll,
+# which carries the fonts of resources/fonts that they draw in.
 # The library sources and the font tools in util are not in the package.
 #
 # The README, the commercial LICENSE and the build and run scripts of the
@@ -110,17 +111,17 @@ mkdir -p "$STAGE" .commercial-packages
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/dotnet-pro LICENSE \
-    net net48 PDFjet.csproj src/bundledfonts examples images PngSuite docfx \
+    net net48 PDFjet.csproj resources/fonts examples images PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
 tar -x -C "$STAGE" -f "$TAR"
 
-# fonts and data are the repositories pdfjet-fonts and pdfjet-data, which
-# get-fonts-and-data.sh fetches and git archive does not have: each is
-# archived at the commit that fonts-and-data.txt of the last commit pins,
-# whatever commit the folder is at, and its README, about the repository, is
-# left out.
+# data is the repository pdfjet-data, which get-fonts-and-data.sh fetches and
+# git archive does not have: it is archived at the commit that
+# fonts-and-data.txt of the last commit pins, whatever commit the folder is
+# at, and its README, about the repository, is left out. The fonts are no
+# longer fetched from 9.1.7: those the examples draw in are in PDFjet.dll.
 bash get-fonts-and-data.sh
-for dir in fonts data; do
+for dir in data; do
     commit=$(git show HEAD:fonts-and-data.txt | sed -n "s/^$dir [^ ]* \([0-9a-f]*\).*/\1/p")
     if [ -z "$commit" ] || ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
         echo "$dir does not have the commit ${commit:-that} fonts-and-data.txt of the last commit pins: run get-fonts-and-data.sh"
@@ -137,10 +138,6 @@ rm "$TAR"
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
 rm -f "$STAGE/images/go.mod"
 
-# The fonts of the package are the fonts directory as it is: the .ttf files,
-# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 07, 48
-# and 50 read.
-
 cd "$STAGE"
 
 # The same build as build-dotnet.sh, strong-named, with the release as the file
@@ -149,9 +146,20 @@ dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
     -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
     -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
 cp bin/release/net8.0/PDFjet.dll .
-# The licenses of the fonts built into PDFjet.dll, which SVG text is drawn
-# in, beside it, as the SIL Open Font License asks that it go with every copy
-cp src/bundledfonts/*-OFL.txt .
+# The licenses of the fonts built into PDFjet.dll, those of resources/fonts,
+# beside it, as the SIL Open Font License asks that it go with every copy:
+# each as <Family>-<its file>, such as IBMPlexSans-license.txt
+for family in resources/fonts/*/; do
+    family=${family%/}
+    for license in "$family"/*; do
+        case $license in *.ttf | *.otf) continue ;; esac
+        cp "$license" "$(basename "$family")-$(basename "$license")"
+    done
+done
+if [ "$(ls ./*-license.txt ./*-OFL.txt ./*-LICENSE 2>/dev/null | wc -l)" -ne "$(ls -d resources/fonts/*/ | wc -l)" ]; then
+    echo "Every family of resources/fonts needs its license beside PDFjet.dll"
+    exit 1
+fi
 
 # The same library for .NET Framework 4.8, from the same sources, strong-named
 # with the same key and version: net48/PDFjet.dll and the System.Memory DLLs
@@ -167,7 +175,7 @@ mv net48-dll net48
 # The same docfx command as generate-documentation.sh; it writes docs/dotnet.
 docfx docfx/docfx.json
 
-rm -rf net PDFjet.csproj src bin obj docfx
+rm -rf net PDFjet.csproj resources bin obj docfx
 
 # The example projects reference the PDFjet.dll of the package.
 # perl, as sed -i is not the same in GNU sed and in the sed of macOS.
@@ -221,7 +229,7 @@ zip_sorted "$CORE_ZIP" "$CORE_NAME"
 cd "$NAME"
 PRO_TAR=$PWD/../pro.tar
 mkdir pro-src
-git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj src/bundledfonts
+git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj resources/fonts
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD net/pdfjet/Sign net/pdfjet/Invoice \
     net/pdfjet/Hyphenation src/hyphenation/patterns \

@@ -361,7 +361,7 @@ public class MergeTest {
         // was left empty when the objects were merged rather than added (the
         // review of 9 October 2026), and its text was lost.
         List<PDFobj> objects = TestSupport.Read(Document("Existing"));
-        Font font = new Font(objects, TestSupport.Open("fonts/NotoSans/NotoSans-Regular.ttf"));
+        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
@@ -375,11 +375,11 @@ public class MergeTest {
         bool found = false;
         foreach (PDFobj obj in merged) {
             if (obj.GetValue("/Subtype") == "/Type0"
-                    && obj.GetValue("/BaseFont").EndsWith("+NotoSans-Regular", StringComparison.Ordinal)) {
+                    && obj.GetValue("/BaseFont").EndsWith("+IBMPlexSans", StringComparison.Ordinal)) {
                 found = true;
             }
         }
-        Assert.True(found, "no Type0 font of a subset of Noto Sans");
+        Assert.True(found, "no Type0 font of a subset of IBM Plex Sans");
     }
 
     // Returns a PDF of pages under one node that holds an inline /Resources of

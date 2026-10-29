@@ -100,19 +100,19 @@ public class Snippets {
     static void Fonts(PDF pdf, Font font) {
         Font serif = new Font(pdf, SourceSerif4.Regular).SetSize(14f);
         Font bold = new Font(pdf, IBMPlexSans.Bold);
-        Font mono = new Font(pdf, JetBrainsMono.Regular).SetSize(10f);
+        Font mono = new Font(pdf, CascadiaMono.Regular).SetSize(10f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(serif, "Source Serif 4 at 14 points").SetLocation(50f, 50f).DrawOn(page);
         new TextLine(bold, "IBM Plex Sans Bold at 12 points").SetLocation(50f, 75f).DrawOn(page);
-        new TextLine(mono, "JetBrains Mono at 10 points").SetLocation(50f, 100f).DrawOn(page);
+        new TextLine(mono, "Cascadia Mono at 10 points").SetLocation(50f, 100f).DrawOn(page);
         new TextLine(bold, "The same font at 24 points").SetFontSize(24f)
                 .SetLocation(50f, 135f).DrawOn(page);
     }
 
     // @snippet font-files
     static void FontFiles(PDF pdf, Font font) {
-        Font otf = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf");
-        Font ttf = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf");
+        Font otf = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        Font ttf = new Font(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(otf, "An OpenType font").SetLocation(50f, 50f).DrawOn(page);
         new TextLine(ttf, "A TrueType font").SetLocation(50f, 75f).DrawOn(page);
@@ -233,7 +233,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).SetSize(11f);
+        Font code = new Font(pdf, CascadiaMono.Regular).SetSize(11f);
         Markup markup = new Markup(font, bold, italic, boldItalic, code);
         List<Paragraph> paragraphs = markup.Paragraphs(
                 "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
@@ -247,7 +247,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).SetSize(10f);
+        Font code = new Font(pdf, CascadiaMono.Regular).SetSize(10f);
         Markdown markdown = new Markdown(font, bold, italic, boldItalic, code);
         List<Page> pages = new List<Page>();
         markdown.DrawOn(pdf, "# A heading\n"
@@ -802,8 +802,8 @@ public class Snippets {
         PDF pdf = new PDF(new BufferedStream(new FileStream("stamped.pdf", FileMode.Create)));
         List<PDFobj> objects = pdf.Read(
                 new FileStream("data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
-        Font font = new Font(objects,
-                new FileStream(IBMPlexSans.Regular, FileMode.Open, FileAccess.Read)).SetSize(24f);
+        // IBM Plex Sans, which PDFjet carries
+        Font font = new Font(objects, IBMPlexSans.Regular).SetSize(24f);
         foreach (PDFobj pageObj in pdf.GetPageObjects(objects)) {
             Page page = new Page(pdf, pageObj);
             page.AddResource(font, objects);

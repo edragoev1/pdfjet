@@ -97,8 +97,7 @@ public class SimpleScatterChartTest {
     public void ALinkedPointIsAFigureInItsLink() {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, new FileStream(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-                FileMode.Open, FileAccess.Read));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f)
                 .Add(1f, 1f).Add("Andorra", 2f, 2f, "https://pdfjet.com/a")

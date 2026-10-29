@@ -20,8 +20,10 @@
     <Compile Include="*.cs" />
     <!-- The category table of the .NET Framework build, held to .NET 8's own. -->
     <Compile Include="../../net48/Compat/UnicodeCategories.cs" />
-    <!-- The fonts PDFjet carries, as PDFjet.csproj has them -->
-    <EmbeddedResource Include="../../src/bundledfonts/*" LogicalName="PDFjet.BundledFonts.%(Filename)%(Extension)" />
+    <!-- The fonts PDFjet carries, which a font path is read from when there
+         is no such file and SVG text is drawn in, and their licenses:
+         PDFjet.Fonts/ and Family/File, with / on Windows too -->
+    <EmbeddedResource Include="../../resources/fonts/**" LogicalName="PDFjet.Fonts/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />

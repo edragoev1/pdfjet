@@ -36,9 +36,10 @@
   <ItemGroup>
     <Compile Include="../net/pdfjet/**/*.cs" Exclude="@(Cut)" />
     <Compile Include="Compat/*.cs" />
-    <!-- The fonts PDFjet carries, which SVG text is drawn in, and their
-         licenses, as PDFjet.csproj has them -->
-    <EmbeddedResource Include="../src/bundledfonts/*" LogicalName="PDFjet.BundledFonts.%(Filename)%(Extension)" />
+    <!-- The fonts PDFjet carries, which a font path is read from when there
+         is no such file and SVG text is drawn in, and their licenses:
+         PDFjet.Fonts/ and Family/File, with / on Windows too -->
+    <EmbeddedResource Include="../resources/fonts/**" LogicalName="PDFjet.Fonts/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

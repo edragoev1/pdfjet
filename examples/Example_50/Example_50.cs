@@ -42,17 +42,12 @@ public class Example_50 {
         image.ScaleBy(0.40f);
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
-        Font f1 = new Font(objects,
-                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
-                        FileMode.Open,
-                        FileAccess.Read));
+        // drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+        // from the library; the path of a font file of your own reads that file.
+        Font f1 = new Font(objects, IBMPlexSans.Regular);
         f1.SetSize(12f);
 
-        Font f2 = new Font(objects,
-                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf",
-                        FileMode.Open,
-                        FileAccess.Read));
+        Font f2 = new Font(objects, IBMPlexSans.Bold);
         f2.SetSize(12f);
 
         List<PDFobj> pages = pdf.GetPageObjects(objects);

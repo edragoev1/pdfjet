@@ -1154,7 +1154,7 @@ public class SVGImage : IDrawable {
         if (bundled == null) {
             pdf.Fail(new InvalidOperationException("The font "
                     + BundledFonts.FileName(run.family, run.weight, run.italic)
-                    + " is not in the library, which was built without the fonts of src/bundledfonts: "
+                    + " is not in the library, which was built without the fonts of resources/fonts: "
                     + "build it with build-dotnet.sh, or set a font with SetFont."));
         }
         return bundled;

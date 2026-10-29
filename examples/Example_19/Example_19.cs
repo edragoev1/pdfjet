@@ -30,7 +30,7 @@ public class Example_19 {
         Font bold = new Font(pdf, IBMPlexSans.Bold).SetSize(11f);
         Font italic = new Font(pdf, IBMPlexSans.Italic).SetSize(11f);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic).SetSize(11f);
-        Font code = new Font(pdf, IBMPlexMono.Regular).SetSize(9.5f);
+        Font code = new Font(pdf, CascadiaMono.Regular).SetSize(9.5f);
 
         Markdown markdown = new Markdown(regular, bold, italic, boldItalic, code);
         markdown.SetImageDirectory("data/markdown");

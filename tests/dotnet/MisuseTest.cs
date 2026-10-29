@@ -318,7 +318,7 @@ public class MisuseTest {
         // An embedded font only reserves its number, written at Complete: the
         // objects could take it too (the review of 9 October 2026).
         PDF pdf3 = TestSupport.NewPDF();
-        new Font(pdf3, TestSupport.RepoPath("fonts/NotoSans/NotoSans-Regular.ttf"));
+        new Font(pdf3, TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Assert.Equal(message,
                 Assert.Throws<InvalidOperationException>(() => pdf3.AddObjects(objects)).Message);
 

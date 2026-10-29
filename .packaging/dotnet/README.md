@@ -17,11 +17,10 @@ for .NET Framework 4.8.
 | `Example_*.pdf` | The PDFs the examples create. |
 | `build-dotnet.sh`, `build-dotnet.cmd` | Build and run all the examples. |
 | `run-dotnet.sh`, `run-dotnet.cmd` | Build and run one example. |
-| `fonts/` | The fonts, ready to embed, with their licenses. |
 | `data/`, `images/`, `PngSuite/` | The files the examples read. |
 | `CHANGELOG.md` | What changed in each release. |
 | `LICENSE`, `THIRD-PARTIES.TXT` | The license of PDFjet and of the work it includes. |
-| `*-OFL.txt` | The licenses of IBM Plex Sans, Source Serif 4 and JetBrains Mono, which `PDFjet.dll` carries for the text of SVG images. |
+| `*-license.txt`, `*-OFL.txt`, `*-LICENSE` | The licenses of the fonts `PDFjet.dll` carries, one for each family, such as `IBMPlexSans-license.txt`. |
 
 ## Quick start
 
@@ -53,8 +52,8 @@ public class Hello {
 }
 ```
 
-Run it with `dotnet run` in a folder that has the `fonts` directory of this
-package, as described below.
+Run it with `dotnet run`: IBM Plex Sans is one of the fonts `PDFjet.dll`
+carries, as described below.
 
 ## .NET Framework 4.8
 
@@ -77,19 +76,23 @@ put `net48/PDFjet.dll` (with its four DLLs) in `lib/net48/` and `PDFjet.dll` in
 
 ## Fonts
 
-The bundled fonts, such as `IBMPlexSans.Regular`, are paths relative to the
-working directory, like `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`. Run
-your program in a folder that has the `fonts` directory, or copy the fonts you
-use next to it and keep their paths. A font can also be read from any `.otf` or
-`.ttf` file by its path. The 14 core PDF fonts, such as `CoreFont.HELVETICA`,
-need no files.
+`PDFjet.dll` carries IBM Plex Sans and Serif, Source Serif 4 and Cascadia
+Mono, from Light or Thin to Bold, upright and italic; IBM Plex Sans Arabic,
+Hebrew and Thai; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC. Their
+constants, such as `IBMPlexSans.Regular`, are paths like
+`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, which the `Font` constructor
+reads from `PDFjet.dll` when there is no such file: they need no files. A font
+can also be read from any `.otf` or `.ttf` file by its path; the fonts PDFjet
+came with before 9.1.7, Noto Sans among them, are at
+[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts). The 14 core PDF
+fonts, such as `CoreFont.HELVETICA`, need no files either.
 
 Every font is embedded as a subset, only the glyphs a document draws: a page
-of English embeds about 25 KB of Noto Sans, a page of Chinese about 93 KB of
-Noto Sans SC's 6.5 MB.
+of English embeds a few dozen KB of IBM Plex Sans, and a page of Chinese a
+small part of IBM Plex Sans SC.
 
 A PDF that embeds a font carries a copy of it, so its license has to allow
-that. The bundled fonts are all under the SIL Open Font License, which lets
+that. The fonts PDFjet carries are all under the SIL Open Font License, which lets
 any document embed them; the fonts of fonts.google.com are under licenses
 that allow it too. Use another font only when its license says so: the fonts
 of Windows and macOS, such as Georgia or Tahoma, are licensed for that

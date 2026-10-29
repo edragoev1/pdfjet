@@ -15,8 +15,12 @@ using Xunit;
 namespace PDFjet.NET {
 public class SubsetTest {
     private static byte[] FontBytes(string path) {
-        return File.ReadAllBytes(TestSupport.RepoPath(path));
+        return TestSupport.FontBytes(path);
     }
+
+    // IBM Plex Sans, which has the short offsets of loca; the subsets of a
+    // font with the long ones read Cascadia Mono or IBM Plex Math.
+    private const string PLEX = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
 
     private static int U16(byte[] font, int at) {
         return font[at] << 8 | font[at + 1];
@@ -75,13 +79,17 @@ public class SubsetTest {
 
     [Fact]
     public void KeepsTheGlyphsUsedAndThePartsOfTheComposites() {
-        // In Noto Sans, Ä (134) is made of A (36) and the dieresis (106), and
-        // ǅ (913) of D (39), z (93) and the caron (331).
-        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        // In Cascadia Mono, whose loca has the long offsets, as that of Noto
+        // Sans, which this test read before 9.1.7, had: Ä (16) is made of A
+        // (1) and the dieresis of capitals (3051), and ặ (229) of a (225),
+        // the dot below (3029) and the breve (3020); 4,319 glyphs. Noto Sans
+        // had Ä (134) of A (36) and the dieresis (106), and ǅ (913) of three.
+        byte[] ttf = FontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf");
+        Assert.Equal(1, U16(ttf, Table(ttf, "head") + 50));
         bool[] kept;
-        byte[] subset = Subset.SubsetTrueType(ttf, Used(134, 913), out kept);
-        Assert.Equal(4503, kept.Length);
-        HashSet<int> want = new HashSet<int> {0, 134, 36, 106, 913, 39, 93, 331};
+        byte[] subset = Subset.SubsetTrueType(ttf, Used(16, 229), out kept);
+        Assert.Equal(4319, kept.Length);
+        HashSet<int> want = new HashSet<int> {0, 16, 1, 3051, 229, 225, 3029, 3020};
         for (int gid = 0; gid < kept.Length; gid++) {
             Assert.True(want.Contains(gid) == kept[gid], "glyph " + gid);
             byte[] glyph = Glyph(subset, gid);
@@ -111,7 +119,9 @@ public class SubsetTest {
 
     [Fact]
     public void SubsetsAFontWithShortOffsets() {
-        byte[] ttf = FontBytes("fonts/NotoSansThai/NotoSansThai-Regular.ttf");
+        // IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
+        // Thai's had.
+        byte[] ttf = FontBytes("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf");
         Assert.Equal(0, U16(ttf, Table(ttf, "head") + 50));
         bool[] kept;
         byte[] subset = Subset.SubsetTrueType(ttf, Used(5), out kept);
@@ -122,7 +132,7 @@ public class SubsetTest {
 
     [Fact]
     public void IsRefusedByAFontWhoseLicenseForbidsIt() {
-        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        byte[] ttf = FontBytes(PLEX);
         int os2 = Table(ttf, "OS/2");
         ttf[os2 + 8] = 0x01;
         ttf[os2 + 9] = 0x00;
@@ -163,49 +173,53 @@ public class SubsetTest {
         return program;
     }
 
-    private const string Tagged = "/BaseFont /([A-Z]{6}\\+NotoSans-Regular)\n";
+    private const string Tagged = "/BaseFont /([A-Z]{6}\\+IBMPlexSans)\n";
 
     [Fact]
     public void ATrueTypeFontIsEmbeddedAsASubsetUnderATaggedName() {
-        foreach (string path in new string[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
+        foreach (string path in new string[] {PLEX}) {
             string raw = Doc(Compliance.PDF_1_7, path, true, "Ä");
             Match m = Regex.Match(raw, Tagged);
             Assert.True(m.Success, path);
             Assert.Contains("/FontName /" + m.Groups[1].Value + "\n", raw);
             Assert.Equal(2, Regex.Matches(raw, Tagged).Count);
             byte[] program = Program(raw);
-            Assert.True(Glyph(program, 134).Length > 0 && Glyph(program, 36).Length > 0, path);
-            Assert.Empty(Glyph(program, 37));
-            // The widths of the glyphs kept: .notdef, A, the dieresis and Ä.
-            Assert.Matches("/W \\[\n0\\[\\d+ \\]\n36\\[\\d+ \\]\n106\\[\\d+ \\]\n134\\[\\d+ \\]\\]\n", raw);
+            // In IBM Plex Sans, Ä (395) is made of A (33) and the dieresis
+            // of capitals (971), and B is 34. Noto Sans had Ä (134), A (36),
+            // the dieresis (106) and B (37).
+            Assert.True(Glyph(program, 395).Length > 0 && Glyph(program, 33).Length > 0, path);
+            Assert.Empty(Glyph(program, 34));
+            // The widths of the glyphs kept: .notdef, A, Ä and the dieresis.
+            Assert.Matches("/W \\[\n0\\[\\d+ \\]\n33\\[\\d+ \\]\n395\\[\\d+ \\]\n971\\[\\d+ \\]\\]\n", raw);
             Assert.DoesNotContain("/CIDSet", raw);
         }
     }
 
     [Fact]
     public void AFontSetToStayWholeIsEmbeddedWhole() {
-        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
-        foreach (string path in new string[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
+        byte[] ttf = FontBytes(PLEX);
+        foreach (string path in new string[] {PLEX}) {
             string raw = Doc(Compliance.PDF_1_7, path, false, "Ä");
-            Assert.Contains("/BaseFont /NotoSans-Regular\n", raw);
-            Assert.DoesNotContain("+NotoSans", raw);
+            Assert.Contains("/BaseFont /IBMPlexSans\n", raw);
+            Assert.DoesNotContain("+IBMPlexSans", raw);
             Assert.Equal(ttf, Program(raw));
         }
     }
 
     [Fact]
     public void TwoFontsOfOneFileShareOneSubset() {
-        string raw = Doc(Compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B");
+        string raw = Doc(Compliance.PDF_1_7, PLEX, true, "A", "B");
         Assert.Single(Regex.Matches(raw, "/Length1 "));
         byte[] program = Program(raw);
-        Assert.True(Glyph(program, 36).Length > 0 && Glyph(program, 37).Length > 0);
+        // A and B, 33 and 34 in IBM Plex Sans; 36 and 37 in Noto Sans.
+        Assert.True(Glyph(program, 33).Length > 0 && Glyph(program, 34).Length > 0);
         // Two Type0 fonts and their CID font.
         Assert.Equal(3, Regex.Matches(raw, Tagged).Count);
     }
 
     [Fact]
     public void APDFA1HasTheCIDSetOfTheGlyphsKept() {
-        string raw = Doc(Compliance.PDF_A_1B, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A");
+        string raw = Doc(Compliance.PDF_A_1B, PLEX, true, "A");
         Match m = Regex.Match(raw, "/CIDSet (\\d+) 0 R\n");
         Assert.True(m.Success, "no CIDSet");
         int at = raw.IndexOf("\n" + m.Groups[1].Value + " 0 obj\n");
@@ -213,10 +227,11 @@ public class SubsetTest {
         Match s = new Regex("/Length (\\d+)\n>>\nstream\n").Match(raw, at);
         Assert.True(s.Success);
         byte[] bits = Inflate(raw, s.Index + s.Length, int.Parse(s.Groups[1].Value));
-        // Glyphs 0 and 36 of 4503.
-        byte[] want = new byte[(4503 + 7) / 8];
+        // Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A
+        // at 36 of 4,503.
+        byte[] want = new byte[(1019 + 7) / 8];
         want[0] = 0x80;
-        want[36 / 8] |= (byte) (0x80 >> (36 % 8));
+        want[33 / 8] |= (byte) (0x80 >> (33 % 8));
         Assert.Equal(want, bits);
     }
 
@@ -251,11 +266,11 @@ public class SubsetTest {
 
     [Fact]
     public void SubsetOfATrueTypeFontAddedToAnExistingPDF() {
-        string path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        string path = PLEX;
         int whole = FontBytes(path).Length;
         List<PDFobj> objects = SubsetInExistingPDF(path, true);
         string name = SubsetFontName(objects);
-        Assert.Matches(@"^/[A-Z]{6}\+NotoSans-Regular$", name);
+        Assert.Matches(@"^/[A-Z]{6}\+IBMPlexSans$", name);
         Assert.Equal(name, TestSupport.FindObject(objects, "/FontName").GetValue("/FontName"));
         Assert.Equal(name, TestSupport.FindObject(objects, "/CIDToGIDMap").GetValue("/BaseFont"));
         PDFobj file = TestSupport.FindObject(objects, "/Length1");
@@ -276,16 +291,16 @@ public class SubsetTest {
 
     [Fact]
     public void SubsetOfACFFFontAddedToAnExistingPDF() {
-        List<PDFobj> objects = SubsetInExistingPDF("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true);
+        List<PDFobj> objects = SubsetInExistingPDF("tests/fonts/IBMPlexSans-Regular.otf", true);
         Assert.Matches(@"^/[A-Z]{6}\+IBMPlexSans$", SubsetFontName(objects));
         Assert.NotNull(TestSupport.FindObject(objects, "/FontFile3"));
     }
 
     [Fact]
     public void SetSubsetFalseKeepsAFontAddedToAnExistingPDFWhole() {
-        string path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        string path = PLEX;
         List<PDFobj> objects = SubsetInExistingPDF(path, false);
-        Assert.Equal("/NotoSans-Regular", SubsetFontName(objects));
+        Assert.Equal("/IBMPlexSans", SubsetFontName(objects));
         Assert.Equal(FontBytes(path).Length,
                 Int32.Parse(TestSupport.FindObject(objects, "/Length1").GetValue("/Length1")));
     }
@@ -314,7 +329,7 @@ public class SubsetTest {
         // The gasp table's entry made a second head table of 8 bytes, whose
         // checksum adjustment the subset wrote past its end (the review of
         // 9 October 2026).
-        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        byte[] ttf = FontBytes(PLEX);
         int gasp = Entry(ttf, "gasp");
         Assert.True(gasp != -1);
         Encoding.ASCII.GetBytes("head").CopyTo(ttf, gasp);
@@ -327,7 +342,7 @@ public class SubsetTest {
         // Format 0xFFFF made the length of the loca table an int past its
         // range, and new byte[...] threw an OverflowException (the review of
         // 9 October 2026).
-        byte[] ttf = FontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf");
+        byte[] ttf = FontBytes("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf");
         PutU16(ttf, Table(ttf, "head") + 50, 0xFFFF);
         AssertRefused(ttf, Used(36));
     }
@@ -338,7 +353,7 @@ public class SubsetTest {
         // them copied it again for each (the review of 9 October 2026: 112 KB
         // made into 384 MB). A subset is never larger than the glyf table and the
         // padding of its glyphs.
-        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        byte[] ttf = FontBytes(PLEX);
         int head = Table(ttf, "head");
         int loca = Table(ttf, "loca");
         int glyfLength = U32(ttf, Entry(ttf, "glyf") + 12);
@@ -364,14 +379,16 @@ public class SubsetTest {
         // A loca entry past 2^31 - 1 refused every subset of the font, read
         // for each glyph up front (the review of 9 October 2026); as in the
         // other ports, only a glyph kept that cannot be read refuses it.
-        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        // Cascadia Mono has the long offsets of loca, as Noto Sans, which
+        // this test read before 9.1.7, had.
+        byte[] ttf = FontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf");
         Assert.Equal(1, U16(ttf, Table(ttf, "head") + 50));
         int loca = Table(ttf, "loca");
         PutU32(ttf, loca + 4 * 1000, 0x80000000L);
         bool[] kept;
         byte[] subset = Subset.SubsetTrueType(ttf, Used(36), out kept);
         Assert.True(kept[36] && !kept[999] && !kept[1000]);
-        byte[] whole = Glyph(FontBytes("fonts/NotoSans/NotoSans-Regular.ttf"), 36);
+        byte[] whole = Glyph(FontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf"), 36);
         Assert.Equal(whole, Slice(Glyph(subset, 36), 0, whole.Length));
         // Drawn, glyph 1000 cannot be read, and the font is embedded whole.
         AssertRefused(ttf, Used(36, 1000));

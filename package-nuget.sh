@@ -21,9 +21,16 @@ rm -rf "$stage" && mkdir -p "$stage/lib/net8.0" "$stage/lib/net48"
 top="PDFjet-For.NET-Core-v$version"
 unzip -q -j -o "$zip" "$top/PDFjet.dll" -d "$stage/lib/net8.0"
 unzip -q -j -o "$zip" "$top/net48/PDFjet.dll" -d "$stage/lib/net48"
-# The licenses of the fonts built into PDFjet.dll, which go with every copy
-unzip -q -j -o "$zip" "$top/IBMPlexSans-OFL.txt" "$top/SourceSerif4-OFL.txt" \
-    "$top/JetBrainsMono-OFL.txt" -d "$stage"
+# The licenses of the fonts built into PDFjet.dll, which go with every copy:
+# those beside it in the zip, one a family, such as IBMPlexSans-license.txt
+licenses=$(unzip -Z1 "$zip" | grep -E "^$top/[A-Za-z0-9]+-(license\.txt|OFL\.txt|LICENSE)\$" || true)
+if [ -z "$licenses" ]; then
+    echo "$(basename "$zip") has no licenses of the fonts beside PDFjet.dll" >&2
+    exit 1
+fi
+mkdir -p "$stage/font-licenses"
+# shellcheck disable=SC2086
+unzip -q -j -o "$zip" $licenses -d "$stage/font-licenses"
 cp nuget/README.md nuget/icon.png "$stage/"
 sed -e "s/\$version\\$/$version/" -e "s/\$commit\\$/$commit/" nuget/PDFjet.nuspec > "$stage/PDFjet.nuspec"
 # dotnet pack needs a project, even one it does not build: a stub, with the
