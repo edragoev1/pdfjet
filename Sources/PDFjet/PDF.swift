@@ -114,9 +114,10 @@ public final class PDF {
     private var metadataObjNumber = 0
     private var outputIntentObjNumber = 0
     private var os: BufferedOutputStream?
-    // The memory the content of the pages is compressed in, one page after
-    // another, made once for the document
-    private lazy var flateMemory = FlateEncode.Memory()
+    // The memory the content of the pages and the fonts is compressed in, one
+    // stream after another, made once for the document: made for each font
+    // stream, its 450 KB were 1.8 MB of a page in two fonts (28 October 2026)
+    internal lazy var flateMemory = FlateEncode.Memory()
     // The digits of the number append(Int) writes, the most an Int has and its sign.
     private var digits = [UInt8](repeating: 0, count: 20)
     private var objOffset = [Int]()

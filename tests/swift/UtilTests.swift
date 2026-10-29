@@ -70,6 +70,19 @@ import Testing
         #expect(try Content.getFromStream(InputStream(data: Data(data)), 17) == data)
     }
 
+    // Read in pieces of the buffer's size, joined once: none, one, an exact
+    // number of them and one byte more.
+    @Test func getFromStreamJoinsThePiecesInOrder() throws {
+        for count in [0, 1, 16, 48, 49] {
+            let data = TestSupport.randomBytes(count, 11)
+            #expect(try Content.getFromStream(InputStream(data: Data(data)), 16) == data)
+        }
+        for count in [65536, 65537, 200000] {
+            let data = TestSupport.randomBytes(count, 11)
+            #expect(try Content.getFromStream(InputStream(data: Data(data))) == data)
+        }
+    }
+
     @Test func ofBinaryFileReadsTheBytes() throws {
         let data: [UInt8] = [0, 1, 2, 0xFF]
         #expect(try Content.ofBinaryFile(try write("data.bin", data)) == data)
