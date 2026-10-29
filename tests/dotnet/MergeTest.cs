@@ -305,7 +305,7 @@ public class MergeTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         foreach (string name in new string[] {"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"}) {
-            pdf.Merge(new PDF().Read(TestSupport.Open("data/testPDFs/" + name)));
+            pdf.Merge(new PDF().Read(TestSupport.Open("resources/data/testPDFs/" + name)));
         }
         pdf.Complete();
         List<PDFobj> objects = TestSupport.Read(stream.ToArray());

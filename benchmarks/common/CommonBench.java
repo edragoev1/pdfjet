@@ -88,7 +88,7 @@ public class CommonBench {
         Font smallBold = new Font(pdf, ROOT + IBMPlexSans.SemiBold).setSize(8f);
         long t1 = System.nanoTime();
 
-        String prose = new String(Files.readAllBytes(Paths.get(ROOT + "data/the-idiot.txt")),
+        String prose = new String(Files.readAllBytes(Paths.get(ROOT + "resources/data/the-idiot.txt")),
                 StandardCharsets.UTF_8).substring(0, 7000);
         Markup markup = new Markup(regular, bold, italic, italic, regular);
         List<Paragraph> paragraphs = new ArrayList<>();
@@ -101,7 +101,7 @@ public class CommonBench {
         frame.setWidth(512f);
         frame.drawOn(pdf, pages, Letter.PORTRAIT);
 
-        List<String> lines = Files.readAllLines(Paths.get(ROOT + "data/world-communications.txt"), StandardCharsets.UTF_8);
+        List<String> lines = Files.readAllLines(Paths.get(ROOT + "resources/data/world-communications.txt"), StandardCharsets.UTF_8);
         List<List<Cell>> rows = new ArrayList<>();
         for (int r = 0; r < lines.size(); r++) {
             String[] fields = lines.get(r).split("\\|", -1);

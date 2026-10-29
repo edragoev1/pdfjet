@@ -1,0 +1,252 @@
+|Student Name|||WRC|WRC|Maze|Maze||WRC|WRC
+Teacher's Last Name|Student's First Name|Student's Last Name||Fall|Errors|Fall|Norms||Winter|Errors
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mr. Bean|John|Smith||38|4|3|Average||60|1
+Mr. Bean|Ivana|Bowden||86|1|13||||
+Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
+Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
+Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1

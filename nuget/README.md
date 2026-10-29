@@ -35,9 +35,12 @@ pdf.Complete();
 ```
 
 The core fonts, such as Helvetica, need no files. For text in other scripts,
-load a .ttf or .otf font: the 252 fonts of
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts), IBM Plex, Noto and
-others, are ready to use.
+`PDFjet.dll` carries IBM Plex Sans and Serif, Source Serif 4, Cascadia Mono,
+IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, all
+under the SIL Open Font License: their constants, such as
+`IBMPlexSans.Regular`, need no files. Any other .ttf or .otf font is read by
+its path; Noto Sans and the other fonts PDFjet came with before 9.1.7 are at
+[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts).
 
 ## More
 

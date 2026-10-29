@@ -31,11 +31,13 @@ images, accessible and archival when you need it to be. The same API and the
 same output come in four languages, and none of them needs a third-party library.
 
 > [!NOTE]
-> The fonts and the examples' data live in
-> [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-> [pdfjet-data](https://github.com/edragoev1/pdfjet-data); the scripts fetch
-> them (see [Examples](#examples)). The packages from Maven Central, NuGet
-> and `go get` have no fonts, and the core fonts, such as Helvetica, need none.
+> This repository has all that the examples and the tests read: the fonts
+> PDFjet carries in `resources/fonts`, which the library reads from itself,
+> and the examples' data in `resources/data`. Nothing is fetched. The
+> packages of 9.1.5 from Maven Central, NuGet and `go get` have no fonts:
+> those PDFjet came with then are at
+> [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts). The core fonts,
+> such as Helvetica, need none.
 
 ## Why PDFjet
 
@@ -90,9 +92,11 @@ same output come in four languages, and none of them needs a third-party library
 ## Quick start
 
 Each snippet writes `hello.pdf` with a line in English, Greek and Bulgarian.
-The bundled fonts, such as `IBMPlexSans.Regular`, are paths relative to the
-working directory, so run the program in a folder that has this repository's
-`fonts` directory, which the build scripts fetch, as the note at the top says.
+The fonts PDFjet carries, such as `IBMPlexSans.Regular`, are paths like
+`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, which the library built from
+this repository reads from itself when there is no such file: they need no
+files. With 9.1.5, which has no fonts, run the program in a folder that has
+the `fonts` folder of pdfjet-fonts, as the Go part says.
 
 <details open>
 <summary><b>Java</b></summary>
@@ -113,11 +117,11 @@ With Gradle:
 implementation("com.pdfjet:pdfjet:9.1.5")
 ```
 
-The jar has no fonts, as the Go module has none: clone pdfjet-fonts as
-`fonts/` next to your program, as the Go part below says, or copy the fonts
-you use from it; the core fonts need no files. Or build `PDFjet.jar` from
-this repository with `./build-java.sh`, which also runs the examples, and put
-it on the class path.
+The jar of 9.1.5 has no fonts: clone pdfjet-fonts as `fonts/` next to your
+program, as the Go part below says, or copy the fonts you use from it; the
+core fonts need no files. Or build `PDFjet.jar` from this repository with
+`./build-java.sh`, which also runs the examples, and put it on the class
+path: it carries the fonts of `resources/fonts`.
 
 ```java
 import com.pdfjet.*;
@@ -153,10 +157,11 @@ Or in the project file:
 <PackageReference Include="PDFjet" Version="9.1.5" />
 ```
 
-The package has no fonts, as the jar has none: get pdfjet-fonts as the Go part
-below says, or copy the fonts you use from it; the core fonts need no files.
-Or build `bin/release/net8.0/PDFjet.dll` from this repository with
-`./build-dotnet.sh` and reference it.
+The package of 9.1.5 has no fonts: get pdfjet-fonts as the Go part below
+says, or copy the fonts you use from it; the core fonts need no files. Or
+build `bin/release/net8.0/PDFjet.dll` from this repository with
+`./build-dotnet.sh` and reference it: it carries the fonts of
+`resources/fonts`.
 
 ```csharp
 using System.IO;
@@ -216,13 +221,12 @@ func main() {
 ```
 
 The module path carries the major version, as Go requires from v2 on. The Go
-module has the source of the library and the examples only. The fonts and the
-data files are not in it: `fonts/` and `data/` are the repositories
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-[pdfjet-data](https://github.com/edragoev1/pdfjet-data), which the scripts of
-this repository fetch, and the module is made without them. `images/` has a `go.mod` that keeps it out. Clone
-pdfjet-fonts as `fonts/` next to your program, or copy the fonts you use from
-it; the core fonts need no files:
+module has the source of the library and the examples, and the fonts PDFjet
+carries, in `resources/fonts`, which the library embeds. The data files of
+the examples, in `resources/data`, and the images, in `images`, are not in
+it: each folder has a `go.mod` of its own, which keeps it out. The module of
+9.1.5 has no fonts: clone pdfjet-fonts as `fonts/` next to your program, or
+copy the fonts you use from it; the core fonts need no files:
 
 ```sh
 git clone --depth 1 https://github.com/edragoev1/pdfjet-fonts.git fonts
@@ -281,9 +285,9 @@ is that of the whole process writing the 500-page document, runtime included.
 ## Examples
 
 The [examples](examples) folder has 50 examples, the same in every port. They
-read the fonts and data files of the `fonts` and `data` folders, which these
-scripts fetch the first time they run. Build a port and run all of its
-examples, or run one example by its number:
+draw in the fonts PDFjet carries, which the library reads from itself, and
+read the data files of `resources/data`, so they need nothing fetched. Build
+a port and run all of its examples, or run one example by its number:
 
 | Port | All examples | One example |
 |---|---|---|
@@ -292,17 +296,12 @@ examples, or run one example by its number:
 | Go | `./build-go.sh` | `./run-go.sh 01` |
 | Swift | `./build-swift.sh` | `./run-swift.sh 01` |
 
-The fonts and the data files are two more repositories,
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-[pdfjet-data](https://github.com/edragoev1/pdfjet-data), at the commits that
-`fonts-and-data.txt` pins. The build, run and test scripts fetch them into
-the folders `fonts` and `data` the first time they run, the pinned commits
-alone, and move them to the new commits when a `git pull` changes a pin.
-`./get-fonts-and-data.sh`, or `get-fonts-and-data.cmd` on Windows, does it
-without building anything. They need git. Using PDFjet from Go with
-`go get`, from Maven Central or from NuGet? The module, the jar and the
-package have no fonts: the Go part of [Quick start](#quick-start) says how to
-get pdfjet-fonts.
+The examples read the data files by paths relative to the repository root,
+such as `resources/data/the-idiot.txt`, and the scripts run them there.
+`resources/data/README.md` says where each file comes from and under which
+license. Using PDFjet 9.1.5 from Go with `go get`, from Maven Central or from
+NuGet? The module, the jar and the package have no fonts: the Go part of
+[Quick start](#quick-start) says how to get pdfjet-fonts.
 
 On Linux, install these first:
 
@@ -391,9 +390,9 @@ The tests are not part of the libraries and add no dependency to them.
 `test-java.sh` downloads the JUnit console launcher once into `build/junit`
 and checks its SHA-256, and builds and runs the tests on Java 8 as on later
 releases. The C# tests compile the library sources into the test project, so
-they can test internal classes, and restore xUnit from NuGet. The Go tests read
-the PngSuite images from the repository, and skip the tests that need the
-fonts when the `fonts` directory is not there. The PDFs the tests make stay in
+they can test internal classes, and restore xUnit from NuGet. The tests of
+every port read the PngSuite images, the fonts of `resources/fonts` and the
+data files of `resources/data` from the repository. The PDFs the tests make stay in
 memory, and the files they need to write go to the system's temporary
 directory. `./check-examples.sh` runs the unit tests of each port after its
 examples.
@@ -479,8 +478,8 @@ null text.
 
 ## Fonts, and what a PDF embeds
 
-The bundled fonts are TrueType `.ttf` files, and IBM Plex Sans is also there as
-`.otf`, a font of CFF outlines. Any `.ttf` or `.otf`
+The fonts PDFjet carries are TrueType `.ttf` files, and IBM Plex Sans JP, KR,
+SC and TC are `.otf`, fonts of CFF outlines. Any `.ttf` or `.otf`
 file on the computer is a font for PDFjet as well. Every font is embedded as a
 subset when the document is completed, the outlines of the glyphs it does not
 draw left out. What a PDF embeds:
@@ -510,23 +509,26 @@ draw left out. What a PDF embeds:
   is added and filled in when the objects are added to the PDF, after the
   pages are drawn. `setSubset(false)` is called before then.
 
-The SIL Open Font License of the bundled fonts allows a document to embed
+The SIL Open Font License of the fonts PDFjet carries allows a document to embed
 them, whole or subset: a document is not a distribution of the font.
 
 ### Choosing a font you may embed
 
 A font is software with a license, and a PDF that embeds a font carries a
 copy of it, a subset at least. That a font is on a computer does not mean
-that any program may embed it in documents. This is why PDFjet comes with a
-large set of fonts, chosen for their scripts and their licenses: so that a
-program has the fonts it needs, for most of the world's languages, that any
-document may embed. In this order:
+that any program may embed it in documents. This is why PDFjet carries a set
+of fonts, chosen for their scripts and their licenses: so that a program has
+the fonts it needs, for most of the world's languages, that any document may
+embed. In this order:
 
-1. **The fonts that come with PDFjet** first: IBM Plex Sans, Serif and Mono,
-   and Plex's Arabic, Hebrew, Thai, Japanese, Korean and Chinese families;
-   Noto Sans and its families; Source Serif 4; JetBrains Mono. All are under
-   the SIL Open Font License, which lets any document embed them, for any
-   use.
+1. **The fonts PDFjet carries** first, in `resources/fonts` and read from the
+   library itself: IBM Plex Sans and Serif, Source Serif 4 and Cascadia
+   Mono; IBM Plex Sans Arabic, Hebrew and Thai; IBM Plex Sans JP, KR, SC and
+   TC; and IBM Plex Math. All are under the SIL Open Font License, which
+   lets any document embed them, for any use. Noto Sans and its families,
+   and the other fonts PDFjet came with before 9.1.7, are at
+   [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts), each with its
+   license.
 2. **Google Fonts**, [fonts.google.com](https://fonts.google.com), next:
    every family there is under the SIL Open Font License, the Apache License
    2.0 or the Ubuntu Font Licence, each of which lets a document embed the
@@ -620,7 +622,7 @@ is broken between its characters, so text without zero width spaces still fits
 in the text block, but its lines can break inside words. A right to left word is
 shaped as a whole before it is broken, so its letters keep their joined forms on
 both sides of the break. The Thai text of Example_04,
-`data/languages/thai.txt`, has a zero width space between its words.
+`resources/data/languages/thai.txt`, has a zero width space between its words.
 
 ## Marks
 

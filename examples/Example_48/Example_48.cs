@@ -52,7 +52,7 @@ class Example_48 {
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_48("data/testPDFs/scanned-linearized.pdf");
+        new Example_48("resources/data/testPDFs/scanned-linearized.pdf");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine($"Example_48 => {time1 - time0,4} ms");
     }

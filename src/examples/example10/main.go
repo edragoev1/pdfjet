@@ -54,7 +54,7 @@ func Example10() {
 	gs.SetAlphaNonStroking(0.5) // Non-Stroking alpha
 	page.SetGraphicsState(gs)
 
-	englishText := content.OfTextFile("data/languages/english.txt")
+	englishText := content.OfTextFile("resources/data/languages/english.txt")
 	// f1.SetSize(14.0)
 	textBlock := pdfjet.NewTextBlock(f1, englishText)
 	textBlock.SetLocation(100.0, 50.0)

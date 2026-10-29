@@ -1,6 +1,5 @@
 @echo off
-call "%~dp0get-fonts-and-data.cmd" || exit /b 1
-:: The folder of this script, which has fonts and data, from wherever it is run.
+:: The folder of this script, which has the files the examples read, from wherever it is run.
 cd /d "%~dp0"
 
 :: Remove the .class files from the output directories. 2>nul keeps del quiet

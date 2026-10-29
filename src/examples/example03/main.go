@@ -49,7 +49,7 @@ func Example03() {
 	// The line above each block is its heading
 	pdfjet.NewTextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("resources/data/languages/japanese.txt"))
 	textBlock.SetLanguage("ja")
 	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(512.0)
@@ -59,7 +59,7 @@ func Example03() {
 
 	pdfjet.NewTextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
+	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("resources/data/languages/korean.txt"))
 	textBlock.SetLanguage("ko")
 	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(512.0)

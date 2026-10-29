@@ -46,7 +46,7 @@ public class Example_10 {
         gs.setAlphaNonStroking(0.5f);               // Non-Stroking alpha
         page.setGraphicsState(gs);
 
-        String englishText = Content.ofTextFile("data/languages/english.txt");
+        String englishText = Content.ofTextFile("resources/data/languages/english.txt");
         // f1.setSize(14f);
         TextBlock textBlock = new TextBlock(f1, englishText);
         textBlock.setLocation(100f, 50f);

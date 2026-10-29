@@ -38,7 +38,7 @@ public class Example_20 {
 
         // The cars of the file: by make, the battery electric ones and the
         // electric range of those that give one, and by model year
-        List<String> lines = Content.LinesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv");
+        List<String> lines = Content.LinesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv");
         int[] cars = new int[MAKES.Length];
         int[] battery = new int[MAKES.Length];
         int[] ranges = new int[MAKES.Length];

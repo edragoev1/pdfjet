@@ -276,7 +276,7 @@ public class Snippets {
     // @snippet text-frame-pages
     static void TextFramePages(PDF pdf, Font font) {
         List<String> text = new List<String>(
-                Content.OfTextFile("data/dostoevsky.txt").Split("\n\n"));
+                Content.OfTextFile("resources/data/dostoevsky.txt").Split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         frame.SetLocation(72f, 72f);
         frame.SetWidth(468f);
@@ -288,7 +288,7 @@ public class Snippets {
     // @snippet text-frame-columns
     static void TextFrameColumns(PDF pdf, Font font) {
         List<String> text = new List<String>(
-                Content.OfTextFile("data/dostoevsky.txt").Split("\n\n"));
+                Content.OfTextFile("resources/data/dostoevsky.txt").Split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         while (frame.HasMoreText()) {
             Page page = new Page(pdf, Letter.LANDSCAPE);
@@ -468,7 +468,7 @@ public class Snippets {
         Font body = new Font(pdf, IBMPlexSans.Regular).SetSize(9f);
         BigTable table = new BigTable(pdf, bold, body, Letter.LANDSCAPE);
         table.SetNumberOfColumns(9);    // Set in this order
-        table.SetTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",");
+        table.SetTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",");
         table.SetLocation(0f, 0f);
         table.SetBottomMargin(20f);
         table.SetVerticalPadding(1f);   // Room above and below each row
@@ -715,7 +715,7 @@ public class Snippets {
 
     // @snippet attachments
     static void Attachments(PDF pdf, Font font) {
-        EmbeddedFile file = new EmbeddedFile(pdf, "data/winter-2009.txt", true);
+        EmbeddedFile file = new EmbeddedFile(pdf, "resources/data/winter-2009.txt", true);
         Page page = new Page(pdf, Letter.PORTRAIT);
         FileAttachment attachment = new FileAttachment(file);
         attachment.SetLocation(50f, 50f);
@@ -776,7 +776,7 @@ public class Snippets {
     // @snippet merge
     static void Merge() {
         PDF pdf = new PDF(new BufferedStream(new FileStream("merged.pdf", FileMode.Create)));
-        String[] files = {"data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"};
+        String[] files = {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"};
         foreach (String file in files) {
             Stream stream = new BufferedStream(
                     new FileStream(file, FileMode.Open, FileAccess.Read));
@@ -789,7 +789,7 @@ public class Snippets {
     // @snippet split
     static void Split() {
         Stream stream = new BufferedStream(
-                new FileStream("data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
+                new FileStream("resources/data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
         List<PDFobj> objects = new PDF().Read(stream);
         stream.Close();
         PDF firstPage = new PDF(new BufferedStream(new FileStream("page1.pdf", FileMode.Create)));
@@ -801,7 +801,7 @@ public class Snippets {
     static void ExistingPages() {
         PDF pdf = new PDF(new BufferedStream(new FileStream("stamped.pdf", FileMode.Create)));
         List<PDFobj> objects = pdf.Read(
-                new FileStream("data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
+                new FileStream("resources/data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
         // IBM Plex Sans, which PDFjet carries
         Font font = new Font(objects, IBMPlexSans.Regular).SetSize(24f);
         foreach (PDFobj pageObj in pdf.GetPageObjects(objects)) {

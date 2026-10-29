@@ -17,7 +17,7 @@ for .NET Framework 4.8.
 | `Example_*.pdf` | The PDFs the examples create. |
 | `build-dotnet.sh`, `build-dotnet.cmd` | Build and run all the examples. |
 | `run-dotnet.sh`, `run-dotnet.cmd` | Build and run one example. |
-| `data/`, `images/`, `PngSuite/` | The files the examples read. |
+| `resources/data/`, `images/`, `PngSuite/` | The files the examples read; `resources/data/README.md` says where the data comes from. |
 | `CHANGELOG.md` | What changed in each release. |
 | `LICENSE`, `THIRD-PARTIES.TXT` | The license of PDFjet and of the work it includes. |
 | `*-license.txt`, `*-OFL.txt`, `*-LICENSE` | The licenses of the fonts `PDFjet.dll` carries, one for each family, such as `IBMPlexSans-license.txt`. |
@@ -109,7 +109,8 @@ Run all the examples, or one by its number, from this folder:
 
 On Windows, use `build-dotnet.cmd` and `run-dotnet.cmd 01`. Each example
 project references the `PDFjet.dll` of this folder, and each example writes its
-PDF to this folder.
+PDF to this folder and reads its data from `resources/data`, by paths relative
+to this folder.
 
 ## Documentation
 

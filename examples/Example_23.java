@@ -37,7 +37,7 @@ final public class Example_23 {
         Table table = new Table();
         // Country|Code|Life expectancy|Children per woman, after a header line
         List<List<Cell>> tableData = getData(
-                "data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2);
+                "resources/data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2);
 
         // A marker on three rows, found by their countries, each a link
         Point p1 = new Point();

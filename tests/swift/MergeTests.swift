@@ -280,7 +280,7 @@ import Testing
     @Test func mergesTheTestDocuments() throws {
         let memory = MemoryPDF()
         for name in ["scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"] {
-            try memory.pdf.merge(PDF().read(from: TestSupport.open("data/testPDFs/" + name)))
+            try memory.pdf.merge(PDF().read(from: TestSupport.open("resources/data/testPDFs/" + name)))
         }
         try memory.pdf.complete()
         let objects = try TestSupport.read(memory.bytes)

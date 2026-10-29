@@ -48,7 +48,7 @@ func Example20() {
 
 	// The cars of the file: by make, the battery electric ones and the
 	// electric range of those that give one, and by model year
-	lines := content.LinesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv")
+	lines := content.LinesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv")
 	cars := make([]int, len(makes))
 	battery := make([]int, len(makes))
 	ranges := make([]int, len(makes))

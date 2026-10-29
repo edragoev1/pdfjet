@@ -1,0 +1,16 @@
+**Conceptual Questions**
+
+Physics is the science concerned with describing the interactions of energy, matter, space, and time to uncover the fundamental mechanisms that underlie every phenomenon.
+
+No, neither of these two theories is more valid than the other. Experimentation is the ultimate decider. If experimental evidence does not suggest one theory over the other, then both are equally valid. A given physicist might prefer one theory over another on the grounds that one seems more simple, more natural, or more beautiful than the other, but that physicist would quickly acknowledge that he or she cannot say the other theory is invalid. Rather, he or she would be honest about the fact that more experimental evidence is
+needed to determine which theory is a better description of nature.
+
+Probably not. As the saying goes, "Extraordinary claims require extraordinary evidence."
+
+Conversions between units require factors of 10 only, which simplifies calculations. Also, the same basic units can be scaled up or down using metric prefixes to sizes appropriate for the problem at hand.
+
+a. Base units are defined by a particular process of measuring a base quantity whereas derived units are defined as algebraic combinations of base units. b. A base quantity is chosen by convention and practical considerations. Derived quantities are expressed as algebraic combinations of base quantities. c. A base unit is a standard for expressing the measurement of a base quantity within a particular system of units. So, a measurement of a base quantity could be expressed in terms of a base unit in any system of units using the same base quantities. For example, length is a base quantity in both SI and the English system, but the meter is a base unit in the SI system only.
+
+a. Uncertainty is a quantitative measure of precision. b. Discrepancy is a quantitative measure of accuracy.
+
+Check to make sure it makes sense and assess its significance.

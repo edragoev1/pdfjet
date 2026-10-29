@@ -57,7 +57,7 @@ Add the module to your program with the go command. The module path carries the 
 
     go get github.com/edragoev1/pdfjet/v9@latest
 
-The Go module has the source of the library and the examples only. The fonts are in the repository pdfjet-fonts, the fonts folder of the repository: clone it as fonts next to your program, or copy the fonts you use from it; the core fonts need no files.
+The Go module has the source of the library and the examples, and the fonts PDFjet carries, which the library embeds; the data files of the examples are left out. The module of 9.1.5 has no fonts: clone the repository pdfjet-fonts as fonts next to your program, or copy the fonts you use from it; the core fonts need no files.
 @end
 @lang swift
 PDFjet for Swift runs on Linux as well as on macOS, so it serves a Swift server too: it uses only the parts of Foundation that Linux has, and none of Apple's frameworks, its compression, encryption, fonts and images being its own.
@@ -74,7 +74,7 @@ Add PDFjet to the Package.swift of your package, and the PDFjet product to the t
     ]
 @end
 
-The fonts that come with PDFjet, such as IBMPlexSans.Regular, are paths relative to the working folder, so a program that uses them runs in a folder that has the fonts folder of the repository.
+The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. They are IBM Plex Sans and Serif, Source Serif 4, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, in the folder resources/fonts of the repository.
 
 ## Hello, World
 

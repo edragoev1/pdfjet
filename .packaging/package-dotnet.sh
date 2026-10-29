@@ -1,8 +1,8 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-For.NET-Pro-vX.Y.Z.zip, a self-contained
 # package for .NET clients: PDFjet.dll, the DocFX reference, the example
-# projects with the PDFs they create, the files they read (data, images,
-# PngSuite), and scripts that build and run the examples against PDFjet.dll,
+# projects with the PDFs they create, the files they read (resources/data,
+# images, PngSuite), and scripts that build and run the examples against PDFjet.dll,
 # which carries the fonts of resources/fonts that they draw in.
 # The library sources and the font tools in util are not in the package.
 #
@@ -111,32 +111,18 @@ mkdir -p "$STAGE" .commercial-packages
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/dotnet-pro LICENSE \
-    net net48 PDFjet.csproj resources/fonts examples images PngSuite docfx \
+    net net48 PDFjet.csproj resources/fonts resources/data examples images PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
 tar -x -C "$STAGE" -f "$TAR"
-
-# data is the repository pdfjet-data, which get-fonts-and-data.sh fetches and
-# git archive does not have: it is archived at the commit that
-# fonts-and-data.txt of the last commit pins, whatever commit the folder is
-# at, and its README, about the repository, is left out. The fonts are no
-# longer fetched from 9.1.7: those the examples draw in are in PDFjet.dll.
-bash get-fonts-and-data.sh
-for dir in data; do
-    commit=$(git show HEAD:fonts-and-data.txt | sed -n "s/^$dir [^ ]* \([0-9a-f]*\).*/\1/p")
-    if [ -z "$commit" ] || ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
-        echo "$dir does not have the commit ${commit:-that} fonts-and-data.txt of the last commit pins: run get-fonts-and-data.sh"
-        exit 1
-    fi
-    git -C "$dir" archive -o "$TAR" --prefix="$dir/" "$commit"
-    tar -x -C "$STAGE" -f "$TAR"
-    rm -f "$STAGE/$dir/README.md"
-done
 rm "$TAR"
 
-# The Java examples and the go.mod file of the Go port are not needed, but
-# Example_42 attaches Example_02.java.
+# resources/data is as it is in the repository, the data files the examples
+# read with the README that says where they come from. resources/fonts is
+# built into PDFjet.dll, and left out after the build: the examples draw in
+# the fonts of PDFjet.dll. The Java examples and the Go files of resources
+# and images are not needed, but Example_42 attaches Example_02.java.
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
-rm -f "$STAGE/images/go.mod"
+rm -f "$STAGE/images/go.mod" "$STAGE/resources/data/go.mod"
 
 cd "$STAGE"
 
@@ -175,7 +161,7 @@ mv net48-dll net48
 # The same docfx command as generate-documentation.sh; it writes docs/dotnet.
 docfx docfx/docfx.json
 
-rm -rf net PDFjet.csproj resources bin obj docfx
+rm -rf net PDFjet.csproj resources/fonts bin obj docfx
 
 # The example projects reference the PDFjet.dll of the package.
 # perl, as sed -i is not the same in GNU sed and in the sed of macOS.

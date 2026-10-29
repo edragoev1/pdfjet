@@ -21,9 +21,8 @@ on:
             - "Sources/**"
             - "Package.swift"
             - "examples/**"
-            - "fonts"
+            - "resources/**"
             - "images/**"
-            - "data"
             - "PngSuite/**"
             - "examples-java.html"
             - "examples-dotnet.html"
@@ -46,13 +45,14 @@ jobs:
         runs-on: ubuntu-24.04
         steps:
             # Only the ports, the DocFX configuration, the examples, the images
-            # the examples read, .github (for the Install Swift action), and
-            # tests/swift, tests/corpus/swift, tests/crossport/swift and
-            # booklet/snippets/swift, the paths of the test target, of the
+            # the examples read, resources (the fonts PDFjet carries and the
+            # data files the examples read), .github (for the Install Swift
+            # action), and tests/swift, tests/corpus/swift, tests/crossport/swift
+            # and booklet/snippets/swift, the paths of the test target, of the
             # corpus and cross-port harnesses and of the booklet snippets,
             # which SwiftPM checks for every target of
             # Package.swift, are checked out. Files in the repository root are
-            # always checked out, get-fonts-and-data.sh among them.
+            # always checked out.
             - uses: actions/checkout@v7
               with:
                   sparse-checkout: |
@@ -64,15 +64,12 @@ jobs:
                       Sources
                       examples
                       images
+                      resources
                       PngSuite
                       tests/swift
                       tests/corpus/swift
                       tests/crossport/swift
                       booklet/snippets/swift
-
-            # The fonts and the data files the examples read.
-            - name: Get the fonts and the data files
-              run: ./get-fonts-and-data.sh
 
             - uses: actions/setup-java@v6
               with:

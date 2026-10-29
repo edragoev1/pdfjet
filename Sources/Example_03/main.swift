@@ -38,7 +38,7 @@ public class Example_03 {
         TextLine(f0, "This block is Japanese: 日本語").setFallbackFont(f1).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         var textBlock = TextBlock(
-                f1, try Content.ofTextFile("data/languages/japanese.txt"))
+                f1, try Content.ofTextFile("resources/data/languages/japanese.txt"))
         textBlock.setLanguage("ja")
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)
@@ -49,7 +49,7 @@ public class Example_03 {
         TextLine(f0, "This block is Korean: 한국어").setFallbackFont(f2).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
-                f2, try Content.ofTextFile("data/languages/korean.txt"))
+                f2, try Content.ofTextFile("resources/data/languages/korean.txt"))
         textBlock.setLanguage("ko")
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)

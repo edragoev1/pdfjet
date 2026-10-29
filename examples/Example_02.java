@@ -41,7 +41,7 @@ public class Example_02 {
                 .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
         TextBlock textBlock = new TextBlock(
-                f1, Content.ofTextFile("data/languages/simplified-chinese.txt"));
+                f1, Content.ofTextFile("resources/data/languages/simplified-chinese.txt"));
         textBlock.setLanguage("zh-Hans");
         textBlock.setLocation(50f, 70f);
         textBlock.setWidth(512f);
@@ -53,7 +53,7 @@ public class Example_02 {
                 .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
         textBlock = new TextBlock(
-                f2, Content.ofTextFile("data/languages/traditional-chinese.txt"));
+                f2, Content.ofTextFile("resources/data/languages/traditional-chinese.txt"));
         textBlock.setLanguage("zh-Hant");
         textBlock.setLocation(50f, 70f);
         textBlock.setWidth(512f);

@@ -46,7 +46,7 @@ public class Example_26 {
         f2.setSize(9f);
 
         // Country|Code|Life expectancy|Children per woman|Region, after a header line
-        List<String> lines = Content.linesOfTextFile("data/life-expectancy-and-fertility-2023.txt");
+        List<String> lines = Content.linesOfTextFile("resources/data/life-expectancy-and-fertility-2023.txt");
         int total = lines.size() - 1;
 
         Page page = new Page(pdf, Letter.PORTRAIT);

@@ -32,7 +32,7 @@ var (
 // book: a title page, and each chapter on new A5 pages that a TextFrame flows
 // onto, with the words in italics and a number on every page. The time it
 // prints is the time PDFjet takes to set the 241,527 words of
-// data/the-idiot.txt.
+// resources/data/the-idiot.txt.
 func Example17() {
 	pdf, err := pdfjet.NewPDFFile("Example_17.pdf")
 	if err != nil {
@@ -72,7 +72,7 @@ func Example17() {
 	// The novel: parts begin with "PART I" and chapters with their number,
 	// "I.", and the paragraphs are separated by an empty line.
 	var chapter []*pdfjet.Paragraph
-	for _, block := range blockRe.Split(content.OfTextFile("data/the-idiot.txt"), -1) {
+	for _, block := range blockRe.Split(content.OfTextFile("resources/data/the-idiot.txt"), -1) {
 		text := strings.Join(strings.Fields(block), " ")
 		if partRe.MatchString(text) {
 			drawChapter(pdf, &pages, chapter)

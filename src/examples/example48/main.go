@@ -62,7 +62,7 @@ func Example48(fileName string) {
 
 func main() {
 	time0 := time.Now().UnixMilli()
-	Example48("data/testPDFs/scanned-linearized.pdf")
+	Example48("resources/data/testPDFs/scanned-linearized.pdf")
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_48 => %4d ms\n", time1-time0)
 }

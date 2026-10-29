@@ -80,6 +80,16 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   instead of 10.3. The PDFs are the same, byte for byte, but for their date
   and document ID. The other three ports compress with the Deflate of
   their platform, and were not changed.
+- The repository needs nothing fetched to build, test and run the examples.
+  The fonts PDFjet carries are in `resources/fonts`, read from the library,
+  and the data files the examples and the tests read, those of the
+  repository pdfjet-data, are in `resources/data`: the examples read
+  `resources/data/the-idiot.txt` where they read `data/the-idiot.txt`.
+  `get-fonts-and-data.sh`, `get-fonts-and-data.cmd` and
+  `fonts-and-data.txt` are gone, and the scripts no longer call them.
+  `resources/data` has a `go.mod` of its own, so that the Go module, which
+  `go get` downloads, leaves the data files out. The Java and .NET zips
+  have them in `resources/data` too.
 
 ## v9.1.5 — 2026-10-28
 

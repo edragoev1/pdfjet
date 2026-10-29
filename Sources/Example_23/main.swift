@@ -32,7 +32,7 @@ public class Example_23 {
         let table = Table()
         // Country|Code|Life expectancy|Children per woman, after a header line
         let tableData = try getData(
-                "data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2)
+                "resources/data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2)
 
         // A marker on three rows, found by their countries, each a link
         var p1 = Point()

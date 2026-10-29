@@ -1,6 +1,0 @@
-# The folders fonts and data, the fonts and the data files the examples and
-# the tests read, are the repositories pdfjet-fonts and pdfjet-data at these
-# commits. get-fonts-and-data.sh and get-fonts-and-data.cmd fetch them, and
-# the build, run and test scripts run those. To move a folder to a newer
-# commit, push the commit to its repository and write it here.
-data https://github.com/edragoev1/pdfjet-data 2fcb907995ca8967e96c9edc8577b8cc07d9dc71

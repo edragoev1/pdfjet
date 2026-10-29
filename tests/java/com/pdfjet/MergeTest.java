@@ -313,7 +313,7 @@ class MergeTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
         for (String name : new String[] {"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"}) {
-            pdf.merge(new PDF().read(TestSupport.open("data/testPDFs/" + name)));
+            pdf.merge(new PDF().read(TestSupport.open("resources/data/testPDFs/" + name)));
         }
         pdf.complete();
         List<PDFobj> objects = TestSupport.read(bos.toByteArray());

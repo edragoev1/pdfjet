@@ -41,7 +41,7 @@ public class Example_26 {
         f2.setSize(9.0)
 
         // Country|Code|Life expectancy|Children per woman|Region, after a header line
-        let lines = try Content.linesOfTextFile("data/life-expectancy-and-fertility-2023.txt")
+        let lines = try Content.linesOfTextFile("resources/data/life-expectancy-and-fertility-2023.txt")
         let total = lines.count - 1
 
         let page = Page(pdf, Letter.PORTRAIT)

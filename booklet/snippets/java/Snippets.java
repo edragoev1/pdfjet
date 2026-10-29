@@ -283,7 +283,7 @@ public class Snippets {
 
     // @snippet text-frame-pages
     static void textFramePages(PDF pdf, Font font) throws Exception {
-        List<String> text = Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\n\n"));
+        List<String> text = Arrays.asList(Content.ofTextFile("resources/data/dostoevsky.txt").split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         frame.setLocation(72f, 72f);
         frame.setWidth(468f);
@@ -294,7 +294,7 @@ public class Snippets {
 
     // @snippet text-frame-columns
     static void textFrameColumns(PDF pdf, Font font) throws Exception {
-        List<String> text = Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\n\n"));
+        List<String> text = Arrays.asList(Content.ofTextFile("resources/data/dostoevsky.txt").split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         while (frame.hasMoreText()) {
             Page page = new Page(pdf, Letter.LANDSCAPE);
@@ -474,7 +474,7 @@ public class Snippets {
         Font body = new Font(pdf, IBMPlexSans.Regular).setSize(9f);
         BigTable table = new BigTable(pdf, bold, body, Letter.LANDSCAPE);
         table.setNumberOfColumns(9);    // Set in this order
-        table.setTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",");
+        table.setTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",");
         table.setLocation(0f, 0f);
         table.setBottomMargin(20f);
         table.setVerticalPadding(1f);   // Room above and below each row
@@ -721,7 +721,7 @@ public class Snippets {
 
     // @snippet attachments
     static void attachments(PDF pdf, Font font) throws Exception {
-        EmbeddedFile file = new EmbeddedFile(pdf, "data/winter-2009.txt", true);
+        EmbeddedFile file = new EmbeddedFile(pdf, "resources/data/winter-2009.txt", true);
         Page page = new Page(pdf, Letter.PORTRAIT);
         FileAttachment attachment = new FileAttachment(file);
         attachment.setLocation(50f, 50f);
@@ -782,7 +782,7 @@ public class Snippets {
     // @snippet merge
     static void merge() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("merged.pdf")));
-        for (String file : new String[] {"data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"}) {
+        for (String file : new String[] {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"}) {
             InputStream stream = new BufferedInputStream(new FileInputStream(file));
             pdf.merge(pdf.read(stream));
             stream.close();
@@ -792,7 +792,7 @@ public class Snippets {
 
     // @snippet split
     static void split() throws Exception {
-        InputStream stream = new BufferedInputStream(new FileInputStream("data/testPDFs/rc65-16e.pdf"));
+        InputStream stream = new BufferedInputStream(new FileInputStream("resources/data/testPDFs/rc65-16e.pdf"));
         List<PDFobj> objects = new PDF().read(stream);
         stream.close();
         PDF firstPage = new PDF(new BufferedOutputStream(new FileOutputStream("page1.pdf")));
@@ -803,7 +803,7 @@ public class Snippets {
     // @snippet existing-pages
     static void existingPages() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("stamped.pdf")));
-        List<PDFobj> objects = pdf.read(new FileInputStream("data/testPDFs/rc65-16e.pdf"));
+        List<PDFobj> objects = pdf.read(new FileInputStream("resources/data/testPDFs/rc65-16e.pdf"));
         // IBM Plex Sans, which PDFjet carries
         Font font = new Font(objects, IBMPlexSans.Regular).setSize(24f);
         for (PDFobj pageObj : pdf.getPageObjects(objects)) {

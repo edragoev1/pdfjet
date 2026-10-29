@@ -18,7 +18,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
+// The vehicles of resources/data/Electric_Vehicle_Population_Data.csv by model year
 // and kind, which Example_24 draws as a table: the rows of the file whose
 // "Electric Vehicle Type" begins with "Battery Electric" and with
 // "Plug-in Hybrid", counted by the "Model Year" column. The file holds
@@ -65,7 +65,7 @@ func Example25() {
 			"document the chart describes itself from its data: each line's first "+
 			"and last values and its highest.\n\n"+
 			"The counts are the vehicles of "+
-			"data/Electric_Vehicle_Population_Data.csv, the file Example_24 draws "+
+			"resources/data/Electric_Vehicle_Population_Data.csv, the file Example_24 draws "+
 			"as a table of 2,546 pages, by model year and by kind.")
 	textBlock.SetFontSize(11.0)
 	textBlock.SetLineSpacing(1.4)

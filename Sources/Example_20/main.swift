@@ -33,7 +33,7 @@ public class Example_20 {
 
         // The cars of the file: by make, the battery electric ones and the
         // electric range of those that give one, and by model year
-        let lines = try Content.linesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv")
+        let lines = try Content.linesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv")
         let makes = Example_20.makes
         var cars = [Int](repeating: 0, count: makes.count)
         var battery = [Int](repeating: 0, count: makes.count)

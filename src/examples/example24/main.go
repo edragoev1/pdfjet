@@ -32,8 +32,8 @@ func Example24() {
 	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
 
 	// Used for performance testing. Results in 2000+ pages PDF.
-	fileName := "data/Electric_Vehicle_Population_Data.csv"
-	// fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
+	fileName := "resources/data/Electric_Vehicle_Population_Data.csv"
+	// fileName := "resources/data/Electric_Vehicle_Population_10_Pages.csv"
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	f1.SetSize(10.0)

@@ -47,7 +47,7 @@ func Example23() {
 	table := pdfjet.NewTable()
 	// Country|Code|Life expectancy|Children per woman, after a header line
 	tableData := getData(
-		"data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2)
+		"resources/data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2)
 
 	// A marker on three rows, found by their countries, each a link
 	p1 := pdfjet.NewPoint(0.0, 0.0)

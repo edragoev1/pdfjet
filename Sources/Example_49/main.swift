@@ -29,9 +29,9 @@ public class Example_49 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_49.pdf", append: false)!)
 
         let fileNames = [
-            "data/testPDFs/scanned-linearized.pdf",
-            "data/testPDFs/rc65-16e.pdf",
-            "data/testPDFs/PDFjetLogo.pdf"
+            "resources/data/testPDFs/scanned-linearized.pdf",
+            "resources/data/testPDFs/rc65-16e.pdf",
+            "resources/data/testPDFs/PDFjetLogo.pdf"
         ]
         var documents = [[PDFobj]]()
         for fileName in fileNames {
@@ -61,7 +61,7 @@ public class Example_49 {
     }
 
     private func split() throws {
-        let objects = try PDF().read(from: InputStream(fileAtPath: "data/testPDFs/scanned-linearized.pdf")!)
+        let objects = try PDF().read(from: InputStream(fileAtPath: "resources/data/testPDFs/scanned-linearized.pdf")!)
         let count = PDF().getPageObjects(from: objects).count
 
         for i in 1...count {

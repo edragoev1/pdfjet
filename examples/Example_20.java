@@ -39,7 +39,7 @@ public class Example_20 {
 
         // The cars of the file: by make, the battery electric ones and the
         // electric range of those that give one, and by model year
-        List<String> lines = Content.linesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv");
+        List<String> lines = Content.linesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv");
         int[] cars = new int[MAKES.length];
         int[] battery = new int[MAKES.length];
         int[] ranges = new int[MAKES.length];

@@ -76,8 +76,8 @@ peak() {
 
     if [ "$WHAT" = all ] || [ "$WHAT" = table ]; then
         CONFIGS=${TABLE_CONFIGS:-"jet jet-table jet-page jet-page-stream"}
-        CSV="$ROOT/data/Electric_Vehicle_Population_Data.csv"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
-        if [ -n "$QUICK" ]; then CSV="$ROOT/data/Electric_Vehicle_Population_10_Pages.csv"; RUNS=1; HEAPS="32m 64m"; fi
+        CSV="$ROOT/resources/data/Electric_Vehicle_Population_Data.csv"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
+        if [ -n "$QUICK" ]; then CSV="$ROOT/resources/data/Electric_Vehicle_Population_10_Pages.csv"; RUNS=1; HEAPS="32m 64m"; fi
         J="java -Xmx8g $PROPS -cp $CP BigTableBench"
         echo "== table: Example_24, $(basename "$CSV")"
         for c in $CONFIGS; do $J bench $c "$CSV" 2>&1 | grep -E 'median|Exception'; done

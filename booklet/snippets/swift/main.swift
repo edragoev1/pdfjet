@@ -269,7 +269,7 @@ func textColumn(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet text-frame-pages
 func textFramePages(_ pdf: PDF, _ font: Font) throws {
-    let text = try Content.ofTextFile("data/dostoevsky.txt").components(separatedBy: "\n\n")
+    let text = try Content.ofTextFile("resources/data/dostoevsky.txt").components(separatedBy: "\n\n")
     let frame = TextFrame(font, text)
     frame.setLocation(72, 72)
     frame.setWidth(468)
@@ -280,7 +280,7 @@ func textFramePages(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet text-frame-columns
 func textFrameColumns(_ pdf: PDF, _ font: Font) throws {
-    let text = try Content.ofTextFile("data/dostoevsky.txt").components(separatedBy: "\n\n")
+    let text = try Content.ofTextFile("resources/data/dostoevsky.txt").components(separatedBy: "\n\n")
     let frame = TextFrame(font, text)
     while frame.hasMoreText() {
         let page = Page(pdf, Letter.LANDSCAPE)
@@ -461,7 +461,7 @@ func bigTable(_ pdf: PDF, _ font: Font) throws {
     let body = try Font(pdf, IBMPlexSans.Regular).setSize(9)
     let table = BigTable(pdf, bold, body, Letter.LANDSCAPE)
     table.setNumberOfColumns(9)    // Set in this order
-    try table.setTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",")
+    try table.setTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",")
     table.setLocation(0, 0)
     table.setBottomMargin(20)
     table.setVerticalPadding(1)    // Room above and below each row
@@ -708,7 +708,7 @@ func bookmarks(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet attachments
 func attachments(_ pdf: PDF, _ font: Font) throws {
-    let file = try EmbeddedFile(pdf, "data/winter-2009.txt", true)
+    let file = try EmbeddedFile(pdf, "resources/data/winter-2009.txt", true)
     let page = Page(pdf, Letter.PORTRAIT)
     let attachment = FileAttachment(file)
     attachment.setLocation(50, 50)
@@ -769,7 +769,7 @@ func formFields(_ pdf: PDF, _ font: Font) throws {
 // @snippet merge
 func merge() throws {
     let pdf = PDF(OutputStream(toFileAtPath: "merged.pdf", append: false)!)
-    for file in ["data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"] {
+    for file in ["resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"] {
         let stream = InputStream(fileAtPath: file)!
         try pdf.merge(pdf.read(from: stream))
         stream.close()
@@ -779,7 +779,7 @@ func merge() throws {
 
 // @snippet split
 func split() throws {
-    let stream = InputStream(fileAtPath: "data/testPDFs/rc65-16e.pdf")!
+    let stream = InputStream(fileAtPath: "resources/data/testPDFs/rc65-16e.pdf")!
     let objects = try PDF().read(from: stream)
     stream.close()
     let firstPage = PDF(OutputStream(toFileAtPath: "page1.pdf", append: false)!)
@@ -790,7 +790,7 @@ func split() throws {
 // @snippet existing-pages
 func existingPages() throws {
     let pdf = PDF(OutputStream(toFileAtPath: "stamped.pdf", append: false)!)
-    var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/rc65-16e.pdf")!)
+    var objects = try pdf.read(from: InputStream(fileAtPath: "resources/data/testPDFs/rc65-16e.pdf")!)
     // IBM Plex Sans, which PDFjet carries
     let font = try Font(&objects, IBMPlexSans.Regular).setSize(24)
     for pageObj in pdf.getPageObjects(from: objects) {

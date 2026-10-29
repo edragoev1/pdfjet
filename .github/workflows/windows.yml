@@ -27,10 +27,6 @@ jobs:
         steps:
             - uses: actions/checkout@v7
 
-            - name: Get the fonts and the data files
-              shell: cmd
-              run: call get-fonts-and-data.cmd
-
             - if: matrix.port == 'java'
               uses: actions/setup-java@v6
               with:

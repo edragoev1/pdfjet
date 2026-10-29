@@ -24,8 +24,8 @@ public class Example_24 {
         pdf.setTitle("Electric Vehicle Population Data")    // Required for PDF/UA !
 
         // Used for performance testing. Results in 2000+ pages PDF.
-        let fileName = "data/Electric_Vehicle_Population_Data.csv"
-        // let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
+        let fileName = "resources/data/Electric_Vehicle_Population_Data.csv"
+        // let fileName = "resources/data/Electric_Vehicle_Population_10_Pages.csv"
 
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         f1.setSize(10.0)

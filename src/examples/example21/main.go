@@ -52,7 +52,7 @@ func drawHeaderRows(pdf *pdfjet.PDF) {
 	f2.SetSize(7.0)
 
 	tableData := make([][]*pdfjet.Cell, 0)
-	lines := content.LinesOfTextFile("data/winter-2009.txt")
+	lines := content.LinesOfTextFile("resources/data/winter-2009.txt")
 	for _, line := range lines {
 		row := make([]*pdfjet.Cell, 0)
 		for _, column := range strings.Split(line, "|") {

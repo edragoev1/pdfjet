@@ -47,7 +47,7 @@ public class Example_26 {
         f2.SetSize(9f);
 
         // Country|Code|Life expectancy|Children per woman|Region, after a header line
-        List<String> lines = Content.LinesOfTextFile("data/life-expectancy-and-fertility-2023.txt");
+        List<String> lines = Content.LinesOfTextFile("resources/data/life-expectancy-and-fertility-2023.txt");
         int total = lines.Count - 1;
 
         Page page = new Page(pdf, Letter.PORTRAIT);

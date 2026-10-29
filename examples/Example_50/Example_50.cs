@@ -187,7 +187,7 @@ public class Example_50 {
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_50("50", "data/testPDFs/rc65-16e.pdf");
+        new Example_50("50", "resources/data/testPDFs/rc65-16e.pdf");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine($"Example_50 => {time1 - time0,4} ms");
     }

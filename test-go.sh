@@ -5,8 +5,6 @@
 # the library. The tests read the PngSuite images and the data from the
 # repository root, the fonts PDFjet carries from resources/fonts, which the
 # library embeds, and the test fonts from tests/fonts.
-
-bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")/src" || exit 1
 
 go vet ./... || exit 1

@@ -158,7 +158,7 @@ func fuzzReadPDF(t *testing.T, data []byte, password string) string {
 func fuzzPDFSeeds(f *testing.F) [][]byte {
 	seeds := [][]byte{fuzzPDFDocument(f, ""), fuzzPDFDocument(f, "secret"), fuzzPDFStreamXref()}
 	for _, name := range []string{"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"} {
-		data, err := os.ReadFile("../data/testPDFs/" + name)
+		data, err := os.ReadFile("../resources/data/testPDFs/" + name)
 		if err != nil {
 			f.Fatal(err)
 		}

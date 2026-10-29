@@ -187,7 +187,7 @@ class Example_50 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        new Example_50("50", "data/testPDFs/rc65-16e.pdf");
+        new Example_50("50", "resources/data/testPDFs/rc65-16e.pdf");
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_50 => %4d ms%n", time1 - time0);
     }

@@ -314,7 +314,7 @@ func textColumn(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet text-frame-pages
 func textFramePages(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	text := strings.Split(content.OfTextFile("data/dostoevsky.txt"), "\n\n")
+	text := strings.Split(content.OfTextFile("resources/data/dostoevsky.txt"), "\n\n")
 	frame := pdfjet.NewTextFrame(font, text)
 	frame.SetLocation(72, 72)
 	frame.SetWidth(468)
@@ -325,7 +325,7 @@ func textFramePages(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet text-frame-columns
 func textFrameColumns(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	text := strings.Split(content.OfTextFile("data/dostoevsky.txt"), "\n\n")
+	text := strings.Split(content.OfTextFile("resources/data/dostoevsky.txt"), "\n\n")
 	frame := pdfjet.NewTextFrame(font, text)
 	for frame.HasMoreText() {
 		page := pdfjet.NewPage(pdf, letter.Landscape())
@@ -516,7 +516,7 @@ func bigTable(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	body := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(9)
 	table := pdfjet.NewBigTable(pdf, bold, body, letter.Landscape())
 	table.SetNumberOfColumns(9) // Set in this order
-	_, err := table.SetTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",")
+	_, err := table.SetTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -772,7 +772,7 @@ func bookmarks(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet attachments
 func attachments(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	file := pdfjet.NewEmbeddedFileAtPath(pdf, "data/winter-2009.txt", true)
+	file := pdfjet.NewEmbeddedFileAtPath(pdf, "resources/data/winter-2009.txt", true)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	attachment := pdfjet.NewFileAttachment(file)
 	attachment.SetLocation(50, 50)
@@ -836,7 +836,7 @@ func merge() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, file := range []string{"data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"} {
+	for _, file := range []string{"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"} {
 		objects, err := pdf.Read(content.OfBinaryFile(file))
 		if err != nil {
 			log.Fatal(err)
@@ -852,7 +852,7 @@ func merge() {
 
 // @snippet split
 func split() {
-	objects, err := pdfjet.NewPDFReader().Read(content.OfBinaryFile("data/testPDFs/rc65-16e.pdf"))
+	objects, err := pdfjet.NewPDFReader().Read(content.OfBinaryFile("resources/data/testPDFs/rc65-16e.pdf"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -875,7 +875,7 @@ func existingPages() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	objects, err := pdf.Read(content.OfBinaryFile("data/testPDFs/rc65-16e.pdf"))
+	objects, err := pdf.Read(content.OfBinaryFile("resources/data/testPDFs/rc65-16e.pdf"))
 	if err != nil {
 		log.Fatal(err)
 	}

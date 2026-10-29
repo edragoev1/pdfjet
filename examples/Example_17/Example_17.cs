@@ -18,7 +18,7 @@ using PDFjet.NET;
  * A whole novel, "The Idiot" by Fyodor Dostoyevsky, set as a book: a title
  * page, and each chapter on new A5 pages that a TextFrame flows onto, with
  * the words in italics and a number on every page. The time it prints is the
- * time PDFjet takes to set the 241,527 words of data/the-idiot.txt.
+ * time PDFjet takes to set the 241,527 words of resources/data/the-idiot.txt.
  */
 public class Example_17 {
     public Example_17() {
@@ -54,7 +54,7 @@ public class Example_17 {
 
         // The novel: parts begin with "PART I" and chapters with their number,
         // "I.", and the paragraphs are separated by an empty line.
-        String[] blocks = Regex.Split(Content.OfTextFile("data/the-idiot.txt"), "\\n\\s*\\n");
+        String[] blocks = Regex.Split(Content.OfTextFile("resources/data/the-idiot.txt"), "\\n\\s*\\n");
         List<Paragraph> chapter = null;
         foreach (String block in blocks) {
             String text = Regex.Replace(block.Trim(), "\\s+", " ");

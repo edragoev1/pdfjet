@@ -117,7 +117,7 @@ public class Example_04 {
         textLine.DrawOn(page);
 
         TextBlock textBlock = new TextBlock(f1,
-                Content.OfTextFile("data/languages/thai.txt"));
+                Content.OfTextFile("resources/data/languages/thai.txt"));
         textBlock.SetLocation(30f, y + 35f);
         textBlock.SetWidth(430f);
         textBlock.SetBorderColor(Color.blue);
@@ -128,7 +128,7 @@ public class Example_04 {
         // Right to left text in text blocks, wrapped at their width.
         page = new Page(pdf, Letter.PORTRAIT);
 
-        textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/arabic.txt"));
+        textBlock = new TextBlock(f3, Content.OfTextFile("resources/data/languages/arabic.txt"));
         textBlock.SetLocation(180f, 30f);
         textBlock.SetWidth(400f);
         textBlock.SetBorderColor(Color.blue);
@@ -137,7 +137,7 @@ public class Example_04 {
         textBlock.SetLanguage("ar");
         xy = textBlock.DrawOn(page);
 
-        textBlock = new TextBlock(f2, Content.OfTextFile("data/languages/hebrew.txt"));
+        textBlock = new TextBlock(f2, Content.OfTextFile("resources/data/languages/hebrew.txt"));
         textBlock.SetLocation(180f, xy[1] + 30f);
         textBlock.SetWidth(400f);
         textBlock.SetBorderColor(Color.blue);
@@ -146,7 +146,7 @@ public class Example_04 {
         textBlock.SetLanguage("he");
         xy = textBlock.DrawOn(page);
 
-        textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/persian.txt"));
+        textBlock = new TextBlock(f3, Content.OfTextFile("resources/data/languages/persian.txt"));
         textBlock.SetLocation(180f, xy[1] + 30f);
         textBlock.SetWidth(400f);
         textBlock.SetBorderColor(Color.blue);

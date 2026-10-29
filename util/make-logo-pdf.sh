@@ -1,5 +1,5 @@
 #!/bin/bash
-# Writes data/testPDFs/PDFjetLogo.pdf, the logo of pdfjet.com as the vector
+# Writes resources/data/testPDFs/PDFjetLogo.pdf, the logo of pdfjet.com as the vector
 # graphics of one page, from images/readme/pdfjet-logo.svg. Run it from
 # anywhere; it builds PDFjet from this checkout.
 #

@@ -7,18 +7,16 @@
 # Needs the four toolchains and python3 with PyMuPDF; veraPDF, run as
 # "verapdf" or as the command in VERAPDF, checks the PDF/UA and PDF/A
 # snippets when it is there.
-
-bash "$(dirname "$0")/../get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")/.." || exit 1
 ROOT=$(pwd)
 WORK=$ROOT/build/check-snippets
 rm -rf "$WORK"
 
-# Each port runs its snippets in a folder of its own, with links to the fonts,
-# images and data they read.
+# Each port runs its snippets in a folder of its own, with links to the
+# resources (the fonts and the data files) and the images they read.
 for port in java csharp go swift; do
     mkdir -p "$WORK/$port/out"
-    for dir in fonts images data; do
+    for dir in resources images; do
         ln -s "$ROOT/$dir" "$WORK/$port/out/$dir"
     done
 done

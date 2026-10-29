@@ -56,7 +56,7 @@ func Example26() {
 	f2.SetSize(9.0)
 
 	// Country|Code|Life expectancy|Children per woman|Region, after a header line
-	lines := content.LinesOfTextFile("data/life-expectancy-and-fertility-2023.txt")
+	lines := content.LinesOfTextFile("resources/data/life-expectancy-and-fertility-2023.txt")
 	total := len(lines) - 1
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())

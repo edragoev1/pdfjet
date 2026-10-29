@@ -1,8 +1,9 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-ForJava-Pro-vX.Y.Z.zip, a self-contained
 # package for Java clients: PDFjet.jar, the Javadoc reference, the examples
-# with the PDFs they create, the files they read (data, the fonts,
-# images, PngSuite), and scripts that build and run the examples against PDFjet.jar.
+# with the PDFs they create, the files they read (resources/data, images,
+# PngSuite), the fonts PDFjet carries (resources/fonts, in PDFjet.jar too),
+# and scripts that build and run the examples against PDFjet.jar.
 # The library sources and the font tools in util are not in the package.
 #
 # The README, the commercial LICENSE and the build and run scripts of the
@@ -94,37 +95,21 @@ mkdir -p "$STAGE" .commercial-packages
 
 # Through a file, not a pipe, so that a failing git archive stops the script.
 TAR=$PWD/$STAGE.tar
+# resources is as it is in the repository: the fonts PDFjet carries, each
+# family with its license, and the data files the examples read, with the
+# README that says where they come from.
 git archive -o "$TAR" HEAD \
     .packaging/java .packaging/java-pro LICENSE \
-    com examples images PngSuite \
+    com examples images PngSuite resources/fonts resources/data \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
 tar -x -C "$STAGE" -f "$TAR"
-
-# fonts and data are the repositories pdfjet-fonts and pdfjet-data, which
-# get-fonts-and-data.sh fetches and git archive does not have: each is
-# archived at the commit that fonts-and-data.txt of the last commit pins,
-# whatever commit the folder is at, and its README, about the repository, is
-# left out.
-bash get-fonts-and-data.sh
-for dir in fonts data; do
-    commit=$(git show HEAD:fonts-and-data.txt | sed -n "s/^$dir [^ ]* \([0-9a-f]*\).*/\1/p")
-    if [ -z "$commit" ] || ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
-        echo "$dir does not have the commit ${commit:-that} fonts-and-data.txt of the last commit pins: run get-fonts-and-data.sh"
-        exit 1
-    fi
-    git -C "$dir" archive -o "$TAR" --prefix="$dir/" "$commit"
-    tar -x -C "$STAGE" -f "$TAR"
-    rm -f "$STAGE/$dir/README.md"
-done
 rm "$TAR"
 
-# The C# example projects and the go.mod file of the Go port are not needed.
+# The C# example projects and the Go and Swift files of resources and images
+# are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-rm -f "$STAGE/images/go.mod"
-
-# The fonts of the package are the fonts directory as it is: the .ttf files,
-# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 07, 48
-# and 50 read.
+rm -f "$STAGE/images/go.mod" "$STAGE/resources/data/go.mod" \
+    "$STAGE/resources/fonts/fonts.go" "$STAGE/resources/fonts/PDFjetFonts.swift"
 
 cd "$STAGE"
 

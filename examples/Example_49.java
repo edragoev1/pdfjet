@@ -33,9 +33,9 @@ final class Example_49 {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_49.pdf")));
 
         String[] fileNames = {
-            "data/testPDFs/scanned-linearized.pdf",
-            "data/testPDFs/rc65-16e.pdf",
-            "data/testPDFs/PDFjetLogo.pdf"
+            "resources/data/testPDFs/scanned-linearized.pdf",
+            "resources/data/testPDFs/rc65-16e.pdf",
+            "resources/data/testPDFs/PDFjetLogo.pdf"
         };
         List<List<PDFobj>> documents = new ArrayList<List<PDFobj>>();
         for (String fileName : fileNames) {
@@ -67,7 +67,7 @@ final class Example_49 {
     }
 
     private void split() throws Exception {
-        BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/scanned-linearized.pdf"));
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream("resources/data/testPDFs/scanned-linearized.pdf"));
         List<PDFobj> objects = new PDF().read(bis);
         bis.close();
         int count = new PDF().getPageObjects(objects).size();

@@ -19,10 +19,10 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example19 draws a Markdown text, data/markdown/pdfjet.md, down the pages by
+// Example19 draws a Markdown text, resources/data/markdown/pdfjet.md, down the pages by
 // Markdown as a PDF/UA document: its headings, paragraphs, lists, quote, code,
 // table and image, each tagged for screen readers, with a number at the foot
-// of every page. The image is read from data/markdown, the directory that
+// of every page. The image is read from resources/data/markdown, the directory that
 // SetImageDirectory names.
 func Example19() {
 	pdf, err := pdfjet.NewPDFFile("Example_19.pdf")
@@ -39,9 +39,9 @@ func Example19() {
 	code := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(9.5)
 
 	markdown := pdfjet.NewMarkdown(regular, bold, italic, boldItalic, code)
-	markdown.SetImageDirectory("data/markdown")
+	markdown.SetImageDirectory("resources/data/markdown")
 	pages := make([]*pdfjet.Page, 0)
-	markdown.DrawOnPages(pdf, content.OfTextFile("data/markdown/pdfjet.md"), &pages, letter.Portrait())
+	markdown.DrawOnPages(pdf, content.OfTextFile("resources/data/markdown/pdfjet.md"), &pages, letter.Portrait())
 
 	for i, page := range pages {
 		number := pdfjet.NewTextLine(regular, strconv.Itoa(i+1))
