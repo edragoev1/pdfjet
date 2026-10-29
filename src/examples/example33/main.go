@@ -19,7 +19,8 @@ import (
 )
 
 // Example33 uses the SVGImage component to draw a map of Europe, scaled to
-// fit the page, and a set of icons, each labeled with its name.
+// fit the page, and a bar chart made with D3, its text in the fonts of the
+// document.
 func Example33() error {
 	pdf, err := pdfjet.NewPDFFile("Example_33.pdf")
 	if err != nil {
@@ -71,57 +72,40 @@ func Example33() error {
 	textBlock.SetWidth(svgMap.GetWidth())
 	xy = textBlock.DrawOn(page)
 
-	iconFiles := []string{
-		"images/svg/home_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg/search_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg/star_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg/settings_FILL0_wght400_GRAD0_opsz48.svg",
-		"images/svg-test/menu-icon.svg",
-		"images/svg-test/menu-icon-close.svg",
-		"images/svg-test/test-CS.svg",
-		"images/svg-test/test-QQ1.svg",
-	}
-	iconNames := []string{
-		"home",
-		"search",
-		"checkout",
-		"palette",
-		"stories",
-		"add",
-		"star",
-		"settings",
-		"menu",
-		"close",
-		"C and S curves",
-		"Q curves",
-	}
+	// A chart made with D3, as a browser draws it, by util/make-d3-chart.mjs:
+	// its text is drawn in the fonts set, embedded, as PDF/UA asks; on a page
+	// of its own
+	page = pdfjet.NewPage(pdf, a4.Portrait())
+	heading := pdfjet.NewTextLine(f2, "A Chart Made with D3")
+	heading.SetStructureType(structelem.H2)
+	heading.SetFontSize(22.0)
+	heading.SetLocation(50.0, 80.0)
+	heading.DrawOn(page)
 
-	// Two rows of six icons, 48 by 48 points each.
-	y := xy[1] + 30.0
-	for i := 0; i < len(iconFiles); i++ {
-		x := 50.0 + float32(i%6)*85.0
-		yIcon := y + float32(i/6)*90.0
+	textBlock = pdfjet.NewTextBlock(f1,
+		"SVGImage draws the charts of D3 and the like, their text in the "+
+			"fonts set with setFont and setBoldFont, which are embedded. This chart "+
+			"was made by D3 in util/make-d3-chart.mjs.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(50.0, 95.0)
+	textBlock.SetWidth(495.0)
+	xy = textBlock.DrawOn(page)
 
-		icon, err := pdfjet.NewSVGImageFromFile(iconFiles[i])
-		if err != nil {
-			return err
-		}
-		// The name under an icon says what it stands for, and so does its
-		// description.
-		icon.SetAltDescription("The " + iconNames[i] + " icon.")
-		icon.SetLocation(x, yIcon)
-		iconXY := icon.DrawOn(page)
-
-		text = pdfjet.NewTextLine(f1, iconNames[i])
-		text.SetFontSize(9.0)
-		text.SetTextColor(color.DimGray)
-		text.SetLocation(x, iconXY[1]+15.0)
-		text.DrawOn(page)
+	chart, err := pdfjet.NewSVGImageFromFile("images/svg/d3-life-expectancy-by-region.svg")
+	if err != nil {
+		return err
 	}
+	chart.SetFont(f1)
+	chart.SetBoldFont(f2)
+	chart.SetAltDescription("A bar chart of the life expectancy at birth of the World Bank's " +
+		"regions in 2023: North America 78.7 years, Europe and Central Asia 78.4, " +
+		"East Asia and Pacific 76.7, Latin America and the Caribbean 75.6, South Asia 72.3, " +
+		"the Middle East, North Africa, Afghanistan and Pakistan 72.1, " +
+		"and Sub-Saharan Africa 62.6; the world 73.3.")
+	chart.ScaleBy(495.0 / chart.GetWidth())
+	chart.SetLocation(50.0, xy[1]+20.0)
+	chart.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

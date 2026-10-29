@@ -230,7 +230,14 @@ func (chart *SimpleScatterChart) top() float32 {
 	if chart.title != "" || chart.subtitle != "" {
 		top += chart.f2.size
 	}
-	return top + float32(float32(float32(chart.drawLegend(nil, 0.0))*scatterLegendRow)*chart.f2.size)
+	// The legend, and half a size of the numbers under it, so that the top
+	// number of the axis is not against its last row
+	rows := chart.drawLegend(nil, 0.0)
+	under := float32(0.0)
+	if rows > 0 {
+		under = float32(0.5 * chart.f2.size)
+	}
+	return top + float32(float32(float32(rows)*scatterLegendRow)*chart.f2.size) + under
 }
 
 // The shapes of the series, in turn, as D3 draws its symbols.
@@ -689,8 +696,11 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		}
 	}
 	page.RestoreGraphicsState()
-	// The points of the series, the outlines of their shapes, opaque
-	page.SetPenWidth(float32(0.12 * size))
+	// The points of the series, the outlines of their shapes, opaque; a chart
+	// without series draws as it did
+	if len(chart.series) > 0 {
+		page.SetPenWidth(float32(0.12 * size))
+	}
 	for _, p := range points {
 		if p.series >= 0 && p.name == "" && onPlot(p, xAxis, yAxis) {
 			page.SetPenColor(scatterSeriesColor(p.series))

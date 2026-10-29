@@ -25,10 +25,22 @@ import (
 // The countries named on the chart, by their codes
 var named = map[string]bool{"BRA": true, "CAN": true, "IND": true, "JPN": true, "NER": true, "NGA": true, "USA": true}
 
+// The World Bank's regions, a series each, in the order of its list
+var regions = []string{
+	"East Asia & Pacific",
+	"Europe & Central Asia",
+	"Latin America & Caribbean",
+	"Middle East, North Africa, Afghanistan & Pakistan",
+	"North America",
+	"South Asia",
+	"Sub-Saharan Africa",
+}
+
 // Example26 draws a SimpleScatterChart of the life expectancy and the
 // children per woman of 217 countries and economies, from the World Bank's
-// data of 2023: a gray dot for each, seven of them named, and the trend line,
-// with a table of the named ones under the chart.
+// data of 2023: a series for each of the World Bank's seven regions, in its
+// color and shape, seven of the countries named, and the trend line, with a
+// table of the named ones under the chart.
 func Example26() {
 	pdf, err := pdfjet.NewPDFFile("Example_26.pdf")
 	if err != nil {
@@ -43,7 +55,7 @@ func Example26() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2.SetSize(9.0)
 
-	// Country|Code|Life expectancy|Children per woman, after a header line
+	// Country|Code|Life expectancy|Children per woman|Region, after a header line
 	lines := content.LinesOfTextFile("data/life-expectancy-and-fertility-2023.txt")
 	total := len(lines) - 1
 
@@ -55,8 +67,8 @@ func Example26() {
 	title.DrawOn(page)
 	intro := []*pdfjet.Paragraph{pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f2,
 		"Where women have fewer children, people live longer: the "+strconv.Itoa(total)+
-			" countries and economies of the World Bank's data of 2023, each a gray dot, "+
-			"seven of them named, each a link to its page of the World Bank's data, and the trend line "+
+			" countries and economies of the World Bank's data of 2023, in a color and "+
+			"a shape for each of its seven regions, seven of them named, each a link to its page of the World Bank's data, and the trend line "+
 			"through them, with the named ones in the table "+
 			"under the chart.").SetFontSize(10.0))}
 	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)
@@ -71,17 +83,28 @@ func Example26() {
 		SetYAxisTitle("Life expectancy at birth, years").
 		SetTrendLine(true)
 	data := [][]*pdfjet.Cell{row(f1, true, "Country", "Children per woman", "Life expectancy")}
+	for _, region := range regions {
+		chart.AddSeries(region)
+		for _, line := range lines[1:] {
+			field := strings.Split(line, "|")
+			if field[4] != region {
+				continue
+			}
+			life, _ := strconv.ParseFloat(field[2], 32)
+			children, _ := strconv.ParseFloat(field[3], 32)
+			if named[field[1]] {
+				chart.AddLinked(field[0], float32(children), float32(life), worldBank(field[0])) // Its shape filled, named, a link
+			} else {
+				chart.Add(float32(children), float32(life)) // The outline of its shape
+			}
+		}
+	}
 	for _, line := range lines[1:] {
 		field := strings.Split(line, "|")
-		life, _ := strconv.ParseFloat(field[2], 32)
-		children, _ := strconv.ParseFloat(field[3], 32)
 		if named[field[1]] {
-			chart.AddLinked(field[0], float32(children), float32(life), worldBank(field[0])) // A navy dot, named, a link
 			// The figures as the file writes them, two decimals and one,
 			// not rounded again, so that every port writes them alike
 			data = append(data, row(f2, false, field[0], decimals(field[3], 2), decimals(field[2], 1)+" years"))
-		} else {
-			chart.Add(float32(children), float32(life)) // A gray dot
 		}
 	}
 	chart.SetSize(512.0, 340.0)
