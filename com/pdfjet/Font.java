@@ -388,7 +388,8 @@ final public class Font {
      * Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
      * to one of the fonts PDFjet carries, such as the constants of
      * com.pdfjet.fonts, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is
-     * read from the library when there is no such file. A path to a
+     * read from the folder resources/fonts when there is no such file, or else
+     * from PDFjet.jar, which carries the fonts in the jar of Maven Central. A path to a
      * .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
      * opens the .ttf or else the .otf file of the same name beside it.
      *
@@ -406,9 +407,7 @@ final public class Font {
     }
 
     // Opens the font file of the path, or, when there is no such file, the
-    // font of that name that PDFjet carries; a font it does not carry, such
-    // as one of the fonts of pdfjet-fonts it left out, throws, saying where
-    // to get it.
+    // font of that name that PDFjet carries; a font it does not carry throws.
     static InputStream open(String fontPath) throws IOException {
         File file = new File(fontPath);
         if (!file.exists()) {
@@ -418,9 +417,8 @@ final public class Font {
             }
             String path = fontPath.replace('\\', '/');
             if (path.startsWith("fonts/") || path.contains("/fonts/")) {
-                throw new FileNotFoundException(fontPath + " is not a file, nor one of the fonts PDFjet carries; "
-                        + "the fonts it came with before 9.1.7, Noto Sans among them, are at "
-                        + BundledFonts.PDFJET_FONTS);
+                throw new FileNotFoundException(fontPath + " is not a file, nor one of the fonts PDFjet carries, "
+                        + "in resources/fonts or in PDFjet.jar: use a font file of your own.");
             }
         }
         return new BufferedInputStream(new FileInputStream(file));

@@ -29,9 +29,6 @@ javac -O -encoding utf-8 %RELEASE% -Xlint -Xlint:-options -Werror ^
     com\pdfjet\fonts\*.java ^
     com\pdfjet\encryption\*.java ^
     -d out\production
-:: The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
-xcopy /e /i /q /y resources\fonts out\production\com\pdfjet\fonts > nul
-del /q out\production\com\pdfjet\fonts\fonts.go out\production\com\pdfjet\fonts\PDFjetFonts.swift 2> nul
 
 :: Create the JAR file
 jar cf PDFjet.jar -C out\production .

@@ -10,26 +10,28 @@ import java.io.InputStream;
 
 /**
  * The fonts PDFjet carries in itself, in resources/fonts, each family in a
- * folder of its name, as in the folder fonts of pdfjet-fonts: IBM Plex Sans
+ * folder of its name, with its license: IBM Plex Sans
  * and Serif, from Thin to Bold, Source Serif 4 and Cascadia Mono, from
  * Light to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to
  * Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
  * SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
  * A path to one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf,
- * the constants of com.pdfjet.fonts, is read from the library when there is
- * no such file, and the text of an SVG image is drawn in them unless a font
- * is set.
+ * the constants of com.pdfjet.fonts, is read from the folder resources/fonts
+ * when there is no such file, or else from the jar, and the text of an SVG
+ * image is drawn in them unless a font is set. The jar of Maven Central
+ * carries them; the PDFjet.jar of the releases on GitHub does not, and is
+ * small, its package having them in resources/fonts.
  */
 final class BundledFonts {
     private BundledFonts() {
     }
 
-    // Where the fonts are among the resources of the jar.
+    // Where the fonts are: the folder resources/fonts of the working
+    // directory, as in the repository and the packages of the releases on
+    // GitHub, whose PDFjet.jar is small; or else the resources of the jar,
+    // as in the jar of Maven Central, which carries them.
+    private static final String FOLDER = "resources/fonts/";
     private static final String RESOURCES = "/com/pdfjet/fonts/";
-
-    // The repository of the fonts PDFjet came with before 9.1.7, which has
-    // those it does not carry, such as Noto Sans.
-    static final String PDFJET_FONTS = "https://github.com/edragoev1/pdfjet-fonts";
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
@@ -44,10 +46,22 @@ final class BundledFonts {
         return path.substring(family + 1);
     }
 
-    // Opens the font of the path that PDFjet carries, or returns null.
+    // Opens the font of the path that PDFjet carries, or returns null: from
+    // the folder resources/fonts, or else from the jar.
     static InputStream open(String fontPath) {
         String name = nameOf(fontPath);
-        return (name == null || name.indexOf("..") >= 0) ? null : BundledFonts.class.getResourceAsStream(RESOURCES + name);
+        if (name == null || name.indexOf("..") >= 0) {
+            return null;
+        }
+        java.io.File file = new java.io.File(FOLDER + name);
+        if (file.isFile()) {
+            try {
+                return new java.io.FileInputStream(file);
+            } catch (java.io.FileNotFoundException e) {
+                // Read from the jar then
+            }
+        }
+        return BundledFonts.class.getResourceAsStream(RESOURCES + name);
     }
 
     static final int SANS = 0;
@@ -125,7 +139,7 @@ final class BundledFonts {
         if (font != null) {
             return font;
         }
-        try (InputStream stream = BundledFonts.class.getResourceAsStream(RESOURCES + name)) {
+        try (InputStream stream = open(name)) {
             if (stream == null) {
                 return null;
             }

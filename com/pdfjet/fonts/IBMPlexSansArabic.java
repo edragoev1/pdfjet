@@ -21,7 +21,7 @@ public class IBMPlexSansArabic {
 
     /**
      * IBM Plex Sans Arabic ExtraLight, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */

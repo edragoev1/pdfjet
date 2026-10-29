@@ -27,9 +27,19 @@ dir=out/maven/stage/com/pdfjet/pdfjet/$version
 base=$dir/pdfjet-$version
 rm -rf out/maven/stage "$work" && mkdir -p "$dir" "$work/docs" "$work/sources"
 
-# The jar, as released
+# The jar, as released, and the fonts PDFjet carries in it, so that the jar
+# of Maven Central works out of the box (the owner, 29 October 2026); the
+# PDFjet.jar of the release on GitHub is small, its package having the fonts
+# in resources/fonts. The fonts, with their licenses, are those of the tag,
+# without the Go and Swift files beside them.
 unzip -q -j -o "$zip" "$top/PDFjet.jar" -d "$work"
 cp "$work/PDFjet.jar" "$base.jar"
+mkdir -p "$work/fonts/com/pdfjet/fonts"
+git archive "v$version" resources/fonts | tar -x -C "$work/fonts"
+for family in "$work"/fonts/resources/fonts/*/; do
+    mv "${family%/}" "$work/fonts/com/pdfjet/fonts/"
+done
+jar --update --date="$date" --file "$base.jar" -C "$work/fonts" com/pdfjet/fonts
 
 # The API reference of the release, as the javadoc jar
 unzip -q -o "$zip" "$top/docs/java/*" -d "$work/docs"

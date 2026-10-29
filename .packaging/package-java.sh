@@ -2,7 +2,8 @@
 # Builds .commercial-packages/PDFjet-ForJava-Pro-vX.Y.Z.zip, a self-contained
 # package for Java clients: PDFjet.jar, the Javadoc reference, the examples
 # with the PDFs they create, the files they read (resources/data, images,
-# PngSuite), the fonts PDFjet carries (resources/fonts, in PDFjet.jar too),
+# PngSuite), the fonts PDFjet carries (resources/fonts, which PDFjet.jar reads
+# from there: the jar of the package is small, that of Maven Central carries them),
 # and scripts that build and run the examples against PDFjet.jar.
 # The library sources and the font tools in util are not in the package.
 #
@@ -128,9 +129,6 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     -d out/library
-# The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
-mkdir -p out/library/com/pdfjet/fonts
-for family in "$REPO"/resources/fonts/*/; do cp -R "${family%/}" out/library/com/pdfjet/fonts/; done
 # The entries of the jar have the time of the release too, the manifest that
 # jar writes as well, with --date, which JDK 17 and later have.
 stamp out/library
@@ -215,9 +213,6 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     pro-src/com/pdfjet/invoice/*.java \
     pro-src/com/pdfjet/hyphenation/*.java \
     -d out/library
-# The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
-mkdir -p out/library/com/pdfjet/fonts
-for family in "$REPO"/resources/fonts/*/; do cp -R "${family%/}" out/library/com/pdfjet/fonts/; done
 # The hyphenation patterns, resources of com.pdfjet.hyphenation, with their
 # licenses; and those beside the jar too, as their MIT licenses ask that the
 # notice go with every copy

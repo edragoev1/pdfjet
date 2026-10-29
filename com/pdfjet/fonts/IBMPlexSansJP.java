@@ -21,7 +21,7 @@ public class IBMPlexSansJP {
 
     /**
      * IBM Plex Sans JP ExtraLight, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */
@@ -30,7 +30,7 @@ public class IBMPlexSansJP {
 
     /**
      * IBM Plex Sans JP Light, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */
@@ -39,7 +39,7 @@ public class IBMPlexSansJP {
 
     /**
      * IBM Plex Sans JP Medium, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */
@@ -52,7 +52,7 @@ public class IBMPlexSansJP {
 
     /**
      * IBM Plex Sans JP Text, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */
@@ -61,7 +61,7 @@ public class IBMPlexSansJP {
 
     /**
      * IBM Plex Sans JP Thin, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */

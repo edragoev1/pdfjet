@@ -31,9 +31,6 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     -d out/production
-# The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
-mkdir -p out/production/com/pdfjet/fonts
-for family in resources/fonts/*/; do cp -R "${family%/}" out/production/com/pdfjet/fonts/; done
 
 # Compile and run the Example_?? program.
 javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -cp out/production examples/Example_$1.java -d out/production

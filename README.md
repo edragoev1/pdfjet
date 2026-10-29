@@ -30,14 +30,23 @@ PDFjet creates PDF documents: text in most scripts, tables, charts, barcodes and
 images, accessible and archival when you need it to be. The same API and the
 same output come in four languages, and none of them needs a third-party library.
 
-> [!NOTE]
-> This repository has all that the examples and the tests read: the fonts
-> PDFjet carries in `resources/fonts`, which the library reads from itself,
-> and the examples' data in `resources/data`. Nothing is fetched. The
-> packages of 9.1.5 from Maven Central, NuGet and `go get` have no fonts:
-> those PDFjet came with then are at
-> [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts). The core fonts,
-> such as Helvetica, need none.
+> [!IMPORTANT]
+> **PDFjet works out of the box: its fonts come with it.** From 9.1.7 the
+> jar of Maven Central and the package of NuGet carry the fonts PDFjet
+> carries, embedded in the documents that use them: IBM Plex Sans and
+> Serif, Source Serif 4, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai,
+> JP, KR, SC and TC, and IBM Plex Math, for Latin, Greek, Cyrillic, Arabic,
+> Hebrew, Thai, Chinese, Japanese and Korean. That jar is about 47 MB.
+>
+> **Want a much smaller jar? Take PDFjet.jar from the
+> [releases on GitHub](https://github.com/edragoev1/pdfjet/releases): it is
+> 0.7 MB.** Its package has the same fonts as files, in `resources/fonts`,
+> which PDFjet reads from there with the same code; keep that folder next to
+> your program, or only the fonts you use.
+>
+> This repository has all that the examples and the tests read: the fonts in
+> `resources/fonts` and the examples' data in `resources/data`. Nothing is
+> fetched.
 
 ## Why PDFjet
 
@@ -93,10 +102,10 @@ same output come in four languages, and none of them needs a third-party library
 
 Each snippet writes `hello.pdf` with a line in English, Greek and Bulgarian.
 The fonts PDFjet carries, such as `IBMPlexSans.Regular`, are paths like
-`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, which the library built from
-this repository reads from itself when there is no such file: they need no
-files. With 9.1.5, which has no fonts, run the program in a folder that has
-the `fonts` folder of pdfjet-fonts, as the Go part says.
+`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`: PDFjet reads the file of that
+path if there is one, else the font from the folder `resources/fonts`, else
+from the library itself, as the jar of Maven Central carries it. The same
+code runs with all three.
 
 <details open>
 <summary><b>Java</b></summary>
@@ -117,11 +126,12 @@ With Gradle:
 implementation("com.pdfjet:pdfjet:9.1.5")
 ```
 
-The jar of 9.1.5 has no fonts: clone pdfjet-fonts as `fonts/` next to your
-program, as the Go part below says, or copy the fonts you use from it; the
-core fonts need no files. Or build `PDFjet.jar` from this repository with
-`./build-java.sh`, which also runs the examples, and put it on the class
-path: it carries the fonts of `resources/fonts`.
+From 9.1.7 the jar of Maven Central carries PDFjet's fonts, so the
+constants of `com.pdfjet.fonts`, such as `IBMPlexSans.Regular`, work with
+nothing else to download; that jar is about 47 MB. The `PDFjet.jar` of the
+[releases on GitHub](https://github.com/edragoev1/pdfjet/releases), and the
+one `./build-java.sh` builds from this repository, is 0.7 MB: it reads the
+same fonts from the folder `resources/fonts`, which its package has.
 
 ```java
 import com.pdfjet.*;
@@ -157,11 +167,11 @@ Or in the project file:
 <PackageReference Include="PDFjet" Version="9.1.5" />
 ```
 
-The package of 9.1.5 has no fonts: get pdfjet-fonts as the Go part below
-says, or copy the fonts you use from it; the core fonts need no files. Or
-build `bin/release/net8.0/PDFjet.dll` from this repository with
-`./build-dotnet.sh` and reference it: it carries the fonts of
-`resources/fonts`.
+From 9.1.7 the package of NuGet carries PDFjet's fonts, so the constants
+such as `IBMPlexSans.Regular` work with nothing else to download. The
+`PDFjet.dll` of the [releases on GitHub](https://github.com/edragoev1/pdfjet/releases)
+is small: it reads the same fonts from the folder `resources/fonts`, which
+its package has.
 
 ```csharp
 using System.IO;
@@ -225,12 +235,8 @@ module has the source of the library and the examples, and the fonts PDFjet
 carries, in `resources/fonts`, which the library embeds. The data files of
 the examples, in `resources/data`, and the images, in `images`, are not in
 it: each folder has a `go.mod` of its own, which keeps it out. The module of
-9.1.5 has no fonts: clone pdfjet-fonts as `fonts/` next to your program, or
-copy the fonts you use from it; the core fonts need no files:
-
-```sh
-git clone --depth 1 https://github.com/edragoev1/pdfjet-fonts.git fonts
-```
+9.1.5 has no fonts: use the font files of its package from the release on
+GitHub.
 </details>
 
 <details>
@@ -299,9 +305,7 @@ a port and run all of its examples, or run one example by its number:
 The examples read the data files by paths relative to the repository root,
 such as `resources/data/the-idiot.txt`, and the scripts run them there.
 `resources/data/README.md` says where each file comes from and under which
-license. Using PDFjet 9.1.5 from Go with `go get`, from Maven Central or from
-NuGet? The module, the jar and the package have no fonts: the Go part of
-[Quick start](#quick-start) says how to get pdfjet-fonts.
+license.
 
 On Linux, install these first:
 
@@ -525,10 +529,7 @@ embed. In this order:
    library itself: IBM Plex Sans and Serif, Source Serif 4 and Cascadia
    Mono; IBM Plex Sans Arabic, Hebrew and Thai; IBM Plex Sans JP, KR, SC and
    TC; and IBM Plex Math. All are under the SIL Open Font License, which
-   lets any document embed them, for any use. Noto Sans and its families,
-   and the other fonts PDFjet came with before 9.1.7, are at
-   [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts), each with its
-   license.
+   lets any document embed them, for any use.
 2. **Google Fonts**, [fonts.google.com](https://fonts.google.com), next:
    every family there is under the SIL Open Font License, the Apache License
    2.0 or the Ubuntu Font Licence, each of which lets a document embed the

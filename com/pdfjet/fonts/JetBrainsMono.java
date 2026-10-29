@@ -8,9 +8,9 @@ package com.pdfjet.fonts;
 
 /**
  * The JetBrains Mono fonts, which PDFjet does not carry from 9.1.7: each constant
- * is the path of a font file of pdfjet-fonts,
- * https://github.com/edragoev1/pdfjet-fonts, which the Font constructor that
- * takes a font path reads when the file is there.
+ * is the path of a font file of the packages of PDFjet before 9.1.7,
+ * which the Font constructor that takes a font path reads when the file is
+ * there.
  *
  * @deprecated PDFjet carries Cascadia Mono, which has all of Greek and of
  * Cyrillic in every face, as JetBrains Mono does not, and which every constant

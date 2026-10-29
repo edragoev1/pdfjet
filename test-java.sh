@@ -48,9 +48,6 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     -d "$OUT/classes" || exit 1
-# The fonts PDFjet carries, resources of com.pdfjet.fonts, with their licenses
-mkdir -p "$OUT/classes/com/pdfjet/fonts"
-for family in resources/fonts/*/; do cp -R "${family%/}" "$OUT/classes/com/pdfjet/fonts/"; done || exit 1
 
 javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -proc:none \
     -cp "$OUT/classes:$JUNIT" \

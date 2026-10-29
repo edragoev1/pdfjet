@@ -18,7 +18,7 @@ public class SourceSerif4 {
 
     /**
      * Source Serif 4 Black, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */
@@ -27,7 +27,7 @@ public class SourceSerif4 {
 
     /**
      * Source Serif 4 BlackItalic, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */
@@ -40,7 +40,7 @@ public class SourceSerif4 {
 
     /**
      * Source Serif 4 ExtraLight, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */
@@ -49,7 +49,7 @@ public class SourceSerif4 {
 
     /**
      * Source Serif 4 ExtraLightItalic, which PDFjet does not carry
-     * from 9.1.7: a font file of pdfjet-fonts, read when the file is there.
+     * from 9.1.7: a font file of its packages before, read when the file is there.
      *
      * @deprecated PDFjet carries the other weights of the family.
      */

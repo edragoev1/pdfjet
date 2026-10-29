@@ -84,10 +84,10 @@ class BundledFontsTest {
         List<PDFobj> objects = TestSupport.read(bos.toByteArray());
         Font font = new Font(objects, com.pdfjet.fonts.IBMPlexSans.Bold);
         assertEquals("IBMPlexSans-Bold", font.name);
-        // A font it does not carry says where the fonts it came with are
+        // A font it does not carry says so
         java.io.FileNotFoundException e = assertThrows(java.io.FileNotFoundException.class,
                 () -> new Font(objects, "fonts/NotoSans/NotoSans-Regular.ttf"));
-        assertTrue(e.getMessage().contains(BundledFonts.PDFJET_FONTS), e.getMessage());
+        assertTrue(e.getMessage().contains("nor one of the fonts PDFjet carries"), e.getMessage());
     }
 
     @Test
