@@ -274,5 +274,25 @@ public class CellTest {
         TestSupport.AssertXY(before[0][0], before[0][1], image.DrawOn(null));
         TestSupport.AssertXY(before[1][0], before[1][1], barcode.DrawOn(null));
     }
+
+    // Text at the bottom of a cell is over the padding, descent and all: in a cell
+    // as tall as its line it is where text at the top is (the review of 30 October
+    // 2026, E5).
+    private static string DrawnAt(Alignment valign) {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(TestSupport.Helvetica(pdf), "gyp").SetVerticalAlignment(valign)}
+        };
+        Table table = new Table().SetTableData(data, 0);
+        table.SetLocation(50f, 50f);
+        table.DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
+    public void BottomAlignedTextIsOverThePadding() {
+        Assert.Equal(DrawnAt(Alignment.TOP), DrawnAt(Alignment.BOTTOM));
+    }
 }
 }

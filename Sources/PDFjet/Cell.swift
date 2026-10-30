@@ -951,7 +951,8 @@ public class Cell {
         } else if alignmentAt(Cell.valignShift) == Alignment.CENTER {
             yText = y + cellH/2 + ascent/2
         } else if alignmentAt(Cell.valignShift) == Alignment.BOTTOM {
-            yText = (y + cellH) - paddingAt(Cell.bottomPaddingShift)
+            // Over the padding by the descent, which went into it
+            yText = (y + cellH) - paddingAt(Cell.bottomPaddingShift) - descentOfCell()
         } else {
             // Recorded for complete() to throw, where it ended the program
             // (review of 11 October 2026, #16)

@@ -853,7 +853,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	case alignment.Center:
 		yText = y + float32(cellH/2.0) + float32(ascent/2.0)
 	case alignment.Bottom:
-		yText = (y + cellH) - cell.paddingAt(cellBottomPadding)
+		// Over the padding by the descent, which went into it
+		yText = (y + cellH) - cell.paddingAt(cellBottomPadding) - cell.descent()
 	default:
 		// alignment.Left, the zero value, panicked (review of 12 October
 		// 2026, F18)

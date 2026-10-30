@@ -912,7 +912,8 @@ public class Cell {
         } else if (AlignmentAt(VALIGN) == Alignment.CENTER) {
             yText = y + cellH/2 + ascent/2;
         } else if (AlignmentAt(VALIGN) == Alignment.BOTTOM) {
-            yText = (y + cellH) - PaddingAt(BOTTOM_PADDING);
+            // Over the padding by the descent, which went into it
+            yText = (y + cellH) - PaddingAt(BOTTOM_PADDING) - Descent();
         } else {
             // The same message in the four ports (review of 12 October 2026)
             page.pdf.Fail(new ArgumentException("The vertical alignment of a cell is top, center or bottom."));
