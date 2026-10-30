@@ -276,11 +276,13 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   the middle of a text is a hard line break, as before.
 - Behavior change: Markup, the four ports: the spaces and tabs at the start
   of the line after a line break, hard or not, are not in the text, as in
-  CommonMark, and a `\r\n` that is no hard line break is one space, where
-  it was two. Example: `paragraph("one  \n  two")` is the text line `one`,
+  CommonMark. Example: `paragraph("one  \n  two")` is the text line `one`,
   a line break and `two`, where the second was `  two`, and
   `paragraph("one\n  two")` is `one two`, where it was `one   two`. A space
   written `&#32;` is text, and so are the spaces after a `<br>`, as before.
+- Behavior change: Markup, the four ports: a `\r\n` that is no hard line
+  break is one line ending, so one space, where it was two. Example:
+  `paragraph("one\r\ntwo")` is `one two`, where it was `one  two`.
 
 ## v9.1.5 — 2026-10-28
 
