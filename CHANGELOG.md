@@ -172,6 +172,16 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   and a file `out.txt` to a reader; for `C:\temp\a.txt` it is
   `C:_temp_a.txt`, where it was `C:\temp\a.txt`, which a reader reads as
   `C:tempa.txt`.
+- Markup, the four ports: a hard line break at the very end of a text, two
+  spaces and a line break, is no break, as in CommonMark, and the spaces
+  are no longer in the last text line. `paragraphs` strips the whitespace
+  at the end of each paragraph, as CommonMark strips a paragraph's final
+  spaces and as Markdown did already.
+- Behavior change: `paragraph("0  \n")` is the one text line `0`, with no
+  line break after it, where it was `0  ` and a line break, and
+  `paragraphs("0  \n")` is `0`, where it was `0  `. Example:
+  `paragraphs("Total \n\nNext")` gives the text lines `Total` and `Next`,
+  where the first was `Total `.
 
 ## v9.1.5 — 2026-10-28
 

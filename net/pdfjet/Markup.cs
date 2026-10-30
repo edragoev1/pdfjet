@@ -26,8 +26,9 @@ namespace PDFjet.NET {
 /// lines with Paragraph.AddJoined.
 /// <para>
 /// A line that ends in two spaces or a backslash, and a &lt;br&gt;, are hard
-/// line breaks, which TextFrame draws as the end of a row; any other line
-/// break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+/// line breaks, which TextFrame draws as the end of a row; two spaces and a
+/// line break at the end of the text are not, and are dropped, as in
+/// CommonMark. Any other line break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
 /// &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
 /// &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
 /// &amp;#8212; and &amp;#x2014;, are the characters they name.
@@ -142,8 +143,13 @@ public class Markup {
         if (buf.Length > 0) {
             // Without the line break after the last line, which made a
             // backslash at the end of the paragraph a hard line break, and
-            // dropped it
+            // dropped it, and without the whitespace at its end, as
+            // CommonMark strips the final spaces of a paragraph: "0  \n" is
+            // "0"
             buf.Length = buf.Length - 1;
+            while (buf.Length > 0 && Util.IsJavaWhitespace(buf[buf.Length - 1])) {
+                buf.Length = buf.Length - 1;
+            }
             Paragraph paragraph = Paragraph(buf.ToString());
             if (paragraph.lines.Count > 0) {
                 paragraphs.Add(paragraph);
@@ -160,6 +166,14 @@ public class Markup {
     /// <returns>the paragraph.</returns>
     public Paragraph Paragraph(String text) {
         Parser parser = new Parser(text);
+        int end = parser.TrailingBreak();
+        if (end < text.Length) {
+            // A hard line break at the end of the text is no break, as in
+            // CommonMark, and the whitespace at the end is dropped: "0  \n"
+            // is the text line "0"
+            text = text.Substring(0, end);
+            parser = new Parser(text);
+        }
         List<Node> nodes = new List<Node>();
         parser.Parse(0, text.Length, null, nodes);
         Paragraph paragraph = new Paragraph();
@@ -398,6 +412,23 @@ public class Markup {
             }
             Flush(buf, link, nodes);
             MatchEmphasis(nodes, first);
+        }
+
+        // Returns where the whitespace at the end of the text starts when a
+        // hard line break is in it, two spaces before a line break, or the
+        // length of the text when none is.
+        internal int TrailingBreak() {
+            int n = text.Length;
+            int start = n;
+            while (start > 0 && Util.IsJavaWhitespace(text[start - 1])) {
+                start--;
+            }
+            for (int i = start; i < n; i++) {
+                if (BreakEnd(i, n) > i) {
+                    return start;
+                }
+            }
+            return n;
         }
 
         // Returns where a hard line break at i ends, or i when there is none:

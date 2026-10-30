@@ -22,8 +22,9 @@ import Foundation
 /// between them: the paragraph joins its text lines with Paragraph.addJoined.
 ///
 /// A line that ends in two spaces or a backslash, and a <br>, are hard line
-/// breaks, which TextFrame draws as the end of a row; any other line break is
-/// a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+/// breaks, which TextFrame draws as the end of a row; two spaces and a line
+/// break at the end of the text are not, and are dropped, as in CommonMark.
+/// Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 /// &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 /// the numbers &#8212; and &#x2014;, are the characters they name.
 ///
@@ -142,8 +143,13 @@ public class Markup {
         if !buf.isEmpty {
             // Without the line break after the last line, which made a
             // backslash at the end of the paragraph a hard line break, and
-            // dropped it
+            // dropped it, and without the whitespace at its end, as
+            // CommonMark strips the final spaces of a paragraph: "0  \n" is
+            // "0"
             buf.removeLast()
+            while let last = buf.last, Markup.isWhitespace(last) {
+                buf.removeLast()
+            }
             let paragraph = self.paragraph(String(decoding: buf, as: UTF16.self))
             if !paragraph.lines.isEmpty {
                 paragraphs.append(paragraph)
@@ -160,7 +166,14 @@ public class Markup {
     /// - Returns: the paragraph.
     ///
     public func paragraph(_ text: String) -> Paragraph {
-        let parser = Parser(text)
+        var parser = Parser(text)
+        let end = parser.trailingBreak()
+        if end < parser.text.count {
+            // A hard line break at the end of the text is no break, as in
+            // CommonMark, and the whitespace at the end is dropped: "0  \n"
+            // is the text line "0"
+            parser = Parser(String(decoding: parser.text[..<end], as: UTF16.self))
+        }
         var nodes = [Node]()
         parser.parse(0, parser.text.count, nil, &nodes)
         let paragraph = Paragraph()
@@ -449,6 +462,25 @@ public class Markup {
             }
             Parser.flush(&buf, link, &nodes)
             Parser.matchEmphasis(&nodes, first)
+        }
+
+        // Returns where the whitespace at the end of the text starts when a
+        // hard line break is in it, two spaces before a line break, or the
+        // length of the text when none is.
+        func trailingBreak() -> Int {
+            let n = text.count
+            var start = n
+            while start > 0 && Markup.isWhitespace(text[start - 1]) {
+                start -= 1
+            }
+            var i = start
+            while i < n {
+                if breakEnd(i, n) > i {
+                    return start
+                }
+                i += 1
+            }
+            return n
         }
 
         // Returns where a hard line break at i ends, or i when there is none:
