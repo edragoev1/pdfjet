@@ -56,7 +56,7 @@ class SVGState {
     String markerMid = null;
     String markerEnd = null;
     String clipPath = null;             // The id of the clip path of the element itself, not inherited
-    String overflow = null;             // The overflow of the element itself, not inherited
+    String overflow = null;             // The overflow of the element, not inherited unless it says inherit
     List<SVGPath> clips = null;         // The clip paths of the element and of its ancestors
     List<SVGImage.Choice> choices = null;   // The children of the switches it is in; never changed in place
     Map<String, Integer> paints = null; // The colors of the gradients, by id, shared by every state
@@ -106,6 +106,7 @@ class SVGState {
         this.markerEnd = parent.markerEnd;
         this.clips = parent.clips;
         this.choices = parent.choices;
+        this.overflow = parent.overflow;    // For a use element, as the parent of what it draws
         this.paints = parent.paints;
     }
 
@@ -266,6 +267,10 @@ class SVGState {
     // that starts with # and is not hexadecimal, as it always has.
     void setProperty(ColorMap colorMap, String name, String value) {
         value = trim(value);
+        if (name.equals("overflow")) {      // Read by elementState, inherit too
+            this.overflow = toLower(value);
+            return;
+        }
         if (value.equals("inherit")) {
             return;
         }
@@ -404,8 +409,6 @@ class SVGState {
             this.markerEnd = this.markerStart;
         } else if (name.equals("clip-path")) {
             this.clipPath = urlId(value);
-        } else if (name.equals("overflow")) {
-            this.overflow = toLower(value);
         }
     }
 

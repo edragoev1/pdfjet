@@ -598,6 +598,9 @@ public class SVGImage : IDrawable {
         foreach (String[] declaration in SVGRule.ParseDeclarations(Attribute(attributes, "style"))) {
             state.SetProperty(declaration[0], declaration[1]);
         }
+        if (state.overflow == "inherit") {
+            state.overflow = (parent.overflow != null) ? parent.overflow : "visible";   // What an element has unless given
+        }
         state.opacity *= state.ownOpacity;
         String transform;
         if (attributes.TryGetValue("transform", out transform)) {
@@ -952,8 +955,8 @@ public class SVGImage : IDrawable {
     // and height, which the use element may give, and which are those of the
     // viewport it is in unless given; a percentage is of that viewport. A
     // viewBox or a size of nothing draws nothing. What is drawn is clipped to
-    // the viewport, as hidden is the overflow of these elements unless given,
-    // not inherited; a viewport of no known size clips nothing.
+    // the viewport, as hidden is the overflow of these elements unless given
+    // or inherit, the value of the parent; a viewport of no known size clips nothing.
     private void EnterViewport(SVGState state, Dictionary<String, String> attributes, String[] size) {
         if (state.overflow == null) {
             state.overflow = "hidden";

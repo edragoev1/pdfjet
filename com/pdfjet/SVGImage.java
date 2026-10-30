@@ -599,6 +599,9 @@ public class SVGImage implements Drawable {
         for (String[] declaration : SVGState.parseDeclarations(attribute(attributes, "style"))) {
             state.setProperty(colorMap, declaration[0], declaration[1]);
         }
+        if ("inherit".equals(state.overflow)) {
+            state.overflow = (parent.overflow != null) ? parent.overflow : "visible";   // What an element has unless given
+        }
         state.opacity *= state.ownOpacity;
         String transform = attributes.get("transform");
         if (transform != null) {
@@ -941,8 +944,8 @@ public class SVGImage implements Drawable {
     // and height, which the use element may give, and which are those of the
     // viewport it is in unless given; a percentage is of that viewport. A
     // viewBox or a size of nothing draws nothing. What is drawn is clipped to
-    // the viewport, as hidden is the overflow of these elements unless given,
-    // not inherited; a viewport of no known size clips nothing.
+    // the viewport, as hidden is the overflow of these elements unless given
+    // or inherit, the value of the parent; a viewport of no known size clips nothing.
     private void enterViewport(SVGState state, Map<String, String> attributes, String[] size) {
         if (state.overflow == null) {
             state.overflow = "hidden";

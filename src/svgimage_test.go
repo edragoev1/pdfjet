@@ -1624,3 +1624,46 @@ func TestSVGImageAMarkerClipsToItsViewport(t *testing.T) {
 		}
 	}
 }
+
+func TestSVGImageAnOverflowOfInheritTakesThatOfTheParent(t *testing.T) {
+	const clips = "h\nW\nn\n"
+	const inner = `<svg width="20" height="20" overflow="inherit"><rect width="50" height="50"/></svg>`
+	for _, test := range []struct {
+		svg   string
+		clips int
+	}{
+		{`<g overflow="visible">` + inner + `</g>`, 0},
+		{`<g overflow="auto">` + inner + `</g>`, 0},
+		{`<g overflow="hidden">` + inner + `</g>`, 1},
+		{`<g overflow="scroll">` + inner + `</g>`, 1},
+		// A group's own overflow is visible, unless given.
+		{`<g>` + inner + `</g>`, 0},
+		{inner, 0},
+		// That of a nested svg is hidden, which clips it too, unless given.
+		{`<svg width="50" height="50">` + inner + `</svg>`, 2},
+		{`<svg width="50" height="50" overflow="visible">` + inner + `</svg>`, 0},
+		{`<svg width="50" height="50" overflow="auto">` + inner + `</svg>`, 0},
+		// Up the chain, which inherit passes on.
+		{`<g overflow="visible"><g overflow="inherit">` + inner + `</g></g>`, 0},
+		{`<g overflow="hidden"><g overflow="inherit">` + inner + `</g></g>`, 1},
+		{`<g overflow="visible"><g>` + inner + `</g></g>`, 0},
+		{`<g overflow="hidden"><g>` + inner + `</g></g>`, 0},
+		// In a style and in rules; the last of them counts.
+		{`<g overflow="visible"><svg width="20" height="20" style="overflow: inherit"><rect width="50" height="50"/></svg></g>`, 0},
+		{`<style>.o { overflow: inherit }</style><g overflow="visible"><svg width="20" height="20" class="o"><rect width="50" height="50"/></svg></g>`, 0},
+		{`<g overflow="visible"><svg width="20" height="20" overflow="INHERIT"><rect width="50" height="50"/></svg></g>`, 0},
+		{`<g overflow="visible"><svg width="20" height="20" overflow="inherit" style="overflow: hidden"><rect width="50" height="50"/></svg></g>`, 1},
+		{`<g overflow="visible"><svg width="20" height="20" overflow="hidden" style="overflow: inherit"><rect width="50" height="50"/></svg></g>`, 0},
+		// A symbol takes it from the use element.
+		{`<symbol id="s" overflow="inherit"><rect width="500" height="5"/></symbol><use href="#s" overflow="visible"/>`, 0},
+		{`<symbol id="s" overflow="inherit"><rect width="500" height="5"/></symbol><use href="#s" overflow="hidden"/>`, 1},
+		{`<symbol id="s" overflow="inherit"><rect width="500" height="5"/></symbol><use href="#s"/>`, 0},
+		// A marker takes it from the base it is drawn on: visible.
+		{`<marker id="m" overflow="inherit"><rect width="20" height="20"/></marker><path d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`, 0},
+	} {
+		content := testDrawSVG(t, `<svg width="100" height="100">`+test.svg+`</svg>`)
+		if strings.Count(content, clips) != test.clips || !strings.Contains(content, "f\n") {
+			t.Errorf("%s content %q", test.svg, content)
+		}
+	}
+}

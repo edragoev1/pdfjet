@@ -521,6 +521,9 @@ public class SVGImage : Drawable {
         for (name, value) in SVGRule.parseDeclarations(attributes["style"] ?? "") {
             try state.setProperty(name, value)
         }
+        if state.overflow == "inherit" {
+            state.overflow = parent.overflow ?? "visible"   // What an element has unless given
+        }
         state.opacity *= state.ownOpacity
         if let transform = attributes["transform"], let matrix = SVGState.parseTransform(transform) {
             state.matrix = SVGState.multiply(parent.matrix, matrix)
@@ -841,8 +844,8 @@ public class SVGImage : Drawable {
     // and height, which the use element may give, and which are those of the
     // viewport it is in unless given; a percentage is of that viewport. A
     // viewBox or a size of nothing draws nothing. What is drawn is clipped to
-    // the viewport, as hidden is the overflow of these elements unless given,
-    // not inherited; a viewport of no known size clips nothing.
+    // the viewport, as hidden is the overflow of these elements unless given
+    // or inherit, the value of the parent; a viewport of no known size clips nothing.
     private func enterViewport(_ state: inout SVGState, _ attributes: [String: String],
             _ size: (String, String)?) throws {
         if state.overflow == nil {

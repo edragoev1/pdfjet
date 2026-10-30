@@ -365,6 +365,8 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 - SVG: `marker` clips to its viewport, unless overflow is visible or auto,
   as `symbol` and nested `svg` do; its viewBox is fitted as theirs is, with
   the alignment and `slice` of its preserveAspectRatio.
+- SVG: `overflow="inherit"` takes the value of the parent, a group's being
+  visible unless given, where it read as hidden.
 - Build: the package scripts take the POM, nuspec and README from the tagged
   commit and run `util/check-version.sh`; the POM and the nuspec say
   `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
@@ -402,6 +404,9 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   draws 4 by 4 of it; `overflow="visible"` keeps all of it. A `marker` of
   `markerWidth="0"` draws nothing, where it drew its content without a
   viewBox.
+- Behavior change: SVG: `overflow="inherit"` no longer clips under a parent
+  that is visible. Example: `<g><svg width="9" height="9" overflow="inherit">`
+  draws all of a larger rectangle, where it clipped it.
 - Behavior change: `SetLanguage` writes `/Lang` on a plain PDF too. Example:
   `fr-CA`; unset writes none.
 - Behavior change: the name of an embedded file is cut at a backslash on every

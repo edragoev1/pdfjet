@@ -649,6 +649,12 @@ func elementState(parent svgState, colorMap map[string]int32, rules *svgStyleShe
 			return state, err
 		}
 	}
+	if state.overflow == "inherit" {
+		state.overflow = parent.overflow
+		if state.overflow == "" {
+			state.overflow = "visible" // What an element has unless given
+		}
+	}
 	state.opacity = float32(state.opacity * state.ownOpacity)
 	if transform, ok := attributes["transform"]; ok {
 		if matrix, ok := parseSVGTransform(transform); ok {
@@ -1043,8 +1049,8 @@ func svgReversed(operations []*svgPathOp) []*svgPathOp {
 // and height, which the use element may give, and which are those of the
 // viewport it is in unless given; a percentage is of that viewport. A
 // viewBox or a size of nothing draws nothing. What is drawn is clipped to the
-// viewport, as hidden is the overflow of these elements unless given, not
-// inherited; a viewport of no known size clips nothing.
+// viewport, as hidden is the overflow of these elements unless given or
+// inherit, the value of the parent; a viewport of no known size clips nothing.
 func (r *svgReader) enterViewport(state *svgState, attributes map[string]string, size [2]string) error {
 	if state.overflow == "" {
 		state.overflow = "hidden"

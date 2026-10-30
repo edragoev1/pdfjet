@@ -64,7 +64,7 @@ type svgState struct {
 	markerMid     string
 	markerEnd     string
 	clipPath      string           // The id of the clip path of the element itself, not inherited
-	overflow      string           // The overflow of the element itself, not inherited; "" unless given
+	overflow      string           // The overflow of the element, not inherited unless it says inherit; "" unless given
 	clips         []*svgPath       // The clip paths of the element and of its ancestors; never changed in place
 	choices       []svgChoice      // The children of the switches it is in; never changed in place
 	paints        map[string]int32 // The colors of the gradients, by id, shared by every state
@@ -234,6 +234,10 @@ func parseSVGDeclarations(text string) [][2]string {
 // for a color that starts with # and is not hexadecimal, as it always has.
 func (state *svgState) setProperty(colorMap map[string]int32, name, value string) error {
 	value = strings.TrimSpace(value)
+	if name == "overflow" { // Read by elementState, inherit too
+		state.overflow = strings.ToLower(value)
+		return nil
+	}
 	if value == "inherit" {
 		return nil
 	}
@@ -393,8 +397,6 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 		state.markerEnd = state.markerStart
 	case "clip-path":
 		state.clipPath = svgURLId(value)
-	case "overflow":
-		state.overflow = strings.ToLower(value)
 	}
 	return nil
 }
