@@ -671,7 +671,7 @@ import Testing
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let paragraph = Markup(font, font, font, font, font)
-                .paragraph("**" + String(repeating: "x", count: 100000) + "**y")
+                .paragraph("**" + String(repeating: "x", count: 200000) + "**y")
         let elapsed = shortestTime(.seconds(6)) {
             TextFrame([paragraph]).setLocation(10, 10).setWidth(300).drawOn(nil)
         }

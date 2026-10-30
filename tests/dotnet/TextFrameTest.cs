@@ -722,7 +722,7 @@ public class TextFrameTest {
     public void ManyFramesOfOneTextLineAreDrawnInLinearTime() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
-        String text = new System.Text.StringBuilder().Insert(0, "word ", 400000).ToString();
+        String text = new System.Text.StringBuilder().Insert(0, "word ", 1000000).ToString();
         long milliseconds = TestSupport.ShortestMillis(3000, () => {
             TextFrame frame = new TextFrame(new List<Paragraph> {new Paragraph().Add(new TextLine(font, text))})
                     .SetLocation(10f, 10f).SetWidth(300f).SetHeight(600f);

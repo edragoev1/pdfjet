@@ -751,7 +751,7 @@ class TextFrameTest {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         StringBuilder text = new StringBuilder();
-        for (int i = 0; i < 400000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             text.append("word ");
         }
         long milliseconds = TestSupport.shortestMillis(3000, () -> {
