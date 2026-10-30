@@ -2721,7 +2721,7 @@ func (pdf *PDF) SetPageMode(pageMode pagemode.PageMode) *PDF {
 }
 
 // minObjNumberLimit is the highest object number read in a file of any size:
-// its empty objects take about 30 MB.
+// its empty objects take about 70 MB.
 const minObjNumberLimit = 262144
 
 // getSortedObjects returns the objects by their number, with an empty object

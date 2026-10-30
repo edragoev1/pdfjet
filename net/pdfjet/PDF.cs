@@ -2814,7 +2814,7 @@ public sealed class PDF {
     }
 
     // The highest object number read in a file of any size: its empty objects
-    // take about 30 MB.
+    // take about 70 MB.
     private const int MIN_OBJ_NUMBER_LIMIT = 262144;
 
     // Returns the objects by their number, with an empty object at the number

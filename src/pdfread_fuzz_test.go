@@ -284,11 +284,11 @@ const fuzzDecodedTotal = 1 << 20
 
 // fuzzReadMaxAlloc is what FuzzPDFRead may allocate for an input of the size:
 // the empty objects of a PDF that numbers one minObjNumberLimit, which any PDF
-// may, 58 MB read, merged and split; a few times fuzzDecodedTotal; and the
+// may, 71 MB read and more merged and split; a few times fuzzDecodedTotal; and the
 // objects of the input. The PDFs of the seeds allocate a few MB, and a way
 // past the budget hundreds.
 func fuzzReadMaxAlloc(size int) uint64 {
-	return fuzzRaceAlloc * (96<<20 + 128*uint64(size))
+	return fuzzRaceAlloc * (192<<20 + 128*uint64(size))
 }
 
 // fuzzReadMaxTime is how long FuzzPDFRead may take for an input of the size,
