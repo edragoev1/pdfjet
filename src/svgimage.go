@@ -132,7 +132,11 @@ var svgTemplates = map[string]bool{
 // A text cannot be in one path with other shapes, as a text object holds no
 // path and clip paths do not add up, so the texts of a <clipPath> that has
 // shapes too are left out, and the glyphs of a text clip by the nonzero rule,
-// whatever its clip-rule. It returns an error
+// whatever its clip-rule. The shapes of a <clipPath> of several are one path,
+// their union, by the nonzero rule, so a clip-rule of evenodd is drawn only in a
+// <clipPath> of one shape: clip paths in a PDF only intersect and a path has one
+// rule, so even-odd shapes in one union would have to be cut where they cross,
+// and a soft mask, which PDF/A-1 forbids, is not used for it. It returns an error
 // for a file that nests what it draws more than 48 deep, or that draws more
 // than 4,000,000 path operations again, by use elements, markers and clip paths.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
