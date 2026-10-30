@@ -118,7 +118,7 @@ public class Bidi {
         if (ch == 0x200C || ch == 0x200D) {         // ZWNJ, ZWJ
             return false;
         }
-        int cat = Character.getType(ch);
+        int cat = UnicodeCategories.of(ch);
         return cat == Character.NON_SPACING_MARK    // Mn
             || cat == Character.ENCLOSING_MARK      // Me
             || cat == Character.FORMAT;             // Cf
@@ -505,13 +505,9 @@ public class Bidi {
     }
 
     private static boolean isAlphaNumeric(int ch) {
-        int cat = Character.getType(ch);
+        int cat = UnicodeCategories.of(ch);
         return cat == Character.DECIMAL_DIGIT_NUMBER    // Nd
-            || cat == Character.UPPERCASE_LETTER        // Lu
-            || cat == Character.LOWERCASE_LETTER        // Ll
-            || cat == Character.TITLECASE_LETTER        // Lt
-            || cat == Character.MODIFIER_LETTER         // Lm
-            || cat == Character.OTHER_LETTER;           // Lo
+            || cat == Character.OTHER_LETTER;           // Any letter
     }
 
     // ---- Bidirectional types ----------------------------------------------
@@ -530,7 +526,7 @@ public class Bidi {
         if (ch == 0x061C) {                                         // ALM
             return AL;
         }
-        int cat = Character.getType(ch);
+        int cat = UnicodeCategories.of(ch);
         if (cat == Character.NON_SPACING_MARK || cat == Character.ENCLOSING_MARK) {
             return NSM;
         }

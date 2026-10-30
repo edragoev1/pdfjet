@@ -864,7 +864,7 @@ final public class Font {
     // and an RLM, LRM, ZWNJ or ZWJ goes with the character after it.
     static Font fontOf(Font font, Font fallbackFont, Font active, String str, int i) {
         int cp = str.codePointAt(i);
-        if (i > 0 && Character.getType(cp) == Character.NON_SPACING_MARK && active.hasGlyph(cp)) {
+        if (i > 0 && UnicodeCategories.of(cp) == Character.NON_SPACING_MARK && active.hasGlyph(cp)) {
             return active;
         }
         int next = i + Character.charCount(cp);

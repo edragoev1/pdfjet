@@ -1414,7 +1414,7 @@ final public class Page {
     }
 
     static boolean isMark(int cp) {
-        int type = Character.getType(cp);
+        int type = UnicodeCategories.of(cp);
         return type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK;
     }
 
@@ -2890,7 +2890,7 @@ final public class Page {
             // word keeps its accents, which are placed on their letters and
             // matched with the word.
             if (!Util.isMark(cp)) {
-                inWord = Character.isLetterOrDigit(cp);
+                inWord = UnicodeCategories.isLetterOrDigit(cp);
             }
             if (inWord) {
                 drawWord(font, buf2, color, highlightColors);

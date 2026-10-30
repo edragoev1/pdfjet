@@ -144,7 +144,7 @@ public class Markup {
             // CommonMark strips the final spaces of a paragraph: "0  \n" is
             // "0"
             buf.setLength(buf.length() - 1);
-            while (buf.length() > 0 && Character.isWhitespace(buf.charAt(buf.length() - 1))) {
+            while (buf.length() > 0 && Util.isWhitespace(buf.charAt(buf.length() - 1))) {
                 buf.setLength(buf.length() - 1);
             }
             Paragraph paragraph = paragraph(buf.toString());
@@ -317,7 +317,7 @@ public class Markup {
             nextSpace = new int[n + 1];
             nextSpace[n] = n;
             for (int i = n - 1; i >= 0; i--) {
-                nextSpace[i] = Character.isWhitespace(text.charAt(i)) ? i : nextSpace[i + 1];
+                nextSpace[i] = Util.isWhitespace(text.charAt(i)) ? i : nextSpace[i + 1];
             }
             for (int i = 0; i < n; ) {
                 if (text.charAt(i) == '\\' && i + 1 < n && text.charAt(i + 1) != '`') {
@@ -428,8 +428,8 @@ public class Markup {
                     run.index = nodes.size();
                     run.count = length;
                     // Before the run, or after it, a space, or the start or the end
-                    boolean left = i + length < end && !Character.isWhitespace(text.charAt(i + length));
-                    boolean right = i > start && !Character.isWhitespace(text.charAt(i - 1));
+                    boolean left = i + length < end && !Util.isWhitespace(text.charAt(i + length));
+                    boolean right = i > start && !Util.isWhitespace(text.charAt(i - 1));
                     run.canOpen = left;
                     run.canClose = right;
                     if (ch == '_') {
@@ -458,7 +458,7 @@ public class Markup {
                         spaces++;
                         spaceEnd = i + 1;
                     }
-                    buf.append(Character.isWhitespace(ch) ? ' ' : ch);
+                    buf.append(Util.isWhitespace(ch) ? ' ' : ch);
                     i++;
                 }
             }
@@ -472,7 +472,7 @@ public class Markup {
         int trailingBreak() {
             int n = text.length();
             int start = n;
-            while (start > 0 && Character.isWhitespace(text.charAt(start - 1))) {
+            while (start > 0 && Util.isWhitespace(text.charAt(start - 1))) {
                 start--;
             }
             for (int i = start; i < n; i++) {
@@ -487,7 +487,7 @@ public class Markup {
         // nothing.
         private boolean onlySpaceFrom(int i) {
             for (; i < text.length(); i++) {
-                if (!Character.isWhitespace(text.charAt(i))) {
+                if (!Util.isWhitespace(text.charAt(i))) {
                     return false;
                 }
             }
@@ -640,7 +640,7 @@ public class Markup {
             int from = i;
             if (text.charAt(i) == '<') {
                 from = i + 1;
-            } else if (i > start && !Character.isWhitespace(text.charAt(i - 1))
+            } else if (i > start && !Util.isWhitespace(text.charAt(i - 1))
                     && "(*_~".indexOf(text.charAt(i - 1)) == -1) {
                 return i;
             }
@@ -649,7 +649,7 @@ public class Markup {
                 return i;
             }
             int j = host;
-            while (j < end && !Character.isWhitespace(text.charAt(j))
+            while (j < end && !Util.isWhitespace(text.charAt(j))
                     && text.charAt(j) != '<' && text.charAt(j) != '>') {
                 j++;
             }

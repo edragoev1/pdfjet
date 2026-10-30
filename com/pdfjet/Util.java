@@ -113,6 +113,9 @@ class Util {
         if (color == null) {
             return -1;
         }
+        if (color.length < 3) {
+            throw new IllegalArgumentException(Page.RGB_COUNT);
+        }
         return (toByte(color[0]) << 16) | (toByte(color[1]) << 8) | toByte(color[2]);
     }
 
@@ -374,7 +377,7 @@ class Util {
 
     // Returns true for a combining mark, Mn, Mc or Me, as Go's unicode.IsMark.
     static boolean isMark(int cp) {
-        int type = Character.getType(cp);
+        int type = UnicodeCategories.of(cp);
         return type == Character.NON_SPACING_MARK
                 || type == Character.COMBINING_SPACING_MARK
                 || type == Character.ENCLOSING_MARK;
@@ -388,10 +391,16 @@ class Util {
         if (cp <= 0xFF) {
             return cp == ' ' || (cp >= '\t' && cp <= '\r') || cp == 0x85 || cp == 0xA0;
         }
-        int type = Character.getType(cp);
+        int type = UnicodeCategories.of(cp);
         return type == Character.SPACE_SEPARATOR
                 || type == Character.LINE_SEPARATOR
                 || type == Character.PARAGRAPH_SEPARATOR;
+    }
+
+    // Returns true for the whitespace of Character.isWhitespace on any runtime:
+    // on Java 8, of Unicode 6.2, it has U+180E, a format character since.
+    static boolean isWhitespace(int cp) {
+        return cp != 0x180E && Character.isWhitespace(cp);
     }
 
     // Returns the string without the white space that leads it and trails it,
