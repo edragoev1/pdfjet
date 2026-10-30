@@ -74,7 +74,7 @@ Add PDFjet to the Package.swift of your package, and the PDFjet product to the t
     ]
 @end
 
-The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. They are IBM Plex Sans and Serif, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, in the folder resources/fonts of the repository, the CJK ones in resources/fonts/cjk. For Chinese, Japanese or Korean, also add the CJK fonts, a package of their own: com.pdfjet:pdfjet-fonts-cjk with Maven or Gradle, PDFjet.Fonts.CJK with NuGet, import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk" in Go, and the product PDFjetFontsCJK in Swift. Without it, a CJK font throws an error that names what to add.
+The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. PDFjet includes every European language (Latin, Greek, Cyrillic) in IBM Plex Sans and Serif and Cascadia Mono. For other scripts, add one package: the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai, IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai, are com.pdfjet:pdfjet-fonts-world with Maven or Gradle, PDFjet.Fonts.World with NuGet, import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world" in Go, and the product PDFjetFontsWorld in Swift. Without it, one of those fonts throws an error that names what to add. In the repository, all are in the folder resources/fonts, those of the other scripts in resources/fonts/world.
 
 ## Hello, World
 
@@ -194,7 +194,7 @@ The compliance levels PDF_A_1A to PDF_A_3B make a PDF/A document, for long-term 
 A Font is created once for a PDF and used by any number of text lines, blocks and tables. Its size is set with setSize, and a text line can draw in another size of the same font with setFontSize.
 
 @snippet fonts The fonts that come with PDFjet
-The classes of the com.pdfjet.fonts package, such as IBMPlexSans, IBMPlexSerif and CascadiaMono, name the font files that come with PDFjet: IBM Plex in its Sans, Serif and Math families and in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; and Cascadia Mono. PDFjet embeds only the glyphs a document uses.
+The classes of the com.pdfjet.fonts package, such as IBMPlexSans, IBMPlexSerif and CascadiaMono, name the font files that come with PDFjet: IBM Plex in its Sans and Serif families and, in the package of the other scripts, in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; and Cascadia Mono. PDFjet embeds only the glyphs a document uses.
 
 @snippet font-files Fonts from files
 Any OpenType or TrueType font file is a font for PDFjet: pass its path, or an input stream of it, to the Font constructor.
