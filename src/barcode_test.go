@@ -325,3 +325,16 @@ func TestBarcodeCode39RefusesAStarAndNoData(t *testing.T) {
 	}
 	NewBarcode(CODE_39, "HELLO-39 $/+%.")
 }
+
+// The bars are solid whatever dash pattern the page was left with, as in the
+// charts: a dashed bar is not a bar a scanner reads (the review of 30 October
+// 2026, E4).
+func TestBarcodeTheBarsAreSolidOnADashedPage(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	page.SetStrokeDashPattern("[3 3] 0")
+	NewBarcode(CODE_128, "A1").SetFont(testHelvetica(pdf)).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "q\n0 0 0 RG\n[] 0 d\n") {
+		t.Errorf("the bars are dashed: %.80q", content)
+	}
+}
