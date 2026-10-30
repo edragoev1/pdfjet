@@ -11,31 +11,57 @@
 #
 #   ./package-maven.sh 9.1.1 ~/Projects/PDFjet-ForJava-Core-v9.1.1.zip
 #
-# It writes out/maven/pdfjet-9.1.1-bundle.zip, which has both artifacts. gpg
+# Run it with HEAD at the tag v9.1.1: the jars, the sources and the POMs are
+# all of the tag, once util/check-version.sh has passed it. It writes
+# out/maven/pdfjet-9.1.1-bundle.zip, which has both artifacts. gpg
 # asks the owner for the key's passphrase, which never goes in a file or a
 # command; GPG_KEY chooses a key other than the default one. Uploading the
 # bundle is the owner's, on https://central.sonatype.com/publishing, Publish
 # Component: the one zip publishes both artifacts.
 #
 # PDFJET_REF=HEAD takes the fonts and the sources of that commit instead of
-# the tag, and PDFJET_UNSIGNED=1 leaves out the signatures, for a bundle to
-# look at and to measure before the release, never to upload.
+# the tag, with a PDFjet-ForJava-Core zip of the release or a draft one of
+# package-java.sh, and PDFJET_UNSIGNED=1 leaves out the signatures, for a
+# bundle to look at and to measure before the release. Neither is to upload,
+# and their bundles say so: the version of their files, and in their POMs, is
+# 9.1.1-draft, 9.1.1-unsigned or 9.1.1-draft-unsigned.
 
 set -euo pipefail
 cd "$(dirname "$0")"
 version=${1:?the version, such as 9.1.1}
 zip=${2:?the PDFjet-ForJava-Core zip of the release}
 ref=${PDFJET_REF:-v$version}
-commit=$(git rev-list -n1 "$ref")
+if ! commit=$(git rev-list -n1 "$ref" 2> /dev/null); then
+    echo "There is no $ref: tag the release, or set PDFJET_REF for a draft." >&2
+    exit 1
+fi
+draft=
+if [ -n "${PDFJET_REF:-}" ]; then
+    draft=-draft
+elif [ "$(git rev-parse HEAD)" != "$commit" ]; then
+    echo "HEAD is $(git describe --tags --always HEAD), not the tag $ref: check out the tag, or set PDFJET_REF for a draft." >&2
+    exit 1
+fi
+packageVersion=$version$draft${PDFJET_UNSIGNED:+-unsigned}
+# The version is the same in all that holds it, at this commit; a draft asks
+# no date of CHANGELOG.md and may be of a commit before the version was set.
+found=$(util/check-version.sh --at "$commit" ${draft:+--draft})
+if [ -z "$draft" ] && [ "$found" != "v$version" ]; then
+    echo "$ref holds the version $found, not v$version." >&2
+    exit 1
+fi
 # The entries of the jars made here have the time of the tag's commit, so that
 # two bundles of a release are the same (review of 17 October 2026)
 date=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ "$ref")
 top="PDFjet-ForJava-Core-v$version"
+if [ -n "$draft" ] && [[ $(unzip -Z1 "$zip") == *"$top-draft/PDFjet.jar"* ]]; then
+    top=$top-draft
+fi
 work=out/maven/work
-dir=out/maven/stage/com/pdfjet/pdfjet/$version
-base=$dir/pdfjet-$version
-worldDir=out/maven/stage/com/pdfjet/pdfjet-fonts-world/$version
-worldBase=$worldDir/pdfjet-fonts-world-$version
+dir=out/maven/stage/com/pdfjet/pdfjet/$packageVersion
+base=$dir/pdfjet-$packageVersion
+worldDir=out/maven/stage/com/pdfjet/pdfjet-fonts-world/$packageVersion
+worldBase=$worldDir/pdfjet-fonts-world-$packageVersion
 rm -rf out/maven/stage "$work" && mkdir -p "$dir" "$worldDir" "$work/docs" "$work/sources"
 
 # The jar, as released, and the European fonts PDFjet carries in it, so that
@@ -75,13 +101,13 @@ if [ "$(find "$work/world/com/pdfjet/fonts/world" -name '*.otf' | wc -l)" -ne 12
         "and the 21 of IBM Plex Sans Arabic, Hebrew and Thai" >&2; exit 1
 fi
 printf 'Automatic-Module-Name: com.pdfjet.fonts.world\nImplementation-Title: PDFjet world fonts\nImplementation-Version: %s\n' \
-    "$version" > "$work/world-manifest.txt"
+    "$packageVersion" > "$work/world-manifest.txt"
 jar --create --date="$date" --file "$worldBase.jar" --manifest "$work/world-manifest.txt" -C "$work/world" com
 # Maven Central asks every jar for a sources jar and a javadoc jar; this one
 # has no code, and they have a README that says so.
 mkdir -p "$work/world-readme"
 cat > "$work/world-readme/README.txt" <<README
-com.pdfjet:pdfjet-fonts-world $version has no code: it is the fonts PDFjet
+com.pdfjet:pdfjet-fonts-world $packageVersion has no code: it is the fonts PDFjet
 carries for Chinese, Japanese, Korean, Arabic, Hebrew and Thai, IBM Plex Sans
 JP, KR, SC and TC, Regular, SemiBold and Bold, and IBM Plex Sans Arabic,
 Hebrew and Thai, Thin to Bold, with their licenses (SIL Open Font License
@@ -101,8 +127,10 @@ jar --create --date="$date" --file "$base-javadoc.jar" -C "$work/docs/$top/docs/
 git archive "$ref" com/pdfjet | tar -x -C "$work/sources"
 jar --create --date="$date" --file "$base-sources.jar" -C "$work/sources" com
 
-sed -e "s/\$version\\$/$version/g" -e "s/\$commit\\$/$commit/g" maven/pdfjet.pom > "$base.pom"
-sed -e "s/\$version\\$/$version/g" -e "s/\$commit\\$/$commit/g" maven/pdfjet-fonts-world.pom > "$worldBase.pom"
+# The POMs of the same commit as the sources
+git archive "$commit" maven | tar -x -C "$work"
+sed -e "s/\$version\\$/$packageVersion/g" -e "s/\$commit\\$/$commit/g" "$work/maven/pdfjet.pom" > "$base.pom"
+sed -e "s/\$version\\$/$packageVersion/g" -e "s/\$commit\\$/$commit/g" "$work/maven/pdfjet-fonts-world.pom" > "$worldBase.pom"
 
 # The jar and the sources jar are of the same code: a class for each source
 # file, and a source for each class, declared in a file of its own name or
@@ -177,7 +205,7 @@ if [ -z "${PDFJET_UNSIGNED:-}" ]; then
     done
 fi
 
-bundle=out/maven/pdfjet-$version-bundle.zip
+bundle=out/maven/pdfjet-$packageVersion-bundle.zip
 rm -f "$bundle"
 (cd out/maven/stage && zip -q -r "../$(basename "$bundle")" com)
 echo "$bundle: $(du -h "$bundle" | cut -f1), $(unzip -Z1 "$bundle" | grep -vc '/$') files, from $(basename "$zip"), commit $commit"
