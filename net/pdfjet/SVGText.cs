@@ -20,7 +20,50 @@ internal class SVGText {
     // the svg element, and after the svg element is drawn at its size, to the
     // space of the image.
     internal double[] matrix;
-    internal readonly List<Run> runs = new List<Run>();
+    internal List<Run> runs = new List<Run>();
+
+    // A tspan with a systemLanguage: an image is read before the language is
+    // known, so all the runs are kept as they were read, and the ones drawn are
+    // chosen, placed and collapsed when it is drawn.
+    internal bool languages = false;
+    internal List<Run> all = null;
+    internal List<Move> moves = new List<Move>();   // Of the elements read since the last run
+
+    // The x, y, dx and dy of an element of a text, NaN where it has none, in the
+    // choices of the element: one that is not chosen does not move the first
+    // character after it, whose place stays with the elements around it.
+    internal sealed class Move {
+        internal readonly List<SVGImage.Choice> choices;
+        private readonly double[] at;
+
+        internal Move(List<SVGImage.Choice> choices, double[] at) {
+            this.choices = choices;
+            this.at = at;
+        }
+
+        // Adds the move to the x, y, dx and dy kept for the first character.
+        internal void ApplyTo(double[] pending) {
+            if (!double.IsNaN(at[0])) {
+                pending[0] = at[0];
+                pending[2] = 0.0;
+            }
+            if (!double.IsNaN(at[1])) {
+                pending[1] = at[1];
+                pending[3] = 0.0;
+            }
+            if (!double.IsNaN(at[2])) {
+                pending[2] += at[2];
+            }
+            if (!double.IsNaN(at[3])) {
+                pending[3] += at[3];
+            }
+        }
+    }
+
+    // Returns the x, y, dx and dy of no element, kept until the first character.
+    internal static double[] NoMove() {
+        return new double[] {double.NaN, double.NaN, 0.0, 0.0};
+    }
 
     // The characters of a text or a tspan element between the elements in it.
     internal sealed class Run {
@@ -44,6 +87,9 @@ internal class SVGText {
         internal JoinStyle lineJoin;
         internal float miterLimit;
         internal bool invisible;        // It keeps its place in the text, and a clip path leaves it out
+        internal List<SVGImage.Choice> choices;  // Those of its element, and of the text
+        internal List<Move> moves;      // Of the elements that start at the run
+        internal String read;           // The text as read, of a text with languages
 
         // Where the run is placed: its start, on its baseline, and its width.
         internal float px;
@@ -74,6 +120,42 @@ internal class SVGText {
             count += 1 + run.text.Length;
         }
         return count;
+    }
+
+    // Keeps the runs as they were read, for Choose.
+    internal void KeepRuns() {
+        all = new List<Run>(runs);
+        foreach (Run run in all) {
+            run.read = run.text;
+        }
+    }
+
+    // Makes the runs those of the language chosen, each where the moves of the
+    // elements chosen put it, and white space collapsed among them alone.
+    internal void Choose() {
+        if (all == null) {
+            return;
+        }
+        runs = new List<Run>(all.Count);
+        double[] pending = NoMove();
+        foreach (Run run in all) {
+            foreach (Move move in run.moves) {
+                if (SVGPath.AreChosen(move.choices)) {
+                    move.ApplyTo(pending);
+                }
+            }
+            if (!SVGPath.AreChosen(run.choices)) {
+                continue;
+            }
+            run.text = run.read;
+            run.x = pending[0];
+            run.y = pending[1];
+            run.dx = pending[2];
+            run.dy = pending[3];
+            pending = NoMove();
+            runs.Add(run);
+        }
+        CollapseSpaces();
     }
 
     // Collapses the white space of the runs as a browser does: a newline or a

@@ -22,7 +22,9 @@ namespace PDFjet.NET {
 /// style attribute or in rules for their classes in a style element that comes
 /// before them. It draws the elements a use element names, a symbol at the size
 /// of the use, a nested svg at its x, y and viewBox, the first child of a switch
-/// that it can draw, and text and tspan
+/// that it can draw and whose systemLanguage has the language of the PDF, which
+/// is known when the image is drawn, and, of any element, one whose
+/// systemLanguage has that language or that has none, and text and tspan
 /// elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
 /// dominant-baseline, in the font set with SetFont and SetBoldFont, or else
 /// in the fonts PDFjet carries, embedded: IBM Plex
@@ -81,6 +83,7 @@ public class SVGImage : IDrawable {
     private double[] marker = null;     // The viewport of the marker drawn next, in its user space
     private bool clipping = false;      // A text of a clip path is read, for each element it clips
     private Dictionary<XMLNode, Switch> switchOf;
+    private Dictionary<XMLNode, Switch> testOf;
     private List<Switch> switches = new List<Switch>();
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
@@ -139,6 +142,7 @@ public class SVGImage : IDrawable {
         ids = new Dictionary<String, XMLNode>();
         reusing = new HashSet<XMLNode>();
         switchOf = new Dictionary<XMLNode, Switch>();
+        testOf = new Dictionary<XMLNode, Switch>();
         List<XMLNode> elements = new List<XMLNode>();
         elements.Add(document);
         for (int i = 0; i < elements.Count; i++) {
@@ -329,6 +333,7 @@ public class SVGImage : IDrawable {
         if (TEMPLATES.Contains(name) && !used) {
             state.hidden = true;
         }
+        state.choices = WithLanguage(node, state.choices);
         if (state.clipPath != null && !state.hidden) {
             Clip(state, rules, stack.Count);
         }
@@ -454,6 +459,11 @@ public class SVGImage : IDrawable {
         internal readonly List<List<String>> languages = new List<List<String>>();
         internal int chosen = -1;   // The child drawn in the language of the PDF, or -1
 
+        // The test of the systemLanguage of an element: a switch of the one child.
+        internal Switch(List<String> languages) {
+            this.languages.Add(languages);
+        }
+
         internal Switch(XMLNode node) {
             foreach (XMLNode child in node.GetChildren()) {
                 if (!IsSwitchable(child)) {
@@ -524,6 +534,31 @@ public class SVGImage : IDrawable {
         return (language.Length == 0) ? "en" : language.ToLowerInvariant();
     }
 
+    // Returns the choices of an element with the test of its systemLanguage, by
+    // the rule of a switch. It is the same test each time the element is drawn,
+    // so the number of them is that of the file.
+    private List<Choice> WithLanguage(XMLNode node, List<Choice> choices) {
+        String value = node.GetAttribute("systemLanguage");
+        if (value == null) {
+            return choices;
+        }
+        Switch test;
+        if (!testOf.TryGetValue(node, out test)) {
+            test = new Switch(Languages(value));
+            testOf[node] = test;
+            switches.Add(test);
+        }
+        return WithChoice(choices, new Choice(test, 0));
+    }
+
+    // Returns the choices with one more, in a new list, as a state never changes
+    // them in place.
+    private static List<Choice> WithChoice(List<Choice> choices, Choice choice) {
+        List<Choice> with = (choices == null) ? new List<Choice>() : new List<Choice>(choices);
+        with.Add(choice);
+        return with;
+    }
+
     // Reads the children of the switch that may be drawn. A switch that is drawn
     // again by a use element is the same switch, so the number of switches is
     // that of the file.
@@ -537,9 +572,7 @@ public class SVGImage : IDrawable {
         SVGState state = stack[stack.Count - 1];
         List<Choice> choices = state.choices;
         for (int i = 0; i < choice.children.Count; i++) {
-            List<Choice> inChild = (choices == null) ? new List<Choice>() : new List<Choice>(choices);
-            inChild.Add(new Choice(choice, i));
-            state.choices = inChild;
+            state.choices = WithChoice(choices, new Choice(choice, i));
             Draw(choice.children[i], stack, rules, ref root, false);
         }
     }
@@ -548,6 +581,7 @@ public class SVGImage : IDrawable {
     private void PlaceTexts(List<SVGPath> paths, Page page) {
         foreach (SVGPath path in paths) {
             if (path.text != null) {
+                path.text.Choose();
                 foreach (SVGText.Run run in path.text.runs) {
                     run.font = FontOf(run, page.pdf);
                 }
@@ -1346,6 +1380,9 @@ public class SVGImage : IDrawable {
         SVGText text = new SVGText();
         text.matrix = state.matrix;
         AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0}, depth);
+        if (text.languages) {
+            text.KeepRuns();
+        }
         text.CollapseSpaces();
         return text;
     }
@@ -1362,24 +1399,13 @@ public class SVGImage : IDrawable {
         if (clipping) {
             CountOperations(1);
         }
-        double x = TextLength(Attribute(attributes, "x"), state.fontSize);
-        double y = TextLength(Attribute(attributes, "y"), state.fontSize);
-        double dx = TextLength(Attribute(attributes, "dx"), state.fontSize);
-        double dy = TextLength(Attribute(attributes, "dy"), state.fontSize);
-        if (!double.IsNaN(x)) {
-            pending[0] = x;
-            pending[2] = 0.0;
-        }
-        if (!double.IsNaN(y)) {
-            pending[1] = y;
-            pending[3] = 0.0;
-        }
-        if (!double.IsNaN(dx)) {
-            pending[2] += dx;
-        }
-        if (!double.IsNaN(dy)) {
-            pending[3] += dy;
-        }
+        SVGText.Move move = new SVGText.Move(state.choices, new double[] {
+            TextLength(Attribute(attributes, "x"), state.fontSize),
+            TextLength(Attribute(attributes, "y"), state.fontSize),
+            TextLength(Attribute(attributes, "dx"), state.fontSize),
+            TextLength(Attribute(attributes, "dy"), state.fontSize)});
+        move.ApplyTo(pending);
+        text.moves.Add(move);
         foreach (object item in node.GetContent()) {
             String characters = item as String;
             if (characters != null) {
@@ -1413,6 +1439,9 @@ public class SVGImage : IDrawable {
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;
                 run.miterLimit = state.miterLimit;
+                run.choices = state.choices;
+                run.moves = text.moves;
+                text.moves = new List<SVGText.Move>();
                 text.runs.Add(run);
             } else {
                 XMLNode child = (XMLNode) item;
@@ -1424,6 +1453,10 @@ public class SVGImage : IDrawable {
                 Dictionary<String, String> childAttributes = Attributes(child, childOrder);
                 SVGState childState = ElementState(state, rules, childAttributes, childOrder);
                 childState.matrix = state.matrix;   // A tspan has no transform
+                if (!clipping) {
+                    text.languages = text.languages || child.GetAttribute("systemLanguage") != null;
+                    childState.choices = WithLanguage(child, childState.choices);
+                }
                 if (!childState.hidden) {
                     AddRuns(text, child, rules, childState, childAttributes, pending, depth + 1);
                 }

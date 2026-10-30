@@ -35,7 +35,12 @@ type svgPath struct {
 
 // isChosen reports whether it is in the children chosen of the switches it is in.
 func (path *svgPath) isChosen() bool {
-	for _, choice := range path.choices {
+	return svgAreChosen(path.choices)
+}
+
+// svgAreChosen reports whether each of the choices is the child chosen.
+func svgAreChosen(choices []svgChoice) bool {
+	for _, choice := range choices {
 		if choice.of.chosen != choice.child {
 			return false
 		}

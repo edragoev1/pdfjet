@@ -38,6 +38,11 @@ class SVGPath {
 
     // Returns true when it is in the children chosen of the switches it is in.
     boolean isChosen() {
+        return areChosen(choices);
+    }
+
+    // Returns true when each of the choices is the child chosen.
+    static boolean areChosen(List<SVGImage.Choice> choices) {
         if (choices != null) {
             for (SVGImage.Choice choice : choices) {
                 if (!choice.isChosen()) {

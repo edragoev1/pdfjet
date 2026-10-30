@@ -30,7 +30,8 @@ import java.util.Set;
  * before them. It draws the elements a use element names, a symbol at the size
  * of the use, a nested svg at its x, y and viewBox, the first child of a switch
  * that it can draw and whose systemLanguage has the language of the PDF, which
- * is known when the image is drawn, and text and tspan
+ * is known when the image is drawn, and, of any element, one whose
+ * systemLanguage has that language or that has none, and text and tspan
  * elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
  * dominant-baseline, in the font set with setFont and setBoldFont, or else
  * in the fonts PDFjet carries, embedded: IBM Plex
@@ -88,6 +89,7 @@ public class SVGImage implements Drawable {
     private double[] marker = null;     // The viewport of the marker drawn next, in its user space
     private boolean clipping = false;   // A text of a clip path is read, for each element it clips
     private Map<XMLNode, Switch> switchOf;
+    private Map<XMLNode, Switch> testOf;
     private List<Switch> switches = new ArrayList<Switch>();
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
@@ -148,6 +150,7 @@ public class SVGImage implements Drawable {
         ids = new HashMap<String, XMLNode>();
         reusing = new HashSet<XMLNode>();
         switchOf = new HashMap<XMLNode, Switch>();
+        testOf = new HashMap<XMLNode, Switch>();
         List<XMLNode> elements = new ArrayList<XMLNode>();
         elements.add(document);
         for (int i = 0; i < elements.size(); i++) {
@@ -332,6 +335,7 @@ public class SVGImage implements Drawable {
         if (TEMPLATES.contains(name) && !used) {
             state.hidden = true;
         }
+        state.choices = withLanguage(node, state.choices);
         if (state.clipPath != null && !state.hidden) {
             clip(state, colorMap, rules, stack.size());
         }
@@ -456,6 +460,11 @@ public class SVGImage implements Drawable {
         final List<List<String>> languages = new ArrayList<List<String>>();
         int chosen = -1;    // The child drawn in the language of the PDF, or -1
 
+        // The test of the systemLanguage of an element: a switch of the one child.
+        Switch(List<String> languages) {
+            this.languages.add(languages);
+        }
+
         Switch(XMLNode node) {
             for (XMLNode child : node.getChildren()) {
                 if (!isSwitchable(child)) {
@@ -526,6 +535,31 @@ public class SVGImage implements Drawable {
         return language.isEmpty() ? "en" : language.toLowerCase(Locale.ROOT);
     }
 
+    // Returns the choices of an element with the test of its systemLanguage, by
+    // the rule of a switch. It is the same test each time the element is drawn,
+    // so the number of them is that of the file.
+    private List<Choice> withLanguage(XMLNode node, List<Choice> choices) {
+        String value = node.getAttribute("systemLanguage");
+        if (value == null) {
+            return choices;
+        }
+        Switch test = testOf.get(node);
+        if (test == null) {
+            test = new Switch(languages(value));
+            testOf.put(node, test);
+            switches.add(test);
+        }
+        return withChoice(choices, new Choice(test, 0));
+    }
+
+    // Returns the choices with one more, in a new list, as a state never changes
+    // them in place.
+    private static List<Choice> withChoice(List<Choice> choices, Choice choice) {
+        List<Choice> with = (choices == null) ? new ArrayList<Choice>() : new ArrayList<Choice>(choices);
+        with.add(choice);
+        return with;
+    }
+
     // Reads the children of the switch that may be drawn. A switch that is drawn
     // again by a use element is the same switch, so the number of switches is
     // that of the file.
@@ -540,9 +574,7 @@ public class SVGImage implements Drawable {
         SVGState state = stack.get(stack.size() - 1);
         List<Choice> choices = state.choices;
         for (int i = 0; i < choice.children.size(); i++) {
-            List<Choice> inChild = (choices == null) ? new ArrayList<Choice>() : new ArrayList<Choice>(choices);
-            inChild.add(new Choice(choice, i));
-            state.choices = inChild;
+            state.choices = withChoice(choices, new Choice(choice, i));
             draw(choice.children.get(i), colorMap, rules, stack, root, false);
         }
     }
@@ -551,6 +583,7 @@ public class SVGImage implements Drawable {
     private void placeTexts(List<SVGPath> paths, Page page) {
         for (SVGPath path : paths) {
             if (path.text != null) {
+                path.text.choose();
                 for (SVGText.Run run : path.text.runs) {
                     run.font = fontOf(run, page.pdf);
                 }
@@ -1331,6 +1364,9 @@ public class SVGImage implements Drawable {
         SVGText text = new SVGText();
         text.matrix = state.matrix;
         addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0}, depth);
+        if (text.languages) {
+            text.keepRuns();
+        }
         text.collapseSpaces();
         return text;
     }
@@ -1347,24 +1383,13 @@ public class SVGImage implements Drawable {
         if (clipping) {
             countOperations(1);
         }
-        double x = textLength(attribute(attributes, "x"), state.fontSize);
-        double y = textLength(attribute(attributes, "y"), state.fontSize);
-        double dx = textLength(attribute(attributes, "dx"), state.fontSize);
-        double dy = textLength(attribute(attributes, "dy"), state.fontSize);
-        if (!Double.isNaN(x)) {
-            pending[0] = x;
-            pending[2] = 0.0;
-        }
-        if (!Double.isNaN(y)) {
-            pending[1] = y;
-            pending[3] = 0.0;
-        }
-        if (!Double.isNaN(dx)) {
-            pending[2] += dx;
-        }
-        if (!Double.isNaN(dy)) {
-            pending[3] += dy;
-        }
+        SVGText.Move move = new SVGText.Move(state.choices, new double[] {
+                textLength(attribute(attributes, "x"), state.fontSize),
+                textLength(attribute(attributes, "y"), state.fontSize),
+                textLength(attribute(attributes, "dx"), state.fontSize),
+                textLength(attribute(attributes, "dy"), state.fontSize)});
+        move.applyTo(pending);
+        text.moves.add(move);
         for (Object item : node.getContent()) {
             if (item instanceof String) {
                 SVGText.Run run = new SVGText.Run();
@@ -1397,6 +1422,9 @@ public class SVGImage implements Drawable {
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;
                 run.miterLimit = state.miterLimit;
+                run.choices = state.choices;
+                run.moves = text.moves;
+                text.moves = new ArrayList<SVGText.Move>();
                 text.runs.add(run);
             } else {
                 XMLNode child = (XMLNode) item;
@@ -1408,6 +1436,10 @@ public class SVGImage implements Drawable {
                 Map<String, String> childAttributes = attributes(child, childOrder);
                 SVGState childState = elementState(state, colorMap, rules, childAttributes, childOrder);
                 childState.matrix = state.matrix;   // A tspan has no transform
+                if (!clipping) {
+                    text.languages = text.languages || child.getAttribute("systemLanguage") != null;
+                    childState.choices = withLanguage(child, childState.choices);
+                }
                 if (!childState.hidden) {
                     addRuns(text, child, colorMap, rules, childState, childAttributes, pending, depth + 1);
                 }

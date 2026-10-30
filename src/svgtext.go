@@ -29,6 +29,45 @@ type svgText struct {
 	// space of the image.
 	matrix [6]float64
 	runs   []*svgTextRun
+
+	// A tspan with a systemLanguage: an image is read before the language is
+	// known, so all the runs are kept as they were read, and the ones drawn
+	// are chosen, placed and collapsed when it is drawn.
+	languages bool
+	all       []*svgTextRun
+	moves     []svgTextMove // Of the elements read since the last run
+}
+
+// svgTextMove is the x, y, dx and dy of an element of a text, NaN where it has
+// none, in the choices of the element: one that is not chosen does not move
+// the first character after it, whose place stays with the elements around it.
+type svgTextMove struct {
+	at      [4]float64
+	choices []svgChoice
+}
+
+// newSVGPending returns the x, y, dx and dy of no element, kept until the first
+// character.
+func newSVGPending() [4]float64 {
+	return [4]float64{math.NaN(), math.NaN(), 0, 0}
+}
+
+// applyTo adds the move to the x, y, dx and dy kept for the first character.
+func (move *svgTextMove) applyTo(pending *[4]float64) {
+	if !math.IsNaN(move.at[0]) {
+		pending[0] = move.at[0]
+		pending[2] = 0.0
+	}
+	if !math.IsNaN(move.at[1]) {
+		pending[1] = move.at[1]
+		pending[3] = 0.0
+	}
+	if !math.IsNaN(move.at[2]) {
+		pending[2] += move.at[2]
+	}
+	if !math.IsNaN(move.at[3]) {
+		pending[3] += move.at[3]
+	}
 }
 
 // svgTextRun holds the characters of a text or a tspan element between the
@@ -51,7 +90,10 @@ type svgTextRun struct {
 	strokeFirst bool
 	miterLimit  float32
 	lineJoin    joinstyle.JoinStyle
-	invisible   bool // It keeps its place in the text, and a clip path leaves it out
+	invisible   bool          // It keeps its place in the text, and a clip path leaves it out
+	choices     []svgChoice   // Those of its element, and of the text
+	moves       []svgTextMove // Of the elements that start at the run
+	read        string        // The text as read, of a text with languages
 
 	// Where the run is placed: its start, on its baseline, and its width.
 	px, py float32
@@ -81,6 +123,39 @@ func (text *svgText) operations() int {
 		count += 1 + utf8.RuneCountInString(run.text)
 	}
 	return count
+}
+
+// keepRuns keeps the runs as they were read, for choose.
+func (text *svgText) keepRuns() {
+	text.all = append(text.all, text.runs...)
+	for _, run := range text.all {
+		run.read = run.text
+	}
+}
+
+// choose makes the runs those of the language chosen, each where the moves of
+// the elements chosen put it, and white space collapsed among them alone.
+func (text *svgText) choose() {
+	if text.all == nil {
+		return
+	}
+	text.runs = make([]*svgTextRun, 0, len(text.all))
+	pending := newSVGPending()
+	for _, run := range text.all {
+		for i := range run.moves {
+			if svgAreChosen(run.moves[i].choices) {
+				run.moves[i].applyTo(&pending)
+			}
+		}
+		if !svgAreChosen(run.choices) {
+			continue
+		}
+		run.text = run.read
+		run.x, run.y, run.dx, run.dy = pending[0], pending[1], pending[2], pending[3]
+		pending = newSVGPending()
+		text.runs = append(text.runs, run)
+	}
+	text.collapseSpaces()
 }
 
 // collapseSpaces collapses the white space of the runs as a browser does: a

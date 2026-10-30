@@ -1574,4 +1574,120 @@ class SVGImageTest {
             assertTrue(content.contains("f\n"), test[0] + " " + content);
         }
     }
+
+    @Test
+    void anyElementHonorsTheSystemLanguage() throws Exception {
+        // The rule of a switch: the primary subtag of the language of the PDF, en
+        // when it has none, and an empty systemLanguage matches none.
+        for (String[] test : new String[][] {
+            {"de", "de", "true"},
+            {"de", "de-AT", "true"},
+            {"de-CH", "de", "true"},
+            {"DE", "de", "true"},
+            {"fr, de", "de", "true"},
+            {"de", "", "false"},
+            {"en", "", "true"},
+            {"en-GB", "en-US", "true"},
+            {"de", "en", "false"},
+            {"", "en", "false"},
+            {"", "", "false"},
+            {" , ", "de", "false"},
+        }) {
+            String content = drawInLanguage("<svg width=\"100\" height=\"100\"><rect width=\"5\" height=\"5\" systemLanguage=\"" + test[0] + "\"/></svg>", test[1]);
+            assertEquals(test[2].equals("true"), !content.isEmpty(), test[0] + " in " + test[1] + ": " + content);
+        }
+        // The element and what is in it, in every kind of element that draws, and
+        // through what is around it.
+        for (String body : new String[] {
+            "<g systemLanguage=\"de\"><rect width=\"5\" height=\"5\"/></g>",
+            "<g systemLanguage=\"de\"><g><g><rect width=\"5\" height=\"5\"/></g></g></g>",
+            "<a systemLanguage=\"de\" href=\"https://example.com\"><rect width=\"5\" height=\"5\"/></a>",
+            "<svg systemLanguage=\"de\" width=\"50\" height=\"50\"><rect width=\"5\" height=\"5\"/></svg>",
+            "<circle systemLanguage=\"de\" r=\"5\"/>",
+            "<ellipse systemLanguage=\"de\" rx=\"5\" ry=\"5\"/>",
+            "<line systemLanguage=\"de\" x2=\"5\" y2=\"5\" stroke=\"black\"/>",
+            "<path systemLanguage=\"de\" d=\"M0 0 L5 5 L0 5 Z\"/>",
+            "<polygon systemLanguage=\"de\" points=\"0,0 5,5 0,5\"/>",
+            "<polyline systemLanguage=\"de\" points=\"0,0 5,5 0,5\"/>",
+            "<text systemLanguage=\"de\" y=\"10\">a</text>",
+            "<rect id=\"r\" systemLanguage=\"de\" width=\"5\" height=\"5\"/><use href=\"#r\"/>",
+            "<defs><rect id=\"r\" width=\"5\" height=\"5\"/></defs><use systemLanguage=\"de\" href=\"#r\"/>",
+            "<defs><rect id=\"r\" systemLanguage=\"de\" width=\"5\" height=\"5\"/></defs><use href=\"#r\"/>",
+            "<symbol id=\"s\" systemLanguage=\"de\" viewBox=\"0 0 5 5\"><rect width=\"5\" height=\"5\"/></symbol><use href=\"#s\"/>",
+            "<symbol id=\"s\" viewBox=\"0 0 5 5\"><g systemLanguage=\"de\"><rect width=\"5\" height=\"5\"/></g></symbol><use href=\"#s\"/>",
+            "<marker id=\"m\" systemLanguage=\"de\"><rect width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L9 9\" fill=\"none\" marker-end=\"url(#m)\"/>",
+            "<marker id=\"m\"><rect systemLanguage=\"de\" width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L9 9\" fill=\"none\" marker-end=\"url(#m)\"/>",
+            "<marker id=\"m\"><rect width=\"5\" height=\"5\"/></marker><path systemLanguage=\"de\" d=\"M0 0 L9 9\" fill=\"none\" marker-end=\"url(#m)\"/>",
+            "<switch systemLanguage=\"de\"><rect width=\"5\" height=\"5\"/></switch>",
+            "<switch systemLanguage=\"de\"><rect systemLanguage=\"en\" width=\"5\" height=\"5\"/><rect width=\"5\" height=\"5\"/></switch>",
+            "<switch><g systemLanguage=\"en\"><rect systemLanguage=\"de\" width=\"5\" height=\"5\"/></g></switch>",
+        }) {
+            String svg = "<svg width=\"100\" height=\"100\">" + body + "</svg>";
+            assertEquals("", drawInLanguage(svg, "en"), body);
+            assertTrue(!drawInLanguage(svg, "de").isEmpty() || body.contains("systemLanguage=\"en\""), body);
+        }
+        // A template is not drawn for matching, and what matches beside it is.
+        assertEquals("", drawInLanguage("<svg width=\"100\" height=\"100\"><defs systemLanguage=\"en\"><rect width=\"5\" height=\"5\"/></defs></svg>", "en"));
+        String beside = drawInLanguage("<svg width=\"100\" height=\"100\"><rect systemLanguage=\"de\" width=\"5\" height=\"5\" fill=\"red\"/><rect systemLanguage=\"en\" width=\"5\" height=\"5\" fill=\"lime\"/></svg>", "en");
+        assertTrue(!beside.contains("1 0 0 rg") && beside.split(" rg\n", -1).length == 2, beside);
+        // One image, drawn in the language of each PDF.
+        SVGImage image = new SVGImage(new ByteArrayInputStream("<svg width=\"100\" height=\"100\"><g systemLanguage=\"de\"><rect width=\"5\" height=\"5\" fill=\"red\"/></g><g systemLanguage=\"en\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></g></svg>".getBytes(StandardCharsets.UTF_8)));
+        for (String[] test : new String[][] {{"de", "1 0 0 rg"}, {"en", "0 0 1 rg"}, {"de", "1 0 0 rg"}}) {
+            PDF pdf = TestSupport.newPDF();
+            pdf.setLanguage(test[0]);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            image.drawOn(page);
+            String drawn = TestSupport.content(page);
+            assertTrue(drawn.contains(test[1]) && drawn.split(" rg\n", -1).length == 2, test[0] + " " + drawn);
+        }
+        // What is not drawn leaves no cut for itself.
+        assertFalse(drawInLanguage("<svg width=\"100\" height=\"100\"><path systemLanguage=\"de\" d=\"M0 0 L900 900\" stroke=\"blue\"/><rect width=\"5\" height=\"5\"/></svg>", "en").contains("W\n"));
+        // The limits count what is read: the language is known when it is drawn.
+        String nested = "<svg width=\"100\" height=\"100\">" + repeat("<g systemLanguage=\"de\">", SVGImage.MAX_DEPTH + 1) + repeat("</g>", SVGImage.MAX_DEPTH + 1) + "</svg>";
+        assertThrows(Exception.class, () -> read(nested));
+    }
+
+    @Test
+    void aTspanHonorsTheSystemLanguage() throws Exception {
+        for (String[] test : new String[][] {
+            // What it would have started at goes to the next that is drawn.
+            {"<text x=\"10\" y=\"20\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan systemLanguage=\"en\">Hello</tspan></text>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            // Its own place goes with it.
+            {"<text x=\"10\" y=\"20\"><tspan systemLanguage=\"de\" x=\"50\" y=\"60\" dx=\"3\" dy=\"4\">Hallo</tspan><tspan systemLanguage=\"en\">Hello</tspan></text>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            {"<text x=\"10\" y=\"20\"><tspan systemLanguage=\"de\" x=\"50\">Hallo</tspan>Hello</text>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            // A place of its own in the run after it stays.
+            {"<text y=\"20\"><tspan systemLanguage=\"de\" x=\"50\">Hallo</tspan><tspan x=\"70\">Hello</tspan></text>", "<text y=\"20\" x=\"70\">Hello</text>"},
+            {"<text x=\"10\" y=\"20\" dx=\"2\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan dx=\"3\">Hello</tspan></text>", "<text x=\"10\" y=\"20\" dx=\"5\">Hello</text>"},
+            // Spaces collapse among what is drawn.
+            {"<text x=\"10\" y=\"20\"> <tspan systemLanguage=\"de\">Hallo</tspan> <tspan systemLanguage=\"en\">Hello</tspan> </text>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            {"<text x=\"10\" y=\"20\">Hello <tspan systemLanguage=\"de\">Welt</tspan> <tspan systemLanguage=\"de\">x</tspan></text>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            {"<text x=\"10\" y=\"20\">a<tspan systemLanguage=\"de\"> b</tspan> c</text>", "<text x=\"10\" y=\"20\">a<tspan> c</tspan></text>"},
+            // In a tspan, and what is in it.
+            {"<text x=\"10\" y=\"20\"><tspan systemLanguage=\"de\" x=\"50\"><tspan x=\"60\">Hallo</tspan></tspan><tspan>Hello</tspan></text>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            {"<text x=\"10\" y=\"20\"><tspan systemLanguage=\"en\">He<tspan systemLanguage=\"de\">xx</tspan>llo</tspan></text>", "<text x=\"10\" y=\"20\">He<tspan>llo</tspan></text>"},
+            // In an a, as a text has them, and of a used text.
+            {"<text x=\"10\" y=\"20\"><a systemLanguage=\"de\">Hallo</a>Hello</text>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            {"<defs><text id=\"t\" x=\"10\" y=\"20\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan>Hello</tspan></text></defs><use href=\"#t\"/>", "<text x=\"10\" y=\"20\">Hello</text>"},
+            // A text-anchor, of the runs drawn.
+            {"<text x=\"100\" y=\"20\" text-anchor=\"end\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan>Hello</tspan></text>", "<text x=\"100\" y=\"20\" text-anchor=\"end\">Hello</text>"},
+        }) {
+            String content = drawInLanguage("<svg width=\"200\" height=\"100\">" + test[0] + "</svg>", "en");
+            assertEquals(drawInLanguage("<svg width=\"200\" height=\"100\">" + test[1] + "</svg>", "en"), content, test[0]);
+            assertFalse(content.isEmpty(), test[0]);
+        }
+        // All of it left out: nothing.
+        assertEquals("", drawInLanguage("<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\"><tspan systemLanguage=\"de\">Hallo</tspan></text></svg>", "en"));
+        // One image, in the language of each PDF, each drawing it as read.
+        SVGImage image = new SVGImage(new ByteArrayInputStream("<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\"> <tspan systemLanguage=\"de\" dx=\"7\">Hallo</tspan> <tspan systemLanguage=\"en\">Hello</tspan> </text></svg>".getBytes(StandardCharsets.UTF_8)));
+        image.setLocation(0f, 0f);
+        for (String[] test : new String[][] {{"en", "<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\">Hello</text></svg>"}, {"de", "<svg width=\"200\" height=\"100\"><text x=\"17\" y=\"20\">Hallo</text></svg>"}, {"en", "<svg width=\"200\" height=\"100\"><text x=\"10\" y=\"20\">Hello</text></svg>"}}) {
+            PDF pdf = TestSupport.newPDF();
+            pdf.setLanguage(test[0]);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            image.drawOn(page);
+            assertEquals(drawInLanguage(test[1], test[0]), TestSupport.content(page));
+        }
+        // A clipPath reads its shapes and texts with no language.
+        assertFalse(drawInLanguage("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><text y=\"20\"><tspan systemLanguage=\"de\">Hallo</tspan></text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>", "en").isEmpty());
+    }
 }

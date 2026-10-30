@@ -86,7 +86,8 @@ type svgReader struct {
 	counted  int64     // The operations maxSVGOperations limits
 	marker   []float64 // The viewport of the marker drawn next, in its user space, or nil
 	switches map[*xmlparser.XMLNode]*svgSwitch
-	clipping bool // A text of a clip path is read, for each element it clips
+	tests    map[*xmlparser.XMLNode]*svgSwitch // Those of the systemLanguage of an element
+	clipping bool                              // A text of a clip path is read, for each element it clips
 }
 
 // NewSVGImageFromFile reads and parses an svgParser image from a file.
@@ -116,7 +117,8 @@ var svgTemplates = map[string]bool{
 // comes before them. It draws the elements a <use> element names, a <symbol>
 // at the size of the <use>, a nested <svg> at its x, y and viewBox, the first
 // child of a <switch> that it can draw and whose systemLanguage has the language
-// of the PDF, which is known when the image is drawn, and <text>
+// of the PDF, which is known when the image is drawn, and, of any element, one
+// whose systemLanguage has that language or that has none, and <text>
 // and <tspan> elements with their x, y, dx, dy, font-size, font-weight,
 // text-anchor and dominant-baseline, in the font set with SetFont and
 // SetBoldFont, or else in the fonts PDFjet carries, embedded: IBM Plex Sans
@@ -156,6 +158,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 		ids:      make(map[string]*xmlparser.XMLNode),
 		reusing:  make(map[*xmlparser.XMLNode]bool),
 		switches: make(map[*xmlparser.XMLNode]*svgSwitch),
+		tests:    make(map[*xmlparser.XMLNode]*svgSwitch),
 	}
 	// The first element of an id, from the top down, is the one it names.
 	elements := []*xmlparser.XMLNode{document}
@@ -373,6 +376,7 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	if svgTemplates[name] && !used {
 		state.hidden = true
 	}
+	state.choices = r.withLanguage(node, state.choices)
 	if state.clipPath != "" && !state.hidden {
 		if err := r.clip(&state); err != nil {
 			return err
@@ -565,6 +569,32 @@ func svgPrimaryLanguage(language string) string {
 	return strings.ToLower(language)
 }
 
+// withLanguage returns the choices of an element with the test of its
+// systemLanguage, by the rule of a switch: a switch of the one child. It is the
+// same test each time the element is drawn, so the number of them is that of
+// the file.
+func (r *svgReader) withLanguage(node *xmlparser.XMLNode, choices []svgChoice) []svgChoice {
+	value, ok := node.Attribute("systemLanguage")
+	if !ok {
+		return choices
+	}
+	test := r.tests[node]
+	if test == nil {
+		test = &svgSwitch{languages: [][]string{svgLanguages(value)}}
+		r.tests[node] = test
+		r.image.switches = append(r.image.switches, test)
+	}
+	return svgWithChoice(choices, svgChoice{test, 0})
+}
+
+// svgWithChoice returns the choices with one more, in a new slice, as a state
+// never changes them in place.
+func svgWithChoice(choices []svgChoice, choice svgChoice) []svgChoice {
+	with := make([]svgChoice, 0, len(choices)+1)
+	with = append(with, choices...)
+	return append(with, choice)
+}
+
 // choose chooses the first child that has the language, or no systemLanguage.
 func (choice *svgSwitch) choose(language string) {
 	choice.chosen = -1
@@ -589,9 +619,7 @@ func (r *svgReader) drawSwitch(node *xmlparser.XMLNode) error {
 	top := len(r.stack) - 1
 	choices := r.stack[top].choices
 	for i, child := range choice.children {
-		inChild := make([]svgChoice, 0, len(choices)+1)
-		inChild = append(inChild, choices...)
-		r.stack[top].choices = append(inChild, svgChoice{choice, i})
+		r.stack[top].choices = svgWithChoice(choices, svgChoice{choice, i})
 		if err := r.draw(child, false); err != nil {
 			return err
 		}
@@ -1398,9 +1426,12 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 func (r *svgReader) readText(node *xmlparser.XMLNode, state svgState, attributes map[string]string) (*svgText, error) {
 	text := new(svgText)
 	text.matrix = state.matrix
-	pending := [4]float64{math.NaN(), math.NaN(), 0, 0}
+	pending := newSVGPending()
 	if err := r.addRuns(text, node, state, attributes, &pending, len(r.stack)); err != nil {
 		return nil, err
+	}
+	if text.languages {
+		text.keepRuns()
 	}
 	text.collapseSpaces()
 	return text, nil
@@ -1419,24 +1450,14 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 			return err
 		}
 	}
-	x := svgTextLength(attributes["x"], state.fontSize)
-	y := svgTextLength(attributes["y"], state.fontSize)
-	dx := svgTextLength(attributes["dx"], state.fontSize)
-	dy := svgTextLength(attributes["dy"], state.fontSize)
-	if !math.IsNaN(x) {
-		pending[0] = x
-		pending[2] = 0.0
-	}
-	if !math.IsNaN(y) {
-		pending[1] = y
-		pending[3] = 0.0
-	}
-	if !math.IsNaN(dx) {
-		pending[2] += dx
-	}
-	if !math.IsNaN(dy) {
-		pending[3] += dy
-	}
+	move := svgTextMove{choices: state.choices, at: [4]float64{
+		svgTextLength(attributes["x"], state.fontSize),
+		svgTextLength(attributes["y"], state.fontSize),
+		svgTextLength(attributes["dx"], state.fontSize),
+		svgTextLength(attributes["dy"], state.fontSize),
+	}}
+	move.applyTo(pending)
+	text.moves = append(text.moves, move)
 	for _, item := range node.Content() {
 		switch item := item.(type) {
 		case string:
@@ -1460,7 +1481,10 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				strokeFirst: state.strokeFirst,
 				lineJoin:    state.lineJoin,
 				miterLimit:  state.miterLimit,
+				choices:     state.choices,
+				moves:       text.moves,
 			}
+			text.moves = nil
 			if state.fillCurrent {
 				run.fill = state.color
 			}
@@ -1473,7 +1497,7 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				run.stroke = color.Transparent
 				run.invisible = true
 			}
-			*pending = [4]float64{math.NaN(), math.NaN(), 0, 0}
+			*pending = newSVGPending()
 			text.runs = append(text.runs, run)
 		case *xmlparser.XMLNode:
 			name := item.LocalName()
@@ -1486,6 +1510,11 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				return err
 			}
 			childState.matrix = state.matrix // A tspan has no transform
+			if !r.clipping {
+				_, language := item.Attribute("systemLanguage")
+				text.languages = text.languages || language
+				childState.choices = r.withLanguage(item, childState.choices)
+			}
 			if !childState.hidden {
 				if err := r.addRuns(text, item, childState, childAttributes, pending, depth+1); err != nil {
 					return err
@@ -2197,6 +2226,7 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	for _, drawn := range [][]*svgPath{paths, image.clipShapes} {
 		for _, path := range drawn {
 			if path.text != nil {
+				path.text.choose()
 				for _, run := range path.text.runs {
 					run.font = image.fontOf(run, page.pdf)
 				}

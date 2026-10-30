@@ -40,6 +40,7 @@ public class SVGImage : Drawable {
     private var marker: [Double]?           // The viewport of the marker drawn next, in its user space
     private var clipping = false    // A text of a clip path is read, for each element it clips
     private var switchOf = [ObjectIdentifier: Switch]()
+    private var testOf = [ObjectIdentifier: Switch]()
     private var switches = [Switch]()
     private var rules = SVGStyleSheet()
     private var stack = [SVGState]()
@@ -102,7 +103,8 @@ public class SVGImage : Drawable {
      * elements a <use> element names, a <symbol> at the size of the <use>, a
      * nested <svg> at its x, y and viewBox, the first child of a <switch> that
      * it can draw and whose systemLanguage has the language of the PDF, which
-     * is known when the image is drawn, and <text> and <tspan> elements with
+     * is known when the image is drawn, and, of any element, one whose
+     * systemLanguage has that language or that has none, and <text> and <tspan> elements with
      * their x, y, dx, dy, font-size, font-weight, text-anchor and
      * dominant-baseline, in the font set with setFont and setBoldFont, or
      * else in the fonts PDFjet carries, embedded: IBM
@@ -336,6 +338,7 @@ public class SVGImage : Drawable {
         if SVGImage.templates.contains(name) && !used {
             state.hidden = true
         }
+        state.choices = withLanguage(node, state.choices)
         if state.clipPath != nil && !state.hidden {
             try clip(&state)
         }
@@ -485,6 +488,23 @@ public class SVGImage : Drawable {
             stack[top].choices = choices + [Choice(of: choice, child: i)]
             try draw(child, false)
         }
+    }
+
+    // Returns the choices of an element with the test of its systemLanguage, by
+    // the rule of a switch. It is the same test each time the element is drawn,
+    // so the number of them is that of the file.
+    private func withLanguage(_ node: PDFjetXMLNode, _ choices: [Choice]?) -> [Choice]? {
+        guard let value = node.getAttribute("systemLanguage") else {
+            return choices
+        }
+        let id = ObjectIdentifier(node)
+        var test = testOf[id]
+        if test == nil {
+            test = Switch(languages: SVGImage.languages(value))
+            testOf[id] = test
+            switches.append(test!)
+        }
+        return (choices ?? []) + [Choice(of: test!, child: 0)]
     }
 
     // Returns the paths drawn in the language of the PDF, those in a child of a
@@ -1214,6 +1234,9 @@ public class SVGImage : Drawable {
         text.matrix = state.matrix
         var pending = [Double.nan, Double.nan, 0.0, 0.0]
         try addRuns(text, node, state, attributes, &pending, stack.count)
+        if text.languages {
+            text.keepRuns()
+        }
         text.collapseSpaces()
         return text
     }
@@ -1230,24 +1253,13 @@ public class SVGImage : Drawable {
         if clipping {
             try countOperations(1)
         }
-        let x = SVGImage.textLength(attributes["x"] ?? "", state.fontSize)
-        let y = SVGImage.textLength(attributes["y"] ?? "", state.fontSize)
-        let dx = SVGImage.textLength(attributes["dx"] ?? "", state.fontSize)
-        let dy = SVGImage.textLength(attributes["dy"] ?? "", state.fontSize)
-        if !x.isNaN {
-            pending[0] = x
-            pending[2] = 0.0
-        }
-        if !y.isNaN {
-            pending[1] = y
-            pending[3] = 0.0
-        }
-        if !dx.isNaN {
-            pending[2] += dx
-        }
-        if !dy.isNaN {
-            pending[3] += dy
-        }
+        let move = SVGText.Move(choices: state.choices, at: [
+                SVGImage.textLength(attributes["x"] ?? "", state.fontSize),
+                SVGImage.textLength(attributes["y"] ?? "", state.fontSize),
+                SVGImage.textLength(attributes["dx"] ?? "", state.fontSize),
+                SVGImage.textLength(attributes["dy"] ?? "", state.fontSize)])
+        move.apply(to: &pending)
+        text.moves.append(move)
         for item in node.getContent() {
             switch item {
             case .text(let characters):
@@ -1278,6 +1290,9 @@ public class SVGImage : Drawable {
                 run.strokeFirst = state.strokeFirst
                 run.lineJoin = state.lineJoin
                 run.miterLimit = state.miterLimit
+                run.choices = state.choices
+                run.moves = text.moves
+                text.moves = []
                 text.runs.append(run)
             case .element(let child):
                 let name = child.getLocalName()
@@ -1288,6 +1303,10 @@ public class SVGImage : Drawable {
                 let childAttributes = SVGImage.attributes(child, &childOrder)
                 var childState = try elementState(state, childAttributes, childOrder)
                 childState.matrix = state.matrix    // A tspan has no transform
+                if !clipping {
+                    text.languages = text.languages || child.getAttribute("systemLanguage") != nil
+                    childState.choices = withLanguage(child, childState.choices)
+                }
                 if !childState.hidden {
                     try addRuns(text, child, childState, childAttributes, &pending, depth + 1)
                 }
@@ -1970,6 +1989,7 @@ public class SVGImage : Drawable {
         // other ports throw; the figure is closed, empty
         for path in paths + clipShapes {
             if let text = path.text {
+                text.choose()
                 for run in text.runs {
                     guard let font = fontOf(run, page.pdf) else {
                         page.addEMC()
@@ -2041,6 +2061,11 @@ private final class Switch {
     var children = [PDFjetXMLNode]()
     var languages = [[String]?]()
     var chosen = -1     // The child drawn in the language of the PDF, or -1
+
+    // The test of the systemLanguage of an element: a switch of the one child.
+    init(languages: [String]) {
+        self.languages = [languages]
+    }
 
     init(_ node: PDFjetXMLNode) {
         for child in node.getChildren() {

@@ -30,6 +30,11 @@ class SVGPath {
 
     // Returns true when it is in the children chosen of the switches it is in.
     func isChosen() -> Bool {
+        return SVGPath.areChosen(choices)
+    }
+
+    // Returns true when each of the choices is the child chosen.
+    static func areChosen(_ choices: [Choice]?) -> Bool {
         return choices?.allSatisfy { $0.isChosen() } ?? true
     }
 }

@@ -1667,3 +1667,143 @@ func TestSVGImageAnOverflowOfInheritTakesThatOfTheParent(t *testing.T) {
 		}
 	}
 }
+
+func TestSVGImageAnyElementHonorsTheSystemLanguage(t *testing.T) {
+	const svg, end = `<svg width="100" height="100">`, `</svg>`
+	const rect = `<rect width="5" height="5"/>`
+	const de, en = `systemLanguage="de"`, `systemLanguage="en"`
+	drawn := func(body, language string) string {
+		return testDrawSVGInLanguage(t, svg+body+end, language)
+	}
+	// The rule of a switch: the primary subtag of the language of the PDF, en
+	// when it has none, and an empty systemLanguage matches none.
+	for _, test := range []struct {
+		value, language string
+		want            bool
+	}{
+		{"de", "de", true}, {"de", "de-AT", true}, {"de-CH", "de", true}, {"DE", "de", true},
+		{"fr, de", "de", true}, {"de", "", false}, {"en", "", true}, {"en-GB", "en-US", true},
+		{"de", "en", false}, {"", "en", false}, {"", "", false}, {" , ", "de", false},
+	} {
+		content := drawn(`<rect width="5" height="5" systemLanguage="`+test.value+`"/>`, test.language)
+		if (content != "") != test.want {
+			t.Errorf("%q in %q: content %q", test.value, test.language, content)
+		}
+	}
+	// The element and what is in it, in every kind of element that draws, and
+	// through what is around it.
+	for _, body := range []string{
+		`<g ` + de + `>` + rect + `</g>`,
+		`<g ` + de + `><g><g>` + rect + `</g></g></g>`,
+		`<a ` + de + ` href="https://example.com">` + rect + `</a>`,
+		`<svg ` + de + ` width="50" height="50">` + rect + `</svg>`,
+		`<circle ` + de + ` r="5"/>`,
+		`<ellipse ` + de + ` rx="5" ry="5"/>`,
+		`<line ` + de + ` x2="5" y2="5" stroke="black"/>`,
+		`<path ` + de + ` d="M0 0 L5 5 L0 5 Z"/>`,
+		`<polygon ` + de + ` points="0,0 5,5 0,5"/>`,
+		`<polyline ` + de + ` points="0,0 5,5 0,5"/>`,
+		`<text ` + de + ` y="10">a</text>`,
+		`<rect id="r" ` + de + ` width="5" height="5"/><use href="#r"/>`,
+		`<defs><rect id="r" width="5" height="5"/></defs><use ` + de + ` href="#r"/>`,
+		`<defs><rect id="r" ` + de + ` width="5" height="5"/></defs><use href="#r"/>`,
+		`<symbol id="s" ` + de + ` viewBox="0 0 5 5">` + rect + `</symbol><use href="#s"/>`,
+		`<symbol id="s" viewBox="0 0 5 5"><g ` + de + `>` + rect + `</g></symbol><use href="#s"/>`,
+		`<marker id="m" ` + de + `>` + rect + `</marker><path d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`,
+		`<marker id="m"><rect ` + de + ` width="5" height="5"/></marker><path d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`,
+		`<marker id="m">` + rect + `</marker><path ` + de + ` d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`,
+		`<switch ` + de + `>` + rect + `</switch>`,
+		`<switch ` + de + `><rect ` + en + ` width="5" height="5"/>` + rect + `</switch>`,
+		`<switch><g ` + en + `><rect ` + de + ` width="5" height="5"/></g></switch>`,
+	} {
+		if content := drawn(body, "en"); content != "" {
+			t.Errorf("%s: content %q", body, content)
+		}
+		if content := drawn(body, "de"); content == "" && !strings.Contains(body, en) {
+			t.Errorf("%s: nothing in de", body)
+		}
+	}
+	// A template is not drawn for matching, and what matches beside it is.
+	if content := drawn(`<defs `+en+`>`+rect+`</defs>`, "en"); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := drawn(`<rect `+de+` width="5" height="5" fill="red"/><rect `+en+` width="5" height="5" fill="lime"/>`, "en"); strings.Contains(content, "1 0 0 rg") || strings.Count(content, " rg\n") != 1 {
+		t.Errorf("content %q", content)
+	}
+	// One image, drawn in the language of each PDF.
+	image := testNewSVG(t, svg+`<g `+de+`><rect width="5" height="5" fill="red"/></g><g `+en+`><rect width="5" height="5" fill="blue"/></g>`+end)
+	for _, test := range []struct{ language, color string }{{"de", "1 0 0 rg"}, {"en", "0 0 1 rg"}, {"de", "1 0 0 rg"}} {
+		pdf := testNewPDF()
+		pdf.SetLanguage(test.language)
+		page := NewPage(pdf, letter.Portrait())
+		image.DrawOn(page)
+		if content := testContent(page); !strings.Contains(content, test.color) || strings.Count(content, " rg\n") != 1 {
+			t.Errorf("language %q content %q", test.language, content)
+		}
+	}
+	// What is not drawn leaves no cut for itself.
+	if content := drawn(`<path `+de+` d="M0 0 L900 900" stroke="blue"/>`+rect, "en"); strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	// The limits count what is read: the language is known when it is drawn.
+	nested := strings.Repeat(`<g `+de+`>`, maxSVGDepth+1) + strings.Repeat(`</g>`, maxSVGDepth+1)
+	if _, err := NewSVGImage(strings.NewReader(svg + nested + end)); err == nil {
+		t.Error("no error for elements nested too deep")
+	}
+}
+
+func TestSVGImageATspanHonorsTheSystemLanguage(t *testing.T) {
+	const de, en = `systemLanguage="de"`, `systemLanguage="en"`
+	text := func(body string) string {
+		return `<svg width="200" height="100">` + body + `</svg>`
+	}
+	for _, test := range []struct{ svg, same string }{
+		// What it would have started at goes to the next that is drawn.
+		{`<text x="10" y="20"><tspan ` + de + `>Hallo</tspan><tspan ` + en + `>Hello</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		// Its own place goes with it.
+		{`<text x="10" y="20"><tspan ` + de + ` x="50" y="60" dx="3" dy="4">Hallo</tspan><tspan ` + en + `>Hello</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20"><tspan ` + de + ` x="50">Hallo</tspan>Hello</text>`, `<text x="10" y="20">Hello</text>`},
+		// A place of its own in the run after it stays.
+		{`<text y="20"><tspan ` + de + ` x="50">Hallo</tspan><tspan x="70">Hello</tspan></text>`, `<text y="20" x="70">Hello</text>`},
+		{`<text x="10" y="20" dx="2"><tspan ` + de + `>Hallo</tspan><tspan dx="3">Hello</tspan></text>`, `<text x="10" y="20" dx="5">Hello</text>`},
+		// Spaces collapse among what is drawn.
+		{`<text x="10" y="20"> <tspan ` + de + `>Hallo</tspan> <tspan ` + en + `>Hello</tspan> </text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20">Hello <tspan ` + de + `>Welt</tspan> <tspan ` + de + `>x</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20">a<tspan ` + de + `> b</tspan> c</text>`, `<text x="10" y="20">a<tspan> c</tspan></text>`},
+		// In a tspan, and what is in it.
+		{`<text x="10" y="20"><tspan ` + de + ` x="50"><tspan x="60">Hallo</tspan></tspan><tspan>Hello</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20"><tspan ` + en + `>He<tspan ` + de + `>xx</tspan>llo</tspan></text>`, `<text x="10" y="20">He<tspan>llo</tspan></text>`},
+		// In an a, as a text has them, and of a used text.
+		{`<text x="10" y="20"><a ` + de + `>Hallo</a>Hello</text>`, `<text x="10" y="20">Hello</text>`},
+		{`<defs><text id="t" x="10" y="20"><tspan ` + de + `>Hallo</tspan><tspan>Hello</tspan></text></defs><use href="#t"/>`, `<text x="10" y="20">Hello</text>`},
+		// A text-anchor, of the runs drawn.
+		{`<text x="100" y="20" text-anchor="end"><tspan ` + de + `>Hallo</tspan><tspan>Hello</tspan></text>`, `<text x="100" y="20" text-anchor="end">Hello</text>`},
+	} {
+		content := testDrawSVGInLanguage(t, text(test.svg), "en")
+		if want := testDrawSVGInLanguage(t, text(test.same), "en"); content != want || content == "" {
+			t.Errorf("%s: content %q, not %q", test.svg, content, want)
+		}
+	}
+	// All of it left out: nothing.
+	if content := testDrawSVGInLanguage(t, text(`<text x="10" y="20"><tspan `+de+`>Hallo</tspan></text>`), "en"); content != "" {
+		t.Errorf("content %q", content)
+	}
+	// One image, in the language of each PDF, each drawing it as read.
+	image := testNewSVG(t, text(`<text x="10" y="20"> <tspan `+de+` dx="7">Hallo</tspan> <tspan `+en+`>Hello</tspan> </text>`))
+	for _, test := range []struct{ language, same string }{
+		{"en", `<text x="10" y="20">Hello</text>`}, {"de", `<text x="17" y="20">Hallo</text>`}, {"en", `<text x="10" y="20">Hello</text>`},
+	} {
+		pdf := testNewPDF()
+		pdf.SetLanguage(test.language)
+		page := NewPage(pdf, letter.Portrait())
+		image.SetLocation(0, 0)
+		image.DrawOn(page)
+		if content, want := testContent(page), testDrawSVGInLanguage(t, text(test.same), test.language); content != want {
+			t.Errorf("language %q content %q, not %q", test.language, content, want)
+		}
+	}
+	// A clipPath reads its shapes and texts with no language.
+	if content := testDrawSVGInLanguage(t, text(`<clipPath id="c"><text y="20"><tspan `+de+`>Hallo</tspan></text></clipPath><rect width="50" height="50" clip-path="url(#c)"/>`), "en"); content == "" {
+		t.Errorf("content %q", content)
+	}
+}

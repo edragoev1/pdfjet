@@ -51,6 +51,11 @@ internal class SVGPath {
 
     /// <summary>True when it is in the children chosen of the switches it is in.</summary>
     internal bool IsChosen() {
+        return AreChosen(choices);
+    }
+
+    // Returns true when each of the choices is the child chosen.
+    internal static bool AreChosen(List<SVGImage.Choice> choices) {
         if (choices != null) {
             foreach (SVGImage.Choice choice in choices) {
                 if (!choice.IsChosen()) {

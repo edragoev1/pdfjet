@@ -367,6 +367,12 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   the alignment and `slice` of its preserveAspectRatio.
 - SVG: `overflow="inherit"` takes the value of the parent, a group's being
   visible unless given, where it read as hidden.
+- SVG: `systemLanguage` is honored on any element, a `tspan` too, not only on
+  the children of a `switch`: an element that does not match is not drawn, by
+  the same rule, the primary subtag of the language of the PDF, or `en` when
+  none is set. What a `tspan` left out would have started at goes to the next
+  text drawn, and spaces collapse among what is drawn. The children of a
+  `clipPath` are read with no language, as a clip path is one path.
 - Build: the package scripts take the POM, nuspec and README from the tagged
   commit and run `util/check-version.sh`; the POM and the nuspec say
   `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
@@ -407,6 +413,9 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 - Behavior change: SVG: `overflow="inherit"` no longer clips under a parent
   that is visible. Example: `<g><svg width="9" height="9" overflow="inherit">`
   draws all of a larger rectangle, where it clipped it.
+- Behavior change: SVG: an element whose `systemLanguage` does not match is
+  not drawn, outside a `switch` too. Example: `<rect systemLanguage="de"/>`
+  draws nothing in an English PDF, where it drew the rectangle.
 - Behavior change: `SetLanguage` writes `/Lang` on a plain PDF too. Example:
   `fr-CA`; unset writes none.
 - Behavior change: the name of an embedded file is cut at a backslash on every

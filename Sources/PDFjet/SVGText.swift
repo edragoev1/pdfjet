@@ -17,6 +17,39 @@ class SVGText {
     var matrix = SVGState.identity
     var runs = [Run]()
 
+    // A tspan with a systemLanguage: an image is read before the language is
+    // known, so all the runs are kept as they were read, and the ones drawn are
+    // chosen, placed and collapsed when it is drawn.
+    var languages = false
+    var all: [Run]?
+    var moves = [Move]()    // Of the elements read since the last run
+
+    // The x, y, dx and dy of an element of a text, NaN where it has none, in the
+    // choices of the element: one that is not chosen does not move the first
+    // character after it, whose place stays with the elements around it.
+    struct Move {
+        let choices: [Choice]?
+        let at: [Double]
+
+        // Adds the move to the x, y, dx and dy kept for the first character.
+        func apply(to pending: inout [Double]) {
+            if !at[0].isNaN {
+                pending[0] = at[0]
+                pending[2] = 0.0
+            }
+            if !at[1].isNaN {
+                pending[1] = at[1]
+                pending[3] = 0.0
+            }
+            if !at[2].isNaN {
+                pending[2] += at[2]
+            }
+            if !at[3].isNaN {
+                pending[3] += at[3]
+            }
+        }
+    }
+
     // The characters of a text or a tspan element between the elements in it.
     final class Run {
         var text = ""
@@ -39,6 +72,9 @@ class SVGText {
         var lineJoin = JoinStyle.MITER
         var miterLimit: Float = 4.0
         var invisible = false           // It keeps its place in the text, and a clip path leaves it out
+        var choices: [Choice]?          // Those of its element, and of the text
+        var moves = [Move]()            // Of the elements that start at the run
+        var read = ""                   // The text as read, of a text with languages
 
         // Where the run is placed: its start, on its baseline, and its width.
         var px: Float = 0.0
@@ -60,6 +96,40 @@ class SVGText {
     // Returns what a clip path writes for the text, as operations.
     func operations() -> Int {
         return runs.reduce(0) { $0 + 1 + $1.text.unicodeScalars.count }
+    }
+
+    // Keeps the runs as they were read, for choose.
+    func keepRuns() {
+        all = runs
+        for run in runs {
+            run.read = run.text
+        }
+    }
+
+    // Makes the runs those of the language chosen, each where the moves of the
+    // elements chosen put it, and white space collapsed among them alone.
+    func choose() {
+        guard let all = all else {
+            return
+        }
+        runs = []
+        var pending = [Double.nan, Double.nan, 0.0, 0.0]
+        for run in all {
+            for move in run.moves where SVGPath.areChosen(move.choices) {
+                move.apply(to: &pending)
+            }
+            if !SVGPath.areChosen(run.choices) {
+                continue
+            }
+            run.text = run.read
+            run.x = pending[0]
+            run.y = pending[1]
+            run.dx = pending[2]
+            run.dy = pending[3]
+            pending = [Double.nan, Double.nan, 0.0, 0.0]
+            runs.append(run)
+        }
+        collapseSpaces()
     }
 
     // Collapses the white space of the runs as a browser does: a newline or a

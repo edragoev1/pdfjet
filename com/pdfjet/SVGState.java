@@ -58,7 +58,7 @@ class SVGState {
     String clipPath = null;             // The id of the clip path of the element itself, not inherited
     String overflow = null;             // The overflow of the element, not inherited unless it says inherit
     List<SVGPath> clips = null;         // The clip paths of the element and of its ancestors
-    List<SVGImage.Choice> choices = null;   // The children of the switches it is in; never changed in place
+    List<SVGImage.Choice> choices = null;   // The children of the switches it is in, and its tests of systemLanguage; never changed in place
     Map<String, Integer> paints = null; // The colors of the gradients, by id, shared by every state
 
     /**
