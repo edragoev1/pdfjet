@@ -477,6 +477,50 @@ final class ChartScale {
     }
 
     /**
+     * The words of a chart for its values outside a range that is set, of
+     * which it would say nothing otherwise, or "" when there are none: "1 point
+     * outside the range", "2 points outside the range".
+     *
+     * @param count the number of values outside.
+     * @param noun what the chart counts, in the singular.
+     * @return the note.
+     */
+    static String outsideNote(int count, String noun) {
+        if (count == 0) {
+            return "";
+        }
+        return count + " " + noun + (count > 1 ? "s" : "") + " outside the range";
+    }
+
+    /**
+     * The description set by the caller with the note, if any, as a sentence
+     * after it: the note is in the figure, and in what a screen reader gets of
+     * it, whoever wrote the description.
+     *
+     * @param description the description set.
+     * @param note the note, or "".
+     * @return the description.
+     */
+    static String withNote(String description, String note) {
+        if (note.isEmpty()) {
+            return description;
+        }
+        return description + SimpleBarChart.punctuationAfter(description, ".") + " " + note + ".";
+    }
+
+    /**
+     * Draws the note, small and in the gray of the numbers, on the baseline,
+     * its right end at x and inside the width from lo to hi, past which it is
+     * shortened.
+     */
+    static void drawOutsideNote(Page page, Font font, float size, String note,
+            float x, float lo, float hi, float baseline) {
+        String text = shorten(font, size, note, hi - lo);
+        page.drawString(font, size, text, Math.max(lo, x - font.stringWidth(size, text)), baseline,
+                Util.toRGB(SimpleBarChart.MUTED), null);
+    }
+
+    /**
      * Tells if the axis can be drawn: the span of a range that is set, or of
      * values that are, can be past the largest float.
      */

@@ -16,11 +16,15 @@ import java.util.*;
  * horizontal grid alone, no border or legend, on a light panel, with a title
  * and a subtitle at the top left, in the look of SimpleBarChart. Any point can
  * be a link, a dot with a description that a hover or a screen reader gets, so
- * that all of 200 points are links without a name printed for each.
+ * that all of 200 points are links without a name printed for each. A point
+ * outside a range that is set is not drawn, and the chart says how many are:
+ * "2 points outside the range", small, under the plot at its right end, and in
+ * its description.
  * <p>
  * In a PDF/UA document the chart is one figure, described from its data: the
- * number of points, the highlighted ones and their values, and which way the
- * trend goes, unless an alternate description is set. It draws with the page
+ * number of points, the highlighted ones and their values, which way the
+ * trend goes and the points outside a range, unless an alternate description
+ * is set, which is then followed by those points alone. It draws with the page
  * alone, and needs no other chart. In PDF/A-1, which has no transparency, the
  * dots are drawn opaque. Please see Example_26.
  */
@@ -153,7 +157,8 @@ public class SimpleScatterChart implements Drawable {
 
     /**
      * Sets the alternate description of the chart in a PDF/UA document.
-     * Without one the chart is described from its data.
+     * Without one the chart is described from its data. The number of points
+     * outside a range that is set follows it, as the chart prints it.
      *
      * @param altDescription the alternate description.
      * @return this chart.
@@ -266,7 +271,9 @@ public class SimpleScatterChart implements Drawable {
     /**
      * Sets the range of the horizontal axis. Without it the range is that of
      * the points, rounded to steps. A range whose end is not past its start
-     * is not set.
+     * is not set. A point outside the range is not drawn, and the chart says
+     * how many are, under the plot, which is that much lower, and in its
+     * description.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -282,7 +289,8 @@ public class SimpleScatterChart implements Drawable {
     /**
      * Sets the range of the vertical axis. Without it the range is that of the
      * points, rounded to steps. A range whose end is not past its start is not
-     * set.
+     * set. A point outside the range is not drawn, and the chart says how many
+     * are, under the plot, which is that much lower, and in its description.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -570,11 +578,26 @@ public class SimpleScatterChart implements Drawable {
         return line;
     }
 
+    // What the chart says of the points with a value outside a range that is
+    // set, or "" when there are none. A point outside both ranges is one point.
+    private String outsideNote() {
+        ChartScale.Axis xRange = new ChartScale.Axis(xMin, xMax, 0);
+        ChartScale.Axis yRange = new ChartScale.Axis(yMin, yMax, 0);
+        int count = 0;
+        for (Point p : valid()) {
+            if ((xRangeSet && !ChartScale.onAxis(p.x, xRange)) || (yRangeSet && !ChartScale.onAxis(p.y, yRange))) {
+                count++;
+            }
+        }
+        return ChartScale.outsideNote(count, "point");
+    }
+
     // The alternate description: the one set, or the title, the number of
-    // points, the highlighted ones and the trend.
+    // points, the highlighted ones and the trend; and the points outside a
+    // range that is set.
     String altDescription() {
         if (!altDescription.isEmpty()) {
-            return altDescription;
+            return ChartScale.withNote(altDescription, outsideNote());
         }
         List<Point> points = valid();
         ChartScale.Axis[] axes = points.isEmpty() ? null : axes(points);
@@ -622,6 +645,10 @@ public class SimpleScatterChart implements Drawable {
             if (line != null) {
                 sb.append(line[0] > 0 ? "; the trend rises" : line[0] < 0 ? "; the trend falls" : "; the trend is flat");
             }
+        }
+        String note = outsideNote();
+        if (!note.isEmpty()) {
+            sb.append("; ").append(note);
         }
         return sb.append(SimpleBarChart.punctuationAfter(sb, ".")).toString();
     }
@@ -679,6 +706,11 @@ public class SimpleScatterChart implements Drawable {
         float bottom = y + h - pad - 1.4f * size;
         if (!xAxisTitle.isEmpty()) {
             bottom -= 1.4f * size;
+        }
+        // Room for the note, a row of its own under the rest
+        String note = outsideNote();
+        if (!note.isEmpty()) {
+            bottom -= 1.4f * subtitleSize();
         }
         if (right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis)) {
             return new float[] {x + w, y + h};
@@ -775,6 +807,9 @@ public class SimpleScatterChart implements Drawable {
                     plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2f,
                     Util.toRGB(SimpleBarChart.INK), null);
             page.setTextRotation(0);
+        }
+        if (!note.isEmpty()) {
+            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
         }
 
         // The trend line, from the left of the plot to its right, within its

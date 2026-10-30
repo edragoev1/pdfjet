@@ -438,4 +438,127 @@ class SimpleScatterChartTest {
             assertTrue(round.minValue <= flat[0] && round.maxValue >= flat[1], flat[0] + " to " + flat[1]);
         }
     }
+
+    // The content of the chart, on a page of its own.
+    private static String noteContent(PDF pdf, SimpleScatterChart chart) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.setLocation(50f, 50f).drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    private static SimpleScatterChart noteChart(Font font) {
+        return new SimpleScatterChart(font, font).setTitle("T").setSize(300f, 200f).add(1f, 1f).add(2f, 2f);
+    }
+
+    // A point outside a range that is set is not drawn, and the chart says so,
+    // in print and in its description: an outlier vanished without a word. A
+    // value that is no number is not outside, and a chart with none outside
+    // adds nothing.
+    @Test
+    void itSaysHowManyPointsAreOutsideTheRange() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        float nan = Float.NaN;
+        float inf = Float.POSITIVE_INFINITY;
+        String one = "1 point outside the range";
+        String two = "2 points outside the range";
+        Object[][] cases = {
+            {noteChart(font).add(100f, 100f), ""},
+            {noteChart(font).add(0f, 10f).add(10f, 0f).setXAxisRange(0f, 10f).setYAxisRange(0f, 10f), ""},
+            {noteChart(font).add(nan, 50f).add(50f, inf).setXAxisRange(0f, 10f).setYAxisRange(0f, 10f), ""},
+            {noteChart(font).add(50f, 1f).setXAxisRange(0f, 10f), one},
+            {noteChart(font).add(1f, -50f).setYAxisRange(0f, 10f), one},
+            {noteChart(font).add(50f, 50f).setXAxisRange(0f, 10f).setYAxisRange(0f, 10f), one},
+            {noteChart(font).add(50f, 1f).add(-50f, 1f).setXAxisRange(0f, 10f), two},
+            {noteChart(font).add(1f, 50f).add("far", 2f, 60f).setYAxisRange(0f, 10f), two},
+            {noteChart(font).add(50f, 1f).add(1f, 50f).setXAxisRange(0f, 10f).setYAxisRange(0f, 10f), two},
+            {noteChart(font).addLinkedDot("a", 50f, 1f, "https://pdfjet.com/a").setXAxisRange(0f, 10f), one},
+        };
+        for (Object[] c : cases) {
+            SimpleScatterChart chart = (SimpleScatterChart) c[0];
+            String note = (String) c[1];
+            String content = noteContent(pdf, chart);
+            String description = chart.altDescription();
+            if (note.isEmpty()) {
+                assertFalse(content.contains(TestSupport.hex(" outside")), description);
+                assertFalse(description.contains("outside"), description);
+            } else {
+                assertTrue(content.contains("<" + TestSupport.hex(note) + ">"), note);
+                assertTrue(description.endsWith("; " + note + "."), description);
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the numbers and the x title, with the
+    // plot that much lower and nothing else moved; right under the plot's
+    // right end.
+    @Test
+    void theNoteIsUnderThePlot() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        String note = "2 points outside the range";
+        float size = font.getSize();
+        float small = 0.8f * size;
+        for (String title : new String[] {"", "children per woman"}) {
+            String without = noteContent(pdf, new SimpleScatterChart(font, font).setSize(300f, 200f)
+                    .setXAxisTitle(title).setXAxisRange(0f, 10f).setYAxisRange(0f, 10f).add(1f, 1f).add(2f, 2f));
+            String with = noteContent(pdf, new SimpleScatterChart(font, font).setSize(300f, 200f)
+                    .setXAxisTitle(title).setXAxisRange(0f, 10f).setYAxisRange(0f, 10f).add(1f, 1f).add(2f, 2f)
+                    .add(50f, 1f).add(1f, 50f));
+            float[] at = TestSupport.positionOf(with, note);
+            float end = at[0] + font.stringWidth(small, note);
+            float right = Math.min(350f - size, 350f - size / 2f - font.stringWidth(size, "10") / 2f);
+            assertEquals(right, end, 0.1f, "the right end");
+            assertTrue(at[0] >= 50f && end <= 350f, "the note at " + at[0]);
+            assertEquals(792f - (250f - size), at[1], 0.01f, "the baseline");
+            float[] number = TestSupport.positionOf(with, "0");
+            assertEquals(TestSupport.positionOf(without, "0")[1] + 1.4f * small, number[1], 0.02f, "the plot");
+            // The numbers of the x axis, or the title under them
+            float last = number[1] + font.getAscent(size) / 2f - 1.4f * size;
+            if (!title.isEmpty()) {
+                last = TestSupport.positionOf(with, title)[1];
+            }
+            assertTrue(at[1] + font.getAscent(small) <= last - font.getDescent(size), "the note over the row above it");
+            assertEquals(TestSupport.fillColorBefore(with, "0"), TestSupport.fillColorBefore(with, note));
+        }
+        // In a chart too narrow for it, shortened and inside
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).setSize(90f, 200f)
+                .setXAxisRange(0f, 1f).add(0f, 1f).add(5f, 1f).add(6f, 1f);
+        assertTrue(TestSupport.positionOf(noteContent(pdf, chart), "2 points")[0] >= 50f + size);
+        assertTrue(chart.altDescription().endsWith("; " + note + "."), chart.altDescription());
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    @Test
+    void theNoteFollowsADescriptionThatIsSet() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).add(1f, 1f).add(2f, 2f)
+                .setAltDescription("Two points");
+        assertEquals("Two points", chart.altDescription());
+        chart.add(50f, 1f).setXAxisRange(0f, 10f);
+        assertEquals("Two points. 1 point outside the range.", chart.altDescription());
+        chart.setAltDescription("Two points.");
+        assertEquals("Two points. 1 point outside the range.", chart.altDescription());
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    @Test
+    void theNoteIsInTheFigure() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).setSize(300f, 200f).add(1f, 1f).add(50f, 1f)
+                .setXAxisRange(0f, 10f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertEquals(content.indexOf("BDC\n"), content.lastIndexOf("BDC\n"), content);
+        assertEquals(content.indexOf("EMC\n"), content.lastIndexOf("EMC\n"), content);
+        assertTrue(content.lastIndexOf("ET\n") < content.lastIndexOf("EMC\n"), content);
+        pdf.complete();
+        assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/Alt "
+                + TestSupport.textString("Scatter chart: 1 points; 1 point outside the range.")));
+    }
 }
