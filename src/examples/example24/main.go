@@ -8,32 +8,32 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example24 draws a very large table across thousands of pages.
-func Example24() {
+// Example24 draws the rows of a CSV file as a table of as many pages as it
+// takes, thousands for the full data file, a PDF/UA document if pdfUA is true.
+func Example24(fileName string, pdfUA bool) {
 	pdf, err := pdfjet.NewPDFFile("Example_24.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Uncomment the line below to make this a PDF/UA document. A BigTable is
-	// tagged as a table: a TR for each row, holding a TH or a TD with the
-	// text of each cell, which is what a screen reader reads a table from.
-	// It is off here because of what it costs at this size: every tagged
-	// cell is an object of its own, so this document goes from 5,108 objects
-	// and 11.8 MB to 1.25 million objects and 249 MB. The 10-page file below
-	// is the size to see the tagging at.
-	// pdf.SetCompliance(compliance.PDF_UA_1)
+	// The sample is a PDF/UA document: a BigTable is tagged as a table, a TR for
+	// each row holding a TH or a TD with the text of each cell, which is what a
+	// screen reader reads a table from. A file given as the argument is left
+	// untagged, so that the benchmark stays comparable with earlier releases:
+	// every tagged cell is an object of its own, and the full data file goes
+	// from 5,108 objects and 11.8 MB to 1.25 million objects and 249 MB.
+	if pdfUA {
+		pdf.SetCompliance(compliance.PDF_UA_1)
+	}
 	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
-
-	// Used for performance testing. Results in 2000+ pages PDF.
-	fileName := "data/Electric_Vehicle_Population_Data.csv"
-	// fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	f1.SetSize(10.0)
@@ -62,8 +62,15 @@ func Example24() {
 }
 
 func main() {
+	// The 10-page sample, or the file given as the first argument: the full
+	// Electric Vehicle Population Data, 124,716 rows, makes 2,546 pages and
+	// is used for performance testing.
+	fileName := "resources/data/Electric_Vehicle_Population_10_Pages.csv"
+	if len(os.Args) > 1 {
+		fileName = os.Args[1]
+	}
 	time0 := time.Now().UnixMilli()
-	Example24()
+	Example24(fileName, len(os.Args) == 1)
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_24 => %4d ms\n", time1-time0)
 }

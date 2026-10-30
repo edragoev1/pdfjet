@@ -93,9 +93,9 @@ func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
 	return dc
 }
 
-// Add adds a slice in the next color of the palette, navy first, the palette
-// of BarChart, so that the charts of a document match; its eight colors repeat
-// from the ninth slice on. The slice's share of the sum of the values sets its
+// Add adds a slice in the next color of the palette, blue first, the palette
+// of BarChart, so that the charts of a document match; its ten colors repeat
+// from the eleventh slice on. The slice's share of the sum of the values sets its
 // angle; a value that is not above 0 has no slice.
 //   - name: the label of the slice; empty for none.
 //   - value: the value of the slice.
@@ -466,8 +466,8 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		}
 	}
 	// The last slice, next to the first around the circle, in the palette's
-	// next color when it would have the first's: the ninth of nine was navy by
-	// the navy first
+	// next color when it would have the first's: the eleventh of eleven was
+	// blue by the blue first
 	first := -1
 	last := -1
 	for i := range dc.slices {

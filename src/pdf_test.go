@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
@@ -264,12 +265,7 @@ func testPageNumbers(t *testing.T, pdf []byte) []string {
 
 func testTrueTypeFont(t *testing.T, pdf *PDF) *Font {
 	t.Helper()
-	file, err := os.Open(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
-	if err != nil {
-		t.Skip("the fonts directory is not here")
-	}
-	defer file.Close()
-	return NewFont(pdf, file)
+	return NewFont(pdf, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
 }
 
 func TestPDFADetachedPageThatIsNeverAddedLeavesNoTrace(t *testing.T) {
@@ -408,18 +404,39 @@ func TestPDFObjectsWithoutAPageTreeHaveNoPages(t *testing.T) {
 	}
 }
 
-func TestPDFTheNameOfAnEmbeddedFileIsATextStringInFAndUF(t *testing.T) {
+// /UF is the name of an embedded file as a text string, and /F is the file
+// specification string of bytes, its characters from space to tilde as they
+// are and each other one, a pair of surrogates in UTF-16 too, an underscore.
+func TestPDFTheNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF(t *testing.T) {
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, letter.Portrait())
-	file := NewEmbeddedFile(doc.pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", strings.NewReader("Hello"), false)
+	file := NewEmbeddedFile(doc.pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt", strings.NewReader("Hello"), false)
 	NewFileAttachment(file).SetLocation(100, 100).DrawOn(page)
 	spec := testFindObject(testRead(t, doc.complete()), "/UF")
 	if spec == nil {
 		t.Fatal("no /UF")
 	}
 	testWant(t, "/Filespec", spec.GetValue("/Type"))
-	testWant(t, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", testUTF16Hex(t, spec.GetValue("/UF")))
-	testWant(t, spec.GetValue("/UF"), spec.GetValue("/F"))
+	testWant(t, "\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt", testUTF16Hex(t, spec.GetValue("/UF")))
+	testWant(t, "<5f6265727369636874205f20725f73756d5f205f2e747874>", strings.ToLower(spec.GetValue("/F")))
+}
+
+// /F is a file specification string of one component, the file name (ISO
+// 32000-2, 7.11.2): a solidus is preceded by a reverse solidus, and a
+// reverse solidus, which a reader removes, is an underscore; /UF is the name
+// as it is.
+func TestPDFTheFOfAnEmbeddedFileEscapesASolidus(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	file := NewEmbeddedFile(doc.pdf, "in/out\\a.txt", strings.NewReader("Hello"), false)
+	NewFileAttachment(file).SetLocation(100, 100).DrawOn(page)
+	spec := testFindObject(testRead(t, doc.complete()), "/UF")
+	if spec == nil {
+		t.Fatal("no /UF")
+	}
+	testWant(t, "in/out\\a.txt", testUTF16Hex(t, spec.GetValue("/UF")))
+	// in\/out_a.txt
+	testWant(t, "<696e5c2f6f75745f612e747874>", strings.ToLower(spec.GetValue("/F")))
 }
 
 func TestPDFAPointIsAnArtifact(t *testing.T) {
@@ -548,7 +565,7 @@ func TestPDFALinkedImageIsTheFigureOfItsLink(t *testing.T) {
 	doc.pdf.SetTitle("Title")
 	testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	file, err := os.Open(testRepoPath(t, "resources/images/up-arrow.png"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -579,7 +596,7 @@ func TestPDFALinkOfADocumentNotTaggedIsNoElement(t *testing.T) {
 	doc := testNewDoc()
 	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	file, err := os.Open(testRepoPath(t, "resources/images/up-arrow.png"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1067,7 +1084,7 @@ func TestPDFAnInlineElementStandingAsABlockSaysSo(t *testing.T) {
 	doc.pdf.SetTitle("Title")
 	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	file, err := os.Open(testRepoPath(t, "resources/images/up-arrow.png"))
 	if err != nil {
 		t.Fatal(err)
 	}

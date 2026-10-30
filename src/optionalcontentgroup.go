@@ -130,8 +130,8 @@ func (ocg *OptionalContentGroup) DrawOn(page *Page) [2]float32 {
 	}
 
 	if len(ocg.components) > 0 {
-		page.appendString("/OC /OC")
-		page.appendInteger(ocg.ocgNumber)
+		page.appendString("/OC ")
+		page.appendString(page.resourceName("/Properties", "/OC", ocg.ocgNumber, nil, ocg.objNumber))
 		page.appendString(" BDC\n")
 		for _, component := range ocg.components {
 			corner := component.DrawOn(page)

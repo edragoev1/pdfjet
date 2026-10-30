@@ -41,9 +41,12 @@ import (
 // The fields are in the order of their size, so that a cell takes no bytes
 // for the padding between them that it does not have to.
 type Cell struct {
-	text     string
-	drawable Drawable // The image, barcode, text block, text column or other drawable
-	uri      string
+	text string
+	// The whole text of a cell whose text wraps, which holds its first line
+	// after the wrap: what a sum reads
+	wholeText string
+	drawable  Drawable // The image, barcode, text block, text column or other drawable
+	uri       string
 
 	font         *Font
 	fallbackFont *Font
@@ -228,6 +231,7 @@ func (cell *Cell) GetFallbackFont() *Font {
 //   - text: the cell text.
 func (cell *Cell) SetText(text string) *Cell {
 	cell.text = text
+	cell.wholeText = ""
 	cell.hasText = true
 	return cell
 }
@@ -849,7 +853,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	case alignment.Center:
 		yText = y + float32(cellH/2.0) + float32(ascent/2.0)
 	case alignment.Bottom:
-		yText = (y + cellH) - cell.paddingAt(cellBottomPadding)
+		// Over the padding by the descent, which went into it
+		yText = (y + cellH) - cell.paddingAt(cellBottomPadding) - cell.descent()
 	default:
 		// alignment.Left, the zero value, panicked (review of 12 October
 		// 2026, F18)

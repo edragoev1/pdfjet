@@ -37,7 +37,7 @@ import (
 
 // fuzzPNGSeeds returns the images of PngSuite.
 func fuzzPNGSeeds(f *testing.F) [][]byte {
-	paths, err := filepath.Glob("../PngSuite/*.[Pp][Nn][Gg]")
+	paths, err := filepath.Glob("../tests/data/PngSuite/*.[Pp][Nn][Gg]")
 	if err != nil || len(paths) == 0 {
 		f.Fatal("no PngSuite images")
 	}
@@ -219,9 +219,6 @@ func fuzzComparePNG(data []byte) error {
 	case 0, 4:
 		channels = 1
 	case 3:
-		depth = 8
-	}
-	if pdfjet.colorType == 4 || pdfjet.colorType == 6 {
 		depth = 8
 	}
 	rowBytes := (w*channels*depth + 7) / 8

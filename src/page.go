@@ -52,6 +52,10 @@ type Page struct {
 	pageObj       *PDFobj
 	objNumber     int
 	renderingMode int
+	// On a page that was read: what the names of the resources of the PDF are
+	// raised by, past the names it holds, and the resources drawn with
+	resourceBase  int
+	readResources []readResource
 	// Whether a text rendering mode other than 0 was written
 	renderingModeSet bool
 	width            float32
@@ -127,6 +131,9 @@ type Page struct {
 	// rather than to an element of its own: a paragraph is one element,
 	// however many words it is drawn one at a time.
 	mcidParent *structElement
+	// The element of the text line with an alternate description that is
+	// being drawn among the words of mcidParent; see describedWords.
+	words *structElement
 	// The figure AddBDC began last, whose bounding box SetFigureBoundingBox
 	// sets, or nil.
 	figure *structElement
@@ -212,6 +219,16 @@ func NewPageDetached(pdf *PDF, pageSize pagesize.PageSize) *Page {
 	return newPage(pdf, pageSize, false)
 }
 
+// readResource is a resource of the PDF that a page that was read draws with.
+// It goes in the category of the resources of the page, like /ExtGState, under
+// the name: the value, or a reference to the object of the PDF with the number.
+type readResource struct {
+	category string
+	name     string
+	value    []string
+	number   int
+}
+
 // NewPage constructs page object and adds it to the PDF document.
 //
 // Please note:
@@ -260,6 +277,7 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.strokeDashPattern = "[] 0"
 	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
+	page.resourceBase = pageObj.maxResourceNumber()
 	page.SaveGraphicsState()
 	if x0, y0 := pageObj.mediaBoxOrigin(); x0 != 0 || y0 != 0 {
 		// The page starts at the corner of its /MediaBox: at 0, 0 of a box
@@ -286,9 +304,39 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 func (page *Page) Complete(objects *[]*PDFobj) {
 	page.RestoreGraphicsState()
 	page.checkBalanced()
+	for _, resource := range page.readResources {
+		value := resource.value
+		if resource.number != 0 {
+			written := newPDFobj().setNumber(len(*objects) + 1)
+			written.writtenNumber = resource.number
+			*objects = append(*objects, written)
+			value = []string{strconv.Itoa(written.number), "0", "R"}
+		}
+		page.pageObj.addResourceEntry(resource.category, resource.name, value, objects)
+	}
 	if !page.pageObj.wrapContents([]byte("q\n"), append([]byte("Q\n"), page.getContent()...), objects) {
 		page.pdf.fail("The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it.")
 	}
+}
+
+// resourceName returns the name for a resource of the PDF on this page, and
+// keeps it for Complete on a page that was read: the resources of the PDF do
+// not reach that page, whose own resources have to name it, and its own names
+// stay as they are. The graphics states, stamps and optional content drawn on
+// such a page had no resource: the alpha was lost, and a stamp did not draw
+// (review of 30 October 2026, B2).
+func (page *Page) resourceName(category, prefix string, n int, value []string, number int) string {
+	if page.pageObj == nil {
+		return prefix + strconv.Itoa(n)
+	}
+	name := prefix + strconv.Itoa(page.resourceBase+n)
+	for _, resource := range page.readResources {
+		if resource.name == name {
+			return name
+		}
+	}
+	page.readResources = append(page.readResources, readResource{category, name, value, number})
+	return name
 }
 
 // checkBalanced records a SaveGraphicsState without its RestoreGraphicsState,
@@ -525,6 +573,55 @@ func (page *Page) drawString(
 		page.drawColoredString(font, str, brush, colors)
 	}
 	page.appendString("ET\n")
+}
+
+// drawSVGText draws the string of an SVG image with the text matrix, in the
+// brush color, or stroked in the pen color and width for the rendering mode 1.
+func (page *Page) drawSVGText(font *Font, fontSize float32, str string, tm [6]float32, mode int) {
+	page.appendString("BT\n")
+	page.setTextFont(font, fontSize)
+	if mode != 0 || page.renderingModeSet {
+		page.renderingModeSet = true
+		page.appendInteger(mode)
+		page.appendString(" Tr\n")
+	}
+	page.showSVGText(font, str, tm)
+	page.appendString("ET\n")
+}
+
+// showSVGText shows the string of an SVG image with the text matrix.
+func (page *Page) showSVGText(font *Font, str string, tm [6]float32) {
+	for _, value := range tm {
+		page.appendFloat32(value)
+		page.appendString(" ")
+	}
+	page.appendString("Tm\n")
+	if font.isCoreFont {
+		page.appendString("[<")
+		page.drawASCIIString(font, str)
+		page.appendString(">] TJ\n")
+	} else {
+		page.appendString("<")
+		page.drawUnicodeString(font, str)
+		page.appendString("> Tj\n")
+	}
+}
+
+// beginSVGClipText begins a text object whose glyphs clip what is drawn after
+// it, by the rendering mode 7 of ISO 32000-1, 9.3.6: at its ET they are one
+// path, filled by the nonzero rule, which the clip path is intersected with.
+// The graphics state saved around it brings the mode back.
+func (page *Page) beginSVGClipText() {
+	page.appendString("BT\n")
+	page.renderingModeSet = true
+	page.appendString("7 Tr\n")
+}
+
+// addSVGClipText adds the string of an SVG image to the text object begun by
+// beginSVGClipText.
+func (page *Page) addSVGClipText(font *Font, fontSize float32, str string, tm [6]float32) {
+	page.setTextFont(font, fontSize)
+	page.showSVGText(font, str, tm)
 }
 
 // The hooks that a build with the texttrace tag sets, in texttrace.go, to
@@ -1326,8 +1423,8 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 		n = len(page.pdf.states) + 1
 		page.pdf.states[state] = n
 	}
-	page.appendString("/GS")
-	page.appendInteger(n)
+	value := slices.Concat([]string{"<<"}, strings.Split(state, " "), []string{">>"})
+	page.appendString(page.resourceName("/ExtGState", "/GS", n, value, 0))
 	page.appendString(" gs\n")
 	return page
 }
@@ -2473,6 +2570,11 @@ func (page *Page) addBDC(
 		// linked marker of a wrapped table cell, is an element of its own,
 		// with its description (the review of 9 October 2026: it was lost).
 		if parent := page.mcidParent; parent != nil && structure != structelem.Figure {
+			if altDescription != "" {
+				parent = page.describedWords(parent, altDescription)
+			} else {
+				page.words = nil
+			}
 			parent.mcids = append(parent.mcids, page.mcid)
 			page.appendString("/")
 			page.appendString(parent.structure)
@@ -2515,6 +2617,22 @@ func (page *Page) addBDC(
 			page.figure = element
 		}
 	}
+}
+
+// describedWords returns the Span of a text line with an alternate description
+// that is drawn in a paragraph word by word or row by row: the description is
+// of the whole text line, so its words are the marked content of one element,
+// which takes its place among the words of the paragraph and is read once.
+func (page *Page) describedWords(parent *structElement, altDescription string) *structElement {
+	if page.words == nil || page.words.parent != parent || page.words.altDescription != altDescription {
+		page.words = newStructElement()
+		page.words.structure = string(structelem.Span)
+		page.words.mcid = -1
+		page.words.altDescription = altDescription
+		page.addStructure(page.words, parent)
+		parent.mcids = append(parent.mcids, -page.words.objNumber)
+	}
+	return page.words
 }
 
 // SetFigureBoundingBox sets the bounding box of the figure that AddBDC began
@@ -2632,6 +2750,7 @@ func (page *Page) addLinkBDC(
 	link.language = language
 	if parent := page.mcidParent; parent != nil {
 		// A word of a paragraph: the Link takes its place among the words
+		link.altDescription = altDescription
 		page.addStructure(link, parent)
 		parent.mcids = append(parent.mcids, -link.objNumber)
 	} else if structure == structelem.Link {
@@ -2766,6 +2885,10 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		return
 	}
 	page.transformAnnotation(annotation)
+	if annotation.hitSize > 0 {
+		annotation.x1, annotation.x2 = hitSpan(annotation.x1, annotation.x2, annotation.hitSize, page.width)
+		annotation.y1, annotation.y2 = hitSpan(annotation.y1, annotation.y2, annotation.hitSize, page.height)
+	}
 	annotation.setDescriptionFallback()
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2
@@ -2810,6 +2933,25 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		element.annotation = annotation
 		page.addStructure(element, page.structParent)
 	}
+}
+
+// hitSpan returns the span lo to hi of an annotation at least size long around
+// its center, and moved inside 0 to limit, not cut, as long as it fits.
+func hitSpan(lo, hi, size, limit float32) (float32, float32) {
+	if hi-lo < size {
+		center := float32((lo + hi) / 2.0)
+		lo = center - float32(size/2.0)
+		hi = lo + size
+	}
+	if hi > limit {
+		lo -= hi - limit
+		hi = limit
+	}
+	if lo < 0 {
+		hi = min(hi-lo, limit)
+		lo = 0
+	}
+	return lo, hi
 }
 
 // transformed returns where the point x, y of what is drawn is on the page,
@@ -2887,9 +3029,9 @@ func (page *Page) transformAnnotation(annotation *annotationObject) {
 func (page *Page) beginTransform(x, y, xScale, yScale float32) {
 	page.SaveGraphicsState()
 
-	page.appendFloat32(xScale)
+	page.appendPrecise(xScale)
 	page.appendString(" 0 0 ")
-	page.appendFloat32(yScale)
+	page.appendPrecise(yScale)
 	page.appendString(" ")
 	page.appendFloat32(x)
 	page.appendString(" ")
@@ -2982,13 +3124,13 @@ func (page *Page) Transform(values []float32) {
 	transx := values[MTransX]
 	transy := values[MTransY]
 
-	page.appendFloat32(scalex)
+	page.appendPrecise(scalex)
 	page.appendString(" ")
-	page.appendFloat32(values[MSkewX])
+	page.appendPrecise(values[MSkewX])
 	page.appendString(" ")
-	page.appendFloat32(values[MSkewY])
+	page.appendPrecise(values[MSkewY])
 	page.appendString(" ")
-	page.appendFloat32(scaley)
+	page.appendPrecise(scaley)
 	page.appendString(" ")
 
 	if math.Asin(float64(values[MSkewY])) != 0.0 {
@@ -3104,6 +3246,19 @@ func (page *Page) appendFloat32(value float32) {
 		}
 		page.grow(24) // The digits of a float and its sign and point
 		page.buf = fastfloat.Append(page.buf, value)
+	}
+}
+
+// appendPrecise appends a number of a scale, written with five decimals, as
+// hundredths would change the size: 0.125 was written as 0.13, 4% too large,
+// and 0.004 as 0, which drew nothing (review of 30 October 2026, B6).
+func (page *Page) appendPrecise(value float32) {
+	if page.open() {
+		if !fastfloat.IsWritable(value) {
+			page.pdf.fail(notWritable)
+		}
+		page.grow(fastfloat.MaxLength)
+		page.buf = fastfloat.AppendPrecise(page.buf, value)
 	}
 }
 

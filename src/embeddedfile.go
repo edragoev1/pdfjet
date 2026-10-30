@@ -34,7 +34,9 @@ type EmbeddedFile struct {
 // NewEmbeddedFileAtPath embeds the file at the specified path into the PDF,
 // compressing it with Flate when compress is true. It panics if the file cannot be opened.
 func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
-	fileName := filePath[strings.LastIndex(filePath, "/")+1:]
+	// A Windows path too: its folders gave the name of the user away (review of
+	// 30 October 2026, F1)
+	fileName := filePath[strings.LastIndexAny(filePath, "/\\")+1:]
 	file, err := os.Open(filePath)
 	if err != nil {
 		panic(err)
@@ -132,11 +134,11 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Filespec\n")
 
-	// The file name as a text string, which every reader decodes the same way.
-	// /UF is the name that readers of PDF 1.7 look for first, and /F is the one
-	// that older readers know; PDF/A-3 requires both.
+	// /UF is the file name as a text string, the one that readers of PDF 1.7
+	// use, and /F is the file specification string that older readers know,
+	// a string of bytes (ISO 32000-2, 7.11.3, Table 43); PDF/A-3 requires both.
 	pdf.appendString("/F ")
-	pdf.appendTextString(fileName)
+	pdf.appendByteString(fileSpecBytes(fileName))
 	pdf.appendString("\n")
 	pdf.appendString("/UF ")
 	pdf.appendTextString(fileName)
@@ -164,6 +166,32 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	file.objNumber = pdf.getObjNumber()
 
 	return file
+}
+
+// fileSpecBytes returns the file name as the bytes of /F, a file
+// specification string of one component, the file name (ISO 32000-2,
+// 7.11.2): a solidus in the name is preceded by a reverse solidus, which
+// tells it from a separator of components, so that "in/out" is "in\/out";
+// a reverse solidus in the name is an underscore, as a reader removes each
+// reverse solidus and 7.11.2 gives no way to write one that stays, so that
+// "C:\temp\a.txt" is "C:_temp_a.txt"; each other character from space to tilde (0x20 to 0x7E)
+// is as it is, and each other one, one Unicode code point, an underscore,
+// so that "résumé.txt" is "r_sum_.txt". The full name is in /UF.
+func fileSpecBytes(fileName string) []byte {
+	bytes := make([]byte, 0, len(fileName))
+	for _, ch := range fileName {
+		switch {
+		case ch == '/':
+			bytes = append(bytes, '\\', '/')
+		case ch == '\\':
+			bytes = append(bytes, '_')
+		case ch >= 0x20 && ch <= 0x7E:
+			bytes = append(bytes, byte(ch))
+		default:
+			bytes = append(bytes, '_')
+		}
+	}
+	return bytes
 }
 
 // toName returns the media type as a name of PDF: the characters a name

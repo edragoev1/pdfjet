@@ -233,7 +233,7 @@ func TestMisuseFontsImagesStampsAndGroupsBelongToOneDocument(t *testing.T) {
 	NewTextLine(font, "Hello").SetLocation(50, 50).DrawOn(page)
 	testRecorded(t, page.pdf, "The font belongs to another PDF.")
 
-	image := NewImageFromFile(other, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	image := NewImageFromFile(other, testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	page = testNewPage()
 	image.SetLocation(50, 50).DrawOn(page)
 	testRecorded(t, page.pdf, "The image belongs to another PDF.")
@@ -357,7 +357,7 @@ func TestMisuseTheXmpMetadataLeavesOutControlCharacters(t *testing.T) {
 
 func TestMisuseAZeroSizeImageStampOrContainerDrawsNothing(t *testing.T) {
 	page := testNewPage()
-	image := NewImageFromFile(page.pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	image := NewImageFromFile(page.pdf, testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	image.ScaleBy(0)
 	image.SetLocation(50, 50).DrawOn(page)
 	stamp := NewStamp(page.pdf).SetSize(50, 50)
@@ -409,7 +409,7 @@ func TestMisuseTheObjectsOfAnExistingPdfComeBeforeTheContent(t *testing.T) {
 	// An embedded font only reserves its number, written at Complete: the
 	// objects could take it too (the review of 9 October 2026).
 	pdf3 := testNewPDF()
-	NewFontFromFile(pdf3, testRepoPath(t, "fonts/NotoSans/NotoSans-Regular.ttf"))
+	NewFontFromFile(pdf3, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	if err := pdf3.AddObjects(objects); err == nil || err.Error() != message {
 		t.Errorf("AddObjects after an embedded font: %v", err)
 	}
@@ -582,5 +582,36 @@ func TestADecimalNumber(t *testing.T) {
 		if isDecimalNumber(text) {
 			t.Errorf("%q is taken", text)
 		}
+	}
+}
+
+// NaN and absurd sizes are the port's error, not a hang or a crash (the review
+// of 30 October 2026, G6 to G8).
+func TestMisuseNaNAndAbsurdSizesAreRefused(t *testing.T) {
+	pdf := testNewPDF()
+	frame := NewTextFrame(testHelvetica(pdf), []string{"Hello frame text"}).SetWidth(120).SetHeight(200)
+	frame.SetLocation(float32(math.NaN()), float32(math.NaN()))
+	for frame.HasMoreText() {
+		frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	}
+	testRefused(t, pdf, "The text frame's location and size must be numbers, not NaN or infinite.")
+
+	pdf = testNewPDF()
+	font := testHelvetica(pdf)
+	NewBarChart(font, font).SetCategories("a").AddSeries("one", []float32{1}).SetFractionDigits(1 << 30).
+		DrawOn(NewPage(pdf, testLetterPortrait()))
+	testRefused(t, pdf, "The fraction digits of a chart are at most 100.")
+
+	pdf = testNewPDF()
+	font = testHelvetica(pdf)
+	NewSimpleBarChart(font, font).Add("a", 1).SetFractionDigits(1 << 30).DrawOn(NewPage(pdf, testLetterPortrait()))
+	testRefused(t, pdf, "The fraction digits of a chart are at most 100.")
+
+	for _, size := range []float32{float32(math.NaN()), float32(math.Inf(1)), 1e30} {
+		pdf = testNewPDF()
+		font = testHelvetica(pdf)
+		NewSimpleLineChart(font, font).SetSize(size, size).SetCategories("a", "b").
+			AddLine("one", []float32{1, 2}).DrawOn(NewPage(pdf, testLetterPortrait()))
+		testRefused(t, pdf, "A coordinate, size or width is NaN, infinite or too large for a PDF.")
 	}
 }
