@@ -471,7 +471,15 @@ def main():
         command = build_port(args.port, out)
         made = os.path.join(out, 'made')
         make_images(made)
-        files = [f for f in image_files(args.images, made) if args.only in f[0]]
+        files = image_files(args.images, made)
+        # PngSuite and the images of the repository are always there, so a
+        # corpus that was not fetched does not show as no files at all.
+        for corpus in ('pillow/', 'bmpsuite/'):
+            if not any(name.startswith(corpus) for name, _ in files):
+                sys.exit(f'No image of {corpus} in {args.images}: the corpus was not fetched.')
+        files = [f for f in files if args.only in f[0]]
+        if not files:
+            sys.exit(f'No image has {args.only!r} in its name.')
         tasks = [(name, path, command, out) for name, path in files]
         counts = Counter()
         kinds = Counter()
