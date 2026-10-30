@@ -362,7 +362,7 @@ public class SVGImage : Drawable {
             state.fillCurrent = false
         }
         var vertices: [[Double]]?
-        if !state.hidden && !operations.isEmpty
+        if !state.hidden && !state.invisible && !operations.isEmpty
                 && (state.markerStart != nil || state.markerMid != nil || state.markerEnd != nil)
                 && (name == "path" || name == "line" || name == "polyline" || name == "polygon") {
             vertices = SVGImage.vertices(operations)    // Before addPath moves the points
@@ -373,11 +373,30 @@ public class SVGImage : Drawable {
         }
 
         for child in node.getChildren() {
+            if name == "switch" && !SVGImage.isSwitchable(child) {
+                continue
+            }
             try draw(child, false)
+            if name == "switch" {
+                break   // A switch draws the first it can
+            }
         }
         if name == "style" {
             rules.add(SVGRule.parseStyleSheet(node.getText()))
         }
+    }
+
+    // The elements PDFjet draws, and a switch can choose.
+    private static let drawn: Set<String> = [
+        "a", "circle", "ellipse", "g", "line", "path", "polygon",
+        "polyline", "rect", "svg", "switch", "text", "use",
+    ]
+
+    // Returns true when a switch can draw the element: one PDFjet draws,
+    // which asks for no extension, as PDFjet has none. The system language
+    // is not tested: a PDF is read by anyone.
+    private static func isSwitchable(_ node: PDFjetXMLNode) -> Bool {
+        return drawn.contains(node.getLocalName()) && node.getAttribute("requiredExtensions") == nil
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -570,7 +589,7 @@ public class SVGImage : Drawable {
     private func addPath(_ state: SVGState, _ operations: [PathOp]) {
         let m = state.matrix
         let det = m[0]*m[3] - m[1]*m[2]
-        if state.hidden || operations.isEmpty || det == 0.0 {
+        if state.hidden || state.invisible || operations.isEmpty || det == 0.0 {
             return
         }
         let path = SVGPath()
@@ -654,6 +673,9 @@ public class SVGImage : Drawable {
                 attributes = SVGImage.attributes(target, &order)
                 shape = try elementState(shape, attributes, order)
                 name = target.getLocalName()
+            }
+            if shape.hidden || shape.invisible {
+                continue
             }
             let operations = try SVGImage.shapeOperations(name, attributes)
             if operations.isEmpty {
@@ -984,6 +1006,11 @@ public class SVGImage : Drawable {
                 run.stroke = state.strokeCurrent ? state.color : state.stroke
                 run.fillAlpha = state.drawnFillAlpha()
                 run.strokeAlpha = state.drawnStrokeAlpha()
+                if state.invisible {
+                    // It keeps its place in the text
+                    run.fill = Color.transparent
+                    run.stroke = Color.transparent
+                }
                 run.strokeWidth = state.strokeWidth
                 run.strokeFirst = state.strokeFirst
                 run.lineJoin = state.lineJoin

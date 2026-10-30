@@ -1004,4 +1004,58 @@ import Testing
             #expect(content == "", "\(content)")
         }
     }
+
+    @Test func whatIsNotVisibleIsNotDrawn() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\"/></g></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><rect width=\"5\" height=\"5\" style=\"visibility:collapse\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\" visibility=\"visible\"/></g></svg>")
+            #expect(content.hasPrefix("0 0 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><text visibility=\"hidden\" x=\"1\" y=\"50\">a</text></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"9\">a<tspan visibility=\"hidden\">b</tspan>c</text></svg>")
+            #expect(content.components(separatedBy: "BT\n").count - 1 == 2, "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><defs><rect id=\"r\" width=\"5\" height=\"5\"/></defs><use href=\"#r\" visibility=\"hidden\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"5\" height=\"5\" visibility=\"hidden\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L1 1\" stroke=\"red\" visibility=\"hidden\" marker-end=\"url(#m)\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func aSwitchDrawsTheFirstChildItCan() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content == "1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><title>a</title><foreignObject width=\"5\" height=\"5\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></foreignObject><g><rect width=\"5\" height=\"5\" fill=\"red\"/></g><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content.hasPrefix("1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content.components(separatedBy: "0 0 1 rg").count - 1 == 0, "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content.components(separatedBy: "1 0 0 rg").count - 1 == 1, "\(content)")
+        }
+    }
 }

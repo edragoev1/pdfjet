@@ -40,6 +40,7 @@ class SVGState {
     float ownOpacity = 1f;              // The opacity of the element itself, not inherited
     double[] matrix = IDENTITY;         // Never changed in place: a new transform is a new array
     boolean hidden = false;             // In <defs> and the like, or under display="none": not drawn
+    boolean invisible = false;          // visibility: not painted, but its children may be
     float[] dashArray = null;           // stroke-dasharray, in the user space; null is a solid line
     float dashOffset = 0f;
     boolean strokeFirst = false;        // paint-order: the stroke drawn before the fill
@@ -84,6 +85,7 @@ class SVGState {
         this.ownOpacity = parent.ownOpacity;
         this.matrix = parent.matrix;
         this.hidden = parent.hidden;
+        this.invisible = parent.invisible;
         this.dashArray = parent.dashArray;
         this.dashOffset = parent.dashOffset;
         this.strokeFirst = parent.strokeFirst;
@@ -320,6 +322,12 @@ class SVGState {
         } else if (name.equals("display")) {
             if (value.equals("none")) {
                 this.hidden = true;
+            }
+        } else if (name.equals("visibility")) {
+            if (value.equals("hidden") || value.equals("collapse")) {
+                this.invisible = true;
+            } else if (value.equals("visible")) {
+                this.invisible = false;
             }
         } else if (name.equals("stroke-dasharray")) {
             this.dashArray = parseDashArray(value);

@@ -357,7 +357,7 @@ public class SVGImage : IDrawable {
             state.fillCurrent = false;
         }
         List<double[]> vertices = null;
-        if (!state.hidden && operations.Count > 0
+        if (!state.hidden && !state.invisible && operations.Count > 0
                 && (state.markerStart != null || state.markerMid != null || state.markerEnd != null)
                 && (name.Equals("path") || name.Equals("line") || name.Equals("polyline") || name.Equals("polygon"))) {
             vertices = Vertices(operations);    // Before AddPath moves the points
@@ -368,7 +368,13 @@ public class SVGImage : IDrawable {
         }
 
         foreach (XMLNode child in node.GetChildren()) {
+            if (name.Equals("switch") && !IsSwitchable(child)) {
+                continue;
+            }
             Draw(child, stack, rules, ref root, false);
+            if (name.Equals("switch")) {
+                break;  // A switch draws the first it can
+            }
         }
         if (name.Equals("style")) {
             rules.Add(SVGRule.ParseStyleSheet(node.GetText()));
@@ -380,6 +386,19 @@ public class SVGImage : IDrawable {
     private static String Attribute(Dictionary<String, String> attributes, String name) {
         String value;
         return attributes.TryGetValue(name, out value) ? value : "";
+    }
+
+    // The elements PDFjet draws, and a switch can choose.
+    private static readonly HashSet<String> DRAWN = new HashSet<String> {
+        "a", "circle", "ellipse", "g", "line", "path", "polygon",
+        "polyline", "rect", "svg", "switch", "text", "use",
+    };
+
+    // Returns true when a switch can draw the element: one PDFjet draws,
+    // which asks for no extension, as PDFjet has none. The system language
+    // is not tested: a PDF is read by anyone.
+    private static bool IsSwitchable(XMLNode node) {
+        return DRAWN.Contains(node.GetLocalName()) && node.GetAttribute("requiredExtensions") == null;
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -572,7 +591,7 @@ public class SVGImage : IDrawable {
     private void AddPath(SVGState state, List<PathOp> operations) {
         double[] m = state.matrix;
         double det = m[0]*m[3] - m[1]*m[2];
-        if (state.hidden || operations.Count == 0 || det == 0.0) {
+        if (state.hidden || state.invisible || operations.Count == 0 || det == 0.0) {
             return;
         }
         SVGPath path = new SVGPath();
@@ -687,6 +706,9 @@ public class SVGImage : IDrawable {
                 attributes = Attributes(target, order);
                 shape = ElementState(shape, rules, attributes, order);
                 name = target.GetLocalName();
+            }
+            if (shape.hidden || shape.invisible) {
+                continue;
             }
             List<PathOp> operations = ShapeOperations(name, attributes);
             if (operations.Count == 0) {
@@ -1042,6 +1064,11 @@ public class SVGImage : IDrawable {
                 run.stroke = state.strokeCurrent ? state.color : state.stroke;
                 run.fillAlpha = state.DrawnFillAlpha();
                 run.strokeAlpha = state.DrawnStrokeAlpha();
+                if (state.invisible) {
+                    // It keeps its place in the text
+                    run.fill = Color.transparent;
+                    run.stroke = Color.transparent;
+                }
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;

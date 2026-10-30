@@ -1057,5 +1057,61 @@ public class SVGImageTest {
             Assert.Equal("", content);
         }
     }
+
+    [Fact]
+    public void WhatIsNotVisibleIsNotDrawn() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\"/></g></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><rect width=\"5\" height=\"5\" style=\"visibility:collapse\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\" visibility=\"visible\"/></g></svg>");
+            Assert.StartsWith("0 0 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><text visibility=\"hidden\" x=\"1\" y=\"50\">a</text></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"9\">a<tspan visibility=\"hidden\">b</tspan>c</text></svg>");
+            Assert.Equal(2, content.Split(new string[] {"BT\n"}, StringSplitOptions.None).Length - 1);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><defs><rect id=\"r\" width=\"5\" height=\"5\"/></defs><use href=\"#r\" visibility=\"hidden\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"5\" height=\"5\" visibility=\"hidden\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L1 1\" stroke=\"red\" visibility=\"hidden\" marker-end=\"url(#m)\"/></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void ASwitchDrawsTheFirstChildItCan() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.Equal("1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><title>a</title><foreignObject width=\"5\" height=\"5\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></foreignObject><g><rect width=\"5\" height=\"5\" fill=\"red\"/></g><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.StartsWith("1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.Equal(0, content.Split(new string[] {"0 0 1 rg"}, StringSplitOptions.None).Length - 1);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.Equal(1, content.Split(new string[] {"1 0 0 rg"}, StringSplitOptions.None).Length - 1);
+        }
+    }
 }
 }

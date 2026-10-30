@@ -1167,3 +1167,45 @@ func TestSVGImageTheKeywordsOfAPaintAreInAnyCase(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 }
+
+func TestSVGImageWhatIsNotVisibleIsNotDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><g visibility="hidden"><rect width="5" height="5"/></g></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><rect width="5" height="5" style="visibility:collapse"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><g visibility="hidden"><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue" visibility="visible"/></g></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><text visibility="hidden" x="1" y="50">a</text></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><text x="1" y="9">a<tspan visibility="hidden">b</tspan>c</text></svg>`); strings.Count(content, "BT\n") != 2 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><defs><rect id="r" width="5" height="5"/></defs><use href="#r" visibility="hidden"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="5" height="5" visibility="hidden"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><marker id="m"><rect width="5" height="5"/></marker><path d="M0 0 L1 1" stroke="red" visibility="hidden" marker-end="url(#m)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASwitchDrawsTheFirstChildItCan(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); content != "1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><title>a</title><foreignObject width="5" height="5"><rect width="5" height="5" fill="blue"/></foreignObject><g><rect width="5" height="5" fill="red"/></g><rect width="5" height="5" fill="blue"/></switch></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" requiredExtensions="http://a" fill="blue"/><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); strings.Count(content, "0 0 1 rg") != 0 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" requiredExtensions="http://a" fill="blue"/><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); strings.Count(content, "1 0 0 rg") != 1 {
+		t.Errorf("content %q", content)
+	}
+}

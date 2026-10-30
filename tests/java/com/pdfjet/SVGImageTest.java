@@ -1068,4 +1068,60 @@ class SVGImageTest {
             assertEquals("", content);
         }
     }
+
+    @Test
+    void whatIsNotVisibleIsNotDrawn() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\"/></g></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><rect width=\"5\" height=\"5\" style=\"visibility:collapse\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\" visibility=\"visible\"/></g></svg>");
+            assertTrue(content.startsWith("0 0 1 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><text visibility=\"hidden\" x=\"1\" y=\"50\">a</text></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"9\">a<tspan visibility=\"hidden\">b</tspan>c</text></svg>");
+            assertEquals(2, content.split("BT\n", -1).length - 1, content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><defs><rect id=\"r\" width=\"5\" height=\"5\"/></defs><use href=\"#r\" visibility=\"hidden\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"5\" height=\"5\" visibility=\"hidden\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L1 1\" stroke=\"red\" visibility=\"hidden\" marker-end=\"url(#m)\"/></svg>");
+            assertEquals("", content);
+        }
+    }
+
+    @Test
+    void aSwitchDrawsTheFirstChildItCan() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertEquals("1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><title>a</title><foreignObject width=\"5\" height=\"5\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></foreignObject><g><rect width=\"5\" height=\"5\" fill=\"red\"/></g><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertTrue(content.startsWith("1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertEquals(0, content.split("0 0 1 rg", -1).length - 1, content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertEquals(1, content.split("1 0 0 rg", -1).length - 1, content);
+        }
+    }
 }

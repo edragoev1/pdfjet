@@ -414,7 +414,7 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 		state.fillCurrent = false
 	}
 	var vertices [][3]float64
-	if !state.hidden && len(operations) > 0 &&
+	if !state.hidden && !state.invisible && len(operations) > 0 &&
 		(state.markerStart != "" || state.markerMid != "" || state.markerEnd != "") &&
 		(name == "path" || name == "line" || name == "polyline" || name == "polygon") {
 		vertices = svgVertices(operations) // Before addPath moves the points
@@ -427,14 +427,34 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	}
 
 	for _, child := range node.Children() {
+		if name == "switch" && !isSVGSwitchable(child) {
+			continue
+		}
 		if err := r.draw(child, false); err != nil {
 			return err
+		}
+		if name == "switch" {
+			break // A switch draws the first it can
 		}
 	}
 	if name == "style" {
 		r.rules.add(parseSVGStyleSheet(node.Text()))
 	}
 	return nil
+}
+
+// svgDrawn are the elements PDFjet draws, and a switch can choose.
+var svgDrawn = map[string]bool{
+	"a": true, "circle": true, "ellipse": true, "g": true, "line": true, "path": true, "polygon": true,
+	"polyline": true, "rect": true, "svg": true, "switch": true, "text": true, "use": true,
+}
+
+// isSVGSwitchable reports whether a switch can draw the element: one PDFjet
+// draws, which asks for no extension, as PDFjet has none. The system language
+// is not tested: a PDF is read by anyone.
+func isSVGSwitchable(node *xmlparser.XMLNode) bool {
+	_, extensions := node.Attribute("requiredExtensions")
+	return svgDrawn[node.LocalName()] && !extensions
 }
 
 // elementState returns the state of an element whose parent has the given
@@ -627,7 +647,7 @@ func radius(value string) (float64, bool) {
 func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	m := state.matrix
 	det := float64(m[0]*m[3]) - float64(m[1]*m[2])
-	if state.hidden || len(operations) == 0 || det == 0.0 {
+	if state.hidden || state.invisible || len(operations) == 0 || det == 0.0 {
 		return
 	}
 	path := new(svgPath)
@@ -727,6 +747,9 @@ func (r *svgReader) clip(state *svgState) error {
 				return err
 			}
 			name = target.LocalName()
+		}
+		if shape.hidden || shape.invisible {
+			continue
 		}
 		operations, err := shapeOperations(name, attributes)
 		if err != nil {
@@ -1101,6 +1124,11 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 			}
 			if state.strokeCurrent {
 				run.stroke = state.color
+			}
+			if state.invisible {
+				// It keeps its place in the text
+				run.fill = color.Transparent
+				run.stroke = color.Transparent
 			}
 			*pending = [4]float64{math.NaN(), math.NaN(), 0, 0}
 			text.runs = append(text.runs, run)

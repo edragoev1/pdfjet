@@ -38,6 +38,7 @@ internal class SVGState {
     internal float ownOpacity = 1f;             // The opacity of the element itself, not inherited
     internal double[] matrix = IDENTITY;        // Replaced, never changed in place
     internal bool hidden = false;               // In <defs> and the like, or under display="none": not drawn
+    internal bool invisible = false;            // visibility: not painted, but its children may be
     internal float[] dashArray = null;          // stroke-dasharray, in the user space; null is a solid line
     internal float dashOffset = 0f;
     internal bool strokeFirst = false;          // paint-order: the stroke drawn before the fill
@@ -173,6 +174,13 @@ internal class SVGState {
             case "display":
                 if (value.Equals("none")) {
                     hidden = true;
+                }
+                break;
+            case "visibility":
+                if (value.Equals("hidden") || value.Equals("collapse")) {
+                    invisible = true;
+                } else if (value.Equals("visible")) {
+                    invisible = false;
                 }
                 break;
             case "stroke-dasharray":

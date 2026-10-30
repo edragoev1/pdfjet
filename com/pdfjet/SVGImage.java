@@ -357,7 +357,7 @@ public class SVGImage implements Drawable {
             state.fillCurrent = false;
         }
         List<double[]> vertices = null;
-        if (!state.hidden && !operations.isEmpty()
+        if (!state.hidden && !state.invisible && !operations.isEmpty()
                 && (state.markerStart != null || state.markerMid != null || state.markerEnd != null)
                 && (name.equals("path") || name.equals("line") || name.equals("polyline") || name.equals("polygon"))) {
             vertices = vertices(operations);    // Before addPath moves the points
@@ -368,7 +368,13 @@ public class SVGImage implements Drawable {
         }
 
         for (XMLNode child : node.getChildren()) {
+            if (name.equals("switch") && !isSwitchable(child)) {
+                continue;
+            }
             draw(child, colorMap, rules, stack, root, false);
+            if (name.equals("switch")) {
+                break;  // A switch draws the first it can
+            }
         }
         if (name.equals("style")) {
             rules.add(SVGState.parseStyleSheet(node.getText()));
@@ -381,6 +387,18 @@ public class SVGImage implements Drawable {
     private static String attribute(Map<String, String> attributes, String name) {
         String value = attributes.get(name);
         return (value == null) ? "" : value;
+    }
+
+    // The elements PDFjet draws, and a switch can choose.
+    private static final Set<String> DRAWN = new HashSet<String>(Arrays.asList(
+            "a", "circle", "ellipse", "g", "line", "path", "polygon",
+            "polyline", "rect", "svg", "switch", "text", "use"));
+
+    // Returns true when a switch can draw the element: one PDFjet draws,
+    // which asks for no extension, as PDFjet has none. The system language
+    // is not tested: a PDF is read by anyone.
+    private static boolean isSwitchable(XMLNode node) {
+        return DRAWN.contains(node.getLocalName()) && node.getAttribute("requiredExtensions") == null;
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -568,7 +586,7 @@ public class SVGImage implements Drawable {
     private void addPath(SVGState state, List<PathOp> operations) {
         double[] m = state.matrix;
         double det = m[0]*m[3] - m[1]*m[2];
-        if (state.hidden || operations.isEmpty() || det == 0.0) {
+        if (state.hidden || state.invisible || operations.isEmpty() || det == 0.0) {
             return;
         }
         SVGPath path = new SVGPath();
@@ -675,6 +693,9 @@ public class SVGImage implements Drawable {
                 attributes = attributes(target, order);
                 shape = elementState(shape, colorMap, rules, attributes, order);
                 name = target.getLocalName();
+            }
+            if (shape.hidden || shape.invisible) {
+                continue;
             }
             List<PathOp> operations = shapeOperations(name, attributes);
             if (operations.isEmpty()) {
@@ -1020,6 +1041,11 @@ public class SVGImage implements Drawable {
                 run.stroke = state.strokeCurrent ? state.color : state.stroke;
                 run.fillAlpha = state.drawnFillAlpha();
                 run.strokeAlpha = state.drawnStrokeAlpha();
+                if (state.invisible) {
+                    // It keeps its place in the text
+                    run.fill = Color.transparent;
+                    run.stroke = Color.transparent;
+                }
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;

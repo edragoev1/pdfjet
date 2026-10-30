@@ -47,6 +47,7 @@ type svgState struct {
 	ownOpacity    float32 // The opacity of the element itself, not inherited
 	matrix        [6]float64
 	hidden        bool      // In <defs> and the like, or under display="none": not drawn
+	invisible     bool      // visibility: not painted, but its children may be
 	dashArray     []float32 // stroke-dasharray, in the user space; nil is a solid line
 	dashOffset    float32
 	strokeFirst   bool    // paint-order: the stroke drawn before the fill
@@ -306,6 +307,12 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 	case "display":
 		if value == "none" {
 			state.hidden = true
+		}
+	case "visibility":
+		if value == "hidden" || value == "collapse" {
+			state.invisible = true
+		} else if value == "visible" {
+			state.invisible = false
 		}
 	case "stroke-dasharray":
 		state.dashArray = parseSVGDashArray(value)

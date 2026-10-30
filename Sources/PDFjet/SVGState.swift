@@ -32,6 +32,7 @@ struct SVGState {
     var ownOpacity: Float = 1.0             // The opacity of the element itself, not inherited
     var matrix = SVGState.identity
     var hidden = false                      // In <defs> and the like, or under display="none": not drawn
+    var invisible = false                   // visibility: not painted, but its children may be
     var dashArray: [Float]? = nil           // stroke-dasharray, in the user space; nil is a solid line
     var dashOffset: Float = 0.0
     var strokeFirst = false                 // paint-order: the stroke drawn before the fill
@@ -150,6 +151,12 @@ struct SVGState {
         case "display":
             if value == "none" {
                 hidden = true
+            }
+        case "visibility":
+            if value == "hidden" || value == "collapse" {
+                invisible = true
+            } else if value == "visible" {
+                invisible = false
             }
         case "stroke-dasharray":
             dashArray = SVGState.parseDashArray(value)
