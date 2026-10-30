@@ -160,6 +160,18 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   later use, and the name tree of `/EmbeddedFiles` is the same. Example:
   for `notes.txt`, `/F` is `<6e6f7465732e747874>`, where it was
   `<feff006e006f007400650073002e007400780074>`.
+- The four ports: the `/F` of an embedded file follows ISO 32000-2, 7.11.2,
+  on file specification strings. The name is one component, the file name:
+  a solidus in it is preceded by a reverse solidus, which tells it from the
+  separator of components, as 7.11.2 asks, and a reverse solidus in it is an
+  underscore, as a reader removes each reverse solidus and 7.11.2 gives no
+  way to write one that stays. `/UF` keeps the full name.
+- Behavior change: a solidus or a reverse solidus in the name of an
+  embedded file is written differently in `/F`. Example: for `in/out.txt`,
+  `/F` is the bytes `in\/out.txt`, where it was `in/out.txt`, a folder `in`
+  and a file `out.txt` to a reader; for `C:\temp\a.txt` it is
+  `C:_temp_a.txt`, where it was `C:\temp\a.txt`, which a reader reads as
+  `C:tempa.txt`.
 
 ## v9.1.5 — 2026-10-28
 

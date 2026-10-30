@@ -162,16 +162,29 @@ public class EmbeddedFile {
         pdf.embeddedFiles.put(this.objNumber, fileName);
     }
 
-    // The file name as the bytes of /F: each character from space to tilde
-    // (0x20 to 0x7E) as it is, and each other character, one Unicode code
-    // point, as an underscore, so that "résumé.txt" is "r_sum_.txt". The full
-    // name is in /UF.
+    // The file name as the bytes of /F, a file specification string of one
+    // component, the file name (ISO 32000-2, 7.11.2): a solidus in the name
+    // is preceded by a reverse solidus, which tells it from a separator of
+    // components, so that "in/out" is "in\/out"; a reverse solidus in the
+    // name is an underscore, as a reader removes each reverse solidus and
+    // 7.11.2 gives no way to write one that stays, so that "C:\temp\a.txt"
+    // is "C:_temp_a.txt"; each other character from space to tilde (0x20 to
+    // 0x7E) is as it is, and each other one, one Unicode code point, an
+    // underscore, so that "résumé.txt" is "r_sum_.txt". The full name is in
+    // /UF.
     static byte[] fileSpecBytes(String fileName) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         int i = 0;
         while (i < fileName.length()) {
             int ch = fileName.codePointAt(i);
-            bytes.write((ch >= 0x20 && ch <= 0x7E) ? ch : '_');
+            if (ch == '/') {
+                bytes.write('\\');
+                bytes.write('/');
+            } else if (ch == '\\') {
+                bytes.write('_');
+            } else {
+                bytes.write((ch >= 0x20 && ch <= 0x7E) ? ch : '_');
+            }
             i += Character.charCount(ch);
         }
         return bytes.toByteArray();

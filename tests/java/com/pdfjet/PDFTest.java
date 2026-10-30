@@ -694,6 +694,27 @@ class PDFTest {
         assertEquals("\u00dcbersicht \u2013 r\u00e9sum\u00e9 \ud83d\ude00.txt", TestSupport.utf16Hex(spec.getValue("/UF")));
         assertEquals("<5f6265727369636874205f20725f73756d5f205f2e747874>", spec.getValue("/F").toLowerCase(Locale.ROOT));
     }
+
+    // /F is a file specification string of one component, the file name (ISO
+    // 32000-2, 7.11.2): a solidus is preceded by a reverse solidus, and a
+    // reverse solidus, which a reader removes, is an underscore; /UF is the
+    // name as it is.
+    @Test
+    void theFOfAnEmbeddedFileEscapesASolidus() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        EmbeddedFile file = new EmbeddedFile(pdf, "in/out\\a.txt",
+                new java.io.ByteArrayInputStream("Hello".getBytes(StandardCharsets.US_ASCII)), false);
+        new FileAttachment(file).setLocation(100f, 100f).drawOn(page);
+        pdf.complete();
+        PDFobj spec = TestSupport.findObject(TestSupport.read(bos.toByteArray()), "/UF");
+        assertNotNull(spec);
+        assertEquals("in/out\\a.txt", TestSupport.utf16Hex(spec.getValue("/UF")));
+        // in\/out_a.txt
+        assertEquals("<696e5c2f6f75745f612e747874>", spec.getValue("/F").toLowerCase(Locale.ROOT));
+    }
+
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads
     // past the file, allocates what the file does not have or traps in Swift.
