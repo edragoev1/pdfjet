@@ -17,6 +17,8 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
   in the public domain. `the-idiot-source.txt` says where it comes from and
   how the text was prepared. `dostoevsky.txt` is from the same translation.
 - `languages` holds sample text in the languages and scripts PDFjet draws.
+- `physics.txt` was written for PDFjet, and `winter-2009.txt` is made up:
+  its names and scores are invented.
 - `testPDFs/PDFjetLogo.pdf`, `markdown` and `invoice` are PDFjet's own
   (`invoice/logo.svg` is the logo of a fictional print shop);
   `testPDFs/scanned-linearized.pdf` is written by `util/make-scanned-pdf.py`

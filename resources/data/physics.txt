@@ -1,16 +1,23 @@
-**Conceptual Questions**
+**Questions on Motion and Measurement**
 
-Physics is the science concerned with describing the interactions of energy, matter, space, and time to uncover the fundamental mechanisms that underlie every phenomenon.
+Physics is the science of how matter and energy behave, from the smallest particles to the largest structures we can observe.
 
-No, neither of these two theories is more valid than the other. Experimentation is the ultimate decider. If experimental evidence does not suggest one theory over the other, then both are equally valid. A given physicist might prefer one theory over another on the grounds that one seems more simple, more natural, or more beautiful than the other, but that physicist would quickly acknowledge that he or she cannot say the other theory is invalid. Rather, he or she would be honest about the fact that more experimental evidence is
-needed to determine which theory is a better description of nature.
+Experimentation settles the question. When two explanations disagree, a good measurement shows which one fits, and a new explanation has to account for every result that came before it.
 
-Probably not. As the saying goes, "Extraordinary claims require extraordinary evidence."
+A surprising claim calls for strong proof, and a single measurement is rarely enough. Other people need to be able to repeat the result, with their own equipment.
 
-Conversions between units require factors of 10 only, which simplifies calculations. Also, the same basic units can be scaled up or down using metric prefixes to sizes appropriate for the problem at hand.
+A ball thrown straight up slows down, stops for an instant and falls back, because gravity acts on it the whole time.
 
-a. Base units are defined by a particular process of measuring a base quantity whereas derived units are defined as algebraic combinations of base units. b. A base quantity is chosen by convention and practical considerations. Derived quantities are expressed as algebraic combinations of base quantities. c. A base unit is a standard for expressing the measurement of a base quantity within a particular system of units. So, a measurement of a base quantity could be expressed in terms of a base unit in any system of units using the same base quantities. For example, length is a base quantity in both SI and the English system, but the meter is a base unit in the SI system only.
+A heavy truck and a small car rolling at the same speed do not stop in the same distance on the same brakes, as the truck carries more energy.
 
-a. Uncertainty is a quantitative measure of precision. b. Discrepancy is a quantitative measure of accuracy.
+**Questions on Units and Errors**
 
-Check to make sure it makes sense and assess its significance.
+Scientific units use powers of ten, so that moving between meters and kilometers takes no more than moving a decimal point.
+
+Precision tells how close repeated measurements are to each other, and accuracy tells how close they are to the true value. A careful experiment needs both.
+
+An answer in physics has a size and a unit, so the first check is whether the unit makes sense. A speed given in kilograms shows a mistake somewhere.
+
+A rough estimate before a calculation is worth the minute it takes. If the result is a thousand times larger, something has gone wrong, and the science is in finding out where.
+
+Rounding too early adds errors that grow at each step, so a value is carried with extra digits and rounded once, at the end.

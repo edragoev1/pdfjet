@@ -1,252 +1,252 @@
 |Student Name|||WRC|WRC|Maze|Maze||WRC|WRC
 Teacher's Last Name|Student's First Name|Student's Last Name||Fall|Errors|Fall|Norms||Winter|Errors
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
-Mr. Bean|John|Smith||38|4|3|Average||60|1
-Mr. Bean|Ivana|Bowden||86|1|13||||
-Mr. Bean|Emilia|Fisher||81|3|13|Well Above Average||116|2
-Mr. Bean|Kathy|Jones||69|4|11|Above Average||91|1
-Mr. Bean|Helena|Rose||131|0|16|Well Above Average||171|1
+Mrs. Teapot|Ben|Yarrow||59|5|8|Average||74|3
+Mrs. Teapot|Dan|Elm||114|2|11||||
+Mrs. Teapot|Ada|Pine||54|1|5|Below Average||62|4
+Mrs. Teapot|Quinn|Hazel||90|4|11|Above Average||99|4
+Mrs. Teapot|Olive|Reed||115|3|10|Well Above Average||140|1
+Mrs. Teapot|Ada|Willow||97|6|9|Above Average||106|0
+Mrs. Teapot|Mia|Knoll||54|4|7||||
+Mrs. Teapot|Tess|Sage||110|5|10|Above Average||140|2
+Mrs. Teapot|Will|Juniper||64|2|6|Average||89|0
+Mrs. Teapot|Noah|Alder||47|4|5|Below Average||83|0
+Mrs. Teapot|Mia|Larch||109|4|13|Above Average||132|4
+Mrs. Teapot|Mia|Pine||62|5|7||||
+Mrs. Teapot|Finn|Cedar||28|5|2|Below Average||68|0
+Mrs. Teapot|Quinn|Thorn||72|4|9|Average||90|1
+Mrs. Teapot|Sam|Hazel||60|4|6|Average||72|4
+Mrs. Teapot|Dan|Ivy||61|2|8|Average||79|4
+Mrs. Teapot|Xena|Reed||38|5|2||||
+Mrs. Teapot|Yara|Fern||95|5|10|Above Average||103|4
+Mrs. Teapot|Sam|Sage||67|1|5|Average||105|2
+Mrs. Teapot|Ada|Reed||80|0|8|Average||86|1
+Mrs. Teapot|Ada|Alder||46|2|7|Below Average||60|3
+Mrs. Teapot|Kira|Birch||121|6|14||||
+Mrs. Teapot|Finn|Maple||33|0|5|Below Average||57|2
+Mrs. Teapot|Finn|Pine||78|5|8|Average||89|4
+Mrs. Teapot|Quinn|Fern||85|1|8|Above Average||90|3
+Mrs. Teapot|Vera|Elm||59|4|4|Average||83|4
+Mrs. Teapot|Olive|Maple||117|6|13||||
+Mrs. Teapot|Uma|Quarry||78|5|9|Average||102|0
+Mrs. Teapot|Olive|Elm||140|0|14|Well Above Average||167|3
+Mrs. Teapot|Elsa|Elm||84|2|8|Above Average||109|0
+Mrs. Teapot|Olive|Thorn||64|4|8|Average||99|4
+Mrs. Teapot|Rosa|Fern||120|4|14||||
+Mrs. Teapot|Leo|Nettle||79|1|7|Average||103|1
+Mrs. Teapot|Rosa|Thorn||59|2|8|Average||75|4
+Mrs. Teapot|Jack|Juniper||90|6|8|Above Average||119|3
+Mrs. Teapot|Hugo|Sage||72|6|10|Average||85|2
+Mrs. Teapot|Mia|Nettle||139|6|13||||
+Mrs. Teapot|Mia|Knoll||137|0|14|Well Above Average||150|2
+Mrs. Teapot|Tess|Birch||39|3|6|Below Average||49|1
+Mrs. Teapot|Will|Vale||122|2|14|Well Above Average||145|1
+Mrs. Teapot|Dan|Alder||83|5|10|Average||98|3
+Mrs. Teapot|Cara|Hazel||62|6|5||||
+Mrs. Teapot|Finn|Reed||35|3|3|Below Average||51|0
+Mrs. Teapot|Vera|Elm||140|6|16|Well Above Average||159|1
+Mrs. Teapot|Noah|Willow||109|2|13|Above Average||138|2
+Mrs. Teapot|Pia|Juniper||34|5|5|Below Average||62|3
+Mrs. Teapot|Zack|Juniper||135|3|13||||
+Mrs. Teapot|Uma|Vale||83|0|9|Average||111|0
+Mrs. Teapot|Zack|Sage||68|1|7|Average||78|1
+Mrs. Teapot|Noah|Nettle||80|2|8|Average||115|1
+Mrs. Teapot|Mia|Yarrow||77|0|8|Average||100|1
+Mrs. Teapot|Will|Knoll||111|5|12||||
+Mrs. Teapot|Tess|Yarrow||120|2|15|Well Above Average||151|4
+Mrs. Teapot|Sam|Maple||124|3|11|Well Above Average||141|2
+Mrs. Teapot|Zack|Oak||118|6|12|Well Above Average||127|1
+Mrs. Teapot|Cara|Fern||105|2|9|Above Average||135|2
+Mrs. Teapot|Hugo|Alder||130|6|12||||
+Mrs. Teapot|Ben|Dale||43|3|3|Below Average||75|0
+Mrs. Teapot|Uma|Pine||62|0|5|Average||102|2
+Mrs. Teapot|Ada|Yarrow||132|1|13|Well Above Average||139|1
+Mrs. Teapot|Zack|Willow||94|2|9|Above Average||104|0
+Mrs. Teapot|Noah|Willow||43|0|2||||
+Mrs. Teapot|Mia|Yarrow||65|0|6|Average||76|0
+Mrs. Teapot|Iris|Fern||127|0|13|Well Above Average||144|4
+Mrs. Teapot|Hugo|Quarry||110|2|13|Above Average||129|4
+Mrs. Teapot|Olive|Thorn||79|5|6|Average||113|3
+Mrs. Teapot|Noah|Glen||61|6|6||||
+Mrs. Teapot|Elsa|Birch||58|0|6|Average||63|0
+Mrs. Teapot|Pia|Fern||131|4|15|Well Above Average||153|3
+Mrs. Teapot|Vera|Quarry||99|5|12|Above Average||128|2
+Mrs. Teapot|Olive|Willow||67|6|7|Average||104|4
+Mrs. Teapot|Iris|Cedar||106|3|12||||
+Mrs. Teapot|Mia|Juniper||100|0|11|Above Average||111|3
+Mrs. Teapot|Elsa|Alder||25|5|3|Well Below Average||57|0
+Mrs. Teapot|Ben|Alder||119|1|13|Well Above Average||130|0
+Mrs. Teapot|Gia|Reed||47|6|6|Below Average||71|0
+Mrs. Teapot|Noah|Reed||49|1|7||||
+Mrs. Teapot|Elsa|Reed||49|2|4|Below Average||77|2
+Mrs. Teapot|Tess|Quarry||128|5|13|Well Above Average||154|2
+Mrs. Teapot|Ada|Glen||52|3|3|Below Average||65|2
+Mrs. Teapot|Noah|Quarry||120|6|13|Well Above Average||140|0
+Mrs. Teapot|Finn|Yarrow||63|0|5||||
+Mrs. Teapot|Quinn|Alder||117|0|14|Well Above Average||133|1
+Mrs. Teapot|Tess|Oak||135|3|13|Well Above Average||151|1
+Mrs. Teapot|Hugo|Knoll||131|1|14|Well Above Average||154|1
+Mrs. Teapot|Vera|Knoll||130|0|12|Well Above Average||147|4
+Mrs. Teapot|Quinn|Sage||26|5|4||||
+Mrs. Teapot|Leo|Willow||91|3|10|Above Average||129|1
+Mrs. Teapot|Vera|Maple||98|4|12|Above Average||110|4
+Mrs. Teapot|Hugo|Larch||88|0|9|Above Average||104|1
+Mrs. Teapot|Quinn|Maple||117|5|13|Well Above Average||142|4
+Mrs. Teapot|Yara|Knoll||90|0|11||||
+Mrs. Teapot|Leo|Willow||109|2|10|Above Average||124|4
+Mrs. Teapot|Yara|Birch||87|6|9|Above Average||114|2
+Mrs. Teapot|Leo|Quarry||40|3|2|Below Average||66|0
+Mrs. Teapot|Rosa|Hazel||96|0|11|Above Average||120|4
+Mrs. Teapot|Ben|Vale||113|4|10||||
+Mrs. Teapot|Elsa|Birch||129|3|13|Well Above Average||156|4
+Mrs. Teapot|Noah|Yarrow||25|2|1|Well Below Average||58|0
+Mrs. Teapot|Rosa|Dale||113|5|14|Well Above Average||128|3
+Mrs. Teapot|Will|Birch||96|5|9|Above Average||123|0
+Mrs. Teapot|Jack|Elm||61|3|8||||
+Mrs. Teapot|Ada|Willow||99|0|9|Above Average||112|4
+Mrs. Teapot|Vera|Sage||85|6|11|Above Average||95|4
+Mrs. Teapot|Olive|Ivy||77|5|8|Average||110|2
+Mrs. Teapot|Hugo|Yarrow||120|4|13|Well Above Average||153|3
+Mrs. Teapot|Jack|Reed||88|0|10||||
+Mrs. Teapot|Gia|Alder||78|1|7|Average||110|2
+Mrs. Teapot|Zack|Juniper||132|3|12|Well Above Average||165|3
+Mrs. Teapot|Noah|Ivy||78|3|6|Average||100|1
+Mrs. Teapot|Xena|Cedar||62|2|8|Average||67|0
+Mrs. Teapot|Jack|Glen||56|5|6||||
+Mrs. Teapot|Ben|Cedar||106|0|11|Above Average||135|0
+Mrs. Teapot|Pia|Birch||89|1|11|Above Average||118|0
+Mrs. Teapot|Yara|Larch||29|3|4|Below Average||44|2
+Mrs. Teapot|Xena|Birch||125|0|11|Well Above Average||159|4
+Mrs. Teapot|Olive|Maple||80|5|6||||
+Mrs. Teapot|Olive|Juniper||140|4|15|Well Above Average||171|2
+Mrs. Teapot|Yara|Maple||109|6|12|Above Average||126|0
+Mrs. Teapot|Elsa|Thorn||89|2|8|Above Average||124|1
+Mrs. Teapot|Leo|Thorn||66|4|6|Average||75|2
+Mrs. Teapot|Kira|Oak||128|5|12||||
+Mrs. Teapot|Ben|Larch||122|4|12|Well Above Average||151|4
+Mrs. Teapot|Iris|Maple||61|3|5|Average||79|2
+Mrs. Teapot|Vera|Pine||67|0|8|Average||107|0
+Mrs. Teapot|Jack|Quarry||85|4|8|Above Average||123|3
+Mrs. Teapot|Hugo|Elm||114|3|13||||
+Mrs. Teapot|Will|Vale||34|1|4|Below Average||71|0
+Mrs. Teapot|Leo|Vale||92|6|12|Above Average||99|4
+Mrs. Teapot|Jack|Alder||44|3|4|Below Average||72|2
+Mrs. Teapot|Quinn|Maple||138|3|14|Well Above Average||160|0
+Mrs. Teapot|Ada|Pine||133|0|15||||
+Mrs. Teapot|Sam|Oak||38|4|2|Below Average||57|2
+Mrs. Teapot|Hugo|Ivy||126|5|13|Well Above Average||134|3
+Mrs. Teapot|Mia|Dale||29|4|4|Below Average||39|0
+Mrs. Teapot|Jack|Sage||94|6|8|Above Average||111|3
+Mrs. Teapot|Iris|Larch||64|1|7||||
+Mrs. Teapot|Sam|Cedar||113|2|12|Well Above Average||147|4
+Mrs. Teapot|Iris|Sage||109|4|11|Above Average||137|4
+Mrs. Teapot|Finn|Quarry||73|2|7|Average||91|4
+Mrs. Teapot|Jack|Cedar||58|0|8|Average||94|2
+Mrs. Teapot|Uma|Alder||94|1|11||||
+Mrs. Teapot|Ada|Alder||82|4|11|Average||90|2
+Mrs. Teapot|Ada|Cedar||130|5|14|Well Above Average||168|3
+Mrs. Teapot|Vera|Vale||52|4|5|Below Average||87|3
+Mrs. Teapot|Zack|Pine||125|3|11|Well Above Average||148|0
+Mrs. Teapot|Noah|Thorn||93|3|9||||
+Mrs. Teapot|Yara|Cedar||36|0|4|Below Average||58|3
+Mrs. Teapot|Zack|Glen||62|6|5|Average||85|0
+Mrs. Teapot|Pia|Willow||55|6|4|Below Average||78|1
+Mrs. Teapot|Ada|Vale||73|4|7|Average||93|1
+Mrs. Teapot|Jack|Larch||28|1|1||||
+Mrs. Teapot|Rosa|Sage||90|1|9|Above Average||128|1
+Mrs. Teapot|Sam|Ivy||125|3|15|Well Above Average||134|1
+Mrs. Teapot|Cara|Vale||66|5|9|Average||85|2
+Mrs. Teapot|Leo|Yarrow||38|6|6|Below Average||57|3
+Mrs. Teapot|Jack|Sage||135|3|13||||
+Mrs. Teapot|Leo|Cedar||98|5|10|Above Average||105|1
+Mrs. Teapot|Cara|Vale||63|6|7|Average||102|1
+Mrs. Teapot|Vera|Yarrow||57|2|8|Average||73|1
+Mrs. Teapot|Yara|Knoll||67|1|9|Average||84|3
+Mrs. Teapot|Uma|Birch||125|1|15||||
+Mrs. Teapot|Elsa|Cedar||40|2|5|Below Average||61|3
+Mrs. Teapot|Kira|Hazel||119|1|12|Well Above Average||134|1
+Mrs. Teapot|Yara|Willow||57|4|5|Average||73|0
+Mrs. Teapot|Sam|Oak||107|2|9|Above Average||143|2
+Mrs. Teapot|Kira|Nettle||91|5|9||||
+Mrs. Teapot|Will|Willow||100|2|9|Above Average||107|1
+Mrs. Teapot|Quinn|Knoll||98|1|10|Above Average||117|1
+Mrs. Teapot|Gia|Willow||86|3|11|Above Average||93|1
+Mrs. Teapot|Will|Birch||79|6|10|Average||100|4
+Mrs. Teapot|Cara|Thorn||138|4|15||||
+Mrs. Teapot|Dan|Hazel||56|0|8|Average||72|1
+Mrs. Teapot|Will|Juniper||125|3|15|Well Above Average||131|2
+Mrs. Teapot|Cara|Alder||76|4|9|Average||107|1
+Mrs. Teapot|Noah|Sage||76|1|8|Average||112|0
+Mrs. Teapot|Finn|Dale||128|6|13||||
+Mrs. Teapot|Cara|Nettle||128|1|15|Well Above Average||164|0
+Mrs. Teapot|Ada|Knoll||136|3|14|Well Above Average||167|3
+Mrs. Teapot|Hugo|Elm||132|6|12|Well Above Average||167|2
+Mrs. Teapot|Ada|Vale||137|1|17|Well Above Average||152|2
+Mrs. Teapot|Dan|Fern||67|1|5||||
+Mrs. Teapot|Noah|Reed||137|3|14|Well Above Average||162|2
+Mrs. Teapot|Elsa|Quarry||111|2|12|Above Average||145|3
+Mrs. Teapot|Vera|Glen||66|4|6|Average||91|4
+Mrs. Teapot|Noah|Reed||131|5|12|Well Above Average||144|4
+Mrs. Teapot|Uma|Oak||126|4|14||||
+Mrs. Teapot|Hugo|Elm||110|5|13|Above Average||129|4
+Mrs. Teapot|Hugo|Ivy||75|2|7|Average||95|0
+Mrs. Teapot|Hugo|Cedar||88|3|11|Above Average||113|3
+Mrs. Teapot|Yara|Yarrow||90|3|10|Above Average||109|2
+Mrs. Teapot|Mia|Reed||115|0|12||||
+Mrs. Teapot|Noah|Glen||73|2|6|Average||91|3
+Mrs. Teapot|Mia|Reed||28|0|3|Below Average||43|3
+Mrs. Teapot|Olive|Cedar||94|2|9|Above Average||126|0
+Mrs. Teapot|Cara|Glen||60|5|8|Average||83|0
+Mrs. Teapot|Pia|Elm||27|6|1||||
+Mrs. Teapot|Sam|Oak||35|2|2|Below Average||49|3
+Mrs. Teapot|Will|Juniper||34|3|2|Below Average||68|4
+Mrs. Teapot|Leo|Glen||139|3|13|Well Above Average||175|1
+Mrs. Teapot|Dan|Birch||110|1|10|Above Average||129|0
+Mrs. Teapot|Iris|Reed||56|5|8||||
+Mrs. Teapot|Xena|Nettle||60|3|7|Average||82|1
+Mrs. Teapot|Quinn|Quarry||33|4|4|Below Average||56|3
+Mrs. Teapot|Cara|Cedar||108|5|10|Above Average||132|1
+Mrs. Teapot|Jack|Alder||29|2|1|Below Average||53|0
+Mrs. Teapot|Hugo|Oak||77|4|10||||
+Mrs. Teapot|Yara|Elm||84|3|10|Above Average||105|0
+Mrs. Teapot|Elsa|Quarry||127|4|16|Well Above Average||162|2
+Mrs. Teapot|Leo|Glen||35|1|2|Below Average||73|4
+Mrs. Teapot|Will|Cedar||119|3|15|Well Above Average||151|4
+Mrs. Teapot|Yara|Nettle||55|1|4||||
+Mrs. Teapot|Rosa|Ivy||52|1|5|Below Average||65|2
+Mrs. Teapot|Ada|Sage||87|6|10|Above Average||109|0
+Mrs. Teapot|Xena|Hazel||75|4|9|Average||99|2
+Mrs. Teapot|Elsa|Glen||92|3|10|Above Average||97|2
+Mrs. Teapot|Pia|Vale||110|5|11||||
+Mrs. Teapot|Will|Willow||72|6|6|Average||109|4
+Mrs. Teapot|Leo|Willow||62|1|6|Average||79|1
+Mrs. Teapot|Dan|Quarry||122|4|15|Well Above Average||157|0
+Mrs. Teapot|Sam|Cedar||54|1|7|Below Average||74|3
+Mrs. Teapot|Leo|Oak||133|1|15||||
+Mrs. Teapot|Yara|Knoll||43|0|5|Below Average||60|3
+Mrs. Teapot|Will|Alder||115|2|13|Well Above Average||131|3
+Mrs. Teapot|Zack|Birch||115|1|14|Well Above Average||126|4
+Mrs. Teapot|Xena|Maple||135|6|17|Well Above Average||168|2
+Mrs. Teapot|Ben|Knoll||128|6|14||||
+Mrs. Teapot|Ada|Thorn||74|0|7|Average||94|4
+Mrs. Teapot|Will|Maple||68|6|9|Average||84|0
+Mrs. Teapot|Uma|Sage||55|1|8|Below Average||78|4
+Mrs. Teapot|Vera|Sage||41|5|3|Below Average||63|1
+Mrs. Teapot|Mia|Hazel||67|4|8||||
+Mrs. Teapot|Noah|Vale||31|2|4|Below Average||52|1
+Mrs. Teapot|Tess|Juniper||121|1|13|Well Above Average||161|3
+Mrs. Teapot|Ada|Elm||133|0|14|Well Above Average||153|0
+Mrs. Teapot|Ada|Maple||100|3|12|Above Average||118|2
+Mrs. Teapot|Quinn|Sage||25|4|2||||
+Mrs. Teapot|Dan|Yarrow||48|5|5|Below Average||56|1
+Mrs. Teapot|Vera|Cedar||30|2|1|Below Average||51|0
+Mrs. Teapot|Sam|Ivy||139|6|13|Well Above Average||168|0
+Mrs. Teapot|Zack|Elm||135|3|17|Well Above Average||147|3
+Mrs. Teapot|Will|Vale||38|6|4||||
+Mrs. Teapot|Sam|Larch||57|3|7|Average||76|0
+Mrs. Teapot|Jack|Ivy||116|2|13|Well Above Average||137|1
+Mrs. Teapot|Ben|Knoll||126|5|13|Well Above Average||138|1
+Mrs. Teapot|Xena|Juniper||48|2|3|Below Average||56|4
+Mrs. Teapot|Kira|Larch||68|4|6||||
+Mrs. Teapot|Ada|Hazel||58|1|5|Average||88|2
+Mrs. Teapot|Mia|Oak||125|1|13|Well Above Average||158|4
+Mrs. Teapot|Ada|Maple||137|3|16|Well Above Average||156|2
