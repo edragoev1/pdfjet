@@ -8,6 +8,8 @@ package pdfjet
 import (
 	"encoding/hex"
 	"math"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -138,6 +140,178 @@ func TestSimpleScatterChartALinkedPointIsAFigureInItsLink(t *testing.T) {
 	}
 	if strings.Count(raw, "/Subtype /Link") != 2 {
 		t.Errorf("%d link annotations, not 2", strings.Count(raw, "/Subtype /Link"))
+	}
+}
+
+// A linked dot is drawn as a point of Add is, stroke for stroke, with nothing
+// beside it: in a document that is not tagged it adds a link alone, described
+// by its name, and the chart's description counts it and does not name it.
+func TestSimpleScatterChartALinkedDotIsADotWithADescription(t *testing.T) {
+	for _, withSeries := range []bool{false, true} {
+		draw := func(linked bool) (string, string, string) {
+			doc := testNewDoc()
+			font := testHelvetica(doc.pdf)
+			page := NewPage(doc.pdf, testLetterPortrait())
+			chart := NewSimpleScatterChart(font, font).SetTitle("T").SetTrendLine(true).Add(1, 1).Add(3, 4)
+			if withSeries {
+				chart.AddSeries("Series")
+			}
+			if linked {
+				chart.AddLinkedDot("Andorra: 84.0 years", 2, 2, "https://pdfjet.com/a")
+			} else {
+				chart.Add(2, 2)
+			}
+			alt := chart.getAltDescription()
+			chart.DrawOn(page)
+			return testContent(page), alt, string(doc.complete())
+		}
+		plain, plainAlt, _ := draw(false)
+		content, alt, raw := draw(true)
+		if content != plain {
+			t.Errorf("series %v: not drawn as a plain point:\n%s\n%s", withSeries, content, plain)
+		}
+		if alt != plainAlt {
+			t.Errorf("series %v: described as %q, not as %q", withSeries, alt, plainAlt)
+		}
+		if strings.Count(raw, "/Subtype /Link") != 1 || !strings.Contains(raw, "/Contents "+testTextString("Andorra: 84.0 years")) {
+			t.Errorf("series %v: no link described by the name", withSeries)
+		}
+		if !strings.Contains(raw, "/URI <"+hex.EncodeToString([]byte("https://pdfjet.com/a"))+">") {
+			t.Errorf("series %v: the URI of the dot is missing", withSeries)
+		}
+	}
+}
+
+// In a PDF/UA document a linked dot is a figure of its own in the Link that
+// holds its annotation, as a linked point is, and looks as it does in the
+// chart: transparent, or the outline of its series, undashed. A highlighted
+// point stays over it.
+func TestSimpleScatterChartALinkedDotIsAFigureInItsLink(t *testing.T) {
+	for _, withSeries := range []bool{false, true} {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+		font := testTrueTypeFont(t, doc.pdf)
+		page := NewPage(doc.pdf, testLetterPortrait())
+		page.SetStrokeDashPattern("[3 3] 0")
+		chart := NewSimpleScatterChart(font, font).SetSize(300, 200).SetHighlightColor(color.Red).Add(1, 1)
+		if withSeries {
+			chart.AddSeries("Series")
+		}
+		chart.AddLinkedDot("Andorra", 2, 2, "https://pdfjet.com/a").
+			AddLinkedDot("Belize", 3, 1, "https://pdfjet.com/b").
+			AddLinked("Chad", 4, 3, "https://pdfjet.com/c").AddNamed("Dominica", 2, 3)
+		chart.SetLocation(50, 50)
+		alt := chart.getAltDescription()
+		chart.DrawOn(page)
+		content := testContent(page)
+		raw := string(doc.complete())
+		elements := testElements(raw)
+		links := testLinks(raw)
+		if len(links) != 3 {
+			t.Fatalf("%d Link elements: %v", len(links), links)
+		}
+		for number, link := range links {
+			figure := strings.Fields(strings.Trim(link[2], "["))[0]
+			if elements[figure][0] != "Figure" || elements[figure][1] != number ||
+				!strings.Contains(link[2], "/Type /OBJR") {
+				t.Errorf("the Link %s holds %s, not a Figure and its annotation", number, link[2])
+			}
+		}
+		for _, name := range []string{"Andorra", "Belize", "Chad"} {
+			if !strings.Contains(raw, "/Alt "+testTextString(name)) {
+				t.Errorf("no figure is described as %q", name)
+			}
+		}
+		if strings.Contains(alt, "Andorra") || strings.Contains(alt, "Belize") {
+			t.Errorf("a dot named in the chart's description: %q", alt)
+		}
+		// The chart, the dots' figures, the named point over them, Chad's
+		chartFigure := strings.Index(content, "/Figure <</MCID 0>>")
+		first := strings.Index(content, "/Figure <</MCID 1>>")
+		second := strings.Index(content, "/Figure <</MCID 2>>")
+		last := strings.Index(content, "/Figure <</MCID 3>>")
+		artifact := strings.Index(content, "/Artifact BMC")
+		if chartFigure == -1 || first == -1 || second == -1 || last == -1 || artifact < second || artifact > last {
+			t.Fatalf("the order of the figures: %d, %d, %d, %d, the artifact %d", chartFigure, first, second, last, artifact)
+		}
+		dot := content[first:second]
+		if strings.Contains(dot, "1 0 0 rg") {
+			t.Errorf("the dot is highlighted: %q", dot)
+		}
+		if !strings.Contains(dot, "\nS\n") && !strings.Contains(dot, "\nf\n") {
+			t.Errorf("the dot is not drawn: %q", dot)
+		}
+		if withSeries != strings.Contains(dot, "\nS\n") {
+			t.Errorf("series %v: not drawn as a dot of the chart: %q", withSeries, dot)
+		}
+		before := content[strings.LastIndex(content[:first], "EMC"):first]
+		if !strings.Contains(before, "[] 0 d\n") || !strings.Contains(before, " gs\n") {
+			t.Errorf("the dots have not the state of the chart: %q", before)
+		}
+	}
+}
+
+// A dot's description is its name, or its URI when it has no name, and a dot
+// without a URI is a plain point; one outside a range that is set is no link.
+func TestSimpleScatterChartALinkedDotWithoutANameOrAURI(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	font := testTrueTypeFont(t, doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	chart := NewSimpleScatterChart(font, font).SetSize(300, 200).SetXAxisRange(0, 5).
+		AddLinkedDot("", 1, 1, "https://pdfjet.com/a").AddLinkedDot("Belize", 2, 2, "").
+		AddLinkedDot("Chad", 9, 3, "https://pdfjet.com/c")
+	chart.SetLocation(50, 50)
+	chart.DrawOn(page)
+	raw := string(doc.complete())
+	if strings.Count(raw, "/Subtype /Link") != 1 {
+		t.Errorf("%d links, not 1", strings.Count(raw, "/Subtype /Link"))
+	}
+	if !strings.Contains(raw, "/Alt "+testTextString("https://pdfjet.com/a")) {
+		t.Error("a dot without a name is not described by its URI")
+	}
+	if strings.Contains(raw, testTextString("Belize")) || strings.Contains(raw, testTextString("Chad")) {
+		t.Error("a dot that is no link is described")
+	}
+}
+
+// The link of a dot is at least 8 points square and holds the dot, on the page
+// as written, and inside the page, in a corner too.
+func TestSimpleScatterChartTheLinkOfADotCanBeHit(t *testing.T) {
+	rect := regexp.MustCompile(`/Rect \[([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)\]`)
+	for _, size := range []float32{2, 9, 30} {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		font.SetSize(size)
+		page := NewPage(doc.pdf, testLetterPortrait())
+		chart := NewSimpleScatterChart(font, font).SetSize(612, 792).SetXAxisRange(0, 4).SetYAxisRange(0, 4).
+			AddLinkedDot("Middle", 2, 2, "https://pdfjet.com/m").AddLinkedDot("Left", 0, 2, "https://pdfjet.com/l")
+		chart.SetLocation(0, 0)
+		chart.DrawOn(page)
+		// Past the corners of the page, as a chart that hangs over it
+		page.addAnnotation(&annotationObject{annotationType: annotationLink, x1: -1, y1: -1, x2: 0, y2: 0,
+			uri: "https://pdfjet.com/c", hitSize: scatterHitSize})
+		page.addAnnotation(&annotationObject{annotationType: annotationLink, x1: 612, y1: 792, x2: 613, y2: 793,
+			uri: "https://pdfjet.com/d", hitSize: scatterHitSize})
+		rects := rect.FindAllStringSubmatch(string(doc.complete()), -1)
+		if len(rects) != 4 {
+			t.Fatalf("size %v: %d links, not 4", size, len(rects))
+		}
+		for i, m := range rects {
+			x1, _ := strconv.ParseFloat(m[1], 64)
+			y1, _ := strconv.ParseFloat(m[2], 64)
+			x2, _ := strconv.ParseFloat(m[3], 64)
+			y2, _ := strconv.ParseFloat(m[4], 64)
+			if x2-x1 < 8 || math.Abs(y2-y1) < 8 {
+				t.Errorf("size %v: %v is under 8 points", size, m[0])
+			}
+			if i < 2 && x2-x1 < float64(float32(0.9*size)) {
+				t.Errorf("size %v: %v does not hold the dot", size, m[0])
+			}
+			if x1 < 0 || x2 > 612 || min(y1, y2) < 0 || max(y1, y2) > 792 {
+				t.Errorf("size %v: %v is past the page", size, m[0])
+			}
+		}
 	}
 }
 

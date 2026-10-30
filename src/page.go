@@ -2885,6 +2885,10 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		return
 	}
 	page.transformAnnotation(annotation)
+	if annotation.hitSize > 0 {
+		annotation.x1, annotation.x2 = hitSpan(annotation.x1, annotation.x2, annotation.hitSize, page.width)
+		annotation.y1, annotation.y2 = hitSpan(annotation.y1, annotation.y2, annotation.hitSize, page.height)
+	}
 	annotation.setDescriptionFallback()
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2
@@ -2929,6 +2933,25 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		element.annotation = annotation
 		page.addStructure(element, page.structParent)
 	}
+}
+
+// hitSpan returns the span lo to hi of an annotation at least size long around
+// its center, and moved inside 0 to limit, not cut, as long as it fits.
+func hitSpan(lo, hi, size, limit float32) (float32, float32) {
+	if hi-lo < size {
+		center := float32((lo + hi) / 2.0)
+		lo = center - float32(size/2.0)
+		hi = lo + size
+	}
+	if hi > limit {
+		lo -= hi - limit
+		hi = limit
+	}
+	if lo < 0 {
+		hi = min(hi-lo, limit)
+		lo = 0
+	}
+	return lo, hi
 }
 
 // transformed returns where the point x, y of what is drawn is on the page,
