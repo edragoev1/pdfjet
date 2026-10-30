@@ -130,7 +130,7 @@ final public class PDF {
     private List<String> acroForm = null;
     private PageLayout pageLayout = null;
     private PageMode pageMode = null;
-    private String language = "en-US";
+    String language = "en-US";
     private boolean languageSet;    // A PDF that is not of PDF/A or PDF/UA says it only then
     private String uuid = newDocumentID();
     // The files the document carries, in the order they were added.

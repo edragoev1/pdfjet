@@ -40,7 +40,21 @@ internal class SVGPath {
     internal bool strokeFirst = false;
     /// <summary>The clip paths it is drawn inside, all of them, or null.</summary>
     internal List<SVGPath> clips = null;
+    /// <summary>The children of the switches it is in, or null.</summary>
+    internal List<SVGImage.Choice> choices = null;
     /// <summary>A text, drawn instead of the operations, or null.</summary>
     internal SVGText text = null;
+
+    /// <summary>True when it is in the children chosen of the switches it is in.</summary>
+    internal bool IsChosen() {
+        if (choices != null) {
+            foreach (SVGImage.Choice choice in choices) {
+                if (!choice.IsChosen()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
 }

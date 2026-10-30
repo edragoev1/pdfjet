@@ -31,5 +31,18 @@ class SVGPath {
     float dashOffset = 0f;
     boolean strokeFirst = false;    // paint-order: the stroke drawn before the fill
     List<SVGPath> clips = null;     // The clip paths it is drawn inside, all of them
+    List<SVGImage.Choice> choices = null;   // The children of the switches it is in
     SVGText text = null;            // A text, drawn instead of the operations
+
+    // Returns true when it is in the children chosen of the switches it is in.
+    boolean isChosen() {
+        if (choices != null) {
+            for (SVGImage.Choice choice : choices) {
+                if (!choice.isChosen()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

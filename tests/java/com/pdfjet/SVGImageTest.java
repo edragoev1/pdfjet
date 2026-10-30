@@ -1135,6 +1135,48 @@ class SVGImageTest {
         }
     }
 
+    private static String drawInLanguage(String svg, String language) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        if (!language.isEmpty()) {
+            pdf.setLanguage(language);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SVGImage image = new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
+        image.setLocation(0f, 0f);
+        image.drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    @Test
+    void aSwitchHonorsTheSystemLanguage() throws Exception {
+        String svg = "<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" systemLanguage=\"de, fr-CA\" fill=\"red\"/><rect width=\"5\" height=\"5\" systemLanguage=\"\" fill=\"lime\"/><g systemLanguage=\"EN-gb\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></g><rect width=\"5\" height=\"5\" fill=\"black\"/></switch></svg>";
+        String[][] tests = {{"", "0 0 1 rg"}, {"en-US", "0 0 1 rg"}, {"en", "0 0 1 rg"}, {"de", "1 0 0 rg"}, {"de-AT", "1 0 0 rg"}, {"FR", "1 0 0 rg"}, {"bg", "0 0 0 rg"}, {"fra", "0 0 0 rg"}};
+        for (String[] test : tests) {
+            String content = drawInLanguage(svg, test[0]);
+            assertTrue(content.contains(test[1]), content);
+            assertEquals(1, content.split(" rg\n", -1).length - 1, content);
+        }
+        // No child of the language, and none without a systemLanguage: nothing.
+        assertEquals("", drawInLanguage("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" systemLanguage=\"de\"/></switch></svg>", ""));
+        // One image, drawn in the language of each PDF.
+        SVGImage image = new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
+        String[][] languages = {{"de", "1 0 0 rg"}, {"en", "0 0 1 rg"}};
+        for (String[] test : languages) {
+            PDF pdf = TestSupport.newPDF();
+            pdf.setLanguage(test[0]);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            image.drawOn(page);
+            assertTrue(TestSupport.content(page).contains(test[1]), TestSupport.content(page));
+        }
+        // Texts, in a switch in a used group, nested, and a marker in a child.
+        String content = drawInLanguage("<svg width=\"100\" height=\"100\"><defs><g id=\"g\"><switch><text systemLanguage=\"de\" y=\"10\" fill=\"red\">a</text><switch><text systemLanguage=\"en\" y=\"10\" fill=\"blue\">b</text></switch></switch></g></defs><use href=\"#g\"/></svg>", "en");
+        assertTrue(content.contains("0 0 1 rg") && !content.contains("1 0 0 rg"), content);
+        assertEquals("", drawInLanguage("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\" fill=\"red\"/></marker><switch><path systemLanguage=\"de\" d=\"M0 0 L9 9\" stroke=\"blue\" marker-end=\"url(#m)\"/></switch></svg>", "en"));
+        // What is not drawn leaves no cut, and no miter limit, for itself.
+        content = drawInLanguage("<svg width=\"100\" height=\"100\"><switch><path systemLanguage=\"de\" d=\"M0 0 L900 900\" stroke=\"blue\"/><rect width=\"5\" height=\"5\"/></switch></svg>", "en");
+        assertFalse(content.contains("W\n") || content.contains(" M\n"), content);
+    }
+
     @Test
     void aUseGivesASymbolItsSize() throws Exception {
         {

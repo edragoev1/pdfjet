@@ -1222,6 +1222,65 @@ func TestSVGImageASwitchDrawsTheFirstChildItCan(t *testing.T) {
 	}
 }
 
+// testDrawSVGInLanguage returns what the image draws on a page of a PDF of the
+// language, or of no language set for "".
+func testDrawSVGInLanguage(t *testing.T, svg, language string) string {
+	t.Helper()
+	pdf := testNewPDF()
+	if language != "" {
+		pdf.SetLanguage(language)
+	}
+	page := NewPage(pdf, letter.Portrait())
+	image := testNewSVG(t, svg)
+	image.SetLocation(0, 0)
+	image.DrawOn(page)
+	return testContent(page)
+}
+
+func TestSVGImageASwitchHonorsTheSystemLanguage(t *testing.T) {
+	svg := `<svg width="100" height="100"><switch>` +
+		`<rect width="5" height="5" systemLanguage="de, fr-CA" fill="red"/>` +
+		`<rect width="5" height="5" systemLanguage="" fill="lime"/>` +
+		`<g systemLanguage="EN-gb"><rect width="5" height="5" fill="blue"/></g>` +
+		`<rect width="5" height="5" fill="black"/></switch></svg>`
+	const red, blue, black = "1 0 0 rg", "0 0 1 rg", "0 0 0 rg"
+	for _, test := range []struct{ language, color string }{
+		{"", blue}, {"en-US", blue}, {"en", blue}, {"de", red}, {"de-AT", red}, {"FR", red},
+		{"bg", black}, {"fra", black},
+	} {
+		content := testDrawSVGInLanguage(t, svg, test.language)
+		if !strings.Contains(content, test.color) || strings.Count(content, " rg\n") != 1 {
+			t.Errorf("language %q content %q", test.language, content)
+		}
+	}
+	// No child of the language, and none without a systemLanguage: nothing.
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><switch><rect width="5" height="5" systemLanguage="de"/></switch></svg>`, ""); content != "" {
+		t.Errorf("content %q", content)
+	}
+	// One image, drawn in the language of each PDF.
+	image := testNewSVG(t, svg)
+	for _, test := range []struct{ language, color string }{{"de", red}, {"en", blue}} {
+		pdf := testNewPDF()
+		pdf.SetLanguage(test.language)
+		page := NewPage(pdf, letter.Portrait())
+		image.DrawOn(page)
+		if !strings.Contains(testContent(page), test.color) {
+			t.Errorf("language %q content %q", test.language, testContent(page))
+		}
+	}
+	// Texts, in a switch in a used group, nested, and a marker in a child.
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><defs><g id="g"><switch><text systemLanguage="de" y="10" fill="red">a</text><switch><text systemLanguage="en" y="10" fill="blue">b</text></switch></switch></g></defs><use href="#g"/></svg>`, "en"); !strings.Contains(content, "0 0 1 rg") || strings.Contains(content, "1 0 0 rg") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><marker id="m"><rect width="5" height="5" fill="red"/></marker><switch><path systemLanguage="de" d="M0 0 L9 9" stroke="blue" marker-end="url(#m)"/></switch></svg>`, "en"); content != "" {
+		t.Errorf("content %q", content)
+	}
+	// What is not drawn leaves no cut, and no miter limit, for itself.
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><switch><path systemLanguage="de" d="M0 0 L900 900" stroke="blue"/><rect width="5" height="5"/></switch></svg>`, "en"); strings.Contains(content, "W\n") || strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
 func TestSVGImageAUseGivesASymbolItsSize(t *testing.T) {
 	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s" x="5" y="5" width="20" height="20"/></svg>`); !strings.Contains(content, "5 787 m\n25 787 l\n25 767 l\n5 767 l\n") {
 		t.Errorf("content %q", content)

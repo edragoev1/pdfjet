@@ -1125,6 +1125,50 @@ public class SVGImageTest {
         }
     }
 
+    private static string DrawInLanguage(string svg, string language) {
+        PDF pdf = TestSupport.NewPDF();
+        if (language.Length > 0) {
+            pdf.SetLanguage(language);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SVGImage image = Parse(svg);
+        image.SetLocation(0f, 0f);
+        image.DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
+    public void ASwitchHonorsTheSystemLanguage() {
+        string svg = "<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" systemLanguage=\"de, fr-CA\" fill=\"red\"/><rect width=\"5\" height=\"5\" systemLanguage=\"\" fill=\"lime\"/><g systemLanguage=\"EN-gb\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></g><rect width=\"5\" height=\"5\" fill=\"black\"/></switch></svg>";
+        string[][] tests = {new[] {"", "0 0 1 rg"}, new[] {"en-US", "0 0 1 rg"}, new[] {"en", "0 0 1 rg"}, new[] {"de", "1 0 0 rg"}, new[] {"de-AT", "1 0 0 rg"}, new[] {"FR", "1 0 0 rg"}, new[] {"bg", "0 0 0 rg"}, new[] {"fra", "0 0 0 rg"}};
+        foreach (string[] test in tests) {
+            string drawn = DrawInLanguage(svg, test[0]);
+            Assert.Contains(test[1], drawn);
+            Assert.Equal(1, drawn.Split(new[] {" rg\n"}, StringSplitOptions.None).Length - 1);
+        }
+        // No child of the language, and none without a systemLanguage: nothing.
+        Assert.Equal("", DrawInLanguage("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" systemLanguage=\"de\"/></switch></svg>", ""));
+        // One image, drawn in the language of each PDF.
+        SVGImage image = Parse(svg);
+        string[][] languages = {new[] {"de", "1 0 0 rg"}, new[] {"en", "0 0 1 rg"}};
+        foreach (string[] test in languages) {
+            PDF pdf = TestSupport.NewPDF();
+            pdf.SetLanguage(test[0]);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            image.DrawOn(page);
+            Assert.Contains(test[1], TestSupport.Content(page));
+        }
+        // Texts, in a switch in a used group, nested, and a marker in a child.
+        string content = DrawInLanguage("<svg width=\"100\" height=\"100\"><defs><g id=\"g\"><switch><text systemLanguage=\"de\" y=\"10\" fill=\"red\">a</text><switch><text systemLanguage=\"en\" y=\"10\" fill=\"blue\">b</text></switch></switch></g></defs><use href=\"#g\"/></svg>", "en");
+        Assert.Contains("0 0 1 rg", content);
+        Assert.DoesNotContain("1 0 0 rg", content);
+        Assert.Equal("", DrawInLanguage("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\" fill=\"red\"/></marker><switch><path systemLanguage=\"de\" d=\"M0 0 L9 9\" stroke=\"blue\" marker-end=\"url(#m)\"/></switch></svg>", "en"));
+        // What is not drawn leaves no cut, and no miter limit, for itself.
+        content = DrawInLanguage("<svg width=\"100\" height=\"100\"><switch><path systemLanguage=\"de\" d=\"M0 0 L900 900\" stroke=\"blue\"/><rect width=\"5\" height=\"5\"/></switch></svg>", "en");
+        Assert.DoesNotContain("W\n", content);
+        Assert.DoesNotContain(" M\n", content);
+    }
+
     [Fact]
     public void AUseGivesASymbolItsSize() {
         {

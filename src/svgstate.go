@@ -65,6 +65,7 @@ type svgState struct {
 	markerEnd     string
 	clipPath      string           // The id of the clip path of the element itself, not inherited
 	clips         []*svgPath       // The clip paths of the element and of its ancestors; never changed in place
+	choices       []svgChoice      // The children of the switches it is in; never changed in place
 	paints        map[string]int32 // The colors of the gradients, by id, shared by every state
 }
 

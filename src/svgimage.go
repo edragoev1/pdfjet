@@ -17,6 +17,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -43,6 +44,7 @@ type SVGImage struct {
 	boldFont            *Font
 	clipShapes          []*svgPath // The clip paths of the image
 	inUnits             bool       // A size in a unit such as mm, and no viewBox
+	switches            []*svgSwitch
 }
 
 // maxSVGReused is the most elements drawn again, by use elements and as
@@ -82,6 +84,7 @@ type svgReader struct {
 	reused   int64
 	useSize  [2]string // The width and the height of the use element of the element drawn next
 	counted  int64     // The operations maxSVGOperations limits
+	switches map[*xmlparser.XMLNode]*svgSwitch
 }
 
 // NewSVGImageFromFile reads and parses an svgParser image from a file.
@@ -110,7 +113,8 @@ var svgTemplates = map[string]bool{
 // inherit, as attributes, in a style attribute or in rules for their classes in a <style> element that
 // comes before them. It draws the elements a <use> element names, a <symbol>
 // at the size of the <use>, a nested <svg> at its x, y and viewBox, the first
-// child of a <switch> that it can draw, and <text>
+// child of a <switch> that it can draw and whose systemLanguage has the language
+// of the PDF, which is known when the image is drawn, and <text>
 // and <tspan> elements with their x, y, dx, dy, font-size, font-weight,
 // text-anchor and dominant-baseline, in the font set with SetFont and
 // SetBoldFont, or else in the fonts PDFjet carries, embedded: IBM Plex Sans
@@ -138,6 +142,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 		root:     true,
 		ids:      make(map[string]*xmlparser.XMLNode),
 		reusing:  make(map[*xmlparser.XMLNode]bool),
+		switches: make(map[*xmlparser.XMLNode]*svgSwitch),
 	}
 	// The first element of an id, from the top down, is the one it names.
 	elements := []*xmlparser.XMLNode{document}
@@ -446,15 +451,12 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 		}
 	}
 
+	if name == "switch" {
+		return r.drawSwitch(node)
+	}
 	for _, child := range node.Children() {
-		if name == "switch" && !isSVGSwitchable(child) {
-			continue
-		}
 		if err := r.draw(child, false); err != nil {
 			return err
-		}
-		if name == "switch" {
-			break // A switch draws the first it can
 		}
 	}
 	if name == "style" {
@@ -470,11 +472,124 @@ var svgDrawn = map[string]bool{
 }
 
 // isSVGSwitchable reports whether a switch can draw the element: one PDFjet
-// draws, which asks for no extension, as PDFjet has none. The system language
-// is not tested: a PDF is read by anyone.
+// draws, which asks for no extension, as PDFjet has none.
 func isSVGSwitchable(node *xmlparser.XMLNode) bool {
 	_, extensions := node.Attribute("requiredExtensions")
 	return svgDrawn[node.LocalName()] && !extensions
+}
+
+// svgSwitch is a switch element: the children it can draw, up to the first
+// with no systemLanguage, which is drawn when none before it is, and the
+// languages of each, nil for no systemLanguage. A PDF has no reader's language,
+// so the language is that of the PDF, and an image is read before it is known:
+// each child is read, and the one that is drawn is chosen in DrawOn.
+type svgSwitch struct {
+	children  []*xmlparser.XMLNode
+	languages [][]string
+	chosen    int // The child drawn in the language of the PDF, or -1
+}
+
+// svgChoice is the child of a switch that an element is in.
+type svgChoice struct {
+	of    *svgSwitch
+	child int
+}
+
+// newSVGSwitch returns the switch of the element.
+func newSVGSwitch(node *xmlparser.XMLNode) *svgSwitch {
+	choice := new(svgSwitch)
+	for _, child := range node.Children() {
+		if !isSVGSwitchable(child) {
+			continue
+		}
+		choice.children = append(choice.children, child)
+		value, ok := child.Attribute("systemLanguage")
+		if !ok {
+			choice.languages = append(choice.languages, nil)
+			break // Nothing after it can be drawn
+		}
+		choice.languages = append(choice.languages, svgLanguages(value))
+	}
+	return choice
+}
+
+// svgLanguages returns the primary subtags of the languages of a
+// systemLanguage, a list split by commas. That of an empty one is not nil, and
+// has none: it matches no language, as SVG says.
+func svgLanguages(value string) []string {
+	languages := make([]string, 0)
+	for _, language := range strings.Split(value, ",") {
+		if strings.TrimSpace(language) != "" {
+			languages = append(languages, svgPrimaryLanguage(language))
+		}
+	}
+	return languages
+}
+
+// svgPrimaryLanguage returns the primary subtag of a language, en-US's en, in
+// lower case, and en for no language.
+func svgPrimaryLanguage(language string) string {
+	language = strings.TrimSpace(language)
+	if dash := strings.IndexByte(language, '-'); dash != -1 {
+		language = language[:dash]
+	}
+	if language == "" {
+		return "en"
+	}
+	return strings.ToLower(language)
+}
+
+// choose chooses the first child that has the language, or no systemLanguage.
+func (choice *svgSwitch) choose(language string) {
+	choice.chosen = -1
+	for i, languages := range choice.languages {
+		if languages == nil || slices.Contains(languages, language) {
+			choice.chosen = i
+			return
+		}
+	}
+}
+
+// drawSwitch reads the children of the switch that may be drawn. A switch that
+// is drawn again by a use element is the same switch, so the number of switches
+// is that of the file.
+func (r *svgReader) drawSwitch(node *xmlparser.XMLNode) error {
+	choice := r.switches[node]
+	if choice == nil {
+		choice = newSVGSwitch(node)
+		r.switches[node] = choice
+		r.image.switches = append(r.image.switches, choice)
+	}
+	top := len(r.stack) - 1
+	choices := r.stack[top].choices
+	for i, child := range choice.children {
+		inChild := make([]svgChoice, 0, len(choices)+1)
+		inChild = append(inChild, choices...)
+		r.stack[top].choices = append(inChild, svgChoice{choice, i})
+		if err := r.draw(child, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// chosenPaths returns the paths drawn in the language of the PDF, those in a
+// child of a switch that is not chosen left out.
+func (image *SVGImage) chosenPaths(language string) []*svgPath {
+	if len(image.switches) == 0 {
+		return image.paths
+	}
+	primary := svgPrimaryLanguage(language)
+	for _, choice := range image.switches {
+		choice.choose(primary)
+	}
+	paths := make([]*svgPath, 0, len(image.paths))
+	for _, path := range image.paths {
+		if path.isChosen() {
+			paths = append(paths, path)
+		}
+	}
+	return paths
 }
 
 // elementState returns the state of an element whose parent has the given
@@ -706,6 +821,7 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 		path.dashOffset = float32(float64(float64(state.dashOffset) * scale))
 	}
 	path.clips = state.clips
+	path.choices = state.choices
 	svgTransformAll(m, operations)
 	image.paths = append(image.paths, path)
 }
@@ -1120,6 +1236,7 @@ func (r *svgReader) drawMarker(id string, state *svgState, vertex [3]float64, st
 	base := newSVGState()
 	base.paints = state.paints
 	base.clips = state.clips
+	base.choices = state.choices
 	base.matrix = m
 	r.stack = append(r.stack, base)
 	r.reusing[marker] = true
@@ -1173,6 +1290,7 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 	path.operations = make([]*svgPathOp, 0)
 	path.text = text
 	path.clips = state.clips
+	path.choices = state.choices
 	r.image.paths = append(r.image.paths, path)
 	return nil
 }
@@ -1786,8 +1904,8 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 
 // strokesMiters reports whether a path or a run of a text is stroked with
 // miter joins and the limit of SVG unless given.
-func (image *SVGImage) strokesMiters() bool {
-	for _, path := range image.paths {
+func (image *SVGImage) strokesMiters(paths []*svgPath) bool {
+	for _, path := range paths {
 		if path.text != nil {
 			for _, run := range path.text.runs {
 				if run.stroke != color.Transparent && run.lineJoin == joinstyle.Miter && run.miterLimit == svgMiterLimit {
@@ -1804,11 +1922,11 @@ func (image *SVGImage) strokesMiters() bool {
 // overflows reports whether something of the image is drawn outside its
 // size, which is cut off then: a point of a path, wider by half its stroke,
 // or the box of a run of a text, from its ascent to its descent.
-func (image *SVGImage) overflows(page *Page) bool {
+func (image *SVGImage) overflows(paths []*svgPath, page *Page) bool {
 	if image.w <= 0.0 || image.h <= 0.0 {
 		return false
 	}
-	for _, path := range image.paths {
+	for _, path := range paths {
 		if path.text != nil {
 			m := path.text.matrix
 			for _, run := range path.text.runs {
@@ -1925,7 +2043,8 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 		link = page.beginLink()
 	}
 	page.AddBDC(structelem.Figure, image.language, image.actualText, image.altDescription)
-	for _, path := range image.paths {
+	paths := image.chosenPaths(page.pdf.language)
+	for _, path := range paths {
 		if path.text != nil {
 			for _, run := range path.text.runs {
 				run.font = image.fontOf(run, page.pdf)
@@ -1935,18 +2054,18 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	}
 	// The miter limit, set once: a stroked map has as many paths as a PDF
 	// would hold, and the few with another limit set their own.
-	miter := image.strokesMiters()
+	miter := image.strokesMiters(paths)
 	if miter {
 		page.SaveGraphicsState()
 		page.appendFloat32(svgMiterLimit)
 		page.appendString(" M\n")
 	}
-	clip := image.overflows(page)
+	clip := image.overflows(paths, page)
 	if clip {
 		page.SaveGraphicsState()
 		page.ClipRect(image.x, image.y, image.w, image.h)
 	}
-	for _, path := range image.paths {
+	for _, path := range paths {
 		if path.text != nil {
 			image.drawText(path.text, path.clips, page)
 		} else {

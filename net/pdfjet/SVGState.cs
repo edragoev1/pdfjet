@@ -55,6 +55,7 @@ internal class SVGState {
     internal String markerEnd = null;
     internal String clipPath = null;            // The id of the clip path of the element itself, not inherited
     internal List<SVGPath> clips = null;        // The clip paths of the element and of its ancestors
+    internal List<SVGImage.Choice> choices = null;  // The children of the switches it is in; never changed in place
     internal Dictionary<String, int> paints = null;     // The colors of the gradients, by id, shared by every state
 
     // The state of the svg element before its attributes: an SVG fills black,

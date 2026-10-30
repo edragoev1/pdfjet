@@ -137,7 +137,7 @@ public final class PDF {
     private var acroForm: [String]? = nil
     private var pageLayout: PageLayout?
     private var pageMode: PageMode?
-    private var language: String = "en-US"
+    private(set) var language: String = "en-US"
     private var languageSet = false     // A PDF that is not of PDF/A or PDF/UA says it only then
     // The document ID for the trailer and the XMP metadata: 16 random bytes as
     // 32 hexadecimal digits, so documents made at the same time get different IDs.

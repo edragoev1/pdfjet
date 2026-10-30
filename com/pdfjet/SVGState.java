@@ -57,6 +57,7 @@ class SVGState {
     String markerEnd = null;
     String clipPath = null;             // The id of the clip path of the element itself, not inherited
     List<SVGPath> clips = null;         // The clip paths of the element and of its ancestors
+    List<SVGImage.Choice> choices = null;   // The children of the switches it is in; never changed in place
     Map<String, Integer> paints = null; // The colors of the gradients, by id, shared by every state
 
     /**
@@ -103,6 +104,7 @@ class SVGState {
         this.markerMid = parent.markerMid;
         this.markerEnd = parent.markerEnd;
         this.clips = parent.clips;
+        this.choices = parent.choices;
         this.paints = parent.paints;
     }
 

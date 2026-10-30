@@ -1069,6 +1069,46 @@ import Testing
         }
     }
 
+    private func drawInLanguage(_ svg: String, _ language: String) throws -> String {
+        let pdf = TestSupport.newPDF()
+        if !language.isEmpty {
+            _ = pdf.setLanguage(language)
+        }
+        let page = Page(pdf, Letter.PORTRAIT)
+        let svgImage = try image(svg)
+        _ = svgImage.setLocation(0, 0)
+        _ = svgImage.drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    @Test func aSwitchHonorsTheSystemLanguage() throws {
+        let svg = "<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" systemLanguage=\"de, fr-CA\" fill=\"red\"/><rect width=\"5\" height=\"5\" systemLanguage=\"\" fill=\"lime\"/><g systemLanguage=\"EN-gb\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></g><rect width=\"5\" height=\"5\" fill=\"black\"/></switch></svg>"
+        let tests = [("", "0 0 1 rg"), ("en-US", "0 0 1 rg"), ("en", "0 0 1 rg"), ("de", "1 0 0 rg"), ("de-AT", "1 0 0 rg"), ("FR", "1 0 0 rg"), ("bg", "0 0 0 rg"), ("fra", "0 0 0 rg")]
+        for (language, color) in tests {
+            let content = try drawInLanguage(svg, language)
+            #expect(content.contains(color), "\(content)")
+            #expect(content.components(separatedBy: " rg\n").count == 2, "\(content)")
+        }
+        // No child of the language, and none without a systemLanguage: nothing.
+        #expect(try drawInLanguage("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" systemLanguage=\"de\"/></switch></svg>", "") == "")
+        // One image, drawn in the language of each PDF.
+        let svgImage = try image(svg)
+        for (language, color) in [("de", "1 0 0 rg"), ("en", "0 0 1 rg")] {
+            let pdf = TestSupport.newPDF()
+            _ = pdf.setLanguage(language)
+            let page = Page(pdf, Letter.PORTRAIT)
+            _ = svgImage.drawOn(page)
+            #expect(TestSupport.content(page).contains(color))
+        }
+        // Texts, in a switch in a used group, nested, and a marker in a child.
+        var content = try drawInLanguage("<svg width=\"100\" height=\"100\"><defs><g id=\"g\"><switch><text systemLanguage=\"de\" y=\"10\" fill=\"red\">a</text><switch><text systemLanguage=\"en\" y=\"10\" fill=\"blue\">b</text></switch></switch></g></defs><use href=\"#g\"/></svg>", "en")
+        #expect(content.contains("0 0 1 rg") && !content.contains("1 0 0 rg"), "\(content)")
+        #expect(try drawInLanguage("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\" fill=\"red\"/></marker><switch><path systemLanguage=\"de\" d=\"M0 0 L9 9\" stroke=\"blue\" marker-end=\"url(#m)\"/></switch></svg>", "en") == "")
+        // What is not drawn leaves no cut, and no miter limit, for itself.
+        content = try drawInLanguage("<svg width=\"100\" height=\"100\"><switch><path systemLanguage=\"de\" d=\"M0 0 L900 900\" stroke=\"blue\"/><rect width=\"5\" height=\"5\"/></switch></svg>", "en")
+        #expect(!content.contains("W\n") && !content.contains(" M\n"), "\(content)")
+    }
+
     @Test func aUseGivesASymbolItsSize() throws {
         do {
             let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>")

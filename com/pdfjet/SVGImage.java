@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,7 +29,8 @@ import java.util.Set;
  * style attribute or in rules for their classes in a style element that comes
  * before them. It draws the elements a use element names, a symbol at the size
  * of the use, a nested svg at its x, y and viewBox, the first child of a switch
- * that it can draw, and text and tspan
+ * that it can draw and whose systemLanguage has the language of the PDF, which
+ * is known when the image is drawn, and text and tspan
  * elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
  * dominant-baseline, in the font set with setFont and setBoldFont, or else
  * in the fonts PDFjet carries, embedded: IBM Plex
@@ -72,6 +74,8 @@ public class SVGImage implements Drawable {
     private long reused = 0;
     private long counted = 0;
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
+    private Map<XMLNode, Switch> switchOf;
+    private List<Switch> switches = new ArrayList<Switch>();
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
@@ -130,6 +134,7 @@ public class SVGImage implements Drawable {
         }
         ids = new HashMap<String, XMLNode>();
         reusing = new HashSet<XMLNode>();
+        switchOf = new HashMap<XMLNode, Switch>();
         List<XMLNode> elements = new ArrayList<XMLNode>();
         elements.add(document);
         for (int i = 0; i < elements.size(); i++) {
@@ -388,13 +393,11 @@ public class SVGImage implements Drawable {
             drawMarkers(state, vertices, colorMap, rules, stack, root);
         }
 
-        for (XMLNode child : node.getChildren()) {
-            if (name.equals("switch") && !isSwitchable(child)) {
-                continue;
-            }
-            draw(child, colorMap, rules, stack, root, false);
-            if (name.equals("switch")) {
-                break;  // A switch draws the first it can
+        if (name.equals("switch")) {
+            drawSwitch(node, colorMap, rules, stack, root);
+        } else {
+            for (XMLNode child : node.getChildren()) {
+                draw(child, colorMap, rules, stack, root, false);
             }
         }
         if (name.equals("style")) {
@@ -416,10 +419,129 @@ public class SVGImage implements Drawable {
             "polyline", "rect", "svg", "switch", "text", "use"));
 
     // Returns true when a switch can draw the element: one PDFjet draws,
-    // which asks for no extension, as PDFjet has none. The system language
-    // is not tested: a PDF is read by anyone.
+    // which asks for no extension, as PDFjet has none.
     private static boolean isSwitchable(XMLNode node) {
         return DRAWN.contains(node.getLocalName()) && node.getAttribute("requiredExtensions") == null;
+    }
+
+    // A switch element: the children it can draw, up to the first with no
+    // systemLanguage, which is drawn when none before it is, and the languages
+    // of each, null for no systemLanguage. A PDF has no reader's language, so
+    // the language is that of the PDF, and an image is read before it is known:
+    // each child is read, and the one that is drawn is chosen in drawOn.
+    private static final class Switch {
+        final List<XMLNode> children = new ArrayList<XMLNode>();
+        final List<List<String>> languages = new ArrayList<List<String>>();
+        int chosen = -1;    // The child drawn in the language of the PDF, or -1
+
+        Switch(XMLNode node) {
+            for (XMLNode child : node.getChildren()) {
+                if (!isSwitchable(child)) {
+                    continue;
+                }
+                children.add(child);
+                String value = child.getAttribute("systemLanguage");
+                if (value == null) {
+                    languages.add(null);
+                    break;  // Nothing after it can be drawn
+                }
+                languages.add(languages(value));
+            }
+        }
+
+        // Chooses the first child that has the language, or no systemLanguage.
+        void choose(String language) {
+            chosen = -1;
+            for (int i = 0; i < languages.size(); i++) {
+                List<String> list = languages.get(i);
+                if (list == null || list.contains(language)) {
+                    chosen = i;
+                    return;
+                }
+            }
+        }
+    }
+
+    // The child of a switch that an element is in.
+    static final class Choice {
+        private final Switch of;
+        private final int child;
+
+        Choice(Switch of, int child) {
+            this.of = of;
+            this.child = child;
+        }
+
+        boolean isChosen() {
+            return of.chosen == child;
+        }
+    }
+
+    // Returns the primary subtags of the languages of a systemLanguage, a list
+    // split by commas. That of an empty one has none: it matches no language,
+    // as SVG says.
+    private static List<String> languages(String value) {
+        List<String> languages = new ArrayList<String>();
+        for (String language : value.split(",", -1)) {
+            if (!language.trim().isEmpty()) {
+                languages.add(primaryLanguage(language));
+            }
+        }
+        return languages;
+    }
+
+    // Returns the primary subtag of a language, en-US's en, in lower case, and
+    // en for no language.
+    private static String primaryLanguage(String language) {
+        if (language == null) {
+            return "en";
+        }
+        language = language.trim();
+        int dash = language.indexOf('-');
+        if (dash != -1) {
+            language = language.substring(0, dash);
+        }
+        return language.isEmpty() ? "en" : language.toLowerCase(Locale.ROOT);
+    }
+
+    // Reads the children of the switch that may be drawn. A switch that is drawn
+    // again by a use element is the same switch, so the number of switches is
+    // that of the file.
+    private void drawSwitch(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
+            List<SVGState> stack, boolean[] root) throws Exception {
+        Switch choice = switchOf.get(node);
+        if (choice == null) {
+            choice = new Switch(node);
+            switchOf.put(node, choice);
+            switches.add(choice);
+        }
+        SVGState state = stack.get(stack.size() - 1);
+        List<Choice> choices = state.choices;
+        for (int i = 0; i < choice.children.size(); i++) {
+            List<Choice> inChild = (choices == null) ? new ArrayList<Choice>() : new ArrayList<Choice>(choices);
+            inChild.add(new Choice(choice, i));
+            state.choices = inChild;
+            draw(choice.children.get(i), colorMap, rules, stack, root, false);
+        }
+    }
+
+    // Returns the paths drawn in the language of the PDF, those in a child of a
+    // switch that is not chosen left out.
+    private List<SVGPath> chosenPaths(String language) {
+        if (switches.isEmpty()) {
+            return paths;
+        }
+        String primary = primaryLanguage(language);
+        for (Switch choice : switches) {
+            choice.choose(primary);
+        }
+        List<SVGPath> chosen = new ArrayList<SVGPath>(paths.size());
+        for (SVGPath path : paths) {
+            if (path.isChosen()) {
+                chosen.add(path);
+            }
+        }
+        return chosen;
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -640,6 +762,7 @@ public class SVGImage implements Drawable {
             path.dashOffset = (float) (((double) state.dashOffset)*scale);
         }
         path.clips = state.clips;
+        path.choices = state.choices;
         transform(m, operations);
         paths.add(path);
     }
@@ -1049,6 +1172,7 @@ public class SVGImage implements Drawable {
         SVGState base = new SVGState();
         base.paints = state.paints;
         base.clips = state.clips;
+        base.choices = state.choices;
         base.matrix = m;
         stack.add(base);
         reusing.add(marker);
@@ -1094,6 +1218,7 @@ public class SVGImage implements Drawable {
         path.operations = new ArrayList<PathOp>();
         path.text = text;
         path.clips = state.clips;
+        path.choices = state.choices;
         paths.add(path);
     }
 
@@ -1796,7 +1921,7 @@ public class SVGImage implements Drawable {
 
     // Returns true when a path or a run of a text is stroked with miter
     // joins and the limit of SVG unless given.
-    private boolean strokesMiters() {
+    private boolean strokesMiters(List<SVGPath> paths) {
         for (SVGPath path : paths) {
             if (path.text != null) {
                 for (SVGText.Run run : path.text.runs) {
@@ -1814,7 +1939,7 @@ public class SVGImage implements Drawable {
     // Returns true when something of the image is drawn outside its size,
     // which is cut off then: a point of a path, wider by half its stroke, or
     // the box of a run of a text, from its ascent to its descent.
-    private boolean overflows(Page page) {
+    private boolean overflows(List<SVGPath> paths, Page page) {
         if (w <= 0f || h <= 0f) {
             return false;
         }
@@ -1873,6 +1998,7 @@ public class SVGImage implements Drawable {
             link = page.beginLink();
         }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription);
+        List<SVGPath> paths = chosenPaths(page.pdf.language);
         for (SVGPath path : paths) {
             if (path.text != null) {
                 for (SVGText.Run run : path.text.runs) {
@@ -1883,13 +2009,13 @@ public class SVGImage implements Drawable {
         }
         // The miter limit, set once: a stroked map has as many paths as a PDF
         // would hold, and the few with another limit set their own.
-        boolean miter = strokesMiters();
+        boolean miter = strokesMiters(paths);
         if (miter) {
             page.saveGraphicsState();
             page.append(4f);
             page.append(" M\n");
         }
-        boolean clip = overflows(page);
+        boolean clip = overflows(paths, page);
         if (clip) {
             page.saveGraphicsState();
             page.clipRect(x, y, w, h);

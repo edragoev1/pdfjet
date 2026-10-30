@@ -134,7 +134,7 @@ public sealed class PDF {
     private List<String> acroForm = null;
     private PageLayout? pageLayout = null;
     private PageMode? pageMode = null;
-    private String language = "en-US";
+    internal String language = "en-US";
     private bool languageSet;       // A PDF that is not of PDF/A or PDF/UA says it only then
     // The files the document carries, in the order they were added.
     private readonly List<EmbeddedFile> associatedFiles = new List<EmbeddedFile>();

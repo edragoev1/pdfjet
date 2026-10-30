@@ -67,6 +67,8 @@ public class SVGImage : IDrawable {
     private long reused = 0;
     private long counted = 0;
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
+    private Dictionary<XMLNode, Switch> switchOf;
+    private List<Switch> switches = new List<Switch>();
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
@@ -123,6 +125,7 @@ public class SVGImage : IDrawable {
         }
         ids = new Dictionary<String, XMLNode>();
         reusing = new HashSet<XMLNode>();
+        switchOf = new Dictionary<XMLNode, Switch>();
         List<XMLNode> elements = new List<XMLNode>();
         elements.Add(document);
         for (int i = 0; i < elements.Count; i++) {
@@ -388,13 +391,11 @@ public class SVGImage : IDrawable {
             DrawMarkers(state, vertices, rules, stack, ref root);
         }
 
-        foreach (XMLNode child in node.GetChildren()) {
-            if (name.Equals("switch") && !IsSwitchable(child)) {
-                continue;
-            }
-            Draw(child, stack, rules, ref root, false);
-            if (name.Equals("switch")) {
-                break;  // A switch draws the first it can
+        if (name.Equals("switch")) {
+            DrawSwitch(node, stack, rules, ref root);
+        } else {
+            foreach (XMLNode child in node.GetChildren()) {
+                Draw(child, stack, rules, ref root, false);
             }
         }
         if (name.Equals("style")) {
@@ -416,10 +417,128 @@ public class SVGImage : IDrawable {
     };
 
     // Returns true when a switch can draw the element: one PDFjet draws,
-    // which asks for no extension, as PDFjet has none. The system language
-    // is not tested: a PDF is read by anyone.
+    // which asks for no extension, as PDFjet has none.
     private static bool IsSwitchable(XMLNode node) {
         return DRAWN.Contains(node.GetLocalName()) && node.GetAttribute("requiredExtensions") == null;
+    }
+
+    // A switch element: the children it can draw, up to the first with no
+    // systemLanguage, which is drawn when none before it is, and the languages
+    // of each, null for no systemLanguage. A PDF has no reader's language, so
+    // the language is that of the PDF, and an image is read before it is known:
+    // each child is read, and the one that is drawn is chosen in DrawOn.
+    internal sealed class Switch {
+        internal readonly List<XMLNode> children = new List<XMLNode>();
+        internal readonly List<List<String>> languages = new List<List<String>>();
+        internal int chosen = -1;   // The child drawn in the language of the PDF, or -1
+
+        internal Switch(XMLNode node) {
+            foreach (XMLNode child in node.GetChildren()) {
+                if (!IsSwitchable(child)) {
+                    continue;
+                }
+                children.Add(child);
+                String value = child.GetAttribute("systemLanguage");
+                if (value == null) {
+                    languages.Add(null);
+                    break;  // Nothing after it can be drawn
+                }
+                languages.Add(Languages(value));
+            }
+        }
+
+        // Chooses the first child that has the language, or no systemLanguage.
+        internal void Choose(String language) {
+            chosen = -1;
+            for (int i = 0; i < languages.Count; i++) {
+                List<String> list = languages[i];
+                if (list == null || list.Contains(language)) {
+                    chosen = i;
+                    return;
+                }
+            }
+        }
+    }
+
+    // The child of a switch that an element is in.
+    internal sealed class Choice {
+        private readonly Switch of;
+        private readonly int child;
+
+        internal Choice(Switch of, int child) {
+            this.of = of;
+            this.child = child;
+        }
+
+        internal bool IsChosen() {
+            return of.chosen == child;
+        }
+    }
+
+    // Returns the primary subtags of the languages of a systemLanguage, a list
+    // split by commas. That of an empty one has none: it matches no language,
+    // as SVG says.
+    private static List<String> Languages(String value) {
+        List<String> languages = new List<String>();
+        foreach (String language in value.Split(',')) {
+            if (language.Trim().Length > 0) {
+                languages.Add(PrimaryLanguage(language));
+            }
+        }
+        return languages;
+    }
+
+    // Returns the primary subtag of a language, en-US's en, in lower case, and
+    // en for no language.
+    private static String PrimaryLanguage(String language) {
+        if (language == null) {
+            return "en";
+        }
+        language = language.Trim();
+        int dash = language.IndexOf('-');
+        if (dash != -1) {
+            language = language.Substring(0, dash);
+        }
+        return (language.Length == 0) ? "en" : language.ToLowerInvariant();
+    }
+
+    // Reads the children of the switch that may be drawn. A switch that is drawn
+    // again by a use element is the same switch, so the number of switches is
+    // that of the file.
+    private void DrawSwitch(XMLNode node, List<SVGState> stack, SVGStyleSheet rules, ref bool root) {
+        Switch choice;
+        if (!switchOf.TryGetValue(node, out choice)) {
+            choice = new Switch(node);
+            switchOf[node] = choice;
+            switches.Add(choice);
+        }
+        SVGState state = stack[stack.Count - 1];
+        List<Choice> choices = state.choices;
+        for (int i = 0; i < choice.children.Count; i++) {
+            List<Choice> inChild = (choices == null) ? new List<Choice>() : new List<Choice>(choices);
+            inChild.Add(new Choice(choice, i));
+            state.choices = inChild;
+            Draw(choice.children[i], stack, rules, ref root, false);
+        }
+    }
+
+    // Returns the paths drawn in the language of the PDF, those in a child of a
+    // switch that is not chosen left out.
+    private List<SVGPath> ChosenPaths(String language) {
+        if (switches.Count == 0) {
+            return paths;
+        }
+        String primary = PrimaryLanguage(language);
+        foreach (Switch choice in switches) {
+            choice.Choose(primary);
+        }
+        List<SVGPath> chosen = new List<SVGPath>(paths.Count);
+        foreach (SVGPath path in paths) {
+            if (path.IsChosen()) {
+                chosen.Add(path);
+            }
+        }
+        return chosen;
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -645,6 +764,7 @@ public class SVGImage : IDrawable {
             path.dashOffset = (float) (((double) state.dashOffset) * scale);
         }
         path.clips = state.clips;
+        path.choices = state.choices;
         Transform(m, operations);
         paths.Add(path);
     }
@@ -1067,6 +1187,7 @@ public class SVGImage : IDrawable {
         SVGState svg = new SVGState();
         svg.paints = state.paints;
         svg.clips = state.clips;
+        svg.choices = state.choices;
         svg.matrix = m;
         stack.Add(svg);
         reusing.Add(marker);
@@ -1112,6 +1233,7 @@ public class SVGImage : IDrawable {
         path.operations = new List<PathOp>();
         path.text = text;
         path.clips = state.clips;
+        path.choices = state.choices;
         paths.Add(path);
     }
 
@@ -1760,7 +1882,7 @@ public class SVGImage : IDrawable {
 
     // Returns true when a path or a run of a text is stroked with miter
     // joins and the limit of SVG unless given.
-    private bool StrokesMiters() {
+    private bool StrokesMiters(List<SVGPath> paths) {
         foreach (SVGPath path in paths) {
             if (path.text != null) {
                 foreach (SVGText.Run run in path.text.runs) {
@@ -1778,7 +1900,7 @@ public class SVGImage : IDrawable {
     // Returns true when something of the image is drawn outside its size,
     // which is cut off then: a point of a path, wider by half its stroke, or
     // the box of a run of a text, from its ascent to its descent.
-    private bool Overflows(Page page) {
+    private bool Overflows(List<SVGPath> paths, Page page) {
         if (w <= 0f || h <= 0f) {
             return false;
         }
@@ -1832,6 +1954,7 @@ public class SVGImage : IDrawable {
             link = page.BeginLink();
         }
         page.AddBDC(StructElem.FIGURE, language, actualText, altDescription);
+        List<SVGPath> paths = ChosenPaths(page.pdf.language);
         foreach (SVGPath path in paths) {
             if (path.text != null) {
                 foreach (SVGText.Run run in path.text.runs) {
@@ -1842,13 +1965,13 @@ public class SVGImage : IDrawable {
         }
         // The miter limit, set once: a stroked map has as many paths as a PDF
         // would hold, and the few with another limit set their own.
-        bool miter = StrokesMiters();
+        bool miter = StrokesMiters(paths);
         if (miter) {
             page.SaveGraphicsState();
             page.Append(4f);
             page.Append(" M\n");
         }
-        bool clip = Overflows(page);
+        bool clip = Overflows(paths, page);
         if (clip) {
             page.SaveGraphicsState();
             page.ClipRect(x, y, w, h);

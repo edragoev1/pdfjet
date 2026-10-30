@@ -37,6 +37,8 @@ public class SVGImage : Drawable {
     private var reused = 0
     private var counted = 0
     private var useSize: (String, String)?  // The width and the height of the use element of the element drawn next
+    private var switchOf = [ObjectIdentifier: Switch]()
+    private var switches = [Switch]()
     private var rules = SVGStyleSheet()
     private var stack = [SVGState]()
     private var root = true
@@ -97,7 +99,8 @@ public class SVGImage : Drawable {
      * classes in a <style> element that comes before them. It draws the
      * elements a <use> element names, a <symbol> at the size of the <use>, a
      * nested <svg> at its x, y and viewBox, the first child of a <switch> that
-     * it can draw, and <text> and <tspan> elements with
+     * it can draw and whose systemLanguage has the language of the PDF, which
+     * is known when the image is drawn, and <text> and <tspan> elements with
      * their x, y, dx, dy, font-size, font-weight, text-anchor and
      * dominant-baseline, in the font set with setFont and setBoldFont, or
      * else in the fonts PDFjet carries, embedded: IBM
@@ -394,13 +397,11 @@ public class SVGImage : Drawable {
             try drawMarkers(state, vertices)
         }
 
-        for child in node.getChildren() {
-            if name == "switch" && !SVGImage.isSwitchable(child) {
-                continue
-            }
-            try draw(child, false)
-            if name == "switch" {
-                break   // A switch draws the first it can
+        if name == "switch" {
+            try drawSwitch(node)
+        } else {
+            for child in node.getChildren() {
+                try draw(child, false)
             }
         }
         if name == "style" {
@@ -415,10 +416,65 @@ public class SVGImage : Drawable {
     ]
 
     // Returns true when a switch can draw the element: one PDFjet draws,
-    // which asks for no extension, as PDFjet has none. The system language
-    // is not tested: a PDF is read by anyone.
-    private static func isSwitchable(_ node: PDFjetXMLNode) -> Bool {
+    // which asks for no extension, as PDFjet has none.
+    fileprivate static func isSwitchable(_ node: PDFjetXMLNode) -> Bool {
         return drawn.contains(node.getLocalName()) && node.getAttribute("requiredExtensions") == nil
+    }
+
+    // Returns the primary subtags of the languages of a systemLanguage, a list
+    // split by commas. That of an empty one has none: it matches no language,
+    // as SVG says.
+    fileprivate static func languages(_ value: String) -> [String] {
+        var languages = [String]()
+        for language in value.components(separatedBy: ",") {
+            if !language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                languages.append(primaryLanguage(language))
+            }
+        }
+        return languages
+    }
+
+    // Returns the primary subtag of a language, en-US's en, in lower case, and
+    // en for no language.
+    private static func primaryLanguage(_ language: String) -> String {
+        var language = language.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let dash = language.firstIndex(of: "-") {
+            language = String(language[..<dash])
+        }
+        return language.isEmpty ? "en" : language.lowercased()
+    }
+
+    // Reads the children of the switch that may be drawn. A switch that is drawn
+    // again by a use element is the same switch, so the number of switches is
+    // that of the file.
+    private func drawSwitch(_ node: PDFjetXMLNode) throws {
+        let id = ObjectIdentifier(node)
+        var found = switchOf[id]
+        if found == nil {
+            found = Switch(node)
+            switchOf[id] = found
+            switches.append(found!)
+        }
+        let choice = found!
+        let top = stack.count - 1
+        let choices = stack[top].choices ?? []
+        for (i, child) in choice.children.enumerated() {
+            stack[top].choices = choices + [Choice(of: choice, child: i)]
+            try draw(child, false)
+        }
+    }
+
+    // Returns the paths drawn in the language of the PDF, those in a child of a
+    // switch that is not chosen left out.
+    private func chosenPaths(_ language: String) -> [SVGPath] {
+        if switches.isEmpty {
+            return paths
+        }
+        let primary = SVGImage.primaryLanguage(language)
+        for choice in switches {
+            choice.choose(primary)
+        }
+        return paths.filter { $0.isChosen() }
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -641,6 +697,7 @@ public class SVGImage : Drawable {
             path.dashOffset = Float(Double(state.dashOffset) * scale)
         }
         path.clips = state.clips
+        path.choices = state.choices
         SVGImage.transform(m, operations)
         paths.append(path)
     }
@@ -1017,6 +1074,7 @@ public class SVGImage : Drawable {
         var base = SVGState()
         base.paints = state.paints
         base.clips = state.clips
+        base.choices = state.choices
         base.matrix = m
         stack.append(base)
         reusing.insert(ObjectIdentifier(marker))
@@ -1055,6 +1113,7 @@ public class SVGImage : Drawable {
         let path = SVGPath()
         path.text = text
         path.clips = state.clips
+        path.choices = state.choices
         paths.append(path)
     }
 
@@ -1693,7 +1752,7 @@ public class SVGImage : Drawable {
 
     // Returns true when a path or a run of a text is stroked with miter
     // joins and the limit of SVG unless given.
-    private func strokesMiters() -> Bool {
+    private func strokesMiters(_ paths: [SVGPath]) -> Bool {
         for path in paths {
             if let text = path.text {
                 if text.runs.contains(where: { $0.stroke != Color.transparent
@@ -1711,7 +1770,7 @@ public class SVGImage : Drawable {
     // Returns true when something of the image is drawn outside its size,
     // which is cut off then: a point of a path, wider by half its stroke, or
     // the box of a run of a text, from its ascent to its descent.
-    private func overflows(_ page: Page) -> Bool {
+    private func overflows(_ paths: [SVGPath], _ page: Page) -> Bool {
         if w <= 0.0 || h <= 0.0 {
             return false
         }
@@ -1766,6 +1825,7 @@ public class SVGImage : Drawable {
             link = page.beginLink()
         }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription)
+        let paths = chosenPaths(page.pdf.language)
         // A font that is missing is refused, and nothing is drawn, as the
         // other ports throw; the figure is closed, empty
         for path in paths {
@@ -1783,13 +1843,13 @@ public class SVGImage : Drawable {
         }
         // The miter limit, set once: a stroked map has as many paths as a
         // PDF would hold, and the few with another limit set their own.
-        let miter = strokesMiters()
+        let miter = strokesMiters(paths)
         if miter {
             page.saveGraphicsState()
             page.append(Float(4.0))
             page.append(" M\n")
         }
-        let clip = overflows(page)
+        let clip = overflows(paths, page)
         if clip {
             page.saveGraphicsState()
             page.clipRect(x, y, w, h)
@@ -1831,3 +1891,54 @@ public class SVGImage : Drawable {
         return [self.x + self.w, self.y + self.h]
     }
 }   // End of SVGImage.swift
+
+/// A switch element: the children it can draw, up to the first with no
+/// systemLanguage, which is drawn when none before it is, and the languages of
+/// each, nil for no systemLanguage. A PDF has no reader's language, so the
+/// language is that of the PDF, and an image is read before it is known: each
+/// child is read, and the one that is drawn is chosen in drawOn.
+private final class Switch {
+    var children = [PDFjetXMLNode]()
+    var languages = [[String]?]()
+    var chosen = -1     // The child drawn in the language of the PDF, or -1
+
+    init(_ node: PDFjetXMLNode) {
+        for child in node.getChildren() {
+            if !SVGImage.isSwitchable(child) {
+                continue
+            }
+            children.append(child)
+            guard let value = child.getAttribute("systemLanguage") else {
+                languages.append(nil)
+                break   // Nothing after it can be drawn
+            }
+            languages.append(SVGImage.languages(value))
+        }
+    }
+
+    // Chooses the first child that has the language, or no systemLanguage.
+    func choose(_ language: String) {
+        chosen = -1
+        for (i, list) in languages.enumerated() {
+            if list == nil || list!.contains(language) {
+                chosen = i
+                return
+            }
+        }
+    }
+}
+
+/// The child of a switch that an element is in.
+struct Choice {
+    private let of: AnyObject
+    private let child: Int
+
+    fileprivate init(of: Switch, child: Int) {
+        self.of = of
+        self.child = child
+    }
+
+    func isChosen() -> Bool {
+        return (of as! Switch).chosen == child
+    }
+}

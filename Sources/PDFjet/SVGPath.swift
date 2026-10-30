@@ -23,5 +23,11 @@ class SVGPath {
     var dashOffset: Float = 0.0
     var strokeFirst = false                 // paint-order: the stroke drawn before the fill
     var clips: [SVGPath]? = nil             // The clip paths it is drawn inside, all of them
+    var choices: [Choice]? = nil            // The children of the switches it is in
     var text: SVGText? = nil                // A text, drawn instead of the operations
+
+    // Returns true when it is in the children chosen of the switches it is in.
+    func isChosen() -> Bool {
+        return choices?.allSatisfy { $0.isChosen() } ?? true
+    }
 }

@@ -25,7 +25,18 @@ type svgPath struct {
 	strokeAlpha float32
 	dashArray   []float32 // The dashes and the gaps, in the space of the svg element; nil is solid
 	dashOffset  float32
-	strokeFirst bool       // paint-order: the stroke drawn before the fill
-	clips       []*svgPath // The clip paths it is drawn inside, all of them
-	text        *svgText   // A text, drawn instead of the operations
+	strokeFirst bool        // paint-order: the stroke drawn before the fill
+	clips       []*svgPath  // The clip paths it is drawn inside, all of them
+	choices     []svgChoice // The children of the switches it is in
+	text        *svgText    // A text, drawn instead of the operations
+}
+
+// isChosen reports whether it is in the children chosen of the switches it is in.
+func (path *svgPath) isChosen() bool {
+	for _, choice := range path.choices {
+		if choice.of.chosen != choice.child {
+			return false
+		}
+	}
+	return true
 }
