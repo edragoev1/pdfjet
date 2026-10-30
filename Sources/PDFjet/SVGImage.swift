@@ -37,6 +37,7 @@ public class SVGImage : Drawable {
     private var reused = 0
     private var counted = 0
     private var useSize: (String, String)?  // The width and the height of the use element of the element drawn next
+    private var marker: [Double]?           // The viewport of the marker drawn next, in its user space
     private var clipping = false    // A text of a clip path is read, for each element it clips
     private var switchOf = [ObjectIdentifier: Switch]()
     private var switches = [Switch]()
@@ -111,8 +112,8 @@ public class SVGImage : Drawable {
      * font-family, font-weight and font-style of the text ask. A gradient is
      * drawn in the mean color of its stops. The width, height, viewBox and preserveAspectRatio of the <svg> element
      * give the size of the image, and what is drawn outside it is cut off, as
-     * a browser does, and so is what a <symbol> or a nested <svg> draws outside
-     * its viewport, unless its overflow is visible or auto. A <clipPath> clips
+     * a browser does, and so is what a <symbol>, a <marker> or a nested <svg> draws
+     * outside its viewport, unless its overflow is visible or auto. A <clipPath> clips
      * with its shapes or, when it has none, with its <text> elements, in those
      * fonts, by the text rendering mode 7 of a PDF. A text cannot be in one path
      * with other shapes, as a text object holds no path and clip paths do not
@@ -340,6 +341,8 @@ public class SVGImage : Drawable {
         }
         let size = useSize
         useSize = nil
+        let viewport = marker
+        marker = nil
         if name == "svg" && root {
             root = false
             w = SVGImage.parseLength(values["width"] ?? "")
@@ -360,6 +363,13 @@ public class SVGImage : Drawable {
             }
         } else if name == "svg" || name == "symbol" && used {
             try enterViewport(&state, values, size)
+        } else if let viewport = viewport {
+            if state.overflow == nil {
+                state.overflow = "hidden"
+            }
+            if !state.hidden && state.clipsOverflow() {
+                try clipToViewport(&state, viewport[0], viewport[1], viewport[2], viewport[3])
+            }
         }
         stack.append(state)
         defer {
@@ -835,6 +845,9 @@ public class SVGImage : Drawable {
     // not inherited; a viewport of no known size clips nothing.
     private func enterViewport(_ state: inout SVGState, _ attributes: [String: String],
             _ size: (String, String)?) throws {
+        if state.overflow == nil {
+            state.overflow = "hidden"
+        }
         let width = (size != nil && !size!.0.isEmpty) ? size!.0 : attributes["width"] ?? ""
         let height = (size != nil && !size!.1.isEmpty) ? size!.1 : attributes["height"] ?? ""
         var w = SVGImage.viewportLength(width, state.viewport[0], state.viewport[0])
@@ -857,7 +870,7 @@ public class SVGImage : Drawable {
             state.hidden = true
             return
         }
-        if !state.hidden && w > 0.0 && h > 0.0 && state.overflow != "visible" && state.overflow != "auto" {
+        if !state.hidden && w > 0.0 && h > 0.0 && state.clipsOverflow() {
             try clipToViewport(&state, x, y, w, h)
         }
         guard fitted, let box = numbers else {
@@ -865,11 +878,21 @@ public class SVGImage : Drawable {
             state.matrix = SVGState.multiply(state.matrix, m)
             return
         }
+        let fit = SVGImage.fit(box, w, h, attributes["preserveAspectRatio"] ?? "")
+        m = SVGState.multiply(m, [fit[0], 0.0, 0.0, fit[1], fit[2], fit[3]])
+        m = SVGState.multiply(m, [1.0, 0.0, 0.0, 1.0, -box[0], -box[1]])
+        state.viewport = [box[2], box[3]]
+        state.matrix = SVGState.multiply(state.matrix, m)
+    }
+
+    // Returns the scales and the move, sx, sy, tx and ty, that fit a viewBox to a
+    // viewport of the width and the height, as its preserveAspectRatio says.
+    private static func fit(_ box: [Double], _ w: Double, _ h: Double, _ aspect: String) -> [Double] {
         var sx = w / box[2]
         var sy = h / box[3]
         var tx = 0.0
         var ty = 0.0
-        var fields = SVGState.fields(attributes["preserveAspectRatio"] ?? "")
+        var fields = SVGState.fields(aspect)
         if !fields.isEmpty && fields[0] == "defer" {
             fields.removeFirst()
         }
@@ -886,10 +909,7 @@ public class SVGImage : Drawable {
             tx = Double(SVGImage.alignOffset(align[1..<4], 1.0)) * (w - box[2]*sx)
             ty = Double(SVGImage.alignOffset(align[5..<8], 1.0)) * (h - box[3]*sy)
         }
-        m = SVGState.multiply(m, [sx, 0.0, 0.0, sy, tx, ty])
-        m = SVGState.multiply(m, [1.0, 0.0, 0.0, 1.0, -box[0], -box[1]])
-        state.viewport = [box[2], box[3]]
-        state.matrix = SVGState.multiply(state.matrix, m)
+        return [sx, sy, tx, ty]
     }
 
     // Clips the element to the rectangle, in the user space it is in before it
@@ -1091,7 +1111,9 @@ public class SVGImage : Drawable {
     // Draws the marker at the vertex: its refX, refY there, turned as its
     // orient says, and its viewBox fitted to its markerWidth and
     // markerHeight, which are in units of the stroke width unless its
-    // markerUnits are userSpaceOnUse.
+    // markerUnits are userSpaceOnUse. A size of nothing draws nothing. What is
+    // drawn is clipped to that viewport, as hidden is the overflow of a marker
+    // unless given, and the viewport is where the viewBox fitted to it leaves it.
     private func drawMarker(_ id: String?, _ state: SVGState, _ vertex: [Double], _ start: Bool) throws {
         guard let id = id, let marker = ids[Array(id.utf8)], marker.getLocalName() == "marker",
               !reusing.contains(ObjectIdentifier(marker)) else {
@@ -1116,18 +1138,20 @@ public class SVGImage : Drawable {
                 ? 1.0 : Double(state.strokeWidth)
         let width = SVGImage.markerSize(marker.getAttribute("markerWidth") ?? "")
         let height = SVGImage.markerSize(marker.getAttribute("markerHeight") ?? "")
+        if width == 0.0 || height == 0.0 {
+            return
+        }
         var sx = 1.0
         var sy = 1.0
+        var viewport = [0.0, 0.0, width, height]
         if let box = SVGState.parseNumbers(marker.getAttribute("viewBox") ?? ""), box.count == 4 {
             if box[2] <= 0.0 || box[3] <= 0.0 {
                 return      // A viewBox of no size draws nothing
             }
-            sx = width / box[2]
-            sy = height / box[3]
-            if SVGState.trimSpace(marker.getAttribute("preserveAspectRatio") ?? "") != "none" {
-                sx = SVGState.goMin(sx, sy)
-                sy = sx
-            }
+            let fit = SVGImage.fit(box, width, height, marker.getAttribute("preserveAspectRatio") ?? "")
+            sx = fit[0]
+            sy = fit[1]
+            viewport = [box[0] - fit[2] / sx, box[1] - fit[3] / sy, width / sx, height / sy]
         }
         let radians = angle * SVGImage.radiansPerDegree
         let cosine = cos(radians)
@@ -1145,6 +1169,7 @@ public class SVGImage : Drawable {
         base.matrix = m
         stack.append(base)
         reusing.insert(ObjectIdentifier(marker))
+        self.marker = viewport
         try draw(marker, true)
         reusing.remove(ObjectIdentifier(marker))
         stack.removeLast()

@@ -41,8 +41,8 @@ import java.util.Set;
  * mean color of its stops. The width,
  * height, viewBox and preserveAspectRatio of the svg element give the size of
  * the image, and what is drawn outside it is cut off, as a browser does, and so
- * is what a symbol or a nested svg draws outside its viewport, unless its
- * overflow is visible or auto. A clipPath clips with its shapes or, when it has
+ * is what a symbol, a marker or a nested svg draws outside its viewport, unless
+ * its overflow is visible or auto. A clipPath clips with its shapes or, when it has
  * none, with its text elements, in those fonts, by the text rendering mode 7 of
  * a PDF. A text cannot be in one path with other shapes, as a text object holds
  * no path and clip paths do not add up, so the texts of a clipPath that has
@@ -85,6 +85,7 @@ public class SVGImage implements Drawable {
     private long reused = 0;
     private long counted = 0;
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
+    private double[] marker = null;     // The viewport of the marker drawn next, in its user space
     private boolean clipping = false;   // A text of a clip path is read, for each element it clips
     private Map<XMLNode, Switch> switchOf;
     private List<Switch> switches = new ArrayList<Switch>();
@@ -336,6 +337,8 @@ public class SVGImage implements Drawable {
         }
         String[] size = useSize;
         useSize = null;
+        double[] viewport = marker;
+        marker = null;
         if (name.equals("svg") && root[0]) {
             root[0] = false;
             this.w = parseLength(attribute(attributes, "width"));
@@ -355,6 +358,13 @@ public class SVGImage implements Drawable {
             }
         } else if (name.equals("svg") || name.equals("symbol") && used) {
             enterViewport(state, attributes, size);
+        } else if (viewport != null) {
+            if (state.overflow == null) {
+                state.overflow = "hidden";
+            }
+            if (!state.hidden && state.clipsOverflow()) {
+                clipToViewport(state, viewport[0], viewport[1], viewport[2], viewport[3]);
+            }
         }
         stack.add(state);
 
@@ -934,6 +944,9 @@ public class SVGImage implements Drawable {
     // the viewport, as hidden is the overflow of these elements unless given,
     // not inherited; a viewport of no known size clips nothing.
     private void enterViewport(SVGState state, Map<String, String> attributes, String[] size) {
+        if (state.overflow == null) {
+            state.overflow = "hidden";
+        }
         String width = (size != null && !size[0].isEmpty()) ? size[0] : attribute(attributes, "width");
         String height = (size != null && !size[1].isEmpty()) ? size[1] : attribute(attributes, "height");
         double w = viewportLength(width, state.viewport[0], state.viewport[0]);
@@ -956,7 +969,7 @@ public class SVGImage implements Drawable {
             state.hidden = true;
             return;
         }
-        if (!state.hidden && w > 0.0 && h > 0.0 && !"visible".equals(state.overflow) && !"auto".equals(state.overflow)) {
+        if (!state.hidden && w > 0.0 && h > 0.0 && state.clipsOverflow()) {
             clipToViewport(state, vx, vy, w, h);
         }
         if (!fitted) {
@@ -964,11 +977,21 @@ public class SVGImage implements Drawable {
             state.matrix = SVGState.multiply(state.matrix, m);
             return;
         }
+        double[] fit = fit(box, w, h, attribute(attributes, "preserveAspectRatio"));
+        m = SVGState.multiply(m, new double[] {fit[0], 0, 0, fit[1], fit[2], fit[3]});
+        m = SVGState.multiply(m, new double[] {1, 0, 0, 1, -box[0], -box[1]});
+        state.viewport = new double[] {box[2], box[3]};
+        state.matrix = SVGState.multiply(state.matrix, m);
+    }
+
+    // Returns the scales and the move, sx, sy, tx and ty, that fit a viewBox to a
+    // viewport of the width and the height, as its preserveAspectRatio says.
+    private static double[] fit(double[] box, double w, double h, String aspect) {
         double sx = w/box[2];
         double sy = h/box[3];
         double tx = 0.0;
         double ty = 0.0;
-        List<String> fields = SVGState.fields(attribute(attributes, "preserveAspectRatio"));
+        List<String> fields = SVGState.fields(aspect);
         if (!fields.isEmpty() && fields.get(0).equals("defer")) {
             fields = fields.subList(1, fields.size());
         }
@@ -987,10 +1010,7 @@ public class SVGImage implements Drawable {
             tx = alignOffset(new String(bytes, 1, 3, StandardCharsets.ISO_8859_1), 1f)*(w - box[2]*sx);
             ty = alignOffset(new String(bytes, 5, 3, StandardCharsets.ISO_8859_1), 1f)*(h - box[3]*sy);
         }
-        m = SVGState.multiply(m, new double[] {sx, 0, 0, sy, tx, ty});
-        m = SVGState.multiply(m, new double[] {1, 0, 0, 1, -box[0], -box[1]});
-        state.viewport = new double[] {box[2], box[3]};
-        state.matrix = SVGState.multiply(state.matrix, m);
+        return new double[] {sx, sy, tx, ty};
     }
 
     // Clips the element to the rectangle, in the user space it is in before it
@@ -1194,7 +1214,9 @@ public class SVGImage implements Drawable {
     // Draws the marker at the vertex: its refX, refY there, turned as its
     // orient says, and its viewBox fitted to its markerWidth and
     // markerHeight, which are in units of the stroke width unless its
-    // markerUnits are userSpaceOnUse.
+    // markerUnits are userSpaceOnUse. A size of nothing draws nothing. What is
+    // drawn is clipped to that viewport, as hidden is the overflow of a marker
+    // unless given, and the viewport is where the viewBox fitted to it leaves it.
     private void drawMarker(String id, SVGState state, double[] vertex, boolean start, ColorMap colorMap,
             SVGState.StyleSheet rules, List<SVGState> stack, boolean[] root) throws Exception {
         XMLNode marker = (id == null) ? null : ids.get(id);
@@ -1224,19 +1246,21 @@ public class SVGImage implements Drawable {
                 ? 1.0 : state.strokeWidth;
         double width = markerSize(attribute(marker, "markerWidth"));
         double height = markerSize(attribute(marker, "markerHeight"));
+        if (width == 0.0 || height == 0.0) {
+            return;
+        }
         double sx = 1.0;
         double sy = 1.0;
+        double[] viewport = {0.0, 0.0, width, height};
         double[] box = SVGState.parseNumbers(attribute(marker, "viewBox"));
         if (box != null && box.length == 4) {
             if (box[2] <= 0.0 || box[3] <= 0.0) {
                 return;     // A viewBox of no size draws nothing
             }
-            sx = width/box[2];
-            sy = height/box[3];
-            if (!SVGState.trim(attribute(marker, "preserveAspectRatio")).equals("none")) {
-                sx = Math.min(sx, sy);
-                sy = sx;
-            }
+            double[] fit = fit(box, width, height, attribute(marker, "preserveAspectRatio"));
+            sx = fit[0];
+            sy = fit[1];
+            viewport = new double[] {box[0] - fit[2]/sx, box[1] - fit[3]/sy, width/sx, height/sy};
         }
         double radians = angle*RADIANS;
         double cos = Math.cos(radians);
@@ -1254,6 +1278,7 @@ public class SVGImage implements Drawable {
         base.matrix = m;
         stack.add(base);
         reusing.add(marker);
+        this.marker = viewport;
         draw(marker, colorMap, rules, stack, root, true);
         reusing.remove(marker);
         stack.remove(stack.size() - 1);

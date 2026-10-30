@@ -33,8 +33,8 @@ namespace PDFjet.NET {
 /// mean color of its stops. The width,
 /// height, viewBox and preserveAspectRatio of the svg element give the size of
 /// the image, and what is drawn outside it is cut off, as a browser does, and so
-/// is what a symbol or a nested svg draws outside its viewport, unless its
-/// overflow is visible or auto. A clipPath clips with its shapes or, when it has
+/// is what a symbol, a marker or a nested svg draws outside its viewport, unless
+/// its overflow is visible or auto. A clipPath clips with its shapes or, when it has
 /// none, with its text elements, in those fonts, by the text rendering mode 7 of
 /// a PDF. A text cannot be in one path with other shapes, as a text object holds
 /// no path and clip paths do not add up, so the texts of a clipPath that has
@@ -78,6 +78,7 @@ public class SVGImage : IDrawable {
     private long reused = 0;
     private long counted = 0;
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
+    private double[] marker = null;     // The viewport of the marker drawn next, in its user space
     private bool clipping = false;      // A text of a clip path is read, for each element it clips
     private Dictionary<XMLNode, Switch> switchOf;
     private List<Switch> switches = new List<Switch>();
@@ -333,6 +334,8 @@ public class SVGImage : IDrawable {
         }
         String[] size = useSize;
         useSize = null;
+        double[] viewport = marker;
+        marker = null;
         if (name.Equals("svg") && root) {
             root = false;
             this.w = ParseLength(Attribute(attributes, "width"));
@@ -353,6 +356,13 @@ public class SVGImage : IDrawable {
             }
         } else if (name.Equals("svg") || (name.Equals("symbol") && used)) {
             EnterViewport(state, attributes, size);
+        } else if (viewport != null) {
+            if (state.overflow == null) {
+                state.overflow = "hidden";
+            }
+            if (!state.hidden && state.ClipsOverflow()) {
+                ClipToViewport(state, viewport[0], viewport[1], viewport[2], viewport[3]);
+            }
         }
         stack.Add(state);
 
@@ -945,6 +955,9 @@ public class SVGImage : IDrawable {
     // the viewport, as hidden is the overflow of these elements unless given,
     // not inherited; a viewport of no known size clips nothing.
     private void EnterViewport(SVGState state, Dictionary<String, String> attributes, String[] size) {
+        if (state.overflow == null) {
+            state.overflow = "hidden";
+        }
         String width = (size != null && size[0].Length > 0) ? size[0] : Attribute(attributes, "width");
         String height = (size != null && size[1].Length > 0) ? size[1] : Attribute(attributes, "height");
         double w = ViewportLength(width, state.viewport[0], state.viewport[0]);
@@ -967,7 +980,7 @@ public class SVGImage : IDrawable {
             state.hidden = true;
             return;
         }
-        if (!state.hidden && w > 0.0 && h > 0.0 && state.overflow != "visible" && state.overflow != "auto") {
+        if (!state.hidden && w > 0.0 && h > 0.0 && state.ClipsOverflow()) {
             ClipToViewport(state, vx, vy, w, h);
         }
         if (!fitted) {
@@ -975,11 +988,21 @@ public class SVGImage : IDrawable {
             state.matrix = SVGState.Multiply(state.matrix, m);
             return;
         }
+        double[] fit = Fit(box, w, h, Attribute(attributes, "preserveAspectRatio"));
+        m = SVGState.Multiply(m, new double[] {fit[0], 0.0, 0.0, fit[1], fit[2], fit[3]});
+        m = SVGState.Multiply(m, new double[] {1.0, 0.0, 0.0, 1.0, -box[0], -box[1]});
+        state.viewport = new double[] {box[2], box[3]};
+        state.matrix = SVGState.Multiply(state.matrix, m);
+    }
+
+    // Returns the scales and the move, sx, sy, tx and ty, that fit a viewBox to a
+    // viewport of the width and the height, as its preserveAspectRatio says.
+    private static double[] Fit(List<double> box, double w, double h, String aspect) {
         double sx = w/box[2];
         double sy = h/box[3];
         double tx = 0.0;
         double ty = 0.0;
-        List<String> fields = SVGState.Fields(Attribute(attributes, "preserveAspectRatio"));
+        List<String> fields = SVGState.Fields(aspect);
         if (fields.Count > 0 && fields[0].Equals("defer")) {
             fields.RemoveAt(0);
         }
@@ -998,10 +1021,7 @@ public class SVGImage : IDrawable {
             tx = AlignOffset(align.Substring(1, 3), 1f)*(w - box[2]*sx);
             ty = AlignOffset(align.Substring(5, 3), 1f)*(h - box[3]*sy);
         }
-        m = SVGState.Multiply(m, new double[] {sx, 0.0, 0.0, sy, tx, ty});
-        m = SVGState.Multiply(m, new double[] {1.0, 0.0, 0.0, 1.0, -box[0], -box[1]});
-        state.viewport = new double[] {box[2], box[3]};
-        state.matrix = SVGState.Multiply(state.matrix, m);
+        return new double[] {sx, sy, tx, ty};
     }
 
     // Clips the element to the rectangle, in the user space it is in before it
@@ -1211,7 +1231,9 @@ public class SVGImage : IDrawable {
     // Draws the marker at the vertex: its refX, refY there, turned as its
     // orient says, and its viewBox fitted to its markerWidth and
     // markerHeight, which are in units of the stroke width unless its
-    // markerUnits are userSpaceOnUse.
+    // markerUnits are userSpaceOnUse. A size of nothing draws nothing. What is
+    // drawn is clipped to that viewport, as hidden is the overflow of a marker
+    // unless given, and the viewport is where the viewBox fitted to it leaves it.
     private void DrawMarker(String id, SVGState state, double[] vertex, bool start,
             SVGStyleSheet rules, List<SVGState> stack, ref bool root) {
         XMLNode marker = ElementOf(id);
@@ -1239,19 +1261,21 @@ public class SVGImage : IDrawable {
                 ? 1.0 : state.strokeWidth;
         double width = MarkerSize(Attribute(marker, "markerWidth"));
         double height = MarkerSize(Attribute(marker, "markerHeight"));
+        if (width == 0.0 || height == 0.0) {
+            return;
+        }
         double sx = 1.0;
         double sy = 1.0;
+        double[] viewport = {0.0, 0.0, width, height};
         List<double> box = SVGState.ParseNumbers(Attribute(marker, "viewBox"));
         if (box != null && box.Count == 4) {
             if (box[2] <= 0.0 || box[3] <= 0.0) {
                 return;     // A viewBox of no size draws nothing
             }
-            sx = width/box[2];
-            sy = height/box[3];
-            if (!SVGState.Trim(Attribute(marker, "preserveAspectRatio")).Equals("none")) {
-                sx = Math.Min(sx, sy);
-                sy = sx;
-            }
+            double[] fit = Fit(box, width, height, Attribute(marker, "preserveAspectRatio"));
+            sx = fit[0];
+            sy = fit[1];
+            viewport = new double[] {box[0] - fit[2]/sx, box[1] - fit[3]/sy, width/sx, height/sy};
         }
         double radians = ToRadians(angle);
         double cos = Math.Cos(radians);
@@ -1269,6 +1293,7 @@ public class SVGImage : IDrawable {
         svg.matrix = m;
         stack.Add(svg);
         reusing.Add(marker);
+        this.marker = viewport;
         Draw(marker, stack, rules, ref root, true);
         reusing.Remove(marker);
         stack.RemoveAt(stack.Count - 1);

@@ -362,6 +362,9 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   overflow is visible or auto; `text` in a `clipPath` clips, with text
   rendering mode 7. A clip path with several shapes keeps no `evenodd`, as
   a PDF clip has one rule for its path.
+- SVG: `marker` clips to its viewport, unless overflow is visible or auto,
+  as `symbol` and nested `svg` do; its viewBox is fitted as theirs is, with
+  the alignment and `slice` of its preserveAspectRatio.
 - Build: the package scripts take the POM, nuspec and README from the tagged
   commit and run `util/check-version.sh`; the POM and the nuspec say
   `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
@@ -394,6 +397,11 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   in an English PDF draws the second, where it drew the first. A nested
   `<svg width="9" height="9">` clips a larger rectangle. The children of a
   `switch` that are not drawn are read, so bad data in them is an error.
+- Behavior change: SVG: a `marker` cuts off what is outside its viewport.
+  Example: a rectangle of 20 in `<marker markerWidth="4" markerHeight="4">`
+  draws 4 by 4 of it; `overflow="visible"` keeps all of it. A `marker` of
+  `markerWidth="0"` draws nothing, where it drew its content without a
+  viewBox.
 - Behavior change: `SetLanguage` writes `/Lang` on a plain PDF too. Example:
   `fr-CA`; unset writes none.
 - Behavior change: the name of an embedded file is cut at a backslash on every

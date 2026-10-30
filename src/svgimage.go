@@ -84,6 +84,7 @@ type svgReader struct {
 	reused   int64
 	useSize  [2]string // The width and the height of the use element of the element drawn next
 	counted  int64     // The operations maxSVGOperations limits
+	marker   []float64 // The viewport of the marker drawn next, in its user space, or nil
 	switches map[*xmlparser.XMLNode]*svgSwitch
 	clipping bool // A text of a clip path is read, for each element it clips
 }
@@ -126,8 +127,8 @@ var svgTemplates = map[string]bool{
 // drawn in the mean color of its stops. The width, height, viewBox and
 // preserveAspectRatio of the <svg> element give the size of the image, and
 // what is drawn outside it is cut off, as a browser does, and so is what a
-// <symbol> or a nested <svg> draws outside its viewport, unless its overflow is
-// visible or auto. A <clipPath> clips with its shapes or, when it has none, with
+// <symbol>, a <marker> or a nested <svg> draws outside its viewport, unless its
+// overflow is visible or auto. A <clipPath> clips with its shapes or, when it has none, with
 // its <text> elements, in those fonts, by the text rendering mode 7 of a PDF.
 // A text cannot be in one path with other shapes, as a text object holds no
 // path and clip paths do not add up, so the texts of a <clipPath> that has
@@ -379,6 +380,8 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	}
 	size := r.useSize
 	r.useSize = [2]string{}
+	marker := r.marker
+	r.marker = nil
 	if name == "svg" && r.root {
 		r.root = false
 		image.w = parseLength(attributes["width"])
@@ -403,6 +406,15 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	} else if name == "svg" || name == "symbol" && used {
 		if err := r.enterViewport(&state, attributes, size); err != nil {
 			return err
+		}
+	} else if marker != nil {
+		if state.overflow == "" {
+			state.overflow = "hidden"
+		}
+		if !state.hidden && state.clipsOverflow() {
+			if err := r.clipToViewport(&state, marker[0], marker[1], marker[2], marker[3]); err != nil {
+				return err
+			}
 		}
 	}
 	r.stack = append(r.stack, state)
@@ -1034,6 +1046,9 @@ func svgReversed(operations []*svgPathOp) []*svgPathOp {
 // viewport, as hidden is the overflow of these elements unless given, not
 // inherited; a viewport of no known size clips nothing.
 func (r *svgReader) enterViewport(state *svgState, attributes map[string]string, size [2]string) error {
+	if state.overflow == "" {
+		state.overflow = "hidden"
+	}
 	width := attributes["width"]
 	if size[0] != "" {
 		width = size[0]
@@ -1061,7 +1076,7 @@ func (r *svgReader) enterViewport(state *svgState, attributes map[string]string,
 		state.hidden = true
 		return nil
 	}
-	if !state.hidden && w > 0.0 && h > 0.0 && state.overflow != "visible" && state.overflow != "auto" {
+	if !state.hidden && w > 0.0 && h > 0.0 && state.clipsOverflow() {
 		if err := r.clipToViewport(state, x, y, w, h); err != nil {
 			return err
 		}
@@ -1071,11 +1086,20 @@ func (r *svgReader) enterViewport(state *svgState, attributes map[string]string,
 		state.matrix = svgMultiply(state.matrix, m)
 		return nil
 	}
-	sx := w / box[2]
-	sy := h / box[3]
-	tx := 0.0
-	ty := 0.0
-	fields := strings.Fields(attributes["preserveAspectRatio"])
+	sx, sy, tx, ty := svgFit(box, w, h, attributes["preserveAspectRatio"])
+	m = svgMultiply(m, [6]float64{sx, 0, 0, sy, tx, ty})
+	m = svgMultiply(m, [6]float64{1, 0, 0, 1, -box[0], -box[1]})
+	state.viewport = [2]float64{box[2], box[3]}
+	state.matrix = svgMultiply(state.matrix, m)
+	return nil
+}
+
+// svgFit returns the scales and the move that fit a viewBox of a size to a
+// viewport of the width and the height, as its preserveAspectRatio says.
+func svgFit(box []float64, w, h float64, aspect string) (sx, sy, tx, ty float64) {
+	sx = w / box[2]
+	sy = h / box[3]
+	fields := strings.Fields(aspect)
 	if len(fields) > 0 && fields[0] == "defer" {
 		fields = fields[1:]
 	}
@@ -1095,11 +1119,7 @@ func (r *svgReader) enterViewport(state *svgState, attributes map[string]string,
 		tx = float64(float64(alignOffset(align[1:4], 1.0)) * (w - float64(box[2]*sx)))
 		ty = float64(float64(alignOffset(align[5:8], 1.0)) * (h - float64(box[3]*sy)))
 	}
-	m = svgMultiply(m, [6]float64{sx, 0, 0, sy, tx, ty})
-	m = svgMultiply(m, [6]float64{1, 0, 0, 1, -box[0], -box[1]})
-	state.viewport = [2]float64{box[2], box[3]}
-	state.matrix = svgMultiply(state.matrix, m)
-	return nil
+	return sx, sy, tx, ty
 }
 
 // clipToViewport clips the element to the rectangle, in the user space it is
@@ -1252,7 +1272,9 @@ func (r *svgReader) drawMarkers(state *svgState, vertices [][3]float64) error {
 // drawMarker draws the marker at the vertex: its refX, refY there, turned as
 // its orient says, and its viewBox fitted to its markerWidth and
 // markerHeight, which are in units of the stroke width unless its
-// markerUnits are userSpaceOnUse.
+// markerUnits are userSpaceOnUse. A size of nothing draws nothing. What is
+// drawn is clipped to that viewport, as hidden is the overflow of a marker
+// unless given, and the viewport is where the viewBox fitted to it leaves it.
 func (r *svgReader) drawMarker(id string, state *svgState, vertex [3]float64, start bool) error {
 	if id == "" {
 		return nil
@@ -1283,18 +1305,19 @@ func (r *svgReader) drawMarker(id string, state *svgState, vertex [3]float64, st
 	}
 	width := svgMarkerSize(svgAttribute(marker, "markerWidth"))
 	height := svgMarkerSize(svgAttribute(marker, "markerHeight"))
+	if width == 0.0 || height == 0.0 {
+		return nil
+	}
 	sx := 1.0
 	sy := 1.0
+	viewport := []float64{0, 0, width, height}
 	if box, err := parseSVGNumbers(svgAttribute(marker, "viewBox")); err == nil && len(box) == 4 {
 		if box[2] <= 0.0 || box[3] <= 0.0 {
 			return nil // A viewBox of no size draws nothing
 		}
-		sx = width / box[2]
-		sy = height / box[3]
-		if strings.TrimSpace(svgAttribute(marker, "preserveAspectRatio")) != "none" {
-			sx = math.Min(sx, sy)
-			sy = sx
-		}
+		var tx, ty float64
+		sx, sy, tx, ty = svgFit(box, width, height, svgAttribute(marker, "preserveAspectRatio"))
+		viewport = []float64{box[0] - tx/sx, box[1] - ty/sy, width / sx, height / sy}
 	}
 	radians := svgRadians(angle)
 	cos := math.Cos(radians)
@@ -1312,6 +1335,7 @@ func (r *svgReader) drawMarker(id string, state *svgState, vertex [3]float64, st
 	base.matrix = m
 	r.stack = append(r.stack, base)
 	r.reusing[marker] = true
+	r.marker = viewport
 	err := r.draw(marker, true)
 	delete(r.reusing, marker)
 	r.stack = r.stack[:len(r.stack)-1]

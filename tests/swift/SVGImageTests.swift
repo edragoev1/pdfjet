@@ -785,7 +785,7 @@ import Testing
                 + "<path d=\"M10 10 L10 50\" stroke=\"black\" stroke-width=\"2\" marker-end=\"url(#m)\"/></svg>")
         // Turned 90 degrees down the path and twice the size, for the stroke
         // width: from 10, 48 to 8, 52.
-        #expect(content.contains("S\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\n"), "\(content)")
+        #expect(content.contains("S\nq\n10 744 m\n10 736 l\n2 736 l\n2 744 l\nh\nW\nn\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\nQ\n"), "\(content)")
     }
 
     @Test func aClipPathCutsOffWhatIsOutsideIt() throws {
@@ -1414,6 +1414,45 @@ import Testing
         do {
             let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(1e308turn, 100%, 50%)\"/></svg>")
             #expect(content.hasPrefix("0 0 0 rg\n"), "\(content)")
+        }
+    }
+
+    @Test func aMarkerClipsToItsViewport() throws {
+        let head = "<svg width=\"100\" height=\"100\"><style>.o { overflow: visible }</style><marker id=\"m\" "
+        let tail = "><rect width=\"20\" height=\"20\"/></marker><path d=\"M10 10 L20 20\" fill=\"none\" marker-end=\"url(#m)\"/></svg>"
+        for (attributes, clip) in [
+            ("markerWidth=\"4\" markerHeight=\"4\" markerUnits=\"userSpaceOnUse\"", "q\n20 772 m\n24 772 l\n24 768 l\n20 768 l\nh\nW\nn\n"),
+            // Its size is 3 unless given, in units of the stroke width.
+            ("", "q\n20 772 m\n23 772 l\n23 769 l\n20 769 l\nh\nW\nn\n"),
+            // The reference point goes to the vertex, and the viewport with it.
+            ("markerWidth=\"4\" markerHeight=\"4\" refX=\"1\" refY=\"2\"", "q\n19 774 m\n23 774 l\n23 770 l\n19 770 l\nh\nW\nn\n"),
+            // A viewBox, which may start anywhere, fitted to the viewport.
+            ("markerWidth=\"5\" markerHeight=\"5\" viewBox=\"0 0 10 10\"", "q\n20 772 m\n25 772 l\n25 767 l\n20 767 l\nh\nW\nn\n"),
+            ("markerWidth=\"6\" markerHeight=\"6\" viewBox=\"0 -5 10 10\" refX=\"5\"", "q\n17 775 m\n23 775 l\n23 769 l\n17 769 l\nh\nW\nn\n"),
+            // The viewport, not the viewBox: the aspect moves one in the other.
+            ("markerWidth=\"20\" markerHeight=\"10\" viewBox=\"0 0 10 10\"", "q\n15 772 m\n35 772 l\n35 762 l\n15 762 l\nh\nW\nn\n"),
+            ("markerWidth=\"20\" markerHeight=\"10\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMinYMin\"", "q\n20 772 m\n40 772 l\n40 762 l\n20 762 l\nh\nW\nn\n"),
+            ("markerWidth=\"20\" markerHeight=\"10\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax\"", "q\n10 772 m\n30 772 l\n30 762 l\n10 762 l\nh\nW\nn\n"),
+            ("markerWidth=\"20\" markerHeight=\"10\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"none\"", "q\n20 772 m\n40 772 l\n40 762 l\n20 762 l\nh\nW\nn\n"),
+            ("markerWidth=\"20\" markerHeight=\"10\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMidYMid slice\"", "q\n20 767 m\n40 767 l\n40 757 l\n20 757 l\nh\nW\nn\n"),
+            // Hidden and scroll clip, in an attribute and a style.
+            ("markerWidth=\"4\" markerHeight=\"4\" overflow=\"hidden\"", "q\n20 772 m\n24 772 l\n24 768 l\n20 768 l\nh\nW\nn\n"),
+            ("markerWidth=\"4\" markerHeight=\"4\" style=\"overflow: scroll\"", "q\n20 772 m\n24 772 l\n24 768 l\n20 768 l\nh\nW\nn\n"),
+        ] {
+            let content = try draw(head + attributes + tail)
+            #expect(content.hasPrefix(clip), "\(attributes) \(content)")
+        }
+        for attributes in ["overflow=\"visible\"", "overflow=\"auto\"", "style=\"overflow: visible\"", "class=\"o\""] {
+            let content = try draw(head + attributes + tail)
+            #expect(!content.contains("W\n") && content.contains("f\n"), "\(attributes) \(content)")
+        }
+        // Turned with the path, and the rectangle with it.
+        #expect(try draw("<svg width=\"100\" height=\"100\"><marker id=\"m\" markerWidth=\"4\" markerHeight=\"2\" orient=\"auto\"><rect width=\"20\" height=\"20\"/></marker><path d=\"M20 10 L20 20\" fill=\"none\" marker-end=\"url(#m)\"/></svg>").hasPrefix("q\n20 772 m\n20 768 l\n18 768 l\n18 772 l\nh\nW\nn\n"))
+        // The clip is on the marker, what is in it stays in it, and each is clipped.
+        #expect(try draw("<svg width=\"100\" height=\"100\"><marker id=\"m\" markerWidth=\"4\" markerHeight=\"4\"><rect width=\"20\" height=\"20\"/><rect width=\"30\" height=\"30\"/></marker><path d=\"M10 10 L20 20 L30 20\" fill=\"none\" marker-mid=\"url(#m)\" marker-end=\"url(#m)\"/></svg>").components(separatedBy: "h\nW\nn\n").count - 1 == 4)
+        // A size of nothing draws nothing, with a viewBox or without.
+        for attributes in ["markerWidth=\"0\"", "markerHeight=\"0\"", "markerWidth=\"0\" overflow=\"visible\"", "markerHeight=\"0\" viewBox=\"0 0 10 10\""] {
+            #expect(try draw(head + attributes + tail) == "", "\(attributes)")
         }
     }
 }

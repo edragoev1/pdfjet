@@ -493,6 +493,12 @@ internal class SVGState {
         return ParseColor(name, value, out paint, out alpha);
     }
 
+    // Reports whether what the element draws outside its viewport is cut off:
+    // hidden and scroll are, as a page has no scrolling.
+    internal bool ClipsOverflow() {
+        return overflow != "visible" && overflow != "auto";
+    }
+
     // The alpha the fill is drawn with: its opacities and the alpha of its
     // color.
     internal float DrawnFillAlpha() {

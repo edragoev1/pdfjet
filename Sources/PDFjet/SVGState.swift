@@ -413,6 +413,12 @@ struct SVGState {
         return (color, alpha, false)
     }
 
+    // Reports whether what the element draws outside its viewport is cut off:
+    // hidden and scroll are, as a page has no scrolling.
+    func clipsOverflow() -> Bool {
+        return overflow != "visible" && overflow != "auto"
+    }
+
     // The alpha the fill is drawn with: its opacities and the alpha of its
     // color.
     func drawnFillAlpha() -> Float {

@@ -953,7 +953,7 @@ func TestSVGImageAMarkerIsDrawnAtTheEndTurnedWithThePath(t *testing.T) {
 		`<path d="M10 10 L10 50" stroke="black" stroke-width="2" marker-end="url(#m)"/></svg>`)
 	// Turned 90 degrees down the path and twice the size, for the stroke
 	// width: from 10, 48 to 8, 52.
-	if !strings.Contains(content, "S\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\n") {
+	if !strings.Contains(content, "S\nq\n10 744 m\n10 736 l\n2 736 l\n2 744 l\nh\nW\nn\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\nQ\n") {
 		t.Errorf("content %q", content)
 	}
 }
@@ -1572,5 +1572,55 @@ func TestSVGImageAViewBoxOfNegativeSizeIsRefused(t *testing.T) {
 func TestSVGImageAHueTooLargeForItsUnitIsNotAColor(t *testing.T) {
 	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(1e308turn, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
 		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAMarkerClipsToItsViewport(t *testing.T) {
+	const head = `<svg width="100" height="100"><style>.o { overflow: visible }</style><marker id="m" `
+	const tail = `><rect width="20" height="20"/></marker><path d="M10 10 L20 20" fill="none" marker-end="url(#m)"/></svg>`
+	clip := func(x0, y0, x1, y1 string) string {
+		return "q\n" + x0 + " " + y0 + " m\n" + x1 + " " + y0 + " l\n" + x1 + " " + y1 + " l\n" + x0 + " " + y1 + " l\nh\nW\nn\n"
+	}
+	for _, test := range []struct{ attributes, clip string }{
+		{`markerWidth="4" markerHeight="4" markerUnits="userSpaceOnUse"`, clip("20", "772", "24", "768")},
+		// Its size is 3 unless given, in units of the stroke width.
+		{``, clip("20", "772", "23", "769")},
+		// The reference point goes to the vertex, and the viewport with it.
+		{`markerWidth="4" markerHeight="4" refX="1" refY="2"`, clip("19", "774", "23", "770")},
+		// A viewBox, which may start anywhere, fitted to the viewport.
+		{`markerWidth="5" markerHeight="5" viewBox="0 0 10 10"`, clip("20", "772", "25", "767")},
+		{`markerWidth="6" markerHeight="6" viewBox="0 -5 10 10" refX="5"`, clip("17", "775", "23", "769")},
+		// The viewport, not the viewBox: the aspect moves one in the other.
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10"`, clip("15", "772", "35", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="xMinYMin"`, clip("20", "772", "40", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="xMaxYMax"`, clip("10", "772", "30", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="none"`, clip("20", "772", "40", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="xMidYMid slice"`, clip("20", "767", "40", "757")},
+		// Hidden and scroll clip, in an attribute and a style.
+		{`markerWidth="4" markerHeight="4" overflow="hidden"`, clip("20", "772", "24", "768")},
+		{`markerWidth="4" markerHeight="4" style="overflow: scroll"`, clip("20", "772", "24", "768")},
+	} {
+		if content := testDrawSVG(t, head+test.attributes+tail); !strings.HasPrefix(content, test.clip) {
+			t.Errorf("%s content %q", test.attributes, content)
+		}
+	}
+	for _, attributes := range []string{`overflow="visible"`, `overflow="auto"`, `style="overflow: visible"`, `class="o"`} {
+		if content := testDrawSVG(t, head+attributes+tail); strings.Contains(content, "W\n") || !strings.Contains(content, "f\n") {
+			t.Errorf("%s content %q", attributes, content)
+		}
+	}
+	// Turned with the path, and the rectangle with it.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><marker id="m" markerWidth="4" markerHeight="2" orient="auto"><rect width="20" height="20"/></marker><path d="M20 10 L20 20" fill="none" marker-end="url(#m)"/></svg>`); !strings.HasPrefix(content, "q\n20 772 m\n20 768 l\n18 768 l\n18 772 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// The clip is on the marker, what is in it stays in it, and each is clipped.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><marker id="m" markerWidth="4" markerHeight="4"><rect width="20" height="20"/><rect width="30" height="30"/></marker><path d="M10 10 L20 20 L30 20" fill="none" marker-mid="url(#m)" marker-end="url(#m)"/></svg>`); strings.Count(content, "h\nW\nn\n") != 4 {
+		t.Errorf("content %q", content)
+	}
+	// A size of nothing draws nothing, with a viewBox or without.
+	for _, attributes := range []string{`markerWidth="0"`, `markerHeight="0"`, `markerWidth="0" overflow="visible"`, `markerHeight="0" viewBox="0 0 10 10"`} {
+		if content := testDrawSVG(t, head+attributes+tail); content != "" {
+			t.Errorf("%s content %q", attributes, content)
+		}
 	}
 }

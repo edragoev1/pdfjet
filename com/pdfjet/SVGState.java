@@ -564,6 +564,12 @@ class SVGState {
         }
     }
 
+    // Reports whether what the element draws outside its viewport is cut off:
+    // hidden and scroll are, as a page has no scrolling.
+    boolean clipsOverflow() {
+        return !"visible".equals(overflow) && !"auto".equals(overflow);
+    }
+
     // The alpha the fill is drawn with: its opacities and the alpha of its
     // color.
     float drawnFillAlpha() {

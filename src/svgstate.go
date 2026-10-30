@@ -399,6 +399,12 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 	return nil
 }
 
+// clipsOverflow reports whether what the element draws outside its viewport
+// is cut off: hidden and scroll are, as a page has no scrolling.
+func (state *svgState) clipsOverflow() bool {
+	return state.overflow != "visible" && state.overflow != "auto"
+}
+
 // drawnFillAlpha returns the alpha the fill is drawn with: its opacities and
 // the alpha of its color.
 func (state *svgState) drawnFillAlpha() float32 {
