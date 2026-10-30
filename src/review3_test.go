@@ -445,7 +445,7 @@ func TestGPOSAnExtensionOffsetPastTheTableIsNoSubtable(t *testing.T) {
 func TestReview3AnImageTurnedAQuarterHasItsDrawnSize(t *testing.T) {
 	pdf := testNewPDF()
 	image := NewImageFromFile(pdf, testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG")) // 32 by 32
-	image.ScaleByWidthAndHeight(0.75, 0.375)                                 // 24 by 12
+	image.ScaleByWidthAndHeight(0.75, 0.375)                                            // 24 by 12
 	image.SetLocation(50, 50)
 	for _, degrees := range []int{90, 270} {
 		image.SetRotation(degrees)
