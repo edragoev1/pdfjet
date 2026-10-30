@@ -3991,7 +3991,8 @@ final public class PDF {
         for (boolean first = true; !stack.isEmpty(); first = false) {
             PDFobj obj = stack.remove(stack.size() - 1);
             // The root is a node, whatever it is.
-            if (!first && (prepared.contains(obj) || isPageObject(obj))) {
+            if (!first && (prepared.contains(obj) || isPageObject(obj)
+                    || (!visited.contains(obj.number) && typeLeaf(obj)))) {
                 if (prepared.add(obj)) {
                     addInheritedEntries(obj, objects, nodes);
                     resolveMediaBox(obj, objects);
@@ -4003,7 +4004,7 @@ final public class PDF {
             if (!visited.add(obj.number)) {
                 continue;
             }
-            List<Integer> kids = obj.getObjectNumbers("/Kids");
+            List<Integer> kids = getKids(obj, objects);
             for (int i = kids.size() - 1; i >= 0; i--) {
                 int number = kids.get(i);
                 if (number >= 1 && number <= objects.size()) {  // A kid that the document has.
@@ -4011,6 +4012,40 @@ final public class PDF {
                 }
             }
         }
+    }
+
+    // Gives a dictionary in the page tree with no /Type and no /Kids the /Type
+    // /Page it is, which is required but which other programs leave out, and
+    // returns true then: the PDF had no pages, with no error (review of 30
+    // October 2026, B3).
+    private static boolean typeLeaf(PDFobj obj) {
+        List<String> value = valueTokens(obj);
+        if (value.isEmpty() || !value.get(0).equals("<<")
+                || entryIndex(value, "/Type") != -1 || entryIndex(value, "/Kids") != -1) {
+            return false;
+        }
+        obj.dict.addAll(obj.dict.indexOf("<<") + 1, Arrays.asList("/Type", "/Page"));
+        return true;
+    }
+
+    // Returns the object numbers of the /Kids of the node, which can be an array
+    // that is an object of its own, "/Kids 5 0 R".
+    private static List<Integer> getKids(PDFobj node, List<PDFobj> objects) {
+        List<Integer> kids = node.getObjectNumbers("/Kids");
+        int i = node.entryIndexOf("/Kids");
+        if (i != -1 && isReference(node.dict, i + 1) && kids.size() == 1) {
+            PDFobj array = PDFobj.objectNumbered(objects, kids.get(0));
+            if (array != null) {
+                List<String> tokens = valueTokens(array);
+                if (!tokens.isEmpty() && tokens.get(0).equals("[")) {
+                    kids = new ArrayList<Integer>();
+                    for (int j = 1; isReference(tokens, j); j += 3) {
+                        kids.add(Integer.parseInt(tokens.get(j)));
+                    }
+                }
+            }
+        }
+        return kids;
     }
 
     // Adds to the page the entries it inherits from the page tree and does

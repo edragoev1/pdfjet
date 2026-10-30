@@ -3818,7 +3818,8 @@ public sealed class PDF {
             PDFobj obj = stack[stack.Count - 1];
             stack.RemoveAt(stack.Count - 1);
             // The root is a node, whatever it is.
-            if (!first && (prepared.Contains(obj) || IsPageObject(obj))) {
+            if (!first && (prepared.Contains(obj) || IsPageObject(obj)
+                    || (!visited.Contains(obj.number) && TypeLeaf(obj)))) {
                 if (prepared.Add(obj)) {
                     AddInheritedEntries(obj, objects, nodes);
                     ResolveMediaBox(obj, objects);
@@ -3830,7 +3831,7 @@ public sealed class PDF {
             if (!visited.Add(obj.number)) {
                 continue;
             }
-            List<Int32> kids = obj.GetObjectNumbers("/Kids");
+            List<Int32> kids = GetKids(obj, objects);
             for (int i = kids.Count - 1; i >= 0; i--) {
                 int number = kids[i];
                 if (number >= 1 && number <= objects.Count) {   // A kid that the document has.
@@ -3838,6 +3839,40 @@ public sealed class PDF {
                 }
             }
         }
+    }
+
+    // Gives a dictionary in the page tree with no /Type and no /Kids the /Type
+    // /Page it is, which is required but which other programs leave out, and
+    // returns true then: the PDF had no pages, with no error (review of 30
+    // October 2026, B3).
+    private static bool TypeLeaf(PDFobj obj) {
+        List<String> value = ValueOf(obj);
+        if (value.Count == 0 || value[0] != "<<"
+                || EntryIndex(value, "/Type") != -1 || EntryIndex(value, "/Kids") != -1) {
+            return false;
+        }
+        obj.dict.InsertRange(obj.dict.IndexOf("<<") + 1, new String[] {"/Type", "/Page"});
+        return true;
+    }
+
+    // Returns the object numbers of the /Kids of the node, which can be an array
+    // that is an object of its own, "/Kids 5 0 R".
+    private static List<Int32> GetKids(PDFobj node, List<PDFobj> objects) {
+        List<Int32> kids = node.GetObjectNumbers("/Kids");
+        int i = node.EntryIndexOf("/Kids");
+        if (i != -1 && IsReference(node.dict, i + 1) && kids.Count == 1) {
+            PDFobj array = PDFobj.ObjectNumbered(objects, kids[0]);
+            if (array != null) {
+                List<String> tokens = ValueOf(array);
+                if (tokens.Count > 0 && tokens[0] == "[") {
+                    kids = new List<Int32>();
+                    for (int j = 1; IsReference(tokens, j); j += 3) {
+                        kids.Add(Int32.Parse(tokens[j], CultureInfo.InvariantCulture));
+                    }
+                }
+            }
+        }
+        return kids;
     }
 
     // Adds to the page the entries it inherits from the page tree and does

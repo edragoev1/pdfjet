@@ -567,6 +567,35 @@ class MergeTest {
         assertTrue(pageObj.getResourcesObject(objects).dict.contains("/GS1"));
     }
 
+    @Test
+    void thePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() throws Exception {
+        // Both gave a PDF of no pages, and no error (review of 30 October 2026,
+        // B3). The two are read and merged as the pages they are.
+        byte[][] pdfs = {
+            PDFTest.pdfWithObjects(new String[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids 5 0 R /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 500] >>",
+                "[3 0 R 4 0 R]"}),
+            PDFTest.pdfWithObjects(new String[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 400 500] >>"})};
+        for (byte[] buf : pdfs) {
+            List<PDFobj> objects = TestSupport.read(buf);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            List<PDFobj> pages = pdf.getPageObjects(objects);
+            assertEquals(2, pages.size());
+            assertEquals(500f, pages.get(1).getPageSize().getHeight());
+            pdf.merge(objects);
+            pdf.complete();
+            assertEquals(2, pdf.getPageObjects(TestSupport.read(bos.toByteArray())).size());
+        }
+    }
+
     // Returns a PDF of pages under one node that holds an inline /Resources of
     // the fonts, which the pages inherit.
     private static byte[] inheritedResources(int pages, int fonts) {

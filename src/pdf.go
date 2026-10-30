@@ -3751,7 +3751,7 @@ func (pdf *PDF) getPageObjects(
 		obj := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		// The root is a node, whatever it is.
-		if !first && (prepared[obj] || isPageObject(obj)) {
+		if !first && (prepared[obj] || isPageObject(obj) || (!visited[obj.number] && typeLeaf(obj))) {
 			if !prepared[obj] {
 				prepared[obj] = true
 				addInheritedEntries(obj, objects, nodes)
@@ -3765,13 +3765,45 @@ func (pdf *PDF) getPageObjects(
 			continue
 		}
 		visited[obj.number] = true
-		kids := obj.getObjectNumbers("/Kids")
+		kids := getKids(obj, objects)
 		for i := len(kids) - 1; i >= 0; i-- {
 			if kids[i] >= 1 && kids[i] <= len(objects) { // A kid that the document has.
 				stack = append(stack, objects[kids[i]-1])
 			}
 		}
 	}
+}
+
+// typeLeaf gives a dictionary in the page tree with no /Type and no /Kids the
+// /Type /Page it is, which is required but which other programs leave out, and
+// returns true then: the PDF had no pages, with no error (review of 30 October
+// 2026, B3).
+func typeLeaf(obj *PDFobj) bool {
+	value := objectValueTokens(obj)
+	if len(value) == 0 || value[0] != "<<" ||
+		dictEntryIndex(value, "/Type") != -1 || dictEntryIndex(value, "/Kids") != -1 {
+		return false
+	}
+	obj.dict = insertArrayAt(obj.dict, []string{"/Type", "/Page"}, slices.Index(obj.dict, "<<")+1)
+	return true
+}
+
+// getKids returns the object numbers of the /Kids of the node, which can be an
+// array that is an object of its own, "/Kids 5 0 R".
+func getKids(node *PDFobj, objects []*PDFobj) []int {
+	kids := node.getObjectNumbers("/Kids")
+	if i := node.entryIndexOf("/Kids"); i != -1 && isObjectReference(node.dict, i+1) && len(kids) == 1 {
+		if array := objectNumbered(objects, kids[0]); array != nil {
+			if tokens := objectValueTokens(array); len(tokens) > 0 && tokens[0] == "[" {
+				kids = []int{}
+				for j := 1; isObjectReference(tokens, j); j += 3 {
+					number, _ := strconv.Atoi(tokens[j])
+					kids = append(kids, number)
+				}
+			}
+		}
+	}
+	return kids
 }
 
 // addInheritedEntries adds to the page the entries it inherits from the page

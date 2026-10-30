@@ -1151,7 +1151,7 @@ func (obj *PDFobj) contentRefs(objects []*PDFobj) (refs []string, start, end int
 	}
 	start = i + 1
 	array := func(tokens []string, from int) ([]string, int) {
-		var refs []string
+		refs := []string{} // An empty array is valid, and not nil
 		for j := from; j < len(tokens); j += 3 {
 			if tokens[j] == "]" {
 				return refs, j + 1

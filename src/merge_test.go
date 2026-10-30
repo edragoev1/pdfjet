@@ -609,6 +609,60 @@ func TestMergeAPageWithNoResourcesGetsThem(t *testing.T) {
 	}
 }
 
+func TestMergeAPageWithAnEmptyContentsArrayIsDrawnOn(t *testing.T) {
+	// An empty array is valid, and it failed the document (review of
+	// 30 October 2026, B4).
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents [] >>"))
+	doc := testNewDoc()
+	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+	page.DrawLine(10, 10, 100, 100)
+	page.Complete(&objects)
+	if err := doc.pdf.AddObjects(objects); err != nil {
+		t.Fatal(err)
+	}
+	merged := testRead(t, doc.complete())
+	if numbers := testNewPDF().GetPageObjects(merged)[0].getObjectNumbers("/Contents"); len(numbers) != 2 {
+		t.Errorf("content streams: want 2, got %v", numbers)
+	}
+}
+
+func TestMergeThePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType(t *testing.T) {
+	// Both gave a PDF of no pages, and no error (review of 30 October 2026,
+	// B3). The two are read and merged as the pages they are.
+	for _, pdf := range [][]byte{
+		testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids 5 0 R /Count 2 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 500] >>",
+			"[3 0 R 4 0 R]"),
+		testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+			"<< /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+			"<< /Parent 2 0 R /MediaBox [0 0 400 500] >>"),
+	} {
+		objects := testRead(t, pdf)
+		pages := testNewPDF().GetPageObjects(objects)
+		if len(pages) != 2 {
+			t.Fatalf("pages: want 2, got %d", len(pages))
+		}
+		if size := pages[1].GetPageSize(); size.GetWidth() != 400 || size.GetHeight() != 500 {
+			t.Errorf("the second page is %v by %v", size.GetWidth(), size.GetHeight())
+		}
+		doc := testNewDoc()
+		if err := doc.pdf.Merge(objects); err != nil {
+			t.Fatal(err)
+		}
+		if merged := testNewPDF().GetPageObjects(testRead(t, doc.complete())); len(merged) != 2 {
+			t.Errorf("merged pages: want 2, got %d", len(merged))
+		}
+	}
+}
+
 // testInheritedResources returns a PDF of pages under one node that holds an
 // inline /Resources of the fonts, which the pages inherit.
 func testInheritedResources(pages, fonts int) []byte {

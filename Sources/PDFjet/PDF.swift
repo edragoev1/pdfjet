@@ -3874,7 +3874,8 @@ public final class PDF {
             let isRoot = first
             first = false
             // The root is a node, whatever it is.
-            if !isRoot && (prepared.contains(ObjectIdentifier(object)) || isPageObject(object)) {
+            if !isRoot && (prepared.contains(ObjectIdentifier(object)) || isPageObject(object)
+                    || (!visited.contains(object.number) && PDF.typeLeaf(object))) {
                 if prepared.insert(ObjectIdentifier(object)).inserted {
                     PDF.addInheritedEntries(object, objects, inherited)
                     PDF.resolveMediaBox(object, objects)
@@ -3885,11 +3886,46 @@ public final class PDF {
             if !visited.insert(object.number).inserted {
                 continue
             }
-            for number in object.getObjectNumbers("/Kids").reversed()
+            for number in PDF.getKids(object, objects).reversed()
                     where number >= 1 && number <= objects.count {  // A kid that the document has.
                 stack.append(objects[number - 1])
             }
         }
+    }
+
+    // Gives a dictionary in the page tree with no /Type and no /Kids the /Type
+    // /Page it is, which is required but which other programs leave out, and
+    // returns true then: the PDF had no pages, with no error (review of 30
+    // October 2026, B3).
+    private static func typeLeaf(_ obj: PDFobj) -> Bool {
+        let value = valueOf(obj)
+        guard value.first == "<<", entryIndex(value, "/Type") == -1, entryIndex(value, "/Kids") == -1,
+                let open = obj.dict.firstIndex(of: "<<") else {
+            return false
+        }
+        obj.dict.insert(contentsOf: ["/Type", "/Page"], at: open + 1)
+        return true
+    }
+
+    // Returns the object numbers of the /Kids of the node, which can be an
+    // array that is an object of its own, "/Kids 5 0 R".
+    private static func getKids(_ node: PDFobj, _ objects: [PDFobj]) -> [Int] {
+        let kids = node.getObjectNumbers("/Kids")
+        let i = node.entryIndexOf("/Kids")
+        if i != -1 && isReference(node.dict, i + 1) && kids.count == 1
+                && kids[0] >= 1 && kids[0] <= objects.count {
+            let tokens = valueOf(objects[kids[0] - 1])
+            if tokens.first == "[" {
+                var numbers = [Int]()
+                var j = 1
+                while isReference(tokens, j) {
+                    numbers.append(Int(tokens[j])!)
+                    j += 3
+                }
+                return numbers
+            }
+        }
+        return kids
     }
 
     // Adds to the page the entries it inherits from the page tree and does

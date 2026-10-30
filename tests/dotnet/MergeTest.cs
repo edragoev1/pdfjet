@@ -532,6 +532,35 @@ public class MergeTest {
         Assert.Contains("/GS1", pageObj.GetResourcesObject(objects).dict);
     }
 
+    [Fact]
+    public void ThePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() {
+        // Both gave a PDF of no pages, and no error (review of 30 October 2026,
+        // B3). The two are read and merged as the pages they are.
+        byte[][] pdfs = {
+            PDFTest.PdfWithObjects(new string[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids 5 0 R /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 500] >>",
+                "[3 0 R 4 0 R]"}),
+            PDFTest.PdfWithObjects(new string[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 400 500] >>"})};
+        foreach (byte[] buf in pdfs) {
+            List<PDFobj> objects = TestSupport.Read(buf);
+            MemoryStream stream = new MemoryStream();
+            PDF pdf = new PDF(stream);
+            List<PDFobj> pages = pdf.GetPageObjects(objects);
+            Assert.Equal(2, pages.Count);
+            Assert.Equal(500f, pages[1].GetPageSize().GetHeight());
+            pdf.Merge(objects);
+            pdf.Complete();
+            Assert.Equal(2, pdf.GetPageObjects(TestSupport.Read(stream.ToArray())).Count);
+        }
+    }
+
     // Returns a PDF of pages under one node that holds an inline /Resources of
     // the fonts, which the pages inherit.
     private static byte[] InheritedResources(int pages, int fonts) {

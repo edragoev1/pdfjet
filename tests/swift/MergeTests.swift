@@ -495,6 +495,33 @@ import Testing
         #expect(pageObj.getResourcesObject(objects)?.dict.contains("/GS1") == true)
     }
 
+    @Test func thePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() throws {
+        // Both gave a PDF of no pages, and no error (review of 30 October 2026,
+        // B3). The two are read and merged as the pages they are.
+        let pdfs = [
+            TestSupport.pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids 5 0 R /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 500] >>",
+                "[3 0 R 4 0 R]"]),
+            TestSupport.pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 400 500] >>"])]
+        for buf in pdfs {
+            let objects = try TestSupport.read(buf)
+            let memory = MemoryPDF()
+            let pages = memory.pdf.getPageObjects(from: objects)
+            #expect(pages.count == 2)
+            #expect(pages.count == 2 && pages[1].getPageSize().getHeight() == 500)
+            try memory.pdf.merge(objects)
+            try memory.pdf.complete()
+            #expect(memory.pdf.getPageObjects(from: try TestSupport.read(memory.bytes)).count == 2)
+        }
+    }
+
     // Returns a PDF of pages under one node that holds an inline /Resources
     // of the fonts, which the pages inherit.
     private func inheritedResources(_ pages: Int, _ fonts: Int) -> [UInt8] {
