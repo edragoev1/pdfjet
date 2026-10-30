@@ -629,7 +629,7 @@ public class ReviewMediaTest {
             MemoryStream stream = new MemoryStream();
             PDF pdf = new PDF(stream);
             Page page = new Page(pdf, Letter.PORTRAIT);
-            Image image = new Image(pdf, TestSupport.RepoPath("resources/images/GLA250.png"));
+            Image image = new Image(pdf, TestSupport.RepoPath("resources/images/dusk.png"));
             image.SetRotation(degrees).SetURIAction("https://pdfjet.com").SetLocation(10f, 20f);
             image.DrawOn(page);
             pdf.Complete();

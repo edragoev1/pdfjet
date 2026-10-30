@@ -506,7 +506,7 @@ func TestReviewMediaTheLinkOfATurnedImageCoversItAsItIsDrawn(t *testing.T) {
 	for _, degrees := range []int{0, 90, 180, 270} {
 		doc := testNewDoc()
 		page := NewPage(doc.pdf, letter.Portrait())
-		image := NewImageFromFile(doc.pdf, testRepoPath(t, "resources/images/GLA250.png"))
+		image := NewImageFromFile(doc.pdf, testRepoPath(t, "resources/images/dusk.png"))
 		image.SetRotation(degrees).SetURIAction("https://pdfjet.com").SetLocation(10, 20)
 		image.DrawOn(page)
 		raw := string(doc.complete())

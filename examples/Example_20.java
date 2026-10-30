@@ -16,7 +16,7 @@ import com.pdfjet.barcodes.*;
  * Example_20.java
  * This example draws a page of results from a CSV file of electric vehicles:
  * two simple bar charts, the five makes and the model years, and under them a
- * table of the same numbers, then a table of one car with its photo and its
+ * table of the same numbers, then a table of one car with a picture and its
  * VIN as a barcode, in their cells.
  */
 public class Example_20 {
@@ -125,11 +125,11 @@ public class Example_20 {
         table.setLocation(50f, y + 10f);
         y = table.drawOn(page)[1] + 30f;
 
-        // One car of the data, its photo and its VIN in their cells
+        // One car of the data, a picture of a car and its VIN in their cells
         new TextLine(f1, "One car of the data").setStructureType(StructElem.H2)
                 .setFontSize(14f).setLocation(50f, y).drawOn(page);
-        Image image = new Image(pdf, "resources/images/TeslaX.png");
-        image.setAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.");
+        Image image = new Image(pdf, "resources/images/car.png");
+        image.setAltDescription("A drawing of a blue car, seen from the side.");
         image.scaleBy(1f / 3f);     // The image is 120 DPI, so 0.6 of its pixels
         Barcode vin = new Barcode(Barcode.CODE_128, modelX[0]);
         vin.setModuleLength(0.75f);

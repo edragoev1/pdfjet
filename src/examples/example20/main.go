@@ -30,7 +30,7 @@ const lastYear = 2023
 
 // Example20 draws a page of results from a CSV file of electric vehicles: two
 // simple bar charts, the five makes and the model years, and under them a
-// table of the same numbers, then a table of one car with its photo and its
+// table of the same numbers, then a table of one car with a picture and its
 // VIN as a barcode, in their cells.
 func Example20() {
 	pdf, err := pdfjet.NewPDFFile("Example_20.pdf")
@@ -139,13 +139,13 @@ func Example20() {
 	table.SetLocation(50.0, y+10.0)
 	y = table.DrawOn(page)[1] + 30.0
 
-	// One car of the data, its photo and its VIN in their cells
+	// One car of the data, a picture of a car and its VIN in their cells
 	heading = pdfjet.NewTextLine(f1, "One car of the data")
 	heading.SetStructureType(structelem.H2).SetFontSize(14.0)
 	heading.SetLocation(50.0, y)
 	heading.DrawOn(page)
-	image := pdfjet.NewImageFromFile(pdf, "resources/images/TeslaX.png")
-	image.SetAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.")
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/car.png")
+	image.SetAltDescription("A drawing of a blue car, seen from the side.")
 	image.ScaleBy(1.0 / 3.0) // The image is 120 DPI, so 0.6 of its pixels
 	vin := pdfjet.NewBarcode(pdfjet.CODE_128, modelX[0])
 	vin.SetModuleLength(0.75)

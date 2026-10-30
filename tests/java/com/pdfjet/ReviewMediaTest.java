@@ -619,7 +619,7 @@ class ReviewMediaTest {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             PDF pdf = new PDF(bos);
             Page page = new Page(pdf, Letter.PORTRAIT);
-            Image image = new Image(pdf, TestSupport.open("resources/images/GLA250.png"));
+            Image image = new Image(pdf, TestSupport.open("resources/images/dusk.png"));
             image.setRotation(degrees).setURIAction("https://pdfjet.com").setLocation(10f, 20f);
             image.drawOn(page);
             pdf.complete();
