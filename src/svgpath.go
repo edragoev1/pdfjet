@@ -20,6 +20,7 @@ type svgPath struct {
 	evenOdd     bool         // Filled, or clipped to, with the even-odd rule
 	lineCap     capstyle.CapStyle
 	lineJoin    joinstyle.JoinStyle
+	miterLimit  float32
 	fillAlpha   float32
 	strokeAlpha float32
 	dashArray   []float32 // The dashes and the gaps, in the space of the svg element; nil is solid

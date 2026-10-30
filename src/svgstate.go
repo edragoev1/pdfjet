@@ -20,6 +20,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 )
 
@@ -41,15 +42,16 @@ type svgState struct {
 	clipEvenOdd   bool    // clip-rule="evenodd"
 	lineCap       capstyle.CapStyle
 	lineJoin      joinstyle.JoinStyle
+	miterLimit    float32
 	fillOpacity   float32
 	strokeOpacity float32
 	opacity       float32 // The opacities of the element and its ancestors, multiplied
 	ownOpacity    float32 // The opacity of the element itself, not inherited
 	matrix        [6]float64
 	viewport      [2]float64 // The width and the height of the viewport, in user units
-	hidden        bool      // In <defs> and the like, or under display="none": not drawn
-	invisible     bool      // visibility: not painted, but its children may be
-	dashArray     []float32 // stroke-dasharray, in the user space; nil is a solid line
+	hidden        bool       // In <defs> and the like, or under display="none": not drawn
+	invisible     bool       // visibility: not painted, but its children may be
+	dashArray     []float32  // stroke-dasharray, in the user space; nil is a solid line
 	dashOffset    float32
 	strokeFirst   bool    // paint-order: the stroke drawn before the fill
 	fontSize      float32 // In the user space; medium, as a browser has it
@@ -66,6 +68,10 @@ type svgState struct {
 	paints        map[string]int32 // The colors of the gradients, by id, shared by every state
 }
 
+// svgMiterLimit is the stroke-miterlimit of SVG unless given; that of a PDF
+// is 10.
+const svgMiterLimit = 4.0
+
 // newSVGState returns the state of the svg element before its attributes: an
 // SVG fills black, strokes nothing, and a stroke is one unit wide.
 func newSVGState() svgState {
@@ -79,6 +85,7 @@ func newSVGState() svgState {
 		strokeWidth:   1.0,
 		lineCap:       capstyle.Butt,
 		lineJoin:      joinstyle.Miter,
+		miterLimit:    svgMiterLimit,
 		fillOpacity:   1.0,
 		strokeOpacity: 1.0,
 		opacity:       1.0,
@@ -292,6 +299,11 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 			state.lineJoin = joinstyle.Round
 		case "bevel":
 			state.lineJoin = joinstyle.Bevel
+		}
+	case "stroke-miterlimit":
+		// Below 1 is an error in SVG, and a PDF has to be able to hold it
+		if limit, err := parseSVGLength(value); err == nil && limit >= 1.0 && fastfloat.IsWritable(limit) {
+			state.miterLimit = limit
 		}
 	case "opacity", "fill-opacity", "stroke-opacity":
 		alpha, ok := parseSVGOpacity(value)

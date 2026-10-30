@@ -16,6 +16,7 @@ class SVGPath {
     var evenOdd = false                     // Filled, or clipped to, with the even-odd rule
     var lineCap = CapStyle.BUTT
     var lineJoin = JoinStyle.MITER
+    var miterLimit: Float = 4.0
     var fillAlpha: Float = 1.0
     var strokeAlpha: Float = 1.0
     var dashArray: [Float]? = nil           // The dashes and the gaps, in the space of the svg element; nil is solid

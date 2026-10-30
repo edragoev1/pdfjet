@@ -15,7 +15,18 @@ public class SVGImageTest {
         return new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes(svg)));
     }
 
+    // What the image draws, without the miter limit that is set around an
+    // image that strokes, which TheMiterLimitOfAStrokeIsWritten checks.
+    internal static string WithoutMiterLimit(string content) {
+        return content.StartsWith("q\n4 M\n", StringComparison.Ordinal)
+                ? content.Substring(6, content.Length - 8) : content;
+    }
+
     private static string Draw(string svg) {
+        return WithoutMiterLimit(DrawAsItIs(svg));
+    }
+
+    private static string DrawAsItIs(string svg) {
         Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
         SVGImage image = Parse(svg);
         image.SetLocation(0f, 0f);
@@ -1199,6 +1210,58 @@ public class SVGImageTest {
         {
             string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>");
             Assert.Contains("f\n0 0 1 RG\n", content);
+        }
+    }
+
+    [Fact]
+    public void TheMiterLimitOfAStrokeIsWritten() {
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" /></svg>");
+            Assert.StartsWith("q\n4 M\n1 0 0 RG\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"2.5\"/></svg>");
+            Assert.StartsWith("q\n2.5 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" style=\"stroke-miterlimit:1\"/></svg>");
+            Assert.StartsWith("q\n1 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"10\"/></svg>");
+            Assert.StartsWith("q\n10 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"0.5\"/></svg>");
+            Assert.StartsWith("q\n4 M\n1 0 0 RG\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"1e30\"/></svg>");
+            Assert.StartsWith("q\n4 M\n1 0 0 RG\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><g fill=\"none\" stroke=\"red\"><path d=\"M0 0 L10 0 L10 10 Z\"/><path d=\"M0 0 L9 0 L9 9 Z\"/></g></svg>");
+            Assert.Equal(1, content.Split(new string[] {" M\n"}, StringSplitOptions.None).Length - 1);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-linejoin=\"round\"/></svg>");
+            Assert.DoesNotContain(" M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>");
+            Assert.DoesNotContain(" M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\">a</text></svg>");
+            Assert.StartsWith("q\n4 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\" stroke-miterlimit=\"3\">a</text></svg>");
+            Assert.Contains("3 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\">a</text></svg>");
+            Assert.DoesNotContain(" M\n", content);
         }
     }
 }

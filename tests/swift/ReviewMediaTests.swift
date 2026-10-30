@@ -321,7 +321,7 @@ import Testing
         let image = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
         _ = image.setLocation(0, 0)
         image.drawOn(page)
-        return TestSupport.content(page)
+        return SVGImageTests.withoutMiterLimit(TestSupport.content(page))
     }
 
     @Test func theCommentsOfAStyleSheetAreLeftOutInOnePass() throws {

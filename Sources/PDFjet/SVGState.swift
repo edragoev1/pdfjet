@@ -26,6 +26,7 @@ struct SVGState {
     var clipEvenOdd = false                 // clip-rule="evenodd"
     var lineCap = CapStyle.BUTT
     var lineJoin = JoinStyle.MITER
+    var miterLimit: Float = 4.0
     var fillOpacity: Float = 1.0
     var strokeOpacity: Float = 1.0
     var opacity: Float = 1.0                // The opacities of the element and its ancestors, multiplied
@@ -152,6 +153,11 @@ struct SVGState {
         case "display":
             if value == "none" {
                 hidden = true
+            }
+        case "stroke-miterlimit":
+            // Below 1 is an error in SVG, and a PDF has to be able to hold it
+            if let limit = SVGState.parseLength(value), limit >= 1.0, FastFloat.isWritable(limit) {
+                miterLimit = limit
             }
         case "visibility":
             if value == "hidden" || value == "collapse" {

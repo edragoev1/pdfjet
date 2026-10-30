@@ -618,6 +618,7 @@ public class SVGImage implements Drawable {
         path.evenOdd = state.evenOdd;
         path.lineCap = state.lineCap;
         path.lineJoin = state.lineJoin;
+        path.miterLimit = state.miterLimit;
         path.strokeFirst = state.strokeFirst;
         if (state.dashArray != null) {
             path.dashArray = new float[state.dashArray.length];
@@ -1141,6 +1142,7 @@ public class SVGImage implements Drawable {
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;
+                run.miterLimit = state.miterLimit;
                 text.runs.add(run);
             } else {
                 XMLNode child = (XMLNode) item;
@@ -1532,8 +1534,10 @@ public class SVGImage implements Drawable {
         boolean alpha = !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1f || stroke && path.strokeAlpha < 1f);
         boolean lineCap = stroke && path.lineCap != CapStyle.BUTT;
         boolean lineJoin = stroke && path.lineJoin != JoinStyle.MITER;
+        // A limit of 4 is set around the whole image, in drawOn
+        boolean miter = stroke && path.lineJoin == JoinStyle.MITER && path.miterLimit != 4f;
         boolean dash = stroke && path.dashArray != null;
-        boolean state = alpha || lineCap || lineJoin || dash || path.clips != null;
+        boolean state = alpha || lineCap || lineJoin || miter || dash || path.clips != null;
         if (state) {
             page.saveGraphicsState();
             clip(path, page);
@@ -1560,6 +1564,10 @@ public class SVGImage implements Drawable {
             }
             if (lineJoin) {
                 page.setLineJoinStyle(path.lineJoin);
+            }
+            if (miter) {
+                page.append(path.miterLimit);
+                page.append(" M\n");
             }
         }
 
@@ -1670,7 +1678,8 @@ public class SVGImage implements Drawable {
             }
             boolean alpha = !page.pdf.isPDFA1() && (fill && run.fillAlpha < 1f || stroke && run.strokeAlpha < 1f);
             boolean lineJoin = stroke && run.lineJoin != JoinStyle.MITER;
-            boolean state = alpha || lineJoin || clips != null;
+            boolean miter = stroke && run.lineJoin == JoinStyle.MITER && run.miterLimit != 4f;
+            boolean state = alpha || lineJoin || miter || clips != null;
             if (state) {
                 page.saveGraphicsState();
                 SVGPath clipped = new SVGPath();
@@ -1684,6 +1693,10 @@ public class SVGImage implements Drawable {
                 }
                 if (lineJoin) {
                     page.setLineJoinStyle(run.lineJoin);
+                }
+                if (miter) {
+                    page.append(run.miterLimit);
+                    page.append(" M\n");
                 }
             }
             for (int pass = 0; pass < 2; pass++) {
@@ -1701,6 +1714,23 @@ public class SVGImage implements Drawable {
                 page.restoreGraphicsState();
             }
         }
+    }
+
+    // Returns true when a path or a run of a text is stroked with miter
+    // joins and the limit of SVG unless given.
+    private boolean strokesMiters() {
+        for (SVGPath path : paths) {
+            if (path.text != null) {
+                for (SVGText.Run run : path.text.runs) {
+                    if (run.stroke != Color.transparent && run.lineJoin == JoinStyle.MITER && run.miterLimit == 4f) {
+                        return true;
+                    }
+                }
+            } else if (path.stroke != Color.transparent && path.lineJoin == JoinStyle.MITER && path.miterLimit == 4f) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Returns true when something of the image is drawn outside its size,
@@ -1773,6 +1803,14 @@ public class SVGImage implements Drawable {
                 path.text.place();
             }
         }
+        // The miter limit, set once: a stroked map has as many paths as a PDF
+        // would hold, and the few with another limit set their own.
+        boolean miter = strokesMiters();
+        if (miter) {
+            page.saveGraphicsState();
+            page.append(4f);
+            page.append(" M\n");
+        }
         boolean clip = overflows(page);
         if (clip) {
             page.saveGraphicsState();
@@ -1786,6 +1824,9 @@ public class SVGImage implements Drawable {
             }
         }
         if (clip) {
+            page.restoreGraphicsState();
+        }
+        if (miter) {
             page.restoreGraphicsState();
         }
         page.setFigureBoundingBox(x, y, w, h);

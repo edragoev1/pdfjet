@@ -24,6 +24,7 @@ class SVGPath {
     boolean evenOdd = false;        // Filled, or clipped to, with the even-odd rule
     CapStyle lineCap = CapStyle.BUTT;
     JoinStyle lineJoin = JoinStyle.MITER;
+    float miterLimit = 4f;
     float fillAlpha = 1f;
     float strokeAlpha = 1f;
     float[] dashArray = null;       // The dashes and the gaps, in the space of the svg element; null is solid

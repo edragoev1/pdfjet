@@ -32,6 +32,7 @@ internal class SVGState {
     internal bool clipEvenOdd = false;          // clip-rule="evenodd"
     internal CapStyle lineCap = CapStyle.BUTT;
     internal JoinStyle lineJoin = JoinStyle.MITER;
+    internal float miterLimit = 4f;
     internal float fillOpacity = 1f;
     internal float strokeOpacity = 1f;
     internal float opacity = 1f;                // The opacities of the element and its ancestors, multiplied
@@ -175,6 +176,13 @@ internal class SVGState {
             case "display":
                 if (value.Equals("none")) {
                     hidden = true;
+                }
+                break;
+            case "stroke-miterlimit":
+                // Below 1 is an error in SVG, and a PDF has to be able to hold it
+                float limit;
+                if (ParseLength(value, out limit) && limit >= 1f && FastFloat.IsWritable(limit)) {
+                    miterLimit = limit;
                 }
                 break;
             case "visibility":

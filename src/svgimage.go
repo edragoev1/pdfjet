@@ -80,7 +80,7 @@ type svgReader struct {
 	reusing  map[*xmlparser.XMLNode]bool
 	reused   int64
 	useSize  [2]string // The width and the height of the use element of the element drawn next
-	counted  int64 // The operations maxSVGOperations limits
+	counted  int64     // The operations maxSVGOperations limits
 }
 
 // NewSVGImageFromFile reads and parses an svgParser image from a file.
@@ -686,6 +686,7 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	path.evenOdd = state.evenOdd
 	path.lineCap = state.lineCap
 	path.lineJoin = state.lineJoin
+	path.miterLimit = state.miterLimit
 	path.strokeFirst = state.strokeFirst
 	if state.dashArray != nil {
 		path.dashArray = make([]float32, len(state.dashArray))
@@ -1214,6 +1215,7 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				strokeWidth: state.strokeWidth,
 				strokeFirst: state.strokeFirst,
 				lineJoin:    state.lineJoin,
+				miterLimit:  state.miterLimit,
 			}
 			if state.fillCurrent {
 				run.fill = state.color
@@ -1572,8 +1574,10 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 	alpha := !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0)
 	lineCap := stroke && path.lineCap != capstyle.Butt
 	lineJoin := stroke && path.lineJoin != joinstyle.Miter
+	// A limit of 4 is set around the whole image, in DrawOn
+	miter := stroke && path.lineJoin == joinstyle.Miter && path.miterLimit != svgMiterLimit
 	dash := stroke && path.dashArray != nil
-	state := alpha || lineCap || lineJoin || dash || path.clips != nil
+	state := alpha || lineCap || lineJoin || miter || dash || path.clips != nil
 	if state {
 		page.SaveGraphicsState()
 		image.clip(path.clips, page)
@@ -1600,6 +1604,10 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 		}
 		if lineJoin {
 			page.SetLineJoinStyle(path.lineJoin)
+		}
+		if miter {
+			page.appendFloat32(path.miterLimit)
+			page.appendString(" M\n")
 		}
 	}
 
@@ -1709,7 +1717,8 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 		}
 		alpha := !page.pdf.isPDFA1() && (fill && run.fillAlpha < 1.0 || stroke && run.strokeAlpha < 1.0)
 		lineJoin := stroke && run.lineJoin != joinstyle.Miter
-		state := alpha || lineJoin || clips != nil
+		miter := stroke && run.lineJoin == joinstyle.Miter && run.miterLimit != svgMiterLimit
+		state := alpha || lineJoin || miter || clips != nil
 		if state {
 			page.SaveGraphicsState()
 			image.clip(clips, page)
@@ -1721,6 +1730,10 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 			}
 			if lineJoin {
 				page.SetLineJoinStyle(run.lineJoin)
+			}
+			if miter {
+				page.appendFloat32(run.miterLimit)
+				page.appendString(" M\n")
 			}
 		}
 		for pass := 0; pass < 2; pass++ {
@@ -1738,6 +1751,23 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 			page.RestoreGraphicsState()
 		}
 	}
+}
+
+// strokesMiters reports whether a path or a run of a text is stroked with
+// miter joins and the limit of SVG unless given.
+func (image *SVGImage) strokesMiters() bool {
+	for _, path := range image.paths {
+		if path.text != nil {
+			for _, run := range path.text.runs {
+				if run.stroke != color.Transparent && run.lineJoin == joinstyle.Miter && run.miterLimit == svgMiterLimit {
+					return true
+				}
+			}
+		} else if path.stroke != color.Transparent && path.lineJoin == joinstyle.Miter && path.miterLimit == svgMiterLimit {
+			return true
+		}
+	}
+	return false
 }
 
 // overflows reports whether something of the image is drawn outside its
@@ -1828,6 +1858,14 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 			path.text.place()
 		}
 	}
+	// The miter limit, set once: a stroked map has as many paths as a PDF
+	// would hold, and the few with another limit set their own.
+	miter := image.strokesMiters()
+	if miter {
+		page.SaveGraphicsState()
+		page.appendFloat32(svgMiterLimit)
+		page.appendString(" M\n")
+	}
 	clip := image.overflows(page)
 	if clip {
 		page.SaveGraphicsState()
@@ -1841,6 +1879,9 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 		}
 	}
 	if clip {
+		page.RestoreGraphicsState()
+	}
+	if miter {
 		page.RestoreGraphicsState()
 	}
 	page.SetFigureBoundingBox(image.x, image.y, image.w, image.h)

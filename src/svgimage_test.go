@@ -26,7 +26,19 @@ func testNewSVG(t *testing.T, svg string) *SVGImage {
 	return image
 }
 
+// testDrawSVG returns what the image draws, without the miter limit that is
+// set around an image that strokes, which
+// TestSVGImageTheMiterLimitOfAStrokeIsWritten checks.
 func testDrawSVG(t *testing.T, svg string) string {
+	t.Helper()
+	content := testDrawSVGAsItIs(t, svg)
+	if strings.HasPrefix(content, "q\n4 M\n") {
+		return content[len("q\n4 M\n") : len(content)-len("Q\n")]
+	}
+	return content
+}
+
+func testDrawSVGAsItIs(t *testing.T, svg string) string {
 	t.Helper()
 	page := testNewPage()
 	image := testNewSVG(t, svg)
@@ -1272,6 +1284,45 @@ func TestSVGImageThePaintOrderOfAShapeIsDrawn(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="normal"/></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheMiterLimitOfAStrokeIsWritten(t *testing.T) {
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" /></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="2.5"/></svg>`); !strings.HasPrefix(content, "q\n2.5 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" style="stroke-miterlimit:1"/></svg>`); !strings.HasPrefix(content, "q\n1 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="10"/></svg>`); !strings.HasPrefix(content, "q\n10 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="0.5"/></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="1e30"/></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><g fill="none" stroke="red"><path d="M0 0 L10 0 L10 10 Z"/><path d="M0 0 L9 0 L9 9 Z"/></g></svg>`); strings.Count(content, " M\n") != 1 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-linejoin="round"/></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z"/></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50" stroke="red">a</text></svg>`); !strings.HasPrefix(content, "q\n4 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50" stroke="red" stroke-miterlimit="3">a</text></svg>`); !strings.Contains(content, "3 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50">a</text></svg>`); strings.Contains(content, " M\n") {
 		t.Errorf("content %q", content)
 	}
 }

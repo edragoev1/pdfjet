@@ -42,6 +42,7 @@ internal class SVGText {
         internal float strokeWidth;         // In the user space of the text element
         internal bool strokeFirst;
         internal JoinStyle lineJoin;
+        internal float miterLimit;
 
         // Where the run is placed: its start, on its baseline, and its width.
         internal float px;

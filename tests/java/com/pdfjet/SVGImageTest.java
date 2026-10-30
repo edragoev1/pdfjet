@@ -18,7 +18,17 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 class SVGImageTest {
+    // What the image draws, without the miter limit that is set around an
+    // image that strokes, which theMiterLimitOfAStrokeIsWritten checks.
+    static String withoutMiterLimit(String content) {
+        return content.startsWith("q\n4 M\n") ? content.substring(6, content.length() - 2) : content;
+    }
+
     private static String draw(String svg) throws Exception {
+        return withoutMiterLimit(drawAsItIs(svg));
+    }
+
+    private static String drawAsItIs(String svg) throws Exception {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
         SVGImage image = new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
         image.setLocation(0f, 0f);
@@ -1210,6 +1220,58 @@ class SVGImageTest {
         {
             String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>");
             assertTrue(content.contains("f\n0 0 1 RG\n"), content);
+        }
+    }
+
+    @Test
+    void theMiterLimitOfAStrokeIsWritten() throws Exception {
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" /></svg>");
+            assertTrue(content.startsWith("q\n4 M\n1 0 0 RG\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"2.5\"/></svg>");
+            assertTrue(content.startsWith("q\n2.5 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" style=\"stroke-miterlimit:1\"/></svg>");
+            assertTrue(content.startsWith("q\n1 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"10\"/></svg>");
+            assertTrue(content.startsWith("q\n10 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"0.5\"/></svg>");
+            assertTrue(content.startsWith("q\n4 M\n1 0 0 RG\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"1e30\"/></svg>");
+            assertTrue(content.startsWith("q\n4 M\n1 0 0 RG\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><g fill=\"none\" stroke=\"red\"><path d=\"M0 0 L10 0 L10 10 Z\"/><path d=\"M0 0 L9 0 L9 9 Z\"/></g></svg>");
+            assertEquals(1, content.split(" M\n", -1).length - 1, content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-linejoin=\"round\"/></svg>");
+            assertFalse(content.contains(" M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>");
+            assertFalse(content.contains(" M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\">a</text></svg>");
+            assertTrue(content.startsWith("q\n4 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\" stroke-miterlimit=\"3\">a</text></svg>");
+            assertTrue(content.contains("3 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\">a</text></svg>");
+            assertFalse(content.contains(" M\n"), content);
         }
     }
 }

@@ -13,7 +13,17 @@ import Testing
         return try SVGImage(stream: InputStream(data: Data(svg.utf8)))
     }
 
+    // What the image draws, without the miter limit that is set around an
+    // image that strokes, which theMiterLimitOfAStrokeIsWritten checks.
+    static func withoutMiterLimit(_ content: String) -> String {
+        return content.hasPrefix("q\n4 M\n") ? String(content.dropFirst(6).dropLast(2)) : content
+    }
+
     private func draw(_ svg: String, sourceLocation: SourceLocation = #_sourceLocation) throws -> String {
+        return SVGImageTests.withoutMiterLimit(try drawAsItIs(svg, sourceLocation: sourceLocation))
+    }
+
+    private func drawAsItIs(_ svg: String, sourceLocation: SourceLocation = #_sourceLocation) throws -> String {
         let page = TestSupport.newPage()
         let svgImage = try image(svg)
         _ = svgImage.setLocation(0, 0)
@@ -1141,6 +1151,57 @@ import Testing
         do {
             let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>")
             #expect(content.contains("f\n0 0 1 RG\n"), "\(content)")
+        }
+    }
+
+    @Test func theMiterLimitOfAStrokeIsWritten() throws {
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" /></svg>")
+            #expect(content.hasPrefix("q\n4 M\n1 0 0 RG\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"2.5\"/></svg>")
+            #expect(content.hasPrefix("q\n2.5 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" style=\"stroke-miterlimit:1\"/></svg>")
+            #expect(content.hasPrefix("q\n1 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"10\"/></svg>")
+            #expect(content.hasPrefix("q\n10 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"0.5\"/></svg>")
+            #expect(content.hasPrefix("q\n4 M\n1 0 0 RG\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"1e30\"/></svg>")
+            #expect(content.hasPrefix("q\n4 M\n1 0 0 RG\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><g fill=\"none\" stroke=\"red\"><path d=\"M0 0 L10 0 L10 10 Z\"/><path d=\"M0 0 L9 0 L9 9 Z\"/></g></svg>")
+            #expect(content.components(separatedBy: " M\n").count - 1 == 1, "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-linejoin=\"round\"/></svg>")
+            #expect(!content.contains(" M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>")
+            #expect(!content.contains(" M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\">a</text></svg>")
+            #expect(content.hasPrefix("q\n4 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\" stroke-miterlimit=\"3\">a</text></svg>")
+            #expect(content.contains("3 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\">a</text></svg>")
+            #expect(!content.contains(" M\n"), "\(content)")
         }
     }
 }

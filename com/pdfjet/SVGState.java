@@ -34,6 +34,7 @@ class SVGState {
     boolean clipEvenOdd = false;        // clip-rule="evenodd"
     CapStyle lineCap = CapStyle.BUTT;
     JoinStyle lineJoin = JoinStyle.MITER;
+    float miterLimit = 4f;
     float fillOpacity = 1f;
     float strokeOpacity = 1f;
     float opacity = 1f;                 // The opacities of the element and its ancestors, multiplied
@@ -80,6 +81,7 @@ class SVGState {
         this.clipEvenOdd = parent.clipEvenOdd;
         this.lineCap = parent.lineCap;
         this.lineJoin = parent.lineJoin;
+        this.miterLimit = parent.miterLimit;
         this.fillOpacity = parent.fillOpacity;
         this.strokeOpacity = parent.strokeOpacity;
         this.opacity = parent.opacity;
@@ -308,6 +310,12 @@ class SVGState {
                 this.lineJoin = JoinStyle.ROUND;
             } else if (value.equals("bevel")) {
                 this.lineJoin = JoinStyle.BEVEL;
+            }
+        } else if (name.equals("stroke-miterlimit")) {
+            // Below 1 is an error in SVG, and a PDF has to be able to hold it
+            Float limit = parseLength(value);
+            if (limit != null && limit >= 1f && FastFloat.isWritable(limit)) {
+                this.miterLimit = limit;
             }
         } else if (name.equals("opacity") || name.equals("fill-opacity") || name.equals("stroke-opacity")) {
             Float alpha = parseOpacity(value);

@@ -37,6 +37,7 @@ class SVGText {
         var strokeWidth: Float = 0.0    // In the user space of the text element
         var strokeFirst = false
         var lineJoin = JoinStyle.MITER
+        var miterLimit: Float = 4.0
 
         // Where the run is placed: its start, on its baseline, and its width.
         var px: Float = 0.0

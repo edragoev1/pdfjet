@@ -623,6 +623,7 @@ public class SVGImage : IDrawable {
         path.evenOdd = state.evenOdd;
         path.lineCap = state.lineCap;
         path.lineJoin = state.lineJoin;
+        path.miterLimit = state.miterLimit;
         path.strokeFirst = state.strokeFirst;
         if (state.dashArray != null) {
             path.dashArray = new float[state.dashArray.Length];
@@ -1160,6 +1161,7 @@ public class SVGImage : IDrawable {
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;
+                run.miterLimit = state.miterLimit;
                 text.runs.Add(run);
             } else {
                 XMLNode child = (XMLNode) item;
@@ -1496,8 +1498,10 @@ public class SVGImage : IDrawable {
         bool alpha = !page.pdf.IsPDFA1() && ((fill && path.fillAlpha < 1f) || (stroke && path.strokeAlpha < 1f));
         bool lineCap = stroke && path.lineCap != CapStyle.BUTT;
         bool lineJoin = stroke && path.lineJoin != JoinStyle.MITER;
+        // A limit of 4 is set around the whole image, in DrawOn
+        bool miter = stroke && path.lineJoin == JoinStyle.MITER && path.miterLimit != 4f;
         bool dash = stroke && path.dashArray != null;
-        bool state = alpha || lineCap || lineJoin || dash || path.clips != null;
+        bool state = alpha || lineCap || lineJoin || miter || dash || path.clips != null;
         if (state) {
             page.SaveGraphicsState();
             Clip(path, page);
@@ -1524,6 +1528,10 @@ public class SVGImage : IDrawable {
             }
             if (lineJoin) {
                 page.SetLineJoinStyle(path.lineJoin);
+            }
+            if (miter) {
+                page.Append(path.miterLimit);
+                page.Append(" M\n");
             }
         }
 
@@ -1634,7 +1642,8 @@ public class SVGImage : IDrawable {
             }
             bool alpha = !page.pdf.IsPDFA1() && ((fill && run.fillAlpha < 1f) || (stroke && run.strokeAlpha < 1f));
             bool lineJoin = stroke && run.lineJoin != JoinStyle.MITER;
-            bool state = alpha || lineJoin || clips != null;
+            bool miter = stroke && run.lineJoin == JoinStyle.MITER && run.miterLimit != 4f;
+            bool state = alpha || lineJoin || miter || clips != null;
             if (state) {
                 page.SaveGraphicsState();
                 SVGPath clipped = new SVGPath();
@@ -1648,6 +1657,10 @@ public class SVGImage : IDrawable {
                 }
                 if (lineJoin) {
                     page.SetLineJoinStyle(run.lineJoin);
+                }
+                if (miter) {
+                    page.Append(run.miterLimit);
+                    page.Append(" M\n");
                 }
             }
             for (int pass = 0; pass < 2; pass++) {
@@ -1665,6 +1678,23 @@ public class SVGImage : IDrawable {
                 page.RestoreGraphicsState();
             }
         }
+    }
+
+    // Returns true when a path or a run of a text is stroked with miter
+    // joins and the limit of SVG unless given.
+    private bool StrokesMiters() {
+        foreach (SVGPath path in paths) {
+            if (path.text != null) {
+                foreach (SVGText.Run run in path.text.runs) {
+                    if (run.stroke != Color.transparent && run.lineJoin == JoinStyle.MITER && run.miterLimit == 4f) {
+                        return true;
+                    }
+                }
+            } else if (path.stroke != Color.transparent && path.lineJoin == JoinStyle.MITER && path.miterLimit == 4f) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Returns true when something of the image is drawn outside its size,
@@ -1732,6 +1762,14 @@ public class SVGImage : IDrawable {
                 path.text.Place();
             }
         }
+        // The miter limit, set once: a stroked map has as many paths as a PDF
+        // would hold, and the few with another limit set their own.
+        bool miter = StrokesMiters();
+        if (miter) {
+            page.SaveGraphicsState();
+            page.Append(4f);
+            page.Append(" M\n");
+        }
         bool clip = Overflows(page);
         if (clip) {
             page.SaveGraphicsState();
@@ -1745,6 +1783,9 @@ public class SVGImage : IDrawable {
             }
         }
         if (clip) {
+            page.RestoreGraphicsState();
+        }
+        if (miter) {
             page.RestoreGraphicsState();
         }
         page.SetFigureBoundingBox(x, y, w, h);

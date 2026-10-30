@@ -26,6 +26,8 @@ internal class SVGPath {
     internal CapStyle lineCap = CapStyle.BUTT;
     /// <summary>The line join style.</summary>
     internal JoinStyle lineJoin = JoinStyle.MITER;
+    /// <summary>The miter limit.</summary>
+    internal float miterLimit = 4f;
     /// <summary>The alpha of the fill.</summary>
     internal float fillAlpha = 1f;
     /// <summary>The alpha of the stroke.</summary>

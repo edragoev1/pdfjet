@@ -623,6 +623,7 @@ public class SVGImage : Drawable {
         path.evenOdd = state.evenOdd
         path.lineCap = state.lineCap
         path.lineJoin = state.lineJoin
+        path.miterLimit = state.miterLimit
         path.strokeFirst = state.strokeFirst
         if let dashArray = state.dashArray {
             path.dashArray = dashArray.map { Float(Double($0) * scale) }
@@ -1101,6 +1102,7 @@ public class SVGImage : Drawable {
                 run.strokeWidth = state.strokeWidth
                 run.strokeFirst = state.strokeFirst
                 run.lineJoin = state.lineJoin
+                run.miterLimit = state.miterLimit
                 text.runs.append(run)
             case .element(let child):
                 let name = child.getLocalName()
@@ -1433,8 +1435,10 @@ public class SVGImage : Drawable {
         let alpha = !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0)
         let lineCap = stroke && path.lineCap != CapStyle.BUTT
         let lineJoin = stroke && path.lineJoin != JoinStyle.MITER
+        // A limit of 4 is set around the whole image, in drawOn
+        let miter = stroke && path.lineJoin == JoinStyle.MITER && path.miterLimit != 4.0
         let dash = stroke && path.dashArray != nil
-        let state = alpha || lineCap || lineJoin || dash || path.clips != nil
+        let state = alpha || lineCap || lineJoin || miter || dash || path.clips != nil
         if state {
             page.saveGraphicsState()
             clip(path.clips, page)
@@ -1461,6 +1465,10 @@ public class SVGImage : Drawable {
             }
             if lineJoin {
                 page.setLineJoinStyle(path.lineJoin)
+            }
+            if miter {
+                page.append(path.miterLimit)
+                page.append(" M\n")
             }
         }
 
@@ -1591,7 +1599,8 @@ public class SVGImage : Drawable {
             }
             let alpha = !page.pdf.isPDFA1() && (fill && run.fillAlpha < 1.0 || stroke && run.strokeAlpha < 1.0)
             let lineJoin = stroke && run.lineJoin != JoinStyle.MITER
-            let state = alpha || lineJoin || clips != nil
+            let miter = stroke && run.lineJoin == JoinStyle.MITER && run.miterLimit != 4.0
+            let state = alpha || lineJoin || miter || clips != nil
             if state {
                 page.saveGraphicsState()
                 clip(clips, page)
@@ -1603,6 +1612,10 @@ public class SVGImage : Drawable {
                 }
                 if lineJoin {
                     page.setLineJoinStyle(run.lineJoin)
+                }
+                if miter {
+                    page.append(run.miterLimit)
+                    page.append(" M\n")
                 }
             }
             for pass in 0..<2 {
@@ -1620,6 +1633,23 @@ public class SVGImage : Drawable {
                 page.restoreGraphicsState()
             }
         }
+    }
+
+    // Returns true when a path or a run of a text is stroked with miter
+    // joins and the limit of SVG unless given.
+    private func strokesMiters() -> Bool {
+        for path in paths {
+            if let text = path.text {
+                if text.runs.contains(where: { $0.stroke != Color.transparent
+                        && $0.lineJoin == JoinStyle.MITER && $0.miterLimit == 4.0 }) {
+                    return true
+                }
+            } else if path.stroke != Color.transparent && path.lineJoin == JoinStyle.MITER
+                    && path.miterLimit == 4.0 {
+                return true
+            }
+        }
+        return false
     }
 
     // Returns true when something of the image is drawn outside its size,
@@ -1695,6 +1725,14 @@ public class SVGImage : Drawable {
                 text.place()
             }
         }
+        // The miter limit, set once: a stroked map has as many paths as a
+        // PDF would hold, and the few with another limit set their own.
+        let miter = strokesMiters()
+        if miter {
+            page.saveGraphicsState()
+            page.append(Float(4.0))
+            page.append(" M\n")
+        }
         let clip = overflows(page)
         if clip {
             page.saveGraphicsState()
@@ -1708,6 +1746,9 @@ public class SVGImage : Drawable {
             }
         }
         if clip {
+            page.restoreGraphicsState()
+        }
+        if miter {
             page.restoreGraphicsState()
         }
         page.setFigureBoundingBox(x, y, w, h)

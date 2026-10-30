@@ -357,7 +357,7 @@ class ReviewMediaTest {
         SVGImage image = svg(svg);
         image.setLocation(0f, 0f);
         TestSupport.assertXY(image.getWidth(), image.getHeight(), image.drawOn(page));
-        return TestSupport.content(page);
+        return SVGImageTest.withoutMiterLimit(TestSupport.content(page));
     }
 
     private static String repeat(String text, int count) {
