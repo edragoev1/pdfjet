@@ -13,7 +13,8 @@
 # checks what it gets against MuPDF. The references job checks the images the
 # Go port embeds against Pillow and the fonts it reads against fontTools. The api
 # job compares the public API of the four ports with the last release tag, with
-# check-api.sh. The dotnet job also builds the library for .NET Framework 4.8,
+# check-api.sh. The dotnet job runs the unit tests and the examples on .NET 10
+# as well as .NET 8, and also builds the library for .NET Framework 4.8,
 # and it and the java job run their unit tests a second time in a Turkish
 # locale. The swift-macos job
 # builds the Swift port and runs its tests on macOS, where an API a version of
@@ -62,8 +63,9 @@ jobs:
                   distribution: temurin
                   java-version: "25"
 
-            # .NET 8 for the library and its tests, and the .NET 10 SDK, for
-            # C# 14, for the library built for .NET Framework 4.8.
+            # .NET 8 for the library, and the .NET 10 SDK, for C# 14, for the
+            # library built for .NET Framework 4.8. With it, test-dotnet.sh
+            # runs the unit tests on .NET 8 and on .NET 10, the latest LTS.
             - if: matrix.port == 'dotnet'
               uses: actions/setup-dotnet@v6
               with:
@@ -129,6 +131,42 @@ jobs:
                   path: Example_*.pdf
                   if-no-files-found: error
                   retention-days: 3
+
+            # The examples, built for .NET 8, again on .NET 10, as an
+            # application on .NET 10 runs the library: the same PDFs, with
+            # their streams decoded and the dates and IDs left out. The bytes
+            # differ, as the zlib of .NET 9 and later compresses otherwise.
+            - name: The examples on .NET 10 make the same PDFs
+              if: matrix.port == 'dotnet'
+              run: |
+                  sudo apt-get update -q
+                  sudo apt-get install -y -q qpdf
+                  mkdir "$RUNNER_TEMP/net8" "$RUNNER_TEMP/decoded"
+                  mv Example_*.pdf "$RUNNER_TEMP/net8"
+                  for i in $(seq -w 1 50); do
+                      DOTNET_ROLL_FORWARD=LatestMajor dotnet examples/Example_$i/bin/release/net8.0/Example_$i.dll
+                  done
+                  # qpdf exits with 3 for a warning. Example_47's owner password is world.
+                  decode() {
+                      qpdf --qdf --object-streams=disable --decode-level=generalized --static-id \
+                          --decrypt --password=world "$1" "$2.qdf" || [ $? -eq 3 ]
+                      LC_ALL=C sed -E -e 's/(CreationDate|ModDate) *(\(D:[^)]*\)|<[0-9a-fA-F]*>)/\1 X/g' \
+                          -e 's/(xmp:CreateDate|xmp:ModifyDate|xmp:MetadataDate)>[^<]*/\1>X/g' \
+                          -e 's/(xmpMM|xapMM):(DocumentID|InstanceID)>[^<]*/\1:\2>X/g' \
+                          -e 's/\/ID *\[<[0-9a-fA-F]*>/\/ID [<X>/g' "$2.qdf" > "$2"
+                  }
+                  failed=0
+                  for f in "$RUNNER_TEMP"/net8/Example_*.pdf; do
+                      name=$(basename "$f")
+                      decode "$f" "$RUNNER_TEMP/decoded/net8-$name"
+                      decode "$name" "$RUNNER_TEMP/decoded/net10-$name"
+                      if ! cmp -s "$RUNNER_TEMP/decoded/net8-$name" "$RUNNER_TEMP/decoded/net10-$name"; then
+                          echo "::error::$name on .NET 10 is not the PDF of .NET 8"
+                          failed=1
+                      fi
+                  done
+                  echo "$(ls "$RUNNER_TEMP"/net8/Example_*.pdf | wc -l) PDFs compared."
+                  exit $failed
 
             # The strings every Go example draws, which the compare job checks
             # the text of every port's PDFs against. The examples are built again

@@ -160,6 +160,10 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   later use, and the name tree of `/EmbeddedFiles` is the same. Example:
   for `notes.txt`, `/F` is `<6e6f7465732e747874>`, where it was
   `<feff006e006f007400650073002e007400780074>`.
+- C#, on .NET 10: a stream of no bytes, such as the content of an empty
+  page, is the zlib stream of no bytes, 8 bytes, as on .NET 8. .NET 10's
+  ZLibStream writes nothing for no bytes, so such a `/FlateDecode` stream
+  had length 0, which is no zlib stream. On .NET 8 nothing changes.
 
 ## v9.1.5 — 2026-10-28
 

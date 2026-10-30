@@ -11,7 +11,11 @@ cd "$(dirname "$0")" || exit 1
 # GitHub; then those of BundledFontsTest again with the fonts inside the
 # library, as the DLL of NuGet is built (-p:PDFjetFonts=true). The constant
 # PDFJET_FONTS it then has rebuilds the test assembly at each switch.
+#
+# With the .NET 10 SDK, the tests run on .NET 8 and on .NET 10 (see
+# PDFjet.Tests.csproj), one after the other, not at once, so that the tests
+# that time the reader are not slowed by the other run.
 set -e
-dotnet test tests/dotnet/PDFjet.Tests.csproj -c release -p:TreatWarningsAsErrors=true
-dotnet test tests/dotnet/PDFjet.Tests.csproj -c release -p:TreatWarningsAsErrors=true -p:PDFjetFonts=true \
+dotnet test tests/dotnet/PDFjet.Tests.csproj -c release -p:TreatWarningsAsErrors=true -p:TestTfmsInParallel=false
+dotnet test tests/dotnet/PDFjet.Tests.csproj -c release -p:TreatWarningsAsErrors=true -p:TestTfmsInParallel=false -p:PDFjetFonts=true \
     --filter "FullyQualifiedName~BundledFontsTest"
