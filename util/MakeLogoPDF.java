@@ -9,13 +9,13 @@ import java.io.*;
 import com.pdfjet.*;
 
 /**
- * Writes data/testPDFs/PDFjetLogo.pdf, the logo of pdfjet.com as the vector
+ * Writes resources/data/testPDFs/PDFjetLogo.pdf, the logo of pdfjet.com as the vector
  * graphics of one Letter page, which Example_34 reads and draws on its
  * letterhead and Example_49 merges. The logo is drawn from
- * images/readme/pdfjet-logo.svg at its own size, 224 by 72 points, in the top
- * left corner of the page, which is where a reader opens the file at and
- * where a one page logo belongs. The content of the page draws it from the
- * top left corner, so what draws it elsewhere anchors it by the top of the
+ * resources/images/readme/pdfjet-logo.svg at its own size, 224 by 72 points,
+ * in the top left corner of the page, which is where a reader opens the file
+ * at and where a one page logo belongs. The content of the page draws it from
+ * the top left corner, so what draws it elsewhere anchors it by the top of the
  * page: Example_34 passes the height of the page to drawContents, not the
  * height of the logo.
  */
@@ -31,13 +31,13 @@ public class MakeLogoPDF {
      */
     public static void main(String[] args) throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("data/testPDFs/PDFjetLogo.pdf")));
+                new FileOutputStream("resources/data/testPDFs/PDFjetLogo.pdf")));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        SVGImage logo = new SVGImage("images/readme/pdfjet-logo.svg");
+        SVGImage logo = new SVGImage("resources/images/readme/pdfjet-logo.svg");
         logo.setLocation(0f, 0f);
         logo.drawOn(page);
         pdf.complete();
-        System.out.printf("data/testPDFs/PDFjetLogo.pdf => %.0f by %.0f points%n",
+        System.out.printf("resources/data/testPDFs/PDFjetLogo.pdf => %.0f by %.0f points%n",
                 logo.getWidth(), logo.getHeight());
     }
 }   // End of MakeLogoPDF.java

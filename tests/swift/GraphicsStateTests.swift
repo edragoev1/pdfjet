@@ -37,7 +37,7 @@ import Testing
         #expect(gs.entries() == "/CA 0.25 /ca 1")
     }
 
-    @Test(.enabled(if: TestSupport.exists(ReviewMediaTests.trueTypeFont), "the fonts directory is not here"))
+    @Test
     func pdfA1TakesOnlyTheNormalBlendMode() throws {
         let failed = "The PDF was not completed because of an earlier error: "
         let multiply: (PDF, Page) throws -> Void = { _, page in

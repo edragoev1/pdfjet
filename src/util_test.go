@@ -185,7 +185,10 @@ func TestUtilNoLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpen
 		{"あい」", '。', 1}, // and so does 」
 		{"あい「", 'う', 2}, // 「 moves down
 		{"中文", ',', 1},
-		{"」", '。', 1}, // no other place to break
+		{"」", '。', 1},      // no other place to break
+		{"あいか", 0x3099, 2}, // か moves down with its dakuten
+		{"あか\u3099", 'う', 3},
+		{"あか\u3099", '。', 1}, // か and its dakuten move down with 。
 	} {
 		if got := cjkLineEnd([]rune(c.line), c.next); got != c.want {
 			t.Errorf("cjkLineEnd(%q, %q) = %d, want %d", c.line, c.next, got, c.want)

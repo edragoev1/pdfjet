@@ -152,13 +152,13 @@ func fuzzReadPDF(t *testing.T, data []byte, password string) string {
 	return report.String()
 }
 
-// fuzzPDFSeeds are documents that PDFjet writes, the PDFs of the repository
-// that other programs wrote, and one with a cross-reference stream and an
-// object stream, which PDFjet reads and does not write.
+// fuzzPDFSeeds are documents that PDFjet writes, the PDFs of the repository,
+// and one with a cross-reference stream and an object stream, which PDFjet
+// reads and does not write.
 func fuzzPDFSeeds(f *testing.F) [][]byte {
 	seeds := [][]byte{fuzzPDFDocument(f, ""), fuzzPDFDocument(f, "secret"), fuzzPDFStreamXref()}
-	for _, name := range []string{"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"} {
-		data, err := os.ReadFile("../data/testPDFs/" + name)
+	for _, name := range []string{"scanned-linearized.pdf", "sample-document.pdf", "PDFjetLogo.pdf"} {
+		data, err := os.ReadFile("../resources/data/testPDFs/" + name)
 		if err != nil {
 			f.Fatal(err)
 		}

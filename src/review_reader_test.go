@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -29,6 +30,20 @@ func testReadQuickly(t *testing.T, pdf []byte) []*PDFobj {
 	if elapsed := time.Since(start); elapsed > 5*time.Second {
 		t.Errorf("reading %d bytes took %v", len(pdf), elapsed)
 	}
+	if err != nil {
+		return nil
+	}
+	return objects
+}
+
+// testReadLinearly checks that the PDF of size 2n takes less than three times
+// the PDF of size n to read, and returns the objects of the PDF of size n, or
+// nil when it cannot be read.
+func testReadLinearly(t *testing.T, n int, pdf func(n int) []byte) []*PDFobj {
+	t.Helper()
+	pdfs := map[int][]byte{n: pdf(n), 2 * n: pdf(2 * n)}
+	testLinearTime(t, n, func(n int) { _, _ = testNewPDF().Read(pdfs[n]) })
+	objects, err := testNewPDF().Read(pdfs[n])
 	if err != nil {
 		return nil
 	}
@@ -176,16 +191,19 @@ func TestReviewReaderAStreamThatTheTableListsManyTimesIsSearchedWithinABudget(t 
 	// of the PDF, and its endstream was looked for there 10,000 times. What
 	// the reader may read in all is eight times the length of the PDF: the
 	// streams past it keep their /Length.
-	var sb strings.Builder
-	sb.WriteString("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
-	sb.WriteString(strings.Repeat("x", 1000000))
-	xref := sb.Len()
-	sb.WriteString("\nxref\n")
-	for i := 0; i < 10000; i++ {
-		sb.WriteString("1 1\n0000000009 00000 n \n")
+	pdf := func(entries int) []byte {
+		var sb strings.Builder
+		sb.WriteString("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
+		sb.WriteString(strings.Repeat("x", 100*entries))
+		xref := sb.Len()
+		sb.WriteString("\nxref\n")
+		for i := 0; i < entries; i++ {
+			sb.WriteString("1 1\n0000000009 00000 n \n")
+		}
+		fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref+1)
+		return []byte(sb.String())
 	}
-	fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref+1)
-	objects := testReadQuickly(t, []byte(sb.String()))
+	objects := testReadLinearly(t, 5000, pdf)
 	if len(objects) != 1 {
 		t.Fatalf("objects %d", len(objects))
 	}
@@ -216,17 +234,20 @@ func TestReviewReaderSectionsWithNoStartxrefAreReadWithinABudget(t *testing.T) {
 func TestReviewReaderAnObjectThatTheTableListsManyTimesIsReadWithinABudget(t *testing.T) {
 	// The object with no endobj was read to the end of the PDF for each of
 	// its 1,000 entries.
-	var sb strings.Builder
-	sb.WriteString("%PDF-1.7\n1 0 obj\n<< /A [")
-	sb.WriteString(strings.Repeat("1 ", 500000))
-	sb.WriteString("] >>\n")
-	xref := sb.Len()
-	sb.WriteString("xref\n")
-	for i := 0; i < 1000; i++ {
-		sb.WriteString("1 1\n0000000009 00000 n \n")
+	pdf := func(entries int) []byte {
+		var sb strings.Builder
+		sb.WriteString("%PDF-1.7\n1 0 obj\n<< /A [")
+		sb.WriteString(strings.Repeat("1 ", 500*entries))
+		sb.WriteString("] >>\n")
+		xref := sb.Len()
+		sb.WriteString("xref\n")
+		for i := 0; i < entries; i++ {
+			sb.WriteString("1 1\n0000000009 00000 n \n")
+		}
+		fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref)
+		return []byte(sb.String())
 	}
-	fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref)
-	objects := testReadQuickly(t, []byte(sb.String()))
+	objects := testReadLinearly(t, 100, pdf)
 	if len(objects) != 1 {
 		t.Fatalf("objects %d", len(objects))
 	}
@@ -297,11 +318,11 @@ func testPDFWithStreams(count int) []byte {
 
 func TestReviewReaderTheLengthOfAStreamIsFoundByItsNumber(t *testing.T) {
 	// Every stream looked for its /Length among all the objects.
-	objects := testReadQuickly(t, testPDFWithStreams(60000))
-	if len(objects) != 120003 {
+	objects := testReadLinearly(t, 10000, testPDFWithStreams)
+	if len(objects) != 20003 {
 		t.Fatalf("objects %d", len(objects))
 	}
-	testWant(t, "q Q", string(objects[119999].GetData()))
+	testWant(t, "q Q", string(objects[19999].GetData()))
 }
 
 func TestReviewReaderTheLengthOfAStreamIsItsNewestVersion(t *testing.T) {
@@ -475,4 +496,122 @@ func TestReviewReaderTheNumbersOfAnObjectStreamAreDigits(t *testing.T) {
 	// An offset past the end of the stream, which overflowed an int of 32 bits.
 	testWant(t, "(no error)",
 		testReadError(t, "1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj"))
+}
+
+// testLZW returns the bytes as LZW data with a code for each, in codes that get
+// one bit longer as the /EarlyChange says.
+func testLZW(data []byte, earlyChange int) []byte {
+	out := make([]byte, 0)
+	bits, bitCount := 0, 0
+	write := func(code, length int) {
+		bits = bits<<length | code
+		bitCount += length
+		for bitCount >= 8 {
+			bitCount -= 8
+			out = append(out, byte(bits>>bitCount))
+		}
+		bits &= 1<<bitCount - 1
+	}
+	next, length := 258, 9
+	write(256, length)
+	for _, b := range data {
+		write(int(b), length)
+		next++
+		if next+earlyChange-1 >= 1<<length {
+			length++
+		}
+	}
+	write(257, length)
+	return append(out, byte(bits<<(8-bitCount)))
+}
+
+// testStreamData returns the data of a stream, of hexadecimal digits, with the
+// entries of its dictionary, in a PDF.
+func testStreamData(t *testing.T, entries string, hex string) []byte {
+	t.Helper()
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		fmt.Sprintf("<< /Length %d %s >>\nstream\n%s\nendstream", len(hex), entries, hex)))
+	return objects[3].GetData()
+}
+
+func TestReviewReaderAnLZWStreamHasItsEarlyChange(t *testing.T) {
+	// /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+	// no error (review of 30 October 2026, B7).
+	data := make([]byte, 600)
+	for i := range data {
+		data[i] = byte(i * i % 251)
+	}
+	for _, earlyChange := range []int{1, 0} {
+		entries := fmt.Sprintf("/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange %d >>]", earlyChange)
+		got := testStreamData(t, entries, fmt.Sprintf("%x>", testLZW(data, earlyChange)))
+		if !bytes.Equal(got, data) {
+			t.Errorf("EarlyChange %d: %d bytes", earlyChange, len(got))
+		}
+	}
+}
+
+func TestReviewReaderAFlateStreamCanLackItsChecksum(t *testing.T) {
+	// It was refused, and in an object stream that failed the PDF (review of
+	// 30 October 2026, B8).
+	data := []byte("0 0 1 rg 10 10 50 50 re f\n")
+	deflated := compressor.Deflate(data)
+	got := testStreamData(t, "/Filter [/ASCIIHexDecode /FlateDecode]", fmt.Sprintf("%x>", deflated[:len(deflated)-4]))
+	if !bytes.Equal(got, data) {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestReviewReaderAFilterThatIsAnObjectAndACryptFilterAreDecoded(t *testing.T) {
+	// The data was the raw bytes (review of 30 October 2026, B10).
+	for _, filter := range []string{"/ASCIIHexDecode", "[/ASCIIHexDecode]"} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+			"<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+			filter))
+		if got := string(objects[3].GetData()); got != "AB" {
+			t.Errorf("%s: got %q", filter, got)
+		}
+	}
+	got := testStreamData(t, "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")
+	if string(got) != "AB" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestReviewReaderAnIdentityCryptFilterSaysTheStreamIsNotEncrypted(t *testing.T) {
+	for entries, want := range map[string]bool{
+		"/Filter /Crypt": true,
+		"/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]": true,
+		"/Filter /Crypt /DecodeParms << /Name /StdCF >>":                          false,
+		"/Filter /FlateDecode": false,
+	} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+			"<< /Length 1 "+entries+" >>\nstream\nx\nendstream"))
+		if got := objects[3].hasIdentityCrypt(); got != want {
+			t.Errorf("%s: %v", entries, got)
+		}
+	}
+}
+
+func TestReviewReaderALengthThatIsARealOrNullIsRead(t *testing.T) {
+	// The PDF was refused (review of 30 October 2026, B11).
+	for _, length := range []string{"5.0", "null", "5 0 R"} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+			"<< /Length "+length+" >>\nstream\n0 0 m\nendstream",
+			"5.0"))
+		if got := string(objects[3].GetData()); got != "0 0 m" {
+			t.Errorf("/Length %s: got %q", length, got)
+		}
+	}
 }

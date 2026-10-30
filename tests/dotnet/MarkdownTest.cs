@@ -339,7 +339,7 @@ public class MarkdownTest {
         Assert.Equal(0, Count(drawn.pdf, "Figure"));
         Assert.Contains(TestSupport.Hex("Circles"), drawn.text, StringComparison.Ordinal);
         // From the directory, the image is a figure.
-        String images = TestSupport.RepoPath("images");
+        String images = TestSupport.RepoPath("resources/images");
         drawn = Draw(text, images);
         Assert.Equal(1, Count(drawn.pdf, "Figure"));
         Match alt = Regex.Match(drawn.pdf, "/Alt <([0-9A-Fa-f]+)>");
@@ -347,7 +347,7 @@ public class MarkdownTest {
                 "the text of the image is its description");
         // Not above it, not an absolute path, not a URL.
         foreach (String source in new String[] {"../images/circles.png", "/etc/passwd",
-                System.IO.Path.GetFullPath(TestSupport.RepoPath("images/circles.png")),
+                System.IO.Path.GetFullPath(TestSupport.RepoPath("resources/images/circles.png")),
                 "https://pdfjet.com/logo.png", "missing.png"}) {
             drawn = Draw("![Not read](" + source + ")", images);
             Assert.True(Count(drawn.pdf, "Figure") == 0, source);
@@ -434,7 +434,7 @@ public class MarkdownTest {
                 Assert.Equal(0, mkfifo.ExitCode);
             }
             File.CreateSymbolicLink(System.IO.Path.Combine(directory, "fifo-link.png"), fifo);
-            File.CreateSymbolicLink(circles, System.IO.Path.GetFullPath(TestSupport.RepoPath("images/circles.png")));
+            File.CreateSymbolicLink(circles, System.IO.Path.GetFullPath(TestSupport.RepoPath("resources/images/circles.png")));
             PDF pdf = new PDF(new MemoryStream());
             Font font = new Font(pdf, CoreFont.HELVETICA);
             Markdown markdown = new Markdown(font, font, font, font, font).SetImageDirectory(directory);
@@ -590,6 +590,39 @@ public class MarkdownTest {
         for (int i = 0; i < drawn.contents.Count; i++) {
             Assert.True(drawn.contents[i].Contains("0.69 0.71 0.75 RG"), "no bar on page " + i);
         }
+    }
+
+    // A table split over pages whose header wraps tall starts the next page
+    // when the header does not fit: drawn at the foot of the page, it ran off
+    // it (the review of 30 October 2026, E3).
+    [Fact]
+    public void ATallHeaderOfATableStaysOnThePage() {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 25; i++) {
+            text.Append("line ").Append(i).Append("\n\n");
+        }
+        StringBuilder header = new StringBuilder();
+        StringBuilder rule = new StringBuilder();
+        StringBuilder row = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            header.Append("| ");
+            for (int j = 0; j < 20; j++) {
+                header.Append("word ");
+            }
+            header.Append(' ');
+            rule.Append("|---");
+            row.Append("| a ");
+        }
+        text.Append(header).Append("|\n").Append(rule).Append("|\n");
+        for (int i = 0; i < 80; i++) {
+            text.Append(row).Append("|\n");
+        }
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<Page> pages = new List<Page>();
+        new Markdown(font, font, font, font, font).DrawOn(pdf, text.ToString(), pages, Letter.PORTRAIT);
+        pdf.AddPages(pages);
+        pdf.Complete();
     }
 }
 }

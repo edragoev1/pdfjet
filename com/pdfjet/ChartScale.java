@@ -15,6 +15,12 @@ import java.math.*;
  * the shortening of a long name, and the test of a value to draw.
  */
 final class ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // setFractionDigits(1 << 30) hung, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    static final int MAX_DIGITS = 100;
+    static final String TOO_MANY_DIGITS = "The fraction digits of a chart are at most 100.";
+
     private ChartScale() {
     }
 
@@ -182,6 +188,11 @@ final class ChartScale {
             round.numOfGridLines = roundLines(minValue, maxValue, numOfGridLines);
             return round;
         }
+        // The product of a step can round to inside the values: 591 steps of
+        // 0.1 are 59.100002, and a point at 59.1 was not on its axis (the
+        // review of 30 October 2026)
+        round.maxValue = Math.max(round.maxValue, maxValue);
+        round.minValue = Math.min(round.minValue, minValue);
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Math.round((round.maxValue - round.minValue) / step);
@@ -463,6 +474,50 @@ final class ChartScale {
      */
     static boolean onAxis(float value, Axis axis) {
         return value >= axis.min && value <= axis.max;
+    }
+
+    /**
+     * The words of a chart for its values outside a range that is set, of
+     * which it would say nothing otherwise, or "" when there are none: "1 point
+     * outside the range", "2 points outside the range".
+     *
+     * @param count the number of values outside.
+     * @param noun what the chart counts, in the singular.
+     * @return the note.
+     */
+    static String outsideNote(int count, String noun) {
+        if (count == 0) {
+            return "";
+        }
+        return count + " " + noun + (count > 1 ? "s" : "") + " outside the range";
+    }
+
+    /**
+     * The description set by the caller with the note, if any, as a sentence
+     * after it: the note is in the figure, and in what a screen reader gets of
+     * it, whoever wrote the description.
+     *
+     * @param description the description set.
+     * @param note the note, or "".
+     * @return the description.
+     */
+    static String withNote(String description, String note) {
+        if (note.isEmpty()) {
+            return description;
+        }
+        return description + SimpleBarChart.punctuationAfter(description, ".") + " " + note + ".";
+    }
+
+    /**
+     * Draws the note, small and in the gray of the numbers, on the baseline,
+     * its right end at x and inside the width from lo to hi, past which it is
+     * shortened.
+     */
+    static void drawOutsideNote(Page page, Font font, float size, String note,
+            float x, float lo, float hi, float baseline) {
+        String text = shorten(font, size, note, hi - lo);
+        page.drawString(font, size, text, Math.max(lo, x - font.stringWidth(size, text)), baseline,
+                Util.toRGB(SimpleBarChart.MUTED), null);
     }
 
     /**

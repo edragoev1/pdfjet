@@ -109,7 +109,7 @@ import Testing
         #expect(stacked.contains(TestSupport.hex("50")) && stacked.contains(TestSupport.hex("85")), "\(stacked)")
     }
 
-    // The first series in navy, the grid lines light gray and solid, the text
+    // The first series in blue, the grid lines light gray and solid, the text
     // gray or ink, and no black line or text.
     @Test func theDefaultLookIsQuiet() {
         let pdf = TestSupport.newPDF()
@@ -117,20 +117,26 @@ import Testing
         let chart = self.chart(pdf).setCategories("a", "b").setTitle("t").setSubtitle("s")
         chart.addSeries("one", [20.0, 75.0]).addSeries("two", [30.0, 10.0])
         let content = draw(chart, page)
-        #expect(content.contains("0.12 0.23 0.37 rg"))
-        #expect(content.contains("0.44 0.58 0.76 rg"))
+        #expect(content.contains("0.31 0.47 0.65 rg"))     // blue
+        #expect(content.contains("0.95 0.56 0.17 rg"))     // orange
         #expect(content.contains("0.88 0.89 0.91 RG\n0.5 w\n"))     // Thin and solid
         #expect(!content.contains("0 0 0 RG") && !content.contains("0 0 0 rg"))
         #expect(TestSupport.fillColorBefore(content, "t") == "0.13 0.15 0.17 rg")
         #expect(TestSupport.fillColorBefore(content, "s") == "0.37 0.41 0.45 rg")
         // A label on a dark bar is white, on a light one ink: whichever
-        // contrasts more. On sage and on the old sage, which a rule by
-        // brightness gave white, ink contrasts more; on slate white.
+        // contrasts more. On sage, which a rule by brightness gave white, ink
+        // contrasts more; on slate white. Where neither contrasts 4.5:1, as
+        // on the old sage, ink 4.26:1, and on the red, the purple and the
+        // brown of the palette, a near black does.
         #expect(BarChart.labelColorOn(0x1F3A5F) == Color.white)
         #expect(BarChart.labelColorOn(0x6F95C2) == 0x22262B)
         #expect(BarChart.labelColorOn(0x76987C) == 0x22262B)
-        #expect(BarChart.labelColorOn(0x6B8F71) == 0x22262B)
         #expect(BarChart.labelColorOn(0x4F7A8C) == Color.white)
+        #expect(BarChart.labelColorOn(0x4E79A7) == Color.white)     // blue
+        #expect(BarChart.labelColorOn(0xF28E2C) == 0x22262B)        // orange
+        for color: Int32 in [0x6B8F71, 0xE15759, 0xAF7AA1, 0x9C755F] {
+            #expect(BarChart.labelColorOn(color) == 0x111111)
+        }
     }
 
     @Test func barsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits() {
@@ -146,7 +152,8 @@ import Testing
         #expect(content.contains(TestSupport.hex("sub")), "\(content)")
         #expect(content.contains("1 0 0 rg"), "\(content)")    // the first bar
         #expect(content.contains("0 0 1 rg"), "\(content)")    // the second bar
-        #expect(TestSupport.fillColorBefore(content, "6,650") == "1 1 1 rg")    // inside the first bar
+        // inside the red bar, on which white contrasts 4:1
+        #expect(TestSupport.fillColorBefore(content, "6,650") == "0.07 0.07 0.07 rg")
         #expect(TestSupport.fillColorBefore(content, "sub") == "0.37 0.41 0.45 rg")
         #expect(content.contains(TestSupport.hex("12")), "\(content)")     // too short: next to the bar
     }
@@ -217,11 +224,11 @@ import Testing
         #expect(swatch != nil && own != nil && swatch!.lowerBound < own!.lowerBound, "\(content)")
     }
 
-    // The height of the first bar the content fills in navy.
+    // The height of the first bar the content fills in blue.
     private func barHeight(_ content: String) -> Float {
-        guard let navy = content.range(of: "0.12 0.23 0.37 rg\n"),
-              let re = content.range(of: " re\n", range: navy.upperBound..<content.endIndex) else {
-            Issue.record("no navy bar in \(content)")
+        guard let blue = content.range(of: "0.31 0.47 0.65 rg\n"),
+              let re = content.range(of: " re\n", range: blue.upperBound..<content.endIndex) else {
+            Issue.record("no blue bar in \(content)")
             return 0
         }
         let start = content[..<re.lowerBound].lastIndex(of: "\n").map { content.index(after: $0) }
@@ -333,5 +340,141 @@ import Testing
                 .addSeries("", [5, 15]), page)
         #expect(content.contains("<" + TestSupport.hex("15") + ">"), "\(content)")
         #expect(!content.contains("<" + TestSupport.hex("5") + ">"), "\(content)")
+    }
+
+    // The content of the chart, on a page of its own.
+    private func noteContent(_ pdf: PDF, _ chart: BarChart) -> String {
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart.drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    private func noteChart(_ pdf: PDF) -> BarChart {
+        return chart(pdf).setCategories("a", "b", "c").addSeries("", [1, 2, 3])
+    }
+
+    // A value of a line series outside a range that is set cuts its line, and
+    // the chart says so, in print and in its description, as SimpleLineChart
+    // does. A value that is no number is not outside, nor is a bar, and a chart
+    // with none outside adds nothing.
+    @Test func itSaysHowManyValuesOfItsLinesAreOutsideTheRange() {
+        let pdf = TestSupport.newPDF()
+        let one = "1 value outside the range"
+        let two = "2 values outside the range"
+        let cases: [(BarChart, String)] = [
+            (noteChart(pdf).addLineSeries("x", [1, 100, 3]), ""),
+            (noteChart(pdf).addLineSeries("x", [0, 5, 10]).setValueAxisRange(0, 10), ""),
+            (noteChart(pdf).addLineSeries("x", [1, Float.nan, Float.infinity]).setValueAxisRange(0, 10), ""),
+            (noteChart(pdf).addLineSeries("x", [1, 2, 3, 50]).setValueAxisRange(0, 10), ""),
+            (chart(pdf).setCategories("a").addSeries("", [50]).setValueAxisRange(0, 10), ""),
+            (noteChart(pdf).addLineSeries("x", [1, 50, 3]).setValueAxisRange(0, 10), one),
+            (noteChart(pdf).addLineSeries("x", [1, 2, -50]).setValueAxisRange(0, 10), one),
+            (noteChart(pdf).addLineSeries("x", [1, 50, -50]).setValueAxisRange(0, 10), two),
+            (noteChart(pdf).addLineSeries("x", [1, 50, 3]).addLineSeries("y", [50, 2, 3])
+                    .setValueAxisRange(0, 10), two),
+            (noteChart(pdf).setHorizontal(true).addLineSeries("x", [1, 50, 3]).setValueAxisRange(0, 10), one)
+        ]
+        for (chart, note) in cases {
+            let content = noteContent(pdf, chart)
+            let description = chart.getAltDescription(2)
+            if note.isEmpty {
+                #expect(!content.contains(TestSupport.hex(" outside")), "\(description)")
+                #expect(!description.contains("outside"), "\(description)")
+            } else {
+                #expect(content.contains("<" + TestSupport.hex(note) + ">"), "\(note)")
+                #expect(description.hasSuffix("; " + note + "."), "\(description)")
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the categories and the x title, the plot
+    // and the title that much higher; its right end at the plot's.
+    @Test func theNoteIsUnderThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let note = "1 value outside the range"
+        let size = font.getSize()
+        let small = 0.8 * size
+        let body = font.getBodyHeight()
+        for title in ["", "year"] {
+            func drawn(_ middle: Float) -> String {
+                return noteContent(pdf, chart(pdf).setXAxisTitle(title).setCategories("a", "b", "c")
+                        .addSeries("", [1, 2, 3]).addLineSeries("", [1, middle, 3]).setValueAxisRange(0, 10))
+            }
+            let without = drawn(2)
+            let with = drawn(50)
+            let at = TestSupport.positionOf(with, note)
+            let end = at[0] + font.stringWidth(small, note)
+            #expect(abs(350 - body / 2 - end) <= 0.1, "the right end")
+            #expect(at[0] >= 50 && end <= 350, "the note at \(at[0])")
+            #expect(abs(792 - (250 - body / 2) - at[1]) <= 0.01, "the baseline")
+            #expect(abs(TestSupport.positionOf(without, "0")[1] + 1.4 * small - TestSupport.positionOf(with, "0")[1])
+                    <= 0.02, "the plot")
+            var last = TestSupport.positionOf(with, "a")[1]
+            if !title.isEmpty {
+                last = TestSupport.positionOf(with, title)[1]
+                #expect(abs(TestSupport.positionOf(without, title)[1] + 1.4 * small - last) <= 0.02, "the x title")
+            }
+            #expect(at[1] + font.getAscent(small) <= last - font.getDescent(size), "the note over the row above it")
+            #expect(TestSupport.fillColorBefore(with, "0") == TestSupport.fillColorBefore(with, note))
+        }
+        // In a chart too narrow for it, shortened and inside
+        let narrow = noteContent(pdf, chart(pdf).setSize(100, 200).setCategories("a")
+                .addSeries("", [1]).addLineSeries("", [50]).setValueAxisRange(0, 10))
+        #expect(TestSupport.positionOf(narrow, "1 value")[0] >= 50)
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    @Test func theNoteFollowsADescriptionThatIsSet() {
+        let chart = chart(TestSupport.newPDF()).setCategories("a", "b")
+                .addLineSeries("", [1, 2]).setAltDescription("A line")
+        #expect(chart.getAltDescription(2) == "A line")
+        chart.addLineSeries("", [1, 50]).setValueAxisRange(0, 10)
+        #expect(chart.getAltDescription(2) == "A line. 1 value outside the range.")
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    @Test func theNoteIsInTheFigure() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        BarChart(font, font).setSize(300, 200).setCategories("a", "b").setValueAxisRange(0, 10)
+                .addLineSeries("", [1, 50]).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.components(separatedBy: "BDC\n").count == 2)
+        let parts = content.components(separatedBy: "EMC\n")
+        #expect(parts.count == 2 && !parts[1].contains("ET\n"))
+        #expect(page.structures[0].altDescription?.hasSuffix("; 1 value outside the range.") == true)
+    }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    @Test func theNoteNeverCostsThePlot() {
+        let pdf = TestSupport.newPDF()
+        func plotChart(_ height: Float, _ middle: Float) -> BarChart {
+            return chart(pdf).setSize(300, height).setCategories("a", "b", "c").setValueAxisRange(0, 10)
+                    .addLineSeries("", [1, middle, 3])
+        }
+        // The least height that draws, found from below
+        var height: Float = 1
+        while !noteContent(pdf, plotChart(height, 2)).contains(" Td\n") {
+            height += 0.25
+        }
+        for h in [height, height + 1, height + 5] {
+            let without = noteContent(pdf, plotChart(h, 2))
+            let chart = plotChart(h, 50)
+            let with = noteContent(pdf, chart)
+            #expect(!with.contains(TestSupport.hex(" outside")), "the note left no room for the plot")
+            #expect(with.contains("W\nn\n"), "the plot is not drawn")
+            #expect(without.components(separatedBy: " Td\n").count == with.components(separatedBy: " Td\n").count,
+                    "the plot is not drawn")
+            #expect(chart.getAltDescription(2).hasSuffix("; 1 value outside the range."))
+        }
+        // With the room, the note
+        #expect(noteContent(pdf, plotChart(height + 20, 50)).contains(TestSupport.hex(" outside")))
     }
 }

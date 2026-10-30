@@ -517,7 +517,7 @@ public sealed class ReviewLayoutTest : IDisposable {
 
     [Fact]
     public void MarkdownReadsTheSourceOfAnImageTheSameWayInEveryPort() {
-        string images = TestSupport.RepoPath("images");
+        string images = TestSupport.RepoPath("resources/images");
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         Markdown markdown = new Markdown(font, font, font, font, font).SetImageDirectory(images);
         Dictionary<string, bool> sources = new Dictionary<string, bool> {

@@ -202,7 +202,7 @@ class FontWriter {
     // Writes a stream object of the data, compressed.
     static func addCompressedStream(_ pdf: PDF, _ data: [UInt8]) {
         var compressed = [UInt8]()
-        FlateEncode(&compressed, data)
+        FlateEncode(&compressed, data, pdf.flateMemory)
         compressed = pdf.encrypted(compressed)
         pdf.newObj()
         pdf.append(Token.beginDictionary)

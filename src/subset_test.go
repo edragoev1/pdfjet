@@ -37,6 +37,10 @@ func testSubsetGlyph(t *testing.T, font []byte, gid int) []byte {
 	return font[glyf+start : glyf+end]
 }
 
+// testSubsetPlex is IBM Plex Sans, which has the short offsets of loca; the
+// subsets of a font with the long ones read Cascadia Mono or IBM Plex Math.
+const testSubsetPlex = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+
 // testSubsetUsed returns the glyphs used, as Font records them.
 func testSubsetUsed(gids ...int) []bool {
 	used := make([]bool, 0x10000)
@@ -47,17 +51,23 @@ func testSubsetUsed(gids ...int) []bool {
 }
 
 func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
-	// In Noto Sans, Ä (134) is made of A (36) and the dieresis (106), and ǅ
-	// (913) of D (39), z (93) and the caron (331).
-	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
-	subset, kept, err := subsetTrueType(ttf, testSubsetUsed(134, 913))
+	// In Cascadia Mono, whose loca has the long offsets, as that of Noto
+	// Sans, which this test read before 9.1.7, had: Ä (16) is made of A (1)
+	// and the dieresis of capitals (3051), and ặ (229) of a (225), the dot
+	// below (3029) and the breve (3020); 4,319 glyphs. Noto Sans had Ä (134)
+	// of A (36) and the dieresis (106), and ǅ (913) of three.
+	ttf := testOpenTypeFontBytes(t, "fonts/CascadiaMono/CascadiaMono-Regular.ttf")
+	if format := binary.BigEndian.Uint16(ttf[testOpenTypeTable(t, ttf, "head")+50:]); format != 1 {
+		t.Fatalf("loca format %d", format)
+	}
+	subset, kept, err := subsetTrueType(ttf, testSubsetUsed(16, 229))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(kept) != 4503 {
-		t.Fatalf("%d glyphs, not 4503", len(kept))
+	if len(kept) != 4319 {
+		t.Fatalf("%d glyphs, not 4319", len(kept))
 	}
-	want := map[int]bool{0: true, 134: true, 36: true, 106: true, 913: true, 39: true, 93: true, 331: true}
+	want := map[int]bool{0: true, 16: true, 1: true, 3051: true, 229: true, 225: true, 3029: true, 3020: true}
 	for gid, keep := range kept {
 		if keep != want[gid] {
 			t.Errorf("glyph %d kept: %v", gid, keep)
@@ -102,10 +112,12 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 }
 
 func TestSubsetOfAFontWithShortOffsets(t *testing.T) {
-	ttf := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	// IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
+	// Thai's had.
+	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	head := testOpenTypeTable(t, ttf, "head")
 	if binary.BigEndian.Uint16(ttf[head+50:]) != 0 {
-		t.Skip("the font has long offsets")
+		t.Fatal("the font has long offsets")
 	}
 	gid := 5
 	subset, _, err := subsetTrueType(ttf, testSubsetUsed(gid))
@@ -122,7 +134,7 @@ func TestSubsetOfAFontWithShortOffsets(t *testing.T) {
 }
 
 func TestSubsetIsRefusedByAFontWhoseLicenseForbidsIt(t *testing.T) {
-	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, testSubsetPlex)
 	os2 := testOpenTypeTable(t, ttf, "OS/2")
 	if _, _, err := subsetTrueType(testOpenTypeWith(ttf, os2+8, 0x0100), testSubsetUsed(36)); err == nil {
 		t.Error("the font was subset")
@@ -164,19 +176,22 @@ func testSubsetProgram(t *testing.T, raw string) []byte {
 }
 
 func TestSubsetATrueTypeFontIsEmbeddedAsASubsetUnderATaggedName(t *testing.T) {
-	for _, path := range []string{"fonts/NotoSans/NotoSans-Regular.ttf"} {
+	for _, path := range []string{testSubsetPlex} {
 		raw := testSubsetDoc(t, compliance.PDF_1_7, path, true, "Ä")
-		tagged := regexp.MustCompile(`/BaseFont /[A-Z]{6}\+NotoSans-Regular\n`).FindAllString(raw, -1)
+		tagged := regexp.MustCompile(`/BaseFont /[A-Z]{6}\+IBMPlexSans\n`).FindAllString(raw, -1)
 		if len(tagged) != 2 || !strings.Contains(raw, "/FontName /"+tagged[0][len("/BaseFont /"):]) {
 			t.Errorf("%s: the names %q", path, tagged)
 		}
+		// In IBM Plex Sans, Ä (395) is made of A (33) and the dieresis of
+		// capitals (971), and B is 34. Noto Sans had Ä (134), A (36), the
+		// dieresis (106) and B (37).
 		program := testSubsetProgram(t, raw)
-		if len(testSubsetGlyph(t, program, 134)) == 0 || len(testSubsetGlyph(t, program, 36)) == 0 ||
-			len(testSubsetGlyph(t, program, 37)) != 0 {
+		if len(testSubsetGlyph(t, program, 395)) == 0 || len(testSubsetGlyph(t, program, 33)) == 0 ||
+			len(testSubsetGlyph(t, program, 34)) != 0 {
 			t.Errorf("%s: the glyphs kept", path)
 		}
-		// The widths of the glyphs kept: .notdef, A, the dieresis and Ä.
-		if !regexp.MustCompile(`/W \[\n0\[\d+ \]\n36\[\d+ \]\n106\[\d+ \]\n134\[\d+ \]\]\n`).MatchString(raw) {
+		// The widths of the glyphs kept: .notdef, A, Ä and the dieresis.
+		if !regexp.MustCompile(`/W \[\n0\[\d+ \]\n33\[\d+ \]\n395\[\d+ \]\n971\[\d+ \]\]\n`).MatchString(raw) {
 			t.Errorf("%s: the widths", path)
 		}
 		if strings.Contains(raw, "/CIDSet") {
@@ -186,10 +201,10 @@ func TestSubsetATrueTypeFontIsEmbeddedAsASubsetUnderATaggedName(t *testing.T) {
 }
 
 func TestSubsetAFontSetToStayWholeIsEmbeddedWhole(t *testing.T) {
-	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
-	for _, path := range []string{"fonts/NotoSans/NotoSans-Regular.ttf"} {
+	ttf := testOpenTypeFontBytes(t, testSubsetPlex)
+	for _, path := range []string{testSubsetPlex} {
 		raw := testSubsetDoc(t, compliance.PDF_1_7, path, false, "Ä")
-		if !strings.Contains(raw, "/BaseFont /NotoSans-Regular\n") || strings.Contains(raw, "+NotoSans") {
+		if !strings.Contains(raw, "/BaseFont /IBMPlexSans\n") || strings.Contains(raw, "+IBMPlexSans") {
 			t.Errorf("%s: the name", path)
 		}
 		if !bytes.Equal(testSubsetProgram(t, raw), ttf) {
@@ -199,21 +214,22 @@ func TestSubsetAFontSetToStayWholeIsEmbeddedWhole(t *testing.T) {
 }
 
 func TestSubsetTwoFontsOfOneFileShareOneSubset(t *testing.T) {
-	raw := testSubsetDoc(t, compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B")
+	raw := testSubsetDoc(t, compliance.PDF_1_7, testSubsetPlex, true, "A", "B")
 	if n := strings.Count(raw, "/Length1 "); n != 1 {
 		t.Fatalf("%d font programs", n)
 	}
 	program := testSubsetProgram(t, raw)
-	if len(testSubsetGlyph(t, program, 36)) == 0 || len(testSubsetGlyph(t, program, 37)) == 0 {
+	// A and B, 33 and 34 in IBM Plex Sans; 36 and 37 in Noto Sans.
+	if len(testSubsetGlyph(t, program, 33)) == 0 || len(testSubsetGlyph(t, program, 34)) == 0 {
 		t.Error("the glyphs of one of the fonts are missing")
 	}
-	if n := len(regexp.MustCompile(`/BaseFont /[A-Z]{6}\+NotoSans-Regular\n`).FindAllString(raw, -1)); n != 3 {
+	if n := len(regexp.MustCompile(`/BaseFont /[A-Z]{6}\+IBMPlexSans\n`).FindAllString(raw, -1)); n != 3 {
 		t.Errorf("%d tagged names, not 3: two Type0 fonts and their CID font", n)
 	}
 }
 
 func TestSubsetAPDFA1HasTheCIDSetOfTheGlyphsKept(t *testing.T) {
-	raw := testSubsetDoc(t, compliance.PDF_A_1B, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A")
+	raw := testSubsetDoc(t, compliance.PDF_A_1B, testSubsetPlex, true, "A")
 	match := regexp.MustCompile(`/CIDSet (\d+) 0 R\n`).FindStringSubmatch(raw)
 	if match == nil {
 		t.Fatal("no CIDSet")
@@ -225,10 +241,11 @@ func TestSubsetAPDFA1HasTheCIDSetOfTheGlyphsKept(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Glyphs 0 and 36 of 4503.
-	want := make([]byte, (4503+7)/8)
+	// Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A at
+	// 36 of 4,503.
+	want := make([]byte, (1019+7)/8)
 	want[0] = 0x80
-	want[36/8] |= 0x80 >> (36 % 8)
+	want[33/8] |= 0x80 >> (33 % 8)
 	if !bytes.Equal(bits, want) {
 		t.Error("the CIDSet")
 	}
@@ -262,12 +279,7 @@ func testSubsetInExistingPDF(t *testing.T, path string, subset bool) []*PDFobj {
 		"<< /Type /Catalog /Pages 2 0 R >>",
 		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
 		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>"))
-	file, err := os.Open(testRepoPath(t, path))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer file.Close()
-	font := NewFontForObjects(&objects, file).SetSubset(subset)
+	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, path))).SetSubset(subset)
 	doc := testNewDoc()
 	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
 	page.AddFontResource(font, &objects)
@@ -292,11 +304,11 @@ func testSubsetFontName(t *testing.T, objects []*PDFobj) string {
 }
 
 func TestSubsetOfATrueTypeFontAddedToAnExistingPDF(t *testing.T) {
-	path := "fonts/NotoSans/NotoSans-Regular.ttf"
+	path := testSubsetPlex
 	whole := len(testOpenTypeFontBytes(t, path))
 	objects := testSubsetInExistingPDF(t, path, true)
 	name := testSubsetFontName(t, objects)
-	if !regexp.MustCompile(`^/[A-Z]{6}\+NotoSans-Regular$`).MatchString(name) {
+	if !regexp.MustCompile(`^/[A-Z]{6}\+IBMPlexSans$`).MatchString(name) {
 		t.Errorf("BaseFont %s", name)
 	}
 	testWant(t, name, testFindObject(objects, "/FontName").GetValue("/FontName"))
@@ -322,7 +334,7 @@ func TestSubsetOfATrueTypeFontAddedToAnExistingPDF(t *testing.T) {
 }
 
 func TestSubsetOfACFFFontAddedToAnExistingPDF(t *testing.T) {
-	objects := testSubsetInExistingPDF(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true)
+	objects := testSubsetInExistingPDF(t, "tests/fonts/IBMPlexSans-Regular.otf", true)
 	name := testSubsetFontName(t, objects)
 	if !regexp.MustCompile(`^/[A-Z]{6}\+IBMPlexSans$`).MatchString(name) {
 		t.Errorf("BaseFont %s", name)
@@ -333,9 +345,9 @@ func TestSubsetOfACFFFontAddedToAnExistingPDF(t *testing.T) {
 }
 
 func TestSetSubsetFalseKeepsAFontAddedToAnExistingPDFWhole(t *testing.T) {
-	path := "fonts/NotoSans/NotoSans-Regular.ttf"
+	path := testSubsetPlex
 	objects := testSubsetInExistingPDF(t, path, false)
-	testWant(t, "/NotoSans-Regular", testSubsetFontName(t, objects))
+	testWant(t, "/IBMPlexSans", testSubsetFontName(t, objects))
 	length1, _ := strconv.Atoi(testFindObject(objects, "/Length1").GetValue("/Length1"))
 	if whole := len(testOpenTypeFontBytes(t, path)); length1 != whole {
 		t.Errorf("/Length1 %d, the whole font %d", length1, whole)
@@ -355,7 +367,7 @@ func TestSubsetATableTwiceIsRefused(t *testing.T) {
 	// The gasp table's entry made a second head table of 8 bytes, whose
 	// checksum adjustment the subset wrote past its end (the review of
 	// 9 October 2026).
-	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, testSubsetPlex)
 	gasp := testOpenTypeEntry(t, ttf, "gasp")
 	copy(ttf[gasp:], "head")
 	binary.BigEndian.PutUint32(ttf[gasp+12:], 8)
@@ -363,7 +375,7 @@ func TestSubsetATableTwiceIsRefused(t *testing.T) {
 }
 
 func TestSubsetALocaFormatOtherThan0Or1IsRefused(t *testing.T) {
-	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, "tests/fonts/IBMPlexMath-Regular.ttf")
 	binary.BigEndian.PutUint16(ttf[testOpenTypeTable(t, ttf, "head")+50:], 0xFFFF)
 	testSubsetRefused(t, ttf, testSubsetUsed(36))
 }
@@ -373,7 +385,7 @@ func TestSubsetOverlappingGlyphsAreRefused(t *testing.T) {
 	// them copied it again for each (the review of 9 October 2026: 112 KB
 	// made into 384 MB). A subset is never larger than the glyf table and the
 	// padding of its glyphs.
-	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, testSubsetPlex)
 	head := testOpenTypeTable(t, ttf, "head")
 	loca := testOpenTypeTable(t, ttf, "loca")
 	glyfLength := int(binary.BigEndian.Uint32(ttf[testOpenTypeEntry(t, ttf, "glyf")+12:]))

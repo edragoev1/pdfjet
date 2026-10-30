@@ -41,8 +41,8 @@ public class Example_11 {
         let xy = textBlock.drawOn(page)
 
         let imageFiles = [
-            "images/ee-map.png",
-            "images/spain-admin.jpg",
+            "resources/images/ee-map.png",
+            "resources/images/spain-admin.jpg",
         ]
         let titles = [
             "The European Union",

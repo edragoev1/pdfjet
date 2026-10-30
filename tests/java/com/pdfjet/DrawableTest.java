@@ -39,8 +39,8 @@ class DrawableTest {
         m.put("TextLine", (pdf, font) -> new TextLine(font, "Hello line"));
         m.put("CompositeTextLine", (pdf, font) -> new CompositeTextLine(0f, 0f).addComponent(new TextLine(font, "Composite")));
         m.put("Title", (pdf, font) -> new Title(font, "Title", 0f, 0f));
-        m.put("Image", (pdf, font) -> new Image(pdf, TestSupport.open("images/up-arrow.png")));
-        m.put("SVGImage", (pdf, font) -> new SVGImage(TestSupport.open("images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg")));
+        m.put("Image", (pdf, font) -> new Image(pdf, TestSupport.open("resources/images/up-arrow.png")));
+        m.put("SVGImage", (pdf, font) -> new SVGImage(TestSupport.open("resources/images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg")));
         m.put("Barcode", (pdf, font) -> new Barcode(Barcode.CODE_128, "Hello"));
         m.put("QRCode", (pdf, font) -> new QRCode("Hello", ErrorCorrectionLevel.M));
         m.put("PDF417", (pdf, font) -> new PDF417("Hello"));

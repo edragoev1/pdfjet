@@ -17,14 +17,26 @@ import Testing
 
     /// Reads the PDF, which must take less than twenty seconds, and returns its
     /// objects, or nil when it cannot be read. The limit is four times that of
-    /// the other ports, as the tests run in a debug build, and in parallel: the
-    /// streams of theLengthOfAStreamIsFoundByItsNumber take seven seconds then.
+    /// the other ports, as the tests run in a debug build, and in parallel.
     private func readQuickly(_ pdf: [UInt8], sourceLocation: SourceLocation = #_sourceLocation) -> [PDFobj]? {
         let start = Date()
         let objects = try? TestSupport.read(pdf)
         let elapsed = Date().timeIntervalSince(start)
         #expect(elapsed < 20.0, "reading \(pdf.count) bytes took \(elapsed) s", sourceLocation: sourceLocation)
         return objects
+    }
+
+    /// Expects the PDF of size 2n to take less than three times the PDF of size
+    /// n to read, and returns the objects of the PDF of size n, or nil when it
+    /// cannot be read.
+    private func readLinearly(_ n: Int, sourceLocation: SourceLocation = #_sourceLocation,
+            _ pdf: (Int) -> [UInt8]) -> [PDFobj]? {
+        let small = pdf(n)
+        let large = pdf(2 * n)
+        expectLinearTime(n, sourceLocation: sourceLocation) { k in
+            _ = try? TestSupport.read(k == n ? small : large)
+        }
+        return try? TestSupport.read(small)
     }
 
     private func pdfWithObjects(_ objects: [String]) -> [UInt8] {
@@ -201,12 +213,14 @@ import Testing
         // end of the PDF, and its endstream was looked for there 10,000 times.
         // What the reader may read in all is eight times the length of the
         // PDF: the streams past it keep their /Length.
-        var body = TestSupport.bytes("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
-        body += [UInt8](repeating: 0x78, count: 1000000)  // "x"
-        let xref = body.count
-        body += TestSupport.bytes("\nxref\n" + String(repeating: "1 1\n0000000009 00000 n \n", count: 10000))
-        body += TestSupport.bytes("trailer\n<< /Size 2 >>\nstartxref\n\(xref + 1)\n%%EOF\n")
-        let objects = try #require(readQuickly(body))
+        let objects = try #require(readLinearly(2000) { entries in
+            var body = TestSupport.bytes("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
+            body += [UInt8](repeating: 0x78, count: 100 * entries)  // "x"
+            let xref = body.count
+            body += TestSupport.bytes("\nxref\n" + String(repeating: "1 1\n0000000009 00000 n \n", count: entries))
+            body += TestSupport.bytes("trailer\n<< /Size 2 >>\nstartxref\n\(xref + 1)\n%%EOF\n")
+            return body
+        })
         #expect(objects.count == 1)
         #expect(objects[0].getValue("/Length") == "1")
     }
@@ -234,13 +248,15 @@ import Testing
     @Test func anObjectThatTheTableListsManyTimesIsReadWithinABudget() throws {
         // The object with no endobj was read to the end of the PDF for each of
         // its 1,000 entries.
-        var body = TestSupport.bytes("%PDF-1.7\n1 0 obj\n<< /A [")
-        body += TestSupport.bytes(String(repeating: "1 ", count: 500000))
-        body += TestSupport.bytes("] >>\n")
-        let xref = body.count
-        body += TestSupport.bytes("xref\n" + String(repeating: "1 1\n0000000009 00000 n \n", count: 1000))
-        body += TestSupport.bytes("trailer\n<< /Size 2 >>\nstartxref\n\(xref)\n%%EOF\n")
-        let objects = try #require(readQuickly(body))
+        let objects = try #require(readLinearly(100) { entries in
+            var body = TestSupport.bytes("%PDF-1.7\n1 0 obj\n<< /A [")
+            body += TestSupport.bytes(String(repeating: "1 ", count: 500 * entries))
+            body += TestSupport.bytes("] >>\n")
+            let xref = body.count
+            body += TestSupport.bytes("xref\n" + String(repeating: "1 1\n0000000009 00000 n \n", count: entries))
+            body += TestSupport.bytes("trailer\n<< /Size 2 >>\nstartxref\n\(xref)\n%%EOF\n")
+            return body
+        })
         #expect(objects.count == 1)
         #expect(objects[0].dict.prefix(7).joined(separator: " ") == "1 0 obj << /A [ 1")
     }
@@ -292,18 +308,20 @@ import Testing
 
     @Test func theLengthOfAStreamIsFoundByItsNumber() throws {
         // Every stream looked for its /Length among all the objects.
-        var objects = [
-            "<< /Type /Catalog /Pages 2 0 R >>",
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
-        ]
-        for _ in 0..<60000 {
-            objects.append("<< /Length \(objects.count + 2) 0 R >>\nstream\nq Q\nendstream")
-            objects.append("3")
-        }
-        let read = try #require(readQuickly(pdfWithObjects(objects)))
-        #expect(read.count == 120003)
-        #expect(TestSupport.latin1(read[119999].getData()) == "q Q")
+        let read = try #require(readLinearly(10000) { count in
+            var objects = [
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            ]
+            for _ in 0..<count {
+                objects.append("<< /Length \(objects.count + 2) 0 R >>\nstream\nq Q\nendstream")
+                objects.append("3")
+            }
+            return pdfWithObjects(objects)
+        })
+        #expect(read.count == 20003)
+        #expect(TestSupport.latin1(read[19999].getData()) == "q Q")
     }
 
     @Test func theLengthOfAStreamIsItsNewestVersion() throws {
@@ -473,5 +491,111 @@ import Testing
         // An offset past the end of the stream, which overflowed an int of 32 bits.
         #expect(readError("1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj")
                 == "(no error)")
+    }
+
+    // Returns the bytes as LZW data with a code for each, in codes that get one
+    // bit longer as the /EarlyChange says.
+    private func lzw(_ data: [UInt8], _ earlyChange: Int) -> [UInt8] {
+        var output = [UInt8]()
+        var bits = 0
+        var bitCount = 0
+        func write(_ code: Int, _ length: Int) {
+            bits = (bits << length) | code
+            bitCount += length
+            while bitCount >= 8 {
+                bitCount -= 8
+                output.append(UInt8((bits >> bitCount) & 0xFF))
+            }
+            bits &= (1 << bitCount) - 1
+        }
+        var next = 258
+        var length = 9
+        write(256, length)
+        for byte in data {
+            write(Int(byte), length)
+            next += 1
+            if next + earlyChange - 1 >= (1 << length) {
+                length += 1
+            }
+        }
+        write(257, length)
+        output.append(UInt8((bits << (8 - bitCount)) & 0xFF))
+        return output
+    }
+
+    private func hex(_ bytes: [UInt8]) -> String {
+        return bytes.map { String(format: "%02x", $0) }.joined()
+    }
+
+    // Returns the data of a stream, of hexadecimal digits, with the entries of
+    // its dictionary, in a PDF.
+    private func streamData(_ entries: String, _ hex: String) throws -> [UInt8] {
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+            "<< /Length \(hex.utf8.count) \(entries) >>\nstream\n\(hex)\nendstream"]))
+        return objects[3].getData()
+    }
+
+    @Test func anLZWStreamHasItsEarlyChange() throws {
+        // /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+        // no error (review of 30 October 2026, B7).
+        let data = (0..<600).map { UInt8($0 * $0 % 251) }
+        for earlyChange in [1, 0] {
+            let entries = "/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange \(earlyChange) >>]"
+            #expect(try streamData(entries, hex(lzw(data, earlyChange)) + ">") == data)
+        }
+    }
+
+    @Test func aFlateStreamCanLackItsChecksum() throws {
+        // It was refused, and in an object stream that failed the PDF (review of
+        // 30 October 2026, B8).
+        let data = Array("0 0 1 rg 10 10 50 50 re f\n".utf8)
+        let deflated = TestSupport.deflate(data)
+        #expect(try streamData("/Filter [/ASCIIHexDecode /FlateDecode]", hex(Array(deflated.dropLast(4))) + ">") == data)
+    }
+
+    @Test func aFilterThatIsAnObjectAndACryptFilterAreDecoded() throws {
+        // The data was the raw bytes (review of 30 October 2026, B10).
+        for filter in ["/ASCIIHexDecode", "[/ASCIIHexDecode]"] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+                filter]))
+            #expect(TestSupport.latin1(objects[3].getData()) == "AB", "\(filter)")
+        }
+        #expect(TestSupport.latin1(try streamData(
+                "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")) == "AB")
+    }
+
+    @Test func anIdentityCryptFilterSaysTheStreamIsNotEncrypted() throws {
+        for (entries, wanted) in [
+                ("/Filter /Crypt", true),
+                ("/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]", true),
+                ("/Filter /Crypt /DecodeParms << /Name /StdCF >>", false),
+                ("/Filter /FlateDecode", false)] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 \(entries) >>\nstream\nx\nendstream"]))
+            #expect(objects[3].hasIdentityCrypt() == wanted, "\(entries)")
+        }
+    }
+
+    @Test func aLengthThatIsARealOrNullIsRead() throws {
+        // The PDF was refused (review of 30 October 2026, B11).
+        for length in ["5.0", "null", "5 0 R"] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length \(length) >>\nstream\n0 0 m\nendstream",
+                "5.0"]))
+            #expect(TestSupport.latin1(objects[3].getData()) == "0 0 m", "\(length)")
+        }
     }
 }

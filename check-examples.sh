@@ -29,8 +29,6 @@
 # JAVA8_HOME environment variable or in /opt/jdk8* or /usr/lib/jvm, Node 22.13
 # or later with npm, for pdf.js, Poppler's pdftoppm and pdftotext, and qpdf,
 # all on the PATH. The script stops before it builds anything when one is missing.
-
-bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")" || exit 1
 
 WORK=build/check-examples

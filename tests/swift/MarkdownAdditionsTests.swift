@@ -41,6 +41,145 @@ import Testing
         #expect(!bold.joinsPrevious(1))
     }
 
+    // A hard line break at the end of a text is no break, as in CommonMark,
+    // and the spaces before it are not in the last text line; paragraphs
+    // strips the whitespace at the end of each paragraph.
+    @Test func aHardLineBreakAtTheEndIsNoBreak() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "] {
+            let paragraph = markup.paragraph(text)
+            #expect(paragraph.lines.count == 1, "\(text)")
+            #expect(paragraph.lines.first?.text == "0", "\(text)")
+            #expect(paragraph.lines.first?.lineBreaks == 0, "\(text)")
+            let paragraphs = markup.paragraphs(text)
+            #expect(paragraphs.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.first?.text == "0", "\(text)")
+        }
+        // In bold, and a break before the last line
+        let bold = markup.paragraph("**0**  \n")
+        #expect(bold.lines.count == 1)
+        #expect(bold.lines.first?.text == "0")
+        #expect(bold.lines.first?.lineBreaks == 0)
+        let two = markup.paragraph("one  \ntwo  \n")
+        #expect(MarkdownAdditionsTests.breaks(two) == [true, false])
+        #expect(two.lines.count == 2 && two.lines[1].text == "two")
+        // Spaces at the end without a line break are text in paragraph
+        #expect(markup.paragraph("0  ").lines.first?.text == "0  ")
+        #expect(markup.paragraphs("0  ").first?.lines.first?.text == "0")
+    }
+
+    // The spaces before a hard line break are not in the text line before
+    // it, as in CommonMark.
+    @Test func theSpacesBeforeAHardLineBreakAreNotText() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+                     "**one**  \ntwo", "[one  \ntwo](u)"] {
+            let paragraph = markup.paragraph(text)
+            #expect(MarkdownAdditionsTests.breaks(paragraph) == [true, false], "\(text)")
+            #expect(paragraph.lines.count == 2 && paragraph.lines[0].text == "one", "\(text)")
+            #expect(paragraph.lines.count == 2 && paragraph.lines[1].text == "two", "\(text)")
+        }
+    }
+
+    // A backslash at the end of a text is a backslash, and no hard line
+    // break, as in CommonMark; in the middle it is a break, as before.
+    @Test func aBackslashAtTheEndIsText() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"] {
+            let paragraph = markup.paragraph(text)
+            #expect(paragraph.lines.count == 1, "\(text)")
+            #expect(paragraph.lines.first?.text == "0\\", "\(text)")
+            #expect(paragraph.lines.first?.lineBreaks == 0, "\(text)")
+            let paragraphs = markup.paragraphs(text)
+            #expect(paragraphs.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.first?.text == "0\\", "\(text)")
+        }
+        let two = markup.paragraph("one\\\ntwo\\\n")
+        #expect(MarkdownAdditionsTests.breaks(two) == [true, false])
+        #expect(two.lines.count == 2 && two.lines[1].text == "two\\")
+    }
+
+    // The spaces and tabs at the start of the line after a hard line break are
+    // not in the text, as in CommonMark; a space written &#32; is, and so are
+    // the spaces after a <br>, which is no line ending.
+    @Test func theSpacesAfterAHardLineBreakAreNotText() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["one  \n  two", "one  \r\n  two", "one   \n\t two", "one\\\n  two",
+                     "one\\\r\n  two", "**one**  \n  two", "[one  \n  two](u)"] {
+            let paragraph = markup.paragraph(text)
+            #expect(MarkdownAdditionsTests.breaks(paragraph) == [true, false], "\(text)")
+            #expect(paragraph.lines.count == 2 && paragraph.lines[0].text == "one", "\(text)")
+            #expect(paragraph.lines.count == 2 && paragraph.lines[1].text == "two", "\(text)")
+            let paragraphs = markup.paragraphs(text)
+            #expect(paragraphs.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.count == 2, "\(text)")
+            #expect(paragraphs.first?.lines.last?.text == "two", "\(text)")
+        }
+        let entity = markup.paragraph("one  \n&#32;two")
+        #expect(entity.lines.count == 2 && entity.lines[1].text == " two")
+        let br = markup.paragraph("one<br>  two")
+        #expect(br.lines.count == 2 && br.lines[1].text == "  two")
+    }
+
+    // The spaces and tabs at the start of the line after a soft line break
+    // are not in the text, as in CommonMark: the line break is one space; a
+    // space written &#32; is text.
+    @Test func theSpacesAfterASoftLineBreakAreNotText() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["one\n  two", "one\r\n  two", "one\n\t two", "one\ntwo", "one\r\ntwo"] {
+            let paragraph = markup.paragraph(text)
+            #expect(paragraph.lines.count == 1, "\(text)")
+            #expect(paragraph.lines.first?.text == "one two", "\(text)")
+            #expect(paragraph.lines.first?.lineBreaks == 0, "\(text)")
+            let paragraphs = markup.paragraphs(text)
+            #expect(paragraphs.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.first?.text == "one two", "\(text)")
+        }
+        #expect(markup.paragraph("one\n&#32;two").lines.first?.text == "one  two")
+    }
+
+    // The spaces and tabs before a soft line break are not in the text, as in
+    // CommonMark, and those before any line break are counted as they were
+    // appended: a space written &#32; stays.
+    @Test func theSpacesBeforeASoftLineBreakAreNotText() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["one \ntwo", "one\t\ntwo", "one \t\n  two", "one \r\ntwo", "one \rtwo"] {
+            #expect(markup.paragraph(text).lines.first?.text == "one two", "\(text)")
+            #expect(markup.paragraphs(text).first?.lines.first?.text == "one two", "\(text)")
+        }
+        #expect(markup.paragraph("one&#32;\ntwo").lines.first?.text == "one  two")
+        #expect(markup.paragraph("one&#32;\n  \ntwo").lines.first?.text == "one ")
+    }
+
+    // A line break right after a hard line break adds no space to the next row.
+    @Test func noSpaceStartsARowAfterAHardLineBreak() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["one<br>\ntwo", "one<br>\n  two", "one<br> \ntwo", "one<br>\r\ntwo",
+                "one<br>\rtwo", "one  \n\ntwo", "one\\\n\ntwo"] {
+            let paragraph = markup.paragraph(text)
+            #expect(MarkdownAdditionsTests.breaks(paragraph) == [true, false], "\(text)")
+            #expect(paragraph.lines.first?.text == "one", "\(text)")
+            #expect(paragraph.lines.last?.text == "two", "\(text)")
+        }
+        #expect(markup.paragraph("\ntwo").lines.first?.text == "two")
+    }
+
+    // \r\n and a lone \r are line endings as \n is, in text, in hard line
+    // breaks, in code and between paragraphs.
+    @Test func everyLineEndingIsOne() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        #expect(markup.paragraph("one\rtwo").lines.first?.text == "one two")
+        #expect(markup.paragraph("`a\r\nb`").lines.first?.text == "a b")
+        #expect(markup.paragraph("`a\rb`").lines.first?.text == "a b")
+        #expect(MarkdownAdditionsTests.breaks(markup.paragraph("one  \rtwo")) == [true, false])
+        #expect(MarkdownAdditionsTests.breaks(markup.paragraph("one\\\rtwo")) == [true, false])
+        #expect(markup.paragraph("0\\\r").lines.first?.text == "0\\")
+        #expect(markup.paragraphs("one\r\rtwo").count == 2)
+    }
+
     @Test func aTextFrameStartsARowAtABreak() {
         let page = TestSupport.newPage()
         let markup = MarkdownAdditionsTests.markup(page.pdf)

@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"fmt"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"regexp"
 	"slices"
@@ -395,7 +396,7 @@ func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
 		t.Error("the text of the image is not drawn")
 	}
 	// From the directory, the image is a figure.
-	images := testRepoPath(t, "images")
+	images := testRepoPath(t, "resources/images")
 	drawn = testDrawMarkdown(text, images)
 	testAssertStructures(t, drawn, "Figure", 1)
 	alt := regexp.MustCompile(`/Alt <([0-9A-Fa-f]+)>`).FindStringSubmatch(drawn.pdf)
@@ -404,7 +405,7 @@ func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
 	}
 	// Not above it, not an absolute path, not a URL.
 	for _, source := range []string{"../images/circles.png", "/etc/passwd",
-		testRepoPath(t, "images/circles.png"), "https://pdfjet.com/logo.png",
+		testRepoPath(t, "resources/images/circles.png"), "https://pdfjet.com/logo.png",
 		"missing.png"} {
 		drawn = testDrawMarkdown("![Not read]("+source+")", images)
 		if n := testCountStructures(drawn.pdf, "Figure"); n != 0 {
@@ -625,5 +626,26 @@ func TestMarkdownALeadInIsTrimmedAsInJava(t *testing.T) {
 	}
 	if markdownLeadsIntoTable(&markdownBlock{kind: markdownParagraph, text: "Sizes: "}, table) {
 		t.Error("a colon and a no-break space leads into the table")
+	}
+}
+
+// A table split over pages whose header wraps tall starts the next page when
+// the header does not fit: drawn at the foot of the page, it ran off it (the
+// review of 30 October 2026, E3).
+func TestMarkdownATallHeaderOfATableStaysOnThePage(t *testing.T) {
+	var text strings.Builder
+	for i := 0; i < 25; i++ {
+		fmt.Fprintf(&text, "line %d\n\n", i)
+	}
+	text.WriteString(strings.Repeat("| "+strings.Repeat("word ", 20)+" ", 6) + "|\n")
+	text.WriteString(strings.Repeat("|---", 6) + "|\n")
+	text.WriteString(strings.Repeat(strings.Repeat("| a ", 6)+"|\n", 80))
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	var pages []*Page
+	NewMarkdown(font, font, font, font, font).DrawOnPages(doc.pdf, text.String(), &pages, letter.Portrait())
+	doc.pdf.AddPages(pages)
+	if err := doc.pdf.Complete(); err != nil {
+		t.Error(err)
 	}
 }

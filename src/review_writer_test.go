@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"bytes"
+	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
@@ -122,6 +124,75 @@ func testAnnotations(pdf *PDF, page *Page) {
 	attachment.SetLocation(200, 400)
 	attachment.SetContents("A file")
 	attachment.DrawOn(page)
+}
+
+func TestWriterAScaleIsWrittenWithItsDecimals(t *testing.T) {
+	// Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros that
+	// drew nothing (review of 30 October 2026, B6).
+	page := testNewPage()
+	stamp := NewStamp(page.pdf).SetSize(50, 50)
+	stamp.Complete()
+	stamp.ScaleBy(0.125).SetLocation(50, 50).DrawOn(page)
+	stamp.ScaleBy(0.004).SetLocation(50, 50).DrawOn(page)
+	container := NewContainer(100, 100)
+	container.Add(NewRect(0, 0, 10, 10))
+	container.ScaleBy(0.125).SetLocation(50, 50).DrawOn(page)
+	page.DrawContents([]byte("n"), 10, 20, 30, 0.125, 0.004)
+	values := make([]float32, 9)
+	values[MScaleX], values[MSkewX], values[MSkewY], values[MScaleY] = 0.125, 0.004, 0.006, 0.375
+	page.Transform(values)
+	content := testContent(page)
+	for _, want := range []string{"0.125 0 0 0.125 0 0 cm\n", "0.004 0 0 0.004 0 0 cm\n", "\n0.125 0 0 0.004 ",
+		"\n0.125 0.004 0.006 0.375 "} {
+		if !strings.Contains(content, want) {
+			t.Errorf("no %q in %q", want, content)
+		}
+	}
+	if strings.Count(content, "0.125 0 0 0.125 0 0 cm\n") != 2 {
+		t.Errorf("the stamp and the container: %q", content)
+	}
+}
+
+func TestWriterACarriageReturnInATitleIsAReferenceInTheMetadata(t *testing.T) {
+	// An XML reader turns it into a line feed, and PDF/A refused the title
+	// (review of 30 October 2026, B9).
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_A_2B)
+	doc.pdf.SetTitle("One\rTwo")
+	NewPage(doc.pdf, letter.Portrait())
+	if raw := string(doc.complete()); !strings.Contains(raw, ">One&#13;Two</rdf:li>") {
+		t.Error(raw)
+	}
+}
+
+func TestWriterALanguageSetOnAnyPDFIsInItsCatalog(t *testing.T) {
+	// SetLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+	// says no language of itself (review of 30 October 2026, B12).
+	for _, language := range []string{"", "fr-CA"} {
+		doc := testNewDoc()
+		if language != "" {
+			doc.pdf.SetLanguage(language)
+		}
+		NewPage(doc.pdf, letter.Portrait())
+		lang := "/Lang <" + hex.EncodeToString([]byte(language)) + ">"
+		if raw := string(doc.complete()); strings.Contains(raw, "/Lang <") != (language != "") ||
+			(language != "" && !strings.Contains(raw, lang)) {
+			t.Errorf("language %q: %s", language, raw)
+		}
+	}
+}
+
+func TestWriterAnEmbeddedFileIsNamedWithoutItsFolders(t *testing.T) {
+	// A path of Windows put its folders, the name of the user in them, in the
+	// /F of the PDF (review of 30 October 2026, F1).
+	path := filepath.Join(t.TempDir(), `C:\Users\alice\x.xml`)
+	if err := os.WriteFile(path, []byte("<a/>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	file := NewEmbeddedFileAtPath(testNewPDF(), path, false)
+	if file.fileName != "x.xml" {
+		t.Errorf("the name is %q", file.fileName)
+	}
 }
 
 func TestWriterEveryAnnotationIsPrintedAndHasAnAppearance(t *testing.T) {
@@ -421,7 +492,21 @@ func TestWriterTheProducerIsTheVersionOfTheLibrary(t *testing.T) {
 func TestWriterTheFontFileRefersToItsMetadataWhoseNoticeIsEscaped(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_A_2B)
-	font := NewFontFromFile(doc.pdf, testRepoPath(t, "fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+	// Noto Sans JP, which this test read before 9.1.7, has "&" in its
+	// designer and its description; no font PDFjet carries has one in its
+	// names, so the license of IBM Plex Sans is made to say "with & FAQ" in
+	// place of "with a FAQ", a character for a character.
+	ttf := testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	var withA []byte
+	for _, c := range " with a FAQ" {
+		withA = append(withA, 0, byte(c))
+	}
+	at := bytes.Index(ttf, withA)
+	if at == -1 {
+		t.Fatal(`the license of the font has no "with a FAQ"`)
+	}
+	ttf[at+2*len(" with ")+1] = '&'
+	font := NewFont(doc.pdf, bytes.NewReader(ttf))
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewTextLine(font, "Hello").SetLocation(50, 50).DrawOn(page)
 	raw := string(doc.complete())

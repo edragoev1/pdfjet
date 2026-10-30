@@ -169,7 +169,7 @@ class ReviewFiveTest {
         Font font = TestSupport.helvetica(TestSupport.newPDF());
         SimpleScatterChart chart = new SimpleScatterChart(font, font).setTitle("T")
                 .add(1f, 1f).add(2f, 2f).add(3f, 3f).add(4f, -1000f).setTrendLine(true).setYAxisRange(0f, 10f);
-        assertEquals("T: 3 points; the trend rises.", chart.altDescription());
+        assertEquals("T: 3 points; the trend rises; 1 point outside the range.", chart.altDescription());
     }
 
     @Test

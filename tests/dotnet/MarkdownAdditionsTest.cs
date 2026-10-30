@@ -49,6 +49,151 @@ public class MarkdownAdditionsTest {
         Assert.False(bold.JoinsPrevious(1));
     }
 
+    // A hard line break at the end of a text is no break, as in CommonMark,
+    // and the spaces before it are not in the last text line; Paragraphs
+    // strips the whitespace at the end of each paragraph.
+    [Fact]
+    public void AHardLineBreakAtTheEndIsNoBreak() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Single(paragraph.lines);
+            Assert.Equal("0", paragraph.lines[0].text);
+            Assert.Equal(0, paragraph.lines[0].lineBreaks);
+            List<Paragraph> paragraphs = markup.Paragraphs(text);
+            Assert.Single(paragraphs);
+            Assert.Single(paragraphs[0].lines);
+            Assert.Equal("0", paragraphs[0].lines[0].text);
+        }
+        // In bold, and a break before the last line
+        Paragraph bold = markup.Paragraph("**0**  \n");
+        Assert.Single(bold.lines);
+        Assert.Equal("0", bold.lines[0].text);
+        Assert.Equal(0, bold.lines[0].lineBreaks);
+        Paragraph two = markup.Paragraph("one  \ntwo  \n");
+        Assert.Equal(new List<bool> {true, false}, Breaks(two));
+        Assert.Equal("two", two.lines[1].text);
+        // Spaces at the end without a line break are text in Paragraph
+        Assert.Equal("0  ", markup.Paragraph("0  ").lines[0].text);
+        Assert.Equal("0", markup.Paragraphs("0  ")[0].lines[0].text);
+    }
+
+    // The spaces before a hard line break are not in the text line before
+    // it, as in CommonMark.
+    [Fact]
+    public void TheSpacesBeforeAHardLineBreakAreNotText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+                "**one**  \ntwo", "[one  \ntwo](u)"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Equal(new List<bool> {true, false}, Breaks(paragraph));
+            Assert.Equal("one", paragraph.lines[0].text);
+            Assert.Equal("two", paragraph.lines[1].text);
+        }
+    }
+
+    // A backslash at the end of a text is a backslash, and no hard line
+    // break, as in CommonMark; in the middle it is a break, as before.
+    [Fact]
+    public void ABackslashAtTheEndIsText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Single(paragraph.lines);
+            Assert.Equal("0\\", paragraph.lines[0].text);
+            Assert.Equal(0, paragraph.lines[0].lineBreaks);
+            List<Paragraph> paragraphs = markup.Paragraphs(text);
+            Assert.Single(paragraphs);
+            Assert.Single(paragraphs[0].lines);
+            Assert.Equal("0\\", paragraphs[0].lines[0].text);
+        }
+        Paragraph two = markup.Paragraph("one\\\ntwo\\\n");
+        Assert.Equal(new List<bool> {true, false}, Breaks(two));
+        Assert.Equal("two\\", two.lines[1].text);
+    }
+
+    // The spaces and tabs at the start of the line after a hard line break are
+    // not in the text, as in CommonMark; a space written &#32; is, and so are
+    // the spaces after a <br>, which is no line ending.
+    [Fact]
+    public void TheSpacesAfterAHardLineBreakAreNotText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one  \n  two", "one  \r\n  two", "one   \n\t two", "one\\\n  two",
+                "one\\\r\n  two", "**one**  \n  two", "[one  \n  two](u)"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Equal(new List<bool> {true, false}, Breaks(paragraph));
+            Assert.Equal("one", paragraph.lines[0].text);
+            Assert.Equal("two", paragraph.lines[1].text);
+            List<Paragraph> paragraphs = markup.Paragraphs(text);
+            Assert.Single(paragraphs);
+            Assert.Equal(2, paragraphs[0].lines.Count);
+            Assert.Equal("two", paragraphs[0].lines[1].text);
+        }
+        Assert.Equal(" two", markup.Paragraph("one  \n&#32;two").lines[1].text);
+        Assert.Equal("  two", markup.Paragraph("one<br>  two").lines[1].text);
+    }
+
+    // The spaces and tabs at the start of the line after a soft line break
+    // are not in the text, as in CommonMark: the line break is one space; a
+    // space written &#32; is text.
+    [Fact]
+    public void TheSpacesAfterASoftLineBreakAreNotText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one\n  two", "one\r\n  two", "one\n\t two", "one\ntwo", "one\r\ntwo"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Single(paragraph.lines);
+            Assert.Equal("one two", paragraph.lines[0].text);
+            Assert.Equal(0, paragraph.lines[0].lineBreaks);
+            List<Paragraph> paragraphs = markup.Paragraphs(text);
+            Assert.Single(paragraphs);
+            Assert.Single(paragraphs[0].lines);
+            Assert.Equal("one two", paragraphs[0].lines[0].text);
+        }
+        Assert.Equal("one  two", markup.Paragraph("one\n&#32;two").lines[0].text);
+    }
+
+    // The spaces and tabs before a soft line break are not in the text, as in
+    // CommonMark, and those before any line break are counted as they were
+    // appended: a space written &#32; stays.
+    [Fact]
+    public void TheSpacesBeforeASoftLineBreakAreNotText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one \ntwo", "one\t\ntwo", "one \t\n  two", "one \r\ntwo", "one \rtwo"}) {
+            Assert.Equal("one two", markup.Paragraph(text).lines[0].text);
+            Assert.Equal("one two", markup.Paragraphs(text)[0].lines[0].text);
+        }
+        Assert.Equal("one  two", markup.Paragraph("one&#32;\ntwo").lines[0].text);
+        Assert.Equal("one ", markup.Paragraph("one&#32;\n  \ntwo").lines[0].text);
+    }
+
+    // A line break right after a hard line break adds no space to the next row.
+    [Fact]
+    public void NoSpaceStartsARowAfterAHardLineBreak() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one<br>\ntwo", "one<br>\n  two", "one<br> \ntwo", "one<br>\r\ntwo",
+                "one<br>\rtwo", "one  \n\ntwo", "one\\\n\ntwo"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Equal(new List<bool> {true, false}, Breaks(paragraph));
+            Assert.Equal("one", paragraph.lines[0].text);
+            Assert.Equal("two", paragraph.lines[1].text);
+        }
+        Assert.Equal("two", markup.Paragraph("\ntwo").lines[0].text);
+    }
+
+    // \r\n and a lone \r are line endings as \n is, in text, in hard line
+    // breaks, in code and between paragraphs.
+    [Fact]
+    public void EveryLineEndingIsOne() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        Assert.Equal("one two", markup.Paragraph("one\rtwo").lines[0].text);
+        Assert.Equal("a b", markup.Paragraph("`a\r\nb`").lines[0].text);
+        Assert.Equal("a b", markup.Paragraph("`a\rb`").lines[0].text);
+        Assert.Equal(new List<bool> {true, false}, Breaks(markup.Paragraph("one  \rtwo")));
+        Assert.Equal(new List<bool> {true, false}, Breaks(markup.Paragraph("one\\\rtwo")));
+        Assert.Equal("0\\", markup.Paragraph("0\\\r").lines[0].text);
+        Assert.Equal(2, markup.Paragraphs("one\r\rtwo").Count);
+    }
+
     [Fact]
     public void ATextFrameStartsARowAtABreak() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();

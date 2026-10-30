@@ -52,7 +52,7 @@ public class ImageSizeTest {
     [Fact]
     public void TheSizeIsTheOneImageDrawsAt() {
         List<String> files = new List<String>();
-        foreach (String dir in new String[] {"images", "tests/data", ".images"}) {
+        foreach (String dir in new String[] {"resources/images", "tests/data", ".images"}) {
             String root = TestSupport.RepoPath(dir);
             if (!Directory.Exists(root)) {
                 continue;

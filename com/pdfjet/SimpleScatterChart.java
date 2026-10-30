@@ -14,11 +14,17 @@ import java.util.*;
  * darker, a few of them highlighted, navy and labeled with their names beside
  * them, and the trend line of the points if asked, labeled at its end. A light
  * horizontal grid alone, no border or legend, on a light panel, with a title
- * and a subtitle at the top left, in the look of SimpleBarChart.
+ * and a subtitle at the top left, in the look of SimpleBarChart. Any point can
+ * be a link, a dot with a description that a hover or a screen reader gets, so
+ * that all of 200 points are links without a name printed for each. A point
+ * outside a range that is set is not drawn, and the chart says how many are:
+ * "2 points outside the range", small, under the plot at its right end, and in
+ * its description, in that alone when the plot would not be left room to draw.
  * <p>
  * In a PDF/UA document the chart is one figure, described from its data: the
- * number of points, the highlighted ones and their values, and which way the
- * trend goes, unless an alternate description is set. It draws with the page
+ * number of points, the highlighted ones and their values, which way the
+ * trend goes and the points outside a range, unless an alternate description
+ * is set, which is then followed by those points alone. It draws with the page
  * alone, and needs no other chart. In PDF/A-1, which has no transparency, the
  * dots are drawn opaque. Please see Example_26.
  */
@@ -31,13 +37,19 @@ public class SimpleScatterChart implements Drawable {
     static final int GRID = 0xD5D9DE;
     static final int TREND = 0x5F6873;
     static final float ALPHA = 0.55f;
+    // The least width and height of the link of a dot, which PDF writes in
+    // hundredths: 8 points that stay 8 however the two sides round.
+    static final float HIT_SIZE = 8.02f;
 
-    // A point of the chart, highlighted when it has a name.
+    // A point of the chart, highlighted when it has a name, but for a dot:
+    // its name describes it and is not printed.
     static final class Point {
         final float x;
         final float y;
         final String name;
-        final String uri;       // The link of a highlighted point, or null
+        final String uri;       // The link of the point, or null
+        boolean dot = false;    // Drawn as a point that is not highlighted
+        int series = -1;        // The index of its series, or -1 for none
 
         Point(float x, float y, String name) {
             this(x, y, name, null);
@@ -48,6 +60,17 @@ public class SimpleScatterChart implements Drawable {
             this.y = y;
             this.name = (name == null) ? "" : name;
             this.uri = uri;
+        }
+
+        // Tells if the point is drawn in the highlight color, its name
+        // beside it.
+        boolean highlighted() {
+            return !name.isEmpty() && !dot;
+        }
+
+        // Tells if the point is a dot that is a link.
+        boolean linkedDot() {
+            return dot && uri != null;
         }
     }
 
@@ -63,6 +86,7 @@ public class SimpleScatterChart implements Drawable {
     private String yAxisTitle = "";
     private String altDescription = "";
     private final List<Point> points = new ArrayList<Point>();
+    private final List<String> series = new ArrayList<String>();   // The names of the series
     private boolean trendLine = false;
     private float xMin;
     private float xMax;
@@ -133,7 +157,8 @@ public class SimpleScatterChart implements Drawable {
 
     /**
      * Sets the alternate description of the chart in a PDF/UA document.
-     * Without one the chart is described from its data.
+     * Without one the chart is described from its data. The number of points
+     * outside a range that is set follows it, as the chart prints it.
      *
      * @param altDescription the alternate description.
      * @return this chart.
@@ -152,7 +177,29 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart add(float x, float y) {
-        points.add(new Point(x, y, ""));
+        return addPoint(new Point(x, y, ""));
+    }
+
+    // Adds the point to the series added last, if any.
+    private SimpleScatterChart addPoint(Point p) {
+        p.series = series.size() - 1;
+        points.add(p);
+        return this;
+    }
+
+    /**
+     * Starts a series: the points added after it are its points, drawn in its
+     * color and its shape, and its name is in the legend over the plot. The
+     * series take the colors of the palette of BarChart, blue, orange, red,
+     * teal and so on, and the shapes circle, square, triangle, star, diamond
+     * and cross, in turn. The points added before the first series are gray
+     * dots, as those of a chart without series.
+     *
+     * @param name the name of the series, in the legend.
+     * @return this chart.
+     */
+    public SimpleScatterChart addSeries(String name) {
+        series.add((name == null) ? "" : name);
         return this;
     }
 
@@ -165,8 +212,7 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart add(String name, float x, float y) {
-        points.add(new Point(x, y, name));
-        return this;
+        return addPoint(new Point(x, y, name));
     }
 
     /**
@@ -183,8 +229,31 @@ public class SimpleScatterChart implements Drawable {
      */
     public SimpleScatterChart add(String name, float x, float y, String uri) {
         // An empty URI is no link, as in the Go port
-        points.add(new Point(x, y, name, (uri == null || uri.isEmpty()) ? null : uri));
-        return this;
+        return addPoint(new Point(x, y, name, (uri == null || uri.isEmpty()) ? null : uri));
+    }
+
+    /**
+     * Adds a point that is a link and not highlighted: a dot as add(x, y)
+     * draws it, in its series if any, with nothing beside it. Its name is not
+     * printed: it is the description of the link, and in a PDF/UA document
+     * that of a figure of its own in the Link that holds its annotation, as
+     * with add(name, x, y, uri), and it counts in the description of the chart
+     * as a point of add(x, y) does. The link is at least 8 points square
+     * around the dot, so that it can be hit, and inside the page. A name left
+     * empty is described by the URI; a URI left empty is no link.
+     *
+     * @param name the description of the point.
+     * @param x the x of the point.
+     * @param y the y of the point.
+     * @param uri the URI the point links to.
+     * @return this chart.
+     */
+    public SimpleScatterChart addLinkedDot(String name, float x, float y, String uri) {
+        String link = (uri == null || uri.isEmpty()) ? null : uri;
+        // A figure needs a description
+        Point p = new Point(x, y, (name == null || Util.trimSpace(name).isEmpty()) ? link : name, link);
+        p.dot = true;
+        return addPoint(p);
     }
 
     /**
@@ -202,7 +271,9 @@ public class SimpleScatterChart implements Drawable {
     /**
      * Sets the range of the horizontal axis. Without it the range is that of
      * the points, rounded to steps. A range whose end is not past its start
-     * is not set.
+     * is not set. A point outside the range is not drawn, and the chart says
+     * how many are, under the plot, which is that much lower, and in its
+     * description.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -218,7 +289,8 @@ public class SimpleScatterChart implements Drawable {
     /**
      * Sets the range of the vertical axis. Without it the range is that of the
      * points, rounded to steps. A range whose end is not past its start is not
-     * set.
+     * set. A point outside the range is not drawn, and the chart says how many
+     * are, under the plot, which is that much lower, and in its description.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -316,7 +388,109 @@ public class SimpleScatterChart implements Drawable {
         if (!title.isEmpty() || !subtitle.isEmpty()) {
             top += f2.getSize();
         }
-        return top;
+        // The legend, and half a size of the numbers under it, so that the
+        // top number of the axis is not against its last row
+        int rows = drawLegend(null, 0f);
+        return top + rows*LEGEND_ROW*f2.getSize() + ((rows > 0) ? 0.5f*f2.getSize() : 0f);
+    }
+
+    // The shapes of the series, in turn, as D3 draws its symbols.
+    static final int CIRCLE = 0;
+    static final int SQUARE = 1;
+    static final int TRIANGLE = 2;
+    static final int STAR = 3;
+    static final int DIAMOND = 4;
+    static final int CROSS = 5;
+    static final int SHAPES = 6;
+    // The height of a row of the legend, in sizes of the numbers.
+    private static final float LEGEND_ROW = 1.5f;
+
+    // The color of a series.
+    private static int seriesColor(int index) {
+        return BarChart.PALETTE[index % BarChart.PALETTE.length];
+    }
+
+    // Draws the legend, the shape and the name of each series, from the
+    // baseline of its first row, its rows wrapped at the right of the chart,
+    // when there is a page; and returns the number of its rows, 0 for a chart
+    // without series.
+    private int drawLegend(Page page, float baseline) {
+        if (series.isEmpty()) {
+            return 0;
+        }
+        float size = f2.getSize();
+        float pad = pad();
+        float r = 0.35f*size;
+        float gap = size/2f;
+        float left = x + pad;
+        float px = left;
+        int rows = 1;
+        for (int i = 0; i < series.size(); i++) {
+            String name = ChartScale.shorten(f2, size, series.get(i), w - 2f*pad - 2f*r - gap);
+            float width = 2f*r + gap + f2.stringWidth(size, name);
+            if (px > left && px + width > x + w - pad) {
+                px = left;
+                baseline += LEGEND_ROW*size;
+                rows++;
+            }
+            if (page != null) {
+                page.setPenColor(seriesColor(i));
+                page.setPenWidth(0.12f*size);
+                drawShape(page, i % SHAPES, px + r, baseline - f2.getAscent(size)/2f, r, false);
+                page.drawString(f2, size, name, px + 2f*r + gap, baseline, Util.toRGB(SimpleBarChart.INK), null);
+            }
+            px += width + size;
+        }
+        return rows;
+    }
+
+    // Draws a shape of a series centered on cx, cy, of about the area of a
+    // circle of radius r, its outline in the pen color, or filled in the
+    // brush color.
+    static void drawShape(Page page, int shape, float cx, float cy, float r, boolean fill) {
+        if (shape == CIRCLE) {
+            if (fill) {
+                page.fillCircle(cx, cy, r);
+            } else {
+                page.drawCircle(cx, cy, r);
+            }
+            return;
+        }
+        float[] xy;
+        if (shape == SQUARE) {
+            float a = 0.886f*r;
+            xy = new float[] {-a, -a, a, -a, a, a, -a, a};
+        } else if (shape == TRIANGLE) {
+            // Pointing up, its center halfway down its height
+            float a = 1.35f*r;
+            xy = new float[] {0f, -a, 0.866f*a, 0.5f*a, -0.866f*a, 0.5f*a};
+        } else if (shape == STAR) {
+            xy = new float[20];
+            for (int i = 0; i < 10; i++) {
+                double angle = Math.PI*i/5.0;
+                float radius = (i % 2 == 0) ? 1.3f*r : 0.5f*r;
+                xy[2*i] = (float) (radius*Math.sin(angle));
+                xy[2*i + 1] = (float) (-radius*Math.cos(angle));
+            }
+        } else if (shape == DIAMOND) {
+            float a = 1.15f*r;
+            float b = 0.75f*r;
+            xy = new float[] {0f, -a, b, 0f, 0f, a, -b, 0f};
+        } else {
+            // A cross of five squares, as wide as three
+            float a = 1.1f*r;
+            float b = a/3f;
+            xy = new float[] {-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b};
+        }
+        page.moveTo(cx + xy[0], cy + xy[1]);
+        for (int i = 2; i < xy.length; i += 2) {
+            page.lineTo(cx + xy[i], cy + xy[i + 1]);
+        }
+        if (fill) {
+            page.fillPath();
+        } else {
+            page.closePath();   // Closed and stroked
+        }
     }
 
     // A number of an axis, with the decimals its step needs.
@@ -404,11 +578,26 @@ public class SimpleScatterChart implements Drawable {
         return line;
     }
 
+    // What the chart says of the points with a value outside a range that is
+    // set, or "" when there are none. A point outside both ranges is one point.
+    private String outsideNote() {
+        ChartScale.Axis xRange = new ChartScale.Axis(xMin, xMax, 0);
+        ChartScale.Axis yRange = new ChartScale.Axis(yMin, yMax, 0);
+        int count = 0;
+        for (Point p : valid()) {
+            if ((xRangeSet && !ChartScale.onAxis(p.x, xRange)) || (yRangeSet && !ChartScale.onAxis(p.y, yRange))) {
+                count++;
+            }
+        }
+        return ChartScale.outsideNote(count, "point");
+    }
+
     // The alternate description: the one set, or the title, the number of
-    // points, the highlighted ones and the trend.
+    // points, the highlighted ones and the trend; and the points outside a
+    // range that is set.
     String altDescription() {
         if (!altDescription.isEmpty()) {
-            return altDescription;
+            return ChartScale.withNote(altDescription, outsideNote());
         }
         List<Point> points = valid();
         ChartScale.Axis[] axes = points.isEmpty() ? null : axes(points);
@@ -431,9 +620,19 @@ public class SimpleScatterChart implements Drawable {
         if (!xAxisTitle.isEmpty() && !yAxisTitle.isEmpty()) {
             sb.append(", ").append(yAxisTitle).append(" against ").append(xAxisTitle);
         }
+        if (!series.isEmpty()) {
+            // in the series A, B and C
+            sb.append(", in the series ");
+            for (int i = 0; i < series.size(); i++) {
+                if (i > 0) {
+                    sb.append((i == series.size() - 1) ? " and " : ", ");
+                }
+                sb.append(series.get(i));
+            }
+        }
         int named = 0;
         for (Point p : shown) {
-            if (p.name.isEmpty()) {
+            if (!p.highlighted()) {
                 continue;
             }
             sb.append(named == 0 ? "; " : ", ");
@@ -446,6 +645,10 @@ public class SimpleScatterChart implements Drawable {
             if (line != null) {
                 sb.append(line[0] > 0 ? "; the trend rises" : line[0] < 0 ? "; the trend falls" : "; the trend is flat");
             }
+        }
+        String note = outsideNote();
+        if (!note.isEmpty()) {
+            sb.append("; ").append(note);
         }
         return sb.append(SimpleBarChart.punctuationAfter(sb, ".")).toString();
     }
@@ -504,6 +707,17 @@ public class SimpleScatterChart implements Drawable {
         if (!xAxisTitle.isEmpty()) {
             bottom -= 1.4f * size;
         }
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        String note = outsideNote();
+        if (!note.isEmpty()) {
+            float above = bottom - 1.4f * subtitleSize();
+            if (above > top) {
+                bottom = above;
+            } else {
+                note = "";
+            }
+        }
         if (right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis)) {
             return new float[] {x + w, y + h};
         }
@@ -515,6 +729,16 @@ public class SimpleScatterChart implements Drawable {
         // annotation, as PDF/UA asks: a link inside the chart's figure has
         // nothing to hold
         boolean linksApart = page.tagsContent();
+
+        // The dots that are links, drawn so after the chart
+        List<Point> linkedDots = new ArrayList<Point>();
+        if (linksApart) {
+            for (Point p : points) {
+                if (p.linkedDot() && onPlot(p, xAxis, yAxis)) {
+                    linkedDots.add(p);
+                }
+            }
+        }
 
         page.addBDC(StructElem.FIGURE, null, altDescription());
         page.saveGraphicsState();
@@ -534,6 +758,12 @@ public class SimpleScatterChart implements Drawable {
             baseline += 1.4f * subtitleSize();
             page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
                     x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
+        }
+        if (!series.isEmpty()) {
+            if (!title.isEmpty() || !subtitle.isEmpty()) {
+                baseline += f2.getSize();
+            }
+            drawLegend(page, baseline + LEGEND_ROW*size - (LEGEND_ROW*size - ascent)/2f);
         }
 
         // The horizontal grid and the numbers of both axes, each where it
@@ -584,6 +814,9 @@ public class SimpleScatterChart implements Drawable {
                     Util.toRGB(SimpleBarChart.INK), null);
             page.setTextRotation(0);
         }
+        if (!note.isEmpty()) {
+            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
+        }
 
         // The trend line, from the left of the plot to its right, within its
         // height
@@ -615,26 +848,43 @@ public class SimpleScatterChart implements Drawable {
 
         // The dots, then the highlighted points and their names over them
         page.saveGraphicsState();
-        if (!page.pdf.isPDFA1()) {
-            GraphicsState gs = new GraphicsState();
-            gs.setAlphaNonStroking(ALPHA);
-            page.setGraphicsState(gs);
-        }
+        setTransparent(page);
         page.setBrushColor(dotColor);
-        float r = 0.3f * size;
         for (Point p : points) {
-            if (p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
-                page.fillCircle(xAt(p.x, xAxis, plotLeft, right), yAt(p.y, yAxis, top, plotBottom), r);
+            if (p.series < 0 && !p.highlighted() && !(linksApart && p.linkedDot()) && onPlot(p, xAxis, yAxis)) {
+                drawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
             }
         }
         page.restoreGraphicsState();
-        List<Point> linked = new ArrayList<Point>();
+        // The points of the series, the outlines of their shapes, opaque;
+        // a chart without series draws as it did
+        if (!series.isEmpty()) {
+            page.setPenWidth(0.12f * size);
+        }
         for (Point p : points) {
-            if (p.name.isEmpty() || !onPlot(p, xAxis, yAxis)) {
+            if (p.series >= 0 && !p.highlighted() && !(linksApart && p.linkedDot()) && onPlot(p, xAxis, yAxis)) {
+                drawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+        }
+        // The links of the dots first, for those of the highlighted points to
+        // be over them
+        for (Point p : points) {
+            if (p.linkedDot() && !linksApart && onPlot(p, xAxis, yAxis)) {
+                page.addAnnotation(linkOf(p, dotBox(p, xAxis, yAxis, plotLeft, right, top, plotBottom)));
+            }
+        }
+        List<Point> linked = new ArrayList<Point>();
+        List<Point> over = new ArrayList<Point>();
+        for (Point p : points) {
+            if (!p.highlighted() || !onPlot(p, xAxis, yAxis)) {
                 continue;
             }
             if (p.uri != null && linksApart) {
                 linked.add(p);
+                continue;
+            }
+            if (!linkedDots.isEmpty()) {
+                over.add(p);    // Over the dots, drawn after the chart
                 continue;
             }
             float[] box = drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
@@ -647,20 +897,90 @@ public class SimpleScatterChart implements Drawable {
         page.setFigureBoundingBox(x, y, w, h);
         page.addEMC();
 
-        for (Point p : linked) {
+        if (!linkedDots.isEmpty()) {
+            // As in the chart, whose graphics state ended with it
             page.saveGraphicsState();
-            StructElement link = page.beginLink();
-            page.addBDC(StructElem.FIGURE, null, p.name);
-            float[] box = drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
-            page.setFigureBoundingBox(box[0], box[1], box[2], box[3]);
-            page.addEMC();
-            page.endLink(link);
+            page.setDefaultStrokeDashPattern();
+            setTransparent(page);
+            if (!series.isEmpty()) {
+                page.setPenWidth(0.12f * size);
+            }
+            for (Point p : linkedDots) {
+                drawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
             page.restoreGraphicsState();
-            Annotation annotation = linkOf(p, box);
-            annotation.linkElement = link;
-            page.addAnnotation(annotation);
+        }
+        // A highlighted point that is no link is in the description of the
+        // chart, and over the dots that are drawn after it
+        if (!over.isEmpty()) {
+            page.saveGraphicsState();
+            page.addArtifactBMC();
+            for (Point p : over) {
+                drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+            page.addEMC();
+            page.restoreGraphicsState();
+        }
+        for (Point p : linked) {
+            drawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
         }
         return new float[] {x + w, y + h};
+    }
+
+    // Draws a point that is a link as a figure of its own in its Link.
+    private void drawFigure(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        page.saveGraphicsState();
+        StructElement link = page.beginLink();
+        page.addBDC(StructElem.FIGURE, null, p.name);
+        float[] box;
+        if (p.dot) {
+            drawDot(page, p, xAxis, yAxis, left, right, top, bottom);
+            box = dotBox(p, xAxis, yAxis, left, right, top, bottom);
+        } else {
+            box = drawNamed(page, p, xAxis, yAxis, left, right, top, bottom);
+        }
+        page.setFigureBoundingBox(box[0], box[1], box[2], box[3]);
+        page.addEMC();
+        page.endLink(link);
+        page.restoreGraphicsState();
+        Annotation annotation = linkOf(p, box);
+        annotation.linkElement = link;
+        page.addAnnotation(annotation);
+    }
+
+    // Draws what follows a little transparent, but in PDF/A-1.
+    private static void setTransparent(Page page) {
+        if (!page.pdf.isPDFA1()) {
+            GraphicsState gs = new GraphicsState();
+            gs.setAlphaNonStroking(ALPHA);
+            page.setGraphicsState(gs);
+        }
+    }
+
+    // Draws a point that is not highlighted, with the transparency, and the
+    // width of the outlines, set.
+    private void drawDot(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float size = f2.getSize();
+        float px = xAt(p.x, xAxis, left, right);
+        float py = yAt(p.y, yAxis, top, bottom);
+        if (p.series >= 0) {
+            page.setPenColor(seriesColor(p.series));
+            drawShape(page, p.series % SHAPES, px, py, 0.35f * size, false);
+        } else {
+            page.setBrushColor(dotColor);
+            page.fillCircle(px, py, 0.3f * size);
+        }
+    }
+
+    // The box of a dot, x, y, w, h: a little past the tip of its outline in
+    // the shape that reaches farthest, the triangle.
+    private float[] dotBox(Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float reach = 0.55f * f2.getSize();
+        return new float[] {xAt(p.x, xAxis, left, right) - reach, yAt(p.y, yAxis, top, bottom) - reach,
+                2f * reach, 2f * reach};
     }
 
     // Draws a highlighted point and its name, and returns the box of the two:
@@ -672,8 +992,13 @@ public class SimpleScatterChart implements Drawable {
         float big = 0.42f * size;
         float px = xAt(p.x, xAxis, left, right);
         float py = yAt(p.y, yAxis, top, bottom);
-        page.setBrushColor(highlightColor);
-        page.fillCircle(px, py, big);
+        int color = (p.series >= 0) ? seriesColor(p.series) : highlightColor;
+        page.setBrushColor(color);
+        if (p.series >= 0) {
+            drawShape(page, p.series % SHAPES, px, py, big, true);
+        } else {
+            page.fillCircle(px, py, big);
+        }
         // A name of two fifths of the plot at most, and in the plot
         String name = ChartScale.shorten(f1, size, p.name, 0.4f * (right - left));
         float width = f1.stringWidth(size, name);
@@ -688,7 +1013,10 @@ public class SimpleScatterChart implements Drawable {
         page.setBrushColor(panelColor >= 0 ? panelColor : Color.white);
         page.fillRect(lx - 1f, baseline - f1.getAscent(size) - 1f,
                 width + 2f, f1.getAscent(size) + f1.getDescent(size) + 2f);
-        page.drawString(f1, size, name, lx, baseline, Util.toRGB(highlightColor), null);
+        // The name of a point of a series in ink, which reads on the panel
+        // whatever the color of the series
+        page.drawString(f1, size, name, lx, baseline,
+                Util.toRGB((p.series >= 0) ? SimpleBarChart.INK : highlightColor), null);
         float x1 = Math.min(px - big, lx);
         float y1 = Math.min(py - big, baseline - f1.getAscent(size));
         float x2 = Math.max(px + big, lx + width);
@@ -696,10 +1024,10 @@ public class SimpleScatterChart implements Drawable {
         return new float[] {x1, y1, x2 - x1, y2 - y1};
     }
 
-    // The link annotation of a point, over the box of its dot and its name,
+    // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static Annotation linkOf(Point p, float[] box) {
-        return new Annotation(
+        Annotation annotation = new Annotation(
                 Annotation.Link,
                 box[0],
                 box[1],
@@ -715,6 +1043,8 @@ public class SimpleScatterChart implements Drawable {
                 null,
                 null,
                 p.name);
+        annotation.hitSize = p.dot ? HIT_SIZE : 0f;
+        return annotation;
     }
 
     // Tells if the point is on the plot: a point outside a range that is set

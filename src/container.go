@@ -186,9 +186,9 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendRotation(cos, sin)
 
 	// 4) Scale around container center
-	page.appendFloat32(c.scaleX)
+	page.appendPrecise(c.scaleX)
 	page.appendString(" 0 0 ")
-	page.appendFloat32(c.scaleY)
+	page.appendPrecise(c.scaleY)
 	page.appendString(" 0 0 cm\n")
 
 	// 5) Move origin back for child drawing

@@ -38,7 +38,7 @@ public class Example_02 {
         new TextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f1).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         TextBlock textBlock = new TextBlock(
-                f1, Content.OfTextFile("data/languages/simplified-chinese.txt"));
+                f1, Content.OfTextFile("resources/data/languages/simplified-chinese.txt"));
         textBlock.SetLanguage("zh-Hans");
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);
@@ -49,7 +49,7 @@ public class Example_02 {
         new TextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f2).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
-                f2, Content.OfTextFile("data/languages/traditional-chinese.txt"));
+                f2, Content.OfTextFile("resources/data/languages/traditional-chinese.txt"));
         textBlock.SetLanguage("zh-Hant");
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);

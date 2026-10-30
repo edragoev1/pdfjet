@@ -41,12 +41,12 @@ func testOpenRepoFile(t *testing.T, path string) *os.File {
 		t.Fatal(err)
 	}
 	for {
-		if info, err := os.Stat(filepath.Join(dir, "PngSuite")); err == nil && info.IsDir() {
+		if info, err := os.Stat(filepath.Join(dir, "tests/data/PngSuite")); err == nil && info.IsDir() {
 			break
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			t.Fatal("no PngSuite directory above the working directory")
+			t.Fatal("no tests/data/PngSuite directory above the working directory")
 		}
 		dir = parent
 	}
@@ -80,10 +80,10 @@ func testDrawables() []testMaker {
 			return pdfjet.NewTitle(font, "Title", 0, 0)
 		}},
 		{"Image", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
-			return pdfjet.NewImage(pdf, bufio.NewReader(testOpenRepoFile(t, "images/up-arrow.png")))
+			return pdfjet.NewImage(pdf, bufio.NewReader(testOpenRepoFile(t, "resources/images/up-arrow.png")))
 		}},
 		{"SVGImage", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
-			image, err := pdfjet.NewSVGImage(testOpenRepoFile(t, "images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg"))
+			image, err := pdfjet.NewSVGImage(testOpenRepoFile(t, "resources/images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg"))
 			if err != nil {
 				t.Fatal(err)
 			}

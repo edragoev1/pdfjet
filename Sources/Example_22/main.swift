@@ -19,7 +19,7 @@ public class Example_22 {
     static let countries = ["Spain", "Italy", "Switzerland", "Greece"]
 
     static let maps = [
-        "images/spain-admin.jpg", "images/italy-admin.jpg", "images/swiss-admin.jpg", "images/gr-map.jpg"]
+        "resources/images/spain-admin.jpg", "resources/images/italy-admin.jpg", "resources/images/swiss-admin.jpg", "resources/images/gr-map.jpg"]
 
     static let texts = [
         [

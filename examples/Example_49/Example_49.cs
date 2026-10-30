@@ -33,9 +33,9 @@ public class Example_49 {
                 new FileStream("Example_49.pdf", FileMode.Create)));
 
         String[] fileNames = {
-            "data/testPDFs/scanned-linearized.pdf",
-            "data/testPDFs/rc65-16e.pdf",
-            "data/testPDFs/PDFjetLogo.pdf"
+            "resources/data/testPDFs/scanned-linearized.pdf",
+            "resources/data/testPDFs/sample-document.pdf",
+            "resources/data/testPDFs/PDFjetLogo.pdf"
         };
         List<List<PDFobj>> documents = new List<List<PDFobj>>();
         foreach (String fileName in fileNames) {
@@ -70,7 +70,7 @@ public class Example_49 {
     private void Split() {
         List<PDFobj> objects;
         using (BufferedStream stream = new BufferedStream(
-                new FileStream("data/testPDFs/scanned-linearized.pdf", FileMode.Open, FileAccess.Read))) {
+                new FileStream("resources/data/testPDFs/scanned-linearized.pdf", FileMode.Open, FileAccess.Read))) {
             objects = new PDF().Read(stream);
         }
         int count = new PDF().GetPageObjects(objects).Count;

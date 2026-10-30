@@ -178,6 +178,39 @@ func TestTableTheFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces(t *testing
 
 // A row taller than the page is refused, rather than asked a new page for
 // forever, and no longer drawn off the page (issue #4).
+// Header and footer rows that run off the page were lost with no error: a
+// page total was drawn at 781.9 to 799.7 of 792 (the review of 30 October
+// 2026, E3). They fail as a row of the body does, and rows that only reach
+// into the bottom margin are drawn, as those of the body are.
+func TestTableHeaderAndFooterRowsThatRunOffThePageFail(t *testing.T) {
+	draw := func(y, bodySize float32) error {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		data := [][]*Cell{{NewCell(font, "header")}, {NewCell(font, "x").SetFontSize(bodySize)}, {NewCell(font, "footer")}}
+		table := NewTable().SetTableData(data, 1).SetNumberOfFooterRows(1)
+		table.SetLocation(50, y)
+		table.SetBottomMargin(20)
+		var pages []*Page
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		doc.pdf.AddPages(pages)
+		return doc.pdf.Complete()
+	}
+	for _, c := range []struct {
+		y, size float32
+		want    string
+	}{
+		{780, 12, "The header rows of the table"},
+		{50, 610, "The footer rows of the table"},
+	} {
+		if err := draw(c.y, c.size); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("got %v, want %q", err, c.want)
+		}
+	}
+	if err := draw(30, 610); err != nil {
+		t.Errorf("rows that reach into the bottom margin: %v", err)
+	}
+}
+
 func TestTableARowTallerThanThePageIsRefusedRatherThanAskedForForever(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
@@ -1069,6 +1102,32 @@ func TestTableTheFooterSumsAreTheTotalsOfThePageAndOfThePagesUpToIt(t *testing.T
 	}
 }
 
+// A sum reads each cell once, its whole text: the lines of a number wrapped in
+// a narrow column were read as numbers, and 1,234,567.89 and 1,000,000.00 came
+// to 686.89; the lines "12" and "30" of "boxes 12" and "pallets 30" came to 42
+// (the review of 30 October 2026, E2).
+func TestTableASumReadsTheWholeTextOfACell(t *testing.T) {
+	for _, c := range []struct{ first, second, want, not string }{
+		{"1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89"},
+		{"boxes 12", "pallets 30", "0.00", "42.00"},
+	} {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		data := [][]*Cell{
+			{NewCell(font, "Sum")}, {NewCell(font, c.first)}, {NewCell(font, c.second)}, {NewCell(font, "")},
+		}
+		table := NewTable().SetTableData(data, 1).SetNumberOfFooterRows(1).SetRunningSum(3, 0, 2)
+		table.SetColumnWidth(0, 30)
+		table.SetLocation(50, 50)
+		page := NewPage(doc.pdf, letter.Portrait())
+		table.DrawOn(page)
+		content := testContent(page)
+		if !strings.Contains(content, "<"+testHex(c.want)+">") || strings.Contains(content, "<"+testHex(c.not)+">") {
+			t.Errorf("%s and %s: no sum %s: %q", c.first, c.second, c.want, content)
+		}
+	}
+}
+
 func TestTableASumReadsTheNumbersAsRightAlignNumbersDoes(t *testing.T) {
 	for _, c := range []struct {
 		text     string
@@ -1689,4 +1748,51 @@ func TestARowDrawnWholeGoesOnTheNextPageWhenTheFirstHasNoRoom(t *testing.T) {
 	if moved == 0 || moved == 31 {
 		t.Errorf("the rows tried are not of every height: %d", moved)
 	}
+}
+
+// A row or column that is not there is the port's error, not a panic: a
+// SetVisibleColumns past the last column left rows of no cells, which panicked
+// when they were drawn (the review of 30 October 2026, E7 and G9).
+func TestTableAWrongIndexFailsTheDocument(t *testing.T) {
+	for i, misuse := range []func(table *Table, font *Font){
+		func(table *Table, font *Font) { table.SetVisibleColumns(5) },
+		func(table *Table, font *Font) { table.SetVisibleColumns(-1) },
+		func(table *Table, font *Font) { table.SetVisibleColumns() },
+		func(table *Table, font *Font) { table.SetTextAlignmentInColumn(-1, alignment.Left) },
+		func(table *Table, font *Font) { table.SetTextColorInColumn(-1, 0) },
+		func(table *Table, font *Font) { table.SetFontInColumn(-1, font) },
+		func(table *Table, font *Font) { table.SetColumnWidth(-1, 10) },
+		func(table *Table, font *Font) { table.SetTextColorInRow(-1, 0) },
+		func(table *Table, font *Font) { table.SetFontInRow(-1, font) },
+		func(table *Table, font *Font) { table.RemoveLineBetweenRows(-1, 0) },
+		func(table *Table, font *Font) { table.RemoveLineBetweenRows(0, 5) },
+		func(table *Table, font *Font) { table.GetCellAt(5, 0).SetText("x") },
+		func(table *Table, font *Font) { table.GetCellAt(-5, 0).SetText("x") },
+		func(table *Table, font *Font) { table.GetCellAt(0, 5).SetText("x") },
+		func(table *Table, font *Font) { table.GetRow(5) },
+		func(table *Table, font *Font) { table.GetRow(-1) },
+		func(table *Table, font *Font) { table.GetColumn(-1) },
+		func(table *Table, font *Font) { table.GetColumnWidth(5) },
+	} {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		table := NewTable().SetTableData([][]*Cell{{NewCell(font, "a")}, {NewCell(font, "b")}}, 1)
+		misuse(table, font)
+		table.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+		err := doc.pdf.Complete()
+		if err == nil || !strings.Contains(err.Error(), "The table has no") {
+			t.Errorf("misuse %d: got %v", i, err)
+		}
+	}
+}
+
+// The width and the percentages take effect whichever comes first, the data
+// or they: given before the data, they were lost (the review of 30 October
+// 2026, E8).
+func TestTableAWidthSetBeforeTheDataIsKept(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	table := NewTable().SetColumnWidthsInPercent(25, 75).SetWidth(400).
+		SetTableData([][]*Cell{{NewCell(font, "a"), NewCell(font, "b")}}, 0)
+	testNear(t, "first", 100, table.GetColumnWidth(0), testDelta)
+	testNear(t, "second", 300, table.GetColumnWidth(1), testDelta)
 }

@@ -144,7 +144,7 @@ import Testing
         let font = TestSupport.helvetica(TestSupport.newPDF())
         let chart = SimpleScatterChart(font, font).setTitle("T")
                 .add(1, 1).add(2, 2).add(3, 3).add(4, -1000).setTrendLine(true).setYAxisRange(0, 10)
-        #expect(chart.getAltDescription() == "T: 3 points; the trend rises.")
+        #expect(chart.getAltDescription() == "T: 3 points; the trend rises; 1 point outside the range.")
     }
 
     @Test func theIgnorableCharactersAtTheEdgesOfTheGapsSkipped() {

@@ -125,7 +125,7 @@ public class Example_40 {
         path.DrawOn(page);
 
         // And so does an image of an arrow.
-        Image image = new Image(pdf, "images/up-arrow.png");
+        Image image = new Image(pdf, "resources/images/up-arrow.png");
         image.SetAltDescription(
                 "An arrow pointing up, which goes back to the contents of the document when it is clicked.");
         image.SetLocation(50f, 20f);

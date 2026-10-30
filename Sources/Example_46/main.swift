@@ -107,8 +107,8 @@ public class Example_46 {
 
         // The invoice as data, which the document carries, and the description
         // of it in the metadata. Files are added before the first page.
-        guard let xml = InputStream(fileAtPath: "data/invoice/factur-x.xml") else {
-            throw ExampleError(message: "Cannot open data/invoice/factur-x.xml")
+        guard let xml = InputStream(fileAtPath: "resources/data/invoice/factur-x.xml") else {
+            throw ExampleError(message: "Cannot open resources/data/invoice/factur-x.xml")
         }
         pdf.addAssociatedFile(try EmbeddedFile(
                 pdf,
@@ -131,8 +131,8 @@ public class Example_46 {
         let middle: Float = 345.0
 
         // The letterhead: the logo, and the address of the seller beside it
-        guard let logo = try SVGImage(fileAtPath: "data/invoice/logo.svg") else {
-            throw ExampleError(message: "Cannot open SVG file: data/invoice/logo.svg")
+        guard let logo = try SVGImage(fileAtPath: "resources/data/invoice/logo.svg") else {
+            throw ExampleError(message: "Cannot open SVG file: resources/data/invoice/logo.svg")
         }
         logo.setAltDescription("The logo of Lindenberg Paper & Print: a sheet of paper on a navy tile.")
         logo.setLocation(left, 50.0)
