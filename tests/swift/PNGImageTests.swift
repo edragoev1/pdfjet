@@ -23,6 +23,11 @@ import Testing
         ("BASN0G16", 32, 32, 0, 16, 2048, "9362f0f0", 0, ""),
         ("BASN2C08", 32, 32, 2, 8, 3072, "7855b9bf", 0, ""),
         ("BASN2C16", 32, 32, 2, 16, 6144, "c278125a", 0, ""),
+        ("BASN4A16", 32, 32, 4, 16, 2048, "992bd988", 1024, "8ce873a2"),
+        ("BASN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"),
+        ("BGAN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"),
+        ("BGGN4A16", 32, 32, 4, 16, 2048, "992bd988", 1024, "8ce873a2"),
+        ("BGYN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"),
         ("BASN3P01", 32, 32, 3, 1, 3072, "31ec284b", 0, ""),
         ("BASN3P02", 32, 32, 3, 2, 3072, "279a463a", 0, ""),
         ("BASN3P04", 32, 32, 3, 4, 3072, "3a9e038e", 0, ""),
@@ -159,11 +164,6 @@ import Testing
         _ = try Image(&objects, TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG"))
         let dict = objects[objects.count - 1].dict.joined(separator: " ")
         #expect(dict.contains("/Mask [ 127 127 127 127 127 127 ]"), "\(dict)")
-    }
-
-    @Test func rejects16BitRgbaWithAMessage() {
-        let error = #expect(throws: (any Error).self) { _ = try decode("BASN6A16") }
-        #expect(TestSupport.message(error) == "Image with unsupported bit depth == 16")
     }
 
     @Test func rejectsDataThatIsNotAPng() {
@@ -362,9 +362,16 @@ import Testing
         #expect(!raw.contains("DeviceRGB"), "no RGB color space")
     }
 
-    @Test func rejects16BitGrayscaleWithAlphaWithAMessage() {
-        let error = #expect(throws: (any Error).self) { _ = try decode("BASN4A16") }
-        #expect(TestSupport.message(error) == "Image with unsupported bit depth == 16")
+    @Test func anImageFromA16BitPngWithAlphaKeeps16BitsWithASoftMask() throws {
+        for name in ["BASN4A16", "BASN6A16"] {
+            let memory = MemoryPDF()
+            let image = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/\(name).PNG"))
+            _ = image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            try memory.pdf.complete()
+            let raw = TestSupport.latin1(memory.bytes)
+            #expect(raw.contains("/BitsPerComponent 16"), "\(name)")
+            #expect(raw.contains("/SMask"), "\(name)")
+        }
     }
 
     @Test func rejectsInterlacedImagesWithAClearError() {

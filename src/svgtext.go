@@ -48,6 +48,7 @@ type svgTextRun struct {
 	strokeAlpha float32
 	strokeWidth float32 // In the user space of the text element
 	strokeFirst bool
+	miterLimit  float32
 	lineJoin    joinstyle.JoinStyle
 
 	// Where the run is placed: its start, on its baseline, and its width.

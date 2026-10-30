@@ -24,16 +24,23 @@ internal class SVGState {
     internal bool fillCurrent = false;          // currentColor: the color property, as it is where it is used
     internal bool strokeCurrent = false;
     internal int color = Color.black;           // The color property
+    internal float fillAlpha = 1f;              // The alpha of the fill color, as #f008 or rgba() has one
+    internal float strokeAlpha = 1f;
+    internal float colorAlpha = 1f;
     internal float strokeWidth = 1f;            // In the user space of the element
     internal bool evenOdd = false;              // fill-rule="evenodd"
+    internal bool clipEvenOdd = false;          // clip-rule="evenodd"
     internal CapStyle lineCap = CapStyle.BUTT;
     internal JoinStyle lineJoin = JoinStyle.MITER;
+    internal float miterLimit = 4f;
     internal float fillOpacity = 1f;
     internal float strokeOpacity = 1f;
     internal float opacity = 1f;                // The opacities of the element and its ancestors, multiplied
     internal float ownOpacity = 1f;             // The opacity of the element itself, not inherited
     internal double[] matrix = IDENTITY;        // Replaced, never changed in place
+    internal double[] viewport = {0.0, 0.0};    // The width and the height of the viewport, in user units; replaced too
     internal bool hidden = false;               // In <defs> and the like, or under display="none": not drawn
+    internal bool invisible = false;            // visibility: not painted, but its children may be
     internal float[] dashArray = null;          // stroke-dasharray, in the user space; null is a solid line
     internal float dashOffset = 0f;
     internal bool strokeFirst = false;          // paint-order: the stroke drawn before the fill
@@ -87,22 +94,27 @@ internal class SVGState {
             case "fill":
             case "stroke":
                 int paint;
+                float paintAlpha;
                 bool current;
-                if (!ParsePaint(paints, name, value, out paint, out current)) {
+                if (!ParsePaint(paints, name, value, out paint, out paintAlpha, out current)) {
                     return;
                 }
                 if (name.Equals("fill")) {
                     fill = paint;
+                    fillAlpha = paintAlpha;
                     fillCurrent = current;
                 } else {
                     stroke = paint;
+                    strokeAlpha = paintAlpha;
                     strokeCurrent = current;
                 }
                 break;
             case "color":
                 int c;
-                if (ParseColor(name, value, out c)) {
+                float cAlpha;
+                if (ParseColor(name, value, out c, out cAlpha)) {
                     color = c;
+                    colorAlpha = cAlpha;
                 }
                 break;
             case "stroke-width":
@@ -119,6 +131,13 @@ internal class SVGState {
                     evenOdd = true;
                 } else if (value.Equals("nonzero")) {
                     evenOdd = false;
+                }
+                break;
+            case "clip-rule":
+                if (value.Equals("evenodd")) {
+                    clipEvenOdd = true;
+                } else if (value.Equals("nonzero")) {
+                    clipEvenOdd = false;
                 }
                 break;
             case "stroke-linecap":
@@ -157,6 +176,20 @@ internal class SVGState {
             case "display":
                 if (value.Equals("none")) {
                     hidden = true;
+                }
+                break;
+            case "stroke-miterlimit":
+                // Below 1 is an error in SVG, and a PDF has to be able to hold it
+                float limit;
+                if (ParseLength(value, out limit) && limit >= 1f && FastFloat.IsWritable(limit)) {
+                    miterLimit = limit;
+                }
+                break;
+            case "visibility":
+                if (value.Equals("hidden") || value.Equals("collapse")) {
+                    invisible = true;
+                } else if (value.Equals("visible")) {
+                    invisible = false;
                 }
                 break;
             case "stroke-dasharray":
@@ -425,8 +458,9 @@ internal class SVGState {
     // a browser draws it. Returns false for a value that leaves the paint as
     // it is inherited.
     private static bool ParsePaint(Dictionary<String, int> paints, String name, String value,
-            out int paint, out bool current) {
+            out int paint, out float alpha, out bool current) {
         paint = 0;
+        alpha = 1f;
         current = false;
         if (value.StartsWith("url(", StringComparison.Ordinal)) {
             int end = value.IndexOf(')');
@@ -442,49 +476,62 @@ internal class SVGState {
                 value = "none";
             }
         }
-        if (value.Equals("none")) {
+        String keyword = value.ToLowerInvariant();
+        if (keyword.Equals("none")) {
             paint = Color.transparent;
             return true;
         }
-        if (value.Equals("currentColor")) {
+        if (keyword.Equals("currentcolor")) {
             current = true;
             return true;
         }
-        return ParseColor(name, value, out paint);
+        return ParseColor(name, value, out paint, out alpha);
+    }
+
+    // The alpha the fill is drawn with: its opacities and the alpha of its
+    // color.
+    internal float DrawnFillAlpha() {
+        return fillOpacity * opacity * (fillCurrent ? colorAlpha : fillAlpha);
+    }
+
+    // The alpha the stroke is drawn with.
+    internal float DrawnStrokeAlpha() {
+        return strokeOpacity * opacity * (strokeCurrent ? colorAlpha : strokeAlpha);
     }
 
     // Reads a color: #rgb, #rrggbb, rgb() of three numbers or percentages, or
     // a name. Returns false for a color it does not know, and throws for one
     // that starts with # but is not hexadecimal.
-    private static bool ParseColor(String name, String value, out int color) {
+    private static bool ParseColor(String name, String value, out int color, out float alpha) {
         color = 0;
+        alpha = 1f;
         if (value.StartsWith("#", StringComparison.Ordinal)) {
             // The digits are counted and read in the bytes of UTF-8, one char
             // for each byte, as the Go port reads them.
             String hex = Encoding.Latin1.GetString(Encoding.UTF8.GetBytes(value.Substring(1)));
-            if (hex.Length == 3) {
-                hex = new String(new char[] {hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]});
+            if (hex.Length == 3 || hex.Length == 4) {
+                StringBuilder doubled = new StringBuilder();
+                foreach (char digit in hex) {
+                    doubled.Append(digit).Append(digit);
+                }
+                hex = doubled.ToString();
             }
-            if (hex.Length != 6) {
+            if (hex.Length != 6 && hex.Length != 8) {
                 return false;
             }
-            // A sign is read as the sign of the number, as in the Go port.
-            int start = (hex[0] == '+' || hex[0] == '-') ? 1 : 0;
-            int number = 0;
-            for (int i = start; i < hex.Length; i++) {
-                int digit = HexDigit(hex[i]);
-                if (digit < 0) {
-                    throw new InvalidDataException("Invalid SVG " + name + ": invalid color \"" + value + "\".");
-                }
-                number = number*16 + digit;
+            int a = 255;
+            if (!ParseHex(hex.Substring(0, 6), out color)
+                    || (hex.Length == 8 && !ParseHex(hex.Substring(6), out a))) {
+                throw new InvalidDataException("Invalid SVG " + name + ": invalid color \"" + value + "\".");
             }
-            color = (hex[0] == '-') ? -number : number;
+            alpha = ((float) Math.Max(a, 0))/255f;
             return true;
         }
         // İ is i, its simple lower case, as in the other ports: .NET's
         // invariant culture left it as it was (review of 17 October 2026)
         String lower = value.Replace('\u0130', 'i').ToLowerInvariant();
-        if (lower.StartsWith("rgb(", StringComparison.Ordinal) || lower.StartsWith("rgba(", StringComparison.Ordinal)) {
+        bool hsl = lower.StartsWith("hsl(", StringComparison.Ordinal) || lower.StartsWith("hsla(", StringComparison.Ordinal);
+        if (hsl || lower.StartsWith("rgb(", StringComparison.Ordinal) || lower.StartsWith("rgba(", StringComparison.Ordinal)) {
             int open = lower.IndexOf('(');
             int end = lower.IndexOf(')');
             if (end < open) {
@@ -494,6 +541,13 @@ internal class SVGState {
                     new char[] {',', '/', ' ', '\t', '\n', '\r'}, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length < 3) {
                 return false;
+            }
+            float opacity;
+            if (parts.Length > 3 && ParseOpacity(parts[3], out opacity)) {
+                alpha = opacity;
+            }
+            if (hsl) {
+                return ParseHSL(parts, out color);
             }
             int rgb = 0;
             for (int i = 0; i < 3; i++) {
@@ -514,6 +568,90 @@ internal class SVGState {
             return true;
         }
         return COLORS.TryGetValue(lower, out color);
+    }
+
+    // Returns the color of the hue, the saturation and the lightness of
+    // hsl(), by the formula of CSS Color 4, or false for one it cannot read.
+    private static bool ParseHSL(String[] parts, out int color) {
+        color = 0;
+        double hue;
+        double saturation;
+        double lightness;
+        if (!ParseHue(parts[0], out hue) || !ParsePercentage(parts[1], out saturation)
+                || !ParsePercentage(parts[2], out lightness)) {
+            return false;
+        }
+        double a = saturation*Math.Min(lightness, 1.0 - lightness);
+        foreach (double n in new double[] {0.0, 8.0, 4.0}) {
+            double k = (n + hue/30.0) % 12.0;
+            double channel = lightness - a*Math.Max(-1.0, Math.Min(Math.Min(k - 3.0, 9.0 - k), 1.0));
+            color = color << 8
+                    | (int) Math.Max(0.0, Math.Min(255.0, Math.Round(channel*255.0, MidpointRounding.AwayFromZero)));
+        }
+        return true;
+    }
+
+    // Reads a hue, in degrees unless it has a unit, and returns it from 0 to
+    // 360, or false for one it cannot read.
+    private static bool ParseHue(String text, out double hue) {
+        hue = 0.0;
+        double scale = 1.0;
+        if (text.EndsWith("deg", StringComparison.Ordinal)) {
+            text = text.Substring(0, text.Length - 3);
+        } else if (text.EndsWith("grad", StringComparison.Ordinal)) {
+            text = text.Substring(0, text.Length - 4);
+            scale = 0.9;
+        } else if (text.EndsWith("rad", StringComparison.Ordinal)) {
+            text = text.Substring(0, text.Length - 3);
+            scale = 57.29577951308232;
+        } else if (text.EndsWith("turn", StringComparison.Ordinal)) {
+            text = text.Substring(0, text.Length - 4);
+            scale = 360.0;
+        }
+        double number;
+        if (!ParseDouble(text, out number) || double.IsNaN(number) || double.IsInfinity(number)) {
+            return false;
+        }
+        hue = (number*scale) % 360.0;
+        if (double.IsNaN(hue)) {
+            return false;   // Too large for its unit
+        }
+        if (hue < 0.0) {
+            hue += 360.0;
+        }
+        return true;
+    }
+
+    // Reads a saturation or a lightness, with or without its percent sign,
+    // and returns it between 0 and 1, or false for one it cannot read.
+    private static bool ParsePercentage(String text, out double value) {
+        value = 0.0;
+        double number;
+        if (text.EndsWith("%", StringComparison.Ordinal)) {
+            text = text.Substring(0, text.Length - 1);
+        }
+        if (!ParseDouble(text, out number) || double.IsNaN(number) || double.IsInfinity(number)) {
+            return false;
+        }
+        value = Math.Max(0.0, Math.Min(1.0, number/100.0));
+        return true;
+    }
+
+    // Reads hexadecimal digits; a sign is read as the sign of the number, as
+    // in the Go port.
+    private static bool ParseHex(String hex, out int number) {
+        number = 0;
+        for (int i = (hex[0] == '+' || hex[0] == '-') ? 1 : 0; i < hex.Length; i++) {
+            int digit = HexDigit(hex[i]);
+            if (digit < 0) {
+                return false;
+            }
+            number = number*16 + digit;
+        }
+        if (hex[0] == '-') {
+            number = -number;
+        }
+        return true;
     }
 
     private static int HexDigit(char ch) {

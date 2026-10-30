@@ -18,7 +18,17 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 class SVGImageTest {
+    // What the image draws, without the miter limit that is set around an
+    // image that strokes, which theMiterLimitOfAStrokeIsWritten checks.
+    static String withoutMiterLimit(String content) {
+        return content.startsWith("q\n4 M\n") ? content.substring(6, content.length() - 2) : content;
+    }
+
     private static String draw(String svg) throws Exception {
+        return withoutMiterLimit(drawAsItIs(svg));
+    }
+
+    private static String drawAsItIs(String svg) throws Exception {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
         SVGImage image = new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
         image.setLocation(0f, 0f);
@@ -305,7 +315,7 @@ class SVGImageTest {
         String[] boxes = {"0 0", "0 0 10 10 10", "0 0 ten 10", "0 0 0 10", "0 0 10 0"};
         String[] messages = {
             "four numbers are needed.", "four numbers are needed.", "four numbers are needed.",
-            "its width and height cannot be zero.", "its width and height cannot be zero.",
+            "its width and height have to be above zero.", "its width and height have to be above zero.",
         };
         for (int i = 0; i < boxes.length; i++) {
             String svg = "<svg width=\"10\" height=\"10\" viewBox=\"" + boxes[i] + "\"/>";
@@ -428,7 +438,7 @@ class SVGImageTest {
             {"fill=\"#F00\"", "1 0 0 rg"},
             {"fill=\"rgb(255, 0, 0)\"", "1 0 0 rg"},
             {"fill=\"rgb(100%,0%,0%)\"", "1 0 0 rg"},
-            {"fill=\"RGBA(255 0 0 / 0.5)\"", "1 0 0 rg"},
+            {"fill=\"RGBA(255 0 0 / 1)\"", "1 0 0 rg"},
             {"fill=\"Red\"", "1 0 0 rg"},
             {"fill=\"currentColor\" color=\"red\"", "1 0 0 rg"},
             {"fill=\"currentColor\"", "0 0 0 rg"},
@@ -834,5 +844,526 @@ class SVGImageTest {
         // The clip path is in the user space of the group, moved with it.
         assertEquals("q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
                 + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", content);
+    }
+
+    // An SVG of a chain of use elements, flat in the file.
+    private static String useChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><defs><rect id=\"u0\" width=\"1\" height=\"1\"/>");
+        for (int i = 1; i <= links; i++) {
+            svg.append("<use id=\"u").append(i).append("\" href=\"#u").append(i - 1).append("\"/>");
+        }
+        return svg.append("</defs><use href=\"#u").append(links).append("\"/></svg>").toString();
+    }
+
+    // An SVG of elements nested levels deep in the svg element, around the content.
+    private static String nested(String open, String end, String content, int levels) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < levels; i++) {
+            svg.append(open);
+        }
+        svg.append(content);
+        for (int i = 0; i < levels; i++) {
+            svg.append(end);
+        }
+        return svg.append("</svg>").toString();
+    }
+
+    // An SVG of markers each drawn by a path in the one before it.
+    private static String markerChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < links; i++) {
+            svg.append("<marker id=\"m").append(i).append("\"><path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m")
+                    .append(i + 1).append(")\"/></marker>");
+        }
+        svg.append("<marker id=\"m").append(links).append("\"><rect width=\"1\" height=\"1\"/></marker>");
+        return svg.append("<path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m0)\"/></svg>").toString();
+    }
+
+    private static SVGImage read(String svg) throws Exception {
+        return new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static String tspans(int levels) {
+        return nested("<g>", "</g>", "<text>a" + nested("<tspan>b", "</tspan>", "", levels)
+                .replace("<svg width=\"10\" height=\"10\">", "").replace("</svg>", "") + "</text>", 2);
+    }
+
+    @Test
+    void theDepthOfWhatIsDrawnIsLimitedOnASmallStack() throws Exception {
+        Throwable[] failure = new Throwable[1];
+        Thread thread = new Thread(null, () -> {
+            try {
+                read(useChain(22));
+                read(markerChain(14));
+                read(nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 46));
+                read(tspans(43));
+                for (String svg : new String[] {
+                        useChain(23), useChain(2000), markerChain(15), tspans(44),
+                        nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 47), nested("<g>", "</g>", "", 250)}) {
+                    IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> read(svg));
+                    assertTrue(e.getMessage().contains("deep"), e.getMessage());
+                }
+            } catch (Throwable e) {
+                failure[0] = e;
+            }
+        }, "svg", 512*1024);
+        thread.start();
+        thread.join();
+        if (failure[0] != null) {
+            throw new AssertionError(failure[0]);
+        }
+    }
+
+    @Test
+    void manyGradientsOfOneGradientOfManyStopsAreReadOnce() throws Exception {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">");
+        for (int i = 0; i < 10000; i++) {
+            svg.append("<stop stop-color=\"red\"/>");
+        }
+        svg.append("</linearGradient>");
+        for (int i = 0; i < 10000; i++) {
+            svg.append("<linearGradient id=\"g").append(i).append("\" href=\"#s\"/>");
+        }
+        svg.append("<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>");
+        long start = System.nanoTime();
+        String content = draw(svg.toString());
+        long elapsed = (System.nanoTime() - start)/1000000;
+        assertTrue(elapsed < 5000, elapsed + " ms");
+        assertTrue(content.startsWith("1 0 0 rg\n"), content);
+    }
+
+    private static String repeat(String text, int count) {
+        StringBuilder repeated = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            repeated.append(text);
+        }
+        return repeated.toString();
+    }
+
+    private static String polygon(int points) {
+        return "<polygon id=\"p\" points=\"" + repeat("0,0 1,1 ", points/2) + "\"/>";
+    }
+
+    @Test
+    void theOperationsDrawnAgainAreLimited() throws Exception {
+        String clipped = "<svg width=\"10\" height=\"10\"><clipPath id=\"c\">" + polygon(10000) + "</clipPath>";
+        for (String svg : new String[] {
+                "<svg width=\"10\" height=\"10\"><defs>" + polygon(10000) + "</defs>"
+                        + repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                clipped + repeat("<g clip-path=\"url(#c)\"/>", 1000) + "</svg>",
+                clipped + "<g clip-path=\"url(#c)\">" + repeat("<rect width=\"1\" height=\"1\"/>", 1000) + "</g></svg>",
+                clipped + "<g clip-path=\"url(#c)\"><text>" + repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + repeat("a", 10000) + "</text></defs>"
+                        + repeat("<use href=\"#p\"/>", 1000) + "</svg>"}) {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> read(svg));
+            assertTrue(e.getMessage().contains("path operations"), e.getMessage());
+        }
+        // A file drawn once is not counted, however large
+        read("<svg width=\"10\" height=\"10\">" + repeat(polygon(10000), 500) + "</svg>");
+        read("<svg width=\"10\" height=\"10\"><defs>" + polygon(1000) + "</defs>"
+                + repeat("<use href=\"#p\"/>", 1000) + "</svg>");
+    }
+
+    @Test
+    void aUseInAClipPathDrawsTheShapeItNames() throws Exception {
+        {
+            String content = draw("<svg width=\"200\" height=\"100\"><defs><rect id=\"r\" width=\"50\" height=\"50\"/></defs><clipPath id=\"c\"><use href=\"#r\" x=\"5\" y=\"5\" transform=\"translate(10,0)\"/></clipPath><g clip-path=\"url(#c)\"><rect x=\"10\" y=\"10\" width=\"80\" height=\"20\"/></g></svg>");
+            assertEquals("q\n15 787 m\n65 787 l\n65 737 l\n15 737 l\nh\nW\nn\n0 0 0 rg\n10 782 m\n90 782 l\n90 762 l\n10 762 l\nf\nQ\n", content);
+        }
+        {
+            String content = draw("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><use href=\"#missing\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertEquals("", content);
+        }
+    }
+
+    @Test
+    void theClipRuleOfAClipPathIsDrawn() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><path clip-rule=\"evenodd\" d=\"M0 0 H50 V50 H0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertTrue(content.contains("h\nW*\nn\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\" style=\"clip-rule:evenodd\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertTrue(content.contains("h\nW*\nn\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertTrue(content.contains("h\nW\nn\n"), content);
+        }
+    }
+
+    @Test
+    void theShapesOfAClipPathGoTheSameWayRound() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><polygon points=\"0,0 20,0 20,20 0,20\"/><polygon clip-rule=\"evenodd\" points=\"10,10 10,30 30,30 30,10\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertTrue(content.contains("0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\n10 782 m\n30 782 l\n30 762 l\n10 762 l\n10 782 l\nW\nn\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"20\" height=\"20\"/><path d=\"M50 0 C50 10 60 20 70 20 L70 0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertTrue(content.contains("50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n"), content);
+        }
+    }
+
+    @Test
+    void theAlphaOfAColorIsDrawn() throws Exception {
+        assertEquals(0.5f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\"/></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.25f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgb(255 0 0 / 25%)\"/></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.25f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\" fill-opacity=\"0.5\"/></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.2509804f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.26666668f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.5019608f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" stroke=\"#00ff0080\"/></svg>").paths.get(0).strokeAlpha, 0f);
+        assertEquals(1.0f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\"/></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.5f, read("<svg width=\"100\" height=\"100\"><g fill=\"rgba(0,0,0,0.5)\"><path d=\"M0 0 L10 0 L10 10 Z\"/></g></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.5f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"rgba(0,0,255,0.5)\" fill=\"currentColor\"/></svg>").paths.get(0).fillAlpha, 0f);
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(0,0,0,0.5)\"/></svg>");
+            assertTrue(content.startsWith("q\n/GS1 gs\n0 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>");
+            assertTrue(content.startsWith("q\n/GS1 gs\n1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>");
+            assertTrue(content.startsWith("q\n/GS1 gs\n1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000000\"/></svg>");
+            assertEquals("", content);
+        }
+    }
+
+    @Test
+    void hslColorsAreDrawn() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(120, 100%, 50%)\"/></svg>");
+            assertTrue(content.startsWith("0 1 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(240deg 100% 50%)\"/></svg>");
+            assertTrue(content.startsWith("0 0 1 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"HSL(-120, 100%, 50%)\"/></svg>");
+            assertTrue(content.startsWith("0 0 1 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0.5turn 100% 50%)\"/></svg>");
+            assertTrue(content.startsWith("0 1 1 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0, 0%, 100%)\"/></svg>");
+            assertTrue(content.startsWith("1 1 1 rg\n"), content);
+        }
+        assertEquals(0.5f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsla(0, 100%, 50%, 0.5)\"/></svg>").paths.get(0).fillAlpha, 0f);
+        assertEquals(0.25f, read("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0 100% 50% / 25%)\"/></svg>").paths.get(0).fillAlpha, 0f);
+    }
+
+    @Test
+    void theKeywordsOfAPaintAreInAnyCase() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"currentcolor\"/></svg>");
+            assertTrue(content.startsWith("1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"CURRENTCOLOR\"/></svg>");
+            assertTrue(content.startsWith("1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"NONE\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"None\"/></svg>");
+            assertEquals("", content);
+        }
+    }
+
+    @Test
+    void whatIsNotVisibleIsNotDrawn() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\"/></g></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><rect width=\"5\" height=\"5\" style=\"visibility:collapse\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\" visibility=\"visible\"/></g></svg>");
+            assertTrue(content.startsWith("0 0 1 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><text visibility=\"hidden\" x=\"1\" y=\"50\">a</text></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"9\">a<tspan visibility=\"hidden\">b</tspan>c</text></svg>");
+            assertEquals(2, content.split("BT\n", -1).length - 1, content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><defs><rect id=\"r\" width=\"5\" height=\"5\"/></defs><use href=\"#r\" visibility=\"hidden\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"5\" height=\"5\" visibility=\"hidden\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L1 1\" stroke=\"red\" visibility=\"hidden\" marker-end=\"url(#m)\"/></svg>");
+            assertEquals("", content);
+        }
+    }
+
+    @Test
+    void aSwitchDrawsTheFirstChildItCan() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertEquals("1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><title>a</title><foreignObject width=\"5\" height=\"5\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></foreignObject><g><rect width=\"5\" height=\"5\" fill=\"red\"/></g><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertTrue(content.startsWith("1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertEquals(0, content.split("0 0 1 rg", -1).length - 1, content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            assertEquals(1, content.split("1 0 0 rg", -1).length - 1, content);
+        }
+    }
+
+    @Test
+    void aUseGivesASymbolItsSize() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>");
+            assertTrue(content.contains("5 787 m\n25 787 l\n25 767 l\n5 767 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            assertTrue(content.contains("0 782 m\n20 782 l\n20 762 l\n0 762 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMinYMin\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            assertTrue(content.contains("0 792 m\n20 792 l\n20 772 l\n0 772 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"none\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            assertTrue(content.contains("0 792 m\n20 792 l\n20 752 l\n0 752 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax slice\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            assertTrue(content.contains("-20 792 m\n20 792 l\n20 752 l\n-20 752 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\"/></svg>");
+            assertTrue(content.contains("0 792 m\n100 792 l\n100 692 l\n0 692 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"0\" height=\"20\"/></svg>");
+            assertEquals("", content);
+        }
+    }
+
+    @Test
+    void aNestedSvgIsAViewport() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\" width=\"20\" height=\"20\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            assertTrue(content.contains("10 772 m\n30 772 l\n30 752 l\n10 752 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            assertTrue(content.contains("10 772 m\n20 772 l\n20 762 l\n10 762 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><svg x=\"50%\" y=\"10%\" width=\"20\" height=\"20\" viewBox=\"5 5 10 10\"><rect x=\"5\" y=\"5\" width=\"10\" height=\"10\"/></svg></svg>");
+            assertTrue(content.contains("50 782 m\n70 782 l\n70 762 l\n50 762 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 200 200\"><svg width=\"50%\" height=\"50%\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            assertTrue(content.contains("0 792 m\n50 792 l\n50 742 l\n0 742 l\n"), content);
+        }
+        {
+            String content = draw("<svg><svg viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            assertTrue(content.contains("0 792 m\n10 792 l\n10 782 l\n0 782 l\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><svg width=\"0\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><svg viewBox=\"0 0 -10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            assertEquals("", content);
+        }
+    }
+
+    @Test
+    void thePaintOrderOfAShapeIsDrawn() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"stroke\"/></svg>");
+            assertTrue(content.contains("S\n1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" style=\"paint-order: stroke fill markers\"/></svg>");
+            assertTrue(content.contains("S\n1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" /></svg>");
+            assertTrue(content.contains("f\n0 0 1 RG\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"fill stroke\"/></svg>");
+            assertTrue(content.contains("f\n0 0 1 RG\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>");
+            assertTrue(content.contains("f\n0 0 1 RG\n"), content);
+        }
+    }
+
+    @Test
+    void theMiterLimitOfAStrokeIsWritten() throws Exception {
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" /></svg>");
+            assertTrue(content.startsWith("q\n4 M\n1 0 0 RG\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"2.5\"/></svg>");
+            assertTrue(content.startsWith("q\n2.5 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" style=\"stroke-miterlimit:1\"/></svg>");
+            assertTrue(content.startsWith("q\n1 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"10\"/></svg>");
+            assertTrue(content.startsWith("q\n10 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"0.5\"/></svg>");
+            assertTrue(content.startsWith("q\n4 M\n1 0 0 RG\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"1e30\"/></svg>");
+            assertTrue(content.startsWith("q\n4 M\n1 0 0 RG\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><g fill=\"none\" stroke=\"red\"><path d=\"M0 0 L10 0 L10 10 Z\"/><path d=\"M0 0 L9 0 L9 9 Z\"/></g></svg>");
+            assertEquals(1, content.split(" M\n", -1).length - 1, content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-linejoin=\"round\"/></svg>");
+            assertFalse(content.contains(" M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>");
+            assertFalse(content.contains(" M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\">a</text></svg>");
+            assertTrue(content.startsWith("q\n4 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\" stroke-miterlimit=\"3\">a</text></svg>");
+            assertTrue(content.contains("3 M\n"), content);
+        }
+        {
+            String content = drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\">a</text></svg>");
+            assertFalse(content.contains(" M\n"), content);
+        }
+    }
+
+    @Test
+    void aDashOffsetBelowZeroIsWrittenInsideThePattern() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-1\"/></svg>");
+            assertTrue(content.contains("[4 2] 5 d\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-7\"/></svg>");
+            assertTrue(content.contains("[4 2] 5 d\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-6\"/></svg>");
+            assertTrue(content.contains("[4 2] 0 d\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"7\"/></svg>");
+            assertTrue(content.contains("[4 2] 7 d\n"), content);
+        }
+    }
+
+    @Test
+    void hugeDashesAndClipPathsSkipThePath() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"1e30\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1e30\" stroke-dashoffset=\"-1\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><text x=\"1\" y=\"50\" clip-path=\"url(#c)\">a</text></svg>");
+            assertEquals("", content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10 L0 20\" stroke-dasharray=\"1e30 1\"/></svg>");
+            assertTrue(content.startsWith("0 0 0 rg\n"), content);
+        }
+    }
+
+    @Test
+    void aSizeInAUnitWithoutAViewBoxIsInPixels() throws Exception {
+        {
+            String content = draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"1in\" height=\"1in\"><rect width=\"96\" height=\"96\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"10mm\" height=\"10mm\"><rect width=\"37.79\" height=\"37.79\"/></svg>");
+            assertFalse(content.contains("W\n"), content);
+        }
+        assertEquals(75f, read("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getWidth(), 0f);
+        assertEquals(75f, read("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getHeight(), 0f);
+        {
+            String content = draw("<svg width=\"100px\" height=\"100\"><rect width=\"100\" height=\"100\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"75pt\" height=\"75pt\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"10\" height=\"10\" fill=\"none\" stroke=\"red\" stroke-width=\"4\"/></svg>");
+            assertTrue(content.contains("3 w\n"), content);
+        }
+    }
+
+    @Test
+    void aViewBoxOfNegativeSizeIsRefused() throws Exception {
+        assertTrue(assertThrows(Exception.class, () -> read("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>")).getMessage().contains("have to be above zero"));
+        assertTrue(assertThrows(Exception.class, () -> read("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>")).getMessage().contains("have to be above zero"));
+    }
+
+    @Test
+    void aHueTooLargeForItsUnitIsNotAColor() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(1e308turn, 100%, 50%)\"/></svg>");
+            assertTrue(content.startsWith("0 0 0 rg\n"), content);
+        }
     }
 }

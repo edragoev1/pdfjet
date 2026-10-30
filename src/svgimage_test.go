@@ -26,7 +26,19 @@ func testNewSVG(t *testing.T, svg string) *SVGImage {
 	return image
 }
 
+// testDrawSVG returns what the image draws, without the miter limit that is
+// set around an image that strokes, which
+// TestSVGImageTheMiterLimitOfAStrokeIsWritten checks.
 func testDrawSVG(t *testing.T, svg string) string {
+	t.Helper()
+	content := testDrawSVGAsItIs(t, svg)
+	if strings.HasPrefix(content, "q\n4 M\n") {
+		return content[len("q\n4 M\n") : len(content)-len("Q\n")]
+	}
+	return content
+}
+
+func testDrawSVGAsItIs(t *testing.T, svg string) string {
 	t.Helper()
 	page := testNewPage()
 	image := testNewSVG(t, svg)
@@ -369,8 +381,8 @@ func TestSVGImageAViewBoxThatIsNotFourNumbersOrHasNoSizeFails(t *testing.T) {
 		`<svg width="10" height="10" viewBox="0 0"/>`:          `Invalid SVG viewBox "0 0": four numbers are needed.`,
 		`<svg width="10" height="10" viewBox="0 0 10 10 10"/>`: `Invalid SVG viewBox "0 0 10 10 10": four numbers are needed.`,
 		`<svg width="10" height="10" viewBox="0 0 ten 10"/>`:   `Invalid SVG viewBox "0 0 ten 10": four numbers are needed.`,
-		`<svg width="10" height="10" viewBox="0 0 0 10"/>`:     `Invalid SVG viewBox "0 0 0 10": its width and height cannot be zero.`,
-		`<svg width="10" height="10" viewBox="0 0 10 0"/>`:     `Invalid SVG viewBox "0 0 10 0": its width and height cannot be zero.`,
+		`<svg width="10" height="10" viewBox="0 0 0 10"/>`:     `Invalid SVG viewBox "0 0 0 10": its width and height have to be above zero.`,
+		`<svg width="10" height="10" viewBox="0 0 10 0"/>`:     `Invalid SVG viewBox "0 0 10 0": its width and height have to be above zero.`,
 	} {
 		_, err := NewSVGImage(strings.NewReader(svg))
 		if err == nil || err.Error() != want {
@@ -507,7 +519,7 @@ func TestSVGImageColorsAreHexadecimalRGBNamesOrTheCurrentColor(t *testing.T) {
 		`fill="#F00"`:                                "1 0 0 rg",
 		`fill="rgb(255, 0, 0)"`:                      "1 0 0 rg",
 		`fill="rgb(100%,0%,0%)"`:                     "1 0 0 rg",
-		`fill="RGBA(255 0 0 / 0.5)"`:                 "1 0 0 rg",
+		`fill="RGBA(255 0 0 / 1)"`:                   "1 0 0 rg",
 		`fill="Red"`:                                 "1 0 0 rg",
 		`fill="currentColor" color="red"`:            "1 0 0 rg",
 		`fill="currentColor"`:                        "0 0 0 rg",
@@ -953,6 +965,439 @@ func TestSVGImageAClipPathCutsOffWhatIsOutsideIt(t *testing.T) {
 	// The clip path is in the user space of the group, moved with it.
 	if content != "q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"+
 		"0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
+	}
+}
+
+// testSVGUseChain returns an SVG of a chain of use elements, flat in the file.
+func testSVGUseChain(links int) string {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10"><defs><rect id="u0" width="1" height="1"/>`)
+	for i := 1; i <= links; i++ {
+		svg.WriteString(`<use id="u` + strconv.Itoa(i) + `" href="#u` + strconv.Itoa(i-1) + `"/>`)
+	}
+	svg.WriteString(`</defs><use href="#u` + strconv.Itoa(links) + `"/></svg>`)
+	return svg.String()
+}
+
+// testSVGNested returns an SVG of elements nested levels deep in the svg
+// element, each the open tag, around the content.
+func testSVGNested(open, end, content string, levels int) string {
+	return `<svg width="10" height="10">` + strings.Repeat(open, levels) + content +
+		strings.Repeat(end, levels) + `</svg>`
+}
+
+// testSVGMarkerChain returns an SVG of markers each drawn by a path in the one
+// before it.
+func testSVGMarkerChain(links int) string {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10">`)
+	for i := 0; i < links; i++ {
+		svg.WriteString(`<marker id="m` + strconv.Itoa(i) + `"><path d="M0 0 L1 1" stroke="red" marker-end="url(#m` +
+			strconv.Itoa(i+1) + `)"/></marker>`)
+	}
+	svg.WriteString(`<marker id="m` + strconv.Itoa(links) + `"><rect width="1" height="1"/></marker>`)
+	svg.WriteString(`<path d="M0 0 L1 1" stroke="red" marker-end="url(#m0)"/></svg>`)
+	return svg.String()
+}
+
+func TestSVGImageTheDepthOfWhatIsDrawnIsLimited(t *testing.T) {
+	testNewSVG(t, testSVGUseChain(22))
+	testNewSVG(t, testSVGMarkerChain(14))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 46))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 43)+
+		strings.Repeat(`</tspan>`, 43)+`</text>`, 2))
+	for name, svg := range map[string]string{
+		"a chain of use elements": testSVGUseChain(23),
+		"a long chain":            testSVGUseChain(600000),
+		"a chain of markers":      testSVGMarkerChain(15),
+		"nested groups":           testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 47),
+		"more nested groups":      testSVGNested(`<g>`, `</g>`, ``, 250),
+		"tspans": testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 44)+
+			strings.Repeat(`</tspan>`, 44)+`</text>`, 2),
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || !strings.Contains(err.Error(), "deep") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+func TestSVGImageManyGradientsOfOneGradientOfManyStopsAreReadOnce(t *testing.T) {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10"><linearGradient id="s">`)
+	svg.WriteString(strings.Repeat(`<stop stop-color="red"/>`, 10000))
+	svg.WriteString(`</linearGradient>`)
+	for i := 0; i < 10000; i++ {
+		svg.WriteString(`<linearGradient id="g` + strconv.Itoa(i) + `" href="#s"/>`)
+	}
+	svg.WriteString(`<rect width="5" height="5" fill="url(#g7)"/></svg>`)
+	start := time.Now()
+	content := testDrawSVG(t, svg.String())
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Errorf("took %v", elapsed)
+	}
+	if !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheOperationsDrawnAgainAreLimited(t *testing.T) {
+	polygon := func(points int) string {
+		return `<polygon id="p" points="` + strings.Repeat("0,0 1,1 ", points/2) + `"/>`
+	}
+	clipped := `<svg width="10" height="10"><clipPath id="c">` + polygon(10000) + `</clipPath>`
+	for name, svg := range map[string]string{
+		"uses of a path": `<svg width="10" height="10"><defs>` + polygon(10000) + `</defs>` +
+			strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+		"elements clipped": clipped + strings.Repeat(`<g clip-path="url(#c)"/>`, 1000) + `</svg>`,
+		"paths in a clip": clipped + `<g clip-path="url(#c)">` +
+			strings.Repeat(`<rect width="1" height="1"/>`, 1000) + `</g></svg>`,
+		"runs in a clip": clipped + `<g clip-path="url(#c)"><text>` +
+			strings.Repeat(`<tspan>a</tspan>`, 1000) + `</text></g></svg>`,
+		"uses of a text": `<svg width="10" height="10"><defs><text id="p">` + strings.Repeat("a", 10000) +
+			`</text></defs>` + strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || !strings.Contains(err.Error(), "path operations") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	// A file drawn once is not counted, however large
+	testNewSVG(t, `<svg width="10" height="10">`+strings.Repeat(polygon(10000), 500)+`</svg>`)
+	testNewSVG(t, `<svg width="10" height="10"><defs>`+polygon(1000)+`</defs>`+
+		strings.Repeat(`<use href="#p"/>`, 1000)+`</svg>`)
+}
+
+func TestSVGImageAUseInAClipPathDrawsTheShapeItNames(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="200" height="100"><defs><rect id="r" width="50" height="50"/></defs><clipPath id="c"><use href="#r" x="5" y="5" transform="translate(10,0)"/></clipPath><g clip-path="url(#c)"><rect x="10" y="10" width="80" height="20"/></g></svg>`); content != "q\n15 787 m\n65 787 l\n65 737 l\n15 737 l\nh\nW\nn\n0 0 0 rg\n10 782 m\n90 782 l\n90 762 l\n10 762 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="200" height="100"><clipPath id="c"><use href="#missing"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheClipRuleOfAClipPathIsDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><path clip-rule="evenodd" d="M0 0 H50 V50 H0 Z"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW*\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c" style="clip-rule:evenodd"><rect width="50" height="50"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW*\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="50" height="50"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheShapesOfAClipPathGoTheSameWayRound(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><polygon points="0,0 20,0 20,20 0,20"/><polygon clip-rule="evenodd" points="10,10 10,30 30,30 30,10"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\n10 782 m\n30 782 l\n30 762 l\n10 762 l\n10 782 l\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="20" height="20"/><path d="M50 0 C50 10 60 20 70 20 L70 0 Z"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheAlphaOfAColorIsDrawn(t *testing.T) {
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(255,0,0,0.5)"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgb(255 0 0 / 25%)"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(255,0,0,0.5)" fill-opacity="0.5"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000040"/></svg>`).paths[0].fillAlpha; alpha != 0.2509804 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#f004"/></svg>`).paths[0].fillAlpha; alpha != 0.26666668 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" stroke="#00ff0080"/></svg>`).paths[0].strokeAlpha; alpha != 0.5019608 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red"/></svg>`).paths[0].fillAlpha; alpha != 1.0 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><g fill="rgba(0,0,0,0.5)"><path d="M0 0 L10 0 L10 10 Z"/></g></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="rgba(0,0,255,0.5)" fill="currentColor"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(0,0,0,0.5)"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000040"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#f004"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000000"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageHslColorsAreDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(120, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 1 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(240deg 100% 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="HSL(-120, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0.5turn 100% 50%)"/></svg>`); !strings.HasPrefix(content, "0 1 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0, 0%, 100%)"/></svg>`); !strings.HasPrefix(content, "1 1 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsla(0, 100%, 50%, 0.5)"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0 100% 50% / 25%)"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+}
+
+func TestSVGImageTheKeywordsOfAPaintAreInAnyCase(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="red" fill="currentcolor"/></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="red" fill="CURRENTCOLOR"/></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="NONE"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="None"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageWhatIsNotVisibleIsNotDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><g visibility="hidden"><rect width="5" height="5"/></g></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><rect width="5" height="5" style="visibility:collapse"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><g visibility="hidden"><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue" visibility="visible"/></g></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><text visibility="hidden" x="1" y="50">a</text></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><text x="1" y="9">a<tspan visibility="hidden">b</tspan>c</text></svg>`); strings.Count(content, "BT\n") != 2 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><defs><rect id="r" width="5" height="5"/></defs><use href="#r" visibility="hidden"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="5" height="5" visibility="hidden"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><marker id="m"><rect width="5" height="5"/></marker><path d="M0 0 L1 1" stroke="red" visibility="hidden" marker-end="url(#m)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASwitchDrawsTheFirstChildItCan(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); content != "1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><title>a</title><foreignObject width="5" height="5"><rect width="5" height="5" fill="blue"/></foreignObject><g><rect width="5" height="5" fill="red"/></g><rect width="5" height="5" fill="blue"/></switch></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" requiredExtensions="http://a" fill="blue"/><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); strings.Count(content, "0 0 1 rg") != 0 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" requiredExtensions="http://a" fill="blue"/><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); strings.Count(content, "1 0 0 rg") != 1 {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAUseGivesASymbolItsSize(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s" x="5" y="5" width="20" height="20"/></svg>`); !strings.Contains(content, "5 787 m\n25 787 l\n25 767 l\n5 767 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "0 782 m\n20 782 l\n20 762 l\n0 762 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMinYMin"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "0 792 m\n20 792 l\n20 772 l\n0 772 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="none"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "0 792 m\n20 792 l\n20 752 l\n0 752 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMaxYMax slice"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "-20 792 m\n20 792 l\n20 752 l\n-20 752 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s"/></svg>`); !strings.Contains(content, "0 792 m\n100 792 l\n100 692 l\n0 692 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s" width="0" height="20"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageANestedSvgIsAViewport(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="10" y="20" width="20" height="20" viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "10 772 m\n30 772 l\n30 752 l\n10 752 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="10" y="20"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "10 772 m\n20 772 l\n20 762 l\n10 762 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="50%" y="10%" width="20" height="20" viewBox="5 5 10 10"><rect x="5" y="5" width="10" height="10"/></svg></svg>`); !strings.Contains(content, "50 782 m\n70 782 l\n70 762 l\n50 762 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100" viewBox="0 0 200 200"><svg width="50%" height="50%" viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "0 792 m\n50 792 l\n50 742 l\n0 742 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg><svg viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "0 792 m\n10 792 l\n10 782 l\n0 782 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="0" viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg viewBox="0 0 -10 10"><rect width="10" height="10"/></svg></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageThePaintOrderOfAShapeIsDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="stroke"/></svg>`); !strings.Contains(content, "S\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" style="paint-order: stroke fill markers"/></svg>`); !strings.Contains(content, "S\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" /></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="fill stroke"/></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="normal"/></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheMiterLimitOfAStrokeIsWritten(t *testing.T) {
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" /></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="2.5"/></svg>`); !strings.HasPrefix(content, "q\n2.5 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" style="stroke-miterlimit:1"/></svg>`); !strings.HasPrefix(content, "q\n1 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="10"/></svg>`); !strings.HasPrefix(content, "q\n10 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="0.5"/></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="1e30"/></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><g fill="none" stroke="red"><path d="M0 0 L10 0 L10 10 Z"/><path d="M0 0 L9 0 L9 9 Z"/></g></svg>`); strings.Count(content, " M\n") != 1 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-linejoin="round"/></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z"/></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50" stroke="red">a</text></svg>`); !strings.HasPrefix(content, "q\n4 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50" stroke="red" stroke-miterlimit="3">a</text></svg>`); !strings.Contains(content, "3 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50">a</text></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageADashOffsetBelowZeroIsWrittenInsideThePattern(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-1"/></svg>`); !strings.Contains(content, "[4 2] 5 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-7"/></svg>`); !strings.Contains(content, "[4 2] 5 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-6"/></svg>`); !strings.Contains(content, "[4 2] 0 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="7"/></svg>`); !strings.Contains(content, "[4 2] 7 d\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageHugeDashesAndClipPathsSkipThePath(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="1e30 1"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="1e30"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="1e30 1e30" stroke-dashoffset="-1"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="1e30" height="5"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="1e30" height="5"/></clipPath><text x="1" y="50" clip-path="url(#c)">a</text></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10 L0 20" stroke-dasharray="1e30 1"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASizeInAUnitWithoutAViewBoxIsInPixels(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt"><rect width="100" height="100"/></svg>`); content != "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="1in" height="1in"><rect width="96" height="96"/></svg>`); content != "0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="10mm" height="10mm"><rect width="37.79" height="37.79"/></svg>`); strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	if image := testNewSVG(t, `<svg width="75pt" height="75pt"><rect width="100" height="100"/></svg>`); image.GetWidth() != 75 || image.GetHeight() != 75 {
+		t.Errorf("size %v x %v", image.GetWidth(), image.GetHeight())
+	}
+	if content := testDrawSVG(t, `<svg width="100px" height="100"><rect width="100" height="100"/></svg>`); content != "0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>`); content != "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt"><rect width="10" height="10" fill="none" stroke="red" stroke-width="4"/></svg>`); !strings.Contains(content, "3 w\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAViewBoxOfNegativeSizeIsRefused(t *testing.T) {
+	if _, err := NewSVGImage(strings.NewReader(`<svg width="10" height="10" viewBox="0 0 -10 10"/>`)); err == nil || !strings.Contains(err.Error(), "have to be above zero") {
+		t.Errorf("error %v", err)
+	}
+	if _, err := NewSVGImage(strings.NewReader(`<svg width="10" height="10" viewBox="0 0 10 -10"/>`)); err == nil || !strings.Contains(err.Error(), "have to be above zero") {
+		t.Errorf("error %v", err)
+	}
+}
+
+func TestSVGImageAHueTooLargeForItsUnitIsNotAColor(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(1e308turn, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
 		t.Errorf("content %q", content)
 	}
 }

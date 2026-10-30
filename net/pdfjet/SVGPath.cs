@@ -20,12 +20,14 @@ internal class SVGPath {
     internal int stroke = Color.transparent;
     /// <summary>The stroke width, in the space of the svg element.</summary>
     internal float strokeWidth = 0f;
-    /// <summary>True to fill the path with the even-odd rule.</summary>
+    /// <summary>True to fill the path, or to clip to it, with the even-odd rule.</summary>
     internal bool evenOdd = false;
     /// <summary>The line cap style.</summary>
     internal CapStyle lineCap = CapStyle.BUTT;
     /// <summary>The line join style.</summary>
     internal JoinStyle lineJoin = JoinStyle.MITER;
+    /// <summary>The miter limit.</summary>
+    internal float miterLimit = 4f;
     /// <summary>The alpha of the fill.</summary>
     internal float fillAlpha = 1f;
     /// <summary>The alpha of the stroke.</summary>
@@ -34,6 +36,8 @@ internal class SVGPath {
     internal float[] dashArray = null;
     /// <summary>The dash offset, in the space of the svg element.</summary>
     internal float dashOffset = 0f;
+    /// <summary>True to draw the stroke before the fill.</summary>
+    internal bool strokeFirst = false;
     /// <summary>The clip paths it is drawn inside, all of them, or null.</summary>
     internal List<SVGPath> clips = null;
     /// <summary>A text, drawn instead of the operations, or null.</summary>

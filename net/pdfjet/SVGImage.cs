@@ -16,10 +16,13 @@ namespace PDFjet.NET {
 /// It draws the path, rect, circle, ellipse, line, polyline and polygon
 /// elements, in groups or not, with their transforms, and the fill, stroke,
 /// stroke-width, stroke-dasharray, stroke-dashoffset, fill-rule,
-/// stroke-linecap, stroke-linejoin, opacity, fill-opacity, stroke-opacity,
-/// paint-order, clip-path and markers they have or inherit, as attributes, in a
+/// stroke-linecap, stroke-linejoin, stroke-miterlimit, opacity, fill-opacity,
+/// stroke-opacity, visibility, paint-order, clip-path and markers they have or
+/// inherit, as attributes, in a
 /// style attribute or in rules for their classes in a style element that comes
-/// before them. It draws the elements a use element names, and text and tspan
+/// before them. It draws the elements a use element names, a symbol at the size
+/// of the use, a nested svg at its x, y and viewBox, the first child of a switch
+/// that it can draw, and text and tspan
 /// elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
 /// dominant-baseline, in the font set with SetFont and SetBoldFont, or else
 /// in the fonts PDFjet carries, embedded: IBM Plex
@@ -29,7 +32,10 @@ namespace PDFjet.NET {
 /// font-weight and font-style of the text ask. A gradient is drawn in the
 /// mean color of its stops. The width,
 /// height, viewBox and preserveAspectRatio of the svg element give the size of
-/// the image, and what is drawn outside it is cut off, as a browser does.
+/// the image, and what is drawn outside it is cut off, as a browser does. It
+/// throws for a file that nests what it draws more than 48 deep, or that draws
+/// more than 4,000,000 path operations again, by use elements, markers and clip
+/// paths.
 /// </para>
 /// </summary>
 public class SVGImage : IDrawable {
@@ -39,6 +45,7 @@ public class SVGImage : IDrawable {
     float h = 0f;       // SVG height
     String viewBox = null;
     String preserveAspectRatio = null;
+    private bool inUnits = false;       // A size in a unit such as mm, and no viewBox
 
     internal List<SVGPath> paths = null;    // Internal for the tests
     /// <summary>The URI opened when the image is clicked.</summary>
@@ -58,10 +65,27 @@ public class SVGImage : IDrawable {
     private List<SVGPath> clipShapes = new List<SVGPath>();
     private HashSet<XMLNode> reusing;
     private long reused = 0;
+    private long counted = 0;
+    private String[] useSize = null;    // The width and the height of the use element of the element drawn next
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     internal const long MAX_REUSED = 1000000;
+    // The path operations drawn again, by use elements and as markers, and
+    // written for the clip paths of what is drawn, at most: a use of a path of N
+    // operations was N operations for each element counted by the limit above,
+    // 506 MB for a file of 200 KB, and a clip path of N operations is read for
+    // every element it clips and written for every path in it, 800 MB of page
+    // for 320 KB (review of 30 October 2026). The operations of a file drawn
+    // once are not counted: they grow with the file.
+    internal const long MAX_OPERATIONS = 4000000;
+    // How deep the elements being drawn may nest, by groups, use elements and
+    // markers, a state on the stack for each: a chain of use elements is flat in
+    // the file, so the limit of the XML parser does not see it, and each level
+    // is a call. The number is the same in the four ports and leaves every one
+    // of them room on a stack of 512 KB, where a level takes 7.8 KB of a debug
+    // build of Swift (review of 30 October 2026).
+    internal const int MAX_DEPTH = 48;
 
     /// <summary>
     /// Used to embed SVG images in the PDF document.
@@ -132,44 +156,70 @@ public class SVGImage : IDrawable {
     // is left out.
     private Dictionary<String, int> GradientColors() {
         Dictionary<String, int> colors = new Dictionary<String, int>();
+        Dictionary<XMLNode, Stops> read = new Dictionary<XMLNode, Stops>();
         foreach (KeyValuePair<String, XMLNode> entry in ids) {
             XMLNode gradient = entry.Value;
             // Up to ten gradients along the hrefs, which may go round in a circle.
             for (int i = 0; i < 10 && gradient != null && IsGradient(gradient); i++) {
-                long r = 0;
-                long g = 0;
-                long b = 0;
-                int count = 0;
-                foreach (XMLNode stop in gradient.GetChildren()) {
-                    if (!stop.GetLocalName().Equals("stop")) {
-                        continue;
-                    }
-                    SVGState state = new SVGState();
-                    state.fill = Color.black;   // stop-color is black unless given
-                    String color = stop.GetAttribute("stop-color");
-                    if (color != null) {
-                        state.SetProperty("fill", color);
-                    }
-                    foreach (String[] declaration in SVGRule.ParseDeclarations(Attribute(stop, "style"))) {
-                        if (declaration[0].Equals("stop-color")) {
-                            state.SetProperty("fill", declaration[1]);
-                        }
-                    }
-                    int c = (state.fill == Color.transparent) ? Color.black : state.fill;
-                    r += (c >> 16) & 0xFF;
-                    g += (c >> 8) & 0xFF;
-                    b += c & 0xFF;
-                    count++;
+                Stops stops;
+                if (!read.TryGetValue(gradient, out stops)) {
+                    stops = GradientStops(gradient);
+                    read[gradient] = stops;
                 }
-                if (count > 0) {
-                    colors[entry.Key] = (int) (
-                            (r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count);
+                if (stops.found) {
+                    colors[entry.Key] = stops.color;
                     break;
                 }
-                gradient = ElementOf(Href(gradient));
+                gradient = stops.next;
             }
         }
         return colors;
+    }
+
+    // What a gradient itself says of its color: the mean of its stops, if it
+    // has any, and the gradient its href names.
+    private class Stops {
+        internal int color = 0;
+        internal bool found = false;
+        internal XMLNode next = null;
+    }
+
+    // Reads the gradient, once however many gradients name it: N gradients
+    // that name one of N stops were N x N stops read, 50 s for 3.4 MB (review
+    // of 30 October 2026).
+    private Stops GradientStops(XMLNode gradient) {
+        long r = 0;
+        long g = 0;
+        long b = 0;
+        int count = 0;
+        foreach (XMLNode stop in gradient.GetChildren()) {
+            if (!stop.GetLocalName().Equals("stop")) {
+                continue;
+            }
+            SVGState state = new SVGState();
+            state.fill = Color.black;   // stop-color is black unless given
+            String color = stop.GetAttribute("stop-color");
+            if (color != null) {
+                state.SetProperty("fill", color);
+            }
+            foreach (String[] declaration in SVGRule.ParseDeclarations(Attribute(stop, "style"))) {
+                if (declaration[0].Equals("stop-color")) {
+                    state.SetProperty("fill", declaration[1]);
+                }
+            }
+            int c = (state.fill == Color.transparent) ? Color.black : state.fill;
+            r += (c >> 16) & 0xFF;
+            g += (c >> 8) & 0xFF;
+            b += c & 0xFF;
+            count++;
+        }
+        Stops stops = new Stops();
+        if (count > 0) {
+            stops.color = (int) ((r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count);
+            stops.found = true;
+        }
+        stops.next = ElementOf(Href(gradient));
+        return stops;
     }
 
     private static bool IsGradient(XMLNode node) {
@@ -208,11 +258,42 @@ public class SVGImage : IDrawable {
         }
     }
 
+    // Counts operations drawn again or written again, and throws when there
+    // are too many.
+    private void CountOperations(long count) {
+        counted += count;
+        if (counted > MAX_OPERATIONS) {
+            throw new ArgumentException("The SVG draws more than " + MAX_OPERATIONS
+                    + " path operations again, with use elements, markers or clip paths.");
+        }
+    }
+
+    // Returns the operations written for the clip paths of one path, and of
+    // a run of a text.
+    private static int ClipOperations(List<SVGPath> clips) {
+        int count = 0;
+        if (clips != null) {
+            foreach (SVGPath clip in clips) {
+                count += clip.operations.Count;
+            }
+        }
+        return count;
+    }
+
+    // The error of elements nested too deep.
+    private static ArgumentException DepthError() {
+        return new ArgumentException(
+                "The SVG nests elements, use elements and markers more than " + MAX_DEPTH + " deep.");
+    }
+
     // Draws the element, then the ones in it, in the order of the document;
     // the rules of a <style> element apply from its end. An element that is
     // used, by a use element or as a marker, is drawn even where it is a
     // template, as a symbol or a marker is.
     private void Draw(XMLNode node, List<SVGState> stack, SVGStyleSheet rules, ref bool root, bool used) {
+        if (stack.Count > MAX_DEPTH) {
+            throw DepthError();
+        }
         String name = node.GetLocalName();
         if (reusing.Count > 0) {
             CountReused();
@@ -233,10 +314,10 @@ public class SVGImage : IDrawable {
             state.hidden = true;
         }
         if (state.clipPath != null && !state.hidden) {
-            Clip(state);
+            Clip(state, rules);
         }
-        stack.Add(state);
-
+        String[] size = useSize;
+        useSize = null;
         if (name.Equals("svg") && root) {
             root = false;
             this.w = ParseLength(Attribute(attributes, "width"));
@@ -247,10 +328,22 @@ public class SVGImage : IDrawable {
                 attributes.TryGetValue("viewbox", out this.viewBox);
             }
             attributes.TryGetValue("preserveAspectRatio", out this.preserveAspectRatio);
+            this.inUnits = (this.viewBox == null || this.viewBox.Equals("")) && this.w > 0f && this.h > 0f
+                    && (HasUnit(Attribute(attributes, "width")) || HasUnit(Attribute(attributes, "height")));
+            List<double> box = SVGState.ParseNumbers(this.viewBox ?? "");
+            state.viewport = (box != null && box.Count == 4)
+                    ? new double[] {box[2], box[3]} : new double[] {this.w, this.h};
+            if (this.inUnits) {
+                state.viewport = new double[] {this.w/PIXEL, this.h/PIXEL};
+            }
+        } else if (name.Equals("svg") || (name.Equals("symbol") && used)) {
+            EnterViewport(state, attributes, size);
         }
+        stack.Add(state);
+
         if (name.Equals("text")) {
             if (!state.hidden) {
-                AddText(node, rules, state, attributes);
+                AddText(node, rules, state, attributes, stack.Count);
             }
             stack.RemoveAt(stack.Count - 1);
             return;
@@ -265,6 +358,7 @@ public class SVGImage : IDrawable {
                     1.0, 0.0, 0.0, 1.0, Number(attributes, "x"), Number(attributes, "y")});
                 stack.Add(parent);
                 reusing.Add(target);
+                useSize = new String[] {Attribute(attributes, "width"), Attribute(attributes, "height")};
                 Draw(target, stack, rules, ref root, true);
                 reusing.Remove(target);
                 stack.RemoveAt(stack.Count - 1);
@@ -273,13 +367,18 @@ public class SVGImage : IDrawable {
             return;
         }
         List<PathOp> operations = ShapeOperations(name, attributes);
+        int count = (reusing.Count > 0) ? operations.Count : 0;
+        if (!state.hidden && operations.Count > 0) {
+            count += ClipOperations(state.clips) + ((state.dashArray != null) ? state.dashArray.Length : 0);
+        }
+        CountOperations(count);
         if (name.Equals("line")) {
             state = state.Copy();
             state.fill = Color.transparent;     // A line has no inside to fill
             state.fillCurrent = false;
         }
         List<double[]> vertices = null;
-        if (!state.hidden && operations.Count > 0
+        if (!state.hidden && !state.invisible && operations.Count > 0
                 && (state.markerStart != null || state.markerMid != null || state.markerEnd != null)
                 && (name.Equals("path") || name.Equals("line") || name.Equals("polyline") || name.Equals("polygon"))) {
             vertices = Vertices(operations);    // Before AddPath moves the points
@@ -290,7 +389,13 @@ public class SVGImage : IDrawable {
         }
 
         foreach (XMLNode child in node.GetChildren()) {
+            if (name.Equals("switch") && !IsSwitchable(child)) {
+                continue;
+            }
             Draw(child, stack, rules, ref root, false);
+            if (name.Equals("switch")) {
+                break;  // A switch draws the first it can
+            }
         }
         if (name.Equals("style")) {
             rules.Add(SVGRule.ParseStyleSheet(node.GetText()));
@@ -302,6 +407,19 @@ public class SVGImage : IDrawable {
     private static String Attribute(Dictionary<String, String> attributes, String name) {
         String value;
         return attributes.TryGetValue(name, out value) ? value : "";
+    }
+
+    // The elements PDFjet draws, and a switch can choose.
+    private static readonly HashSet<String> DRAWN = new HashSet<String> {
+        "a", "circle", "ellipse", "g", "line", "path", "polygon",
+        "polyline", "rect", "svg", "switch", "text", "use",
+    };
+
+    // Returns true when a switch can draw the element: one PDFjet draws,
+    // which asks for no extension, as PDFjet has none. The system language
+    // is not tested: a PDF is read by anyone.
+    private static bool IsSwitchable(XMLNode node) {
+        return DRAWN.Contains(node.GetLocalName()) && node.GetAttribute("requiredExtensions") == null;
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -494,15 +612,15 @@ public class SVGImage : IDrawable {
     private void AddPath(SVGState state, List<PathOp> operations) {
         double[] m = state.matrix;
         double det = m[0]*m[3] - m[1]*m[2];
-        if (state.hidden || operations.Count == 0 || det == 0.0) {
+        if (state.hidden || state.invisible || operations.Count == 0 || det == 0.0) {
             return;
         }
         SVGPath path = new SVGPath();
         path.operations = operations;
         path.fill = state.fillCurrent ? state.color : state.fill;
         path.stroke = state.strokeCurrent ? state.color : state.stroke;
-        path.fillAlpha = state.fillOpacity * state.opacity;
-        path.strokeAlpha = state.strokeOpacity * state.opacity;
+        path.fillAlpha = state.DrawnFillAlpha();
+        path.strokeAlpha = state.DrawnStrokeAlpha();
         if (path.fillAlpha == 0f) {
             path.fill = Color.transparent;
         }
@@ -517,6 +635,8 @@ public class SVGImage : IDrawable {
         path.evenOdd = state.evenOdd;
         path.lineCap = state.lineCap;
         path.lineJoin = state.lineJoin;
+        path.miterLimit = state.miterLimit;
+        path.strokeFirst = state.strokeFirst;
         if (state.dashArray != null) {
             path.dashArray = new float[state.dashArray.Length];
             for (int i = 0; i < path.dashArray.Length; i++) {
@@ -571,36 +691,67 @@ public class SVGImage : IDrawable {
 
     // Sets the clip paths of the element: those of its ancestors and the one
     // its clip-path names, the shapes of the clipPath element in the user
-    // space of the element. A clip path that is not there, or one in
-    // objectBoundingBox units, which PDFjet does not draw, is left out; one
-    // with no shape in it hides the element, as SVG clips all of it away.
-    private void Clip(SVGState state) {
+    // space of the element. A use in it names a shape, moved by its x and y. A
+    // clip path of one shape keeps the clip-rule of the shape; several are
+    // one path whose nonzero rule draws their union, each turned the same way
+    // round, as opposite ways would cancel out where they overlap. A clip path
+    // that is not there, or one in objectBoundingBox units, which PDFjet does
+    // not draw, is left out; one with no shape in it hides the element, as SVG
+    // clips all of it away.
+    private void Clip(SVGState state, SVGStyleSheet rules) {
         XMLNode clipPath = ElementOf(state.clipPath);
         if (clipPath == null || !clipPath.GetLocalName().Equals("clipPath")
                 || SVGState.Trim(Attribute(clipPath, "clipPathUnits")).Equals("objectBoundingBox")) {
             return;
         }
-        double[] m = state.matrix;
-        double[] own = SVGState.ParseTransform(Attribute(clipPath, "transform"));
-        if (own != null) {
-            m = SVGState.Multiply(m, own);
-        }
+        SVGState svg = new SVGState();
+        svg.matrix = state.matrix;
+        List<String> order = new List<String>();
+        Dictionary<String, String> attributes = Attributes(clipPath, order);
+        SVGState parent = ElementState(svg, rules, attributes, order);
+        parent.hidden = false;  // A clipPath element is not displayed anyway
         SVGPath clip = new SVGPath();
         clip.operations = new List<PathOp>();
+        List<List<PathOp>> shapes = new List<List<PathOp>>();
         foreach (XMLNode child in clipPath.GetChildren()) {
-            Dictionary<String, String> attributes = Attributes(child, new List<String>());
-            double[] shape = m;
-            String transform;
-            if (attributes.TryGetValue("transform", out transform)) {
-                double[] matrix = SVGState.ParseTransform(transform);
-                if (matrix != null) {
-                    shape = SVGState.Multiply(m, matrix);
+            order = new List<String>();
+            attributes = Attributes(child, order);
+            SVGState shape = ElementState(parent, rules, attributes, order);
+            String name = child.GetLocalName();
+            if (name.Equals("use")) {
+                XMLNode target = ElementOf(Href(child));
+                if (target == null) {
+                    continue;
+                }
+                shape.matrix = SVGState.Multiply(shape.matrix, new double[] {
+                    1.0, 0.0, 0.0, 1.0, Number(attributes, "x"), Number(attributes, "y")});
+                order = new List<String>();
+                attributes = Attributes(target, order);
+                shape = ElementState(shape, rules, attributes, order);
+                name = target.GetLocalName();
+            }
+            if (shape.hidden || shape.invisible) {
+                continue;
+            }
+            List<PathOp> operations = ShapeOperations(name, attributes);
+            if (operations.Count == 0) {
+                continue;
+            }
+            Transform(shape.matrix, operations);
+            shapes.Add(operations);
+            clip.evenOdd = shape.clipEvenOdd;
+        }
+        foreach (List<PathOp> operations in shapes) {
+            List<PathOp> added = operations;
+            if (shapes.Count > 1) {
+                clip.evenOdd = false;
+                if (Area(operations) < 0.0) {
+                    added = Reversed(operations);
                 }
             }
-            List<PathOp> operations = ShapeOperations(child.GetLocalName(), attributes);
-            Transform(shape, operations);
-            clip.operations.AddRange(operations);
+            clip.operations.AddRange(added);
         }
+        CountOperations(clipPath.GetChildren().Count + clip.operations.Count);
         if (clip.operations.Count == 0) {
             state.hidden = true;
             return;
@@ -609,6 +760,141 @@ public class SVGImage : IDrawable {
         List<SVGPath> clips = (state.clips == null) ? new List<SVGPath>() : new List<SVGPath>(state.clips);
         clips.Add(clip);
         state.clips = clips;
+    }
+
+    // Sets the user space of a nested svg element, or of a symbol a use
+    // element draws: moved by its x and y, and its viewBox fitted to its width
+    // and height, which the use element may give, and which are those of the
+    // viewport it is in unless given; a percentage is of that viewport. A
+    // viewBox or a size of nothing draws nothing.
+    private static void EnterViewport(SVGState state, Dictionary<String, String> attributes, String[] size) {
+        String width = (size != null && size[0].Length > 0) ? size[0] : Attribute(attributes, "width");
+        String height = (size != null && size[1].Length > 0) ? size[1] : Attribute(attributes, "height");
+        double w = ViewportLength(width, state.viewport[0], state.viewport[0]);
+        double h = ViewportLength(height, state.viewport[1], state.viewport[1]);
+        double[] m = new double[] {1.0, 0.0, 0.0, 1.0,
+            ViewportLength(Attribute(attributes, "x"), state.viewport[0], 0.0),
+            ViewportLength(Attribute(attributes, "y"), state.viewport[1], 0.0)};
+        List<double> box = SVGState.ParseNumbers(Attribute(attributes, "viewBox"));
+        if (box == null || box.Count != 4) {
+            state.viewport = new double[] {w, h};
+            state.matrix = SVGState.Multiply(state.matrix, m);
+            return;
+        }
+        // A viewport of no known size, of an svg element with neither a size
+        // nor a viewBox, leaves the viewBox as it is.
+        if (w == 0.0 && width.Length == 0) {
+            w = box[2];
+        }
+        if (h == 0.0 && height.Length == 0) {
+            h = box[3];
+        }
+        if (box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0) {
+            state.hidden = true;
+            return;
+        }
+        double sx = w/box[2];
+        double sy = h/box[3];
+        double tx = 0.0;
+        double ty = 0.0;
+        List<String> fields = SVGState.Fields(Attribute(attributes, "preserveAspectRatio"));
+        if (fields.Count > 0 && fields[0].Equals("defer")) {
+            fields.RemoveAt(0);
+        }
+        // The alignment is read in the bytes of UTF-8, one char for each
+        // byte, as the Go port reads it.
+        String align = (fields.Count > 0) ? Encoding.Latin1.GetString(Encoding.UTF8.GetBytes(fields[0])) : "xMidYMid";
+        if (!align.Equals("none")) {
+            sx = Math.Min(sx, sy);
+            if (fields.Count > 1 && fields[1].Equals("slice")) {
+                sx = Math.Max(w/box[2], h/box[3]);
+            }
+            sy = sx;
+            if (align.Length != 8) {
+                align = "xMidYMid";
+            }
+            tx = AlignOffset(align.Substring(1, 3), 1f)*(w - box[2]*sx);
+            ty = AlignOffset(align.Substring(5, 3), 1f)*(h - box[3]*sy);
+        }
+        m = SVGState.Multiply(m, new double[] {sx, 0.0, 0.0, sy, tx, ty});
+        m = SVGState.Multiply(m, new double[] {1.0, 0.0, 0.0, 1.0, -box[0], -box[1]});
+        state.viewport = new double[] {box[2], box[3]};
+        state.matrix = SVGState.Multiply(state.matrix, m);
+    }
+
+    // Reads an x, a y, a width or a height of a viewport, which may be a
+    // percentage of the size of the one it is in, the given one if it has none.
+    private static double ViewportLength(String value, double whole, double given) {
+        value = SVGState.Trim(value);
+        if (value.Length == 0) {
+            return given;
+        }
+        if (value.EndsWith("%", StringComparison.Ordinal)) {
+            double number;
+            if (!SVGState.ParseDouble(value.Substring(0, value.Length - 1), out number)
+                    || double.IsNaN(number) || double.IsInfinity(number)) {
+                return given;
+            }
+            return number*whole/100.0;
+        }
+        return SVGState.ParseCoordinate(value);
+    }
+
+    // Returns twice the area of the path, its sign the way it goes round, by
+    // the points of its lines and curves, and closed.
+    private static double Area(List<PathOp> operations) {
+        double area = 0.0;
+        double x0 = 0.0;
+        double y0 = 0.0;
+        double x = 0.0;
+        double y = 0.0;
+        foreach (PathOp op in operations) {
+            if (op.cmd == 'M') {
+                area += x*y0 - x0*y;
+                x0 = op.x;
+                y0 = op.y;
+                x = x0;
+                y = y0;
+                continue;
+            }
+            if (op.cmd == 'C') {
+                area += x*op.y1 - ((double) op.x1)*y;
+                area += ((double) op.x1)*op.y2 - ((double) op.x2)*op.y1;
+                x = op.x2;
+                y = op.y2;
+            }
+            area += x*op.y - ((double) op.x)*y;
+            x = op.x;
+            y = op.y;
+        }
+        return area + x*y0 - x0*y;
+    }
+
+    // Returns the path going the other way round, each subpath from its end.
+    // Only a clip path needs this, whose subpaths close of themselves.
+    private static List<PathOp> Reversed(List<PathOp> operations) {
+        List<PathOp> reversed = new List<PathOp>(operations.Count);
+        int start = 0;
+        for (int end = 1; end <= operations.Count; end++) {
+            if (end < operations.Count && operations[end].cmd != 'M') {
+                continue;
+            }
+            PathOp last = operations[end - 1];
+            reversed.Add(new PathOp('M', last.x, last.y));
+            for (int i = end - 1; i > start; i--) {
+                PathOp op = operations[i];
+                PathOp before = operations[i - 1];
+                if (op.cmd == 'C') {
+                    PathOp curve = new PathOp('C');
+                    curve.SetCubicPoints(op.x2, op.y2, op.x1, op.y1, before.x, before.y);
+                    reversed.Add(curve);
+                } else {
+                    reversed.Add(new PathOp('L', before.x, before.y));
+                }
+            }
+            start = end;
+        }
+        return reversed;
     }
 
     // The length of the vector x, y. Its coordinates come from floats, whose
@@ -800,17 +1086,24 @@ public class SVGImage : IDrawable {
 
     // Adds a text element, with its tspan elements, as the runs of its
     // characters.
-    private void AddText(XMLNode node, SVGStyleSheet rules, SVGState state, Dictionary<String, String> attributes) {
+    private void AddText(XMLNode node, SVGStyleSheet rules, SVGState state,
+            Dictionary<String, String> attributes, int depth) {
         SVGText text = new SVGText();
         text.matrix = state.matrix;
-        AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0});
+        AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0}, depth);
         text.CollapseSpaces();
         bool empty = true;
+        long count = 0;
         foreach (SVGText.Run run in text.runs) {
             if (run.text.Length > 0) {
                 empty = false;
             }
+            count += ClipOperations(state.clips);
+            if (reusing.Count > 0) {
+                count += 1 + run.text.Length;
+            }
         }
+        CountOperations(count);
         double[] m = state.matrix;
         if (empty || m[0]*m[3] - m[1]*m[2] == 0.0) {
             return;
@@ -824,9 +1117,13 @@ public class SVGImage : IDrawable {
 
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
-    // pending until then.
+    // pending until then. A tspan counts as a level of the depth of the
+    // elements.
     private void AddRuns(SVGText text, XMLNode node, SVGStyleSheet rules,
-            SVGState state, Dictionary<String, String> attributes, double[] pending) {
+            SVGState state, Dictionary<String, String> attributes, double[] pending, int depth) {
+        if (depth > MAX_DEPTH) {
+            throw DepthError();
+        }
         double x = TextLength(Attribute(attributes, "x"), state.fontSize);
         double y = TextLength(Attribute(attributes, "y"), state.fontSize);
         double dx = TextLength(Attribute(attributes, "dx"), state.fontSize);
@@ -866,11 +1163,17 @@ public class SVGImage : IDrawable {
                 run.baseline = state.baseline;
                 run.fill = state.fillCurrent ? state.color : state.fill;
                 run.stroke = state.strokeCurrent ? state.color : state.stroke;
-                run.fillAlpha = state.fillOpacity * state.opacity;
-                run.strokeAlpha = state.strokeOpacity * state.opacity;
+                run.fillAlpha = state.DrawnFillAlpha();
+                run.strokeAlpha = state.DrawnStrokeAlpha();
+                if (state.invisible) {
+                    // It keeps its place in the text
+                    run.fill = Color.transparent;
+                    run.stroke = Color.transparent;
+                }
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;
+                run.miterLimit = state.miterLimit;
                 text.runs.Add(run);
             } else {
                 XMLNode child = (XMLNode) item;
@@ -883,7 +1186,7 @@ public class SVGImage : IDrawable {
                 SVGState childState = ElementState(state, rules, childAttributes, childOrder);
                 childState.matrix = state.matrix;   // A tspan has no transform
                 if (!childState.hidden) {
-                    AddRuns(text, child, rules, childState, childAttributes, pending);
+                    AddRuns(text, child, rules, childState, childAttributes, pending, depth + 1);
                 }
             }
         }
@@ -916,6 +1219,22 @@ public class SVGImage : IDrawable {
         return double.IsInfinity(length) ? double.NaN : length;
     }
 
+    // A user unit of an svg element whose size is in a unit such as mm and
+    // that has no viewBox, in points. Such a size is the size of its pixels,
+    // 96 in an inch, and what is in it is drawn in those.
+    private const float PIXEL = 0.75f;
+
+    // Returns true when the length has a unit that is not a pixel.
+    private static bool HasUnit(String value) {
+        String text = value.Trim();
+        foreach (String unit in SVGState.UNITS) {
+            if (!unit.Equals("px") && text.EndsWith(unit, StringComparison.Ordinal)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Returns the width or the height of the svg element in points, and 0 for
     // a length that PDFjet cannot read, a percentage among them, which leaves
     // the size to the viewBox.
@@ -937,20 +1256,25 @@ public class SVGImage : IDrawable {
     }
 
     private void ProcessPaths(List<SVGPath> paths) {
-        if (viewBox == null || viewBox.Equals("")) {
+        if ((viewBox == null || viewBox.Equals("")) && !inUnits) {
             return;
         }
         float[] box = new float[4];
-        List<double> list = SVGState.ParseNumbers(viewBox);
-        if (list == null || list.Count != 4) {
-            throw new InvalidDataException("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
-        }
-        for (int i = 0; i < 4; i++) {
-            box[i] = (float) list[i];
-        }
-        if (box[2] == 0f || box[3] == 0f) {
-            throw new InvalidDataException(
-                    "Invalid SVG viewBox \"" + viewBox + "\": its width and height cannot be zero.");
+        if (inUnits) {
+            box[2] = w/PIXEL;
+            box[3] = h/PIXEL;
+        } else {
+            List<double> list = SVGState.ParseNumbers(viewBox);
+            if (list == null || list.Count != 4) {
+                throw new InvalidDataException("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+            }
+            for (int i = 0; i < 4; i++) {
+                box[i] = (float) list[i];
+            }
+            if (box[2] <= 0f || box[3] <= 0f) {
+                throw new InvalidDataException(
+                        "Invalid SVG viewBox \"" + viewBox + "\": its width and height have to be above zero.");
+            }
         }
         // A size the file does not give, or one in a unit PDFjet cannot read,
         // is the other one in the proportions of the viewBox, or the size of
@@ -1178,7 +1502,52 @@ public class SVGImage : IDrawable {
         if (!FastFloat.IsWritable(path.strokeWidth)) {
             return false;
         }
-        foreach (PathOp op in path.operations) {
+        if (path.stroke != Color.transparent && path.dashArray != null) {
+            foreach (float length in path.dashArray) {
+                if (!FastFloat.IsWritable(length)) {
+                    return false;
+                }
+            }
+            if (!FastFloat.IsWritable(DashPhase(path))) {
+                return false;
+            }
+        }
+        return AreWritable(path.operations, page) && ClipsAreWritable(path.clips, page);
+    }
+
+    // Returns the dash offset as a PDF writes it, which is not below zero: an
+    // offset below zero starts as far before the pattern, the same place as
+    // that far from the end of the pattern (review of 30 October 2026).
+    private static float DashPhase(SVGPath path) {
+        if (path.dashOffset >= 0f) {
+            return path.dashOffset;
+        }
+        double sum = 0.0;
+        foreach (float length in path.dashArray) {
+            sum += length;
+        }
+        double phase = ((double) path.dashOffset) % sum;
+        if (phase < 0.0) {
+            phase += sum;
+        }
+        return (float) Math.Abs(phase);
+    }
+
+    // Whether a PDF can hold the clip paths.
+    private bool ClipsAreWritable(List<SVGPath> clips, Page page) {
+        if (clips != null) {
+            foreach (SVGPath clip in clips) {
+                if (!AreWritable(clip.operations, page)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Whether a PDF can hold the points of the operations.
+    private bool AreWritable(List<PathOp> operations, Page page) {
+        foreach (PathOp op in operations) {
             if (!IsWritable(op.x, op.y, page) || (op.cmd == 'C' &&
                     (!IsWritable(op.x1, op.y1, page) || !IsWritable(op.x2, op.y2, page)))) {
                 return false;
@@ -1193,8 +1562,9 @@ public class SVGImage : IDrawable {
         return FastFloat.IsWritable(x) && FastFloat.IsWritable(y) && FastFloat.IsWritable(page.height - y);
     }
 
-    // Draws a path, filled and then stroked. An opacity, a line cap and a
-    // line join are set in a graphics state of the path's own.
+    // Draws a path, filled and then stroked, or stroked first when its
+    // paint-order says. An opacity, a line cap and a line join are set in a
+    // graphics state of the path's own.
     private void drawPath(SVGPath path, Page page) {
         bool fill = path.fill != Color.transparent;
         bool stroke = path.stroke != Color.transparent;
@@ -1206,8 +1576,10 @@ public class SVGImage : IDrawable {
         bool alpha = !page.pdf.IsPDFA1() && ((fill && path.fillAlpha < 1f) || (stroke && path.strokeAlpha < 1f));
         bool lineCap = stroke && path.lineCap != CapStyle.BUTT;
         bool lineJoin = stroke && path.lineJoin != JoinStyle.MITER;
+        // A limit of 4 is set around the whole image, in DrawOn
+        bool miter = stroke && path.lineJoin == JoinStyle.MITER && path.miterLimit != 4f;
         bool dash = stroke && path.dashArray != null;
-        bool state = alpha || lineCap || lineJoin || dash || path.clips != null;
+        bool state = alpha || lineCap || lineJoin || miter || dash || path.clips != null;
         if (state) {
             page.SaveGraphicsState();
             Clip(path, page);
@@ -1220,7 +1592,7 @@ public class SVGImage : IDrawable {
                     page.Append(path.dashArray[i]);
                 }
                 page.Append("] ");
-                page.Append(path.dashOffset);
+                page.Append(DashPhase(path));
                 page.Append(" d\n");
             }
             if (alpha) {
@@ -1235,49 +1607,56 @@ public class SVGImage : IDrawable {
             if (lineJoin) {
                 page.SetLineJoinStyle(path.lineJoin);
             }
-        }
-
-        if (fill) {
-            page.SetBrushColor(path.fill);
-            foreach (PathOp op in path.operations) {
-                if (op.cmd == 'M') {
-                    page.MoveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.LineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.CurveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
-                }
-            }
-            if (path.evenOdd) {
-                page.Append("f*\n");
-            } else {
-                page.FillPath();
+            if (miter) {
+                page.Append(path.miterLimit);
+                page.Append(" M\n");
             }
         }
 
-        if (stroke) {
-            page.SetPenColor(path.stroke);
-            page.SetPenWidth(path.strokeWidth);
-            // Z closes a subpath, and the path is stroked once, all of its
-            // subpaths together, as SVG strokes it.
-            foreach (PathOp op in path.operations) {
-                if (op.cmd == 'M') {
-                    page.MoveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.LineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.CurveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
-                } else if (op.cmd == 'Z') {
-                    page.Append("h\n");
+        for (int pass = 0; pass < 2; pass++) {
+            bool strokePass = (pass == 0) == path.strokeFirst;
+            if (!strokePass && fill) {
+                page.SetBrushColor(path.fill);
+                foreach (PathOp op in path.operations) {
+                    if (op.cmd == 'M') {
+                        page.MoveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.LineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.CurveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    }
+                }
+                if (path.evenOdd) {
+                    page.Append("f*\n");
+                } else {
+                    page.FillPath();
                 }
             }
-            page.StrokePath();
+
+            if (strokePass && stroke) {
+                page.SetPenColor(path.stroke);
+                page.SetPenWidth(path.strokeWidth);
+                // Z closes a subpath, and the path is stroked once, all of its
+                // subpaths together, as SVG strokes it.
+                foreach (PathOp op in path.operations) {
+                    if (op.cmd == 'M') {
+                        page.MoveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.LineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.CurveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    } else if (op.cmd == 'Z') {
+                        page.Append("h\n");
+                    }
+                }
+                page.StrokePath();
+            }
         }
 
         if (state) {
@@ -1302,7 +1681,11 @@ public class SVGImage : IDrawable {
                     page.Append("h\n");
                 }
             }
-            page.ClipPath();
+            if (clip.evenOdd) {
+                page.Append("W*\nn\n");
+            } else {
+                page.ClipPath();
+            }
         }
     }
 
@@ -1324,7 +1707,7 @@ public class SVGImage : IDrawable {
                 (float) m[3],
                 (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
                 page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
-            bool writable = true;
+            bool writable = ClipsAreWritable(clips, page);
             foreach (float value in tm) {
                 writable = writable && FastFloat.IsWritable(value);
             }
@@ -1337,7 +1720,8 @@ public class SVGImage : IDrawable {
             }
             bool alpha = !page.pdf.IsPDFA1() && ((fill && run.fillAlpha < 1f) || (stroke && run.strokeAlpha < 1f));
             bool lineJoin = stroke && run.lineJoin != JoinStyle.MITER;
-            bool state = alpha || lineJoin || clips != null;
+            bool miter = stroke && run.lineJoin == JoinStyle.MITER && run.miterLimit != 4f;
+            bool state = alpha || lineJoin || miter || clips != null;
             if (state) {
                 page.SaveGraphicsState();
                 SVGPath clipped = new SVGPath();
@@ -1351,6 +1735,10 @@ public class SVGImage : IDrawable {
                 }
                 if (lineJoin) {
                     page.SetLineJoinStyle(run.lineJoin);
+                }
+                if (miter) {
+                    page.Append(run.miterLimit);
+                    page.Append(" M\n");
                 }
             }
             for (int pass = 0; pass < 2; pass++) {
@@ -1368,6 +1756,23 @@ public class SVGImage : IDrawable {
                 page.RestoreGraphicsState();
             }
         }
+    }
+
+    // Returns true when a path or a run of a text is stroked with miter
+    // joins and the limit of SVG unless given.
+    private bool StrokesMiters() {
+        foreach (SVGPath path in paths) {
+            if (path.text != null) {
+                foreach (SVGText.Run run in path.text.runs) {
+                    if (run.stroke != Color.transparent && run.lineJoin == JoinStyle.MITER && run.miterLimit == 4f) {
+                        return true;
+                    }
+                }
+            } else if (path.stroke != Color.transparent && path.lineJoin == JoinStyle.MITER && path.miterLimit == 4f) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Returns true when something of the image is drawn outside its size,
@@ -1435,6 +1840,14 @@ public class SVGImage : IDrawable {
                 path.text.Place();
             }
         }
+        // The miter limit, set once: a stroked map has as many paths as a PDF
+        // would hold, and the few with another limit set their own.
+        bool miter = StrokesMiters();
+        if (miter) {
+            page.SaveGraphicsState();
+            page.Append(4f);
+            page.Append(" M\n");
+        }
         bool clip = Overflows(page);
         if (clip) {
             page.SaveGraphicsState();
@@ -1448,6 +1861,9 @@ public class SVGImage : IDrawable {
             }
         }
         if (clip) {
+            page.RestoreGraphicsState();
+        }
+        if (miter) {
             page.RestoreGraphicsState();
         }
         page.SetFigureBoundingBox(x, y, w, h);

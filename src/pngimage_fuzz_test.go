@@ -221,9 +221,6 @@ func fuzzComparePNG(data []byte) error {
 	case 3:
 		depth = 8
 	}
-	if pdfjet.colorType == 4 || pdfjet.colorType == 6 {
-		depth = 8
-	}
 	rowBytes := (w*channels*depth + 7) / 8
 	if len(samples) != rowBytes*h {
 		return fmt.Errorf("%d bytes of samples, not %d", len(samples), rowBytes*h)

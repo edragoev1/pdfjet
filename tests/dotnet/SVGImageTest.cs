@@ -15,7 +15,18 @@ public class SVGImageTest {
         return new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes(svg)));
     }
 
+    // What the image draws, without the miter limit that is set around an
+    // image that strokes, which TheMiterLimitOfAStrokeIsWritten checks.
+    internal static string WithoutMiterLimit(string content) {
+        return content.StartsWith("q\n4 M\n", StringComparison.Ordinal)
+                ? content.Substring(6, content.Length - 8) : content;
+    }
+
     private static string Draw(string svg) {
+        return WithoutMiterLimit(DrawAsItIs(svg));
+    }
+
+    private static string DrawAsItIs(string svg) {
         Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
         SVGImage image = Parse(svg);
         image.SetLocation(0f, 0f);
@@ -300,7 +311,7 @@ public class SVGImageTest {
         string[] boxes = {"0 0", "0 0 10 10 10", "0 0 ten 10", "0 0 0 10", "0 0 10 0"};
         string[] messages = {
             "four numbers are needed.", "four numbers are needed.", "four numbers are needed.",
-            "its width and height cannot be zero.", "its width and height cannot be zero.",
+            "its width and height have to be above zero.", "its width and height have to be above zero.",
         };
         for (int i = 0; i < boxes.Length; i++) {
             string svg = "<svg width=\"10\" height=\"10\" viewBox=\"" + boxes[i] + "\"/>";
@@ -435,7 +446,7 @@ public class SVGImageTest {
             new string[] {"fill=\"#F00\"", "1 0 0 rg"},
             new string[] {"fill=\"rgb(255, 0, 0)\"", "1 0 0 rg"},
             new string[] {"fill=\"rgb(100%,0%,0%)\"", "1 0 0 rg"},
-            new string[] {"fill=\"RGBA(255 0 0 / 0.5)\"", "1 0 0 rg"},
+            new string[] {"fill=\"RGBA(255 0 0 / 1)\"", "1 0 0 rg"},
             new string[] {"fill=\"Red\"", "1 0 0 rg"},
             new string[] {"fill=\"currentColor\" color=\"red\"", "1 0 0 rg"},
             new string[] {"fill=\"currentColor\"", "0 0 0 rg"},
@@ -638,9 +649,9 @@ public class SVGImageTest {
     public void ADottedCapitalIInAColorIsI() {
         var parse = typeof(PDF).Assembly.GetType("PDFjet.NET.SVGState").GetMethod("ParseColor",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        object[] args = {"fill", "L\u0130ME", 0};
+        object[] args = {"fill", "L\u0130ME", 0, 0f};
         Assert.True((bool) parse.Invoke(null, args));
-        object[] lime = {"fill", "lime", 0};
+        object[] lime = {"fill", "lime", 0, 0f};
         parse.Invoke(null, lime);
         Assert.Equal(lime[2], args[2]);
     }
@@ -830,6 +841,520 @@ public class SVGImageTest {
         // The clip path is in the user space of the group, moved with it.
         Assert.Equal("q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
                 + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", content);
+    }
+
+    // An SVG of a chain of use elements, flat in the file.
+    private static string UseChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><defs><rect id=\"u0\" width=\"1\" height=\"1\"/>");
+        for (int i = 1; i <= links; i++) {
+            svg.Append("<use id=\"u").Append(i).Append("\" href=\"#u").Append(i - 1).Append("\"/>");
+        }
+        return svg.Append("</defs><use href=\"#u").Append(links).Append("\"/></svg>").ToString();
+    }
+
+    // An SVG of elements nested levels deep in the svg element, around the content.
+    private static string Nested(string open, string end, string content, int levels) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < levels; i++) {
+            svg.Append(open);
+        }
+        svg.Append(content);
+        for (int i = 0; i < levels; i++) {
+            svg.Append(end);
+        }
+        return svg.Append("</svg>").ToString();
+    }
+
+    // An SVG of markers each drawn by a path in the one before it.
+    private static string MarkerChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < links; i++) {
+            svg.Append("<marker id=\"m").Append(i).Append("\"><path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m")
+                    .Append(i + 1).Append(")\"/></marker>");
+        }
+        svg.Append("<marker id=\"m").Append(links).Append("\"><rect width=\"1\" height=\"1\"/></marker>");
+        return svg.Append("<path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m0)\"/></svg>").ToString();
+    }
+
+    private static string Tspans(int levels) {
+        return Nested("<g>", "</g>", "<text>a" + Nested("<tspan>b", "</tspan>", "", levels)
+                .Replace("<svg width=\"10\" height=\"10\">", "").Replace("</svg>", "") + "</text>", 2);
+    }
+
+    [Fact]
+    public void TheDepthOfWhatIsDrawnIsLimitedOnASmallStack() {
+        Exception failure = null;
+        System.Threading.Thread thread = new System.Threading.Thread(() => {
+            try {
+                Parse(UseChain(22));
+                Parse(MarkerChain(14));
+                Parse(Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 46));
+                Parse(Tspans(43));
+                foreach (string svg in new string[] {
+                        UseChain(23), UseChain(2000), MarkerChain(15), Tspans(44),
+                        Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 47), Nested("<g>", "</g>", "", 250)}) {
+                    ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
+                    Assert.Contains("deep", e.Message);
+                }
+            } catch (Exception e) {
+                failure = e;
+            }
+        }, 512*1024);
+        thread.Start();
+        thread.Join();
+        Assert.Null(failure);
+    }
+
+    [Fact]
+    public void ManyGradientsOfOneGradientOfManyStopsAreReadOnce() {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">");
+        for (int i = 0; i < 10000; i++) {
+            svg.Append("<stop stop-color=\"red\"/>");
+        }
+        svg.Append("</linearGradient>");
+        for (int i = 0; i < 10000; i++) {
+            svg.Append("<linearGradient id=\"g").Append(i).Append("\" href=\"#s\"/>");
+        }
+        svg.Append("<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>");
+        System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+        string content = Draw(svg.ToString());
+        Assert.True(watch.ElapsedMilliseconds < 5000, watch.ElapsedMilliseconds + " ms");
+        Assert.StartsWith("1 0 0 rg\n", content);
+    }
+
+    private static string Repeat(string text, int count) {
+        StringBuilder repeated = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            repeated.Append(text);
+        }
+        return repeated.ToString();
+    }
+
+    private static string Polygon(int points) {
+        return "<polygon id=\"p\" points=\"" + Repeat("0,0 1,1 ", points/2) + "\"/>";
+    }
+
+    [Fact]
+    public void TheOperationsDrawnAgainAreLimited() {
+        string clipped = "<svg width=\"10\" height=\"10\"><clipPath id=\"c\">" + Polygon(10000) + "</clipPath>";
+        foreach (string svg in new string[] {
+                "<svg width=\"10\" height=\"10\"><defs>" + Polygon(10000) + "</defs>"
+                        + Repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                clipped + Repeat("<g clip-path=\"url(#c)\"/>", 1000) + "</svg>",
+                clipped + "<g clip-path=\"url(#c)\">" + Repeat("<rect width=\"1\" height=\"1\"/>", 1000) + "</g></svg>",
+                clipped + "<g clip-path=\"url(#c)\"><text>" + Repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + Repeat("a", 10000) + "</text></defs>"
+                        + Repeat("<use href=\"#p\"/>", 1000) + "</svg>"}) {
+            ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
+            Assert.Contains("path operations", e.Message);
+        }
+        // A file drawn once is not counted, however large
+        Parse("<svg width=\"10\" height=\"10\">" + Repeat(Polygon(10000), 500) + "</svg>");
+        Parse("<svg width=\"10\" height=\"10\"><defs>" + Polygon(1000) + "</defs>"
+                + Repeat("<use href=\"#p\"/>", 1000) + "</svg>");
+    }
+
+    [Fact]
+    public void AUseInAClipPathDrawsTheShapeItNames() {
+        {
+            string content = Draw("<svg width=\"200\" height=\"100\"><defs><rect id=\"r\" width=\"50\" height=\"50\"/></defs><clipPath id=\"c\"><use href=\"#r\" x=\"5\" y=\"5\" transform=\"translate(10,0)\"/></clipPath><g clip-path=\"url(#c)\"><rect x=\"10\" y=\"10\" width=\"80\" height=\"20\"/></g></svg>");
+            Assert.Equal("q\n15 787 m\n65 787 l\n65 737 l\n15 737 l\nh\nW\nn\n0 0 0 rg\n10 782 m\n90 782 l\n90 762 l\n10 762 l\nf\nQ\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><use href=\"#missing\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void TheClipRuleOfAClipPathIsDrawn() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><path clip-rule=\"evenodd\" d=\"M0 0 H50 V50 H0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Contains("h\nW*\nn\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\" style=\"clip-rule:evenodd\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Contains("h\nW*\nn\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Contains("h\nW\nn\n", content);
+        }
+    }
+
+    [Fact]
+    public void TheShapesOfAClipPathGoTheSameWayRound() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><polygon points=\"0,0 20,0 20,20 0,20\"/><polygon clip-rule=\"evenodd\" points=\"10,10 10,30 30,30 30,10\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Contains("0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\n10 782 m\n30 782 l\n30 762 l\n10 762 l\n10 782 l\nW\nn\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"20\" height=\"20\"/><path d=\"M50 0 C50 10 60 20 70 20 L70 0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Contains("50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n", content);
+        }
+    }
+
+    [Fact]
+    public void TheAlphaOfAColorIsDrawn() {
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.25f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgb(255 0 0 / 25%)\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.25f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\" fill-opacity=\"0.5\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.2509804f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.26666668f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.5019608f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" stroke=\"#00ff0080\"/></svg>").paths[0].strokeAlpha);
+        Assert.Equal(1.0f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><g fill=\"rgba(0,0,0,0.5)\"><path d=\"M0 0 L10 0 L10 10 Z\"/></g></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"rgba(0,0,255,0.5)\" fill=\"currentColor\"/></svg>").paths[0].fillAlpha);
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(0,0,0,0.5)\"/></svg>");
+            Assert.StartsWith("q\n/GS1 gs\n0 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>");
+            Assert.StartsWith("q\n/GS1 gs\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>");
+            Assert.StartsWith("q\n/GS1 gs\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000000\"/></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void HslColorsAreDrawn() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(120, 100%, 50%)\"/></svg>");
+            Assert.StartsWith("0 1 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(240deg 100% 50%)\"/></svg>");
+            Assert.StartsWith("0 0 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"HSL(-120, 100%, 50%)\"/></svg>");
+            Assert.StartsWith("0 0 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0.5turn 100% 50%)\"/></svg>");
+            Assert.StartsWith("0 1 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0, 0%, 100%)\"/></svg>");
+            Assert.StartsWith("1 1 1 rg\n", content);
+        }
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsla(0, 100%, 50%, 0.5)\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.25f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0 100% 50% / 25%)\"/></svg>").paths[0].fillAlpha);
+    }
+
+    [Fact]
+    public void TheKeywordsOfAPaintAreInAnyCase() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"currentcolor\"/></svg>");
+            Assert.StartsWith("1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"CURRENTCOLOR\"/></svg>");
+            Assert.StartsWith("1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"NONE\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"None\"/></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void WhatIsNotVisibleIsNotDrawn() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\"/></g></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><rect width=\"5\" height=\"5\" style=\"visibility:collapse\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\" visibility=\"visible\"/></g></svg>");
+            Assert.StartsWith("0 0 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><text visibility=\"hidden\" x=\"1\" y=\"50\">a</text></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"9\">a<tspan visibility=\"hidden\">b</tspan>c</text></svg>");
+            Assert.Equal(2, content.Split(new string[] {"BT\n"}, StringSplitOptions.None).Length - 1);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><defs><rect id=\"r\" width=\"5\" height=\"5\"/></defs><use href=\"#r\" visibility=\"hidden\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"5\" height=\"5\" visibility=\"hidden\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L1 1\" stroke=\"red\" visibility=\"hidden\" marker-end=\"url(#m)\"/></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void ASwitchDrawsTheFirstChildItCan() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.Equal("1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><title>a</title><foreignObject width=\"5\" height=\"5\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></foreignObject><g><rect width=\"5\" height=\"5\" fill=\"red\"/></g><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.StartsWith("1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.Equal(0, content.Split(new string[] {"0 0 1 rg"}, StringSplitOptions.None).Length - 1);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>");
+            Assert.Equal(1, content.Split(new string[] {"1 0 0 rg"}, StringSplitOptions.None).Length - 1);
+        }
+    }
+
+    [Fact]
+    public void AUseGivesASymbolItsSize() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>");
+            Assert.Contains("5 787 m\n25 787 l\n25 767 l\n5 767 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            Assert.Contains("0 782 m\n20 782 l\n20 762 l\n0 762 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMinYMin\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            Assert.Contains("0 792 m\n20 792 l\n20 772 l\n0 772 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"none\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            Assert.Contains("0 792 m\n20 792 l\n20 752 l\n0 752 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax slice\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>");
+            Assert.Contains("-20 792 m\n20 792 l\n20 752 l\n-20 752 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\"/></svg>");
+            Assert.Contains("0 792 m\n100 792 l\n100 692 l\n0 692 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"0\" height=\"20\"/></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void ANestedSvgIsAViewport() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\" width=\"20\" height=\"20\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            Assert.Contains("10 772 m\n30 772 l\n30 752 l\n10 752 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            Assert.Contains("10 772 m\n20 772 l\n20 762 l\n10 762 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><svg x=\"50%\" y=\"10%\" width=\"20\" height=\"20\" viewBox=\"5 5 10 10\"><rect x=\"5\" y=\"5\" width=\"10\" height=\"10\"/></svg></svg>");
+            Assert.Contains("50 782 m\n70 782 l\n70 762 l\n50 762 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 200 200\"><svg width=\"50%\" height=\"50%\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            Assert.Contains("0 792 m\n50 792 l\n50 742 l\n0 742 l\n", content);
+        }
+        {
+            string content = Draw("<svg><svg viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            Assert.Contains("0 792 m\n10 792 l\n10 782 l\n0 782 l\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><svg width=\"0\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><svg viewBox=\"0 0 -10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void ThePaintOrderOfAShapeIsDrawn() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"stroke\"/></svg>");
+            Assert.Contains("S\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" style=\"paint-order: stroke fill markers\"/></svg>");
+            Assert.Contains("S\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" /></svg>");
+            Assert.Contains("f\n0 0 1 RG\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"fill stroke\"/></svg>");
+            Assert.Contains("f\n0 0 1 RG\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>");
+            Assert.Contains("f\n0 0 1 RG\n", content);
+        }
+    }
+
+    [Fact]
+    public void TheMiterLimitOfAStrokeIsWritten() {
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" /></svg>");
+            Assert.StartsWith("q\n4 M\n1 0 0 RG\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"2.5\"/></svg>");
+            Assert.StartsWith("q\n2.5 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" style=\"stroke-miterlimit:1\"/></svg>");
+            Assert.StartsWith("q\n1 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"10\"/></svg>");
+            Assert.StartsWith("q\n10 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"0.5\"/></svg>");
+            Assert.StartsWith("q\n4 M\n1 0 0 RG\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"1e30\"/></svg>");
+            Assert.StartsWith("q\n4 M\n1 0 0 RG\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><g fill=\"none\" stroke=\"red\"><path d=\"M0 0 L10 0 L10 10 Z\"/><path d=\"M0 0 L9 0 L9 9 Z\"/></g></svg>");
+            Assert.Equal(1, content.Split(new string[] {" M\n"}, StringSplitOptions.None).Length - 1);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-linejoin=\"round\"/></svg>");
+            Assert.DoesNotContain(" M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>");
+            Assert.DoesNotContain(" M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\">a</text></svg>");
+            Assert.StartsWith("q\n4 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\" stroke-miterlimit=\"3\">a</text></svg>");
+            Assert.Contains("3 M\n", content);
+        }
+        {
+            string content = DrawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\">a</text></svg>");
+            Assert.DoesNotContain(" M\n", content);
+        }
+    }
+
+    [Fact]
+    public void ADashOffsetBelowZeroIsWrittenInsideThePattern() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-1\"/></svg>");
+            Assert.Contains("[4 2] 5 d\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-7\"/></svg>");
+            Assert.Contains("[4 2] 5 d\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-6\"/></svg>");
+            Assert.Contains("[4 2] 0 d\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"7\"/></svg>");
+            Assert.Contains("[4 2] 7 d\n", content);
+        }
+    }
+
+    [Fact]
+    public void HugeDashesAndClipPathsSkipThePath() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"1e30\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1e30\" stroke-dashoffset=\"-1\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><text x=\"1\" y=\"50\" clip-path=\"url(#c)\">a</text></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10 L0 20\" stroke-dasharray=\"1e30 1\"/></svg>");
+            Assert.StartsWith("0 0 0 rg\n", content);
+        }
+    }
+
+    [Fact]
+    public void ASizeInAUnitWithoutAViewBoxIsInPixels() {
+        {
+            string content = Draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"1in\" height=\"1in\"><rect width=\"96\" height=\"96\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"10mm\" height=\"10mm\"><rect width=\"37.79\" height=\"37.79\"/></svg>");
+            Assert.DoesNotContain("W\n", content);
+        }
+        Assert.Equal(75f, Parse("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").GetWidth());
+        Assert.Equal(75f, Parse("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").GetHeight());
+        {
+            string content = Draw("<svg width=\"100px\" height=\"100\"><rect width=\"100\" height=\"100\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"75pt\" height=\"75pt\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"10\" height=\"10\" fill=\"none\" stroke=\"red\" stroke-width=\"4\"/></svg>");
+            Assert.Contains("3 w\n", content);
+        }
+    }
+
+    [Fact]
+    public void AViewBoxOfNegativeSizeIsRefused() {
+        Assert.Contains("have to be above zero", Assert.ThrowsAny<Exception>(() => Parse("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>")).Message);
+        Assert.Contains("have to be above zero", Assert.ThrowsAny<Exception>(() => Parse("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>")).Message);
+    }
+
+    [Fact]
+    public void AHueTooLargeForItsUnitIsNotAColor() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(1e308turn, 100%, 50%)\"/></svg>");
+            Assert.StartsWith("0 0 0 rg\n", content);
+        }
     }
 }
 }

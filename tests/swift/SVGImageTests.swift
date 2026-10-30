@@ -13,7 +13,17 @@ import Testing
         return try SVGImage(stream: InputStream(data: Data(svg.utf8)))
     }
 
+    // What the image draws, without the miter limit that is set around an
+    // image that strokes, which theMiterLimitOfAStrokeIsWritten checks.
+    static func withoutMiterLimit(_ content: String) -> String {
+        return content.hasPrefix("q\n4 M\n") ? String(content.dropFirst(6).dropLast(2)) : content
+    }
+
     private func draw(_ svg: String, sourceLocation: SourceLocation = #_sourceLocation) throws -> String {
+        return SVGImageTests.withoutMiterLimit(try drawAsItIs(svg, sourceLocation: sourceLocation))
+    }
+
+    private func drawAsItIs(_ svg: String, sourceLocation: SourceLocation = #_sourceLocation) throws -> String {
         let page = TestSupport.newPage()
         let svgImage = try image(svg)
         _ = svgImage.setLocation(0, 0)
@@ -292,8 +302,8 @@ import Testing
             ("0 0", "four numbers are needed."),
             ("0 0 10 10 10", "four numbers are needed."),
             ("0 0 ten 10", "four numbers are needed."),
-            ("0 0 0 10", "its width and height cannot be zero."),
-            ("0 0 10 0", "its width and height cannot be zero."),
+            ("0 0 0 10", "its width and height have to be above zero."),
+            ("0 0 10 0", "its width and height have to be above zero."),
         ]
         for (box, message) in boxes {
             let error = #expect(throws: (any Error).self) {
@@ -420,7 +430,7 @@ import Testing
             ("fill=\"#F00\"", "1 0 0 rg"),
             ("fill=\"rgb(255, 0, 0)\"", "1 0 0 rg"),
             ("fill=\"rgb(100%,0%,0%)\"", "1 0 0 rg"),
-            ("fill=\"RGBA(255 0 0 / 0.5)\"", "1 0 0 rg"),
+            ("fill=\"RGBA(255 0 0 / 1)\"", "1 0 0 rg"),
             ("fill=\"Red\"", "1 0 0 rg"),
             ("fill=\"currentColor\" color=\"red\"", "1 0 0 rg"),
             ("fill=\"currentColor\"", "0 0 0 rg"),
@@ -785,5 +795,500 @@ import Testing
         // The clip path is in the user space of the group, moved with it.
         #expect(content == "q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
                 + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", "\(content)")
+    }
+
+    // An SVG of a chain of use elements, flat in the file.
+    private func useChain(_ links: Int) -> String {
+        var svg = "<svg width=\"10\" height=\"10\"><defs><rect id=\"u0\" width=\"1\" height=\"1\"/>"
+        for i in stride(from: 1, through: links, by: 1) {
+            svg += "<use id=\"u\(i)\" href=\"#u\(i - 1)\"/>"
+        }
+        return svg + "</defs><use href=\"#u\(links)\"/></svg>"
+    }
+
+    // An SVG of elements nested levels deep in the svg element, around the content.
+    private func nested(_ open: String, _ end: String, _ content: String, _ levels: Int) -> String {
+        return "<svg width=\"10\" height=\"10\">" + String(repeating: open, count: levels) + content
+                + String(repeating: end, count: levels) + "</svg>"
+    }
+
+    // An SVG of markers each drawn by a path in the one before it.
+    private func markerChain(_ links: Int) -> String {
+        var svg = "<svg width=\"10\" height=\"10\">"
+        for i in 0..<links {
+            svg += "<marker id=\"m\(i)\"><path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m\(i + 1))\"/></marker>"
+        }
+        svg += "<marker id=\"m\(links)\"><rect width=\"1\" height=\"1\"/></marker>"
+        return svg + "<path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m0)\"/></svg>"
+    }
+
+    private func tspans(_ levels: Int) -> String {
+        return nested("<g>", "</g>", "<text>a" + String(repeating: "<tspan>b", count: levels)
+                + String(repeating: "</tspan>", count: levels) + "</text>", 2)
+    }
+
+    // A secondary thread of Apple's has a stack of 512 KB, and an overflow
+    // kills the process.
+    @Test func theDepthOfWhatIsDrawnIsLimitedOnASmallStack() throws {
+        let finished = DispatchSemaphore(value: 0)
+        nonisolated(unsafe) var failures = [String]()
+        let accepted = [useChain(22), markerChain(14), nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 46), tspans(43)]
+        let refused = [useChain(23), useChain(2000), markerChain(15), tspans(44),
+                nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 47), nested("<g>", "</g>", "", 250)]
+        let thread = Thread {
+            for svg in accepted {
+                do {
+                    _ = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
+                } catch {
+                    failures.append("\(error)")
+                }
+            }
+            for svg in refused {
+                do {
+                    _ = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
+                    failures.append("read: \(svg.prefix(60))")
+                } catch {
+                    if !"\(error)".contains("deep") {
+                        failures.append("\(error)")
+                    }
+                }
+            }
+            finished.signal()
+        }
+        thread.stackSize = 512*1024
+        thread.start()
+        finished.wait()
+        #expect(failures.isEmpty, "\(failures)")
+    }
+
+    @Test func manyGradientsOfOneGradientOfManyStopsAreReadOnce() throws {
+        var svg = "<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">"
+        svg += String(repeating: "<stop stop-color=\"red\"/>", count: 10000)
+        svg += "</linearGradient>"
+        for i in 0..<10000 {
+            svg += "<linearGradient id=\"g\(i)\" href=\"#s\"/>"
+        }
+        svg += "<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>"
+        let start = Date()
+        let content = try draw(svg)
+        let elapsed = Date().timeIntervalSince(start)
+        #expect(elapsed < 20.0, "\(elapsed)")
+        #expect(content.hasPrefix("1 0 0 rg\n"), "\(content.prefix(80))")
+    }
+
+    private func polygon(_ points: Int) -> String {
+        return "<polygon id=\"p\" points=\"" + String(repeating: "0,0 1,1 ", count: points/2) + "\"/>"
+    }
+
+    @Test func theOperationsDrawnAgainAreLimited() throws {
+        let clipped = "<svg width=\"10\" height=\"10\"><clipPath id=\"c\">" + polygon(10000) + "</clipPath>"
+        for svg in [
+                "<svg width=\"10\" height=\"10\"><defs>" + polygon(10000) + "</defs>"
+                        + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>",
+                clipped + String(repeating: "<g clip-path=\"url(#c)\"/>", count: 1000) + "</svg>",
+                clipped + "<g clip-path=\"url(#c)\">"
+                        + String(repeating: "<rect width=\"1\" height=\"1\"/>", count: 1000) + "</g></svg>",
+                clipped + "<g clip-path=\"url(#c)\"><text>"
+                        + String(repeating: "<tspan>a</tspan>", count: 1000) + "</text></g></svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + String(repeating: "a", count: 10000)
+                        + "</text></defs>" + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>"] {
+            #expect(throws: (any Error).self) {
+                do {
+                    _ = try image(svg)
+                } catch {
+                    #expect("\(error)".contains("path operations"), "\(error)")
+                    throw error
+                }
+            }
+        }
+        // A file drawn once is not counted, however large
+        _ = try image("<svg width=\"10\" height=\"10\"><defs>" + polygon(1000) + "</defs>"
+                + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>")
+    }
+
+    @Test func aUseInAClipPathDrawsTheShapeItNames() throws {
+        do {
+            let content = try draw("<svg width=\"200\" height=\"100\"><defs><rect id=\"r\" width=\"50\" height=\"50\"/></defs><clipPath id=\"c\"><use href=\"#r\" x=\"5\" y=\"5\" transform=\"translate(10,0)\"/></clipPath><g clip-path=\"url(#c)\"><rect x=\"10\" y=\"10\" width=\"80\" height=\"20\"/></g></svg>")
+            #expect(content == "q\n15 787 m\n65 787 l\n65 737 l\n15 737 l\nh\nW\nn\n0 0 0 rg\n10 782 m\n90 782 l\n90 762 l\n10 762 l\nf\nQ\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><use href=\"#missing\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func theClipRuleOfAClipPathIsDrawn() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><path clip-rule=\"evenodd\" d=\"M0 0 H50 V50 H0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content.contains("h\nW*\nn\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\" style=\"clip-rule:evenodd\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content.contains("h\nW*\nn\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content.contains("h\nW\nn\n"), "\(content)")
+        }
+    }
+
+    @Test func theShapesOfAClipPathGoTheSameWayRound() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><polygon points=\"0,0 20,0 20,20 0,20\"/><polygon clip-rule=\"evenodd\" points=\"10,10 10,30 30,30 30,10\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content.contains("0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\n10 782 m\n30 782 l\n30 762 l\n10 762 l\n10 782 l\nW\nn\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"20\" height=\"20\"/><path d=\"M50 0 C50 10 60 20 70 20 L70 0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content.contains("50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n"), "\(content)")
+        }
+    }
+
+    @Test func theAlphaOfAColorIsDrawn() throws {
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\"/></svg>").paths[0].fillAlpha == Float(0.5))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgb(255 0 0 / 25%)\"/></svg>").paths[0].fillAlpha == Float(0.25))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\" fill-opacity=\"0.5\"/></svg>").paths[0].fillAlpha == Float(0.25))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>").paths[0].fillAlpha == Float(0.2509804))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>").paths[0].fillAlpha == Float(0.26666668))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" stroke=\"#00ff0080\"/></svg>").paths[0].strokeAlpha == Float(0.5019608))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\"/></svg>").paths[0].fillAlpha == Float(1.0))
+        #expect(try image("<svg width=\"100\" height=\"100\"><g fill=\"rgba(0,0,0,0.5)\"><path d=\"M0 0 L10 0 L10 10 Z\"/></g></svg>").paths[0].fillAlpha == Float(0.5))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"rgba(0,0,255,0.5)\" fill=\"currentColor\"/></svg>").paths[0].fillAlpha == Float(0.5))
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(0,0,0,0.5)\"/></svg>")
+            #expect(content.hasPrefix("q\n/GS1 gs\n0 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>")
+            #expect(content.hasPrefix("q\n/GS1 gs\n1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>")
+            #expect(content.hasPrefix("q\n/GS1 gs\n1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000000\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func hslColorsAreDrawn() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(120, 100%, 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 1 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(240deg 100% 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 0 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"HSL(-120, 100%, 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 0 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0.5turn 100% 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 1 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0, 0%, 100%)\"/></svg>")
+            #expect(content.hasPrefix("1 1 1 rg\n"), "\(content)")
+        }
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsla(0, 100%, 50%, 0.5)\"/></svg>").paths[0].fillAlpha == Float(0.5))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0 100% 50% / 25%)\"/></svg>").paths[0].fillAlpha == Float(0.25))
+    }
+
+    @Test func theKeywordsOfAPaintAreInAnyCase() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"currentcolor\"/></svg>")
+            #expect(content.hasPrefix("1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"CURRENTCOLOR\"/></svg>")
+            #expect(content.hasPrefix("1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"NONE\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"None\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func whatIsNotVisibleIsNotDrawn() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\"/></g></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><rect width=\"5\" height=\"5\" style=\"visibility:collapse\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><g visibility=\"hidden\"><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\" visibility=\"visible\"/></g></svg>")
+            #expect(content.hasPrefix("0 0 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><text visibility=\"hidden\" x=\"1\" y=\"50\">a</text></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"9\">a<tspan visibility=\"hidden\">b</tspan>c</text></svg>")
+            #expect(content.components(separatedBy: "BT\n").count - 1 == 2, "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><defs><rect id=\"r\" width=\"5\" height=\"5\"/></defs><use href=\"#r\" visibility=\"hidden\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"5\" height=\"5\" visibility=\"hidden\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><marker id=\"m\"><rect width=\"5\" height=\"5\"/></marker><path d=\"M0 0 L1 1\" stroke=\"red\" visibility=\"hidden\" marker-end=\"url(#m)\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func aSwitchDrawsTheFirstChildItCan() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content == "1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><title>a</title><foreignObject width=\"5\" height=\"5\"><rect width=\"5\" height=\"5\" fill=\"blue\"/></foreignObject><g><rect width=\"5\" height=\"5\" fill=\"red\"/></g><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content.hasPrefix("1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content.components(separatedBy: "0 0 1 rg").count - 1 == 0, "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><switch><rect width=\"5\" height=\"5\" requiredExtensions=\"http://a\" fill=\"blue\"/><rect width=\"5\" height=\"5\" fill=\"red\"/><rect width=\"5\" height=\"5\" fill=\"blue\"/></switch></svg>")
+            #expect(content.components(separatedBy: "1 0 0 rg").count - 1 == 1, "\(content)")
+        }
+    }
+
+    @Test func aUseGivesASymbolItsSize() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>")
+            #expect(content.contains("5 787 m\n25 787 l\n25 767 l\n5 767 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("0 782 m\n20 782 l\n20 762 l\n0 762 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMinYMin\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("0 792 m\n20 792 l\n20 772 l\n0 772 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"none\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("0 792 m\n20 792 l\n20 752 l\n0 752 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax slice\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("-20 792 m\n20 792 l\n20 752 l\n-20 752 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\"/></svg>")
+            #expect(content.contains("0 792 m\n100 792 l\n100 692 l\n0 692 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"0\" height=\"20\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func aNestedSvgIsAViewport() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\" width=\"20\" height=\"20\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("10 772 m\n30 772 l\n30 752 l\n10 752 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("10 772 m\n20 772 l\n20 762 l\n10 762 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg x=\"50%\" y=\"10%\" width=\"20\" height=\"20\" viewBox=\"5 5 10 10\"><rect x=\"5\" y=\"5\" width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("50 782 m\n70 782 l\n70 762 l\n50 762 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 200 200\"><svg width=\"50%\" height=\"50%\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("0 792 m\n50 792 l\n50 742 l\n0 742 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg><svg viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("0 792 m\n10 792 l\n10 782 l\n0 782 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg width=\"0\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg viewBox=\"0 0 -10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func thePaintOrderOfAShapeIsDrawn() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"stroke\"/></svg>")
+            #expect(content.contains("S\n1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" style=\"paint-order: stroke fill markers\"/></svg>")
+            #expect(content.contains("S\n1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" /></svg>")
+            #expect(content.contains("f\n0 0 1 RG\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"fill stroke\"/></svg>")
+            #expect(content.contains("f\n0 0 1 RG\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>")
+            #expect(content.contains("f\n0 0 1 RG\n"), "\(content)")
+        }
+    }
+
+    @Test func theMiterLimitOfAStrokeIsWritten() throws {
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" /></svg>")
+            #expect(content.hasPrefix("q\n4 M\n1 0 0 RG\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"2.5\"/></svg>")
+            #expect(content.hasPrefix("q\n2.5 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" style=\"stroke-miterlimit:1\"/></svg>")
+            #expect(content.hasPrefix("q\n1 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"10\"/></svg>")
+            #expect(content.hasPrefix("q\n10 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"0.5\"/></svg>")
+            #expect(content.hasPrefix("q\n4 M\n1 0 0 RG\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-miterlimit=\"1e30\"/></svg>")
+            #expect(content.hasPrefix("q\n4 M\n1 0 0 RG\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><g fill=\"none\" stroke=\"red\"><path d=\"M0 0 L10 0 L10 10 Z\"/><path d=\"M0 0 L9 0 L9 9 Z\"/></g></svg>")
+            #expect(content.components(separatedBy: " M\n").count - 1 == 1, "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"none\" stroke=\"red\" stroke-linejoin=\"round\"/></svg>")
+            #expect(!content.contains(" M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>")
+            #expect(!content.contains(" M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\">a</text></svg>")
+            #expect(content.hasPrefix("q\n4 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\" stroke=\"red\" stroke-miterlimit=\"3\">a</text></svg>")
+            #expect(content.contains("3 M\n"), "\(content)")
+        }
+        do {
+            let content = try drawAsItIs("<svg width=\"100\" height=\"100\"><text x=\"1\" y=\"50\">a</text></svg>")
+            #expect(!content.contains(" M\n"), "\(content)")
+        }
+    }
+
+    @Test func aDashOffsetBelowZeroIsWrittenInsideThePattern() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-1\"/></svg>")
+            #expect(content.contains("[4 2] 5 d\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-7\"/></svg>")
+            #expect(content.contains("[4 2] 5 d\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-6\"/></svg>")
+            #expect(content.contains("[4 2] 0 d\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"7\"/></svg>")
+            #expect(content.contains("[4 2] 7 d\n"), "\(content)")
+        }
+    }
+
+    @Test func hugeDashesAndClipPathsSkipThePath() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"1e30\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1e30\" stroke-dashoffset=\"-1\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><text x=\"1\" y=\"50\" clip-path=\"url(#c)\">a</text></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10 L0 20\" stroke-dasharray=\"1e30 1\"/></svg>")
+            #expect(content.hasPrefix("0 0 0 rg\n"), "\(content)")
+        }
+    }
+
+    @Test func aSizeInAUnitWithoutAViewBoxIsInPixels() throws {
+        do {
+            let content = try draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"1in\" height=\"1in\"><rect width=\"96\" height=\"96\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"10mm\" height=\"10mm\"><rect width=\"37.79\" height=\"37.79\"/></svg>")
+            #expect(!content.contains("W\n"), "\(content)")
+        }
+        #expect(try image("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getWidth() == 75)
+        #expect(try image("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getHeight() == 75)
+        do {
+            let content = try draw("<svg width=\"100px\" height=\"100\"><rect width=\"100\" height=\"100\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"75pt\" height=\"75pt\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"10\" height=\"10\" fill=\"none\" stroke=\"red\" stroke-width=\"4\"/></svg>")
+            #expect(content.contains("3 w\n"), "\(content)")
+        }
+    }
+
+    @Test func aViewBoxOfNegativeSizeIsRefused() throws {
+        #expect(throws: (any Error).self) { _ = try image("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>") }
+        #expect(throws: (any Error).self) { _ = try image("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>") }
+    }
+
+    @Test func aHueTooLargeForItsUnitIsNotAColor() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(1e308turn, 100%, 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 0 0 rg\n"), "\(content)")
+        }
     }
 }

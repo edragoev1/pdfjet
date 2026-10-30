@@ -21,13 +21,15 @@ class SVGPath {
     int fill = Color.transparent;   // The fill color, or transparent for none
     int stroke = Color.transparent; // The stroke color, or transparent for none
     float strokeWidth = 0f;         // The stroke width, in the space of the svg element
-    boolean evenOdd = false;        // Filled with the even-odd rule
+    boolean evenOdd = false;        // Filled, or clipped to, with the even-odd rule
     CapStyle lineCap = CapStyle.BUTT;
     JoinStyle lineJoin = JoinStyle.MITER;
+    float miterLimit = 4f;
     float fillAlpha = 1f;
     float strokeAlpha = 1f;
     float[] dashArray = null;       // The dashes and the gaps, in the space of the svg element; null is solid
     float dashOffset = 0f;
+    boolean strokeFirst = false;    // paint-order: the stroke drawn before the fill
     List<SVGPath> clips = null;     // The clip paths it is drawn inside, all of them
     SVGText text = null;            // A text, drawn instead of the operations
 }

@@ -26,16 +26,23 @@ class SVGState {
     boolean fillCurrent = false;        // currentColor: the color property, as it is where it is used
     boolean strokeCurrent = false;
     int color = Color.black;            // The color property
+    float fillAlpha = 1f;               // The alpha of the fill color, as #f008 or rgba() has one
+    float strokeAlpha = 1f;
+    float colorAlpha = 1f;
     float strokeWidth = 1f;             // In the user space of the element
     boolean evenOdd = false;            // fill-rule="evenodd"
+    boolean clipEvenOdd = false;        // clip-rule="evenodd"
     CapStyle lineCap = CapStyle.BUTT;
     JoinStyle lineJoin = JoinStyle.MITER;
+    float miterLimit = 4f;
     float fillOpacity = 1f;
     float strokeOpacity = 1f;
     float opacity = 1f;                 // The opacities of the element and its ancestors, multiplied
     float ownOpacity = 1f;              // The opacity of the element itself, not inherited
     double[] matrix = IDENTITY;         // Never changed in place: a new transform is a new array
+    double[] viewport = {0.0, 0.0};     // The width and the height of the viewport, in user units; replaced too
     boolean hidden = false;             // In <defs> and the like, or under display="none": not drawn
+    boolean invisible = false;          // visibility: not painted, but its children may be
     float[] dashArray = null;           // stroke-dasharray, in the user space; null is a solid line
     float dashOffset = 0f;
     boolean strokeFirst = false;        // paint-order: the stroke drawn before the fill
@@ -66,16 +73,23 @@ class SVGState {
         this.fillCurrent = parent.fillCurrent;
         this.strokeCurrent = parent.strokeCurrent;
         this.color = parent.color;
+        this.fillAlpha = parent.fillAlpha;
+        this.strokeAlpha = parent.strokeAlpha;
+        this.colorAlpha = parent.colorAlpha;
         this.strokeWidth = parent.strokeWidth;
         this.evenOdd = parent.evenOdd;
+        this.clipEvenOdd = parent.clipEvenOdd;
         this.lineCap = parent.lineCap;
         this.lineJoin = parent.lineJoin;
+        this.miterLimit = parent.miterLimit;
         this.fillOpacity = parent.fillOpacity;
         this.strokeOpacity = parent.strokeOpacity;
         this.opacity = parent.opacity;
         this.ownOpacity = parent.ownOpacity;
         this.matrix = parent.matrix;
+        this.viewport = parent.viewport;
         this.hidden = parent.hidden;
+        this.invisible = parent.invisible;
         this.dashArray = parent.dashArray;
         this.dashOffset = parent.dashOffset;
         this.strokeFirst = parent.strokeFirst;
@@ -255,9 +269,11 @@ class SVGState {
         if (name.equals("fill") || name.equals("stroke")) {
             setPaint(colorMap, name, value);
         } else if (name.equals("color")) {
-            Integer c = parseColor(colorMap, name, value);
+            float[] alpha = {1f};
+            Integer c = parseColor(colorMap, name, value, alpha);
             if (c != null) {
                 this.color = c;
+                this.colorAlpha = alpha[0];
             }
         } else if (name.equals("stroke-width")) {
             if (value.endsWith("%")) {
@@ -272,6 +288,12 @@ class SVGState {
                 this.evenOdd = true;
             } else if (value.equals("nonzero")) {
                 this.evenOdd = false;
+            }
+        } else if (name.equals("clip-rule")) {
+            if (value.equals("evenodd")) {
+                this.clipEvenOdd = true;
+            } else if (value.equals("nonzero")) {
+                this.clipEvenOdd = false;
             }
         } else if (name.equals("stroke-linecap")) {
             if (value.equals("butt")) {
@@ -289,6 +311,12 @@ class SVGState {
             } else if (value.equals("bevel")) {
                 this.lineJoin = JoinStyle.BEVEL;
             }
+        } else if (name.equals("stroke-miterlimit")) {
+            // Below 1 is an error in SVG, and a PDF has to be able to hold it
+            Float limit = parseLength(value);
+            if (limit != null && limit >= 1f && FastFloat.isWritable(limit)) {
+                this.miterLimit = limit;
+            }
         } else if (name.equals("opacity") || name.equals("fill-opacity") || name.equals("stroke-opacity")) {
             Float alpha = parseOpacity(value);
             if (alpha == null) {
@@ -304,6 +332,12 @@ class SVGState {
         } else if (name.equals("display")) {
             if (value.equals("none")) {
                 this.hidden = true;
+            }
+        } else if (name.equals("visibility")) {
+            if (value.equals("hidden") || value.equals("collapse")) {
+                this.invisible = true;
+            } else if (value.equals("visible")) {
+                this.invisible = false;
             }
         } else if (name.equals("stroke-dasharray")) {
             this.dashArray = parseDashArray(value);
@@ -525,12 +559,23 @@ class SVGState {
         }
     }
 
+    // The alpha the fill is drawn with: its opacities and the alpha of its
+    // color.
+    float drawnFillAlpha() {
+        return fillOpacity*opacity*(fillCurrent ? colorAlpha : fillAlpha);
+    }
+
+    // The alpha the stroke is drawn with.
+    float drawnStrokeAlpha() {
+        return strokeOpacity*opacity*(strokeCurrent ? colorAlpha : strokeAlpha);
+    }
+
     // Sets the fill or the stroke: none, currentColor, a color, or a url of a
     // gradient, which PDFjet draws in the mean color of its stops. A url of
     // anything else, a pattern or an element that is not there, is the color
     // after it, which SVG draws when it cannot draw the url, or none, as a
     // browser draws it. A value it cannot read leaves the paint as it is
-    // inherited.
+    // inherited. none and currentColor are keywords of CSS, in any case.
     private void setPaint(ColorMap colorMap, String name, String value) {
         Integer gradient = null;
         if (value.startsWith("url(")) {
@@ -546,15 +591,17 @@ class SVGState {
             }
         }
         int paint = 0;
+        float[] alpha = {1f};
         boolean current = false;
+        String keyword = toLower(value);
         if (gradient != null) {
             paint = gradient;
-        } else if (value.equals("none")) {
+        } else if (keyword.equals("none")) {
             paint = Color.transparent;
-        } else if (value.equals("currentColor")) {
+        } else if (keyword.equals("currentcolor")) {
             current = true;
         } else {
-            Integer c = parseColor(colorMap, name, value);
+            Integer c = parseColor(colorMap, name, value, alpha);
             if (c == null) {
                 return;
             }
@@ -562,24 +609,32 @@ class SVGState {
         }
         if (name.equals("fill")) {
             this.fill = paint;
+            this.fillAlpha = alpha[0];
             this.fillCurrent = current;
         } else {
             this.stroke = paint;
+            this.strokeAlpha = alpha[0];
             this.strokeCurrent = current;
         }
     }
 
-    // Reads a color: #rgb, #rrggbb, rgb() of three numbers or percentages, or
-    // a name. It returns null for a color it does not know, and throws for one
-    // that starts with # but is not hexadecimal. The digits are counted in
-    // bytes of UTF-8, as the Go port counts them.
-    static Integer parseColor(ColorMap colorMap, String property, String value) {
+    // Reads a color, and its alpha into alpha[0]: #rgb, #rgba, #rrggbb,
+    // #rrggbbaa, rgb() of three numbers or percentages, hsl(), with an alpha
+    // after them in either, or a name. It returns null for a color it does
+    // not know, and throws for one that starts with # but is not hexadecimal.
+    // The digits are counted in bytes of UTF-8, as the Go port counts them.
+    static Integer parseColor(ColorMap colorMap, String property, String value, float[] alpha) {
         if (value.startsWith("#")) {
             byte[] hex = Util.utf8(value.substring(1));
-            if (hex.length == 3) {
-                hex = new byte[] {hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]};
+            if (hex.length == 3 || hex.length == 4) {
+                byte[] doubled = new byte[2*hex.length];
+                for (int i = 0; i < hex.length; i++) {
+                    doubled[2*i] = hex[i];
+                    doubled[2*i + 1] = hex[i];
+                }
+                hex = doubled;
             }
-            if (hex.length != 6) {
+            if (hex.length != 6 && hex.length != 8) {
                 return null;
             }
             try {
@@ -588,14 +643,20 @@ class SVGState {
                         throw new NumberFormatException();  // Not ASCII, so not a digit
                     }
                 }
-                return Integer.parseInt(new String(hex, StandardCharsets.US_ASCII), 16);
+                int rgb = Integer.parseInt(new String(hex, 0, 6, StandardCharsets.US_ASCII), 16);
+                if (hex.length == 8) {
+                    int a = Integer.parseInt(new String(hex, 6, 2, StandardCharsets.US_ASCII), 16);
+                    alpha[0] = ((float) Math.max(a, 0))/255f;
+                }
+                return rgb;
             } catch (NumberFormatException e) {
                 throw new NumberFormatException(
                         "Invalid SVG " + property + ": invalid color \"" + value + "\"");
             }
         }
         String lower = toLower(value);
-        if (lower.startsWith("rgb(") || lower.startsWith("rgba(")) {
+        boolean hsl = lower.startsWith("hsl(") || lower.startsWith("hsla(");
+        if (hsl || lower.startsWith("rgb(") || lower.startsWith("rgba(")) {
             int open = lower.indexOf('(');
             int end = lower.indexOf(')');
             if (end < open) {
@@ -616,6 +677,15 @@ class SVGState {
             }
             if (parts.size() < 3) {
                 return null;
+            }
+            if (parts.size() > 3) {
+                Float opacity = parseOpacity(parts.get(3));
+                if (opacity != null) {
+                    alpha[0] = opacity;
+                }
+            }
+            if (hsl) {
+                return parseHSL(parts);
             }
             int rgb = 0;
             for (int i = 0; i < 3; i++) {
@@ -640,6 +710,72 @@ class SVGState {
             return rgb;
         }
         return colorMap.map.get(lower);
+    }
+
+    // Returns the color of the hue, the saturation and the lightness of
+    // hsl(), by the formula of CSS Color 4, or null for one it cannot read.
+    private static Integer parseHSL(List<String> parts) {
+        Double hue = parseHue(parts.get(0));
+        Double saturation = parsePercentage(parts.get(1));
+        Double lightness = parsePercentage(parts.get(2));
+        if (hue == null || saturation == null || lightness == null) {
+            return null;
+        }
+        double a = saturation*Math.min(lightness, 1.0 - lightness);
+        int rgb = 0;
+        for (double n : new double[] {0.0, 8.0, 4.0}) {
+            double k = (n + hue/30.0) % 12.0;
+            double channel = lightness - a*Math.max(-1.0, Math.min(Math.min(k - 3.0, 9.0 - k), 1.0));
+            rgb = rgb << 8 | (int) Math.max(0.0, Math.min(255.0, round(channel*255.0)));
+        }
+        return rgb;
+    }
+
+    // Reads a hue, in degrees unless it has a unit, and returns it from 0 to
+    // 360, or null for one it cannot read.
+    private static Double parseHue(String text) {
+        double scale = 1.0;
+        if (text.endsWith("deg")) {
+            text = text.substring(0, text.length() - 3);
+        } else if (text.endsWith("grad")) {
+            text = text.substring(0, text.length() - 4);
+            scale = 0.9;
+        } else if (text.endsWith("rad")) {
+            text = text.substring(0, text.length() - 3);
+            scale = 57.29577951308232;
+        } else if (text.endsWith("turn")) {
+            text = text.substring(0, text.length() - 4);
+            scale = 360.0;
+        }
+        double number;
+        try {
+            number = parseNumber(text, false);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        if (Double.isNaN(number) || Double.isInfinite(number)) {
+            return null;
+        }
+        double hue = (number*scale) % 360.0;
+        if (Double.isNaN(hue)) {
+            return null;    // Too large for its unit
+        }
+        return (hue < 0.0) ? hue + 360.0 : hue;
+    }
+
+    // Reads a saturation or a lightness, with or without its percent sign,
+    // and returns it between 0 and 1, or null for one it cannot read.
+    private static Double parsePercentage(String text) {
+        double number;
+        try {
+            number = parseNumber(text.endsWith("%") ? text.substring(0, text.length() - 1) : text, false);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        if (Double.isNaN(number) || Double.isInfinite(number)) {
+            return null;
+        }
+        return Math.max(0.0, Math.min(1.0, number/100.0));
     }
 
     // Rounds half away from zero.

@@ -18,6 +18,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -41,12 +42,30 @@ type SVGImage struct {
 	font                *Font
 	boldFont            *Font
 	clipShapes          []*svgPath // The clip paths of the image
+	inUnits             bool       // A size in a unit such as mm, and no viewBox
 }
 
 // maxSVGReused is the most elements drawn again, by use elements and as
 // markers: a use of a group of uses, and so on, draws ten to the power of the
 // number of groups, as an XML of entities in entities does.
 const maxSVGReused = 1000000
+
+// maxSVGOperations is the most path operations drawn again, by use elements
+// and as markers, and written for the clip paths of what is drawn: a use of a
+// path of N operations was N operations for each element maxSVGReused counts,
+// 506 MB for a file of 200 KB, and a clip path of N operations is read for
+// every element it clips and written for every path in it, 800 MB of page for
+// 320 KB (review of 30 October 2026). The operations of a file drawn once are
+// not counted: they grow with the file.
+const maxSVGOperations = 4000000
+
+// maxSVGDepth is how deep the elements being drawn may nest, by groups, use
+// elements and markers, a state on the stack for each: a chain of use elements
+// is flat in the file, so the limit of the XML parser does not see it, and
+// each level is a call. The number is the same in the four ports and leaves
+// every one of them room on a stack of 512 KB, where a level takes 7.8 KB of a debug
+// build of Swift (review of 30 October 2026).
+const maxSVGDepth = 48
 
 // svgReader holds what is needed while an SVG file is read: the elements by
 // their ids, the states of the elements being drawn, and the elements drawn
@@ -61,6 +80,8 @@ type svgReader struct {
 	ids      map[string]*xmlparser.XMLNode
 	reusing  map[*xmlparser.XMLNode]bool
 	reused   int64
+	useSize  [2]string // The width and the height of the use element of the element drawn next
+	counted  int64     // The operations maxSVGOperations limits
 }
 
 // NewSVGImageFromFile reads and parses an svgParser image from a file.
@@ -84,10 +105,12 @@ var svgTemplates = map[string]bool{
 // It draws the <path>, <rect>, <circle>, <ellipse>, <line>, <polyline> and
 // <polygon> elements, in groups or not, with their transforms, and the fill,
 // stroke, stroke-width, stroke-dasharray, stroke-dashoffset, fill-rule,
-// stroke-linecap, stroke-linejoin, opacity, fill-opacity, stroke-opacity,
-// paint-order, clip-path and markers they have or inherit, as attributes, in
-// a style attribute or in rules for their classes in a <style> element that
-// comes before them. It draws the elements a <use> element names, and <text>
+// stroke-linecap, stroke-linejoin, stroke-miterlimit, opacity, fill-opacity,
+// stroke-opacity, visibility, paint-order, clip-path and markers they have or
+// inherit, as attributes, in a style attribute or in rules for their classes in a <style> element that
+// comes before them. It draws the elements a <use> element names, a <symbol>
+// at the size of the <use>, a nested <svg> at its x, y and viewBox, the first
+// child of a <switch> that it can draw, and <text>
 // and <tspan> elements with their x, y, dx, dy, font-size, font-weight,
 // text-anchor and dominant-baseline, in the font set with SetFont and
 // SetBoldFont, or else in the fonts PDFjet carries, embedded: IBM Plex Sans
@@ -97,7 +120,9 @@ var svgTemplates = map[string]bool{
 // the font-family, font-weight and font-style of the text ask. A gradient is
 // drawn in the mean color of its stops. The width, height, viewBox and
 // preserveAspectRatio of the <svg> element give the size of the image, and
-// what is drawn outside it is cut off, as a browser does.
+// what is drawn outside it is cut off, as a browser does. It returns an error
+// for a file that nests what it draws more than 48 deep, or that draws more
+// than 4,000,000 path operations again, by use elements, markers and clip paths.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
 	image.paths = make([]*svgPath, 0)
@@ -147,47 +172,78 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 // is left out.
 func (r *svgReader) gradientColors() (map[string]int32, error) {
 	colors := make(map[string]int32)
+	read := make(map[*xmlparser.XMLNode]*svgStops)
 	for id, gradient := range r.ids {
 		// Up to ten gradients along the hrefs, which may go round in a circle.
 		for i := 0; i < 10 && gradient != nil && isSVGGradient(gradient); i++ {
-			var red, green, blue int64
-			count := int64(0)
-			for _, stop := range gradient.Children() {
-				if stop.LocalName() != "stop" {
-					continue
+			stops := read[gradient]
+			if stops == nil {
+				var err error
+				stops, err = r.gradientStops(gradient)
+				if err != nil {
+					return nil, err
 				}
-				state := newSVGState()
-				state.fill = color.Black // stop-color is black unless given
-				if c, ok := stop.Attribute("stop-color"); ok {
-					if err := state.setProperty(r.colorMap, "fill", c); err != nil {
-						return nil, err
-					}
-				}
-				style, _ := stop.Attribute("style")
-				for _, declaration := range parseSVGDeclarations(style) {
-					if declaration[0] == "stop-color" {
-						if err := state.setProperty(r.colorMap, "fill", declaration[1]); err != nil {
-							return nil, err
-						}
-					}
-				}
-				c := int64(state.fill)
-				if state.fill == color.Transparent {
-					c = int64(color.Black)
-				}
-				red += (c >> 16) & 0xFF
-				green += (c >> 8) & 0xFF
-				blue += c & 0xFF
-				count++
+				read[gradient] = stops
 			}
-			if count > 0 {
-				colors[id] = int32((red+count/2)/count<<16 | (green+count/2)/count<<8 | (blue+count/2)/count)
+			if stops.found {
+				colors[id] = stops.color
 				break
 			}
-			gradient = r.ids[svgHref(gradient)]
+			gradient = stops.next
 		}
 	}
 	return colors, nil
+}
+
+// svgStops is what a gradient itself says of its color: the mean of its stops,
+// if it has any, and the gradient its href names.
+type svgStops struct {
+	color int32
+	found bool
+	next  *xmlparser.XMLNode
+}
+
+// gradientStops reads the gradient, once however many gradients name it: N
+// gradients that name one of N stops were N x N stops read, 50 s for 3.4 MB
+// (review of 30 October 2026).
+func (r *svgReader) gradientStops(gradient *xmlparser.XMLNode) (*svgStops, error) {
+	var red, green, blue int64
+	count := int64(0)
+	for _, stop := range gradient.Children() {
+		if stop.LocalName() != "stop" {
+			continue
+		}
+		state := newSVGState()
+		state.fill = color.Black // stop-color is black unless given
+		if c, ok := stop.Attribute("stop-color"); ok {
+			if err := state.setProperty(r.colorMap, "fill", c); err != nil {
+				return nil, err
+			}
+		}
+		style, _ := stop.Attribute("style")
+		for _, declaration := range parseSVGDeclarations(style) {
+			if declaration[0] == "stop-color" {
+				if err := state.setProperty(r.colorMap, "fill", declaration[1]); err != nil {
+					return nil, err
+				}
+			}
+		}
+		c := int64(state.fill)
+		if state.fill == color.Transparent {
+			c = int64(color.Black)
+		}
+		red += (c >> 16) & 0xFF
+		green += (c >> 8) & 0xFF
+		blue += c & 0xFF
+		count++
+	}
+	stops := new(svgStops)
+	if count > 0 {
+		stops.color = int32((red+count/2)/count<<16 | (green+count/2)/count<<8 | (blue+count/2)/count)
+		stops.found = true
+	}
+	stops.next = r.ids[svgHref(gradient)]
+	return stops, nil
 }
 
 // isSVGGradient reports whether the element is a gradient.
@@ -250,11 +306,40 @@ func (r *svgReader) countReused() error {
 	return nil
 }
 
+// countOperations counts operations drawn again or written again, and fails
+// when there are too many.
+func (r *svgReader) countOperations(count int) error {
+	r.counted += int64(count)
+	if r.counted > maxSVGOperations {
+		return fmt.Errorf("The SVG draws more than %d path operations again, with use elements, "+
+			"markers or clip paths.", maxSVGOperations)
+	}
+	return nil
+}
+
+// svgClipOperations returns the operations written for the clip paths of one
+// path, and of a run of a text.
+func svgClipOperations(clips []*svgPath) int {
+	count := 0
+	for _, clip := range clips {
+		count += len(clip.operations)
+	}
+	return count
+}
+
+// errSVGDepth is the error of elements nested too deep.
+func errSVGDepth() error {
+	return fmt.Errorf("The SVG nests elements, use elements and markers more than %d deep.", maxSVGDepth)
+}
+
 // draw draws the element, then the ones in it, in the order of the document;
 // the rules of a <style> element apply from its end. An element that is used,
 // by a use element or as a marker, is drawn even where it is a template, as a
 // symbol or a marker is.
 func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
+	if len(r.stack) > maxSVGDepth {
+		return errSVGDepth()
+	}
 	image := r.image
 	name := node.LocalName()
 	if len(r.reusing) > 0 {
@@ -275,9 +360,8 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 			return err
 		}
 	}
-	r.stack = append(r.stack, state)
-	defer func() { r.stack = r.stack[:len(r.stack)-1] }()
-
+	size := r.useSize
+	r.useSize = [2]string{}
 	if name == "svg" && r.root {
 		r.root = false
 		image.w = parseLength(attributes["width"])
@@ -290,7 +374,21 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 			image.viewBox = attributes["viewbox"]
 		}
 		image.preserveAspectRatio = attributes["preserveAspectRatio"]
+		image.inUnits = image.viewBox == "" && image.w > 0.0 && image.h > 0.0 &&
+			(svgHasUnit(attributes["width"]) || svgHasUnit(attributes["height"]))
+		state.viewport = [2]float64{float64(image.w), float64(image.h)}
+		if image.inUnits {
+			state.viewport = [2]float64{float64(image.w / svgPixel), float64(image.h / svgPixel)}
+		}
+		if box, err := parseSVGNumbers(image.viewBox); err == nil && len(box) == 4 {
+			state.viewport = [2]float64{box[2], box[3]}
+		}
+	} else if name == "svg" || name == "symbol" && used {
+		state.enterViewport(attributes, size)
 	}
+	r.stack = append(r.stack, state)
+	defer func() { r.stack = r.stack[:len(r.stack)-1] }()
+
 	if name == "text" {
 		if !state.hidden {
 			return r.addText(node, state, attributes)
@@ -307,6 +405,7 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 				1, 0, 0, 1, parseSVGCoordinate(attributes["x"]), parseSVGCoordinate(attributes["y"])})
 			r.stack = append(r.stack, parent)
 			r.reusing[target] = true
+			r.useSize = [2]string{attributes["width"], attributes["height"]}
 			err := r.draw(target, true)
 			delete(r.reusing, target)
 			r.stack = r.stack[:len(r.stack)-1]
@@ -320,12 +419,22 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	if err != nil {
 		return err
 	}
+	count := 0
+	if len(r.reusing) > 0 {
+		count = len(operations)
+	}
+	if !state.hidden && len(operations) > 0 {
+		count += svgClipOperations(state.clips) + len(state.dashArray)
+	}
+	if err := r.countOperations(count); err != nil {
+		return err
+	}
 	if name == "line" {
 		state.fill = color.Transparent // A line has no inside to fill
 		state.fillCurrent = false
 	}
 	var vertices [][3]float64
-	if !state.hidden && len(operations) > 0 &&
+	if !state.hidden && !state.invisible && len(operations) > 0 &&
 		(state.markerStart != "" || state.markerMid != "" || state.markerEnd != "") &&
 		(name == "path" || name == "line" || name == "polyline" || name == "polygon") {
 		vertices = svgVertices(operations) // Before addPath moves the points
@@ -338,14 +447,34 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	}
 
 	for _, child := range node.Children() {
+		if name == "switch" && !isSVGSwitchable(child) {
+			continue
+		}
 		if err := r.draw(child, false); err != nil {
 			return err
+		}
+		if name == "switch" {
+			break // A switch draws the first it can
 		}
 	}
 	if name == "style" {
 		r.rules.add(parseSVGStyleSheet(node.Text()))
 	}
 	return nil
+}
+
+// svgDrawn are the elements PDFjet draws, and a switch can choose.
+var svgDrawn = map[string]bool{
+	"a": true, "circle": true, "ellipse": true, "g": true, "line": true, "path": true, "polygon": true,
+	"polyline": true, "rect": true, "svg": true, "switch": true, "text": true, "use": true,
+}
+
+// isSVGSwitchable reports whether a switch can draw the element: one PDFjet
+// draws, which asks for no extension, as PDFjet has none. The system language
+// is not tested: a PDF is read by anyone.
+func isSVGSwitchable(node *xmlparser.XMLNode) bool {
+	_, extensions := node.Attribute("requiredExtensions")
+	return svgDrawn[node.LocalName()] && !extensions
 }
 
 // elementState returns the state of an element whose parent has the given
@@ -538,7 +667,7 @@ func radius(value string) (float64, bool) {
 func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	m := state.matrix
 	det := float64(m[0]*m[3]) - float64(m[1]*m[2])
-	if state.hidden || len(operations) == 0 || det == 0.0 {
+	if state.hidden || state.invisible || len(operations) == 0 || det == 0.0 {
 		return
 	}
 	path := new(svgPath)
@@ -551,8 +680,8 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	if state.strokeCurrent {
 		path.stroke = state.color
 	}
-	path.fillAlpha = float32(state.fillOpacity * state.opacity)
-	path.strokeAlpha = float32(state.strokeOpacity * state.opacity)
+	path.fillAlpha = state.drawnFillAlpha()
+	path.strokeAlpha = state.drawnStrokeAlpha()
 	if path.fillAlpha == 0.0 {
 		path.fill = color.Transparent
 	}
@@ -567,6 +696,8 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	path.evenOdd = state.evenOdd
 	path.lineCap = state.lineCap
 	path.lineJoin = state.lineJoin
+	path.miterLimit = state.miterLimit
+	path.strokeFirst = state.strokeFirst
 	if state.dashArray != nil {
 		path.dashArray = make([]float32, len(state.dashArray))
 		for i, length := range state.dashArray {
@@ -595,35 +726,75 @@ func svgTransformAll(m [6]float64, operations []*svgPathOp) {
 
 // clip sets the clip paths of the element: those of its ancestors and the one
 // its clip-path names, the shapes of the clipPath element in the user space
-// of the element. A clip path that is not there, or one in objectBoundingBox
-// units, which PDFjet does not draw, is left out; one with no shape in it
-// hides the element, as SVG clips all of it away.
+// of the element. A use in it names a shape, moved by its x and y. A clip path
+// of one shape keeps the clip-rule of the shape; several are one path whose
+// nonzero rule draws their union, each turned the same way round, as opposite
+// ways would cancel out where they overlap. A clip path that is not there, or
+// one in objectBoundingBox units, which PDFjet does not draw, is left out; one
+// with no shape in it hides the element, as SVG clips all of it away.
 func (r *svgReader) clip(state *svgState) error {
 	clipPath := r.ids[state.clipPath]
 	if clipPath == nil || clipPath.LocalName() != "clipPath" ||
 		strings.TrimSpace(svgAttribute(clipPath, "clipPathUnits")) == "objectBoundingBox" {
 		return nil
 	}
-	m := state.matrix
-	if own, ok := parseSVGTransform(svgAttribute(clipPath, "transform")); ok {
-		m = svgMultiply(m, own)
+	base := newSVGState()
+	base.matrix = state.matrix
+	attributes, order := svgAttributes(clipPath)
+	base, err := elementState(base, r.colorMap, r.rules, attributes, order)
+	if err != nil {
+		return err
 	}
+	base.hidden = false // A clipPath element is not displayed anyway
 	clip := new(svgPath)
 	clip.operations = make([]*svgPathOp, 0)
+	shapes := make([][]*svgPathOp, 0)
 	for _, child := range clipPath.Children() {
-		attributes, _ := svgAttributes(child)
-		shape := m
-		if transform, ok := attributes["transform"]; ok {
-			if matrix, ok := parseSVGTransform(transform); ok {
-				shape = svgMultiply(m, matrix)
-			}
-		}
-		operations, err := shapeOperations(child.LocalName(), attributes)
+		attributes, order := svgAttributes(child)
+		shape, err := elementState(base, r.colorMap, r.rules, attributes, order)
 		if err != nil {
 			return err
 		}
-		svgTransformAll(shape, operations)
+		name := child.LocalName()
+		if name == "use" {
+			target := r.ids[svgHref(child)]
+			if target == nil {
+				continue
+			}
+			shape.matrix = svgMultiply(shape.matrix, [6]float64{
+				1, 0, 0, 1, parseSVGCoordinate(attributes["x"]), parseSVGCoordinate(attributes["y"])})
+			attributes, order = svgAttributes(target)
+			shape, err = elementState(shape, r.colorMap, r.rules, attributes, order)
+			if err != nil {
+				return err
+			}
+			name = target.LocalName()
+		}
+		if shape.hidden || shape.invisible {
+			continue
+		}
+		operations, err := shapeOperations(name, attributes)
+		if err != nil {
+			return err
+		}
+		if len(operations) == 0 {
+			continue
+		}
+		svgTransformAll(shape.matrix, operations)
+		shapes = append(shapes, operations)
+		clip.evenOdd = shape.clipEvenOdd
+	}
+	for _, operations := range shapes {
+		if len(shapes) > 1 {
+			clip.evenOdd = false
+			if svgArea(operations) < 0.0 {
+				operations = svgReversed(operations)
+			}
+		}
 		clip.operations = append(clip.operations, operations...)
+	}
+	if err := r.countOperations(len(clipPath.Children()) + len(clip.operations)); err != nil {
+		return err
 	}
 	if len(clip.operations) == 0 {
 		state.hidden = true
@@ -634,6 +805,147 @@ func (r *svgReader) clip(state *svgState) error {
 	clips = append(clips, state.clips...)
 	state.clips = append(clips, clip)
 	return nil
+}
+
+// svgArea returns twice the area of the path, its sign the way it goes round,
+// by the points of its lines and curves, and closed.
+func svgArea(operations []*svgPathOp) float64 {
+	area := 0.0
+	var x0, y0, x, y float64
+	line := func(px, py float64) {
+		area += float64(x*py) - float64(px*y)
+		x = px
+		y = py
+	}
+	for _, op := range operations {
+		if op.cmd == 'M' {
+			line(x0, y0)
+			x0 = float64(op.x)
+			y0 = float64(op.y)
+			x = x0
+			y = y0
+			continue
+		}
+		if op.cmd == 'C' {
+			line(float64(op.x1), float64(op.y1))
+			line(float64(op.x2), float64(op.y2))
+		}
+		line(float64(op.x), float64(op.y))
+	}
+	line(x0, y0)
+	return area
+}
+
+// svgReversed returns the path going the other way round, each subpath from
+// its end. Only a clip path needs this, whose subpaths close of themselves.
+func svgReversed(operations []*svgPathOp) []*svgPathOp {
+	reversed := make([]*svgPathOp, 0, len(operations))
+	start := 0
+	for end := 1; end <= len(operations); end++ {
+		if end < len(operations) && operations[end].cmd != 'M' {
+			continue
+		}
+		last := operations[end-1]
+		reversed = append(reversed, newSVGPathOpXY('M', last.x, last.y))
+		for i := end - 1; i > start; i-- {
+			op := operations[i]
+			before := operations[i-1]
+			if op.cmd == 'C' {
+				curve := newSVGPathOp('C')
+				curve.setCubicPoints(op.x2, op.y2, op.x1, op.y1, before.x, before.y)
+				reversed = append(reversed, curve)
+			} else {
+				reversed = append(reversed, newSVGPathOpXY('L', before.x, before.y))
+			}
+		}
+		start = end
+	}
+	return reversed
+}
+
+// enterViewport sets the user space of a nested svg element, or of a symbol a use
+// element draws: moved by its x and y, and its viewBox fitted to its width
+// and height, which the use element may give, and which are those of the
+// viewport it is in unless given; a percentage is of that viewport. A
+// viewBox or a size of nothing draws nothing.
+func (state *svgState) enterViewport(attributes map[string]string, size [2]string) {
+	width := attributes["width"]
+	if size[0] != "" {
+		width = size[0]
+	}
+	height := attributes["height"]
+	if size[1] != "" {
+		height = size[1]
+	}
+	w := svgViewportLength(width, state.viewport[0], state.viewport[0])
+	h := svgViewportLength(height, state.viewport[1], state.viewport[1])
+	m := [6]float64{1, 0, 0, 1,
+		svgViewportLength(attributes["x"], state.viewport[0], 0.0),
+		svgViewportLength(attributes["y"], state.viewport[1], 0.0)}
+	box, err := parseSVGNumbers(attributes["viewBox"])
+	if err != nil || len(box) != 4 {
+		state.viewport = [2]float64{w, h}
+		state.matrix = svgMultiply(state.matrix, m)
+		return
+	}
+	// A viewport of no known size, of an svg element with neither a size nor
+	// a viewBox, leaves the viewBox as it is.
+	if w == 0.0 && width == "" {
+		w = box[2]
+	}
+	if h == 0.0 && height == "" {
+		h = box[3]
+	}
+	if box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0 {
+		state.hidden = true
+		return
+	}
+	sx := w / box[2]
+	sy := h / box[3]
+	tx := 0.0
+	ty := 0.0
+	fields := strings.Fields(attributes["preserveAspectRatio"])
+	if len(fields) > 0 && fields[0] == "defer" {
+		fields = fields[1:]
+	}
+	align := "xMidYMid"
+	if len(fields) > 0 {
+		align = fields[0]
+	}
+	if align != "none" {
+		sx = math.Min(sx, sy)
+		if len(fields) > 1 && fields[1] == "slice" {
+			sx = math.Max(w/box[2], h/box[3])
+		}
+		sy = sx
+		if len(align) != 8 {
+			align = "xMidYMid"
+		}
+		tx = float64(float64(alignOffset(align[1:4], 1.0)) * (w - float64(box[2]*sx)))
+		ty = float64(float64(alignOffset(align[5:8], 1.0)) * (h - float64(box[3]*sy)))
+	}
+	m = svgMultiply(m, [6]float64{sx, 0, 0, sy, tx, ty})
+	m = svgMultiply(m, [6]float64{1, 0, 0, 1, -box[0], -box[1]})
+	state.viewport = [2]float64{box[2], box[3]}
+	state.matrix = svgMultiply(state.matrix, m)
+}
+
+// svgViewportLength reads an x, a y, a width or a height of a viewport, which
+// may be a percentage of the size of the one it is in, the given one if it has
+// none.
+func svgViewportLength(value string, whole, given float64) float64 {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return given
+	}
+	if strings.HasSuffix(value, "%") {
+		number, err := parseSVGFloat(strings.TrimSuffix(value, "%"), 64)
+		if err != nil || math.IsNaN(number) || math.IsInf(number, 0) {
+			return given
+		}
+		return float64(number*whole) / 100.0
+	}
+	return parseSVGCoordinate(value)
 }
 
 // svgVertices returns the vertices of the path, where its markers are drawn,
@@ -835,15 +1147,23 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 	text := new(svgText)
 	text.matrix = state.matrix
 	pending := [4]float64{math.NaN(), math.NaN(), 0, 0}
-	if err := r.addRuns(text, node, state, attributes, &pending); err != nil {
+	if err := r.addRuns(text, node, state, attributes, &pending, len(r.stack)); err != nil {
 		return err
 	}
 	text.collapseSpaces()
 	empty := true
+	count := 0
 	for _, run := range text.runs {
 		if run.text != "" {
 			empty = false
 		}
+		count += svgClipOperations(state.clips)
+		if len(r.reusing) > 0 {
+			count += 1 + utf8.RuneCountInString(run.text)
+		}
+	}
+	if err := r.countOperations(count); err != nil {
+		return err
 	}
 	m := state.matrix
 	if empty || float64(m[0]*m[3])-float64(m[1]*m[2]) == 0.0 {
@@ -859,9 +1179,12 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 
 // addRuns adds the runs of a text or a tspan element. Its x, y, dx and dy
 // apply to its first character, which may be in a tspan in it; they are kept
-// in pending until then.
+// in pending until then. A tspan counts as a level of the depth of the elements.
 func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgState,
-	attributes map[string]string, pending *[4]float64) error {
+	attributes map[string]string, pending *[4]float64, depth int) error {
+	if depth > maxSVGDepth {
+		return errSVGDepth()
+	}
 	x := svgTextLength(attributes["x"], state.fontSize)
 	y := svgTextLength(attributes["y"], state.fontSize)
 	dx := svgTextLength(attributes["dx"], state.fontSize)
@@ -897,17 +1220,23 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				baseline:    state.baseline,
 				fill:        state.fill,
 				stroke:      state.stroke,
-				fillAlpha:   float32(state.fillOpacity * state.opacity),
-				strokeAlpha: float32(state.strokeOpacity * state.opacity),
+				fillAlpha:   state.drawnFillAlpha(),
+				strokeAlpha: state.drawnStrokeAlpha(),
 				strokeWidth: state.strokeWidth,
 				strokeFirst: state.strokeFirst,
 				lineJoin:    state.lineJoin,
+				miterLimit:  state.miterLimit,
 			}
 			if state.fillCurrent {
 				run.fill = state.color
 			}
 			if state.strokeCurrent {
 				run.stroke = state.color
+			}
+			if state.invisible {
+				// It keeps its place in the text
+				run.fill = color.Transparent
+				run.stroke = color.Transparent
 			}
 			*pending = [4]float64{math.NaN(), math.NaN(), 0, 0}
 			text.runs = append(text.runs, run)
@@ -923,7 +1252,7 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 			}
 			childState.matrix = state.matrix // A tspan has no transform
 			if !childState.hidden {
-				if err := r.addRuns(text, item, childState, childAttributes, pending); err != nil {
+				if err := r.addRuns(text, item, childState, childAttributes, pending, depth+1); err != nil {
 					return err
 				}
 			}
@@ -983,6 +1312,22 @@ var svgUnits = []struct {
 	{"cm", 72.0 / 2.54},
 }
 
+// svgPixel is a user unit of an svg element whose size is in a unit such as mm
+// and that has no viewBox, in points. Such a size is the size of its pixels, 96
+// in an inch, and what is in it is drawn in those.
+const svgPixel = 0.75
+
+// svgHasUnit reports whether the length has a unit that is not a pixel.
+func svgHasUnit(value string) bool {
+	value = strings.TrimSpace(value)
+	for _, unit := range svgUnits {
+		if unit.suffix != "px" && strings.HasSuffix(value, unit.suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 // parseLength returns the width or the height of the svg element in points,
 // and 0 for a length that PDFjet cannot read, a percentage among them, which
 // leaves the size to the viewBox.
@@ -1018,19 +1363,24 @@ func parseFloatLenient(value string) (float32, error) {
 }
 
 func (image *SVGImage) processPaths(paths []*svgPath) error {
-	if image.viewBox == "" {
+	if image.viewBox == "" && !image.inUnits {
 		return nil
 	}
 	var box [4]float32
-	list, err := parseSVGNumbers(image.viewBox)
-	if err != nil || len(list) != 4 {
-		return fmt.Errorf("Invalid SVG viewBox %q: four numbers are needed.", image.viewBox)
-	}
-	for i := range box {
-		box[i] = float32(list[i])
-	}
-	if box[2] == 0 || box[3] == 0 {
-		return fmt.Errorf("Invalid SVG viewBox %q: its width and height cannot be zero.", image.viewBox)
+	if image.inUnits {
+		box[2] = image.w / svgPixel
+		box[3] = image.h / svgPixel
+	} else {
+		list, err := parseSVGNumbers(image.viewBox)
+		if err != nil || len(list) != 4 {
+			return fmt.Errorf("Invalid SVG viewBox %q: four numbers are needed.", image.viewBox)
+		}
+		for i := range box {
+			box[i] = float32(list[i])
+		}
+		if box[2] <= 0 || box[3] <= 0 {
+			return fmt.Errorf("Invalid SVG viewBox %q: its width and height have to be above zero.", image.viewBox)
+		}
 	}
 	// A size the file does not give, or one in a unit PDFjet cannot read, is
 	// the other one in the proportions of the viewBox, or the size of the
@@ -1241,8 +1591,9 @@ func (image *SVGImage) GetHeight() float32 {
 	return image.h
 }
 
-// drawPath draws a path, filled and then stroked. An opacity, a line cap
-// and a line join are set in a graphics state of the path's own.
+// drawPath draws a path, filled and then stroked, or stroked first when its
+// paint-order says. An opacity, a line cap and a line join are set in a
+// graphics state of the path's own.
 func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 	fill := path.fill != color.Transparent
 	stroke := path.stroke != color.Transparent
@@ -1254,8 +1605,10 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 	alpha := !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0)
 	lineCap := stroke && path.lineCap != capstyle.Butt
 	lineJoin := stroke && path.lineJoin != joinstyle.Miter
+	// A limit of 4 is set around the whole image, in DrawOn
+	miter := stroke && path.lineJoin == joinstyle.Miter && path.miterLimit != svgMiterLimit
 	dash := stroke && path.dashArray != nil
-	state := alpha || lineCap || lineJoin || dash || path.clips != nil
+	state := alpha || lineCap || lineJoin || miter || dash || path.clips != nil
 	if state {
 		page.SaveGraphicsState()
 		image.clip(path.clips, page)
@@ -1268,7 +1621,7 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 				page.appendFloat32(length)
 			}
 			page.appendString("] ")
-			page.appendFloat32(path.dashOffset)
+			page.appendFloat32(svgDashPhase(path))
 			page.appendString(" d\n")
 		}
 		if alpha {
@@ -1283,49 +1636,56 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 		if lineJoin {
 			page.SetLineJoinStyle(path.lineJoin)
 		}
-	}
-
-	if fill {
-		page.SetBrushColor(path.fill)
-		for _, op := range path.operations {
-			if op.cmd == 'M' {
-				page.MoveTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'L' {
-				page.LineTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'C' {
-				page.CurveTo(
-					op.x1+image.x, op.y1+image.y,
-					op.x2+image.x, op.y2+image.y,
-					op.x+image.x, op.y+image.y)
-			}
-		}
-		if path.evenOdd {
-			page.appendString("f*\n")
-		} else {
-			page.FillPath()
+		if miter {
+			page.appendFloat32(path.miterLimit)
+			page.appendString(" M\n")
 		}
 	}
 
-	if stroke {
-		page.SetPenColor(path.stroke)
-		page.SetPenWidth(path.strokeWidth)
-		// Z closes a subpath, and the path is stroked once, all of its
-		// subpaths together, as SVG strokes it.
-		for _, op := range path.operations {
-			if op.cmd == 'M' {
-				page.MoveTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'L' {
-				page.LineTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'C' {
-				page.CurveTo(
-					op.x1+image.x, op.y1+image.y,
-					op.x2+image.x, op.y2+image.y,
-					op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'Z' {
-				page.appendString("h\n")
+	for pass := 0; pass < 2; pass++ {
+		strokePass := (pass == 0) == path.strokeFirst
+		if !strokePass && fill {
+			page.SetBrushColor(path.fill)
+			for _, op := range path.operations {
+				if op.cmd == 'M' {
+					page.MoveTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'L' {
+					page.LineTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'C' {
+					page.CurveTo(
+						op.x1+image.x, op.y1+image.y,
+						op.x2+image.x, op.y2+image.y,
+						op.x+image.x, op.y+image.y)
+				}
+			}
+			if path.evenOdd {
+				page.appendString("f*\n")
+			} else {
+				page.FillPath()
 			}
 		}
-		page.StrokePath()
+
+		if strokePass && stroke {
+			page.SetPenColor(path.stroke)
+			page.SetPenWidth(path.strokeWidth)
+			// Z closes a subpath, and the path is stroked once, all of its
+			// subpaths together, as SVG strokes it.
+			for _, op := range path.operations {
+				if op.cmd == 'M' {
+					page.MoveTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'L' {
+					page.LineTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'C' {
+					page.CurveTo(
+						op.x1+image.x, op.y1+image.y,
+						op.x2+image.x, op.y2+image.y,
+						op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'Z' {
+					page.appendString("h\n")
+				}
+			}
+			page.StrokePath()
+		}
 	}
 
 	if state {
@@ -1347,7 +1707,11 @@ func (image *SVGImage) clip(clips []*svgPath, page *Page) {
 				page.appendString("h\n")
 			}
 		}
-		page.ClipPath()
+		if clip.evenOdd {
+			page.appendString("W*\nn\n")
+		} else {
+			page.ClipPath()
+		}
 	}
 }
 
@@ -1371,7 +1735,7 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 			float32(m[3]),
 			float32(float64(m[0]*px)+float64(m[2]*py)+m[4]) + image.x,
 			page.height - (float32(float64(m[1]*px)+float64(m[3]*py)+m[5]) + image.y)}
-		writable := true
+		writable := image.clipsAreWritable(clips, page)
 		for _, value := range tm {
 			writable = writable && fastfloat.IsWritable(value)
 		}
@@ -1384,7 +1748,8 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 		}
 		alpha := !page.pdf.isPDFA1() && (fill && run.fillAlpha < 1.0 || stroke && run.strokeAlpha < 1.0)
 		lineJoin := stroke && run.lineJoin != joinstyle.Miter
-		state := alpha || lineJoin || clips != nil
+		miter := stroke && run.lineJoin == joinstyle.Miter && run.miterLimit != svgMiterLimit
+		state := alpha || lineJoin || miter || clips != nil
 		if state {
 			page.SaveGraphicsState()
 			image.clip(clips, page)
@@ -1396,6 +1761,10 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 			}
 			if lineJoin {
 				page.SetLineJoinStyle(run.lineJoin)
+			}
+			if miter {
+				page.appendFloat32(run.miterLimit)
+				page.appendString(" M\n")
 			}
 		}
 		for pass := 0; pass < 2; pass++ {
@@ -1413,6 +1782,23 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 			page.RestoreGraphicsState()
 		}
 	}
+}
+
+// strokesMiters reports whether a path or a run of a text is stroked with
+// miter joins and the limit of SVG unless given.
+func (image *SVGImage) strokesMiters() bool {
+	for _, path := range image.paths {
+		if path.text != nil {
+			for _, run := range path.text.runs {
+				if run.stroke != color.Transparent && run.lineJoin == joinstyle.Miter && run.miterLimit == svgMiterLimit {
+					return true
+				}
+			}
+		} else if path.stroke != color.Transparent && path.lineJoin == joinstyle.Miter && path.miterLimit == svgMiterLimit {
+			return true
+		}
+	}
+	return false
 }
 
 // overflows reports whether something of the image is drawn outside its
@@ -1464,19 +1850,63 @@ func (image *SVGImage) outside(px, py, margin float32) bool {
 	return px < -e || py < -e || px > image.w+e || py > image.h+e
 }
 
-// isWritable reports whether a PDF can hold the points and the stroke width
-// of the path where it is drawn: a transform or a scale such as scale(1e30)
-// can take them out of its range, and such a path is not drawn.
+// svgDashPhase returns the dash offset as a PDF writes it, which is not below
+// zero: an offset below zero starts as far before the pattern, the same place
+// as that far from the end of the pattern (review of 30 October 2026).
+func svgDashPhase(path *svgPath) float32 {
+	if path.dashOffset >= 0.0 {
+		return path.dashOffset
+	}
+	sum := 0.0
+	for _, length := range path.dashArray {
+		sum += float64(length)
+	}
+	phase := math.Mod(float64(path.dashOffset), sum)
+	if phase < 0.0 {
+		phase += sum
+	}
+	return float32(math.Abs(phase))
+}
+
+// isWritable reports whether a PDF can hold the points, the stroke width, the
+// dashes and the clip paths of the path where it is drawn: a transform or a
+// scale such as scale(1e30) can take them out of its range, and such a path is
+// not drawn.
 func (image *SVGImage) isWritable(path *svgPath, page *Page) bool {
+	if !fastfloat.IsWritable(path.strokeWidth) {
+		return false
+	}
+	if path.stroke != color.Transparent && path.dashArray != nil {
+		for _, length := range path.dashArray {
+			if !fastfloat.IsWritable(length) {
+				return false
+			}
+		}
+		if !fastfloat.IsWritable(svgDashPhase(path)) {
+			return false
+		}
+	}
+	return image.areWritable(path.operations, page) && image.clipsAreWritable(path.clips, page)
+}
+
+// clipsAreWritable reports whether a PDF can hold the clip paths.
+func (image *SVGImage) clipsAreWritable(clips []*svgPath, page *Page) bool {
+	for _, clip := range clips {
+		if !image.areWritable(clip.operations, page) {
+			return false
+		}
+	}
+	return true
+}
+
+// areWritable reports whether a PDF can hold the points of the operations.
+func (image *SVGImage) areWritable(operations []*svgPathOp, page *Page) bool {
 	point := func(x, y float32) bool {
 		x += image.x
 		y += image.y
 		return fastfloat.IsWritable(x) && fastfloat.IsWritable(y) && fastfloat.IsWritable(page.height-y)
 	}
-	if !fastfloat.IsWritable(path.strokeWidth) {
-		return false
-	}
-	for _, op := range path.operations {
+	for _, op := range operations {
 		if !point(op.x, op.y) || op.cmd == 'C' && (!point(op.x1, op.y1) || !point(op.x2, op.y2)) {
 			return false
 		}
@@ -1503,6 +1933,14 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 			path.text.place()
 		}
 	}
+	// The miter limit, set once: a stroked map has as many paths as a PDF
+	// would hold, and the few with another limit set their own.
+	miter := image.strokesMiters()
+	if miter {
+		page.SaveGraphicsState()
+		page.appendFloat32(svgMiterLimit)
+		page.appendString(" M\n")
+	}
 	clip := image.overflows(page)
 	if clip {
 		page.SaveGraphicsState()
@@ -1516,6 +1954,9 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 		}
 	}
 	if clip {
+		page.RestoreGraphicsState()
+	}
+	if miter {
 		page.RestoreGraphicsState()
 	}
 	page.SetFigureBoundingBox(image.x, image.y, image.w, image.h)

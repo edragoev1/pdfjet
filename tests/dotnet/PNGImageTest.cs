@@ -26,6 +26,11 @@ public class PNGImageTest {
         new[] {"BASN0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
         new[] {"BASN2C08", "32", "32", "2", "8", "3072", "7855b9bf", "", ""},
         new[] {"BASN2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        new[] {"BASN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        new[] {"BASN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        new[] {"BGAN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        new[] {"BGGN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        new[] {"BGYN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
         new[] {"BASN3P01", "32", "32", "3", "1", "3072", "31ec284b", "", ""},
         new[] {"BASN3P02", "32", "32", "3", "2", "3072", "279a463a", "", ""},
         new[] {"BASN3P04", "32", "32", "3", "4", "3072", "3a9e038e", "", ""},
@@ -173,12 +178,6 @@ public class PNGImageTest {
         System.Collections.Generic.List<PDFobj> objects = new System.Collections.Generic.List<PDFobj>();
         new Image(objects, TestSupport.Open("tests/data/PngSuite/TBRN2C08.PNG"));
         Assert.Contains("/Mask [ 127 127 127 127 127 127 ]", string.Join(" ", objects[objects.Count - 1].dict));
-    }
-
-    [Fact]
-    public void Rejects16BitRgbaWithAMessage() {
-        Exception e = Assert.ThrowsAny<Exception>(() => Decode("BASN6A16"));
-        Assert.Equal("Image with unsupported bit depth == 16", e.Message);
     }
 
     [Fact]
@@ -402,9 +401,19 @@ public class PNGImageTest {
     }
 
     [Fact]
-    public void Rejects16BitGrayscaleWithAlphaWithAMessage() {
-        Exception e = Assert.ThrowsAny<Exception>(() => Decode("BASN4A16"));
-        Assert.Equal("Image with unsupported bit depth == 16", e.Message);
+    public void AnImageFromA16BitPngWithAlphaKeeps16BitsWithASoftMask() {
+        foreach (string name in new string[] {"BASN4A16", "BASN6A16"}) {
+            MemoryStream output = new MemoryStream();
+            PDF pdf = new PDF(output);
+            using (Stream stream = TestSupport.Open("tests/data/PngSuite/" + name + ".PNG")) {
+                Image image = new Image(pdf, stream);
+                image.DrawOn(new Page(pdf, Letter.PORTRAIT));
+            }
+            pdf.Complete();
+            string raw = TestSupport.Latin1(output.ToArray());
+            Assert.Contains("/BitsPerComponent 16", raw);
+            Assert.Contains("/SMask", raw);
+        }
     }
 
     [Fact]

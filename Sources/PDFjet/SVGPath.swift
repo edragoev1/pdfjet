@@ -13,13 +13,15 @@ class SVGPath {
     var fill: Int32 = Color.transparent     // The fill color, or Color.transparent for none
     var stroke: Int32 = Color.transparent   // The stroke color, or Color.transparent for none
     var strokeWidth: Float = 0.0            // The stroke width, in the space of the svg element
-    var evenOdd = false                     // Filled with the even-odd rule
+    var evenOdd = false                     // Filled, or clipped to, with the even-odd rule
     var lineCap = CapStyle.BUTT
     var lineJoin = JoinStyle.MITER
+    var miterLimit: Float = 4.0
     var fillAlpha: Float = 1.0
     var strokeAlpha: Float = 1.0
     var dashArray: [Float]? = nil           // The dashes and the gaps, in the space of the svg element; nil is solid
     var dashOffset: Float = 0.0
+    var strokeFirst = false                 // paint-order: the stroke drawn before the fill
     var clips: [SVGPath]? = nil             // The clip paths it is drawn inside, all of them
     var text: SVGText? = nil                // A text, drawn instead of the operations
 }

@@ -352,7 +352,7 @@ public class ReviewMediaTest {
         SVGImage image = new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes(svg)));
         image.SetLocation(0f, 0f);
         image.DrawOn(page);
-        return TestSupport.Content(page);
+        return SVGImageTest.WithoutMiterLimit(TestSupport.Content(page));
     }
 
     private static string Repeat(string text, int count) {

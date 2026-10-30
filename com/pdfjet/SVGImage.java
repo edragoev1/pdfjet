@@ -22,10 +22,13 @@ import java.util.Set;
  * It draws the path, rect, circle, ellipse, line, polyline and polygon
  * elements, in groups or not, with their transforms, and the fill, stroke,
  * stroke-width, stroke-dasharray, stroke-dashoffset, fill-rule,
- * stroke-linecap, stroke-linejoin, opacity, fill-opacity, stroke-opacity,
- * paint-order, clip-path and markers they have or inherit, as attributes, in a
+ * stroke-linecap, stroke-linejoin, stroke-miterlimit, opacity, fill-opacity,
+ * stroke-opacity, visibility, paint-order, clip-path and markers they have or
+ * inherit, as attributes, in a
  * style attribute or in rules for their classes in a style element that comes
- * before them. It draws the elements a use element names, and text and tspan
+ * before them. It draws the elements a use element names, a symbol at the size
+ * of the use, a nested svg at its x, y and viewBox, the first child of a switch
+ * that it can draw, and text and tspan
  * elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
  * dominant-baseline, in the font set with setFont and setBoldFont, or else
  * in the fonts PDFjet carries, embedded: IBM Plex
@@ -35,7 +38,10 @@ import java.util.Set;
  * font-weight and font-style of the text ask. A gradient is drawn in the
  * mean color of its stops. The width,
  * height, viewBox and preserveAspectRatio of the svg element give the size of
- * the image, and what is drawn outside it is cut off, as a browser does.
+ * the image, and what is drawn outside it is cut off, as a browser does. It
+ * throws for a file that nests what it draws more than 48 deep, or that draws
+ * more than 4,000,000 path operations again, by use elements, markers and clip
+ * paths.
  */
 public class SVGImage implements Drawable {
     float x = 0f;
@@ -44,6 +50,7 @@ public class SVGImage implements Drawable {
     float h = 0f;       // SVG height
     String viewBox = "";
     String preserveAspectRatio = "";
+    private boolean inUnits = false;    // A size in a unit such as mm, and no viewBox
 
     List<SVGPath> paths = null;
     /** The URI opened when the image is clicked. */
@@ -63,10 +70,27 @@ public class SVGImage implements Drawable {
     private List<SVGPath> clipShapes = new ArrayList<SVGPath>();
     private Set<XMLNode> reusing;
     private long reused = 0;
+    private long counted = 0;
+    private String[] useSize = null;    // The width and the height of the use element of the element drawn next
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     static final long MAX_REUSED = 1000000;
+    // The path operations drawn again, by use elements and as markers, and
+    // written for the clip paths of what is drawn, at most: a use of a path of N
+    // operations was N operations for each element counted by the limit above,
+    // 506 MB for a file of 200 KB, and a clip path of N operations is read for
+    // every element it clips and written for every path in it, 800 MB of page
+    // for 320 KB (review of 30 October 2026). The operations of a file drawn
+    // once are not counted: they grow with the file.
+    static final long MAX_OPERATIONS = 4000000;
+    // How deep the elements being drawn may nest, by groups, use elements and
+    // markers, a state on the stack for each: a chain of use elements is flat in
+    // the file, so the limit of the XML parser does not see it, and each level
+    // is a call. The number is the same in the four ports and leaves every one
+    // of them room on a stack of 512 KB, where a level takes 7.8 KB of a debug
+    // build of Swift (review of 30 October 2026).
+    static final int MAX_DEPTH = 48;
 
     /**
      * Used to embed SVG images in the PDF document.
@@ -133,44 +157,70 @@ public class SVGImage implements Drawable {
     // is left out.
     private Map<String, Integer> gradientColors(ColorMap colorMap) {
         Map<String, Integer> colors = new HashMap<String, Integer>();
+        Map<XMLNode, Stops> read = new HashMap<XMLNode, Stops>();
         for (Map.Entry<String, XMLNode> entry : ids.entrySet()) {
             XMLNode gradient = entry.getValue();
             // Up to ten gradients along the hrefs, which may go round in a circle.
             for (int i = 0; i < 10 && gradient != null && isGradient(gradient); i++) {
-                long r = 0;
-                long g = 0;
-                long b = 0;
-                int count = 0;
-                for (XMLNode stop : gradient.getChildren()) {
-                    if (!stop.getLocalName().equals("stop")) {
-                        continue;
-                    }
-                    SVGState state = new SVGState();
-                    state.fill = Color.black;   // stop-color is black unless given
-                    String color = stop.getAttribute("stop-color");
-                    if (color != null) {
-                        state.setProperty(colorMap, "fill", color);
-                    }
-                    for (String[] declaration : SVGState.parseDeclarations(attribute(stop, "style"))) {
-                        if (declaration[0].equals("stop-color")) {
-                            state.setProperty(colorMap, "fill", declaration[1]);
-                        }
-                    }
-                    int c = (state.fill == Color.transparent) ? Color.black : state.fill;
-                    r += (c >> 16) & 0xFF;
-                    g += (c >> 8) & 0xFF;
-                    b += c & 0xFF;
-                    count++;
+                Stops stops = read.get(gradient);
+                if (stops == null) {
+                    stops = gradientStops(gradient, colorMap);
+                    read.put(gradient, stops);
                 }
-                if (count > 0) {
-                    colors.put(entry.getKey(), (int) (
-                            (r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count));
+                if (stops.found) {
+                    colors.put(entry.getKey(), stops.color);
                     break;
                 }
-                gradient = ids.get(href(gradient));
+                gradient = stops.next;
             }
         }
         return colors;
+    }
+
+    // What a gradient itself says of its color: the mean of its stops, if it
+    // has any, and the gradient its href names.
+    private static class Stops {
+        int color = 0;
+        boolean found = false;
+        XMLNode next = null;
+    }
+
+    // Reads the gradient, once however many gradients name it: N gradients
+    // that name one of N stops were N x N stops read, 50 s for 3.4 MB (review
+    // of 30 October 2026).
+    private Stops gradientStops(XMLNode gradient, ColorMap colorMap) {
+        long r = 0;
+        long g = 0;
+        long b = 0;
+        int count = 0;
+        for (XMLNode stop : gradient.getChildren()) {
+            if (!stop.getLocalName().equals("stop")) {
+                continue;
+            }
+            SVGState state = new SVGState();
+            state.fill = Color.black;   // stop-color is black unless given
+            String color = stop.getAttribute("stop-color");
+            if (color != null) {
+                state.setProperty(colorMap, "fill", color);
+            }
+            for (String[] declaration : SVGState.parseDeclarations(attribute(stop, "style"))) {
+                if (declaration[0].equals("stop-color")) {
+                    state.setProperty(colorMap, "fill", declaration[1]);
+                }
+            }
+            int c = (state.fill == Color.transparent) ? Color.black : state.fill;
+            r += (c >> 16) & 0xFF;
+            g += (c >> 8) & 0xFF;
+            b += c & 0xFF;
+            count++;
+        }
+        Stops stops = new Stops();
+        if (count > 0) {
+            stops.color = (int) ((r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count);
+            stops.found = true;
+        }
+        stops.next = ids.get(href(gradient));
+        return stops;
     }
 
     private static boolean isGradient(XMLNode node) {
@@ -209,12 +259,43 @@ public class SVGImage implements Drawable {
         }
     }
 
+    // Counts operations drawn again or written again, and throws when there
+    // are too many.
+    private void countOperations(long count) {
+        counted += count;
+        if (counted > MAX_OPERATIONS) {
+            throw new IllegalArgumentException("The SVG draws more than " + MAX_OPERATIONS
+                    + " path operations again, with use elements, markers or clip paths.");
+        }
+    }
+
+    // Returns the operations written for the clip paths of one path, and of
+    // a run of a text.
+    private static int clipOperations(List<SVGPath> clips) {
+        int count = 0;
+        if (clips != null) {
+            for (SVGPath clip : clips) {
+                count += clip.operations.size();
+            }
+        }
+        return count;
+    }
+
+    // The error of elements nested too deep.
+    private static IllegalArgumentException depthError() {
+        return new IllegalArgumentException(
+                "The SVG nests elements, use elements and markers more than " + MAX_DEPTH + " deep.");
+    }
+
     // Draws the element, then the ones in it, in the order of the document;
     // the rules of a <style> element apply from its end. An element that is
     // used, by a use element or as a marker, is drawn even where it is a
     // template, as a symbol or a marker is.
     private void draw(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
             List<SVGState> stack, boolean[] root, boolean used) throws Exception {
+        if (stack.size() > MAX_DEPTH) {
+            throw depthError();
+        }
         String name = node.getLocalName();
         if (!reusing.isEmpty()) {
             countReused();
@@ -234,10 +315,10 @@ public class SVGImage implements Drawable {
             state.hidden = true;
         }
         if (state.clipPath != null && !state.hidden) {
-            clip(state);
+            clip(state, colorMap, rules);
         }
-        stack.add(state);
-
+        String[] size = useSize;
+        useSize = null;
         if (name.equals("svg") && root[0]) {
             root[0] = false;
             this.w = parseLength(attribute(attributes, "width"));
@@ -247,10 +328,22 @@ public class SVGImage implements Drawable {
             this.viewBox = attributes.containsKey("viewBox")
                     ? attribute(attributes, "viewBox") : attribute(attributes, "viewbox");
             this.preserveAspectRatio = attribute(attributes, "preserveAspectRatio");
+            this.inUnits = this.viewBox.isEmpty() && this.w > 0f && this.h > 0f
+                    && (hasUnit(attribute(attributes, "width")) || hasUnit(attribute(attributes, "height")));
+            double[] box = SVGState.parseNumbers(this.viewBox);
+            state.viewport = (box != null && box.length == 4)
+                    ? new double[] {box[2], box[3]} : new double[] {this.w, this.h};
+            if (this.inUnits) {
+                state.viewport = new double[] {this.w/PIXEL, this.h/PIXEL};
+            }
+        } else if (name.equals("svg") || name.equals("symbol") && used) {
+            enterViewport(state, attributes, size);
         }
+        stack.add(state);
+
         if (name.equals("text")) {
             if (!state.hidden) {
-                addText(node, colorMap, rules, state, attributes);
+                addText(node, colorMap, rules, state, attributes, stack.size());
             }
             stack.remove(stack.size() - 1);
             return;
@@ -265,6 +358,7 @@ public class SVGImage implements Drawable {
                         1, 0, 0, 1, number(attributes, "x"), number(attributes, "y")});
                 stack.add(parent);
                 reusing.add(target);
+                useSize = new String[] {attribute(attributes, "width"), attribute(attributes, "height")};
                 draw(target, colorMap, rules, stack, root, true);
                 reusing.remove(target);
                 stack.remove(stack.size() - 1);
@@ -273,13 +367,18 @@ public class SVGImage implements Drawable {
             return;
         }
         List<PathOp> operations = shapeOperations(name, attributes);
+        int count = reusing.isEmpty() ? 0 : operations.size();
+        if (!state.hidden && !operations.isEmpty()) {
+            count += clipOperations(state.clips) + ((state.dashArray != null) ? state.dashArray.length : 0);
+        }
+        countOperations(count);
         if (name.equals("line")) {
             state = new SVGState(state);
             state.fill = Color.transparent;     // A line has no inside to fill
             state.fillCurrent = false;
         }
         List<double[]> vertices = null;
-        if (!state.hidden && !operations.isEmpty()
+        if (!state.hidden && !state.invisible && !operations.isEmpty()
                 && (state.markerStart != null || state.markerMid != null || state.markerEnd != null)
                 && (name.equals("path") || name.equals("line") || name.equals("polyline") || name.equals("polygon"))) {
             vertices = vertices(operations);    // Before addPath moves the points
@@ -290,7 +389,13 @@ public class SVGImage implements Drawable {
         }
 
         for (XMLNode child : node.getChildren()) {
+            if (name.equals("switch") && !isSwitchable(child)) {
+                continue;
+            }
             draw(child, colorMap, rules, stack, root, false);
+            if (name.equals("switch")) {
+                break;  // A switch draws the first it can
+            }
         }
         if (name.equals("style")) {
             rules.add(SVGState.parseStyleSheet(node.getText()));
@@ -303,6 +408,18 @@ public class SVGImage implements Drawable {
     private static String attribute(Map<String, String> attributes, String name) {
         String value = attributes.get(name);
         return (value == null) ? "" : value;
+    }
+
+    // The elements PDFjet draws, and a switch can choose.
+    private static final Set<String> DRAWN = new HashSet<String>(Arrays.asList(
+            "a", "circle", "ellipse", "g", "line", "path", "polygon",
+            "polyline", "rect", "svg", "switch", "text", "use"));
+
+    // Returns true when a switch can draw the element: one PDFjet draws,
+    // which asks for no extension, as PDFjet has none. The system language
+    // is not tested: a PDF is read by anyone.
+    private static boolean isSwitchable(XMLNode node) {
+        return DRAWN.contains(node.getLocalName()) && node.getAttribute("requiredExtensions") == null;
     }
 
     // Returns the state of an element whose parent has the given one: its
@@ -490,15 +607,15 @@ public class SVGImage implements Drawable {
     private void addPath(SVGState state, List<PathOp> operations) {
         double[] m = state.matrix;
         double det = m[0]*m[3] - m[1]*m[2];
-        if (state.hidden || operations.isEmpty() || det == 0.0) {
+        if (state.hidden || state.invisible || operations.isEmpty() || det == 0.0) {
             return;
         }
         SVGPath path = new SVGPath();
         path.operations = operations;
         path.fill = state.fillCurrent ? state.color : state.fill;
         path.stroke = state.strokeCurrent ? state.color : state.stroke;
-        path.fillAlpha = state.fillOpacity*state.opacity;
-        path.strokeAlpha = state.strokeOpacity*state.opacity;
+        path.fillAlpha = state.drawnFillAlpha();
+        path.strokeAlpha = state.drawnStrokeAlpha();
         if (path.fillAlpha == 0f) {
             path.fill = Color.transparent;
         }
@@ -513,6 +630,8 @@ public class SVGImage implements Drawable {
         path.evenOdd = state.evenOdd;
         path.lineCap = state.lineCap;
         path.lineJoin = state.lineJoin;
+        path.miterLimit = state.miterLimit;
+        path.strokeFirst = state.strokeFirst;
         if (state.dashArray != null) {
             path.dashArray = new float[state.dashArray.length];
             for (int i = 0; i < path.dashArray.length; i++) {
@@ -559,36 +678,66 @@ public class SVGImage implements Drawable {
 
     // Sets the clip paths of the element: those of its ancestors and the one
     // its clip-path names, the shapes of the clipPath element in the user
-    // space of the element. A clip path that is not there, or one in
-    // objectBoundingBox units, which PDFjet does not draw, is left out; one
-    // with no shape in it hides the element, as SVG clips all of it away.
-    private void clip(SVGState state) {
+    // space of the element. A use in it names a shape, moved by its x and y. A
+    // clip path of one shape keeps the clip-rule of the shape; several are
+    // one path whose nonzero rule draws their union, each turned the same way
+    // round, as opposite ways would cancel out where they overlap. A clip path
+    // that is not there, or one in objectBoundingBox units, which PDFjet does
+    // not draw, is left out; one with no shape in it hides the element, as SVG
+    // clips all of it away.
+    private void clip(SVGState state, ColorMap colorMap, SVGState.StyleSheet rules) throws Exception {
         XMLNode clipPath = ids.get(state.clipPath);
         if (clipPath == null || !clipPath.getLocalName().equals("clipPath")
                 || SVGState.trim(attribute(clipPath, "clipPathUnits")).equals("objectBoundingBox")) {
             return;
         }
-        double[] m = state.matrix;
-        double[] own = SVGState.parseTransform(attribute(clipPath, "transform"));
-        if (own != null) {
-            m = SVGState.multiply(m, own);
-        }
+        SVGState base = new SVGState();
+        base.matrix = state.matrix;
+        List<String> order = new ArrayList<String>();
+        Map<String, String> attributes = attributes(clipPath, order);
+        base = elementState(base, colorMap, rules, attributes, order);
+        base.hidden = false;    // A clipPath element is not displayed anyway
         SVGPath clip = new SVGPath();
         clip.operations = new ArrayList<PathOp>();
+        List<List<PathOp>> shapes = new ArrayList<List<PathOp>>();
         for (XMLNode child : clipPath.getChildren()) {
-            Map<String, String> attributes = attributes(child, new ArrayList<String>());
-            double[] shape = m;
-            String transform = attributes.get("transform");
-            if (transform != null) {
-                double[] matrix = SVGState.parseTransform(transform);
-                if (matrix != null) {
-                    shape = SVGState.multiply(m, matrix);
+            order = new ArrayList<String>();
+            attributes = attributes(child, order);
+            SVGState shape = elementState(base, colorMap, rules, attributes, order);
+            String name = child.getLocalName();
+            if (name.equals("use")) {
+                XMLNode target = ids.get(href(child));
+                if (target == null) {
+                    continue;
+                }
+                shape.matrix = SVGState.multiply(shape.matrix, new double[] {
+                        1, 0, 0, 1, number(attributes, "x"), number(attributes, "y")});
+                order = new ArrayList<String>();
+                attributes = attributes(target, order);
+                shape = elementState(shape, colorMap, rules, attributes, order);
+                name = target.getLocalName();
+            }
+            if (shape.hidden || shape.invisible) {
+                continue;
+            }
+            List<PathOp> operations = shapeOperations(name, attributes);
+            if (operations.isEmpty()) {
+                continue;
+            }
+            transform(shape.matrix, operations);
+            shapes.add(operations);
+            clip.evenOdd = shape.clipEvenOdd;
+        }
+        for (List<PathOp> operations : shapes) {
+            if (shapes.size() > 1) {
+                clip.evenOdd = false;
+                if (area(operations) < 0.0) {
+                    operations = reversed(operations);
                 }
             }
-            List<PathOp> operations = shapeOperations(child.getLocalName(), attributes);
-            transform(shape, operations);
             clip.operations.addAll(operations);
         }
+        countOperations(clipPath.getChildren().size() + clip.operations.size());
         if (clip.operations.isEmpty()) {
             state.hidden = true;
             return;
@@ -597,6 +746,145 @@ public class SVGImage implements Drawable {
         List<SVGPath> clips = (state.clips == null) ? new ArrayList<SVGPath>() : new ArrayList<SVGPath>(state.clips);
         clips.add(clip);
         state.clips = clips;
+    }
+
+    // Sets the user space of a nested svg element, or of a symbol a use
+    // element draws: moved by its x and y, and its viewBox fitted to its width
+    // and height, which the use element may give, and which are those of the
+    // viewport it is in unless given; a percentage is of that viewport. A
+    // viewBox or a size of nothing draws nothing.
+    private static void enterViewport(SVGState state, Map<String, String> attributes, String[] size) {
+        String width = (size != null && !size[0].isEmpty()) ? size[0] : attribute(attributes, "width");
+        String height = (size != null && !size[1].isEmpty()) ? size[1] : attribute(attributes, "height");
+        double w = viewportLength(width, state.viewport[0], state.viewport[0]);
+        double h = viewportLength(height, state.viewport[1], state.viewport[1]);
+        double[] m = {1, 0, 0, 1,
+                viewportLength(attribute(attributes, "x"), state.viewport[0], 0.0),
+                viewportLength(attribute(attributes, "y"), state.viewport[1], 0.0)};
+        double[] box = SVGState.parseNumbers(attribute(attributes, "viewBox"));
+        if (box == null || box.length != 4) {
+            state.viewport = new double[] {w, h};
+            state.matrix = SVGState.multiply(state.matrix, m);
+            return;
+        }
+        // A viewport of no known size, of an svg element with neither a size
+        // nor a viewBox, leaves the viewBox as it is.
+        if (w == 0.0 && width.isEmpty()) {
+            w = box[2];
+        }
+        if (h == 0.0 && height.isEmpty()) {
+            h = box[3];
+        }
+        if (box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0) {
+            state.hidden = true;
+            return;
+        }
+        double sx = w/box[2];
+        double sy = h/box[3];
+        double tx = 0.0;
+        double ty = 0.0;
+        List<String> fields = SVGState.fields(attribute(attributes, "preserveAspectRatio"));
+        if (!fields.isEmpty() && fields.get(0).equals("defer")) {
+            fields = fields.subList(1, fields.size());
+        }
+        String align = fields.isEmpty() ? "xMidYMid" : fields.get(0);
+        if (!align.equals("none")) {
+            sx = Math.min(sx, sy);
+            if (fields.size() > 1 && fields.get(1).equals("slice")) {
+                sx = Math.max(w/box[2], h/box[3]);
+            }
+            sy = sx;
+            // The value is read in bytes of UTF-8, as the Go port reads it.
+            byte[] bytes = Util.utf8(align);
+            if (bytes.length != 8) {
+                bytes = "xMidYMid".getBytes(StandardCharsets.US_ASCII);
+            }
+            tx = alignOffset(new String(bytes, 1, 3, StandardCharsets.ISO_8859_1), 1f)*(w - box[2]*sx);
+            ty = alignOffset(new String(bytes, 5, 3, StandardCharsets.ISO_8859_1), 1f)*(h - box[3]*sy);
+        }
+        m = SVGState.multiply(m, new double[] {sx, 0, 0, sy, tx, ty});
+        m = SVGState.multiply(m, new double[] {1, 0, 0, 1, -box[0], -box[1]});
+        state.viewport = new double[] {box[2], box[3]};
+        state.matrix = SVGState.multiply(state.matrix, m);
+    }
+
+    // Reads an x, a y, a width or a height of a viewport, which may be a
+    // percentage of the size of the one it is in, the given one if it has none.
+    private static double viewportLength(String value, double whole, double given) {
+        value = SVGState.trim(value);
+        if (value.isEmpty()) {
+            return given;
+        }
+        if (value.endsWith("%")) {
+            double number;
+            try {
+                number = SVGState.parseNumber(value.substring(0, value.length() - 1), false);
+            } catch (NumberFormatException e) {
+                return given;
+            }
+            if (Double.isNaN(number) || Double.isInfinite(number)) {
+                return given;
+            }
+            return number*whole/100.0;
+        }
+        return SVGState.parseCoordinate(value);
+    }
+
+    // Returns twice the area of the path, its sign the way it goes round, by
+    // the points of its lines and curves, and closed.
+    private static double area(List<PathOp> operations) {
+        double area = 0.0;
+        double x0 = 0.0;
+        double y0 = 0.0;
+        double x = 0.0;
+        double y = 0.0;
+        for (PathOp op : operations) {
+            if (op.cmd == 'M') {
+                area += x*y0 - x0*y;
+                x0 = op.x;
+                y0 = op.y;
+                x = x0;
+                y = y0;
+                continue;
+            }
+            if (op.cmd == 'C') {
+                area += x*op.y1 - ((double) op.x1)*y;
+                area += ((double) op.x1)*op.y2 - ((double) op.x2)*op.y1;
+                x = op.x2;
+                y = op.y2;
+            }
+            area += x*op.y - ((double) op.x)*y;
+            x = op.x;
+            y = op.y;
+        }
+        return area + x*y0 - x0*y;
+    }
+
+    // Returns the path going the other way round, each subpath from its end.
+    // Only a clip path needs this, whose subpaths close of themselves.
+    private static List<PathOp> reversed(List<PathOp> operations) {
+        List<PathOp> reversed = new ArrayList<PathOp>(operations.size());
+        int start = 0;
+        for (int end = 1; end <= operations.size(); end++) {
+            if (end < operations.size() && operations.get(end).cmd != 'M') {
+                continue;
+            }
+            PathOp last = operations.get(end - 1);
+            reversed.add(new PathOp('M', last.x, last.y));
+            for (int i = end - 1; i > start; i--) {
+                PathOp op = operations.get(i);
+                PathOp before = operations.get(i - 1);
+                if (op.cmd == 'C') {
+                    PathOp curve = new PathOp('C');
+                    curve.setCubicPoints(op.x2, op.y2, op.x1, op.y1, before.x, before.y);
+                    reversed.add(curve);
+                } else {
+                    reversed.add(new PathOp('L', before.x, before.y));
+                }
+            }
+            start = end;
+        }
+        return reversed;
     }
 
     // Returns the vertices of the path, where its markers are drawn, in its
@@ -781,17 +1069,23 @@ public class SVGImage implements Drawable {
     // Adds a text element, with its tspan elements, as the runs of its
     // characters.
     private void addText(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
-            SVGState state, Map<String, String> attributes) {
+            SVGState state, Map<String, String> attributes, int depth) {
         SVGText text = new SVGText();
         text.matrix = state.matrix;
-        addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0});
+        addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0}, depth);
         text.collapseSpaces();
         boolean empty = true;
+        long count = 0;
         for (SVGText.Run run : text.runs) {
             if (!run.text.isEmpty()) {
                 empty = false;
             }
+            count += clipOperations(state.clips);
+            if (!reusing.isEmpty()) {
+                count += 1 + run.text.length();
+            }
         }
+        countOperations(count);
         double[] m = state.matrix;
         if (empty || m[0]*m[3] - m[1]*m[2] == 0.0) {
             return;
@@ -805,9 +1099,13 @@ public class SVGImage implements Drawable {
 
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
-    // pending until then.
+    // pending until then. A tspan counts as a level of the depth of the
+    // elements.
     private void addRuns(SVGText text, XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
-            SVGState state, Map<String, String> attributes, double[] pending) {
+            SVGState state, Map<String, String> attributes, double[] pending, int depth) {
+        if (depth > MAX_DEPTH) {
+            throw depthError();
+        }
         double x = textLength(attribute(attributes, "x"), state.fontSize);
         double y = textLength(attribute(attributes, "y"), state.fontSize);
         double dx = textLength(attribute(attributes, "dx"), state.fontSize);
@@ -846,11 +1144,17 @@ public class SVGImage implements Drawable {
                 run.baseline = state.baseline;
                 run.fill = state.fillCurrent ? state.color : state.fill;
                 run.stroke = state.strokeCurrent ? state.color : state.stroke;
-                run.fillAlpha = state.fillOpacity*state.opacity;
-                run.strokeAlpha = state.strokeOpacity*state.opacity;
+                run.fillAlpha = state.drawnFillAlpha();
+                run.strokeAlpha = state.drawnStrokeAlpha();
+                if (state.invisible) {
+                    // It keeps its place in the text
+                    run.fill = Color.transparent;
+                    run.stroke = Color.transparent;
+                }
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;
+                run.miterLimit = state.miterLimit;
                 text.runs.add(run);
             } else {
                 XMLNode child = (XMLNode) item;
@@ -863,7 +1167,7 @@ public class SVGImage implements Drawable {
                 SVGState childState = elementState(state, colorMap, rules, childAttributes, childOrder);
                 childState.matrix = state.matrix;   // A tspan has no transform
                 if (!childState.hidden) {
-                    addRuns(text, child, colorMap, rules, childState, childAttributes, pending);
+                    addRuns(text, child, colorMap, rules, childState, childAttributes, pending, depth + 1);
                 }
             }
         }
@@ -904,6 +1208,22 @@ public class SVGImage implements Drawable {
         };
     }
 
+    // A user unit of an svg element whose size is in a unit such as mm and
+    // that has no viewBox, in points. Such a size is the size of its pixels,
+    // 96 in an inch, and what is in it is drawn in those.
+    private static final float PIXEL = 0.75f;
+
+    // Returns true when the length has a unit that is not a pixel.
+    private static boolean hasUnit(String value) {
+        String text = SVGState.trim(value);
+        for (String unit : SVGState.UNITS) {
+            if (!unit.equals("px") && text.endsWith(unit)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Returns the width or the height of the svg element in points, and 0 for
     // a length that PDFjet cannot read, a percentage among them, which leaves
     // the size to the viewBox.
@@ -929,20 +1249,25 @@ public class SVGImage implements Drawable {
     }
 
     private void processPaths(List<SVGPath> paths) throws Exception {
-        if (viewBox.isEmpty()) {
+        if (viewBox.isEmpty() && !inUnits) {
             return;
         }
         float[] box = new float[4];
-        double[] list = SVGState.parseNumbers(viewBox);
-        if (list == null || list.length != 4) {
-            throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
-        }
-        for (int i = 0; i < 4; i++) {
-            box[i] = (float) list[i];
-        }
-        if (box[2] == 0f || box[3] == 0f) {
-            throw new Exception(
-                    "Invalid SVG viewBox \"" + viewBox + "\": its width and height cannot be zero.");
+        if (inUnits) {
+            box[2] = w/PIXEL;
+            box[3] = h/PIXEL;
+        } else {
+            double[] list = SVGState.parseNumbers(viewBox);
+            if (list == null || list.length != 4) {
+                throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+            }
+            for (int i = 0; i < 4; i++) {
+                box[i] = (float) list[i];
+            }
+            if (box[2] <= 0f || box[3] <= 0f) {
+                throw new Exception(
+                        "Invalid SVG viewBox \"" + viewBox + "\": its width and height have to be above zero.");
+            }
         }
         // A size the file does not give, or one in a unit PDFjet cannot read,
         // is the other one in the proportions of the viewBox, or the size of
@@ -1204,7 +1529,52 @@ public class SVGImage implements Drawable {
         if (!FastFloat.isWritable(path.strokeWidth)) {
             return false;
         }
-        for (PathOp op : path.operations) {
+        if (path.stroke != Color.transparent && path.dashArray != null) {
+            for (float length : path.dashArray) {
+                if (!FastFloat.isWritable(length)) {
+                    return false;
+                }
+            }
+            if (!FastFloat.isWritable(dashPhase(path))) {
+                return false;
+            }
+        }
+        return areWritable(path.operations, page) && clipsAreWritable(path.clips, page);
+    }
+
+    // Returns the dash offset as a PDF writes it, which is not below zero: an
+    // offset below zero starts as far before the pattern, the same place as
+    // that far from the end of the pattern (review of 30 October 2026).
+    private static float dashPhase(SVGPath path) {
+        if (path.dashOffset >= 0f) {
+            return path.dashOffset;
+        }
+        double sum = 0.0;
+        for (float length : path.dashArray) {
+            sum += length;
+        }
+        double phase = ((double) path.dashOffset) % sum;
+        if (phase < 0.0) {
+            phase += sum;
+        }
+        return (float) Math.abs(phase);
+    }
+
+    // Returns true when a PDF can hold the clip paths.
+    private boolean clipsAreWritable(List<SVGPath> clips, Page page) {
+        if (clips != null) {
+            for (SVGPath clip : clips) {
+                if (!areWritable(clip.operations, page)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Returns true when a PDF can hold the points of the operations.
+    private boolean areWritable(List<PathOp> operations, Page page) {
+        for (PathOp op : operations) {
             if (!isWritable(op.x, op.y, page) || op.cmd == 'C' &&
                     (!isWritable(op.x1, op.y1, page) || !isWritable(op.x2, op.y2, page))) {
                 return false;
@@ -1228,8 +1598,9 @@ public class SVGImage implements Drawable {
         return this.h;
     }
 
-    // Draws a path, filled and then stroked. An opacity, a line cap and a
-    // line join are set in a graphics state of the path's own.
+    // Draws a path, filled and then stroked, or stroked first when its
+    // paint-order says. An opacity, a line cap and a line join are set in a
+    // graphics state of the path's own.
     private void drawPath(SVGPath path, Page page) {
         boolean fill = path.fill != Color.transparent;
         boolean stroke = path.stroke != Color.transparent;
@@ -1241,8 +1612,10 @@ public class SVGImage implements Drawable {
         boolean alpha = !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1f || stroke && path.strokeAlpha < 1f);
         boolean lineCap = stroke && path.lineCap != CapStyle.BUTT;
         boolean lineJoin = stroke && path.lineJoin != JoinStyle.MITER;
+        // A limit of 4 is set around the whole image, in drawOn
+        boolean miter = stroke && path.lineJoin == JoinStyle.MITER && path.miterLimit != 4f;
         boolean dash = stroke && path.dashArray != null;
-        boolean state = alpha || lineCap || lineJoin || dash || path.clips != null;
+        boolean state = alpha || lineCap || lineJoin || miter || dash || path.clips != null;
         if (state) {
             page.saveGraphicsState();
             clip(path, page);
@@ -1255,7 +1628,7 @@ public class SVGImage implements Drawable {
                     page.append(path.dashArray[i]);
                 }
                 page.append("] ");
-                page.append(path.dashOffset);
+                page.append(dashPhase(path));
                 page.append(" d\n");
             }
             if (alpha) {
@@ -1270,49 +1643,56 @@ public class SVGImage implements Drawable {
             if (lineJoin) {
                 page.setLineJoinStyle(path.lineJoin);
             }
-        }
-
-        if (fill) {
-            page.setBrushColor(path.fill);
-            for (PathOp op : path.operations) {
-                if (op.cmd == 'M') {
-                    page.moveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.lineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.curveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
-                }
-            }
-            if (path.evenOdd) {
-                page.append("f*\n");
-            } else {
-                page.fillPath();
+            if (miter) {
+                page.append(path.miterLimit);
+                page.append(" M\n");
             }
         }
 
-        if (stroke) {
-            page.setPenColor(path.stroke);
-            page.setPenWidth(path.strokeWidth);
-            // Z closes a subpath, and the path is stroked once, all of its
-            // subpaths together, as SVG strokes it.
-            for (PathOp op : path.operations) {
-                if (op.cmd == 'M') {
-                    page.moveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.lineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.curveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
-                } else if (op.cmd == 'Z') {
-                    page.append("h\n");
+        for (int pass = 0; pass < 2; pass++) {
+            boolean strokePass = (pass == 0) == path.strokeFirst;
+            if (!strokePass && fill) {
+                page.setBrushColor(path.fill);
+                for (PathOp op : path.operations) {
+                    if (op.cmd == 'M') {
+                        page.moveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.lineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.curveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    }
+                }
+                if (path.evenOdd) {
+                    page.append("f*\n");
+                } else {
+                    page.fillPath();
                 }
             }
-            page.strokePath();
+
+            if (strokePass && stroke) {
+                page.setPenColor(path.stroke);
+                page.setPenWidth(path.strokeWidth);
+                // Z closes a subpath, and the path is stroked once, all of its
+                // subpaths together, as SVG strokes it.
+                for (PathOp op : path.operations) {
+                    if (op.cmd == 'M') {
+                        page.moveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.lineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.curveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    } else if (op.cmd == 'Z') {
+                        page.append("h\n");
+                    }
+                }
+                page.strokePath();
+            }
         }
 
         if (state) {
@@ -1337,7 +1717,11 @@ public class SVGImage implements Drawable {
                     page.append("h\n");
                 }
             }
-            page.clipPath();
+            if (clip.evenOdd) {
+                page.append("W*\nn\n");
+            } else {
+                page.clipPath();
+            }
         }
     }
 
@@ -1359,7 +1743,7 @@ public class SVGImage implements Drawable {
                 (float) m[3],
                 (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
                 page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
-            boolean writable = true;
+            boolean writable = clipsAreWritable(clips, page);
             for (float value : tm) {
                 writable = writable && FastFloat.isWritable(value);
             }
@@ -1372,7 +1756,8 @@ public class SVGImage implements Drawable {
             }
             boolean alpha = !page.pdf.isPDFA1() && (fill && run.fillAlpha < 1f || stroke && run.strokeAlpha < 1f);
             boolean lineJoin = stroke && run.lineJoin != JoinStyle.MITER;
-            boolean state = alpha || lineJoin || clips != null;
+            boolean miter = stroke && run.lineJoin == JoinStyle.MITER && run.miterLimit != 4f;
+            boolean state = alpha || lineJoin || miter || clips != null;
             if (state) {
                 page.saveGraphicsState();
                 SVGPath clipped = new SVGPath();
@@ -1386,6 +1771,10 @@ public class SVGImage implements Drawable {
                 }
                 if (lineJoin) {
                     page.setLineJoinStyle(run.lineJoin);
+                }
+                if (miter) {
+                    page.append(run.miterLimit);
+                    page.append(" M\n");
                 }
             }
             for (int pass = 0; pass < 2; pass++) {
@@ -1403,6 +1792,23 @@ public class SVGImage implements Drawable {
                 page.restoreGraphicsState();
             }
         }
+    }
+
+    // Returns true when a path or a run of a text is stroked with miter
+    // joins and the limit of SVG unless given.
+    private boolean strokesMiters() {
+        for (SVGPath path : paths) {
+            if (path.text != null) {
+                for (SVGText.Run run : path.text.runs) {
+                    if (run.stroke != Color.transparent && run.lineJoin == JoinStyle.MITER && run.miterLimit == 4f) {
+                        return true;
+                    }
+                }
+            } else if (path.stroke != Color.transparent && path.lineJoin == JoinStyle.MITER && path.miterLimit == 4f) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Returns true when something of the image is drawn outside its size,
@@ -1475,6 +1881,14 @@ public class SVGImage implements Drawable {
                 path.text.place();
             }
         }
+        // The miter limit, set once: a stroked map has as many paths as a PDF
+        // would hold, and the few with another limit set their own.
+        boolean miter = strokesMiters();
+        if (miter) {
+            page.saveGraphicsState();
+            page.append(4f);
+            page.append(" M\n");
+        }
         boolean clip = overflows(page);
         if (clip) {
             page.saveGraphicsState();
@@ -1488,6 +1902,9 @@ public class SVGImage implements Drawable {
             }
         }
         if (clip) {
+            page.restoreGraphicsState();
+        }
+        if (miter) {
             page.restoreGraphicsState();
         }
         page.setFigureBoundingBox(x, y, w, h);
