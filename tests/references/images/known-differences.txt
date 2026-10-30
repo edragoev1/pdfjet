@@ -45,16 +45,10 @@ tests/data/PngSuite/S38I3P04.PNG: interlaced PNGs are not supported
 tests/data/PngSuite/S39I3P04.PNG: interlaced PNGs are not supported
 tests/data/PngSuite/S40I3P04.PNG: interlaced PNGs are not supported
 
-# A PNG with alpha and 16 bits a sample, gray and alpha or RGBA, is refused
-# with "unsupported bit depth"; 16-bit gray and RGB without alpha are read.
-pillow/Tests/images/apng/mode_16bit.png: 16-bit RGBA is refused
-bmpsuite/html/rgba32-61754.png: 16-bit RGBA is refused
-bmpsuite/html/rgba32-81284.png: 16-bit RGBA is refused
-tests/data/PngSuite/BASN4A16.PNG: 16-bit gray and alpha is refused
-tests/data/PngSuite/BASN6A16.PNG: 16-bit RGBA is refused
-tests/data/PngSuite/BGAN6A16.PNG: 16-bit RGBA is refused
-tests/data/PngSuite/BGGN4A16.PNG: 16-bit gray and alpha is refused
-tests/data/PngSuite/BGYN6A16.PNG: 16-bit RGBA is refused
+# A PNG of 16-bit gray and alpha is read; Pillow decodes it to RGBA, 8 bits a
+# sample, so that the samples do not compare.
+tests/data/PngSuite/BASN4A16.PNG: Pillow reads 16-bit gray and alpha as RGBA
+tests/data/PngSuite/BGGN4A16.PNG: Pillow reads 16-bit gray and alpha as RGBA
 
 # PDFjet ignores the chunks of an animated PNG and the text chunks, and draws
 # the image of its IDAT chunks, where Pillow refuses the file: for frame
