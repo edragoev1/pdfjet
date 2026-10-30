@@ -839,7 +839,7 @@ func merge() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, file := range []string{"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"} {
+	for _, file := range []string{"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"} {
 		objects, err := pdf.Read(content.OfBinaryFile(file))
 		if err != nil {
 			log.Fatal(err)
@@ -855,7 +855,7 @@ func merge() {
 
 // @snippet split
 func split() {
-	objects, err := pdfjet.NewPDFReader().Read(content.OfBinaryFile("resources/data/testPDFs/rc65-16e.pdf"))
+	objects, err := pdfjet.NewPDFReader().Read(content.OfBinaryFile("resources/data/testPDFs/sample-document.pdf"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -878,7 +878,7 @@ func existingPages() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	objects, err := pdf.Read(content.OfBinaryFile("resources/data/testPDFs/rc65-16e.pdf"))
+	objects, err := pdf.Read(content.OfBinaryFile("resources/data/testPDFs/sample-document.pdf"))
 	if err != nil {
 		log.Fatal(err)
 	}

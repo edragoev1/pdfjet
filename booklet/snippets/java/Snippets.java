@@ -782,7 +782,7 @@ public class Snippets {
     // @snippet merge
     static void merge() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("merged.pdf")));
-        for (String file : new String[] {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"}) {
+        for (String file : new String[] {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"}) {
             InputStream stream = new BufferedInputStream(new FileInputStream(file));
             pdf.merge(pdf.read(stream));
             stream.close();
@@ -792,7 +792,7 @@ public class Snippets {
 
     // @snippet split
     static void split() throws Exception {
-        InputStream stream = new BufferedInputStream(new FileInputStream("resources/data/testPDFs/rc65-16e.pdf"));
+        InputStream stream = new BufferedInputStream(new FileInputStream("resources/data/testPDFs/sample-document.pdf"));
         List<PDFobj> objects = new PDF().read(stream);
         stream.close();
         PDF firstPage = new PDF(new BufferedOutputStream(new FileOutputStream("page1.pdf")));
@@ -803,7 +803,7 @@ public class Snippets {
     // @snippet existing-pages
     static void existingPages() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("stamped.pdf")));
-        List<PDFobj> objects = pdf.read(new FileInputStream("resources/data/testPDFs/rc65-16e.pdf"));
+        List<PDFobj> objects = pdf.read(new FileInputStream("resources/data/testPDFs/sample-document.pdf"));
         // IBM Plex Sans, which PDFjet carries
         Font font = new Font(objects, IBMPlexSans.Regular).setSize(24f);
         for (PDFobj pageObj : pdf.getPageObjects(objects)) {

@@ -34,7 +34,7 @@ final class Example_49 {
 
         String[] fileNames = {
             "resources/data/testPDFs/scanned-linearized.pdf",
-            "resources/data/testPDFs/rc65-16e.pdf",
+            "resources/data/testPDFs/sample-document.pdf",
             "resources/data/testPDFs/PDFjetLogo.pdf"
         };
         List<List<PDFobj>> documents = new ArrayList<List<PDFobj>>();

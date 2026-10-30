@@ -356,7 +356,7 @@ func TestMergeAnEncryptedDocumentIsMergedDecrypted(t *testing.T) {
 
 func TestMergeMergesTheTestDocuments(t *testing.T) {
 	doc := testNewDoc()
-	for _, name := range []string{"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"} {
+	for _, name := range []string{"scanned-linearized.pdf", "sample-document.pdf", "PDFjetLogo.pdf"} {
 		buf, err := os.ReadFile(testRepoPath(t, "resources/data/testPDFs/"+name))
 		if err != nil {
 			t.Fatal(err)

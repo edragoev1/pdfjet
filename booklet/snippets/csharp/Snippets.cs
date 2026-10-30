@@ -776,7 +776,7 @@ public class Snippets {
     // @snippet merge
     static void Merge() {
         PDF pdf = new PDF(new BufferedStream(new FileStream("merged.pdf", FileMode.Create)));
-        String[] files = {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"};
+        String[] files = {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"};
         foreach (String file in files) {
             Stream stream = new BufferedStream(
                     new FileStream(file, FileMode.Open, FileAccess.Read));
@@ -789,7 +789,7 @@ public class Snippets {
     // @snippet split
     static void Split() {
         Stream stream = new BufferedStream(
-                new FileStream("resources/data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
+                new FileStream("resources/data/testPDFs/sample-document.pdf", FileMode.Open, FileAccess.Read));
         List<PDFobj> objects = new PDF().Read(stream);
         stream.Close();
         PDF firstPage = new PDF(new BufferedStream(new FileStream("page1.pdf", FileMode.Create)));
@@ -801,7 +801,7 @@ public class Snippets {
     static void ExistingPages() {
         PDF pdf = new PDF(new BufferedStream(new FileStream("stamped.pdf", FileMode.Create)));
         List<PDFobj> objects = pdf.Read(
-                new FileStream("resources/data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
+                new FileStream("resources/data/testPDFs/sample-document.pdf", FileMode.Open, FileAccess.Read));
         // IBM Plex Sans, which PDFjet carries
         Font font = new Font(objects, IBMPlexSans.Regular).SetSize(24f);
         foreach (PDFobj pageObj in pdf.GetPageObjects(objects)) {

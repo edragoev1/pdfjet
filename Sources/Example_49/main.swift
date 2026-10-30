@@ -30,7 +30,7 @@ public class Example_49 {
 
         let fileNames = [
             "resources/data/testPDFs/scanned-linearized.pdf",
-            "resources/data/testPDFs/rc65-16e.pdf",
+            "resources/data/testPDFs/sample-document.pdf",
             "resources/data/testPDFs/PDFjetLogo.pdf"
         ]
         var documents = [[PDFobj]]()

@@ -769,7 +769,7 @@ func formFields(_ pdf: PDF, _ font: Font) throws {
 // @snippet merge
 func merge() throws {
     let pdf = PDF(OutputStream(toFileAtPath: "merged.pdf", append: false)!)
-    for file in ["resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/rc65-16e.pdf"] {
+    for file in ["resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"] {
         let stream = InputStream(fileAtPath: file)!
         try pdf.merge(pdf.read(from: stream))
         stream.close()
@@ -779,7 +779,7 @@ func merge() throws {
 
 // @snippet split
 func split() throws {
-    let stream = InputStream(fileAtPath: "resources/data/testPDFs/rc65-16e.pdf")!
+    let stream = InputStream(fileAtPath: "resources/data/testPDFs/sample-document.pdf")!
     let objects = try PDF().read(from: stream)
     stream.close()
     let firstPage = PDF(OutputStream(toFileAtPath: "page1.pdf", append: false)!)
@@ -790,7 +790,7 @@ func split() throws {
 // @snippet existing-pages
 func existingPages() throws {
     let pdf = PDF(OutputStream(toFileAtPath: "stamped.pdf", append: false)!)
-    var objects = try pdf.read(from: InputStream(fileAtPath: "resources/data/testPDFs/rc65-16e.pdf")!)
+    var objects = try pdf.read(from: InputStream(fileAtPath: "resources/data/testPDFs/sample-document.pdf")!)
     // IBM Plex Sans, which PDFjet carries
     let font = try Font(&objects, IBMPlexSans.Regular).setSize(24)
     for pageObj in pdf.getPageObjects(from: objects) {
