@@ -654,7 +654,7 @@ class TextFrameTest {
     @Test
     void aJustifiedRowInAKernedFontEndsAtTheRightEdge() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = KerningTest.kernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        Font font = KerningTest.kernedFont(pdf, "tests/fonts/SourceSerif4-Regular.ttf", true);
         font.setSize(14f);
         String text = "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: "
                 + "We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday.";

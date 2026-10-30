@@ -16,7 +16,7 @@ import (
 
 // The fonts PDFjet carries in itself, in resources/fonts, each family in a
 // folder of its name, with its license: IBM Plex Sans and Serif, from Thin to
-// Bold, Source Serif 4 and Cascadia Mono, from Light to Bold, upright and
+// Bold, and Cascadia Mono, from Light to Bold, upright and
 // italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; IBM Plex Math;
 // and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
 // All are under the SIL Open Font License 1.1. A path to one of them, such as
@@ -106,7 +106,7 @@ const (
 	bundledMono
 )
 
-var bundledFamilies = []string{"IBMPlexSans", "SourceSerif4", "CascadiaMono"}
+var bundledFamilies = []string{"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"}
 
 // bundledWeights are the CSS weights the faces of each family stand for, and
 // bundledStyles their styles. Cascadia Mono's strokes are heavier than IBM
@@ -116,13 +116,13 @@ var bundledFamilies = []string{"IBMPlexSans", "SourceSerif4", "CascadiaMono"}
 // they are.
 var bundledWeights = [][]int{
 	{100, 300, 400, 450, 500, 600, 700},
-	{300, 400, 500, 600, 700},
+	{100, 300, 400, 450, 500, 600, 700},
 	{300, 400, 500, 600, 700},
 }
 
 var bundledStyles = [][]string{
 	{"Thin", "Light", "Regular", "Text", "Medium", "SemiBold", "Bold"},
-	{"Light", "Regular", "Medium", "SemiBold", "Bold"},
+	{"Thin", "Light", "Regular", "Text", "Medium", "SemiBold", "Bold"},
 	{"Light", "SemiLight", "Regular", "SemiBold", "Bold"},
 }
 
@@ -232,7 +232,7 @@ var bundledFontNames = [][]string{
 		"liberation sans", "dejavu sans", "ibm plex sans", "inter"},
 	{"serif", "times", "times new roman", "georgia", "garamond", "cambria", "palatino",
 		"book antiqua", "liberation serif", "dejavu serif", "noto serif", "source serif 4",
-		"source serif pro"},
+		"source serif pro", "ibm plex serif"},
 	{"monospace", "courier", "courier new", "consolas", "menlo", "monaco", "ui-monospace",
 		"sfmono-regular", "lucida console", "liberation mono", "dejavu sans mono",
 		"jetbrains mono", "ibm plex mono", "source code pro", "cascadia mono", "cascadia code"},

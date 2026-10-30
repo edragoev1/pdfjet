@@ -19,7 +19,7 @@ import (
 // empty box (the owner, 29 October 2026, of ѝ, the Bulgarian "her", which
 // JetBrains Mono does not have).
 
-var testCoverageFamilies = []string{"IBMPlexSans", "IBMPlexSerif", "SourceSerif4", "CascadiaMono"}
+var testCoverageFamilies = []string{"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"}
 
 // testCoverageLetters returns the letters of modern Greek, U+0386 to U+03CE,
 // and of Cyrillic, U+0400 to U+045F; what the code points between them are
@@ -72,7 +72,7 @@ func TestFontCoverageEveryFaceForLatinTextHasGreekAndCyrillic(t *testing.T) {
 			faces++
 		}
 	}
-	if faces != 14+14+10+10 {
+	if faces != 14+14+10 {
 		t.Errorf("%d faces", faces)
 	}
 }

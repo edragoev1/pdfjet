@@ -164,7 +164,7 @@ class TextLineTest {
     @Test
     void theUnderlineOfALastTokenIsAsLongAsTheKernedToken() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = KerningTest.kernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        Font font = KerningTest.kernedFont(pdf, "tests/fonts/SourceSerif4-Regular.ttf", true);
         font.setSize(14f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine line = new TextLine(font, "WAY ").setUnderline(true).setStrikeout(true);

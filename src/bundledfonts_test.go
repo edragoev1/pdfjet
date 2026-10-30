@@ -76,8 +76,8 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 		}
 	}
 	slices.Sort(carried)
-	if len(carried) != 82 {
-		t.Fatalf("%d fonts carried, not 82", len(carried))
+	if len(carried) != 72 {
+		t.Fatalf("%d fonts carried, not 72", len(carried))
 	}
 	var constants []string
 	deprecated := 0
@@ -138,9 +138,9 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 			t.Errorf("no constants in %s", name)
 		}
 	}
-	// IBM Plex Mono, JetBrains Mono and Noto Sans, and the weights not
-	// carried of the other families
-	if deprecated != 16+12+18+29 {
+	// IBM Plex Mono, JetBrains Mono, Noto Sans and Source Serif 4, and the
+	// weights not carried of the other families
+	if deprecated != 16+12+18+14+25 {
 		t.Errorf("%d constants deprecated", deprecated)
 	}
 	slices.Sort(constants)
@@ -196,8 +196,8 @@ func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testi
 		{bundledSans, 400, "IBMPlexSans/IBMPlexSans-Regular.ttf"},
 		{bundledSans, 200, "IBMPlexSans/IBMPlexSans-Thin.ttf"},
 		{bundledSans, 800, "IBMPlexSans/IBMPlexSans-Bold.ttf"},
-		{bundledSerif, 100, "SourceSerif4/SourceSerif4-Light.ttf"},
-		{bundledSerif, 900, "SourceSerif4/SourceSerif4-Bold.ttf"},
+		{bundledSerif, 100, "IBMPlexSerif/IBMPlexSerif-Thin.ttf"},
+		{bundledSerif, 900, "IBMPlexSerif/IBMPlexSerif-Bold.ttf"},
 		{bundledMono, 400, "CascadiaMono/CascadiaMono-SemiLight.ttf"},
 		{bundledMono, 500, "CascadiaMono/CascadiaMono-Regular.ttf"},
 		{bundledMono, 600, "CascadiaMono/CascadiaMono-SemiBold.ttf"},

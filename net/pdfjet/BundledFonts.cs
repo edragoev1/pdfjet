@@ -11,7 +11,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// The fonts PDFjet carries in itself, in resources/fonts, each family in a
 /// folder of its name, with its license: IBM Plex Sans
-/// and Serif, from Thin to Bold, Source Serif 4 and Cascadia Mono, from
+/// and Serif, from Thin to Bold, and Cascadia Mono, from
 /// Light to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai,
 /// Thin to Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
 /// SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
@@ -74,7 +74,7 @@ internal static class BundledFonts {
     internal const int SANS = 0;
     internal const int SERIF = 1;
     internal const int MONO = 2;
-    private static readonly String[] FAMILIES = {"IBMPlexSans", "SourceSerif4", "CascadiaMono"};
+    private static readonly String[] FAMILIES = {"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"};
     // The CSS weights the faces of each family stand for, and their styles.
     // Cascadia Mono's strokes are heavier than IBM Plex Sans's at the same
     // weight: its SemiLight is as thick as Plex Sans Regular, so it stands
@@ -82,12 +82,12 @@ internal static class BundledFonts {
     // October 2026); its SemiBold and Bold match Plex Sans's as they are.
     private static readonly int[][] WEIGHTS = {
         new int[] {100, 300, 400, 450, 500, 600, 700},
-        new int[] {300, 400, 500, 600, 700},
+        new int[] {100, 300, 400, 450, 500, 600, 700},
         new int[] {300, 400, 500, 600, 700},
     };
     private static readonly String[][] STYLES = {
         new String[] {"Thin", "Light", "Regular", "Text", "Medium", "SemiBold", "Bold"},
-        new String[] {"Light", "Regular", "Medium", "SemiBold", "Bold"},
+        new String[] {"Thin", "Light", "Regular", "Text", "Medium", "SemiBold", "Bold"},
         new String[] {"Light", "SemiLight", "Regular", "SemiBold", "Bold"},
     };
 
@@ -188,7 +188,7 @@ internal static class BundledFonts {
                 "liberation sans", "dejavu sans", "ibm plex sans", "inter"},
         new String[] {"serif", "times", "times new roman", "georgia", "garamond", "cambria", "palatino",
                 "book antiqua", "liberation serif", "dejavu serif", "noto serif", "source serif 4",
-                "source serif pro"},
+                "source serif pro", "ibm plex serif"},
         new String[] {"monospace", "courier", "courier new", "consolas", "menlo", "monaco", "ui-monospace",
                 "sfmono-regular", "lucida console", "liberation mono", "dejavu sans mono",
                 "jetbrains mono", "ibm plex mono", "source code pro", "cascadia mono", "cascadia code"},

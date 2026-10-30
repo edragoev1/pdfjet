@@ -21,15 +21,15 @@ public class Example_17 {
         pdf.setTitle("The Idiot")
         pdf.setAuthor("Fyodor Dostoyevsky")
 
-        let regular = try Font(pdf, SourceSerif4.Regular)
-        let italic = try Font(pdf, SourceSerif4.Italic)
-        let semiBold = try Font(pdf, SourceSerif4.SemiBold)
+        let regular = try Font(pdf, IBMPlexSerif.Regular)
+        let italic = try Font(pdf, IBMPlexSerif.Italic)
+        let semiBold = try Font(pdf, IBMPlexSerif.SemiBold)
         regular.setSize(10.0)
         italic.setSize(10.0)
 
-        // Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+        // Kerning, from the GPOS table of IBM Plex Serif: pairs such as "Te", "Yo"
         // and "r." drawn closer, as the font's designers spaced them. The novel
-        // sets on 736 pages kerned, 745 not.
+        // sets on 694 pages kerned, 696 not.
         regular.setKernPairs(true)
         italic.setKernPairs(true)
         semiBold.setKernPairs(true)

@@ -33,7 +33,7 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
     the text with `paint-order: stroke`, the white halo of a label. The
     text is drawn in the fonts PDFjet carries (below), embedded, so that a
     PDF/A or PDF/UA document needs nothing set: IBM Plex Sans for
-    sans-serif, Helvetica, Arial and the like, Source Serif 4 for serif,
+    sans-serif, Helvetica, Arial and the like, IBM Plex Serif for serif,
     Times and the like, Cascadia Mono for monospace, Courier and the like,
     in the weight and the style the text asks for; monospace text of weight
     400 is drawn in Cascadia Mono SemiLight, whose strokes match IBM Plex
@@ -43,24 +43,23 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
     from the PDF gives twice.
 - The fonts PDFjet carries, all four ports, for every language it draws,
   so that it works out of the box: IBM Plex Sans and Serif (Thin to Bold,
-  and Text), Source Serif 4 and Cascadia Mono (Light to Bold), each upright
-  and italic; IBM Plex Sans Arabic, Hebrew and Thai (Thin to Bold); IBM
+  and Text) and Cascadia Mono (Light to Bold), each upright and italic; IBM Plex Sans Arabic, Hebrew and Thai (Thin to Bold); IBM
   Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and
-  Bold, as .otf. 82 faces, under the SIL Open Font License, each family
+  Bold, as .otf. 72 faces, under the SIL Open Font License, each family
   with its license in `resources/fonts` (THIRD-PARTIES.TXT). A font path,
   such as the constant `IBMPlexSans.Regular`, is read from the file of the
   path, else from the folder `resources/fonts`, else from the library, with
   the same API in every case:
-  - Java: the jar of Maven Central carries the fonts, about 47 MB; the
+  - Java: the jar of Maven Central carries the fonts, about 46 MB; the
     `PDFjet.jar` of the release packages on GitHub, and the one built from
     the repository, does not, 0.7 MB, its package having `resources/fonts`.
-  - .NET: the package of NuGet carries them in `PDFjet.dll`, about 70 MB;
+  - .NET: the package of NuGet carries them in `PDFjet.dll`, about 67 MB;
     the `PDFjet.dll` of the release packages on GitHub does not, 0.9 MB.
   - Go: a program built with PDFjet carries the fonts of every script but
-    Chinese, Japanese and Korean, about 23 MB in all; `import _
+    Chinese, Japanese and Korean, about 20 MB in all; `import _
     "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"` adds those, 48
     MB more.
-  - Swift: the fonts come with the product `PDFjetFonts`, about 66 MB in
+  - Swift: the fonts come with the product `PDFjetFonts`, about 63 MB in
     an app that adds it; the library alone has none.
   New: `IBMPlexSerif` and `CascadiaMono` constants, and `Font(objects,
   path)`, a font added to an existing PDF by its path. A font PDFjet does
@@ -86,10 +85,29 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   TC, Thin, Light, Text and Medium: PDFjet does not carry them. Their
   constants read the font file when it is there; the release packages
   before 9.1.7 have them.
+- `SourceSerif4`, all four ports: PDFjet does not carry Source Serif 4 from
+  9.1.7, and carries IBM Plex Serif in its place. Its constants read the
+  font file when it is there; the release packages before 9.1.7 have it.
 - The CJK constants Regular, SemiBold and Bold name the .otf of the font,
   where they named the .ttf; the same font, with smaller subsets.
 
 ### Changed
+- PDFjet no longer carries Source Serif 4: IBM Plex Serif, which it carried
+  already, is its serif font, so that the fonts it carries are the IBM Plex
+  families and Cascadia Mono, 72 faces. The fonts are 2.7 MB smaller: the
+  `PDFjet.dll` of NuGet, a Go program and the Swift product `PDFjetFonts`
+  by 2.7 MB, the jar of Maven Central by about 1 MB. The examples (07, 10,
+  16, 17), the snippets of the booklet and the text benchmark use IBM Plex
+  Serif; Example_17 sets the novel on 694 pages kerned, 696 not. Like the
+  ExtraLight faces above, `SourceSerif4` is deprecated, not removed.
+- Behavior change: a Source Serif 4 constant finds the font only if the
+  program supplies its file, in the folder `resources/fonts` or at its path;
+  PDFjet no longer reads it from the library. Example:
+  `pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)` panics in Go, and
+  `new Font(pdf, SourceSerif4.Regular)` in Java and C# and `try Font(pdf,
+  SourceSerif4.Regular)` in Swift throw, saying PDFjet does not carry the
+  font, where 9.1.5 read it from the folder `fonts` of its package; use
+  `IBMPlexSerif.Regular` instead.
 - Behavior change: BarChart and DonutChart draw their series and slices in
   the Tableau 10 palette, the colors of D3's charts: blue #4E79A7, orange
   #F28E2C, red #E15759, teal #76B7B2, green #59A14F, yellow #EDC949, purple

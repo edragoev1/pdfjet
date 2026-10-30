@@ -26,10 +26,12 @@ import org.junit.jupiter.api.Test;
 class KerningTest {
     private static final String PLEX_TTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
     private static final String PLEX_OTF = "tests/fonts/IBMPlexSans-Regular.otf";
-    // Source Serif 4, whose kern feature has Extension lookups of its pairs
-    // and a chained one, with LookupFlag 8, as Noto Sans, which these tests
-    // read before 9.1.7, has; the lookups of IBM Plex Sans are pairs alone.
-    private static final String SERIF_TTF = "fonts/SourceSerif4/SourceSerif4-Regular.ttf";
+    // IBM Plex Serif, whose kern lookups have LookupFlag 8, as those of Noto
+    // Sans, which these tests read before 9.1.7, have; the lookups of IBM Plex
+    // Sans have none. IBM Plex Sans JP, whose kern feature has Extension
+    // lookups of its pairs, as Source Serif 4, which PDFjet carried before, has.
+    private static final String SERIF_TTF = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf";
+    private static final String EXTENSION_OTF = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf";
 
     private static final Pattern DRAWN_TEXT = Pattern.compile("<([0-9A-F]*)> Tj|\\[(-?[0-9.]+)\\] TJ");
 
@@ -86,7 +88,7 @@ class KerningTest {
     @Test
     void kerningIsDrawnAsItIsMeasured() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        for (String path : new String[] {PLEX_TTF, PLEX_OTF, SERIF_TTF}) {
+        for (String path : new String[] {PLEX_TTF, PLEX_OTF, SERIF_TTF, EXTENSION_OTF}) {
             Font font = kernedFont(pdf, path, true);
             for (String text : new String[] {
                     "AVATAR. To Wally, Tyler and LT: \"Yes,\" P.V. said.",
@@ -256,11 +258,11 @@ class KerningTest {
             {PLEX_TTF, "Тъй ТАТЯНА", 55.94f, -165},
             {PLEX_TTF, "ΑΥΤΟ", 24.44f, -70},
             {PLEX_OTF, "AVATAR To Wally", 75.14f, -302},
-            // Source Serif 4, from its hmtx and kern lookups (Noto Sans, before
+            // IBM Plex Serif, from its hmtx and kern lookups (Noto Sans, before
             // 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)
-            {SERIF_TTF, "AVATAR To Wally", 80.43f, -599},
-            {SERIF_TTF, "Тъй ТАТЯНА", 61.50f, -215},
-            {SERIF_TTF, "ΑΥΤΟ", 26.34f, -115},
+            {SERIF_TTF, "AVATAR To Wally", 80.59f, -315},
+            {SERIF_TTF, "Тъй ТАТЯНА", 61.57f, -147},
+            {SERIF_TTF, "ΑΥΤΟ", 26.40f, -48},
         };
         for (Object[] c : cases) {
             String path = (String) c[0];

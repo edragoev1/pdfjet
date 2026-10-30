@@ -737,7 +737,7 @@ public class SVGImageTest {
         Parse("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
                 + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").DrawOn(page);
         Assert.Equal(new System.Collections.Generic.SortedSet<string>(new[] {
-                "SourceSerif4/SourceSerif4-SemiBoldItalic.ttf", "CascadiaMono/CascadiaMono-Bold.ttf",
+                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf", "CascadiaMono/CascadiaMono-Bold.ttf",
                 "IBMPlexSans/IBMPlexSans-Regular.ttf", "IBMPlexSans/IBMPlexSans-Bold.ttf"}, StringComparer.Ordinal),
                 new System.Collections.Generic.SortedSet<string>(pdf.bundledFonts.Keys, StringComparer.Ordinal));
     }

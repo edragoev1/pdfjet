@@ -29,7 +29,7 @@ func Example10() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Text block with highlighted keywords")
 
-	// f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
+	// f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Regular)
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(15.0)
 

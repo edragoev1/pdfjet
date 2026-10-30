@@ -34,7 +34,7 @@ public class BundledFontsTest {
                 }
             }
         }
-        Assert.Equal(82, carried.Count);
+        Assert.Equal(72, carried.Count);
         SortedSet<String> constants = new SortedSet<String>(StringComparer.Ordinal);
         foreach (String name in CLASSES) {
             Type c = typeof(Font).Assembly.GetType("PDFjet.NET." + name, true);
@@ -120,7 +120,7 @@ public class BundledFontsTest {
         // The small library, as built from the repository and for GitHub
         Assert.Empty(resources);
         Assert.Null(BundledFonts.OpenResource(BundledFonts.NameOf(IBMPlexSans.Regular)));
-        Assert.True(files.Count > 82);
+        Assert.True(files.Count > 72);
 #endif
     }
 
@@ -132,8 +132,8 @@ public class BundledFontsTest {
             new String[] {"0", "400", "IBMPlexSans/IBMPlexSans-Regular.ttf"},
             new String[] {"0", "200", "IBMPlexSans/IBMPlexSans-Thin.ttf"},
             new String[] {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.ttf"},
-            new String[] {"1", "100", "SourceSerif4/SourceSerif4-Light.ttf"},
-            new String[] {"1", "900", "SourceSerif4/SourceSerif4-Bold.ttf"},
+            new String[] {"1", "100", "IBMPlexSerif/IBMPlexSerif-Thin.ttf"},
+            new String[] {"1", "900", "IBMPlexSerif/IBMPlexSerif-Bold.ttf"},
             new String[] {"2", "400", "CascadiaMono/CascadiaMono-SemiLight.ttf"},
             new String[] {"2", "500", "CascadiaMono/CascadiaMono-Regular.ttf"},
             new String[] {"2", "600", "CascadiaMono/CascadiaMono-SemiBold.ttf"},

@@ -106,11 +106,11 @@ public class Snippets {
 
     // @snippet fonts
     static void fonts(PDF pdf, Font font) throws Exception {
-        Font serif = new Font(pdf, SourceSerif4.Regular).setSize(14f);
+        Font serif = new Font(pdf, IBMPlexSerif.Regular).setSize(14f);
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font mono = new Font(pdf, CascadiaMono.Regular).setSize(10f);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(serif, "Source Serif 4 at 14 points").setLocation(50f, 50f).drawOn(page);
+        new TextLine(serif, "IBM Plex Serif at 14 points").setLocation(50f, 50f).drawOn(page);
         new TextLine(bold, "IBM Plex Sans Bold at 12 points").setLocation(50f, 75f).drawOn(page);
         new TextLine(mono, "Cascadia Mono at 10 points").setLocation(50f, 100f).drawOn(page);
         new TextLine(bold, "The same font at 24 points").setFontSize(24f)

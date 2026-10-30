@@ -752,7 +752,7 @@ func TestTextFrameGetTextBottomIsTheBottomOfTheLastRowWhenTheFrameBreaksInsideAT
 // past the right edge (the review of 28 October 2026).
 func TestTextFrameAJustifiedRowInAKernedFontEndsAtTheRightEdge(t *testing.T) {
 	pdf := testNewPDF()
-	font := testKernedFont(t, pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true)
+	font := testKernedFont(t, pdf, "tests/fonts/SourceSerif4-Regular.ttf", true)
 	font.SetSize(14)
 	text := "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: " +
 		"We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday."

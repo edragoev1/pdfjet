@@ -599,7 +599,7 @@ import Testing
     // rows ended past the right edge (the review of 28 October 2026).
     @Test func aJustifiedRowInAKernedFontEndsAtTheRightEdge() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/SourceSerif4/SourceSerif4-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("tests/fonts/SourceSerif4-Regular.ttf"))
         font.setKernPairs(true)
         font.setSize(14)
         let text = "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: " +

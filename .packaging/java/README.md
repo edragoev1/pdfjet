@@ -51,10 +51,10 @@ On Windows, separate the class path entries with `;` instead of `:`.
 
 ## Fonts
 
-`PDFjet.jar` carries IBM Plex Sans and Serif, Source Serif 4 and Cascadia
-Mono, from Light or Thin to Bold, upright and italic; IBM Plex Sans Arabic,
-Hebrew and Thai; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC. Their
-constants, such as `IBMPlexSans.Regular`, are paths like
+`PDFjet.jar` carries IBM Plex Sans and Serif and Cascadia Mono, from Light
+or Thin to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai;
+IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC. Their constants, such as
+`IBMPlexSans.Regular`, are paths like
 `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, which the `Font` constructor
 reads from `PDFjet.jar` when there is no such file: they need no files. The
 same fonts are in `resources/fonts` of this package, with their licenses. A

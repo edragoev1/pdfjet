@@ -8,43 +8,24 @@ using System;
 
 namespace PDFjet.NET {
     /// <summary>
-    /// The Source Serif 4 fonts. Each constant is the path of a font file,
-    /// embedded as a subset of the glyphs a document draws; pass it to the Font
-    /// constructor that takes a font path. PDFjet carries these fonts in
-    /// itself: the path is read from the library when there is no such file.
+    /// The Source Serif 4 fonts, which PDFjet does not carry from 9.1.7: each
+    /// constant is the path of a font file of the packages of PDFjet before
+    /// 9.1.7, which the Font constructor that takes a font path reads when the
+    /// file is there.
     /// </summary>
+    [Obsolete("PDFjet carries IBM Plex Serif, which every constant of IBMPlexSerif reads with nothing to download.")]
     public static class SourceSerif4 {
-
-        /// <summary>
-        /// Source Serif 4 Black, which PDFjet does not carry from 9.1.7: a font
-        /// file of its packages before, read when the file is there.
-        /// </summary>
-        [Obsolete("PDFjet carries the other weights of the family.")]
+        /// <summary>Source Serif 4 Black</summary>
         public const string Black            = "fonts/SourceSerif4/SourceSerif4-Black.ttf";
-
-        /// <summary>
-        /// Source Serif 4 BlackItalic, which PDFjet does not carry from 9.1.7:
-        /// a font file of its packages before, read when the file is there.
-        /// </summary>
-        [Obsolete("PDFjet carries the other weights of the family.")]
+        /// <summary>Source Serif 4 BlackItalic</summary>
         public const string BlackItalic      = "fonts/SourceSerif4/SourceSerif4-BlackItalic.ttf";
         /// <summary>Source Serif 4 Bold</summary>
         public const string Bold             = "fonts/SourceSerif4/SourceSerif4-Bold.ttf";
         /// <summary>Source Serif 4 BoldItalic</summary>
         public const string BoldItalic       = "fonts/SourceSerif4/SourceSerif4-BoldItalic.ttf";
-
-        /// <summary>
-        /// Source Serif 4 ExtraLight, which PDFjet does not carry from 9.1.7: a
-        /// font file of its packages before, read when the file is there.
-        /// </summary>
-        [Obsolete("PDFjet carries the other weights of the family.")]
+        /// <summary>Source Serif 4 ExtraLight</summary>
         public const string ExtraLight       = "fonts/SourceSerif4/SourceSerif4-ExtraLight.ttf";
-
-        /// <summary>
-        /// Source Serif 4 ExtraLightItalic, which PDFjet does not carry from
-        /// 9.1.7: a font file of its packages before, read when the file is there.
-        /// </summary>
-        [Obsolete("PDFjet carries the other weights of the family.")]
+        /// <summary>Source Serif 4 ExtraLightItalic</summary>
         public const string ExtraLightItalic = "fonts/SourceSerif4/SourceSerif4-ExtraLightItalic.ttf";
         /// <summary>Source Serif 4 Italic</summary>
         public const string Italic           = "fonts/SourceSerif4/SourceSerif4-Italic.ttf";

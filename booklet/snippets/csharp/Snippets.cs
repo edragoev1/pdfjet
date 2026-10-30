@@ -98,11 +98,11 @@ public class Snippets {
 
     // @snippet fonts
     static void Fonts(PDF pdf, Font font) {
-        Font serif = new Font(pdf, SourceSerif4.Regular).SetSize(14f);
+        Font serif = new Font(pdf, IBMPlexSerif.Regular).SetSize(14f);
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font mono = new Font(pdf, CascadiaMono.Regular).SetSize(10f);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(serif, "Source Serif 4 at 14 points").SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(serif, "IBM Plex Serif at 14 points").SetLocation(50f, 50f).DrawOn(page);
         new TextLine(bold, "IBM Plex Sans Bold at 12 points").SetLocation(50f, 75f).DrawOn(page);
         new TextLine(mono, "Cascadia Mono at 10 points").SetLocation(50f, 100f).DrawOn(page);
         new TextLine(bold, "The same font at 24 points").SetFontSize(24f)

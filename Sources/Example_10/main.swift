@@ -16,7 +16,7 @@ public class Example_10 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Text block with highlighted keywords")
 
-        // let f1 = try Font(pdf, SourceSerif4.Regular)
+        // let f1 = try Font(pdf, IBMPlexSerif.Regular)
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(15.0)
 

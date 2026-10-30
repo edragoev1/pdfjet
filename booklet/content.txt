@@ -22,7 +22,7 @@ PDFjet comes in four languages, Java, C#, Go and Swift, with the same API and th
 ## What is in the library
 
 - Text in Latin, Greek, Cyrillic, Chinese, Japanese, Korean, Thai, Hebrew, Arabic and Persian, with right to left text, kerning and fallback fonts.
-- 260 font files ready to use, from the IBM Plex, Noto, Source Serif and JetBrains Mono families, and any OpenType or TrueType file on the computer.
+- 72 font files ready to use, from the IBM Plex and Cascadia Mono families, and any OpenType or TrueType file on the computer.
 - Text lines, text blocks, columns and frames that wrap and flow text, and tables that break across pages and repeat their header rows.
 - Bar, line, scatter and donut charts.
 - Barcodes: Code 128, Code 39, UPC-A, EAN-13, QR codes, Data Matrix and PDF417.
@@ -74,7 +74,7 @@ Add PDFjet to the Package.swift of your package, and the PDFjet product to the t
     ]
 @end
 
-The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. They are IBM Plex Sans and Serif, Source Serif 4, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, in the folder resources/fonts of the repository.
+The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. They are IBM Plex Sans and Serif, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, in the folder resources/fonts of the repository.
 
 ## Hello, World
 
@@ -194,7 +194,7 @@ The compliance levels PDF_A_1A to PDF_A_3B make a PDF/A document, for long-term 
 A Font is created once for a PDF and used by any number of text lines, blocks and tables. Its size is set with setSize, and a text line can draw in another size of the same font with setFontSize.
 
 @snippet fonts The fonts that come with PDFjet
-The classes of the com.pdfjet.fonts package, such as IBMPlexSans, SourceSerif4, JetBrainsMono and NotoSans, name the font files that come with PDFjet: IBM Plex in its Sans, Serif, Mono and Math families and in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; Source Serif 4; JetBrains Mono; and Noto Sans. They are .ttf files, and PDFjet embeds only the glyphs a document uses.
+The classes of the com.pdfjet.fonts package, such as IBMPlexSans, IBMPlexSerif and CascadiaMono, name the font files that come with PDFjet: IBM Plex in its Sans, Serif and Math families and in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; and Cascadia Mono. PDFjet embeds only the glyphs a document uses.
 
 @snippet font-files Fonts from files
 Any OpenType or TrueType font file is a font for PDFjet: pass its path, or an input stream of it, to the Font constructor.

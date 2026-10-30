@@ -634,7 +634,7 @@ public class TextFrameTest {
     [Fact]
     public void AJustifiedRowInAKernedFontEndsAtTheRightEdge() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = KerningTest.KernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        Font font = KerningTest.KernedFont(pdf, "tests/fonts/SourceSerif4-Regular.ttf", true);
         font.SetSize(14f);
         string text = "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: "
                 + "We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday.";

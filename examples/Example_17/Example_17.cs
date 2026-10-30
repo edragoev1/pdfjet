@@ -28,15 +28,15 @@ public class Example_17 {
         pdf.SetTitle("The Idiot");
         pdf.SetAuthor("Fyodor Dostoyevsky");
 
-        Font regular = new Font(pdf, SourceSerif4.Regular);
-        Font italic = new Font(pdf, SourceSerif4.Italic);
-        Font semiBold = new Font(pdf, SourceSerif4.SemiBold);
+        Font regular = new Font(pdf, IBMPlexSerif.Regular);
+        Font italic = new Font(pdf, IBMPlexSerif.Italic);
+        Font semiBold = new Font(pdf, IBMPlexSerif.SemiBold);
         regular.SetSize(10f);
         italic.SetSize(10f);
 
-        // Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+        // Kerning, from the GPOS table of IBM Plex Serif: pairs such as "Te", "Yo"
         // and "r." drawn closer, as the font's designers spaced them. The novel
-        // sets on 736 pages kerned, 745 not.
+        // sets on 694 pages kerned, 696 not.
         regular.SetKernPairs(true);
         italic.SetKernPairs(true);
         semiBold.SetKernPairs(true);

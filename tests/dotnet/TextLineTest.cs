@@ -152,7 +152,7 @@ public class TextLineTest {
     [Fact]
     public void TheUnderlineOfALastTokenIsAsLongAsTheKernedToken() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = KerningTest.KernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        Font font = KerningTest.KernedFont(pdf, "tests/fonts/SourceSerif4-Regular.ttf", true);
         font.SetSize(14f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine line = new TextLine(font, "WAY ").SetUnderline(true).SetStrikeout(true);

@@ -35,12 +35,15 @@ Each run writes its own `build/results-<date>-<time>.log`, and `build/` is not
 tracked.
 
 The text document has two configurations: `jet-plex`, with IBM Plex Sans
-(`IBMPlexSans-Regular.ttf`), and `jet-serif`, with Source Serif 4
-(`SourceSerif4-Regular.ttf`), both embedded as subsets from 9.0.5; the runs
+(`IBMPlexSans-Regular.ttf`), and `jet-serif`, with IBM Plex Serif
+(`IBMPlexSerif-Regular.ttf`), both embedded as subsets from 9.0.5; the runs
 before used the `.otf.stream` and `.ttf.stream` files. Up to 9.1.5 the second
 was `jet-noto`, with Noto Sans (`NotoSans-Regular.ttf`), which PDFjet does not
 come with from 9.1.7: the results below with Noto Sans were measured
-with it. The table has four:
+with it. During the work on 9.1.7, `jet-serif` drew Source Serif 4, which
+PDFjet does not carry from 9.1.7 either; the text benchmark now uses IBM Plex
+Serif, and the figures published below are left as they were measured. The
+table has four:
 
 | Configuration | What it draws with |
 |---|---|

@@ -51,7 +51,7 @@ public class Example_07 {
         String[] files = {
             IBMPlexSansJP.Regular,
             IBMPlexSans.Regular,
-            SourceSerif4.Regular,
+            IBMPlexSerif.Italic,
             IBMPlexSerif.Regular,
         };
         String[] kinds = {
