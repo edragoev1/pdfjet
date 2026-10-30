@@ -80,7 +80,7 @@ public class CommonBench {
     static long[] report(OutputStream os) throws Exception {
         long t0 = System.nanoTime();
         PDF pdf = new PDF(os);
-        pdf.setTitle("World Communications");
+        pdf.setTitle("Life Expectancy and Fertility");
         Font regular = new Font(pdf, ROOT + IBMPlexSans.Regular).setSize(11f);
         Font bold = new Font(pdf, ROOT + IBMPlexSans.SemiBold).setSize(11f);
         Font italic = new Font(pdf, ROOT + IBMPlexSans.Italic).setSize(11f);
@@ -92,7 +92,7 @@ public class CommonBench {
                 StandardCharsets.UTF_8).substring(0, 7000);
         Markup markup = new Markup(regular, bold, italic, italic, regular);
         List<Paragraph> paragraphs = new ArrayList<>();
-        paragraphs.add(new Paragraph(new TextLine(bold, "World Communications").setFontSize(20f)));
+        paragraphs.add(new Paragraph(new TextLine(bold, "Life Expectancy and Fertility").setFontSize(20f)));
         paragraphs.addAll(markup.paragraphs(prose.replace("\n\n", "\u0000").replace('\n', ' ').replace('\u0000', '\n')
                 .replace("\n", "\n\n")));
         List<Page> pages = new ArrayList<>();
@@ -101,16 +101,13 @@ public class CommonBench {
         frame.setWidth(512f);
         frame.drawOn(pdf, pages, Letter.PORTRAIT);
 
-        List<String> lines = Files.readAllLines(Paths.get(ROOT + "resources/data/world-communications.txt"), StandardCharsets.UTF_8);
+        List<String> lines = Files.readAllLines(Paths.get(ROOT + "resources/data/life-expectancy-and-fertility-2023.txt"), StandardCharsets.UTF_8);
         List<List<Cell>> rows = new ArrayList<>();
         for (int r = 0; r < lines.size(); r++) {
             String[] fields = lines.get(r).split("\\|", -1);
             List<Cell> row = new ArrayList<>();
-            for (int c = 0; c < 8 && c < fields.length; c++) {
+            for (int c = 0; c < fields.length; c++) {
                 row.add(new Cell(r == 0 ? smallBold : small, fields[c]));
-            }
-            while (row.size() < 8) {
-                row.add(new Cell(small, ""));
             }
             rows.add(row);
         }
@@ -118,7 +115,7 @@ public class CommonBench {
         table.setTableData(rows, 1);
         table.setCellPadding(3f, 2f);
         table.setWidth(552f);
-        table.setColumnWidthsInPercent(16f, 12f, 12f, 12f, 12f, 12f, 12f, 12f);
+        table.setColumnWidthsInPercent(26f, 8f, 14f, 14f, 38f);
         table.setLocation(30f, 40f);
         table.setBottomMargin(40f);
         table.drawOn(pdf, pages, Letter.PORTRAIT);
