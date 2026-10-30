@@ -347,8 +347,11 @@ func (obj *PDFobj) setLength(length int) {
 // decompressor.MaxDecodedLength bytes.
 func (obj *PDFobj) decode(stream []byte) []byte {
 	decoded := stream
-	for i, filter := range obj.getValues("/Filter") {
+	for i, filter := range obj.getFilters() {
 		switch filter {
+		case "/Crypt":
+			// What it does is done: decryptStream reads it (review of
+			// 30 October 2026, B10)
 		case "/FlateDecode", "/Fl":
 			data, err := decompressor.InflateStream(decoded, obj.maxDecodedLength())
 			obj.decoded(data, err)
@@ -408,6 +411,38 @@ func (obj *PDFobj) decodedHex(data []byte) []byte {
 	}
 	obj.decoded(data, nil)
 	return data
+}
+
+// getFilters returns the filters of the stream, whose /Filter can be an object
+// of its own, a name or an array: the data was the bytes as they are.
+func (obj *PDFobj) getFilters() []string {
+	i := slices.Index(obj.dict, "/Filter") + 1
+	if i == 0 || !isObjectReference(obj.dict, i) {
+		return obj.getValues("/Filter")
+	}
+	filters := make([]string, 0)
+	number, _ := strconv.Atoi(obj.dict[i])
+	if filter := obj.readObjects[number]; filter != nil {
+		for _, token := range objectValueTokens(filter) {
+			if token != "[" && token != "]" {
+				filters = append(filters, token)
+			}
+		}
+	}
+	return filters
+}
+
+// hasIdentityCrypt returns true for a stream with a /Crypt filter that is the
+// Identity one, whose name is the default: the stream is not encrypted.
+func (obj *PDFobj) hasIdentityCrypt() bool {
+	for i, filter := range obj.getFilters() {
+		if filter == "/Crypt" {
+			parms := obj.getDecodeParms(i)
+			j := slices.Index(parms, "/Name")
+			return j == -1 || tokenAt(parms, j+1) == "/Identity"
+		}
+	}
+	return false
 }
 
 // getValues returns the elements of the array that is the value of the key,
@@ -698,10 +733,7 @@ func (obj *PDFobj) getLength(numbered map[int]*PDFobj) int {
 		return 0
 	}
 	i += open
-	number, err := strconv.Atoi(tokenAt(obj.dict, i+1))
-	if err != nil {
-		panic(errors.New("The /Length of a stream is not a number."))
-	}
+	number := toLength(tokenAt(obj.dict, i+1))
 	if i+2 >= len(obj.dict) {
 		panic(errors.New("The dictionary ends after the /Length."))
 	}
@@ -723,11 +755,25 @@ func getLengthFromObject(numbered map[int]*PDFobj, number int) int {
 	if !ok {
 		return 0
 	}
-	length, err := strconv.Atoi(tokenAt(obj.dict, 3))
-	if err != nil {
+	return toLength(tokenAt(obj.dict, 3))
+}
+
+// toLength returns the length that the token holds. A real number and null are
+// other programs' ways to write it, and were refused: the stream ends at its
+// endstream when the length is wrong, as with null, for which it is 0 (review
+// of 30 October 2026, B11).
+func toLength(token string) int {
+	if token == "null" {
+		return 0
+	}
+	if number, err := strconv.Atoi(token); err == nil {
+		return number
+	}
+	value, err := strconv.ParseFloat(token, 64)
+	if err != nil || !isDecimalNumber(token) || math.Abs(value) > math.MaxInt32 {
 		panic(errors.New("The /Length of a stream is not a number."))
 	}
-	return length
+	return int(value)
 }
 
 // GetContentObject returns the content object of the page, or nil if it has

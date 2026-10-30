@@ -584,5 +584,49 @@ public class ReviewReaderTest {
         Assert.Equal(data, StreamData("/Filter [/ASCIIHexDecode /FlateDecode]",
                 Util.ToHexString(deflated[..^4]) + ">"));
     }
+
+    [Fact]
+    public void AFilterThatIsAnObjectAndACryptFilterAreDecoded() {
+        // The data was the raw bytes (review of 30 October 2026, B10).
+        foreach (string filter in new string[] {"/ASCIIHexDecode", "[/ASCIIHexDecode]"}) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+                    filter));
+            Assert.Equal("AB", TestSupport.Latin1(objects[3].GetData()));
+        }
+        Assert.Equal("AB", TestSupport.Latin1(StreamData(
+                "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")));
+    }
+
+    [Theory]
+    [InlineData("/Filter /Crypt", true)]
+    [InlineData("/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]", true)]
+    [InlineData("/Filter /Crypt /DecodeParms << /Name /StdCF >>", false)]
+    [InlineData("/Filter /FlateDecode", false)]
+    public void AnIdentityCryptFilterSaysTheStreamIsNotEncrypted(string entries, bool wanted) {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 " + entries + " >>\nstream\nx\nendstream"));
+        Assert.Equal(wanted, objects[3].HasIdentityCrypt());
+    }
+
+    [Fact]
+    public void ALengthThatIsARealOrNullIsRead() {
+        // The PDF was refused (review of 30 October 2026, B11).
+        foreach (string length in new string[] {"5.0", "null", "5 0 R"}) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length " + length + " >>\nstream\n0 0 m\nendstream",
+                    "5.0"));
+            Assert.Equal("0 0 m", TestSupport.Latin1(objects[3].GetData()));
+        }
+    }
 }
 }   // End of namespace PDFjet.NET

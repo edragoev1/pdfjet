@@ -3061,6 +3061,7 @@ final public class PDF {
                 decryptor.decryptStrings(obj);
             }
             if (obj.dict.contains("stream")) {
+                obj.readObjects = numbered;     // For a /Filter that is an object of its own
                 obj.setStreamAndData(buf, obj.getLength(numbered), decryptor, budget);
             }
 

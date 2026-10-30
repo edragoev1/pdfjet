@@ -537,4 +537,47 @@ import Testing
         let deflated = TestSupport.deflate(data)
         #expect(try streamData("/Filter [/ASCIIHexDecode /FlateDecode]", hex(Array(deflated.dropLast(4))) + ">") == data)
     }
+
+    @Test func aFilterThatIsAnObjectAndACryptFilterAreDecoded() throws {
+        // The data was the raw bytes (review of 30 October 2026, B10).
+        for filter in ["/ASCIIHexDecode", "[/ASCIIHexDecode]"] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+                filter]))
+            #expect(TestSupport.latin1(objects[3].getData()) == "AB", "\(filter)")
+        }
+        #expect(TestSupport.latin1(try streamData(
+                "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")) == "AB")
+    }
+
+    @Test func anIdentityCryptFilterSaysTheStreamIsNotEncrypted() throws {
+        for (entries, wanted) in [
+                ("/Filter /Crypt", true),
+                ("/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]", true),
+                ("/Filter /Crypt /DecodeParms << /Name /StdCF >>", false),
+                ("/Filter /FlateDecode", false)] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 \(entries) >>\nstream\nx\nendstream"]))
+            #expect(objects[3].hasIdentityCrypt() == wanted, "\(entries)")
+        }
+    }
+
+    @Test func aLengthThatIsARealOrNullIsRead() throws {
+        // The PDF was refused (review of 30 October 2026, B11).
+        for length in ["5.0", "null", "5 0 R"] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length \(length) >>\nstream\n0 0 m\nendstream",
+                "5.0"]))
+            #expect(TestSupport.latin1(objects[3].getData()) == "0 0 m", "\(length)")
+        }
+    }
 }

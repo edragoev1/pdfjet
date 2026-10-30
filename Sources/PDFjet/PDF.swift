@@ -2422,6 +2422,7 @@ public final class PDF {
         for obj in objects1 {
             numbered[obj.number] = obj
         }
+        let readSoFar = ReadObjects(Array(numbered.values))
 
         var objects2 = [PDFobj]()
         for obj in objects1 {
@@ -2436,6 +2437,7 @@ public final class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
+                obj.readObjects = readSoFar     // For a /Filter that is an object of its own
                 try obj.setStreamAndData(&buffer1, try obj.getLength(numbered), decryptor, budget)
             }
             if type == "/ObjStm" {

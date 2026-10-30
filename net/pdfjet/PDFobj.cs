@@ -328,7 +328,7 @@ public class PDFobj {
     // filter that is not supported, like DCTDecode, ends the decoding, and
     // the data is what the filters before it decoded.
     private byte[] Decode(byte[] stream) {
-        List<String> filters = GetValues("/Filter");
+        List<String> filters = GetFilters();
         byte[] decoded = stream;
         for (int i = 0; i < filters.Count; i++) {
             String filter = filters[i];
@@ -343,8 +343,8 @@ public class PDFobj {
                 decoded = Decoded(Decompressor.ASCII85Decode(decoded, MaxDecodedLength()));
             } else if (filter.Equals("/RunLengthDecode") || filter.Equals("/RL")) {
                 decoded = Decoded(Decompressor.RunLengthDecode(decoded, MaxDecodedLength()));
-            } else {
-                break;
+            } else if (!filter.Equals("/Crypt")) {  // DecryptStream reads that one (review
+                break;                              // of 30 October 2026, B10)
             }
         }
         return decoded;
@@ -377,6 +377,40 @@ public class PDFobj {
                     "the stream decodes to more than " + MaxDecodedLength() + " bytes");
         }
         return Decoded(data);
+    }
+
+    // Returns the filters of the stream, whose /Filter can be an object of its
+    // own, a name or an array: the data was the bytes as they are.
+    private List<String> GetFilters() {
+        int i = dict.IndexOf("/Filter") + 1;
+        if (i == 0 || !PDF.IsReference(dict, i)) {
+            return GetValues("/Filter");
+        }
+        List<String> filters = new List<String>();
+        PDFobj filter;
+        if (readObjects != null
+                && readObjects.TryGetValue(Int32.Parse(dict[i], CultureInfo.InvariantCulture), out filter)) {
+            foreach (String token in PDF.ValueOf(filter)) {
+                if (token != "[" && token != "]") {
+                    filters.Add(token);
+                }
+            }
+        }
+        return filters;
+    }
+
+    // Returns true for a stream with a /Crypt filter that is the Identity one,
+    // whose name is the default: the stream is not encrypted.
+    internal bool HasIdentityCrypt() {
+        List<String> filters = GetFilters();
+        for (int i = 0; i < filters.Count; i++) {
+            if (filters[i].Equals("/Crypt")) {
+                List<String> parms = GetDecodeParms(i);
+                int j = parms.IndexOf("/Name");
+                return j == -1 || TokenAt(parms, j + 1).Equals("/Identity");
+            }
+        }
+        return false;
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -686,13 +720,24 @@ public class PDFobj {
     }
 
     // Returns the length the token holds, which a PDF that was read can write
-    // as anything.
+    // as anything. A real number and null are other programs' ways to write it,
+    // and were refused: the stream ends at its endstream when the length is
+    // wrong, as with null, for which it is 0 (review of 30 October 2026, B11).
     private static int ToLength(String token) {
-        int length;
-        if (!Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out length)) {
-            throw new InvalidDataException("The /Length of a stream is not a number.");
+        if (token == "null") {
+            return 0;
         }
-        return length;
+        int length;
+        if (Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out length)) {
+            return length;
+        }
+        if (Util.IsDecimalNumber(token)) {
+            double value = Double.Parse(token, CultureInfo.InvariantCulture);
+            if (Math.Abs(value) <= Int32.MaxValue) {
+                return (int) value;
+            }
+        }
+        throw new InvalidDataException("The /Length of a stream is not a number.");
     }
 
     /// <summary>

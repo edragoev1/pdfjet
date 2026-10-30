@@ -607,4 +607,52 @@ class ReviewReaderTest {
         org.junit.jupiter.api.Assertions.assertArrayEquals(data, streamData("/Filter [/ASCIIHexDecode /FlateDecode]",
                 Util.toHexString(Arrays.copyOf(deflated, deflated.length - 4)) + ">"));
     }
+
+    @Test
+    void aFilterThatIsAnObjectAndACryptFilterAreDecoded() throws Exception {
+        // The data was the raw bytes (review of 30 October 2026, B10).
+        for (String filter : new String[] {"/ASCIIHexDecode", "[/ASCIIHexDecode]"}) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+                    filter));
+            assertEquals("AB", TestSupport.latin1(objects.get(3).getData()), filter);
+        }
+        assertEquals("AB", TestSupport.latin1(streamData(
+                "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")));
+    }
+
+    @Test
+    void anIdentityCryptFilterSaysTheStreamIsNotEncrypted() throws Exception {
+        String[] entries = {
+            "/Filter /Crypt",
+            "/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]",
+            "/Filter /Crypt /DecodeParms << /Name /StdCF >>",
+            "/Filter /FlateDecode"};
+        boolean[] wanted = {true, true, false, false};
+        for (int i = 0; i < entries.length; i++) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length 1 " + entries[i] + " >>\nstream\nx\nendstream"));
+            assertEquals(wanted[i], objects.get(3).hasIdentityCrypt(), entries[i]);
+        }
+    }
+
+    @Test
+    void aLengthThatIsARealOrNullIsRead() throws Exception {
+        // The PDF was refused (review of 30 October 2026, B11).
+        for (String length : new String[] {"5.0", "null", "5 0 R"}) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length " + length + " >>\nstream\n0 0 m\nendstream",
+                    "5.0"));
+            assertEquals("0 0 m", TestSupport.latin1(objects.get(3).getData()), length);
+        }
+    }
 }

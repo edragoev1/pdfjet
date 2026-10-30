@@ -358,8 +358,10 @@ public final class PDFobj {
     // data is what the filters before it decoded.
     private final func decode(_ stream: [UInt8]) throws -> [UInt8] {
         var decoded = stream
-        for (i, filter) in getValues("/Filter").enumerated() {
+        for (i, filter) in getFilters().enumerated() {
             switch filter {
+            case "/Crypt":
+                break   // decryptStream reads it (review of 30 October 2026, B10)
             case "/FlateDecode", "/Fl":
                 decoded = applyDecodeParms(self.decoded(try inflateStream(decoded, maxDecodedLength())), i)
             case "/LZWDecode", "/LZW":
@@ -404,6 +406,31 @@ public final class PDFobj {
             throw PDFjetError(message: "The stream decodes to more than \(maxDecodedLength()) bytes")
         }
         return decoded(data)
+    }
+
+    // Returns the filters of the stream, whose /Filter can be an object of its
+    // own, a name or an array: the data was the bytes as they are.
+    private final func getFilters() -> [String] {
+        guard let k = dict.firstIndex(of: "/Filter"), PDF.isReference(dict, k + 1) else {
+            return getValues("/Filter")
+        }
+        guard let filter = readObjects?.object(Int(dict[k + 1])!) else {
+            return []
+        }
+        return PDF.valueOf(filter).filter { $0 != "[" && $0 != "]" }
+    }
+
+    // Returns true for a stream with a /Crypt filter that is the Identity one,
+    // whose name is the default: the stream is not encrypted.
+    final func hasIdentityCrypt() -> Bool {
+        for (i, filter) in getFilters().enumerated() where filter == "/Crypt" {
+            let parms = getDecodeParms(i)
+            guard let j = parms.firstIndex(of: "/Name") else {
+                return true
+            }
+            return tokenAt(parms, j + 1) == "/Identity"
+        }
+        return false
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -685,9 +712,10 @@ public final class PDFobj {
             return 0
         }
         let i = key + open
-        guard i + 1 < dict.count, let number = Int(dict[i + 1]) else {
+        guard i + 1 < dict.count else {
             throw PDFjetError(message: "The /Length of a stream is not a number.")
         }
+        let number = try PDFobj.toLength(dict[i + 1])
         guard i + 2 < dict.count else {
             throw PDFjetError(message: "The dictionary ends after the /Length.")
         }
@@ -710,10 +738,27 @@ public final class PDFobj {
         guard let obj = numbered[number] else {
             return 0
         }
-        guard obj.dict.count > 3, let length = Int(obj.dict[3]) else {
+        guard obj.dict.count > 3 else {
             throw PDFjetError(message: "The /Length of a stream is not a number.")
         }
-        return length
+        return try toLength(obj.dict[3])
+    }
+
+    // Returns the length the token holds, which a PDF that was read can write
+    // as anything. A real number and null are other programs' ways to write it,
+    // and were refused: the stream ends at its endstream when the length is
+    // wrong, as with null, for which it is 0 (review of 30 October 2026, B11).
+    private static func toLength(_ token: String) throws -> Int {
+        if token == "null" {
+            return 0
+        }
+        if let number = Int(token) {
+            return number
+        }
+        guard Util.isDecimalNumber(token), let value = Double(token), abs(value) <= Double(Int32.max) else {
+            throw PDFjetError(message: "The /Length of a stream is not a number.")
+        }
+        return Int(value)
     }
 
     // Returns the object with the number, or nil when the PDF that was read

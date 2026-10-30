@@ -543,3 +543,55 @@ func TestReviewReaderAFlateStreamCanLackItsChecksum(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestReviewReaderAFilterThatIsAnObjectAndACryptFilterAreDecoded(t *testing.T) {
+	// The data was the raw bytes (review of 30 October 2026, B10).
+	for _, filter := range []string{"/ASCIIHexDecode", "[/ASCIIHexDecode]"} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+			"<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+			filter))
+		if got := string(objects[3].GetData()); got != "AB" {
+			t.Errorf("%s: got %q", filter, got)
+		}
+	}
+	got := testStreamData(t, "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")
+	if string(got) != "AB" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestReviewReaderAnIdentityCryptFilterSaysTheStreamIsNotEncrypted(t *testing.T) {
+	for entries, want := range map[string]bool{
+		"/Filter /Crypt": true,
+		"/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]": true,
+		"/Filter /Crypt /DecodeParms << /Name /StdCF >>":                          false,
+		"/Filter /FlateDecode": false,
+	} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+			"<< /Length 1 "+entries+" >>\nstream\nx\nendstream"))
+		if got := objects[3].hasIdentityCrypt(); got != want {
+			t.Errorf("%s: %v", entries, got)
+		}
+	}
+}
+
+func TestReviewReaderALengthThatIsARealOrNullIsRead(t *testing.T) {
+	// The PDF was refused (review of 30 October 2026, B11).
+	for _, length := range []string{"5.0", "null", "5 0 R"} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+			"<< /Length "+length+" >>\nstream\n0 0 m\nendstream",
+			"5.0"))
+		if got := string(objects[3].GetData()); got != "0 0 m" {
+			t.Errorf("/Length %s: got %q", length, got)
+		}
+	}
+}

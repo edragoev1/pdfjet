@@ -373,7 +373,7 @@ public class PDFobj {
     // filter that is not supported, like DCTDecode, ends the decoding, and
     // the data is what the filters before it decoded.
     private byte[] decode(byte[] stream) throws Exception {
-        List<String> filters = getValues("/Filter");
+        List<String> filters = getFilters();
         byte[] decoded = stream;
         for (int i = 0; i < filters.size(); i++) {
             String filter = filters.get(i);
@@ -388,8 +388,8 @@ public class PDFobj {
                 decoded = decoded(Decompressor.ascii85Decode(decoded, maxDecodedLength()));
             } else if (filter.equals("/RunLengthDecode") || filter.equals("/RL")) {
                 decoded = decoded(Decompressor.runLengthDecode(decoded, maxDecodedLength()));
-            } else {
-                break;
+            } else if (!filter.equals("/Crypt")) {  // decryptStream reads that one (review
+                break;                              // of 30 October 2026, B10)
             }
         }
         return decoded;
@@ -422,6 +422,39 @@ public class PDFobj {
                     "The stream decodes to more than " + maxDecodedLength() + " bytes");
         }
         return decoded(data);
+    }
+
+    // Returns the filters of the stream, whose /Filter can be an object of its
+    // own, a name or an array: the data was the bytes as they are.
+    private List<String> getFilters() {
+        int i = dict.indexOf("/Filter") + 1;
+        if (i == 0 || !PDF.isReference(dict, i)) {
+            return getValues("/Filter");
+        }
+        List<String> filters = new ArrayList<String>();
+        PDFobj filter = (readObjects == null) ? null : readObjects.get(Integer.parseInt(dict.get(i)));
+        if (filter != null) {
+            for (String token : PDF.valueOf(filter)) {
+                if (!token.equals("[") && !token.equals("]")) {
+                    filters.add(token);
+                }
+            }
+        }
+        return filters;
+    }
+
+    // Returns true for a stream with a /Crypt filter that is the Identity one,
+    // whose name is the default: the stream is not encrypted.
+    boolean hasIdentityCrypt() {
+        List<String> filters = getFilters();
+        for (int i = 0; i < filters.size(); i++) {
+            if (filters.get(i).equals("/Crypt")) {
+                List<String> parms = getDecodeParms(i);
+                int j = parms.indexOf("/Name");
+                return j == -1 || tokenAt(parms, j + 1).equals("/Identity");
+            }
+        }
+        return false;
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -790,11 +823,19 @@ public class PDFobj {
     }
 
     // Returns the length the token holds, which a PDF that was read can write
-    // as anything.
+    // as anything. A real number and null are other programs' ways to write it,
+    // and were refused: the stream ends at its endstream when the length is
+    // wrong, as with null, for which it is 0 (review of 30 October 2026, B11).
     private static int toLength(String token) throws Exception {
+        if (token.equals("null")) {
+            return 0;
+        }
         try {
             return Integer.parseInt(token);
         } catch (NumberFormatException e) {
+            if (Util.isDecimalNumber(token) && Math.abs(Double.parseDouble(token)) <= Integer.MAX_VALUE) {
+                return (int) Double.parseDouble(token);
+            }
             throw new Exception("The /Length of a stream is not a number.");
         }
     }

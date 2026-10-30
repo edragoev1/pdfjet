@@ -2832,6 +2832,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 		if contains(obj.dict, "stream") {
 			length := obj.getLength(numbered)
+			obj.readObjects = numbered // For a /Filter that is an object of its own
 			obj.setStreamAndData(buf, length, dec, budget)
 		}
 

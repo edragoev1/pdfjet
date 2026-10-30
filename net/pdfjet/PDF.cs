@@ -2901,6 +2901,7 @@ public sealed class PDF {
                 decryptor.DecryptStrings(obj);
             }
             if (obj.dict.Contains("stream")) {
+                obj.readObjects = numbered;     // For a /Filter that is an object of its own
                 obj.SetStreamAndData(buf, obj.GetLength(numbered), decryptor, budget);
             }
 

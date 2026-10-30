@@ -501,7 +501,7 @@ final class Decryptor {
      * @throws Exception if the stream cannot be decrypted.
      */
     byte[] decryptStream(PDFobj obj, byte[] stream) throws Exception {
-        if (!encryptMetadata && obj.getValue("/Type").equals("/Metadata")) {
+        if ((!encryptMetadata && obj.getValue("/Type").equals("/Metadata")) || obj.hasIdentityCrypt()) {
             return stream;
         }
         return decrypt(stream, streamMethod, obj);
