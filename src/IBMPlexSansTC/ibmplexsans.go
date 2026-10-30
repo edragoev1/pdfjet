@@ -6,8 +6,8 @@
 // Package IBMPlexSansTC has the paths to the IBM Plex Sans TC fonts. Each
 // constant is the path of a font file, embedded as a subset of the glyphs a
 // document draws; pass it to NewFontFromFile. PDFjet carries these fonts: the
-// path is read, when there is no such file, from the folder resources/fonts,
-// else from the library when the program imports
+// path is read, when there is no such file, from the folder
+// resources/fonts/cjk, else from the library when the program imports
 // github.com/edragoev1/pdfjet/v9/resources/fonts/cjk.
 package IBMPlexSansTC
 

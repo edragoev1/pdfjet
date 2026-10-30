@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- The POM of com.pdfjet:pdfjet on Maven Central, made by package-maven.sh
-     for the PDFjet.jar of a release's PDFjet-ForJava-Core zip, as released:
+     for the PDFjet.jar of a release's PDFjet-ForJava-Core zip, as released;
+     its CJK fonts are com.pdfjet:pdfjet-fonts-cjk, pdfjet-fonts-cjk.pom:
      $version$ and $commit$ are written in by the script. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,7 +12,7 @@
   <version>$version$</version>
   <packaging>jar</packaging>
   <name>PDFjet</name>
-  <description>Fast, dependency-free PDF generation: text in many scripts with TrueType and OpenType fonts embedded as subsets, tables, charts, barcodes, SVG and Markdown, PDF/UA and PDF/A, merging and AES-256. Java 8 or later. The same API in .NET, Go and Swift.</description>
+  <description>Fast, dependency-free PDF generation: text in many scripts with TrueType and OpenType fonts embedded as subsets, tables, charts, barcodes, SVG and Markdown, PDF/UA and PDF/A, merging and AES-256. Java 8 or later. The same API in .NET, Go and Swift. Its fonts work out of the box; for Chinese, Japanese or Korean, also add com.pdfjet:pdfjet-fonts-cjk, the same version.</description>
   <url>https://github.com/edragoev1/pdfjet</url>
   <licenses>
     <license>

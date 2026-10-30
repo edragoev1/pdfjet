@@ -12,16 +12,15 @@
 // Go builds the files a package embeds into every program that imports it,
 // uncompressed, so this package embeds the fonts of every script but
 // Chinese, Japanese and Korean, about 15 MB. IBM Plex Sans JP, KR, SC and
-// TC, about 48 MB, are in the folders of their names here too, each a
-// package that embeds its own files, and a program builds them in with one
-// line:
+// TC, about 48 MB, are in the folder cjk, the package that embeds them, and
+// a program builds them in with one line:
 //
 //	import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
 //
 // The pdfjet package reads the fonts from here: a path to one of them, such
 // as the constants of the packages IBMPlexSans and the others, is read from
-// the folder resources/fonts of the working directory when there is no such
-// file, else from here, and the text of an SVG image is drawn in them unless
+// the folder resources/fonts of the working directory, or resources/fonts/cjk
+// for a CJK font, when there is no such file, else from here, and the text of an SVG image is drawn in them unless
 // a font is set. Go embeds the files of the folder of a package alone, so
 // this package is in resources/fonts itself.
 package fonts

@@ -109,11 +109,12 @@ rm "$TAR"
 # The C# example projects and the Go and Swift files of resources and images
 # are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod" \
-    "$STAGE/resources/fonts/PDFjetFonts.swift"
-# Every .go file of resources/fonts: fonts.go, the package cjk and the
-# packages of the CJK families that embed them for Go.
-find "$STAGE/resources/fonts" -name '*.go' -delete
+rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
+# Every .go and .swift file of resources/fonts: fonts.go and the package cjk,
+# which embed the fonts for Go, and the sources of the Swift targets
+# PDFjetFonts and PDFjetFontsCJK. The CJK fonts stay in resources/fonts/cjk,
+# where PDFjet.jar reads them.
+find "$STAGE/resources/fonts" \( -name '*.go' -o -name '*.swift' \) -delete
 find "$STAGE/resources/fonts" -type d -empty -delete
 
 cd "$STAGE"

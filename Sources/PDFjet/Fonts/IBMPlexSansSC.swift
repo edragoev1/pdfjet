@@ -9,8 +9,13 @@ import Foundation
 ///
 /// The IBM Plex Sans SC fonts. Each constant is the path of a font file,
 /// embedded as a subset of the glyphs a document draws; pass it to the Font
-/// constructor that takes a font path. PDFjet carries these fonts in itself:
-/// the path is read from the library when there is no such file.
+/// constructor that takes a font path. These fonts are not in the product
+/// PDFjet: they are in the product PDFjetFontsCJK, which an app that draws in
+/// them adds to the dependencies of its target in Package.swift,
+/// `.product(name: "PDFjetFontsCJK", package: "pdfjet")`. The path is read
+/// from the file of that path, else from the folder resources/fonts/cjk of
+/// the working directory, else from the bundle of PDFjetFontsCJK, and a font
+/// found in none says what to add.
 ///
 public struct IBMPlexSansSC {
     /// IBM Plex Sans SC Bold

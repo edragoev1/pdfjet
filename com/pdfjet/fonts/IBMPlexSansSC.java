@@ -9,8 +9,14 @@ package com.pdfjet.fonts;
 /**
  * The IBM Plex Sans SC fonts. Each constant is the path of a font file,
  * embedded as a subset of the glyphs a document draws; pass it to the Font
- * constructor that takes a font path. PDFjet carries these fonts in itself:
- * the path is read from the library when there is no such file.
+ * constructor that takes a font path. These fonts are not in the jar
+ * com.pdfjet:pdfjet: they are in the package com.pdfjet:pdfjet-fonts-cjk,
+ * which a program that draws in them adds next to it, with Maven
+ * {@code <dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-cjk</artifactId><version>9.1.7</version></dependency>},
+ * or with Gradle {@code implementation("com.pdfjet:pdfjet-fonts-cjk:9.1.7")},
+ * the same version as PDFjet's. The path is read from the file of that path,
+ * else from the folder resources/fonts/cjk, as in the release packages on
+ * GitHub, else from that jar, and a font found in none says what to add.
  */
 public class IBMPlexSansSC {
     private IBMPlexSansSC() {

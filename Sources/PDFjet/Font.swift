@@ -348,16 +348,20 @@ public class Font {
     // Returns the bytes of the font file of the path, in one read, as Java, C#
     // and Go read it, or, when there is no such file, of the font of that
     // name that PDFjet carries, from resources/fonts or the bundle of
-    // PDFjetFonts; a font it does not carry throws, and so does one it
-    // carries when neither is there, saying to add PDFjetFonts.
+    // PDFjetFonts, or of PDFjetFontsCJK for a CJK font; a font it does not
+    // carry throws, and so does a CJK font of an app without PDFjetFontsCJK,
+    // saying to add it.
     static func open(_ fontPath: String) throws -> [UInt8] {
         if !FileManager.default.fileExists(atPath: fontPath) {
             if let url = BundledFonts.url(fontPath), let data = try? Data(contentsOf: url) {
                 return [UInt8](data)
             }
+            if let message = BundledFonts.cjkMissing(fontPath) {
+                throw PDFjetError(message: message)
+            }
             let path = fontPath.replacingOccurrences(of: "\\", with: "/")
             if path.hasPrefix("fonts/") || path.contains("/fonts/") {
-                throw PDFjetError(message: notCarried(fontPath, BundledFonts.available()))
+                throw PDFjetError(message: notCarried(fontPath))
             }
         }
         guard let data = FileManager.default.contents(atPath: fontPath) else {
@@ -367,14 +371,9 @@ public class Font {
     }
 
     // The message of a font path that is not a file, nor a font in
-    // resources/fonts or the bundle of PDFjetFonts: with the fonts there, one
-    // PDFjet does not carry; without them, what to add.
-    static func notCarried(_ fontPath: String, _ available: Bool) -> String {
-        if available {
-            return fontPath + " is not a file, nor one of the fonts PDFjet carries: use a font file of your own."
-        }
-        return fontPath + " is not a file, and the fonts PDFjet carries are not in this program: "
-                + BundledFonts.ADD_PDFJET_FONTS + "."
+    // resources/fonts or the bundles of the fonts PDFjet carries.
+    static func notCarried(_ fontPath: String) -> String {
+        return fontPath + " is not a file, nor one of the fonts PDFjet carries: use a font file of your own."
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream

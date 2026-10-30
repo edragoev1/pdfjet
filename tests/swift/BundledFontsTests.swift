@@ -48,13 +48,22 @@ import Testing
     @Test func everyFontCarriedHasAConstantAndEveryConstantNotDeprecatedIsCarried() throws {
         var carried = Set<String>()
         let root = TestSupport.path("resources/fonts")
-        for family in try FileManager.default.contentsOfDirectory(atPath: root) {
+        // The family folders, and those of the CJK fonts in the folder cjk
+        var folders = [String]()
+        for family in try FileManager.default.contentsOfDirectory(atPath: root) where family != "cjk" {
+            folders.append(family)
+        }
+        for family in try FileManager.default.contentsOfDirectory(atPath: root + "/cjk") {
+            folders.append("cjk/" + family)
+        }
+        for folder in folders {
             var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: root + "/" + family, isDirectory: &isDirectory),
+            guard FileManager.default.fileExists(atPath: root + "/" + folder, isDirectory: &isDirectory),
                     isDirectory.boolValue else {
                 continue
             }
-            for font in try FileManager.default.contentsOfDirectory(atPath: root + "/" + family)
+            let family = (folder as NSString).lastPathComponent
+            for font in try FileManager.default.contentsOfDirectory(atPath: root + "/" + folder)
                     where font.hasSuffix(".ttf") || font.hasSuffix(".otf") {
                 carried.insert("fonts/" + family + "/" + font)
             }
@@ -105,7 +114,7 @@ import Testing
     }
 
     @Test func aFontIsReadFromResourcesFontsElseFromTheBundleOfPDFjetFonts() throws {
-        // The tests depend on PDFjetFonts: its bundle is found by its name
+        // PDFjet depends on PDFjetFonts, whose bundle has all but the CJK fonts
         let bundle = try #require(BundledFonts.bundle)
         #expect(bundle.bundleURL.lastPathComponent.hasPrefix("PDFjet_PDFjetFonts."))
         // From the working directory, the repository, resources/fonts first
@@ -115,26 +124,56 @@ import Testing
         // With no such folder, as in an app, the bundle
         let missing = "no-such-folder/resources/fonts/"
         let inBundle = try #require(BundledFonts.url(IBMPlexSans.Regular, missing))
-        #expect(inBundle.path.contains("PDFjet_PDFjetFonts"), "\(inBundle.path)")
+        #expect(inBundle.path.contains("PDFjet_PDFjetFonts."), "\(inBundle.path)")
         #expect(try Data(contentsOf: inBundle) == Data(contentsOf: onDisk))
-        #expect(BundledFonts.url(IBMPlexSansJP.Bold, missing) != nil)
         #expect(BundledFonts.url("fonts/NotoSans/NotoSans-Regular.ttf", missing) == nil)
-        #expect(BundledFonts.available(missing))
-        // The fonts and their licenses, without the Go port's files
+        // The fonts and their licenses, without the CJK fonts and the Go
+        // port's files
         let files = try FileManager.default.subpathsOfDirectory(atPath: bundle.bundleURL.path)
-        #expect(files.filter { $0.hasSuffix(".ttf") || $0.hasSuffix(".otf") }.count == 72)
+        #expect(files.filter { $0.hasSuffix(".ttf") || $0.hasSuffix(".otf") }.count == 60)
+        #expect(!files.contains { $0.hasPrefix("IBMPlexSansJP") || $0.contains("/IBMPlexSansJP") })
         #expect(!files.contains { $0.hasSuffix(".go") }, "\(files.filter { $0.hasSuffix(".go") })")
         for license in ["license.txt", "LICENSE"] {
             #expect(files.contains { $0.hasSuffix(license) }, "\(license)")
         }
-        // With neither, as in an app without PDFjetFonts, nothing, and the
-        // error says to add the product, with its line for Package.swift
-        #expect(BundledFonts.url(IBMPlexSans.Regular, missing, nil) == nil)
-        #expect(!BundledFonts.available(missing, nil))
-        let message = Font.notCarried(IBMPlexSans.Regular, false)
-        #expect(message.contains("add the product PDFjetFonts"), "\(message)")
-        #expect(message.contains(".product(name: \"PDFjetFonts\", package: \"pdfjet\")"), "\(message)")
-        #expect(!message.contains("pdfjet-fonts"), "\(message)")
+    }
+
+    @Test func aCJKFontIsReadFromResourcesFontsCJKElseFromTheBundleOfPDFjetFontsCJK() throws {
+        // The tests depend on PDFjetFontsCJK: its bundle is found by its name
+        let cjkBundle = try #require(BundledFonts.cjkBundle)
+        #expect(cjkBundle.bundleURL.lastPathComponent.hasPrefix("PDFjet_PDFjetFontsCJK."))
+        // From the working directory, the repository, resources/fonts/cjk first
+        let onDisk = try #require(BundledFonts.url(IBMPlexSansJP.Bold))
+        #expect(onDisk.path.hasSuffix("resources/fonts/cjk/IBMPlexSansJP/IBMPlexSansJP-Bold.otf"), "\(onDisk.path)")
+        // With no such folder, the bundle of PDFjetFontsCJK
+        let missing = "no-such-folder/resources/fonts/"
+        let inBundle = try #require(BundledFonts.url(IBMPlexSansJP.Bold, missing))
+        #expect(inBundle.path.contains("PDFjet_PDFjetFontsCJK."), "\(inBundle.path)")
+        #expect(try Data(contentsOf: inBundle) == Data(contentsOf: onDisk))
+        for path in [IBMPlexSansKR.Regular, IBMPlexSansSC.SemiBold, IBMPlexSansTC.Bold] {
+            #expect(BundledFonts.url(path, missing) != nil, "\(path)")
+        }
+        let files = try FileManager.default.subpathsOfDirectory(atPath: cjkBundle.bundleURL.path)
+        #expect(files.filter { $0.hasSuffix(".otf") }.count == 12)
+        #expect(files.contains { $0.hasSuffix("license.txt") })
+        #expect(!files.contains { $0.hasSuffix(".go") })
+    }
+
+    @Test func aCJKFontNotFoundNamesTheProductAndTheLineToAdd() throws {
+        // Neither the folder nor the bundle of PDFjetFontsCJK, as in an app
+        // without that product: not found, while the other fonts are
+        let missing = "no-such-folder/resources/fonts/"
+        #expect(BundledFonts.url(IBMPlexSansJP.Regular, missing, BundledFonts.bundle, nil) == nil)
+        #expect(BundledFonts.url(IBMPlexSans.Regular, missing, BundledFonts.bundle, nil) != nil)
+        let message = try #require(BundledFonts.cjkMissing(IBMPlexSansJP.Regular))
+        #expect(message == "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf is not a file, nor in resources/fonts/cjk. "
+                + "IBM Plex Sans JP is in the product PDFjetFontsCJK: add it to the dependencies of your target in "
+                + "Package.swift, .product(name: \"PDFjetFontsCJK\", package: \"pdfjet\")", "\(message)")
+        #expect(BundledFonts.cjkMissing(IBMPlexSansSC.Bold)?.contains("IBM Plex Sans SC is in") == true)
+        // Not for the other fonts, nor for a weight PDFjet does not carry
+        #expect(BundledFonts.cjkMissing(IBMPlexSans.Regular) == nil)
+        #expect(BundledFonts.cjkMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf") == nil)
+        #expect(!Font.notCarried(IBMPlexSans.Regular).contains("PDFjetFonts"))
     }
 
     @Test func cssWeightsMatchFacesThatLookAlikeAcrossTheFamilies() {

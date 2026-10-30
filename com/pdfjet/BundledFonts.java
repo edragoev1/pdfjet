@@ -13,14 +13,17 @@ import java.io.InputStream;
  * folder of its name, with its license: IBM Plex Sans
  * and Serif, from Thin to Bold, and Cascadia Mono, from
  * Light to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to
- * Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
- * SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
- * A path to one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf,
- * the constants of com.pdfjet.fonts, is read from the folder resources/fonts
- * when there is no such file, or else from the jar, and the text of an SVG
- * image is drawn in them unless a font is set. The jar of Maven Central
- * carries them; the PDFjet.jar of the releases on GitHub does not, and is
- * small, its package having them in resources/fonts.
+ * Bold; IBM Plex Math; and, in resources/fonts/cjk, IBM Plex Sans JP, KR, SC
+ * and TC, Regular, SemiBold and Bold, as .otf. All are under the SIL Open
+ * Font License 1.1. A path to one of them, such as
+ * fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of
+ * com.pdfjet.fonts, is read from the folder resources/fonts when there is no
+ * such file, or else from the classpath, and the text of an SVG image is
+ * drawn in them unless a font is set. The jar of Maven Central,
+ * com.pdfjet:pdfjet, carries all but the CJK fonts, which are in the jar
+ * com.pdfjet:pdfjet-fonts-cjk, at com/pdfjet/fonts/cjk, found on the
+ * classpath when a program has it; the PDFjet.jar of the releases on GitHub
+ * carries none, and is small, its package having them in resources/fonts.
  */
 final class BundledFonts {
     private BundledFonts() {
@@ -28,10 +31,16 @@ final class BundledFonts {
 
     // Where the fonts are: the folder resources/fonts of the working
     // directory, as in the repository and the packages of the releases on
-    // GitHub, whose PDFjet.jar is small; or else the resources of the jar,
-    // as in the jar of Maven Central, which carries them.
-    private static final String FOLDER = "resources/fonts/";
-    private static final String RESOURCES = "/com/pdfjet/fonts/";
+    // GitHub, whose PDFjet.jar is small; or else the classpath, as with the
+    // jar of Maven Central, which carries them but the CJK ones, and the jar
+    // com.pdfjet:pdfjet-fonts-cjk, which carries those.
+    static final String FOLDER = "resources/fonts/";
+    private static final String RESOURCES = "com/pdfjet/fonts/";
+
+    // The families of the CJK fonts, which are in resources/fonts/cjk and in
+    // the jar com.pdfjet:pdfjet-fonts-cjk, apart from the others, as they
+    // are about 48 MB.
+    private static final String[] CJK_FAMILIES = {"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"};
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
@@ -46,14 +55,44 @@ final class BundledFonts {
         return path.substring(family + 1);
     }
 
+    // Returns the family of a name, Family/File, if it is one of the CJK
+    // families, or null.
+    private static String cjkFamilyOf(String name) {
+        int slash = name.indexOf('/');
+        String family = (slash < 0) ? name : name.substring(0, slash);
+        for (String cjk : CJK_FAMILIES) {
+            if (cjk.equals(family)) {
+                return cjk;
+            }
+        }
+        return null;
+    }
+
+    // Returns the path of a font under resources/fonts, and under
+    // com/pdfjet/fonts in the jars, by its name, Family/File: the name, or
+    // cjk/ and the name for a CJK font, such as
+    // cjk/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
+    static String folderPathOf(String name) {
+        return (cjkFamilyOf(name) != null) ? "cjk/" + name : name;
+    }
+
     // Opens the font of the path that PDFjet carries, or returns null: from
-    // the folder resources/fonts, or else from the jar.
+    // the folder resources/fonts, or else from the classpath.
     static InputStream open(String fontPath) {
+        return open(fontPath, FOLDER, BundledFonts.class.getClassLoader());
+    }
+
+    // Opens the font of the path that PDFjet carries, or returns null: from
+    // the folder, or else from the jar of the library, or else, for a CJK
+    // font, from the classpath of the loader, which has the jar
+    // com.pdfjet:pdfjet-fonts-cjk when the program does.
+    static InputStream open(String fontPath, String folder, ClassLoader loader) {
         String name = nameOf(fontPath);
         if (name == null || name.indexOf("..") >= 0) {
             return null;
         }
-        java.io.File file = new java.io.File(FOLDER + name);
+        String path = folderPathOf(name);
+        java.io.File file = new java.io.File(folder + path);
         if (file.isFile()) {
             try {
                 return new java.io.FileInputStream(file);
@@ -61,7 +100,39 @@ final class BundledFonts {
                 // Read from the jar then
             }
         }
-        return BundledFonts.class.getResourceAsStream(RESOURCES + name);
+        // The resources of a jar of a named module are read through the
+        // class loader, as they are not in the module of PDFjet.
+        InputStream stream = BundledFonts.class.getResourceAsStream("/" + RESOURCES + path);
+        if (stream == null && loader != null) {
+            stream = loader.getResourceAsStream(RESOURCES + path);
+        }
+        return stream;
+    }
+
+    // Returns what to do when the font of the path is one of the CJK fonts
+    // PDFjet carries, Regular, SemiBold or Bold, which is in neither the
+    // folder resources/fonts/cjk nor the classpath, or null for any other
+    // font: add the jar com.pdfjet:pdfjet-fonts-cjk.
+    static String cjkMissing(String fontPath) {
+        String name = nameOf(fontPath);
+        if (name == null) {
+            return null;
+        }
+        String family = cjkFamilyOf(name);
+        if (family == null) {
+            return null;
+        }
+        String file = name.substring(family.length() + 1);
+        if (!file.equals(family + "-Regular.otf") && !file.equals(family + "-SemiBold.otf")
+                && !file.equals(family + "-Bold.otf")) {
+            return null;
+        }
+        return fontPath + " is not a file, nor in resources/fonts/cjk. "
+                + "IBM Plex Sans " + family.substring("IBMPlexSans".length())
+                + " is in the package com.pdfjet:pdfjet-fonts-cjk. Add it next to com.pdfjet:pdfjet: "
+                + "<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-cjk</artifactId>"
+                + "<version>" + PDF.VERSION + "</version></dependency> "
+                + "(Gradle: implementation(\"com.pdfjet:pdfjet-fonts-cjk:" + PDF.VERSION + "\"))";
     }
 
     static final int SANS = 0;

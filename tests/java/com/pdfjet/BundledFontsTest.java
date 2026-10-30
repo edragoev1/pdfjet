@@ -36,10 +36,18 @@ class BundledFontsTest {
     void everyFontCarriedHasAConstantAndEveryConstantNotDeprecatedIsCarried() throws Exception {
         Set<String> carried = new TreeSet<String>();
         File root = TestSupport.file("resources/fonts");
+        List<File> families = new java.util.ArrayList<File>();
         for (File family : root.listFiles()) {
-            if (!family.isDirectory()) {
-                continue;   // The Go and Swift files that carry the fonts in those ports
+            if (family.isDirectory() && !family.getName().equals("cjk")) {
+                families.add(family);   // Not the Go and Swift files beside them
             }
+        }
+        for (File family : new File(root, "cjk").listFiles()) {
+            if (family.isDirectory()) {
+                families.add(family);   // The CJK fonts, in resources/fonts/cjk
+            }
+        }
+        for (File family : families) {
             for (File font : family.listFiles()) {
                 if (font.getName().endsWith(".ttf") || font.getName().endsWith(".otf")) {
                     carried.add("fonts/" + family.getName() + "/" + font.getName());
@@ -88,6 +96,59 @@ class BundledFontsTest {
         java.io.FileNotFoundException e = assertThrows(java.io.FileNotFoundException.class,
                 () -> new Font(objects, "fonts/NotoSans/NotoSans-Regular.ttf"));
         assertTrue(e.getMessage().contains("nor one of the fonts PDFjet carries"), e.getMessage());
+    }
+
+    @Test
+    void aCJKFontNotFoundNamesThePackageAndTheLinesToAdd() throws Exception {
+        // No folder resources/fonts and a classpath without the jar
+        // com.pdfjet:pdfjet-fonts-cjk: the font is not found, and the error
+        // says what to add, in Maven's and in Gradle's words
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(new java.net.URL[0], null)) {
+            assertEquals(null, BundledFonts.open(com.pdfjet.fonts.IBMPlexSansJP.Regular, "no-such-folder/", loader));
+        }
+        assertEquals("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf is not a file, nor in resources/fonts/cjk. "
+                + "IBM Plex Sans JP is in the package com.pdfjet:pdfjet-fonts-cjk. Add it next to com.pdfjet:pdfjet: "
+                + "<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-cjk</artifactId>"
+                + "<version>" + PDF.VERSION + "</version></dependency> "
+                + "(Gradle: implementation(\"com.pdfjet:pdfjet-fonts-cjk:" + PDF.VERSION + "\"))",
+                BundledFonts.cjkMissing(com.pdfjet.fonts.IBMPlexSansJP.Regular));
+        assertTrue(PDF.VERSION.matches("[0-9]+\\.[0-9]+\\.[0-9]+"), PDF.VERSION);
+        assertTrue(BundledFonts.cjkMissing(com.pdfjet.fonts.IBMPlexSansTC.Bold).contains("IBM Plex Sans TC is in"));
+        // Not for the fonts of the jar of the library, nor for a weight PDFjet
+        // does not carry
+        assertEquals(null, BundledFonts.cjkMissing(com.pdfjet.fonts.IBMPlexSans.Regular));
+        assertEquals(null, BundledFonts.cjkMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"));
+    }
+
+    @Test
+    void aCJKFontIsFoundInTheJarOfTheCJKFontsOnTheClasspath() throws Exception {
+        // A jar laid out as com.pdfjet:pdfjet-fonts-cjk is (package-maven.sh),
+        // with no folder resources/fonts: the font is read from it
+        File jar = File.createTempFile("pdfjet-fonts-cjk", ".jar");
+        jar.deleteOnExit();
+        String[] paths = {com.pdfjet.fonts.IBMPlexSansJP.Regular, com.pdfjet.fonts.IBMPlexSansKR.Bold};
+        try (java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String path : paths) {
+                String name = BundledFonts.nameOf(path);
+                zip.putNextEntry(new java.util.zip.ZipEntry("com/pdfjet/fonts/cjk/" + name));
+                zip.write(java.nio.file.Files.readAllBytes(TestSupport.file("resources/fonts/cjk/" + name).toPath()));
+                zip.closeEntry();
+            }
+        }
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(new java.net.URL[] {jar.toURI().toURL()}, null)) {
+            for (String path : paths) {
+                try (InputStream stream = BundledFonts.open(path, "no-such-folder/", loader)) {
+                    assertNotNull(stream, path);
+                    Font font = new Font(new PDF(new java.io.ByteArrayOutputStream()), stream);
+                    assertTrue(font.name.startsWith(BundledFonts.nameOf(path).substring(0, 13)), font.name);
+                }
+            }
+        }
+        // And from the folder resources/fonts/cjk of the repository, the
+        // working directory of the tests, before the classpath
+        try (InputStream stream = BundledFonts.open(com.pdfjet.fonts.IBMPlexSansSC.SemiBold)) {
+            assertTrue(stream instanceof java.io.FileInputStream);
+        }
     }
 
     @Test

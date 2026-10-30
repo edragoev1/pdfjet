@@ -6,6 +6,7 @@
  */
 using System;
 using System.IO;
+using System.Reflection;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -13,24 +14,38 @@ namespace PDFjet.NET {
 /// folder of its name, with its license: IBM Plex Sans
 /// and Serif, from Thin to Bold, and Cascadia Mono, from
 /// Light to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai,
-/// Thin to Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
-/// SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
-/// A path to one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf,
-/// the constants of the font classes, is read from the folder resources/fonts
-/// when there is no such file, or else from the resources of the assembly,
-/// named PDFjet.Fonts/ and Family/File, and the text of an SVG image is drawn
-/// in them unless a font is set. The PDFjet.dll of the NuGet package carries
-/// them; that of the releases on GitHub does not, and is small, its package
-/// having them in resources/fonts.
+/// Thin to Bold; IBM Plex Math; and, in resources/fonts/cjk, IBM Plex Sans JP,
+/// KR, SC and TC, Regular, SemiBold and Bold, as .otf. All are under the SIL
+/// Open Font License 1.1. A path to one of them, such as
+/// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the font
+/// classes, is read from the folder resources/fonts when there is no such
+/// file, or else from the resources of the assembly, named PDFjet.Fonts/ and
+/// their path under resources/fonts, and the text of an SVG image is drawn in
+/// them unless a font is set. The PDFjet.dll of the NuGet package PDFjet
+/// carries all but the CJK fonts, which are in the assembly
+/// PDFjet.Fonts.CJK of the NuGet package of that name, loaded by its name
+/// when a CJK font is asked for, without a reference to it; the PDFjet.dll of
+/// the releases on GitHub carries none, and is small, its package having them
+/// in resources/fonts.
 /// </summary>
 internal static class BundledFonts {
     // Where the fonts are: the folder resources/fonts of the working
     // directory, as in the repository and the packages of the releases on
     // GitHub, whose PDFjet.dll is small; or else the resources of the
-    // assembly, as in the PDFjet.dll of NuGet, built with -p:PDFjetFonts=true.
+    // assembly, as in the PDFjet.dll of NuGet, built with -p:PDFjetFonts=true,
+    // and those of the assembly PDFjet.Fonts.CJK for the CJK fonts.
     internal const String FOLDER = "resources/fonts/";
-    // The prefix of the names of the resources, before Family/File.
+    // The prefix of the names of the resources, before their path under
+    // resources/fonts, Family/File or cjk/Family/File.
     internal const String RESOURCE_PREFIX = "PDFjet.Fonts/";
+    // The assembly of the NuGet package PDFjet.Fonts.CJK, which has the CJK
+    // fonts as resources of the same names.
+    internal const String CJK_ASSEMBLY = "PDFjet.Fonts.CJK";
+
+    // The families of the CJK fonts, which are in resources/fonts/cjk and in
+    // the package PDFjet.Fonts.CJK, apart from the others, as they are about
+    // 48 MB.
+    private static readonly String[] CJK_FAMILIES = {"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"};
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
@@ -45,14 +60,63 @@ internal static class BundledFonts {
         return path.Substring(family + 1);
     }
 
+    // Returns the family of a name, Family/File, if it is one of the CJK
+    // families, or null.
+    private static String CjkFamilyOf(String name) {
+        int slash = name.IndexOf('/');
+        String family = (slash < 0) ? name : name.Substring(0, slash);
+        foreach (String cjk in CJK_FAMILIES) {
+            if (cjk.Equals(family)) {
+                return cjk;
+            }
+        }
+        return null;
+    }
+
+    // Returns the path of a font under resources/fonts, and after
+    // PDFjet.Fonts/ among the resources, by its name, Family/File: the name,
+    // or cjk/ and the name for a CJK font, such as
+    // cjk/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
+    internal static String FolderPathOf(String name) {
+        return (CjkFamilyOf(name) != null) ? "cjk/" + name : name;
+    }
+
+    // The assembly PDFjet.Fonts.CJK, loaded once, when a CJK font is first
+    // asked for, or null when the program does not have it.
+    private static readonly Lazy<Assembly> cjkAssembly = new Lazy<Assembly>(LoadCjkAssembly);
+
+    internal static Assembly CjkAssembly {
+        get { return cjkAssembly.Value; }
+    }
+
+    private static Assembly LoadCjkAssembly() {
+        try {
+            return Assembly.Load(new AssemblyName(CJK_ASSEMBLY));
+        } catch (FileNotFoundException) {
+            return null;
+        } catch (FileLoadException) {
+            return null;
+        } catch (BadImageFormatException) {
+            return null;
+        }
+    }
+
     // Opens the font of the path that PDFjet carries, or returns null: from
-    // the folder resources/fonts, or else from the assembly.
+    // the folder resources/fonts, or else from the assembly, or else, for a
+    // CJK font, from the assembly PDFjet.Fonts.CJK.
     internal static Stream Open(String fontPath) {
+        return Open(fontPath, FOLDER, null, true);
+    }
+
+    // Opens the font of the path that PDFjet carries, or returns null: from
+    // the folder, or else from the assembly, or else, for a CJK font, from
+    // the assembly cjk, or PDFjet.Fonts.CJK when loadCjk.
+    internal static Stream Open(String fontPath, String folder, Assembly cjk, bool loadCjk) {
         String name = NameOf(fontPath);
         if (name == null || name.IndexOf("..", StringComparison.Ordinal) >= 0) {
             return null;
         }
-        String file = FOLDER + name;
+        String file = folder + FolderPathOf(name);
         if (File.Exists(file)) {
             try {
                 return new FileStream(file, FileMode.Open, FileAccess.Read);
@@ -62,13 +126,48 @@ internal static class BundledFonts {
                 // Read from the assembly then
             }
         }
-        return OpenResource(name);
+        Stream stream = OpenResource(name);
+        if (stream == null && CjkFamilyOf(name) != null) {
+            if (cjk == null && loadCjk) {
+                cjk = CjkAssembly;
+            }
+            if (cjk != null) {
+                stream = cjk.GetManifestResourceStream(RESOURCE_PREFIX + FolderPathOf(name));
+            }
+        }
+        return stream;
     }
 
     // Opens the font of the name, Family/File, among the resources of the
     // assembly, or returns null when it was built without the fonts.
     internal static Stream OpenResource(String name) {
-        return typeof(BundledFonts).Assembly.GetManifestResourceStream(RESOURCE_PREFIX + name);
+        return typeof(BundledFonts).Assembly.GetManifestResourceStream(RESOURCE_PREFIX + FolderPathOf(name));
+    }
+
+    // Returns what to do when the font of the path is one of the CJK fonts
+    // PDFjet carries, Regular, SemiBold or Bold, which is in neither the
+    // folder resources/fonts/cjk nor the program, or null for any other
+    // font: add the NuGet package PDFjet.Fonts.CJK.
+    internal static String CjkMissing(String fontPath) {
+        String name = NameOf(fontPath);
+        if (name == null) {
+            return null;
+        }
+        String family = CjkFamilyOf(name);
+        if (family == null) {
+            return null;
+        }
+        String file = name.Substring(family.Length + 1);
+        if (!file.Equals(family + "-Regular.otf") && !file.Equals(family + "-SemiBold.otf")
+                && !file.Equals(family + "-Bold.otf")) {
+            return null;
+        }
+        return fontPath + " is not a file, nor in resources/fonts/cjk. "
+                + "IBM Plex Sans " + family.Substring("IBMPlexSans".Length)
+                + " is in the NuGet package " + CJK_ASSEMBLY + ": dotnet add package " + CJK_ASSEMBLY
+                + " --version " + PDF.VERSION
+                + " (in the project file: <PackageReference Include=\"" + CJK_ASSEMBLY + "\" Version=\""
+                + PDF.VERSION + "\" />)";
     }
 
     internal const int SANS = 0;

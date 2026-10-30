@@ -112,7 +112,9 @@ final public class PDF {
     private final Map<String, Destination> destinations = new HashMap<String, Destination>();
     private OutputStream os = null;
     private final List<Long> objOffset = new ArrayList<Long>();
-    private final String producer = "PDFjet v9.1.5";
+    private static final String producer = "PDFjet v9.1.5";
+    // The version of the library, such as 9.1.7, of the producer string
+    static final String VERSION = producer.substring("PDFjet v".length());
     private String title;
     private String author;
     private String subject;

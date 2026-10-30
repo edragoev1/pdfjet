@@ -389,7 +389,10 @@ final public class Font {
      * to one of the fonts PDFjet carries, such as the constants of
      * com.pdfjet.fonts, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is
      * read from the folder resources/fonts when there is no such file, or else
-     * from PDFjet.jar, which carries the fonts in the jar of Maven Central. A path to a
+     * from PDFjet.jar, which carries the fonts in the jar of Maven Central; the
+     * CJK fonts, such as IBMPlexSansJP.Regular, are in the jar
+     * com.pdfjet:pdfjet-fonts-cjk, which a program adds next to
+     * com.pdfjet:pdfjet, and a CJK font not found says so. A path to a
      * .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
      * opens the .ttf or else the .otf file of the same name beside it.
      *
@@ -414,6 +417,10 @@ final public class Font {
             InputStream bundled = BundledFonts.open(fontPath);
             if (bundled != null) {
                 return new BufferedInputStream(bundled);
+            }
+            String cjk = BundledFonts.cjkMissing(fontPath);
+            if (cjk != null) {
+                throw new FileNotFoundException(cjk);
             }
             String path = fontPath.replace('\\', '/');
             if (path.startsWith("fonts/") || path.contains("/fonts/")) {

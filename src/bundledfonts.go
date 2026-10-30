@@ -18,8 +18,9 @@ import (
 // folder of its name, with its license: IBM Plex Sans and Serif, from Thin to
 // Bold, and Cascadia Mono, from Light to Bold, upright and
 // italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; IBM Plex Math;
-// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
-// All are under the SIL Open Font License 1.1. A path to one of them, such as
+// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf,
+// in resources/fonts/cjk. All are under the SIL Open Font License 1.1. A
+// path to one of them, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the packages
 // IBMPlexSans and the others, is read from the folder resources/fonts of the
 // working directory when there is no such file, or else from the library,
@@ -52,6 +53,19 @@ func bundledFontName(fontPath string) string {
 	return path[family+1:]
 }
 
+// bundledFontFolderPath returns the path under resources/fonts of a font
+// PDFjet carries, by its name, Family/File: the name itself, or, for the
+// CJK fonts, which are apart so that a program, a jar or a package carries
+// them only when it asks for them, cjk/ and the name, such as
+// cjk/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
+func bundledFontFolderPath(name string) string {
+	family, _, _ := strings.Cut(name, "/")
+	if slices.Contains(cjkFamilies, family) {
+		return "cjk/" + name
+	}
+	return name
+}
+
 // bundledFontData returns the font of the path that PDFjet carries, from the
 // folder resources/fonts or else from the library, or nil.
 func bundledFontData(fontPath string) []byte {
@@ -59,7 +73,7 @@ func bundledFontData(fontPath string) []byte {
 	if name == "" || strings.Contains(name, "..") {
 		return nil
 	}
-	if buf, err := os.ReadFile(filepath.Join(bundledFolder, filepath.FromSlash(name))); err == nil {
+	if buf, err := os.ReadFile(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil {
 		return buf
 	}
 	if buf, err := fonts.ReadFile(name); err == nil {
@@ -75,7 +89,7 @@ func bundledFontHas(fontPath string) bool {
 	if name == "" || strings.Contains(name, "..") {
 		return false
 	}
-	if info, err := os.Stat(filepath.Join(bundledFolder, filepath.FromSlash(name))); err == nil && info.Mode().IsRegular() {
+	if info, err := os.Stat(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil && info.Mode().IsRegular() {
 		return true
 	}
 	_, err := fonts.Stat(name)

@@ -23,10 +23,22 @@ public class BundledFontsTest {
         "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
     };
 
+    // The folders of the families, those of the CJK fonts in resources/fonts/cjk
+    private static List<String> Families() {
+        List<String> families = new List<String>();
+        foreach (String family in Directory.GetDirectories(TestSupport.RepoPath("resources/fonts"))) {
+            if (System.IO.Path.GetFileName(family) != "cjk") {
+                families.Add(family);
+            }
+        }
+        families.AddRange(Directory.GetDirectories(TestSupport.RepoPath("resources/fonts/cjk")));
+        return families;
+    }
+
     [Fact]
     public void EveryFontCarriedHasAConstantAndEveryConstantNotObsoleteIsCarried() {
         SortedSet<String> carried = new SortedSet<String>(StringComparer.Ordinal);
-        foreach (String family in Directory.GetDirectories(TestSupport.RepoPath("resources/fonts"))) {
+        foreach (String family in Families()) {
             foreach (String font in Directory.GetFiles(family)) {
                 String name = System.IO.Path.GetFileName(font);
                 if (name.EndsWith(".ttf", StringComparison.Ordinal) || name.EndsWith(".otf", StringComparison.Ordinal)) {
@@ -89,16 +101,21 @@ public class BundledFontsTest {
                 resources.Add(name.Substring(BundledFonts.RESOURCE_PREFIX.Length));
             }
         }
+        // The files of the families, and apart those of the CJK fonts, which
+        // are in the assembly PDFjet.Fonts.CJK, cjk/Family/File
         SortedSet<String> files = new SortedSet<String>(StringComparer.Ordinal);
-        foreach (String family in Directory.GetDirectories(TestSupport.RepoPath("resources/fonts"))) {
+        SortedSet<String> cjkFiles = new SortedSet<String>(StringComparer.Ordinal);
+        foreach (String family in Families()) {
+            bool cjk = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(family)) == "cjk";
             foreach (String file in Directory.GetFiles(family)) {
                 String name = System.IO.Path.GetFileName(file);
                 if (name.EndsWith(".ttf", StringComparison.Ordinal) || name.EndsWith(".otf", StringComparison.Ordinal)
                         || name.EndsWith(".txt", StringComparison.Ordinal) || name.Equals("LICENSE")) {
-                    files.Add(System.IO.Path.GetFileName(family) + "/" + name);
+                    (cjk ? cjkFiles : files).Add((cjk ? "cjk/" : "") + System.IO.Path.GetFileName(family) + "/" + name);
                 }
             }
         }
+        Assert.Equal(16, cjkFiles.Count);
 #if PDFJET_FONTS
         // The fonts and their licenses, Family/File, and nothing else
         Assert.Equal(files, resources);
@@ -107,9 +124,22 @@ public class BundledFontsTest {
             Assert.True(name.EndsWith(".ttf", StringComparison.Ordinal) || name.EndsWith(".otf", StringComparison.Ordinal)
                     || name.EndsWith(".txt", StringComparison.Ordinal) || name.EndsWith("/LICENSE", StringComparison.Ordinal), name);
         }
+        // The CJK fonts and their licenses are in the assembly PDFjet.Fonts.CJK
+        // alone, which the tests have beside them, as a program that adds the
+        // package does, and the library loads by its name
+        Assert.Null(BundledFonts.OpenResource(BundledFonts.NameOf(IBMPlexSansSC.Regular)));
+        Assembly cjkAssembly = BundledFonts.CjkAssembly;
+        Assert.NotNull(cjkAssembly);
+        Assert.Equal("PDFjet.Fonts.CJK", cjkAssembly.GetName().Name);
+        SortedSet<String> cjkResources = new SortedSet<String>(StringComparer.Ordinal);
+        foreach (String name in cjkAssembly.GetManifestResourceNames()) {
+            Assert.StartsWith(BundledFonts.RESOURCE_PREFIX, name);
+            cjkResources.Add(name.Substring(BundledFonts.RESOURCE_PREFIX.Length));
+        }
+        Assert.Equal(cjkFiles, cjkResources);
         // Read from the library, as with no resources/fonts folder, and drawn
-        foreach (String path in new String[] {IBMPlexSans.Regular, IBMPlexSansSC.Regular, CascadiaMono.Regular}) {
-            using (Stream stream = BundledFonts.OpenResource(BundledFonts.NameOf(path))) {
+        foreach (String path in new String[] {IBMPlexSans.Regular, IBMPlexSansSC.Regular, IBMPlexSansJP.Bold, CascadiaMono.Regular}) {
+            using (Stream stream = BundledFonts.Open(path, "no-such-folder/", null, true)) {
                 Assert.True(stream != null, path);
                 PDF pdf = new PDF(new MemoryStream());
                 Font font = new Font(pdf, stream);
@@ -120,8 +150,31 @@ public class BundledFontsTest {
         // The small library, as built from the repository and for GitHub
         Assert.Empty(resources);
         Assert.Null(BundledFonts.OpenResource(BundledFonts.NameOf(IBMPlexSans.Regular)));
-        Assert.True(files.Count > 72);
+        Assert.True(files.Count > 56);
+        // Nor is the assembly PDFjet.Fonts.CJK beside the tests: a CJK font
+        // is not found without resources/fonts/cjk
+        Assert.Null(BundledFonts.CjkAssembly);
+        Assert.Null(BundledFonts.Open(IBMPlexSansJP.Regular, "no-such-folder/", null, true));
 #endif
+    }
+
+    [Fact]
+    public void ACJKFontNotFoundNamesThePackageAndTheLineToAdd() {
+        Assert.Equal("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf is not a file, nor in resources/fonts/cjk. "
+                + "IBM Plex Sans JP is in the NuGet package PDFjet.Fonts.CJK: dotnet add package PDFjet.Fonts.CJK"
+                + " --version " + PDF.VERSION
+                + " (in the project file: <PackageReference Include=\"PDFjet.Fonts.CJK\" Version=\"" + PDF.VERSION + "\" />)",
+                BundledFonts.CjkMissing(IBMPlexSansJP.Regular));
+        Assert.Matches("^[0-9]+\\.[0-9]+\\.[0-9]+$", PDF.VERSION);
+        Assert.Contains("IBM Plex Sans KR is in", BundledFonts.CjkMissing(IBMPlexSansKR.SemiBold));
+        // Not for the other fonts, nor for a weight PDFjet does not carry
+        Assert.Null(BundledFonts.CjkMissing(IBMPlexSans.Regular));
+        Assert.Null(BundledFonts.CjkMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"));
+        // From the folder resources/fonts/cjk of the repository, the working
+        // directory of the tests, first
+        using (Stream stream = BundledFonts.Open(IBMPlexSansTC.Regular)) {
+            Assert.IsType<FileStream>(stream);
+        }
     }
 
     [Fact]

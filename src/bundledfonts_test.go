@@ -61,17 +61,31 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The family folders, and those of the CJK fonts in the folder cjk
+	var folders []string
 	for _, family := range families {
-		if !family.IsDir() {
-			continue
+		if family.IsDir() && family.Name() != "cjk" {
+			folders = append(folders, family.Name())
 		}
-		files, err := os.ReadDir(filepath.Join(root, family.Name()))
+	}
+	cjk, err := os.ReadDir(filepath.Join(root, "cjk"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, family := range cjk {
+		if family.IsDir() {
+			folders = append(folders, "cjk/"+family.Name())
+		}
+	}
+	for _, folder := range folders {
+		files, err := os.ReadDir(filepath.Join(root, filepath.FromSlash(folder)))
 		if err != nil {
 			t.Fatal(err)
 		}
+		family := filepath.Base(folder)
 		for _, file := range files {
 			if strings.HasSuffix(file.Name(), ".ttf") || strings.HasSuffix(file.Name(), ".otf") {
-				carried = append(carried, "fonts/"+family.Name()+"/"+file.Name())
+				carried = append(carried, "fonts/"+family+"/"+file.Name())
 			}
 		}
 	}

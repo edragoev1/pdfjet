@@ -10,8 +10,15 @@ namespace PDFjet.NET {
     /// <summary>
     /// The IBM Plex Sans KR fonts. Each constant is the path of a font file,
     /// embedded as a subset of the glyphs a document draws; pass it to the Font
-    /// constructor that takes a font path. PDFjet carries these fonts in
-    /// itself: the path is read from the library when there is no such file.
+    /// constructor that takes a font path. These fonts are not in the NuGet
+    /// package PDFjet: they are in the package PDFjet.Fonts.CJK, which a
+    /// program that draws in them adds next to it, with
+    /// <c>dotnet add package PDFjet.Fonts.CJK</c>, or in the project file
+    /// <c>&lt;PackageReference Include="PDFjet.Fonts.CJK" Version="9.1.7" /&gt;</c>,
+    /// the same version as PDFjet's. The path is read from the file of that
+    /// path, else from the folder resources/fonts/cjk, as in the release
+    /// packages on GitHub, else from that package, and a font found in none
+    /// says what to add.
     /// </summary>
     public static class IBMPlexSansKR {
         /// <summary>IBM Plex Sans KR Bold</summary>

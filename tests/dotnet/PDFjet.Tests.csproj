@@ -35,8 +35,16 @@
          (package-nuget.sh). Otherwise the DLL is small and reads them from the
          folder resources/fonts, as in the repository and the release packages
          on GitHub. The font files and the licenses alone, not the Go and Swift
-         files beside them. -->
-    <EmbeddedResource Condition="'$(PDFjetFonts)' == 'true'" Include="../../resources/fonts/*/**/*.ttf;../../resources/fonts/*/**/*.otf;../../resources/fonts/*/**/*.txt;../../resources/fonts/*/**/LICENSE" LogicalName="PDFjet.Fonts/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+         files beside them, and not the CJK fonts of resources/fonts/cjk, which
+         are in the assembly of the NuGet package PDFjet.Fonts.CJK
+         (nuget/cjk/PDFjet.Fonts.CJK.csproj). -->
+    <EmbeddedResource Condition="'$(PDFjetFonts)' == 'true'" Include="../../resources/fonts/*/**/*.ttf;../../resources/fonts/*/**/*.otf;../../resources/fonts/*/**/*.txt;../../resources/fonts/*/**/LICENSE" Exclude="../../resources/fonts/cjk/**" LogicalName="PDFjet.Fonts/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+  </ItemGroup>
+  <!-- With the fonts, the assembly PDFjet.Fonts.CJK too, beside the tests,
+       as the NuGet package PDFjet.Fonts.CJK puts it beside a program: the
+       library loads it by its name, with no reference to it. -->
+  <ItemGroup Condition="'$(PDFjetFonts)' == 'true'">
+    <ProjectReference Include="../../nuget/cjk/PDFjet.Fonts.CJK.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />

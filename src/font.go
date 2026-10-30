@@ -385,7 +385,7 @@ func readFontFile(fontPath string) ([]byte, error) {
 			return buf, nil
 		}
 		if bundledCJKMissing(fontPath) {
-			return nil, &fontNotFoundError{fontPath + " is not a file, nor in resources/fonts; " +
+			return nil, &fontNotFoundError{fontPath + " is not a file, nor in resources/fonts/cjk; " +
 				"PDFjet builds its Chinese, Japanese and Korean fonts into a program that imports them: " +
 				cjkImport}
 		}

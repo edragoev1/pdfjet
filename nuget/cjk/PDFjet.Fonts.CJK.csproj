@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- PDFjet.Fonts.CJK.dll, the assembly of the NuGet package PDFjet.Fonts.CJK
+       (package-nuget.sh): the CJK fonts PDFjet carries, IBM Plex Sans JP, KR,
+       SC and TC, and their licenses, as resources and nothing else, named as
+       in PDFjet.dll, PDFjet.Fonts/ and their path under resources/fonts, such
+       as PDFjet.Fonts/cjk/IBMPlexSansJP/IBMPlexSansJP-Regular.otf. PDFjet
+       loads it by its name when a CJK font is asked for, and has no
+       reference to it. For .NET Standard 2.0, so that one assembly serves
+       .NET 8 and later and .NET Framework 4.8 alike, and the fonts, about 40
+       MB, are in the package once. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>library</OutputType>
+    <AssemblyName>PDFjet.Fonts.CJK</AssemblyName>
+    <RootNamespace>PDFjet.Fonts.CJK</RootNamespace>
+    <AssemblyVersion>9.0.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Company>PDFjet Software</Company>
+    <Product>PDFjet</Product>
+    <Copyright>Copyright (c) 2026 PDFjet Software</Copyright>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../resources/fonts/cjk/*/*.otf;../../resources/fonts/cjk/*/license.txt" LogicalName="PDFjet.Fonts/cjk/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -127,12 +127,16 @@ rm "$TAR"
 # but Example_42 attaches Example_02.java.
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
 rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
+# The CJK fonts stay in resources/fonts/cjk, each family in a folder of its
+# name, where PDFjet.dll reads them.
 find "$STAGE/resources/fonts" -maxdepth 1 -type f -delete
-find "$STAGE/resources/fonts" -mindepth 2 \( -type d -o \( -type f ! -name '*.ttf' ! -name '*.otf' \
-    ! -name '*.txt' ! -name LICENSE \) \) -prune -exec rm -rf {} +
-# The folder of the Go package cjk, left empty
+find "$STAGE/resources/fonts" -mindepth 2 -type f ! -name '*.ttf' ! -name '*.otf' \
+    ! -name '*.txt' ! -name LICENSE -delete
 find "$STAGE/resources/fonts" -mindepth 1 -type d -empty -delete
-for family in "$STAGE"/resources/fonts/*/; do
+for family in "$STAGE"/resources/fonts/*/ "$STAGE"/resources/fonts/cjk/*/; do
+    if [ "$family" = "$STAGE/resources/fonts/cjk/" ]; then
+        continue
+    fi
     if [ ! -f "$family/license.txt" ] && [ ! -f "$family/OFL.txt" ] && [ ! -f "$family/LICENSE" ]; then
         echo "$family has no license"
         exit 1
