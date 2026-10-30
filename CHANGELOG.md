@@ -416,6 +416,11 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 - Behavior change: SVG: an element whose `systemLanguage` does not match is
   not drawn, outside a `switch` too. Example: `<rect systemLanguage="de"/>`
   draws nothing in an English PDF, where it drew the rectangle.
+- Behavior change: the folders `fonts` and `data` of the repository are
+  `resources/fonts` and `resources/data`, and PDFjet carries IBM Plex Sans as
+  `.ttf` only. Example: a program of 9.1.5 that opens
+  `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf` itself, or an `.otf` of the
+  family, keeps that folder beside it or changes the path.
 - Behavior change: `SetLanguage` writes `/Lang` on a plain PDF too. Example:
   `fr-CA`; unset writes none.
 - Behavior change: the name of an embedded file is cut at a backslash on every
