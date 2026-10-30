@@ -468,11 +468,11 @@ internal class Util {
     /// </summary>
     internal static int CjkLineEnd(String line, String next) {
         int end = line.Length;
-        if (NOT_AT_LINE_START.Contains(next)) {
+        if (CannotStartLine(next)) {
             while (end > 0) {
                 String ch = LastCharacter(line, end);
                 end -= ch.Length;
-                if (!NOT_AT_LINE_START.Contains(ch)) {
+                if (!CannotStartLine(ch)) {
                     break;
                 }
             }
@@ -481,6 +481,13 @@ internal class Util {
             end -= LastCharacter(line, end).Length;
         }
         return (end > 0) ? end : line.Length;
+    }
+
+    // Returns true for a character that does not start a line of Chinese or
+    // Japanese text: those of NOT_AT_LINE_START, and a combining mark, as the
+    // dakuten U+3099, which stays with the letter before it.
+    private static bool CannotStartLine(String ch) {
+        return NOT_AT_LINE_START.Contains(ch) || TextBlock.StaysWithPrevious(CodePointAt(ch, 0));
     }
 
     // The character that ends at index end of the string.

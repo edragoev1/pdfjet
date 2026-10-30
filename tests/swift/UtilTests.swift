@@ -167,6 +167,9 @@ import Testing
             cjkLineEnd(Array(line.unicodeScalars), next)
         }
         #expect(end("あいう", "え") == 3)
+        #expect(end("あいか", "\u{3099}") == 2)   // か moves down with its dakuten
+        #expect(end("あか\u{3099}", "う") == 3)
+        #expect(end("あか\u{3099}", "。") == 1)   // か and its dakuten move down with 。
         #expect(end("あいう", "。") == 2)  // う moves down with 。
         #expect(end("あい」", "。") == 1)  // and so does 」
         #expect(end("あい「", "う") == 2)  // 「 moves down

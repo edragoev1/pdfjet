@@ -475,11 +475,11 @@ class Util {
      */
     static int cjkLineEnd(String line, int next) {
         int end = line.length();
-        if (NOT_AT_LINE_START.indexOf(next) >= 0) {
+        if (cannotStartLine(next)) {
             while (end > 0) {
                 int ch = line.codePointBefore(end);
                 end -= Character.charCount(ch);
-                if (NOT_AT_LINE_START.indexOf(ch) < 0) {
+                if (!cannotStartLine(ch)) {
                     break;
                 }
             }
@@ -488,5 +488,12 @@ class Util {
             end -= Character.charCount(line.codePointBefore(end));
         }
         return (end > 0) ? end : line.length();
+    }
+
+    // Returns true for a character that does not start a line of Chinese or
+    // Japanese text: those of NOT_AT_LINE_START, and a combining mark, as the
+    // dakuten U+3099, which stays with the letter before it.
+    private static boolean cannotStartLine(int ch) {
+        return NOT_AT_LINE_START.indexOf(ch) >= 0 || TextBlock.staysWithPrevious(ch);
     }
 }
