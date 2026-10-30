@@ -1029,3 +1029,30 @@ func TestSVGImageManyGradientsOfOneGradientOfManyStopsAreReadOnce(t *testing.T) 
 		t.Errorf("content %q", content)
 	}
 }
+
+func TestSVGImageTheOperationsDrawnAgainAreLimited(t *testing.T) {
+	polygon := func(points int) string {
+		return `<polygon id="p" points="` + strings.Repeat("0,0 1,1 ", points/2) + `"/>`
+	}
+	clipped := `<svg width="10" height="10"><clipPath id="c">` + polygon(10000) + `</clipPath>`
+	for name, svg := range map[string]string{
+		"uses of a path": `<svg width="10" height="10"><defs>` + polygon(10000) + `</defs>` +
+			strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+		"elements clipped": clipped + strings.Repeat(`<g clip-path="url(#c)"/>`, 1000) + `</svg>`,
+		"paths in a clip": clipped + `<g clip-path="url(#c)">` +
+			strings.Repeat(`<rect width="1" height="1"/>`, 1000) + `</g></svg>`,
+		"runs in a clip": clipped + `<g clip-path="url(#c)"><text>` +
+			strings.Repeat(`<tspan>a</tspan>`, 1000) + `</text></g></svg>`,
+		"uses of a text": `<svg width="10" height="10"><defs><text id="p">` + strings.Repeat("a", 10000) +
+			`</text></defs>` + strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || !strings.Contains(err.Error(), "path operations") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	// A file drawn once is not counted, however large
+	testNewSVG(t, `<svg width="10" height="10">`+strings.Repeat(polygon(10000), 500)+`</svg>`)
+	testNewSVG(t, `<svg width="10" height="10"><defs>`+polygon(1000)+`</defs>`+
+		strings.Repeat(`<use href="#p"/>`, 1000)+`</svg>`)
+}

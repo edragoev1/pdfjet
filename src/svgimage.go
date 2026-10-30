@@ -18,6 +18,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -48,6 +49,15 @@ type SVGImage struct {
 // number of groups, as an XML of entities in entities does.
 const maxSVGReused = 1000000
 
+// maxSVGOperations is the most path operations drawn again, by use elements
+// and as markers, and written for the clip paths of what is drawn: a use of a
+// path of N operations was N operations for each element maxSVGReused counts,
+// 506 MB for a file of 200 KB, and a clip path of N operations is read for
+// every element it clips and written for every path in it, 800 MB of page for
+// 320 KB (review of 30 October 2026). The operations of a file drawn once are
+// not counted: they grow with the file.
+const maxSVGOperations = 4000000
+
 // maxSVGDepth is how deep the elements being drawn may nest, by groups, use
 // elements and markers, a state on the stack for each: a chain of use elements
 // is flat in the file, so the limit of the XML parser does not see it, and
@@ -69,6 +79,7 @@ type svgReader struct {
 	ids      map[string]*xmlparser.XMLNode
 	reusing  map[*xmlparser.XMLNode]bool
 	reused   int64
+	counted  int64 // The operations maxSVGOperations limits
 }
 
 // NewSVGImageFromFile reads and parses an svgParser image from a file.
@@ -289,6 +300,27 @@ func (r *svgReader) countReused() error {
 	return nil
 }
 
+// countOperations counts operations drawn again or written again, and fails
+// when there are too many.
+func (r *svgReader) countOperations(count int) error {
+	r.counted += int64(count)
+	if r.counted > maxSVGOperations {
+		return fmt.Errorf("The SVG draws more than %d path operations again, with use elements, "+
+			"markers or clip paths.", maxSVGOperations)
+	}
+	return nil
+}
+
+// svgClipOperations returns the operations written for the clip paths of one
+// path, and of a run of a text.
+func svgClipOperations(clips []*svgPath) int {
+	count := 0
+	for _, clip := range clips {
+		count += len(clip.operations)
+	}
+	return count
+}
+
 // errSVGDepth is the error of elements nested too deep.
 func errSVGDepth() error {
 	return fmt.Errorf("The SVG nests elements, use elements and markers more than %d deep.", maxSVGDepth)
@@ -365,6 +397,16 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	}
 	operations, err := shapeOperations(name, attributes)
 	if err != nil {
+		return err
+	}
+	count := 0
+	if len(r.reusing) > 0 {
+		count = len(operations)
+	}
+	if !state.hidden && len(operations) > 0 {
+		count += svgClipOperations(state.clips) + len(state.dashArray)
+	}
+	if err := r.countOperations(count); err != nil {
 		return err
 	}
 	if name == "line" {
@@ -672,6 +714,9 @@ func (r *svgReader) clip(state *svgState) error {
 		svgTransformAll(shape, operations)
 		clip.operations = append(clip.operations, operations...)
 	}
+	if err := r.countOperations(len(clipPath.Children()) + len(clip.operations)); err != nil {
+		return err
+	}
 	if len(clip.operations) == 0 {
 		state.hidden = true
 		return nil
@@ -887,10 +932,18 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 	}
 	text.collapseSpaces()
 	empty := true
+	count := 0
 	for _, run := range text.runs {
 		if run.text != "" {
 			empty = false
 		}
+		count += svgClipOperations(state.clips)
+		if len(r.reusing) > 0 {
+			count += 1 + utf8.RuneCountInString(run.text)
+		}
+	}
+	if err := r.countOperations(count); err != nil {
+		return err
 	}
 	m := state.matrix
 	if empty || float64(m[0]*m[3])-float64(m[1]*m[2]) == 0.0 {

@@ -910,5 +910,37 @@ public class SVGImageTest {
         Assert.True(watch.ElapsedMilliseconds < 5000, watch.ElapsedMilliseconds + " ms");
         Assert.StartsWith("1 0 0 rg\n", content);
     }
+
+    private static string Repeat(string text, int count) {
+        StringBuilder repeated = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            repeated.Append(text);
+        }
+        return repeated.ToString();
+    }
+
+    private static string Polygon(int points) {
+        return "<polygon id=\"p\" points=\"" + Repeat("0,0 1,1 ", points/2) + "\"/>";
+    }
+
+    [Fact]
+    public void TheOperationsDrawnAgainAreLimited() {
+        string clipped = "<svg width=\"10\" height=\"10\"><clipPath id=\"c\">" + Polygon(10000) + "</clipPath>";
+        foreach (string svg in new string[] {
+                "<svg width=\"10\" height=\"10\"><defs>" + Polygon(10000) + "</defs>"
+                        + Repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                clipped + Repeat("<g clip-path=\"url(#c)\"/>", 1000) + "</svg>",
+                clipped + "<g clip-path=\"url(#c)\">" + Repeat("<rect width=\"1\" height=\"1\"/>", 1000) + "</g></svg>",
+                clipped + "<g clip-path=\"url(#c)\"><text>" + Repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + Repeat("a", 10000) + "</text></defs>"
+                        + Repeat("<use href=\"#p\"/>", 1000) + "</svg>"}) {
+            ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
+            Assert.Contains("path operations", e.Message);
+        }
+        // A file drawn once is not counted, however large
+        Parse("<svg width=\"10\" height=\"10\">" + Repeat(Polygon(10000), 500) + "</svg>");
+        Parse("<svg width=\"10\" height=\"10\"><defs>" + Polygon(1000) + "</defs>"
+                + Repeat("<use href=\"#p\"/>", 1000) + "</svg>");
+    }
 }
 }

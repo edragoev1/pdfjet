@@ -921,4 +921,36 @@ class SVGImageTest {
         assertTrue(elapsed < 5000, elapsed + " ms");
         assertTrue(content.startsWith("1 0 0 rg\n"), content);
     }
+
+    private static String repeat(String text, int count) {
+        StringBuilder repeated = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            repeated.append(text);
+        }
+        return repeated.toString();
+    }
+
+    private static String polygon(int points) {
+        return "<polygon id=\"p\" points=\"" + repeat("0,0 1,1 ", points/2) + "\"/>";
+    }
+
+    @Test
+    void theOperationsDrawnAgainAreLimited() throws Exception {
+        String clipped = "<svg width=\"10\" height=\"10\"><clipPath id=\"c\">" + polygon(10000) + "</clipPath>";
+        for (String svg : new String[] {
+                "<svg width=\"10\" height=\"10\"><defs>" + polygon(10000) + "</defs>"
+                        + repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                clipped + repeat("<g clip-path=\"url(#c)\"/>", 1000) + "</svg>",
+                clipped + "<g clip-path=\"url(#c)\">" + repeat("<rect width=\"1\" height=\"1\"/>", 1000) + "</g></svg>",
+                clipped + "<g clip-path=\"url(#c)\"><text>" + repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + repeat("a", 10000) + "</text></defs>"
+                        + repeat("<use href=\"#p\"/>", 1000) + "</svg>"}) {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> read(svg));
+            assertTrue(e.getMessage().contains("path operations"), e.getMessage());
+        }
+        // A file drawn once is not counted, however large
+        read("<svg width=\"10\" height=\"10\">" + repeat(polygon(10000), 500) + "</svg>");
+        read("<svg width=\"10\" height=\"10\"><defs>" + polygon(1000) + "</defs>"
+                + repeat("<use href=\"#p\"/>", 1000) + "</svg>");
+    }
 }

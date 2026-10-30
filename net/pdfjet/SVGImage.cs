@@ -58,10 +58,19 @@ public class SVGImage : IDrawable {
     private List<SVGPath> clipShapes = new List<SVGPath>();
     private HashSet<XMLNode> reusing;
     private long reused = 0;
+    private long counted = 0;
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     internal const long MAX_REUSED = 1000000;
+    // The path operations drawn again, by use elements and as markers, and
+    // written for the clip paths of what is drawn, at most: a use of a path of N
+    // operations was N operations for each element counted by the limit above,
+    // 506 MB for a file of 200 KB, and a clip path of N operations is read for
+    // every element it clips and written for every path in it, 800 MB of page
+    // for 320 KB (review of 30 October 2026). The operations of a file drawn
+    // once are not counted: they grow with the file.
+    internal const long MAX_OPERATIONS = 4000000;
     // How deep the elements being drawn may nest, by groups, use elements and
     // markers, a state on the stack for each: a chain of use elements is flat in
     // the file, so the limit of the XML parser does not see it, and each level
@@ -241,6 +250,28 @@ public class SVGImage : IDrawable {
         }
     }
 
+    // Counts operations drawn again or written again, and throws when there
+    // are too many.
+    private void CountOperations(int count) {
+        counted += count;
+        if (counted > MAX_OPERATIONS) {
+            throw new ArgumentException("The SVG draws more than " + MAX_OPERATIONS
+                    + " path operations again, with use elements, markers or clip paths.");
+        }
+    }
+
+    // Returns the operations written for the clip paths of one path, and of
+    // a run of a text.
+    private static int ClipOperations(List<SVGPath> clips) {
+        int count = 0;
+        if (clips != null) {
+            foreach (SVGPath clip in clips) {
+                count += clip.operations.Count;
+            }
+        }
+        return count;
+    }
+
     // The error of elements nested too deep.
     private static ArgumentException DepthError() {
         return new ArgumentException(
@@ -315,6 +346,11 @@ public class SVGImage : IDrawable {
             return;
         }
         List<PathOp> operations = ShapeOperations(name, attributes);
+        int count = (reusing.Count > 0) ? operations.Count : 0;
+        if (!state.hidden && operations.Count > 0) {
+            count += ClipOperations(state.clips) + ((state.dashArray != null) ? state.dashArray.Length : 0);
+        }
+        CountOperations(count);
         if (name.Equals("line")) {
             state = state.Copy();
             state.fill = Color.transparent;     // A line has no inside to fill
@@ -643,6 +679,7 @@ public class SVGImage : IDrawable {
             Transform(shape, operations);
             clip.operations.AddRange(operations);
         }
+        CountOperations(clipPath.GetChildren().Count + clip.operations.Count);
         if (clip.operations.Count == 0) {
             state.hidden = true;
             return;
@@ -849,11 +886,17 @@ public class SVGImage : IDrawable {
         AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0}, depth);
         text.CollapseSpaces();
         bool empty = true;
+        int count = 0;
         foreach (SVGText.Run run in text.runs) {
             if (run.text.Length > 0) {
                 empty = false;
             }
+            count += ClipOperations(state.clips);
+            if (reusing.Count > 0) {
+                count += 1 + run.text.Length;
+            }
         }
+        CountOperations(count);
         double[] m = state.matrix;
         if (empty || m[0]*m[3] - m[1]*m[2] == 0.0) {
             return;

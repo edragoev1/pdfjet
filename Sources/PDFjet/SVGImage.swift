@@ -34,6 +34,7 @@ public class SVGImage : Drawable {
     private var clipShapes = [SVGPath]()
     private var reusing = Set<ObjectIdentifier>()
     private var reused = 0
+    private var counted = 0
     private var rules = SVGStyleSheet()
     private var stack = [SVGState]()
     private var root = true
@@ -41,6 +42,14 @@ public class SVGImage : Drawable {
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     static let MAX_REUSED = 1000000
+    // The path operations drawn again, by use elements and as markers, and
+    // written for the clip paths of what is drawn, at most: a use of a path of N
+    // operations was N operations for each element counted by the limit above,
+    // 506 MB for a file of 200 KB, and a clip path of N operations is read for
+    // every element it clips and written for every path in it, 800 MB of page
+    // for 320 KB (review of 30 October 2026). The operations of a file drawn
+    // once are not counted: they grow with the file.
+    static let MAX_OPERATIONS = 4000000
     // How deep the elements being drawn may nest, by groups, use elements and
     // markers, a state on the stack for each: a chain of use elements is flat in
     // the file, so the limit of the XML parser does not see it, and each level
@@ -263,6 +272,22 @@ public class SVGImage : Drawable {
         return attributes
     }
 
+    // Counts operations drawn again or written again, and throws when there
+    // are too many.
+    private func countOperations(_ count: Int) throws {
+        counted += count
+        if counted > SVGImage.MAX_OPERATIONS {
+            throw PDFjetError(message: "The SVG draws more than \(SVGImage.MAX_OPERATIONS)"
+                    + " path operations again, with use elements, markers or clip paths.")
+        }
+    }
+
+    // Returns the operations written for the clip paths of one path, and of
+    // a run of a text.
+    private static func clipOperations(_ clips: [SVGPath]?) -> Int {
+        return (clips ?? []).reduce(0) { $0 + $1.operations.count }
+    }
+
     // The error of elements nested too deep.
     private static func depthError() -> PDFjetError {
         return PDFjetError(message:
@@ -327,6 +352,11 @@ public class SVGImage : Drawable {
             return
         }
         let operations = try SVGImage.shapeOperations(name, values)
+        var count = reusing.isEmpty ? 0 : operations.count
+        if !state.hidden && !operations.isEmpty {
+            count += SVGImage.clipOperations(state.clips) + (state.dashArray?.count ?? 0)
+        }
+        try countOperations(count)
         if name == "line" {
             state.fill = Color.transparent  // A line has no inside to fill
             state.fillCurrent = false
@@ -613,6 +643,7 @@ public class SVGImage : Drawable {
             SVGImage.transform(shape, operations)
             clip.operations.append(contentsOf: operations)
         }
+        try countOperations(clipPath.getChildren().count + clip.operations.count)
         if clip.operations.isEmpty {
             state.hidden = true
             return
@@ -804,6 +835,11 @@ public class SVGImage : Drawable {
         try addRuns(text, node, state, attributes, &pending, stack.count)
         text.collapseSpaces()
         let empty = text.runs.allSatisfy { $0.text.isEmpty }
+        var count = text.runs.count * SVGImage.clipOperations(state.clips)
+        if !reusing.isEmpty {
+            count += text.runs.reduce(0) { $0 + 1 + $1.text.unicodeScalars.count }
+        }
+        try countOperations(count)
         let m = state.matrix
         if empty || m[0]*m[3] - m[1]*m[2] == 0.0 {
             return

@@ -63,10 +63,19 @@ public class SVGImage implements Drawable {
     private List<SVGPath> clipShapes = new ArrayList<SVGPath>();
     private Set<XMLNode> reusing;
     private long reused = 0;
+    private long counted = 0;
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     static final long MAX_REUSED = 1000000;
+    // The path operations drawn again, by use elements and as markers, and
+    // written for the clip paths of what is drawn, at most: a use of a path of N
+    // operations was N operations for each element counted by the limit above,
+    // 506 MB for a file of 200 KB, and a clip path of N operations is read for
+    // every element it clips and written for every path in it, 800 MB of page
+    // for 320 KB (review of 30 October 2026). The operations of a file drawn
+    // once are not counted: they grow with the file.
+    static final long MAX_OPERATIONS = 4000000;
     // How deep the elements being drawn may nest, by groups, use elements and
     // markers, a state on the stack for each: a chain of use elements is flat in
     // the file, so the limit of the XML parser does not see it, and each level
@@ -242,6 +251,28 @@ public class SVGImage implements Drawable {
         }
     }
 
+    // Counts operations drawn again or written again, and throws when there
+    // are too many.
+    private void countOperations(int count) {
+        counted += count;
+        if (counted > MAX_OPERATIONS) {
+            throw new IllegalArgumentException("The SVG draws more than " + MAX_OPERATIONS
+                    + " path operations again, with use elements, markers or clip paths.");
+        }
+    }
+
+    // Returns the operations written for the clip paths of one path, and of
+    // a run of a text.
+    private static int clipOperations(List<SVGPath> clips) {
+        int count = 0;
+        if (clips != null) {
+            for (SVGPath clip : clips) {
+                count += clip.operations.size();
+            }
+        }
+        return count;
+    }
+
     // The error of elements nested too deep.
     private static IllegalArgumentException depthError() {
         return new IllegalArgumentException(
@@ -315,6 +346,11 @@ public class SVGImage implements Drawable {
             return;
         }
         List<PathOp> operations = shapeOperations(name, attributes);
+        int count = reusing.isEmpty() ? 0 : operations.size();
+        if (!state.hidden && !operations.isEmpty()) {
+            count += clipOperations(state.clips) + ((state.dashArray != null) ? state.dashArray.length : 0);
+        }
+        countOperations(count);
         if (name.equals("line")) {
             state = new SVGState(state);
             state.fill = Color.transparent;     // A line has no inside to fill
@@ -631,6 +667,7 @@ public class SVGImage implements Drawable {
             transform(shape, operations);
             clip.operations.addAll(operations);
         }
+        countOperations(clipPath.getChildren().size() + clip.operations.size());
         if (clip.operations.isEmpty()) {
             state.hidden = true;
             return;
@@ -829,11 +866,17 @@ public class SVGImage implements Drawable {
         addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0}, depth);
         text.collapseSpaces();
         boolean empty = true;
+        int count = 0;
         for (SVGText.Run run : text.runs) {
             if (!run.text.isEmpty()) {
                 empty = false;
             }
+            count += clipOperations(state.clips);
+            if (!reusing.isEmpty()) {
+                count += 1 + run.text.length();
+            }
         }
+        countOperations(count);
         double[] m = state.matrix;
         if (empty || m[0]*m[3] - m[1]*m[2] == 0.0) {
             return;

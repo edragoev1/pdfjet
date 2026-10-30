@@ -865,4 +865,34 @@ import Testing
         #expect(elapsed < 20.0, "\(elapsed)")
         #expect(content.hasPrefix("1 0 0 rg\n"), "\(content.prefix(80))")
     }
+
+    private func polygon(_ points: Int) -> String {
+        return "<polygon id=\"p\" points=\"" + String(repeating: "0,0 1,1 ", count: points/2) + "\"/>"
+    }
+
+    @Test func theOperationsDrawnAgainAreLimited() throws {
+        let clipped = "<svg width=\"10\" height=\"10\"><clipPath id=\"c\">" + polygon(10000) + "</clipPath>"
+        for svg in [
+                "<svg width=\"10\" height=\"10\"><defs>" + polygon(10000) + "</defs>"
+                        + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>",
+                clipped + String(repeating: "<g clip-path=\"url(#c)\"/>", count: 1000) + "</svg>",
+                clipped + "<g clip-path=\"url(#c)\">"
+                        + String(repeating: "<rect width=\"1\" height=\"1\"/>", count: 1000) + "</g></svg>",
+                clipped + "<g clip-path=\"url(#c)\"><text>"
+                        + String(repeating: "<tspan>a</tspan>", count: 1000) + "</text></g></svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + String(repeating: "a", count: 10000)
+                        + "</text></defs>" + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>"] {
+            #expect(throws: (any Error).self) {
+                do {
+                    _ = try image(svg)
+                } catch {
+                    #expect("\(error)".contains("path operations"), "\(error)")
+                    throw error
+                }
+            }
+        }
+        // A file drawn once is not counted, however large
+        _ = try image("<svg width=\"10\" height=\"10\"><defs>" + polygon(1000) + "</defs>"
+                + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>")
+    }
 }
