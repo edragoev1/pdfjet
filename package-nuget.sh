@@ -173,9 +173,9 @@ try {
     Console.WriteLine(e.Message);
 }
 CODE
-dotnet build "$check/Check.csproj" -c release -o "$check/without" --nologo -v quiet > /dev/null
+dotnet build "$check/Check.csproj" -c release -o "$check/without" --nologo -v quiet
 rm -rf "$check/obj"
-dotnet build "$check/Check.csproj" -c release -p:World=true -o "$check/with" --nologo -v quiet > /dev/null
+dotnet build "$check/Check.csproj" -c release -p:World=true -o "$check/with" --nologo -v quiet
 without=$(cd "$check/without" && dotnet Check.dll)
 with=$(cd "$check/with" && dotnet Check.dll)
 case $without in

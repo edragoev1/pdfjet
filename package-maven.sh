@@ -75,7 +75,7 @@ rm -rf out/maven/stage "$work" && mkdir -p "$dir" "$worldDir" "$work/docs" "$wor
 # classpath (the owner, 30 October 2026).
 unzip -q -j -o "$zip" "$top/PDFjet.jar" -d "$work"
 cp "$work/PDFjet.jar" "$base.jar"
-mkdir -p "$work/fonts/com/pdfjet/fonts" "$work/world/com/pdfjet/fonts" "$work/world/META-INF"
+mkdir -p "$work/fonts/com/pdfjet/fonts" "$work/world/com/pdfjet/fonts"
 git archive "$ref" resources/fonts | tar -x -C "$work/fonts"
 find "$work/fonts/resources/fonts" \( -name '*.go' -o -name '*.swift' \) -delete
 find "$work/fonts/resources/fonts" -type d -empty -delete
@@ -84,7 +84,10 @@ for family in "$work"/fonts/resources/fonts/*/; do
     mv "${family%/}" "$work/fonts/com/pdfjet/fonts/"
 done
 jar --update --date="$date" --file "$base.jar" -C "$work/fonts" com/pdfjet/fonts
-if unzip -Z1 "$base.jar" | grep -q '^com/pdfjet/fonts/world/'; then
+# Through a variable, not a pipe: grep -q stops at the first match, unzip then
+# dies of SIGPIPE, and with pipefail the pipe fails just when the fonts are there.
+jarFiles=$(unzip -Z1 "$base.jar")
+if grep -q '^com/pdfjet/fonts/world/' <<< "$jarFiles"; then
     echo "$base.jar has the fonts of pdfjet-fonts-world" >&2; exit 1
 fi
 
