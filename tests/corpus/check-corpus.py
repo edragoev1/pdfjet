@@ -187,7 +187,9 @@ def check_file(corpora, relpath, password, command, out):
             port = json.loads(run.stdout)
         except ValueError:
             stderr = run.stderr.decode(errors='replace').strip().splitlines()
-            return relpath, 'fail', [f'crashes: {stderr[-1] if stderr else run.returncode}']
+            stdout = run.stdout.decode(errors='replace').strip()[:200]
+            return relpath, 'fail', [f'crashes: {stderr[-1] if stderr else run.returncode}, '
+                                     f'its output: {stdout!r}']
         if port.get('crash'):
             return relpath, 'fail', [f'crashes: {port["crash"]}']
 
