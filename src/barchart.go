@@ -57,8 +57,11 @@ var barChartPalette = []int32{
 }
 
 // BarChart is a bar chart renderer for PDF pages: one slot per category, the
-// bars of the series grouped inside each slot. See Example_27, of horizontal
-// and vertical bars.
+// bars of the series grouped inside each slot. A value of a line series outside
+// a range that is set cuts its line at the edge of the plot, and the chart says
+// how many are: "2 values outside the range", small, under the plot at its
+// right end, and in its description, in that alone when the plot would not be
+// left room to draw. See Example_27, of horizontal and vertical bars.
 type BarChart struct {
 	x1, y1 float32
 	w, h   float32
@@ -140,7 +143,9 @@ func (chart *BarChart) SetSubtitle(subtitle string) *BarChart {
 // SetAltDescription sets the alternate description of the chart, which a
 // screen reader reads in a PDF/UA document, where the chart is a figure. The
 // default is the title and the subtitle, or "Bar chart" without them, and the
-// values of each series by category. Describe what the chart shows.
+// values of each series by category. Describe what the chart shows. The number
+// of values of the line series outside a range that is set follows it, as the
+// chart prints it.
 func (chart *BarChart) SetAltDescription(altDescription string) *BarChart {
 	chart.altDescription = altDescription
 	return chart
@@ -203,7 +208,8 @@ func (chart *BarChart) AddSeriesWithColors(name string, values []float32, colors
 // AddLineSeries adds a series drawn as a line over the bars, in ink, a dot at
 // each category: a target, the average, or last year. It shares the value axis
 // with the bars, is not stacked, and is in the legend and the description. A
-// value that is NaN or infinite leaves a gap in the line.
+// value that is NaN or infinite leaves a gap in the line, and the chart says
+// how many values are outside a range set with SetValueAxisRange.
 //   - name: the series name, shown in the legend; empty for none.
 //   - values: one value per category.
 func (chart *BarChart) AddLineSeries(name string, values []float32) *BarChart {
@@ -336,7 +342,10 @@ func (chart *BarChart) SetFractionDigits(digits int) *BarChart {
 // SetValueAxisRange sets the range of the value axis, with grid lines on a
 // round step, as SetYAxisRange does in SimpleLineChart and SimpleScatterChart.
 // Without it the range is that of the data, rounded to steps, and always
-// includes 0. A range whose end is not past its start is not set.
+// includes 0. A range whose end is not past its start is not set. A value of a
+// line series outside the range is drawn past the plot, which clips it, and the
+// chart says how many are, under the plot, which is that much shorter, and in
+// its description.
 //   - min: the value at the start of the axis.
 //   - max: the value at the end of the axis.
 func (chart *BarChart) SetValueAxisRange(min, max float32) *BarChart {
@@ -577,6 +586,19 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	y5 := chart.y1 + topMargin
 	x6 := x2 - rightMargin
 	y8 := y2 - bottomMargin
+	// Room for the note, a row of its own under the rest; a chart that has
+	// not the room keeps its plot, and its description says the number
+	note := chart.outsideNote()
+	small := float32(0.8 * f2.size)
+	noteRow := float32(0.0)
+	if note != "" {
+		if above := y8 - float32(1.4*small); above > y5 {
+			noteRow = float32(1.4 * small)
+			y8 = above
+		} else {
+			note = ""
+		}
+	}
 	// No room for the plot, or an axis whose span is past the largest
 	// float, as a set range of -3e38 to 3e38, whose steps are infinite
 	if x6 <= x5 || y8 <= y5 || !isValue(step) {
@@ -930,7 +952,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	page.SetTextRotation(0)
 	xTitle := shorten(f2, f2.size, chart.xAxisTitle, x6-x5)
 	barChartText(page, f2, xTitle, x5+float32(((x6-x5)-f2.StringWidth(f2.size, xTitle))/2.0),
-		y2-float32(bodyHeight/2.0), barChartMuted)
+		y2-float32(bodyHeight/2.0)-noteRow, barChartMuted)
+	if note != "" {
+		drawOutsideNote(page, f2, small, note, x6, chart.x1, x2, y2-float32(bodyHeight/2.0))
+	}
 
 	page.RestoreGraphicsState()
 	page.SetFigureBoundingBox(chart.x1, chart.y1, chart.w, chart.h)
@@ -939,13 +964,32 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 }
 
+// outsideNote returns what the chart says of the values of its line series
+// outside a range that is set, or "" when there are none.
+func (chart *BarChart) outsideNote() string {
+	count := 0
+	if chart.rangeSet {
+		axis := chartAxis{min: chart.min, max: chart.max}
+		n := chart.numberOfCategories()
+		for _, s := range chart.lineSeries {
+			for i := 0; i < min(len(s.values), n); i++ {
+				if isValue(s.values[i]) && !onAxis(s.values[i], axis) {
+					count++
+				}
+			}
+		}
+	}
+	return outsideNote(count, "value")
+}
+
 // getAltDescription returns the alternate description: the one set, or the
 // title, the subtitle and, for each series, its name and its values by
 // category, with the digits of the labels, or, without SetFractionDigits, with
-// two significant digits at least.
+// two significant digits at least; and the values of the line series outside a
+// range that is set.
 func (chart *BarChart) getAltDescription(digits int) string {
 	if chart.altDescription != "" {
-		return chart.altDescription
+		return withNote(chart.altDescription, chart.outsideNote())
 	}
 	var sb strings.Builder
 	sb.WriteString(join(chart.title, chart.subtitle))
@@ -993,6 +1037,9 @@ func (chart *BarChart) getAltDescription(digits int) string {
 		}
 		sb.WriteString(values.String())
 		separator = "; "
+	}
+	if note := chart.outsideNote(); note != "" {
+		sb.WriteString("; " + note)
 	}
 	sb.WriteString(".")
 	return sb.String()

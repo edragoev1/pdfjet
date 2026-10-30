@@ -479,3 +479,37 @@ func TestSimpleLineChartTheNoteIsInTheFigure(t *testing.T) {
 		t.Error("the note is not in the description")
 	}
 }
+
+// A chart barely tall enough keeps its plot, as drawn without the note, and
+// its description says the number: the note cost it the plot.
+func TestSimpleLineChartTheNoteNeverCostsThePlot(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	draw := func(height, middle float32) (string, string) {
+		return testLineNote(pdf, NewSimpleLineChart(font, font).SetSize(300, height).
+			SetYAxisRange(0, 10).AddLine("a", []float32{1, middle, 3}))
+	}
+	// The least height that draws, found from below
+	height := float32(1)
+	for !strings.Contains(func() string { c, _ := draw(height, 2); return c }(), " Td\n") {
+		height += 0.25
+	}
+	for _, h := range []float32{height, height + 1, height + 5} {
+		without, _ := draw(h, 2)
+		with, description := draw(h, 50)
+		if strings.Contains(with, testHex(" outside")) {
+			t.Errorf("%v: the note left no room for the plot", h)
+		}
+		if !strings.Contains(with, "W\nn\n") || strings.Count(with, " Td\n") != strings.Count(without, " Td\n") {
+			t.Errorf("%v: the plot is not drawn", h)
+		}
+		if !strings.HasSuffix(description, "; 1 value outside the range.") {
+			t.Errorf("%v: description %q", h, description)
+		}
+	}
+	// With the room, the note
+	with, _ := draw(height+20, 50)
+	if !strings.Contains(with, testHex(" outside")) {
+		t.Error("no note in a chart with room for it")
+	}
+}
