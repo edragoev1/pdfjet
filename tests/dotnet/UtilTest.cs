@@ -144,6 +144,9 @@ public sealed class UtilTest : IDisposable {
         Assert.Equal(2, Util.CjkLineEnd("あい「", "う"));  // 「 moves down
         Assert.Equal(1, Util.CjkLineEnd("中文", ","));
         Assert.Equal(1, Util.CjkLineEnd("」", "。"));      // no other place to break
+        Assert.Equal(2, Util.CjkLineEnd("あいか", "\u3099"));   // か moves down with its dakuten
+        Assert.Equal(3, Util.CjkLineEnd("あか\u3099", "う"));
+        Assert.Equal(1, Util.CjkLineEnd("あか\u3099", "。"));   // か and its dakuten move down with 。
     }
 
     [Fact]

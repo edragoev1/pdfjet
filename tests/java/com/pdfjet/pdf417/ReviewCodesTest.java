@@ -57,4 +57,17 @@ class ReviewCodesTest {
         assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\nq\n"), content.substring(0, 80));
         assertFalse(content.contains("/Artifact"));
     }
+
+    // The bars are solid whatever dash pattern the page was left with, as in the
+    // charts: a dashed bar is not a bar a scanner reads (the review of 30 October
+    // 2026, E4).
+    @Test
+    void theBarsAreSolidOnADashedPage() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.setStrokeDashPattern("[3 3] 0");
+        new PDF417("Hello, World!").drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("q\n0 0 0 RG\n[] 0 d\n"), content.substring(0, 80));
+    }
 }

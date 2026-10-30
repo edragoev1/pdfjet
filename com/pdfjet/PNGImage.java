@@ -299,16 +299,16 @@ class PNGImage {
             }
         } else if (colorType == 4) {
             // Grayscale image with alpha
-            if (bitDepth == 8) {
-                image = getImageColorType4BitDepth8(inflatedImageData);
+            if (bitDepth == 16) {
+                image = getImageColorType4BitDepth16(inflatedImageData);
             } else {
-                throw new Exception("Image with unsupported bit depth == " + bitDepth);
+                image = getImageColorType4BitDepth8(inflatedImageData);
             }
         } else if (colorType == 6) {
-            if (bitDepth == 8) {
-                image = getImageColorType6BitDepth8(inflatedImageData);
+            if (bitDepth == 16) {
+                image = getImageColorType6BitDepth16(inflatedImageData);
             } else {
-                throw new Exception("Image with unsupported bit depth == " + bitDepth);
+                image = getImageColorType6BitDepth8(inflatedImageData);
             }
         } else if (colorType == 2) {
             // True color image; a PLTE chunk in it is only a suggested palette
@@ -337,7 +337,7 @@ class PNGImage {
             return bitDepth;
         } else if (colorType == 3 && palette != null) {
             return bitDepth;
-        } else if (colorType == 2 && bitDepth == 16) {
+        } else if (colorType != 3 && bitDepth == 16) {
             return 16;
         }
         return 8;
@@ -696,6 +696,36 @@ class PNGImage {
         }
         setAlpha(alpha);
         return gray;
+    }
+
+    // The gray samples of 16 bits are the image, as those of an image without
+    // alpha; the soft mask of a PDF image has 8 bits here, the high byte of
+    // each alpha sample.
+    private byte[] getImageColorType4BitDepth16(byte[] buf) throws Exception {
+        byte[] image = unfilter(buf, this.h, 4 * this.w, 4);
+        byte[] gray = new byte[2 * this.w * this.h];
+        byte[] alpha = new byte[this.w * this.h];
+        for (int i = 0; i < alpha.length; i++) {
+            gray[2 * i] = image[4 * i];
+            gray[2 * i + 1] = image[4 * i + 1];
+            alpha[i] = image[4 * i + 2];
+        }
+        setAlpha(alpha);
+        return gray;
+    }
+
+    // The samples of 16 bits of the colors are the image; the soft mask is
+    // the high byte of each alpha sample.
+    private byte[] getImageColorType6BitDepth16(byte[] buf) throws Exception {
+        byte[] image = unfilter(buf, this.h, 8 * this.w, 8);
+        byte[] idata = new byte[6 * this.w * this.h];   // Image data
+        byte[] alpha = new byte[this.w * this.h];       // Alpha values
+        for (int i = 0; i < alpha.length; i++) {
+            System.arraycopy(image, 8 * i, idata, 6 * i, 6);
+            alpha[i] = image[8 * i + 6];
+        }
+        setAlpha(alpha);
+        return idata;
     }
 
     private byte[] getImageColorType6BitDepth8(byte[] buf) throws Exception {

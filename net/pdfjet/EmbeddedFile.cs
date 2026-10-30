@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -27,7 +28,9 @@ public class EmbeddedFile {
 
     /// <summary>Embeds the file with the specified name into the PDF, compressed with Flate when compress is true.</summary>
     public EmbeddedFile(PDF pdf, String fileName, bool compress) :
-        this(pdf, fileName.Substring(fileName.LastIndexOf('/') + 1),
+        // A Windows path too: its folders gave the name of the user away
+        // (review of 30 October 2026, F1)
+        this(pdf, fileName.Substring(fileName.LastIndexOfAny(new char[] {'/', '\\'}) + 1),
                 new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
     }
 
@@ -97,11 +100,12 @@ public class EmbeddedFile {
         pdf.Append(Token.BeginDictionary);
         pdf.Append("/Type /Filespec\n");
 
-        // The file name as a text string, which every reader decodes the same
-        // way. /UF is the name that readers of PDF 1.7 look for first, and /F
-        // is the one that older readers know; PDF/A-3 requires both.
+        // /UF is the file name as a text string, the one that readers of PDF
+        // 1.7 use, and /F is the file specification string that older readers
+        // know, a string of bytes (ISO 32000-2, 7.11.3, Table 43); PDF/A-3
+        // requires both.
         pdf.Append("/F ");
-        pdf.AppendTextString(fileName);
+        pdf.AppendByteString(FileSpecBytes(fileName));
         pdf.Append("\n");
         pdf.Append("/UF ");
         pdf.AppendTextString(fileName);
@@ -127,6 +131,39 @@ public class EmbeddedFile {
         pdf.EndObj();
 
         this.objNumber = pdf.GetObjNumber();
+    }
+
+    // The file name as the bytes of /F, a file specification string of one
+    // component, the file name (ISO 32000-2, 7.11.2): a solidus in the name
+    // is preceded by a reverse solidus, which tells it from a separator of
+    // components, so that "in/out" is "in\/out"; a reverse solidus in the
+    // name is an underscore, as a reader removes each reverse solidus and
+    // 7.11.2 gives no way to write one that stays, so that "C:\temp\a.txt"
+    // is "C:_temp_a.txt"; each other character from space to tilde (0x20 to
+    // 0x7E) is as it is, and each other one, one Unicode code point, an
+    // underscore, so that "résumé.txt" is "r_sum_.txt". The full name is in
+    // /UF.
+    internal static byte[] FileSpecBytes(String fileName) {
+        List<byte> bytes = new List<byte>(fileName.Length);
+        for (int i = 0; i < fileName.Length; i++) {
+            char ch = fileName[i];
+            if (ch == '/') {
+                bytes.Add((byte) '\\');
+                bytes.Add((byte) '/');
+            } else if (ch == '\\') {
+                bytes.Add((byte) '_');
+            } else if (ch >= 0x20 && ch <= 0x7E) {
+                bytes.Add((byte) ch);
+            } else {
+                // A pair of surrogates is one code point.
+                if (Char.IsHighSurrogate(ch) && i + 1 < fileName.Length &&
+                        Char.IsLowSurrogate(fileName[i + 1])) {
+                    i++;
+                }
+                bytes.Add((byte) '_');
+            }
+        }
+        return bytes.ToArray();
     }
 
     // The media type as a name of PDF: the characters a name cannot hold

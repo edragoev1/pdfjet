@@ -36,6 +36,26 @@ public class ReviewReaderTest {
         return objects;
     }
 
+    // Checks that the PDF of size 2n takes less than three times the PDF of size
+    // n to read, and returns the objects of the PDF of size n, or null when it
+    // cannot be read.
+    private static List<PDFobj> ReadLinearly(int n, Func<int, byte[]> pdf) {
+        byte[] small = pdf(n);
+        byte[] large = pdf(2*n);
+        TestSupport.AssertLinearTime(n, k => {
+            try {
+                TestSupport.Read((k == n) ? small : large);
+            } catch (Exception) {
+                // The time of a PDF that cannot be read counts as well
+            }
+        });
+        try {
+            return TestSupport.Read(small);
+        } catch (Exception) {
+            return null;
+        }
+    }
+
     private static string Repeat(string text, int count) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
@@ -232,13 +252,15 @@ public class ReviewReaderTest {
         // end of the PDF, and its endstream was looked for there 10,000 times.
         // What the reader may read in all is eight times the length of the
         // PDF: the streams past it keep their /Length.
-        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
-        sb.Append(Repeat("x", 1000000));
-        int xref = sb.Length;
-        sb.Append("\nxref\n");
-        sb.Append(Repeat("1 1\n0000000009 00000 n \n", 10000));
-        sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref + 1).Append("\n%%EOF\n");
-        List<PDFobj> objects = ReadQuickly(Latin1(sb.ToString()));
+        List<PDFobj> objects = ReadLinearly(5000, entries => {
+            StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
+            sb.Append(Repeat("x", 100*entries));
+            int xref = sb.Length;
+            sb.Append("\nxref\n");
+            sb.Append(Repeat("1 1\n0000000009 00000 n \n", entries));
+            sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref + 1).Append("\n%%EOF\n");
+            return Latin1(sb.ToString());
+        });
         Assert.NotNull(objects);
         Assert.Single(objects);
         Assert.Equal("1", objects[0].GetValue("/Length"));
@@ -269,14 +291,16 @@ public class ReviewReaderTest {
     public void AnObjectThatTheTableListsManyTimesIsReadWithinABudget() {
         // The object with no endobj was read to the end of the PDF for each of
         // its 1,000 entries.
-        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
-        sb.Append(Repeat("1 ", 500000));
-        sb.Append("] >>\n");
-        int xref = sb.Length;
-        sb.Append("xref\n");
-        sb.Append(Repeat("1 1\n0000000009 00000 n \n", 1000));
-        sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
-        List<PDFobj> objects = ReadQuickly(Latin1(sb.ToString()));
+        List<PDFobj> objects = ReadLinearly(100, entries => {
+            StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
+            sb.Append(Repeat("1 ", 500*entries));
+            sb.Append("] >>\n");
+            int xref = sb.Length;
+            sb.Append("xref\n");
+            sb.Append(Repeat("1 1\n0000000009 00000 n \n", entries));
+            sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
+            return Latin1(sb.ToString());
+        });
         Assert.NotNull(objects);
         Assert.Single(objects);
         Assert.Equal("1 0 obj << /A [ 1", string.Join(" ", objects[0].dict.GetRange(0, 7)));
@@ -330,19 +354,21 @@ public class ReviewReaderTest {
     [Fact]
     public void TheLengthOfAStreamIsFoundByItsNumber() {
         // Every stream looked for its /Length among all the objects.
-        List<string> objects = new List<string> {
-            "<< /Type /Catalog /Pages 2 0 R >>",
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
-        };
-        for (int i = 0; i < 60000; i++) {
-            objects.Add("<< /Length " + (objects.Count + 2) + " 0 R >>\nstream\nq Q\nendstream");
-            objects.Add("3");
-        }
-        List<PDFobj> read = ReadQuickly(PdfWithObjects(objects));
+        List<PDFobj> read = ReadLinearly(10000, count => {
+            List<string> objects = new List<string> {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            };
+            for (int i = 0; i < count; i++) {
+                objects.Add("<< /Length " + (objects.Count + 2) + " 0 R >>\nstream\nq Q\nendstream");
+                objects.Add("3");
+            }
+            return PdfWithObjects(objects);
+        });
         Assert.NotNull(read);
-        Assert.Equal(120003, read.Count);
-        Assert.Equal("q Q", Encoding.Latin1.GetString(read[119999].GetData()));
+        Assert.Equal(20003, read.Count);
+        Assert.Equal("q Q", Encoding.Latin1.GetString(read[19999].GetData()));
     }
 
     [Fact]
@@ -518,6 +544,115 @@ public class ReviewReaderTest {
         // An offset past the end of the stream, which overflowed an int.
         Assert.Equal("(no error)",
                 ReadError("1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj"));
+    }
+
+    // Returns the bytes as LZW data with a code for each, in codes that get one
+    // bit longer as the /EarlyChange says.
+    private static byte[] Lzw(byte[] data, int earlyChange) {
+        List<byte> output = new List<byte>();
+        int bits = 0;
+        int bitCount = 0;
+        void Write(int code, int length) {
+            bits = (bits << length) | code;
+            bitCount += length;
+            while (bitCount >= 8) {
+                bitCount -= 8;
+                output.Add((byte) (bits >> bitCount));
+            }
+            bits &= (1 << bitCount) - 1;
+        }
+        int next = 258;
+        int codeLength = 9;
+        Write(256, codeLength);
+        foreach (byte b in data) {
+            Write(b, codeLength);
+            next++;
+            if (next + earlyChange - 1 >= (1 << codeLength)) {
+                codeLength++;
+            }
+        }
+        Write(257, codeLength);
+        output.Add((byte) (bits << (8 - bitCount)));
+        return output.ToArray();
+    }
+
+    // Returns the data of a stream, of hexadecimal digits, with the entries of
+    // its dictionary, in a PDF.
+    private static byte[] StreamData(string entries, string hex) {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length " + hex.Length + " " + entries + " >>\nstream\n" + hex + "\nendstream"));
+        return objects[3].GetData();
+    }
+
+    [Fact]
+    public void AnLZWStreamHasItsEarlyChange() {
+        // /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+        // no error (review of 30 October 2026, B7).
+        byte[] data = new byte[600];
+        for (int i = 0; i < data.Length; i++) {
+            data[i] = (byte) (i * i % 251);
+        }
+        foreach (int earlyChange in new int[] {1, 0}) {
+            string entries = "/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange " + earlyChange + " >>]";
+            Assert.Equal(data, StreamData(entries, Util.ToHexString(Lzw(data, earlyChange)) + ">"));
+        }
+    }
+
+    [Fact]
+    public void AFlateStreamCanLackItsChecksum() {
+        // It was refused, and in an object stream that failed the PDF (review of
+        // 30 October 2026, B8).
+        byte[] data = Encoding.ASCII.GetBytes("0 0 1 rg 10 10 50 50 re f\n");
+        byte[] deflated = Compressor.Deflate(data);
+        Assert.Equal(data, StreamData("/Filter [/ASCIIHexDecode /FlateDecode]",
+                Util.ToHexString(deflated[..^4]) + ">"));
+    }
+
+    [Fact]
+    public void AFilterThatIsAnObjectAndACryptFilterAreDecoded() {
+        // The data was the raw bytes (review of 30 October 2026, B10).
+        foreach (string filter in new string[] {"/ASCIIHexDecode", "[/ASCIIHexDecode]"}) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+                    filter));
+            Assert.Equal("AB", TestSupport.Latin1(objects[3].GetData()));
+        }
+        Assert.Equal("AB", TestSupport.Latin1(StreamData(
+                "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")));
+    }
+
+    [Theory]
+    [InlineData("/Filter /Crypt", true)]
+    [InlineData("/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]", true)]
+    [InlineData("/Filter /Crypt /DecodeParms << /Name /StdCF >>", false)]
+    [InlineData("/Filter /FlateDecode", false)]
+    public void AnIdentityCryptFilterSaysTheStreamIsNotEncrypted(string entries, bool wanted) {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 " + entries + " >>\nstream\nx\nendstream"));
+        Assert.Equal(wanted, objects[3].HasIdentityCrypt());
+    }
+
+    [Fact]
+    public void ALengthThatIsARealOrNullIsRead() {
+        // The PDF was refused (review of 30 October 2026, B11).
+        foreach (string length in new string[] {"5.0", "null", "5 0 R"}) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length " + length + " >>\nstream\n0 0 m\nendstream",
+                    "5.0"));
+            Assert.Equal("0 0 m", TestSupport.Latin1(objects[3].GetData()));
+        }
     }
 }
 }   // End of namespace PDFjet.NET

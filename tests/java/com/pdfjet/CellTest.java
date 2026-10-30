@@ -268,7 +268,7 @@ class CellTest {
     void aDrawableOfACellStaysWhereTheCallerPutIt() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
-        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));
         image.setLocation(7f, 8f);
         Barcode barcode = new Barcode(Barcode.CODE_128, "12345");
         barcode.setLocation(7f, 8f);
@@ -279,5 +279,25 @@ class CellTest {
         table.drawOn(new Page(pdf, Letter.PORTRAIT));
         TestSupport.assertXY(before[0][0], before[0][1], image.drawOn(null));
         TestSupport.assertXY(before[1][0], before[1][1], barcode.drawOn(null));
+    }
+
+    // Text at the bottom of a cell is over the padding, descent and all: in a cell
+    // as tall as its line it is where text at the top is (the review of 30 October
+    // 2026, E5).
+    private static String drawnAt(Alignment valign) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(
+                new Cell(TestSupport.helvetica(pdf), "gyp").setVerticalAlignment(valign))));
+        Table table = new Table().setTableData(data, 0);
+        table.setLocation(50f, 50f);
+        table.drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    @Test
+    void bottomAlignedTextIsOverThePadding() throws Exception {
+        assertEquals(drawnAt(Alignment.TOP), drawnAt(Alignment.BOTTOM));
     }
 }

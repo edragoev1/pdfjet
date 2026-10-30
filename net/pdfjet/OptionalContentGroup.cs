@@ -125,8 +125,8 @@ public class OptionalContentGroup {
         }
 
         if (components.Count > 0) {
-            page.Append("/OC /OC");
-            page.Append(ocgNumber);
+            page.Append("/OC ");
+            page.Append(page.ResourceName("/Properties", "/OC", ocgNumber, null, objNumber));
             page.Append(" BDC\n");
             foreach (IDrawable component in components) {
                 float[] corner = component.DrawOn(page);

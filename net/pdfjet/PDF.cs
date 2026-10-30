@@ -19,6 +19,8 @@ public sealed class PDF {
     internal List<Image> images = new List<Image>();
     internal List<OptionalContentGroup> groups = new List<OptionalContentGroup>();
     internal Dictionary<String, Int32> states = new Dictionary<String, Int32>();
+    // The fonts PDFjet carries that the document draws in, by their files
+    internal readonly Dictionary<String, Font> bundledFonts = new Dictionary<String, Font>();
     internal List<Stamp> stamps = new List<Stamp>();
     internal Compliance compliance = Compliance.PDF_1_7;
 
@@ -114,7 +116,9 @@ public sealed class PDF {
     private String uuid = Guid.NewGuid().ToString("N");
     private Stream os = null;
     private readonly List<long> objOffset = new List<long>(); // Required by the xref section
-    private String producer = "PDFjet v9.1.5";
+    private const String producer = "PDFjet v9.1.5";
+    // The version of the library, such as 9.1.7, of the producer string
+    internal static readonly String VERSION = producer.Substring("PDFjet v".Length);
     private String title;
     private String author;
     private String subject;
@@ -130,7 +134,8 @@ public sealed class PDF {
     private List<String> acroForm = null;
     private PageLayout? pageLayout = null;
     private PageMode? pageMode = null;
-    private String language = "en-US";
+    internal String language = "en-US";
+    private bool languageSet;       // A PDF that is not of PDF/A or PDF/UA says it only then
     // The files the document carries, in the order they were added.
     private readonly List<EmbeddedFile> associatedFiles = new List<EmbeddedFile>();
     // The files embedded in the document, and whether one is attached to a
@@ -575,6 +580,11 @@ public sealed class PDF {
                 sb.Append("&lt;");
             } else if (ch == '>') {
                 sb.Append("&gt;");
+            } else if (ch == '\r') {
+                // An XML reader turns the character itself into a line feed, and
+                // the metadata did not say what the information dictionary says,
+                // which PDF/A refused (review of 30 October 2026, B9)
+                sb.Append("&#13;");
             } else {
                 sb.Append(ch);
             }
@@ -1187,7 +1197,7 @@ public sealed class PDF {
         Append(Token.BeginDictionary);
         Append("/Type /Catalog\n");
 
-        if (compliance != Compliance.PDF_1_7) {
+        if (compliance != Compliance.PDF_1_7 || languageSet) {
             byte[] languageBytes = Encoding.UTF8.GetBytes(this.language);
             if (encryption != null) {
                 languageBytes = AES256.Encrypt(languageBytes, encryption.GetKey());
@@ -1195,7 +1205,9 @@ public sealed class PDF {
             Append("/Lang <");
             Append(Util.ToHexString(languageBytes));
             Append(">\n");
+        }
 
+        if (compliance != Compliance.PDF_1_7) {
             // Only a tagged document has a structure tree: a PDF/A of level B
             // that said it was marked would say its content is tagged, which
             // it is not.
@@ -1322,7 +1334,9 @@ public sealed class PDF {
                 destination.pageObjNumber = page.objNumber;
                 if (destination.bookmark) {
                     bookmarks.Add(destination);
-                } else {
+                } else if (!destinations.ContainsKey(destination.name)) {
+                    // The first of a name: the parts of a text line wrapped
+                    // by a TextFrame or a TextColumn all have its destination
                     destinations[destination.name] = destination;
                 }
             }
@@ -2061,9 +2075,14 @@ public sealed class PDF {
             for (int j = 0; j < value.Count; j++) {
                 if (IsReference(value, j)) {
                     int number = Int32.Parse(value[j], CultureInfo.InvariantCulture);
-                    if (!numbers.ContainsKey(number) && IsMergedObject(number, objects, mergedPages)) {
-                        numbers[number] = ReserveObjNumber();
-                        queue.Add(objects[number - 1]);
+                    if (!numbers.ContainsKey(number)) {
+                        PDFobj written = PDFobj.ObjectNumbered(objects, number);
+                        if (written != null && written.writtenNumber != 0) {
+                            numbers[number] = written.writtenNumber;
+                        } else if (IsMergedObject(number, objects, mergedPages)) {
+                            numbers[number] = ReserveObjNumber();
+                            queue.Add(objects[number - 1]);
+                        }
                     }
                     j += 2;
                 }
@@ -2121,7 +2140,8 @@ public sealed class PDF {
             return false;
         }
         PDFobj obj = objects[number - 1];
-        if (obj.dict == null || obj.dict.Count == 0) {
+        // A stream with no dictionary is the content that was drawn on a page.
+        if ((obj.dict == null || obj.dict.Count == 0) && obj.stream == null) {
             return false;
         }
         String type = obj.GetValue("/Type");
@@ -2139,6 +2159,10 @@ public sealed class PDF {
             Func<PDFobj, List<String>, List<String>> shared) {
         List<String> value = ValueOf(obj);
         if (obj.stream != null) {
+            if (value.Count == 0) {
+                value.Add("<<");    // Content that was drawn on a page
+                value.Add(">>");
+            }
             SetEntry(value, "/Length", new List<String> { obj.stream.Length.ToString(CultureInfo.InvariantCulture) });
         }
         if (isPage) {
@@ -2703,6 +2727,7 @@ public sealed class PDF {
     /// <returns>this PDF object.</returns>
     public PDF SetLanguage(String language) {
         this.language = language;
+        this.languageSet = true;
         return this;
     }
 
@@ -2887,6 +2912,7 @@ public sealed class PDF {
                 decryptor.DecryptStrings(obj);
             }
             if (obj.dict.Contains("stream")) {
+                obj.readObjects = numbered;     // For a /Filter that is an object of its own
                 obj.SetStreamAndData(buf, obj.GetLength(numbered), decryptor, budget);
             }
 
@@ -3804,7 +3830,8 @@ public sealed class PDF {
             PDFobj obj = stack[stack.Count - 1];
             stack.RemoveAt(stack.Count - 1);
             // The root is a node, whatever it is.
-            if (!first && (prepared.Contains(obj) || IsPageObject(obj))) {
+            if (!first && (prepared.Contains(obj) || IsPageObject(obj)
+                    || (!visited.Contains(obj.number) && TypeLeaf(obj)))) {
                 if (prepared.Add(obj)) {
                     AddInheritedEntries(obj, objects, nodes);
                     ResolveMediaBox(obj, objects);
@@ -3816,7 +3843,7 @@ public sealed class PDF {
             if (!visited.Add(obj.number)) {
                 continue;
             }
-            List<Int32> kids = obj.GetObjectNumbers("/Kids");
+            List<Int32> kids = GetKids(obj, objects);
             for (int i = kids.Count - 1; i >= 0; i--) {
                 int number = kids[i];
                 if (number >= 1 && number <= objects.Count) {   // A kid that the document has.
@@ -3824,6 +3851,40 @@ public sealed class PDF {
                 }
             }
         }
+    }
+
+    // Gives a dictionary in the page tree with no /Type and no /Kids the /Type
+    // /Page it is, which is required but which other programs leave out, and
+    // returns true then: the PDF had no pages, with no error (review of 30
+    // October 2026, B3).
+    private static bool TypeLeaf(PDFobj obj) {
+        List<String> value = ValueOf(obj);
+        if (value.Count == 0 || value[0] != "<<"
+                || EntryIndex(value, "/Type") != -1 || EntryIndex(value, "/Kids") != -1) {
+            return false;
+        }
+        obj.dict.InsertRange(obj.dict.IndexOf("<<") + 1, new String[] {"/Type", "/Page"});
+        return true;
+    }
+
+    // Returns the object numbers of the /Kids of the node, which can be an array
+    // that is an object of its own, "/Kids 5 0 R".
+    private static List<Int32> GetKids(PDFobj node, List<PDFobj> objects) {
+        List<Int32> kids = node.GetObjectNumbers("/Kids");
+        int i = node.EntryIndexOf("/Kids");
+        if (i != -1 && IsReference(node.dict, i + 1) && kids.Count == 1) {
+            PDFobj array = PDFobj.ObjectNumbered(objects, kids[0]);
+            if (array != null) {
+                List<String> tokens = ValueOf(array);
+                if (tokens.Count > 0 && tokens[0] == "[") {
+                    kids = new List<Int32>();
+                    for (int j = 1; IsReference(tokens, j); j += 3) {
+                        kids.Add(Int32.Parse(tokens[j], CultureInfo.InvariantCulture));
+                    }
+                }
+            }
+        }
+        return kids;
     }
 
     // Adds to the page the entries it inherits from the page tree and does
