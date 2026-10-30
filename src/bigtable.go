@@ -411,12 +411,12 @@ func (bt *BigTable) drawFooter() {
 // pages are counted when the table is drawn.
 func (bt *BigTable) countPages() int {
 	pageHeight := bt.pageSize.GetHeight()
-	yTop := bt.y + bt.f1.ascent + bt.f1.descent + bt.f2.ascent + float32(3*bt.verticalPadding)
+	yTop := bt.firstRowY(bt.y)
 	yPos := yTop
 	if bt.startsOnFirstPage() {
 		// The first page can be of another size than the next ones.
 		pageHeight = bt.firstPage.height
-		yPos = bt.firstPageY + bt.f1.ascent + bt.f1.descent + bt.f2.ascent + float32(3*bt.verticalPadding)
+		yPos = bt.firstRowY(bt.firstPageY)
 	}
 	count := 1
 	newPage := false
@@ -433,6 +433,15 @@ func (bt *BigTable) countPages() int {
 		}
 	}
 	return count
+}
+
+// firstRowY returns the baseline of the first row of a page, of a table whose
+// top is there, in the order newPage adds it up: added up otherwise, it can
+// round to another float32, and the count was a page off the drawing.
+func (bt *BigTable) firstRowY(top float32) float32 {
+	y := top + bt.verticalPadding + bt.f1.ascent
+	y += bt.f1.descent + float32(2*bt.verticalPadding) + bt.f2.ascent
+	return y
 }
 
 func (bt *BigTable) drawTextAndLine(fields []string) {
