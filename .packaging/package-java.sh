@@ -33,10 +33,22 @@ if [ -z "$VERSION" ]; then
     echo "Could not read the version from com/pdfjet/PDF.java"
     exit 1
 fi
-NAME="PDFjet-ForJava-Pro-$VERSION"
+# A package is made from HEAD, so HEAD must be the tag of the version: a run
+# on a later commit deleted the zip of the release and made another under its
+# name (review of 30 October 2026). PDFJET_DRAFT=1 makes one to look at before
+# the release instead, -draft in its name, with its folder inside, and leaves
+# the zips of the release as they are.
+DRAFT=""
+if [ -n "${PDFJET_DRAFT:-}" ]; then
+    DRAFT="-draft"
+elif [ "$(git rev-parse HEAD)" != "$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}")" ]; then
+    echo "HEAD is $(git describe --tags --always HEAD), not the tag $VERSION: check out the tag, or set PDFJET_DRAFT=1."
+    exit 1
+fi
+NAME="PDFjet-ForJava-Pro-$VERSION$DRAFT"
 STAGE="build/package-java/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
-CORE_NAME="PDFjet-ForJava-Core-$VERSION"
+CORE_NAME="PDFjet-ForJava-Core-$VERSION$DRAFT"
 REPO=$PWD
 PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
 if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
@@ -44,8 +56,8 @@ if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     exit 1
 fi
 # The version is the same in the four ports, their tests and Example_37, and
-# CHANGELOG.md gives it its date; PDFJET_DRAFT=1 asks for no date, for a
-# package made to look at before the release (review of 17 October 2026).
+# CHANGELOG.md gives it its date; PDFJET_DRAFT=1 asks for no date (review of
+# 17 October 2026).
 if ! util/check-version.sh ${PDFJET_DRAFT:+--draft} > /dev/null; then
     exit 1
 fi
@@ -300,8 +312,12 @@ rm -rf build/package-java
 # GitHub sends to the latest release's file of that name, so that the link
 # never changes; the version is in the name of the folder inside.
 LATEST_ZIP="$(dirname "$CORE_ZIP")/PDFjet-ForJava-Core.zip"
-cp "$CORE_ZIP" "$LATEST_ZIP"
+if [ -z "$DRAFT" ]; then
+    cp "$CORE_ZIP" "$LATEST_ZIP"
+fi
 
 echo "Created $ZIP"
 echo "Created $CORE_ZIP"
-echo "Created $LATEST_ZIP, the same, for the GitHub release"
+if [ -z "$DRAFT" ]; then
+    echo "Created $LATEST_ZIP, the same, for the GitHub release"
+fi

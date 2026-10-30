@@ -33,6 +33,7 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     -d out/production
 jar cf PDFjet.jar -C out/production .
 
+pids=()
 for i in $(seq 1 50);
 do
     if [ $i -lt 10 ]; then
@@ -40,10 +41,12 @@ do
     else
         javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -cp PDFjet.jar examples/Example_$i.java -d out/production &
     fi
+    pids+=($!)
 done
 # Each compile in the background is waited for on its own, so that one that
-# fails stops the script here.
-for pid in $(jobs -p); do
+# fails stops the script here. By the pids taken as they started: jobs -p does
+# not list a job that has ended, so a compile that failed fast was passed over.
+for pid in "${pids[@]}"; do
     wait "$pid"
 done
 

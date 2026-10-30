@@ -284,7 +284,9 @@ def operator_states(template, n):
 
 
 def verapdf(profile, paths):
-    """Runs veraPDF and returns (path, failures) for every file that fails."""
+    """Runs veraPDF and returns (path, failures) for every file that fails, or that it has no
+    result for. A veraPDF that stopped early, or reported fewer files than it was given, used to
+    pass what it never checked (review of 30 October 2026)."""
     command = os.environ.get('VERAPDF', 'verapdf')
     result = subprocess.run([command, '--flavour', profile, '--format', 'mrr', *paths],
                             capture_output=True, text=True)
@@ -293,8 +295,10 @@ def verapdf(profile, paths):
     except ET.ParseError:
         raise RuntimeError(f'veraPDF did not produce a report:\n{result.stderr}')
     failed = []
+    checked = set()
     for job in report.iter('job'):
-        path = job.findtext('item/name')
+        path = job.findtext('item/name') or ''
+        checked.add(os.path.realpath(path))
         validation = job.find('validationReport')
         if validation is None:
             failed.append((path, [job.findtext('.//exceptionMessage') or 'veraPDF could not check the file']))
@@ -303,6 +307,10 @@ def verapdf(profile, paths):
                 f"{rule.get('clause')}-{rule.get('testNumber')}: {(rule.findtext('description') or '').strip()}"
                 for rule in validation.iter('rule') if rule.get('status') == 'failed'
             ]))
+    failed += [(path, ['veraPDF gave no result for the file'])
+               for path in paths if os.path.realpath(path) not in checked]
+    if result.returncode != 0 and not failed:
+        raise RuntimeError(f'veraPDF exited with {result.returncode} and no file failed:\n{result.stderr}')
     return failed
 
 
@@ -325,6 +333,8 @@ def main():
     for n in EXAMPLES:
         for profile in compliance_profiles(java_source(n)):
             by_profile.setdefault(profile, []).append(n)
+    if not by_profile:
+        problems.append('no example declares a PDF/A or PDF/UA profile: veraPDF checked nothing')
     for profile, examples in sorted(by_profile.items()):
         port_of = {
             os.path.realpath(os.path.join(template.format(port=port), f'Example_{n:02d}.pdf')): port

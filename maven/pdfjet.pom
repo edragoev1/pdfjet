@@ -17,9 +17,10 @@
   <url>https://github.com/edragoev1/pdfjet</url>
   <licenses>
     <license>
-      <name>MIT License</name>
-      <url>https://opensource.org/license/mit</url>
+      <name>MIT AND OFL-1.1</name>
+      <url>https://github.com/edragoev1/pdfjet/blob/main/LICENSE</url>
       <distribution>repo</distribution>
+      <comments>PDFjet is under the MIT License; the fonts in its jar are under the SIL Open Font License 1.1, each family with its license. One entry, as a POM with two means a choice of either.</comments>
     </license>
   </licenses>
   <developers>

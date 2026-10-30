@@ -269,6 +269,8 @@ def main():
     with tempfile.TemporaryDirectory() as out:
         command = build_port(args.port, out)
         files = [f for f in corpus_files(args.corpora) if args.only in f[0]]
+        if not files:
+            sys.exit(f'No PDF to check in {args.corpora}: the corpora were not fetched, or --only left none.')
         tasks = [(args.corpora, relpath, password, command, out) for relpath, password in files]
         counts = Counter()
         kinds = Counter()
