@@ -36,6 +36,26 @@ public class ReviewReaderTest {
         return objects;
     }
 
+    // Checks that the PDF of size 2n takes less than three times the PDF of size
+    // n to read, and returns the objects of the PDF of size n, or null when it
+    // cannot be read.
+    private static List<PDFobj> ReadLinearly(int n, Func<int, byte[]> pdf) {
+        byte[] small = pdf(n);
+        byte[] large = pdf(2*n);
+        TestSupport.AssertLinearTime(n, k => {
+            try {
+                TestSupport.Read((k == n) ? small : large);
+            } catch (Exception) {
+                // The time of a PDF that cannot be read counts as well
+            }
+        });
+        try {
+            return TestSupport.Read(small);
+        } catch (Exception) {
+            return null;
+        }
+    }
+
     private static string Repeat(string text, int count) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
@@ -232,13 +252,15 @@ public class ReviewReaderTest {
         // end of the PDF, and its endstream was looked for there 10,000 times.
         // What the reader may read in all is eight times the length of the
         // PDF: the streams past it keep their /Length.
-        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
-        sb.Append(Repeat("x", 1000000));
-        int xref = sb.Length;
-        sb.Append("\nxref\n");
-        sb.Append(Repeat("1 1\n0000000009 00000 n \n", 10000));
-        sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref + 1).Append("\n%%EOF\n");
-        List<PDFobj> objects = ReadQuickly(Latin1(sb.ToString()));
+        List<PDFobj> objects = ReadLinearly(5000, entries => {
+            StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
+            sb.Append(Repeat("x", 100*entries));
+            int xref = sb.Length;
+            sb.Append("\nxref\n");
+            sb.Append(Repeat("1 1\n0000000009 00000 n \n", entries));
+            sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref + 1).Append("\n%%EOF\n");
+            return Latin1(sb.ToString());
+        });
         Assert.NotNull(objects);
         Assert.Single(objects);
         Assert.Equal("1", objects[0].GetValue("/Length"));
@@ -269,14 +291,16 @@ public class ReviewReaderTest {
     public void AnObjectThatTheTableListsManyTimesIsReadWithinABudget() {
         // The object with no endobj was read to the end of the PDF for each of
         // its 1,000 entries.
-        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
-        sb.Append(Repeat("1 ", 500000));
-        sb.Append("] >>\n");
-        int xref = sb.Length;
-        sb.Append("xref\n");
-        sb.Append(Repeat("1 1\n0000000009 00000 n \n", 1000));
-        sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
-        List<PDFobj> objects = ReadQuickly(Latin1(sb.ToString()));
+        List<PDFobj> objects = ReadLinearly(100, entries => {
+            StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
+            sb.Append(Repeat("1 ", 500*entries));
+            sb.Append("] >>\n");
+            int xref = sb.Length;
+            sb.Append("xref\n");
+            sb.Append(Repeat("1 1\n0000000009 00000 n \n", entries));
+            sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
+            return Latin1(sb.ToString());
+        });
         Assert.NotNull(objects);
         Assert.Single(objects);
         Assert.Equal("1 0 obj << /A [ 1", string.Join(" ", objects[0].dict.GetRange(0, 7)));
@@ -330,19 +354,21 @@ public class ReviewReaderTest {
     [Fact]
     public void TheLengthOfAStreamIsFoundByItsNumber() {
         // Every stream looked for its /Length among all the objects.
-        List<string> objects = new List<string> {
-            "<< /Type /Catalog /Pages 2 0 R >>",
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
-        };
-        for (int i = 0; i < 60000; i++) {
-            objects.Add("<< /Length " + (objects.Count + 2) + " 0 R >>\nstream\nq Q\nendstream");
-            objects.Add("3");
-        }
-        List<PDFobj> read = ReadQuickly(PdfWithObjects(objects));
+        List<PDFobj> read = ReadLinearly(10000, count => {
+            List<string> objects = new List<string> {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            };
+            for (int i = 0; i < count; i++) {
+                objects.Add("<< /Length " + (objects.Count + 2) + " 0 R >>\nstream\nq Q\nendstream");
+                objects.Add("3");
+            }
+            return PdfWithObjects(objects);
+        });
         Assert.NotNull(read);
-        Assert.Equal(120003, read.Count);
-        Assert.Equal("q Q", Encoding.Latin1.GetString(read[119999].GetData()));
+        Assert.Equal(20003, read.Count);
+        Assert.Equal("q Q", Encoding.Latin1.GetString(read[19999].GetData()));
     }
 
     [Fact]

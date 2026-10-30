@@ -710,11 +710,15 @@ public class TextFrameTest {
     public void ALongWordJoinedToTheNextIsDrawnInLinearTime() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
-        Paragraph paragraph = new Markup(font, font, font, font, font).Paragraph("**" + new String('x', 400000) + "**y");
-        long milliseconds = TestSupport.ShortestMillis(3000, () => {
-            new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(null);
+        const int letters = 80000;
+        Markup markup = new Markup(font, font, font, font, font);
+        var paragraphs = new Dictionary<int, Paragraph> {
+            {letters, markup.Paragraph("**" + new String('x', letters) + "**y")},
+            {2*letters, markup.Paragraph("**" + new String('x', 2*letters) + "**y")},
+        };
+        TestSupport.AssertLinearTime(letters, n => {
+            new TextFrame(new List<Paragraph> {paragraphs[n]}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(null);
         });
-        Assert.True(milliseconds < 3000, milliseconds + " ms");
     }
 
     // Each frame drawn copied the words left of the text line.
@@ -722,15 +726,16 @@ public class TextFrameTest {
     public void ManyFramesOfOneTextLineAreDrawnInLinearTime() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
-        String text = new System.Text.StringBuilder().Insert(0, "word ", 1000000).ToString();
-        long milliseconds = TestSupport.ShortestMillis(3000, () => {
-            TextFrame frame = new TextFrame(new List<Paragraph> {new Paragraph().Add(new TextLine(font, text))})
-                    .SetLocation(10f, 10f).SetWidth(300f).SetHeight(600f);
+        const int words = 100000;
+        String text = new System.Text.StringBuilder().Insert(0, "word ", 2*words).ToString();
+        TestSupport.AssertLinearTime(words, n => {
+            TextLine line = new TextLine(font, text.Substring(0, 5*n));
+            TextFrame frame = new TextFrame(new List<Paragraph> {new Paragraph().Add(line)})
+                    .SetLocation(10f, 10f).SetWidth(300f).SetHeight(60f);
             while (frame.HasMoreText()) {
                 frame.DrawOn(new Page(pdf, Letter.PORTRAIT, false));
             }
         });
-        Assert.True(milliseconds < 3000, milliseconds + " ms");
     }
 
     // Measured, the text is kept for the frame that draws it.

@@ -310,3 +310,30 @@ func testLetterPortrait() pagesize.PageSize {
 func testShortest(limit time.Duration, work func()) time.Duration {
 	return fuzzShortest(limit, work)
 }
+
+// testLinearTime checks that the work of size 2n takes less than three times
+// the work of size n, each the shortest of three runs: the time of a linear
+// algorithm doubles, and that of a quadratic one, whose time dominates at n,
+// comes near four times. A ratio holds on a busy computer, where limits in
+// seconds failed (CI, 30 October 2026); the sizes are timed in turns, and all
+// again up to three times, as load can fall on one of them only, where a
+// quadratic algorithm fails every time.
+func testLinearTime(t *testing.T, n int, work func(n int)) {
+	t.Helper()
+	var small, large time.Duration
+	for attempt := 0; attempt < 3; attempt++ {
+		small, large = math.MaxInt64, math.MaxInt64
+		for run := 0; run < 3; run++ {
+			start := time.Now()
+			work(n)
+			small = min(small, time.Since(start))
+			start = time.Now()
+			work(2 * n)
+			large = min(large, time.Since(start))
+		}
+		if large < 3*small {
+			return
+		}
+	}
+	t.Errorf("size %d took %v, and size %d %v", 2*n, large, n, small)
+}

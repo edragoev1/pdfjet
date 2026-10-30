@@ -6,7 +6,9 @@
  */
 package com.pdfjet;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -916,20 +918,23 @@ class SVGImageTest {
 
     @Test
     void manyGradientsOfOneGradientOfManyStopsAreReadOnce() throws Exception {
-        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">");
-        for (int i = 0; i < 10000; i++) {
-            svg.append("<stop stop-color=\"red\"/>");
+        final int count = 5000;
+        Map<Integer, String> svgs = new HashMap<Integer, String>();
+        for (int n : new int[] {count, 2*count}) {
+            StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">");
+            for (int i = 0; i < n; i++) {
+                svg.append("<stop stop-color=\"red\"/>");
+            }
+            svg.append("</linearGradient>");
+            for (int i = 0; i < n; i++) {
+                svg.append("<linearGradient id=\"g").append(i).append("\" href=\"#s\"/>");
+            }
+            svg.append("<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>");
+            svgs.put(n, svg.toString());
         }
-        svg.append("</linearGradient>");
-        for (int i = 0; i < 10000; i++) {
-            svg.append("<linearGradient id=\"g").append(i).append("\" href=\"#s\"/>");
-        }
-        svg.append("<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>");
-        long start = System.nanoTime();
-        String content = draw(svg.toString());
-        long elapsed = (System.nanoTime() - start)/1000000;
-        assertTrue(elapsed < 5000, elapsed + " ms");
-        assertTrue(content.startsWith("1 0 0 rg\n"), content);
+        String[] content = new String[1];
+        TestSupport.assertLinearTime(count, n -> content[0] = draw(svgs.get(n)));
+        assertTrue(content[0].startsWith("1 0 0 rg\n"), content[0]);
     }
 
     private static String repeat(String text, int count) {

@@ -862,17 +862,19 @@ import Testing
     }
 
     @Test func manyGradientsOfOneGradientOfManyStopsAreReadOnce() throws {
-        var svg = "<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">"
-        svg += String(repeating: "<stop stop-color=\"red\"/>", count: 10000)
-        svg += "</linearGradient>"
-        for i in 0..<10000 {
-            svg += "<linearGradient id=\"g\(i)\" href=\"#s\"/>"
+        func svg(_ n: Int) -> String {
+            var svg = "<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">"
+            svg += String(repeating: "<stop stop-color=\"red\"/>", count: n)
+            svg += "</linearGradient>"
+            for i in 0..<n {
+                svg += "<linearGradient id=\"g\(i)\" href=\"#s\"/>"
+            }
+            return svg + "<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>"
         }
-        svg += "<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>"
-        let start = Date()
-        let content = try draw(svg)
-        let elapsed = Date().timeIntervalSince(start)
-        #expect(elapsed < 20.0, "\(elapsed)")
+        let count = 2000
+        let svgs = [count: svg(count), 2 * count: svg(2 * count)]
+        var content = ""
+        try expectLinearTime(count) { n in content = try draw(svgs[n]!) }
         #expect(content.hasPrefix("1 0 0 rg\n"), "\(content.prefix(80))")
     }
 

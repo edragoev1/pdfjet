@@ -36,6 +36,20 @@ func testReadQuickly(t *testing.T, pdf []byte) []*PDFobj {
 	return objects
 }
 
+// testReadLinearly checks that the PDF of size 2n takes less than three times
+// the PDF of size n to read, and returns the objects of the PDF of size n, or
+// nil when it cannot be read.
+func testReadLinearly(t *testing.T, n int, pdf func(n int) []byte) []*PDFobj {
+	t.Helper()
+	pdfs := map[int][]byte{n: pdf(n), 2 * n: pdf(2 * n)}
+	testLinearTime(t, n, func(n int) { _, _ = testNewPDF().Read(pdfs[n]) })
+	objects, err := testNewPDF().Read(pdfs[n])
+	if err != nil {
+		return nil
+	}
+	return objects
+}
+
 // testNumberedObjects returns a PDF with no cross-reference table, of a
 // catalog, a page tree of one page and then count objects "<< /A i >>", with
 // or without their endobj.
@@ -177,16 +191,19 @@ func TestReviewReaderAStreamThatTheTableListsManyTimesIsSearchedWithinABudget(t 
 	// of the PDF, and its endstream was looked for there 10,000 times. What
 	// the reader may read in all is eight times the length of the PDF: the
 	// streams past it keep their /Length.
-	var sb strings.Builder
-	sb.WriteString("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
-	sb.WriteString(strings.Repeat("x", 1000000))
-	xref := sb.Len()
-	sb.WriteString("\nxref\n")
-	for i := 0; i < 10000; i++ {
-		sb.WriteString("1 1\n0000000009 00000 n \n")
+	pdf := func(entries int) []byte {
+		var sb strings.Builder
+		sb.WriteString("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
+		sb.WriteString(strings.Repeat("x", 100*entries))
+		xref := sb.Len()
+		sb.WriteString("\nxref\n")
+		for i := 0; i < entries; i++ {
+			sb.WriteString("1 1\n0000000009 00000 n \n")
+		}
+		fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref+1)
+		return []byte(sb.String())
 	}
-	fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref+1)
-	objects := testReadQuickly(t, []byte(sb.String()))
+	objects := testReadLinearly(t, 5000, pdf)
 	if len(objects) != 1 {
 		t.Fatalf("objects %d", len(objects))
 	}
@@ -217,17 +234,20 @@ func TestReviewReaderSectionsWithNoStartxrefAreReadWithinABudget(t *testing.T) {
 func TestReviewReaderAnObjectThatTheTableListsManyTimesIsReadWithinABudget(t *testing.T) {
 	// The object with no endobj was read to the end of the PDF for each of
 	// its 1,000 entries.
-	var sb strings.Builder
-	sb.WriteString("%PDF-1.7\n1 0 obj\n<< /A [")
-	sb.WriteString(strings.Repeat("1 ", 500000))
-	sb.WriteString("] >>\n")
-	xref := sb.Len()
-	sb.WriteString("xref\n")
-	for i := 0; i < 1000; i++ {
-		sb.WriteString("1 1\n0000000009 00000 n \n")
+	pdf := func(entries int) []byte {
+		var sb strings.Builder
+		sb.WriteString("%PDF-1.7\n1 0 obj\n<< /A [")
+		sb.WriteString(strings.Repeat("1 ", 500*entries))
+		sb.WriteString("] >>\n")
+		xref := sb.Len()
+		sb.WriteString("xref\n")
+		for i := 0; i < entries; i++ {
+			sb.WriteString("1 1\n0000000009 00000 n \n")
+		}
+		fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref)
+		return []byte(sb.String())
 	}
-	fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref)
-	objects := testReadQuickly(t, []byte(sb.String()))
+	objects := testReadLinearly(t, 100, pdf)
 	if len(objects) != 1 {
 		t.Fatalf("objects %d", len(objects))
 	}
@@ -298,11 +318,11 @@ func testPDFWithStreams(count int) []byte {
 
 func TestReviewReaderTheLengthOfAStreamIsFoundByItsNumber(t *testing.T) {
 	// Every stream looked for its /Length among all the objects.
-	objects := testReadQuickly(t, testPDFWithStreams(60000))
-	if len(objects) != 120003 {
+	objects := testReadLinearly(t, 10000, testPDFWithStreams)
+	if len(objects) != 20003 {
 		t.Fatalf("objects %d", len(objects))
 	}
-	testWant(t, "q Q", string(objects[119999].GetData()))
+	testWant(t, "q Q", string(objects[19999].GetData()))
 }
 
 func TestReviewReaderTheLengthOfAStreamIsItsNewestVersion(t *testing.T) {

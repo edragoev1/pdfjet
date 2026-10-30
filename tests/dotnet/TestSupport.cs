@@ -307,5 +307,34 @@ public static class TestSupport {
         }
         return shortest;
     }
+
+    // Checks that the work of size 2n takes less than three times
+    // the work of size n, each the shortest of three runs: the time of a linear
+    // algorithm doubles, and that of a quadratic one, whose time dominates at n,
+    // comes near four times. A ratio holds on a busy computer, where limits in
+    // seconds failed (CI, 30 October 2026); the sizes are timed in turns, and all
+    // again up to three times, as load can fall on one of them only, where a
+    // quadratic algorithm fails every time.
+    public static void AssertLinearTime(int n, Action<int> work) {
+        long small = 0L;
+        long large = 0L;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            small = long.MaxValue;
+            large = long.MaxValue;
+            for (int run = 0; run < 3; run++) {
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                work(n);
+                small = Math.Min(small, watch.ElapsedTicks);
+                watch.Restart();
+                work(2*n);
+                large = Math.Min(large, watch.ElapsedTicks);
+            }
+            if (large < 3L*small) {
+                return;
+            }
+        }
+        long perMillisecond = System.Diagnostics.Stopwatch.Frequency/1000L;
+        Assert.Fail("size " + 2*n + " took " + large/perMillisecond + " ms, and size " + n + " " + small/perMillisecond + " ms");
+    }
 }
 }

@@ -670,12 +670,31 @@ import Testing
     @Test func aLongWordJoinedToTheNextIsDrawnInLinearTime() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
-        let paragraph = Markup(font, font, font, font, font)
-                .paragraph("**" + String(repeating: "x", count: 200000) + "**y")
-        let elapsed = shortestTime(.seconds(6)) {
-            TextFrame([paragraph]).setLocation(10, 10).setWidth(300).drawOn(nil)
+        let letters = 40000
+        let markup = Markup(font, font, font, font, font)
+        let paragraphs = [
+            letters: markup.paragraph("**" + String(repeating: "x", count: letters) + "**y"),
+            2 * letters: markup.paragraph("**" + String(repeating: "x", count: 2 * letters) + "**y"),
+        ]
+        expectLinearTime(letters) { n in
+            TextFrame([paragraphs[n]!]).setLocation(10, 10).setWidth(300).drawOn(nil)
         }
-        #expect(elapsed < .seconds(6), "\(elapsed)")
+    }
+
+    // Each frame drawn copied the words left of the text line, in the other
+    // ports.
+    @Test func manyFramesOfOneTextLineAreDrawnInLinearTime() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let words = 20000
+        let texts = [words: String(repeating: "word ", count: words), 2 * words: String(repeating: "word ", count: 2 * words)]
+        expectLinearTime(words) { n in
+            let frame = TextFrame([Paragraph().add(TextLine(font, texts[n]!))])
+                    .setLocation(10, 10).setWidth(300).setHeight(60)
+            while frame.hasMoreText() {
+                frame.drawOn(Page(pdf, Letter.PORTRAIT, false))
+            }
+        }
     }
 
     // Measured, the text is kept for the frame that draws it.

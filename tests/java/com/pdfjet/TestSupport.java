@@ -301,4 +301,37 @@ public final class TestSupport {
         }
         return shortest;
     }
+
+    interface Sized {
+        void run(int n) throws Exception;
+    }
+
+    // Checks that the work of size 2n takes less than three times
+    // the work of size n, each the shortest of three runs: the time of a linear
+    // algorithm doubles, and that of a quadratic one, whose time dominates at n,
+    // comes near four times. A ratio holds on a busy computer, where limits in
+    // seconds failed (CI, 30 October 2026); the sizes are timed in turns, and all
+    // again up to three times, as load can fall on one of them only, where a
+    // quadratic algorithm fails every time.
+    static void assertLinearTime(int n, Sized work) throws Exception {
+        long small = 0L;
+        long large = 0L;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            small = Long.MAX_VALUE;
+            large = Long.MAX_VALUE;
+            for (int run = 0; run < 3; run++) {
+                long start = System.nanoTime();
+                work.run(n);
+                small = Math.min(small, System.nanoTime() - start);
+                start = System.nanoTime();
+                work.run(2*n);
+                large = Math.min(large, System.nanoTime() - start);
+            }
+            if (large < 3L*small) {
+                return;
+            }
+        }
+        org.junit.jupiter.api.Assertions.fail(
+                "size " + 2*n + " took " + large/1000000L + " ms, and size " + n + " " + small/1000000L + " ms");
+    }
 }

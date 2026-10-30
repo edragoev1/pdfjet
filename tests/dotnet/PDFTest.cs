@@ -622,29 +622,32 @@ public class PDFTest {
         // in isartor-6-1-12-t01-fail-a: the node was read again for each
         // entry of each page, which took time that grew as the square of the
         // number of pages, and more than a minute for that file.
-        const int count = 10000;
-        StringBuilder kids = new StringBuilder();
-        string[] objects = new string[count + 2];
-        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
-        for (int i = 0; i < count; i++) {
-            kids.Append(i + 3).Append(" 0 R ");
-            objects[i + 2] = "<< /Type /Page /Parent 2 0 R >>";
-        }
-        objects[1] = "<< /Type /Pages /MediaBox [0 0 595 842] /Kids [" + kids + "] /Count " + count + " >>";
-        byte[] bytes = PdfWithObjects(objects);
+        const int count = 2000;
+        Func<int, byte[]> pdfOf = pageCount => {
+            StringBuilder kids = new StringBuilder();
+            string[] objects = new string[pageCount + 2];
+            objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+            for (int i = 0; i < pageCount; i++) {
+                kids.Append(i + 3).Append(" 0 R ");
+                objects[i + 2] = "<< /Type /Page /Parent 2 0 R >>";
+            }
+            objects[1] = "<< /Type /Pages /MediaBox [0 0 595 842] /Kids [" + kids + "] /Count " + pageCount + " >>";
+            return PdfWithObjects(objects);
+        };
+        byte[] small = pdfOf(count);
+        byte[] large = pdfOf(2*count);
         List<PDFobj> pages = null;
         // Timed on objects read again for each run, as GetPageObjects changes
         // the objects it reads
-        long milliseconds = TestSupport.ShortestMillis(5000, () => {
-            List<PDFobj> read = TestSupport.Read(bytes);
+        TestSupport.AssertLinearTime(count, n => {
+            List<PDFobj> read = TestSupport.Read((n == count) ? small : large);
             pages = new PDF().GetPageObjects(read);
             PDF pdf = new PDF(new MemoryStream());
             pdf.Merge(read);
             pdf.Complete();
         });
-        Assert.Equal(count, pages.Count);
-        Assert.Equal(842f, pages[count - 1].GetPageSize().GetHeight());
-        Assert.True(milliseconds < 5000, "It took " + milliseconds + " ms.");
+        Assert.Equal(2*count, pages.Count);
+        Assert.Equal(842f, pages[2*count - 1].GetPageSize().GetHeight());
     }
 
     [Fact]

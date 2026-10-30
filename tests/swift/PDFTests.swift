@@ -895,21 +895,24 @@ import Testing
         // isartor-6-1-12-t01-fail-a, whose /Kids it copied and walked each
         // time: reading its pages and merging them took over a minute. What
         // a node has or inherits is looked for once.
-        let count = 4000
-        var objects = ["<< /Type /Catalog /Pages 2 0 R >>",
-                "<< /Type /Pages /Kids [" + (3..<(count + 3)).map { "\($0) 0 R" }.joined(separator: " ")
-                        + "] /Count \(count) /Resources << >> >>"]
-        for _ in 0..<count {
-            objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>")
+        func pdf(_ count: Int) -> [UInt8] {
+            var objects = ["<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [" + (3..<(count + 3)).map { "\($0) 0 R" }.joined(separator: " ")
+                            + "] /Count \(count) /Resources << >> >>"]
+            for _ in 0..<count {
+                objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>")
+            }
+            return pdfWithObjects(objects)
         }
-        let bytes = pdfWithObjects(objects)
-        let elapsed = try shortestTime(.seconds(10), prepare: { try TestSupport.read(bytes) }) { source in
-            #expect(TestSupport.pageObjects(source).count == count)
+        let count = 2000
+        let bytes = [count: pdf(count), 2 * count: pdf(2 * count)]
+        try expectLinearTime(count) { n in
+            let source = try TestSupport.read(bytes[n]!)
+            #expect(TestSupport.pageObjects(source).count == n)
             let memory = MemoryPDF()
             try memory.pdf.merge(source)
             try memory.pdf.complete()
         }
-        #expect(elapsed < .seconds(10), "\(elapsed)")
     }
 
     @Test func aResourcesObjectThatNamesItsOwnPageIsAddedToOnce() throws {

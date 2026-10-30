@@ -829,32 +829,32 @@ func TestTextFrameADestinationNameUsedTwiceGoesToTheFirst(t *testing.T) {
 // through the whole word for each row: quadratic time.
 func TestTextFrameALongWordJoinedToTheNextIsDrawnInLinearTime(t *testing.T) {
 	markup := testAdditionsMarkup(testNewPDF())
-	paragraph := markup.Paragraph("**" + strings.Repeat("x", 400000) + "**y")
-	elapsed := testShortest(3*time.Second, func() {
-		frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+	const letters = 80000
+	paragraphs := map[int]*Paragraph{
+		letters:     markup.Paragraph("**" + strings.Repeat("x", letters) + "**y"),
+		2 * letters: markup.Paragraph("**" + strings.Repeat("x", 2*letters) + "**y"),
+	}
+	testLinearTime(t, letters, func(n int) {
+		frame := NewTextFrameFromParagraphs([]*Paragraph{paragraphs[n]}).SetWidth(300)
 		frame.SetLocation(10, 10)
 		frame.DrawOn(nil)
 	})
-	if elapsed > 3*time.Second {
-		t.Errorf("%v", elapsed)
-	}
 }
 
 // Each frame drawn copied the words left of the text line.
 func TestTextFrameManyFramesOfOneTextLineAreDrawnInLinearTime(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
-	text := strings.Repeat("word ", 400000)
-	elapsed := testShortest(3*time.Second, func() {
-		frame := NewTextFrameFromParagraphs([]*Paragraph{NewParagraph().Add(NewTextLine(font, text))}).SetWidth(300).SetHeight(600)
+	const words = 100000
+	text := strings.Repeat("word ", 2*words)
+	testLinearTime(t, words, func(n int) {
+		line := NewTextLine(font, text[:5*n])
+		frame := NewTextFrameFromParagraphs([]*Paragraph{NewParagraph().Add(line)}).SetWidth(300).SetHeight(60)
 		frame.SetLocation(10, 10)
 		for frame.HasMoreText() {
 			frame.DrawOn(NewPageDetached(pdf, letter.Portrait()))
 		}
 	})
-	if elapsed > 3*time.Second {
-		t.Errorf("%v", elapsed)
-	}
 }
 
 // Measured, the text is kept for the frame that draws it.

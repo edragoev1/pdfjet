@@ -12,8 +12,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
@@ -734,15 +736,18 @@ class TextFrameTest {
     void aLongWordJoinedToTheNextIsDrawnInLinearTime() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
-        StringBuilder text = new StringBuilder("**");
-        for (int i = 0; i < 400000; i++) {
-            text.append('x');
+        final int letters = 80000;
+        Map<Integer, Paragraph> paragraphs = new HashMap<Integer, Paragraph>();
+        for (int n : new int[] {letters, 2*letters}) {
+            StringBuilder text = new StringBuilder("**");
+            for (int i = 0; i < n; i++) {
+                text.append('x');
+            }
+            paragraphs.put(n, new Markup(font, font, font, font, font).paragraph(text.append("**y").toString()));
         }
-        Paragraph paragraph = new Markup(font, font, font, font, font).paragraph(text.append("**y").toString());
-        long milliseconds = TestSupport.shortestMillis(3000, () -> {
-            new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(300f).drawOn(null);
+        TestSupport.assertLinearTime(letters, n -> {
+            new TextFrame(Arrays.asList(paragraphs.get(n))).setLocation(10f, 10f).setWidth(300f).drawOn(null);
         });
-        assertTrue(milliseconds < 3000, milliseconds + " ms");
     }
 
     // Each frame drawn copied the words left of the text line.
@@ -750,18 +755,19 @@ class TextFrameTest {
     void manyFramesOfOneTextLineAreDrawnInLinearTime() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
+        final int words = 100000;
         StringBuilder text = new StringBuilder();
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 2*words; i++) {
             text.append("word ");
         }
-        long milliseconds = TestSupport.shortestMillis(3000, () -> {
-            TextFrame frame = new TextFrame(Arrays.asList(new Paragraph().add(new TextLine(font, text.toString()))))
-                    .setLocation(10f, 10f).setWidth(300f).setHeight(600f);
+        TestSupport.assertLinearTime(words, n -> {
+            TextLine line = new TextLine(font, text.substring(0, 5*n));
+            TextFrame frame = new TextFrame(Arrays.asList(new Paragraph().add(line)))
+                    .setLocation(10f, 10f).setWidth(300f).setHeight(60f);
             while (frame.hasMoreText()) {
                 frame.drawOn(new Page(pdf, Letter.PORTRAIT, false));
             }
         });
-        assertTrue(milliseconds < 3000, milliseconds + " ms");
     }
 
     // Measured, the text is kept for the frame that draws it.
