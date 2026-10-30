@@ -161,6 +161,52 @@ func TestMarkdownAdditionsTheSpacesAfterASoftLineBreakAreNotText(t *testing.T) {
 	testWant(t, "one  two", markup.Paragraph("one\n&#32;two").lines[0].text)
 }
 
+// The spaces and tabs before a soft line break are not in the text, as in
+// CommonMark, and those before any line break are counted as they were
+// appended: a space written &#32; stays.
+func TestMarkdownAdditionsTheSpacesBeforeASoftLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one \ntwo", "one\t\ntwo", "one \t\n  two", "one \r\ntwo", "one \rtwo"} {
+		testWant(t, "one two", markup.Paragraph(text).lines[0].text)
+		testWant(t, "one two", markup.Paragraphs(text)[0].lines[0].text)
+	}
+	testWant(t, "one  two", markup.Paragraph("one&#32;\ntwo").lines[0].text)
+	testWant(t, "one ", markup.Paragraph("one&#32;\n  \ntwo").lines[0].text)
+}
+
+// A line break right after a hard line break adds no space to the next row.
+func TestMarkdownAdditionsNoSpaceStartsARowAfterAHardLineBreak(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one<br>\ntwo", "one<br>\n  two", "one<br> \ntwo", "one<br>\r\ntwo",
+		"one<br>\rtwo", "one  \n\ntwo", "one\\\n\ntwo"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) ||
+			paragraph.lines[0].text != "one" || paragraph.lines[1].text != "two" {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+	}
+	testWant(t, "two", markup.Paragraph("\ntwo").lines[0].text)
+}
+
+// \r\n and a lone \r are line endings as \n is, in text, in hard line breaks,
+// in code and between paragraphs.
+func TestMarkdownAdditionsEveryLineEndingIsOne(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	testWant(t, "one two", markup.Paragraph("one\rtwo").lines[0].text)
+	testWant(t, "a b", markup.Paragraph("`a\r\nb`").lines[0].text)
+	testWant(t, "a b", markup.Paragraph("`a\rb`").lines[0].text)
+	for _, text := range []string{"one  \rtwo", "one\\\rtwo"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+	}
+	testWant(t, "0\\", markup.Paragraph("0\\\r").lines[0].text)
+	if got := len(markup.Paragraphs("one\r\rtwo")); got != 2 {
+		t.Errorf("%d paragraphs", got)
+	}
+}
+
 func TestMarkdownAdditionsATextFrameStartsARowAtABreak(t *testing.T) {
 	testAllowCoreFonts(t)
 	pdf := testNewPDF()

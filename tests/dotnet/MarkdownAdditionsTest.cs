@@ -152,6 +152,48 @@ public class MarkdownAdditionsTest {
         Assert.Equal("one  two", markup.Paragraph("one\n&#32;two").lines[0].text);
     }
 
+    // The spaces and tabs before a soft line break are not in the text, as in
+    // CommonMark, and those before any line break are counted as they were
+    // appended: a space written &#32; stays.
+    [Fact]
+    public void TheSpacesBeforeASoftLineBreakAreNotText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one \ntwo", "one\t\ntwo", "one \t\n  two", "one \r\ntwo", "one \rtwo"}) {
+            Assert.Equal("one two", markup.Paragraph(text).lines[0].text);
+            Assert.Equal("one two", markup.Paragraphs(text)[0].lines[0].text);
+        }
+        Assert.Equal("one  two", markup.Paragraph("one&#32;\ntwo").lines[0].text);
+        Assert.Equal("one ", markup.Paragraph("one&#32;\n  \ntwo").lines[0].text);
+    }
+
+    // A line break right after a hard line break adds no space to the next row.
+    [Fact]
+    public void NoSpaceStartsARowAfterAHardLineBreak() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one<br>\ntwo", "one<br>\n  two", "one<br> \ntwo", "one<br>\r\ntwo",
+                "one<br>\rtwo", "one  \n\ntwo", "one\\\n\ntwo"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Equal(new List<bool> {true, false}, Breaks(paragraph));
+            Assert.Equal("one", paragraph.lines[0].text);
+            Assert.Equal("two", paragraph.lines[1].text);
+        }
+        Assert.Equal("two", markup.Paragraph("\ntwo").lines[0].text);
+    }
+
+    // \r\n and a lone \r are line endings as \n is, in text, in hard line
+    // breaks, in code and between paragraphs.
+    [Fact]
+    public void EveryLineEndingIsOne() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        Assert.Equal("one two", markup.Paragraph("one\rtwo").lines[0].text);
+        Assert.Equal("a b", markup.Paragraph("`a\r\nb`").lines[0].text);
+        Assert.Equal("a b", markup.Paragraph("`a\rb`").lines[0].text);
+        Assert.Equal(new List<bool> {true, false}, Breaks(markup.Paragraph("one  \rtwo")));
+        Assert.Equal(new List<bool> {true, false}, Breaks(markup.Paragraph("one\\\rtwo")));
+        Assert.Equal("0\\", markup.Paragraph("0\\\r").lines[0].text);
+        Assert.Equal(2, markup.Paragraphs("one\r\rtwo").Count);
+    }
+
     [Fact]
     public void ATextFrameStartsARowAtABreak() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();

@@ -30,9 +30,10 @@ import (
 // breaks, which TextFrame draws as the end of a row, and the spaces before
 // the line break are not in the text; two spaces and a line break at the end
 // of the text are not, and are dropped, and a backslash at the end of the text
-// is a backslash, as in CommonMark. Any other line break is a space. The
-// spaces and tabs at the start of the line after a line break, hard or not,
-// are not in the text, as in CommonMark. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+// is a backslash, as in CommonMark. Any other line break is a space, none at
+// the start of a row. \n, \r\n and \r are each a line break. The spaces and
+// tabs around a line break, hard or not, are not in the text, as in CommonMark,
+// and a space written &#32; is. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 // &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 // the numbers &#8212; and &#x2014;, are the characters they name.
 //
@@ -117,8 +118,7 @@ func (markup *Markup) SetLinkUnderline(underline bool) *Markup {
 func (markup *Markup) Paragraphs(text string) []*Paragraph {
 	paragraphs := make([]*Paragraph, 0)
 	var buf strings.Builder
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.TrimSuffix(line, "\r")
+	for _, line := range strings.Split(markupLineFeeds(text), "\n") {
 		if trimSpace(line) == "" {
 			paragraphs = markup.addParagraph(paragraphs, &buf)
 		} else {
@@ -145,10 +145,16 @@ func (markup *Markup) addParagraph(paragraphs []*Paragraph, buf *strings.Builder
 	return paragraphs
 }
 
+// markupLineFeeds returns the text with its line endings \n: the parser sees
+// no \r\n or \r.
+func markupLineFeeds(text string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n")
+}
+
 // Paragraph returns the text as one paragraph: a text line for each run of
 // text in one style, each joined to the text before it.
 func (markup *Markup) Paragraph(text string) *Paragraph {
-	parser := newMarkupParser([]rune(text))
+	parser := newMarkupParser([]rune(markupLineFeeds(text)))
 	if end := parser.trailingBreak(); end < len(parser.text) {
 		// A hard line break at the end of the text is no break, as in
 		// CommonMark, and the whitespace at the end is dropped: "0  \n" is
@@ -336,10 +342,12 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 	text := parser.text
 	first := len(nodes)
 	buf := make([]rune, 0)
+	// The spaces and tabs that end at spaceEnd, each one space in the buffer.
+	spaces, spaceEnd := 0, start
 	i := start
 	for i < end {
 		ch := text[i]
-		if breakEnd := parser.breakEnd(i, end); breakEnd > i {
+		if breakEnd := parser.breakEnd(i, end); breakEnd > i || ch == '\n' {
 			if ch == '\\' && parser.onlySpaceFrom(breakEnd) {
 				// A backslash at the end of the text is text, and no hard
 				// line break, as in CommonMark: "0\\\n" is the text line
@@ -348,19 +356,27 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 				i = end
 				continue
 			}
-			if ch == '\r' || ch == '\n' {
-				// The spaces before a hard line break are not in the text,
-				// as in CommonMark: "one  \ntwo" is "one", a break and "two"
-				for k := i; k > start && isJavaWhitespace(text[k-1]) &&
-					len(buf) > 0 && buf[len(buf)-1] == ' '; k-- {
-					buf = buf[:len(buf)-1]
-				}
+			if ch == '\n' && spaceEnd == i {
+				// The spaces before a line break are not in the text, as in
+				// CommonMark: "one  \ntwo" is "one", a break and "two"
+				buf = buf[:len(buf)-spaces]
 			}
-			buf, nodes = markupFlush(buf, link, nodes)
-			nodes = append(nodes, &markupNode{flags: markupBreak, link: link})
-			i = breakEnd
+			spaces = 0
+			if breakEnd > i {
+				buf, nodes = markupFlush(buf, link, nodes)
+				nodes = append(nodes, &markupNode{flags: markupBreak, link: link})
+				i = breakEnd
+			} else {
+				// A line break is a space, but for one at the start of a row
+				if len(buf) > 0 || (len(nodes) > 0 && nodes[len(nodes)-1].flags&markupBreak == 0) {
+					buf = append(buf, ' ')
+					spaces = 1
+				}
+				i++
+			}
 			if text[i-1] == '\n' {
 				i = parser.lineStart(i, end)
+				spaceEnd = i
 			}
 		} else if code, entityEnd := parser.entity(i, end); entityEnd > i {
 			buf = append(buf, code)
@@ -428,19 +444,19 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 			nodes = parser.parse(i+1, close, parser.decoded(close+2, urlEnd), nodes)
 			i = urlEnd + 1
 		} else {
+			if ch == ' ' || ch == '\t' {
+				if spaceEnd != i {
+					spaces = 0
+				}
+				spaces++
+				spaceEnd = i + 1
+			}
 			if isJavaWhitespace(ch) {
 				buf = append(buf, ' ')
 			} else {
 				buf = append(buf, ch)
 			}
 			i++
-			if ch == '\r' && i < end && text[i] == '\n' {
-				// A \r\n is one line ending, and one space
-				i++
-			}
-			if text[i-1] == '\n' {
-				i = parser.lineStart(i, end)
-			}
 		}
 	}
 	_, nodes = markupFlush(buf, link, nodes)
@@ -493,19 +509,11 @@ func (parser *markupParser) lineStart(i, end int) int {
 func (parser *markupParser) breakEnd(i, end int) int {
 	text := parser.text
 	ch := text[i]
-	// The line break of a text of \r\n line ends too
-	newline := i
-	if ch == '\r' && i+1 < end && text[i+1] == '\n' {
-		newline = i + 1
-	}
-	if text[newline] == '\n' && i >= 2 && text[i-1] == ' ' && text[i-2] == ' ' {
-		return newline + 1
+	if ch == '\n' && i >= 2 && text[i-1] == ' ' && text[i-2] == ' ' {
+		return i + 1
 	}
 	if ch == '\\' && i+1 < end && text[i+1] == '\n' {
 		return i + 2
-	}
-	if ch == '\\' && i+2 < end && text[i+1] == '\r' && text[i+2] == '\n' {
-		return i + 3
 	}
 	if ch == '<' && i+3 < end && (text[i+1] == 'b' || text[i+1] == 'B') &&
 		(text[i+2] == 'r' || text[i+2] == 'R') {
@@ -744,7 +752,7 @@ func (parser *markupParser) closingBackticks(length, from, end int) int {
 func markupCodeText(code []rune) string {
 	code = append([]rune(nil), code...)
 	for i, ch := range code {
-		if ch == '\n' || ch == '\r' {
+		if ch == '\n' {
 			code[i] = ' '
 		}
 	}

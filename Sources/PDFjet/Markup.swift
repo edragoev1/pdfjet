@@ -25,9 +25,10 @@ import Foundation
 /// breaks, which TextFrame draws as the end of a row, and the spaces before
 /// the line break are not in the text; two spaces and a line break at the end
 /// of the text are not, and are dropped, and a backslash at the end of the text
-/// is a backslash, as in CommonMark. Any other line break is a space. The
-/// spaces and tabs at the start of the line after a line break, hard or not,
-/// are not in the text, as in CommonMark. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+/// is a backslash, as in CommonMark. Any other line break is a space, none at
+/// the start of a row. \n, \r\n and \r are each a line break. The spaces and
+/// tabs around a line break, hard or not, are not in the text, as in CommonMark,
+/// and a space written &#32; is. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 /// &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 /// the numbers &#8212; and &#x2014;, are the characters they name.
 ///
@@ -119,17 +120,14 @@ public class Markup {
         var buf = [UInt16]()
         // The lines of the text, split at each \n as in Java's
         // text.split("\n", -1), in UTF-16 code units.
-        let units = Array(text.utf16)
+        let units = Markup.lineFeeds(Array(text.utf16))
         var start = 0
         while start <= units.count {
             var end = start
             while end < units.count && units[end] != 0x0A {
                 end += 1
             }
-            var line = units[start..<end]
-            if line.last == 0x0D {
-                line = line.dropLast()
-            }
+            let line = units[start..<end]
             if Markup.isBlank(line) {
                 addParagraph(&paragraphs, &buf)
             } else {
@@ -161,6 +159,21 @@ public class Markup {
         }
     }
 
+    // Returns the UTF-16 code units with their line endings \n: the parser sees
+    // no \r\n or \r.
+    private static func lineFeeds(_ units: [UInt16]) -> [UInt16] {
+        var result = [UInt16]()
+        result.reserveCapacity(units.count)
+        for (i, unit) in units.enumerated() {
+            if unit != 0x0D {
+                result.append(unit)
+            } else if i + 1 == units.count || units[i + 1] != 0x0A {
+                result.append(0x0A)
+            }
+        }
+        return result
+    }
+
     ///
     /// Returns the text as one paragraph: a text line for each run of text in
     /// one style, each joined to the text before it.
@@ -169,13 +182,13 @@ public class Markup {
     /// - Returns: the paragraph.
     ///
     public func paragraph(_ text: String) -> Paragraph {
-        var parser = Parser(text)
+        var parser = Parser(Markup.lineFeeds(Array(text.utf16)))
         let end = parser.trailingBreak()
         if end < parser.text.count {
             // A hard line break at the end of the text is no break, as in
             // CommonMark, and the whitespace at the end is dropped: "0  \n"
             // is the text line "0"
-            parser = Parser(String(decoding: parser.text[..<end], as: UTF16.self))
+            parser = Parser(Array(parser.text[..<end]))
         }
         var nodes = [Node]()
         parser.parse(0, parser.text.count, nil, &nodes)
@@ -303,8 +316,7 @@ public class Markup {
         private var backtickRuns = [Int: [Int]]()
         private var backtickCursor = [Int: Int]()
 
-        init(_ string: String) {
-            let text = Array(string.utf16)
+        init(_ text: [UInt16]) {
             let n = text.count
             var closingBracket = [Int](repeating: -1, count: n)
             var open = [Int]()
@@ -373,7 +385,6 @@ public class Markup {
         private static let closeParenthesis = UInt16(UInt8(ascii: ")"))
         private static let space = UInt16(UInt8(ascii: " "))
         private static let newline = UInt16(UInt8(ascii: "\n"))
-        private static let carriageReturn = UInt16(UInt8(ascii: "\r"))
         private static let tab = UInt16(UInt8(ascii: "\t"))
         private static let slash = UInt16(UInt8(ascii: "/"))
         private static let ampersand = UInt16(UInt8(ascii: "&"))
@@ -391,6 +402,10 @@ public class Markup {
         func parse(_ start: Int, _ end: Int, _ link: String?, _ nodes: inout [Node]) {
             let first = nodes.count
             var buf = [UInt16]()
+            // The spaces and tabs that end at spaceEnd, each one space in the
+            // buffer.
+            var spaces = 0
+            var spaceEnd = start
             var i = start
             while i < end {
                 let ch = text[i]
@@ -401,23 +416,30 @@ public class Markup {
                     // "0\\"
                     buf.append(ch)
                     i = end
-                } else if breakEnd > i {
-                    if ch == Parser.carriageReturn || ch == Parser.newline {
-                        // The spaces before a hard line break are not in the
-                        // text, as in CommonMark: "one  \ntwo" is "one", a
-                        // break and "two"
-                        var k = i
-                        while k > start && Markup.isWhitespace(text[k - 1]) &&
-                            !buf.isEmpty && buf[buf.count - 1] == Parser.space {
-                            buf.removeLast()
-                            k -= 1
-                        }
+                } else if breakEnd > i || ch == Parser.newline {
+                    if ch == Parser.newline && spaceEnd == i {
+                        // The spaces before a line break are not in the text,
+                        // as in CommonMark: "one  \ntwo" is "one", a break
+                        // and "two"
+                        buf.removeLast(spaces)
                     }
-                    Parser.flush(&buf, link, &nodes)
-                    nodes.append(Node("", Markup.BREAK, link))
-                    i = breakEnd
+                    spaces = 0
+                    if breakEnd > i {
+                        Parser.flush(&buf, link, &nodes)
+                        nodes.append(Node("", Markup.BREAK, link))
+                        i = breakEnd
+                    } else {
+                        // A line break is a space, but for one at the start of
+                        // a row
+                        if !buf.isEmpty || (nodes.last.map { $0.flags & Markup.BREAK == 0 } ?? false) {
+                            buf.append(Parser.space)
+                            spaces = 1
+                        }
+                        i += 1
+                    }
                     if text[i - 1] == Parser.newline {
                         i = lineStart(i, end)
+                        spaceEnd = i
                     }
                 } else if let entity = entity(i, end) {
                     buf.append(contentsOf: Unicode.Scalar(entity.code)!.utf16)
@@ -480,15 +502,15 @@ public class Markup {
                     parse(i + 1, close, decoded(close + 2, urlEnd), &nodes)
                     i = urlEnd + 1
                 } else {
+                    if ch == Parser.space || ch == Parser.tab {
+                        if spaceEnd != i {
+                            spaces = 0
+                        }
+                        spaces += 1
+                        spaceEnd = i + 1
+                    }
                     buf.append(Markup.isWhitespace(ch) ? Parser.space : ch)
                     i += 1
-                    if ch == Parser.carriageReturn && i < end && text[i] == Parser.newline {
-                        // A \r\n is one line ending, and one space
-                        i += 1
-                    }
-                    if text[i - 1] == Parser.newline {
-                        i = lineStart(i, end)
-                    }
                 }
             }
             Parser.flush(&buf, link, &nodes)
@@ -544,17 +566,11 @@ public class Markup {
         // <br>, <br/> or <br /> in capitals or not.
         private func breakEnd(_ i: Int, _ end: Int) -> Int {
             let ch = text[i]
-            // The line break of a text of \r\n line ends too
-            let newline = (ch == Parser.carriageReturn && i + 1 < end && text[i + 1] == Parser.newline) ? i + 1 : i
-            if text[newline] == Parser.newline && i >= 2 && text[i - 1] == Parser.space && text[i - 2] == Parser.space {
-                return newline + 1
+            if ch == Parser.newline && i >= 2 && text[i - 1] == Parser.space && text[i - 2] == Parser.space {
+                return i + 1
             }
             if ch == Parser.backslash && i + 1 < end && text[i + 1] == Parser.newline {
                 return i + 2
-            }
-            if ch == Parser.backslash && i + 2 < end && text[i + 1] == Parser.carriageReturn
-                    && text[i + 2] == Parser.newline {
-                return i + 3
             }
             if ch == Parser.lessThan && i + 3 < end && (text[i + 1] == Parser.letterB || text[i + 1] == Parser.capitalB)
                     && (text[i + 2] == Parser.letterR || text[i + 2] == Parser.capitalR) {
@@ -790,7 +806,7 @@ public class Markup {
         // The text of a code span: a line break is a space, and one space at
         // each end is taken away when both ends have one, as in `` `a` ``.
         private static func codeText(_ units: ArraySlice<UInt16>) -> String {
-            var code = units.map { ($0 == 0x0A || $0 == 0x0D) ? space : $0 }[...]
+            var code = units.map { $0 == 0x0A ? space : $0 }[...]
             if code.count >= 2 && code.first == space && code.last == space
                     && !Markup.isBlank(code) {
                 code = code.dropFirst().dropLast()

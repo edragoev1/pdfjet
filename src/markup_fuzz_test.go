@@ -74,7 +74,7 @@ func FuzzMarkup(f *testing.F) {
 			// Two spaces before a line break make a hard line break, which
 			// ends the text line.
 			if !strings.ContainsAny(text, "*_~`[]()<\\") && !strings.Contains(text, "://") &&
-				!strings.Contains(text, "  \n") && !strings.Contains(text, "  \r\n") {
+				!strings.Contains(text, "  \n") && !strings.Contains(text, "  \r") {
 				fuzzCheckPlainMarkup(t, text, paragraph)
 			}
 			paragraphs := append(markup.Paragraphs(text), paragraph)
@@ -98,25 +98,36 @@ func FuzzMarkup(f *testing.F) {
 
 // fuzzCheckPlainMarkup checks the paragraph of a text with none of the marks:
 // one text line of the text, as characters, with each whitespace character a
-// space, a \r\n one, and the spaces and tabs at the start of a line left out,
-// or none when that is only spaces and control characters.
+// space, a \r\n or a \r a line break, each line break one space, none at the
+// start, and the spaces and tabs around it left out, or none when that is only
+// spaces and control characters.
 func fuzzCheckPlainMarkup(t *testing.T, text string, paragraph *Paragraph) {
-	runes := []rune(text)
+	runes := []rune(strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n"))
 	want := make([]rune, 0, len(runes))
+	spaces := 0
 	for i := 0; i < len(runes); i++ {
 		ch := runes[i]
-		if ch == '\r' && i+1 < len(runes) && runes[i+1] == '\n' {
-			i++
+		if ch == '\n' {
+			want = want[:len(want)-spaces]
+			spaces = 0
+			if len(want) > 0 {
+				want = append(want, ' ')
+				spaces = 1
+			}
+			for i+1 < len(runes) && (runes[i+1] == ' ' || runes[i+1] == '\t') {
+				i++
+			}
+			continue
+		}
+		if ch == ' ' || ch == '\t' {
+			spaces++
+		} else {
+			spaces = 0
 		}
 		if isJavaWhitespace(ch) {
 			ch = ' '
 		}
 		want = append(want, ch)
-		if runes[i] == '\n' {
-			for i+1 < len(runes) && (runes[i+1] == ' ' || runes[i+1] == '\t') {
-				i++
-			}
-		}
 	}
 	if trimSpace(string(want)) == "" {
 		if len(paragraph.lines) != 0 {
