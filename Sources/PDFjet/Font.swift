@@ -329,9 +329,10 @@ public class Font {
     /// structs, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read,
     /// when there is no such file, from the folder resources/fonts of the
     /// working directory, or else from the bundle of PDFjetFonts, which PDFjet
-    /// depends on; the CJK fonts, such as IBMPlexSansJP.Regular, from
-    /// resources/fonts/cjk, or else from the product PDFjetFontsCJK, which an
-    /// app that draws in them adds, and a CJK font not found says so. A path to a
+    /// depends on; the fonts of the other scripts than the European ones, such
+    /// as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular, from
+    /// resources/fonts/world, or else from the product PDFjetFontsWorld, which
+    /// an app that draws in them adds, and such a font not found says so. A path to a
     /// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
     /// opens the .ttf or else the .otf file of the same name beside it.
     ///
@@ -350,15 +351,16 @@ public class Font {
     // Returns the bytes of the font file of the path, in one read, as Java, C#
     // and Go read it, or, when there is no such file, of the font of that
     // name that PDFjet carries, from resources/fonts or the bundle of
-    // PDFjetFonts, or of PDFjetFontsCJK for a CJK font; a font it does not
-    // carry throws, and so does a CJK font of an app without PDFjetFontsCJK,
-    // saying to add it.
+    // PDFjetFonts, or of PDFjetFontsWorld for a font of resources/fonts/world;
+    // a font it does not carry throws, and so does a font of
+    // resources/fonts/world of an app without PDFjetFontsWorld, saying to add
+    // it.
     static func open(_ fontPath: String) throws -> [UInt8] {
         if !FileManager.default.fileExists(atPath: fontPath) {
             if let url = BundledFonts.url(fontPath), let data = try? Data(contentsOf: url) {
                 return [UInt8](data)
             }
-            if let message = BundledFonts.cjkMissing(fontPath) {
+            if let message = BundledFonts.worldMissing(fontPath) {
                 throw PDFjetError(message: message)
             }
             let path = fontPath.replacingOccurrences(of: "\\", with: "/")

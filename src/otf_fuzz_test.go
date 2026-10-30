@@ -33,7 +33,7 @@ import (
 // loca, marks and no kerning (Cascadia Mono, JetBrains Mono before 9.1.7),
 // and an OpenType font whose glyphs are in a CFF table (IBM Plex Sans).
 var fuzzOpenTypeFontSeeds = []string{
-	"../resources/fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf",
+	"../resources/fonts/world/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf",
 	"../resources/fonts/CascadiaMono/CascadiaMono-Regular.ttf",
 	"../tests/fonts/IBMPlexSans-Regular.otf",
 }

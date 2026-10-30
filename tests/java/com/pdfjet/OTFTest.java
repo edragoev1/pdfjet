@@ -204,7 +204,7 @@ class OTFTest {
         // before 9.1.7), so sCapHeight is changed to 999 to tell the two
         // apart. IBM Plex Sans Thai has the short offsets of loca, and IBM
         // Plex Math the long ones, as Noto Sans had.
-        for (String path : new String[] {THAI, "fonts/IBMPlexMath/IBMPlexMath-Regular.ttf"}) {
+        for (String path : new String[] {THAI, "tests/fonts/IBMPlexMath-Regular.ttf"}) {
             byte[] font = font(path);
             int os2 = table(font, "OS/2");
             font = with(font, os2 + 88, 999);

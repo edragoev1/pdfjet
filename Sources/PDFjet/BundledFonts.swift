@@ -9,48 +9,61 @@ import PDFjetFonts
 
 /// The fonts PDFjet carries, in resources/fonts, each family in a folder of
 /// its name, with its license: IBM Plex Sans and Serif, from Thin to Bold,
-/// and Cascadia Mono, from Light to Bold, upright and italic;
-/// IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; IBM Plex Math; and,
-/// in resources/fonts/cjk, IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold
-/// and Bold, as .otf. All are under the SIL Open Font License 1.1. A path to
-/// one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the
-/// constants of the font structs, is read, when there is no such file, from
-/// the folder resources/fonts of the working directory, or else from the
-/// resource bundle of the module PDFjetFonts, which PDFjet depends on, or of
-/// the product PDFjetFontsCJK for the CJK fonts, and the text of an SVG image
-/// is drawn in them unless a font is set.
+/// and Cascadia Mono, from Light to Bold, upright and italic, for every
+/// European language, in Latin, Greek and Cyrillic; and, in
+/// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to
+/// Bold, and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as
+/// .otf. All are under the SIL Open Font License 1.1. A path to one of them,
+/// such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the
+/// font structs, is read, when there is no such file, from the folder
+/// resources/fonts of the working directory, or else from the resource
+/// bundle of the module PDFjetFonts, which PDFjet depends on, or of the
+/// product PDFjetFontsWorld for the fonts of resources/fonts/world, and the
+/// text of an SVG image is drawn in them unless a font is set.
 ///
-/// The library does not depend on PDFjetFontsCJK, so that an app carries the
-/// 48 MB of the CJK fonts only when its developer adds that product (the
+/// The library does not depend on PDFjetFontsWorld, so that an app carries
+/// the 52 MB of those fonts only when its developer adds that product (the
 /// owner, 30 October 2026). Swift has no code run on import, so PDFjet finds
 /// the bundle by its name, which SwiftPM gives it, PackageName_TargetName:
-/// from the command line, PDFjet_PDFjetFontsCJK.bundle, or .resources on
+/// from the command line, PDFjet_PDFjetFontsWorld.bundle, or .resources on
 /// Linux with the native build system, beside the executable; in an app that
-/// Xcode builds, PDFjet_PDFjetFontsCJK.bundle among the resources of the app,
-/// or of the framework that links PDFjet. Those are the places the bundle's
-/// own accessor, Bundle.module, looks in, so the bundle is found where the
-/// module would find it, and the developer writes no code.
+/// Xcode builds, PDFjet_PDFjetFontsWorld.bundle among the resources of the
+/// app, or of the framework that links PDFjet. Those are the places the
+/// bundle's own accessor, Bundle.module, looks in, so the bundle is found
+/// where the module would find it, and the developer writes no code.
 enum BundledFonts {
     // Where the fonts are on disk: the folder resources/fonts of the working
     // directory, as in the repository and the packages of the releases.
     static let FOLDER = "resources/fonts/"
 
-    // The families of the CJK fonts, which are in resources/fonts/cjk and in
-    // the product PDFjetFontsCJK, apart from the others, as they are about
-    // 48 MB.
-    private static let cjkFamilies = ["IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"]
+    // The families of the fonts of resources/fonts/world and the product
+    // PDFjetFontsWorld, apart from the European ones, as they are about 52
+    // MB, and the files of the faces of each that PDFjet carries: IBM Plex
+    // Sans JP, KR, SC and TC as .otf, the others as .ttf.
+    private static let worldFaces: [String: [String]] = {
+        var faces = [String: [String]]()
+        for family in ["IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"] {
+            faces[family] = ["Regular", "SemiBold", "Bold"].map { family + "-" + $0 + ".otf" }
+        }
+        for family in ["IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"] {
+            faces[family] = ["Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"].map {
+                family + "-" + $0 + ".ttf"
+            }
+        }
+        return faces
+    }()
 
     // The names SwiftPM gives the resource bundle of the target
-    // PDFjetFontsCJK of the package PDFjet, on Apple's systems and on Linux.
-    private static let cjkBundleNames = ["PDFjet_PDFjetFontsCJK.bundle", "PDFjet_PDFjetFontsCJK.resources"]
+    // PDFjetFontsWorld of the package PDFjet, on Apple's systems and on Linux.
+    private static let worldBundleNames = ["PDFjet_PDFjetFontsWorld.bundle", "PDFjet_PDFjetFontsWorld.resources"]
 
-    // The resource bundle of the fonts but the CJK ones, of the module
-    // PDFjetFonts, which PDFjet depends on.
+    // The resource bundle of the European fonts, of the module PDFjetFonts,
+    // which PDFjet depends on.
     static let bundle: Bundle? = PDFjetFonts.bundle
 
-    // The resource bundle of the product PDFjetFontsCJK, or nil when the
+    // The resource bundle of the product PDFjetFontsWorld, or nil when the
     // program was built without it, found once.
-    static let cjkBundle: Bundle? = findBundle(cjkBundleNames)
+    static let worldBundle: Bundle? = findBundle(worldBundleNames)
 
     // Looks for a bundle of one of the names where SwiftPM and Xcode put it.
     private static func findBundle(_ names: [String]) -> Bundle? {
@@ -82,8 +95,11 @@ enum BundledFonts {
         return nil
     }
 
-    // The line of the product PDFjetFontsCJK for Package.swift.
-    static let CJK_PRODUCT = ".product(name: \"PDFjetFontsCJK\", package: \"pdfjet\")"
+    // The line of the product PDFjetFontsWorld for Package.swift.
+    static let WORLD_PRODUCT = ".product(name: \"PDFjetFontsWorld\", package: \"pdfjet\")"
+
+    // What the fonts of the product PDFjetFontsWorld are for.
+    static let WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai"
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
@@ -99,25 +115,38 @@ enum BundledFonts {
         return path
     }
 
-    // Returns the family of a name, Family/File, if it is one of the CJK
-    // families, or nil.
-    private static func cjkFamilyOf(_ name: String) -> String? {
-        let family = name.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init)
-        return cjkFamilies.first { $0 == family }
+    // Returns the family of a name, Family/File, if it is one of the
+    // families of resources/fonts/world, or nil.
+    private static func worldFamilyOf(_ name: String) -> String? {
+        guard let family = name.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
+                .first.map(String.init), worldFaces[family] != nil else {
+            return nil
+        }
+        return family
+    }
+
+    // Returns the name of a family as people write it, such as IBM Plex Sans
+    // Arabic of IBMPlexSansArabic.
+    static func familyName(_ family: String) -> String {
+        var name = "IBM Plex " + family.dropFirst("IBMPlex".count)
+        if let sans = name.range(of: "Sans"), sans.upperBound < name.endIndex {
+            name.insert(" ", at: sans.upperBound)
+        }
+        return name
     }
 
     // Returns the path of a font under resources/fonts by its name,
-    // Family/File: the name, or cjk/ and the name for a CJK font, such as
-    // cjk/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
+    // Family/File: the name, or world/ and the name for a font of
+    // resources/fonts/world, such as world/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
     static func folderPathOf(_ name: String) -> String {
-        return (cjkFamilyOf(name) != nil) ? "cjk/" + name : name
+        return (worldFamilyOf(name) != nil) ? "world/" + name : name
     }
 
     // Returns the URL of the font of the path that PDFjet carries, or nil:
     // in the folder resources/fonts, or else in the bundle of PDFjetFonts,
-    // or of PDFjetFontsCJK for a CJK font.
+    // or of PDFjetFontsWorld for a font of resources/fonts/world.
     static func url(_ fontPath: String, _ folder: String = FOLDER,
-            _ bundle: Bundle? = BundledFonts.bundle, _ cjkBundle: Bundle? = BundledFonts.cjkBundle) -> URL? {
+            _ bundle: Bundle? = BundledFonts.bundle, _ worldBundle: Bundle? = BundledFonts.worldBundle) -> URL? {
         guard let name = nameOf(fontPath), !name.contains(".."), !name.hasPrefix("/") else {
             return nil
         }
@@ -128,7 +157,7 @@ enum BundledFonts {
         }
         // The bundle has the files of the family folders side by side, as
         // .process puts them, each font's name its own
-        guard let bundle = (cjkFamilyOf(name) != nil) ? cjkBundle : bundle,
+        guard let bundle = (worldFamilyOf(name) != nil) ? worldBundle : bundle,
                 let slash = name.firstIndex(of: "/") else {
             return nil
         }
@@ -136,22 +165,18 @@ enum BundledFonts {
         return bundle.url(forResource: base.deletingPathExtension, withExtension: base.pathExtension)
     }
 
-    // Returns what to do when the font of the path is one of the CJK fonts
-    // PDFjet carries, Regular, SemiBold or Bold, which is in neither the
-    // folder resources/fonts/cjk nor the program, or nil for any other font:
-    // add the product PDFjetFontsCJK.
-    static func cjkMissing(_ fontPath: String) -> String? {
-        guard let name = nameOf(fontPath), let family = cjkFamilyOf(name) else {
+    // Returns what to do when the font of the path is one of the fonts of
+    // resources/fonts/world that PDFjet carries, which is in neither that
+    // folder nor the program, or nil for any other font: add the product
+    // PDFjetFontsWorld.
+    static func worldMissing(_ fontPath: String) -> String? {
+        guard let name = nameOf(fontPath), let family = worldFamilyOf(name),
+                worldFaces[family]!.contains(String(name.dropFirst(family.count + 1))) else {
             return nil
         }
-        let file = String(name.dropFirst(family.count + 1))
-        guard ["Regular", "SemiBold", "Bold"].contains(where: { file == family + "-" + $0 + ".otf" }) else {
-            return nil
-        }
-        return fontPath + " is not a file, nor in resources/fonts/cjk. IBM Plex Sans "
-                + String(family.dropFirst("IBMPlexSans".count))
-                + " is in the product PDFjetFontsCJK: add it to the dependencies of your target in "
-                + "Package.swift, " + CJK_PRODUCT
+        return fontPath + " is not a file, nor in resources/fonts/world. " + familyName(family)
+                + " is in the product PDFjetFontsWorld, " + WORLD_SCRIPTS
+                + ": add it to the dependencies of your target in Package.swift, " + WORLD_PRODUCT
     }
 
     static let SANS = 0

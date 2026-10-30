@@ -110,10 +110,11 @@ rm "$TAR"
 # are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
-# Every .go and .swift file of resources/fonts: fonts.go and the package cjk,
-# which embed the fonts for Go, and the sources of the Swift targets
-# PDFjetFonts and PDFjetFontsCJK. The CJK fonts stay in resources/fonts/cjk,
-# where PDFjet.jar reads them.
+# Every .go and .swift file of resources/fonts: fonts.go and the packages
+# world and cjk, which embed the fonts for Go, and the sources of the Swift
+# targets PDFjetFonts and PDFjetFontsWorld. The fonts of the other scripts
+# than the European ones stay in resources/fonts/world, where PDFjet.jar
+# reads them.
 find "$STAGE/resources/fonts" \( -name '*.go' -o -name '*.swift' \) -delete
 find "$STAGE/resources/fonts" -type d -empty -delete
 

@@ -13,6 +13,12 @@ CFF outlines:
   charset whose CIDs are not the glyph numbers. SIL Open Font License 1.1,
   in `SourceHanSansJP-LICENSE.txt`.
 
+For the subsets of fonts with TrueType outlines and the long offsets of
+`loca`, and the cap height read from `OS/2`:
+
+- IBM Plex Math Regular, which PDFjet does not carry from 9.1.7. SIL Open
+  Font License 1.1, in `IBMPlexMath-license.txt`.
+
 For kerning:
 
 - Source Serif 4 Regular, which PDFjet does not carry from 9.1.7, for the tests of

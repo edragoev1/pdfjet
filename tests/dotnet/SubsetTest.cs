@@ -342,7 +342,7 @@ public class SubsetTest {
         // Format 0xFFFF made the length of the loca table an int past its
         // range, and new byte[...] threw an OverflowException (the review of
         // 9 October 2026).
-        byte[] ttf = FontBytes("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf");
+        byte[] ttf = FontBytes("tests/fonts/IBMPlexMath-Regular.ttf");
         PutU16(ttf, Table(ttf, "head") + 50, 0xFFFF);
         AssertRefused(ttf, Used(36));
     }

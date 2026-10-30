@@ -357,7 +357,7 @@ class SubsetTest {
 
     @Test
     void aLocaFormatOtherThan0Or1IsRefused() throws Exception {
-        byte[] ttf = fontBytes("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf");
+        byte[] ttf = fontBytes("tests/fonts/IBMPlexMath-Regular.ttf");
         putU16(ttf, table(ttf, "head") + 50, 0xFFFF);
         assertRefused(ttf, used(36));
     }
@@ -368,7 +368,7 @@ class SubsetTest {
         // refused only if it is kept, as the other ports do (the review of
         // 9 October 2026). IBM Plex Math has the long offsets of loca, as IBM
         // Plex Sans JP's .ttf, which this test read before 9.1.7, had.
-        byte[] ttf = fontBytes("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf");
+        byte[] ttf = fontBytes("tests/fonts/IBMPlexMath-Regular.ttf");
         assertEquals(1, u16(ttf, table(ttf, "head") + 50));
         int numGlyphs = u16(ttf, table(ttf, "maxp") + 4);
         putU32(ttf, table(ttf, "loca") + 4 * numGlyphs, 0xFFFFFFF0L);

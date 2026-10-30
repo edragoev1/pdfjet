@@ -20,7 +20,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 )
 
-// These tests do not import the package cjk, as a program that does not:
+// These tests do not import the package world, as a program that does not:
 // the CJK fonts are not built in.
 
 // testRepoRoot returns the root of the repository, the folder above the
@@ -45,7 +45,7 @@ func testRepoRoot(t *testing.T) string {
 
 func TestACJKFontIsReadFromTheFolderResourcesFontsWhenTheProgramDoesNotImportThePackageCJK(t *testing.T) {
 	if _, err := fonts.Stat("IBMPlexSansJP/IBMPlexSansJP-Regular.otf"); err == nil {
-		t.Fatal("IBM Plex Sans JP is built in without the package cjk")
+		t.Fatal("IBM Plex Sans JP is built in without the package world")
 	}
 	t.Chdir(testRepoRoot(t))
 	pdf := pdfjet.NewPDF(bufio.NewWriter(io.Discard))
@@ -61,10 +61,10 @@ func TestACJKFontNotInResourcesFontsNamesTheImportLineWhenTheProgramDoesNotImpor
 	defer func() {
 		err, ok := recover().(error)
 		if !ok || !errors.Is(err, fs.ErrNotExist) ||
-			!strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"`) {
+			!strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"`) {
 			t.Errorf("%v", err)
 		}
 	}()
 	pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Bold)
-	t.Error("a CJK font was read with neither the package cjk nor resources/fonts")
+	t.Error("a CJK font was read with neither the package world nor resources/fonts/world")
 }

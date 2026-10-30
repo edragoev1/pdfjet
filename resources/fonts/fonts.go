@@ -5,24 +5,26 @@
 
 // Package fonts holds the fonts PDFjet carries in itself, each family in a
 // folder of its name with its license: IBM Plex Sans and Serif, from Thin to
-// Bold, and Cascadia Mono, from Light to Bold, upright and
-// italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; and IBM Plex
-// Math. All are under the SIL Open Font License 1.1.
+// Bold, and Cascadia Mono, from Light to Bold, upright and italic, for every
+// European language, in Latin, Greek and Cyrillic. All are under the SIL
+// Open Font License 1.1.
 //
 // Go builds the files a package embeds into every program that imports it,
-// uncompressed, so this package embeds the fonts of every script but
-// Chinese, Japanese and Korean, about 15 MB. IBM Plex Sans JP, KR, SC and
-// TC, about 48 MB, are in the folder cjk, the package that embeds them, and
-// a program builds them in with one line:
+// uncompressed, so this package embeds the European fonts alone, about 11 MB.
+// The fonts of every other script, IBM Plex Sans JP, KR, SC and TC, IBM Plex
+// Sans Arabic, Hebrew and Thai, about 52 MB, are in the
+// folder world, the package that embeds them, and a program builds them in
+// with one line:
 //
-//	import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
+//	import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 //
 // The pdfjet package reads the fonts from here: a path to one of them, such
 // as the constants of the packages IBMPlexSans and the others, is read from
-// the folder resources/fonts of the working directory, or resources/fonts/cjk
-// for a CJK font, when there is no such file, else from here, and the text of an SVG image is drawn in them unless
-// a font is set. Go embeds the files of the folder of a package alone, so
-// this package is in resources/fonts itself.
+// the folder resources/fonts of the working directory, or
+// resources/fonts/world for a font of the package world, when there is no
+// such file, else from here, and the text of an SVG image is drawn in them
+// unless a font is set. Go embeds the files of the folder of a package
+// alone, so this package is in resources/fonts itself.
 package fonts
 
 import (
@@ -36,11 +38,7 @@ import (
 // IBMPlexSans/IBMPlexSans-Regular.ttf, and the licenses of the families.
 //
 //go:embed CascadiaMono/*.ttf CascadiaMono/LICENSE
-//go:embed IBMPlexMath/*.ttf IBMPlexMath/license.txt
 //go:embed IBMPlexSans/*.ttf IBMPlexSans/license.txt
-//go:embed IBMPlexSansArabic/*.ttf IBMPlexSansArabic/license.txt
-//go:embed IBMPlexSansHebrew/*.ttf IBMPlexSansHebrew/license.txt
-//go:embed IBMPlexSansThai/*.ttf IBMPlexSansThai/license.txt
 //go:embed IBMPlexSerif/*.ttf IBMPlexSerif/license.txt
 var FS embed.FS
 
@@ -50,8 +48,8 @@ var (
 )
 
 // Register adds a family of fonts that FS leaves out, its files by their
-// names alone, such as IBMPlexSansJP-Regular.otf. It is for the package cjk,
-// which registers IBM Plex Sans JP, KR, SC and TC when a program imports it;
+// names alone, such as IBMPlexSansJP-Regular.otf. It is for the package
+// world, which registers its families when a program imports it;
 // a program has no need to call it.
 func Register(family string, files fs.FS) {
 	mutex.Lock()

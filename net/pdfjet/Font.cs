@@ -316,9 +316,10 @@ public class Font {
     /// to one of the fonts PDFjet carries, such as the constants of the font
     /// classes, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from
     /// the folder resources/fonts, else from the library, when there is no
-    /// such file; the CJK fonts, such as IBMPlexSansJP.Regular, are in the
-    /// NuGet package PDFjet.Fonts.CJK, which a program adds next to PDFjet,
-    /// and a CJK font not found says so. A path to a .ttf.stream or
+    /// such file: the NuGet package PDFjet carries the European fonts; the
+    /// others, such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular,
+    /// are in the NuGet package PDFjet.Fonts.World, which a program adds next
+    /// to PDFjet, and such a font not found says so. A path to a .ttf.stream or
     /// .otf.stream file, the fonts PDFjet shipped before 9.0.5, opens the .ttf
     /// or else the .otf file of the same name beside it.
     /// </summary>
@@ -342,9 +343,9 @@ public class Font {
             if (bundled != null) {
                 return bundled;
             }
-            String cjk = BundledFonts.CjkMissing(fontPath);
-            if (cjk != null) {
-                throw new FileNotFoundException(cjk, fontPath);
+            String world = BundledFonts.WorldMissing(fontPath);
+            if (world != null) {
+                throw new FileNotFoundException(world, fontPath);
             }
             String path = fontPath.Replace('\\', '/');
             if (path.StartsWith("fonts/", StringComparison.Ordinal) || path.Contains("/fonts/")) {

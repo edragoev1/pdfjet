@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The NuGet package PDFjet.Fonts.World, made by package-nuget.sh: the
+     fonts PDFjet carries for the other scripts than the European ones, IBM
+     Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai,
+     as resources of one assembly for .NET Standard 2.0,
+     PDFjet.Fonts.World.dll, which PDFjet loads by its name; $version$ and
+     $commit$ are written in by the script. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>PDFjet.Fonts.World</id>
+    <version>$version$</version>
+    <title>PDFjet world fonts</title>
+    <authors>PDFjet Software</authors>
+    <license type="expression">OFL-1.1</license>
+    <projectUrl>https://github.com/edragoev1/pdfjet</projectUrl>
+    <repository type="git" url="https://github.com/edragoev1/pdfjet.git" commit="$commit$" />
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <description>The fonts of PDFjet for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: IBM Plex Sans JP, KR, SC and TC, and IBM Plex Sans Arabic, Hebrew and Thai, under the SIL Open Font License 1.1, for the package PDFjet of the same version: add it next to PDFjet, and constants such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular work. No code. For .NET 8 and later and .NET Framework 4.8.</description>
+    <releaseNotes>https://github.com/edragoev1/pdfjet/blob/main/CHANGELOG.md</releaseNotes>
+    <copyright>Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"</copyright>
+    <tags>pdfjet pdf fonts cjk chinese japanese korean arabic hebrew thai ibm-plex</tags>
+    <dependencies>
+      <group targetFramework="netstandard2.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="lib/netstandard2.0/PDFjet.Fonts.World.dll" target="lib/netstandard2.0" />
+    <file src="README.md" target="" />
+    <file src="icon.png" target="" />
+    <!-- The licenses of the fonts, one a family -->
+    <file src="font-licenses/*" target="" />
+  </files>
+</package>

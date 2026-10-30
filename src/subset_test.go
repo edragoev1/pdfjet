@@ -375,7 +375,7 @@ func TestSubsetATableTwiceIsRefused(t *testing.T) {
 }
 
 func TestSubsetALocaFormatOtherThan0Or1IsRefused(t *testing.T) {
-	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexMath/IBMPlexMath-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, "tests/fonts/IBMPlexMath-Regular.ttf")
 	binary.BigEndian.PutUint16(ttf[testOpenTypeTable(t, ttf, "head")+50:], 0xFFFF)
 	testSubsetRefused(t, ttf, testSubsetUsed(36))
 }

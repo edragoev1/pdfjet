@@ -17,9 +17,9 @@ import (
 	"strconv"
 	"strings"
 
-	// The Chinese, Japanese and Korean fonts PDFjet carries, built into
+	// The fonts PDFjet carries for the scripts but the European ones, built into
 	// the program
-	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
+	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/CascadiaMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"

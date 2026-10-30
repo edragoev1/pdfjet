@@ -19,14 +19,17 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/resources/fonts"
-	// The CJK fonts, built in for the tests that draw in them, as a program
-	// builds them in
-	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
+	// The fonts of the package world, built in for the tests that draw in
+	// them, as a program builds them in
+	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansThai"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -61,20 +64,21 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The family folders, and those of the CJK fonts in the folder cjk
+	// The family folders, and those of the other scripts in the folder
+	// world; the folder cjk is the deprecated package cjk alone
 	var folders []string
 	for _, family := range families {
-		if family.IsDir() && family.Name() != "cjk" {
+		if family.IsDir() && family.Name() != "world" && family.Name() != "cjk" {
 			folders = append(folders, family.Name())
 		}
 	}
-	cjk, err := os.ReadDir(filepath.Join(root, "cjk"))
+	world, err := os.ReadDir(filepath.Join(root, "world"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, family := range cjk {
+	for _, family := range world {
 		if family.IsDir() {
-			folders = append(folders, "cjk/"+family.Name())
+			folders = append(folders, "world/"+family.Name())
 		}
 	}
 	for _, folder := range folders {
@@ -90,8 +94,8 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 		}
 	}
 	slices.Sort(carried)
-	if len(carried) != 72 {
-		t.Fatalf("%d fonts carried, not 72", len(carried))
+	if len(carried) != 71 {
+		t.Fatalf("%d fonts carried, not 71", len(carried))
 	}
 	var constants []string
 	deprecated := 0
@@ -134,14 +138,15 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 						continue
 					}
 					// In the library, as the module has it, not only in the folder:
-					// the CJK fonts registered by the package cjk, which this
-					// test imports, and the others built in always
+					// the fonts registered by the package world, which this
+					// test imports, and the European ones built in always
 					if buf, err := fonts.ReadFile(bundledFontName(path)); err != nil || len(buf) == 0 {
 						t.Errorf("%s is not in the library: %v", constant, err)
 					}
 					family, _, _ := strings.Cut(bundledFontName(path), "/")
 					_, err = fonts.FS.ReadFile(bundledFontName(path))
-					if builtIn := err == nil; builtIn == slices.Contains(cjkFamilies, family) {
+					_, world := worldFaces[family]
+					if builtIn := err == nil; builtIn == world {
 						t.Errorf("%s built in always: %v", constant, builtIn)
 					}
 					constants = append(constants, path)
@@ -152,9 +157,9 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 			t.Errorf("no constants in %s", name)
 		}
 	}
-	// IBM Plex Mono, JetBrains Mono, Noto Sans and Source Serif 4, and the
-	// weights not carried of the other families
-	if deprecated != 16+12+18+14+25 {
+	// IBM Plex Mono, JetBrains Mono, Noto Sans, Source Serif 4 and IBM Plex
+	// Math, and the weights not carried of the other families
+	if deprecated != 16+12+18+14+1+25 {
 		t.Errorf("%d constants deprecated", deprecated)
 	}
 	slices.Sort(constants)
@@ -183,21 +188,28 @@ func TestBundledFontsAFontAddedToAnExistingPDFIsReadFromTheLibraryByItsPath(t *t
 	t.Error("a font PDFjet does not carry was read")
 }
 
-func TestBundledFontsTheCJKFontsAreReadFromTheLibraryWhenTheProgramImportsThePackageCJK(t *testing.T) {
+func TestBundledFontsTheWorldFontsAreReadFromTheLibraryWhenTheProgramImportsThePackageWorld(t *testing.T) {
 	// A working directory with no folder resources/fonts: the font is the
-	// one the package cjk, which this test imports, builds in
+	// one the package world, which this test imports, builds in
 	t.Chdir(t.TempDir())
 	doc := testNewDoc()
-	for _, path := range []string{IBMPlexSansJP.Regular, IBMPlexSansKR.SemiBold, IBMPlexSansSC.Bold, IBMPlexSansTC.Regular} {
+	for _, path := range []string{IBMPlexSansJP.Regular, IBMPlexSansKR.SemiBold, IBMPlexSansSC.Bold, IBMPlexSansTC.Regular,
+		IBMPlexSansArabic.Regular, IBMPlexSansHebrew.Thin, IBMPlexSansThai.Text} {
 		font := NewFontFromFile(doc.pdf, path)
 		if family := filepath.Base(filepath.Dir(path)); !strings.HasPrefix(font.GetName(), family) {
 			t.Errorf("%s: the font %s", path, font.GetName())
 		}
 	}
-	// A weight PDFjet does not carry is not one of them
-	if bundledCJKMissing(IBMPlexSansJP.Regular) || bundledCJKMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf") {
-		t.Error("a CJK font is missing")
+	// Built in, none is missing; nor is a face PDFjet does not carry, nor
+	// IBM Plex Math, which it no longer carries
+	for _, path := range []string{IBMPlexSansJP.Regular, IBMPlexSansArabic.Bold,
+		"fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf", "fonts/IBMPlexMath/IBMPlexMath-Regular.ttf"} {
+		if message := bundledWorldMissing(path); message != "" {
+			t.Errorf("%s: %s", path, message)
+		}
 	}
+	testWant(t, "IBM Plex Sans Arabic", bundledFamilyName("IBMPlexSansArabic"))
+	testWant(t, "IBM Plex Sans JP", bundledFamilyName("IBMPlexSansJP"))
 }
 
 func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testing.T) {
