@@ -1334,7 +1334,9 @@ public sealed class PDF {
                 destination.pageObjNumber = page.objNumber;
                 if (destination.bookmark) {
                     bookmarks.Add(destination);
-                } else {
+                } else if (!destinations.ContainsKey(destination.name)) {
+                    // The first of a name: the parts of a text line wrapped
+                    // by a TextFrame or a TextColumn all have its destination
                     destinations[destination.name] = destination;
                 }
             }

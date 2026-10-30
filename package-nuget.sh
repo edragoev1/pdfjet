@@ -169,6 +169,7 @@ rm -rf "$build"
 cp nuget/README.md nuget/icon.png "$stage/"
 sed -e "s/\$version\\$/$version/" -e "s/\$commit\\$/$commit/" nuget/PDFjet.nuspec > "$stage/PDFjet.nuspec"
 cp nuget/world/README.md nuget/icon.png "$worldStage/"
+cp -r nuget/world/buildTransitive "$worldStage/"
 sed -e "s/\$version\\$/$version/" -e "s/\$commit\\$/$commit/" nuget/world/PDFjet.Fonts.World.nuspec > "$worldStage/PDFjet.Fonts.World.nuspec"
 # dotnet pack needs a project, even one it does not build: a stub, with the
 # .nuspec doing the rest

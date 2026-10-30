@@ -180,6 +180,9 @@ public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     internal var mcidParent: StructElement?
+    // The element of the text line with an alternate description that is being
+    // drawn among the words of mcidParent; see describedWords.
+    private var words: StructElement?
     // The figure addBDC began last, whose bounding box setFigureBoundingBox
     // sets, or nil.
     private var figure: StructElement?
@@ -1444,6 +1447,10 @@ public class Page {
         if color == Color.transparent {
             return self
         }
+        if color == Util.shortColor {
+            pdf.fail(Page.RGB_COUNT)
+            return self
+        }
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
@@ -1499,6 +1506,10 @@ public class Page {
     @discardableResult
     public func setBrushColor(_ color: Int32) -> Page {
         if color == Color.transparent {
+            return self
+        }
+        if color == Util.shortColor {
+            pdf.fail(Page.RGB_COUNT)
             return self
         }
         let r = Float((color >> 16) & 0xff)/255.0
@@ -2806,7 +2817,12 @@ public class Page {
             // belongs to the one element of the paragraph; a figure in it, as the
             // linked marker of a wrapped table cell, is an element of its own,
             // with its description (the review of 9 October 2026: it was lost).
-            if let parent = mcidParent, structure != StructElem.FIGURE {
+            if var parent = mcidParent, structure != StructElem.FIGURE {
+                if let altDescription = altDescription, !altDescription.isEmpty {
+                    parent = describedWords(parent, altDescription)
+                } else {
+                    words = nil
+                }
                 parent.mcids.append(mcid)
                 append("/")
                 append(parent.structure!)
@@ -2852,6 +2868,24 @@ public class Page {
                 figure = element
             }
         }
+    }
+
+    // Returns the Span of a text line with an alternate description that is
+    // drawn in a paragraph word by word or row by row: the description is of
+    // the whole text line, so its words are the marked content of one element,
+    // which takes its place among the words of the paragraph and is read once.
+    private func describedWords(_ parent: StructElement, _ altDescription: String) -> StructElement {
+        if let words = words, words.parent === parent, words.altDescription == altDescription {
+            return words
+        }
+        let element = StructElement()
+        element.structure = StructElem.SPAN.rawValue
+        element.mcid = -1
+        element.altDescription = altDescription
+        addStructure(element, parent)
+        parent.mcids.append(-(element.objNumber ?? 0))
+        words = element
+        return element
     }
 
     /// Sets the bounding box of the figure that AddBDC began last: the box it is
@@ -2977,6 +3011,7 @@ public class Page {
         link.language = language
         if let parent = mcidParent {
             // A word of a paragraph: the Link takes its place among the words
+            link.altDescription = altDescription
             addStructure(link, parent)
             parent.mcids.append(-(link.objNumber ?? 0))
         } else if structure == StructElem.LINK {

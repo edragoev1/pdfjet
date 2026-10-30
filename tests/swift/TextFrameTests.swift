@@ -622,4 +622,129 @@ import Testing
         }
         #expect(rows >= 2, "\(rows) justified rows")
     }
+
+    // A text line wrapped into rows keeps its destination, in a TextFrame and
+    // a TextColumn, and the destination is where the text line starts: a link
+    // to it failed the document (the review of 30 October 2026).
+    @Test func aWrappedTextLineKeepsItsDestination() throws {
+        for column in [false, true] {
+            let memory = MemoryPDF()
+            let font = TestSupport.helvetica(memory.pdf)
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            TextLine(font, "Go").setGoToAction("there").setLocation(50, 50).drawOn(page)
+            let line = TextLine(font, "one two three four five six seven").setDestination("there")
+            let paragraph = Paragraph().add(line)
+            if column {
+                let textColumn = TextColumn()
+                textColumn.setWidth(60)
+                textColumn.setLocation(100, 200)
+                textColumn.addParagraph(paragraph)
+                textColumn.drawOn(page)
+            } else {
+                TextFrame([paragraph]).setLocation(100, 200).setWidth(60).drawOn(page)
+            }
+            try memory.pdf.complete()
+            let file = TestSupport.latin1(memory.bytes)
+            #expect(file.components(separatedBy: "/Dest [").count - 1 == 1, "\(file)")
+            // The first row, a font size above its baseline, and not the last
+            let y = page.getHeight() - (paragraph.getTextY() - font.getSize())
+            let tail = try #require(file.components(separatedBy: "/XYZ 0 ").last)
+            let got = try #require(Float(tail.components(separatedBy: " ")[0]))
+            #expect(abs(got - y) < 0.1)
+        }
+    }
+
+    @Test func aDestinationNameUsedTwiceGoesToTheFirst() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextLine(font, "Go").setGoToAction("x").setLocation(50, 50).drawOn(page)
+        TextLine(font, "first").setDestination("x").setLocation(50, 100 + font.getSize()).drawOn(page)
+        TextLine(font, "second").setDestination("x").setLocation(50, 200 + font.getSize()).drawOn(page)
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains("/XYZ 0 692 0]"))
+    }
+
+    // A word broken into thousands of rows, with a text line joined to it,
+    // looked through the whole word for each row: quadratic time.
+    @Test func aLongWordJoinedToTheNextIsDrawnInLinearTime() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Markup(font, font, font, font, font)
+                .paragraph("**" + String(repeating: "x", count: 200000) + "**y")
+        let elapsed = shortestTime(.seconds(6)) {
+            TextFrame([paragraph]).setLocation(10, 10).setWidth(300).drawOn(nil)
+        }
+        #expect(elapsed < .seconds(6), "\(elapsed)")
+    }
+
+    // Measured, the text is kept for the frame that draws it.
+    @Test func measuringInsideATextLineKeepsItsWords() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let text = String(repeating: "alpha ", count: 39) + "alpha"
+        let frame = TextFrame([Paragraph().add(TextLine(font, text))]).setLocation(10, 10).setWidth(100).setHeight(40)
+        frame.drawOn(Page(pdf, Letter.PORTRAIT))
+        frame.drawOn(nil)
+        let second = Page(pdf, Letter.PORTRAIT)
+        frame.drawOn(second)
+        #expect(TestSupport.content(second).contains(TestSupport.hex("alpha")))
+    }
+
+    // A row is below the row before it, or the top of the frame, by its tallest
+    // text: a 48 point word after 12 point text rose out of the frame.
+    @Test func aLargerWordLowersItsRow() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph().add(TextLine(font, "a").setFontSize(12)).add(TextLine(font, "B").setFontSize(48))
+        let frame = TextFrame([paragraph]).setLocation(10, 100).setWidth(300)
+        frame.drawOn(Page(pdf, Letter.PORTRAIT))
+        let want = 100 + font.getAscent(48)
+        TestSupport.expectNear(want, paragraph.getTextY())
+        TestSupport.expectNear(want + font.getDescent(48), paragraph.getY2())
+        TestSupport.expectNear(want + font.getDescent(48), frame.getTextBottom())
+        // Words of one size in two fonts stay on the baseline of the first
+        let mono = try Font(pdf, CoreFont.COURIER)
+        let even = Paragraph().add(TextLine(font, "a")).add(TextLine(mono, "b"))
+        TextFrame([even]).setLocation(10, 100).setWidth(300).drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(even.getTextY() == 100 + font.getAscent(font.getSize()))
+    }
+
+    // The alternate description of a text line in a paragraph, of a tagged
+    // document, is of one Span among the words, however many rows it wraps into.
+    @Test func aTextLineInATaggedParagraphKeepsItsDescription() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try TestSupport.plexSans(memory.pdf)
+        let paragraph = Paragraph().add(TextLine(font, "Before"))
+                .add(TextLine(font, "H2O is a very long formula").setAltDescription("Water"))
+                .add(TextLine(font, "after"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextFrame([paragraph]).setLocation(10, 10).setWidth(60).drawOn(page)
+        #expect(TestSupport.content(page).components(separatedBy: "/Span <</MCID").count - 1 >= 2)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/S /Span").count - 1 == 1)
+        #expect(raw.components(separatedBy: "/Alt ").count - 1 == 1)
+    }
+
+    // Spaces in code are as they are written: `a  b` was a b.
+    @Test func codeKeepsItsSpaces() {
+        #expect(TextFrame.splitKeepingSpaces("a  b") == ["a ", "b"])
+        #expect(TextFrame.splitKeepingSpaces("a   b") == ["a  ", "b"])
+        #expect(TextFrame.splitKeepingSpaces(" a b  ") == [" a", "b "])
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextFrame([Markup(font, font, font, font, font).paragraph("x `a  b` y z  w")])
+                .setLocation(10, 10).setWidth(300).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("a  b ")), "\(content)")
+        #expect(content.contains(TestSupport.hex("y z w")), "\(content)")
+    }
+
+    @Test func anEmptyParagraphStartsWithNothing() {
+        #expect(!Paragraph().startsWith("a"))
+        #expect(!Paragraph().startsWith(""))
+    }
 }

@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
@@ -44,14 +45,28 @@ internal static class BundledFonts {
 
     // The families of the fonts of resources/fonts/world and the package
     // PDFjet.Fonts.World, apart from the European ones, as they are about 52
-    // MB, and the styles of the faces of each that PDFjet carries: IBM Plex
-    // Sans JP, KR, SC and TC, the first four, as .otf, the others as .ttf.
-    private static readonly String[] WORLD_FAMILIES = {
-        "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC",
-        "IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai",
-    };
-    private static readonly String[] CJK_STYLES = {"Regular", "SemiBold", "Bold"};
-    private static readonly String[] THIN_TO_BOLD = {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"};
+    // MB, and the files of the faces of each that PDFjet carries: IBM Plex
+    // Sans JP, KR, SC and TC as .otf, the others as .ttf.
+    private static readonly Dictionary<String, List<String>> WORLD_FACES = WorldFaces();
+
+    private static Dictionary<String, List<String>> WorldFaces() {
+        Dictionary<String, List<String>> faces = new Dictionary<String, List<String>>();
+        foreach (String family in new String[] {"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"}) {
+            List<String> files = new List<String>();
+            foreach (String style in new String[] {"Regular", "SemiBold", "Bold"}) {
+                files.Add(family + "-" + style + ".otf");
+            }
+            faces[family] = files;
+        }
+        foreach (String family in new String[] {"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
+            List<String> files = new List<String>();
+            foreach (String style in new String[] {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}) {
+                files.Add(family + "-" + style + ".ttf");
+            }
+            faces[family] = files;
+        }
+        return faces;
+    }
 
     // What the fonts of the package PDFjet.Fonts.World are for.
     internal const String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai";
@@ -74,12 +89,7 @@ internal static class BundledFonts {
     private static String WorldFamilyOf(String name) {
         int slash = name.IndexOf('/');
         String family = (slash < 0) ? name : name.Substring(0, slash);
-        foreach (String world in WORLD_FAMILIES) {
-            if (world.Equals(family)) {
-                return world;
-            }
-        }
-        return null;
+        return WORLD_FACES.ContainsKey(family) ? family : null;
     }
 
     // Returns the name of a family as people write it, such as IBM Plex Sans
@@ -122,14 +132,13 @@ internal static class BundledFonts {
     // the folder resources/fonts, or else from the assembly, or else, for a
     // font of resources/fonts/world, from the assembly PDFjet.Fonts.World.
     internal static Stream Open(String fontPath) {
-        return Open(fontPath, FOLDER, null, true);
+        return Open(fontPath, FOLDER);
     }
 
     // Opens the font of the path that PDFjet carries, or returns null: from
     // the folder, or else from the assembly, or else, for a font of
-    // resources/fonts/world, from the assembly world, or PDFjet.Fonts.World
-    // when loadWorld.
-    internal static Stream Open(String fontPath, String folder, Assembly world, bool loadWorld) {
+    // resources/fonts/world, from the assembly PDFjet.Fonts.World.
+    internal static Stream Open(String fontPath, String folder) {
         String name = NameOf(fontPath);
         if (name == null || name.IndexOf("..", StringComparison.Ordinal) >= 0) {
             return null;
@@ -145,13 +154,8 @@ internal static class BundledFonts {
             }
         }
         Stream stream = OpenResource(name);
-        if (stream == null && WorldFamilyOf(name) != null) {
-            if (world == null && loadWorld) {
-                world = WorldAssembly;
-            }
-            if (world != null) {
-                stream = world.GetManifestResourceStream(RESOURCE_PREFIX + FolderPathOf(name));
-            }
+        if (stream == null && WorldFamilyOf(name) != null && WorldAssembly != null) {
+            stream = WorldAssembly.GetManifestResourceStream(RESOURCE_PREFIX + FolderPathOf(name));
         }
         return stream;
     }
@@ -176,12 +180,15 @@ internal static class BundledFonts {
             return null;
         }
         String file = name.Substring(family.Length + 1);
-        bool cjk = Array.IndexOf(WORLD_FAMILIES, family) < 4;
-        bool carried = false;
-        foreach (String style in cjk ? CJK_STYLES : THIN_TO_BOLD) {
-            carried |= file.Equals(family + "-" + style + (cjk ? ".otf" : ".ttf"));
+        List<String> faces = WORLD_FACES[family];
+        // A path written for the .stream files PDFjet shipped before is the same font
+        foreach (String stream in new String[] {".ttf.stream", ".otf.stream"}) {
+            if (file.EndsWith(stream, StringComparison.Ordinal)) {
+                String first = faces[0];
+                file = file.Substring(0, file.Length - stream.Length) + first.Substring(first.LastIndexOf('.'));
+            }
         }
-        if (!carried) {
+        if (!faces.Contains(file)) {
             return null;
         }
         return fontPath + " is not a file, nor in resources/fonts/world. "

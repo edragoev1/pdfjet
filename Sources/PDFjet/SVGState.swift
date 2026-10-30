@@ -681,10 +681,9 @@ struct SVGState {
     // compares characters, of one or more code points, and treats canonically
     // equivalent ones as equal.
 
-    // Returns true for the white space that separates the numbers of a list:
-    // the white space of XML.
+    // Returns true for the white space of Unicode, as Go's unicode.IsSpace.
     static func isSpace(_ ch: Unicode.Scalar) -> Bool {
-        return ch == " " || ch == "\t" || ch == "\n" || ch == "\r"
+        return ch.properties.isWhitespace
     }
 
     static func string<S: Sequence>(_ scalars: S) -> String where S.Element == Unicode.Scalar {

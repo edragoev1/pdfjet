@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.Globalization;
 using Xunit;
 
@@ -30,6 +31,29 @@ public class UnicodeCategoriesTest {
 #endif
         Assert.Equal(UnicodeCategory.OtherNotAssigned, Compat.UnicodeCategories.Of(-1));
         Assert.Equal(UnicodeCategory.OtherNotAssigned, Compat.UnicodeCategories.Of(0x110000));
+    }
+
+    // The source asks CharUnicodeInfo, which the .NET Framework 4.8 build
+    // answers with the table, and never char itself, which it does not.
+    [Fact]
+    public void TheLibraryAsksTheTableForCategories() {
+        foreach (string file in System.IO.Directory.GetFiles(TestSupport.RepoPath("net/pdfjet"), "*.cs")) {
+            string source = System.IO.File.ReadAllText(file);
+            Assert.False(source.Contains("char.GetUnicodeCategory(") || source.Contains("char.IsDigit("), file);
+        }
+    }
+
+    // The white space of a value of SVG is that of Unicode, as in the other ports.
+    [Fact]
+    public void TheWhiteSpaceOfSVGIsThatOfUnicode() {
+        Assert.Equal("x", SVGState.Trim("\u00A0\u2003x\u3000\u0085\u000B"));
+        Assert.False(SVGState.IsSpace('\u180E'));
+        Assert.False(SVGState.IsSpace('x'));
+    }
+
+    [Fact]
+    public void AShortColorIsAnArgumentError() {
+        Assert.Throws<ArgumentException>(() => Util.ToPackedRGB(new float[] {0.5f}));
     }
 
     // The Arabic mark U+08D4, of Unicode 9, is a mark, which the data of

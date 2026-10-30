@@ -528,7 +528,7 @@ class SVGState {
             int slash = field.indexOf('/');
             String size = (slash < 0) ? field : field.substring(0, slash);
             // A size has a unit or is a keyword; a number alone is a weight.
-            if (!size.isEmpty() && !Character.isDigit(size.charAt(size.length() - 1))) {
+            if (!size.isEmpty() && UnicodeCategories.of(size.charAt(size.length() - 1)) != Character.DECIMAL_DIGIT_NUMBER) {
                 Float fontSize = parseFontSize(size, this.fontSize);
                 if (fontSize != null) {
                     this.fontSize = fontSize;
@@ -973,10 +973,7 @@ class SVGState {
     // Returns true for the white space of Unicode, as the Go port's
     // unicode.IsSpace does, which String.trim does not take.
     static boolean isSpace(char ch) {
-        if (ch == '\t' || ch == '\n' || ch == '\u000B' || ch == '\f' || ch == '\r' || ch == '\u0085') {
-            return true;
-        }
-        return ch != '᠎' && Character.isSpaceChar(ch);
+        return Util.isSpace(ch);
     }
 
     // Returns the text without the white space at its ends.

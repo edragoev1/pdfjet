@@ -120,6 +120,9 @@ public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     internal StructElement mcidParent = null;
+    // The element of the text line with an alternate description that is being
+    // drawn among the words of mcidParent; see DescribedWords.
+    private StructElement words = null;
     // The figure AddBDC began last, whose bounding box SetFigureBoundingBox
     // sets, or null.
     private StructElement figure = null;
@@ -2950,9 +2953,15 @@ public class Page {
             // linked marker of a wrapped table cell, is an element of its own,
             // with its description (the review of 9 October 2026: it was lost).
             if (mcidParent != null && structure != StructElem.FIGURE) {
-                mcidParent.mcids.Add(mcid);
+                StructElement parent = mcidParent;
+                if (!string.IsNullOrEmpty(altDescription)) {
+                    parent = DescribedWords(parent, altDescription);
+                } else {
+                    words = null;
+                }
+                parent.mcids.Add(mcid);
                 Append("/");
-                Append(mcidParent.structure);
+                Append(parent.structure);
                 Append(" <</MCID ");
                 Append(mcid++);
                 // A word of another language than its paragraph says so in its
@@ -2990,6 +2999,22 @@ public class Page {
                 figure = element;
             }
         }
+    }
+
+    // Returns the Span of a text line with an alternate description that is
+    // drawn in a paragraph word by word or row by row: the description is of
+    // the whole text line, so its words are the marked content of one element,
+    // which takes its place among the words of the paragraph and is read once.
+    private StructElement DescribedWords(StructElement parent, String altDescription) {
+        if (words == null || words.parent != parent || altDescription != words.altDescription) {
+            words = new StructElement();
+            words.structure = StructElem.SPAN.Type();
+            words.mcid = -1;
+            words.altDescription = altDescription;
+            AddStructure(words, parent);
+            parent.mcids.Add(-words.objNumber);
+        }
+        return words;
     }
 
     /// <summary>
@@ -3116,6 +3141,7 @@ public class Page {
         link.language = language;
         if (mcidParent != null) {
             // A word of a paragraph: the Link takes its place among the words
+            link.altDescription = altDescription;
             AddStructure(link, mcidParent);
             mcidParent.mcids.Add(-link.objNumber);
         } else if (structure == StructElem.LINK) {

@@ -28,7 +28,9 @@ var arabic = new Font(pdf, IBMPlexSansArabic.Regular);
 
 PDFjet finds this package's `PDFjet.Fonts.World.dll` on its own; there is
 no code to write. Without it, those constants throw an error that names
-this package. Only the glyphs a document draws are embedded in it.
+this package. Only the glyphs a document draws are embedded in it. A program
+published trimmed or with NativeAOT keeps the fonts: the package says so to
+the build.
 
 The package has IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold,
 and IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold, about 41 MB, under

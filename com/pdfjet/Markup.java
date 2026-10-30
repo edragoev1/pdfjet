@@ -27,9 +27,10 @@ import java.util.*;
  * line breaks, which TextFrame draws as the end of a row, and the spaces
  * before the line break are not in the text; two spaces and a line break at
  * the end of the text are not, and are dropped, and a backslash at the end of
- * the text is a backslash, as in CommonMark. Any other line break is a space.
- * The spaces and tabs at the start of the line after a line break, hard or
- * not, are not in the text, as in CommonMark. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+ * the text is a backslash, as in CommonMark. Any other line break is a space,
+ * none at the start of a row. \n, \r\n and \r are each a line break. The
+ * spaces and tabs around a line break, hard or not, are not in the text, as
+ * in CommonMark, and a space written &amp;#32; is. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
  * &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
  * &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
  * &amp;#8212; and &amp;#x2014;, are the characters they name.
@@ -124,10 +125,7 @@ public class Markup {
     public List<Paragraph> paragraphs(String text) {
         List<Paragraph> paragraphs = new ArrayList<Paragraph>();
         StringBuilder buf = new StringBuilder();
-        for (String line : text.split("\n", -1)) {
-            if (line.endsWith("\r")) {
-                line = line.substring(0, line.length() - 1);
-            }
+        for (String line : lineFeeds(text).split("\n", -1)) {
             if (line.trim().isEmpty()) {
                 addParagraph(paragraphs, buf);
             } else {
@@ -146,7 +144,7 @@ public class Markup {
             // CommonMark strips the final spaces of a paragraph: "0  \n" is
             // "0"
             buf.setLength(buf.length() - 1);
-            while (buf.length() > 0 && Character.isWhitespace(buf.charAt(buf.length() - 1))) {
+            while (buf.length() > 0 && Util.isWhitespace(buf.charAt(buf.length() - 1))) {
                 buf.setLength(buf.length() - 1);
             }
             Paragraph paragraph = paragraph(buf.toString());
@@ -157,6 +155,12 @@ public class Markup {
         }
     }
 
+    // Returns the text with its line endings \n: the parser sees no \r\n or
+    // \r.
+    private static String lineFeeds(String text) {
+        return text.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
     /**
      * Returns the text as one paragraph: a text line for each run of text in
      * one style, each joined to the text before it.
@@ -165,6 +169,7 @@ public class Markup {
      * @return the paragraph.
      */
     public Paragraph paragraph(String text) {
+        text = lineFeeds(text);
         Parser parser = new Parser(text);
         int end = parser.trailingBreak();
         if (end < text.length()) {
@@ -222,6 +227,7 @@ public class Markup {
                 : ((flags & BOLD) != 0) ? bold
                 : ((flags & ITALIC) != 0) ? italic : regular;
         TextLine textLine = new TextLine(font, text);
+        textLine.keepSpaces = (flags & CODE) != 0;
         if ((flags & STRIKE) != 0) {
             textLine.setStrikeout(true);
         }
@@ -272,8 +278,9 @@ public class Markup {
         private final String text;
         // Where each ] that closes a [ is, by the index of the [.
         private final int[] closingBracket;
-        // The index of the next ) and of the next space at or after each index.
-        private final int[] nextParenthesis;
+        // Where each ) that closes a ( is, by the index of the (, and the index
+        // of the next space at or after each index.
+        private final int[] closingParenthesis;
         private final int[] nextSpace;
         // The runs of backticks, by their length: where each starts, in order,
         // and the first one of each length that can still close a code span.
@@ -296,14 +303,21 @@ public class Markup {
                     closingBracket[open.pop()] = i;
                 }
             }
-            nextParenthesis = new int[n + 1];
+            closingParenthesis = new int[n];
+            Arrays.fill(closingParenthesis, -1);
+            open.clear();
+            for (int i = 0; i < n; i++) {
+                char ch = text.charAt(i);
+                if (ch == '(') {
+                    open.push(i);
+                } else if (ch == ')' && !open.isEmpty()) {
+                    closingParenthesis[open.pop()] = i;
+                }
+            }
             nextSpace = new int[n + 1];
-            nextParenthesis[n] = n;
             nextSpace[n] = n;
             for (int i = n - 1; i >= 0; i--) {
-                char ch = text.charAt(i);
-                nextParenthesis[i] = (ch == ')') ? i : nextParenthesis[i + 1];
-                nextSpace[i] = Character.isWhitespace(ch) ? i : nextSpace[i + 1];
+                nextSpace[i] = Util.isWhitespace(text.charAt(i)) ? i : nextSpace[i + 1];
             }
             for (int i = 0; i < n; ) {
                 if (text.charAt(i) == '\\' && i + 1 < n && text.charAt(i + 1) != '`') {
@@ -336,6 +350,10 @@ public class Markup {
         void parse(int start, int end, String link, List<Node> nodes) {
             int first = nodes.size();
             StringBuilder buf = new StringBuilder();
+            // The spaces and tabs that end at spaceEnd, each one space in the
+            // buffer.
+            int spaces = 0;
+            int spaceEnd = start;
             int i = start;
             while (i < end) {
                 char ch = text.charAt(i);
@@ -348,21 +366,31 @@ public class Markup {
                     // "0\\"
                     buf.append(ch);
                     i = end;
-                } else if (breakEnd > i) {
-                    if (ch == '\r' || ch == '\n') {
-                        // The spaces before a hard line break are not in the
-                        // text, as in CommonMark: "one  \ntwo" is "one", a
-                        // break and "two"
-                        for (int k = i; k > start && Character.isWhitespace(text.charAt(k - 1))
-                                && buf.length() > 0 && buf.charAt(buf.length() - 1) == ' '; k--) {
-                            buf.setLength(buf.length() - 1);
-                        }
+                } else if (breakEnd > i || ch == '\n') {
+                    if (ch == '\n' && spaceEnd == i) {
+                        // The spaces before a line break are not in the text,
+                        // as in CommonMark: "one  \ntwo" is "one", a break
+                        // and "two"
+                        buf.setLength(buf.length() - spaces);
                     }
-                    flush(buf, link, nodes);
-                    nodes.add(new Node("", BREAK, link));
-                    i = breakEnd;
+                    spaces = 0;
+                    if (breakEnd > i) {
+                        flush(buf, link, nodes);
+                        nodes.add(new Node("", BREAK, link));
+                        i = breakEnd;
+                    } else {
+                        // A line break is a space, but for one at the start of
+                        // a row
+                        if (buf.length() > 0 || (!nodes.isEmpty()
+                                && (nodes.get(nodes.size() - 1).flags & BREAK) == 0)) {
+                            buf.append(' ');
+                            spaces = 1;
+                        }
+                        i++;
+                    }
                     if (text.charAt(i - 1) == '\n') {
                         i = lineStart(i, end);
+                        spaceEnd = i;
                     }
                 } else if ((entity = entity(i, end)) != null) {
                     buf.appendCodePoint(entity[0]);
@@ -400,8 +428,8 @@ public class Markup {
                     run.index = nodes.size();
                     run.count = length;
                     // Before the run, or after it, a space, or the start or the end
-                    boolean left = i + length < end && !Character.isWhitespace(text.charAt(i + length));
-                    boolean right = i > start && !Character.isWhitespace(text.charAt(i - 1));
+                    boolean left = i + length < end && !Util.isWhitespace(text.charAt(i + length));
+                    boolean right = i > start && !Util.isWhitespace(text.charAt(i - 1));
                     run.canOpen = left;
                     run.canClose = right;
                     if (ch == '_') {
@@ -418,20 +446,20 @@ public class Markup {
                     i = addressEnd;
                 } else if (ch == '[' && link == null && isLink(i, end)) {
                     int close = closingBracket[i];
-                    int urlEnd = nextParenthesis[close + 2];
+                    int urlEnd = closingParenthesis[close + 1];
                     flush(buf, link, nodes);
                     parse(i + 1, close, decoded(close + 2, urlEnd), nodes);
                     i = urlEnd + 1;
                 } else {
-                    buf.append(Character.isWhitespace(ch) ? ' ' : ch);
+                    if (ch == ' ' || ch == '\t') {
+                        if (spaceEnd != i) {
+                            spaces = 0;
+                        }
+                        spaces++;
+                        spaceEnd = i + 1;
+                    }
+                    buf.append(Util.isWhitespace(ch) ? ' ' : ch);
                     i++;
-                    if (ch == '\r' && i < end && text.charAt(i) == '\n') {
-                        // A \r\n is one line ending, and one space
-                        i++;
-                    }
-                    if (text.charAt(i - 1) == '\n') {
-                        i = lineStart(i, end);
-                    }
                 }
             }
             flush(buf, link, nodes);
@@ -444,7 +472,7 @@ public class Markup {
         int trailingBreak() {
             int n = text.length();
             int start = n;
-            while (start > 0 && Character.isWhitespace(text.charAt(start - 1))) {
+            while (start > 0 && Util.isWhitespace(text.charAt(start - 1))) {
                 start--;
             }
             for (int i = start; i < n; i++) {
@@ -459,7 +487,7 @@ public class Markup {
         // nothing.
         private boolean onlySpaceFrom(int i) {
             for (; i < text.length(); i++) {
-                if (!Character.isWhitespace(text.charAt(i))) {
+                if (!Util.isWhitespace(text.charAt(i))) {
                     return false;
                 }
             }
@@ -482,16 +510,11 @@ public class Markup {
         // <br>, <br/> or <br /> in capitals or not.
         private int breakEnd(int i, int end) {
             char ch = text.charAt(i);
-            // The line break of a text of \r\n line ends too
-            int newline = (ch == '\r' && i + 1 < end && text.charAt(i + 1) == '\n') ? i + 1 : i;
-            if (text.charAt(newline) == '\n' && i >= 2 && text.charAt(i - 1) == ' ' && text.charAt(i - 2) == ' ') {
-                return newline + 1;
+            if (ch == '\n' && i >= 2 && text.charAt(i - 1) == ' ' && text.charAt(i - 2) == ' ') {
+                return i + 1;
             }
             if (ch == '\\' && i + 1 < end && text.charAt(i + 1) == '\n') {
                 return i + 2;
-            }
-            if (ch == '\\' && i + 2 < end && text.charAt(i + 1) == '\r' && text.charAt(i + 2) == '\n') {
-                return i + 3;
             }
             if (ch == '<' && i + 3 < end && (text.charAt(i + 1) == 'b' || text.charAt(i + 1) == 'B')
                     && (text.charAt(i + 2) == 'r' || text.charAt(i + 2) == 'R')) {
@@ -591,13 +614,15 @@ public class Markup {
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]
-        // at once, and a ) ends the URL before any space: [text](url).
+        // at once, and the ) that closes it ends the URL before any space:
+        // [text](url), with the parentheses in the URL in pairs, as in
+        // CommonMark: [Foo](https://x/Foo_(bar)).
         private boolean isLink(int i, int end) {
             int close = closingBracket[i];
             if (close == -1 || close + 1 >= end || text.charAt(close + 1) != '(') {
                 return false;
             }
-            int urlEnd = nextParenthesis[close + 2];
+            int urlEnd = closingParenthesis[close + 1];
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd;
         }
 
@@ -615,7 +640,7 @@ public class Markup {
             int from = i;
             if (text.charAt(i) == '<') {
                 from = i + 1;
-            } else if (i > start && !Character.isWhitespace(text.charAt(i - 1))
+            } else if (i > start && !Util.isWhitespace(text.charAt(i - 1))
                     && "(*_~".indexOf(text.charAt(i - 1)) == -1) {
                 return i;
             }
@@ -624,7 +649,7 @@ public class Markup {
                 return i;
             }
             int j = host;
-            while (j < end && !Character.isWhitespace(text.charAt(j))
+            while (j < end && !Util.isWhitespace(text.charAt(j))
                     && text.charAt(j) != '<' && text.charAt(j) != '>') {
                 j++;
             }
@@ -711,7 +736,7 @@ public class Markup {
         // The text of a code span: a line break is a space, and one space at
         // each end is taken away when both ends have one, as in `` `a` ``.
         private static String codeText(String code) {
-            code = code.replace('\n', ' ').replace('\r', ' ');
+            code = code.replace('\n', ' ');
             if (code.length() >= 2 && code.charAt(0) == ' ' && code.charAt(code.length() - 1) == ' '
                     && !code.trim().isEmpty()) {
                 code = code.substring(1, code.length() - 1);

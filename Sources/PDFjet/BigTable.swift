@@ -369,8 +369,8 @@ public class BigTable {
     private func drawFooter() {
         if !footerDrawn, let footerText = footerText, !footerText.isEmpty {
             let text = footerText
-                    .replacingOccurrences(of: "{page}", with: String(pageNumber))
-                    .replacingOccurrences(of: "{pages}", with: String(pageCount))
+                    .replacingOccurrences(of: "{page}", with: String(pageNumber), options: .literal)
+                    .replacingOccurrences(of: "{pages}", with: String(pageCount), options: .literal)
             // The page number repeats on every page, which makes it an artifact:
             // addFooter marks it as a pagination artifact, a footer.
             let footer = TextLine(footerFont ?? f1, text)

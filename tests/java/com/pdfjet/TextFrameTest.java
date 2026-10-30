@@ -681,4 +681,166 @@ class TextFrameTest {
         }
         assertTrue(rows >= 2, rows + " justified rows");
     }
+
+    // A text line wrapped into rows keeps its destination, in a TextFrame and
+    // a TextColumn, and the destination is where the text line starts: a link
+    // to it failed the document (the review of 30 October 2026).
+    @Test
+    void aWrappedTextLineKeepsItsDestination() throws Exception {
+        for (boolean column : new boolean[] {false, true}) {
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            Font font = TestSupport.helvetica(pdf);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextLine(font, "Go").setGoToAction("there").setLocation(50f, 50f).drawOn(page);
+            TextLine line = new TextLine(font, "one two three four five six seven").setDestination("there");
+            Paragraph paragraph = new Paragraph().add(line);
+            if (column) {
+                TextColumn textColumn = new TextColumn();
+                textColumn.setWidth(60f);
+                textColumn.setLocation(100f, 200f);
+                textColumn.addParagraph(paragraph);
+                textColumn.drawOn(page);
+            } else {
+                new TextFrame(Arrays.asList(paragraph)).setLocation(100f, 200f).setWidth(60f).drawOn(page);
+            }
+            pdf.complete();
+            String file = TestSupport.latin1(bos.toByteArray());
+            assertEquals(1, file.split("/Dest \\[").length - 1, file);
+            // The first row, a font size above its baseline, and not the last
+            float y = page.getHeight() - (paragraph.getTextY() - font.getSize());
+            Matcher matcher = Pattern.compile("/XYZ 0 ([0-9.]+) 0\\]").matcher(file);
+            assertTrue(matcher.find());
+            assertEquals(y, Float.parseFloat(matcher.group(1)), 0.1f);
+        }
+    }
+
+    @Test
+    void aDestinationNameUsedTwiceGoesToTheFirst() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Go").setGoToAction("x").setLocation(50f, 50f).drawOn(page);
+        new TextLine(font, "first").setDestination("x").setLocation(50f, 100f + font.getSize()).drawOn(page);
+        new TextLine(font, "second").setDestination("x").setLocation(50f, 200f + font.getSize()).drawOn(page);
+        pdf.complete();
+        assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/XYZ 0 692 0]"));
+    }
+
+    // A word broken into thousands of rows, with a text line joined to it,
+    // looked through the whole word for each row: quadratic time.
+    @Test
+    void aLongWordJoinedToTheNextIsDrawnInLinearTime() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder text = new StringBuilder("**");
+        for (int i = 0; i < 400000; i++) {
+            text.append('x');
+        }
+        Paragraph paragraph = new Markup(font, font, font, font, font).paragraph(text.append("**y").toString());
+        long milliseconds = TestSupport.shortestMillis(3000, () -> {
+            new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(300f).drawOn(null);
+        });
+        assertTrue(milliseconds < 3000, milliseconds + " ms");
+    }
+
+    // Each frame drawn copied the words left of the text line.
+    @Test
+    void manyFramesOfOneTextLineAreDrawnInLinearTime() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 1000000; i++) {
+            text.append("word ");
+        }
+        long milliseconds = TestSupport.shortestMillis(3000, () -> {
+            TextFrame frame = new TextFrame(Arrays.asList(new Paragraph().add(new TextLine(font, text.toString()))))
+                    .setLocation(10f, 10f).setWidth(300f).setHeight(600f);
+            while (frame.hasMoreText()) {
+                frame.drawOn(new Page(pdf, Letter.PORTRAIT, false));
+            }
+        });
+        assertTrue(milliseconds < 3000, milliseconds + " ms");
+    }
+
+    // Measured, the text is kept for the frame that draws it.
+    @Test
+    void measuringInsideATextLineKeepsItsWords() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder text = new StringBuilder("alpha");
+        for (int i = 0; i < 39; i++) {
+            text.append(" alpha");
+        }
+        TextFrame frame = new TextFrame(Arrays.asList(new Paragraph().add(new TextLine(font, text.toString()))))
+                .setLocation(10f, 10f).setWidth(100f).setHeight(40f);
+        frame.drawOn(new Page(pdf, Letter.PORTRAIT));
+        frame.drawOn(null);
+        Page second = new Page(pdf, Letter.PORTRAIT);
+        frame.drawOn(second);
+        assertTrue(TestSupport.content(second).contains(TestSupport.hex("alpha")));
+    }
+
+    // A row is below the row before it, or the top of the frame, by its tallest
+    // text: a 48 point word after 12 point text rose out of the frame.
+    @Test
+    void aLargerWordLowersItsRow() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph().add(new TextLine(font, "a").setFontSize(12f))
+                .add(new TextLine(font, "B").setFontSize(48f));
+        TextFrame frame = new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 100f).setWidth(300f);
+        frame.drawOn(new Page(pdf, Letter.PORTRAIT));
+        float want = 100f + font.getAscent(48f);
+        assertEquals(want, paragraph.getTextY(), 0.01f);
+        assertEquals(want + font.getDescent(48f), paragraph.getY2(), 0.01f);
+        assertEquals(want + font.getDescent(48f), frame.getTextBottom(), 0.01f);
+        // Words of one size in two fonts stay on the baseline of the first
+        Font mono = new Font(pdf, CoreFont.COURIER);
+        Paragraph even = new Paragraph().add(new TextLine(font, "a")).add(new TextLine(mono, "b"));
+        new TextFrame(Arrays.asList(even)).setLocation(10f, 100f).setWidth(300f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertEquals(100f + font.getAscent(font.getSize()), even.getTextY(), 0f);
+    }
+
+    // The alternate description of a text line in a paragraph, of a tagged
+    // document, is of one Span among the words, however many rows it wraps into.
+    @Test
+    void aTextLineInATaggedParagraphKeepsItsDescription() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
+        Font font = TestSupport.plexSans(pdf);
+        Paragraph paragraph = new Paragraph().add(new TextLine(font, "Before"))
+                .add(new TextLine(font, "H2O is a very long formula").setAltDescription("Water"))
+                .add(new TextLine(font, "after"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(60f).drawOn(page);
+        assertTrue(TestSupport.content(page).split("/Span <</MCID").length - 1 >= 2);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, raw.split("/S /Span").length - 1);
+        assertEquals(1, raw.split("/Alt ").length - 1);
+    }
+
+    // Spaces in code are as they are written: `a  b` was a b.
+    @Test
+    void codeKeepsItsSpaces() throws Exception {
+        assertEquals(Arrays.asList("a ", "b"), TextFrame.splitKeepingSpaces("a  b"));
+        assertEquals(Arrays.asList("a  ", "b"), TextFrame.splitKeepingSpaces("a   b"));
+        assertEquals(Arrays.asList(" a", "b "), TextFrame.splitKeepingSpaces(" a b  "));
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(Arrays.asList(new Markup(font, font, font, font, font).paragraph("x `a  b` y z  w")))
+                .setLocation(10f, 10f).setWidth(300f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("a  b ")), content);
+        assertTrue(content.contains(TestSupport.hex("y z w")), content);
+    }
+
+    @Test
+    void anEmptyParagraphStartsWithNothing() {
+        assertFalse(new Paragraph().startsWith("a"));
+        assertFalse(new Paragraph().startsWith(""));
+    }
 }

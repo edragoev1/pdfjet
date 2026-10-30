@@ -98,6 +98,13 @@ extension String {
 private let notAtLineStart = Set(")]},.:;!?、。，．・：；？！゛゜ヽヾゝゞ々〻ー‐゠–〜～）］｝」』】〕〉》〙〗〟’”｠»ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ".unicodeScalars)
 private let notAtLineEnd = Set("([{（［｛「『【〔〈《〘〖〝‘“｟«".unicodeScalars)
 
+/// Returns true for a character that does not start a line of Chinese or
+/// Japanese text: those of notAtLineStart, and a combining mark, as the dakuten
+/// U+3099, which stays with the letter before it.
+private func cannotStartLine(_ ch: Unicode.Scalar) -> Bool {
+    return notAtLineStart.contains(ch) || TextBlock.staysWithPrevious(ch)
+}
+
 /// Returns where a full line of Chinese or Japanese text ends when the next
 /// character does not fit on it, by the line breaking rules of these languages
 /// (kinsoku shori): when the next character does not start a line, the one
@@ -105,10 +112,10 @@ private let notAtLineEnd = Set("([{（［｛「『【〔〈《〘〖〝‘“｟
 /// end of the line. A line that has no other place to break ends where it is full.
 func cjkLineEnd(_ line: [Unicode.Scalar], _ next: Unicode.Scalar) -> Int {
     var end = line.count
-    if notAtLineStart.contains(next) {
+    if cannotStartLine(next) {
         while end > 0 {
             end -= 1
-            if !notAtLineStart.contains(line[end]) {
+            if !cannotStartLine(line[end]) {
                 break
             }
         }

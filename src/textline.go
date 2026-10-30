@@ -42,6 +42,7 @@ type TextLine struct {
 	explicitOffset     bool // True after SetVerticalOffset
 	uri, key           string
 	destination        string
+	keepSpaces         bool // Code: a TextFrame keeps the runs of spaces of the text
 	language           string
 	altDescription     string
 	uriLanguage        string
@@ -460,6 +461,7 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 	line.explicitOffset = textLine.explicitOffset
 	line.uri = textLine.uri
 	line.key = textLine.key
+	line.destination = textLine.destination
 	line.language = textLine.language
 	if textLine.altDescription != textLine.text {
 		line.altDescription = textLine.altDescription
