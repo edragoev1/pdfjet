@@ -1,5 +1,8 @@
 @echo off
 REM Windows batch script equivalent of clean.sh
+REM The folder of this script: run from anywhere else, it deleted the bin, obj,
+REM *.pdf and *.dll of that folder.
+cd /d "%~dp0"
 
 rmdir /s /q out\production 2>nul
 del /f /q net\pdfjet\*.exe.mdb 2>nul
