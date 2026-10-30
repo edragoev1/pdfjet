@@ -85,14 +85,15 @@ same output come in four languages, and none of them needs a third-party library
   SimpleScatterChart in the same look, and bar and donut charts too.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
-- **Fonts ready to use.** 261 TrueType and OpenType fonts from the IBM Plex, Noto and
-  other families, with Unicode text in Latin, Greek, Cyrillic, CJK and right
-  to left scripts, embedded as subsets of the glyphs a document draws. IBM
+- **Fonts ready to use.** 71 TrueType and OpenType fonts, IBM Plex Sans and
+  Serif, Cascadia Mono, and IBM Plex Sans JP, KR, SC, TC, Arabic, Hebrew and
+  Thai, with Unicode text in Latin, Greek, Cyrillic, CJK and right to left
+  scripts, embedded as subsets of the glyphs a document draws. IBM
   Plex Sans alone covers all 24 official languages of the European Union,
   from Czech ř and Romanian ș to Greek and Bulgarian, with the euro sign and
   each language's quotation marks: a one-page PDF in it is about 28 KB. A
-  page of Chinese in Noto Sans SC is about 93 KB, where the whole font is
-  6.5 MB.
+  page of Chinese in IBM Plex Sans SC is about 180 KB, where the whole font
+  is 7 MB.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics. For
   logos, icons and drawings, use SVG: it stays sharp at any size and in
   print, and it is far smaller and faster than a PNG with transparency,
