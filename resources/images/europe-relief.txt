@@ -1,0 +1,8 @@
+europe-relief.png is cut from Natural Earth II with Shaded Relief, 1:50m
+(NE2_50M_SR_W.tif), from https://www.naturalearthdata.com. Natural Earth
+data is in the public domain: https://www.naturalearthdata.com/about/terms-of-use/
+
+The image covers 12°W to 42°E and 62°N to 34°N in the geographic projection
+(WGS84) of the original, so longitude and latitude map linearly to x and y.
+It was narrowed to 67% of its width (the cosine of 48°N) so that central
+Europe keeps its proportions, and reduced to 256 colors: 1,084 by 840 pixels.

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The logo of a fictional print shop, written as a drawing program exports
+     one: a style sheet of classes, groups, a transform and basic shapes. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="48" viewBox="0 0 160 48">
+  <defs>
+    <style>
+      .tile { fill: #1d3557; }
+      .sheet { fill: #ffffff; }
+      .fold { fill: #a8dadc; }
+      .line { fill: none; stroke: #1d3557; stroke-width: 1.6; stroke-linecap: round; }
+      .accent { fill: #e63946; }
+      .bar { fill: #1d3557; }
+    </style>
+  </defs>
+  <rect class="tile" width="48" height="48" rx="10"/>
+  <g transform="translate(13 9)">
+    <path class="sheet" d="M0 0 H16 L22 6 V30 H0 Z"/>
+    <polygon class="fold" points="16,0 22,6 16,6"/>
+    <g class="line">
+      <line x1="4" y1="13" x2="18" y2="13"/>
+      <line x1="4" y1="18" x2="18" y2="18"/>
+      <line x1="4" y1="23" x2="13" y2="23"/>
+    </g>
+  </g>
+  <circle class="accent" cx="38" cy="38" r="5"/>
+  <g transform="translate(58 12)">
+    <rect class="bar" width="96" height="7" rx="3.5"/>
+    <rect class="bar" y="12" width="70" height="7" rx="3.5" opacity="0.55"/>
+    <rect class="accent" y="24" width="30" height="4" rx="2"/>
+  </g>
+</svg>
