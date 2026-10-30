@@ -17,6 +17,7 @@ rm -rf obj
 dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true
 
 # Build Example_01 to Example_06
+pids=()
 for i in {1..50}
 do
     if [ $i -lt 10 ]; then
@@ -24,10 +25,12 @@ do
     else
         dotnet build examples/Example_$i/Example_$i.csproj -c release -p:TreatWarningsAsErrors=true &
     fi
+    pids+=($!)
 done
 # Each compile in the background is waited for on its own, so that one that
-# fails stops the script here.
-for pid in $(jobs -p); do
+# fails stops the script here. By the pids taken as they started: jobs -p does
+# not list a job that has ended, so a compile that failed fast was passed over.
+for pid in "${pids[@]}"; do
     wait "$pid"
 done
 
