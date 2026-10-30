@@ -562,5 +562,33 @@ public class SimpleScatterChartTest {
         Assert.Contains("/Alt " + TestSupport.TextString("Scatter chart: 1 points; 1 point outside the range."),
                 TestSupport.Latin1(bos.ToArray()));
     }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    [Fact]
+    public void TheNoteNeverCostsThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        // The least height that draws, found from below
+        float height = 1f;
+        while (!NoteContent(pdf, PlotChart(font, height, 3f)).Contains(" Td\n")) {
+            height += 0.25f;
+        }
+        foreach (float h in new float[] {height, height + 1f, height + 5f}) {
+            String without = NoteContent(pdf, PlotChart(font, h, 3f));
+            SimpleScatterChart chart = PlotChart(font, h, 50f);
+            String with = NoteContent(pdf, chart);
+            Assert.DoesNotContain(TestSupport.Hex(" outside"), with);
+            Assert.Equal(without.Split(" Td\n").Length, with.Split(" Td\n").Length);
+            Assert.EndsWith("; 1 point outside the range.", chart.AltDescription());
+        }
+        // With the room, the note
+        Assert.Contains(TestSupport.Hex(" outside"), NoteContent(pdf, PlotChart(font, height + 20f, 50f)));
+    }
+
+    private static SimpleScatterChart PlotChart(Font font, float height, float far) {
+        return new SimpleScatterChart(font, font).SetSize(300f, height).SetXAxisRange(0f, 10f)
+                .Add(1f, 1f).Add(2f, 2f).Add(far, 1f);
+    }
 }
 }   // End of namespace PDFjet.NET

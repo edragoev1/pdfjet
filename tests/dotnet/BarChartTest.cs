@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -398,6 +399,151 @@ public class BarChartTest {
             }
             Assert.Equal(want, format(value, digits));
         }
+    }
+
+    // The content of the chart, on a page of its own.
+    private static String NoteContent(PDF pdf, BarChart chart) {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    private static BarChart NoteChart(PDF pdf) {
+        return NewChart(pdf).SetCategories("a", "b", "c").AddSeries("", new float[] {1f, 2f, 3f});
+    }
+
+    // A value of a line series outside a range that is set cuts its line, and
+    // the chart says so, in print and in its description, as SimpleLineChart
+    // does. A value that is no number is not outside, nor is a bar, and a chart
+    // with none outside adds nothing.
+    [Fact]
+    public void ItSaysHowManyValuesOfItsLinesAreOutsideTheRange() {
+        PDF pdf = TestSupport.NewPDF();
+        float nan = float.NaN;
+        float inf = float.PositiveInfinity;
+        String one = "1 value outside the range";
+        String two = "2 values outside the range";
+        Object[][] cases = {
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {1f, 100f, 3f}), ""},
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {0f, 5f, 10f}).SetValueAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {1f, nan, inf}).SetValueAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {1f, 2f, 3f, 50f}).SetValueAxisRange(0f, 10f), ""},
+            new Object[] {NewChart(pdf).SetCategories("a").AddSeries("", new float[] {50f}).SetValueAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {1f, 50f, 3f}).SetValueAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {1f, 2f, -50f}).SetValueAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {1f, 50f, -50f}).SetValueAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(pdf).AddLineSeries("x", new float[] {1f, 50f, 3f}).AddLineSeries("y", new float[] {50f, 2f, 3f})
+                    .SetValueAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(pdf).SetHorizontal(true).AddLineSeries("x", new float[] {1f, 50f, 3f})
+                    .SetValueAxisRange(0f, 10f), one},
+        };
+        foreach (Object[] c in cases) {
+            BarChart chart = (BarChart) c[0];
+            String note = (String) c[1];
+            String content = NoteContent(pdf, chart);
+            String description = chart.AltDescription(2);
+            if (note.Length == 0) {
+                Assert.DoesNotContain(TestSupport.Hex(" outside"), content);
+                Assert.DoesNotContain("outside", description);
+            } else {
+                Assert.Contains("<" + TestSupport.Hex(note) + ">", content);
+                Assert.EndsWith("; " + note + ".", description);
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the categories and the x title, the plot
+    // and the title that much higher; its right end at the plot's.
+    [Fact]
+    public void TheNoteIsUnderThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        String note = "1 value outside the range";
+        float size = font.GetSize();
+        float small = 0.8f * size;
+        float body = font.GetBodyHeight();
+        foreach (String title in new String[] {"", "year"}) {
+            String[] drawn = new String[2];
+            for (int k = 0; k < 2; k++) {
+                drawn[k] = NoteContent(pdf, NewChart(pdf).SetXAxisTitle(title).SetCategories("a", "b", "c")
+                        .AddSeries("", new float[] {1f, 2f, 3f})
+                        .AddLineSeries("", new float[] {1f, k == 0 ? 2f : 50f, 3f}).SetValueAxisRange(0f, 10f));
+            }
+            String with = drawn[1];
+            float[] at = TestSupport.PositionOf(with, note);
+            float end = at[0] + font.StringWidth(small, note);
+            Assert.True(Math.Abs(350f - body / 2f - end) <= 0.1f);
+            Assert.True(at[0] >= 50f && end <= 350f, "the note at " + at[0]);
+            Assert.True(Math.Abs(792f - (250f - body / 2f) - at[1]) <= 0.01f);
+            Assert.True(Math.Abs(TestSupport.PositionOf(drawn[0], "0")[1] + 1.4f * small - TestSupport.PositionOf(with, "0")[1]) <= 0.02f);
+            float last = TestSupport.PositionOf(with, "a")[1];
+            if (title.Length > 0) {
+                last = TestSupport.PositionOf(with, title)[1];
+                Assert.True(Math.Abs(TestSupport.PositionOf(drawn[0], title)[1] + 1.4f * small - last) <= 0.02f);
+            }
+            Assert.True(at[1] + font.GetAscent(small) <= last - font.GetDescent(size), "the note over the row above it");
+            Assert.Equal(TestSupport.FillColorBefore(with, "0"), TestSupport.FillColorBefore(with, note));
+        }
+        // In a chart too narrow for it, shortened and inside
+        String narrow = NoteContent(pdf, NewChart(pdf).SetSize(100f, 200f).SetCategories("a")
+                .AddSeries("", new float[] {1f}).AddLineSeries("", new float[] {50f}).SetValueAxisRange(0f, 10f));
+        Assert.True(TestSupport.PositionOf(narrow, "1 value")[0] >= 50f);
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    [Fact]
+    public void TheNoteFollowsADescriptionThatIsSet() {
+        BarChart chart = NewChart(TestSupport.NewPDF()).SetCategories("a", "b")
+                .AddLineSeries("", new float[] {1f, 2f}).SetAltDescription("A line");
+        Assert.Equal("A line", chart.AltDescription(2));
+        chart.AddLineSeries("", new float[] {1f, 50f}).SetValueAxisRange(0f, 10f);
+        Assert.Equal("A line. 1 value outside the range.", chart.AltDescription(2));
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    [Fact]
+    public void TheNoteIsInTheFigure() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new BarChart(font, font).SetSize(300f, 200f).SetCategories("a", "b").SetValueAxisRange(0f, 10f)
+                .AddLineSeries("", new float[] {1f, 50f}).DrawOn(page);
+        String content = TestSupport.Content(page);
+        Assert.Equal(content.IndexOf("BDC\n"), content.LastIndexOf("BDC\n"));
+        Assert.Equal(content.IndexOf("EMC\n"), content.LastIndexOf("EMC\n"));
+        Assert.True(content.LastIndexOf("ET\n") < content.LastIndexOf("EMC\n"));
+        Assert.EndsWith("; 1 value outside the range.", page.structures[0].altDescription);
+    }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    [Fact]
+    public void TheNoteNeverCostsThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        // The least height that draws, found from below
+        float height = 1f;
+        while (!NoteContent(pdf, PlotChart(pdf, height, 2f)).Contains(" Td\n")) {
+            height += 0.25f;
+        }
+        foreach (float h in new float[] {height, height + 1f, height + 5f}) {
+            String without = NoteContent(pdf, PlotChart(pdf, h, 2f));
+            BarChart chart = PlotChart(pdf, h, 50f);
+            String with = NoteContent(pdf, chart);
+            Assert.DoesNotContain(TestSupport.Hex(" outside"), with);
+            Assert.Contains("W\nn\n", with);
+            Assert.Equal(without.Split(" Td\n").Length, with.Split(" Td\n").Length);
+            Assert.EndsWith("; 1 value outside the range.", chart.AltDescription(2));
+        }
+        // With the room, the note
+        Assert.Contains(TestSupport.Hex(" outside"), NoteContent(pdf, PlotChart(pdf, height + 20f, 50f)));
+    }
+
+    private static BarChart PlotChart(PDF pdf, float height, float middle) {
+        return NewChart(pdf).SetSize(300f, height).SetCategories("a", "b", "c").SetValueAxisRange(0f, 10f)
+                .AddLineSeries("", new float[] {1f, middle, 3f});
     }
 }
 }

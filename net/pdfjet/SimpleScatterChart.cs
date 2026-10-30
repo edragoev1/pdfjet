@@ -20,7 +20,7 @@ namespace PDFjet.NET {
 /// that all of 200 points are links without a name printed for each. A point
 /// outside a range that is set is not drawn, and the chart says how many are:
 /// "2 points outside the range", small, under the plot at its right end, and in
-/// its description.
+/// its description, in that alone when the plot would not be left room to draw.
 ///
 /// In a PDF/UA document the chart is one figure, described from its data: the
 /// number of points, the highlighted ones and their values, which way the
@@ -689,10 +689,16 @@ public class SimpleScatterChart : IDrawable {
         if (xAxisTitle.Length > 0) {
             bottom -= 1.4f * size;
         }
-        // Room for the note, a row of its own under the rest
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
         String note = OutsideNote();
         if (note.Length > 0) {
-            bottom -= 1.4f * SubtitleSize();
+            float above = bottom - 1.4f * SubtitleSize();
+            if (above > top) {
+                bottom = above;
+            } else {
+                note = "";
+            }
         }
         if (right <= left || bottom <= top || !ChartScale.Drawable(xAxis) || !ChartScale.Drawable(yAxis)) {
             return new float[] {x + w, y + h};
