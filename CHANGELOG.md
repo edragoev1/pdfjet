@@ -9,9 +9,13 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.1.7 — not released yet
 
-Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
+The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 
 ### Added
+- Go: `XMLNode.Content()` in the package xmlparser returns the text and the
+  child elements of a node in the order of the document, a string for each
+  piece of text and an `*XMLNode` for each element. The SVG reader draws
+  text with it; Java, C# and Swift have the same, inside the library.
 - SimpleBarChart, all four ports, three additions, each off unless set, so
   that a chart drawn before draws the same (checked against 9.1.5, byte for
   byte but for the date and the document ID):
