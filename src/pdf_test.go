@@ -421,6 +421,24 @@ func TestPDFTheNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF(t *testing.T) {
 	testWant(t, "<5f6265727369636874205f20725f73756d5f205f2e747874>", strings.ToLower(spec.GetValue("/F")))
 }
 
+// /F is a file specification string of one component, the file name (ISO
+// 32000-2, 7.11.2): a solidus is preceded by a reverse solidus, and a
+// reverse solidus, which a reader removes, is an underscore; /UF is the name
+// as it is.
+func TestPDFTheFOfAnEmbeddedFileEscapesASolidus(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	file := NewEmbeddedFile(doc.pdf, "in/out\\a.txt", strings.NewReader("Hello"), false)
+	NewFileAttachment(file).SetLocation(100, 100).DrawOn(page)
+	spec := testFindObject(testRead(t, doc.complete()), "/UF")
+	if spec == nil {
+		t.Fatal("no /UF")
+	}
+	testWant(t, "in/out\\a.txt", testUTF16Hex(t, spec.GetValue("/UF")))
+	// in\/out_a.txt
+	testWant(t, "<696e5c2f6f75745f612e747874>", strings.ToLower(spec.GetValue("/F")))
+}
+
 func TestPDFAPointIsAnArtifact(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")

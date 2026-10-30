@@ -34,7 +34,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   Poppler, and compares the snippets of the booklet in the four ports. The
   Build workflow runs the same checks on every push, but for the snippets,
   which it compiles and does not compare.
-- **The public API.** `./check-api.sh v9.1.1` (the last release) lists what
+- **The public API.** `./check-api.sh v9.1.5` (the last release) lists what
   was added and what was removed in each port: nothing is removed and no
   signature changes but those util/api-removed.txt lists, each with the
   owner's word and a line of CHANGELOG.md, and what is added is what

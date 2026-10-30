@@ -671,6 +671,27 @@ public class PDFTest {
         Assert.Equal("\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
         Assert.Equal("<5f6265727369636874205f20725f73756d5f205f2e747874>", spec.GetValue("/F").ToLowerInvariant());
     }
+
+    // /F is a file specification string of one component, the file name (ISO
+    // 32000-2, 7.11.2): a solidus is preceded by a reverse solidus, and a
+    // reverse solidus, which a reader removes, is an underscore; /UF is the
+    // name as it is.
+    [Fact]
+    public void TheFOfAnEmbeddedFileEscapesASolidus() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        EmbeddedFile file = new EmbeddedFile(pdf, "in/out\\a.txt",
+                new MemoryStream(Encoding.ASCII.GetBytes("Hello")), false);
+        new FileAttachment(file).SetLocation(100f, 100f).DrawOn(page);
+        pdf.Complete();
+        PDFobj spec = TestSupport.FindObject(TestSupport.Read(stream.ToArray()), "/UF");
+        Assert.NotNull(spec);
+        Assert.Equal("in/out\\a.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
+        // in\/out_a.txt
+        Assert.Equal("<696e5c2f6f75745f612e747874>", spec.GetValue("/F").ToLowerInvariant());
+    }
+
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads
     // past the file, allocates what the file does not have or traps in Swift.

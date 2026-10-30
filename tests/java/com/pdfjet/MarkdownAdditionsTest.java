@@ -58,6 +58,35 @@ class MarkdownAdditionsTest {
         assertFalse(bold.joinsPrevious(1));
     }
 
+    // A hard line break at the end of a text is no break, as in CommonMark,
+    // and the spaces before it are not in the last text line; paragraphs
+    // strips the whitespace at the end of each paragraph.
+    @Test
+    void aHardLineBreakAtTheEndIsNoBreak() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(1, paragraph.lines.size(), text);
+            assertEquals("0", paragraph.lines.get(0).text, text);
+            assertEquals(0, paragraph.lines.get(0).lineBreaks, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(1, paragraphs.get(0).lines.size(), text);
+            assertEquals("0", paragraphs.get(0).lines.get(0).text, text);
+        }
+        // In bold, and a break before the last line
+        Paragraph bold = markup.paragraph("**0**  \n");
+        assertEquals(1, bold.lines.size());
+        assertEquals("0", bold.lines.get(0).text);
+        assertEquals(0, bold.lines.get(0).lineBreaks);
+        Paragraph two = markup.paragraph("one  \ntwo  \n");
+        assertEquals(Arrays.asList(true, false), breaks(two));
+        assertEquals("two", two.lines.get(1).text);
+        // Spaces at the end without a line break are text in paragraph
+        assertEquals("0  ", markup.paragraph("0  ").lines.get(0).text);
+        assertEquals("0", markup.paragraphs("0  ").get(0).lines.get(0).text);
+    }
+
     @Test
     void aTextFrameStartsARowAtABreak() throws Exception {
         TestSupport.allowCoreFonts(true);

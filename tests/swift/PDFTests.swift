@@ -662,6 +662,24 @@ import Testing
         #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9} \u{1F600}.txt")
         #expect(spec.getValue("/F").lowercased() == "<5f6265727369636874205f20725f73756d5f205f2e747874>")
     }
+
+    // /F is a file specification string of one component, the file name (ISO
+    // 32000-2, 7.11.2): a solidus is preceded by a reverse solidus, and a
+    // reverse solidus, which a reader removes, is an underscore; /UF is the
+    // name as it is.
+    @Test func theFOfAnEmbeddedFileEscapesASolidus() throws {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let file = try EmbeddedFile(memory.pdf, "in/out\\a.txt",
+                InputStream(data: Data("Hello".utf8)), false)
+        FileAttachment(file).setLocation(100, 100).drawOn(page)
+        try memory.pdf.complete()
+        let spec = try #require(TestSupport.findObject(try TestSupport.read(memory.bytes), "/UF"))
+        #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "in/out\\a.txt")
+        // in\/out_a.txt
+        #expect(spec.getValue("/F").lowercased() == "<696e5c2f6f75745f612e747874>")
+    }
+
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads
     // past the file, allocates what the file does not have or traps.

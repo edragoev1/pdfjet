@@ -27,8 +27,9 @@ import (
 // Paragraph.AddJoined.
 //
 // A line that ends in two spaces or a backslash, and a <br>, are hard line
-// breaks, which TextFrame draws as the end of a row; any other line break is
-// a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+// breaks, which TextFrame draws as the end of a row; two spaces and a line
+// break at the end of the text are not, and are dropped, as in CommonMark.
+// Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 // &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 // the numbers &#8212; and &#x2014;, are the characters they name.
 //
@@ -128,9 +129,11 @@ func (markup *Markup) Paragraphs(text string) []*Paragraph {
 func (markup *Markup) addParagraph(paragraphs []*Paragraph, buf *strings.Builder) []*Paragraph {
 	if buf.Len() > 0 {
 		// Without the line break after the last line, which made a backslash
-		// at the end of the paragraph a hard line break, and dropped it
+		// at the end of the paragraph a hard line break, and dropped it, and
+		// without the whitespace at its end, as CommonMark strips the final
+		// spaces of a paragraph: "0  \n" is "0"
 		text := buf.String()
-		paragraph := markup.Paragraph(text[:len(text)-1])
+		paragraph := markup.Paragraph(strings.TrimRightFunc(text[:len(text)-1], isJavaWhitespace))
 		if len(paragraph.lines) > 0 {
 			paragraphs = append(paragraphs, paragraph)
 		}
@@ -143,6 +146,12 @@ func (markup *Markup) addParagraph(paragraphs []*Paragraph, buf *strings.Builder
 // text in one style, each joined to the text before it.
 func (markup *Markup) Paragraph(text string) *Paragraph {
 	parser := newMarkupParser([]rune(text))
+	if end := parser.trailingBreak(); end < len(parser.text) {
+		// A hard line break at the end of the text is no break, as in
+		// CommonMark, and the whitespace at the end is dropped: "0  \n" is
+		// the text line "0"
+		parser = newMarkupParser(parser.text[:end])
+	}
 	nodes := make([]*markupNode, 0)
 	nodes = parser.parse(0, len(parser.text), "", nodes)
 	paragraph := NewParagraph()
@@ -408,6 +417,23 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 	_, nodes = markupFlush(buf, link, nodes)
 	markupMatchEmphasis(nodes, first)
 	return nodes
+}
+
+// trailingBreak returns where the whitespace at the end of the text starts
+// when a hard line break is in it, two spaces before a line break, or the
+// length of the text when none is.
+func (parser *markupParser) trailingBreak() int {
+	n := len(parser.text)
+	start := n
+	for start > 0 && isJavaWhitespace(parser.text[start-1]) {
+		start--
+	}
+	for i := start; i < n; i++ {
+		if parser.breakEnd(i, n) > i {
+			return start
+		}
+	}
+	return n
 }
 
 // breakEnd returns where a hard line break at the index ends, or i when there

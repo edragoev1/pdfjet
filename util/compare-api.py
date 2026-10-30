@@ -5,7 +5,7 @@ added (+) in each. A line marked deprecated, [Obsolete] or [deprecated], or a
 Swift initializer made a convenience one of the same signature, is changed
 rather than gone and added, and does not fail the check.
 
-    python3 util/compare-api.py build/check-api v9.0.1
+    python3 util/compare-api.py build/check-api v9.1.5
 """
 import os
 import re

@@ -182,6 +182,28 @@ Planned with PDFjet Pro's next release, likely early 2027 (TODO.md).
   page, is the zlib stream of no bytes, 8 bytes, as on .NET 8. .NET 10's
   ZLibStream writes nothing for no bytes, so such a `/FlateDecode` stream
   had length 0, which is no zlib stream. On .NET 8 nothing changes.
+- The four ports: the `/F` of an embedded file follows ISO 32000-2, 7.11.2,
+  on file specification strings. The name is one component, the file name:
+  a solidus in it is preceded by a reverse solidus, which tells it from the
+  separator of components, as 7.11.2 asks, and a reverse solidus in it is an
+  underscore, as a reader removes each reverse solidus and 7.11.2 gives no
+  way to write one that stays. `/UF` keeps the full name.
+- Behavior change: a solidus or a reverse solidus in the name of an
+  embedded file is written differently in `/F`. Example: for `in/out.txt`,
+  `/F` is the bytes `in\/out.txt`, where it was `in/out.txt`, a folder `in`
+  and a file `out.txt` to a reader; for `C:\temp\a.txt` it is
+  `C:_temp_a.txt`, where it was `C:\temp\a.txt`, which a reader reads as
+  `C:tempa.txt`.
+- Markup, the four ports: a hard line break at the very end of a text, two
+  spaces and a line break, is no break, as in CommonMark, and the spaces
+  are no longer in the last text line. `paragraphs` strips the whitespace
+  at the end of each paragraph, as CommonMark strips a paragraph's final
+  spaces and as Markdown did already.
+- Behavior change: `paragraph("0  \n")` is the one text line `0`, with no
+  line break after it, where it was `0  ` and a line break, and
+  `paragraphs("0  \n")` is `0`, where it was `0  `. Example:
+  `paragraphs("Total \n\nNext")` gives the text lines `Total` and `Next`,
+  where the first was `Total `.
 
 ## v9.1.5 — 2026-10-28
 

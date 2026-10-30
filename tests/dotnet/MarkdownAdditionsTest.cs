@@ -49,6 +49,35 @@ public class MarkdownAdditionsTest {
         Assert.False(bold.JoinsPrevious(1));
     }
 
+    // A hard line break at the end of a text is no break, as in CommonMark,
+    // and the spaces before it are not in the last text line; Paragraphs
+    // strips the whitespace at the end of each paragraph.
+    [Fact]
+    public void AHardLineBreakAtTheEndIsNoBreak() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Single(paragraph.lines);
+            Assert.Equal("0", paragraph.lines[0].text);
+            Assert.Equal(0, paragraph.lines[0].lineBreaks);
+            List<Paragraph> paragraphs = markup.Paragraphs(text);
+            Assert.Single(paragraphs);
+            Assert.Single(paragraphs[0].lines);
+            Assert.Equal("0", paragraphs[0].lines[0].text);
+        }
+        // In bold, and a break before the last line
+        Paragraph bold = markup.Paragraph("**0**  \n");
+        Assert.Single(bold.lines);
+        Assert.Equal("0", bold.lines[0].text);
+        Assert.Equal(0, bold.lines[0].lineBreaks);
+        Paragraph two = markup.Paragraph("one  \ntwo  \n");
+        Assert.Equal(new List<bool> {true, false}, Breaks(two));
+        Assert.Equal("two", two.lines[1].text);
+        // Spaces at the end without a line break are text in Paragraph
+        Assert.Equal("0  ", markup.Paragraph("0  ").lines[0].text);
+        Assert.Equal("0", markup.Paragraphs("0  ")[0].lines[0].text);
+    }
+
     [Fact]
     public void ATextFrameStartsARowAtABreak() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();

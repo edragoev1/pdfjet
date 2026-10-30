@@ -166,16 +166,26 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	return file
 }
 
-// fileSpecBytes returns the file name as the bytes of /F: each character
-// from space to tilde (0x20 to 0x7E) as it is, and each other character, one
-// Unicode code point, as an underscore, so that "résumé.txt" is
-// "r_sum_.txt". The full name is in /UF.
+// fileSpecBytes returns the file name as the bytes of /F, a file
+// specification string of one component, the file name (ISO 32000-2,
+// 7.11.2): a solidus in the name is preceded by a reverse solidus, which
+// tells it from a separator of components, so that "in/out" is "in\/out";
+// a reverse solidus in the name is an underscore, as a reader removes each
+// reverse solidus and 7.11.2 gives no way to write one that stays, so that
+// "C:\temp\a.txt" is "C:_temp_a.txt"; each other character from space to tilde (0x20 to 0x7E)
+// is as it is, and each other one, one Unicode code point, an underscore,
+// so that "résumé.txt" is "r_sum_.txt". The full name is in /UF.
 func fileSpecBytes(fileName string) []byte {
 	bytes := make([]byte, 0, len(fileName))
 	for _, ch := range fileName {
-		if ch >= 0x20 && ch <= 0x7E {
+		switch {
+		case ch == '/':
+			bytes = append(bytes, '\\', '/')
+		case ch == '\\':
+			bytes = append(bytes, '_')
+		case ch >= 0x20 && ch <= 0x7E:
 			bytes = append(bytes, byte(ch))
-		} else {
+		default:
 			bytes = append(bytes, '_')
 		}
 	}

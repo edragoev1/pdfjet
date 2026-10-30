@@ -59,6 +59,35 @@ func TestMarkdownAdditionsHardLineBreaks(t *testing.T) {
 	}
 }
 
+// A hard line break at the end of a text is no break, as in CommonMark, and
+// the spaces before it are not in the last text line; Paragraphs strips the
+// whitespace at the end of each paragraph.
+func TestMarkdownAdditionsAHardLineBreakAtTheEndIsNoBreak(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "} {
+		paragraph := markup.Paragraph(text)
+		if len(paragraph.lines) != 1 || paragraph.lines[0].text != "0" || paragraph.lines[0].lineBreaks != 0 {
+			t.Errorf("%q: %d text lines", text, len(paragraph.lines))
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 1 || paragraphs[0].lines[0].text != "0" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	// In bold, and a break before the last line
+	bold := markup.Paragraph("**0**  \n")
+	if len(bold.lines) != 1 || bold.lines[0].text != "0" || bold.lines[0].lineBreaks != 0 {
+		t.Errorf("**0**: %d text lines", len(bold.lines))
+	}
+	two := markup.Paragraph("one  \ntwo  \n")
+	if got := testBreaks(two); !reflect.DeepEqual(got, []bool{true, false}) || two.lines[1].text != "two" {
+		t.Errorf("one two: breaks %v", got)
+	}
+	// Spaces at the end without a line break are text in Paragraph
+	testWant(t, "0  ", markup.Paragraph("0  ").lines[0].text)
+	testWant(t, "0", markup.Paragraphs("0  ")[0].lines[0].text)
+}
+
 func TestMarkdownAdditionsATextFrameStartsARowAtABreak(t *testing.T) {
 	testAllowCoreFonts(t)
 	pdf := testNewPDF()

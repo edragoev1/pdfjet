@@ -41,6 +41,34 @@ import Testing
         #expect(!bold.joinsPrevious(1))
     }
 
+    // A hard line break at the end of a text is no break, as in CommonMark,
+    // and the spaces before it are not in the last text line; paragraphs
+    // strips the whitespace at the end of each paragraph.
+    @Test func aHardLineBreakAtTheEndIsNoBreak() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "] {
+            let paragraph = markup.paragraph(text)
+            #expect(paragraph.lines.count == 1, "\(text)")
+            #expect(paragraph.lines.first?.text == "0", "\(text)")
+            #expect(paragraph.lines.first?.lineBreaks == 0, "\(text)")
+            let paragraphs = markup.paragraphs(text)
+            #expect(paragraphs.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.first?.text == "0", "\(text)")
+        }
+        // In bold, and a break before the last line
+        let bold = markup.paragraph("**0**  \n")
+        #expect(bold.lines.count == 1)
+        #expect(bold.lines.first?.text == "0")
+        #expect(bold.lines.first?.lineBreaks == 0)
+        let two = markup.paragraph("one  \ntwo  \n")
+        #expect(MarkdownAdditionsTests.breaks(two) == [true, false])
+        #expect(two.lines.count == 2 && two.lines[1].text == "two")
+        // Spaces at the end without a line break are text in paragraph
+        #expect(markup.paragraph("0  ").lines.first?.text == "0  ")
+        #expect(markup.paragraphs("0  ").first?.lines.first?.text == "0")
+    }
+
     @Test func aTextFrameStartsARowAtABreak() {
         let page = TestSupport.newPage()
         let markup = MarkdownAdditionsTests.markup(page.pdf)
