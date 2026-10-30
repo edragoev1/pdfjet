@@ -61,6 +61,8 @@ public class Table implements Drawable {
     // decimals, or null when the table is not being drawn: they were read
     // again for every page, which took 33 seconds for 40,000 rows.
     private Map<Integer, ColumnSums> columnSums;
+    // The height of the header rows, wrapped, that getTotalHeight measures.
+    float wrappedHeaderHeight;
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -1117,6 +1119,13 @@ public class Table implements Drawable {
         if (page != null && !first && !repeatsHeaderOn(page)) {
             return new float[] {x, y};
         }
+        float height = 0f;
+        for (int i = 0; i < numOfHeaderRows && i < tableData.size(); i++) {
+            if (!(first && isBroughtForwardRow(i))) {
+                height += this.heights[i];
+            }
+        }
+        checkFits(page, "header", y, height);
         if (page != null && !first && numOfHeaderRows > 0) {
             page.addArtifactBMC();
         }
@@ -1498,6 +1507,11 @@ public class Table implements Drawable {
     private float drawFooterRows(Page page, float x, float y, float[] heights, boolean last)
             throws Exception {
         int footer = footerStart();
+        float height = 0f;
+        for (int r = footer; r < tableData.size(); r++) {
+            height += heights[r];
+        }
+        checkFits(page, "footer", y, height);
         if (page != null && !last && footer < tableData.size()) {
             page.addArtifactBMC();
         }
@@ -1517,6 +1531,22 @@ public class Table implements Drawable {
             page.addEMC();
         }
         return y;
+    }
+
+    // Fails the document, as a row of the body does, when the header or footer
+    // rows of the height, drawn at y, run off the page: what did not fit was
+    // lost with no error, a page total among it (the review of 30 October
+    // 2026). Rows that only reach into the bottom margin are drawn, as those
+    // of the body are.
+    private void checkFits(Page page, String rows, float y, float height) {
+        if (page == null || height <= 0f || y + height <= page.height) {
+            return;
+        }
+        rendered = -1; // Nothing more is drawn, and no more pages are asked for
+        page.pdf.fail(new IllegalStateException(String.format(Locale.ROOT,
+                "The %s rows of the table are %.0f points tall, and run off the page, "
+                + "which has %.0f points for them. Make them smaller, or give the table more of the page.",
+                rows, height, Math.max(page.height - bottomMargin - y, 0f))));
     }
 
     // Works out what each cell that spans rows covers, after the text is
@@ -2077,8 +2107,13 @@ public class Table implements Drawable {
             wrapAroundCellText();
             applyRowSpans();
             float total = 0f;
-            for (float height : getRowHeights()) {
-                total += height;
+            float[] heights = getRowHeights();
+            wrappedHeaderHeight = 0f;
+            for (int r = 0; r < heights.length; r++) {
+                total += heights[r];
+                if (r < numOfHeaderRows) {
+                    wrappedHeaderHeight += heights[r];
+                }
             }
             return total;
         } finally {

@@ -113,6 +113,37 @@ public sealed class TableTest : IDisposable {
     // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
     // the page with no error, and what did not fit was lost (issue #4, 15 October
     // 2026): it fails, and the same text in a text cell goes on over the pages.
+    private static void DrawThreeRows(PDF pdf, float y, float bodySize) {
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "header")},
+            new List<Cell> {new Cell(font, "x").SetFontSize(bodySize)},
+            new List<Cell> {new Cell(font, "footer")}
+        };
+        Table table = new Table().SetTableData(data, 1).SetNumberOfFooterRows(1);
+        table.SetLocation(50f, y);
+        table.SetBottomMargin(20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        pdf.AddPages(pages);
+    }
+
+    // Header and footer rows that run off the page were lost with no error: a
+    // page total was drawn at 781.9 to 799.7 of 792 (the review of 30 October
+    // 2026, E3). They fail as a row of the body does, and rows that only reach
+    // into the bottom margin are drawn, as those of the body are.
+    [Fact]
+    public void HeaderAndFooterRowsThatRunOffThePageFail() {
+        InvalidOperationException e = Assert.Throws<InvalidOperationException>(
+                () => DrawThreeRows(TestSupport.NewPDF(), 780f, 12f));
+        Assert.Contains("The header rows of the table", e.Message);
+        e = Assert.Throws<InvalidOperationException>(() => DrawThreeRows(TestSupport.NewPDF(), 50f, 610f));
+        Assert.Contains("The footer rows of the table", e.Message);
+        PDF pdf = TestSupport.NewPDF();
+        DrawThreeRows(pdf, 30f, 610f);
+        pdf.Complete();
+    }
+
     [Fact]
     public void ACellTallerThanAPageThatCannotBeSplitFails() {
         StringBuilder words = new StringBuilder();

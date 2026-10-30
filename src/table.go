@@ -75,6 +75,8 @@ type Table struct {
 	// decimals, or nil when the table is not being drawn: they were read
 	// again for every page, which took 33 seconds for 40,000 rows.
 	columnSums map[[2]int]*columnSums
+	// The height of the header rows, wrapped, that getTotalHeight measures.
+	wrappedHeaderHeight float32
 }
 
 // columnSums is the number of each row of a column, in units of the decimals,
@@ -1036,6 +1038,15 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	if page != nil && !first && !table.repeatsHeaderOn(page) {
 		return [2]float32{x, y}
 	}
+	height := float32(0.0)
+	for i := 0; i < table.numOfHeaderRows && i < len(table.tableData); i++ {
+		if !(first && table.isBroughtForwardRow(i)) {
+			height += table.heights[i]
+		}
+	}
+	if table.runsOff(page, "header", y, height) {
+		return [2]float32{x, y}
+	}
 	if page != nil && !first && table.numOfHeaderRows > 0 {
 		page.AddArtifactBMC()
 	}
@@ -1430,6 +1441,13 @@ func (table *Table) spanAbove(r, column int) int {
 // the pages before.
 func (table *Table) drawFooterRows(page *Page, x, y float32, heights []float32, last bool) float32 {
 	footer := table.footerStart()
+	height := float32(0.0)
+	for r := footer; r < len(table.tableData); r++ {
+		height += heights[r]
+	}
+	if table.runsOff(page, "footer", y, height) {
+		return y
+	}
 	artifact := page != nil && !last && footer < len(table.tableData)
 	if artifact {
 		page.AddArtifactBMC()
@@ -1455,6 +1473,22 @@ func (table *Table) drawFooterRows(page *Page, x, y float32, heights []float32, 
 	return y
 }
 
+// runsOff tells if the header or footer rows of the height, drawn at y, run
+// off the page, which fails the document as a row of the body that does: what
+// did not fit was lost with no error, a page total among it (the review of 30
+// October 2026). Rows that only reach into the bottom margin are drawn, as
+// those of the body are.
+func (table *Table) runsOff(page *Page, rows string, y, height float32) bool {
+	if page == nil || height <= 0.0 || y+height <= page.height {
+		return false
+	}
+	page.pdf.fail(fmt.Sprintf("The %s rows of the table are %.0f points tall, and run off the page, "+
+		"which has %.0f points for them. Make them smaller, or give the table more of the page.",
+		rows, height, max(page.height-table.bottomMargin-y, 0.0)))
+	table.rendered = -1 // Nothing more is drawn, and no more pages are asked for
+	return true
+}
+
 // applyRowSpans works out what each cell that spans rows covers, after the
 // text is wrapped: a row of the table is drawn as one row for each line its
 // tallest cell needs, so a cell that spans two rows of the table spans as many
@@ -1477,8 +1511,12 @@ func (table *Table) getTotalHeight() float32 {
 	table.wrapAroundCellText()
 	table.applyRowSpans()
 	var total float32
-	for _, height := range table.getRowHeights() {
+	table.wrappedHeaderHeight = 0
+	for r, height := range table.getRowHeights() {
 		total += height
+		if r < table.numOfHeaderRows {
+			table.wrappedHeaderHeight += height
+		}
 	}
 	return total
 }

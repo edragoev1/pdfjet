@@ -61,6 +61,8 @@ public class Table : IDrawable {
     // decimals, or null when the table is not being drawn: they were read
     // again for every page, which took 33 seconds for 40,000 rows.
     private Dictionary<long, ColumnSums> columnSums;
+    // The height of the header rows, wrapped, that GetTotalHeight measures.
+    internal float wrappedHeaderHeight;
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -1073,6 +1075,13 @@ public class Table : IDrawable {
         if (page != null && !first && !RepeatsHeaderOn(page)) {
             return new float[] {x, y};
         }
+        float height = 0f;
+        for (int i = 0; i < numOfHeaderRows && i < tableData.Count; i++) {
+            if (!(first && IsBroughtForwardRow(i))) {
+                height += this.heights[i];
+            }
+        }
+        CheckFits(page, "header", y, height);
         if (page != null && !first && numOfHeaderRows > 0) {
             page.AddArtifactBMC();
         }
@@ -1453,6 +1462,11 @@ public class Table : IDrawable {
     // pages before.
     private float DrawFooterRows(Page page, float x, float y, float[] heights, bool last) {
         int footer = FooterStart();
+        float height = 0f;
+        for (int r = footer; r < tableData.Count; r++) {
+            height += heights[r];
+        }
+        CheckFits(page, "footer", y, height);
         bool artifact = (page != null && !last && footer < tableData.Count);
         if (artifact) {
             page.AddArtifactBMC();
@@ -1474,6 +1488,22 @@ public class Table : IDrawable {
         return y;
     }
 
+    // Fails the document, as a row of the body does, when the header or footer
+    // rows of the height, drawn at y, run off the page: what did not fit was
+    // lost with no error, a page total among it (the review of 30 October
+    // 2026). Rows that only reach into the bottom margin are drawn, as those
+    // of the body are.
+    private void CheckFits(Page page, String rows, float y, float height) {
+        if (page == null || height <= 0f || y + height <= page.height) {
+            return;
+        }
+        rendered = -1;  // Nothing more is drawn, and no more pages are asked for
+        page.pdf.Fail(new InvalidOperationException(String.Format(CultureInfo.InvariantCulture,
+                "The {0} rows of the table are {1:F0} points tall, and run off the page, "
+                + "which has {2:F0} points for them. Make them smaller, or give the table more of the page.",
+                rows, height, Math.Max(page.height - bottomMargin - y, 0f))));
+    }
+
     // Works out what each cell that spans rows covers, after the text is
     // wrapped: a row of the table is drawn as one row for each line its
     // tallest cell needs, so a cell that spans two rows of the table spans as
@@ -1491,8 +1521,13 @@ public class Table : IDrawable {
             WrapAroundCellText();
             ApplyRowSpans();
             float total = 0f;
-            foreach (float height in GetRowHeights()) {
-                total += height;
+            float[] heights = GetRowHeights();
+            wrappedHeaderHeight = 0f;
+            for (int r = 0; r < heights.Length; r++) {
+                total += heights[r];
+                if (r < numOfHeaderRows) {
+                    wrappedHeaderHeight += heights[r];
+                }
             }
             return total;
         } finally {

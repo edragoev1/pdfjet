@@ -24,6 +24,33 @@ import Testing
     // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
     // the page with no error, and what did not fit was lost (issue #4, 15 October
     // 2026): it fails, and the same text in a text cell goes on over the pages.
+    private func completeThreeRows(_ y: Float, _ bodySize: Float) throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let data = [[Cell(font, "header")], [Cell(font, "x").setFontSize(bodySize)], [Cell(font, "footer")]]
+        let table = Table().setTableData(data, 1).setNumberOfFooterRows(1)
+        table.setLocation(50, y)
+        table.setBottomMargin(20)
+        var pages = [Page]()
+        table.drawOn(memory.pdf, &pages, Letter.PORTRAIT)
+        memory.pdf.addPages(pages)
+        try memory.pdf.complete()
+    }
+
+    // Header and footer rows that run off the page were lost with no error: a
+    // page total was drawn at 781.9 to 799.7 of 792 (the review of 30 October
+    // 2026, E3). They fail as a row of the body does, and rows that only reach
+    // into the bottom margin are drawn, as those of the body are.
+    @Test func headerAndFooterRowsThatRunOffThePageFail() throws {
+        var error = #expect(throws: PDFjetError.self) { try completeThreeRows(780, 12) }
+        var message = TestSupport.message(error)
+        #expect(message.contains("The header rows of the table"), "got \(message)")
+        error = #expect(throws: PDFjetError.self) { try completeThreeRows(50, 610) }
+        message = TestSupport.message(error)
+        #expect(message.contains("The footer rows of the table"), "got \(message)")
+        try completeThreeRows(30, 610)
+    }
+
     @Test func aCellTallerThanAPageThatCannotBeSplitFails() throws {
         var words = ""
         for i in 0..<200 {

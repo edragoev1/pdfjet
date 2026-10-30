@@ -178,6 +178,39 @@ func TestTableTheFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces(t *testing
 
 // A row taller than the page is refused, rather than asked a new page for
 // forever, and no longer drawn off the page (issue #4).
+// Header and footer rows that run off the page were lost with no error: a
+// page total was drawn at 781.9 to 799.7 of 792 (the review of 30 October
+// 2026, E3). They fail as a row of the body does, and rows that only reach
+// into the bottom margin are drawn, as those of the body are.
+func TestTableHeaderAndFooterRowsThatRunOffThePageFail(t *testing.T) {
+	draw := func(y, bodySize float32) error {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		data := [][]*Cell{{NewCell(font, "header")}, {NewCell(font, "x").SetFontSize(bodySize)}, {NewCell(font, "footer")}}
+		table := NewTable().SetTableData(data, 1).SetNumberOfFooterRows(1)
+		table.SetLocation(50, y)
+		table.SetBottomMargin(20)
+		var pages []*Page
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		doc.pdf.AddPages(pages)
+		return doc.pdf.Complete()
+	}
+	for _, c := range []struct {
+		y, size float32
+		want    string
+	}{
+		{780, 12, "The header rows of the table"},
+		{50, 610, "The footer rows of the table"},
+	} {
+		if err := draw(c.y, c.size); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("got %v, want %q", err, c.want)
+		}
+	}
+	if err := draw(30, 610); err != nil {
+		t.Errorf("rows that reach into the bottom margin: %v", err)
+	}
+}
+
 func TestTableARowTallerThanThePageIsRefusedRatherThanAskedForForever(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)

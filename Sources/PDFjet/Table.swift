@@ -55,6 +55,8 @@ public class Table : Drawable {
     // decimals, or nil when the table is not being drawn: they were read
     // again for every page, which took 33 seconds for 40,000 rows.
     private var columnSums: [Int: ColumnSums]?
+    // The height of the header rows, wrapped, that getTotalHeight measures.
+    var wrappedHeaderHeight: Float = 0.0
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -1115,6 +1117,13 @@ public class Table : Drawable {
         if let page = page, !first && !repeatsHeaderOn(page) {
             return [x, y]
         }
+        var height: Float = 0.0
+        for i in 0..<min(numOfHeaderRows, tableData.count) where !(first && isBroughtForwardRow(i)) {
+            height += self.heights[i]
+        }
+        if runsOff(page, "header", y, height) {
+            return [x, y]
+        }
         if let page = page, !first && numOfHeaderRows > 0 {
             page.addArtifactBMC()
         }
@@ -1467,6 +1476,13 @@ public class Table : Drawable {
     // pages before.
     private func drawFooterRows(_ page: Page?, _ x: Float, _ y: Float, _ heights: [Float], _ last: Bool) -> Float {
         let footer = footerStart()
+        var height: Float = 0.0
+        for r in footer..<tableData.count {
+            height += heights[r]
+        }
+        if runsOff(page, "footer", y, height) {
+            return y
+        }
         let artifact = (page != nil && !last && footer < tableData.count)
         if artifact {
             page!.addArtifactBMC()
@@ -1487,6 +1503,23 @@ public class Table : Drawable {
             page!.addEMC()
         }
         return y
+    }
+
+    // Tells if the header or footer rows of the height, drawn at y, run off the
+    // page, which fails the document as a row of the body that does: what did
+    // not fit was lost with no error, a page total among it (the review of 30
+    // October 2026). Rows that only reach into the bottom margin are drawn, as
+    // those of the body are.
+    private func runsOff(_ page: Page?, _ rows: String, _ y: Float, _ height: Float) -> Bool {
+        guard let page = page, height > 0.0, y + height > page.height else {
+            return false
+        }
+        page.pdf.fail("The \(rows) rows of the table are \(String(format: "%.0f", height)) points tall, "
+                + "and run off the page, which has "
+                + "\(String(format: "%.0f", max(page.height - bottomMargin - y, 0.0))) points for them. "
+                + "Make them smaller, or give the table more of the page.")
+        rendered = -1   // Nothing more is drawn, and no more pages are asked for
+        return true
     }
 
     // Works out what each cell that spans rows covers, after the text is
@@ -1511,8 +1544,12 @@ public class Table : Drawable {
         wrapAroundCellText()
         applyRowSpans()
         var total: Float = 0.0
-        for height in getRowHeights() {
+        wrappedHeaderHeight = 0.0
+        for (r, height) in getRowHeights().enumerated() {
             total += height
+            if r < numOfHeaderRows {
+                wrappedHeaderHeight += height
+            }
         }
         return total
     }
