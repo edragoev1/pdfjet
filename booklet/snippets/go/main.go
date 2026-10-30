@@ -28,7 +28,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
-	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
@@ -137,11 +137,11 @@ func archivalDocument() {
 
 // @snippet fonts
 func fonts(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	serif := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular).SetSize(14)
+	serif := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Regular).SetSize(14)
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	mono := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(10)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
-	pdfjet.NewTextLine(serif, "Source Serif 4 at 14 points").SetLocation(50, 50).DrawOn(page)
+	pdfjet.NewTextLine(serif, "IBM Plex Serif at 14 points").SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextLine(bold, "IBM Plex Sans Bold at 12 points").SetLocation(50, 75).DrawOn(page)
 	pdfjet.NewTextLine(mono, "Cascadia Mono at 10 points").SetLocation(50, 100).DrawOn(page)
 	pdfjet.NewTextLine(bold, "The same font at 24 points").SetFontSize(24).

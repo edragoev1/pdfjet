@@ -14,7 +14,7 @@ import Testing
 /// an empty box (the owner, 29 October 2026, of ѝ, the Bulgarian "her", which
 /// JetBrains Mono does not have).
 @Suite struct FontCoverageTests {
-    private static let families = ["IBMPlexSans", "IBMPlexSerif", "SourceSerif4", "CascadiaMono"]
+    private static let families = ["IBMPlexSans", "IBMPlexSerif", "CascadiaMono"]
 
     // The letters of modern Greek, U+0386 to U+03CE, and of Cyrillic, U+0400
     // to U+045F; what the code points between them are not, as U+0387, a
@@ -53,6 +53,6 @@ import Testing
                 faces += 1
             }
         }
-        #expect(faces == 14 + 14 + 10 + 10)
+        #expect(faces == 14 + 14 + 10)
     }
 }   // End of FontCoverageTests.swift

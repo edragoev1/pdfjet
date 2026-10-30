@@ -741,7 +741,7 @@ class SVGImageTest {
         image("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
                 + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").drawOn(page);
         assertEquals(new java.util.TreeSet<String>(java.util.Arrays.asList(
-                "SourceSerif4/SourceSerif4-SemiBoldItalic.ttf", "CascadiaMono/CascadiaMono-Bold.ttf",
+                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf", "CascadiaMono/CascadiaMono-Bold.ttf",
                 "IBMPlexSans/IBMPlexSans-Regular.ttf", "IBMPlexSans/IBMPlexSans-Bold.ttf")),
                 new java.util.TreeSet<String>(pdf.bundledFonts.keySet()));
     }

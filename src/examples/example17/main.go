@@ -14,7 +14,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
 	"github.com/edragoev1/pdfjet/v9/src/a5"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -42,15 +42,15 @@ func Example17() {
 	pdf.SetTitle("The Idiot")
 	pdf.SetAuthor("Fyodor Dostoyevsky")
 
-	regular := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	italic := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
-	semiBold := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	regular := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Regular)
+	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Italic)
+	semiBold := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.SemiBold)
 	regular.SetSize(10.0)
 	italic.SetSize(10.0)
 
-	// Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+	// Kerning, from the GPOS table of IBM Plex Serif: pairs such as "Te", "Yo"
 	// and "r." drawn closer, as the font's designers spaced them. The novel
-	// sets on 736 pages kerned, 745 not.
+	// sets on 694 pages kerned, 696 not.
 	regular.SetKernPairs(true)
 	italic.SetKernPairs(true)
 	semiBold.SetKernPairs(true)

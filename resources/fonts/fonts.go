@@ -5,13 +5,13 @@
 
 // Package fonts holds the fonts PDFjet carries in itself, each family in a
 // folder of its name with its license: IBM Plex Sans and Serif, from Thin to
-// Bold, Source Serif 4 and Cascadia Mono, from Light to Bold, upright and
+// Bold, and Cascadia Mono, from Light to Bold, upright and
 // italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; and IBM Plex
 // Math. All are under the SIL Open Font License 1.1.
 //
 // Go builds the files a package embeds into every program that imports it,
 // uncompressed, so this package embeds the fonts of every script but
-// Chinese, Japanese and Korean, about 17.5 MB. IBM Plex Sans JP, KR, SC and
+// Chinese, Japanese and Korean, about 15 MB. IBM Plex Sans JP, KR, SC and
 // TC, about 48 MB, are in the folders of their names here too, each a
 // package that embeds its own files, and a program builds them in with one
 // line:
@@ -43,7 +43,6 @@ import (
 //go:embed IBMPlexSansHebrew/*.ttf IBMPlexSansHebrew/license.txt
 //go:embed IBMPlexSansThai/*.ttf IBMPlexSansThai/license.txt
 //go:embed IBMPlexSerif/*.ttf IBMPlexSerif/license.txt
-//go:embed SourceSerif4/*.ttf SourceSerif4/OFL.txt
 var FS embed.FS
 
 var (

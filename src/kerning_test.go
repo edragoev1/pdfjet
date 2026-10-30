@@ -15,11 +15,15 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// testKerningSerif is Source Serif 4, whose kern feature has Extension
-// lookups of its pairs and a chained one, with LookupFlag 8, as Noto Sans,
-// which these tests read before 9.1.7, has; the lookups of IBM Plex Sans are
-// pairs alone.
-const testKerningSerif = "fonts/SourceSerif4/SourceSerif4-Regular.ttf"
+// testKerningSerif is IBM Plex Serif, whose kern lookups have LookupFlag 8,
+// as those of Noto Sans, which these tests read before 9.1.7, have; the
+// lookups of IBM Plex Sans have none. testKerningExtension is IBM Plex Sans
+// JP, whose kern feature has Extension lookups of its pairs, as Source Serif
+// 4, which PDFjet carried before, has.
+const (
+	testKerningSerif     = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"
+	testKerningExtension = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"
+)
 
 // testKernedFont opens a font of the repository, or one PDFjet carries, with
 // its kerning on or off.
@@ -81,6 +85,7 @@ func TestKerningIsDrawnAsItIsMeasured(t *testing.T) {
 		"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
 		"tests/fonts/IBMPlexSans-Regular.otf",
 		testKerningSerif,
+		testKerningExtension,
 	} {
 		font := testKernedFont(t, pdf, path, true)
 		for _, text := range []string{
@@ -252,11 +257,11 @@ func TestKerningWidthsAreThoseOfTheOtherPorts(t *testing.T) {
 		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "Тъй ТАТЯНА", 55.94, -165},
 		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "ΑΥΤΟ", 24.44, -70},
 		{"tests/fonts/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14, -302},
-		// Source Serif 4, from its hmtx and kern lookups (Noto Sans, before
+		// IBM Plex Serif, from its hmtx and kern lookups (Noto Sans, before
 		// 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)
-		{testKerningSerif, "AVATAR To Wally", 80.43, -599},
-		{testKerningSerif, "Тъй ТАТЯНА", 61.50, -215},
-		{testKerningSerif, "ΑΥΤΟ", 26.34, -115},
+		{testKerningSerif, "AVATAR To Wally", 80.59, -315},
+		{testKerningSerif, "Тъй ТАТЯНА", 61.57, -147},
+		{testKerningSerif, "ΑΥΤΟ", 26.40, -48},
 	} {
 		font := testKernedFont(t, pdf, c.path, true)
 		testNear(t, c.path+": "+c.text, c.kerned, font.StringWidth(10, c.text), 0.005)

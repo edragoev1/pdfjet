@@ -18,7 +18,7 @@ namespace PDFjet.NET {
 /// JetBrains Mono does not have).
 /// </summary>
 public class FontCoverageTest {
-    private static readonly String[] FAMILIES = {"IBMPlexSans", "IBMPlexSerif", "SourceSerif4", "CascadiaMono"};
+    private static readonly String[] FAMILIES = {"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"};
 
     // The letters of modern Greek, U+0386 to U+03CE, and of Cyrillic, U+0400
     // to U+045F; what the code points between them are not, as U+0387, a
@@ -64,7 +64,7 @@ public class FontCoverageTest {
                 faces++;
             }
         }
-        Assert.Equal(14 + 14 + 10 + 10, faces);
+        Assert.Equal(14 + 14 + 10, faces);
     }
 }
 }   // End of FontCoverageTest.cs

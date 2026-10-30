@@ -7,45 +7,25 @@
 import Foundation
 
 ///
-/// The Source Serif 4 fonts. Each constant is the path of a font file,
-/// embedded as a subset of the glyphs a document draws; pass it to the Font
-/// constructor that takes a font path. PDFjet carries these fonts in itself:
-/// the path is read from the library when there is no such file.
+/// The Source Serif 4 fonts, which PDFjet does not carry from 9.1.7: each constant
+/// is the path of a font file of the packages of PDFjet before 9.1.7,
+/// which the Font constructor that takes a font path reads when the file is
+/// there.
 ///
+@available(*, deprecated, message: "PDFjet carries IBM Plex Serif, which every constant of IBMPlexSerif reads with nothing to download.")
 public struct SourceSerif4 {
-    ///
-    /// Source Serif 4 Black, which PDFjet does not carry
-    /// from 9.1.7: a font file of its packages before, read when the file is there.
-    ///
-    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    /// Source Serif 4 Black
     public static let Black            = "fonts/SourceSerif4/SourceSerif4-Black.ttf"
-
-    ///
-    /// Source Serif 4 BlackItalic, which PDFjet does not carry
-    /// from 9.1.7: a font file of its packages before, read when the file is there.
-    ///
-    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    /// Source Serif 4 BlackItalic
     public static let BlackItalic      = "fonts/SourceSerif4/SourceSerif4-BlackItalic.ttf"
-
     /// Source Serif 4 Bold
     public static let Bold             = "fonts/SourceSerif4/SourceSerif4-Bold.ttf"
     /// Source Serif 4 BoldItalic
     public static let BoldItalic       = "fonts/SourceSerif4/SourceSerif4-BoldItalic.ttf"
-
-    ///
-    /// Source Serif 4 ExtraLight, which PDFjet does not carry
-    /// from 9.1.7: a font file of its packages before, read when the file is there.
-    ///
-    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    /// Source Serif 4 ExtraLight
     public static let ExtraLight       = "fonts/SourceSerif4/SourceSerif4-ExtraLight.ttf"
-
-    ///
-    /// Source Serif 4 ExtraLightItalic, which PDFjet does not carry
-    /// from 9.1.7: a font file of its packages before, read when the file is there.
-    ///
-    @available(*, deprecated, message: "PDFjet carries the other weights of the family.")
+    /// Source Serif 4 ExtraLightItalic
     public static let ExtraLightItalic = "fonts/SourceSerif4/SourceSerif4-ExtraLightItalic.ttf"
-
     /// Source Serif 4 Italic
     public static let Italic           = "fonts/SourceSerif4/SourceSerif4-Italic.ttf"
     /// Source Serif 4 Light

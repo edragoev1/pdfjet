@@ -47,7 +47,7 @@ public class Example_07 {
         let files = [
             IBMPlexSansJP.Regular,
             IBMPlexSans.Regular,
-            SourceSerif4.Regular,
+            IBMPlexSerif.Italic,
             IBMPlexSerif.Regular,
         ]
         let kinds = [

@@ -8,7 +8,7 @@ import Foundation
 
 /// The fonts PDFjet carries, in resources/fonts, each family in a folder of
 /// its name, with its license: IBM Plex Sans and Serif, from Thin to Bold,
-/// Source Serif 4 and Cascadia Mono, from Light to Bold, upright and italic;
+/// and Cascadia Mono, from Light to Bold, upright and italic;
 /// IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; IBM Plex Math; and IBM
 /// Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf. All are
 /// under the SIL Open Font License 1.1. A path to one of them, such as
@@ -18,7 +18,7 @@ import Foundation
 /// of the product PDFjetFonts, and the text of an SVG image is drawn in them
 /// unless a font is set.
 ///
-/// The library does not depend on PDFjetFonts, so that an app carries the 66
+/// The library does not depend on PDFjetFonts, so that an app carries the 63
 /// MB of the fonts only when its developer adds that product (the owner, 29
 /// October 2026). Swift has no code run on import, so PDFjet finds the bundle
 /// by its name, which SwiftPM gives it, PackageName_TargetName: from the
@@ -122,7 +122,7 @@ enum BundledFonts {
     static let SANS = 0
     static let SERIF = 1
     static let MONO = 2
-    private static let families = ["IBMPlexSans", "SourceSerif4", "CascadiaMono"]
+    private static let families = ["IBMPlexSans", "IBMPlexSerif", "CascadiaMono"]
     // The CSS weights the faces of each family stand for, and their styles.
     // Cascadia Mono's strokes are heavier than IBM Plex Sans's at the same
     // weight: its SemiLight is as thick as Plex Sans Regular, so it stands
@@ -130,12 +130,12 @@ enum BundledFonts {
     // October 2026); its SemiBold and Bold match Plex Sans's as they are.
     private static let weights: [[Int]] = [
         [100, 300, 400, 450, 500, 600, 700],
-        [300, 400, 500, 600, 700],
+        [100, 300, 400, 450, 500, 600, 700],
         [300, 400, 500, 600, 700],
     ]
     private static let styles: [[String]] = [
         ["Thin", "Light", "Regular", "Text", "Medium", "SemiBold", "Bold"],
-        ["Light", "Regular", "Medium", "SemiBold", "Bold"],
+        ["Thin", "Light", "Regular", "Text", "Medium", "SemiBold", "Bold"],
         ["Light", "SemiLight", "Regular", "SemiBold", "Bold"],
     ]
 
@@ -232,7 +232,7 @@ enum BundledFonts {
                 "liberation sans", "dejavu sans", "ibm plex sans", "inter"],
         ["serif", "times", "times new roman", "georgia", "garamond", "cambria", "palatino",
                 "book antiqua", "liberation serif", "dejavu serif", "noto serif", "source serif 4",
-                "source serif pro"],
+                "source serif pro", "ibm plex serif"],
         ["monospace", "courier", "courier new", "consolas", "menlo", "monaco", "ui-monospace",
                 "sfmono-regular", "lucida console", "liberation mono", "dejavu sans mono",
                 "jetbrains mono", "ibm plex mono", "source code pro", "cascadia mono", "cascadia code"],

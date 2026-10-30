@@ -92,11 +92,11 @@ func archivalDocument() throws {
 
 // @snippet fonts
 func fonts(_ pdf: PDF, _ font: Font) throws {
-    let serif = try Font(pdf, SourceSerif4.Regular).setSize(14)
+    let serif = try Font(pdf, IBMPlexSerif.Regular).setSize(14)
     let bold = try Font(pdf, IBMPlexSans.Bold)
     let mono = try Font(pdf, CascadiaMono.Regular).setSize(10)
     let page = Page(pdf, Letter.PORTRAIT)
-    TextLine(serif, "Source Serif 4 at 14 points").setLocation(50, 50).drawOn(page)
+    TextLine(serif, "IBM Plex Serif at 14 points").setLocation(50, 50).drawOn(page)
     TextLine(bold, "IBM Plex Sans Bold at 12 points").setLocation(50, 75).drawOn(page)
     TextLine(mono, "Cascadia Mono at 10 points").setLocation(50, 100).drawOn(page)
     TextLine(bold, "The same font at 24 points").setFontSize(24)

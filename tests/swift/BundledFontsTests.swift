@@ -59,7 +59,7 @@ import Testing
                 carried.insert("fonts/" + family + "/" + font)
             }
         }
-        #expect(carried.count == 82)
+        #expect(carried.count == 72)
         var named = Set<String>()
         for name in BundledFontsTests.structs {
             let found = try constants(name)
@@ -122,9 +122,9 @@ import Testing
         #expect(BundledFonts.available(missing))
         // The fonts and their licenses, without the Go port's files
         let files = try FileManager.default.subpathsOfDirectory(atPath: bundle.bundleURL.path)
-        #expect(files.filter { $0.hasSuffix(".ttf") || $0.hasSuffix(".otf") }.count == 82)
+        #expect(files.filter { $0.hasSuffix(".ttf") || $0.hasSuffix(".otf") }.count == 72)
         #expect(!files.contains { $0.hasSuffix(".go") }, "\(files.filter { $0.hasSuffix(".go") })")
-        for license in ["license.txt", "LICENSE", "OFL.txt"] {
+        for license in ["license.txt", "LICENSE"] {
             #expect(files.contains { $0.hasSuffix(license) }, "\(license)")
         }
         // With neither, as in an app without PDFjetFonts, nothing, and the
@@ -144,8 +144,8 @@ import Testing
             (0, 400, "IBMPlexSans/IBMPlexSans-Regular.ttf"),
             (0, 200, "IBMPlexSans/IBMPlexSans-Thin.ttf"),
             (0, 800, "IBMPlexSans/IBMPlexSans-Bold.ttf"),
-            (1, 100, "SourceSerif4/SourceSerif4-Light.ttf"),
-            (1, 900, "SourceSerif4/SourceSerif4-Bold.ttf"),
+            (1, 100, "IBMPlexSerif/IBMPlexSerif-Thin.ttf"),
+            (1, 900, "IBMPlexSerif/IBMPlexSerif-Bold.ttf"),
             (2, 400, "CascadiaMono/CascadiaMono-SemiLight.ttf"),
             (2, 500, "CascadiaMono/CascadiaMono-Regular.ttf"),
             (2, 600, "CascadiaMono/CascadiaMono-SemiBold.ttf"),

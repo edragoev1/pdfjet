@@ -46,7 +46,7 @@ class BundledFontsTest {
                 }
             }
         }
-        assertEquals(82, carried.size());
+        assertEquals(72, carried.size());
         Set<String> constants = new TreeSet<String>();
         for (String name : CLASSES) {
             Class<?> c = Class.forName("com.pdfjet.fonts." + name);
@@ -98,8 +98,8 @@ class BundledFontsTest {
             {"0", "400", "IBMPlexSans/IBMPlexSans-Regular.ttf"},
             {"0", "200", "IBMPlexSans/IBMPlexSans-Thin.ttf"},
             {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.ttf"},
-            {"1", "100", "SourceSerif4/SourceSerif4-Light.ttf"},
-            {"1", "900", "SourceSerif4/SourceSerif4-Bold.ttf"},
+            {"1", "100", "IBMPlexSerif/IBMPlexSerif-Thin.ttf"},
+            {"1", "900", "IBMPlexSerif/IBMPlexSerif-Bold.ttf"},
             {"2", "400", "CascadiaMono/CascadiaMono-SemiLight.ttf"},
             {"2", "500", "CascadiaMono/CascadiaMono-Regular.ttf"},
             {"2", "600", "CascadiaMono/CascadiaMono-SemiBold.ttf"},

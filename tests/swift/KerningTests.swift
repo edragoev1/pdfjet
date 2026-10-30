@@ -11,10 +11,12 @@ import Testing
 @Suite struct KerningTests {
     private let plexTTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
     private let plexOTF = "tests/fonts/IBMPlexSans-Regular.otf"
-    // Source Serif 4, whose kern feature has Extension lookups of its pairs
-    // and a chained one, with LookupFlag 8, as Noto Sans, which these tests
-    // read before 9.1.7, has; the lookups of IBM Plex Sans are pairs alone.
-    private let serifTTF = "fonts/SourceSerif4/SourceSerif4-Regular.ttf"
+    // IBM Plex Serif, whose kern lookups have LookupFlag 8, as those of Noto
+    // Sans, which these tests read before 9.1.7, have; the lookups of IBM Plex
+    // Sans have none. IBM Plex Sans JP, whose kern feature has Extension
+    // lookups of its pairs, as Source Serif 4, which PDFjet carried before, has.
+    private let serifTTF = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"
+    private let extensionOTF = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"
 
     // Opens a font of the repository, with its kerning on or off.
     private func font(_ pdf: PDF, _ path: String, _ kerned: Bool) throws -> Font {
@@ -99,7 +101,7 @@ import Testing
 
     @Test func kerningIsDrawnAsItIsMeasured() throws {
         let pdf = TestSupport.newPDF()
-        for path in [plexTTF, plexOTF, serifTTF] {
+        for path in [plexTTF, plexOTF, serifTTF, extensionOTF] {
             let font = try font(pdf, path, true)
             for text in [
                 "AVATAR. To Wally, Tyler and LT: \"Yes,\" P.V. said.",
@@ -275,11 +277,11 @@ import Testing
             (plexTTF, "Тъй ТАТЯНА", 55.94, -165),
             (plexTTF, "ΑΥΤΟ", 24.44, -70),
             (plexOTF, "AVATAR To Wally", 75.14, -302),
-            // Source Serif 4, from its hmtx and kern lookups (Noto Sans, before
+            // IBM Plex Serif, from its hmtx and kern lookups (Noto Sans, before
             // 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)
-            (serifTTF, "AVATAR To Wally", 80.43, -599),
-            (serifTTF, "Тъй ТАТЯНА", 61.50, -215),
-            (serifTTF, "ΑΥΤΟ", 26.34, -115),
+            (serifTTF, "AVATAR To Wally", 80.59, -315),
+            (serifTTF, "Тъй ТАТЯНА", 61.57, -147),
+            (serifTTF, "ΑΥΤΟ", 26.40, -48),
         ]
         for c in cases {
             let font = try font(pdf, c.path, true)

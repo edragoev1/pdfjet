@@ -1,7 +1,7 @@
 # Test fonts
 
-Fonts for the tests of the subsets of fonts with CFF outlines, which PDFjet
-does not carry:
+Fonts for tests, which PDFjet does not carry. For the subsets of fonts with
+CFF outlines:
 
 - IBM Plex Sans Regular and Italic (`.otf`), keyed by glyph names, as most
   `.otf` fonts are; PDFjet carries the `.ttf` of these fonts in
@@ -12,5 +12,12 @@ does not carry:
   dictionaries, each with its own private dictionary and subroutines, and a
   charset whose CIDs are not the glyph numbers. SIL Open Font License 1.1,
   in `SourceHanSansJP-LICENSE.txt`.
+
+For kerning:
+
+- Source Serif 4 Regular, which PDFjet does not carry from 9.1.7, for the tests of
+  a font that kerns the space with the letters beside it, as Source Serif 4
+  kerns it with T, V, W and Y and no font PDFjet carries does. SIL Open Font
+  License 1.1, in `SourceSerif4-OFL.txt`.
 
 They are test data only.

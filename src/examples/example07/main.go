@@ -17,7 +17,6 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
-	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -62,7 +61,7 @@ func Example07() {
 	files := []string{
 		IBMPlexSansJP.Regular,
 		IBMPlexSans.Regular,
-		SourceSerif4.Regular,
+		IBMPlexSerif.Italic,
 		IBMPlexSerif.Regular,
 	}
 	kinds := []string{

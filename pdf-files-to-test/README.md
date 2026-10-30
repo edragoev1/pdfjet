@@ -13,7 +13,7 @@ PAC runs in Wine on Ubuntu (it ran on Windows before 28 October 2026).
 
 **Leave out Example_17, Example_33 and Example_52.** They claim PDF/UA and pass
 veraPDF, but they crash PAC (29 September 2026; Example_17 on 28 October 2026).
-Example_17 has 736 pages and Example_52 has 745.
+Example_17 has 694 pages and Example_52 has 745.
 
 **Only files that embed all their fonts go here.** PDF/UA asks for every font
 to be embedded (Matterhorn 31-001), so a file with one that is not fails for

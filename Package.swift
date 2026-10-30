@@ -8,7 +8,7 @@ let package = Package(
     // executable targets that only this package builds.
     products: [
         .library(name: "PDFjet", targets: ["PDFjet"]),
-        // The fonts PDFjet carries, about 66 MB, for an app that wants them
+        // The fonts PDFjet carries, about 63 MB, for an app that wants them
         // built in: .product(name: "PDFjetFonts", package: "pdfjet").
         .library(name: "PDFjetFonts", targets: ["PDFjetFonts"]),
     ],
@@ -56,7 +56,6 @@ let package = Package(
                 .process("IBMPlexSansTC"),
                 .process("IBMPlexSansThai"),
                 .process("IBMPlexSerif"),
-                .process("SourceSerif4"),
             ]
         ),
         .target(name: "PDFjet"),

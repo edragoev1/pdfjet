@@ -77,7 +77,7 @@ put `net48/PDFjet.dll` (with its four DLLs) in `lib/net48/` and `PDFjet.dll` in
 
 ## Fonts
 
-PDFjet carries IBM Plex Sans and Serif, Source Serif 4 and Cascadia Mono,
+PDFjet carries IBM Plex Sans and Serif and Cascadia Mono,
 from Light or Thin to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew
 and Thai; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC. They are in
 `resources/fonts` of this package, each family with its license. Their
@@ -88,7 +88,7 @@ file of that path if there is one, else the font from the folder
 The `PDFjet.dll` of this package is small, under 1 MB, and does not carry
 them: keep `resources/fonts` next to your program, or only the fonts you
 use. The `PDFjet.dll` of the NuGet package `PDFjet` carries them inside, about
-70 MB, and needs no folder. A font can also be read from any `.otf` or `.ttf`
+67 MB, and needs no folder. A font can also be read from any `.otf` or `.ttf`
 file by its path. The 14 core PDF fonts, such as `CoreFont.HELVETICA`, need no
 files.
 

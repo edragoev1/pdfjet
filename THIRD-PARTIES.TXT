@@ -154,7 +154,7 @@ http://scripts.sil.org/OFL
 
 This software includes, unmodified, the fonts in resources/fonts: IBM Plex
 Sans, Sans Arabic, Sans Hebrew, Sans Thai, Sans JP, Sans KR, Sans SC, Sans TC,
-Serif and Math, Source Serif 4, and Cascadia Mono. A font path names one of
+Serif and Math, and Cascadia Mono. A font path names one of
 them, and the text of SVG images is drawn in them. They are licensed under the
 SIL Open Font License, Version 1.1, whose text, with the copyright of each, is
 beside each family in resources/fonts, and goes with them wherever they are
@@ -163,8 +163,6 @@ Go programs, and in the Swift product PDFjetFonts.
 
     ============================================================================
     IBM Plex: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
-    Source Serif 4: (c) 2014 - 2021 Adobe Systems Incorporated
-        (http://www.adobe.com/), with Reserved Font Name 'Source'.
     Cascadia Mono: Copyright (c) 2019 - Present, Microsoft Corporation,
         with Reserved Font Name Cascadia Code.
 

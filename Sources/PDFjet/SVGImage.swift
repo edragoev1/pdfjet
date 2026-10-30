@@ -80,7 +80,7 @@ public class SVGImage : Drawable {
      * their x, y, dx, dy, font-size, font-weight, text-anchor and
      * dominant-baseline, in the font set with setFont and setBoldFont, or
      * else in the fonts PDFjet carries, embedded: IBM
-     * Plex Sans for sans-serif, Helvetica, Arial and the like, Source Serif 4
+     * Plex Sans for sans-serif, Helvetica, Arial and the like, IBM Plex Serif
      * for serif, Times and the like, Cascadia Mono for monospace, Courier and
      * the like, regular, semibold or bold, upright or italic, as the
      * font-family, font-weight and font-style of the text ask. A gradient is
