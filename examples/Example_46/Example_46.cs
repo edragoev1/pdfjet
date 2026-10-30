@@ -107,7 +107,7 @@ public class Example_46 {
         pdf.AddAssociatedFile(new EmbeddedFile(
                 pdf,
                 "factur-x.xml",
-                new FileStream("data/invoice/factur-x.xml", FileMode.Open, FileAccess.Read),
+                new FileStream("resources/data/invoice/factur-x.xml", FileMode.Open, FileAccess.Read),
                 true,
                 "text/xml",
                 Relationship.ALTERNATIVE,
@@ -125,7 +125,7 @@ public class Example_46 {
         float middle = 345f;
 
         // The letterhead: the logo, and the address of the seller beside it
-        SVGImage logo = new SVGImage("data/invoice/logo.svg");
+        SVGImage logo = new SVGImage("resources/data/invoice/logo.svg");
         logo.SetAltDescription("The logo of Lindenberg Paper & Print: a sheet of paper on a navy tile.");
         logo.SetLocation(left, 50f);
         logo.DrawOn(page);

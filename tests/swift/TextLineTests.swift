@@ -140,7 +140,7 @@ import Testing
     // the letter before it (the review of 28 October 2026).
     @Test func theUnderlineOfALastTokenIsAsLongAsTheKernedToken() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/SourceSerif4/SourceSerif4-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("tests/fonts/SourceSerif4-Regular.ttf"))
         font.setKernPairs(true)
         font.setSize(14)
         let page = Page(pdf, Letter.PORTRAIT)

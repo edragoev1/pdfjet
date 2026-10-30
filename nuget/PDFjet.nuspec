@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The NuGet package PDFjet, made by package-nuget.sh from the PDFjet.dll of
-     a release's PDFjet-For.NET-Core zip, as released and strong-name signed:
+<!-- The NuGet package PDFjet, made by package-nuget.sh: the PDFjet.dll of a
+     release's tag, built with the European fonts PDFjet carries inside it,
+     the others being the package PDFjet.Fonts.World (world/), and
+     strong-name signed, which the small PDFjet.dll of the release zips is not;
      $version$ and $commit$ are written in by the script. -->
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
@@ -8,14 +10,14 @@
     <version>$version$</version>
     <title>PDFjet</title>
     <authors>PDFjet Software</authors>
-    <license type="expression">MIT</license>
+    <license type="expression">MIT AND OFL-1.1</license>
     <projectUrl>https://github.com/edragoev1/pdfjet</projectUrl>
     <repository type="git" url="https://github.com/edragoev1/pdfjet.git" commit="$commit$" />
     <icon>icon.png</icon>
     <readme>README.md</readme>
-    <description>Fast, dependency-free PDF generation: text in many scripts with TrueType and OpenType fonts embedded as subsets, tables, charts, barcodes, SVG and Markdown, PDF/UA and PDF/A, merging and AES-256. The same API in Java, Go and Swift.</description>
+    <description>Fast, dependency-free PDF generation: text in many scripts with TrueType and OpenType fonts embedded as subsets, tables, charts, barcodes, SVG and Markdown, PDF/UA and PDF/A, merging and AES-256. The same API in Java, Go and Swift. It includes every European language (Latin, Greek, Cyrillic); for other scripts (Chinese, Japanese, Korean, Arabic, Hebrew, Thai), also add the package PDFjet.Fonts.World, the same version.</description>
     <releaseNotes>https://github.com/edragoev1/pdfjet/blob/main/CHANGELOG.md</releaseNotes>
-    <copyright>Copyright (c) 2000-2026 PDFjet Software</copyright>
+    <copyright>Copyright (c) 2000-2025 Innovatics Inc.; Copyright (c) 2025-2026 PDFjet Software</copyright>
     <tags>pdf pdf-generation pdf-library pdfa pdfua accessibility barcode qrcode datamatrix svg markdown</tags>
     <dependencies>
       <group targetFramework="net8.0" />
@@ -29,5 +31,7 @@
     <file src="lib/net48/PDFjet.dll" target="lib/net48" />
     <file src="README.md" target="" />
     <file src="icon.png" target="" />
+    <!-- The licenses of the fonts PDFjet.dll carries, one a family -->
+    <file src="font-licenses/*" target="" />
   </files>
 </package>

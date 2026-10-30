@@ -18,17 +18,14 @@ public class Example_04 {
 
         // Thai font, whose GPOS table places the tone marks above the upper
         // vowels.
-        // let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
         let f1 = try Font(pdf, IBMPlexSansThai.Regular)
         f1.setSize(12.0)
 
         // Hebrew font
-        // let f2 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
         let f2 = try Font(pdf, IBMPlexSansHebrew.Regular)
         f2.setSize(12.0)
 
         // Arabic font
-        // let f3 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
         let f3 = try Font(pdf, IBMPlexSansArabic.Regular)
         f3.setSize(12.0)
 
@@ -126,7 +123,7 @@ public class Example_04 {
         textLine.setLocation(x - f2.stringWidth(str), y)
         textLine.drawOn(page)
 
-        var textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/thai.txt"))
+        var textBlock = TextBlock(f1, try Content.ofTextFile("resources/data/languages/thai.txt"))
         textBlock.setLocation(30.0, y + 35.0)
         textBlock.setWidth(430.0)
         textBlock.setBorderColor(Color.blue)
@@ -137,7 +134,7 @@ public class Example_04 {
         // Right to left text in text blocks, wrapped at their width.
         page = Page(pdf, Letter.PORTRAIT)
 
-        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/arabic.txt"))
+        textBlock = TextBlock(f3, try Content.ofTextFile("resources/data/languages/arabic.txt"))
         textBlock.setLocation(180.0, 30.0)
         textBlock.setWidth(400.0)
         textBlock.setBorderColor(Color.blue)
@@ -146,7 +143,7 @@ public class Example_04 {
         textBlock.setLanguage("ar")
         xy = textBlock.drawOn(page)
 
-        textBlock = TextBlock(f2, try Content.ofTextFile("data/languages/hebrew.txt"))
+        textBlock = TextBlock(f2, try Content.ofTextFile("resources/data/languages/hebrew.txt"))
         textBlock.setLocation(180.0, xy[1] + 30.0)
         textBlock.setWidth(400.0)
         textBlock.setBorderColor(Color.blue)
@@ -155,7 +152,7 @@ public class Example_04 {
         textBlock.setLanguage("he")
         xy = textBlock.drawOn(page)
 
-        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/persian.txt"))
+        textBlock = TextBlock(f3, try Content.ofTextFile("resources/data/languages/persian.txt"))
         textBlock.setLocation(180.0, xy[1] + 30.0)
         textBlock.setWidth(400.0)
         textBlock.setBorderColor(Color.blue)

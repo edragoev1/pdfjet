@@ -13,6 +13,18 @@ import Testing
         return text.unicodeScalars.map { $0.value }
     }
 
+    // Text pasted from a PDF often has presentation forms, and Persian and
+    // Urdu text the letters of Arabic Supplement.
+    @Test func theOtherLettersOfRightToLeftScriptsAreRightToLeft() {
+        #expect(scalars(Bidi.reorderVisually("abc \u{FB2A}\u{FB2C}")) == [0xFB2C, 0xFB2A, 0x20, 0x61, 0x62, 0x63])
+        #expect(scalars(Bidi.reorderVisually("abc \u{FE8D}\u{FEE2}")) == [0xFEE2, 0xFE8D, 0x20, 0x61, 0x62, 0x63])
+        #expect(scalars(Bidi.reorderVisually("abc \u{FB50}\u{FB51}")) == [0xFB51, 0xFB50, 0x20, 0x61, 0x62, 0x63])
+        #expect(scalars(Bidi.reorderVisually("abc \u{0750}\u{0751}")) == [0x0751, 0x0750, 0x20, 0x61, 0x62, 0x63])
+        #expect(scalars(Bidi.reorderVisually("abc \u{08A0}\u{08A1}")) == [0x08A1, 0x08A0, 0x20, 0x61, 0x62, 0x63])
+        #expect(scalars(Bidi.reorderVisually("abc \u{07CA}\u{07CB}")) == [0x07CB, 0x07CA, 0x20, 0x61, 0x62, 0x63])
+        #expect(scalars(Bidi.reorderVisually("abc \u{10800}\u{10801}")) == [0x10801, 0x10800, 0x20, 0x61, 0x62, 0x63])
+    }
+
     @Test func leftToRightTextIsUnchanged() {
         #expect(Bidi.reorderVisually("abc") == "abc")
     }

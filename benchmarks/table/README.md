@@ -1,7 +1,7 @@
 # Table in the four ports
 
 `Table` at the scale the release plan asks about: the 9 columns of
-`data/Electric_Vehicle_Population_10_Pages.csv` built as `Cell` objects and
+`resources/data/Electric_Vehicle_Population_10_Pages.csv` built as `Cell` objects and
 drawn on as many Letter portrait pages as they need, in IBM Plex Sans
 (`IBMPlexSans-SemiBold.ttf` for the header row, `-Regular` for the
 rest) at 8 points. The rows of the file repeat until the table has the number
@@ -156,7 +156,8 @@ A 50,000-row table is 1,072 pages, and about 9.7 MB in Java and C#.
 ## At the size of Example_24
 
 The release plan asks how `Table` fares on the table `BigTable` draws in
-Example_24, the whole `data/Electric_Vehicle_Population_Data.csv`. That is
+Example_24 with the whole Electric Vehicle Population Data,
+`Electric_Vehicle_Population_Data.csv`, which is not in the repository. That is
 124,716 rows, so 1.12 million `Cell` objects, and 2,673 pages here:
 
 ```

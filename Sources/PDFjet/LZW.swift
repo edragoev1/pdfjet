@@ -12,7 +12,13 @@
 /// up to there, as a missing end is common in real files. Data that decodes to
 /// more than maxLength bytes throws.
 ///
-func lzwDecode(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws -> [UInt8] {
+/// With an earlyChange of 0, the /EarlyChange of the /DecodeParms of the stream,
+/// the codes get one bit longer only when the table needs it. It was ignored,
+/// and such data decoded to wrong bytes with no error (review of 30 October
+/// 2026, B7).
+func lzwDecode(
+        _ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH, _ earlyChange: Int = 1) throws -> [UInt8] {
+    let early = min(max(earlyChange, 0), 1)
     var decoded = [UInt8]()
     decoded.reserveCapacity(min(data.count * 2, maxLength))
     var table = [[UInt8]](repeating: [], count: 4096)
@@ -53,7 +59,7 @@ func lzwDecode(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws ->
                 next += 1
             }
             previous = entry
-            if next + 1 >= (1 << codeLength) && codeLength < 12 {
+            if next + early >= (1 << codeLength) && codeLength < 12 {
                 codeLength += 1
             }
         }

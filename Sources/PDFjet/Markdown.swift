@@ -842,7 +842,8 @@ public class Markdown {
         // does: a short table went to the next page alone
         let rowHeight = 2.0 * regular.getBodyHeight(size())
         if y + height > bottom {
-            ensure(2.0 * rowHeight)
+            // A header that wraps tall starts the page as well: it ran off this one
+            ensure(max(2.0 * rowHeight, table.wrappedHeaderHeight + rowHeight))
         }
         table.setLocation(x, marginTop)
         table.setFirstPageTopMargin(y)

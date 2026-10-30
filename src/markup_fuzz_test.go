@@ -28,7 +28,8 @@ const fuzzMarkupMaxTime = time.Second
 
 // The fuzz target of the markup. Any text makes paragraphs that are drawn in a
 // text frame and written; see fuzzRun. A text with none of the marks is one
-// text line of its text, with each whitespace character a space, and the text
+// text line of its text, with each whitespace character a space and the
+// spaces and tabs at the start of a line left out, and the text
 // repeated to fuzzMarkupRepeated characters is read in linear time, as
 // TestMarkupLongInputsAreReadInLinearTime checks. The seeds are the texts of
 // the unit tests and a few that are hard on the parser; go test runs them, and
@@ -70,7 +71,10 @@ func FuzzMarkup(f *testing.F) {
 			pdf := NewPDF(bufio.NewWriter(io.Discard))
 			markup, _ := testMarkup(pdf)
 			paragraph := markup.Paragraph(text)
-			if !strings.ContainsAny(text, "*_~`[]()<\\") && !strings.Contains(text, "://") {
+			// Two spaces before a line break make a hard line break, which
+			// ends the text line.
+			if !strings.ContainsAny(text, "*_~`[]()<\\") && !strings.Contains(text, "://") &&
+				!strings.Contains(text, "  \n") && !strings.Contains(text, "  \r") {
 				fuzzCheckPlainMarkup(t, text, paragraph)
 			}
 			paragraphs := append(markup.Paragraphs(text), paragraph)
@@ -94,13 +98,36 @@ func FuzzMarkup(f *testing.F) {
 
 // fuzzCheckPlainMarkup checks the paragraph of a text with none of the marks:
 // one text line of the text, as characters, with each whitespace character a
-// space, or none when that is only spaces and control characters.
+// space, a \r\n or a \r a line break, each line break one space, none at the
+// start, and the spaces and tabs around it left out, or none when that is only
+// spaces and control characters.
 func fuzzCheckPlainMarkup(t *testing.T, text string, paragraph *Paragraph) {
-	want := []rune(text)
-	for i, ch := range want {
-		if isJavaWhitespace(ch) {
-			want[i] = ' '
+	runes := []rune(strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n"))
+	want := make([]rune, 0, len(runes))
+	spaces := 0
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+		if ch == '\n' {
+			want = want[:len(want)-spaces]
+			spaces = 0
+			if len(want) > 0 {
+				want = append(want, ' ')
+				spaces = 1
+			}
+			for i+1 < len(runes) && (runes[i+1] == ' ' || runes[i+1] == '\t') {
+				i++
+			}
+			continue
 		}
+		if ch == ' ' || ch == '\t' {
+			spaces++
+		} else {
+			spaces = 0
+		}
+		if isJavaWhitespace(ch) {
+			ch = ' '
+		}
+		want = append(want, ch)
 	}
 	if trimSpace(string(want)) == "" {
 		if len(paragraph.lines) != 0 {

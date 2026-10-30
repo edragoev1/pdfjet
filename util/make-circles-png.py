@@ -5,18 +5,18 @@
 # Copyright (c) 2026 PDFjet Software
 # Licensed under the MIT License. See LICENSE file in the project root.
 #
-# Writes images/circles.png, an 8-bit RGBA PNG of three half transparent
-# circles, red, green and blue, that overlap on a transparent background. Its
-# edges are anti-aliased, so the alpha channel holds every value from 0 to 255.
-# It was made for the tests and examples of PDFjet, which draw it, attach it
-# to a PDF and copy it with its soft mask. Run it from the project root; it
-# needs Pillow.
+# Writes resources/images/circles.png, an 8-bit RGBA PNG of three half
+# transparent circles, red, green and blue, that overlap on a transparent
+# background. Its edges are anti-aliased, so the alpha channel holds every
+# value from 0 to 255. It was made for the tests and examples of PDFjet, which
+# draw it, attach it to a PDF and copy it with its soft mask. Run it from the
+# project root; it needs Pillow.
 #
 #     python3 util/make-circles-png.py
 
 from PIL import Image, ImageDraw
 
-OUTPUT = "images/circles.png"
+OUTPUT = "resources/images/circles.png"
 
 SIZE = 400
 SCALE = 4                       # Drawn 4 times larger, then reduced

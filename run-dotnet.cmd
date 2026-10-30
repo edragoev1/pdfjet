@@ -1,6 +1,5 @@
 @echo off
-call "%~dp0get-fonts-and-data.cmd" || exit /b 1
-REM The folder of this script, which has fonts and data, from wherever it is run.
+REM The folder of this script, which has the files the examples read, from wherever it is run.
 cd /d "%~dp0"
 REM Check if an argument is provided (example number)
 if "%1"=="" (

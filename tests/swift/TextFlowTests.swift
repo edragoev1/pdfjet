@@ -28,7 +28,7 @@ import Testing
     // An image of the repository, 100 points wide and as tall as the height,
     // narrower than the text.
     private func image(_ pdf: PDF, _ height: Float) throws -> Image {
-        let image = try Image(pdf, TestSupport.open("images/up-arrow.png"))
+        let image = try Image(pdf, TestSupport.open("resources/images/up-arrow.png"))
         return image.scaleBy(100 / image.getWidth(), height / image.getHeight())
     }
 

@@ -7,11 +7,13 @@
 import Foundation
 
 ///
-/// The IBM Plex Math fonts. Each constant is the path of a font file in the
-/// TrueType (.ttf) format, embedded as a subset of the glyphs a document
-/// draws; pass it to the Font constructor that takes a font path.
+/// The IBM Plex Math fonts, which PDFjet does not carry from 9.1.7: each constant
+/// is the path of a font file of the packages of PDFjet before 9.1.7,
+/// which the Font constructor that takes a font path reads when the file is
+/// there.
 ///
+@available(*, deprecated, message: "PDFjet carries IBM Plex Sans and Serif, whose math signs serve business documents.")
 public struct IBMPlexMath {
     /// IBM Plex Math Regular
-    public static let Regular = "fonts/IBMPlexMath/IBMPlexMath-Regular.ttf";
+    public static let Regular = "fonts/IBMPlexMath/IBMPlexMath-Regular.ttf"
 }

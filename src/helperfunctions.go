@@ -410,6 +410,13 @@ const (
 	notAtLineEnd   = "([{（［｛「『【〔〈《〘〖〝‘“｟«"
 )
 
+// cannotStartLine returns true for a character that does not start a line of
+// Chinese or Japanese text: those of notAtLineStart, and a combining mark, as
+// the dakuten U+3099, which stays with the letter before it.
+func cannotStartLine(ch rune) bool {
+	return strings.ContainsRune(notAtLineStart, ch) || staysWithPrevious(ch)
+}
+
 // cjkLineEnd returns where a full line of Chinese or Japanese text ends when
 // the next character does not fit on it, by the line breaking rules of these
 // languages (kinsoku shori): when the next character does not start a line, the
@@ -418,10 +425,10 @@ const (
 // full.
 func cjkLineEnd(line []rune, next rune) int {
 	end := len(line)
-	if strings.ContainsRune(notAtLineStart, next) {
+	if cannotStartLine(next) {
 		for end > 0 {
 			end--
-			if !strings.ContainsRune(notAtLineStart, line[end]) {
+			if !cannotStartLine(line[end]) {
 				break
 			}
 		}

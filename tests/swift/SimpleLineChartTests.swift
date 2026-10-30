@@ -286,4 +286,135 @@ import Testing
         #expect(ChartScale.stepSignificant(4.84e15, 2e12) == 4)
         #expect(ChartScale.stepSignificant(12345, 1000) == 3)
     }
+
+    // The content of the chart, on a page of its own.
+    private func noteContent(_ pdf: PDF, _ chart: SimpleLineChart) -> String {
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart.setLocation(50, 50).drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    private func noteChart(_ font: Font) -> SimpleLineChart {
+        return SimpleLineChart(font, font).setTitle("T").setSize(300, 200).setCategories("a", "b", "c")
+    }
+
+    // A value outside a range that is set cuts its line, and the chart says
+    // so, in print and in its description: an outlier was clipped without a
+    // word. A value that is no number is not outside, and a chart with none
+    // outside adds nothing.
+    @Test func itSaysHowManyValuesAreOutsideTheRange() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let one = "1 value outside the range"
+        let two = "2 values outside the range"
+        let cases: [(SimpleLineChart, String)] = [
+            (noteChart(font).addLine("x", [1, 100, 3]), ""),
+            (noteChart(font).addLine("x", [0, 5, 10]).setYAxisRange(0, 10), ""),
+            (noteChart(font).addLine("x", [1, Float.nan, Float.infinity]).setYAxisRange(0, 10), ""),
+            (noteChart(font).addLine("x", [1, 2, 3, 50]).setYAxisRange(0, 10), ""),
+            (noteChart(font).addLine("x", [1, 50, 3]).setYAxisRange(0, 10), one),
+            (noteChart(font).addLine("x", [1, 2, -50]).setYAxisRange(0, 10), one),
+            (noteChart(font).addLine("x", [1, 50, -50]).setYAxisRange(0, 10), two),
+            (noteChart(font).addLine("x", [1, 50, 3]).addLine("y", [50, 2, 3]).setYAxisRange(0, 10), two)
+        ]
+        for (chart, note) in cases {
+            let content = noteContent(pdf, chart)
+            let description = chart.getAltDescription()
+            if note.isEmpty {
+                #expect(!content.contains(TestSupport.hex(" outside")), "\(description)")
+                #expect(!description.contains("outside"), "\(description)")
+            } else {
+                #expect(content.contains("<" + TestSupport.hex(note) + ">"), "\(note)")
+                #expect(description.hasSuffix("; " + note + "."), "\(description)")
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the categories and the x title, with the
+    // plot that much lower and nothing else moved; its right end at the plot's.
+    @Test func theNoteIsUnderThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let note = "1 value outside the range"
+        let size = font.getSize()
+        let small = 0.8 * size
+        for title in ["", "year"] {
+            func drawn(_ middle: Float) -> String {
+                return noteContent(pdf, SimpleLineChart(font, font).setSize(300, 200).setXAxisTitle(title)
+                        .setCategories("a", "b", "c").setYAxisRange(0, 10).addLine("x", [1, middle, 3]))
+            }
+            let without = drawn(2)
+            let with = drawn(50)
+            let at = TestSupport.positionOf(with, note)
+            let end = at[0] + font.stringWidth(small, note)
+            let c = TestSupport.positionOf(with, "c")
+            #expect(abs(c[0] + font.stringWidth(size, "c") / 2 - end) <= 0.1, "the right end")
+            #expect(at[0] >= 50 && end <= 350, "the note at \(at[0])")
+            #expect(abs(792 - (250 - size) - at[1]) <= 0.01, "the baseline")
+            #expect(abs(TestSupport.positionOf(without, "c")[1] + 1.4 * small - c[1]) <= 0.02, "the plot")
+            let last = title.isEmpty ? c[1] : TestSupport.positionOf(with, title)[1]
+            #expect(at[1] + font.getAscent(small) <= last - font.getDescent(size), "the note over the row above it")
+            #expect(TestSupport.fillColorBefore(with, "c") == TestSupport.fillColorBefore(with, note))
+        }
+        // In a chart too narrow for it, shortened and inside
+        let chart = SimpleLineChart(font, font).setSize(110, 200).setYAxisRange(0, 10).addLine("", [1, 50, 3])
+        #expect(TestSupport.positionOf(noteContent(pdf, chart), "1 value")[0] >= 50 + size)
+        #expect(chart.getAltDescription().hasSuffix("; " + note + "."))
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    @Test func theNoteFollowsADescriptionThatIsSet() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let chart = SimpleLineChart(font, font).addLine("a", [1, 2]).setAltDescription("A line")
+        #expect(chart.getAltDescription() == "A line")
+        chart.addLine("b", [1, 50]).setYAxisRange(0, 10)
+        #expect(chart.getAltDescription() == "A line. 1 value outside the range.")
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    @Test func theNoteIsInTheFigure() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleLineChart(font, font).setSize(300, 200).setYAxisRange(0, 10).addLine("a", [1, 50]).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.components(separatedBy: "BDC\n").count == 2)
+        let parts = content.components(separatedBy: "EMC\n")
+        #expect(parts.count == 2 && !parts[1].contains("ET\n"))
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains("/Alt " +
+                TestSupport.textString("Line chart: a from 1 to 50; 1 value outside the range.")))
+    }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    @Test func theNoteNeverCostsThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        func plotChart(_ height: Float, _ middle: Float) -> SimpleLineChart {
+            return SimpleLineChart(font, font).setSize(300, height).setYAxisRange(0, 10)
+                    .addLine("a", [1, middle, 3])
+        }
+        // The least height that draws, found from below
+        var height: Float = 1
+        while !noteContent(pdf, plotChart(height, 2)).contains(" Td\n") {
+            height += 0.25
+        }
+        for h in [height, height + 1, height + 5] {
+            let without = noteContent(pdf, plotChart(h, 2))
+            let chart = plotChart(h, 50)
+            let with = noteContent(pdf, chart)
+            #expect(!with.contains(TestSupport.hex(" outside")), "the note left no room for the plot")
+            #expect(with.contains("W\nn\n"), "the plot is not drawn")
+            #expect(without.components(separatedBy: " Td\n").count == with.components(separatedBy: " Td\n").count,
+                    "the plot is not drawn")
+            #expect(chart.getAltDescription().hasSuffix("; 1 value outside the range."))
+        }
+        // With the room, the note
+        #expect(noteContent(pdf, plotChart(height + 20, 50)).contains(TestSupport.hex(" outside")))
+    }
 }

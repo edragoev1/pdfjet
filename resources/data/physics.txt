@@ -1,0 +1,23 @@
+**Questions on Motion and Measurement**
+
+Physics is the science of how matter and energy behave, from the smallest particles to the largest structures we can observe.
+
+Experimentation settles the question. When two explanations disagree, a good measurement shows which one fits, and a new explanation has to account for every result that came before it.
+
+A surprising claim calls for strong proof, and a single measurement is rarely enough. Other people need to be able to repeat the result, with their own equipment.
+
+A ball thrown straight up slows down, stops for an instant and falls back, because gravity acts on it the whole time.
+
+A heavy truck and a small car rolling at the same speed do not stop in the same distance on the same brakes, as the truck carries more energy.
+
+**Questions on Units and Errors**
+
+Scientific units use powers of ten, so that moving between meters and kilometers takes no more than moving a decimal point.
+
+Precision tells how close repeated measurements are to each other, and accuracy tells how close they are to the true value. A careful experiment needs both.
+
+An answer in physics has a size and a unit, so the first check is whether the unit makes sense. A speed given in kilograms shows a mistake somewhere.
+
+A rough estimate before a calculation is worth the minute it takes. If the result is a thousand times larger, something has gone wrong, and the science is in finding out where.
+
+Rounding too early adds errors that grow at each step, so a value is carried with extra digits and rounded once, at the end.

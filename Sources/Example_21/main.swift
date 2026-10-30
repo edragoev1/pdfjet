@@ -36,7 +36,7 @@ public class Example_21 {
 
         var tableData = [[Cell]]()
         let text = (try String(contentsOfFile:
-                "data/winter-2009.txt", encoding: .utf8)).trimmingCharacters(in: .newlines)
+                "resources/data/winter-2009.txt", encoding: .utf8)).trimmingCharacters(in: .newlines)
         let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
         for line1 in lines {
             let line = line1.trimmingCharacters(in: .newlines)
@@ -134,7 +134,7 @@ public class Example_21 {
     }
 
     private func drawSpans(_ pdf: PDF) throws {
-        let font = try Font(pdf, IBMPlexMono.Regular)
+        let font = try Font(pdf, CascadiaMono.Regular)
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         let f2 = try Font(pdf, IBMPlexSans.Regular)
         let page = Page(pdf, Letter.LANDSCAPE)

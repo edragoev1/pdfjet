@@ -30,7 +30,7 @@ trim_trailing_whitespace = false
 
 # Example input fixtures. Their exact bytes are part of the expected output,
 # so trailing whitespace and a missing final newline are both significant.
-[data/**]
+[resources/data/**]
 trim_trailing_whitespace = false
 insert_final_newline = false
 

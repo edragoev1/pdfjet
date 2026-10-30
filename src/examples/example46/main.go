@@ -117,7 +117,7 @@ func Example46() error {
 
 	// The invoice as data, which the document carries, and the description
 	// of it in the metadata. Files are added before the first page.
-	file, err := os.Open("data/invoice/factur-x.xml")
+	file, err := os.Open("resources/data/invoice/factur-x.xml")
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func Example46() error {
 	var middle float32 = 345.0
 
 	// The letterhead: the logo, and the address of the seller beside it
-	logo, err := pdfjet.NewSVGImageFromFile("data/invoice/logo.svg")
+	logo, err := pdfjet.NewSVGImageFromFile("resources/data/invoice/logo.svg")
 	if err != nil {
 		return err
 	}

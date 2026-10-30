@@ -63,7 +63,7 @@ func FuzzJPGImage(f *testing.F) {
 // that image/jpeg writes; the three component one with the Adobe APP14 segment
 // before its other segments; and a four component CMYK image.
 func fuzzJPEGSeeds(f *testing.F) [][]byte {
-	progressive, err := os.ReadFile("../images/610-30x30.jpg")
+	progressive, err := os.ReadFile("../resources/images/610-30x30.jpg")
 	if err != nil {
 		f.Fatal(err)
 	}

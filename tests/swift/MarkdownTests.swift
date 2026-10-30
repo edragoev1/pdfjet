@@ -300,7 +300,7 @@ import Testing
         #expect(MarkdownTests.count(drawn.pdf, "Figure") == 0)
         #expect(drawn.text.contains(TestSupport.hex("Circles")))
         // From the directory, the image is a figure.
-        let images = TestSupport.path("images")
+        let images = TestSupport.path("resources/images")
         drawn = try MarkdownTests.draw(text, images)
         #expect(MarkdownTests.count(drawn.pdf, "Figure") == 1)
         let alt = MarkdownTests.groups("/Alt <([0-9A-Fa-f]+)>", drawn.pdf)
@@ -308,7 +308,7 @@ import Testing
                 "the text of the image is its description")
         // Not above it, not an absolute path, not a URL.
         for source in ["../images/circles.png", "/etc/passwd",
-                TestSupport.path("images/circles.png"), "https://pdfjet.com/logo.png",
+                TestSupport.path("resources/images/circles.png"), "https://pdfjet.com/logo.png",
                 "missing.png"] {
             drawn = try MarkdownTests.draw("![Not read](" + source + ")", images)
             #expect(MarkdownTests.count(drawn.pdf, "Figure") == 0, "\(source)")
@@ -535,12 +535,31 @@ import Testing
         try FileManager.default.createSymbolicLink(atPath: directory + "/fifo-link.png",
                 withDestinationPath: directory + "/fifo.png")
         try FileManager.default.createSymbolicLink(atPath: directory + "/circles.png",
-                withDestinationPath: TestSupport.path("images/circles.png"))
+                withDestinationPath: TestSupport.path("resources/images/circles.png"))
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let markdown = Markdown(font, font, font, font, font).setImageDirectory(directory)
         #expect(markdown.imagePath("fifo.png") == nil)
         #expect(markdown.imagePath("fifo-link.png") == nil)
         #expect(markdown.imagePath("circles.png") == directory + "/circles.png")
+    }
+
+    // A table split over pages whose header wraps tall starts the next page
+    // when the header does not fit: drawn at the foot of the page, it ran off
+    // it (the review of 30 October 2026, E3).
+    @Test func aTallHeaderOfATableStaysOnThePage() throws {
+        var text = ""
+        for i in 0..<25 {
+            text += "line \(i)\n\n"
+        }
+        text += String(repeating: "| " + String(repeating: "word ", count: 20) + " ", count: 6) + "|\n"
+        text += String(repeating: "|---", count: 6) + "|\n"
+        text += String(repeating: String(repeating: "| a ", count: 6) + "|\n", count: 80)
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        var pages = [Page]()
+        try Markdown(font, font, font, font, font).drawOn(memory.pdf, text, &pages, Letter.PORTRAIT)
+        memory.pdf.addPages(pages)
+        try memory.pdf.complete()
     }
 }

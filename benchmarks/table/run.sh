@@ -29,6 +29,9 @@ if has java; then
     javac -O -encoding utf-8 --release 8 -nowarn -d "$B/jet" \
         com/pdfjet/*.java com/pdfjet/barcodes/*.java com/pdfjet/pdf417/*.java com/pdfjet/qrcode/*.java \
         com/pdfjet/datamatrix/*.java com/pdfjet/internal/*.java com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java 2>&1 | grep -v '^Note:' || true
+    # The fonts PDFjet carries, resources of com.pdfjet.fonts, as build-java.sh copies them
+    mkdir -p "$B/jet/com/pdfjet/fonts"
+    cp -R resources/fonts/* "$B/jet/com/pdfjet/fonts/"
     javac -nowarn -encoding utf-8 -d "$B/classes" -cp "$B/jet" benchmarks/table/TableBench.java
 fi
 if has dotnet; then

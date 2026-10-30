@@ -10,6 +10,9 @@ import (
 	"log"
 	"time"
 
+	// The fonts PDFjet carries for the scripts but the European ones, built
+	// into the program
+	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
@@ -32,17 +35,14 @@ func Example04() {
 
 	// Thai font, whose GPOS table places the tone marks above the upper
 	// vowels.
-	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
 	f1.SetSize(12.0)
 
 	// Hebrew font
-	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
 	f2.SetSize(12.0)
 
 	// Arabic font
-	// f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
 	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
 	f3.SetSize(12.0)
 
@@ -140,7 +140,7 @@ func Example04() {
 	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
 	textLine.DrawOn(page)
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("resources/data/languages/thai.txt"))
 	textBlock.SetLocation(30.0, y+35.0)
 	textBlock.SetWidth(430.0)
 	textBlock.SetBorderColor(color.Blue)
@@ -151,7 +151,7 @@ func Example04() {
 	// Right to left text in text blocks, wrapped at their width.
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
-	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/arabic.txt"))
+	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("resources/data/languages/arabic.txt"))
 	textBlock.SetLocation(180.0, 30.0)
 	textBlock.SetWidth(400.0)
 	textBlock.SetBorderColor(color.Blue)
@@ -160,7 +160,7 @@ func Example04() {
 	textBlock.SetLanguage("ar")
 	xy = textBlock.DrawOn(page)
 
-	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/hebrew.txt"))
+	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("resources/data/languages/hebrew.txt"))
 	textBlock.SetLocation(180.0, xy[1]+30.0)
 	textBlock.SetWidth(400.0)
 	textBlock.SetBorderColor(color.Blue)
@@ -169,7 +169,7 @@ func Example04() {
 	textBlock.SetLanguage("he")
 	xy = textBlock.DrawOn(page)
 
-	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/persian.txt"))
+	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("resources/data/languages/persian.txt"))
 	textBlock.SetLocation(180.0, xy[1]+30.0)
 	textBlock.SetWidth(400.0)
 	textBlock.SetBorderColor(color.Blue)

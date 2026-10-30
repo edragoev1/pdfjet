@@ -74,7 +74,7 @@ func Example14() {
 	colorMap["physics"] = color.Firebrick
 	colorMap["Experimentation"] = color.Sienna
 	colorMap["science"] = color.Blue
-	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
+	paragraphs = pdfjet.ParagraphsFromFile(f1, "resources/data/physics.txt")
 	// The paragraphs under each heading are a numbered list. The number of a
 	// paragraph is its label, which the text frame draws to the left of it
 	// and reads before it.

@@ -13,7 +13,8 @@
 # checks what it gets against MuPDF. The references job checks the images the
 # Go port embeds against Pillow and the fonts it reads against fontTools. The api
 # job compares the public API of the four ports with the last release tag, with
-# check-api.sh. The dotnet job also builds the library for .NET Framework 4.8,
+# check-api.sh. The dotnet job runs the unit tests and the examples on .NET 10
+# as well as .NET 8, and also builds the library for .NET Framework 4.8,
 # and it and the java job run their unit tests a second time in a Turkish
 # locale. The swift-macos job
 # builds the Swift port and runs its tests on macOS, where an API a version of
@@ -54,28 +55,26 @@ jobs:
             matrix:
                 port: [ java, dotnet, go, swift ]
         steps:
-            - uses: actions/checkout@v7
-
-            - name: Get the fonts and the data files
-              run: ./get-fonts-and-data.sh
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - if: matrix.port == 'java'
-              uses: actions/setup-java@v6
+              uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
               with:
                   distribution: temurin
                   java-version: "25"
 
-            # .NET 8 for the library and its tests, and the .NET 10 SDK, for
-            # C# 14, for the library built for .NET Framework 4.8.
+            # .NET 8 for the library, and the .NET 10 SDK, for C# 14, for the
+            # library built for .NET Framework 4.8. With it, test-dotnet.sh
+            # runs the unit tests on .NET 8 and on .NET 10, the latest LTS.
             - if: matrix.port == 'dotnet'
-              uses: actions/setup-dotnet@v6
+              uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
               with:
                   dotnet-version: |
                       8.0.x
                       10.0.x
 
             - if: matrix.port == 'go'
-              uses: actions/setup-go@v7
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version-file: go.mod
                   cache: false
@@ -126,12 +125,48 @@ jobs:
 
             # The compare job checks these PDFs.
             - name: Upload the example PDFs
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
               with:
                   name: example-pdfs-${{ matrix.port }}
                   path: Example_*.pdf
                   if-no-files-found: error
                   retention-days: 3
+
+            # The examples, built for .NET 8, again on .NET 10, as an
+            # application on .NET 10 runs the library: the same PDFs, with
+            # their streams decoded and the dates and IDs left out. The bytes
+            # differ, as the zlib of .NET 9 and later compresses otherwise.
+            - name: The examples on .NET 10 make the same PDFs
+              if: matrix.port == 'dotnet'
+              run: |
+                  sudo apt-get update -q
+                  sudo apt-get install -y -q qpdf
+                  mkdir "$RUNNER_TEMP/net8" "$RUNNER_TEMP/decoded"
+                  mv Example_*.pdf "$RUNNER_TEMP/net8"
+                  for i in $(seq -w 1 50); do
+                      DOTNET_ROLL_FORWARD=LatestMajor dotnet examples/Example_$i/bin/release/net8.0/Example_$i.dll
+                  done
+                  # qpdf exits with 3 for a warning. Example_47's owner password is world.
+                  decode() {
+                      qpdf --qdf --object-streams=disable --decode-level=generalized --static-id \
+                          --decrypt --password=world "$1" "$2.qdf" || [ $? -eq 3 ]
+                      LC_ALL=C sed -E -e 's/(CreationDate|ModDate) *(\(D:[^)]*\)|<[0-9a-fA-F]*>)/\1 X/g' \
+                          -e 's/(xmp:CreateDate|xmp:ModifyDate|xmp:MetadataDate)>[^<]*/\1>X/g' \
+                          -e 's/(xmpMM|xapMM):(DocumentID|InstanceID)>[^<]*/\1:\2>X/g' \
+                          -e 's/\/ID *\[<[0-9a-fA-F]*>/\/ID [<X>/g' "$2.qdf" > "$2"
+                  }
+                  failed=0
+                  for f in "$RUNNER_TEMP"/net8/Example_*.pdf; do
+                      name=$(basename "$f")
+                      decode "$f" "$RUNNER_TEMP/decoded/net8-$name"
+                      decode "$name" "$RUNNER_TEMP/decoded/net10-$name"
+                      if ! cmp -s "$RUNNER_TEMP/decoded/net8-$name" "$RUNNER_TEMP/decoded/net10-$name"; then
+                          echo "::error::$name on .NET 10 is not the PDF of .NET 8"
+                          failed=1
+                      fi
+                  done
+                  echo "$(ls "$RUNNER_TEMP"/net8/Example_*.pdf | wc -l) PDFs compared."
+                  exit $failed
 
             # The strings every Go example draws, which the compare job checks
             # the text of every port's PDFs against. The examples are built again
@@ -141,7 +176,7 @@ jobs:
               run: .github/scripts/trace-go-examples.sh "$RUNNER_TEMP/text"
 
             - if: matrix.port == 'go'
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
               with:
                   name: text-trace
                   path: ${{ runner.temp }}/text/text-trace.jsonl
@@ -155,7 +190,7 @@ jobs:
               run: go run ./.github/scripts/encrypted-pdfs "$RUNNER_TEMP/encrypted"
 
             - if: matrix.port == 'go'
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
               with:
                   name: encrypted-pdfs
                   path: ${{ runner.temp }}/encrypted/*.pdf
@@ -240,9 +275,9 @@ jobs:
         name: java (JDK 8, compile only)
         runs-on: ubuntu-24.04
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-            - uses: actions/setup-java@v6
+            - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
               with:
                   distribution: temurin
                   java-version: "8"
@@ -266,30 +301,30 @@ jobs:
         steps:
             # The script reads the Java examples for their compliance level and
             # the password of the encrypted example.
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   sparse-checkout: |
                       .github
                       examples
 
             # Each port's PDFs go into their own folder, example-pdfs-<port>.
-            - uses: actions/download-artifact@v8
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   pattern: example-pdfs-*
                   path: ${{ runner.temp }}/pdfs
 
-            - uses: actions/download-artifact@v8
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   name: text-trace
                   path: ${{ runner.temp }}/text
 
-            - uses: actions/download-artifact@v8
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   name: encrypted-pdfs
                   path: ${{ runner.temp }}/encrypted
 
             # veraPDF runs on Java.
-            - uses: actions/setup-java@v6
+            - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
               with:
                   distribution: temurin
                   java-version: "25"
@@ -395,24 +430,24 @@ jobs:
                     - engine: pdfjs
                       os: ubuntu-24.04
                     - engine: pdfkit
-                      os: macos-latest
+                      os: macos-26
                     - engine: poppler
                       os: ubuntu-24.04
         steps:
             # The script reads the Java examples for the passwords of the
             # encrypted one.
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   sparse-checkout: |
                       .github
                       examples
 
-            - uses: actions/download-artifact@v8
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   name: example-pdfs-java
                   path: ${{ runner.temp }}/pdfs
 
-            - uses: actions/download-artifact@v8
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   name: encrypted-pdfs
                   path: ${{ runner.temp }}/encrypted
@@ -429,7 +464,7 @@ jobs:
               run: '"$RUNNER_TEMP/venv/bin/pip" install -q pypdfium2==5.13.0'
 
             - if: matrix.engine == 'pdfjs'
-              uses: actions/setup-node@v7
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
               with:
                   node-version: "24.21.0"
 
@@ -468,7 +503,7 @@ jobs:
 
             # Also when the check fails, to see why.
             - if: always()
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
               with:
                   name: viewer-renders-${{ matrix.engine }}
                   path: ${{ runner.temp }}/viewers
@@ -487,24 +522,21 @@ jobs:
             matrix:
                 port: [ java, dotnet, go, swift ]
         steps:
-            - uses: actions/checkout@v7
-
-            - name: Get the fonts and the data files
-              run: ./get-fonts-and-data.sh
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - if: matrix.port == 'java'
-              uses: actions/setup-java@v6
+              uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
               with:
                   distribution: temurin
                   java-version: "25"
 
             - if: matrix.port == 'dotnet'
-              uses: actions/setup-dotnet@v6
+              uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
               with:
                   dotnet-version: "8.0.x"
 
             - if: matrix.port == 'go'
-              uses: actions/setup-go@v7
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version-file: go.mod
                   cache: false
@@ -517,7 +549,7 @@ jobs:
                   python3 -m venv "$RUNNER_TEMP/venv"
                   "$RUNNER_TEMP/venv/bin/pip" install -q pymupdf==1.28.2
 
-            - uses: actions/cache@v6
+            - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
               with:
                   path: .corpora
                   key: corpora-${{ hashFiles('tests/corpus/fetch-corpora.sh', 'tests/corpus/fetch-links.py') }}
@@ -539,12 +571,9 @@ jobs:
     references:
         runs-on: ubuntu-24.04
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-            - name: Get the fonts and the data files
-              run: ./get-fonts-and-data.sh
-
-            - uses: actions/setup-go@v7
+            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version-file: go.mod
                   cache: false
@@ -554,7 +583,7 @@ jobs:
                   python3 -m venv "$RUNNER_TEMP/venv"
                   "$RUNNER_TEMP/venv/bin/pip" install -q pymupdf==1.28.2 Pillow==12.3.0 fonttools==4.65.0
 
-            - uses: actions/cache@v6
+            - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
               with:
                   path: |
                       .images
@@ -585,20 +614,20 @@ jobs:
     api:
         runs-on: ubuntu-24.04
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   fetch-depth: 0
 
-            - uses: actions/setup-java@v6
+            - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
               with:
                   distribution: temurin
                   java-version: "25"
 
-            - uses: actions/setup-dotnet@v6
+            - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
               with:
                   dotnet-version: "8.0.x"
 
-            - uses: actions/setup-go@v7
+            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version-file: go.mod
                   cache: false
@@ -625,18 +654,18 @@ jobs:
     crossport:
         runs-on: ubuntu-24.04
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-            - uses: actions/setup-java@v6
+            - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
               with:
                   distribution: temurin
                   java-version: "25"
 
-            - uses: actions/setup-dotnet@v6
+            - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
               with:
                   dotnet-version: "8.0.x"
 
-            - uses: actions/setup-go@v7
+            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version-file: go.mod
                   cache: false
@@ -654,7 +683,7 @@ jobs:
         name: swift (6.1)
         runs-on: ubuntu-24.04
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - uses: ./.github/actions/install-swift
               with:
@@ -673,9 +702,9 @@ jobs:
         env:
             GOTOOLCHAIN: local
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-            - uses: actions/setup-go@v7
+            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version: "1.26"
 
@@ -685,13 +714,10 @@ jobs:
                   ./test-go.sh
 
     swift-macos:
-        runs-on: macos-latest
+        runs-on: macos-26
         timeout-minutes: 30
         steps:
-            - uses: actions/checkout@v7
-
-            - name: Get the fonts and the data files
-              run: ./get-fonts-and-data.sh
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             # The newest release of Xcode on the runner, not a beta beside it,
             # for Swift 6.1 or later, which Package.swift asks for.

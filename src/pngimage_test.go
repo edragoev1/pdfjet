@@ -44,6 +44,11 @@ var testPngSuite = []struct {
 	{"BASN0G16", 32, 32, 0, 16, 2048, "9362f0f0", 0, ""},
 	{"BASN2C08", 32, 32, 2, 8, 3072, "7855b9bf", 0, ""},
 	{"BASN2C16", 32, 32, 2, 16, 6144, "c278125a", 0, ""},
+	{"BASN4A16", 32, 32, 4, 16, 2048, "992bd988", 1024, "8ce873a2"},
+	{"BASN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"},
+	{"BGAN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"},
+	{"BGGN4A16", 32, 32, 4, 16, 2048, "992bd988", 1024, "8ce873a2"},
+	{"BGYN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"},
 	{"BASN3P01", 32, 32, 3, 1, 3072, "31ec284b", 0, ""},
 	{"BASN3P02", 32, 32, 3, 2, 3072, "279a463a", 0, ""},
 	{"BASN3P04", 32, 32, 3, 4, 3072, "3a9e038e", 0, ""},
@@ -112,7 +117,7 @@ func testInflate(t *testing.T, data []byte) []byte {
 
 func testDecodePNG(t *testing.T, name string) *pngImage {
 	t.Helper()
-	file, err := os.Open(testRepoPath(t, "PngSuite/"+name+".PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +217,7 @@ func TestPNGImageTheBitsOfTheImageAreReadOfATrnsSampleAndAChunkOfAnotherLengthIs
 func TestPNGImageTheImageOfAPngWithATransparentColorHasItsMask(t *testing.T) {
 	doc := testNewDoc()
 	for _, name := range []string{"TBRN2C08", "TBWN1G16"} {
-		file, err := os.Open(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -230,7 +235,7 @@ func TestPNGImageTheImageOfAPngWithATransparentColorHasItsMask(t *testing.T) {
 		t.Error("a soft mask")
 	}
 	// And an image added to the objects of a PDF that was read.
-	file, err := os.Open(testRepoPath(t, "PngSuite/TBRN2C08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/TBRN2C08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,13 +247,6 @@ func TestPNGImageTheImageOfAPngWithATransparentColorHasItsMask(t *testing.T) {
 	}
 }
 
-func TestPNGImageRejects16BitRgbaWithAMessage(t *testing.T) {
-	message, panicked := testPanic(func() { testDecodePNG(t, "BASN6A16") })
-	if !panicked || message != "Image with unsupported bit depth == 16" {
-		t.Errorf("panicked %v with %q", panicked, message)
-	}
-}
-
 func TestPNGImageRejectsDataThatIsNotAPng(t *testing.T) {
 	if _, panicked := testPanic(func() { newPNGImage(strings.NewReader("not a png file")) }); !panicked {
 		t.Error("did not panic")
@@ -256,7 +254,7 @@ func TestPNGImageRejectsDataThatIsNotAPng(t *testing.T) {
 }
 
 func TestPNGImageAnImageFromAPngHasItsSize(t *testing.T) {
-	file, err := os.Open(testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +282,7 @@ func TestPNGImageDecodesGrayscaleWithAlpha(t *testing.T) {
 }
 
 func TestPNGImageAnImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask(t *testing.T) {
-	file, err := os.Open(testRepoPath(t, "PngSuite/BASN4A08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/BASN4A08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,10 +296,20 @@ func TestPNGImageAnImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask(t *testing
 	}
 }
 
-func TestPNGImageRejects16BitGrayscaleWithAlphaWithAMessage(t *testing.T) {
-	message, panicked := testPanic(func() { testDecodePNG(t, "BASN4A16") })
-	if !panicked || message != "Image with unsupported bit depth == 16" {
-		t.Errorf("panicked %v with %q", panicked, message)
+func TestPNGImageAnImageFromA16BitPngWithAlphaKeeps16BitsWithASoftMask(t *testing.T) {
+	for _, name := range []string{"BASN4A16", "BASN6A16"} {
+		file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer file.Close()
+		doc := testNewDoc()
+		image := NewImage(doc.pdf, file)
+		image.DrawOn(NewPage(doc.pdf, testLetterPortrait()))
+		raw := string(doc.complete())
+		if !strings.Contains(raw, "/BitsPerComponent 16") || !strings.Contains(raw, "/SMask") {
+			t.Errorf("%s: not 16 bits with a soft mask", name)
+		}
 	}
 }
 
@@ -445,7 +453,7 @@ func TestPNGImageRejectsAChunkLengthThatTheFileDoesNotHave(t *testing.T) {
 }
 
 func TestPNGImageReadsAStreamThatReturnsFewBytesAtATime(t *testing.T) {
-	file, err := os.Open(testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -509,7 +517,7 @@ func TestPNGImageThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt(t *testing.T)
 	// to be, so it is drawn that size rather than one point for each of its
 	// pixels. 11811 pixels per metre is 300 dots per inch, and 1520 by 400 of
 	// them are 364.8 by 96 points.
-	path := testRepoPath(t, "images/rgba-8bit-chunks.png")
+	path := testRepoPath(t, "resources/images/rgba-8bit-chunks.png")
 	file, err := os.Open(path)
 	if err != nil {
 		t.Fatal(err)
@@ -924,7 +932,7 @@ func TestPNGImageTheDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes(t *te
 	embedded := 0
 	for _, row := range testPngSuite {
 		name := row.name
-		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1063,7 +1071,7 @@ func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsMasks(t *testing.T) {
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, letter.Portrait())
 	for _, name := range []string{"BASN6A08", "TBRN2C08"} {
-		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1148,7 +1156,7 @@ func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsStencilMask(t *testing.
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, letter.Portrait())
 	for _, name := range []string{"BASN2C08", "BASN0G01"} {
-		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1217,7 +1225,7 @@ func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsStencilMask(t *testing.
 // PDFjet writes no /Matte, so the soft mask of a PNG with alpha has one
 // added after it was read.
 func TestPNGImageTheSoftMaskOfACopiedImageKeepsItsMatte(t *testing.T) {
-	png, err := os.ReadFile(testRepoPath(t, "PngSuite/BASN6A08.PNG"))
+	png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/BASN6A08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
