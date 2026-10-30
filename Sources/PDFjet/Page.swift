@@ -1413,6 +1413,10 @@ public class Page {
         if color == Color.transparent {
             return self
         }
+        if color == Util.shortColor {
+            pdf.fail(Page.RGB_COUNT)
+            return self
+        }
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
@@ -1468,6 +1472,10 @@ public class Page {
     @discardableResult
     public func setBrushColor(_ color: Int32) -> Page {
         if color == Color.transparent {
+            return self
+        }
+        if color == Util.shortColor {
+            pdf.fail(Page.RGB_COUNT)
             return self
         }
         let r = Float((color >> 16) & 0xff)/255.0

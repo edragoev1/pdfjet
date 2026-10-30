@@ -29,6 +29,9 @@ internal class Util {
         if (color == null) {
             return -1;
         }
+        if (color.Length < 3) {
+            throw new ArgumentException(Page.RGB_COUNT);
+        }
         return (ToByte(color[0]) << 16) | (ToByte(color[1]) << 8) | ToByte(color[2]);
     }
 
@@ -312,7 +315,7 @@ internal class Util {
     }
 
     private static bool Cased(char c) {
-        UnicodeCategory category = char.GetUnicodeCategory(c);
+        UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
         return category == UnicodeCategory.UppercaseLetter || category == UnicodeCategory.LowercaseLetter
                 || category == UnicodeCategory.TitlecaseLetter;
     }
@@ -323,7 +326,7 @@ internal class Util {
         case '\u00AD': case '\u00B7': case '\u2018': case '\u2019': case '\u2024': case '\u2027':
             return true;
         }
-        UnicodeCategory category = char.GetUnicodeCategory(c);
+        UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
         return category == UnicodeCategory.NonSpacingMark || category == UnicodeCategory.EnclosingMark
                 || category == UnicodeCategory.Format || category == UnicodeCategory.ModifierLetter
                 || category == UnicodeCategory.ModifierSymbol;

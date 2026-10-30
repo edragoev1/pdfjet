@@ -369,7 +369,7 @@ internal class SVGState {
             int slash = field.IndexOf('/');
             String size = (slash < 0) ? field : field.Substring(0, slash);
             // A size has a unit or is a keyword; a number alone is a weight.
-            if (size.Length > 0 && !char.IsDigit(size[size.Length - 1])) {
+            if (size.Length > 0 && CharUnicodeInfo.GetUnicodeCategory(size[size.Length - 1]) != UnicodeCategory.DecimalDigitNumber) {
                 float newSize;
                 if (ParseFontSize(size, fontSize, out newSize)) {
                     fontSize = newSize;
@@ -640,12 +640,17 @@ internal class SVGState {
         return (double) length;
     }
 
-    private static bool IsSpace(char ch) {
-        return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+    // Returns true for the white space of Unicode, as Go's unicode.IsSpace.
+    internal static bool IsSpace(char ch) {
+        if (ch <= 0xFF) {
+            return ch == ' ' || (ch >= '\t' && ch <= '\r') || ch == 0x85 || ch == 0xA0;
+        }
+        UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(ch);
+        return category == UnicodeCategory.SpaceSeparator || category == UnicodeCategory.LineSeparator
+                || category == UnicodeCategory.ParagraphSeparator;
     }
 
-    // Returns the text without the white space of XML at its ends: spaces,
-    // tabs and line breaks, and no other characters.
+    // Returns the text without the white space at its ends.
     internal static String Trim(String text) {
         int start = 0;
         int end = text.Length;

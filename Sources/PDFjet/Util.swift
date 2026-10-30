@@ -11,10 +11,16 @@ import Foundation
 ///
 class Util {
     /// Returns the color as a 0xRRGGBB value, each component rounded to the nearest
-    /// of 256 steps and kept between 0.0 and 1.0, or -1 if the color is nil.
+    /// of 256 steps and kept between 0.0 and 1.0, or -1 if the color is nil, or
+    /// shortColor if it has fewer than three values, which fails the document
+    /// when it is drawn, as a short color does on a page: the setters of a cell
+    /// have no document to fail.
     static func toPackedRGB(_ color: [Float]?) -> Int32 {
         guard let color else {
             return -1
+        }
+        if color.count < 3 {
+            return shortColor
         }
         return (toByte(color[0]) << 16) | (toByte(color[1]) << 8) | toByte(color[2])
     }
@@ -24,8 +30,15 @@ class Util {
         return Int32((value * 255.0 + 0.5).rounded(.down))   // Rounds half up, as Java's Math.round
     }
 
+    /// What toPackedRGB returns for a color of fewer than three values: no
+    /// 0xRRGGBB value, nor -1.
+    static let shortColor = Int32.min
+
     /// Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color.
     static func toRGB(_ color: Int32) -> [Float] {
+        if color == shortColor {
+            return []
+        }
         return [Float((color >> 16) & 0xff)/255.0, Float((color >> 8) & 0xff)/255.0, Float(color & 0xff)/255.0]
     }
 
@@ -186,7 +199,7 @@ class Util {
                 }
                 // The text between the quotes, where every quote is doubled.
                 let field = String(decoding: bytes[start..<(i - 1)], as: UTF8.self)
-                fields.append(field.contains("\"\"") ? field.replacingOccurrences(of: "\"\"", with: "\"") : field)
+                fields.append(field.replacingOccurrences(of: "\"\"", with: "\"", options: .literal))
                 if i < bytes.count && !Util.startsWith(bytes, separator, i) {
                     throw PDFjetError(message: "A quoted field is followed by text on this line of the data file: "
                             + Util.excerpt(line))
