@@ -1522,5 +1522,17 @@ public sealed class TableTest : IDisposable {
         Assert.Throws<ArgumentOutOfRangeException>(() => table.GetRow(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => table.GetCellAt(0, 5));
     }
+
+    // The width and the percentages take effect whichever comes first, the data
+    // or they: given before the data, they were lost (the review of 30 October
+    // 2026, E8).
+    [Fact]
+    public void AWidthSetBeforeTheDataIsKept() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        List<List<Cell>> data = new List<List<Cell>> {new List<Cell> {new Cell(font, "a"), new Cell(font, "b")}};
+        Table table = new Table().SetColumnWidthsInPercent(25f, 75f).SetWidth(400f).SetTableData(data, 0);
+        Assert.Equal(100f, table.GetColumnWidth(0), 3);
+        Assert.Equal(300f, table.GetColumnWidth(1), 3);
+    }
 }
 }

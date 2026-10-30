@@ -1569,5 +1569,18 @@ class TableTest {
         assertThrows(IndexOutOfBoundsException.class, () -> table.getRow(5));
         assertThrows(IndexOutOfBoundsException.class, () -> table.getCellAt(0, 5));
     }
+
+    // The width and the percentages take effect whichever comes first, the data
+    // or they: given before the data, they were lost (the review of 30 October
+    // 2026, E8).
+    @Test
+    void aWidthSetBeforeTheDataIsKept() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), new Cell(font, "b"))));
+        Table table = new Table().setColumnWidthsInPercent(25f, 75f).setWidth(400f).setTableData(data, 0);
+        assertEquals(100f, table.getColumnWidth(0), 1e-3f);
+        assertEquals(300f, table.getColumnWidth(1), 1e-3f);
+    }
 }
 

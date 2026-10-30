@@ -1413,4 +1413,15 @@ import Testing
             #expect(message.contains("The table has no"), "got \(message)")
         }
     }
+
+    // The width and the percentages take effect whichever comes first, the data
+    // or they: given before the data, they were lost (the review of 30 October
+    // 2026, E8).
+    @Test func aWidthSetBeforeTheDataIsKept() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let table = Table().setColumnWidthsInPercent(25, 75).setWidth(400)
+                .setTableData([[Cell(font, "a"), Cell(font, "b")]], 0)
+        #expect(abs(table.getColumnWidth(0) - 100) < 1e-3)
+        #expect(abs(table.getColumnWidth(1) - 300) < 1e-3)
+    }
 }

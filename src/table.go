@@ -225,6 +225,11 @@ func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Tabl
 	table.rendered = numOfHeaderRows
 	table.headerDrawn = false
 	table.addCellsToCompleteTheGrid()
+	if table.tableWidth > 0 {
+		// The width and the percentages given before the data: they were lost
+		// (the review of 30 October 2026)
+		table.SetWidth(table.tableWidth)
+	}
 	return table
 }
 

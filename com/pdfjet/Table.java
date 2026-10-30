@@ -201,6 +201,11 @@ public class Table implements Drawable {
         this.rendered = numOfHeaderRows;
         this.headerDrawn = false;
         addCellsToCompleteTheGrid();
+        if (tableWidth > 0f) {
+            // The width and the percentages given before the data: they were
+            // lost (the review of 30 October 2026)
+            setWidth(tableWidth);
+        }
         return this;
     }
 

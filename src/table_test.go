@@ -1785,3 +1785,14 @@ func TestTableAWrongIndexFailsTheDocument(t *testing.T) {
 		}
 	}
 }
+
+// The width and the percentages take effect whichever comes first, the data
+// or they: given before the data, they were lost (the review of 30 October
+// 2026, E8).
+func TestTableAWidthSetBeforeTheDataIsKept(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	table := NewTable().SetColumnWidthsInPercent(25, 75).SetWidth(400).
+		SetTableData([][]*Cell{{NewCell(font, "a"), NewCell(font, "b")}}, 0)
+	testNear(t, "first", 100, table.GetColumnWidth(0), testDelta)
+	testNear(t, "second", 300, table.GetColumnWidth(1), testDelta)
+}

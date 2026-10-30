@@ -197,6 +197,11 @@ public class Table : Drawable {
         self.rendered = numOfHeaderRows
         self.headerDrawn = false
         addCellsToCompleteTheGrid()
+        if tableWidth > 0.0 {
+            // The width and the percentages given before the data: they were
+            // lost (the review of 30 October 2026)
+            setWidth(tableWidth)
+        }
         return self
     }
 

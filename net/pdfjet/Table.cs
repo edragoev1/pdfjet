@@ -191,6 +191,11 @@ public class Table : IDrawable {
         this.rendered = numOfHeaderRows;
         this.headerDrawn = false;
         AddCellsToCompleteTheGrid();
+        if (tableWidth > 0f) {
+            // The width and the percentages given before the data: they were
+            // lost (the review of 30 October 2026)
+            SetWidth(tableWidth);
+        }
         return this;
     }
 
