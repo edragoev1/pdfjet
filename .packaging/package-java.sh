@@ -192,7 +192,8 @@ zip_sorted "$CORE_ZIP" "$CORE_NAME"
 # repository, compiled into PDFjet.jar with the library (the owner, 12 October
 # 2026: one PDFjet.jar), for Java 8, with "PDFjet Pro" in its manifest so that
 # it is told from the jar of PDFjet Core; the API reference of both; its
-# examples and the certificate of the signing one; and the POM of the jar,
+# examples, the certificate of the signing one and the test PKI of the
+# long-term signature one; and the POM of the jar,
 # com.pdfjet:pdfjet-pro, to install it in a Maven repository.
 cd "$NAME"
 PRO_TAR=$PWD/../pro.tar
@@ -201,7 +202,10 @@ git -C "$REPO" archive -o "$PRO_TAR" HEAD com
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD com/pdfjet/sign com/pdfjet/invoice \
     com/pdfjet/hyphenation src/hyphenation/patterns \
-    examples/package/java tests/data/rsa-signer.p12
+    examples/package/java tests/data/rsa-signer.p12 \
+    tests/ltv-server.py tests/data/ltv-signer.p12 tests/data/ltv-root.pem tests/data/ltv-root.key \
+    tests/data/ltv-root-index.txt tests/data/ltv-ca.pem tests/data/ltv-ca.key tests/data/ltv-ca-index.txt \
+    tests/data/ltv-tsa.pem tests/data/ltv-tsa.key tests/data/ltv-ocsp.pem tests/data/ltv-ocsp.key
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
 javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
@@ -251,6 +255,19 @@ javadoc -quiet -notimestamp -public -doctitle "PDFjet Pro for Java" -windowtitle
 mkdir -p examples/pro
 cp pro-src/examples/package/java/*.java examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
+# The test PKI of the long-term signature example, SignLongTerm, which no one
+# trusts, and ltv-server.py, its OCSP responder, CRLs, CA certificates and time
+# stamp authority on 127.0.0.1:19180, which build-pro.sh starts
+mkdir -p examples/pro/ltv
+cp pro-src/tests/ltv-server.py pro-src/tests/data/ltv-* examples/pro/ltv/
+# The packages are under PDFjet Pro's commercial license, so the server's
+# copy carries the header of the packaged examples, not the repository's.
+sed -i -e '/^# Licensed under the GNU Affero General Public License/,/^# SPDX-License-Identifier: AGPL-3.0-only/c\
+# A test server of PDFjet Pro, for the packages of PDFjet.' examples/pro/ltv/ltv-server.py
+if grep -q AGPL examples/pro/ltv/ltv-server.py; then
+    echo "examples/pro/ltv/ltv-server.py still names the AGPL." >&2
+    exit 1
+fi
 rm -rf pro-src out
 mv ../java-pro/build-pro.sh ../java-pro/build-pro.cmd .
 # The POM and the README of PDFjet Pro, with its version: the jar installed
@@ -262,7 +279,8 @@ rm -rf ../java-pro
 # Creates the PDFs of PDFjet Pro with the package's own script.
 ./build-pro.sh
 rm -rf out-pro
-for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText; do
+for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText \
+        Pro_SignLongTerm_B-LT Pro_SignLongTerm_B-LTA Pro_SignLongTerm_B-LTA-renewed; do
     if ! tail -c 32 "$pdf.pdf" 2>/dev/null | grep -q '%%EOF'; then
         echo "$pdf.pdf was not created or is incomplete"
         exit 1

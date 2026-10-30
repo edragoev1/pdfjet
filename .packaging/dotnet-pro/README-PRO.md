@@ -15,13 +15,16 @@ Pro.
 | `examples/pro/DrawSwissQRBill/` | Draws the Swiss QR-bill of an invoice. |
 | `examples/pro/DrawEPCQRCode/` | Draws the EPC QR code of a SEPA credit transfer. |
 | `examples/pro/HyphenateText/` | Hyphenates a paragraph, in English and German, beside the same without. |
+| `examples/pro/SignLongTerm/` | Signs a document with long-term signatures, B-LT and B-LTA, and renews the archive time stamp. |
 | `examples/pro/demo-signer.p12` | A certificate for the signing example alone, which no one trusts. |
+| `examples/pro/ltv/` | The test PKI of SignLongTerm, which no one trusts, and `ltv-server.py`, its OCSP responder, CRLs and time stamp authority on 127.0.0.1:19180, which needs Python 3 and openssl; `build-pro.sh` starts it. |
 | `Pro_*.pdf` | The PDFs the examples create. |
 | `build-pro.sh`, `build-pro.cmd` | Build and run the examples of PDFjet Pro. |
 
-- **PDFjet Sign**: PAdES signatures, B-B and B-T with a time stamp; RSA,
-  RSASSA-PSS and ECDSA; keys in a PKCS #12 file, in a PKCS #11 token, or in
-  memory; visible and invisible signature fields.
+- **PDFjet Sign**: PAdES signatures, B-B, B-T with a time stamp, and the
+  long-term B-LT and B-LTA; RSA, RSASSA-PSS and ECDSA; keys in a PKCS #12
+  file, in a PKCS #11 token, or in memory; visible and invisible signature
+  fields.
 - **PDFjet Invoice**: ZUGFeRD and Factur-X in every profile, and XRechnung,
   written into a PDF/A-3 document and read back; the Swiss QR-bill; the EPC QR
   code of a SEPA transfer.
