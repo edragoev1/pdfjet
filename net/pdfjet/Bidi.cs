@@ -463,8 +463,24 @@ namespace PDFjet.NET {
             return ch >= 0x0600 && ch <= 0x06FF;
         }
 
-        private static bool IsHebrew(int ch) {
-            return ch >= 0x0590 && ch <= 0x05FF;
+        // Returns true if the character is in a block of the scripts written from
+        // right to left whose letters are of the bidirectional type R; IsArabicBlock
+        // those of the type AL: the blocks of Hebrew and Arabic and their
+        // presentation forms, and those of the other such scripts, as
+        // DerivedBidiClass.txt of Unicode gives them.
+        private static bool IsRightToLeftBlock(int ch) {
+            return (ch >= 0x0590 && ch <= 0x05FF) || (ch >= 0x07C0 && ch <= 0x085F)
+                        || (ch >= 0xFB1D && ch <= 0xFB4F) || (ch >= 0x10800 && ch <= 0x10FFF)
+                        || (ch >= 0x1E800 && ch <= 0x1EFFF);
+        }
+
+        private static bool IsArabicBlock(int ch) {
+            return (ch >= 0x0600 && ch <= 0x07BF) || (ch >= 0x0860 && ch <= 0x08FF)
+                    || (ch >= 0xFB50 && ch <= 0xFD3D) || (ch >= 0xFD50 && ch <= 0xFDCE)
+                    || (ch >= 0xFDF0 && ch <= 0xFDFC) || (ch >= 0xFE70 && ch <= 0xFEFC)
+                    || (ch >= 0x10D00 && ch <= 0x10D3F) || (ch >= 0x10EC0 && ch <= 0x10EFF)
+                    || (ch >= 0x10F30 && ch <= 0x10F6F) || (ch >= 0x1EC70 && ch <= 0x1ECBF)
+                    || (ch >= 0x1ED00 && ch <= 0x1ED4F) || (ch >= 0x1EE00 && ch <= 0x1EEFF);
         }
 
         private static bool IsAlphaNumeric(int ch) {
@@ -509,7 +525,7 @@ namespace PDFjet.NET {
                     || ch == 0x066B || ch == 0x066C) {                  // Arabic decimal and thousands separators
                 return AN;
             }
-            if (ch == '+' || ch == '-' || ch == 0x2212) {               // minus sign
+            if (ch == '+' || ch == '-' || ch == 0x2212 || ch == 0xFB29) {   // minus sign, Hebrew plus sign
                 return ES;
             }
             if (ch == ',' || ch == '.' || ch == '/' || ch == ':'
@@ -522,11 +538,11 @@ namespace PDFjet.NET {
                     || (ch >= 0x2030 && ch <= 0x2034)) {                // per mille, per ten thousand, primes
                 return ET;
             }
-            if (IsHebrew(ch)) {
-                return R;
-            }
-            if (IsArabic(ch)) {
+            if (IsArabicBlock(ch)) {
                 return AL;
+            }
+            if (IsRightToLeftBlock(ch)) {
+                return R;
             }
             if (cat == UnicodeCategory.CurrencySymbol) {
                 return ET;
