@@ -10,8 +10,11 @@ import java.util.*;
 
 /**
  * Bar chart renderer for PDF pages: one slot per category, the bars of the
- * series grouped inside each slot. See Example_27, of horizontal and
- * vertical bars.
+ * series grouped inside each slot. A value of a line series outside a range
+ * that is set cuts its line at the edge of the plot, and the chart says how
+ * many are: "2 values outside the range", small, under the plot at its right
+ * end, and in its description, in that alone when the plot would not be left
+ * room to draw. See Example_27, of horizontal and vertical bars.
  */
 public class BarChart implements Drawable {
     /**
@@ -146,7 +149,9 @@ public class BarChart implements Drawable {
      * Sets the alternate description of the chart, which a screen reader reads
      * in a PDF/UA document, where the chart is a figure. The default is the
      * title and the subtitle, or "Bar chart" without them, and the values of
-     * each series by category. Describe what the chart shows.
+     * each series by category. Describe what the chart shows. The number of
+     * values of the line series outside a range that is set follows it, as the
+     * chart prints it.
      *
      * @param altDescription the alternate description.
      * @return this BarChart object.
@@ -242,7 +247,9 @@ public class BarChart implements Drawable {
      * Adds a series drawn as a line over the bars, in ink, a dot at each
      * category: a target, the average, or last year. It shares the value
      * axis with the bars, is not stacked, and is in the legend and the
-     * description. A value that is NaN or infinite leaves a gap in the line.
+     * description. A value that is NaN or infinite leaves a gap in the line, and
+     * the chart says how many values are outside a range set with
+     * setValueAxisRange.
      *
      * @param name the series name, shown in the legend; empty for none.
      * @param values one value per category.
@@ -441,7 +448,10 @@ public class BarChart implements Drawable {
      * Sets the range of the value axis, with grid lines on a round step, as
      * setYAxisRange does in SimpleLineChart and SimpleScatterChart. Without it
      * the range is that of the data, rounded to steps, and always includes 0.
-     * A range whose end is not past its start is not set.
+     * A range whose end is not past its start is not set. A value of a line
+     * series outside the range is drawn past the plot, which clips it, and the
+     * chart says how many are, under the plot, which is that much shorter, and
+     * in its description.
      *
      * @param min the value at the start of the axis.
      * @param max the value at the end of the axis.
@@ -642,6 +652,20 @@ public class BarChart implements Drawable {
         float y5 = y1 + topMargin;
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        String note = outsideNote();
+        float small = 0.8f * f2.getSize();
+        float noteRow = 0f;
+        if (!note.isEmpty()) {
+            float above = y8 - 1.4f * small;
+            if (above > y5) {
+                noteRow = 1.4f * small;
+                y8 = above;
+            } else {
+                note = "";
+            }
+        }
         // No room for the plot, or an axis whose span is past the largest
         // float, as a set range of -3e38 to 3e38, whose steps are infinite
         if (x6 <= x5 || y8 <= y5 || !ChartScale.isValue(step)) {
@@ -923,7 +947,11 @@ public class BarChart implements Drawable {
         drawText(page, f2, yTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yTitle)) / 2f, MUTED);
         page.setTextRotation(0);
         String xTitle = ChartScale.shorten(f2, f2.getSize(), xAxisTitle, x6 - x5);
-        drawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.stringWidth(xTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
+        drawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.stringWidth(xTitle)) / 2f,
+                y2 - bodyHeight / 2f - noteRow, MUTED);
+        if (!note.isEmpty()) {
+            ChartScale.drawOutsideNote(page, f2, small, note, x6, x1, x2, y2 - bodyHeight / 2f);
+        }
 
         page.restoreGraphicsState();
         page.setFigureBoundingBox(x1, y1, w, h);
@@ -932,13 +960,32 @@ public class BarChart implements Drawable {
         return new float[] {x1 + w, y1 + h};
     }
 
+    // What the chart says of the values of its line series outside a range
+    // that is set, or "" when there are none.
+    private String outsideNote() {
+        int count = 0;
+        if (rangeSet) {
+            ChartScale.Axis axis = new ChartScale.Axis(min, max, 0);
+            int n = numberOfCategories();
+            for (Series s : lineSeries) {
+                for (int i = 0; i < Math.min(s.values.length, n); i++) {
+                    if (ChartScale.isValue(s.values[i]) && !ChartScale.onAxis(s.values[i], axis)) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return ChartScale.outsideNote(count, "value");
+    }
+
     // The alternate description: the one set, or the title, the subtitle and,
     // for each series, its name and its values by category, with the digits
     // of the labels, or, without setFractionDigits, with two significant
-    // digits at least.
-    private String altDescription(int digits) {
+    // digits at least; and the values of the line series outside a range that
+    // is set.
+    String altDescription(int digits) {
         if (altDescription != null && !altDescription.isEmpty()) {
-            return altDescription;
+            return ChartScale.withNote(altDescription, outsideNote());
         }
         StringBuilder sb = new StringBuilder(ChartScale.join(title, subtitle));
         if (sb.length() == 0) {
@@ -971,6 +1018,10 @@ public class BarChart implements Drawable {
             }
             sb.append(values);
             separator = "; ";
+        }
+        String note = outsideNote();
+        if (!note.isEmpty()) {
+            sb.append("; ").append(note);
         }
         return sb.append('.').toString();
     }

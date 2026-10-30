@@ -561,4 +561,32 @@ class SimpleScatterChartTest {
         assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/Alt "
                 + TestSupport.textString("Scatter chart: 1 points; 1 point outside the range.")));
     }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    @Test
+    void theNoteNeverCostsThePlot() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        // The least height that draws, found from below
+        float height = 1f;
+        while (!noteContent(pdf, plotChart(font, height, 3f)).contains(" Td\n")) {
+            height += 0.25f;
+        }
+        for (float h : new float[] {height, height + 1f, height + 5f}) {
+            String without = noteContent(pdf, plotChart(font, h, 3f));
+            SimpleScatterChart chart = plotChart(font, h, 50f);
+            String with = noteContent(pdf, chart);
+            assertFalse(with.contains(TestSupport.hex(" outside")), "the note left no room for the plot");
+            assertEquals(without.split(" Td\n", -1).length, with.split(" Td\n", -1).length, "the plot is not drawn");
+            assertTrue(chart.altDescription().endsWith("; 1 point outside the range."), chart.altDescription());
+        }
+        // With the room, the note
+        assertTrue(noteContent(pdf, plotChart(font, height + 20f, 50f)).contains(TestSupport.hex(" outside")));
+    }
+
+    private static SimpleScatterChart plotChart(Font font, float height, float far) {
+        return new SimpleScatterChart(font, font).setSize(300f, height).setXAxisRange(0f, 10f)
+                .add(1f, 1f).add(2f, 2f).add(far, 1f);
+    }
 }

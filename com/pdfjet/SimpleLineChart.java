@@ -17,7 +17,8 @@ import java.util.*;
  * the look of SimpleBarChart and SimpleScatterChart. A value that is NaN
  * leaves a gap in its line. A value outside a range that is set cuts its line
  * at the edge of the plot, and the chart says how many are: "2 values outside
- * the range", small, under the plot at its right end, and in its description.
+ * the range", small, under the plot at its right end, and in its description,
+ * in that alone when the plot would not be left room to draw.
  * <p>
  * In a PDF/UA document the chart is one figure, described from its data: the
  * lines, their first and last values and their highest, and the values outside
@@ -571,10 +572,16 @@ public class SimpleLineChart implements Drawable {
         if (!xAxisTitle.isEmpty()) {
             bottom -= 1.4f * size;
         }
-        // Room for the note, a row of its own under the rest
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
         String note = outsideNote();
         if (!note.isEmpty()) {
-            bottom -= 1.4f * subtitleSize();
+            float above = bottom - 1.4f * subtitleSize();
+            if (above > top) {
+                bottom = above;
+            } else {
+                note = "";
+            }
         }
         if (right <= left || bottom <= top || !ChartScale.drawable(axis)) {
             return new float[] {x + w, y + h};

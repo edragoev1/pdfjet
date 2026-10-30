@@ -363,4 +363,150 @@ class BarChartTest {
         assertTrue(content.contains("<" + TestSupport.hex("15") + ">"), content);
         assertFalse(content.contains("<" + TestSupport.hex("5") + ">"), content);
     }
+
+    // The content of the chart, on a page of its own.
+    private static String noteContent(PDF pdf, BarChart chart) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    private static BarChart noteChart(PDF pdf) throws Exception {
+        return chart(pdf).setCategories("a", "b", "c").addSeries("", new float[] {1f, 2f, 3f});
+    }
+
+    // A value of a line series outside a range that is set cuts its line, and
+    // the chart says so, in print and in its description, as SimpleLineChart
+    // does. A value that is no number is not outside, nor is a bar, and a chart
+    // with none outside adds nothing.
+    @Test
+    void itSaysHowManyValuesOfItsLinesAreOutsideTheRange() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        float nan = Float.NaN;
+        float inf = Float.POSITIVE_INFINITY;
+        String one = "1 value outside the range";
+        String two = "2 values outside the range";
+        Object[][] cases = {
+            {noteChart(pdf).addLineSeries("x", new float[] {1f, 100f, 3f}), ""},
+            {noteChart(pdf).addLineSeries("x", new float[] {0f, 5f, 10f}).setValueAxisRange(0f, 10f), ""},
+            {noteChart(pdf).addLineSeries("x", new float[] {1f, nan, inf}).setValueAxisRange(0f, 10f), ""},
+            {noteChart(pdf).addLineSeries("x", new float[] {1f, 2f, 3f, 50f}).setValueAxisRange(0f, 10f), ""},
+            {chart(pdf).setCategories("a").addSeries("", new float[] {50f}).setValueAxisRange(0f, 10f), ""},
+            {noteChart(pdf).addLineSeries("x", new float[] {1f, 50f, 3f}).setValueAxisRange(0f, 10f), one},
+            {noteChart(pdf).addLineSeries("x", new float[] {1f, 2f, -50f}).setValueAxisRange(0f, 10f), one},
+            {noteChart(pdf).addLineSeries("x", new float[] {1f, 50f, -50f}).setValueAxisRange(0f, 10f), two},
+            {noteChart(pdf).addLineSeries("x", new float[] {1f, 50f, 3f}).addLineSeries("y", new float[] {50f, 2f, 3f})
+                    .setValueAxisRange(0f, 10f), two},
+            {noteChart(pdf).setHorizontal(true).addLineSeries("x", new float[] {1f, 50f, 3f})
+                    .setValueAxisRange(0f, 10f), one},
+        };
+        for (Object[] c : cases) {
+            BarChart chart = (BarChart) c[0];
+            String note = (String) c[1];
+            String content = noteContent(pdf, chart);
+            String description = chart.altDescription(2);
+            if (note.isEmpty()) {
+                assertFalse(content.contains(TestSupport.hex(" outside")), description);
+                assertFalse(description.contains("outside"), description);
+            } else {
+                assertTrue(content.contains("<" + TestSupport.hex(note) + ">"), note);
+                assertTrue(description.endsWith("; " + note + "."), description);
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the categories and the x title, the plot
+    // and the title that much higher; its right end at the plot's.
+    @Test
+    void theNoteIsUnderThePlot() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        String note = "1 value outside the range";
+        float size = font.getSize();
+        float small = 0.8f * size;
+        float body = font.getBodyHeight();
+        for (String title : new String[] {"", "year"}) {
+            String[] drawn = new String[2];
+            for (int k = 0; k < 2; k++) {
+                drawn[k] = noteContent(pdf, chart(pdf).setXAxisTitle(title).setCategories("a", "b", "c")
+                        .addSeries("", new float[] {1f, 2f, 3f})
+                        .addLineSeries("", new float[] {1f, k == 0 ? 2f : 50f, 3f}).setValueAxisRange(0f, 10f));
+            }
+            String with = drawn[1];
+            float[] at = TestSupport.positionOf(with, note);
+            float end = at[0] + font.stringWidth(small, note);
+            assertEquals(350f - body / 2f, end, 0.1f, "the right end");
+            assertTrue(at[0] >= 50f && end <= 350f, "the note at " + at[0]);
+            assertEquals(792f - (250f - body / 2f), at[1], 0.01f, "the baseline");
+            assertEquals(TestSupport.positionOf(drawn[0], "0")[1] + 1.4f * small,
+                    TestSupport.positionOf(with, "0")[1], 0.02f, "the plot");
+            float last = TestSupport.positionOf(with, "a")[1];
+            if (!title.isEmpty()) {
+                last = TestSupport.positionOf(with, title)[1];
+                assertEquals(TestSupport.positionOf(drawn[0], title)[1] + 1.4f * small, last, 0.02f, "the x title");
+            }
+            assertTrue(at[1] + font.getAscent(small) <= last - font.getDescent(size), "the note over the row above it");
+            assertEquals(TestSupport.fillColorBefore(with, "0"), TestSupport.fillColorBefore(with, note));
+        }
+        // In a chart too narrow for it, shortened and inside
+        String narrow = noteContent(pdf, chart(pdf).setSize(100f, 200f).setCategories("a")
+                .addSeries("", new float[] {1f}).addLineSeries("", new float[] {50f}).setValueAxisRange(0f, 10f));
+        assertTrue(TestSupport.positionOf(narrow, "1 value")[0] >= 50f);
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    @Test
+    void theNoteFollowsADescriptionThatIsSet() throws Exception {
+        BarChart chart = chart(TestSupport.newPDF()).setCategories("a", "b")
+                .addLineSeries("", new float[] {1f, 2f}).setAltDescription("A line");
+        assertEquals("A line", chart.altDescription(2));
+        chart.addLineSeries("", new float[] {1f, 50f}).setValueAxisRange(0f, 10f);
+        assertEquals("A line. 1 value outside the range.", chart.altDescription(2));
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    @Test
+    void theNoteIsInTheFigure() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new BarChart(font, font).setSize(300f, 200f).setCategories("a", "b").setValueAxisRange(0f, 10f)
+                .addLineSeries("", new float[] {1f, 50f}).drawOn(page);
+        String content = TestSupport.content(page);
+        assertEquals(content.indexOf("BDC\n"), content.lastIndexOf("BDC\n"), content);
+        assertEquals(content.indexOf("EMC\n"), content.lastIndexOf("EMC\n"), content);
+        assertTrue(content.lastIndexOf("ET\n") < content.lastIndexOf("EMC\n"), content);
+        assertTrue(page.structures.get(0).altDescription.endsWith("; 1 value outside the range."));
+    }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    @Test
+    void theNoteNeverCostsThePlot() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        // The least height that draws, found from below
+        float height = 1f;
+        while (!noteContent(pdf, plotChart(pdf, height, 2f)).contains(" Td\n")) {
+            height += 0.25f;
+        }
+        for (float h : new float[] {height, height + 1f, height + 5f}) {
+            String without = noteContent(pdf, plotChart(pdf, h, 2f));
+            BarChart chart = plotChart(pdf, h, 50f);
+            String with = noteContent(pdf, chart);
+            assertFalse(with.contains(TestSupport.hex(" outside")), "the note left no room for the plot");
+            assertTrue(with.contains("W\nn\n"), "the plot is not drawn");
+            assertEquals(without.split(" Td\n", -1).length, with.split(" Td\n", -1).length, "the plot is not drawn");
+            assertTrue(chart.altDescription(2).endsWith("; 1 value outside the range."), chart.altDescription(2));
+        }
+        // With the room, the note
+        assertTrue(noteContent(pdf, plotChart(pdf, height + 20f, 50f)).contains(TestSupport.hex(" outside")));
+    }
+
+    private static BarChart plotChart(PDF pdf, float height, float middle) throws Exception {
+        return chart(pdf).setSize(300f, height).setCategories("a", "b", "c").setValueAxisRange(0f, 10f)
+                .addLineSeries("", new float[] {1f, middle, 3f});
+    }
 }
