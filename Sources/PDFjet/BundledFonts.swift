@@ -5,7 +5,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 import Foundation
-import PDFjetFonts
 
 /// The fonts PDFjet carries, in resources/fonts, each family in a folder of
 /// its name, with its license: IBM Plex Sans and Serif, from Thin to Bold,
@@ -30,7 +29,10 @@ import PDFjetFonts
 /// Xcode builds, PDFjet_PDFjetFontsWorld.bundle among the resources of the
 /// app, or of the framework that links PDFjet. Those are the places the
 /// bundle's own accessor, Bundle.module, looks in, so the bundle is found
-/// where the module would find it, and the developer writes no code.
+/// where the module would find it, and the developer writes no code. So is
+/// the bundle of PDFjetFonts: Bundle.module stops the process when its bundle
+/// is missing, as for an executable copied alone, where a font path that is no
+/// file is to be an error.
 enum BundledFonts {
     // Where the fonts are on disk: the folder resources/fonts of the working
     // directory, as in the repository and the packages of the releases.
@@ -57,16 +59,20 @@ enum BundledFonts {
     // PDFjetFontsWorld of the package PDFjet, on Apple's systems and on Linux.
     private static let worldBundleNames = ["PDFjet_PDFjetFontsWorld.bundle", "PDFjet_PDFjetFontsWorld.resources"]
 
+    // The names SwiftPM gives the resource bundle of the target PDFjetFonts.
+    static let bundleNames = ["PDFjet_PDFjetFonts.bundle", "PDFjet_PDFjetFonts.resources"]
+
     // The resource bundle of the European fonts, of the module PDFjetFonts,
-    // which PDFjet depends on.
-    static let bundle: Bundle? = PDFjetFonts.bundle
+    // which PDFjet depends on, or nil when the program was moved without it,
+    // found once.
+    static let bundle: Bundle? = findBundle(bundleNames)
 
     // The resource bundle of the product PDFjetFontsWorld, or nil when the
     // program was built without it, found once.
     static let worldBundle: Bundle? = findBundle(worldBundleNames)
 
     // Looks for a bundle of one of the names where SwiftPM and Xcode put it.
-    private static func findBundle(_ names: [String]) -> Bundle? {
+    static func findBundle(_ names: [String]) -> Bundle? {
         var folders = [URL]()
         if let url = Bundle.main.resourceURL {
             folders.append(url)
@@ -170,8 +176,15 @@ enum BundledFonts {
     // folder nor the program, or nil for any other font: add the product
     // PDFjetFontsWorld.
     static func worldMissing(_ fontPath: String) -> String? {
-        guard let name = nameOf(fontPath), let family = worldFamilyOf(name),
-                worldFaces[family]!.contains(String(name.dropFirst(family.count + 1))) else {
+        guard let name = nameOf(fontPath), let family = worldFamilyOf(name), let faces = worldFaces[family] else {
+            return nil
+        }
+        var file = String(name.dropFirst(family.count + 1))
+        // A path written for the .stream files PDFjet shipped before is the same font
+        for stream in [".ttf.stream", ".otf.stream"] where file.hasSuffix(stream) {
+            file = String(file.dropLast(stream.count)) + "." + (faces[0] as NSString).pathExtension
+        }
+        guard faces.contains(file) else {
             return nil
         }
         return fontPath + " is not a file, nor in resources/fonts/world. " + familyName(family)

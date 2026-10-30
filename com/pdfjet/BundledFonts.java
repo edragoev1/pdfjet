@@ -7,6 +7,10 @@
 package com.pdfjet;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The fonts PDFjet carries in itself, in resources/fonts, each family in a
@@ -41,12 +45,26 @@ final class BundledFonts {
     // com.pdfjet:pdfjet-fonts-world, apart from the European ones, as they
     // are about 52 MB, and the styles of the faces of each that PDFjet
     // carries: IBM Plex Sans JP, KR, SC and TC as .otf, the others as .ttf.
-    private static final String[] WORLD_FAMILIES = {
-        "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC",
-        "IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai",
-    };
-    private static final String[] CJK_STYLES = {"Regular", "SemiBold", "Bold"};
-    private static final String[] THIN_TO_BOLD = {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"};
+    private static final Map<String, List<String>> WORLD_FACES = worldFaces();
+
+    private static Map<String, List<String>> worldFaces() {
+        Map<String, List<String>> faces = new HashMap<String, List<String>>();
+        for (String family : new String[] {"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"}) {
+            List<String> files = new ArrayList<String>();
+            for (String style : new String[] {"Regular", "SemiBold", "Bold"}) {
+                files.add(family + "-" + style + ".otf");
+            }
+            faces.put(family, files);
+        }
+        for (String family : new String[] {"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
+            List<String> files = new ArrayList<String>();
+            for (String style : new String[] {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}) {
+                files.add(family + "-" + style + ".ttf");
+            }
+            faces.put(family, files);
+        }
+        return faces;
+    }
 
     // What the fonts of the jar com.pdfjet:pdfjet-fonts-world are for.
     static final String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai";
@@ -69,12 +87,7 @@ final class BundledFonts {
     private static String worldFamilyOf(String name) {
         int slash = name.indexOf('/');
         String family = (slash < 0) ? name : name.substring(0, slash);
-        for (String world : WORLD_FAMILIES) {
-            if (world.equals(family)) {
-                return world;
-            }
-        }
-        return null;
+        return WORLD_FACES.containsKey(family) ? family : null;
     }
 
     // Returns the name of a family as people write it, such as IBM Plex Sans
@@ -100,7 +113,9 @@ final class BundledFonts {
     // Opens the font of the path that PDFjet carries, or returns null: from
     // the folder, or else from the jar of the library, or else, for a font of
     // resources/fonts/world, from the classpath of the loader, which has the
-    // jar com.pdfjet:pdfjet-fonts-world when the program does.
+    // jar com.pdfjet:pdfjet-fonts-world when the program does, or else from
+    // that of the thread's context class loader: PDFjet in a server's shared
+    // lib does not see the jar in the WEB-INF/lib of the application.
     static InputStream open(String fontPath, String folder, ClassLoader loader) {
         String name = nameOf(fontPath);
         if (name == null || name.indexOf("..") >= 0) {
@@ -121,6 +136,10 @@ final class BundledFonts {
         if (stream == null && loader != null) {
             stream = loader.getResourceAsStream(RESOURCES + path);
         }
+        ClassLoader context = Thread.currentThread().getContextClassLoader();
+        if (stream == null && context != null && context != loader) {
+            stream = context.getResourceAsStream(RESOURCES + path);
+        }
         return stream;
     }
 
@@ -138,13 +157,15 @@ final class BundledFonts {
             return null;
         }
         String file = name.substring(family.length() + 1);
-        // The first four families are IBM Plex Sans JP, KR, SC and TC
-        boolean cjk = java.util.Arrays.asList(WORLD_FAMILIES).indexOf(family) < 4;
-        boolean carried = false;
-        for (String style : cjk ? CJK_STYLES : THIN_TO_BOLD) {
-            carried |= file.equals(family + "-" + style + (cjk ? ".otf" : ".ttf"));
+        List<String> faces = WORLD_FACES.get(family);
+        // A path written for the .stream files PDFjet shipped before is the same font
+        for (String stream : new String[] {".ttf.stream", ".otf.stream"}) {
+            if (file.endsWith(stream)) {
+                String first = faces.get(0);
+                file = file.substring(0, file.length() - stream.length()) + first.substring(first.lastIndexOf('.'));
+            }
         }
-        if (!carried) {
+        if (!faces.contains(file)) {
             return null;
         }
         return fontPath + " is not a file, nor in resources/fonts/world. "

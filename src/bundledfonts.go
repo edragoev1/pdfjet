@@ -36,22 +36,20 @@ const bundledFolder = "resources/fonts"
 
 // worldFaces are the families that the package world builds in, and the
 // files of the faces of each that PDFjet carries.
-var worldFaces = map[string][]string{}
-
-func init() {
-	cjk := []string{"Regular", "SemiBold", "Bold"}
-	thinToBold := []string{"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}
+var worldFaces = func() map[string][]string {
+	faces := map[string][]string{}
 	for _, family := range []string{"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"} {
-		for _, style := range cjk {
-			worldFaces[family] = append(worldFaces[family], family+"-"+style+".otf")
+		for _, style := range []string{"Regular", "SemiBold", "Bold"} {
+			faces[family] = append(faces[family], family+"-"+style+".otf")
 		}
 	}
 	for _, family := range []string{"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"} {
-		for _, style := range thinToBold {
-			worldFaces[family] = append(worldFaces[family], family+"-"+style+".ttf")
+		for _, style := range []string{"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"} {
+			faces[family] = append(faces[family], family+"-"+style+".ttf")
 		}
 	}
-}
+	return faces
+}()
 
 // worldImport is the line that builds the fonts of the package world into a
 // program.
@@ -131,7 +129,16 @@ func bundledFontHas(fontPath string) bool {
 func bundledWorldMissing(fontPath string) string {
 	family, file, _ := strings.Cut(bundledFontName(fontPath), "/")
 	faces, ok := worldFaces[family]
-	if !ok || !slices.Contains(faces, file) || bundledFontHas(fontPath) {
+	if !ok {
+		return ""
+	}
+	// A path written for the .stream files PDFjet shipped before is the same font
+	for _, stream := range []string{".ttf.stream", ".otf.stream"} {
+		if base, found := strings.CutSuffix(file, stream); found {
+			file = base + filepath.Ext(faces[0])
+		}
+	}
+	if !slices.Contains(faces, file) || bundledFontHas(fontPath) {
 		return ""
 	}
 	return fontPath + " is not a file, nor in resources/fonts/world. " + bundledFamilyName(family) +

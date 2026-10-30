@@ -118,6 +118,11 @@ import Testing
         // PDFjet depends on PDFjetFonts, whose bundle has the European fonts
         let bundle = try #require(BundledFonts.bundle)
         #expect(bundle.bundleURL.lastPathComponent.hasPrefix("PDFjet_PDFjetFonts."))
+        // Found by its name, as a lookup that returns nil can stop no process:
+        // Bundle.module does when the bundle is missing
+        #expect(BundledFonts.findBundle(BundledFonts.bundleNames)?.bundleURL == bundle.bundleURL)
+        #expect(BundledFonts.findBundle(["PDFjet_NoSuchFonts.bundle"]) == nil)
+        #expect(BundledFonts.url("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "no-such-folder/", nil, nil) == nil)
         // From the working directory, the repository, resources/fonts first
         let onDisk = try #require(BundledFonts.url(IBMPlexSans.Regular))
         #expect(onDisk.path.hasSuffix("resources/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"), "\(onDisk.path)")
@@ -179,6 +184,12 @@ import Testing
         #expect(BundledFonts.worldMissing(IBMPlexSansThai.Thin)?.contains("IBM Plex Sans Thai is in") == true)
         // Not for the European fonts, nor for a face PDFjet does not carry,
         // nor for IBM Plex Math, which it no longer carries
+        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream")?
+                .contains("IBM Plex Sans KR is in") == true)
+        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf.stream")?
+                .contains("IBM Plex Sans Thai is in") == true)
+        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream")?
+                .contains("IBM Plex Sans JP is in") == true)
         #expect(BundledFonts.worldMissing(IBMPlexSans.Regular) == nil)
         #expect(BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf") == nil)
         #expect(BundledFonts.worldMissing("fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf") == nil)

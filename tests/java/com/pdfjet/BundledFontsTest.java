@@ -163,6 +163,42 @@ class BundledFontsTest {
     }
 
     @Test
+    void aPathOfTheOldStreamFilesOfAWorldFontNamesThePackage() {
+        assertTrue(BundledFonts.worldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream")
+                .contains("IBM Plex Sans KR is in"));
+        assertTrue(BundledFonts.worldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf.stream")
+                .contains("IBM Plex Sans Thai is in"));
+        assertTrue(BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream")
+                .contains("IBM Plex Sans JP is in"));
+        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.otf.stream"));
+    }
+
+    // PDFjet in a server's shared lib, the world jar in the WEB-INF/lib of the
+    // application: the jar is on the classpath of the context class loader alone.
+    @Test
+    void aWorldFontIsFoundThroughTheContextClassLoader(@org.junit.jupiter.api.io.TempDir File folder) throws Exception {
+        String path = com.pdfjet.fonts.IBMPlexSansThai.Regular;
+        String name = BundledFonts.nameOf(path);
+        File jar = new File(folder, "pdfjet-fonts-world.jar");
+        try (java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(jar))) {
+            zip.putNextEntry(new java.util.zip.ZipEntry("com/pdfjet/fonts/world/" + name));
+            zip.write(java.nio.file.Files.readAllBytes(TestSupport.file("resources/fonts/world/" + name).toPath()));
+            zip.closeEntry();
+        }
+        ClassLoader saved = Thread.currentThread().getContextClassLoader();
+        try (java.net.URLClassLoader shared = new java.net.URLClassLoader(new java.net.URL[0], null);
+                java.net.URLClassLoader application = new java.net.URLClassLoader(new java.net.URL[] {jar.toURI().toURL()}, null)) {
+            assertEquals(null, BundledFonts.open(path, "no-such-folder/", shared));
+            Thread.currentThread().setContextClassLoader(application);
+            try (InputStream stream = BundledFonts.open(path, "no-such-folder/", shared)) {
+                assertNotNull(stream);
+            }
+        } finally {
+            Thread.currentThread().setContextClassLoader(saved);
+        }
+    }
+
+    @Test
     void cssWeightsMatchFacesThatLookAlikeAcrossTheFamilies() {
         // Cascadia Mono SemiLight is as thick as IBM Plex Sans Regular: it
         // stands for 400, and Regular for 500

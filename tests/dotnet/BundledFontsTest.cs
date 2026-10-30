@@ -148,7 +148,7 @@ public class BundledFontsTest {
         // Read from the library, as with no resources/fonts folder, and drawn
         foreach (String path in new String[] {IBMPlexSans.Regular, IBMPlexSansSC.Regular, IBMPlexSansJP.Bold,
                 IBMPlexSansThai.Regular, CascadiaMono.Regular}) {
-            using (Stream stream = BundledFonts.Open(path, "no-such-folder/", null, true)) {
+            using (Stream stream = BundledFonts.Open(path, "no-such-folder/")) {
                 Assert.True(stream != null, path);
                 PDF pdf = new PDF(new MemoryStream());
                 Font font = new Font(pdf, stream);
@@ -163,8 +163,8 @@ public class BundledFontsTest {
         // Nor is the assembly PDFjet.Fonts.World beside the tests: its fonts
         // are not found without resources/fonts/world
         Assert.Null(BundledFonts.WorldAssembly);
-        Assert.Null(BundledFonts.Open(IBMPlexSansJP.Regular, "no-such-folder/", null, true));
-        Assert.Null(BundledFonts.Open(IBMPlexSansHebrew.Regular, "no-such-folder/", null, true));
+        Assert.Null(BundledFonts.Open(IBMPlexSansJP.Regular, "no-such-folder/"));
+        Assert.Null(BundledFonts.Open(IBMPlexSansHebrew.Regular, "no-such-folder/"));
 #endif
     }
 
@@ -184,6 +184,9 @@ public class BundledFontsTest {
         Assert.Contains("IBM Plex Sans Hebrew is in", BundledFonts.WorldMissing(IBMPlexSansHebrew.Text));
         // Not for the European fonts, nor for a face PDFjet does not carry,
         // nor for IBM Plex Math, which it no longer carries
+        Assert.Contains("IBM Plex Sans KR is in", BundledFonts.WorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream"));
+        Assert.Contains("IBM Plex Sans Thai is in", BundledFonts.WorldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf.stream"));
+        Assert.Contains("IBM Plex Sans JP is in", BundledFonts.WorldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream"));
         Assert.Null(BundledFonts.WorldMissing(IBMPlexSans.Regular));
         Assert.Null(BundledFonts.WorldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"));
         Assert.Null(BundledFonts.WorldMissing("fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf"));
@@ -193,6 +196,18 @@ public class BundledFontsTest {
         using (Stream stream = BundledFonts.Open(IBMPlexSansTC.Regular)) {
             Assert.IsType<FileStream>(stream);
         }
+    }
+
+    // A published app removes an assembly nothing refers to, and PDFjet loads
+    // PDFjet.Fonts.World by its name: the package keeps it with a
+    // TrimmerRootAssembly, for a project that uses the package directly or
+    // through another.
+    [Fact]
+    public void ThePackageOfTheWorldFontsKeepsItsAssemblyInATrimmedApp() {
+        Assert.Contains("<TrimmerRootAssembly Include=\"PDFjet.Fonts.World\" />",
+                File.ReadAllText(TestSupport.RepoPath("nuget/world/buildTransitive/PDFjet.Fonts.World.props")));
+        Assert.Contains("target=\"buildTransitive\"", File.ReadAllText(TestSupport.RepoPath("nuget/world/PDFjet.Fonts.World.nuspec")));
+        Assert.Contains("nuget/world/buildTransitive", File.ReadAllText(TestSupport.RepoPath("package-nuget.sh")));
     }
 
     [Fact]
