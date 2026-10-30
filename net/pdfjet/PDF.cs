@@ -2125,7 +2125,8 @@ public sealed class PDF {
             return false;
         }
         PDFobj obj = objects[number - 1];
-        if (obj.dict == null || obj.dict.Count == 0) {
+        // A stream with no dictionary is the content that was drawn on a page.
+        if ((obj.dict == null || obj.dict.Count == 0) && obj.stream == null) {
             return false;
         }
         String type = obj.GetValue("/Type");
@@ -2143,6 +2144,10 @@ public sealed class PDF {
             Func<PDFobj, List<String>, List<String>> shared) {
         List<String> value = ValueOf(obj);
         if (obj.stream != null) {
+            if (value.Count == 0) {
+                value.Add("<<");    // Content that was drawn on a page
+                value.Add(">>");
+            }
             SetEntry(value, "/Length", new List<String> { obj.stream.Length.ToString(CultureInfo.InvariantCulture) });
         }
         if (isPage) {

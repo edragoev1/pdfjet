@@ -382,6 +382,35 @@ public class MergeTest {
         Assert.True(found, "no Type0 font of a subset of IBM Plex Sans");
     }
 
+    [Fact]
+    public void WhatWasDrawnOnAPageThatWasReadIsMerged() {
+        // The content streams that Page.Complete adds have no dictionary, and
+        // Merge took them for missing: /Contents [ null 3 0 R null ], and both
+        // the drawing and the text of the page were lost (review of 30 October
+        // 2026, B1).
+        List<PDFobj> objects = TestSupport.Read(Document("Existing"));
+        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        page.AddResource(font, objects);
+        page.DrawString(font, null, 12f, "Hello", 72f, 72f);
+        page.Complete(objects);
+        pdf.Merge(objects);
+        pdf.Complete();
+        List<PDFobj> merged = TestSupport.Read(stream.ToArray());
+        PDFobj pageObj = pdf.GetPageObjects(merged)[0];
+        Assert.DoesNotContain("null", pageObj.dict);
+        StringBuilder text = new StringBuilder();
+        foreach (PDFobj obj in merged) {
+            if (obj.stream != null) {
+                text.Append(Encoding.Latin1.GetString(obj.GetData()));
+            }
+        }
+        Assert.Contains(TestSupport.Hex("Existing"), text.ToString());
+        Assert.Contains("72 720 Td", text.ToString());
+    }
+
     // Returns a PDF of pages under one node that holds an inline /Resources of
     // the fonts, which the pages inherit.
     private static byte[] InheritedResources(int pages, int fonts) {

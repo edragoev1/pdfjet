@@ -443,6 +443,39 @@ func TestMergeAFontAddedToTheObjectsIsWritten(t *testing.T) {
 	}
 }
 
+func TestMergeWhatWasDrawnOnAPageThatWasReadIsMerged(t *testing.T) {
+	// The content streams that Page.Complete adds have no dictionary, and
+	// Merge took them for missing: /Contents [ null 3 0 R null ], and both
+	// the drawing and the text of the page were lost (review of 30 October
+	// 2026, B1).
+	objects := testRead(t, testMergeDocument("Existing"))
+	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	doc := testNewDoc()
+	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+	page.AddFontResource(font, &objects)
+	page.DrawString(font, nil, 12, "Hello", 72, 72)
+	page.Complete(&objects)
+	if err := doc.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	merged := testRead(t, doc.complete())
+	pageObj := doc.pdf.GetPageObjects(merged)[0]
+	numbers := pageObj.getObjectNumbers("/Contents")
+	if len(numbers) != 3 {
+		t.Fatalf("content streams: want 3, got %v in %v", numbers, pageObj.dict)
+	}
+	text := ""
+	for _, number := range numbers {
+		text += string(merged[number-1].GetData())
+	}
+	if !strings.Contains(text, testHex("Existing")) {
+		t.Errorf("the text of the page is lost: %q", text)
+	}
+	if !strings.Contains(text, "72 720 Td") {
+		t.Errorf("the drawing is lost: %q", text)
+	}
+}
+
 // testInheritedResources returns a PDF of pages under one node that holds an
 // inline /Resources of the fonts, which the pages inherit.
 func testInheritedResources(pages, fonts int) []byte {

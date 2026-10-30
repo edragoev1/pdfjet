@@ -411,6 +411,38 @@ class MergeTest {
         return sb.toString().getBytes(StandardCharsets.ISO_8859_1);
     }
 
+    @Test
+    void whatWasDrawnOnAPageThatWasReadIsMerged() throws Exception {
+        // The content streams that Page.complete adds have no dictionary, and
+        // merge took them for missing: /Contents [ null 3 0 R null ], and both
+        // the drawing and the text of the page were lost (review of 30 October
+        // 2026, B1).
+        List<PDFobj> objects = TestSupport.read(document("Existing"));
+        Font font;
+        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
+            font = new Font(objects, in);
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        page.addResource(font, objects);
+        page.drawString(font, null, 12f, "Hello", 72f, 72f);
+        page.complete(objects);
+        pdf.merge(objects);
+        pdf.complete();
+        List<PDFobj> merged = TestSupport.read(bos.toByteArray());
+        PDFobj pageObj = pdf.getPageObjects(merged).get(0);
+        assertFalse(pageObj.dict.contains("null"), pageObj.dict.toString());
+        StringBuilder text = new StringBuilder();
+        for (PDFobj obj : merged) {
+            if (obj.stream != null) {
+                text.append(new String(obj.getData(), StandardCharsets.ISO_8859_1));
+            }
+        }
+        assertTrue(text.indexOf(TestSupport.hex("Existing")) != -1, "the text of the page is lost");
+        assertTrue(text.indexOf("72 720 Td") != -1, "the drawing is lost");
+    }
+
     // Returns a PDF of pages under one node that holds an inline /Resources of
     // the fonts, which the pages inherit.
     private static byte[] inheritedResources(int pages, int fonts) {

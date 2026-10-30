@@ -3453,7 +3453,8 @@ public final class PDF {
             return false
         }
         let obj = objects[number - 1]
-        if obj.dict.isEmpty {
+        // A stream with no dictionary is the content that was drawn on a page.
+        if obj.dict.isEmpty && obj.stream == nil {
             return false
         }
         let type = obj.getValue("/Type")
@@ -3474,6 +3475,9 @@ public final class PDF {
             _ shared: (Int, [String]) -> [String]) -> [String] {
         var value = valueOf(obj)
         if let stream = obj.stream {
+            if value.isEmpty {
+                value = ["<<", ">>"] // Content that was drawn on a page
+            }
             setEntry(&value, "/Length", [String(stream.count)])
         }
         if isPage {

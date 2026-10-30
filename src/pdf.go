@@ -2113,7 +2113,8 @@ func isMergedObject(number int, objects []*PDFobj, mergedPages map[int]bool) boo
 		return false
 	}
 	obj := objects[number-1]
-	if obj == nil || len(obj.dict) == 0 {
+	// A stream with no dictionary is the content that was drawn on a page.
+	if obj == nil || (len(obj.dict) == 0 && obj.stream == nil) {
 		return false
 	}
 	objType := obj.GetValue("/Type")
@@ -2130,6 +2131,9 @@ func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj, nodes pageTreeNode
 	shared func(node *PDFobj, value []string) []string) []string {
 	value := objectValue(obj)
 	if obj.stream != nil {
+		if len(value) == 0 {
+			value = []string{"<<", ">>"} // Content that was drawn on a page
+		}
 		value = setDictEntry(value, "/Length", []string{strconv.Itoa(len(obj.stream))})
 	}
 	if isPage {

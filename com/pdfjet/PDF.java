@@ -2196,7 +2196,8 @@ final public class PDF {
             return false;
         }
         PDFobj obj = objects.get(number - 1);
-        if (obj.dict == null || obj.dict.isEmpty()) {
+        // A stream with no dictionary is the content that was drawn on a page.
+        if ((obj.dict == null || obj.dict.isEmpty()) && obj.stream == null) {
             return false;
         }
         String type = obj.getValue("/Type");
@@ -2217,6 +2218,10 @@ final public class PDF {
             Shared shared) {
         List<String> value = valueOf(obj);
         if (obj.stream != null) {
+            if (value.isEmpty()) {
+                value.add("<<"); // Content that was drawn on a page
+                value.add(">>");
+            }
             setEntry(value, "/Length", Collections.singletonList(String.valueOf(obj.stream.length)));
         }
         if (isPage) {

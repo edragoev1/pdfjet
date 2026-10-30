@@ -359,6 +359,31 @@ import Testing
         expectReferencesResolve(merged)
     }
 
+    @Test func whatWasDrawnOnAPageThatWasReadIsMerged() throws {
+        // The content streams that Page.complete adds have no dictionary, and
+        // merge took them for missing: /Contents [ null 3 0 R null ], and both
+        // the drawing and the text of the page were lost (review of 30 October
+        // 2026, B1).
+        var objects = try TestSupport.read(document("Existing"))
+        let font = try Font(&objects, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+        page.addResource(font, &objects)
+        page.drawString(font, nil, 12, "Hello", 72, 72)
+        page.complete(&objects)
+        try memory.pdf.merge(objects)
+        try memory.pdf.complete()
+        let merged = try TestSupport.read(memory.bytes)
+        let pageObj = memory.pdf.getPageObjects(from: merged)[0]
+        #expect(!pageObj.dict.contains("null"), "\(pageObj.dict)")
+        var text = ""
+        for obj in merged where obj.stream != nil {
+            text += String(decoding: obj.getData(), as: UTF8.self)
+        }
+        #expect(text.contains(TestSupport.hex("Existing")), "the text of the page is lost")
+        #expect(text.contains("72 720 Td"), "the drawing is lost")
+    }
+
     // Returns a PDF of pages under one node that holds an inline /Resources
     // of the fonts, which the pages inherit.
     private func inheritedResources(_ pages: Int, _ fonts: Int) -> [UInt8] {
