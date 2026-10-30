@@ -520,6 +520,50 @@ enum ChartScale {
     }
 
     ///
+    /// The words of a chart for its values outside a range that is set, of
+    /// which it would say nothing otherwise, or "" when there are none: "1 point
+    /// outside the range", "2 points outside the range".
+    ///
+    /// - Parameter count: the number of values outside.
+    /// - Parameter noun: what the chart counts, in the singular.
+    /// - Returns: the note.
+    ///
+    static func outsideNote(_ count: Int, _ noun: String) -> String {
+        if count == 0 {
+            return ""
+        }
+        return "\(count) \(noun)\(count > 1 ? "s" : "") outside the range"
+    }
+
+    ///
+    /// The description set by the caller with the note, if any, as a sentence
+    /// after it: the note is in the figure, and in what a screen reader gets of
+    /// it, whoever wrote the description.
+    ///
+    /// - Parameter description: the description set.
+    /// - Parameter note: the note, or "".
+    /// - Returns: the description.
+    ///
+    static func withNote(_ description: String, _ note: String) -> String {
+        if note.isEmpty {
+            return description
+        }
+        return description + SimpleBarChart.punctuationAfter(description, ".") + " " + note + "."
+    }
+
+    ///
+    /// Draws the note, small and in the gray of the numbers, on the baseline,
+    /// its right end at x and inside the width from lo to hi, past which it is
+    /// shortened.
+    ///
+    static func drawOutsideNote(_ page: Page, _ font: Font, _ size: Float, _ note: String,
+            _ x: Float, _ lo: Float, _ hi: Float, _ baseline: Float) {
+        let text = shorten(font, size, note, hi - lo)
+        page.drawString(font, size, text, Swift.max(lo, x - font.stringWidth(size, text)), baseline,
+                Util.toRGB(SimpleBarChart.MUTED), nil)
+    }
+
+    ///
     /// Tells if the axis can be drawn: the span of a range that is set, or of
     /// values that are, can be past the largest float.
     ///

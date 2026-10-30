@@ -377,4 +377,116 @@ import Testing
             #expect(round.minValue <= flat.lo && round.maxValue >= flat.hi, "\(flat.lo) to \(flat.hi)")
         }
     }
+
+    // The content of the chart, on a page of its own.
+    private func noteContent(_ pdf: PDF, _ chart: SimpleScatterChart) -> String {
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart.setLocation(50, 50).drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    private func noteChart(_ font: Font) -> SimpleScatterChart {
+        return SimpleScatterChart(font, font).setTitle("T").setSize(300, 200).add(1, 1).add(2, 2)
+    }
+
+    // A point outside a range that is set is not drawn, and the chart says so,
+    // in print and in its description: an outlier vanished without a word. A
+    // value that is no number is not outside, and a chart with none outside
+    // adds nothing.
+    @Test func itSaysHowManyPointsAreOutsideTheRange() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let one = "1 point outside the range"
+        let two = "2 points outside the range"
+        let cases: [(SimpleScatterChart, String)] = [
+            (noteChart(font).add(100, 100), ""),
+            (noteChart(font).add(0, 10).add(10, 0).setXAxisRange(0, 10).setYAxisRange(0, 10), ""),
+            (noteChart(font).add(Float.nan, 50).add(50, Float.infinity).setXAxisRange(0, 10).setYAxisRange(0, 10), ""),
+            (noteChart(font).add(50, 1).setXAxisRange(0, 10), one),
+            (noteChart(font).add(1, -50).setYAxisRange(0, 10), one),
+            (noteChart(font).add(50, 50).setXAxisRange(0, 10).setYAxisRange(0, 10), one),
+            (noteChart(font).add(50, 1).add(-50, 1).setXAxisRange(0, 10), two),
+            (noteChart(font).add(1, 50).add("far", 2, 60).setYAxisRange(0, 10), two),
+            (noteChart(font).add(50, 1).add(1, 50).setXAxisRange(0, 10).setYAxisRange(0, 10), two),
+            (noteChart(font).addLinkedDot("a", 50, 1, "https://pdfjet.com/a").setXAxisRange(0, 10), one)
+        ]
+        for (chart, note) in cases {
+            let content = noteContent(pdf, chart)
+            let description = chart.getAltDescription()
+            if note.isEmpty {
+                #expect(!content.contains(TestSupport.hex(" outside")), "\(description)")
+                #expect(!description.contains("outside"), "\(description)")
+            } else {
+                #expect(content.contains("<" + TestSupport.hex(note) + ">"), "\(note)")
+                #expect(description.hasSuffix("; " + note + "."), "\(description)")
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the numbers and the x title, with the
+    // plot that much lower and nothing else moved; right under the plot's
+    // right end.
+    @Test func theNoteIsUnderThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let note = "2 points outside the range"
+        let size = font.getSize()
+        let small = 0.8 * size
+        for title in ["", "children per woman"] {
+            let without = noteContent(pdf, SimpleScatterChart(font, font).setSize(300, 200).setXAxisTitle(title)
+                    .setXAxisRange(0, 10).setYAxisRange(0, 10).add(1, 1).add(2, 2))
+            let with = noteContent(pdf, SimpleScatterChart(font, font).setSize(300, 200).setXAxisTitle(title)
+                    .setXAxisRange(0, 10).setYAxisRange(0, 10).add(1, 1).add(2, 2).add(50, 1).add(1, 50))
+            let at = TestSupport.positionOf(with, note)
+            let end = at[0] + font.stringWidth(small, note)
+            let right = Swift.min(350 - size, 350 - size / 2 - font.stringWidth(size, "10") / 2)
+            #expect(abs(right - end) <= 0.1, "the right end")
+            #expect(at[0] >= 50 && end <= 350, "the note at \(at[0])")
+            #expect(abs(792 - (250 - size) - at[1]) <= 0.01, "the baseline")
+            let number = TestSupport.positionOf(with, "0")
+            #expect(abs(TestSupport.positionOf(without, "0")[1] + 1.4 * small - number[1]) <= 0.02, "the plot")
+            // The numbers of the x axis, or the title under them
+            var last = number[1] + font.getAscent(size) / 2 - 1.4 * size
+            if !title.isEmpty {
+                last = TestSupport.positionOf(with, title)[1]
+            }
+            #expect(at[1] + font.getAscent(small) <= last - font.getDescent(size), "the note over the row above it")
+            #expect(TestSupport.fillColorBefore(with, "0") == TestSupport.fillColorBefore(with, note))
+        }
+        // In a chart too narrow for it, shortened and inside
+        let chart = SimpleScatterChart(font, font).setSize(90, 200)
+                .setXAxisRange(0, 1).add(0, 1).add(5, 1).add(6, 1)
+        #expect(TestSupport.positionOf(noteContent(pdf, chart), "2 points")[0] >= 50 + size)
+        #expect(chart.getAltDescription().hasSuffix("; " + note + "."))
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    @Test func theNoteFollowsADescriptionThatIsSet() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let chart = SimpleScatterChart(font, font).add(1, 1).add(2, 2).setAltDescription("Two points")
+        #expect(chart.getAltDescription() == "Two points")
+        chart.add(50, 1).setXAxisRange(0, 10)
+        #expect(chart.getAltDescription() == "Two points. 1 point outside the range.")
+        chart.setAltDescription("Two points.")
+        #expect(chart.getAltDescription() == "Two points. 1 point outside the range.")
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    @Test func theNoteIsInTheFigure() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(300, 200).add(1, 1).add(50, 1).setXAxisRange(0, 10).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.components(separatedBy: "BDC\n").count == 2)
+        let parts = content.components(separatedBy: "EMC\n")
+        #expect(parts.count == 2 && !parts[1].contains("ET\n"))
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains("/Alt " +
+                TestSupport.textString("Scatter chart: 1 points; 1 point outside the range.")))
+    }
 }

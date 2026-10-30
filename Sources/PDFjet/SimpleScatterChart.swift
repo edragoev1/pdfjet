@@ -14,11 +14,15 @@ import Foundation
 /// horizontal grid alone, no border or legend, on a light panel, with a title
 /// and a subtitle at the top left, in the look of SimpleBarChart. Any point can
 /// be a link, a dot with a description that a hover or a screen reader gets, so
-/// that all of 200 points are links without a name printed for each.
+/// that all of 200 points are links without a name printed for each. A point
+/// outside a range that is set is not drawn, and the chart says how many are:
+/// "2 points outside the range", small, under the plot at its right end, and in
+/// its description.
 ///
 /// In a PDF/UA document the chart is one figure, described from its data: the
-/// number of points, the highlighted ones and their values, and which way the
-/// trend goes, unless an alternate description is set. It draws with the page
+/// number of points, the highlighted ones and their values, which way the
+/// trend goes and the points outside a range, unless an alternate description
+/// is set, which is then followed by those points alone. It draws with the page
 /// alone, and needs no other chart. In PDF/A-1, which has no transparency, the
 /// dots are drawn opaque. Please see Example_26.
 ///
@@ -144,7 +148,8 @@ public class SimpleScatterChart : Drawable {
 
     ///
     /// Sets the alternate description of the chart in a PDF/UA document.
-    /// Without one the chart is described from its data.
+    /// Without one the chart is described from its data. The number of points
+    /// outside a range that is set follows it, as the chart prints it.
     ///
     /// - Parameter altDescription: the alternate description.
     /// - Returns: this chart.
@@ -263,7 +268,9 @@ public class SimpleScatterChart : Drawable {
     ///
     /// Sets the range of the horizontal axis. Without it the range is that of
     /// the points, rounded to steps. A range whose end is not past its start
-    /// is not set.
+    /// is not set. A point outside the range is not drawn, and the chart says
+    /// how many are, under the plot, which is that much lower, and in its
+    /// description.
     ///
     /// - Parameter min: the first value of the axis.
     /// - Parameter max: the last value of the axis.
@@ -280,7 +287,8 @@ public class SimpleScatterChart : Drawable {
     ///
     /// Sets the range of the vertical axis. Without it the range is that of the
     /// points, rounded to steps. A range whose end is not past its start is not
-    /// set.
+    /// set. A point outside the range is not drawn, and the chart says how many
+    /// are, under the plot, which is that much lower, and in its description.
     ///
     /// - Parameter min: the first value of the axis.
     /// - Parameter max: the last value of the axis.
@@ -562,11 +570,25 @@ public class SimpleScatterChart : Drawable {
         return nil
     }
 
+    // What the chart says of the points with a value outside a range that is
+    // set, or "" when there are none. A point outside both ranges is one point.
+    private func outsideNote() -> String {
+        let xRange = ChartScale.Axis(min: xMin, max: xMax, lines: 0)
+        let yRange = ChartScale.Axis(min: yMin, max: yMax, lines: 0)
+        var outside = 0
+        for p in valid() where (xRangeSet && !ChartScale.onAxis(p.x, xRange)) ||
+                (yRangeSet && !ChartScale.onAxis(p.y, yRange)) {
+            outside += 1
+        }
+        return ChartScale.outsideNote(outside, "point")
+    }
+
     // The alternate description: the one set, or the title, the number of
-    // points, the highlighted ones and the trend.
+    // points, the highlighted ones and the trend; and the points outside a
+    // range that is set.
     func getAltDescription() -> String {
         if !altDescription.isEmpty {
-            return altDescription
+            return ChartScale.withNote(altDescription, outsideNote())
         }
         let points = valid()
         let axes = points.isEmpty ? nil : self.axes(points)
@@ -607,6 +629,10 @@ public class SimpleScatterChart : Drawable {
         // Not one that is not drawn
         if trendLine, let axes = axes, let line = SimpleScatterChart.shownTrend(points, axes.x, axes.y) {
             text += line.slope > 0 ? "; the trend rises" : line.slope < 0 ? "; the trend falls" : "; the trend is flat"
+        }
+        let note = outsideNote()
+        if !note.isEmpty {
+            text += "; " + note
         }
         return text + SimpleBarChart.punctuationAfter(text, ".")
     }
@@ -658,6 +684,11 @@ public class SimpleScatterChart : Drawable {
         var bottom = y + h - pad - 1.4 * size
         if !xAxisTitle.isEmpty {
             bottom -= 1.4 * size
+        }
+        // Room for the note, a row of its own under the rest
+        let note = outsideNote()
+        if !note.isEmpty {
+            bottom -= 1.4 * subtitleSize()
         }
         if right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis) {
             return [x + w, y + h]
@@ -759,6 +790,9 @@ public class SimpleScatterChart : Drawable {
                     plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2.0,
                     Util.toRGB(SimpleBarChart.INK), nil)
             page.setTextRotation(0)
+        }
+        if !note.isEmpty {
+            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad)
         }
 
         // The trend line, from the left of the plot to its right, within its

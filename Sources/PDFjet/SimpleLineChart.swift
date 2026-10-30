@@ -13,11 +13,14 @@ import Foundation
 /// navy, its label bold, the others gray. A light horizontal grid alone, no
 /// border, on a light panel, with a title and a subtitle at the top left, in
 /// the look of SimpleBarChart and SimpleScatterChart. A value that is NaN
-/// leaves a gap in its line.
+/// leaves a gap in its line. A value outside a range that is set cuts its line
+/// at the edge of the plot, and the chart says how many are: "2 values outside
+/// the range", small, under the plot at its right end, and in its description.
 ///
 /// In a PDF/UA document the chart is one figure, described from its data: the
-/// lines, their first and last values and their highest, unless an alternate
-/// description is set. It draws with the page alone, and needs no other chart.
+/// lines, their first and last values and their highest, and the values outside
+/// a range, unless an alternate description is set, which is then followed by
+/// those values alone. It draws with the page alone, and needs no other chart.
 /// Please see Example_25.
 ///
 public class SimpleLineChart : Drawable {
@@ -132,7 +135,8 @@ public class SimpleLineChart : Drawable {
 
     ///
     /// Sets the alternate description of the chart in a PDF/UA document.
-    /// Without one the chart is described from its data.
+    /// Without one the chart is described from its data. The number of values
+    /// outside a range that is set follows it, as the chart prints it.
     ///
     /// - Parameter altDescription: the alternate description.
     /// - Returns: this chart.
@@ -241,7 +245,9 @@ public class SimpleLineChart : Drawable {
     ///
     /// Sets the range of the vertical axis. Without it the range is that of
     /// the values, rounded to steps. A range whose end is not past its start
-    /// is not set.
+    /// is not set. A value outside the range is drawn past the plot, which
+    /// clips it, and the chart says how many are, under the plot, which is that
+    /// much lower, and in its description.
     ///
     /// - Parameter min: the first value of the axis.
     /// - Parameter max: the last value of the axis.
@@ -402,11 +408,27 @@ public class SimpleLineChart : Drawable {
         return -1
     }
 
+    // What the chart says of its values outside a range that is set, or ""
+    // when there are none.
+    private func outsideNote() -> String {
+        var outside = 0
+        if yRangeSet {
+            let yRange = ChartScale.Axis(min: yMin, max: yMax, lines: 0)
+            for line in lines {
+                for j in 0..<count() where line.has(j) && !ChartScale.onAxis(line.values[j], yRange) {
+                    outside += 1
+                }
+            }
+        }
+        return ChartScale.outsideNote(outside, "value")
+    }
+
     // The alternate description: the one set, or the title, the categories
-    // and, for each line, its first and last values and its highest.
+    // and, for each line, its first and last values and its highest; and the
+    // values outside a range that is set.
     func getAltDescription() -> String {
         if !altDescription.isEmpty {
-            return altDescription
+            return ChartScale.withNote(altDescription, outsideNote())
         }
         // The values in the digits of the numbers of the axis
         var all = [Float]()
@@ -469,6 +491,10 @@ public class SimpleLineChart : Drawable {
                     sb += " in " + category(high)
                 }
             }
+        }
+        let note = outsideNote()
+        if !note.isEmpty {
+            sb += "; " + note
         }
         return sb + SimpleBarChart.punctuationAfter(sb, ".")
     }
@@ -533,6 +559,11 @@ public class SimpleLineChart : Drawable {
         var bottom = y + h - pad - 1.4 * size
         if !xAxisTitle.isEmpty {
             bottom -= 1.4 * size
+        }
+        // Room for the note, a row of its own under the rest
+        let note = outsideNote()
+        if !note.isEmpty {
+            bottom -= 1.4 * subtitleSize()
         }
         if right <= left || bottom <= top || !ChartScale.drawable(axis) {
             return [x + w, y + h]
@@ -620,6 +651,9 @@ public class SimpleLineChart : Drawable {
                     plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2.0,
                     Util.toRGB(SimpleBarChart.INK), nil)
             page.setTextRotation(0)
+        }
+        if !note.isEmpty {
+            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad)
         }
 
         // The lines, the highlighted one last, over the others, broken where a
