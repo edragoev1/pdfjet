@@ -29,6 +29,19 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
     cross a bar's value, and the PDF/UA description ends with it.
   - `setRoundedBars(true)`: bars with slightly rounded ends.
   Example_20's chart by model year uses all three.
+- SimpleScatterChart, all four ports: `addLinkedDot(name, x, y, uri)` (Go
+  and C# `AddLinkedDot`), a point drawn as an ordinary dot, in its series if
+  any, not highlighted and with no name beside it, that is a link to the
+  URI. Its name is its description, what a hover or a screen reader gets:
+  the alternative text of the annotation, and in PDF/UA that of a figure of
+  its own in the Link that holds it, as with a linked point. The link is at
+  least 8 points square around the dot, however small the dot is, and inside
+  the page. The point counts in the description of the chart as a plain
+  point does, unnamed. Example_26 uses it: every one of its 217 countries is
+  now a link, to the World Bank's page by its two-letter code, a new last
+  field of the data file, the seven named ones as before and the rest
+  described by their figures ("Albania: 79.6 years, 1.35 children per
+  woman"), which takes its PDF from 53 KB to 269 KB.
 - SVGImage, all four ports, draws the charts of D3 and the like as a
   browser does:
   - `text` and `tspan` elements: x, y, dx and dy (in em too), font-size,

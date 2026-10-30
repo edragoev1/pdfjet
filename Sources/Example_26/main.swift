@@ -12,8 +12,9 @@ import PDFjet
  * This example draws a SimpleScatterChart of the life expectancy and the
  * children per woman of 217 countries and economies, from the World Bank's
  * data of 2023: a series for each of the World Bank's seven regions, in its
- * color and shape, seven of the countries named, and the trend line, with a
- * table of the named ones under the chart.
+ * color and shape, seven of the countries named, each point a link to its page
+ * of the World Bank's data, described by its figures, and the trend line, with
+ * a table of the named ones under the chart.
  */
 public class Example_26 {
     // The countries named on the chart, by their codes
@@ -40,7 +41,7 @@ public class Example_26 {
         let f2 = try Font(pdf, IBMPlexSans.Regular)
         f2.setSize(9.0)
 
-        // Country|Code|Life expectancy|Children per woman|Region, after a header line
+        // Country|Code|Life expectancy|Children per woman|Region|ISO2, after a header line
         let lines = try Content.linesOfTextFile("resources/data/life-expectancy-and-fertility-2023.txt")
         let total = lines.count - 1
 
@@ -51,7 +52,7 @@ public class Example_26 {
                 .setLocation(50.0, 70.0).drawOn(page)
         let intro = [Paragraph(TextLine(f2, "Where women have fewer children, people live longer: the "
                 + "\(total) countries and economies of the World Bank's data of 2023, in a color and "
-                + "a shape for each of its seven regions, seven of them named, each a link to its page of the World Bank's data, and the trend line "
+                + "a shape for each of its seven regions, seven of them named, each point a link to its page of the World Bank's data, and the trend line "
                 + "through them, with the named ones in the table "
                 + "under the chart.").setFontSize(10.0))]
         let frame = TextFrame(intro).setLocation(50.0, 84.0).setWidth(512.0)
@@ -75,10 +76,14 @@ public class Example_26 {
                 }
                 let life = Float(field[2]) ?? 0
                 let children = Float(field[3]) ?? 0
+                let uri = "https://data.worldbank.org/country/" + field[5]
                 if Example_26.named.contains(field[1]) {
-                    chart.add(field[0], children, life, Example_26.worldBank(field[0]))  // Its shape filled, named, a link
+                    chart.add(field[0], children, life, uri)    // Its shape filled, named, a link
                 } else {
-                    chart.add(children, life)       // The outline of its shape
+                    // The outline of its shape, a link described by its figures
+                    let name = field[0] + ": " + Example_26.decimals(field[2], 1) + " years, "
+                            + Example_26.decimals(field[3], 2) + " children per woman"
+                    chart.addLinkedDot(name, children, life, uri)
                 }
             }
         }
@@ -110,12 +115,6 @@ public class Example_26 {
                 .setFontSize(8.0).setTextColor(0x5F6873).setLocation(50.0, y).drawOn(page)
 
         try pdf.complete()
-    }
-
-    // The page of the country in the World Bank's data: its name in lower
-    // case, a hyphen for each space, as data.worldbank.org/country/united-states
-    static func worldBank(_ country: String) -> String {
-        return "https://data.worldbank.org/country/" + country.lowercased().replacingOccurrences(of: " ", with: "-")
     }
 
     // The number of the text with the decimals, zeros added: 1.5 is 1.50.

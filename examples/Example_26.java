@@ -16,8 +16,9 @@ import com.pdfjet.fonts.*;
  * This example draws a SimpleScatterChart of the life expectancy and the
  * children per woman of 217 countries and economies, from the World Bank's
  * data of 2023: a series for each of the World Bank's seven regions, in its
- * color and shape, seven of the countries named, and the trend line, with a
- * table of the named ones under the chart.
+ * color and shape, seven of the countries named, each point a link to its page
+ * of the World Bank's data, described by its figures, and the trend line, with
+ * a table of the named ones under the chart.
  */
 public class Example_26 {
     // The countries named on the chart, by their codes
@@ -45,7 +46,7 @@ public class Example_26 {
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.setSize(9f);
 
-        // Country|Code|Life expectancy|Children per woman|Region, after a header line
+        // Country|Code|Life expectancy|Children per woman|Region|ISO2, after a header line
         List<String> lines = Content.linesOfTextFile("resources/data/life-expectancy-and-fertility-2023.txt");
         int total = lines.size() - 1;
 
@@ -57,7 +58,7 @@ public class Example_26 {
         List<Paragraph> intro = new ArrayList<Paragraph>();
         intro.add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
                 + total + " countries and economies of the World Bank's data of 2023, in a color and "
-                + "a shape for each of its seven regions, seven of them named, each a link to its page of the World Bank's data, and the trend line "
+                + "a shape for each of its seven regions, seven of them named, each point a link to its page of the World Bank's data, and the trend line "
                 + "through them, with the named ones in the table "
                 + "under the chart.").setFontSize(10f)));
         TextFrame frame = new TextFrame(intro).setLocation(50f, 84f).setWidth(512f);
@@ -81,10 +82,14 @@ public class Example_26 {
                 }
                 float life = Float.parseFloat(field[2]);
                 float children = Float.parseFloat(field[3]);
+                String uri = "https://data.worldbank.org/country/" + field[5];
                 if (NAMED.contains(field[1])) {
-                    chart.add(field[0], children, life, worldBank(field[0]));  // Its shape filled, named, a link
+                    chart.add(field[0], children, life, uri);   // Its shape filled, named, a link
                 } else {
-                    chart.add(children, life);          // The outline of its shape
+                    // The outline of its shape, a link described by its figures
+                    String name = field[0] + ": " + decimals(field[2], 1) + " years, "
+                            + decimals(field[3], 2) + " children per woman";
+                    chart.addLinkedDot(name, children, life, uri);
                 }
             }
         }
@@ -115,12 +120,6 @@ public class Example_26 {
                 .setFontSize(8f).setTextColor(0x5F6873).setLocation(50f, y).drawOn(page);
 
         pdf.complete();
-    }
-
-    // The page of the country in the World Bank's data: its name in lower
-    // case, a hyphen for each space, as data.worldbank.org/country/united-states
-    static String worldBank(String country) {
-        return "https://data.worldbank.org/country/" + country.toLowerCase(Locale.US).replace(' ', '-');
     }
 
     // A row of cells of the font at 9 points, one for each text, in the

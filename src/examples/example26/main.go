@@ -39,8 +39,9 @@ var regions = []string{
 // Example26 draws a SimpleScatterChart of the life expectancy and the
 // children per woman of 217 countries and economies, from the World Bank's
 // data of 2023: a series for each of the World Bank's seven regions, in its
-// color and shape, seven of the countries named, and the trend line, with a
-// table of the named ones under the chart.
+// color and shape, seven of the countries named, each point a link to its page
+// of the World Bank's data, described by its figures, and the trend line, with
+// a table of the named ones under the chart.
 func Example26() {
 	pdf, err := pdfjet.NewPDFFile("Example_26.pdf")
 	if err != nil {
@@ -55,7 +56,7 @@ func Example26() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2.SetSize(9.0)
 
-	// Country|Code|Life expectancy|Children per woman|Region, after a header line
+	// Country|Code|Life expectancy|Children per woman|Region|ISO2, after a header line
 	lines := content.LinesOfTextFile("resources/data/life-expectancy-and-fertility-2023.txt")
 	total := len(lines) - 1
 
@@ -68,7 +69,7 @@ func Example26() {
 	intro := []*pdfjet.Paragraph{pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f2,
 		"Where women have fewer children, people live longer: the "+strconv.Itoa(total)+
 			" countries and economies of the World Bank's data of 2023, in a color and "+
-			"a shape for each of its seven regions, seven of them named, each a link to its page of the World Bank's data, and the trend line "+
+			"a shape for each of its seven regions, seven of them named, each point a link to its page of the World Bank's data, and the trend line "+
 			"through them, with the named ones in the table "+
 			"under the chart.").SetFontSize(10.0))}
 	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)
@@ -92,10 +93,13 @@ func Example26() {
 			}
 			life, _ := strconv.ParseFloat(field[2], 32)
 			children, _ := strconv.ParseFloat(field[3], 32)
+			uri := "https://data.worldbank.org/country/" + field[5]
 			if named[field[1]] {
-				chart.AddLinked(field[0], float32(children), float32(life), worldBank(field[0])) // Its shape filled, named, a link
+				chart.AddLinked(field[0], float32(children), float32(life), uri) // Its shape filled, named, a link
 			} else {
-				chart.Add(float32(children), float32(life)) // The outline of its shape
+				// The outline of its shape, a link described by its figures
+				name := field[0] + ": " + decimals(field[2], 1) + " years, " + decimals(field[3], 2) + " children per woman"
+				chart.AddLinkedDot(name, float32(children), float32(life), uri)
 			}
 		}
 	}
@@ -133,13 +137,6 @@ func Example26() {
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-// worldBank returns the page of the country in the World Bank's data: its name
-// in lower case, a hyphen for each space, as
-// data.worldbank.org/country/united-states.
-func worldBank(country string) string {
-	return "https://data.worldbank.org/country/" + strings.ReplaceAll(strings.ToLower(country), " ", "-")
 }
 
 // decimals returns the number of the text with the decimals, zeros added:
