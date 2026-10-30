@@ -48,6 +48,7 @@ struct SVGState {
     var markerMid: String? = nil
     var markerEnd: String? = nil
     var clipPath: String? = nil             // The id of the clip path of the element itself, not inherited
+    var overflow: String? = nil             // The overflow of the element itself, not inherited
     var clips: [SVGPath]? = nil             // The clip paths of the element and of its ancestors
     var choices: [Choice]? = nil            // The children of the switches it is in
     var paints: [[UInt8]: Int32]? = nil     // The colors of the gradients, by the bytes of their ids
@@ -226,6 +227,8 @@ struct SVGState {
             markerEnd = markerStart
         case "clip-path":
             clipPath = SVGState.urlId(value)
+        case "overflow":
+            overflow = SVGState.toLower(value)
         default:
             break
         }

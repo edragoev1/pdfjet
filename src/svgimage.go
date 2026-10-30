@@ -124,7 +124,9 @@ var svgTemplates = map[string]bool{
 // the font-family, font-weight and font-style of the text ask. A gradient is
 // drawn in the mean color of its stops. The width, height, viewBox and
 // preserveAspectRatio of the <svg> element give the size of the image, and
-// what is drawn outside it is cut off, as a browser does. It returns an error
+// what is drawn outside it is cut off, as a browser does, and so is what a
+// <symbol> or a nested <svg> draws outside its viewport, unless its overflow is
+// visible or auto. It returns an error
 // for a file that nests what it draws more than 48 deep, or that draws more
 // than 4,000,000 path operations again, by use elements, markers and clip paths.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
@@ -389,7 +391,9 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 			state.viewport = [2]float64{box[2], box[3]}
 		}
 	} else if name == "svg" || name == "symbol" && used {
-		state.enterViewport(attributes, size)
+		if err := r.enterViewport(&state, attributes, size); err != nil {
+			return err
+		}
 	}
 	r.stack = append(r.stack, state)
 	defer func() { r.stack = r.stack[:len(r.stack)-1] }()
@@ -601,6 +605,7 @@ func elementState(parent svgState, colorMap map[string]int32, rules *svgStyleShe
 	state := parent
 	state.ownOpacity = 1.0
 	state.clipPath = ""
+	state.overflow = ""
 	for _, name := range order {
 		if err := state.setProperty(colorMap, name, attributes[name]); err != nil {
 			return state, err
@@ -916,11 +921,16 @@ func (r *svgReader) clip(state *svgState) error {
 		state.hidden = true
 		return nil
 	}
+	r.addClip(state, clip)
+	return nil
+}
+
+// addClip adds the clip path to those of the element.
+func (r *svgReader) addClip(state *svgState, clip *svgPath) {
 	r.image.clipShapes = append(r.image.clipShapes, clip)
 	clips := make([]*svgPath, 0, len(state.clips)+1)
 	clips = append(clips, state.clips...)
 	state.clips = append(clips, clip)
-	return nil
 }
 
 // svgArea returns twice the area of the path, its sign the way it goes round,
@@ -983,8 +993,10 @@ func svgReversed(operations []*svgPathOp) []*svgPathOp {
 // element draws: moved by its x and y, and its viewBox fitted to its width
 // and height, which the use element may give, and which are those of the
 // viewport it is in unless given; a percentage is of that viewport. A
-// viewBox or a size of nothing draws nothing.
-func (state *svgState) enterViewport(attributes map[string]string, size [2]string) {
+// viewBox or a size of nothing draws nothing. What is drawn is clipped to the
+// viewport, as hidden is the overflow of these elements unless given, not
+// inherited; a viewport of no known size clips nothing.
+func (r *svgReader) enterViewport(state *svgState, attributes map[string]string, size [2]string) error {
 	width := attributes["width"]
 	if size[0] != "" {
 		width = size[0]
@@ -995,26 +1007,32 @@ func (state *svgState) enterViewport(attributes map[string]string, size [2]strin
 	}
 	w := svgViewportLength(width, state.viewport[0], state.viewport[0])
 	h := svgViewportLength(height, state.viewport[1], state.viewport[1])
-	m := [6]float64{1, 0, 0, 1,
-		svgViewportLength(attributes["x"], state.viewport[0], 0.0),
-		svgViewportLength(attributes["y"], state.viewport[1], 0.0)}
+	x := svgViewportLength(attributes["x"], state.viewport[0], 0.0)
+	y := svgViewportLength(attributes["y"], state.viewport[1], 0.0)
+	m := [6]float64{1, 0, 0, 1, x, y}
 	box, err := parseSVGNumbers(attributes["viewBox"])
-	if err != nil || len(box) != 4 {
-		state.viewport = [2]float64{w, h}
-		state.matrix = svgMultiply(state.matrix, m)
-		return
-	}
+	fitted := err == nil && len(box) == 4
 	// A viewport of no known size, of an svg element with neither a size nor
 	// a viewBox, leaves the viewBox as it is.
-	if w == 0.0 && width == "" {
+	if fitted && w == 0.0 && width == "" {
 		w = box[2]
 	}
-	if h == 0.0 && height == "" {
+	if fitted && h == 0.0 && height == "" {
 		h = box[3]
 	}
-	if box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0 {
+	if fitted && (box[2] <= 0.0 || box[3] <= 0.0) || width != "" && w <= 0.0 || height != "" && h <= 0.0 {
 		state.hidden = true
-		return
+		return nil
+	}
+	if !state.hidden && w > 0.0 && h > 0.0 && state.overflow != "visible" && state.overflow != "auto" {
+		if err := r.clipToViewport(state, x, y, w, h); err != nil {
+			return err
+		}
+	}
+	if !fitted {
+		state.viewport = [2]float64{w, h}
+		state.matrix = svgMultiply(state.matrix, m)
+		return nil
 	}
 	sx := w / box[2]
 	sy := h / box[3]
@@ -1044,6 +1062,23 @@ func (state *svgState) enterViewport(attributes map[string]string, size [2]strin
 	m = svgMultiply(m, [6]float64{1, 0, 0, 1, -box[0], -box[1]})
 	state.viewport = [2]float64{box[2], box[3]}
 	state.matrix = svgMultiply(state.matrix, m)
+	return nil
+}
+
+// clipToViewport clips the element to the rectangle, in the user space it is
+// in before it enters its viewport.
+func (r *svgReader) clipToViewport(state *svgState, x, y, w, h float64) error {
+	b := new(svgBuilder)
+	b.moveTo(x, y)
+	b.lineTo(x+w, y)
+	b.lineTo(x+w, y+h)
+	b.lineTo(x, y+h)
+	b.closePath()
+	svgTransformAll(state.matrix, b.operations)
+	clip := new(svgPath)
+	clip.operations = b.operations
+	r.addClip(state, clip)
+	return r.countOperations(len(clip.operations))
 }
 
 // svgViewportLength reads an x, a y, a width or a height of a viewport, which

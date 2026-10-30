@@ -40,7 +40,9 @@ import java.util.Set;
  * font-weight and font-style of the text ask. A gradient is drawn in the
  * mean color of its stops. The width,
  * height, viewBox and preserveAspectRatio of the svg element give the size of
- * the image, and what is drawn outside it is cut off, as a browser does. It
+ * the image, and what is drawn outside it is cut off, as a browser does, and so
+ * is what a symbol or a nested svg draws outside its viewport, unless its
+ * overflow is visible or auto. It
  * throws for a file that nests what it draws more than 48 deep, or that draws
  * more than 4,000,000 path operations again, by use elements, markers and clip
  * paths.
@@ -553,6 +555,7 @@ public class SVGImage implements Drawable {
         SVGState state = new SVGState(parent);
         state.ownOpacity = 1f;
         state.clipPath = null;
+        state.overflow = null;
         for (String name : order) {
             state.setProperty(colorMap, name, attributes.get(name));
         }
@@ -865,6 +868,11 @@ public class SVGImage implements Drawable {
             state.hidden = true;
             return;
         }
+        addClip(state, clip);
+    }
+
+    // Adds the clip path to those of the element.
+    private void addClip(SVGState state, SVGPath clip) {
         clipShapes.add(clip);
         List<SVGPath> clips = (state.clips == null) ? new ArrayList<SVGPath>() : new ArrayList<SVGPath>(state.clips);
         clips.add(clip);
@@ -875,31 +883,38 @@ public class SVGImage implements Drawable {
     // element draws: moved by its x and y, and its viewBox fitted to its width
     // and height, which the use element may give, and which are those of the
     // viewport it is in unless given; a percentage is of that viewport. A
-    // viewBox or a size of nothing draws nothing.
-    private static void enterViewport(SVGState state, Map<String, String> attributes, String[] size) {
+    // viewBox or a size of nothing draws nothing. What is drawn is clipped to
+    // the viewport, as hidden is the overflow of these elements unless given,
+    // not inherited; a viewport of no known size clips nothing.
+    private void enterViewport(SVGState state, Map<String, String> attributes, String[] size) {
         String width = (size != null && !size[0].isEmpty()) ? size[0] : attribute(attributes, "width");
         String height = (size != null && !size[1].isEmpty()) ? size[1] : attribute(attributes, "height");
         double w = viewportLength(width, state.viewport[0], state.viewport[0]);
         double h = viewportLength(height, state.viewport[1], state.viewport[1]);
-        double[] m = {1, 0, 0, 1,
-                viewportLength(attribute(attributes, "x"), state.viewport[0], 0.0),
-                viewportLength(attribute(attributes, "y"), state.viewport[1], 0.0)};
+        double vx = viewportLength(attribute(attributes, "x"), state.viewport[0], 0.0);
+        double vy = viewportLength(attribute(attributes, "y"), state.viewport[1], 0.0);
+        double[] m = {1, 0, 0, 1, vx, vy};
         double[] box = SVGState.parseNumbers(attribute(attributes, "viewBox"));
-        if (box == null || box.length != 4) {
-            state.viewport = new double[] {w, h};
-            state.matrix = SVGState.multiply(state.matrix, m);
-            return;
-        }
+        boolean fitted = box != null && box.length == 4;
         // A viewport of no known size, of an svg element with neither a size
         // nor a viewBox, leaves the viewBox as it is.
-        if (w == 0.0 && width.isEmpty()) {
+        if (fitted && w == 0.0 && width.isEmpty()) {
             w = box[2];
         }
-        if (h == 0.0 && height.isEmpty()) {
+        if (fitted && h == 0.0 && height.isEmpty()) {
             h = box[3];
         }
-        if (box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0) {
+        if (fitted && (box[2] <= 0.0 || box[3] <= 0.0)
+                || !width.isEmpty() && w <= 0.0 || !height.isEmpty() && h <= 0.0) {
             state.hidden = true;
+            return;
+        }
+        if (!state.hidden && w > 0.0 && h > 0.0 && !"visible".equals(state.overflow) && !"auto".equals(state.overflow)) {
+            clipToViewport(state, vx, vy, w, h);
+        }
+        if (!fitted) {
+            state.viewport = new double[] {w, h};
+            state.matrix = SVGState.multiply(state.matrix, m);
             return;
         }
         double sx = w/box[2];
@@ -929,6 +944,22 @@ public class SVGImage implements Drawable {
         m = SVGState.multiply(m, new double[] {1, 0, 0, 1, -box[0], -box[1]});
         state.viewport = new double[] {box[2], box[3]};
         state.matrix = SVGState.multiply(state.matrix, m);
+    }
+
+    // Clips the element to the rectangle, in the user space it is in before it
+    // enters its viewport.
+    private void clipToViewport(SVGState state, double x, double y, double w, double h) {
+        ShapeBuilder b = new ShapeBuilder();
+        b.moveTo(x, y);
+        b.lineTo(x + w, y);
+        b.lineTo(x + w, y + h);
+        b.lineTo(x, y + h);
+        b.closePath();
+        transform(state.matrix, b.operations);
+        SVGPath clip = new SVGPath();
+        clip.operations = b.operations;
+        addClip(state, clip);
+        countOperations(clip.operations.size());
     }
 
     // Reads an x, a y, a width or a height of a viewport, which may be a

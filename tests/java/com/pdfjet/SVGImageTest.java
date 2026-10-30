@@ -954,7 +954,8 @@ class SVGImageTest {
                 clipped + "<g clip-path=\"url(#c)\">" + repeat("<rect width=\"1\" height=\"1\"/>", 1000) + "</g></svg>",
                 clipped + "<g clip-path=\"url(#c)\"><text>" + repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
                 "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + repeat("a", 10000) + "</text></defs>"
-                        + repeat("<use href=\"#p\"/>", 1000) + "</svg>"}) {
+                        + repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                nested("<svg width=\"1\" height=\"1\">", "</svg>", repeat("<rect width=\"1\" height=\"1\"/>", 20000), 45)}) {
             IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> read(svg));
             assertTrue(e.getMessage().contains("path operations"), e.getMessage());
         }
@@ -1239,6 +1240,38 @@ class SVGImageTest {
             String content = draw("<svg width=\"100\" height=\"100\"><svg viewBox=\"0 0 -10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
             assertEquals("", content);
         }
+    }
+
+    @Test
+    void aSymbolAndANestedSvgClipToTheirViewports() throws Exception {
+        final String clip = "h\nW\nn\n";
+        assertEquals("q\n5 787 m\n25 787 l\n25 767 l\n5 767 l\nh\nW\nn\n0 0 0 rg\n5 787 m\n45 787 l\n45 747 l\n5 747 l\nf\nQ\n", draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"20\" height=\"20\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>"));
+        assertTrue(draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\" width=\"20\" height=\"20\"><rect width=\"50\" height=\"50\"/></svg></svg>").startsWith("q\n10 772 m\n30 772 l\n30 752 l\n10 752 l\n" + clip));
+        // The viewport, not the viewBox, and in the space of the image.
+        assertTrue(draw("<svg width=\"100\" height=\"100\"><svg width=\"20\" height=\"40\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax slice\"><rect width=\"10\" height=\"10\"/></svg></svg>").contains("q\n0 792 m\n20 792 l\n20 752 l\n0 752 l\n" + clip));
+        assertTrue(draw("<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\"/></svg></svg>").startsWith("q\n0 792 m\n20 792 l\n20 772 l\n0 772 l\n" + clip));
+        // Moved and scaled by the scale of the image, too.
+        SVGImage image = new SVGImage(new ByteArrayInputStream("<svg width=\"100\" height=\"100\"><svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\"/></svg></svg>".getBytes(StandardCharsets.UTF_8)));
+        image.scaleBy(2f);
+        image.setLocation(10f, 0f);
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        image.drawOn(page);
+        assertTrue(TestSupport.content(page).startsWith("q\n10 792 m\n30 792 l\n30 772 l\n10 772 l\n" + clip));
+        // Each viewport clips, and an overflow is not inherited.
+        assertEquals(3, draw("<svg width=\"100\" height=\"100\"><svg width=\"50\" height=\"50\"><svg width=\"20\" height=\"20\"><rect width=\"5\" height=\"5\"/></svg></svg></svg>").split(clip, -1).length);
+        assertEquals(2, draw("<svg width=\"100\" height=\"100\"><svg width=\"50\" height=\"50\" overflow=\"visible\"><svg width=\"20\" height=\"20\"><rect width=\"5\" height=\"5\"/></svg></svg></svg>").split(clip, -1).length);
+        // Overflow, as an attribute, in a style and in rules; hidden and scroll clip.
+        for (String overflow : new String[] {"overflow=\"visible\"", "overflow=\"auto\"", "overflow=\"VISIBLE\"", "style=\"overflow: visible\"", "class=\"o\""}) {
+            String content = draw("<svg width=\"100\" height=\"100\"><style>.o { overflow: visible }</style><symbol id=\"s\" " + overflow + "><rect width=\"500\" height=\"5\"/></symbol><use href=\"#s\"/></svg>");
+            assertFalse(content.contains(clip), content);
+        }
+        for (String overflow : new String[] {"overflow=\"hidden\"", "overflow=\"scroll\""}) {
+            String content = draw("<svg width=\"100\" height=\"100\"><svg width=\"5\" height=\"5\" " + overflow + "><rect width=\"5\" height=\"5\"/></svg></svg>");
+            assertTrue(content.contains(clip), content);
+        }
+        // A viewport of no known size clips nothing, and one of no size hides.
+        assertFalse(draw("<svg><svg x=\"1\"><rect width=\"5\" height=\"5\"/></svg></svg>").contains("W\n"));
+        assertEquals("", draw("<svg width=\"100\" height=\"100\"><svg width=\"0\"><rect width=\"5\" height=\"5\"/></svg></svg>"));
     }
 
     @Test

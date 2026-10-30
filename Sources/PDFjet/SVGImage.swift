@@ -110,7 +110,8 @@ public class SVGImage : Drawable {
      * font-family, font-weight and font-style of the text ask. A gradient is
      * drawn in the mean color of its stops. The width, height, viewBox and preserveAspectRatio of the <svg> element
      * give the size of the image, and what is drawn outside it is cut off, as
-     * a browser does. It throws for a file that nests what it draws more than
+     * a browser does, and so is what a <symbol> or a nested <svg> draws outside
+     * its viewport, unless its overflow is visible or auto. It throws for a file that nests what it draws more than
      * 48 deep, or that draws more than 4,000,000 path operations again, by use
      * elements, markers and clip paths.
      *
@@ -346,7 +347,7 @@ public class SVGImage : Drawable {
                 state.viewport = [Double(w / SVGImage.pixel), Double(h / SVGImage.pixel)]
             }
         } else if name == "svg" || name == "symbol" && used {
-            SVGImage.enterViewport(&state, values, size)
+            try enterViewport(&state, values, size)
         }
         stack.append(state)
         defer {
@@ -486,6 +487,7 @@ public class SVGImage : Drawable {
         var state = parent
         state.ownOpacity = 1.0
         state.clipPath = nil
+        state.overflow = nil
         for name in order {
             try state.setProperty(name, attributes[name]!)
         }
@@ -779,6 +781,11 @@ public class SVGImage : Drawable {
             state.hidden = true
             return
         }
+        addClip(&state, clip)
+    }
+
+    // Adds the clip path to those of the element.
+    private func addClip(_ state: inout SVGState, _ clip: SVGPath) {
         clipShapes.append(clip)
         state.clips = (state.clips ?? []) + [clip]
     }
@@ -787,31 +794,39 @@ public class SVGImage : Drawable {
     // element draws: moved by its x and y, and its viewBox fitted to its width
     // and height, which the use element may give, and which are those of the
     // viewport it is in unless given; a percentage is of that viewport. A
-    // viewBox or a size of nothing draws nothing.
-    private static func enterViewport(_ state: inout SVGState, _ attributes: [String: String],
-            _ size: (String, String)?) {
+    // viewBox or a size of nothing draws nothing. What is drawn is clipped to
+    // the viewport, as hidden is the overflow of these elements unless given,
+    // not inherited; a viewport of no known size clips nothing.
+    private func enterViewport(_ state: inout SVGState, _ attributes: [String: String],
+            _ size: (String, String)?) throws {
         let width = (size != nil && !size!.0.isEmpty) ? size!.0 : attributes["width"] ?? ""
         let height = (size != nil && !size!.1.isEmpty) ? size!.1 : attributes["height"] ?? ""
-        var w = viewportLength(width, state.viewport[0], state.viewport[0])
-        var h = viewportLength(height, state.viewport[1], state.viewport[1])
-        var m = [1.0, 0.0, 0.0, 1.0,
-                viewportLength(attributes["x"] ?? "", state.viewport[0], 0.0),
-                viewportLength(attributes["y"] ?? "", state.viewport[1], 0.0)]
-        guard let box = SVGState.parseNumbers(attributes["viewBox"] ?? ""), box.count == 4 else {
-            state.viewport = [w, h]
-            state.matrix = SVGState.multiply(state.matrix, m)
-            return
-        }
+        var w = SVGImage.viewportLength(width, state.viewport[0], state.viewport[0])
+        var h = SVGImage.viewportLength(height, state.viewport[1], state.viewport[1])
+        let x = SVGImage.viewportLength(attributes["x"] ?? "", state.viewport[0], 0.0)
+        let y = SVGImage.viewportLength(attributes["y"] ?? "", state.viewport[1], 0.0)
+        var m = [1.0, 0.0, 0.0, 1.0, x, y]
+        let numbers = SVGState.parseNumbers(attributes["viewBox"] ?? "")
+        let fitted = numbers != nil && numbers!.count == 4
         // A viewport of no known size, of an svg element with neither a size
         // nor a viewBox, leaves the viewBox as it is.
-        if w == 0.0 && width.isEmpty {
-            w = box[2]
+        if fitted && w == 0.0 && width.isEmpty {
+            w = numbers![2]
         }
-        if h == 0.0 && height.isEmpty {
-            h = box[3]
+        if fitted && h == 0.0 && height.isEmpty {
+            h = numbers![3]
         }
-        if box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0 {
+        if fitted && (numbers![2] <= 0.0 || numbers![3] <= 0.0)
+                || !width.isEmpty && w <= 0.0 || !height.isEmpty && h <= 0.0 {
             state.hidden = true
+            return
+        }
+        if !state.hidden && w > 0.0 && h > 0.0 && state.overflow != "visible" && state.overflow != "auto" {
+            try clipToViewport(&state, x, y, w, h)
+        }
+        guard fitted, let box = numbers else {
+            state.viewport = [w, h]
+            state.matrix = SVGState.multiply(state.matrix, m)
             return
         }
         var sx = w / box[2]
@@ -832,13 +847,29 @@ public class SVGImage : Drawable {
             if align.count != 8 {
                 align = Array("xMidYMid".utf8)
             }
-            tx = Double(alignOffset(align[1..<4], 1.0)) * (w - box[2]*sx)
-            ty = Double(alignOffset(align[5..<8], 1.0)) * (h - box[3]*sy)
+            tx = Double(SVGImage.alignOffset(align[1..<4], 1.0)) * (w - box[2]*sx)
+            ty = Double(SVGImage.alignOffset(align[5..<8], 1.0)) * (h - box[3]*sy)
         }
         m = SVGState.multiply(m, [sx, 0.0, 0.0, sy, tx, ty])
         m = SVGState.multiply(m, [1.0, 0.0, 0.0, 1.0, -box[0], -box[1]])
         state.viewport = [box[2], box[3]]
         state.matrix = SVGState.multiply(state.matrix, m)
+    }
+
+    // Clips the element to the rectangle, in the user space it is in before it
+    // enters its viewport.
+    private func clipToViewport(_ state: inout SVGState, _ x: Double, _ y: Double, _ w: Double, _ h: Double) throws {
+        var b = Builder()
+        b.moveTo(x, y)
+        b.lineTo(x + w, y)
+        b.lineTo(x + w, y + h)
+        b.lineTo(x, y + h)
+        b.closePath()
+        SVGImage.transform(state.matrix, b.operations)
+        let clip = SVGPath()
+        clip.operations = b.operations
+        addClip(&state, clip)
+        try countOperations(clip.operations.count)
     }
 
     // Reads an x, a y, a width or a height of a viewport, which may be a

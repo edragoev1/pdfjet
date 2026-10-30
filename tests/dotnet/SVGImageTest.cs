@@ -944,7 +944,8 @@ public class SVGImageTest {
                 clipped + "<g clip-path=\"url(#c)\">" + Repeat("<rect width=\"1\" height=\"1\"/>", 1000) + "</g></svg>",
                 clipped + "<g clip-path=\"url(#c)\"><text>" + Repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
                 "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + Repeat("a", 10000) + "</text></defs>"
-                        + Repeat("<use href=\"#p\"/>", 1000) + "</svg>"}) {
+                        + Repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                Nested("<svg width=\"1\" height=\"1\">", "</svg>", Repeat("<rect width=\"1\" height=\"1\"/>", 20000), 45)}) {
             ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
             Assert.Contains("path operations", e.Message);
         }
@@ -1231,6 +1232,36 @@ public class SVGImageTest {
             string content = Draw("<svg width=\"100\" height=\"100\"><svg viewBox=\"0 0 -10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>");
             Assert.Equal("", content);
         }
+    }
+
+    [Fact]
+    public void ASymbolAndANestedSvgClipToTheirViewports() {
+        const string clip = "h\nW\nn\n";
+        Assert.Equal("q\n5 787 m\n25 787 l\n25 767 l\n5 767 l\nh\nW\nn\n0 0 0 rg\n5 787 m\n45 787 l\n45 747 l\n5 747 l\nf\nQ\n", Draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"20\" height=\"20\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>"));
+        Assert.StartsWith("q\n10 772 m\n30 772 l\n30 752 l\n10 752 l\n" + clip, Draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\" width=\"20\" height=\"20\"><rect width=\"50\" height=\"50\"/></svg></svg>"));
+        // The viewport, not the viewBox, and in the space of the image.
+        Assert.Contains("q\n0 792 m\n20 792 l\n20 752 l\n0 752 l\n" + clip, Draw("<svg width=\"100\" height=\"100\"><svg width=\"20\" height=\"40\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax slice\"><rect width=\"10\" height=\"10\"/></svg></svg>"));
+        Assert.StartsWith("q\n0 792 m\n20 792 l\n20 772 l\n0 772 l\n" + clip, Draw("<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\"/></svg></svg>"));
+        // Moved and scaled by the scale of the image, too.
+        SVGImage image = Parse("<svg width=\"100\" height=\"100\"><svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\"/></svg></svg>");
+        image.ScaleBy(2f);
+        image.SetLocation(10f, 0f);
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        image.DrawOn(page);
+        Assert.StartsWith("q\n10 792 m\n30 792 l\n30 772 l\n10 772 l\n" + clip, TestSupport.Content(page));
+        // Each viewport clips, and an overflow is not inherited.
+        Assert.Equal(3, Draw("<svg width=\"100\" height=\"100\"><svg width=\"50\" height=\"50\"><svg width=\"20\" height=\"20\"><rect width=\"5\" height=\"5\"/></svg></svg></svg>").Split(new[] {clip}, StringSplitOptions.None).Length);
+        Assert.Equal(2, Draw("<svg width=\"100\" height=\"100\"><svg width=\"50\" height=\"50\" overflow=\"visible\"><svg width=\"20\" height=\"20\"><rect width=\"5\" height=\"5\"/></svg></svg></svg>").Split(new[] {clip}, StringSplitOptions.None).Length);
+        // Overflow, as an attribute, in a style and in rules; hidden and scroll clip.
+        foreach (string overflow in new[] {"overflow=\"visible\"", "overflow=\"auto\"", "overflow=\"VISIBLE\"", "style=\"overflow: visible\"", "class=\"o\""}) {
+            Assert.DoesNotContain(clip, Draw("<svg width=\"100\" height=\"100\"><style>.o { overflow: visible }</style><symbol id=\"s\" " + overflow + "><rect width=\"500\" height=\"5\"/></symbol><use href=\"#s\"/></svg>"));
+        }
+        foreach (string overflow in new[] {"overflow=\"hidden\"", "overflow=\"scroll\""}) {
+            Assert.Contains(clip, Draw("<svg width=\"100\" height=\"100\"><svg width=\"5\" height=\"5\" " + overflow + "><rect width=\"5\" height=\"5\"/></svg></svg>"));
+        }
+        // A viewport of no known size clips nothing, and one of no size hides.
+        Assert.DoesNotContain("W\n", Draw("<svg><svg x=\"1\"><rect width=\"5\" height=\"5\"/></svg></svg>"));
+        Assert.Equal("", Draw("<svg width=\"100\" height=\"100\"><svg width=\"0\"><rect width=\"5\" height=\"5\"/></svg></svg>"));
     }
 
     [Fact]

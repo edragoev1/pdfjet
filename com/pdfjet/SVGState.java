@@ -56,6 +56,7 @@ class SVGState {
     String markerMid = null;
     String markerEnd = null;
     String clipPath = null;             // The id of the clip path of the element itself, not inherited
+    String overflow = null;             // The overflow of the element itself, not inherited
     List<SVGPath> clips = null;         // The clip paths of the element and of its ancestors
     List<SVGImage.Choice> choices = null;   // The children of the switches it is in; never changed in place
     Map<String, Integer> paints = null; // The colors of the gradients, by id, shared by every state
@@ -403,6 +404,8 @@ class SVGState {
             this.markerEnd = this.markerStart;
         } else if (name.equals("clip-path")) {
             this.clipPath = urlId(value);
+        } else if (name.equals("overflow")) {
+            this.overflow = toLower(value);
         }
     }
 

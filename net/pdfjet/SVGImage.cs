@@ -32,7 +32,9 @@ namespace PDFjet.NET {
 /// font-weight and font-style of the text ask. A gradient is drawn in the
 /// mean color of its stops. The width,
 /// height, viewBox and preserveAspectRatio of the svg element give the size of
-/// the image, and what is drawn outside it is cut off, as a browser does. It
+/// the image, and what is drawn outside it is cut off, as a browser does, and so
+/// is what a symbol or a nested svg draws outside its viewport, unless its
+/// overflow is visible or auto. It
 /// throws for a file that nests what it draws more than 48 deep, or that draws
 /// more than 4,000,000 path operations again, by use elements, markers and clip
 /// paths.
@@ -550,6 +552,7 @@ public class SVGImage : IDrawable {
         SVGState state = parent.Copy();
         state.ownOpacity = 1f;
         state.clipPath = null;
+        state.overflow = null;
         foreach (String name in order) {
             state.SetProperty(name, attributes[name]);
         }
@@ -876,6 +879,11 @@ public class SVGImage : IDrawable {
             state.hidden = true;
             return;
         }
+        AddClip(state, clip);
+    }
+
+    // Adds the clip path to those of the element.
+    private void AddClip(SVGState state, SVGPath clip) {
         clipShapes.Add(clip);
         List<SVGPath> clips = (state.clips == null) ? new List<SVGPath>() : new List<SVGPath>(state.clips);
         clips.Add(clip);
@@ -886,31 +894,38 @@ public class SVGImage : IDrawable {
     // element draws: moved by its x and y, and its viewBox fitted to its width
     // and height, which the use element may give, and which are those of the
     // viewport it is in unless given; a percentage is of that viewport. A
-    // viewBox or a size of nothing draws nothing.
-    private static void EnterViewport(SVGState state, Dictionary<String, String> attributes, String[] size) {
+    // viewBox or a size of nothing draws nothing. What is drawn is clipped to
+    // the viewport, as hidden is the overflow of these elements unless given,
+    // not inherited; a viewport of no known size clips nothing.
+    private void EnterViewport(SVGState state, Dictionary<String, String> attributes, String[] size) {
         String width = (size != null && size[0].Length > 0) ? size[0] : Attribute(attributes, "width");
         String height = (size != null && size[1].Length > 0) ? size[1] : Attribute(attributes, "height");
         double w = ViewportLength(width, state.viewport[0], state.viewport[0]);
         double h = ViewportLength(height, state.viewport[1], state.viewport[1]);
-        double[] m = new double[] {1.0, 0.0, 0.0, 1.0,
-            ViewportLength(Attribute(attributes, "x"), state.viewport[0], 0.0),
-            ViewportLength(Attribute(attributes, "y"), state.viewport[1], 0.0)};
+        double vx = ViewportLength(Attribute(attributes, "x"), state.viewport[0], 0.0);
+        double vy = ViewportLength(Attribute(attributes, "y"), state.viewport[1], 0.0);
+        double[] m = new double[] {1.0, 0.0, 0.0, 1.0, vx, vy};
         List<double> box = SVGState.ParseNumbers(Attribute(attributes, "viewBox"));
-        if (box == null || box.Count != 4) {
-            state.viewport = new double[] {w, h};
-            state.matrix = SVGState.Multiply(state.matrix, m);
-            return;
-        }
+        bool fitted = box != null && box.Count == 4;
         // A viewport of no known size, of an svg element with neither a size
         // nor a viewBox, leaves the viewBox as it is.
-        if (w == 0.0 && width.Length == 0) {
+        if (fitted && w == 0.0 && width.Length == 0) {
             w = box[2];
         }
-        if (h == 0.0 && height.Length == 0) {
+        if (fitted && h == 0.0 && height.Length == 0) {
             h = box[3];
         }
-        if (box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0) {
+        if (fitted && (box[2] <= 0.0 || box[3] <= 0.0)
+                || width.Length > 0 && w <= 0.0 || height.Length > 0 && h <= 0.0) {
             state.hidden = true;
+            return;
+        }
+        if (!state.hidden && w > 0.0 && h > 0.0 && state.overflow != "visible" && state.overflow != "auto") {
+            ClipToViewport(state, vx, vy, w, h);
+        }
+        if (!fitted) {
+            state.viewport = new double[] {w, h};
+            state.matrix = SVGState.Multiply(state.matrix, m);
             return;
         }
         double sx = w/box[2];
@@ -940,6 +955,22 @@ public class SVGImage : IDrawable {
         m = SVGState.Multiply(m, new double[] {1.0, 0.0, 0.0, 1.0, -box[0], -box[1]});
         state.viewport = new double[] {box[2], box[3]};
         state.matrix = SVGState.Multiply(state.matrix, m);
+    }
+
+    // Clips the element to the rectangle, in the user space it is in before it
+    // enters its viewport.
+    private void ClipToViewport(SVGState state, double x, double y, double w, double h) {
+        Builder b = new Builder();
+        b.MoveTo(x, y);
+        b.LineTo(x + w, y);
+        b.LineTo(x + w, y + h);
+        b.LineTo(x, y + h);
+        b.ClosePath();
+        Transform(state.matrix, b.operations);
+        SVGPath clip = new SVGPath();
+        clip.operations = b.operations;
+        AddClip(state, clip);
+        CountOperations(clip.operations.Count);
     }
 
     // Reads an x, a y, a width or a height of a viewport, which may be a

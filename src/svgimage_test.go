@@ -1057,6 +1057,8 @@ func TestSVGImageTheOperationsDrawnAgainAreLimited(t *testing.T) {
 			strings.Repeat(`<tspan>a</tspan>`, 1000) + `</text></g></svg>`,
 		"uses of a text": `<svg width="10" height="10"><defs><text id="p">` + strings.Repeat("a", 10000) +
 			`</text></defs>` + strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+		"clips of viewports": testSVGNested(`<svg width="1" height="1">`, `</svg>`,
+			strings.Repeat(`<rect width="1" height="1"/>`, 20000), 45),
 	} {
 		_, err := NewSVGImage(strings.NewReader(svg))
 		if err == nil || !strings.Contains(err.Error(), "path operations") {
@@ -1325,6 +1327,56 @@ func TestSVGImageANestedSvgIsAViewport(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 	if content := testDrawSVG(t, `<svg width="100" height="100"><svg viewBox="0 0 -10 10"><rect width="10" height="10"/></svg></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASymbolAndANestedSvgClipToTheirViewports(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="20" height="20"/></symbol><use href="#s" x="5" y="5" width="20" height="20"/></svg>`); content != "q\n5 787 m\n25 787 l\n25 767 l\n5 767 l\nh\nW\nn\n0 0 0 rg\n5 787 m\n45 787 l\n45 747 l\n5 747 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="10" y="20" width="20" height="20"><rect width="50" height="50"/></svg></svg>`); !strings.HasPrefix(content, "q\n10 772 m\n30 772 l\n30 752 l\n10 752 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// The viewport, not the viewBox, and in the space of the image.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="20" height="40" viewBox="0 0 10 10" preserveAspectRatio="xMaxYMax slice"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "q\n0 792 m\n20 792 l\n20 752 l\n0 752 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="200" height="200" viewBox="0 0 100 100"><svg width="10" height="10"><rect width="5" height="5"/></svg></svg>`); !strings.HasPrefix(content, "q\n0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// Moved and scaled by the scale of the image, too.
+	image := testNewSVG(t, `<svg width="100" height="100"><svg width="10" height="10"><rect width="5" height="5"/></svg></svg>`)
+	image.ScaleBy(2)
+	image.SetLocation(10, 0)
+	page := testNewPage()
+	image.DrawOn(page)
+	if content := testContent(page); !strings.HasPrefix(content, "q\n10 792 m\n30 792 l\n30 772 l\n10 772 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// Each viewport clips, and an overflow is not inherited.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="50" height="50"><svg width="20" height="20"><rect width="5" height="5"/></svg></svg></svg>`); strings.Count(content, "h\nW\nn\n") != 2 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="50" height="50" overflow="visible"><svg width="20" height="20"><rect width="5" height="5"/></svg></svg></svg>`); strings.Count(content, "h\nW\nn\n") != 1 {
+		t.Errorf("content %q", content)
+	}
+	// Overflow, as an attribute, in a style and in rules; hidden and scroll clip.
+	for _, overflow := range []string{`overflow="visible"`, `overflow="auto"`, `overflow="VISIBLE"`, `style="overflow: visible"`, `class="o"`} {
+		if content := testDrawSVG(t, `<svg width="100" height="100"><style>.o { overflow: visible }</style><symbol id="s" `+overflow+`><rect width="500" height="5"/></symbol><use href="#s"/></svg>`); strings.Contains(content, "h\nW\nn\n") {
+			t.Errorf("%s content %q", overflow, content)
+		}
+	}
+	for _, overflow := range []string{`overflow="hidden"`, `overflow="scroll"`} {
+		if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="5" height="5" `+overflow+`><rect width="5" height="5"/></svg></svg>`); !strings.Contains(content, "h\nW\nn\n") {
+			t.Errorf("%s content %q", overflow, content)
+		}
+	}
+	// A viewport of no known size clips nothing, and one of no size hides.
+	if content := testDrawSVG(t, `<svg><svg x="1"><rect width="5" height="5"/></svg></svg>`); strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="0"><rect width="5" height="5"/></svg></svg>`); content != "" {
 		t.Errorf("content %q", content)
 	}
 }

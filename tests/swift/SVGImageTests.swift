@@ -891,7 +891,9 @@ import Testing
                 clipped + "<g clip-path=\"url(#c)\"><text>"
                         + String(repeating: "<tspan>a</tspan>", count: 1000) + "</text></g></svg>",
                 "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + String(repeating: "a", count: 10000)
-                        + "</text></defs>" + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>"] {
+                        + "</text></defs>" + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>",
+                nested("<svg width=\"1\" height=\"1\">", "</svg>",
+                        String(repeating: "<rect width=\"1\" height=\"1\"/>", count: 20000), 45)] {
             #expect(throws: (any Error).self) {
                 do {
                     _ = try image(svg)
@@ -1169,6 +1171,37 @@ import Testing
             let content = try draw("<svg width=\"100\" height=\"100\"><svg viewBox=\"0 0 -10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
             #expect(content == "", "\(content)")
         }
+    }
+
+    @Test func aSymbolAndANestedSvgClipToTheirViewports() throws {
+        let clip = "h\nW\nn\n"
+        #expect(try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"20\" height=\"20\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>") == "q\n5 787 m\n25 787 l\n25 767 l\n5 767 l\nh\nW\nn\n0 0 0 rg\n5 787 m\n45 787 l\n45 747 l\n5 747 l\nf\nQ\n")
+        #expect(try draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\" width=\"20\" height=\"20\"><rect width=\"50\" height=\"50\"/></svg></svg>").hasPrefix("q\n10 772 m\n30 772 l\n30 752 l\n10 752 l\n" + clip))
+        // The viewport, not the viewBox, and in the space of the image.
+        #expect(try draw("<svg width=\"100\" height=\"100\"><svg width=\"20\" height=\"40\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax slice\"><rect width=\"10\" height=\"10\"/></svg></svg>").contains("q\n0 792 m\n20 792 l\n20 752 l\n0 752 l\n" + clip))
+        #expect(try draw("<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\"/></svg></svg>").hasPrefix("q\n0 792 m\n20 792 l\n20 772 l\n0 772 l\n" + clip))
+        // Moved and scaled by the scale of the image, too.
+        let svgImage = try image("<svg width=\"100\" height=\"100\"><svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\"/></svg></svg>")
+        svgImage.scaleBy(2)
+        _ = svgImage.setLocation(10, 0)
+        let page = TestSupport.newPage()
+        _ = svgImage.drawOn(page)
+        #expect(TestSupport.content(page).hasPrefix("q\n10 792 m\n30 792 l\n30 772 l\n10 772 l\n" + clip))
+        // Each viewport clips, and an overflow is not inherited.
+        #expect(try draw("<svg width=\"100\" height=\"100\"><svg width=\"50\" height=\"50\"><svg width=\"20\" height=\"20\"><rect width=\"5\" height=\"5\"/></svg></svg></svg>").components(separatedBy: clip).count == 3)
+        #expect(try draw("<svg width=\"100\" height=\"100\"><svg width=\"50\" height=\"50\" overflow=\"visible\"><svg width=\"20\" height=\"20\"><rect width=\"5\" height=\"5\"/></svg></svg></svg>").components(separatedBy: clip).count == 2)
+        // Overflow, as an attribute, in a style and in rules; hidden and scroll clip.
+        for overflow in ["overflow=\"visible\"", "overflow=\"auto\"", "overflow=\"VISIBLE\"", "style=\"overflow: visible\"", "class=\"o\""] {
+            let content = try draw("<svg width=\"100\" height=\"100\"><style>.o { overflow: visible }</style><symbol id=\"s\" " + overflow + "><rect width=\"500\" height=\"5\"/></symbol><use href=\"#s\"/></svg>")
+            #expect(!content.contains(clip), "\(content)")
+        }
+        for overflow in ["overflow=\"hidden\"", "overflow=\"scroll\""] {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg width=\"5\" height=\"5\" " + overflow + "><rect width=\"5\" height=\"5\"/></svg></svg>")
+            #expect(content.contains(clip), "\(content)")
+        }
+        // A viewport of no known size clips nothing, and one of no size hides.
+        #expect(try !draw("<svg><svg x=\"1\"><rect width=\"5\" height=\"5\"/></svg></svg>").contains("W\n"))
+        #expect(try draw("<svg width=\"100\" height=\"100\"><svg width=\"0\"><rect width=\"5\" height=\"5\"/></svg></svg>") == "")
     }
 
     @Test func thePaintOrderOfAShapeIsDrawn() throws {
