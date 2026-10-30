@@ -381,8 +381,8 @@ func TestSVGImageAViewBoxThatIsNotFourNumbersOrHasNoSizeFails(t *testing.T) {
 		`<svg width="10" height="10" viewBox="0 0"/>`:          `Invalid SVG viewBox "0 0": four numbers are needed.`,
 		`<svg width="10" height="10" viewBox="0 0 10 10 10"/>`: `Invalid SVG viewBox "0 0 10 10 10": four numbers are needed.`,
 		`<svg width="10" height="10" viewBox="0 0 ten 10"/>`:   `Invalid SVG viewBox "0 0 ten 10": four numbers are needed.`,
-		`<svg width="10" height="10" viewBox="0 0 0 10"/>`:     `Invalid SVG viewBox "0 0 0 10": its width and height cannot be zero.`,
-		`<svg width="10" height="10" viewBox="0 0 10 0"/>`:     `Invalid SVG viewBox "0 0 10 0": its width and height cannot be zero.`,
+		`<svg width="10" height="10" viewBox="0 0 0 10"/>`:     `Invalid SVG viewBox "0 0 0 10": its width and height have to be above zero.`,
+		`<svg width="10" height="10" viewBox="0 0 10 0"/>`:     `Invalid SVG viewBox "0 0 10 0": its width and height have to be above zero.`,
 	} {
 		_, err := NewSVGImage(strings.NewReader(svg))
 		if err == nil || err.Error() != want {
@@ -1360,5 +1360,38 @@ func TestSVGImageHugeDashesAndClipPathsSkipThePath(t *testing.T) {
 	}
 	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10 L0 20" stroke-dasharray="1e30 1"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
 		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASizeInAUnitWithoutAViewBoxIsInPixels(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt"><rect width="100" height="100"/></svg>`); content != "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="1in" height="1in"><rect width="96" height="96"/></svg>`); content != "0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="10mm" height="10mm"><rect width="37.79" height="37.79"/></svg>`); strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	if image := testNewSVG(t, `<svg width="75pt" height="75pt"><rect width="100" height="100"/></svg>`); image.GetWidth() != 75 || image.GetHeight() != 75 {
+		t.Errorf("size %v x %v", image.GetWidth(), image.GetHeight())
+	}
+	if content := testDrawSVG(t, `<svg width="100px" height="100"><rect width="100" height="100"/></svg>`); content != "0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>`); content != "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt"><rect width="10" height="10" fill="none" stroke="red" stroke-width="4"/></svg>`); !strings.Contains(content, "3 w\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAViewBoxOfNegativeSizeIsRefused(t *testing.T) {
+	if _, err := NewSVGImage(strings.NewReader(`<svg width="10" height="10" viewBox="0 0 -10 10"/>`)); err == nil || !strings.Contains(err.Error(), "have to be above zero") {
+		t.Errorf("error %v", err)
+	}
+	if _, err := NewSVGImage(strings.NewReader(`<svg width="10" height="10" viewBox="0 0 10 -10"/>`)); err == nil || !strings.Contains(err.Error(), "have to be above zero") {
+		t.Errorf("error %v", err)
 	}
 }

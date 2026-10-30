@@ -42,6 +42,7 @@ type SVGImage struct {
 	font                *Font
 	boldFont            *Font
 	clipShapes          []*svgPath // The clip paths of the image
+	inUnits             bool       // A size in a unit such as mm, and no viewBox
 }
 
 // maxSVGReused is the most elements drawn again, by use elements and as
@@ -369,7 +370,12 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 			image.viewBox = attributes["viewbox"]
 		}
 		image.preserveAspectRatio = attributes["preserveAspectRatio"]
+		image.inUnits = image.viewBox == "" && image.w > 0.0 && image.h > 0.0 &&
+			(svgHasUnit(attributes["width"]) || svgHasUnit(attributes["height"]))
 		state.viewport = [2]float64{float64(image.w), float64(image.h)}
+		if image.inUnits {
+			state.viewport = [2]float64{float64(image.w / svgPixel), float64(image.h / svgPixel)}
+		}
 		if box, err := parseSVGNumbers(image.viewBox); err == nil && len(box) == 4 {
 			state.viewport = [2]float64{box[2], box[3]}
 		}
@@ -1302,6 +1308,22 @@ var svgUnits = []struct {
 	{"cm", 72.0 / 2.54},
 }
 
+// svgPixel is a user unit of an svg element whose size is in a unit such as mm
+// and that has no viewBox, in points. Such a size is the size of its pixels, 96
+// in an inch, and what is in it is drawn in those.
+const svgPixel = 0.75
+
+// svgHasUnit reports whether the length has a unit that is not a pixel.
+func svgHasUnit(value string) bool {
+	value = strings.TrimSpace(value)
+	for _, unit := range svgUnits {
+		if unit.suffix != "px" && strings.HasSuffix(value, unit.suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 // parseLength returns the width or the height of the svg element in points,
 // and 0 for a length that PDFjet cannot read, a percentage among them, which
 // leaves the size to the viewBox.
@@ -1337,19 +1359,24 @@ func parseFloatLenient(value string) (float32, error) {
 }
 
 func (image *SVGImage) processPaths(paths []*svgPath) error {
-	if image.viewBox == "" {
+	if image.viewBox == "" && !image.inUnits {
 		return nil
 	}
 	var box [4]float32
-	list, err := parseSVGNumbers(image.viewBox)
-	if err != nil || len(list) != 4 {
-		return fmt.Errorf("Invalid SVG viewBox %q: four numbers are needed.", image.viewBox)
-	}
-	for i := range box {
-		box[i] = float32(list[i])
-	}
-	if box[2] == 0 || box[3] == 0 {
-		return fmt.Errorf("Invalid SVG viewBox %q: its width and height cannot be zero.", image.viewBox)
+	if image.inUnits {
+		box[2] = image.w / svgPixel
+		box[3] = image.h / svgPixel
+	} else {
+		list, err := parseSVGNumbers(image.viewBox)
+		if err != nil || len(list) != 4 {
+			return fmt.Errorf("Invalid SVG viewBox %q: four numbers are needed.", image.viewBox)
+		}
+		for i := range box {
+			box[i] = float32(list[i])
+		}
+		if box[2] <= 0 || box[3] <= 0 {
+			return fmt.Errorf("Invalid SVG viewBox %q: its width and height have to be above zero.", image.viewBox)
+		}
 	}
 	// A size the file does not give, or one in a unit PDFjet cannot read, is
 	// the other one in the proportions of the viewBox, or the size of the

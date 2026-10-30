@@ -315,7 +315,7 @@ class SVGImageTest {
         String[] boxes = {"0 0", "0 0 10 10 10", "0 0 ten 10", "0 0 0 10", "0 0 10 0"};
         String[] messages = {
             "four numbers are needed.", "four numbers are needed.", "four numbers are needed.",
-            "its width and height cannot be zero.", "its width and height cannot be zero.",
+            "its width and height have to be above zero.", "its width and height have to be above zero.",
         };
         for (int i = 0; i < boxes.length; i++) {
             String svg = "<svg width=\"10\" height=\"10\" viewBox=\"" + boxes[i] + "\"/>";
@@ -1321,5 +1321,41 @@ class SVGImageTest {
             String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10 L0 20\" stroke-dasharray=\"1e30 1\"/></svg>");
             assertTrue(content.startsWith("0 0 0 rg\n"), content);
         }
+    }
+
+    @Test
+    void aSizeInAUnitWithoutAViewBoxIsInPixels() throws Exception {
+        {
+            String content = draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"1in\" height=\"1in\"><rect width=\"96\" height=\"96\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"10mm\" height=\"10mm\"><rect width=\"37.79\" height=\"37.79\"/></svg>");
+            assertFalse(content.contains("W\n"), content);
+        }
+        assertEquals(75f, read("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getWidth(), 0f);
+        assertEquals(75f, read("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getHeight(), 0f);
+        {
+            String content = draw("<svg width=\"100px\" height=\"100\"><rect width=\"100\" height=\"100\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"75pt\" height=\"75pt\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg>");
+            assertEquals("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            String content = draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"10\" height=\"10\" fill=\"none\" stroke=\"red\" stroke-width=\"4\"/></svg>");
+            assertTrue(content.contains("3 w\n"), content);
+        }
+    }
+
+    @Test
+    void aViewBoxOfNegativeSizeIsRefused() throws Exception {
+        assertTrue(assertThrows(Exception.class, () -> read("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>")).getMessage().contains("have to be above zero"));
+        assertTrue(assertThrows(Exception.class, () -> read("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>")).getMessage().contains("have to be above zero"));
     }
 }

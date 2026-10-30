@@ -44,6 +44,7 @@ public class SVGImage implements Drawable {
     float h = 0f;       // SVG height
     String viewBox = "";
     String preserveAspectRatio = "";
+    private boolean inUnits = false;    // A size in a unit such as mm, and no viewBox
 
     List<SVGPath> paths = null;
     /** The URI opened when the image is clicked. */
@@ -321,9 +322,14 @@ public class SVGImage implements Drawable {
             this.viewBox = attributes.containsKey("viewBox")
                     ? attribute(attributes, "viewBox") : attribute(attributes, "viewbox");
             this.preserveAspectRatio = attribute(attributes, "preserveAspectRatio");
+            this.inUnits = this.viewBox.isEmpty() && this.w > 0f && this.h > 0f
+                    && (hasUnit(attribute(attributes, "width")) || hasUnit(attribute(attributes, "height")));
             double[] box = SVGState.parseNumbers(this.viewBox);
             state.viewport = (box != null && box.length == 4)
                     ? new double[] {box[2], box[3]} : new double[] {this.w, this.h};
+            if (this.inUnits) {
+                state.viewport = new double[] {this.w/PIXEL, this.h/PIXEL};
+            }
         } else if (name.equals("svg") || name.equals("symbol") && used) {
             enterViewport(state, attributes, size);
         }
@@ -1196,6 +1202,22 @@ public class SVGImage implements Drawable {
         };
     }
 
+    // A user unit of an svg element whose size is in a unit such as mm and
+    // that has no viewBox, in points. Such a size is the size of its pixels,
+    // 96 in an inch, and what is in it is drawn in those.
+    private static final float PIXEL = 0.75f;
+
+    // Returns true when the length has a unit that is not a pixel.
+    private static boolean hasUnit(String value) {
+        String text = SVGState.trim(value);
+        for (String unit : SVGState.UNITS) {
+            if (!unit.equals("px") && text.endsWith(unit)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Returns the width or the height of the svg element in points, and 0 for
     // a length that PDFjet cannot read, a percentage among them, which leaves
     // the size to the viewBox.
@@ -1221,20 +1243,25 @@ public class SVGImage implements Drawable {
     }
 
     private void processPaths(List<SVGPath> paths) throws Exception {
-        if (viewBox.isEmpty()) {
+        if (viewBox.isEmpty() && !inUnits) {
             return;
         }
         float[] box = new float[4];
-        double[] list = SVGState.parseNumbers(viewBox);
-        if (list == null || list.length != 4) {
-            throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
-        }
-        for (int i = 0; i < 4; i++) {
-            box[i] = (float) list[i];
-        }
-        if (box[2] == 0f || box[3] == 0f) {
-            throw new Exception(
-                    "Invalid SVG viewBox \"" + viewBox + "\": its width and height cannot be zero.");
+        if (inUnits) {
+            box[2] = w/PIXEL;
+            box[3] = h/PIXEL;
+        } else {
+            double[] list = SVGState.parseNumbers(viewBox);
+            if (list == null || list.length != 4) {
+                throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+            }
+            for (int i = 0; i < 4; i++) {
+                box[i] = (float) list[i];
+            }
+            if (box[2] <= 0f || box[3] <= 0f) {
+                throw new Exception(
+                        "Invalid SVG viewBox \"" + viewBox + "\": its width and height have to be above zero.");
+            }
         }
         // A size the file does not give, or one in a unit PDFjet cannot read,
         // is the other one in the proportions of the viewBox, or the size of

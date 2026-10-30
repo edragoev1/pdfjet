@@ -39,6 +39,7 @@ public class SVGImage : IDrawable {
     float h = 0f;       // SVG height
     String viewBox = null;
     String preserveAspectRatio = null;
+    private bool inUnits = false;       // A size in a unit such as mm, and no viewBox
 
     internal List<SVGPath> paths = null;    // Internal for the tests
     /// <summary>The URI opened when the image is clicked.</summary>
@@ -321,9 +322,14 @@ public class SVGImage : IDrawable {
                 attributes.TryGetValue("viewbox", out this.viewBox);
             }
             attributes.TryGetValue("preserveAspectRatio", out this.preserveAspectRatio);
+            this.inUnits = (this.viewBox == null || this.viewBox.Equals("")) && this.w > 0f && this.h > 0f
+                    && (HasUnit(Attribute(attributes, "width")) || HasUnit(Attribute(attributes, "height")));
             List<double> box = SVGState.ParseNumbers(this.viewBox ?? "");
             state.viewport = (box != null && box.Count == 4)
                     ? new double[] {box[2], box[3]} : new double[] {this.w, this.h};
+            if (this.inUnits) {
+                state.viewport = new double[] {this.w/PIXEL, this.h/PIXEL};
+            }
         } else if (name.Equals("svg") || (name.Equals("symbol") && used)) {
             EnterViewport(state, attributes, size);
         }
@@ -1207,6 +1213,22 @@ public class SVGImage : IDrawable {
         return double.IsInfinity(length) ? double.NaN : length;
     }
 
+    // A user unit of an svg element whose size is in a unit such as mm and
+    // that has no viewBox, in points. Such a size is the size of its pixels,
+    // 96 in an inch, and what is in it is drawn in those.
+    private const float PIXEL = 0.75f;
+
+    // Returns true when the length has a unit that is not a pixel.
+    private static bool HasUnit(String value) {
+        String text = value.Trim();
+        foreach (String unit in SVGState.UNITS) {
+            if (!unit.Equals("px") && text.EndsWith(unit, StringComparison.Ordinal)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Returns the width or the height of the svg element in points, and 0 for
     // a length that PDFjet cannot read, a percentage among them, which leaves
     // the size to the viewBox.
@@ -1228,20 +1250,25 @@ public class SVGImage : IDrawable {
     }
 
     private void ProcessPaths(List<SVGPath> paths) {
-        if (viewBox == null || viewBox.Equals("")) {
+        if ((viewBox == null || viewBox.Equals("")) && !inUnits) {
             return;
         }
         float[] box = new float[4];
-        List<double> list = SVGState.ParseNumbers(viewBox);
-        if (list == null || list.Count != 4) {
-            throw new InvalidDataException("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
-        }
-        for (int i = 0; i < 4; i++) {
-            box[i] = (float) list[i];
-        }
-        if (box[2] == 0f || box[3] == 0f) {
-            throw new InvalidDataException(
-                    "Invalid SVG viewBox \"" + viewBox + "\": its width and height cannot be zero.");
+        if (inUnits) {
+            box[2] = w/PIXEL;
+            box[3] = h/PIXEL;
+        } else {
+            List<double> list = SVGState.ParseNumbers(viewBox);
+            if (list == null || list.Count != 4) {
+                throw new InvalidDataException("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+            }
+            for (int i = 0; i < 4; i++) {
+                box[i] = (float) list[i];
+            }
+            if (box[2] <= 0f || box[3] <= 0f) {
+                throw new InvalidDataException(
+                        "Invalid SVG viewBox \"" + viewBox + "\": its width and height have to be above zero.");
+            }
         }
         // A size the file does not give, or one in a unit PDFjet cannot read,
         // is the other one in the proportions of the viewBox, or the size of

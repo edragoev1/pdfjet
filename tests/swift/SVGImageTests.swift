@@ -302,8 +302,8 @@ import Testing
             ("0 0", "four numbers are needed."),
             ("0 0 10 10 10", "four numbers are needed."),
             ("0 0 ten 10", "four numbers are needed."),
-            ("0 0 0 10", "its width and height cannot be zero."),
-            ("0 0 10 0", "its width and height cannot be zero."),
+            ("0 0 0 10", "its width and height have to be above zero."),
+            ("0 0 10 0", "its width and height have to be above zero."),
         ]
         for (box, message) in boxes {
             let error = #expect(throws: (any Error).self) {
@@ -1249,5 +1249,39 @@ import Testing
             let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10 L0 20\" stroke-dasharray=\"1e30 1\"/></svg>")
             #expect(content.hasPrefix("0 0 0 rg\n"), "\(content)")
         }
+    }
+
+    @Test func aSizeInAUnitWithoutAViewBoxIsInPixels() throws {
+        do {
+            let content = try draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"1in\" height=\"1in\"><rect width=\"96\" height=\"96\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"10mm\" height=\"10mm\"><rect width=\"37.79\" height=\"37.79\"/></svg>")
+            #expect(!content.contains("W\n"), "\(content)")
+        }
+        #expect(try image("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getWidth() == 75)
+        #expect(try image("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").getHeight() == 75)
+        do {
+            let content = try draw("<svg width=\"100px\" height=\"100\"><rect width=\"100\" height=\"100\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"75pt\" height=\"75pt\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg>")
+            #expect(content == "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"10\" height=\"10\" fill=\"none\" stroke=\"red\" stroke-width=\"4\"/></svg>")
+            #expect(content.contains("3 w\n"), "\(content)")
+        }
+    }
+
+    @Test func aViewBoxOfNegativeSizeIsRefused() throws {
+        #expect(throws: (any Error).self) { _ = try image("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>") }
+        #expect(throws: (any Error).self) { _ = try image("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>") }
     }
 }

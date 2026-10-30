@@ -311,7 +311,7 @@ public class SVGImageTest {
         string[] boxes = {"0 0", "0 0 10 10 10", "0 0 ten 10", "0 0 0 10", "0 0 10 0"};
         string[] messages = {
             "four numbers are needed.", "four numbers are needed.", "four numbers are needed.",
-            "its width and height cannot be zero.", "its width and height cannot be zero.",
+            "its width and height have to be above zero.", "its width and height have to be above zero.",
         };
         for (int i = 0; i < boxes.Length; i++) {
             string svg = "<svg width=\"10\" height=\"10\" viewBox=\"" + boxes[i] + "\"/>";
@@ -1311,6 +1311,42 @@ public class SVGImageTest {
             string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10 L0 20\" stroke-dasharray=\"1e30 1\"/></svg>");
             Assert.StartsWith("0 0 0 rg\n", content);
         }
+    }
+
+    [Fact]
+    public void ASizeInAUnitWithoutAViewBoxIsInPixels() {
+        {
+            string content = Draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"1in\" height=\"1in\"><rect width=\"96\" height=\"96\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"10mm\" height=\"10mm\"><rect width=\"37.79\" height=\"37.79\"/></svg>");
+            Assert.DoesNotContain("W\n", content);
+        }
+        Assert.Equal(75f, Parse("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").GetWidth());
+        Assert.Equal(75f, Parse("<svg width=\"75pt\" height=\"75pt\"><rect width=\"100\" height=\"100\"/></svg>").GetHeight());
+        {
+            string content = Draw("<svg width=\"100px\" height=\"100\"><rect width=\"100\" height=\"100\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"75pt\" height=\"75pt\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"75pt\" height=\"75pt\"><rect width=\"10\" height=\"10\" fill=\"none\" stroke=\"red\" stroke-width=\"4\"/></svg>");
+            Assert.Contains("3 w\n", content);
+        }
+    }
+
+    [Fact]
+    public void AViewBoxOfNegativeSizeIsRefused() {
+        Assert.Contains("have to be above zero", Assert.ThrowsAny<Exception>(() => Parse("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>")).Message);
+        Assert.Contains("have to be above zero", Assert.ThrowsAny<Exception>(() => Parse("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>")).Message);
     }
 }
 }

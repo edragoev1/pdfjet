@@ -16,6 +16,7 @@ public class SVGImage : Drawable {
     var h: Float = 0.0  // SVG height
     var viewBox = ""
     var preserveAspectRatio = ""
+    private var inUnits = false     // A size in a unit such as mm, and no viewBox
     var paths = [SVGPath]()
     var uri: String?
     var key: String?
@@ -326,10 +327,15 @@ public class SVGImage : Drawable {
             // HTML page's parser reads an inline svg, whose files keep it
             viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
             preserveAspectRatio = values["preserveAspectRatio"] ?? ""
+            inUnits = viewBox.isEmpty && w > 0.0 && h > 0.0
+                    && (SVGImage.hasUnit(values["width"] ?? "") || SVGImage.hasUnit(values["height"] ?? ""))
             if let box = SVGState.parseNumbers(viewBox), box.count == 4 {
                 state.viewport = [box[2], box[3]]
             } else {
                 state.viewport = [Double(w), Double(h)]
+            }
+            if inUnits {
+                state.viewport = [Double(w / SVGImage.pixel), Double(h / SVGImage.pixel)]
             }
         } else if name == "svg" || name == "symbol" && used {
             SVGImage.enterViewport(&state, values, size)
@@ -1158,6 +1164,17 @@ public class SVGImage : Drawable {
         ("in", 72.0), ("mm", 72.0/25.4), ("cm", 72.0/2.54),
     ]
 
+    // A user unit of an svg element whose size is in a unit such as mm and
+    // that has no viewBox, in points. Such a size is the size of its pixels,
+    // 96 in an inch, and what is in it is drawn in those.
+    private static let pixel: Float = 0.75
+
+    // Returns true when the length has a unit that is not a pixel.
+    private static func hasUnit(_ value: String) -> Bool {
+        let text = SVGState.trimSpace(value)
+        return units.contains { $0.0 != "px" && SVGState.hasSuffix(text, $0.0) }
+    }
+
     // Returns the width or the height of the svg element in points, and 0 for
     // a length that PDFjet cannot read, a percentage among them, which leaves
     // the size to the viewBox.
@@ -1187,16 +1204,19 @@ public class SVGImage : Drawable {
     }
 
     func processPaths(_ paths: [SVGPath]) throws {
-        if viewBox.isEmpty {
+        if viewBox.isEmpty && !inUnits {
             return
         }
-        guard let list = SVGState.parseNumbers(viewBox), list.count == 4 else {
-            throw PDFjetError(message: "Invalid SVG viewBox \"\(viewBox)\": four numbers are needed.")
-        }
-        let box = list.map { Float($0) }
-        guard box[2] != 0.0, box[3] != 0.0 else {
-            throw PDFjetError(
-                message: "Invalid SVG viewBox \"\(viewBox)\": its width and height cannot be zero.")
+        var box: [Float] = [0.0, 0.0, w / SVGImage.pixel, h / SVGImage.pixel]
+        if !inUnits {
+            guard let list = SVGState.parseNumbers(viewBox), list.count == 4 else {
+                throw PDFjetError(message: "Invalid SVG viewBox \"\(viewBox)\": four numbers are needed.")
+            }
+            box = list.map { Float($0) }
+            guard box[2] > 0.0, box[3] > 0.0 else {
+                throw PDFjetError(
+                    message: "Invalid SVG viewBox \"\(viewBox)\": its width and height have to be above zero.")
+            }
         }
         // A size the file does not give, or one in a unit PDFjet cannot read,
         // is the other one in the proportions of the viewBox, or the size of
