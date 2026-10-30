@@ -25,7 +25,9 @@ import Foundation
 /// breaks, which TextFrame draws as the end of a row, and the spaces before
 /// the line break are not in the text; two spaces and a line break at the end
 /// of the text are not, and are dropped, and a backslash at the end of the text
-/// is a backslash, as in CommonMark. Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+/// is a backslash, as in CommonMark. Any other line break is a space. The
+/// spaces and tabs at the start of the line after a line break, hard or not,
+/// are not in the text, as in CommonMark. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 /// &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 /// the numbers &#8212; and &#x2014;, are the characters they name.
 ///
@@ -372,6 +374,7 @@ public class Markup {
         private static let space = UInt16(UInt8(ascii: " "))
         private static let newline = UInt16(UInt8(ascii: "\n"))
         private static let carriageReturn = UInt16(UInt8(ascii: "\r"))
+        private static let tab = UInt16(UInt8(ascii: "\t"))
         private static let slash = UInt16(UInt8(ascii: "/"))
         private static let ampersand = UInt16(UInt8(ascii: "&"))
         private static let semicolon = UInt16(UInt8(ascii: ";"))
@@ -413,6 +416,9 @@ public class Markup {
                     Parser.flush(&buf, link, &nodes)
                     nodes.append(Node("", Markup.BREAK, link))
                     i = breakEnd
+                    if text[i - 1] == Parser.newline {
+                        i = lineStart(i, end)
+                    }
                 } else if let entity = entity(i, end) {
                     buf.append(contentsOf: Unicode.Scalar(entity.code)!.utf16)
                     i = entity.end
@@ -476,6 +482,13 @@ public class Markup {
                 } else {
                     buf.append(Markup.isWhitespace(ch) ? Parser.space : ch)
                     i += 1
+                    if ch == Parser.carriageReturn && i < end && text[i] == Parser.newline {
+                        // A \r\n is one line ending, and one space
+                        i += 1
+                    }
+                    if text[i - 1] == Parser.newline {
+                        i = lineStart(i, end)
+                    }
                 }
             }
             Parser.flush(&buf, link, &nodes)
@@ -512,6 +525,18 @@ public class Markup {
                 i += 1
             }
             return true
+        }
+
+        // Returns where the text of the line at i starts before the end:
+        // after its spaces and tabs, which are not in the text after a line
+        // break, hard or not, as in CommonMark: "one  \n  two" is "one", a
+        // break and "two". A space written &#32; is text.
+        private func lineStart(_ from: Int, _ end: Int) -> Int {
+            var i = from
+            while i < end && (text[i] == Parser.space || text[i] == Parser.tab) {
+                i += 1
+            }
+            return i
         }
 
         // Returns where a hard line break at i ends, or i when there is none:

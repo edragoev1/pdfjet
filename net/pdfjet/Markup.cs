@@ -29,7 +29,9 @@ namespace PDFjet.NET {
 /// line breaks, which TextFrame draws as the end of a row, and the spaces
 /// before the line break are not in the text; two spaces and a line break at
 /// the end of the text are not, and are dropped, and a backslash at the end of
-/// the text is a backslash, as in CommonMark. Any other line break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+/// the text is a backslash, as in CommonMark. Any other line break is a space.
+/// The spaces and tabs at the start of the line after a line break, hard or
+/// not, are not in the text, as in CommonMark. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
 /// &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
 /// &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
 /// &amp;#8212; and &amp;#x2014;, are the characters they name.
@@ -361,6 +363,9 @@ public class Markup {
                     Flush(buf, link, nodes);
                     nodes.Add(new Node("", BREAK, link));
                     i = breakEnd;
+                    if (text[i - 1] == '\n') {
+                        i = LineStart(i, end);
+                    }
                 } else if ((entity = Entity(i, end)) != null) {
                     AppendCodePoint(buf, entity[0]);
                     i = entity[1];
@@ -424,6 +429,13 @@ public class Markup {
                 } else {
                     buf.Append(Util.IsJavaWhitespace(ch) ? ' ' : ch);
                     i++;
+                    if (ch == '\r' && i < end && text[i] == '\n') {
+                        // A \r\n is one line ending, and one space
+                        i++;
+                    }
+                    if (text[i - 1] == '\n') {
+                        i = LineStart(i, end);
+                    }
                 }
             }
             Flush(buf, link, nodes);
@@ -456,6 +468,17 @@ public class Markup {
                 }
             }
             return true;
+        }
+
+        // Returns where the text of the line at i starts before the end:
+        // after its spaces and tabs, which are not in the text after a line
+        // break, hard or not, as in CommonMark: "one  \n  two" is "one", a
+        // break and "two". A space written &#32; is text.
+        private int LineStart(int i, int end) {
+            while (i < end && (text[i] == ' ' || text[i] == '\t')) {
+                i++;
+            }
+            return i;
         }
 
         // Returns where a hard line break at i ends, or i when there is none:

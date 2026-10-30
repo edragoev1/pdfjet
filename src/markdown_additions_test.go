@@ -122,6 +122,45 @@ func TestMarkdownAdditionsABackslashAtTheEndIsText(t *testing.T) {
 	}
 }
 
+// The spaces and tabs at the start of the line after a hard line break are not
+// in the text, as in CommonMark; a space written &#32; is, and so are the
+// spaces after a <br>, which is no line ending.
+func TestMarkdownAdditionsTheSpacesAfterAHardLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one  \n  two", "one  \r\n  two", "one   \n\t two", "one\\\n  two",
+		"one\\\r\n  two", "**one**  \n  two", "[one  \n  two](u)"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) ||
+			paragraph.lines[0].text != "one" || paragraph.lines[1].text != "two" {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 2 || paragraphs[0].lines[1].text != "two" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	testWant(t, " two", markup.Paragraph("one  \n&#32;two").lines[1].text)
+	testWant(t, "  two", markup.Paragraph("one<br>  two").lines[1].text)
+}
+
+// The spaces and tabs at the start of the line after a soft line break are not
+// in the text, as in CommonMark: the line break is one space; a space written
+// &#32; is text.
+func TestMarkdownAdditionsTheSpacesAfterASoftLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one\n  two", "one\r\n  two", "one\n\t two", "one\ntwo", "one\r\ntwo"} {
+		paragraph := markup.Paragraph(text)
+		if len(paragraph.lines) != 1 || paragraph.lines[0].text != "one two" || paragraph.lines[0].lineBreaks != 0 {
+			t.Errorf("%q: %d text lines", text, len(paragraph.lines))
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 1 || paragraphs[0].lines[0].text != "one two" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	testWant(t, "one  two", markup.Paragraph("one\n&#32;two").lines[0].text)
+}
+
 func TestMarkdownAdditionsATextFrameStartsARowAtABreak(t *testing.T) {
 	testAllowCoreFonts(t)
 	pdf := testNewPDF()

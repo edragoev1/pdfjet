@@ -30,7 +30,9 @@ import (
 // breaks, which TextFrame draws as the end of a row, and the spaces before
 // the line break are not in the text; two spaces and a line break at the end
 // of the text are not, and are dropped, and a backslash at the end of the text
-// is a backslash, as in CommonMark. Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+// is a backslash, as in CommonMark. Any other line break is a space. The
+// spaces and tabs at the start of the line after a line break, hard or not,
+// are not in the text, as in CommonMark. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 // &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 // the numbers &#8212; and &#x2014;, are the characters they name.
 //
@@ -357,6 +359,9 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 			buf, nodes = markupFlush(buf, link, nodes)
 			nodes = append(nodes, &markupNode{flags: markupBreak, link: link})
 			i = breakEnd
+			if text[i-1] == '\n' {
+				i = parser.lineStart(i, end)
+			}
 		} else if code, entityEnd := parser.entity(i, end); entityEnd > i {
 			buf = append(buf, code)
 			i = entityEnd
@@ -429,6 +434,13 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 				buf = append(buf, ch)
 			}
 			i++
+			if ch == '\r' && i < end && text[i] == '\n' {
+				// A \r\n is one line ending, and one space
+				i++
+			}
+			if text[i-1] == '\n' {
+				i = parser.lineStart(i, end)
+			}
 		}
 	}
 	_, nodes = markupFlush(buf, link, nodes)
@@ -462,6 +474,17 @@ func (parser *markupParser) onlySpaceFrom(i int) bool {
 		}
 	}
 	return true
+}
+
+// lineStart returns where the text of the line at the index starts before
+// the end: after its spaces and tabs, which are not in the text after a line
+// break, hard or not, as in CommonMark: "one  \n  two" is "one", a break and
+// "two". A space written &#32; is text.
+func (parser *markupParser) lineStart(i, end int) int {
+	for i < end && (parser.text[i] == ' ' || parser.text[i] == '\t') {
+		i++
+	}
+	return i
 }
 
 // breakEnd returns where a hard line break at the index ends, or i when there

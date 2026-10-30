@@ -274,6 +274,13 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   `paragraph("0\\\n")` is the one text line `0\`, with no line break after
   it, where it was `0` and a line break. A backslash before a line break in
   the middle of a text is a hard line break, as before.
+- Behavior change: Markup, the four ports: the spaces and tabs at the start
+  of the line after a line break, hard or not, are not in the text, as in
+  CommonMark, and a `\r\n` that is no hard line break is one space, where
+  it was two. Example: `paragraph("one  \n  two")` is the text line `one`,
+  a line break and `two`, where the second was `  two`, and
+  `paragraph("one\n  two")` is `one two`, where it was `one   two`. A space
+  written `&#32;` is text, and so are the spaces after a `<br>`, as before.
 
 ## v9.1.5 — 2026-10-28
 

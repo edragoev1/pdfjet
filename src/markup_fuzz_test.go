@@ -28,7 +28,8 @@ const fuzzMarkupMaxTime = time.Second
 
 // The fuzz target of the markup. Any text makes paragraphs that are drawn in a
 // text frame and written; see fuzzRun. A text with none of the marks is one
-// text line of its text, with each whitespace character a space, and the text
+// text line of its text, with each whitespace character a space and the
+// spaces and tabs at the start of a line left out, and the text
 // repeated to fuzzMarkupRepeated characters is read in linear time, as
 // TestMarkupLongInputsAreReadInLinearTime checks. The seeds are the texts of
 // the unit tests and a few that are hard on the parser; go test runs them, and
@@ -97,12 +98,24 @@ func FuzzMarkup(f *testing.F) {
 
 // fuzzCheckPlainMarkup checks the paragraph of a text with none of the marks:
 // one text line of the text, as characters, with each whitespace character a
-// space, or none when that is only spaces and control characters.
+// space, a \r\n one, and the spaces and tabs at the start of a line left out,
+// or none when that is only spaces and control characters.
 func fuzzCheckPlainMarkup(t *testing.T, text string, paragraph *Paragraph) {
-	want := []rune(text)
-	for i, ch := range want {
+	runes := []rune(text)
+	want := make([]rune, 0, len(runes))
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+		if ch == '\r' && i+1 < len(runes) && runes[i+1] == '\n' {
+			i++
+		}
 		if isJavaWhitespace(ch) {
-			want[i] = ' '
+			ch = ' '
+		}
+		want = append(want, ch)
+		if runes[i] == '\n' {
+			for i+1 < len(runes) && (runes[i+1] == ' ' || runes[i+1] == '\t') {
+				i++
+			}
 		}
 	}
 	if trimSpace(string(want)) == "" {

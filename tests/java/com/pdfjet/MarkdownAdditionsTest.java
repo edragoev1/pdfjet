@@ -121,6 +121,46 @@ class MarkdownAdditionsTest {
         assertEquals("two\\", two.lines.get(1).text);
     }
 
+    // The spaces and tabs at the start of the line after a hard line break are
+    // not in the text, as in CommonMark; a space written &#32; is, and so are
+    // the spaces after a <br>, which is no line ending.
+    @Test
+    void theSpacesAfterAHardLineBreakAreNotText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one  \n  two", "one  \r\n  two", "one   \n\t two", "one\\\n  two",
+                "one\\\r\n  two", "**one**  \n  two", "[one  \n  two](u)"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(Arrays.asList(true, false), breaks(paragraph), text);
+            assertEquals("one", paragraph.lines.get(0).text, text);
+            assertEquals("two", paragraph.lines.get(1).text, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(2, paragraphs.get(0).lines.size(), text);
+            assertEquals("two", paragraphs.get(0).lines.get(1).text, text);
+        }
+        assertEquals(" two", markup.paragraph("one  \n&#32;two").lines.get(1).text);
+        assertEquals("  two", markup.paragraph("one<br>  two").lines.get(1).text);
+    }
+
+    // The spaces and tabs at the start of the line after a soft line break
+    // are not in the text, as in CommonMark: the line break is one space; a
+    // space written &#32; is text.
+    @Test
+    void theSpacesAfterASoftLineBreakAreNotText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one\n  two", "one\r\n  two", "one\n\t two", "one\ntwo", "one\r\ntwo"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(1, paragraph.lines.size(), text);
+            assertEquals("one two", paragraph.lines.get(0).text, text);
+            assertEquals(0, paragraph.lines.get(0).lineBreaks, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(1, paragraphs.get(0).lines.size(), text);
+            assertEquals("one two", paragraphs.get(0).lines.get(0).text, text);
+        }
+        assertEquals("one  two", markup.paragraph("one\n&#32;two").lines.get(0).text);
+    }
+
     @Test
     void aTextFrameStartsARowAtABreak() throws Exception {
         TestSupport.allowCoreFonts(true);
