@@ -22,8 +22,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Seven of the countries, by their codes
-var named = map[string]bool{"BRA": true, "CAN": true, "IND": true, "JPN": true, "NER": true, "NGA": true, "USA": true}
+// The seven with the fewest children, by their codes, the fewest first
+var fewest = []string{"MAC", "KOR", "HKG", "PRI", "SGP", "UKR", "CHN"}
 
 // The World Bank's regions, a series each, in the order of its list
 var regions = []string{
@@ -41,7 +41,7 @@ var regions = []string{
 // data of 2023: a series for each of the World Bank's seven regions, in its
 // color and shape, each point a link to its row
 // of a table on pdfjet.com, with its life expectancy and children per woman,
-// described by its figures, and the trend line, with a table of seven of them
+// described by its figures, and the trend line, with a table of the seven with the fewest children
 // under the chart.
 func Example26() {
 	pdf, err := pdfjet.NewPDFFile("Example_26.pdf")
@@ -71,7 +71,7 @@ func Example26() {
 		"Where women have fewer children, people live longer: the "+strconv.Itoa(total)+
 			" countries and economies of the World Bank's data of 2023, in a color and "+
 			"a shape for each of its seven regions, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "+
-			"through them, with seven of them in the table "+
+			"through them, with the seven with the fewest children in the table "+
 			"under the chart.").SetFontSize(10.0))}
 	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)
 	frame.SetLocation(50.0, 84.0)
@@ -100,9 +100,12 @@ func Example26() {
 			chart.AddLinkedDot(name, float32(children), float32(life), uri)
 		}
 	}
-	for _, line := range lines[1:] {
-		field := strings.Split(line, "|")
-		if named[field[1]] {
+	for _, code := range fewest {
+		for _, line := range lines[1:] {
+			field := strings.Split(line, "|")
+			if field[1] != code {
+				continue
+			}
 			// The figures as the file writes them, two decimals and one,
 			// not rounded again, so that every port writes them alike
 			data = append(data, row(f2, false, field[0], decimals(field[3], 2), decimals(field[2], 1)+" years"))
@@ -112,8 +115,8 @@ func Example26() {
 	chart.SetLocation(50.0, y)
 	y = chart.DrawOn(page)[1] + 30.0
 
-	// Seven of the countries
-	heading := pdfjet.NewTextLine(f1, "Seven of the countries")
+	// The seven with the fewest children
+	heading := pdfjet.NewTextLine(f1, "The seven with the fewest children")
 	heading.SetStructureType(structelem.H2).SetFontSize(14.0)
 	heading.SetLocation(50.0, y)
 	heading.DrawOn(page)

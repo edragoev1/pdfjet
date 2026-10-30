@@ -14,12 +14,12 @@ import PDFjet
  * data of 2023: a series for each of the World Bank's seven regions, in its
  * color and shape, each point a link to its row
  * of a table on pdfjet.com, with its life expectancy and children per woman,
- * described by its figures, and the trend line, with a table of seven of them
+ * described by its figures, and the trend line, with a table of the seven with the fewest children
  * under the chart.
  */
 public class Example_26 {
-    // Seven of the countries, by their codes
-    static let named: Set<String> = ["BRA", "CAN", "IND", "JPN", "NER", "NGA", "USA"]
+    // The seven with the fewest children, by their codes, the fewest first
+    static let fewest = ["MAC", "KOR", "HKG", "PRI", "SGP", "UKR", "CHN"]
     // The World Bank's regions, a series each, in the order of its list
     static let regions = [
         "East Asia & Pacific",
@@ -54,7 +54,7 @@ public class Example_26 {
         let intro = [Paragraph(TextLine(f2, "Where women have fewer children, people live longer: the "
                 + "\(total) countries and economies of the World Bank's data of 2023, in a color and "
                 + "a shape for each of its seven regions, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "
-                + "through them, with seven of them in the table "
+                + "through them, with the seven with the fewest children in the table "
                 + "under the chart.").setFontSize(10.0))]
         let frame = TextFrame(intro).setLocation(50.0, 84.0).setWidth(512.0)
         frame.drawOn(page)
@@ -84,9 +84,12 @@ public class Example_26 {
                 chart.addLinkedDot(name, children, life, uri)
             }
         }
-        for line in lines[1...] {
-            let field = line.components(separatedBy: "|")
-            if Example_26.named.contains(field[1]) {
+        for code in Example_26.fewest {
+            for line in lines[1...] {
+                let field = line.components(separatedBy: "|")
+                if field[1] != code {
+                    continue
+                }
                 // The figures as the file writes them, two decimals and one,
                 // not rounded again, so that every port writes them alike
                 data.append(Example_26.row(f2, false, field[0], Example_26.decimals(field[3], 2),
@@ -96,8 +99,8 @@ public class Example_26 {
         chart.setLocation(50.0, y).setSize(512.0, 340.0)
         y = chart.drawOn(page)[1] + 30.0
 
-        // Seven of the countries
-        TextLine(f1, "Seven of the countries").setStructureType(StructElem.H2)
+        // The seven with the fewest children
+        TextLine(f1, "The seven with the fewest children").setStructureType(StructElem.H2)
                 .setFontSize(14.0).setLocation(50.0, y).drawOn(page)
         let table = Table()
         table.setTableData(data, 1)

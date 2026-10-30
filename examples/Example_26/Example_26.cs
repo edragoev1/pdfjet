@@ -19,12 +19,12 @@ using PDFjet.NET;
  * data of 2023: a series for each of the World Bank's seven regions, in its
  * color and shape, each point a link to its row
  * of a table on pdfjet.com, with its life expectancy and children per woman,
- * described by its figures, and the trend line, with a table of seven of them
+ * described by its figures, and the trend line, with a table of the seven with the fewest children
  * under the chart.
  */
 public class Example_26 {
-    // Seven of the countries, by their codes
-    static readonly List<String> NAMED = new List<String> {"BRA", "CAN", "IND", "JPN", "NER", "NGA", "USA"};
+    // The seven with the fewest children, by their codes, the fewest first
+    static readonly List<String> FEWEST = new List<String> {"MAC", "KOR", "HKG", "PRI", "SGP", "UKR", "CHN"};
     // The World Bank's regions, a series each, in the order of its list
     static readonly String[] REGIONS = {
         "East Asia & Pacific",
@@ -61,7 +61,7 @@ public class Example_26 {
         intro.Add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
                 + total + " countries and economies of the World Bank's data of 2023, in a color and "
                 + "a shape for each of its seven regions, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "
-                + "through them, with seven of them in the table "
+                + "through them, with the seven with the fewest children in the table "
                 + "under the chart.").SetFontSize(10f)));
         TextFrame frame = new TextFrame(intro).SetLocation(50f, 84f).SetWidth(512f);
         frame.DrawOn(page);
@@ -91,9 +91,12 @@ public class Example_26 {
                 chart.AddLinkedDot(name, children, life, uri);
             }
         }
-        for (int n = 1; n < lines.Count; n++) {
-            String[] field = lines[n].Split('|');
-            if (NAMED.Contains(field[1])) {
+        foreach (String code in FEWEST) {
+            for (int n = 1; n < lines.Count; n++) {
+                String[] field = lines[n].Split('|');
+                if (field[1] != code) {
+                    continue;
+                }
                 // The figures as the file writes them, two decimals and one,
                 // not rounded again, so that every port writes them alike
                 data.Add(Row(f2, false, field[0], Decimals(field[3], 2), Decimals(field[2], 1) + " years"));
@@ -102,8 +105,8 @@ public class Example_26 {
         chart.SetLocation(50f, y).SetSize(512f, 340f);
         y = chart.DrawOn(page)[1] + 30f;
 
-        // Seven of the countries
-        new TextLine(f1, "Seven of the countries").SetStructureType(StructElem.H2)
+        // The seven with the fewest children
+        new TextLine(f1, "The seven with the fewest children").SetStructureType(StructElem.H2)
                 .SetFontSize(14f).SetLocation(50f, y).DrawOn(page);
         Table table = new Table();
         table.SetTableData(data, 1);

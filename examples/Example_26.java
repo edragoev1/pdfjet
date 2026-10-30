@@ -18,12 +18,12 @@ import com.pdfjet.fonts.*;
  * data of 2023: a series for each of the World Bank's seven regions, in its
  * color and shape, each point a link to its row
  * of a table on pdfjet.com, with its life expectancy and children per woman,
- * described by its figures, and the trend line, with a table of seven of them
+ * described by its figures, and the trend line, with a table of the seven with the fewest children
  * under the chart.
  */
 public class Example_26 {
-    // Seven of the countries, by their codes
-    static final List<String> NAMED = Arrays.asList("BRA", "CAN", "IND", "JPN", "NER", "NGA", "USA");
+    // The seven with the fewest children, by their codes, the fewest first
+    static final List<String> FEWEST = Arrays.asList("MAC", "KOR", "HKG", "PRI", "SGP", "UKR", "CHN");
     // The World Bank's regions, a series each, in the order of its list
     static final String[] REGIONS = {
         "East Asia & Pacific",
@@ -60,7 +60,7 @@ public class Example_26 {
         intro.add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
                 + total + " countries and economies of the World Bank's data of 2023, in a color and "
                 + "a shape for each of its seven regions, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "
-                + "through them, with seven of them in the table "
+                + "through them, with the seven with the fewest children in the table "
                 + "under the chart.").setFontSize(10f)));
         TextFrame frame = new TextFrame(intro).setLocation(50f, 84f).setWidth(512f);
         frame.drawOn(page);
@@ -90,9 +90,12 @@ public class Example_26 {
                 chart.addLinkedDot(name, children, life, uri);
             }
         }
-        for (String line : lines.subList(1, lines.size())) {
-            String[] field = line.split("\\|");
-            if (NAMED.contains(field[1])) {
+        for (String code : FEWEST) {
+            for (String line : lines.subList(1, lines.size())) {
+                String[] field = line.split("\\|");
+                if (!field[1].equals(code)) {
+                    continue;
+                }
                 // The figures as the file writes them, two decimals and one,
                 // not rounded again, so that every port writes them alike
                 data.add(row(f2, false, field[0], decimals(field[3], 2), decimals(field[2], 1) + " years"));
@@ -101,8 +104,8 @@ public class Example_26 {
         chart.setLocation(50f, y).setSize(512f, 340f);
         y = chart.drawOn(page)[1] + 30f;
 
-        // Seven of the countries
-        new TextLine(f1, "Seven of the countries").setStructureType(StructElem.H2)
+        // The seven with the fewest children
+        new TextLine(f1, "The seven with the fewest children").setStructureType(StructElem.H2)
                 .setFontSize(14f).setLocation(50f, y).drawOn(page);
         Table table = new Table();
         table.setTableData(data, 1);
