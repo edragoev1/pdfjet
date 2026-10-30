@@ -1395,3 +1395,9 @@ func TestSVGImageAViewBoxOfNegativeSizeIsRefused(t *testing.T) {
 		t.Errorf("error %v", err)
 	}
 }
+
+func TestSVGImageAHueTooLargeForItsUnitIsNotAColor(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(1e308turn, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}

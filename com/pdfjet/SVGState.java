@@ -757,6 +757,9 @@ class SVGState {
             return null;
         }
         double hue = (number*scale) % 360.0;
+        if (Double.isNaN(hue)) {
+            return null;    // Too large for its unit
+        }
         return (hue < 0.0) ? hue + 360.0 : hue;
     }
 

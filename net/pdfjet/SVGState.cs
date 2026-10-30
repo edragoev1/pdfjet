@@ -613,6 +613,9 @@ internal class SVGState {
             return false;
         }
         hue = (number*scale) % 360.0;
+        if (double.IsNaN(hue)) {
+            return false;   // Too large for its unit
+        }
         if (hue < 0.0) {
             hue += 360.0;
         }

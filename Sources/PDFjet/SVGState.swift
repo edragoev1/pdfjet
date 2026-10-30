@@ -514,6 +514,9 @@ struct SVGState {
             return nil
         }
         let hue = (number * scale).truncatingRemainder(dividingBy: 360.0)
+        if hue.isNaN {
+            return nil      // Too large for its unit
+        }
         return (hue < 0.0) ? hue + 360.0 : hue
     }
 

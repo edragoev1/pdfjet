@@ -1358,4 +1358,12 @@ class SVGImageTest {
         assertTrue(assertThrows(Exception.class, () -> read("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>")).getMessage().contains("have to be above zero"));
         assertTrue(assertThrows(Exception.class, () -> read("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>")).getMessage().contains("have to be above zero"));
     }
+
+    @Test
+    void aHueTooLargeForItsUnitIsNotAColor() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(1e308turn, 100%, 50%)\"/></svg>");
+            assertTrue(content.startsWith("0 0 0 rg\n"), content);
+        }
+    }
 }

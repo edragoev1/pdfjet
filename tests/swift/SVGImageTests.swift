@@ -1284,4 +1284,11 @@ import Testing
         #expect(throws: (any Error).self) { _ = try image("<svg width=\"10\" height=\"10\" viewBox=\"0 0 -10 10\"/>") }
         #expect(throws: (any Error).self) { _ = try image("<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 -10\"/>") }
     }
+
+    @Test func aHueTooLargeForItsUnitIsNotAColor() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(1e308turn, 100%, 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 0 0 rg\n"), "\(content)")
+        }
+    }
 }

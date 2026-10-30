@@ -105,10 +105,12 @@ var svgTemplates = map[string]bool{
 // It draws the <path>, <rect>, <circle>, <ellipse>, <line>, <polyline> and
 // <polygon> elements, in groups or not, with their transforms, and the fill,
 // stroke, stroke-width, stroke-dasharray, stroke-dashoffset, fill-rule,
-// stroke-linecap, stroke-linejoin, opacity, fill-opacity, stroke-opacity,
-// paint-order, clip-path and markers they have or inherit, as attributes, in
-// a style attribute or in rules for their classes in a <style> element that
-// comes before them. It draws the elements a <use> element names, and <text>
+// stroke-linecap, stroke-linejoin, stroke-miterlimit, opacity, fill-opacity,
+// stroke-opacity, visibility, paint-order, clip-path and markers they have or
+// inherit, as attributes, in a style attribute or in rules for their classes in a <style> element that
+// comes before them. It draws the elements a <use> element names, a <symbol>
+// at the size of the <use>, a nested <svg> at its x, y and viewBox, the first
+// child of a <switch> that it can draw, and <text>
 // and <tspan> elements with their x, y, dx, dy, font-size, font-weight,
 // text-anchor and dominant-baseline, in the font set with SetFont and
 // SetBoldFont, or else in the fonts PDFjet carries, embedded: IBM Plex Sans
@@ -118,7 +120,9 @@ var svgTemplates = map[string]bool{
 // the font-family, font-weight and font-style of the text ask. A gradient is
 // drawn in the mean color of its stops. The width, height, viewBox and
 // preserveAspectRatio of the <svg> element give the size of the image, and
-// what is drawn outside it is cut off, as a browser does.
+// what is drawn outside it is cut off, as a browser does. It returns an error
+// for a file that nests what it draws more than 64 deep, or that draws more
+// than 4,000,000 path operations again, by use elements, markers and clip paths.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
 	image.paths = make([]*svgPath, 0)

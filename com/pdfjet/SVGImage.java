@@ -22,10 +22,13 @@ import java.util.Set;
  * It draws the path, rect, circle, ellipse, line, polyline and polygon
  * elements, in groups or not, with their transforms, and the fill, stroke,
  * stroke-width, stroke-dasharray, stroke-dashoffset, fill-rule,
- * stroke-linecap, stroke-linejoin, opacity, fill-opacity, stroke-opacity,
- * paint-order, clip-path and markers they have or inherit, as attributes, in a
+ * stroke-linecap, stroke-linejoin, stroke-miterlimit, opacity, fill-opacity,
+ * stroke-opacity, visibility, paint-order, clip-path and markers they have or
+ * inherit, as attributes, in a
  * style attribute or in rules for their classes in a style element that comes
- * before them. It draws the elements a use element names, and text and tspan
+ * before them. It draws the elements a use element names, a symbol at the size
+ * of the use, a nested svg at its x, y and viewBox, the first child of a switch
+ * that it can draw, and text and tspan
  * elements with their x, y, dx, dy, font-size, font-weight, text-anchor and
  * dominant-baseline, in the font set with setFont and setBoldFont, or else
  * in the fonts PDFjet carries, embedded: IBM Plex
@@ -35,7 +38,10 @@ import java.util.Set;
  * font-weight and font-style of the text ask. A gradient is drawn in the
  * mean color of its stops. The width,
  * height, viewBox and preserveAspectRatio of the svg element give the size of
- * the image, and what is drawn outside it is cut off, as a browser does.
+ * the image, and what is drawn outside it is cut off, as a browser does. It
+ * throws for a file that nests what it draws more than 64 deep, or that draws
+ * more than 4,000,000 path operations again, by use elements, markers and clip
+ * paths.
  */
 public class SVGImage implements Drawable {
     float x = 0f;
@@ -255,7 +261,7 @@ public class SVGImage implements Drawable {
 
     // Counts operations drawn again or written again, and throws when there
     // are too many.
-    private void countOperations(int count) {
+    private void countOperations(long count) {
         counted += count;
         if (counted > MAX_OPERATIONS) {
             throw new IllegalArgumentException("The SVG draws more than " + MAX_OPERATIONS
@@ -1069,7 +1075,7 @@ public class SVGImage implements Drawable {
         addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0}, depth);
         text.collapseSpaces();
         boolean empty = true;
-        int count = 0;
+        long count = 0;
         for (SVGText.Run run : text.runs) {
             if (!run.text.isEmpty()) {
                 empty = false;

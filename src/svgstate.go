@@ -747,6 +747,9 @@ func parseSVGHue(text string) (float64, bool) {
 		return 0.0, false
 	}
 	hue := math.Mod(float64(number*scale), 360.0)
+	if math.IsNaN(hue) {
+		return 0.0, false // Too large for its unit
+	}
 	if hue < 0.0 {
 		hue += 360.0
 	}
