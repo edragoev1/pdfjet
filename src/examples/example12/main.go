@@ -29,7 +29,7 @@ func Example12() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Switzerland")
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/swiss-admin.jpg")
+	image1 := pdfjet.NewImageFromFile(pdf, "resources/images/swiss-admin.jpg")
 	image1.SetAltDescription(
 		"A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.")
 

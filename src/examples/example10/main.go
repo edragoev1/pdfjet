@@ -29,8 +29,7 @@ func Example10() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Text block with highlighted keywords")
 
-	// f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	// f1 := pdfjet.NewFontFromFile(pdf, NotoSans.Regular)
+	// f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Regular)
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(15.0)
 
@@ -55,7 +54,7 @@ func Example10() {
 	gs.SetAlphaNonStroking(0.5) // Non-Stroking alpha
 	page.SetGraphicsState(gs)
 
-	englishText := content.OfTextFile("data/languages/english.txt")
+	englishText := content.OfTextFile("resources/data/languages/english.txt")
 	// f1.SetSize(14.0)
 	textBlock := pdfjet.NewTextBlock(f1, englishText)
 	textBlock.SetLocation(100.0, 50.0)

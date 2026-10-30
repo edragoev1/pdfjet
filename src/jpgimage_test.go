@@ -20,9 +20,10 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// A CMYK JPEG that Adobe software wrote, as images/cmyk.jpg is, has an APP14
-// marker and stores its inks inverted, so the image is written with a Decode
-// array that inverts them back; one without the marker is written as it is.
+// A CMYK JPEG that Adobe software wrote, as resources/images/cmyk.jpg is, has
+// an APP14 marker and stores its inks inverted, so the image is written with a
+// Decode array that inverts them back; one without the marker is written as
+// it is.
 
 // testWithoutAPP14 returns the JPEG without its APP14 segment.
 func testWithoutAPP14(jpeg []byte) []byte {
@@ -42,7 +43,7 @@ func testPDFWith(jpeg []byte) string {
 }
 
 func TestJPGImageTheInksOfACmykJpegAreInvertedBackOnlyWhenAdobeSoftwareWroteIt(t *testing.T) {
-	jpeg, err := os.ReadFile(testRepoPath(t, "images/cmyk.jpg"))
+	jpeg, err := os.ReadFile(testRepoPath(t, "resources/images/cmyk.jpg"))
 	if err != nil {
 		t.Skip("the images directory is not here")
 	}
@@ -69,7 +70,7 @@ func TestJPGImageTheInksOfACmykJpegAreInvertedBackOnlyWhenAdobeSoftwareWroteIt(t
 // /Decode array that inverts its inks back: without it, the copy would be
 // drawn as a negative (the review of 28 October 2026).
 func TestJPGImageACmykJpegCopiedFromAPDFThatWasReadKeepsItsDecodeArray(t *testing.T) {
-	jpeg, err := os.ReadFile(testRepoPath(t, "images/cmyk.jpg"))
+	jpeg, err := os.ReadFile(testRepoPath(t, "resources/images/cmyk.jpg"))
 	if err != nil {
 		t.Skip("the images directory is not here")
 	}
@@ -244,7 +245,7 @@ func TestJPGImageTheJfifDensityGivesTheSizeTheImageIsDrawnAt(t *testing.T) {
 	// The JFIF segment of a JPEG holds the pixel density and the unit it is
 	// in, and says how large the image is meant to be. cmyk.jpg is 1200 by
 	// 800 pixels at 300 dots per inch, which is 288 by 192 points.
-	path := testRepoPath(t, "images/cmyk.jpg")
+	path := testRepoPath(t, "resources/images/cmyk.jpg")
 	file, err := os.Open(path)
 	if err != nil {
 		t.Fatal(err)
@@ -279,8 +280,8 @@ func TestJPGImageAJfifDensityThatGivesNoSizeIsPassedOver(t *testing.T) {
 	// nothing about how large the image is, and a JPEG with no JFIF segment
 	// at all gives no size either.
 	for _, c := range []struct{ what, name string }{
-		{"a ratio is not a size", "images/italy-admin.jpg"},
-		{"there is no JFIF segment", "images/gr-map.jpg"},
+		{"a ratio is not a size", "resources/images/italy-admin.jpg"},
+		{"there is no JFIF segment", "resources/images/gr-map.jpg"},
 	} {
 		file, err := os.Open(testRepoPath(t, c.name))
 		if err != nil {
@@ -334,11 +335,11 @@ func TestJPGImageCutShortIsRefused(t *testing.T) {
 
 // Every JPEG of the examples is read, none taken for one cut short.
 func TestJPGImageTheJPEGsOfTheExamplesAreWhole(t *testing.T) {
-	paths, _ := filepath.Glob("../images/*.jp*g")
-	more, _ := filepath.Glob("../images/*/*.jp*g")
+	paths, _ := filepath.Glob("../resources/images/*.jp*g")
+	more, _ := filepath.Glob("../resources/images/*/*.jp*g")
 	paths = append(paths, more...)
 	if len(paths) == 0 {
-		t.Skip("no JPEGs in ../images")
+		t.Skip("no JPEGs in ../resources/images")
 	}
 	for _, path := range paths {
 		data, err := os.ReadFile(path)
@@ -414,7 +415,7 @@ func testPDFOf(file []byte, overwrite bool) string {
 // reader of them, which NewImage makes with NewImageFromBytes, so it compared
 // a code path with itself (the review of 28 October 2026).
 func TestJPGImageTheBytesOfAnImageFileCanBeReusedAfterTheImageIsMade(t *testing.T) {
-	for _, name := range []string{"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
+	for _, name := range []string{"resources/images/italy-admin.jpg", "resources/images/cmyk.jpg", "resources/images/ee-map.png",
 		"tests/data/jpeg/restart.jpg"} {
 		file, err := os.ReadFile(testRepoPath(t, name))
 		if err != nil {

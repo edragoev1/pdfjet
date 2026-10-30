@@ -8,11 +8,13 @@ package pdfjet
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -83,7 +85,7 @@ func testPlexSans(pdf *PDF) *Font {
 		panic(err)
 	}
 	for {
-		if info, err := os.Stat(filepath.Join(dir, "PngSuite")); err == nil && info.IsDir() {
+		if info, err := os.Stat(filepath.Join(dir, "tests/data/PngSuite")); err == nil && info.IsDir() {
 			return NewFontFromFile(pdf, filepath.Join(dir, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 		}
 		parent := filepath.Dir(dir)
@@ -96,7 +98,7 @@ func testPlexSans(pdf *PDF) *Font {
 
 // testRepoPath returns the path of a file of the repository: the tests run in
 // their package directory, so the root is the first directory above it that
-// has the PngSuite directory.
+// has the tests/data/PngSuite directory.
 func testRepoPath(t *testing.T, path string) string {
 	t.Helper()
 	dir, err := os.Getwd()
@@ -104,15 +106,83 @@ func testRepoPath(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	for {
-		if info, err := os.Stat(filepath.Join(dir, "PngSuite")); err == nil && info.IsDir() {
+		if info, err := os.Stat(filepath.Join(dir, "tests/data/PngSuite")); err == nil && info.IsDir() {
 			return filepath.Join(dir, path)
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			t.Fatal("no PngSuite directory above the working directory")
+			t.Fatal("no tests/data/PngSuite directory above the working directory")
 		}
 		dir = parent
 	}
+}
+
+// testFontBytes returns the bytes of a file of the repository, or, for a
+// path under fonts that is not a file, of the font PDFjet carries, as
+// NewFontFromFile reads it: for the tests that read or patch a font file
+// itself.
+func testFontBytes(t *testing.T, path string) []byte {
+	t.Helper()
+	buf, err := readFontFile(testRepoPath(t, path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return buf
+}
+
+// testWithSharedGlyphs returns the font with its character map rewritten so
+// that the second character of each pair is drawn with the glyph of the
+// first, as Noto Sans Arabic draws ١ and ۱, and ل and its isolated form ﻝ,
+// with one glyph, which no font PDFjet carries does in Arabic. The map is a
+// format 12 subtable of the Windows platform, of every character of the font
+// to its glyph, put at the end of the font in place of its cmap table, which
+// PDFjet reads as it reads any font's.
+func testWithSharedGlyphs(t *testing.T, font []byte, pairs [][2]rune) []byte {
+	t.Helper()
+	glyphs := make(map[rune]int)
+	newOpenTypeFont(font).unicodeToGID.each(func(c rune, gid int) {
+		glyphs[c] = gid
+	})
+	for _, pair := range pairs {
+		gid, ok := glyphs[pair[0]]
+		if !ok {
+			t.Fatalf("the font has no U+%04X", pair[0])
+		}
+		glyphs[pair[1]] = gid
+	}
+	chars := make([]rune, 0, len(glyphs))
+	for c := range glyphs {
+		chars = append(chars, c)
+	}
+	slices.Sort(chars)
+	cmap := make([]byte, 0, 12+16+12*len(chars))
+	cmap = binary.BigEndian.AppendUint16(cmap, 0)  // The version
+	cmap = binary.BigEndian.AppendUint16(cmap, 1)  // One record
+	cmap = binary.BigEndian.AppendUint16(cmap, 3)  // Windows
+	cmap = binary.BigEndian.AppendUint16(cmap, 10) // Unicode full
+	cmap = binary.BigEndian.AppendUint32(cmap, 12)
+	cmap = binary.BigEndian.AppendUint16(cmap, 12)
+	cmap = binary.BigEndian.AppendUint16(cmap, 0)
+	cmap = binary.BigEndian.AppendUint32(cmap, uint32(16+12*len(chars)))
+	cmap = binary.BigEndian.AppendUint32(cmap, 0)
+	cmap = binary.BigEndian.AppendUint32(cmap, uint32(len(chars)))
+	for _, c := range chars {
+		cmap = binary.BigEndian.AppendUint32(cmap, uint32(c))
+		cmap = binary.BigEndian.AppendUint32(cmap, uint32(c))
+		cmap = binary.BigEndian.AppendUint32(cmap, uint32(glyphs[c]))
+	}
+	patched := append(append([]byte(nil), font...), cmap...)
+	tables := int(binary.BigEndian.Uint16(font[4:]))
+	for i := 0; i < tables; i++ {
+		entry := 12 + 16*i
+		if string(font[entry:entry+4]) == "cmap" {
+			binary.BigEndian.PutUint32(patched[entry+8:], uint32(len(font)))
+			binary.BigEndian.PutUint32(patched[entry+12:], uint32(len(cmap)))
+			return patched
+		}
+	}
+	t.Fatal("the font has no cmap table")
+	return nil
 }
 
 // testContent returns the content stream of the page, which is not compressed yet.
@@ -239,4 +309,31 @@ func testLetterPortrait() pagesize.PageSize {
 // 12 October 2026, C6).
 func testShortest(limit time.Duration, work func()) time.Duration {
 	return fuzzShortest(limit, work)
+}
+
+// testLinearTime checks that the work of size 2n takes less than three times
+// the work of size n, each the shortest of three runs: the time of a linear
+// algorithm doubles, and that of a quadratic one, whose time dominates at n,
+// comes near four times. A ratio holds on a busy computer, where limits in
+// seconds failed (CI, 30 October 2026); the sizes are timed in turns, and all
+// again up to three times, as load can fall on one of them only, where a
+// quadratic algorithm fails every time.
+func testLinearTime(t *testing.T, n int, work func(n int)) {
+	t.Helper()
+	var small, large time.Duration
+	for attempt := 0; attempt < 3; attempt++ {
+		small, large = math.MaxInt64, math.MaxInt64
+		for run := 0; run < 3; run++ {
+			start := time.Now()
+			work(n)
+			small = min(small, time.Since(start))
+			start = time.Now()
+			work(2 * n)
+			large = min(large, time.Since(start))
+		}
+		if large < 3*small {
+			return
+		}
+	}
+	t.Errorf("size %d took %v, and size %d %v", 2*n, large, n, small)
 }

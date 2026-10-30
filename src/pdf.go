@@ -48,6 +48,7 @@ type PDF struct {
 	groups                []*OptionalContentGroup
 	states                map[string]int
 	stamps                []*Stamp
+	bundledFonts          map[string]*Font // The fonts PDFjet carries that the document draws in, by their files
 	metadataObjNumber     int
 	outputIntentObjNumber int
 	compliance            compliance.Compliance
@@ -63,6 +64,7 @@ type PDF struct {
 	pageLayout            pagelayout.PageLayout
 	pageMode              pagemode.PageMode
 	language              string
+	languageSet           bool // A PDF that is not of PDF/A or PDF/UA says it only then
 	toc                   *Bookmark
 	// The headings of a tagged document, and of a Markdown text in any
 	// document, in the order they are drawn, which its bookmarks are made of
@@ -545,6 +547,11 @@ func escapeXML(text string) string {
 			sb.WriteString("&lt;")
 		case '>':
 			sb.WriteString("&gt;")
+		case '\r':
+			// An XML reader turns the character itself into a line feed, and
+			// the metadata did not say what the information dictionary says,
+			// which PDF/A refused (review of 30 October 2026, B9)
+			sb.WriteString("&#13;")
 		default:
 			sb.WriteRune(r)
 		}
@@ -1102,7 +1109,7 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Catalog\n")
 
-	if pdf.compliance != compliance.PDF_1_7 {
+	if pdf.compliance != compliance.PDF_1_7 || pdf.languageSet {
 		languageBytes := []byte(pdf.language)
 		if pdf.encryption != nil {
 			languageBytes = pdf.encryption.encrypt(languageBytes)
@@ -1111,7 +1118,9 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 		pdf.appendString("/Lang <")
 		pdf.appendString(hex.EncodeToString(languageBytes))
 		pdf.appendString(">\n")
+	}
 
+	if pdf.compliance != compliance.PDF_1_7 {
 		// Only a tagged document has a structure tree: a PDF/A of level B
 		// that said it was marked would say its content is tagged, which it
 		// is not.
@@ -1248,7 +1257,9 @@ func (pdf *PDF) setDestinationObjNumbers() {
 			destination.pageObjNumber = page.objNumber
 			if destination.bookmark {
 				bookmarks = append(bookmarks, destination)
-			} else {
+			} else if pdf.destinations[destination.name] == nil {
+				// The first of a name: the parts of a text line wrapped by a
+				// TextFrame or a TextColumn all have its destination
 				pdf.destinations[destination.name] = destination
 			}
 		}
@@ -2050,9 +2061,13 @@ func (pdf *PDF) mergePages(objects []*PDFobj, pageObjects []*PDFobj) {
 		for j := 0; j < len(value); j++ {
 			if isObjectReference(value, j) {
 				number, _ := strconv.Atoi(value[j])
-				if _, ok := numbers[number]; !ok && isMergedObject(number, objects, mergedPages) {
-					numbers[number] = pdf.reserveObjNumber()
-					queue = append(queue, objects[number-1])
+				if _, ok := numbers[number]; !ok {
+					if written := objectNumbered(objects, number); written != nil && written.writtenNumber != 0 {
+						numbers[number] = written.writtenNumber
+					} else if isMergedObject(number, objects, mergedPages) {
+						numbers[number] = pdf.reserveObjNumber()
+						queue = append(queue, objects[number-1])
+					}
 				}
 				j += 2
 			}
@@ -2112,7 +2127,8 @@ func isMergedObject(number int, objects []*PDFobj, mergedPages map[int]bool) boo
 		return false
 	}
 	obj := objects[number-1]
-	if obj == nil || len(obj.dict) == 0 {
+	// A stream with no dictionary is the content that was drawn on a page.
+	if obj == nil || (len(obj.dict) == 0 && obj.stream == nil) {
 		return false
 	}
 	objType := obj.GetValue("/Type")
@@ -2129,6 +2145,9 @@ func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj, nodes pageTreeNode
 	shared func(node *PDFobj, value []string) []string) []string {
 	value := objectValue(obj)
 	if obj.stream != nil {
+		if len(value) == 0 {
+			value = []string{"<<", ">>"} // Content that was drawn on a page
+		}
 		value = setDictEntry(value, "/Length", []string{strconv.Itoa(len(obj.stream))})
 	}
 	if isPage {
@@ -2630,6 +2649,7 @@ func (pdf *PDF) AddMetadata(rdfDescription string) *PDF {
 // SetLanguage sets the "Language" document property of the PDF file.
 func (pdf *PDF) SetLanguage(language string) *PDF {
 	pdf.language = language
+	pdf.languageSet = true
 	return pdf
 }
 
@@ -2823,6 +2843,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 		if contains(obj.dict, "stream") {
 			length := obj.getLength(numbered)
+			obj.readObjects = numbered // For a /Filter that is an object of its own
 			obj.setStreamAndData(buf, length, dec, budget)
 		}
 
@@ -3742,7 +3763,7 @@ func (pdf *PDF) getPageObjects(
 		obj := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		// The root is a node, whatever it is.
-		if !first && (prepared[obj] || isPageObject(obj)) {
+		if !first && (prepared[obj] || isPageObject(obj) || (!visited[obj.number] && typeLeaf(obj))) {
 			if !prepared[obj] {
 				prepared[obj] = true
 				addInheritedEntries(obj, objects, nodes)
@@ -3756,13 +3777,45 @@ func (pdf *PDF) getPageObjects(
 			continue
 		}
 		visited[obj.number] = true
-		kids := obj.getObjectNumbers("/Kids")
+		kids := getKids(obj, objects)
 		for i := len(kids) - 1; i >= 0; i-- {
 			if kids[i] >= 1 && kids[i] <= len(objects) { // A kid that the document has.
 				stack = append(stack, objects[kids[i]-1])
 			}
 		}
 	}
+}
+
+// typeLeaf gives a dictionary in the page tree with no /Type and no /Kids the
+// /Type /Page it is, which is required but which other programs leave out, and
+// returns true then: the PDF had no pages, with no error (review of 30 October
+// 2026, B3).
+func typeLeaf(obj *PDFobj) bool {
+	value := objectValueTokens(obj)
+	if len(value) == 0 || value[0] != "<<" ||
+		dictEntryIndex(value, "/Type") != -1 || dictEntryIndex(value, "/Kids") != -1 {
+		return false
+	}
+	obj.dict = insertArrayAt(obj.dict, []string{"/Type", "/Page"}, slices.Index(obj.dict, "<<")+1)
+	return true
+}
+
+// getKids returns the object numbers of the /Kids of the node, which can be an
+// array that is an object of its own, "/Kids 5 0 R".
+func getKids(node *PDFobj, objects []*PDFobj) []int {
+	kids := node.getObjectNumbers("/Kids")
+	if i := node.entryIndexOf("/Kids"); i != -1 && isObjectReference(node.dict, i+1) && len(kids) == 1 {
+		if array := objectNumbered(objects, kids[0]); array != nil {
+			if tokens := objectValueTokens(array); len(tokens) > 0 && tokens[0] == "[" {
+				kids = []int{}
+				for j := 1; isObjectReference(tokens, j); j += 3 {
+					number, _ := strconv.Atoi(tokens[j])
+					kids = append(kids, number)
+				}
+			}
+		}
+	}
+	return kids
 }
 
 // addInheritedEntries adds to the page the entries it inherits from the page

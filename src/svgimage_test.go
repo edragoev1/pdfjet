@@ -7,10 +7,14 @@ package pdfjet
 
 import (
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 func testNewSVG(t *testing.T, svg string) *SVGImage {
@@ -22,7 +26,19 @@ func testNewSVG(t *testing.T, svg string) *SVGImage {
 	return image
 }
 
+// testDrawSVG returns what the image draws, without the miter limit that is
+// set around an image that strokes, which
+// TestSVGImageTheMiterLimitOfAStrokeIsWritten checks.
 func testDrawSVG(t *testing.T, svg string) string {
+	t.Helper()
+	content := testDrawSVGAsItIs(t, svg)
+	if strings.HasPrefix(content, "q\n4 M\n") {
+		return content[len("q\n4 M\n") : len(content)-len("Q\n")]
+	}
+	return content
+}
+
+func testDrawSVGAsItIs(t *testing.T, svg string) string {
 	t.Helper()
 	page := testNewPage()
 	image := testNewSVG(t, svg)
@@ -126,14 +142,26 @@ func TestSVGImageNoneOnThePathWinsOverTheColorsOfTheSvgElement(t *testing.T) {
 	}
 }
 
-func TestSVGImageAPathWithoutColorsOrWithAnUnknownFillIsFilledBlack(t *testing.T) {
+func TestSVGImageAPathWithoutColorsIsFilledBlackAndOneOfAnUnknownURLIsNotFilled(t *testing.T) {
 	unset := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 L10 40 Z"/></svg>`)
 	if !strings.HasPrefix(unset, "0 0 0 rg\n") || !strings.HasSuffix(unset, "\nf\n") {
 		t.Errorf("content %q", unset)
 	}
-	gradient := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 L10 40 Z" fill="url(#g)"/></svg>`)
-	if gradient != unset {
-		t.Errorf("%q != %q", gradient, unset)
+	// A url of an element that is not there is none, as a browser draws it.
+	unknown := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 L10 40 Z" fill="url(#g)"/></svg>`)
+	if unknown != "" {
+		t.Errorf("content %q", unknown)
+	}
+}
+
+func TestSVGImageAGradientIsDrawnInTheMeanColorOfItsStops(t *testing.T) {
+	stops := `<stop offset="0" stop-color="#ff0000"/><stop offset="1" style="stop-color: blue"/>`
+	content := testDrawSVG(t, `<svg width="100" height="50"><defs><linearGradient id="g">`+stops+
+		`</linearGradient><radialGradient id="h" href="#g"/></defs>`+
+		`<path d="M10 10 L90 40 L10 40 Z" fill="url(#g)"/><path d="M10 10 L90 40" stroke="url('#h')"/></svg>`)
+	// 255/2 rounds half up; the second gradient takes the stops of the first.
+	if !strings.HasPrefix(content, "0.5 0 0.5 rg\n") || !strings.Contains(content, "0.5 0 0.5 RG\n") {
+		t.Errorf("content %q", content)
 	}
 }
 
@@ -353,8 +381,8 @@ func TestSVGImageAViewBoxThatIsNotFourNumbersOrHasNoSizeFails(t *testing.T) {
 		`<svg width="10" height="10" viewBox="0 0"/>`:          `Invalid SVG viewBox "0 0": four numbers are needed.`,
 		`<svg width="10" height="10" viewBox="0 0 10 10 10"/>`: `Invalid SVG viewBox "0 0 10 10 10": four numbers are needed.`,
 		`<svg width="10" height="10" viewBox="0 0 ten 10"/>`:   `Invalid SVG viewBox "0 0 ten 10": four numbers are needed.`,
-		`<svg width="10" height="10" viewBox="0 0 0 10"/>`:     `Invalid SVG viewBox "0 0 0 10": its width and height cannot be zero.`,
-		`<svg width="10" height="10" viewBox="0 0 10 0"/>`:     `Invalid SVG viewBox "0 0 10 0": its width and height cannot be zero.`,
+		`<svg width="10" height="10" viewBox="0 0 0 10"/>`:     `Invalid SVG viewBox "0 0 0 10": its width and height have to be above zero.`,
+		`<svg width="10" height="10" viewBox="0 0 10 0"/>`:     `Invalid SVG viewBox "0 0 10 0": its width and height have to be above zero.`,
 	} {
 		_, err := NewSVGImage(strings.NewReader(svg))
 		if err == nil || err.Error() != want {
@@ -491,12 +519,11 @@ func TestSVGImageColorsAreHexadecimalRGBNamesOrTheCurrentColor(t *testing.T) {
 		`fill="#F00"`:                                "1 0 0 rg",
 		`fill="rgb(255, 0, 0)"`:                      "1 0 0 rg",
 		`fill="rgb(100%,0%,0%)"`:                     "1 0 0 rg",
-		`fill="RGBA(255 0 0 / 0.5)"`:                 "1 0 0 rg",
+		`fill="RGBA(255 0 0 / 1)"`:                   "1 0 0 rg",
 		`fill="Red"`:                                 "1 0 0 rg",
 		`fill="currentColor" color="red"`:            "1 0 0 rg",
 		`fill="currentColor"`:                        "0 0 0 rg",
 		`fill="url(#gradient) red"`:                  "1 0 0 rg",
-		`fill="url(#gradient)"`:                      "0 0 0 rg", // Not drawn: as if not given
 		`fill="unknown"`:                             "0 0 0 rg",
 		`fill="rgb(nan, 0, 0)"`:                      "0 0 0 rg", // Not a number: as if not given
 		`fill="rgb(inf, 0, 0)"`:                      "0 0 0 rg",
@@ -627,6 +654,28 @@ func TestSVGImageValuesThatCannotBeReadAreLeftOut(t *testing.T) {
 	}
 }
 
+func TestSVGImageDrawsTheSeedOfTheFuzzTestOfGroupsTransformsShapesAndStyles(t *testing.T) {
+	// The seed of FuzzSVGImage for what drawing programs write.
+	content := testDrawSVG(t, `<svg width="100" height="50" viewBox="0 0 200 100" preserveAspectRatio="xMinYMax slice">`+
+		`<style>.a{fill:rgb(10%,20,30);stroke:currentColor;stroke-width:2px} .b{opacity:.5}</style>`+
+		`<g transform="translate(10,5) rotate(30 5 5) skewX(10)" color="blue" class="a" fill-rule="evenodd">`+
+		`<rect x="1" y="2" width="30" height="20" rx="4" class="b"/><circle cx="50" cy="20" r="8"/>`+
+		`<ellipse cx="80" cy="20" rx="10" ry="5" style="fill-opacity:0.3;stroke-linecap:round"/>`+
+		`<line x1="0" y1="40" x2="90" y2="45" stroke-linejoin="bevel"/>`+
+		`<polyline points="0,50 10,60 20,50"/><polygon points="30 50 40 60 50 50"/></g>`+
+		`<defs><path d="M0 0 L5 5"/></defs><g display="none"><rect width="5" height="5"/></g></svg>`)
+	// Every shape but the line, which has no inside, is filled with the
+	// even-odd rule; the first in a graphics state of its opacity.
+	if n := strings.Count(content, "\nf*\n"); n != 5 {
+		t.Errorf("%d shapes filled in %q", n, content)
+	}
+	// The slice draws past the size of the image, which cuts it off.
+	if !strings.HasPrefix(content, "q\n0 792 m\n100 792 l\n100 742 l\n0 742 l\nW\nn\n"+
+		"q\n/GS1 gs\n0.1 0.08 0.12 rg\n8.4 788.21 m\n17.93 782.71 l\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
 func TestSVGImageASizeOrATransformTooLargeForAFloatDrawsNothing(t *testing.T) {
 	// A PDF holds numbers below 2^31 and no infinity: a size of inf is no
 	// size, and a path a transform takes out of that range is not drawn.
@@ -721,5 +770,1040 @@ func TestANumberOfAnAttributeIsWrittenInDecimal(t *testing.T) {
 	}
 	if n, err := parseSVGFloat("-inf", 64); err != nil || !math.IsInf(n, -1) {
 		t.Errorf("-inf: %v %v", n, err)
+	}
+}
+
+// The text of a chart: text and tspan elements, placed as a browser places
+// them, in the fonts PDFjet carries unless a font is set.
+
+func TestSVGImageDrawsATextAtItsXAndY(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text x="10" y="20" font-size="12">Hi</text></svg>`)
+	if !strings.Contains(content, " 12 Tf\n1 0 0 1 10 772 Tm\n<") {
+		t.Errorf("content %q", content)
+	}
+	if !strings.Contains(content, "> Tj\nET\n") { // IBM Plex Sans, embedded
+		t.Errorf("content %q", content)
+	}
+	if strings.Contains(content, "W\n") { // Inside the image: nothing is cut off
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAnAnchorMovesTheTextByItsWidthAndDyIsInEm(t *testing.T) {
+	// Hi is 957 thousandths of an em wide in IBM Plex Sans: 11.484 at 12.
+	content := testDrawSVG(t, `<svg width="200" height="100"><text x="100" y="20" dy="0.5em" `+
+		`font-size="12" text-anchor="end">Hi</text></svg>`)
+	if !strings.Contains(content, "1 0 0 1 88.52 766 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheTextAndTheTspansAreDrawnInTheOrderOfTheDocument(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text x="0" y="20">`+
+		` A <tspan font-weight="bold">B</tspan>C<title>not drawn</title></text></svg>`)
+	// Three runs: "A " (the space at the start left out), the bold B in IBM
+	// Plex Sans Bold, and C; the title is not drawn
+	if strings.Count(content, " Tj\n") != 3 {
+		t.Errorf("content %q", content)
+	}
+	fonts := strings.Split(content, " 16 Tf\n")
+	if len(fonts) != 4 {
+		t.Fatalf("content %q", content)
+	}
+	regular := fonts[0][strings.LastIndex(fonts[0], "/"):]
+	if strings.HasSuffix(fonts[1], regular) || !strings.HasSuffix(fonts[2], regular) {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageATspanWithAnXOrAYStartsAChunkAnchoredOnItsOwn(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text text-anchor="middle" `+
+		`transform="translate(100,50)" font-size="10"><tspan y="-0.4em">Go</tspan>`+
+		`<tspan x="0" y="0.7em">12%</tspan></text></svg>`)
+	// Go is 1255 thousandths of an em, and 12% 2127.
+	if !strings.Contains(content, "1 0 0 1 93.72 746 Tm\n") || !strings.Contains(content, "1 0 0 1 89.36 735 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheFontShorthandSetsTheSizeAndTheWeight(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100" style="font: bold 10px sans-serif">`+
+		`<text y="20">A</text><text y="40" font-weight="400">B</text></svg>`)
+	if strings.Count(content, " 10 Tf\n") != 2 {
+		t.Errorf("content %q", content)
+	}
+	if strings.Index(content, "/F") == strings.LastIndex(content, "/F") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageACoreFontDrawsTheMinusSignAsAHyphenMinus(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	testNewSVG(t, "<svg width=\"200\" height=\"100\"><text y=\"20\">−5</text></svg>").
+		SetFont(testHelvetica(pdf)).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "[<2D35>] TJ") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheFamilyTheWeightAndTheStyleChooseTheFontPDFjetCarries(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	testNewSVG(t, `<svg width="200" height="100">`+
+		`<text y="10" font-family="'Times New Roman', serif" font-weight="600" font-style="italic">a</text>`+
+		`<text y="20" style="font: bold 10px Courier, monospace">b</text>`+
+		`<text y="30" font-family="Unknown, Arial">c</text>`+
+		`<text y="40" font-family="Unknown" font-weight="bolder">d</text></svg>`).DrawOn(page)
+	// Another image draws in the same fonts of the document, not new ones
+	testNewSVG(t, `<svg width="200" height="100"><text y="10" font-family="Georgia" `+
+		`font-weight="600" font-style="oblique">e</text></svg>`).DrawOn(page)
+	names := make([]string, 0)
+	for name := range pdf.bundledFonts {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	want := []string{"CascadiaMono/CascadiaMono-Bold.ttf", "IBMPlexSans/IBMPlexSans-Bold.ttf",
+		"IBMPlexSans/IBMPlexSans-Regular.ttf", "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf"}
+	if strings.Join(names, " ") != strings.Join(want, " ") {
+		t.Errorf("the fonts %v", names)
+	}
+}
+
+func TestSVGImageAStrokeBeforeTheFillDrawsAHaloUnderTheText(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><text y="20" stroke="white" stroke-width="3" `+
+		`stroke-linejoin="round" paint-order="stroke">A</text></svg>`)
+	stroke := strings.Index(content, "1 Tr\n")
+	fill := strings.Index(content, "0 Tr\n")
+	if !(stroke > 0 && fill > stroke) || !strings.Contains(content, "1 1 1 RG\n3 w\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASetFontDrawsTheText(t *testing.T) {
+	pdf := testNewPDF()
+	font := testPlexSans(pdf)
+	page := NewPage(pdf, letter.Portrait())
+	image := testNewSVG(t, `<svg width="200" height="100"><text y="20" font-weight="bold">Hi</text></svg>`)
+	image.SetFont(font) // The bold text too, as no bold font is set
+	image.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, "> Tj\n") || strings.Contains(content, "TJ") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheTextOfADocumentOfPDFAOrPDFUAIsInEmbeddedFonts(t *testing.T) {
+	// The fonts PDFjet carries are embedded, so the text needs no font set
+	svg := `<svg width="200" height="100"><text y="20">A</text></svg>`
+	for _, c := range []compliance.Compliance{compliance.PDF_A_3B, compliance.PDF_UA_1} {
+		pdf := testNewPDF()
+		pdf.SetCompliance(c)
+		pdf.SetTitle("SVG")
+		page := NewPage(pdf, letter.Portrait())
+		testNewSVG(t, svg).SetAltDescription("A").DrawOn(page)
+		if err := pdf.Complete(); err != nil {
+			t.Errorf("%v: %v", c, err)
+		}
+	}
+}
+
+func TestSVGImageADashArrayOfAnOddNumberOfLengthsIsRepeated(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><path d="M0 10 L100 10" stroke="red" `+
+		`stroke-dasharray="4, 2 1" stroke-dashoffset="1"/>`+
+		`<path d="M0 20 L100 20" stroke="red" stroke-dasharray="0 0"/>`+
+		`<path d="M0 30 L100 30" stroke="red" stroke-dasharray="4 -2"/></svg>`)
+	if !strings.Contains(content, "q\n[4 2 1 4 2 1] 1 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if strings.Count(content, " d\n") != 1 { // The others are solid
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAUseDrawsTheElementItNamesMovedByItsXAndY(t *testing.T) {
+	content := testDrawSVG(t, `<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="100">`+
+		`<defs><rect id="r" width="10" height="10"/><symbol id="s"><circle r="2"/></symbol></defs>`+
+		`<use href="#r" x="20" y="30" fill="red"/><use xlink:href="#s" x="50" y="50"/>`+
+		`<g id="loop"><use href="#loop"/></g></svg>`)
+	if !strings.HasPrefix(content, "1 0 0 rg\n20 762 m\n30 762 l\n") || !strings.Contains(content, "\n52 742 m\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageUsesOfUsesThatDrawTooManyElementsFail(t *testing.T) {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10"><rect id="g0" width="1" height="1"/>`)
+	for level := 1; level <= 7; level++ {
+		svg.WriteString(`<g id="g` + strconv.Itoa(level) + `">`)
+		for i := 0; i < 10; i++ {
+			svg.WriteString(`<use href="#g` + strconv.Itoa(level-1) + `"/>`)
+		}
+		svg.WriteString("</g>")
+	}
+	svg.WriteString("</svg>")
+	if _, err := NewSVGImage(strings.NewReader(svg.String())); err == nil {
+		t.Error("ten million elements drawn again were read")
+	}
+}
+
+func TestSVGImageAMarkerIsDrawnAtTheEndTurnedWithThePath(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><defs><marker id="m" markerWidth="4" `+
+		`markerHeight="4" orient="auto" refX="1"><rect width="2" height="1"/></marker></defs>`+
+		`<path d="M10 10 L10 50" stroke="black" stroke-width="2" marker-end="url(#m)"/></svg>`)
+	// Turned 90 degrees down the path and twice the size, for the stroke
+	// width: from 10, 48 to 8, 52.
+	if !strings.Contains(content, "S\nq\n10 744 m\n10 736 l\n2 736 l\n2 744 l\nh\nW\nn\n10 744 m\n10 740 l\n8 740 l\n8 744 l\nf\nQ\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAClipPathCutsOffWhatIsOutsideIt(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="200" height="100"><clipPath id="c"><rect width="50" height="50"/>`+
+		`</clipPath><g clip-path="url(#c)" transform="translate(10,0)"><rect x="10" y="10" width="80" `+
+		`height="20"/></g><clipPath id="none"/><rect width="5" height="5" clip-path="url(#none)"/></svg>`)
+	// The clip path is in the user space of the group, moved with it.
+	if content != "q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"+
+		"0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
+	}
+}
+
+// testSVGUseChain returns an SVG of a chain of use elements, flat in the file.
+func testSVGUseChain(links int) string {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10"><defs><rect id="u0" width="1" height="1"/>`)
+	for i := 1; i <= links; i++ {
+		svg.WriteString(`<use id="u` + strconv.Itoa(i) + `" href="#u` + strconv.Itoa(i-1) + `"/>`)
+	}
+	svg.WriteString(`</defs><use href="#u` + strconv.Itoa(links) + `"/></svg>`)
+	return svg.String()
+}
+
+// testSVGNested returns an SVG of elements nested levels deep in the svg
+// element, each the open tag, around the content.
+func testSVGNested(open, end, content string, levels int) string {
+	return `<svg width="10" height="10">` + strings.Repeat(open, levels) + content +
+		strings.Repeat(end, levels) + `</svg>`
+}
+
+// testSVGMarkerChain returns an SVG of markers each drawn by a path in the one
+// before it.
+func testSVGMarkerChain(links int) string {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10">`)
+	for i := 0; i < links; i++ {
+		svg.WriteString(`<marker id="m` + strconv.Itoa(i) + `"><path d="M0 0 L1 1" stroke="red" marker-end="url(#m` +
+			strconv.Itoa(i+1) + `)"/></marker>`)
+	}
+	svg.WriteString(`<marker id="m` + strconv.Itoa(links) + `"><rect width="1" height="1"/></marker>`)
+	svg.WriteString(`<path d="M0 0 L1 1" stroke="red" marker-end="url(#m0)"/></svg>`)
+	return svg.String()
+}
+
+func TestSVGImageTheDepthOfWhatIsDrawnIsLimited(t *testing.T) {
+	testNewSVG(t, testSVGUseChain(22))
+	testNewSVG(t, testSVGMarkerChain(14))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 46))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 43)+
+		strings.Repeat(`</tspan>`, 43)+`</text>`, 2))
+	for name, svg := range map[string]string{
+		"a chain of use elements": testSVGUseChain(23),
+		"a long chain":            testSVGUseChain(600000),
+		"a chain of markers":      testSVGMarkerChain(15),
+		"nested groups":           testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 47),
+		"more nested groups":      testSVGNested(`<g>`, `</g>`, ``, 250),
+		"tspans": testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 44)+
+			strings.Repeat(`</tspan>`, 44)+`</text>`, 2),
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || !strings.Contains(err.Error(), "deep") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+func TestSVGImageManyGradientsOfOneGradientOfManyStopsAreReadOnce(t *testing.T) {
+	svg := func(n int) string {
+		var svg strings.Builder
+		svg.WriteString(`<svg width="10" height="10"><linearGradient id="s">`)
+		svg.WriteString(strings.Repeat(`<stop stop-color="red"/>`, n))
+		svg.WriteString(`</linearGradient>`)
+		for i := 0; i < n; i++ {
+			svg.WriteString(`<linearGradient id="g` + strconv.Itoa(i) + `" href="#s"/>`)
+		}
+		svg.WriteString(`<rect width="5" height="5" fill="url(#g7)"/></svg>`)
+		return svg.String()
+	}
+	const count = 5000
+	svgs := map[int]string{count: svg(count), 2 * count: svg(2 * count)}
+	content := ""
+	testLinearTime(t, count, func(n int) { content = testDrawSVG(t, svgs[n]) })
+	if !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheOperationsDrawnAgainAreLimited(t *testing.T) {
+	polygon := func(points int) string {
+		return `<polygon id="p" points="` + strings.Repeat("0,0 1,1 ", points/2) + `"/>`
+	}
+	clipped := `<svg width="10" height="10"><clipPath id="c">` + polygon(10000) + `</clipPath>`
+	for name, svg := range map[string]string{
+		"uses of a path": `<svg width="10" height="10"><defs>` + polygon(10000) + `</defs>` +
+			strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+		"elements clipped": clipped + strings.Repeat(`<g clip-path="url(#c)"/>`, 1000) + `</svg>`,
+		"paths in a clip": clipped + `<g clip-path="url(#c)">` +
+			strings.Repeat(`<rect width="1" height="1"/>`, 1000) + `</g></svg>`,
+		"runs in a clip": clipped + `<g clip-path="url(#c)"><text>` +
+			strings.Repeat(`<tspan>a</tspan>`, 1000) + `</text></g></svg>`,
+		"uses of a text": `<svg width="10" height="10"><defs><text id="p">` + strings.Repeat("a", 10000) +
+			`</text></defs>` + strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+		"paths in a text clip": `<svg width="10" height="10"><clipPath id="c"><text>` + strings.Repeat("a", 1000) +
+			`</text></clipPath><g clip-path="url(#c)">` + strings.Repeat(`<rect width="1" height="1"/>`, 5000) + `</g></svg>`,
+		"tspans in a text clip": `<svg width="10" height="10"><clipPath id="c"><text>a` + strings.Repeat(`<tspan/>`, 100000) +
+			`</text></clipPath>` + strings.Repeat(`<g clip-path="url(#c)"/>`, 100) + `</svg>`,
+		"clips of viewports": testSVGNested(`<svg width="1" height="1">`, `</svg>`,
+			strings.Repeat(`<rect width="1" height="1"/>`, 20000), 45),
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || !strings.Contains(err.Error(), "path operations") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	// A file drawn once is not counted, however large
+	testNewSVG(t, `<svg width="10" height="10">`+strings.Repeat(polygon(10000), 500)+`</svg>`)
+	testNewSVG(t, `<svg width="10" height="10"><defs>`+polygon(1000)+`</defs>`+
+		strings.Repeat(`<use href="#p"/>`, 1000)+`</svg>`)
+}
+
+func TestSVGImageAUseInAClipPathDrawsTheShapeItNames(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="200" height="100"><defs><rect id="r" width="50" height="50"/></defs><clipPath id="c"><use href="#r" x="5" y="5" transform="translate(10,0)"/></clipPath><g clip-path="url(#c)"><rect x="10" y="10" width="80" height="20"/></g></svg>`); content != "q\n15 787 m\n65 787 l\n65 737 l\n15 737 l\nh\nW\nn\n0 0 0 rg\n10 782 m\n90 782 l\n90 762 l\n10 762 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="200" height="100"><clipPath id="c"><use href="#missing"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheClipRuleOfAClipPathIsDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><path clip-rule="evenodd" d="M0 0 H50 V50 H0 Z"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW*\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c" style="clip-rule:evenodd"><rect width="50" height="50"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW*\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="50" height="50"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageATextInAClipPathClips(t *testing.T) {
+	const svg, clipped = `<svg width="100" height="100"><clipPath id="c">`, `</clipPath><rect width="50" height="50" clip-path="url(#c)"/></svg>`
+	content := testDrawSVG(t, svg+`<text x="10" y="20" font-size="12">Hi</text>`+clipped)
+	if !strings.HasPrefix(content, "q\nBT\n7 Tr\n/") || !strings.Contains(content, " 12 Tf\n1 0 0 1 10 772 Tm\n<") ||
+		!strings.Contains(content, "> Tj\nET\n0 0 0 rg\n0 792 m\n") || !strings.HasSuffix(content, "f\nQ\n") ||
+		strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	// A text drawn in it is drawn in the mode of its own.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><text y="20">Hi</text></clipPath><text y="20" clip-path="url(#c)">Hi</text></svg>`); !strings.Contains(content, "0 Tr\n1 0 0 1 0 772 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	// All the texts are in one text object, each with its transform.
+	content = testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c" transform="translate(5,0)"><text x="1" y="20">a<tspan x="1" y="40" font-weight="bold">b</tspan></text><text x="1" y="60" transform="scale(2)">c</text>`+clipped)
+	if strings.Count(content, "BT\n") != 1 || strings.Count(content, "> Tj\n") != 3 || strings.Count(content, " Tf\n") != 3 ||
+		!strings.Contains(content, "1 0 0 1 6 772 Tm\n") || !strings.Contains(content, "1 0 0 1 6 752 Tm\n") ||
+		!strings.Contains(content, "2 0 0 2 7 672 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	// A use names a text.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><defs><text id="t" y="20">Hi</text></defs><clipPath id="c"><use href="#t" x="5"/>`+clipped); !strings.Contains(content, "1 0 0 1 5 772 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	// Shapes and texts: a PDF cannot have them in one path, and the shapes stay.
+	if content := testDrawSVG(t, svg+`<text y="20">Hi</text><rect width="5" height="5"/>`+clipped); strings.Contains(content, " Tr\n") || !strings.Contains(content, "h\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// With no glyph it clips all away; out of the range of a PDF nothing is drawn.
+	for _, text := range []string{`<text y="20"> </text>`, `<text y="20" font-size="0">Hi</text>`, `<text y="20" display="none">Hi</text>`,
+		`<text y="20" visibility="hidden">Hi</text>`, `<text y="20"><tspan visibility="hidden">Hi</tspan></text>`,
+		`<text y="20" transform="scale(0)">Hi</text>`, `<text y="20" transform="scale(1e30)">Hi</text>`} {
+		if content := testDrawSVG(t, svg+text+clipped); content != "" {
+			t.Errorf("%s content %q", text, content)
+		}
+	}
+	// In the fill of no color, too: a clip path takes the shape of the glyphs.
+	if content := testDrawSVG(t, svg+`<text y="20" fill="none">Hi</text>`+clipped); !strings.Contains(content, "7 Tr\n") {
+		t.Errorf("content %q", content)
+	}
+	// In the space of the image, and of its scale.
+	image := testNewSVG(t, `<svg width="200" height="200" viewBox="0 0 100 100"><clipPath id="c"><text x="10" y="20" font-size="12">Hi</text>`+clipped)
+	page := testNewPage()
+	image.SetLocation(0, 0)
+	image.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, " 12 Tf\n2 0 0 2 20 752 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	image.ScaleBy(0.5)
+	image.SetLocation(10, 0)
+	page = testNewPage()
+	image.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, " 12 Tf\n1 0 0 1 20 772 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheShapesOfAClipPathGoTheSameWayRound(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><polygon points="0,0 20,0 20,20 0,20"/><polygon clip-rule="evenodd" points="10,10 10,30 30,30 30,10"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\n10 782 m\n30 782 l\n30 762 l\n10 762 l\n10 782 l\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="20" height="20"/><path d="M50 0 C50 10 60 20 70 20 L70 0 Z"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheAlphaOfAColorIsDrawn(t *testing.T) {
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(255,0,0,0.5)"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgb(255 0 0 / 25%)"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(255,0,0,0.5)" fill-opacity="0.5"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000040"/></svg>`).paths[0].fillAlpha; alpha != 0.2509804 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#f004"/></svg>`).paths[0].fillAlpha; alpha != 0.26666668 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" stroke="#00ff0080"/></svg>`).paths[0].strokeAlpha; alpha != 0.5019608 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red"/></svg>`).paths[0].fillAlpha; alpha != 1.0 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><g fill="rgba(0,0,0,0.5)"><path d="M0 0 L10 0 L10 10 Z"/></g></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="rgba(0,0,255,0.5)" fill="currentColor"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(0,0,0,0.5)"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000040"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#f004"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000000"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageHslColorsAreDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(120, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 1 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(240deg 100% 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="HSL(-120, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0.5turn 100% 50%)"/></svg>`); !strings.HasPrefix(content, "0 1 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0, 0%, 100%)"/></svg>`); !strings.HasPrefix(content, "1 1 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsla(0, 100%, 50%, 0.5)"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0 100% 50% / 25%)"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+}
+
+func TestSVGImageTheKeywordsOfAPaintAreInAnyCase(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="red" fill="currentcolor"/></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="red" fill="CURRENTCOLOR"/></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="NONE"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="None"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageWhatIsNotVisibleIsNotDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><g visibility="hidden"><rect width="5" height="5"/></g></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><rect width="5" height="5" style="visibility:collapse"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><g visibility="hidden"><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue" visibility="visible"/></g></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><text visibility="hidden" x="1" y="50">a</text></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><text x="1" y="9">a<tspan visibility="hidden">b</tspan>c</text></svg>`); strings.Count(content, "BT\n") != 2 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><defs><rect id="r" width="5" height="5"/></defs><use href="#r" visibility="hidden"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="5" height="5" visibility="hidden"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><marker id="m"><rect width="5" height="5"/></marker><path d="M0 0 L1 1" stroke="red" visibility="hidden" marker-end="url(#m)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASwitchDrawsTheFirstChildItCan(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); content != "1 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><title>a</title><foreignObject width="5" height="5"><rect width="5" height="5" fill="blue"/></foreignObject><g><rect width="5" height="5" fill="red"/></g><rect width="5" height="5" fill="blue"/></switch></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" requiredExtensions="http://a" fill="blue"/><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); strings.Count(content, "0 0 1 rg") != 0 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><switch><rect width="5" height="5" requiredExtensions="http://a" fill="blue"/><rect width="5" height="5" fill="red"/><rect width="5" height="5" fill="blue"/></switch></svg>`); strings.Count(content, "1 0 0 rg") != 1 {
+		t.Errorf("content %q", content)
+	}
+}
+
+// testDrawSVGInLanguage returns what the image draws on a page of a PDF of the
+// language, or of no language set for "".
+func testDrawSVGInLanguage(t *testing.T, svg, language string) string {
+	t.Helper()
+	pdf := testNewPDF()
+	if language != "" {
+		pdf.SetLanguage(language)
+	}
+	page := NewPage(pdf, letter.Portrait())
+	image := testNewSVG(t, svg)
+	image.SetLocation(0, 0)
+	image.DrawOn(page)
+	return testContent(page)
+}
+
+func TestSVGImageASwitchHonorsTheSystemLanguage(t *testing.T) {
+	svg := `<svg width="100" height="100"><switch>` +
+		`<rect width="5" height="5" systemLanguage="de, fr-CA" fill="red"/>` +
+		`<rect width="5" height="5" systemLanguage="" fill="lime"/>` +
+		`<g systemLanguage="EN-gb"><rect width="5" height="5" fill="blue"/></g>` +
+		`<rect width="5" height="5" fill="black"/></switch></svg>`
+	const red, blue, black = "1 0 0 rg", "0 0 1 rg", "0 0 0 rg"
+	for _, test := range []struct{ language, color string }{
+		{"", blue}, {"en-US", blue}, {"en", blue}, {"de", red}, {"de-AT", red}, {"FR", red},
+		{"bg", black}, {"fra", black},
+	} {
+		content := testDrawSVGInLanguage(t, svg, test.language)
+		if !strings.Contains(content, test.color) || strings.Count(content, " rg\n") != 1 {
+			t.Errorf("language %q content %q", test.language, content)
+		}
+	}
+	// No child of the language, and none without a systemLanguage: nothing.
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><switch><rect width="5" height="5" systemLanguage="de"/></switch></svg>`, ""); content != "" {
+		t.Errorf("content %q", content)
+	}
+	// One image, drawn in the language of each PDF.
+	image := testNewSVG(t, svg)
+	for _, test := range []struct{ language, color string }{{"de", red}, {"en", blue}} {
+		pdf := testNewPDF()
+		pdf.SetLanguage(test.language)
+		page := NewPage(pdf, letter.Portrait())
+		image.DrawOn(page)
+		if !strings.Contains(testContent(page), test.color) {
+			t.Errorf("language %q content %q", test.language, testContent(page))
+		}
+	}
+	// Texts, in a switch in a used group, nested, and a marker in a child.
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><defs><g id="g"><switch><text systemLanguage="de" y="10" fill="red">a</text><switch><text systemLanguage="en" y="10" fill="blue">b</text></switch></switch></g></defs><use href="#g"/></svg>`, "en"); !strings.Contains(content, "0 0 1 rg") || strings.Contains(content, "1 0 0 rg") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><marker id="m"><rect width="5" height="5" fill="red"/></marker><switch><path systemLanguage="de" d="M0 0 L9 9" stroke="blue" marker-end="url(#m)"/></switch></svg>`, "en"); content != "" {
+		t.Errorf("content %q", content)
+	}
+	// What is not drawn leaves no cut, and no miter limit, for itself.
+	if content := testDrawSVGInLanguage(t, `<svg width="100" height="100"><switch><path systemLanguage="de" d="M0 0 L900 900" stroke="blue"/><rect width="5" height="5"/></switch></svg>`, "en"); strings.Contains(content, "W\n") || strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAUseGivesASymbolItsSize(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s" x="5" y="5" width="20" height="20"/></svg>`); !strings.Contains(content, "5 787 m\n25 787 l\n25 767 l\n5 767 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "0 782 m\n20 782 l\n20 762 l\n0 762 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMinYMin"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "0 792 m\n20 792 l\n20 772 l\n0 772 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="none"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "0 792 m\n20 792 l\n20 752 l\n0 752 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMaxYMax slice"><rect width="10" height="10"/></symbol><use href="#s" width="20" height="40"/></svg>`); !strings.Contains(content, "-20 792 m\n20 792 l\n20 752 l\n-20 752 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s"/></svg>`); !strings.Contains(content, "0 792 m\n100 792 l\n100 692 l\n0 692 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol><use href="#s" width="0" height="20"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageANestedSvgIsAViewport(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="10" y="20" width="20" height="20" viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "10 772 m\n30 772 l\n30 752 l\n10 752 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="10" y="20"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "10 772 m\n20 772 l\n20 762 l\n10 762 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="50%" y="10%" width="20" height="20" viewBox="5 5 10 10"><rect x="5" y="5" width="10" height="10"/></svg></svg>`); !strings.Contains(content, "50 782 m\n70 782 l\n70 762 l\n50 762 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100" viewBox="0 0 200 200"><svg width="50%" height="50%" viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "0 792 m\n50 792 l\n50 742 l\n0 742 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg><svg viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "0 792 m\n10 792 l\n10 782 l\n0 782 l\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="0" viewBox="0 0 10 10"><rect width="10" height="10"/></svg></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg viewBox="0 0 -10 10"><rect width="10" height="10"/></svg></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASymbolAndANestedSvgClipToTheirViewports(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><symbol id="s" viewBox="0 0 10 10"><rect width="20" height="20"/></symbol><use href="#s" x="5" y="5" width="20" height="20"/></svg>`); content != "q\n5 787 m\n25 787 l\n25 767 l\n5 767 l\nh\nW\nn\n0 0 0 rg\n5 787 m\n45 787 l\n45 747 l\n5 747 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg x="10" y="20" width="20" height="20"><rect width="50" height="50"/></svg></svg>`); !strings.HasPrefix(content, "q\n10 772 m\n30 772 l\n30 752 l\n10 752 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// The viewport, not the viewBox, and in the space of the image.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="20" height="40" viewBox="0 0 10 10" preserveAspectRatio="xMaxYMax slice"><rect width="10" height="10"/></svg></svg>`); !strings.Contains(content, "q\n0 792 m\n20 792 l\n20 752 l\n0 752 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="200" height="200" viewBox="0 0 100 100"><svg width="10" height="10"><rect width="5" height="5"/></svg></svg>`); !strings.HasPrefix(content, "q\n0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// Moved and scaled by the scale of the image, too.
+	image := testNewSVG(t, `<svg width="100" height="100"><svg width="10" height="10"><rect width="5" height="5"/></svg></svg>`)
+	image.ScaleBy(2)
+	image.SetLocation(10, 0)
+	page := testNewPage()
+	image.DrawOn(page)
+	if content := testContent(page); !strings.HasPrefix(content, "q\n10 792 m\n30 792 l\n30 772 l\n10 772 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// Each viewport clips, and an overflow is not inherited.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="50" height="50"><svg width="20" height="20"><rect width="5" height="5"/></svg></svg></svg>`); strings.Count(content, "h\nW\nn\n") != 2 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="50" height="50" overflow="visible"><svg width="20" height="20"><rect width="5" height="5"/></svg></svg></svg>`); strings.Count(content, "h\nW\nn\n") != 1 {
+		t.Errorf("content %q", content)
+	}
+	// Overflow, as an attribute, in a style and in rules; hidden and scroll clip.
+	for _, overflow := range []string{`overflow="visible"`, `overflow="auto"`, `overflow="VISIBLE"`, `style="overflow: visible"`, `class="o"`} {
+		if content := testDrawSVG(t, `<svg width="100" height="100"><style>.o { overflow: visible }</style><symbol id="s" `+overflow+`><rect width="500" height="5"/></symbol><use href="#s"/></svg>`); strings.Contains(content, "h\nW\nn\n") {
+			t.Errorf("%s content %q", overflow, content)
+		}
+	}
+	for _, overflow := range []string{`overflow="hidden"`, `overflow="scroll"`} {
+		if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="5" height="5" `+overflow+`><rect width="5" height="5"/></svg></svg>`); !strings.Contains(content, "h\nW\nn\n") {
+			t.Errorf("%s content %q", overflow, content)
+		}
+	}
+	// A viewport of no known size clips nothing, and one of no size hides.
+	if content := testDrawSVG(t, `<svg><svg x="1"><rect width="5" height="5"/></svg></svg>`); strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><svg width="0"><rect width="5" height="5"/></svg></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageThePaintOrderOfAShapeIsDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="stroke"/></svg>`); !strings.Contains(content, "S\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" style="paint-order: stroke fill markers"/></svg>`); !strings.Contains(content, "S\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" /></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="fill stroke"/></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="normal"/></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheMiterLimitOfAStrokeIsWritten(t *testing.T) {
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" /></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="2.5"/></svg>`); !strings.HasPrefix(content, "q\n2.5 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" style="stroke-miterlimit:1"/></svg>`); !strings.HasPrefix(content, "q\n1 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="10"/></svg>`); !strings.HasPrefix(content, "q\n10 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="0.5"/></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-miterlimit="1e30"/></svg>`); !strings.HasPrefix(content, "q\n4 M\n1 0 0 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><g fill="none" stroke="red"><path d="M0 0 L10 0 L10 10 Z"/><path d="M0 0 L9 0 L9 9 Z"/></g></svg>`); strings.Count(content, " M\n") != 1 {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="none" stroke="red" stroke-linejoin="round"/></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z"/></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50" stroke="red">a</text></svg>`); !strings.HasPrefix(content, "q\n4 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50" stroke="red" stroke-miterlimit="3">a</text></svg>`); !strings.Contains(content, "3 M\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVGAsItIs(t, `<svg width="100" height="100"><text x="1" y="50">a</text></svg>`); strings.Contains(content, " M\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageADashOffsetBelowZeroIsWrittenInsideThePattern(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-1"/></svg>`); !strings.Contains(content, "[4 2] 5 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-7"/></svg>`); !strings.Contains(content, "[4 2] 5 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-6"/></svg>`); !strings.Contains(content, "[4 2] 0 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="7"/></svg>`); !strings.Contains(content, "[4 2] 7 d\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageHugeDashesAndClipPathsSkipThePath(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="1e30 1"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="1e30"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="1e30 1e30" stroke-dashoffset="-1"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="1e30" height="5"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="1e30" height="5"/></clipPath><text x="1" y="50" clip-path="url(#c)">a</text></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10 L0 20" stroke-dasharray="1e30 1"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageASizeInAUnitWithoutAViewBoxIsInPixels(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt"><rect width="100" height="100"/></svg>`); content != "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="1in" height="1in"><rect width="96" height="96"/></svg>`); content != "0 0 0 rg\n0 792 m\n72 792 l\n72 720 l\n0 720 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="10mm" height="10mm"><rect width="37.79" height="37.79"/></svg>`); strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	if image := testNewSVG(t, `<svg width="75pt" height="75pt"><rect width="100" height="100"/></svg>`); image.GetWidth() != 75 || image.GetHeight() != 75 {
+		t.Errorf("size %v x %v", image.GetWidth(), image.GetHeight())
+	}
+	if content := testDrawSVG(t, `<svg width="100px" height="100"><rect width="100" height="100"/></svg>`); content != "0 0 0 rg\n0 792 m\n100 792 l\n100 692 l\n0 692 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>`); content != "0 0 0 rg\n0 792 m\n75 792 l\n75 717 l\n0 717 l\nf\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="75pt" height="75pt"><rect width="10" height="10" fill="none" stroke="red" stroke-width="4"/></svg>`); !strings.Contains(content, "3 w\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAViewBoxOfNegativeSizeIsRefused(t *testing.T) {
+	if _, err := NewSVGImage(strings.NewReader(`<svg width="10" height="10" viewBox="0 0 -10 10"/>`)); err == nil || !strings.Contains(err.Error(), "have to be above zero") {
+		t.Errorf("error %v", err)
+	}
+	if _, err := NewSVGImage(strings.NewReader(`<svg width="10" height="10" viewBox="0 0 10 -10"/>`)); err == nil || !strings.Contains(err.Error(), "have to be above zero") {
+		t.Errorf("error %v", err)
+	}
+}
+
+func TestSVGImageAHueTooLargeForItsUnitIsNotAColor(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(1e308turn, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageAMarkerClipsToItsViewport(t *testing.T) {
+	const head = `<svg width="100" height="100"><style>.o { overflow: visible }</style><marker id="m" `
+	const tail = `><rect width="20" height="20"/></marker><path d="M10 10 L20 20" fill="none" marker-end="url(#m)"/></svg>`
+	clip := func(x0, y0, x1, y1 string) string {
+		return "q\n" + x0 + " " + y0 + " m\n" + x1 + " " + y0 + " l\n" + x1 + " " + y1 + " l\n" + x0 + " " + y1 + " l\nh\nW\nn\n"
+	}
+	for _, test := range []struct{ attributes, clip string }{
+		{`markerWidth="4" markerHeight="4" markerUnits="userSpaceOnUse"`, clip("20", "772", "24", "768")},
+		// Its size is 3 unless given, in units of the stroke width.
+		{``, clip("20", "772", "23", "769")},
+		// The reference point goes to the vertex, and the viewport with it.
+		{`markerWidth="4" markerHeight="4" refX="1" refY="2"`, clip("19", "774", "23", "770")},
+		// A viewBox, which may start anywhere, fitted to the viewport.
+		{`markerWidth="5" markerHeight="5" viewBox="0 0 10 10"`, clip("20", "772", "25", "767")},
+		{`markerWidth="6" markerHeight="6" viewBox="0 -5 10 10" refX="5"`, clip("17", "775", "23", "769")},
+		// The viewport, not the viewBox: the aspect moves one in the other.
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10"`, clip("15", "772", "35", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="xMinYMin"`, clip("20", "772", "40", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="xMaxYMax"`, clip("10", "772", "30", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="none"`, clip("20", "772", "40", "762")},
+		{`markerWidth="20" markerHeight="10" viewBox="0 0 10 10" preserveAspectRatio="xMidYMid slice"`, clip("20", "767", "40", "757")},
+		// Hidden and scroll clip, in an attribute and a style.
+		{`markerWidth="4" markerHeight="4" overflow="hidden"`, clip("20", "772", "24", "768")},
+		{`markerWidth="4" markerHeight="4" style="overflow: scroll"`, clip("20", "772", "24", "768")},
+	} {
+		if content := testDrawSVG(t, head+test.attributes+tail); !strings.HasPrefix(content, test.clip) {
+			t.Errorf("%s content %q", test.attributes, content)
+		}
+	}
+	for _, attributes := range []string{`overflow="visible"`, `overflow="auto"`, `style="overflow: visible"`, `class="o"`} {
+		if content := testDrawSVG(t, head+attributes+tail); strings.Contains(content, "W\n") || !strings.Contains(content, "f\n") {
+			t.Errorf("%s content %q", attributes, content)
+		}
+	}
+	// Turned with the path, and the rectangle with it.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><marker id="m" markerWidth="4" markerHeight="2" orient="auto"><rect width="20" height="20"/></marker><path d="M20 10 L20 20" fill="none" marker-end="url(#m)"/></svg>`); !strings.HasPrefix(content, "q\n20 772 m\n20 768 l\n18 768 l\n18 772 l\nh\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// The clip is on the marker, what is in it stays in it, and each is clipped.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><marker id="m" markerWidth="4" markerHeight="4"><rect width="20" height="20"/><rect width="30" height="30"/></marker><path d="M10 10 L20 20 L30 20" fill="none" marker-mid="url(#m)" marker-end="url(#m)"/></svg>`); strings.Count(content, "h\nW\nn\n") != 4 {
+		t.Errorf("content %q", content)
+	}
+	// A size of nothing draws nothing, with a viewBox or without.
+	for _, attributes := range []string{`markerWidth="0"`, `markerHeight="0"`, `markerWidth="0" overflow="visible"`, `markerHeight="0" viewBox="0 0 10 10"`} {
+		if content := testDrawSVG(t, head+attributes+tail); content != "" {
+			t.Errorf("%s content %q", attributes, content)
+		}
+	}
+}
+
+func TestSVGImageAnOverflowOfInheritTakesThatOfTheParent(t *testing.T) {
+	const clips = "h\nW\nn\n"
+	const inner = `<svg width="20" height="20" overflow="inherit"><rect width="50" height="50"/></svg>`
+	for _, test := range []struct {
+		svg   string
+		clips int
+	}{
+		{`<g overflow="visible">` + inner + `</g>`, 0},
+		{`<g overflow="auto">` + inner + `</g>`, 0},
+		{`<g overflow="hidden">` + inner + `</g>`, 1},
+		{`<g overflow="scroll">` + inner + `</g>`, 1},
+		// A group's own overflow is visible, unless given.
+		{`<g>` + inner + `</g>`, 0},
+		{inner, 0},
+		// That of a nested svg is hidden, which clips it too, unless given.
+		{`<svg width="50" height="50">` + inner + `</svg>`, 2},
+		{`<svg width="50" height="50" overflow="visible">` + inner + `</svg>`, 0},
+		{`<svg width="50" height="50" overflow="auto">` + inner + `</svg>`, 0},
+		// Up the chain, which inherit passes on.
+		{`<g overflow="visible"><g overflow="inherit">` + inner + `</g></g>`, 0},
+		{`<g overflow="hidden"><g overflow="inherit">` + inner + `</g></g>`, 1},
+		{`<g overflow="visible"><g>` + inner + `</g></g>`, 0},
+		{`<g overflow="hidden"><g>` + inner + `</g></g>`, 0},
+		// In a style and in rules; the last of them counts.
+		{`<g overflow="visible"><svg width="20" height="20" style="overflow: inherit"><rect width="50" height="50"/></svg></g>`, 0},
+		{`<style>.o { overflow: inherit }</style><g overflow="visible"><svg width="20" height="20" class="o"><rect width="50" height="50"/></svg></g>`, 0},
+		{`<g overflow="visible"><svg width="20" height="20" overflow="INHERIT"><rect width="50" height="50"/></svg></g>`, 0},
+		{`<g overflow="visible"><svg width="20" height="20" overflow="inherit" style="overflow: hidden"><rect width="50" height="50"/></svg></g>`, 1},
+		{`<g overflow="visible"><svg width="20" height="20" overflow="hidden" style="overflow: inherit"><rect width="50" height="50"/></svg></g>`, 0},
+		// A symbol takes it from the use element.
+		{`<symbol id="s" overflow="inherit"><rect width="500" height="5"/></symbol><use href="#s" overflow="visible"/>`, 0},
+		{`<symbol id="s" overflow="inherit"><rect width="500" height="5"/></symbol><use href="#s" overflow="hidden"/>`, 1},
+		{`<symbol id="s" overflow="inherit"><rect width="500" height="5"/></symbol><use href="#s"/>`, 0},
+		// A marker takes it from the base it is drawn on: visible.
+		{`<marker id="m" overflow="inherit"><rect width="20" height="20"/></marker><path d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`, 0},
+	} {
+		content := testDrawSVG(t, `<svg width="100" height="100">`+test.svg+`</svg>`)
+		if strings.Count(content, clips) != test.clips || !strings.Contains(content, "f\n") {
+			t.Errorf("%s content %q", test.svg, content)
+		}
+	}
+}
+
+func TestSVGImageAnyElementHonorsTheSystemLanguage(t *testing.T) {
+	const svg, end = `<svg width="100" height="100">`, `</svg>`
+	const rect = `<rect width="5" height="5"/>`
+	const de, en = `systemLanguage="de"`, `systemLanguage="en"`
+	drawn := func(body, language string) string {
+		return testDrawSVGInLanguage(t, svg+body+end, language)
+	}
+	// The rule of a switch: the primary subtag of the language of the PDF, en
+	// when it has none, and an empty systemLanguage matches none.
+	for _, test := range []struct {
+		value, language string
+		want            bool
+	}{
+		{"de", "de", true}, {"de", "de-AT", true}, {"de-CH", "de", true}, {"DE", "de", true},
+		{"fr, de", "de", true}, {"de", "", false}, {"en", "", true}, {"en-GB", "en-US", true},
+		{"de", "en", false}, {"", "en", false}, {"", "", false}, {" , ", "de", false},
+	} {
+		content := drawn(`<rect width="5" height="5" systemLanguage="`+test.value+`"/>`, test.language)
+		if (content != "") != test.want {
+			t.Errorf("%q in %q: content %q", test.value, test.language, content)
+		}
+	}
+	// The element and what is in it, in every kind of element that draws, and
+	// through what is around it.
+	for _, body := range []string{
+		`<g ` + de + `>` + rect + `</g>`,
+		`<g ` + de + `><g><g>` + rect + `</g></g></g>`,
+		`<a ` + de + ` href="https://example.com">` + rect + `</a>`,
+		`<svg ` + de + ` width="50" height="50">` + rect + `</svg>`,
+		`<circle ` + de + ` r="5"/>`,
+		`<ellipse ` + de + ` rx="5" ry="5"/>`,
+		`<line ` + de + ` x2="5" y2="5" stroke="black"/>`,
+		`<path ` + de + ` d="M0 0 L5 5 L0 5 Z"/>`,
+		`<polygon ` + de + ` points="0,0 5,5 0,5"/>`,
+		`<polyline ` + de + ` points="0,0 5,5 0,5"/>`,
+		`<text ` + de + ` y="10">a</text>`,
+		`<rect id="r" ` + de + ` width="5" height="5"/><use href="#r"/>`,
+		`<defs><rect id="r" width="5" height="5"/></defs><use ` + de + ` href="#r"/>`,
+		`<defs><rect id="r" ` + de + ` width="5" height="5"/></defs><use href="#r"/>`,
+		`<symbol id="s" ` + de + ` viewBox="0 0 5 5">` + rect + `</symbol><use href="#s"/>`,
+		`<symbol id="s" viewBox="0 0 5 5"><g ` + de + `>` + rect + `</g></symbol><use href="#s"/>`,
+		`<marker id="m" ` + de + `>` + rect + `</marker><path d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`,
+		`<marker id="m"><rect ` + de + ` width="5" height="5"/></marker><path d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`,
+		`<marker id="m">` + rect + `</marker><path ` + de + ` d="M0 0 L9 9" fill="none" marker-end="url(#m)"/>`,
+		`<switch ` + de + `>` + rect + `</switch>`,
+		`<switch ` + de + `><rect ` + en + ` width="5" height="5"/>` + rect + `</switch>`,
+		`<switch><g ` + en + `><rect ` + de + ` width="5" height="5"/></g></switch>`,
+	} {
+		if content := drawn(body, "en"); content != "" {
+			t.Errorf("%s: content %q", body, content)
+		}
+		if content := drawn(body, "de"); content == "" && !strings.Contains(body, en) {
+			t.Errorf("%s: nothing in de", body)
+		}
+	}
+	// A template is not drawn for matching, and what matches beside it is.
+	if content := drawn(`<defs `+en+`>`+rect+`</defs>`, "en"); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := drawn(`<rect `+de+` width="5" height="5" fill="red"/><rect `+en+` width="5" height="5" fill="lime"/>`, "en"); strings.Contains(content, "1 0 0 rg") || strings.Count(content, " rg\n") != 1 {
+		t.Errorf("content %q", content)
+	}
+	// One image, drawn in the language of each PDF.
+	image := testNewSVG(t, svg+`<g `+de+`><rect width="5" height="5" fill="red"/></g><g `+en+`><rect width="5" height="5" fill="blue"/></g>`+end)
+	for _, test := range []struct{ language, color string }{{"de", "1 0 0 rg"}, {"en", "0 0 1 rg"}, {"de", "1 0 0 rg"}} {
+		pdf := testNewPDF()
+		pdf.SetLanguage(test.language)
+		page := NewPage(pdf, letter.Portrait())
+		image.DrawOn(page)
+		if content := testContent(page); !strings.Contains(content, test.color) || strings.Count(content, " rg\n") != 1 {
+			t.Errorf("language %q content %q", test.language, content)
+		}
+	}
+	// What is not drawn leaves no cut for itself.
+	if content := drawn(`<path `+de+` d="M0 0 L900 900" stroke="blue"/>`+rect, "en"); strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	// The limits count what is read: the language is known when it is drawn.
+	nested := strings.Repeat(`<g `+de+`>`, maxSVGDepth+1) + strings.Repeat(`</g>`, maxSVGDepth+1)
+	if _, err := NewSVGImage(strings.NewReader(svg + nested + end)); err == nil {
+		t.Error("no error for elements nested too deep")
+	}
+}
+
+func TestSVGImageATspanHonorsTheSystemLanguage(t *testing.T) {
+	const de, en = `systemLanguage="de"`, `systemLanguage="en"`
+	text := func(body string) string {
+		return `<svg width="200" height="100">` + body + `</svg>`
+	}
+	for _, test := range []struct{ svg, same string }{
+		// What it would have started at goes to the next that is drawn.
+		{`<text x="10" y="20"><tspan ` + de + `>Hallo</tspan><tspan ` + en + `>Hello</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		// Its own place goes with it.
+		{`<text x="10" y="20"><tspan ` + de + ` x="50" y="60" dx="3" dy="4">Hallo</tspan><tspan ` + en + `>Hello</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20"><tspan ` + de + ` x="50">Hallo</tspan>Hello</text>`, `<text x="10" y="20">Hello</text>`},
+		// A place of its own in the run after it stays.
+		{`<text y="20"><tspan ` + de + ` x="50">Hallo</tspan><tspan x="70">Hello</tspan></text>`, `<text y="20" x="70">Hello</text>`},
+		{`<text x="10" y="20" dx="2"><tspan ` + de + `>Hallo</tspan><tspan dx="3">Hello</tspan></text>`, `<text x="10" y="20" dx="5">Hello</text>`},
+		// Spaces collapse among what is drawn.
+		{`<text x="10" y="20"> <tspan ` + de + `>Hallo</tspan> <tspan ` + en + `>Hello</tspan> </text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20">Hello <tspan ` + de + `>Welt</tspan> <tspan ` + de + `>x</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20">a<tspan ` + de + `> b</tspan> c</text>`, `<text x="10" y="20">a<tspan> c</tspan></text>`},
+		// In a tspan, and what is in it.
+		{`<text x="10" y="20"><tspan ` + de + ` x="50"><tspan x="60">Hallo</tspan></tspan><tspan>Hello</tspan></text>`, `<text x="10" y="20">Hello</text>`},
+		{`<text x="10" y="20"><tspan ` + en + `>He<tspan ` + de + `>xx</tspan>llo</tspan></text>`, `<text x="10" y="20">He<tspan>llo</tspan></text>`},
+		// In an a, as a text has them, and of a used text.
+		{`<text x="10" y="20"><a ` + de + `>Hallo</a>Hello</text>`, `<text x="10" y="20">Hello</text>`},
+		{`<defs><text id="t" x="10" y="20"><tspan ` + de + `>Hallo</tspan><tspan>Hello</tspan></text></defs><use href="#t"/>`, `<text x="10" y="20">Hello</text>`},
+		// A text-anchor, of the runs drawn.
+		{`<text x="100" y="20" text-anchor="end"><tspan ` + de + `>Hallo</tspan><tspan>Hello</tspan></text>`, `<text x="100" y="20" text-anchor="end">Hello</text>`},
+	} {
+		content := testDrawSVGInLanguage(t, text(test.svg), "en")
+		if want := testDrawSVGInLanguage(t, text(test.same), "en"); content != want || content == "" {
+			t.Errorf("%s: content %q, not %q", test.svg, content, want)
+		}
+	}
+	// All of it left out: nothing.
+	if content := testDrawSVGInLanguage(t, text(`<text x="10" y="20"><tspan `+de+`>Hallo</tspan></text>`), "en"); content != "" {
+		t.Errorf("content %q", content)
+	}
+	// One image, in the language of each PDF, each drawing it as read.
+	image := testNewSVG(t, text(`<text x="10" y="20"> <tspan `+de+` dx="7">Hallo</tspan> <tspan `+en+`>Hello</tspan> </text>`))
+	for _, test := range []struct{ language, same string }{
+		{"en", `<text x="10" y="20">Hello</text>`}, {"de", `<text x="17" y="20">Hallo</text>`}, {"en", `<text x="10" y="20">Hello</text>`},
+	} {
+		pdf := testNewPDF()
+		pdf.SetLanguage(test.language)
+		page := NewPage(pdf, letter.Portrait())
+		image.SetLocation(0, 0)
+		image.DrawOn(page)
+		if content, want := testContent(page), testDrawSVGInLanguage(t, text(test.same), test.language); content != want {
+			t.Errorf("language %q content %q, not %q", test.language, content, want)
+		}
+	}
+	// A clipPath reads its shapes and texts with no language.
+	if content := testDrawSVGInLanguage(t, text(`<clipPath id="c"><text y="20"><tspan `+de+`>Hallo</tspan></text></clipPath><rect width="50" height="50" clip-path="url(#c)"/>`), "en"); content == "" {
+		t.Errorf("content %q", content)
 	}
 }
