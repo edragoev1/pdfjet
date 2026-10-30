@@ -106,6 +106,149 @@ import Testing
         #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 2)
     }
 
+    // A linked dot is drawn as a point of add(x, y) is, stroke for stroke, with
+    // nothing beside it: in a document that is not tagged it adds a link alone,
+    // described by its name, and the chart's description counts it and does
+    // not name it.
+    @Test(arguments: [false, true])
+    func aLinkedDotIsADotWithADescription(_ withSeries: Bool) throws {
+        let plain = try drawDot(withSeries, false)
+        let dot = try drawDot(withSeries, true)
+        #expect(dot.content == plain.content, "not drawn as a plain point")
+        #expect(dot.alt == plain.alt, "not described as a plain point")
+        #expect(dot.raw.components(separatedBy: "/Subtype /Link").count - 1 == 1)
+        #expect(dot.raw.contains("/Contents " + TestSupport.textString("Andorra: 84.0 years")), "the name")
+        #expect(dot.raw.contains("/URI <" + TestSupport.hex("https://pdfjet.com/a").lowercased() + ">"), "the URI")
+    }
+
+    // The content, the description and the bytes of a chart with a third point
+    // that is a linked dot, or a plain one.
+    private func drawDot(_ withSeries: Bool, _ linked: Bool) throws -> (content: String, alt: String, raw: String) {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let chart = SimpleScatterChart(font, font).setTitle("T").setTrendLine(true).add(1, 1).add(3, 4)
+        if withSeries {
+            chart.addSeries("Series")
+        }
+        if linked {
+            chart.addLinkedDot("Andorra: 84.0 years", 2, 2, "https://pdfjet.com/a")
+        } else {
+            chart.add(2, 2)
+        }
+        let alt = chart.getAltDescription()
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        try memory.pdf.complete()
+        return (content, alt, TestSupport.latin1(memory.bytes))
+    }
+
+    // In a PDF/UA document a linked dot is a figure of its own in the Link that
+    // holds its annotation, as a linked point is, and looks as it does in the
+    // chart: transparent, or the outline of its series, undashed. A highlighted
+    // point stays over it.
+    @Test(arguments: [false, true])
+    func aLinkedDotIsAFigureInItsLink(_ withSeries: Bool) throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        page.setStrokeDashPattern("[3 3] 0")
+        let chart = SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50)
+                .setHighlightColor(Color.red).add(1, 1)
+        if withSeries {
+            chart.addSeries("Series")
+        }
+        chart.addLinkedDot("Andorra", 2, 2, "https://pdfjet.com/a")
+                .addLinkedDot("Belize", 3, 1, "https://pdfjet.com/b")
+                .add("Chad", 4, 3, "https://pdfjet.com/c").add("Dominica", 2, 3)
+        let alt = chart.getAltDescription()
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let all = try TestSupport.structElements(raw)
+        let links = all.filter { $0.value[0] == "Link" }
+        #expect(links.count == 3)
+        for (number, link) in links {
+            let figure = link[2].trimmingCharacters(in: CharacterSet(charactersIn: "["))
+                .components(separatedBy: " ")[0]
+            #expect(all[figure]?[0] == "Figure" && all[figure]?[1] == number && link[2].contains("/Type /OBJR"),
+                    "the Link \(number) holds \(link[2])")
+        }
+        for name in ["Andorra", "Belize", "Chad"] {
+            #expect(raw.contains("/Alt " + TestSupport.textString(name)), "no figure is described as \(name)")
+        }
+        #expect(!alt.contains("Andorra") && !alt.contains("Belize"), "a dot named in \(alt)")
+        // The chart, the dots' figures, the named point over them, Chad's
+        let parts = content.components(separatedBy: "/Figure <</MCID ")
+        #expect(parts.count == 5, "the figures of the content")
+        #expect(parts.count == 5 && parts[1].hasPrefix("0>>"))
+        if parts.count == 5 {
+            let dot = parts[2]
+            #expect(!dot.contains("1 0 0 rg"), "\(dot)")
+            #expect(dot.contains("\nS\n") == withSeries, "\(dot)")
+            #expect(dot.contains("\nf\n") == !withSeries, "\(dot)")
+            let before = parts[1].components(separatedBy: "EMC").last ?? ""
+            #expect(before.contains("[] 0 d\n") && before.contains(" gs\n"), "\(before)")
+            #expect(parts[3].contains("/Artifact BMC"), "the named point is not over the dots")
+        }
+    }
+
+    // A dot's description is its name, or its URI when it has no name, and a
+    // dot without a URI is a plain point; one outside a range that is set is
+    // no link.
+    @Test func aLinkedDotWithoutANameOrAURI() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50).setXAxisRange(0, 5)
+                .addLinkedDot("", 1, 1, "https://pdfjet.com/a").addLinkedDot("Belize", 2, 2, "")
+                .addLinkedDot("Chad", 9, 3, "https://pdfjet.com/c").drawOn(page)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 1)
+        #expect(raw.contains("/Alt " + TestSupport.textString("https://pdfjet.com/a")), "the URI")
+        #expect(!raw.contains(TestSupport.textString("Belize")) && !raw.contains(TestSupport.textString("Chad")))
+    }
+
+    // The link of a dot is at least 8 points square and holds the dot, on the
+    // page as written, and inside the page, in a corner too.
+    @Test(arguments: [Float(2), Float(9), Float(30)])
+    func theLinkOfADotCanBeHit(_ size: Float) throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        font.setSize(size)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(612, 792).setLocation(0, 0)
+                .setXAxisRange(0, 4).setYAxisRange(0, 4)
+                .addLinkedDot("Middle", 2, 2, "https://pdfjet.com/m")
+                .addLinkedDot("Left", 0, 2, "https://pdfjet.com/l").drawOn(page)
+        // Past the corners of the page, as a chart that hangs over it
+        page.addAnnotation(corner(-1, -1, 0, 0))
+        page.addAnnotation(corner(612, 792, 613, 793))
+        try memory.pdf.complete()
+        let rects = TestSupport.latin1(memory.bytes).components(separatedBy: "/Rect [")
+        #expect(rects.count == 5)
+        for i in 1..<rects.count {
+            let rect = rects[i].components(separatedBy: "]")[0]
+            let box = rect.components(separatedBy: " ").map { Float($0) ?? -1000 }
+            #expect(box[2] - box[0] >= 7.999 && abs(box[3] - box[1]) >= 7.999, "\(rect)")
+            #expect(i > 2 || box[2] - box[0] >= 0.9 * size, "\(rect)")
+            #expect(box[0] >= 0 && box[2] <= 612 && Swift.min(box[1], box[3]) >= 0 && Swift.max(box[1], box[3]) <= 792,
+                    "\(rect)")
+        }
+    }
+
+    // A link with the hit size of a dot, at the box.
+    private func corner(_ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float) -> Annotation {
+        let annotation = Annotation(Annotation.Link, x1, y1, x2, y2, nil, nil, 0.0, nil, nil,
+                "https://pdfjet.com/c", nil, nil, nil, "Corner")
+        annotation.hitSize = SimpleScatterChart.HIT_SIZE
+        return annotation
+    }
+
     // In a document that is not tagged, a linked point is drawn in the chart,
     // its dot and its name the link, and no elements are made.
     @Test func aLinkedPointOfADocumentNotTaggedIsDrawnInTheChart() throws {

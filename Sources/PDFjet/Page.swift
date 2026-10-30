@@ -3166,6 +3166,10 @@ public class Page {
             return
         }
         transformAnnotation(annotation)
+        if annotation.hitSize > 0.0 {
+            (annotation.x1, annotation.x2) = Page.hitSpan(annotation.x1, annotation.x2, annotation.hitSize, self.width)
+            (annotation.y1, annotation.y2) = Page.hitSpan(annotation.y1, annotation.y2, annotation.hitSize, self.height)
+        }
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
@@ -3545,6 +3549,27 @@ public class Page {
             append("> Tj\n")
         }
         append(Token.endText)
+    }
+
+    // Returns the span lo to hi of an annotation at least size long around its
+    // center, and moved inside 0 to limit, not cut, as long as it fits.
+    private static func hitSpan(_ low: Float, _ high: Float, _ size: Float, _ limit: Float) -> (Float, Float) {
+        var lo = low
+        var hi = high
+        if hi - lo < size {
+            let center = (lo + hi) / 2.0
+            lo = center - size / 2.0
+            hi = lo + size
+        }
+        if hi > limit {
+            lo -= hi - limit
+            hi = limit
+        }
+        if lo < 0.0 {
+            hi = Swift.min(hi - lo, limit)
+            lo = 0.0
+        }
+        return (lo, hi)
     }
 
     // Returns where the point x, y of what is drawn is on the page, after the
