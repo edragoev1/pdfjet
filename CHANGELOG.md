@@ -322,6 +322,11 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
     with a dash pattern. Markdown: a tall wrapped header starts a new page.
   - NaN and absurd sizes in TextFrame and the charts, and wrong table
     indexes, are errors, not hangs or crashes.
+- SVG: `switch` honors `systemLanguage`, by the language of the PDF, or `en`
+  when none is set; `symbol` and nested `svg` clip to their viewports, unless
+  overflow is visible or auto; `text` in a `clipPath` clips, with text
+  rendering mode 7. A clip path with several shapes keeps no `evenodd`, as
+  a PDF clip has one rule for its path.
 - Build: the package scripts take the POM, nuspec and README from the tagged
   commit and run `util/check-version.sh`; the POM and the nuspec say
   `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
@@ -349,6 +354,10 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 - Behavior change: SVG strokes get a miter limit of 4, as SVG says, where it
   was PDF's 10, so sharp corners bevel. A size in a unit with no viewBox
   scales the content: `width="100pt"` with a rectangle of 100 fills 75.
+- Behavior change: SVG: `<switch><rect systemLanguage="de"/><rect/></switch>`
+  in an English PDF draws the second, where it drew the first. A nested
+  `<svg width="9" height="9">` clips a larger rectangle. The children of a
+  `switch` that are not drawn are read, so bad data in them is an error.
 - Behavior change: `SetLanguage` writes `/Lang` on a plain PDF too. Example:
   `fr-CA`; unset writes none.
 - Behavior change: the name of an embedded file is cut at a backslash on every
