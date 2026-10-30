@@ -1326,3 +1326,39 @@ func TestSVGImageTheMiterLimitOfAStrokeIsWritten(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 }
+
+func TestSVGImageADashOffsetBelowZeroIsWrittenInsideThePattern(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-1"/></svg>`); !strings.Contains(content, "[4 2] 5 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-7"/></svg>`); !strings.Contains(content, "[4 2] 5 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="-6"/></svg>`); !strings.Contains(content, "[4 2] 0 d\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="7"/></svg>`); !strings.Contains(content, "[4 2] 7 d\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageHugeDashesAndClipPathsSkipThePath(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="1e30 1"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="4 2" stroke-dashoffset="1e30"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10" stroke="red" stroke-dasharray="1e30 1e30" stroke-dashoffset="-1"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="1e30" height="5"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="1e30" height="5"/></clipPath><text x="1" y="50" clip-path="url(#c)">a</text></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 10 L100 10 L0 20" stroke-dasharray="1e30 1"/></svg>`); !strings.HasPrefix(content, "0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}

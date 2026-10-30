@@ -1204,4 +1204,50 @@ import Testing
             #expect(!content.contains(" M\n"), "\(content)")
         }
     }
+
+    @Test func aDashOffsetBelowZeroIsWrittenInsideThePattern() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-1\"/></svg>")
+            #expect(content.contains("[4 2] 5 d\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-7\"/></svg>")
+            #expect(content.contains("[4 2] 5 d\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"-6\"/></svg>")
+            #expect(content.contains("[4 2] 0 d\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"7\"/></svg>")
+            #expect(content.contains("[4 2] 7 d\n"), "\(content)")
+        }
+    }
+
+    @Test func hugeDashesAndClipPathsSkipThePath() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"4 2\" stroke-dashoffset=\"1e30\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10\" stroke=\"red\" stroke-dasharray=\"1e30 1e30\" stroke-dashoffset=\"-1\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"1e30\" height=\"5\"/></clipPath><text x=\"1\" y=\"50\" clip-path=\"url(#c)\">a</text></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 10 L100 10 L0 20\" stroke-dasharray=\"1e30 1\"/></svg>")
+            #expect(content.hasPrefix("0 0 0 rg\n"), "\(content)")
+        }
+    }
 }

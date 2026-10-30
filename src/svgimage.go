@@ -1590,7 +1590,7 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 				page.appendFloat32(length)
 			}
 			page.appendString("] ")
-			page.appendFloat32(path.dashOffset)
+			page.appendFloat32(svgDashPhase(path))
 			page.appendString(" d\n")
 		}
 		if alpha {
@@ -1704,7 +1704,7 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 			float32(m[3]),
 			float32(float64(m[0]*px)+float64(m[2]*py)+m[4]) + image.x,
 			page.height - (float32(float64(m[1]*px)+float64(m[3]*py)+m[5]) + image.y)}
-		writable := true
+		writable := image.clipsAreWritable(clips, page)
 		for _, value := range tm {
 			writable = writable && fastfloat.IsWritable(value)
 		}
@@ -1819,19 +1819,63 @@ func (image *SVGImage) outside(px, py, margin float32) bool {
 	return px < -e || py < -e || px > image.w+e || py > image.h+e
 }
 
-// isWritable reports whether a PDF can hold the points and the stroke width
-// of the path where it is drawn: a transform or a scale such as scale(1e30)
-// can take them out of its range, and such a path is not drawn.
+// svgDashPhase returns the dash offset as a PDF writes it, which is not below
+// zero: an offset below zero starts as far before the pattern, the same place
+// as that far from the end of the pattern (review of 30 October 2026).
+func svgDashPhase(path *svgPath) float32 {
+	if path.dashOffset >= 0.0 {
+		return path.dashOffset
+	}
+	sum := 0.0
+	for _, length := range path.dashArray {
+		sum += float64(length)
+	}
+	phase := math.Mod(float64(path.dashOffset), sum)
+	if phase < 0.0 {
+		phase += sum
+	}
+	return float32(math.Abs(phase))
+}
+
+// isWritable reports whether a PDF can hold the points, the stroke width, the
+// dashes and the clip paths of the path where it is drawn: a transform or a
+// scale such as scale(1e30) can take them out of its range, and such a path is
+// not drawn.
 func (image *SVGImage) isWritable(path *svgPath, page *Page) bool {
+	if !fastfloat.IsWritable(path.strokeWidth) {
+		return false
+	}
+	if path.stroke != color.Transparent && path.dashArray != nil {
+		for _, length := range path.dashArray {
+			if !fastfloat.IsWritable(length) {
+				return false
+			}
+		}
+		if !fastfloat.IsWritable(svgDashPhase(path)) {
+			return false
+		}
+	}
+	return image.areWritable(path.operations, page) && image.clipsAreWritable(path.clips, page)
+}
+
+// clipsAreWritable reports whether a PDF can hold the clip paths.
+func (image *SVGImage) clipsAreWritable(clips []*svgPath, page *Page) bool {
+	for _, clip := range clips {
+		if !image.areWritable(clip.operations, page) {
+			return false
+		}
+	}
+	return true
+}
+
+// areWritable reports whether a PDF can hold the points of the operations.
+func (image *SVGImage) areWritable(operations []*svgPathOp, page *Page) bool {
 	point := func(x, y float32) bool {
 		x += image.x
 		y += image.y
 		return fastfloat.IsWritable(x) && fastfloat.IsWritable(y) && fastfloat.IsWritable(page.height-y)
 	}
-	if !fastfloat.IsWritable(path.strokeWidth) {
-		return false
-	}
-	for _, op := range path.operations {
+	for _, op := range operations {
 		if !point(op.x, op.y) || op.cmd == 'C' && (!point(op.x1, op.y1) || !point(op.x2, op.y2)) {
 			return false
 		}

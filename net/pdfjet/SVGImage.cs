@@ -1469,7 +1469,52 @@ public class SVGImage : IDrawable {
         if (!FastFloat.IsWritable(path.strokeWidth)) {
             return false;
         }
-        foreach (PathOp op in path.operations) {
+        if (path.stroke != Color.transparent && path.dashArray != null) {
+            foreach (float length in path.dashArray) {
+                if (!FastFloat.IsWritable(length)) {
+                    return false;
+                }
+            }
+            if (!FastFloat.IsWritable(DashPhase(path))) {
+                return false;
+            }
+        }
+        return AreWritable(path.operations, page) && ClipsAreWritable(path.clips, page);
+    }
+
+    // Returns the dash offset as a PDF writes it, which is not below zero: an
+    // offset below zero starts as far before the pattern, the same place as
+    // that far from the end of the pattern (review of 30 October 2026).
+    private static float DashPhase(SVGPath path) {
+        if (path.dashOffset >= 0f) {
+            return path.dashOffset;
+        }
+        double sum = 0.0;
+        foreach (float length in path.dashArray) {
+            sum += length;
+        }
+        double phase = ((double) path.dashOffset) % sum;
+        if (phase < 0.0) {
+            phase += sum;
+        }
+        return (float) Math.Abs(phase);
+    }
+
+    // Whether a PDF can hold the clip paths.
+    private bool ClipsAreWritable(List<SVGPath> clips, Page page) {
+        if (clips != null) {
+            foreach (SVGPath clip in clips) {
+                if (!AreWritable(clip.operations, page)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Whether a PDF can hold the points of the operations.
+    private bool AreWritable(List<PathOp> operations, Page page) {
+        foreach (PathOp op in operations) {
             if (!IsWritable(op.x, op.y, page) || (op.cmd == 'C' &&
                     (!IsWritable(op.x1, op.y1, page) || !IsWritable(op.x2, op.y2, page)))) {
                 return false;
@@ -1514,7 +1559,7 @@ public class SVGImage : IDrawable {
                     page.Append(path.dashArray[i]);
                 }
                 page.Append("] ");
-                page.Append(path.dashOffset);
+                page.Append(DashPhase(path));
                 page.Append(" d\n");
             }
             if (alpha) {
@@ -1629,7 +1674,7 @@ public class SVGImage : IDrawable {
                 (float) m[3],
                 (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
                 page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
-            bool writable = true;
+            bool writable = ClipsAreWritable(clips, page);
             foreach (float value in tm) {
                 writable = writable && FastFloat.IsWritable(value);
             }

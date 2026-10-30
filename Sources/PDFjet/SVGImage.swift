@@ -1451,7 +1451,7 @@ public class SVGImage : Drawable {
                     page.append(length)
                 }
                 page.append("] ")
-                page.append(path.dashOffset)
+                page.append(SVGImage.dashPhase(path))
                 page.append(" d\n")
             }
             if alpha {
@@ -1527,16 +1527,47 @@ public class SVGImage : Drawable {
     // path where it is drawn: a transform or a scale such as scale(1e30) can
     // take them out of its range, and such a path is not drawn.
     private func isWritable(_ path: SVGPath, _ page: Page) -> Bool {
+        if !FastFloat.isWritable(path.strokeWidth) {
+            return false
+        }
+        if path.stroke != Color.transparent, let dashArray = path.dashArray {
+            if !dashArray.allSatisfy({ FastFloat.isWritable($0) })
+                    || !FastFloat.isWritable(SVGImage.dashPhase(path)) {
+                return false
+            }
+        }
+        return areWritable(path.operations, page) && clipsAreWritable(path.clips, page)
+    }
+
+    // Returns the dash offset as a PDF writes it, which is not below zero: an
+    // offset below zero starts as far before the pattern, the same place as
+    // that far from the end of the pattern (review of 30 October 2026).
+    private static func dashPhase(_ path: SVGPath) -> Float {
+        if path.dashOffset >= 0.0 {
+            return path.dashOffset
+        }
+        let sum = (path.dashArray ?? []).reduce(0.0) { $0 + Double($1) }
+        var phase = Double(path.dashOffset).truncatingRemainder(dividingBy: sum)
+        if phase < 0.0 {
+            phase += sum
+        }
+        return Float(abs(phase))
+    }
+
+    // Returns true when a PDF can hold the clip paths.
+    private func clipsAreWritable(_ clips: [SVGPath]?, _ page: Page) -> Bool {
+        return (clips ?? []).allSatisfy { areWritable($0.operations, page) }
+    }
+
+    // Returns true when a PDF can hold the points of the operations.
+    private func areWritable(_ operations: [PathOp], _ page: Page) -> Bool {
         func point(_ px: Float, _ py: Float) -> Bool {
             let px = px + x
             let py = py + y
             return FastFloat.isWritable(px) && FastFloat.isWritable(py) &&
                     FastFloat.isWritable(page.height - py)
         }
-        if !FastFloat.isWritable(path.strokeWidth) {
-            return false
-        }
-        for op in path.operations {
+        for op in operations {
             if !point(op.x, op.y) || op.cmd == "C" && (!point(op.x1, op.y1) || !point(op.x2, op.y2)) {
                 return false
             }
@@ -1589,7 +1620,7 @@ public class SVGImage : Drawable {
                 Float(m[3]),
                 Float(m[0]*px + m[2]*py + m[4]) + x,
                 page.height - (Float(m[1]*px + m[3]*py + m[5]) + y)]
-            let writable = tm.allSatisfy { FastFloat.isWritable($0) }
+            let writable = clipsAreWritable(clips, page) && tm.allSatisfy { FastFloat.isWritable($0) }
             let strokeWidth = Float(Double(run.strokeWidth) * scale)
             let fill = run.fill != Color.transparent && run.fillAlpha > 0.0
             let stroke = run.stroke != Color.transparent && run.strokeAlpha > 0.0

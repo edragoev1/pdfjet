@@ -1496,7 +1496,52 @@ public class SVGImage implements Drawable {
         if (!FastFloat.isWritable(path.strokeWidth)) {
             return false;
         }
-        for (PathOp op : path.operations) {
+        if (path.stroke != Color.transparent && path.dashArray != null) {
+            for (float length : path.dashArray) {
+                if (!FastFloat.isWritable(length)) {
+                    return false;
+                }
+            }
+            if (!FastFloat.isWritable(dashPhase(path))) {
+                return false;
+            }
+        }
+        return areWritable(path.operations, page) && clipsAreWritable(path.clips, page);
+    }
+
+    // Returns the dash offset as a PDF writes it, which is not below zero: an
+    // offset below zero starts as far before the pattern, the same place as
+    // that far from the end of the pattern (review of 30 October 2026).
+    private static float dashPhase(SVGPath path) {
+        if (path.dashOffset >= 0f) {
+            return path.dashOffset;
+        }
+        double sum = 0.0;
+        for (float length : path.dashArray) {
+            sum += length;
+        }
+        double phase = ((double) path.dashOffset) % sum;
+        if (phase < 0.0) {
+            phase += sum;
+        }
+        return (float) Math.abs(phase);
+    }
+
+    // Returns true when a PDF can hold the clip paths.
+    private boolean clipsAreWritable(List<SVGPath> clips, Page page) {
+        if (clips != null) {
+            for (SVGPath clip : clips) {
+                if (!areWritable(clip.operations, page)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Returns true when a PDF can hold the points of the operations.
+    private boolean areWritable(List<PathOp> operations, Page page) {
+        for (PathOp op : operations) {
             if (!isWritable(op.x, op.y, page) || op.cmd == 'C' &&
                     (!isWritable(op.x1, op.y1, page) || !isWritable(op.x2, op.y2, page))) {
                 return false;
@@ -1550,7 +1595,7 @@ public class SVGImage implements Drawable {
                     page.append(path.dashArray[i]);
                 }
                 page.append("] ");
-                page.append(path.dashOffset);
+                page.append(dashPhase(path));
                 page.append(" d\n");
             }
             if (alpha) {
@@ -1665,7 +1710,7 @@ public class SVGImage implements Drawable {
                 (float) m[3],
                 (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
                 page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
-            boolean writable = true;
+            boolean writable = clipsAreWritable(clips, page);
             for (float value : tm) {
                 writable = writable && FastFloat.isWritable(value);
             }
