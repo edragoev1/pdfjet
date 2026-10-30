@@ -28,6 +28,7 @@ class SVGPath {
     float strokeAlpha = 1f;
     float[] dashArray = null;       // The dashes and the gaps, in the space of the svg element; null is solid
     float dashOffset = 0f;
+    boolean strokeFirst = false;    // paint-order: the stroke drawn before the fill
     List<SVGPath> clips = null;     // The clip paths it is drawn inside, all of them
     SVGText text = null;            // A text, drawn instead of the operations
 }

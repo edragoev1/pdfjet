@@ -1177,5 +1177,29 @@ public class SVGImageTest {
             Assert.Equal("", content);
         }
     }
+
+    [Fact]
+    public void ThePaintOrderOfAShapeIsDrawn() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"stroke\"/></svg>");
+            Assert.Contains("S\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" style=\"paint-order: stroke fill markers\"/></svg>");
+            Assert.Contains("S\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" /></svg>");
+            Assert.Contains("f\n0 0 1 RG\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"fill stroke\"/></svg>");
+            Assert.Contains("f\n0 0 1 RG\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>");
+            Assert.Contains("f\n0 0 1 RG\n", content);
+        }
+    }
 }
 }

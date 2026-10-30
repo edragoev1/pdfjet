@@ -623,6 +623,7 @@ public class SVGImage : IDrawable {
         path.evenOdd = state.evenOdd;
         path.lineCap = state.lineCap;
         path.lineJoin = state.lineJoin;
+        path.strokeFirst = state.strokeFirst;
         if (state.dashArray != null) {
             path.dashArray = new float[state.dashArray.Length];
             for (int i = 0; i < path.dashArray.Length; i++) {
@@ -1481,8 +1482,9 @@ public class SVGImage : IDrawable {
         return FastFloat.IsWritable(x) && FastFloat.IsWritable(y) && FastFloat.IsWritable(page.height - y);
     }
 
-    // Draws a path, filled and then stroked. An opacity, a line cap and a
-    // line join are set in a graphics state of the path's own.
+    // Draws a path, filled and then stroked, or stroked first when its
+    // paint-order says. An opacity, a line cap and a line join are set in a
+    // graphics state of the path's own.
     private void drawPath(SVGPath path, Page page) {
         bool fill = path.fill != Color.transparent;
         bool stroke = path.stroke != Color.transparent;
@@ -1525,47 +1527,50 @@ public class SVGImage : IDrawable {
             }
         }
 
-        if (fill) {
-            page.SetBrushColor(path.fill);
-            foreach (PathOp op in path.operations) {
-                if (op.cmd == 'M') {
-                    page.MoveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.LineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.CurveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
+        for (int pass = 0; pass < 2; pass++) {
+            bool strokePass = (pass == 0) == path.strokeFirst;
+            if (!strokePass && fill) {
+                page.SetBrushColor(path.fill);
+                foreach (PathOp op in path.operations) {
+                    if (op.cmd == 'M') {
+                        page.MoveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.LineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.CurveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    }
+                }
+                if (path.evenOdd) {
+                    page.Append("f*\n");
+                } else {
+                    page.FillPath();
                 }
             }
-            if (path.evenOdd) {
-                page.Append("f*\n");
-            } else {
-                page.FillPath();
-            }
-        }
 
-        if (stroke) {
-            page.SetPenColor(path.stroke);
-            page.SetPenWidth(path.strokeWidth);
-            // Z closes a subpath, and the path is stroked once, all of its
-            // subpaths together, as SVG strokes it.
-            foreach (PathOp op in path.operations) {
-                if (op.cmd == 'M') {
-                    page.MoveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.LineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.CurveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
-                } else if (op.cmd == 'Z') {
-                    page.Append("h\n");
+            if (strokePass && stroke) {
+                page.SetPenColor(path.stroke);
+                page.SetPenWidth(path.strokeWidth);
+                // Z closes a subpath, and the path is stroked once, all of its
+                // subpaths together, as SVG strokes it.
+                foreach (PathOp op in path.operations) {
+                    if (op.cmd == 'M') {
+                        page.MoveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.LineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.CurveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    } else if (op.cmd == 'Z') {
+                        page.Append("h\n");
+                    }
                 }
+                page.StrokePath();
             }
-            page.StrokePath();
         }
 
         if (state) {

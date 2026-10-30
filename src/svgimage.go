@@ -686,6 +686,7 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	path.evenOdd = state.evenOdd
 	path.lineCap = state.lineCap
 	path.lineJoin = state.lineJoin
+	path.strokeFirst = state.strokeFirst
 	if state.dashArray != nil {
 		path.dashArray = make([]float32, len(state.dashArray))
 		for i, length := range state.dashArray {
@@ -1557,8 +1558,9 @@ func (image *SVGImage) GetHeight() float32 {
 	return image.h
 }
 
-// drawPath draws a path, filled and then stroked. An opacity, a line cap
-// and a line join are set in a graphics state of the path's own.
+// drawPath draws a path, filled and then stroked, or stroked first when its
+// paint-order says. An opacity, a line cap and a line join are set in a
+// graphics state of the path's own.
 func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 	fill := path.fill != color.Transparent
 	stroke := path.stroke != color.Transparent
@@ -1601,47 +1603,50 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 		}
 	}
 
-	if fill {
-		page.SetBrushColor(path.fill)
-		for _, op := range path.operations {
-			if op.cmd == 'M' {
-				page.MoveTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'L' {
-				page.LineTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'C' {
-				page.CurveTo(
-					op.x1+image.x, op.y1+image.y,
-					op.x2+image.x, op.y2+image.y,
-					op.x+image.x, op.y+image.y)
+	for pass := 0; pass < 2; pass++ {
+		strokePass := (pass == 0) == path.strokeFirst
+		if !strokePass && fill {
+			page.SetBrushColor(path.fill)
+			for _, op := range path.operations {
+				if op.cmd == 'M' {
+					page.MoveTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'L' {
+					page.LineTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'C' {
+					page.CurveTo(
+						op.x1+image.x, op.y1+image.y,
+						op.x2+image.x, op.y2+image.y,
+						op.x+image.x, op.y+image.y)
+				}
+			}
+			if path.evenOdd {
+				page.appendString("f*\n")
+			} else {
+				page.FillPath()
 			}
 		}
-		if path.evenOdd {
-			page.appendString("f*\n")
-		} else {
-			page.FillPath()
-		}
-	}
 
-	if stroke {
-		page.SetPenColor(path.stroke)
-		page.SetPenWidth(path.strokeWidth)
-		// Z closes a subpath, and the path is stroked once, all of its
-		// subpaths together, as SVG strokes it.
-		for _, op := range path.operations {
-			if op.cmd == 'M' {
-				page.MoveTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'L' {
-				page.LineTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'C' {
-				page.CurveTo(
-					op.x1+image.x, op.y1+image.y,
-					op.x2+image.x, op.y2+image.y,
-					op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'Z' {
-				page.appendString("h\n")
+		if strokePass && stroke {
+			page.SetPenColor(path.stroke)
+			page.SetPenWidth(path.strokeWidth)
+			// Z closes a subpath, and the path is stroked once, all of its
+			// subpaths together, as SVG strokes it.
+			for _, op := range path.operations {
+				if op.cmd == 'M' {
+					page.MoveTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'L' {
+					page.LineTo(op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'C' {
+					page.CurveTo(
+						op.x1+image.x, op.y1+image.y,
+						op.x2+image.x, op.y2+image.y,
+						op.x+image.x, op.y+image.y)
+				} else if op.cmd == 'Z' {
+					page.appendString("h\n")
+				}
 			}
+			page.StrokePath()
 		}
-		page.StrokePath()
 	}
 
 	if state {

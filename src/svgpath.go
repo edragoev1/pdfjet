@@ -24,6 +24,7 @@ type svgPath struct {
 	strokeAlpha float32
 	dashArray   []float32 // The dashes and the gaps, in the space of the svg element; nil is solid
 	dashOffset  float32
+	strokeFirst bool       // paint-order: the stroke drawn before the fill
 	clips       []*svgPath // The clip paths it is drawn inside, all of them
 	text        *svgText   // A text, drawn instead of the operations
 }

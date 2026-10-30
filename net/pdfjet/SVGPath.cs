@@ -34,6 +34,8 @@ internal class SVGPath {
     internal float[] dashArray = null;
     /// <summary>The dash offset, in the space of the svg element.</summary>
     internal float dashOffset = 0f;
+    /// <summary>True to draw the stroke before the fill.</summary>
+    internal bool strokeFirst = false;
     /// <summary>The clip paths it is drawn inside, all of them, or null.</summary>
     internal List<SVGPath> clips = null;
     /// <summary>A text, drawn instead of the operations, or null.</summary>

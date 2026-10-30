@@ -618,6 +618,7 @@ public class SVGImage implements Drawable {
         path.evenOdd = state.evenOdd;
         path.lineCap = state.lineCap;
         path.lineJoin = state.lineJoin;
+        path.strokeFirst = state.strokeFirst;
         if (state.dashArray != null) {
             path.dashArray = new float[state.dashArray.length];
             for (int i = 0; i < path.dashArray.length; i++) {
@@ -1517,8 +1518,9 @@ public class SVGImage implements Drawable {
         return this.h;
     }
 
-    // Draws a path, filled and then stroked. An opacity, a line cap and a
-    // line join are set in a graphics state of the path's own.
+    // Draws a path, filled and then stroked, or stroked first when its
+    // paint-order says. An opacity, a line cap and a line join are set in a
+    // graphics state of the path's own.
     private void drawPath(SVGPath path, Page page) {
         boolean fill = path.fill != Color.transparent;
         boolean stroke = path.stroke != Color.transparent;
@@ -1561,47 +1563,50 @@ public class SVGImage implements Drawable {
             }
         }
 
-        if (fill) {
-            page.setBrushColor(path.fill);
-            for (PathOp op : path.operations) {
-                if (op.cmd == 'M') {
-                    page.moveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.lineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.curveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
+        for (int pass = 0; pass < 2; pass++) {
+            boolean strokePass = (pass == 0) == path.strokeFirst;
+            if (!strokePass && fill) {
+                page.setBrushColor(path.fill);
+                for (PathOp op : path.operations) {
+                    if (op.cmd == 'M') {
+                        page.moveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.lineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.curveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    }
+                }
+                if (path.evenOdd) {
+                    page.append("f*\n");
+                } else {
+                    page.fillPath();
                 }
             }
-            if (path.evenOdd) {
-                page.append("f*\n");
-            } else {
-                page.fillPath();
-            }
-        }
 
-        if (stroke) {
-            page.setPenColor(path.stroke);
-            page.setPenWidth(path.strokeWidth);
-            // Z closes a subpath, and the path is stroked once, all of its
-            // subpaths together, as SVG strokes it.
-            for (PathOp op : path.operations) {
-                if (op.cmd == 'M') {
-                    page.moveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.lineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.curveTo(
-                        op.x1 + x, op.y1 + y,
-                        op.x2 + x, op.y2 + y,
-                        op.x + x, op.y + y);
-                } else if (op.cmd == 'Z') {
-                    page.append("h\n");
+            if (strokePass && stroke) {
+                page.setPenColor(path.stroke);
+                page.setPenWidth(path.strokeWidth);
+                // Z closes a subpath, and the path is stroked once, all of its
+                // subpaths together, as SVG strokes it.
+                for (PathOp op : path.operations) {
+                    if (op.cmd == 'M') {
+                        page.moveTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'L') {
+                        page.lineTo(op.x + x, op.y + y);
+                    } else if (op.cmd == 'C') {
+                        page.curveTo(
+                            op.x1 + x, op.y1 + y,
+                            op.x2 + x, op.y2 + y,
+                            op.x + x, op.y + y);
+                    } else if (op.cmd == 'Z') {
+                        page.append("h\n");
+                    }
                 }
+                page.strokePath();
             }
-            page.strokePath();
         }
 
         if (state) {

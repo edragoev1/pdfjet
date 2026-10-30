@@ -1257,3 +1257,21 @@ func TestSVGImageANestedSvgIsAViewport(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 }
+
+func TestSVGImageThePaintOrderOfAShapeIsDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="stroke"/></svg>`); !strings.Contains(content, "S\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" style="paint-order: stroke fill markers"/></svg>`); !strings.Contains(content, "S\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" /></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="fill stroke"/></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red" stroke="blue" paint-order="normal"/></svg>`); !strings.Contains(content, "f\n0 0 1 RG\n") {
+		t.Errorf("content %q", content)
+	}
+}

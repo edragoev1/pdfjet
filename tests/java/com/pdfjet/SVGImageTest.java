@@ -1188,4 +1188,28 @@ class SVGImageTest {
             assertEquals("", content);
         }
     }
+
+    @Test
+    void thePaintOrderOfAShapeIsDrawn() throws Exception {
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"stroke\"/></svg>");
+            assertTrue(content.contains("S\n1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" style=\"paint-order: stroke fill markers\"/></svg>");
+            assertTrue(content.contains("S\n1 0 0 rg\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" /></svg>");
+            assertTrue(content.contains("f\n0 0 1 RG\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"fill stroke\"/></svg>");
+            assertTrue(content.contains("f\n0 0 1 RG\n"), content);
+        }
+        {
+            String content = draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\" stroke=\"blue\" paint-order=\"normal\"/></svg>");
+            assertTrue(content.contains("f\n0 0 1 RG\n"), content);
+        }
+    }
 }
