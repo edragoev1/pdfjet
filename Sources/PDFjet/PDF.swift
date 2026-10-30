@@ -3389,9 +3389,13 @@ public final class PDF {
             while j < value.count {
                 if PDF.isReference(value, j) {
                     let number = Int(value[j])!
-                    if numbers[number] == nil && isMergedObject(number, objects, mergedPages) {
-                        numbers[number] = reserveObjNumber()
-                        queue.append(objects[number - 1])
+                    if numbers[number] == nil {
+                        if number >= 1 && number <= objects.count && objects[number - 1].writtenNumber != 0 {
+                            numbers[number] = objects[number - 1].writtenNumber
+                        } else if isMergedObject(number, objects, mergedPages) {
+                            numbers[number] = reserveObjNumber()
+                            queue.append(objects[number - 1])
+                        }
                     }
                     j += 2
                 }

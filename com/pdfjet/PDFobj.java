@@ -58,6 +58,10 @@ public class PDFobj {
     // The objects of the PDF it was read from, by number, for the masks of an
     // image copied into another PDF; null for an object not read
     Map<Integer, PDFobj> readObjects;
+    // The number in the PDF being written of an object that a page that was
+    // read uses, like a stamp: this object stands for it among the objects,
+    // and only merge reads the number
+    int writtenNumber;
 
     /**
      * Creates an object with an empty dictionary.
@@ -914,14 +918,20 @@ public class PDFobj {
 
     // Gives the page a copy of the /Resources it shares with the others under
     // its node, before a resource is added to it, so that the resource is the
-    // page's alone, as it was when every page had a copy.
+    // page's alone, as it was when every page had a copy. A page with no
+    // /Resources gets an empty one: the fonts added to it were lost, with no
+    // error (review of 30 October 2026, B5).
     private void ownResources() {
-        if (inheritedResources == null) {
-            return;
+        List<String> entry = inheritedResources;
+        if (entry == null) {
+            if (entryIndexOf("/Resources") != -1) {
+                return;
+            }
+            entry = Arrays.asList("<<", ">>");
         }
         int open = dict.indexOf("<<");
         if (open != -1) {
-            dict.addAll(open + 1, inheritedResources);
+            dict.addAll(open + 1, entry);
             dict.add(open + 1, "/Resources");
         }
         inheritedResources = null;
@@ -1365,14 +1375,80 @@ public class PDFobj {
         return maxGSNumber;
     }
 
-    /**
-     * Sets the graphics state of the PDF.
-     *
-     * @param gs the graphics state.
-     * @param objects the objects list.
-     * @return this PDFobj object.
-     */
-    public PDFobj setGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+    // Returns the largest number of the /GS, /Fm and /OC names in the resources
+    // of this page, or 0, so that the names of what is drawn on it are not those
+    // of what it holds. They are all read from the objects of the PDF, in the
+    // resources or in an /ExtGState, /XObject or /Properties dictionary that is
+    // an object of its own.
+    int maxResourceNumber() {
+        if (readObjects == null) {
+            return 0;
+        }
+        List<String> tokens = inheritedResources;
+        if (tokens == null) {
+            int i = entryIndexOf("/Resources");
+            if (i == -1) {
+                return 0;
+            }
+            tokens = dict;
+            if (PDF.isReference(dict, i + 1)) {
+                PDFobj resources = readObjects.get(Integer.parseInt(dict.get(i + 1)));
+                if (resources == null) {
+                    return 0;
+                }
+                tokens = resources.dict;
+            }
+        }
+        int maximum = maxNameNumber(tokens);
+        for (int i = 0; i < tokens.size(); i++) {
+            String token = tokens.get(i);
+            if ((token.equals("/ExtGState") || token.equals("/XObject") || token.equals("/Properties"))
+                    && PDF.isReference(tokens, i + 1)) {
+                PDFobj entries = readObjects.get(Integer.parseInt(tokens.get(i + 1)));
+                if (entries != null) {
+                    maximum = Math.max(maximum, maxNameNumber(entries.dict));
+                }
+            }
+        }
+        return maximum;
+    }
+
+    // Returns the largest number of the names in the tokens that are /GS, /Fm
+    // or /OC and one to nine digits, or 0.
+    private static int maxNameNumber(List<String> tokens) {
+        int maximum = 0;
+        for (String token : tokens) {
+            if (token.matches("/(GS|Fm|OC)[0-9]{1,9}")) {
+                maximum = Math.max(maximum, Integer.parseInt(token.substring(3)));
+            }
+        }
+        return maximum;
+    }
+
+    // Adds the name and its value to a dictionary of the resources of this
+    // page, like /ExtGState, unless it has the name.
+    void addResourceEntry(String category, String name, List<String> value, List<PDFobj> objects) {
+        Object[] found = resourceEntries(category, objects);
+        if (found == null) {
+            return;
+        }
+        PDFobj resources = (PDFobj) found[0];
+        int index = (Integer) found[1];
+        for (int i = index; i < resources.dict.size() && !resources.dict.get(i).equals(">>");
+                i = PDF.valueEnd(resources.dict, i + 1)) {
+            if (resources.dict.get(i).equals(name)) {
+                return;
+            }
+        }
+        resources.dict.addAll(index, value);
+        resources.dict.add(index, name);
+    }
+
+    // Returns the object that holds a dictionary of the resources of this page,
+    // like /ExtGState, and the index of its first entry, or null. The resources
+    // and the dictionary can be objects of their own, and resources without the
+    // dictionary get it.
+    private Object[] resourceEntries(String category, List<PDFobj> objects) {
         ownResources();
         PDFobj obj = null;
         int index = -1;
@@ -1394,27 +1470,40 @@ public class PDFobj {
             }
         }
         if (obj == null || index == -1) {
-            return this;
+            return null;
         }
-        // The graphics states go in the /ExtGState dictionary of the resources,
-        // which can be an object of its own. Resources without one get it.
         int i = index;
-        while (i < obj.dict.size() && !obj.dict.get(i).equals("/ExtGState")) {
+        while (i < obj.dict.size() && !obj.dict.get(i).equals(category)) {
             i++;
         }
         if (i == obj.dict.size()) {
-            obj.dict.addAll(index, Arrays.asList("/ExtGState", "<<", ">>"));
-            index += 2;
-        } else if (tokenAt(obj.dict, i + 1).equals("<<")) {
-            index = i + 2;
-        } else {                                // "/ExtGState 12 0 R"
-            PDFobj extGState = objectAt(objects, tokenAt(obj.dict, i + 1));
-            if (extGState == null) {
-                return this;
-            }
-            obj = extGState;
-            index = obj.dict.indexOf("<<") + 1;
+            obj.dict.addAll(index, Arrays.asList(category, "<<", ">>"));
+            return new Object[] {obj, index + 2};
         }
+        if (tokenAt(obj.dict, i + 1).equals("<<")) {
+            return new Object[] {obj, i + 2};
+        }
+        PDFobj entries = objectAt(objects, tokenAt(obj.dict, i + 1));   // "/ExtGState 12 0 R"
+        if (entries == null) {
+            return null;
+        }
+        return new Object[] {entries, entries.dict.indexOf("<<") + 1};
+    }
+
+    /**
+     * Sets the graphics state of the PDF.
+     *
+     * @param gs the graphics state.
+     * @param objects the objects list.
+     * @return this PDFobj object.
+     */
+    public PDFobj setGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+        Object[] found = resourceEntries("/ExtGState", objects);
+        if (found == null) {
+            return this;
+        }
+        PDFobj obj = (PDFobj) found[0];
+        int index = (Integer) found[1];
         List<String> entries = Arrays.asList(gs.entries().split(" "));
         String name = sameState(obj, index, entries);
         if (name != null) {

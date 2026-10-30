@@ -96,6 +96,10 @@ public class Page {
         return document
     }
     internal var pageObj: PDFobj?
+    // On a page that was read: what the names of the resources of the PDF are
+    // raised by, past the names it holds, and the resources drawn with
+    private var resourceBase = 0
+    private var readResources = [ReadResource]()
     internal var objNumber = 0
     internal var renderingMode = 0
     // Whether a text rendering mode other than 0 was written
@@ -237,6 +241,7 @@ public class Page {
         let pageSize = self.pageObj!.getPageSize()
         self.width = pageSize.getWidth()
         self.height = pageSize.getHeight()
+        self.resourceBase = self.pageObj!.maxResourceNumber()
         saveGraphicsState()
         let origin = self.pageObj!.mediaBoxOrigin()
         if origin.x != 0 || origin.y != 0 {
@@ -264,9 +269,38 @@ public class Page {
         // this one (review of 12 October 2026, F2).
         restoreGraphicsState()
         checkBalanced()
+        for resource in readResources {
+            var value = resource.value
+            if resource.number != 0 {
+                let written = PDFobj()
+                written.setNumber(objects.count + 1)
+                written.writtenNumber = resource.number
+                objects.append(written)
+                value = [String(written.getNumber()), "0", "R"]
+            }
+            pageObj!.addResourceEntry(resource.category, resource.name, value, &objects)
+        }
         if !pageObj!.wrapContents(Array("q\n".utf8), Array("Q\n".utf8) + self.buf, &objects) {
             pdf.fail("The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it.")
         }
+    }
+
+    // Returns the name for a resource of the PDF on this page, and keeps it for
+    // complete on a page that was read: the resources of the PDF do not reach
+    // that page, whose own resources have to name it, and its own names stay as
+    // they are. The graphics states, stamps and optional content drawn on such
+    // a page had no resource: the alpha was lost, and a stamp did not draw
+    // (review of 30 October 2026, B2).
+    final func resourceName(
+            _ category: String, _ prefix: String, _ n: Int, _ value: [String], _ number: Int) -> String {
+        if pageObj == nil {
+            return prefix + String(n)
+        }
+        let name = prefix + String(resourceBase + n)
+        if !readResources.contains(where: { $0.name == name }) {
+            readResources.append(ReadResource(category: category, name: name, value: value, number: number))
+        }
+        return name
     }
 
     /// Checks that every saveGraphicsState has its restoreGraphicsState and every
@@ -1373,8 +1407,8 @@ public class Page {
             n = pdf.states.count + 1
             pdf.states[state] = n
         }
-        append("/GS")
-        append(n!)
+        let value = ["<<"] + state.split(separator: " ").map(String.init) + [">>"]
+        append(resourceName("/ExtGState", "/GS", n!, value, 0))
         append(" gs\n")
         return self
     }
@@ -3715,4 +3749,14 @@ public class Page {
 
     // The hexadecimal digits of toUTF16Hex, made once.
     private static let upperHexDigits: [UInt8] = Array("0123456789ABCDEF".utf8)
+
+    // A resource of the PDF that a page that was read draws with. It goes in the
+    // category of the resources of the page, like /ExtGState, under the name:
+    // the value, or a reference to the object of the PDF with the number.
+    private struct ReadResource {
+        let category: String
+        let name: String
+        let value: [String]
+        let number: Int
+    }
 }   // End of Page.swift

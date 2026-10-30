@@ -476,6 +476,139 @@ func TestMergeWhatWasDrawnOnAPageThatWasReadIsMerged(t *testing.T) {
 	}
 }
 
+// testOnePagePDF returns a PDF of one page with the entries, a content stream
+// as its object 4, and the other objects after it.
+func testOnePagePDF(entries string, others ...string) []byte {
+	return testPDFWithObjects(append([]string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R " + entries + " >>",
+		"<< /Length 25 >>\nstream\n0 0 1 rg 10 10 50 50 re f\nendstream"}, others...)...)
+}
+
+// testResource returns the value of the name in the dictionary of the
+// resources of the first page of the PDF, the value of a reference when it is
+// one: the tokens of the object it refers to.
+func testResource(t *testing.T, buf []byte, category, name string) []string {
+	t.Helper()
+	objects := testRead(t, buf)
+	page := testNewPDF().GetPageObjects(objects)[0]
+	dict := page.GetResourcesObject(objects).dict
+	i := slices.Index(dict, category)
+	if i == -1 {
+		t.Fatalf("no %s in %v", category, dict)
+	}
+	if isObjectReference(dict, i+1) {
+		number, _ := strconv.Atoi(dict[i+1])
+		dict = objects[number-1].dict
+	} else {
+		dict = dict[i:]
+	}
+	i = slices.Index(dict, name)
+	if i == -1 {
+		t.Fatalf("no %s in %v", name, dict)
+	}
+	if isObjectReference(dict, i+1) {
+		number, _ := strconv.Atoi(dict[i+1])
+		return objects[number-1].dict
+	}
+	return dict[i+1:]
+}
+
+func TestMergeAGraphicsStateOnAPageThatWasReadIsInItsResources(t *testing.T) {
+	// The content named a /GS that the resources of the page did not have,
+	// so the alpha was lost; the name has to be one the page does not use
+	// (review of 30 October 2026, B2).
+	for _, merge := range []bool{true, false} {
+		objects := testRead(t, testOnePagePDF("/Resources << /ExtGState << /GS1 << /ca 0.1 >> >> >>"))
+		doc := testNewDoc()
+		page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+		page.SetGraphicsState(NewGraphicsState().SetAlphaNonStroking(0.5))
+		page.FillRect(300, 300, 100, 100)
+		page.Complete(&objects)
+		var err error
+		if merge {
+			err = doc.pdf.Merge(objects)
+		} else {
+			err = doc.pdf.AddObjects(objects)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		buf := doc.complete()
+		if value := testResource(t, buf, "/ExtGState", "/GS2"); value[0] != "<<" || value[3] != "/ca" || value[4] != "0.5" {
+			t.Errorf("merge %v: /GS2 is %v", merge, value)
+		}
+		if value := testResource(t, buf, "/ExtGState", "/GS1"); value[2] != "0.1" {
+			t.Errorf("merge %v: /GS1 is %v", merge, value)
+		}
+		merged := testRead(t, buf)
+		found := false
+		for _, obj := range merged {
+			found = found || strings.Contains(string(obj.GetData()), "/GS2 gs\n")
+		}
+		if !found {
+			t.Errorf("merge %v: the content does not use /GS2", merge)
+		}
+	}
+}
+
+func TestMergeAStampAndOptionalContentOnAPageThatWasReadAreInItsResources(t *testing.T) {
+	// They are objects of the PDF being written, and the page has to refer
+	// to them by their numbers there (review of 30 October 2026, B2).
+	objects := testRead(t, testOnePagePDF("/Resources << /XObject 5 0 R >>", "<< /Fm9 4 0 R >>"))
+	doc := testNewDoc()
+	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+	stamp := NewStamp(doc.pdf).SetSize(100, 100)
+	stamp.Complete()
+	stamp.SetLocation(200, 200)
+	stamp.DrawOn(page)
+	group := NewOptionalContentGroup(doc.pdf, "Layer")
+	group.Add(NewRect(300, 300, 100, 100))
+	group.DrawOn(page)
+	page.Complete(&objects)
+	if err := doc.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	buf := doc.complete()
+	if value := testResource(t, buf, "/XObject", "/Fm"+strconv.Itoa(9+stamp.objNumber)); !slices.Contains(value, "/Form") {
+		t.Errorf("the stamp is %v", value)
+	}
+	if value := testResource(t, buf, "/XObject", "/Fm9"); !slices.Contains(value, "/Length") {
+		t.Errorf("/Fm9 is %v", value)
+	}
+	if value := testResource(t, buf, "/Properties", "/OC10"); !slices.Contains(value, "/OCG") {
+		t.Errorf("the group is %v", value)
+	}
+}
+
+func TestMergeAPageWithNoResourcesGetsThem(t *testing.T) {
+	// A font added to it did nothing, and the text was lost with no error
+	// (review of 30 October 2026, B5).
+	objects := testRead(t, testOnePagePDF(""))
+	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	doc := testNewDoc()
+	pageObj := doc.pdf.GetPageObjects(objects)[0]
+	page := NewPageFromObject(doc.pdf, pageObj)
+	page.AddFontResource(font, &objects)
+	page.DrawString(font, nil, 12, "Hello", 72, 72)
+	page.Complete(&objects)
+	if err := doc.pdf.AddObjects(objects); err != nil {
+		t.Fatal(err)
+	}
+	value := testResource(t, doc.complete(), "/Font", "/F"+strconv.Itoa(font.objNumber))
+	if !slices.Contains(value, "/Type0") {
+		t.Errorf("the font is %v", value)
+	}
+
+	objects = testRead(t, testOnePagePDF(""))
+	pageObj = testNewPDF().GetPageObjects(objects)[0]
+	pageObj.SetGraphicsState(NewGraphicsState().SetAlphaNonStroking(0.5), &objects)
+	if resources := pageObj.GetResourcesObject(objects); resources == nil || !slices.Contains(resources.dict, "/GS1") {
+		t.Errorf("no graphics state in %v", pageObj.dict)
+	}
+}
+
 // testInheritedResources returns a PDF of pages under one node that holds an
 // inline /Resources of the fonts, which the pages inherit.
 func testInheritedResources(pages, fonts int) []byte {

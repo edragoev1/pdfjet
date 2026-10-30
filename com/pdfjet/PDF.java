@@ -2126,9 +2126,14 @@ final public class PDF {
             for (int j = 0; j < value.size(); j++) {
                 if (isReference(value, j)) {
                     int number = Integer.parseInt(value.get(j));
-                    if (!numbers.containsKey(number) && isMergedObject(number, objects, mergedPages)) {
-                        numbers.put(number, reserveObjNumber());
-                        queue.add(objects.get(number - 1));
+                    if (!numbers.containsKey(number)) {
+                        PDFobj written = PDFobj.objectNumbered(objects, number);
+                        if (written != null && written.writtenNumber != 0) {
+                            numbers.put(number, written.writtenNumber);
+                        } else if (isMergedObject(number, objects, mergedPages)) {
+                            numbers.put(number, reserveObjNumber());
+                            queue.add(objects.get(number - 1));
+                        }
                     }
                     j += 2;
                 }

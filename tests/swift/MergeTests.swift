@@ -384,6 +384,117 @@ import Testing
         #expect(text.contains("72 720 Td"), "the drawing is lost")
     }
 
+    // Returns a PDF of one page with the entries, a content stream as its
+    // object 4, and the other objects after it.
+    private func onePagePDF(_ entries: String, _ others: String...) -> [UInt8] {
+        return TestSupport.pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R \(entries) >>",
+            "<< /Length 25 >>\nstream\n0 0 1 rg 10 10 50 50 re f\nendstream"] + others)
+    }
+
+    // Returns the value of the name in the dictionary of the resources of the
+    // first page of the PDF, the tokens of the object it refers to when it is
+    // a reference, or nothing.
+    private func resource(_ buf: [UInt8], _ category: String, _ name: String) throws -> [String] {
+        let objects = try TestSupport.read(buf)
+        let page = MemoryPDF().pdf.getPageObjects(from: objects)[0]
+        var dict = page.getResourcesObject(objects)!.dict
+        guard let i = dict.firstIndex(of: category) else {
+            return []
+        }
+        if PDF.isReference(dict, i + 1) {
+            dict = objects[Int(dict[i + 1])! - 1].dict
+        } else {
+            dict = Array(dict[i...])
+        }
+        guard let k = dict.firstIndex(of: name) else {
+            return []
+        }
+        if PDF.isReference(dict, k + 1) {
+            return objects[Int(dict[k + 1])! - 1].dict
+        }
+        return Array(dict[(k + 1)...])
+    }
+
+    @Test func aGraphicsStateOnAPageThatWasReadIsInItsResources() throws {
+        // The content named a /GS that the resources of the page did not have,
+        // so the alpha was lost; the name has to be one the page does not use
+        // (review of 30 October 2026, B2).
+        for merge in [true, false] {
+            var objects = try TestSupport.read(
+                    onePagePDF("/Resources << /ExtGState << /GS1 << /ca 0.1 >> >> >>"))
+            let memory = MemoryPDF()
+            let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+            let state = GraphicsState()
+            state.setAlphaNonStroking(0.5)
+            page.setGraphicsState(state)
+            page.fillRect(300, 300, 100, 100)
+            page.complete(&objects)
+            if merge {
+                try memory.pdf.merge(objects)
+            } else {
+                try memory.pdf.addObjects(objects)
+            }
+            try memory.pdf.complete()
+            let value = try resource(memory.bytes, "/ExtGState", "/GS2")
+            #expect(value.count > 4 && value[0] == "<<" && value[3] == "/ca" && value[4] == "0.5", "\(value)")
+            let first = try resource(memory.bytes, "/ExtGState", "/GS1")
+            #expect(first.count > 2 && first[2] == "0.1", "\(first)")
+            #expect(try TestSupport.read(memory.bytes).contains {
+                $0.stream != nil && String(decoding: $0.getData(), as: UTF8.self).contains("/GS2 gs\n")
+            }, "the content does not use /GS2")
+        }
+    }
+
+    @Test func aStampAndOptionalContentOnAPageThatWasReadAreInItsResources() throws {
+        // They are objects of the PDF being written, and the page has to refer
+        // to them by their numbers there (review of 30 October 2026, B2).
+        var objects = try TestSupport.read(
+                onePagePDF("/Resources << /XObject 5 0 R >>", "<< /Fm9 4 0 R >>"))
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+        let stamp = Stamp(memory.pdf)
+        stamp.setSize(100, 100)
+        try stamp.complete()
+        stamp.setLocation(200, 200)
+        stamp.drawOn(page)
+        let group = OptionalContentGroup(memory.pdf, "Layer")
+        group.add(Rect(300, 300, 100, 100))
+        group.drawOn(page)
+        page.complete(&objects)
+        try memory.pdf.merge(objects)
+        try memory.pdf.complete()
+        let stamped = try resource(memory.bytes, "/XObject", "/Fm\(9 + stamp.objNumber!)")
+        #expect(stamped.contains("/Form"), "\(stamped)")
+        #expect(try resource(memory.bytes, "/XObject", "/Fm9").contains("/Length"))
+        #expect(try resource(memory.bytes, "/Properties", "/OC10").contains("/OCG"))
+    }
+
+    @Test func aPageWithNoResourcesGetsThem() throws {
+        // A font added to it did nothing, and the text was lost with no error
+        // (review of 30 October 2026, B5).
+        var objects = try TestSupport.read(onePagePDF(""))
+        let font = try Font(&objects, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+        page.addResource(font, &objects)
+        page.drawString(font, nil, 12, "Hello", 72, 72)
+        page.complete(&objects)
+        try memory.pdf.addObjects(objects)
+        try memory.pdf.complete()
+        let value = try resource(memory.bytes, "/Font", "/F\(font.objNumber)")
+        #expect(value.contains("/Type0"), "\(value)")
+
+        objects = try TestSupport.read(onePagePDF(""))
+        let pageObj = memory.pdf.getPageObjects(from: objects)[0]
+        let state = GraphicsState()
+        state.setAlphaNonStroking(0.5)
+        pageObj.setGraphicsState(state, &objects)
+        #expect(pageObj.getResourcesObject(objects)?.dict.contains("/GS1") == true)
+    }
+
     // Returns a PDF of pages under one node that holds an inline /Resources
     // of the fonts, which the pages inherit.
     private func inheritedResources(_ pages: Int, _ fonts: Int) -> [UInt8] {

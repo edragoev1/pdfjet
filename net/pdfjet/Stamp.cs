@@ -594,8 +594,7 @@ public class Stamp : IDrawable {
         page.Append(" cm\n");
 
         // 1. DRAW: draw the object
-        page.Append("/Fm");
-        page.Append(objNumber);
+        page.Append(page.ResourceName("/XObject", "/Fm", objNumber, null, objNumber));
         page.Append(" Do\n");
 
         page.RestoreGraphicsState();

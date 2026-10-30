@@ -615,8 +615,7 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	page.appendString(" cm\n")
 
 	// 1. DRAW: draw the object
-	page.appendString("/Fm")
-	page.appendInteger(s.objNumber)
+	page.appendString(page.resourceName("/XObject", "/Fm", s.objNumber, nil, s.objNumber))
 	page.appendString(" Do\n")
 
 	page.RestoreGraphicsState()

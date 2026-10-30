@@ -37,6 +37,10 @@ public class PDFobj {
     // The objects of the PDF it was read from, by number, for the masks of an
     // image copied into another PDF; null for an object not read
     internal Dictionary<int, PDFobj> readObjects;
+    // The number in the PDF being written of an object that a page that was
+    // read uses, like a stamp: this object stands for it among the objects,
+    // and only Merge reads the number
+    internal int writtenNumber;
 
     /// <summary>
     /// Creates an object with an empty dictionary.
@@ -809,14 +813,20 @@ public class PDFobj {
 
     // Gives the page a copy of the /Resources it shares with the others under
     // its node, before a resource is added to it, so that the resource is the
-    // page's alone, as it was when every page had a copy.
+    // page's alone, as it was when every page had a copy. A page with no
+    // /Resources gets an empty one: the fonts added to it were lost, with no
+    // error (review of 30 October 2026, B5).
     internal void OwnResources() {
-        if (inheritedResources == null) {
-            return;
+        List<String> entry = inheritedResources;
+        if (entry == null) {
+            if (EntryIndexOf("/Resources") != -1) {
+                return;
+            }
+            entry = new List<String> {"<<", ">>"};
         }
         int open = dict.IndexOf("<<");
         if (open != -1) {
-            dict.InsertRange(open + 1, inheritedResources);
+            dict.InsertRange(open + 1, entry);
             dict.Insert(open + 1, "/Resources");
         }
         inheritedResources = null;
@@ -1227,9 +1237,85 @@ public class PDFobj {
         return maxGSNumber;
     }
 
-    /// <summary>Adds the graphics state to the resources of this page.</summary>
-    public PDFobj SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+    // Returns the largest number of the /GS, /Fm and /OC names in the resources
+    // of this page, or 0, so that the names of what is drawn on it are not those
+    // of what it holds. They are all read from the objects of the PDF, in the
+    // resources or in an /ExtGState, /XObject or /Properties dictionary that is
+    // an object of its own.
+    internal int MaxResourceNumber() {
+        if (readObjects == null) {
+            return 0;
+        }
+        List<String> tokens = inheritedResources;
+        if (tokens == null) {
+            int i = EntryIndexOf("/Resources");
+            if (i == -1) {
+                return 0;
+            }
+            tokens = dict;
+            if (PDF.IsReference(dict, i + 1)) {
+                PDFobj resources;
+                if (!readObjects.TryGetValue(Int32.Parse(dict[i + 1], CultureInfo.InvariantCulture), out resources)) {
+                    return 0;
+                }
+                tokens = resources.dict;
+            }
+        }
+        int maximum = MaxNameNumber(tokens);
+        for (int i = 0; i < tokens.Count; i++) {
+            String token = tokens[i];
+            if ((token == "/ExtGState" || token == "/XObject" || token == "/Properties")
+                    && PDF.IsReference(tokens, i + 1)) {
+                PDFobj entries;
+                if (readObjects.TryGetValue(Int32.Parse(tokens[i + 1], CultureInfo.InvariantCulture), out entries)) {
+                    maximum = Math.Max(maximum, MaxNameNumber(entries.dict));
+                }
+            }
+        }
+        return maximum;
+    }
+
+    // Returns the largest number of the names in the tokens that are /GS, /Fm
+    // or /OC and one to nine digits, or 0.
+    private static int MaxNameNumber(List<String> tokens) {
+        int maximum = 0;
+        foreach (String token in tokens) {
+            if (token.Length >= 4
+                    && (token.StartsWith("/GS", StringComparison.Ordinal)
+                            || token.StartsWith("/Fm", StringComparison.Ordinal)
+                            || token.StartsWith("/OC", StringComparison.Ordinal))
+                    && IsGSName("/GS" + token.Substring(3))) {
+                maximum = Math.Max(maximum, Int32.Parse(token.Substring(3), CultureInfo.InvariantCulture));
+            }
+        }
+        return maximum;
+    }
+
+    // Adds the name and its value to a dictionary of the resources of this
+    // page, like /ExtGState, unless it has the name.
+    internal void AddResourceEntry(String category, String name, List<String> value, List<PDFobj> objects) {
+        PDFobj resources;
+        int index = ResourceEntries(category, objects, out resources);
+        if (resources == null) {
+            return;
+        }
+        for (int i = index; i < resources.dict.Count && resources.dict[i] != ">>";
+                i = PDF.ValueEnd(resources.dict, i + 1)) {
+            if (resources.dict[i] == name) {
+                return;
+            }
+        }
+        resources.dict.InsertRange(index, value);
+        resources.dict.Insert(index, name);
+    }
+
+    // Returns the index of the first entry of a dictionary of the resources of
+    // this page, like /ExtGState, and the object that holds it, or null. The
+    // resources and the dictionary can be objects of their own, and resources
+    // without the dictionary get it.
+    private int ResourceEntries(String category, List<PDFobj> objects, out PDFobj holder) {
         OwnResources();
+        holder = null;
         PDFobj obj = null;
         int index = -1;
         for (int i = 0; i < dict.Count; i++) {
@@ -1250,26 +1336,31 @@ public class PDFobj {
             }
         }
         if (obj == null || index == -1) {
-            return this;
+            return -1;
         }
-        // The graphics states go in the /ExtGState dictionary of the resources,
-        // which can be an object of its own. Resources without one get it.
         int k = index;
-        while (k < obj.dict.Count && !obj.dict[k].Equals("/ExtGState")) {
+        while (k < obj.dict.Count && !obj.dict[k].Equals(category)) {
             k++;
         }
         if (k == obj.dict.Count) {
-            obj.dict.InsertRange(index, new String[] {"/ExtGState", "<<", ">>"});
-            index += 2;
-        } else if (TokenAt(obj.dict, k + 1).Equals("<<")) {
-            index = k + 2;
-        } else {                                    // "/ExtGState 12 0 R"
-            PDFobj extGState = ObjectAt(objects, TokenAt(obj.dict, k + 1));
-            if (extGState == null) {
-                return this;
-            }
-            obj = extGState;
-            index = obj.dict.IndexOf("<<") + 1;
+            obj.dict.InsertRange(index, new String[] {category, "<<", ">>"});
+            holder = obj;
+            return index + 2;
+        }
+        if (TokenAt(obj.dict, k + 1).Equals("<<")) {
+            holder = obj;
+            return k + 2;
+        }
+        holder = ObjectAt(objects, TokenAt(obj.dict, k + 1));   // "/ExtGState 12 0 R"
+        return (holder == null) ? -1 : holder.dict.IndexOf("<<") + 1;
+    }
+
+    /// <summary>Adds the graphics state to the resources of this page.</summary>
+    public PDFobj SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+        PDFobj obj;
+        int index = ResourceEntries("/ExtGState", objects, out obj);
+        if (obj == null) {
+            return this;
         }
         List<String> entries = new List<String>(gs.Entries().Split(' '));
         String name = SameState(obj, index, entries);

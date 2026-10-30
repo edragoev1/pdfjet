@@ -45,6 +45,10 @@ type PDFobj struct {
 	// The objects of the PDF it was read from, by number, for the masks of
 	// an image copied into another PDF; nil for an object not read
 	readObjects map[int]*PDFobj
+	// The number in the PDF being written of an object that a page that was
+	// read uses, like a stamp: this object stands for it among the objects,
+	// and only Merge reads the number
+	writtenNumber int
 }
 
 // maxDecodedTotal is what all the streams of one PDF may decode to together,
@@ -856,13 +860,18 @@ func indexAt(dict []string, index int) int {
 
 // ownResources gives the page a copy of the /Resources it shares with the
 // others under its node, before a resource is added to it, so that the
-// resource is the page's alone, as it was when every page had a copy.
+// resource is the page's alone, as it was when every page had a copy. A page
+// with no /Resources gets an empty one: the fonts added to it were lost, with
+// no error (review of 30 October 2026, B5).
 func (obj *PDFobj) ownResources() {
+	entry := append([]string{"/Resources"}, obj.inheritedResources...)
 	if obj.inheritedResources == nil {
-		return
+		if obj.entryIndexOf("/Resources") != -1 {
+			return
+		}
+		entry = []string{"/Resources", "<<", ">>"}
 	}
 	if open := slices.Index(obj.dict, "<<"); open != -1 {
-		entry := append([]string{"/Resources"}, obj.inheritedResources...)
 		obj.dict = insertArrayAt(obj.dict, entry, open+1)
 	}
 	obj.inheritedResources = nil
@@ -1269,8 +1278,75 @@ func getMaxGSNumber(obj *PDFobj) int {
 	return maxGSNumber
 }
 
-// SetGraphicsState sets the graphics state.
-func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFobj {
+// maxResourceNumber returns the largest number of the /GS, /Fm and /OC names
+// in the resources of this page, or 0, so that the names of what is drawn on
+// it are not those of what it holds. They are all read from the objects of the
+// PDF, in the resources or in an /ExtGState, /XObject or /Properties dictionary
+// that is an object of its own.
+func (obj *PDFobj) maxResourceNumber() int {
+	dict := obj.inheritedResources
+	if dict == nil {
+		i := obj.entryIndexOf("/Resources")
+		if i == -1 {
+			return 0
+		}
+		dict = obj.dict
+		if isObjectReference(obj.dict, i+1) {
+			number, _ := strconv.Atoi(obj.dict[i+1])
+			resources := obj.readObjects[number]
+			if resources == nil {
+				return 0
+			}
+			dict = resources.dict
+		}
+	}
+	maximum := maxNameNumber(dict)
+	for i, token := range dict {
+		if (token == "/ExtGState" || token == "/XObject" || token == "/Properties") &&
+			isObjectReference(dict, i+1) {
+			number, _ := strconv.Atoi(dict[i+1])
+			if entries := obj.readObjects[number]; entries != nil {
+				maximum = max(maximum, maxNameNumber(entries.dict))
+			}
+		}
+	}
+	return maximum
+}
+
+// maxNameNumber returns the largest number of the names in the tokens that
+// are /GS, /Fm or /OC and one to nine digits, or 0.
+func maxNameNumber(tokens []string) int {
+	maximum := 0
+	for _, token := range tokens {
+		if len(token) >= 4 && (token[:3] == "/GS" || token[:3] == "/Fm" || token[:3] == "/OC") &&
+			isGSName("/GS"+token[3:]) {
+			number, _ := strconv.Atoi(token[3:])
+			maximum = max(maximum, number)
+		}
+	}
+	return maximum
+}
+
+// addResourceEntry adds the name and its value to a dictionary of the
+// resources of this page, like /ExtGState, unless it has the name.
+func (obj *PDFobj) addResourceEntry(category, name string, value []string, objects *[]*PDFobj) {
+	resources, index := obj.resourceEntries(category, objects)
+	if resources == nil {
+		return
+	}
+	for i := index; i < len(resources.dict) && resources.dict[i] != ">>"; i = dictValueEnd(resources.dict, i+1) {
+		if resources.dict[i] == name {
+			return
+		}
+	}
+	resources.dict = insertArrayAt(resources.dict, append([]string{name}, value...), index)
+}
+
+// resourceEntries returns the object that holds a dictionary of the resources
+// of this page, like /ExtGState, and the index of its first entry, or nil. The
+// resources and the dictionary can be objects of their own, and resources
+// without the dictionary get it.
+func (obj *PDFobj) resourceEntries(category string, objects *[]*PDFobj) (*PDFobj, int) {
 	obj.ownResources()
 	var resources *PDFobj
 	index := -1
@@ -1293,26 +1369,31 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 		}
 	}
 	if resources == nil || index == -1 {
-		return obj
+		return nil, -1
 	}
-	// The graphics states go in the /ExtGState dictionary of the resources,
-	// which can be an object of its own. Resources without one get it.
 	i := index
-	for i < len(resources.dict) && resources.dict[i] != "/ExtGState" {
+	for i < len(resources.dict) && resources.dict[i] != category {
 		i++
 	}
 	if i == len(resources.dict) {
-		resources.dict = insertArrayAt(resources.dict, []string{"/ExtGState", "<<", ">>"}, index)
-		index += 2
-	} else if tokenAt(resources.dict, i+1) == "<<" {
-		index = i + 2
-	} else { // "/ExtGState 12 0 R"
-		o := objectAt(*objects, tokenAt(resources.dict, i+1))
-		if o == nil {
-			return obj
-		}
-		resources = o
-		index = slices.Index(resources.dict, "<<") + 1
+		resources.dict = insertArrayAt(resources.dict, []string{category, "<<", ">>"}, index)
+		return resources, index + 2
+	}
+	if tokenAt(resources.dict, i+1) == "<<" {
+		return resources, i + 2
+	}
+	o := objectAt(*objects, tokenAt(resources.dict, i+1)) // "/ExtGState 12 0 R"
+	if o == nil {
+		return nil, -1
+	}
+	return o, slices.Index(o.dict, "<<") + 1
+}
+
+// SetGraphicsState sets the graphics state.
+func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFobj {
+	resources, index := obj.resourceEntries("/ExtGState", objects)
+	if resources == nil {
+		return obj
 	}
 	entries := strings.Split(gs.entries(), " ")
 	name := sameState(resources, index, entries)

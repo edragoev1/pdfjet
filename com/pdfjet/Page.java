@@ -25,6 +25,10 @@ final public class Page {
     protected PDF pdf;
     /** The page object, when the page was read from an existing PDF. */
     protected PDFobj pageObj;
+    // On a page that was read: what the names of the resources of the PDF are
+    // raised by, past the names it holds, and the resources drawn with
+    private int resourceBase;
+    private final List<ReadResource> readResources = new ArrayList<ReadResource>();
     /** The object number of this page. */
     protected int objNumber;
     /** The content stream of this page. */
@@ -223,6 +227,7 @@ final public class Page {
         width = pageSize.getWidth();
         height = pageSize.getHeight();
         buf = new ContentBuffer(8192);
+        resourceBase = pageObj.maxResourceNumber();
         this.saveGraphicsState();
         float[] origin = pageObj.mediaBoxOrigin();
         if (origin[0] != 0f || origin[1] != 0f) {
@@ -317,6 +322,17 @@ final public class Page {
     public void complete(List<PDFobj> objects) {
         restoreGraphicsState();
         checkBalanced();
+        for (ReadResource resource : readResources) {
+            List<String> value = resource.value;
+            if (resource.number != 0) {
+                PDFobj written = new PDFobj();
+                written.number = objects.size() + 1;
+                written.writtenNumber = resource.number;
+                objects.add(written);
+                value = Arrays.asList(String.valueOf(written.number), "0", "R");
+            }
+            pageObj.addResourceEntry(resource.category, resource.name, value, objects);
+        }
         byte[] content = getContent();
         byte[] after = new byte[content.length + 2];
         after[0] = 'Q';
@@ -326,6 +342,26 @@ final public class Page {
             pdf.fail(new IllegalStateException(
                     "The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it."));
         }
+    }
+
+    // Returns the name for a resource of the PDF on this page, and keeps it for
+    // complete on a page that was read: the resources of the PDF do not reach
+    // that page, whose own resources have to name it, and its own names stay as
+    // they are. The graphics states, stamps and optional content drawn on such a
+    // page had no resource: the alpha was lost, and a stamp did not draw (review
+    // of 30 October 2026, B2).
+    String resourceName(String category, String prefix, int n, List<String> value, int number) {
+        if (pageObj == null) {
+            return prefix + n;
+        }
+        String name = prefix + (resourceBase + n);
+        for (ReadResource resource : readResources) {
+            if (resource.name.equals(name)) {
+                return name;
+            }
+        }
+        readResources.add(new ReadResource(category, name, value, number));
+        return name;
     }
 
     /**
@@ -2576,8 +2612,10 @@ final public class Page {
             n = pdf.states.size() + 1;
             pdf.states.put(state, n);
         }
-        append("/GS");
-        append(n);
+        List<String> value = new ArrayList<String>(Arrays.asList(state.split(" ")));
+        value.add(0, "<<");
+        value.add(">>");
+        append(resourceName("/ExtGState", "/GS", n, value, 0));
         append(" gs\n");
         return this;
     }
@@ -3861,5 +3899,22 @@ final public class Page {
             sb.append(digits.charAt(ch & 0xF));
         }
         return sb.toString();
+    }
+
+    // A resource of the PDF that a page that was read draws with. It goes in the
+    // category of the resources of the page, like /ExtGState, under the name: the
+    // value, or a reference to the object of the PDF with the number.
+    private static final class ReadResource {
+        final String category;
+        final String name;
+        final List<String> value;
+        final int number;
+
+        ReadResource(String category, String name, List<String> value, int number) {
+            this.category = category;
+            this.name = name;
+            this.value = value;
+            this.number = number;
+        }
     }
 }   // End of Page.java

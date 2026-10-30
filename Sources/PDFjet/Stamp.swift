@@ -611,7 +611,7 @@ public class Stamp : Drawable {
         page.append(" cm\n")
 
         // 1. DRAW: draw the object
-        page.append("/Fm\(objNumber ?? 0) Do\n")
+        page.append(page.resourceName("/XObject", "/Fm", objNumber ?? 0, [], objNumber ?? 0) + " Do\n")
 
         page.restoreGraphicsState()
         page.addEMC()

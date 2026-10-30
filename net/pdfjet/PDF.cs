@@ -2065,9 +2065,14 @@ public sealed class PDF {
             for (int j = 0; j < value.Count; j++) {
                 if (IsReference(value, j)) {
                     int number = Int32.Parse(value[j], CultureInfo.InvariantCulture);
-                    if (!numbers.ContainsKey(number) && IsMergedObject(number, objects, mergedPages)) {
-                        numbers[number] = ReserveObjNumber();
-                        queue.Add(objects[number - 1]);
+                    if (!numbers.ContainsKey(number)) {
+                        PDFobj written = PDFobj.ObjectNumbered(objects, number);
+                        if (written != null && written.writtenNumber != 0) {
+                            numbers[number] = written.writtenNumber;
+                        } else if (IsMergedObject(number, objects, mergedPages)) {
+                            numbers[number] = ReserveObjNumber();
+                            queue.Add(objects[number - 1]);
+                        }
                     }
                     j += 2;
                 }

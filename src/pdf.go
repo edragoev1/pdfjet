@@ -2051,9 +2051,13 @@ func (pdf *PDF) mergePages(objects []*PDFobj, pageObjects []*PDFobj) {
 		for j := 0; j < len(value); j++ {
 			if isObjectReference(value, j) {
 				number, _ := strconv.Atoi(value[j])
-				if _, ok := numbers[number]; !ok && isMergedObject(number, objects, mergedPages) {
-					numbers[number] = pdf.reserveObjNumber()
-					queue = append(queue, objects[number-1])
+				if _, ok := numbers[number]; !ok {
+					if written := objectNumbered(objects, number); written != nil && written.writtenNumber != 0 {
+						numbers[number] = written.writtenNumber
+					} else if isMergedObject(number, objects, mergedPages) {
+						numbers[number] = pdf.reserveObjNumber()
+						queue = append(queue, objects[number-1])
+					}
 				}
 				j += 2
 			}

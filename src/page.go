@@ -52,6 +52,10 @@ type Page struct {
 	pageObj       *PDFobj
 	objNumber     int
 	renderingMode int
+	// On a page that was read: what the names of the resources of the PDF are
+	// raised by, past the names it holds, and the resources drawn with
+	resourceBase  int
+	readResources []readResource
 	// Whether a text rendering mode other than 0 was written
 	renderingModeSet bool
 	width            float32
@@ -212,6 +216,16 @@ func NewPageDetached(pdf *PDF, pageSize pagesize.PageSize) *Page {
 	return newPage(pdf, pageSize, false)
 }
 
+// readResource is a resource of the PDF that a page that was read draws with.
+// It goes in the category of the resources of the page, like /ExtGState, under
+// the name: the value, or a reference to the object of the PDF with the number.
+type readResource struct {
+	category string
+	name     string
+	value    []string
+	number   int
+}
+
 // NewPage constructs page object and adds it to the PDF document.
 //
 // Please note:
@@ -260,6 +274,7 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.strokeDashPattern = "[] 0"
 	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
+	page.resourceBase = pageObj.maxResourceNumber()
 	page.SaveGraphicsState()
 	if x0, y0 := pageObj.mediaBoxOrigin(); x0 != 0 || y0 != 0 {
 		// The page starts at the corner of its /MediaBox: at 0, 0 of a box
@@ -286,9 +301,39 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 func (page *Page) Complete(objects *[]*PDFobj) {
 	page.RestoreGraphicsState()
 	page.checkBalanced()
+	for _, resource := range page.readResources {
+		value := resource.value
+		if resource.number != 0 {
+			written := newPDFobj().setNumber(len(*objects) + 1)
+			written.writtenNumber = resource.number
+			*objects = append(*objects, written)
+			value = []string{strconv.Itoa(written.number), "0", "R"}
+		}
+		page.pageObj.addResourceEntry(resource.category, resource.name, value, objects)
+	}
 	if !page.pageObj.wrapContents([]byte("q\n"), append([]byte("Q\n"), page.getContent()...), objects) {
 		page.pdf.fail("The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it.")
 	}
+}
+
+// resourceName returns the name for a resource of the PDF on this page, and
+// keeps it for Complete on a page that was read: the resources of the PDF do
+// not reach that page, whose own resources have to name it, and its own names
+// stay as they are. The graphics states, stamps and optional content drawn on
+// such a page had no resource: the alpha was lost, and a stamp did not draw
+// (review of 30 October 2026, B2).
+func (page *Page) resourceName(category, prefix string, n int, value []string, number int) string {
+	if page.pageObj == nil {
+		return prefix + strconv.Itoa(n)
+	}
+	name := prefix + strconv.Itoa(page.resourceBase+n)
+	for _, resource := range page.readResources {
+		if resource.name == name {
+			return name
+		}
+	}
+	page.readResources = append(page.readResources, readResource{category, name, value, number})
+	return name
 }
 
 // checkBalanced records a SaveGraphicsState without its RestoreGraphicsState,
@@ -1353,8 +1398,8 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 		n = len(page.pdf.states) + 1
 		page.pdf.states[state] = n
 	}
-	page.appendString("/GS")
-	page.appendInteger(n)
+	value := slices.Concat([]string{"<<"}, strings.Split(state, " "), []string{">>"})
+	page.appendString(page.resourceName("/ExtGState", "/GS", n, value, 0))
 	page.appendString(" gs\n")
 	return page
 }

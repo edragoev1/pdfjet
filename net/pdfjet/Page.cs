@@ -40,6 +40,10 @@ public class Page {
 
     internal PDF pdf;
     internal PDFobj pageObj;
+    // On a page that was read: what the names of the resources of the PDF are
+    // raised by, past the names it holds, and the resources drawn with
+    private int resourceBase;
+    private readonly List<ReadResource> readResources = new List<ReadResource>();
     internal int objNumber;
 
     internal MemoryStream buf;
@@ -199,6 +203,7 @@ public class Page {
         this.width = pageSize.GetWidth();
         this.height = pageSize.GetHeight();
         this.buf = new MemoryStream(8192);
+        resourceBase = pageObj.MaxResourceNumber();
         SaveGraphicsState();
         float[] origin = pageObj.MediaBoxOrigin();
         if (origin[0] != 0f || origin[1] != 0f) {
@@ -226,6 +231,17 @@ public class Page {
         // this one (review of 12 October 2026, F2).
         RestoreGraphicsState();
         CheckBalanced();
+        foreach (ReadResource resource in readResources) {
+            List<String> value = resource.value;
+            if (resource.number != 0) {
+                PDFobj written = new PDFobj();
+                written.number = objects.Count + 1;
+                written.writtenNumber = resource.number;
+                objects.Add(written);
+                value = new List<String> {written.number.ToString(CultureInfo.InvariantCulture), "0", "R"};
+            }
+            pageObj.AddResourceEntry(resource.category, resource.name, value, objects);
+        }
         byte[] content = GetContent();
         byte[] after = new byte[content.Length + 2];
         after[0] = (byte) 'Q';
@@ -235,6 +251,26 @@ public class Page {
             pdf.Fail(new InvalidOperationException(
                     "The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it."));
         }
+    }
+
+    // Returns the name for a resource of the PDF on this page, and keeps it for
+    // Complete on a page that was read: the resources of the PDF do not reach
+    // that page, whose own resources have to name it, and its own names stay as
+    // they are. The graphics states, stamps and optional content drawn on such a
+    // page had no resource: the alpha was lost, and a stamp did not draw (review
+    // of 30 October 2026, B2).
+    internal String ResourceName(String category, String prefix, int n, List<String> value, int number) {
+        if (pageObj == null) {
+            return prefix + n.ToString(CultureInfo.InvariantCulture);
+        }
+        String name = prefix + (resourceBase + n).ToString(CultureInfo.InvariantCulture);
+        foreach (ReadResource resource in readResources) {
+            if (resource.name == name) {
+                return name;
+            }
+        }
+        readResources.Add(new ReadResource(category, name, value, number));
+        return name;
     }
 
     // Checks that every SaveGraphicsState has its RestoreGraphicsState and every
@@ -2560,8 +2596,10 @@ public class Page {
             n = pdf.states.Count + 1;
             pdf.states[state] = n;
         }
-        Append("/GS");
-        Append(n);
+        List<String> value = new List<String>(state.Split(' '));
+        value.Insert(0, "<<");
+        value.Add(">>");
+        Append(ResourceName("/ExtGState", "/GS", n, value, 0));
         Append(" gs\n");
         return this;
     }
@@ -3597,6 +3635,23 @@ public class Page {
             chars[7 + 4 * i] = digits[ch & 0xF];
         }
         return new String(chars);
+    }
+
+    // A resource of the PDF that a page that was read draws with. It goes in the
+    // category of the resources of the page, like /ExtGState, under the name: the
+    // value, or a reference to the object of the PDF with the number.
+    private sealed class ReadResource {
+        internal readonly String category;
+        internal readonly String name;
+        internal readonly List<String> value;
+        internal readonly int number;
+
+        internal ReadResource(String category, String name, List<String> value, int number) {
+            this.category = category;
+            this.name = name;
+            this.value = value;
+            this.number = number;
+        }
     }
 }   // End of Page.cs
 }   // End of namespace PDFjet.NET
