@@ -831,5 +831,67 @@ public class SVGImageTest {
         Assert.Equal("q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
                 + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", content);
     }
+
+    // An SVG of a chain of use elements, flat in the file.
+    private static string UseChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><defs><rect id=\"u0\" width=\"1\" height=\"1\"/>");
+        for (int i = 1; i <= links; i++) {
+            svg.Append("<use id=\"u").Append(i).Append("\" href=\"#u").Append(i - 1).Append("\"/>");
+        }
+        return svg.Append("</defs><use href=\"#u").Append(links).Append("\"/></svg>").ToString();
+    }
+
+    // An SVG of elements nested levels deep in the svg element, around the content.
+    private static string Nested(string open, string end, string content, int levels) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < levels; i++) {
+            svg.Append(open);
+        }
+        svg.Append(content);
+        for (int i = 0; i < levels; i++) {
+            svg.Append(end);
+        }
+        return svg.Append("</svg>").ToString();
+    }
+
+    // An SVG of markers each drawn by a path in the one before it.
+    private static string MarkerChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < links; i++) {
+            svg.Append("<marker id=\"m").Append(i).Append("\"><path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m")
+                    .Append(i + 1).Append(")\"/></marker>");
+        }
+        svg.Append("<marker id=\"m").Append(links).Append("\"><rect width=\"1\" height=\"1\"/></marker>");
+        return svg.Append("<path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m0)\"/></svg>").ToString();
+    }
+
+    private static string Tspans(int levels) {
+        return Nested("<g>", "</g>", "<text>a" + Nested("<tspan>b", "</tspan>", "", levels)
+                .Replace("<svg width=\"10\" height=\"10\">", "").Replace("</svg>", "") + "</text>", 2);
+    }
+
+    [Fact]
+    public void TheDepthOfWhatIsDrawnIsLimitedOnASmallStack() {
+        Exception failure = null;
+        System.Threading.Thread thread = new System.Threading.Thread(() => {
+            try {
+                Parse(UseChain(30));
+                Parse(MarkerChain(19));
+                Parse(Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 62));
+                Parse(Tspans(59));
+                foreach (string svg in new string[] {
+                        UseChain(31), UseChain(2000), MarkerChain(20), Tspans(60),
+                        Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 63), Nested("<g>", "</g>", "", 250)}) {
+                    ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
+                    Assert.Contains("deep", e.Message);
+                }
+            } catch (Exception e) {
+                failure = e;
+            }
+        }, 512*1024);
+        thread.Start();
+        thread.Join();
+        Assert.Null(failure);
+    }
 }
 }

@@ -835,4 +835,72 @@ class SVGImageTest {
         assertEquals("q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
                 + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", content);
     }
+
+    // An SVG of a chain of use elements, flat in the file.
+    private static String useChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><defs><rect id=\"u0\" width=\"1\" height=\"1\"/>");
+        for (int i = 1; i <= links; i++) {
+            svg.append("<use id=\"u").append(i).append("\" href=\"#u").append(i - 1).append("\"/>");
+        }
+        return svg.append("</defs><use href=\"#u").append(links).append("\"/></svg>").toString();
+    }
+
+    // An SVG of elements nested levels deep in the svg element, around the content.
+    private static String nested(String open, String end, String content, int levels) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < levels; i++) {
+            svg.append(open);
+        }
+        svg.append(content);
+        for (int i = 0; i < levels; i++) {
+            svg.append(end);
+        }
+        return svg.append("</svg>").toString();
+    }
+
+    // An SVG of markers each drawn by a path in the one before it.
+    private static String markerChain(int links) {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\">");
+        for (int i = 0; i < links; i++) {
+            svg.append("<marker id=\"m").append(i).append("\"><path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m")
+                    .append(i + 1).append(")\"/></marker>");
+        }
+        svg.append("<marker id=\"m").append(links).append("\"><rect width=\"1\" height=\"1\"/></marker>");
+        return svg.append("<path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m0)\"/></svg>").toString();
+    }
+
+    private static SVGImage read(String svg) throws Exception {
+        return new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static String tspans(int levels) {
+        return nested("<g>", "</g>", "<text>a" + nested("<tspan>b", "</tspan>", "", levels)
+                .replace("<svg width=\"10\" height=\"10\">", "").replace("</svg>", "") + "</text>", 2);
+    }
+
+    @Test
+    void theDepthOfWhatIsDrawnIsLimitedOnASmallStack() throws Exception {
+        Throwable[] failure = new Throwable[1];
+        Thread thread = new Thread(null, () -> {
+            try {
+                read(useChain(30));
+                read(markerChain(19));
+                read(nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 62));
+                read(tspans(59));
+                for (String svg : new String[] {
+                        useChain(31), useChain(2000), markerChain(20), tspans(60),
+                        nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 63), nested("<g>", "</g>", "", 250)}) {
+                    IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> read(svg));
+                    assertTrue(e.getMessage().contains("deep"), e.getMessage());
+                }
+            } catch (Throwable e) {
+                failure[0] = e;
+            }
+        }, "svg", 512*1024);
+        thread.start();
+        thread.join();
+        if (failure[0] != null) {
+            throw new AssertionError(failure[0]);
+        }
+    }
 }

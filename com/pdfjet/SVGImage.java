@@ -67,6 +67,13 @@ public class SVGImage implements Drawable {
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     static final long MAX_REUSED = 1000000;
+    // How deep the elements being drawn may nest, by groups, use elements and
+    // markers, a state on the stack for each: a chain of use elements is flat in
+    // the file, so the limit of the XML parser does not see it, and each level
+    // is a call. The number is the same in the four ports and leaves every one
+    // of them room on a stack of 512 KB, where a level takes 6.4 KB of a debug
+    // build of Swift (review of 30 October 2026).
+    static final int MAX_DEPTH = 64;
 
     /**
      * Used to embed SVG images in the PDF document.
@@ -209,12 +216,21 @@ public class SVGImage implements Drawable {
         }
     }
 
+    // The error of elements nested too deep.
+    private static IllegalArgumentException depthError() {
+        return new IllegalArgumentException(
+                "The SVG nests elements, use elements and markers more than " + MAX_DEPTH + " deep.");
+    }
+
     // Draws the element, then the ones in it, in the order of the document;
     // the rules of a <style> element apply from its end. An element that is
     // used, by a use element or as a marker, is drawn even where it is a
     // template, as a symbol or a marker is.
     private void draw(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
             List<SVGState> stack, boolean[] root, boolean used) throws Exception {
+        if (stack.size() > MAX_DEPTH) {
+            throw depthError();
+        }
         String name = node.getLocalName();
         if (!reusing.isEmpty()) {
             countReused();
@@ -250,7 +266,7 @@ public class SVGImage implements Drawable {
         }
         if (name.equals("text")) {
             if (!state.hidden) {
-                addText(node, colorMap, rules, state, attributes);
+                addText(node, colorMap, rules, state, attributes, stack.size());
             }
             stack.remove(stack.size() - 1);
             return;
@@ -781,10 +797,10 @@ public class SVGImage implements Drawable {
     // Adds a text element, with its tspan elements, as the runs of its
     // characters.
     private void addText(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
-            SVGState state, Map<String, String> attributes) {
+            SVGState state, Map<String, String> attributes, int depth) {
         SVGText text = new SVGText();
         text.matrix = state.matrix;
-        addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0});
+        addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0}, depth);
         text.collapseSpaces();
         boolean empty = true;
         for (SVGText.Run run : text.runs) {
@@ -805,9 +821,13 @@ public class SVGImage implements Drawable {
 
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
-    // pending until then.
+    // pending until then. A tspan counts as a level of the depth of the
+    // elements.
     private void addRuns(SVGText text, XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
-            SVGState state, Map<String, String> attributes, double[] pending) {
+            SVGState state, Map<String, String> attributes, double[] pending, int depth) {
+        if (depth > MAX_DEPTH) {
+            throw depthError();
+        }
         double x = textLength(attribute(attributes, "x"), state.fontSize);
         double y = textLength(attribute(attributes, "y"), state.fontSize);
         double dx = textLength(attribute(attributes, "dx"), state.fontSize);
@@ -863,7 +883,7 @@ public class SVGImage implements Drawable {
                 SVGState childState = elementState(state, colorMap, rules, childAttributes, childOrder);
                 childState.matrix = state.matrix;   // A tspan has no transform
                 if (!childState.hidden) {
-                    addRuns(text, child, colorMap, rules, childState, childAttributes, pending);
+                    addRuns(text, child, colorMap, rules, childState, childAttributes, pending, depth + 1);
                 }
             }
         }

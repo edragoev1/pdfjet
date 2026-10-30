@@ -41,6 +41,13 @@ public class SVGImage : Drawable {
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     static let MAX_REUSED = 1000000
+    // How deep the elements being drawn may nest, by groups, use elements and
+    // markers, a state on the stack for each: a chain of use elements is flat in
+    // the file, so the limit of the XML parser does not see it, and each level
+    // is a call. The number is the same in the four ports and leaves every one
+    // of them room on a stack of 512 KB, where a level takes 6.4 KB of a debug
+    // build of Swift (review of 30 October 2026).
+    static let MAX_DEPTH = 64
 
     // The elements whose content is not drawn where it is, but used by other
     // elements, which PDFjet does not draw.
@@ -231,11 +238,20 @@ public class SVGImage : Drawable {
         return attributes
     }
 
+    // The error of elements nested too deep.
+    private static func depthError() -> PDFjetError {
+        return PDFjetError(message:
+            "The SVG nests elements, use elements and markers more than \(MAX_DEPTH) deep.")
+    }
+
     // Draws the element, then the ones in it, in the order of the document;
     // the rules of a <style> element apply from its end. An element that is
     // used, by a use element or as a marker, is drawn even where it is a
     // template, as a symbol or a marker is.
     private func draw(_ node: PDFjetXMLNode, _ used: Bool) throws {
+        if stack.count > SVGImage.MAX_DEPTH {
+            throw SVGImage.depthError()
+        }
         let name = node.getLocalName()
         if !reusing.isEmpty {
             try countReused()
@@ -760,7 +776,7 @@ public class SVGImage : Drawable {
         let text = SVGText()
         text.matrix = state.matrix
         var pending = [Double.nan, Double.nan, 0.0, 0.0]
-        try addRuns(text, node, state, attributes, &pending)
+        try addRuns(text, node, state, attributes, &pending, stack.count)
         text.collapseSpaces()
         let empty = text.runs.allSatisfy { $0.text.isEmpty }
         let m = state.matrix
@@ -775,9 +791,13 @@ public class SVGImage : Drawable {
 
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
-    // pending until then.
+    // pending until then. A tspan counts as a level of the depth of the
+    // elements.
     private func addRuns(_ text: SVGText, _ node: PDFjetXMLNode, _ state: SVGState,
-            _ attributes: [String: String], _ pending: inout [Double]) throws {
+            _ attributes: [String: String], _ pending: inout [Double], _ depth: Int) throws {
+        if depth > SVGImage.MAX_DEPTH {
+            throw SVGImage.depthError()
+        }
         let x = SVGImage.textLength(attributes["x"] ?? "", state.fontSize)
         let y = SVGImage.textLength(attributes["y"] ?? "", state.fontSize)
         let dx = SVGImage.textLength(attributes["dx"] ?? "", state.fontSize)
@@ -830,7 +850,7 @@ public class SVGImage : Drawable {
                 var childState = try elementState(state, childAttributes, childOrder)
                 childState.matrix = state.matrix    // A tspan has no transform
                 if !childState.hidden {
-                    try addRuns(text, child, childState, childAttributes, &pending)
+                    try addRuns(text, child, childState, childAttributes, &pending, depth + 1)
                 }
             }
         }

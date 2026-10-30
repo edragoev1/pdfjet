@@ -48,6 +48,14 @@ type SVGImage struct {
 // number of groups, as an XML of entities in entities does.
 const maxSVGReused = 1000000
 
+// maxSVGDepth is how deep the elements being drawn may nest, by groups, use
+// elements and markers, a state on the stack for each: a chain of use elements
+// is flat in the file, so the limit of the XML parser does not see it, and
+// each level is a call. The number is the same in the four ports and leaves
+// every one of them room on a stack of 512 KB, where a level takes 6.4 KB of a debug
+// build of Swift (review of 30 October 2026).
+const maxSVGDepth = 64
+
 // svgReader holds what is needed while an SVG file is read: the elements by
 // their ids, the states of the elements being drawn, and the elements drawn
 // again by a use element or as a marker, which are not drawn inside
@@ -250,11 +258,19 @@ func (r *svgReader) countReused() error {
 	return nil
 }
 
+// errSVGDepth is the error of elements nested too deep.
+func errSVGDepth() error {
+	return fmt.Errorf("The SVG nests elements, use elements and markers more than %d deep.", maxSVGDepth)
+}
+
 // draw draws the element, then the ones in it, in the order of the document;
 // the rules of a <style> element apply from its end. An element that is used,
 // by a use element or as a marker, is drawn even where it is a template, as a
 // symbol or a marker is.
 func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
+	if len(r.stack) > maxSVGDepth {
+		return errSVGDepth()
+	}
 	image := r.image
 	name := node.LocalName()
 	if len(r.reusing) > 0 {
@@ -835,7 +851,7 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 	text := new(svgText)
 	text.matrix = state.matrix
 	pending := [4]float64{math.NaN(), math.NaN(), 0, 0}
-	if err := r.addRuns(text, node, state, attributes, &pending); err != nil {
+	if err := r.addRuns(text, node, state, attributes, &pending, len(r.stack)); err != nil {
 		return err
 	}
 	text.collapseSpaces()
@@ -859,9 +875,12 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 
 // addRuns adds the runs of a text or a tspan element. Its x, y, dx and dy
 // apply to its first character, which may be in a tspan in it; they are kept
-// in pending until then.
+// in pending until then. A tspan counts as a level of the depth of the elements.
 func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgState,
-	attributes map[string]string, pending *[4]float64) error {
+	attributes map[string]string, pending *[4]float64, depth int) error {
+	if depth > maxSVGDepth {
+		return errSVGDepth()
+	}
 	x := svgTextLength(attributes["x"], state.fontSize)
 	y := svgTextLength(attributes["y"], state.fontSize)
 	dx := svgTextLength(attributes["dx"], state.fontSize)
@@ -923,7 +942,7 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 			}
 			childState.matrix = state.matrix // A tspan has no transform
 			if !childState.hidden {
-				if err := r.addRuns(text, item, childState, childAttributes, pending); err != nil {
+				if err := r.addRuns(text, item, childState, childAttributes, pending, depth+1); err != nil {
 					return err
 				}
 			}

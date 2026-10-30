@@ -62,6 +62,13 @@ public class SVGImage : IDrawable {
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
     internal const long MAX_REUSED = 1000000;
+    // How deep the elements being drawn may nest, by groups, use elements and
+    // markers, a state on the stack for each: a chain of use elements is flat in
+    // the file, so the limit of the XML parser does not see it, and each level
+    // is a call. The number is the same in the four ports and leaves every one
+    // of them room on a stack of 512 KB, where a level takes 6.4 KB of a debug
+    // build of Swift (review of 30 October 2026).
+    internal const int MAX_DEPTH = 64;
 
     /// <summary>
     /// Used to embed SVG images in the PDF document.
@@ -208,11 +215,20 @@ public class SVGImage : IDrawable {
         }
     }
 
+    // The error of elements nested too deep.
+    private static ArgumentException DepthError() {
+        return new ArgumentException(
+                "The SVG nests elements, use elements and markers more than " + MAX_DEPTH + " deep.");
+    }
+
     // Draws the element, then the ones in it, in the order of the document;
     // the rules of a <style> element apply from its end. An element that is
     // used, by a use element or as a marker, is drawn even where it is a
     // template, as a symbol or a marker is.
     private void Draw(XMLNode node, List<SVGState> stack, SVGStyleSheet rules, ref bool root, bool used) {
+        if (stack.Count > MAX_DEPTH) {
+            throw DepthError();
+        }
         String name = node.GetLocalName();
         if (reusing.Count > 0) {
             CountReused();
@@ -250,7 +266,7 @@ public class SVGImage : IDrawable {
         }
         if (name.Equals("text")) {
             if (!state.hidden) {
-                AddText(node, rules, state, attributes);
+                AddText(node, rules, state, attributes, stack.Count);
             }
             stack.RemoveAt(stack.Count - 1);
             return;
@@ -800,10 +816,11 @@ public class SVGImage : IDrawable {
 
     // Adds a text element, with its tspan elements, as the runs of its
     // characters.
-    private void AddText(XMLNode node, SVGStyleSheet rules, SVGState state, Dictionary<String, String> attributes) {
+    private void AddText(XMLNode node, SVGStyleSheet rules, SVGState state,
+            Dictionary<String, String> attributes, int depth) {
         SVGText text = new SVGText();
         text.matrix = state.matrix;
-        AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0});
+        AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0}, depth);
         text.CollapseSpaces();
         bool empty = true;
         foreach (SVGText.Run run in text.runs) {
@@ -824,9 +841,13 @@ public class SVGImage : IDrawable {
 
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
-    // pending until then.
+    // pending until then. A tspan counts as a level of the depth of the
+    // elements.
     private void AddRuns(SVGText text, XMLNode node, SVGStyleSheet rules,
-            SVGState state, Dictionary<String, String> attributes, double[] pending) {
+            SVGState state, Dictionary<String, String> attributes, double[] pending, int depth) {
+        if (depth > MAX_DEPTH) {
+            throw DepthError();
+        }
         double x = TextLength(Attribute(attributes, "x"), state.fontSize);
         double y = TextLength(Attribute(attributes, "y"), state.fontSize);
         double dx = TextLength(Attribute(attributes, "dx"), state.fontSize);
@@ -883,7 +904,7 @@ public class SVGImage : IDrawable {
                 SVGState childState = ElementState(state, rules, childAttributes, childOrder);
                 childState.matrix = state.matrix;   // A tspan has no transform
                 if (!childState.hidden) {
-                    AddRuns(text, child, rules, childState, childAttributes, pending);
+                    AddRuns(text, child, rules, childState, childAttributes, pending, depth + 1);
                 }
             }
         }

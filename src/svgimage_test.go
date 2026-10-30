@@ -956,3 +956,57 @@ func TestSVGImageAClipPathCutsOffWhatIsOutsideIt(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 }
+
+// testSVGUseChain returns an SVG of a chain of use elements, flat in the file.
+func testSVGUseChain(links int) string {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10"><defs><rect id="u0" width="1" height="1"/>`)
+	for i := 1; i <= links; i++ {
+		svg.WriteString(`<use id="u` + strconv.Itoa(i) + `" href="#u` + strconv.Itoa(i-1) + `"/>`)
+	}
+	svg.WriteString(`</defs><use href="#u` + strconv.Itoa(links) + `"/></svg>`)
+	return svg.String()
+}
+
+// testSVGNested returns an SVG of elements nested levels deep in the svg
+// element, each the open tag, around the content.
+func testSVGNested(open, end, content string, levels int) string {
+	return `<svg width="10" height="10">` + strings.Repeat(open, levels) + content +
+		strings.Repeat(end, levels) + `</svg>`
+}
+
+// testSVGMarkerChain returns an SVG of markers each drawn by a path in the one
+// before it.
+func testSVGMarkerChain(links int) string {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10">`)
+	for i := 0; i < links; i++ {
+		svg.WriteString(`<marker id="m` + strconv.Itoa(i) + `"><path d="M0 0 L1 1" stroke="red" marker-end="url(#m` +
+			strconv.Itoa(i+1) + `)"/></marker>`)
+	}
+	svg.WriteString(`<marker id="m` + strconv.Itoa(links) + `"><rect width="1" height="1"/></marker>`)
+	svg.WriteString(`<path d="M0 0 L1 1" stroke="red" marker-end="url(#m0)"/></svg>`)
+	return svg.String()
+}
+
+func TestSVGImageTheDepthOfWhatIsDrawnIsLimited(t *testing.T) {
+	testNewSVG(t, testSVGUseChain(30))
+	testNewSVG(t, testSVGMarkerChain(19))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 62))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 59)+
+		strings.Repeat(`</tspan>`, 59)+`</text>`, 2))
+	for name, svg := range map[string]string{
+		"a chain of use elements": testSVGUseChain(31),
+		"a long chain":            testSVGUseChain(600000),
+		"a chain of markers":      testSVGMarkerChain(20),
+		"nested groups":           testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 63),
+		"more nested groups":      testSVGNested(`<g>`, `</g>`, ``, 250),
+		"tspans": testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 60)+
+			strings.Repeat(`</tspan>`, 60)+`</text>`, 2),
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || !strings.Contains(err.Error(), "deep") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}

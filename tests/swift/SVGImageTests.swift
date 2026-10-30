@@ -786,4 +786,68 @@ import Testing
         #expect(content == "q\n10 792 m\n60 792 l\n60 742 l\n10 742 l\nh\nW\nn\n"
                 + "0 0 0 rg\n20 782 m\n100 782 l\n100 762 l\n20 762 l\nf\nQ\n", "\(content)")
     }
+
+    // An SVG of a chain of use elements, flat in the file.
+    private func useChain(_ links: Int) -> String {
+        var svg = "<svg width=\"10\" height=\"10\"><defs><rect id=\"u0\" width=\"1\" height=\"1\"/>"
+        for i in stride(from: 1, through: links, by: 1) {
+            svg += "<use id=\"u\(i)\" href=\"#u\(i - 1)\"/>"
+        }
+        return svg + "</defs><use href=\"#u\(links)\"/></svg>"
+    }
+
+    // An SVG of elements nested levels deep in the svg element, around the content.
+    private func nested(_ open: String, _ end: String, _ content: String, _ levels: Int) -> String {
+        return "<svg width=\"10\" height=\"10\">" + String(repeating: open, count: levels) + content
+                + String(repeating: end, count: levels) + "</svg>"
+    }
+
+    // An SVG of markers each drawn by a path in the one before it.
+    private func markerChain(_ links: Int) -> String {
+        var svg = "<svg width=\"10\" height=\"10\">"
+        for i in 0..<links {
+            svg += "<marker id=\"m\(i)\"><path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m\(i + 1))\"/></marker>"
+        }
+        svg += "<marker id=\"m\(links)\"><rect width=\"1\" height=\"1\"/></marker>"
+        return svg + "<path d=\"M0 0 L1 1\" stroke=\"red\" marker-end=\"url(#m0)\"/></svg>"
+    }
+
+    private func tspans(_ levels: Int) -> String {
+        return nested("<g>", "</g>", "<text>a" + String(repeating: "<tspan>b", count: levels)
+                + String(repeating: "</tspan>", count: levels) + "</text>", 2)
+    }
+
+    // A secondary thread of Apple's has a stack of 512 KB, and an overflow
+    // kills the process.
+    @Test func theDepthOfWhatIsDrawnIsLimitedOnASmallStack() throws {
+        let finished = DispatchSemaphore(value: 0)
+        nonisolated(unsafe) var failures = [String]()
+        let accepted = [useChain(30), markerChain(19), nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 62), tspans(59)]
+        let refused = [useChain(31), useChain(2000), markerChain(20), tspans(60),
+                nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 63), nested("<g>", "</g>", "", 250)]
+        let thread = Thread {
+            for svg in accepted {
+                do {
+                    _ = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
+                } catch {
+                    failures.append("\(error)")
+                }
+            }
+            for svg in refused {
+                do {
+                    _ = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
+                    failures.append("read: \(svg.prefix(60))")
+                } catch {
+                    if !"\(error)".contains("deep") {
+                        failures.append("\(error)")
+                    }
+                }
+            }
+            finished.signal()
+        }
+        thread.stackSize = 512*1024
+        thread.start()
+        finished.wait()
+        #expect(failures.isEmpty, "\(failures)")
+    }
 }
