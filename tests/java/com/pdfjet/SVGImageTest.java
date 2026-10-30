@@ -893,13 +893,13 @@ class SVGImageTest {
         Throwable[] failure = new Throwable[1];
         Thread thread = new Thread(null, () -> {
             try {
-                read(useChain(30));
-                read(markerChain(19));
-                read(nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 62));
-                read(tspans(59));
+                read(useChain(22));
+                read(markerChain(14));
+                read(nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 46));
+                read(tspans(43));
                 for (String svg : new String[] {
-                        useChain(31), useChain(2000), markerChain(20), tspans(60),
-                        nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 63), nested("<g>", "</g>", "", 250)}) {
+                        useChain(23), useChain(2000), markerChain(15), tspans(44),
+                        nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 47), nested("<g>", "</g>", "", 250)}) {
                     IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> read(svg));
                     assertTrue(e.getMessage().contains("deep"), e.getMessage());
                 }

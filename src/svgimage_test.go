@@ -1002,19 +1002,19 @@ func testSVGMarkerChain(links int) string {
 }
 
 func TestSVGImageTheDepthOfWhatIsDrawnIsLimited(t *testing.T) {
-	testNewSVG(t, testSVGUseChain(30))
-	testNewSVG(t, testSVGMarkerChain(19))
-	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 62))
-	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 59)+
-		strings.Repeat(`</tspan>`, 59)+`</text>`, 2))
+	testNewSVG(t, testSVGUseChain(22))
+	testNewSVG(t, testSVGMarkerChain(14))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 46))
+	testNewSVG(t, testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 43)+
+		strings.Repeat(`</tspan>`, 43)+`</text>`, 2))
 	for name, svg := range map[string]string{
-		"a chain of use elements": testSVGUseChain(31),
+		"a chain of use elements": testSVGUseChain(23),
 		"a long chain":            testSVGUseChain(600000),
-		"a chain of markers":      testSVGMarkerChain(20),
-		"nested groups":           testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 63),
+		"a chain of markers":      testSVGMarkerChain(15),
+		"nested groups":           testSVGNested(`<g>`, `</g>`, `<rect width="1" height="1"/>`, 47),
 		"more nested groups":      testSVGNested(`<g>`, `</g>`, ``, 250),
-		"tspans": testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 60)+
-			strings.Repeat(`</tspan>`, 60)+`</text>`, 2),
+		"tspans": testSVGNested(`<g>`, `</g>`, `<text>a`+strings.Repeat(`<tspan>b`, 44)+
+			strings.Repeat(`</tspan>`, 44)+`</text>`, 2),
 	} {
 		_, err := NewSVGImage(strings.NewReader(svg))
 		if err == nil || !strings.Contains(err.Error(), "deep") {

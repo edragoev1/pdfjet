@@ -33,7 +33,7 @@ namespace PDFjet.NET {
 /// mean color of its stops. The width,
 /// height, viewBox and preserveAspectRatio of the svg element give the size of
 /// the image, and what is drawn outside it is cut off, as a browser does. It
-/// throws for a file that nests what it draws more than 64 deep, or that draws
+/// throws for a file that nests what it draws more than 48 deep, or that draws
 /// more than 4,000,000 path operations again, by use elements, markers and clip
 /// paths.
 /// </para>
@@ -83,9 +83,9 @@ public class SVGImage : IDrawable {
     // markers, a state on the stack for each: a chain of use elements is flat in
     // the file, so the limit of the XML parser does not see it, and each level
     // is a call. The number is the same in the four ports and leaves every one
-    // of them room on a stack of 512 KB, where a level takes 6.4 KB of a debug
+    // of them room on a stack of 512 KB, where a level takes 7.8 KB of a debug
     // build of Swift (review of 30 October 2026).
-    internal const int MAX_DEPTH = 64;
+    internal const int MAX_DEPTH = 48;
 
     /// <summary>
     /// Used to embed SVG images in the PDF document.

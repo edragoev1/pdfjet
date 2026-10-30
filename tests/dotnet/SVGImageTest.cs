@@ -886,13 +886,13 @@ public class SVGImageTest {
         Exception failure = null;
         System.Threading.Thread thread = new System.Threading.Thread(() => {
             try {
-                Parse(UseChain(30));
-                Parse(MarkerChain(19));
-                Parse(Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 62));
-                Parse(Tspans(59));
+                Parse(UseChain(22));
+                Parse(MarkerChain(14));
+                Parse(Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 46));
+                Parse(Tspans(43));
                 foreach (string svg in new string[] {
-                        UseChain(31), UseChain(2000), MarkerChain(20), Tspans(60),
-                        Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 63), Nested("<g>", "</g>", "", 250)}) {
+                        UseChain(23), UseChain(2000), MarkerChain(15), Tspans(44),
+                        Nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 47), Nested("<g>", "</g>", "", 250)}) {
                     ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
                     Assert.Contains("deep", e.Message);
                 }

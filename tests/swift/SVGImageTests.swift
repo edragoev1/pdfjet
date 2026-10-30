@@ -832,9 +832,9 @@ import Testing
     @Test func theDepthOfWhatIsDrawnIsLimitedOnASmallStack() throws {
         let finished = DispatchSemaphore(value: 0)
         nonisolated(unsafe) var failures = [String]()
-        let accepted = [useChain(30), markerChain(19), nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 62), tspans(59)]
-        let refused = [useChain(31), useChain(2000), markerChain(20), tspans(60),
-                nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 63), nested("<g>", "</g>", "", 250)]
+        let accepted = [useChain(22), markerChain(14), nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 46), tspans(43)]
+        let refused = [useChain(23), useChain(2000), markerChain(15), tspans(44),
+                nested("<g>", "</g>", "<rect width=\"1\" height=\"1\"/>", 47), nested("<g>", "</g>", "", 250)]
         let thread = Thread {
             for svg in accepted {
                 do {
