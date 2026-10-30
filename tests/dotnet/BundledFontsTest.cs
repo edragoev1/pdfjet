@@ -24,13 +24,12 @@ public class BundledFontsTest {
     };
 
     // The folders of the families, those of the other scripts than the
-    // European ones in resources/fonts/world; resources/fonts/cjk is the
-    // deprecated Go package cjk alone
+    // European ones in resources/fonts/world
     private static List<String> Families() {
         List<String> families = new List<String>();
         foreach (String family in Directory.GetDirectories(TestSupport.RepoPath("resources/fonts"))) {
             String name = System.IO.Path.GetFileName(family);
-            if (name != "world" && name != "cjk") {
+            if (name != "world") {
                 families.Add(family);
             }
         }

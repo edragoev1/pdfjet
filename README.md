@@ -300,9 +300,7 @@ are 52 MB more, built in only when the program has the line above, which
 makes it about 70 MB. Without it, `IBMPlexSansJP.Regular`,
 `IBMPlexSansArabic.Regular` and the others are read from the folder
 `resources/fonts/world` of the working directory when it has them, and are
-an error that names this line when it does not. The package
-`resources/fonts/cjk`, deprecated, imports `world`, so a program that
-imports it still builds.
+an error that names this line when it does not.
 </details>
 
 <details>

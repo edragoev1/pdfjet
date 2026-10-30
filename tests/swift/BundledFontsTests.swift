@@ -51,7 +51,7 @@ import Testing
         // The family folders, and those of the other scripts in the folder
         // world; the folder cjk is the Go port's deprecated package alone
         var folders = [String]()
-        for family in try FileManager.default.contentsOfDirectory(atPath: root) where family != "world" && family != "cjk" {
+        for family in try FileManager.default.contentsOfDirectory(atPath: root) where family != "world" {
             folders.append(family)
         }
         for family in try FileManager.default.contentsOfDirectory(atPath: root + "/world") {

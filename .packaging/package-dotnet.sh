@@ -141,8 +141,7 @@ find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delet
 rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
 # The fonts of the other scripts than the European ones stay in
 # resources/fonts/world, each family in a folder of its name, where
-# PDFjet.dll reads them; resources/fonts/cjk, the deprecated Go package,
-# goes with its .go file.
+# PDFjet.dll reads them.
 find "$STAGE/resources/fonts" -maxdepth 1 -type f -delete
 find "$STAGE/resources/fonts" -mindepth 2 -type f ! -name '*.ttf' ! -name '*.otf' \
     ! -name '*.txt' ! -name LICENSE -delete

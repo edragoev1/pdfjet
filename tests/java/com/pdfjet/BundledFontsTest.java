@@ -38,7 +38,7 @@ class BundledFontsTest {
         File root = TestSupport.file("resources/fonts");
         List<File> families = new java.util.ArrayList<File>();
         for (File family : root.listFiles()) {
-            if (family.isDirectory() && !family.getName().equals("world") && !family.getName().equals("cjk")) {
+            if (family.isDirectory() && !family.getName().equals("world")) {
                 families.add(family);   // Not the Go and Swift files beside them
             }
         }

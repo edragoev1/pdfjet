@@ -69,7 +69,7 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 	// world; the folder cjk is the deprecated package cjk alone
 	var folders []string
 	for _, family := range families {
-		if family.IsDir() && family.Name() != "world" && family.Name() != "cjk" {
+		if family.IsDir() && family.Name() != "world" {
 			folders = append(folders, family.Name())
 		}
 	}

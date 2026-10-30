@@ -151,9 +151,7 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   "github.com/edragoev1/pdfjet/v9/resources/fonts/world"`, and panics
   without it, naming the line; in Swift, `.product(name: "PDFjetFontsWorld", package: "pdfjet")`
   in `Package.swift`, where an app that named `PDFjetFonts` for its fonts
-  keeps the European ones. The Go package
-  `github.com/edragoev1/pdfjet/v9/resources/fonts/cjk` is deprecated: it
-  imports `world`, so a program that imports it still builds.
+  keeps the European ones.
 - Behavior change: PDFjet no longer carries IBM Plex Math, as Source Serif
   4 above. Example: `new Font(pdf, IBMPlexMath.Regular)` in Java and C#,
   `try Font(pdf, IBMPlexMath.Regular)` in Swift and
