@@ -63,11 +63,14 @@ func (p scatterPoint) linkedDot() bool {
 // a light panel, with a title and a subtitle at the top left, in the look of
 // SimpleBarChart. Any point can be a link, a dot with a description that a
 // hover or a screen reader gets, so that all of 200 points are links without a
-// name printed for each.
+// name printed for each. A point outside a range that is set is not drawn, and
+// the chart says how many are: "2 points outside the range", small, under the
+// plot at its right end, and in its description.
 //
 // In a PDF/UA document the chart is one figure, described from its data: the
-// number of points, the highlighted ones and their values, and which way the
-// trend goes, unless an alternate description is set. It draws with the page
+// number of points, the highlighted ones and their values, which way the trend
+// goes and the points outside a range, unless an alternate description is set,
+// which is then followed by those points alone. It draws with the page
 // alone, and needs no other chart. In PDF/A-1, which has no transparency, the
 // dots are drawn opaque. Please see Example_26.
 type SimpleScatterChart struct {
@@ -122,7 +125,8 @@ func (chart *SimpleScatterChart) SetYAxisTitle(title string) *SimpleScatterChart
 }
 
 // SetAltDescription sets the alternate description of the chart in a PDF/UA
-// document. Without one the chart is described from its data.
+// document. Without one the chart is described from its data. The number of
+// points outside a range that is set follows it, as the chart prints it.
 func (chart *SimpleScatterChart) SetAltDescription(altDescription string) *SimpleScatterChart {
 	chart.altDescription = altDescription
 	return chart
@@ -191,7 +195,9 @@ func (chart *SimpleScatterChart) SetTrendLine(trendLine bool) *SimpleScatterChar
 
 // SetXAxisRange sets the range of the horizontal axis. Without it the range
 // is that of the points, rounded to steps. A range whose end is not past its
-// start is not set.
+// start is not set. A point outside the range is not drawn, and the chart says
+// how many are, under the plot, which is that much lower, and in its
+// description.
 func (chart *SimpleScatterChart) SetXAxisRange(lo, hi float32) *SimpleScatterChart {
 	chart.xMin, chart.xMax, chart.xRangeSet = lo, hi, hi > lo
 	return chart
@@ -199,7 +205,9 @@ func (chart *SimpleScatterChart) SetXAxisRange(lo, hi float32) *SimpleScatterCha
 
 // SetYAxisRange sets the range of the vertical axis. Without it the range is
 // that of the points, rounded to steps. A range whose end is not past its
-// start is not set.
+// start is not set. A point outside the range is not drawn, and the chart says
+// how many are, under the plot, which is that much lower, and in its
+// description.
 func (chart *SimpleScatterChart) SetYAxisRange(lo, hi float32) *SimpleScatterChart {
 	chart.yMin, chart.yMax, chart.yRangeSet = lo, hi, hi > lo
 	return chart
@@ -466,11 +474,27 @@ func onPlot(p scatterPoint, xAxis, yAxis chartAxis) bool {
 	return onAxis(p.x, xAxis) && onAxis(p.y, yAxis)
 }
 
+// outsideNote returns what the chart says of the points with a value outside
+// a range that is set, or "" when there are none. A point outside both ranges
+// is one point.
+func (chart *SimpleScatterChart) outsideNote() string {
+	xRange := chartAxis{min: chart.xMin, max: chart.xMax}
+	yRange := chartAxis{min: chart.yMin, max: chart.yMax}
+	count := 0
+	for _, p := range chart.valid() {
+		if (chart.xRangeSet && !onAxis(p.x, xRange)) || (chart.yRangeSet && !onAxis(p.y, yRange)) {
+			count++
+		}
+	}
+	return outsideNote(count, "point")
+}
+
 // getAltDescription returns the alternate description: the one set, or the
-// title, the number of points, the highlighted ones and the trend.
+// title, the number of points, the highlighted ones and the trend; and the
+// points outside a range that is set.
 func (chart *SimpleScatterChart) getAltDescription() string {
 	if chart.altDescription != "" {
-		return chart.altDescription
+		return withNote(chart.altDescription, chart.outsideNote())
 	}
 	points := chart.valid()
 	var xAxis, yAxis chartAxis
@@ -533,6 +557,9 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 			}
 		}
 	}
+	if note := chart.outsideNote(); note != "" {
+		sb.WriteString("; " + note)
+	}
 	sb.WriteString(punctuationAfter(sb.String(), "."))
 	return sb.String()
 }
@@ -583,6 +610,11 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	bottom := chart.y + chart.h - pad - float32(1.4*size)
 	if chart.xAxisTitle != "" {
 		bottom -= float32(1.4 * size)
+	}
+	// Room for the note, a row of its own under the rest
+	note := chart.outsideNote()
+	if note != "" {
+		bottom -= float32(1.4 * chart.subtitleSize())
 	}
 	if right <= left || bottom <= top || !drawable(xAxis) || !drawable(yAxis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
@@ -689,6 +721,10 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		page.drawString(f2, size, title, chart.x+pad+ascent,
 			bottom-float32((bottom-top-f2.StringWidth(size, title))/2.0), colorToRGB(simpleBarInk), nil)
 		page.SetTextRotation(0)
+	}
+	if note != "" {
+		drawOutsideNote(page, f2, chart.subtitleSize(), note, right, chart.x+pad, chart.x+chart.w-pad,
+			chart.y+chart.h-pad)
 	}
 
 	// The trend line, from the left of the plot to its right, within its

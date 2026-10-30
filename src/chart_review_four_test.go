@@ -180,13 +180,13 @@ func TestSimpleScatterChartDescriptionTellsWhatIsDrawn(t *testing.T) {
 		t.Errorf("description %q", got)
 	}
 	chart.SetYAxisRange(100, 200)
-	if got := chart.getAltDescription(); got != "Flat: 0 points." {
+	if got := chart.getAltDescription(); got != "Flat: 0 points; 3 points outside the range." {
 		t.Errorf("description over a range that is set %q", got)
 	}
-	// The points outside a range that is set are not counted
+	// The points outside a range that is set are counted apart
 	chart = NewSimpleScatterChart(font, font).SetTitle("Some").
 		Add(1, 5).Add(2, 6).AddNamed("far", 3, 50).SetYAxisRange(0, 10)
-	if got := chart.getAltDescription(); got != "Some: 2 points." {
+	if got := chart.getAltDescription(); got != "Some: 2 points; 1 point outside the range." {
 		t.Errorf("description %q", got)
 	}
 }

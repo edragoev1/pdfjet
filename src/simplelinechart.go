@@ -36,11 +36,15 @@ type simpleLine struct {
 // legend; one line highlighted in navy, its label bold, the others gray. A
 // light horizontal grid alone, no border, on a light panel, with a title and a
 // subtitle at the top left, in the look of SimpleBarChart and
-// SimpleScatterChart. A value that is NaN leaves a gap in its line.
+// SimpleScatterChart. A value that is NaN leaves a gap in its line. A value
+// outside a range that is set cuts its line at the edge of the plot, and the
+// chart says how many are: "2 values outside the range", small, under the plot
+// at its right end, and in its description.
 //
 // In a PDF/UA document the chart is one figure, described from its data: the
-// lines, their first and last values and their highest, unless an alternate
-// description is set. It draws with the page alone, and needs no other chart.
+// lines, their first and last values and their highest, and the values outside
+// a range, unless an alternate description is set, which is then followed by
+// those values alone. It draws with the page alone, and needs no other chart.
 // Please see Example_25.
 type SimpleLineChart struct {
 	f1, f2                 *Font // the title and the highlighted label; the rest
@@ -98,7 +102,8 @@ func (chart *SimpleLineChart) SetYAxisTitle(title string) *SimpleLineChart {
 }
 
 // SetAltDescription sets the alternate description of the chart in a PDF/UA
-// document. Without one the chart is described from its data.
+// document. Without one the chart is described from its data. The number of
+// values outside a range that is set follows it, as the chart prints it.
 func (chart *SimpleLineChart) SetAltDescription(altDescription string) *SimpleLineChart {
 	chart.altDescription = altDescription
 	return chart
@@ -154,7 +159,9 @@ func (chart *SimpleLineChart) SetAreaFilled(areaFilled bool) *SimpleLineChart {
 
 // SetYAxisRange sets the range of the vertical axis. Without it the range is
 // that of the values, rounded to steps. A range whose end is not past its
-// start is not set.
+// start is not set. A value outside the range is drawn past the plot, which
+// clips it, and the chart says how many are, under the plot, which is that
+// much lower, and in its description.
 func (chart *SimpleLineChart) SetYAxisRange(lo, hi float32) *SimpleLineChart {
 	chart.yMin, chart.yMax, chart.yRangeSet = lo, hi, hi > lo
 	return chart
@@ -292,12 +299,29 @@ func (chart *SimpleLineChart) lastOf(line *simpleLine) int {
 	return -1
 }
 
+// outsideNote returns what the chart says of its values outside a range that
+// is set, or "" when there are none.
+func (chart *SimpleLineChart) outsideNote() string {
+	count := 0
+	if chart.yRangeSet {
+		yRange := chartAxis{min: chart.yMin, max: chart.yMax}
+		for _, line := range chart.lines {
+			for j := 0; j < chart.count(); j++ {
+				if v, ok := line.valueOf(j); ok && !onAxis(v, yRange) {
+					count++
+				}
+			}
+		}
+	}
+	return outsideNote(count, "value")
+}
+
 // getAltDescription returns the alternate description: the one set, or the
 // title, the categories and, for each line, its first and last values and
-// its highest.
+// its highest; and the values outside a range that is set.
 func (chart *SimpleLineChart) getAltDescription() string {
 	if chart.altDescription != "" {
-		return chart.altDescription
+		return withNote(chart.altDescription, chart.outsideNote())
 	}
 	// The values in the digits of the numbers of the axis
 	all := make([]float32, 0)
@@ -366,6 +390,9 @@ func (chart *SimpleLineChart) getAltDescription() string {
 			}
 		}
 	}
+	if note := chart.outsideNote(); note != "" {
+		sb.WriteString("; " + note)
+	}
 	sb.WriteString(punctuationAfter(sb.String(), "."))
 	return sb.String()
 }
@@ -426,6 +453,11 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	bottom := chart.y + chart.h - pad - float32(1.4*size)
 	if chart.xAxisTitle != "" {
 		bottom -= float32(1.4 * size)
+	}
+	// Room for the note, a row of its own under the rest
+	note := chart.outsideNote()
+	if note != "" {
+		bottom -= float32(1.4 * chart.subtitleSize())
 	}
 	if right <= left || bottom <= top || !drawable(axis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
@@ -512,6 +544,10 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		page.drawString(f2, size, title, chart.x+pad+ascent,
 			bottom-float32((bottom-top-f2.StringWidth(size, title))/2.0), colorToRGB(simpleBarInk), nil)
 		page.SetTextRotation(0)
+	}
+	if note != "" {
+		drawOutsideNote(page, f2, chart.subtitleSize(), note, right, chart.x+pad, chart.x+chart.w-pad,
+			chart.y+chart.h-pad)
 	}
 
 	// The lines, the highlighted one last, over the others, broken where a

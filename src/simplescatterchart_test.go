@@ -471,3 +471,140 @@ func TestSimpleScatterChartAnAxisHoldsItsValues(t *testing.T) {
 		}
 	}
 }
+
+// testScatterNote draws the chart on a page of its own and returns its content
+// and its description.
+func testScatterNote(pdf *PDF, chart *SimpleScatterChart) (string, string) {
+	page := NewPage(pdf, testLetterPortrait())
+	chart.SetLocation(50, 50)
+	chart.DrawOn(page)
+	return testContent(page), chart.getAltDescription()
+}
+
+// A point outside a range that is set is not drawn, and the chart says so, in
+// print and in its description: an outlier vanished without a word. A value
+// that is no number is not outside, and a chart with none outside adds nothing.
+func TestSimpleScatterChartSaysHowManyPointsAreOutsideTheRange(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	nan, inf := float32(math.NaN()), float32(math.Inf(1))
+	base := func() *SimpleScatterChart {
+		return NewSimpleScatterChart(font, font).SetTitle("T").SetSize(300, 200).Add(1, 1).Add(2, 2)
+	}
+	cases := []struct {
+		name  string
+		chart *SimpleScatterChart
+		note  string
+	}{
+		{"no range", base().Add(100, 100), ""},
+		{"on the ends", base().Add(0, 10).Add(10, 0).SetXAxisRange(0, 10).SetYAxisRange(0, 10), ""},
+		{"not numbers", base().Add(nan, 50).Add(50, inf).SetXAxisRange(0, 10).SetYAxisRange(0, 10), ""},
+		{"x", base().Add(50, 1).SetXAxisRange(0, 10), "1 point outside the range"},
+		{"y", base().Add(1, -50).SetYAxisRange(0, 10), "1 point outside the range"},
+		{"both of one", base().Add(50, 50).SetXAxisRange(0, 10).SetYAxisRange(0, 10), "1 point outside the range"},
+		{"x twice", base().Add(50, 1).Add(-50, 1).SetXAxisRange(0, 10), "2 points outside the range"},
+		{"y twice", base().Add(1, 50).AddNamed("far", 2, 60).SetYAxisRange(0, 10), "2 points outside the range"},
+		{"x and y", base().Add(50, 1).Add(1, 50).SetXAxisRange(0, 10).SetYAxisRange(0, 10), "2 points outside the range"},
+		{"a linked dot", base().AddLinkedDot("a", 50, 1, "https://pdfjet.com/a").SetXAxisRange(0, 10), "1 point outside the range"},
+	}
+	for _, c := range cases {
+		content, description := testScatterNote(pdf, c.chart)
+		if c.note == "" {
+			if strings.Contains(content, testHex(" outside")) || strings.Contains(description, "outside") {
+				t.Errorf("%s: a note: %q", c.name, description)
+			}
+			continue
+		}
+		if !strings.Contains(content, "<"+testHex(c.note)+">") {
+			t.Errorf("%s: %q is not drawn", c.name, c.note)
+		}
+		if !strings.HasSuffix(description, "; "+c.note+".") {
+			t.Errorf("%s: description %q", c.name, description)
+		}
+	}
+}
+
+// The note is in the gray of the numbers, in the small size, on a row of its
+// own inside the chart, under the numbers and the x title, with the plot that
+// much lower and nothing else moved; right under the plot's right end.
+func TestSimpleScatterChartTheNoteIsUnderThePlot(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	note := "2 points outside the range"
+	for _, title := range []string{"", "children per woman"} {
+		chart := func() *SimpleScatterChart {
+			return NewSimpleScatterChart(font, font).SetSize(300, 200).SetXAxisTitle(title).
+				SetXAxisRange(0, 10).SetYAxisRange(0, 10).Add(1, 1).Add(2, 2)
+		}
+		without, _ := testScatterNote(pdf, chart())
+		with, _ := testScatterNote(pdf, chart().Add(50, 1).Add(1, 50))
+		small := float32(0.8 * font.size)
+		at := testPositionOf(t, with, note)
+		right := min(350-font.size, 350-font.size/2.0-font.StringWidth(font.size, "10")/2.0)
+		testNear(t, "the right end", right, at[0]+font.StringWidth(small, note), 0.1)
+		if at[0] < 50 || at[0]+font.StringWidth(small, note) > 350 {
+			t.Errorf("the note at %v", at)
+		}
+		testNear(t, "the baseline", 792-(250-font.size), at[1], 0.01)
+		number := testPositionOf(t, with, "0")
+		testNear(t, "the plot", testPositionOf(t, without, "0")[1]+float32(1.4*small), number[1], 0.02)
+		// The numbers of the x axis, or the title under them
+		last := number[1] + font.GetAscent(font.size)/2.0 - float32(1.4*font.size)
+		if title != "" {
+			last = testPositionOf(t, with, title)[1]
+		}
+		if at[1]+font.GetAscent(small) > last-font.GetDescent(font.size) {
+			t.Errorf("the note at %v, the row above it at %v", at, last)
+		}
+		if got, want := testFillColorBefore(with, note), testFillColorBefore(with, "0"); got != want {
+			t.Errorf("the color of the note %q, of the numbers %q", got, want)
+		}
+	}
+	// In a chart too narrow for it, shortened and inside
+	content, description := testScatterNote(pdf, NewSimpleScatterChart(font, font).SetSize(90, 200).
+		SetXAxisRange(0, 1).Add(0, 1).Add(5, 1).Add(6, 1))
+	at := testPositionOf(t, content, "2 points")
+	if at[0] < 50+font.size {
+		t.Errorf("the note at %v", at)
+	}
+	if !strings.HasSuffix(description, "; "+note+".") {
+		t.Errorf("description %q", description)
+	}
+}
+
+// A description that is set is followed by the note, for a screen reader to
+// have what the chart prints; with none outside it stays as it is.
+func TestSimpleScatterChartTheNoteFollowsADescriptionThatIsSet(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	chart := NewSimpleScatterChart(font, font).Add(1, 1).Add(2, 2).SetAltDescription("Two points")
+	if got := chart.getAltDescription(); got != "Two points" {
+		t.Errorf("description %q", got)
+	}
+	chart.Add(50, 1).SetXAxisRange(0, 10)
+	if got := chart.getAltDescription(); got != "Two points. 1 point outside the range." {
+		t.Errorf("description %q", got)
+	}
+	chart.SetAltDescription("Two points.")
+	if got := chart.getAltDescription(); got != "Two points. 1 point outside the range." {
+		t.Errorf("description %q", got)
+	}
+}
+
+// In a tagged document the note is text of the chart's figure, and its
+// description says it.
+func TestSimpleScatterChartTheNoteIsInTheFigure(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	font := testTrueTypeFont(t, doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	NewSimpleScatterChart(font, font).SetSize(300, 200).Add(1, 1).Add(50, 1).SetXAxisRange(0, 10).DrawOn(page)
+	content := testContent(page)
+	if strings.Count(content, "BDC\n") != 1 || strings.Count(content, "EMC\n") != 1 ||
+		strings.LastIndex(content, "ET\n") > strings.LastIndex(content, "EMC\n") {
+		t.Errorf("text outside the figure: %q", content)
+	}
+	if raw := string(doc.complete()); !strings.Contains(raw, "/Alt "+testTextString(
+		"Scatter chart: 1 points; 1 point outside the range.")) {
+		t.Error("the note is not in the description")
+	}
+}

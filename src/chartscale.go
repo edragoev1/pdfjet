@@ -360,6 +360,39 @@ func onAxis(value float32, axis chartAxis) bool {
 	return value >= axis.min && value <= axis.max
 }
 
+// outsideNote returns the words of a chart for its values outside a range that
+// is set, of which it would say nothing otherwise, or "" when there are none:
+// "1 point outside the range", "2 points outside the range". The noun is what
+// the chart counts, in the singular.
+func outsideNote(count int, noun string) string {
+	if count == 0 {
+		return ""
+	}
+	if count > 1 {
+		noun += "s"
+	}
+	return strconv.Itoa(count) + " " + noun + " outside the range"
+}
+
+// withNote returns the description set by the caller with the note, if any, as
+// a sentence after it: the note is in the figure, and in what a screen reader
+// gets of it, whoever wrote the description.
+func withNote(description, note string) string {
+	if note == "" {
+		return description
+	}
+	return description + punctuationAfter(description, ".") + " " + note + "."
+}
+
+// drawOutsideNote draws the note, small and in the gray of the numbers, on the
+// baseline, its right end at x and inside the width from lo to hi, past which
+// it is shortened.
+func drawOutsideNote(page *Page, font *Font, size float32, note string, x, lo, hi, baseline float32) {
+	note = shorten(font, size, note, hi-lo)
+	page.drawString(font, size, note, max(lo, x-font.StringWidth(size, note)), baseline,
+		colorToRGB(simpleBarMuted), nil)
+}
+
 // drawable tells if the axis can be drawn: the span of a range that is set,
 // or of values that are, can be past the largest float.
 func drawable(axis chartAxis) bool {
