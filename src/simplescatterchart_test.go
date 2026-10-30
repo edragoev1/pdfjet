@@ -271,3 +271,29 @@ func TestSimpleScatterChartALongAxisTitleIsShortened(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+// The end of an axis rounded to steps is never inside the values: 591 steps
+// of 0.1 come to 59.100002 in float32, and a point at 59.1 was not drawn (the
+// review of 30 October 2026, E1).
+func TestSimpleScatterChartAnAxisHoldsItsValues(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	chart := NewSimpleScatterChart(font, font).SetSize(400, 300).AddNamed("Only", 59.1, 59.1)
+	chart.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, testHex("Only")) {
+		t.Errorf("the point at 59.1 is not drawn: %q", content)
+	}
+	for i := 1; i <= 20000; i++ {
+		value := float32(float32(i) * 0.1)
+		axis := axisOf([]float32{value}, 0, 0, false)
+		if !onAxis(value, axis) {
+			t.Fatalf("%v is not on the axis of %v to %v", value, axis.min, axis.max)
+		}
+		lo, hi := flatRange(value)
+		round := roundMaxAndMinValues(hi, lo)
+		if round.minValue > lo || round.maxValue < hi {
+			t.Fatalf("%v to %v rounded to %v to %v", lo, hi, round.minValue, round.maxValue)
+		}
+	}
+}

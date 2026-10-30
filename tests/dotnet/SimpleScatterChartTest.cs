@@ -249,5 +249,25 @@ public class SimpleScatterChartTest {
         chart = new SimpleScatterChart(font, font).SetTitle("Life expectancy?").Add(1f, 2f).Add(2f, 3f);
         Assert.Equal("Life expectancy? 2 points.", chart.AltDescription());
     }
+
+    // The end of an axis rounded to steps is never inside the values: 591
+    // steps of 0.1 come to 59.100002 in float, and a point at 59.1 was not
+    // drawn (the review of 30 October 2026, E1).
+    [Fact]
+    public void AnAxisHoldsItsValues() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetSize(400f, 300f).Add("Only", 59.1f, 59.1f).DrawOn(page);
+        Assert.Contains(TestSupport.Hex("Only"), TestSupport.Content(page));
+        for (int i = 1; i <= 20000; i++) {
+            float value = i * 0.1f;
+            ChartScale.Axis axis = ChartScale.AxisOf(new float[] {value}, 0f, 0f, false);
+            Assert.True(ChartScale.OnAxis(value, axis), value + " on " + axis.min + " to " + axis.max);
+            float[] flat = ChartScale.FlatRange(value);
+            Round round = ChartScale.RoundMaxAndMinValues(flat[1], flat[0]);
+            Assert.True(round.minValue <= flat[0] && round.maxValue >= flat[1], flat[0] + " to " + flat[1]);
+        }
+    }
 }
 }   // End of namespace PDFjet.NET

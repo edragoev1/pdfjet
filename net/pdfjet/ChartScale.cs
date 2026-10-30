@@ -194,6 +194,11 @@ internal static class ChartScale {
             round.numOfGridLines = RoundLines(minValue, maxValue, numOfGridLines);
             return round;
         }
+        // The product of a step can round to inside the values: 591 steps of
+        // 0.1 are 59.100002, and a point at 59.1 was not on its axis (the
+        // review of 30 October 2026)
+        round.maxValue = Math.Max(round.maxValue, maxValue);
+        round.minValue = Math.Min(round.minValue, minValue);
 
         round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
         if (round.numOfGridLines < 1 || round.maxValue <= round.minValue) {
