@@ -34,7 +34,9 @@ type EmbeddedFile struct {
 // NewEmbeddedFileAtPath embeds the file at the specified path into the PDF,
 // compressing it with Flate when compress is true. It panics if the file cannot be opened.
 func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
-	fileName := filePath[strings.LastIndex(filePath, "/")+1:]
+	// A Windows path too: its folders gave the name of the user away (review of
+	// 30 October 2026, F1)
+	fileName := filePath[strings.LastIndexAny(filePath, "/\\")+1:]
 	file, err := os.Open(filePath)
 	if err != nil {
 		panic(err)

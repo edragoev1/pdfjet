@@ -171,6 +171,22 @@ class ReviewWriterTest {
     }
 
     @Test
+    void anEmbeddedFileIsNamedWithoutItsFolders() throws Exception {
+        // A path of Windows put its folders, the name of the user in them, in
+        // the /F of the PDF (review of 30 October 2026, F1).
+        java.nio.file.Path folder = java.nio.file.Files.createTempDirectory("pdfjet");
+        java.nio.file.Path path = folder.resolve("C:\\Users\\alice\\x.xml");
+        java.nio.file.Files.write(path, new byte[] {'<', 'a', '/', '>'});
+        try {
+            EmbeddedFile file = new EmbeddedFile(TestSupport.newPDF(), path.toString(), false);
+            assertEquals("x.xml", file.fileName);
+        } finally {
+            java.nio.file.Files.delete(path);
+            java.nio.file.Files.delete(folder);
+        }
+    }
+
+    @Test
     void aScaleIsWrittenWithItsDecimals() throws Exception {
         // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
         // that drew nothing (review of 30 October 2026, B6).

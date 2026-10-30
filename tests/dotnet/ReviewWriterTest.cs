@@ -140,6 +140,21 @@ public class ReviewWriterTest {
     }
 
     [Fact]
+    public void AnEmbeddedFileIsNamedWithoutItsFolders() {
+        // A path of Windows put its folders, the name of the user in them, in
+        // the /F of the PDF (review of 30 October 2026, F1).
+        string folder = Directory.CreateTempSubdirectory("pdfjet").FullName;
+        string path = System.IO.Path.Combine(folder, "C:\\Users\\alice\\x.xml");
+        File.WriteAllBytes(path, Encoding.ASCII.GetBytes("<a/>"));
+        try {
+            EmbeddedFile file = new EmbeddedFile(TestSupport.NewPDF(), path, false);
+            Assert.Equal("x.xml", file.fileName);
+        } finally {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [Fact]
     public void AScaleIsWrittenWithItsDecimals() {
         // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
         // that drew nothing (review of 30 October 2026, B6).

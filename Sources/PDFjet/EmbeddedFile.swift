@@ -28,7 +28,9 @@ public class EmbeddedFile {
             _ compress: Bool) throws {
         var fileName = ""
         for scalar in filePath.unicodeScalars {
-            if scalar == "/" {
+            // A Windows path too: its folders gave the name of the user away
+            // (review of 30 October 2026, F1)
+            if scalar == "/" || scalar == "\\" {
                 fileName = ""
             } else {
                 fileName += String(scalar)

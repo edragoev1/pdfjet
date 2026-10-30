@@ -40,7 +40,9 @@ public class EmbeddedFile {
      * @throws Exception if there is an issue.
      */
     public EmbeddedFile(PDF pdf, String fileName, boolean compress) throws Exception {
-        this(pdf, fileName.substring(fileName.lastIndexOf("/") + 1),
+        // A Windows path too: its folders gave the name of the user away
+        // (review of 30 October 2026, F1)
+        this(pdf, fileName.substring(Math.max(fileName.lastIndexOf('/'), fileName.lastIndexOf('\\')) + 1),
                 new BufferedInputStream(new FileInputStream(fileName)), compress);
     }
 

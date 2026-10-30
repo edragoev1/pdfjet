@@ -182,6 +182,19 @@ func TestWriterALanguageSetOnAnyPDFIsInItsCatalog(t *testing.T) {
 	}
 }
 
+func TestWriterAnEmbeddedFileIsNamedWithoutItsFolders(t *testing.T) {
+	// A path of Windows put its folders, the name of the user in them, in the
+	// /F of the PDF (review of 30 October 2026, F1).
+	path := filepath.Join(t.TempDir(), `C:\Users\alice\x.xml`)
+	if err := os.WriteFile(path, []byte("<a/>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	file := NewEmbeddedFileAtPath(testNewPDF(), path, false)
+	if file.fileName != "x.xml" {
+		t.Errorf("the name is %q", file.fileName)
+	}
+}
+
 func TestWriterEveryAnnotationIsPrintedAndHasAnAppearance(t *testing.T) {
 	testAllowCoreFonts(t)
 	for _, level := range []compliance.Compliance{compliance.PDF_1_7, compliance.PDF_A_2B, compliance.PDF_A_3A} {

@@ -28,7 +28,9 @@ public class EmbeddedFile {
 
     /// <summary>Embeds the file with the specified name into the PDF, compressed with Flate when compress is true.</summary>
     public EmbeddedFile(PDF pdf, String fileName, bool compress) :
-        this(pdf, fileName.Substring(fileName.LastIndexOf('/') + 1),
+        // A Windows path too: its folders gave the name of the user away
+        // (review of 30 October 2026, F1)
+        this(pdf, fileName.Substring(fileName.LastIndexOfAny(new char[] {'/', '\\'}) + 1),
                 new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
     }
 

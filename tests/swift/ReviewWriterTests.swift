@@ -134,6 +134,18 @@ import Testing
         #expect(TestSupport.latin1(memory.bytes).lowercased().contains("/lang <\(hex)>"))
     }
 
+    @Test func anEmbeddedFileIsNamedWithoutItsFolders() throws {
+        // A path of Windows put its folders, the name of the user in them, in
+        // the /F of the PDF (review of 30 October 2026, F1).
+        let folder = NSTemporaryDirectory() + "/pdfjet-" + UUID().uuidString
+        try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: folder) }
+        let path = folder + "/C:\\Users\\alice\\x.xml"
+        #expect(FileManager.default.createFile(atPath: path, contents: Data("<a/>".utf8)))
+        let file = try EmbeddedFile(TestSupport.newPDF(), path, false)
+        #expect(file.fileName == "x.xml")
+    }
+
     @Test func aScaleIsWrittenWithItsDecimals() throws {
         // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
         // that drew nothing (review of 30 October 2026, B6).
