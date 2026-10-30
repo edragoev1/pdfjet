@@ -47,6 +47,7 @@ public class TextFrame : Drawable {
     private var yText: Float = 0.0
     private var rowOpen = false
     private var rowPlaced = false
+    private var rowLine: TextLine?      // The text line the row was placed for
     private var nextBaseline: Float = 0.0
     private var startsParagraph = false     // The next row starts a paragraph
     private var rowBottom: Float = 0.0      // The bottom of the last row drawn
@@ -268,13 +269,16 @@ public class TextFrame : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         let startParagraph = paragraphIndex
         let startLine = lineIndex
-        let startTokens = tokens
+        let continued = startLine > 0 || tokens != nil
+        // Measured, not drawn, so the text is kept: held only then, as for
+        // every frame it made the words copied at the first change
+        let startTokens = (page == nil) ? tokens : nil
         let startToken = tokenIndex
 
         elementParagraph = nil
         element = nil
         continuedParagraph = nil
-        if startLine > 0 || startTokens != nil {
+        if continued {
             continuedParagraph = paragraphs[startParagraph]
         }
         var bottom = drawParagraphs(page)
@@ -393,6 +397,7 @@ public class TextFrame : Drawable {
         xText = x
         yText = baseline
         rowOpen = true
+        rowLine = textLine
         rowPlaced = true
         startsParagraph = false
         return true
@@ -413,6 +418,10 @@ public class TextFrame : Drawable {
         // seconds where 200,000 took 0.08 in Java); it is copied once, when
         // the frame is full.
         var start: String.Index? = nil
+        // Found once: each looks through the text of the text lines, and a
+        // word broken into rows comes here for every row
+        let joinsNextLine = paragraph.joinsPrevious(lineIndex + 1)
+        let spaceMoves = !joinsNextLine && paragraph.spaceMovesToNext(lineIndex)
         while tokenIndex < tokens!.count {
             if !rowOpen && !openRow(textLine) {
                 if let start = start {
@@ -428,10 +437,10 @@ public class TextFrame : Drawable {
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
             let last = (tokenIndex == tokens!.count - 1)
-            let joinsNext = last && paragraph.joinsPrevious(lineIndex + 1)
+            let joinsNext = last && joinsNextLine
             // The space after the last word goes at the start of the next text
             // line when that one's space is narrower.
-            let spaceToNext = last && !joinsNext && paragraph.spaceMovesToNext(lineIndex)
+            let spaceToNext = last && spaceMoves
             // Whether the token is drawn with the space after it; the text is made
             // only when the token is drawn whole: made for each row of a word
             // broken into thousands of rows, it copied the rest of the word each time
@@ -523,7 +532,10 @@ public class TextFrame : Drawable {
             _ paragraph: Paragraph, _ index: Int, _ before: Float, _ available: Float) -> Float {
         var width: Float = 0.0
         var i = index + 1
-        while i < paragraph.lines.count && paragraph.joinsPrevious(i) {
+        // The caller knows the first one is joined: the test looks through
+        // the text of the text line, and a word broken into rows comes here
+        // for each
+        while i < paragraph.lines.count && (i == index + 1 || paragraph.joinsPrevious(i)) {
             let textLine = paragraph.lines[i]
             let words = textLine.text!.splitOnWhitespace()
             width += TextFrame.width(textLine, words[0])
@@ -706,6 +718,34 @@ public class TextFrame : Drawable {
         }
     }
 
+    // Moves the row down so that its tallest text is below the row before it,
+    // or the top of the frame: the row was placed for its first text line, and
+    // a larger word after that one rose out of it. Fonts of one size stay on
+    // the baseline they have, or the rows of a paragraph with a word in another
+    // font would not be evenly apart.
+    private func lowerRow() {
+        guard let rowLine = rowLine else {
+            return
+        }
+        let ascent = rowLine.font!.getAscent(rowLine.fontSize)
+        var rise: Float = 0.0
+        for part in row where !part.text.isEmpty && part.textLine.fontSize > rowLine.fontSize {
+            rise = max(rise, part.textLine.font!.getAscent(part.textLine.fontSize) - ascent)
+        }
+        if rise == 0.0 {
+            return
+        }
+        yText += rise
+        for part in row {
+            if part.startsParagraph {
+                part.paragraph.yText += rise
+            }
+            if part.endsTextLine {
+                part.paragraph.y2 = yText + part.textLine.font!.getDescent(part.textLine.fontSize)
+            }
+        }
+    }
+
     private func drawRow(_ page: Page?, _ lastRowOfParagraph: Bool) {
         joinReserved = false
         leadingSpace = false
@@ -714,6 +754,7 @@ public class TextFrame : Drawable {
         if row.isEmpty {
             return
         }
+        lowerRow()
         for part in row where !part.text.isEmpty {
             rowBottom = max(rowBottom, yText + part.textLine.font!.getDescent(part.textLine.fontSize))
         }
@@ -875,8 +916,29 @@ public class TextFrame : Drawable {
 
     // Splits the text of the text line into words, or, for CJK text, which has no
     // spaces between its words, into runs of characters that fit in the width.
+    // Splits the text of code into words at the last space of each run, which
+    // the frame draws after a word, as it does the space between two words. The
+    // other spaces of the run stay with the word before them, or the word after
+    // them at the start of the text: `a  b` is "a " and "b".
+    static func splitKeepingSpaces(_ text: String) -> [String] {
+        let units = Array(text.utf8)
+        var list = [String]()
+        var start = 0
+        for i in units.indices where units[i] == 0x20 && i > start && (i + 1 == units.count || units[i + 1] != 0x20) {
+            list.append(String(decoding: units[start..<i], as: UTF8.self))
+            start = i + 1
+        }
+        if start < units.count {
+            list.append(String(decoding: units[start...], as: UTF8.self))
+        }
+        return list
+    }
+
     private func tokenize(_ textLine: TextLine) -> [String] {
         if !textLine.text!.isCJK() {
+            if textLine.keepSpaces && textLine.text!.contains("  ") {
+                return TextFrame.splitKeepingSpaces(textLine.text!)
+            }
             return textLine.text!.splitOnWhitespace()
         }
         var list = [String]()

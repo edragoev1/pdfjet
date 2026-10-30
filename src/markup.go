@@ -216,6 +216,7 @@ func (markup *Markup) addRun(paragraph *Paragraph, text string, flags int, link 
 		font = markup.italic
 	}
 	textLine := NewTextLine(font, text)
+	textLine.keepSpaces = flags&markupCode != 0
 	if flags&markupStrike != 0 {
 		textLine.SetStrikeout(true)
 	}
@@ -263,9 +264,10 @@ type markupParser struct {
 	text []rune
 	// Where each ] that closes a [ is, by the index of the [.
 	closingBracket []int
-	// The index of the next ) and of the next space at or after each index.
-	nextParenthesis []int
-	nextSpace       []int
+	// Where each ) that closes a ( is, by the index of the (, and the index of
+	// the next space at or after each index.
+	closingParenthesis []int
+	nextSpace          []int
 	// The runs of backticks, by their length: where each starts, in order,
 	// and the first one of each length that can still close a code span.
 	backtickRuns   map[int][]int
@@ -295,18 +297,21 @@ func newMarkupParser(text []rune) *markupParser {
 			open = open[:len(open)-1]
 		}
 	}
-	parser.nextParenthesis = make([]int, n+1)
+	parser.closingParenthesis = make([]int, n)
+	open = open[:0]
+	for i := 0; i < n; i++ {
+		parser.closingParenthesis[i] = -1
+		if text[i] == '(' {
+			open = append(open, i)
+		} else if text[i] == ')' && len(open) > 0 {
+			parser.closingParenthesis[open[len(open)-1]] = i
+			open = open[:len(open)-1]
+		}
+	}
 	parser.nextSpace = make([]int, n+1)
-	parser.nextParenthesis[n] = n
 	parser.nextSpace[n] = n
 	for i := n - 1; i >= 0; i-- {
-		ch := text[i]
-		if ch == ')' {
-			parser.nextParenthesis[i] = i
-		} else {
-			parser.nextParenthesis[i] = parser.nextParenthesis[i+1]
-		}
-		if isJavaWhitespace(ch) {
+		if isJavaWhitespace(text[i]) {
 			parser.nextSpace[i] = i
 		} else {
 			parser.nextSpace[i] = parser.nextSpace[i+1]
@@ -439,7 +444,7 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 			i = urlEnd
 		} else if ch == '[' && link == "" && parser.isLink(i, end) {
 			close := parser.closingBracket[i]
-			urlEnd := parser.nextParenthesis[close+2]
+			urlEnd := parser.closingParenthesis[close+1]
 			buf, nodes = markupFlush(buf, link, nodes)
 			nodes = parser.parse(i+1, close, parser.decoded(close+2, urlEnd), nodes)
 			i = urlEnd + 1
@@ -622,14 +627,15 @@ func markupASCIIDigit(ch rune, hex bool) int {
 }
 
 // isLink returns true when the [ at the index starts a link: its ] is before
-// the end, a ( follows the ] at once, and a ) ends the URL before any space:
-// [text](url).
+// the end, a ( follows the ] at once, and the ) that closes it ends the URL
+// before any space: [text](url), with the parentheses in the URL in pairs, as
+// in CommonMark: [Foo](https://x/Foo_(bar)).
 func (parser *markupParser) isLink(i, end int) bool {
 	close := parser.closingBracket[i]
 	if close == -1 || close+1 >= end || parser.text[close+1] != '(' {
 		return false
 	}
-	urlEnd := parser.nextParenthesis[close+2]
+	urlEnd := parser.closingParenthesis[close+1]
 	return urlEnd < end && urlEnd > close+2 && parser.nextSpace[close+2] > urlEnd
 }
 

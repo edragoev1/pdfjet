@@ -239,6 +239,7 @@ public class Markup {
                 : ((flags & Markup.BOLD) != 0) ? bold
                 : ((flags & Markup.ITALIC) != 0) ? italic : regular
         let textLine = TextLine(font, text)
+        textLine.keepSpaces = (flags & Markup.CODE) != 0
         if (flags & Markup.STRIKE) != 0 {
             textLine.setStrikeout(true)
         }
@@ -308,8 +309,9 @@ public class Markup {
         let text: [UInt16]
         // Where each ] that closes a [ is, by the index of the [.
         private let closingBracket: [Int]
-        // The index of the next ) and of the next space at or after each index.
-        private let nextParenthesis: [Int]
+        // Where each ) that closes a ( is, by the index of the (, and the index
+        // of the next space at or after each index.
+        private let closingParenthesis: [Int]
         private let nextSpace: [Int]
         // The runs of backticks, by their length: where each starts, in order,
         // and the first one of each length that can still close a code span.
@@ -332,18 +334,27 @@ public class Markup {
                 }
                 i += 1
             }
-            var nextParenthesis = [Int](repeating: n, count: n + 1)
+            var closingParenthesis = [Int](repeating: -1, count: n)
+            open.removeAll()
+            i = 0
+            while i < n {
+                let ch = text[i]
+                if ch == Parser.openParenthesis {
+                    open.append(i)
+                } else if ch == Parser.closeParenthesis && !open.isEmpty {
+                    closingParenthesis[open.removeLast()] = i
+                }
+                i += 1
+            }
             var nextSpace = [Int](repeating: n, count: n + 1)
             i = n - 1
             while i >= 0 {
-                let ch = text[i]
-                nextParenthesis[i] = (ch == Parser.closeParenthesis) ? i : nextParenthesis[i + 1]
-                nextSpace[i] = Markup.isWhitespace(ch) ? i : nextSpace[i + 1]
+                nextSpace[i] = Markup.isWhitespace(text[i]) ? i : nextSpace[i + 1]
                 i -= 1
             }
             self.text = text
             self.closingBracket = closingBracket
-            self.nextParenthesis = nextParenthesis
+            self.closingParenthesis = closingParenthesis
             self.nextSpace = nextSpace
             i = 0
             while i < n {
@@ -497,7 +508,7 @@ public class Markup {
                     i = urlEnd
                 } else if ch == Parser.openBracket && link == nil && isLink(i, end) {
                     let close = closingBracket[i]
-                    let urlEnd = nextParenthesis[close + 2]
+                    let urlEnd = closingParenthesis[close + 1]
                     Parser.flush(&buf, link, &nodes)
                     parse(i + 1, close, decoded(close + 2, urlEnd), &nodes)
                     i = urlEnd + 1
@@ -672,13 +683,15 @@ public class Markup {
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]
-        // at once, and a ) ends the URL before any space: [text](url).
+        // at once, and the ) that closes it ends the URL before any space:
+        // [text](url), with the parentheses in the URL in pairs, as in
+        // CommonMark: [Foo](https://x/Foo_(bar)).
         private func isLink(_ i: Int, _ end: Int) -> Bool {
             let close = closingBracket[i]
             if close == -1 || close + 1 >= end || text[close + 1] != Parser.openParenthesis {
                 return false
             }
-            let urlEnd = nextParenthesis[close + 2]
+            let urlEnd = closingParenthesis[close + 1]
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd
         }
 

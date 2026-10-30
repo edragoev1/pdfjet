@@ -777,3 +777,182 @@ func TestTextFrameAJustifiedRowInAKernedFontEndsAtTheRightEdge(t *testing.T) {
 		t.Errorf("%d justified rows", rows)
 	}
 }
+
+// A text line wrapped into rows keeps its destination, in a TextFrame and a
+// TextColumn, and the destination is where the text line starts: a link to it
+// failed the document (the review of 30 October 2026).
+func TestTextFrameAWrappedTextLineKeepsItsDestination(t *testing.T) {
+	for _, column := range []bool{false, true} {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		page := NewPage(doc.pdf, letter.Portrait())
+		NewTextLine(font, "Go").SetGoToAction("there").SetLocation(50, 50).DrawOn(page)
+		line := NewTextLine(font, "one two three four five six seven").SetDestination("there")
+		paragraph := NewParagraph().Add(line)
+		if column {
+			textColumn := NewTextColumn()
+			textColumn.SetWidth(60)
+			textColumn.SetLocation(100, 200)
+			textColumn.AddParagraph(paragraph)
+			textColumn.DrawOn(page)
+		} else {
+			frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(60)
+			frame.SetLocation(100, 200)
+			frame.DrawOn(page)
+		}
+		file := string(doc.complete())
+		if strings.Count(file, "/Dest [") != 1 {
+			t.Fatalf("column %v: no link", column)
+		}
+		// The first row, a font size above its baseline, and not the last
+		y := page.height - (paragraph.GetTextY() - font.size)
+		match := regexp.MustCompile(`/XYZ 0 ([0-9.]+) 0\]`).FindStringSubmatch(file)
+		if got, _ := strconv.ParseFloat(match[1], 32); math.Abs(got-float64(y)) > 0.1 {
+			t.Errorf("column %v: at %v, not %v", column, got, y)
+		}
+	}
+}
+
+func TestTextFrameADestinationNameUsedTwiceGoesToTheFirst(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewTextLine(font, "Go").SetGoToAction("x").SetLocation(50, 50).DrawOn(page)
+	NewTextLine(font, "first").SetDestination("x").SetLocation(50, 100+font.size).DrawOn(page)
+	NewTextLine(font, "second").SetDestination("x").SetLocation(50, 200+font.size).DrawOn(page)
+	if file := string(doc.complete()); !strings.Contains(file, "/XYZ 0 692 0]") {
+		t.Error("not the first")
+	}
+}
+
+// A word broken into thousands of rows, with a text line joined to it, looked
+// through the whole word for each row: quadratic time.
+func TestTextFrameALongWordJoinedToTheNextIsDrawnInLinearTime(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	paragraph := markup.Paragraph("**" + strings.Repeat("x", 400000) + "**y")
+	elapsed := testShortest(3*time.Second, func() {
+		frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+		frame.SetLocation(10, 10)
+		frame.DrawOn(nil)
+	})
+	if elapsed > 3*time.Second {
+		t.Errorf("%v", elapsed)
+	}
+}
+
+// Each frame drawn copied the words left of the text line.
+func TestTextFrameManyFramesOfOneTextLineAreDrawnInLinearTime(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	text := strings.Repeat("word ", 400000)
+	elapsed := testShortest(3*time.Second, func() {
+		frame := NewTextFrameFromParagraphs([]*Paragraph{NewParagraph().Add(NewTextLine(font, text))}).SetWidth(300).SetHeight(600)
+		frame.SetLocation(10, 10)
+		for frame.HasMoreText() {
+			frame.DrawOn(NewPageDetached(pdf, letter.Portrait()))
+		}
+	})
+	if elapsed > 3*time.Second {
+		t.Errorf("%v", elapsed)
+	}
+}
+
+// Measured, the text is kept for the frame that draws it.
+func TestTextFrameMeasuringInsideATextLineKeepsItsWords(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	text := strings.TrimSpace(strings.Repeat("alpha ", 40))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{NewParagraph().Add(NewTextLine(font, text))}).SetWidth(100).SetHeight(40)
+	frame.SetLocation(10, 10)
+	page := NewPage(doc.pdf, letter.Portrait())
+	frame.DrawOn(page)
+	frame.DrawOn(nil)
+	before := strings.Count(testContent(page), testHex("alpha"))
+	second := NewPage(doc.pdf, letter.Portrait())
+	frame.DrawOn(second)
+	if before == 0 || strings.Count(testContent(second), testHex("alpha")) == 0 {
+		t.Errorf("%d words, then none", before)
+	}
+}
+
+// A row is below the row before it, or the top of the frame, by its tallest
+// text: a 48 point word after 12 point text rose out of the frame.
+func TestTextFrameALargerWordLowersItsRow(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	large := NewTextLine(font, "B").SetFontSize(48)
+	paragraph := NewParagraph().Add(NewTextLine(font, "a").SetFontSize(12)).Add(large)
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+	frame.SetLocation(10, 100)
+	frame.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	want := 100 + font.GetAscent(48)
+	if math.Abs(float64(paragraph.GetTextY()-want)) > 0.01 {
+		t.Errorf("baseline %v, want %v", paragraph.GetTextY(), want)
+	}
+	if y2 := want + font.GetDescent(48); math.Abs(float64(paragraph.GetY2()-y2)) > 0.01 ||
+		math.Abs(float64(frame.GetTextBottom()-y2)) > 0.01 {
+		t.Errorf("bottom %v and %v, want %v", paragraph.GetY2(), frame.GetTextBottom(), y2)
+	}
+	// Words of one size in two fonts stay on the baseline of the first
+	mono := NewCoreFont(doc.pdf, corefont.Courier())
+	even := NewParagraph().Add(NewTextLine(font, "a")).Add(NewTextLine(mono, "b"))
+	frame = NewTextFrameFromParagraphs([]*Paragraph{even}).SetWidth(300)
+	frame.SetLocation(10, 100)
+	frame.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	if want := 100 + font.GetAscent(font.size); even.GetTextY() != want {
+		t.Errorf("baseline %v, want %v", even.GetTextY(), want)
+	}
+}
+
+// The alternate description of a text line in a paragraph, of a tagged
+// document, is of one Span among the words, however many rows it wraps into.
+func TestTextFrameATextLineInATaggedParagraphKeepsItsDescription(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	font := testPlexSans(doc.pdf)
+	paragraph := NewParagraph().
+		Add(NewTextLine(font, "Before")).
+		Add(NewTextLine(font, "H2O is a very long formula").SetAltDescription("Water")).
+		Add(NewTextLine(font, "after"))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(60)
+	frame.SetLocation(10, 10)
+	page := NewPage(doc.pdf, letter.Portrait())
+	frame.DrawOn(page)
+	content := testContent(page)
+	if strings.Count(content, "/Span <</MCID") < 2 {
+		t.Errorf("%d Span marked contents", strings.Count(content, "/Span <</MCID"))
+	}
+	if strings.Index(content, "/P <</MCID 0") != strings.Index(content, "/P <</MCID") {
+		t.Error("the first word is not of the paragraph")
+	}
+	raw := string(doc.complete())
+	if strings.Count(raw, "/S /Span") != 1 || strings.Count(raw, "/Alt ") != 1 {
+		t.Errorf("%d Span and %d Alt", strings.Count(raw, "/S /Span"), strings.Count(raw, "/Alt "))
+	}
+}
+
+// Spaces in code are as they are written, in a TextFrame: `a  b` was a b.
+func TestTextFrameCodeKeepsItsSpaces(t *testing.T) {
+	testWant(t, `["a " "b"]`, fmt.Sprintf("%q", splitKeepingSpaces("a  b")))
+	testWant(t, `["a  " "b"]`, fmt.Sprintf("%q", splitKeepingSpaces("a   b")))
+	testWant(t, `[" a" "b "]`, fmt.Sprintf("%q", splitKeepingSpaces(" a b  ")))
+	doc := testNewDoc()
+	markup := testAdditionsMarkup(doc.pdf)
+	frame := NewTextFrameFromParagraphs([]*Paragraph{markup.Paragraph("x `a  b` y z  w")}).SetWidth(300)
+	frame.SetLocation(10, 10)
+	page := NewPage(doc.pdf, letter.Portrait())
+	frame.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("a  b ")) {
+		t.Errorf("no a  b in %q", content)
+	}
+	if !strings.Contains(content, testHex(" y z w")) && !strings.Contains(content, testHex("y z w")) {
+		t.Errorf("the spaces of plain text stay one: %q", content)
+	}
+}
+
+func TestParagraphAnEmptyParagraphStartsWithNothing(t *testing.T) {
+	if NewParagraph().StartsWith("a") || NewParagraph().StartsWith("") {
+		t.Error("an empty paragraph starts with a token")
+	}
+}

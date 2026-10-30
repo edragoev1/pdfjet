@@ -127,6 +127,9 @@ type Page struct {
 	// rather than to an element of its own: a paragraph is one element,
 	// however many words it is drawn one at a time.
 	mcidParent *structElement
+	// The element of the text line with an alternate description that is
+	// being drawn among the words of mcidParent; see describedWords.
+	words *structElement
 	// The figure AddBDC began last, whose bounding box SetFigureBoundingBox
 	// sets, or nil.
 	figure *structElement
@@ -2500,6 +2503,11 @@ func (page *Page) addBDC(
 		// linked marker of a wrapped table cell, is an element of its own,
 		// with its description (the review of 9 October 2026: it was lost).
 		if parent := page.mcidParent; parent != nil && structure != structelem.Figure {
+			if altDescription != "" {
+				parent = page.describedWords(parent, altDescription)
+			} else {
+				page.words = nil
+			}
 			parent.mcids = append(parent.mcids, page.mcid)
 			page.appendString("/")
 			page.appendString(parent.structure)
@@ -2542,6 +2550,22 @@ func (page *Page) addBDC(
 			page.figure = element
 		}
 	}
+}
+
+// describedWords returns the Span of a text line with an alternate description
+// that is drawn in a paragraph word by word or row by row: the description is
+// of the whole text line, so its words are the marked content of one element,
+// which takes its place among the words of the paragraph and is read once.
+func (page *Page) describedWords(parent *structElement, altDescription string) *structElement {
+	if page.words == nil || page.words.parent != parent || page.words.altDescription != altDescription {
+		page.words = newStructElement()
+		page.words.structure = string(structelem.Span)
+		page.words.mcid = -1
+		page.words.altDescription = altDescription
+		page.addStructure(page.words, parent)
+		parent.mcids = append(parent.mcids, -page.words.objNumber)
+	}
+	return page.words
 }
 
 // SetFigureBoundingBox sets the bounding box of the figure that AddBDC began
@@ -2659,6 +2683,7 @@ func (page *Page) addLinkBDC(
 	link.language = language
 	if parent := page.mcidParent; parent != nil {
 		// A word of a paragraph: the Link takes its place among the words
+		link.altDescription = altDescription
 		page.addStructure(link, parent)
 		parent.mcids = append(parent.mcids, -link.objNumber)
 	} else if structure == structelem.Link {

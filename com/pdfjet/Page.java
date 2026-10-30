@@ -109,6 +109,9 @@ final public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     StructElement mcidParent = null;
+    // The element of the text line with an alternate description that is being
+    // drawn among the words of mcidParent; see describedWords.
+    private StructElement words = null;
     // The figure addBDC began last, whose bounding box setFigureBoundingBox
     // sets, or null.
     private StructElement figure = null;
@@ -2977,9 +2980,15 @@ final public class Page {
             // linked marker of a wrapped table cell, is an element of its own,
             // with its description (the review of 9 October 2026: it was lost).
             if (mcidParent != null && structure != StructElem.FIGURE) {
-                mcidParent.mcids.add(this.mcid);
+                StructElement parent = mcidParent;
+                if (altDescription != null && !altDescription.isEmpty()) {
+                    parent = describedWords(parent, altDescription);
+                } else {
+                    words = null;
+                }
+                parent.mcids.add(this.mcid);
                 append("/");
-                append(mcidParent.structure);
+                append(parent.structure);
                 append(" <</MCID ");
                 append(mcid++);
                 // A word of another language than its paragraph says so in its
@@ -3017,6 +3026,22 @@ final public class Page {
                 figure = element;
             }
         }
+    }
+
+    // Returns the Span of a text line with an alternate description that is
+    // drawn in a paragraph word by word or row by row: the description is of
+    // the whole text line, so its words are the marked content of one element,
+    // which takes its place among the words of the paragraph and is read once.
+    private StructElement describedWords(StructElement parent, String altDescription) {
+        if (words == null || words.parent != parent || !altDescription.equals(words.altDescription)) {
+            words = new StructElement();
+            words.structure = StructElem.SPAN.type;
+            words.mcid = -1;
+            words.altDescription = altDescription;
+            addStructure(words, parent);
+            parent.mcids.add(-words.objNumber);
+        }
+        return words;
     }
 
     /**
@@ -3153,6 +3178,7 @@ final public class Page {
         if (mcidParent != null) {
             // A word of a paragraph: the Link takes its place among the words
             StructElement parent = mcidParent;
+            link.altDescription = altDescription;
             addStructure(link, parent);
             parent.mcids.add(-link.objNumber);
         } else if (structure == StructElem.LINK) {

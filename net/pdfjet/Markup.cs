@@ -229,6 +229,7 @@ public class Markup {
                 : ((flags & BOLD) != 0) ? bold
                 : ((flags & ITALIC) != 0) ? italic : regular;
         TextLine textLine = new TextLine(font, text);
+        textLine.keepSpaces = (flags & CODE) != 0;
         if ((flags & STRIKE) != 0) {
             textLine.SetStrikeout(true);
         }
@@ -278,8 +279,9 @@ public class Markup {
         private readonly String text;
         // Where each ] that closes a [ is, by the index of the [.
         private readonly int[] closingBracket;
-        // The index of the next ) and of the next space at or after each index.
-        private readonly int[] nextParenthesis;
+        // Where each ) that closes a ( is, by the index of the (, and the index
+        // of the next space at or after each index.
+        private readonly int[] closingParenthesis;
         private readonly int[] nextSpace;
         // The runs of backticks, by their length: where each starts, in order,
         // and the first one of each length that can still close a code span.
@@ -302,14 +304,21 @@ public class Markup {
                     closingBracket[open.Pop()] = i;
                 }
             }
-            nextParenthesis = new int[n + 1];
+            closingParenthesis = new int[n];
+            open.Clear();
+            for (int i = 0; i < n; i++) {
+                char ch = text[i];
+                closingParenthesis[i] = -1;
+                if (ch == '(') {
+                    open.Push(i);
+                } else if (ch == ')' && open.Count > 0) {
+                    closingParenthesis[open.Pop()] = i;
+                }
+            }
             nextSpace = new int[n + 1];
-            nextParenthesis[n] = n;
             nextSpace[n] = n;
             for (int i = n - 1; i >= 0; i--) {
-                char ch = text[i];
-                nextParenthesis[i] = (ch == ')') ? i : nextParenthesis[i + 1];
-                nextSpace[i] = Util.IsJavaWhitespace(ch) ? i : nextSpace[i + 1];
+                nextSpace[i] = Util.IsJavaWhitespace(text[i]) ? i : nextSpace[i + 1];
             }
             for (int i = 0; i < n; ) {
                 if (text[i] == '\\' && i + 1 < n && text[i + 1] != '`') {
@@ -440,7 +449,7 @@ public class Markup {
                     i = autolinkEnd;
                 } else if (ch == '[' && link == null && IsLink(i, end)) {
                     int close = closingBracket[i];
-                    int urlEnd = nextParenthesis[close + 2];
+                    int urlEnd = closingParenthesis[close + 1];
                     Flush(buf, link, nodes);
                     Parse(i + 1, close, Decoded(close + 2, urlEnd), nodes);
                     i = urlEnd + 1;
@@ -617,13 +626,15 @@ public class Markup {
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]
-        // at once, and a ) ends the URL before any space: [text](url).
+        // at once, and the ) that closes it ends the URL before any space:
+        // [text](url), with the parentheses in the URL in pairs, as in
+        // CommonMark: [Foo](https://x/Foo_(bar)).
         private bool IsLink(int i, int end) {
             int close = closingBracket[i];
             if (close == -1 || close + 1 >= end || text[close + 1] != '(') {
                 return false;
             }
-            int urlEnd = nextParenthesis[close + 2];
+            int urlEnd = closingParenthesis[close + 1];
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd;
         }
 

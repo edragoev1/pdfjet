@@ -74,6 +74,7 @@ type TextFrame struct {
 	xText, yText    float32
 	rowOpen         bool
 	rowPlaced       bool
+	rowLine         *TextLine // The text line the row was placed for
 	nextBaseline    float32
 	startsParagraph bool    // The next row starts a paragraph
 	rowBottom       float32 // The bottom of the last row drawn
@@ -264,8 +265,11 @@ func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Pag
 func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 	startParagraph := tf.paragraphIndex
 	startLine := tf.lineIndex
+	continued := startLine > 0 || tf.tokens != nil
 	var startTokens []string
-	if tf.tokens != nil {
+	if page == nil && tf.tokens != nil {
+		// Measured, not drawn, so the text is kept: copied only then, as for
+		// every frame it made the time grow with the square of the words
 		startTokens = make([]string, len(tf.tokens))
 		copy(startTokens, tf.tokens)
 	}
@@ -274,7 +278,7 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 	tf.elementParagraph = nil
 	tf.element = nil
 	tf.continuedParagraph = nil
-	if startLine > 0 || startTokens != nil {
+	if continued {
 		tf.continuedParagraph = tf.paragraphs[startParagraph]
 	}
 	bottom := tf.drawParagraphs(page)
@@ -396,6 +400,7 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 	}
 	tf.xText = tf.x
 	tf.yText = baseline
+	tf.rowLine = textLine
 	tf.rowOpen = true
 	tf.rowPlaced = true
 	tf.startsParagraph = false
@@ -411,6 +416,10 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 	fontSize := textLine.fontSize
 	var buf strings.Builder
 	var runLength float32
+	// Found once: each looks through the text of the text lines, and a word
+	// broken into rows comes here for every row
+	joinsNextLine := paragraph.joinsPrevious(tf.lineIndex + 1)
+	spaceMoves := !joinsNextLine && paragraph.spaceMovesToNext(tf.lineIndex)
 	for tf.tokenIndex < len(tf.tokens) {
 		if !tf.rowOpen && !tf.openRow(textLine) {
 			return false
@@ -420,10 +429,10 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		// has no space after it, and it is measured with the words joined to
 		// it, so that the row does not break between them.
 		last := (tf.tokenIndex == len(tf.tokens)-1)
-		joinsNext := last && paragraph.joinsPrevious(tf.lineIndex+1)
+		joinsNext := last && joinsNextLine
 		// The space after the last word goes at the start of the next text
 		// line when that one's space is narrower.
-		spaceToNext := last && !joinsNext && paragraph.spaceMovesToNext(tf.lineIndex)
+		spaceToNext := last && spaceMoves
 		// The token with the space after it, made only when the token is
 		// drawn whole: made for each row of a word broken into thousands of
 		// rows, it copied the rest of the word each time
@@ -516,7 +525,9 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 // all joined, is measured in linear time and not in quadratic time.
 func (tf *TextFrame) joinedWidth(paragraph *Paragraph, index int, before, available float32) float32 {
 	var width float32
-	for i := index + 1; i < len(paragraph.lines) && paragraph.joinsPrevious(i); i++ {
+	// The caller knows the first one is joined: the test looks through the
+	// text of the text line, and a word broken into rows comes here for each
+	for i := index + 1; i < len(paragraph.lines) && (i == index+1 || paragraph.joinsPrevious(i)); i++ {
 		textLine := paragraph.lines[i]
 		words := splitOnWhitespace(textLine.text)
 		width += textWidth(textLine, words[0])
@@ -607,6 +618,7 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 	if len(tf.row) == 0 {
 		return
 	}
+	tf.lowerRow()
 	for _, part := range tf.row {
 		if part.text != "" {
 			tf.rowBottom = max(tf.rowBottom, tf.yText+part.textLine.font.GetDescent(part.textLine.fontSize))
@@ -657,6 +669,33 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		}
 	}
 	tf.row = tf.row[:0]
+}
+
+// lowerRow moves the row down so that its tallest text is below the row before
+// it, or the top of the frame: the row was placed for its first text line, and
+// a larger word after that one rose out of it. Fonts of one size stay on the
+// baseline they have, or the rows of a paragraph with a word in another font
+// would not be evenly apart.
+func (tf *TextFrame) lowerRow() {
+	ascent := tf.rowLine.font.GetAscent(tf.rowLine.fontSize)
+	var rise float32
+	for _, part := range tf.row {
+		if part.text != "" && part.textLine.fontSize > tf.rowLine.fontSize {
+			rise = max(rise, part.textLine.font.GetAscent(part.textLine.fontSize)-ascent)
+		}
+	}
+	if rise == 0 {
+		return
+	}
+	tf.yText += rise
+	for _, part := range tf.row {
+		if part.startsParagraph {
+			part.paragraph.yText += rise
+		}
+		if part.endsTextLine {
+			part.paragraph.y2 = tf.yText + part.textLine.font.GetDescent(part.textLine.fontSize)
+		}
+	}
 }
 
 // beginParagraphElement makes the text that is drawn next belong to the
@@ -866,6 +905,9 @@ func textWidth(textLine *TextLine, text string) float32 {
 func (tf *TextFrame) tokenize(textLine *TextLine) []string {
 	list := make([]string, 0)
 	if !isCJK(textLine.text) {
+		if textLine.keepSpaces && strings.Contains(textLine.text, "  ") {
+			return append(list, splitKeepingSpaces(textLine.text)...)
+		}
 		return append(list, splitOnWhitespace(textLine.text)...)
 	}
 	var buf strings.Builder
@@ -885,6 +927,25 @@ func (tf *TextFrame) tokenize(textLine *TextLine) []string {
 	}
 	if buf.Len() > 0 {
 		list = append(list, buf.String())
+	}
+	return list
+}
+
+// splitKeepingSpaces splits the text of code into words at the last space of
+// each run, which the frame draws after a word, as it does the space between
+// two words. The other spaces of the run stay with the word before them, or
+// the word after them at the start of the text: `a  b` is "a " and "b".
+func splitKeepingSpaces(text string) []string {
+	list := make([]string, 0)
+	start := 0
+	for i := 0; i < len(text); i++ {
+		if text[i] == ' ' && i > start && (i+1 == len(text) || text[i+1] != ' ') {
+			list = append(list, text[start:i])
+			start = i + 1
+		}
+	}
+	if start < len(text) {
+		list = append(list, text[start:])
 	}
 	return list
 }

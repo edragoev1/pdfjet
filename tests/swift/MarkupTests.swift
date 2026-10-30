@@ -101,6 +101,16 @@ import Testing
         #expect(parse("[[b](u) c](v)") == ["[b](u) c|R v"])
     }
 
+    // The parentheses of a URL in pairs are in the URL, as in CommonMark; one
+    // that no ) closes makes no link.
+    @Test func theParenthesesOfAURLInPairsAreInTheURL() {
+        #expect(parse("[Foo](https://x/Foo_(bar))") == ["Foo|R https://x/Foo_(bar)"])
+        #expect(parse("[Foo](https://x/a(b)c(d)) e") == ["Foo|R https://x/a(b)c(d)", " e|R"])
+        #expect(parse("[Foo](https://x/((b)))") == ["Foo|R https://x/((b))"])
+        #expect(parse("[a](b(c)") == ["[a](b(c)|R"])
+        #expect(parse("[a](b)(c)") == ["a|R b", "+(c)|R"])
+    }
+
     @Test func marksWithNoMatchAreText() {
         #expect(parse("2 * 3 = 6") == ["2 * 3 = 6|R"])
         #expect(parse("**a") == ["**a|R"])

@@ -49,6 +49,7 @@ public class TextFrame implements Drawable {
     private float yText;
     private boolean rowOpen;
     private boolean rowPlaced;
+    private TextLine rowLine;       // The text line the row was placed for
     private float nextBaseline;
     private boolean startsParagraph;    // The next row starts a paragraph
     private float rowBottom;            // The bottom of the last row drawn
@@ -293,13 +294,16 @@ public class TextFrame implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         int startParagraph = paragraphIndex;
         int startLine = lineIndex;
-        List<String> startTokens = (tokens == null) ? null : new ArrayList<String>(tokens);
+        boolean continued = startLine > 0 || tokens != null;
+        // Measured, not drawn, so the text is kept: copied only then, as for
+        // every frame it made the time grow with the square of the words
+        List<String> startTokens = (page != null || tokens == null) ? null : new ArrayList<String>(tokens);
         int startToken = tokenIndex;
 
         elementParagraph = null;
         element = null;
         continuedParagraph = null;
-        if (startLine > 0 || startTokens != null) {
+        if (continued) {
             continuedParagraph = paragraphs.get(startParagraph);
         }
         float bottom = drawParagraphs(page);
@@ -469,6 +473,7 @@ public class TextFrame implements Drawable {
         xText = x;
         yText = baseline;
         rowOpen = true;
+        rowLine = textLine;
         rowPlaced = true;
         startsParagraph = false;
         return true;
@@ -489,6 +494,10 @@ public class TextFrame implements Drawable {
         // seconds where 200,000 took 0.08); it is copied once, when the frame
         // is full.
         int start = 0;
+        // Found once: each looks through the text of the text lines, and a
+        // word broken into rows comes here for every row
+        boolean joinsNextLine = paragraph.joinsPrevious(lineIndex + 1);
+        boolean spaceMoves = !joinsNextLine && paragraph.spaceMovesToNext(lineIndex);
         while (tokenIndex < tokens.size()) {
             if (!rowOpen && !openRow(textLine)) {
                 if (start > 0) {
@@ -502,10 +511,10 @@ public class TextFrame implements Drawable {
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
             boolean last = (tokenIndex == tokens.size() - 1);
-            boolean joinsNext = last && paragraph.joinsPrevious(lineIndex + 1);
+            boolean joinsNext = last && joinsNextLine;
             // The space after the last word goes at the start of the next text
             // line when that one's space is narrower.
-            boolean spaceToNext = last && !joinsNext && paragraph.spaceMovesToNext(lineIndex);
+            boolean spaceToNext = last && spaceMoves;
             // Whether the token is drawn with the space after it; the text is made
             // only when the token is drawn whole: made for each row of a word
             // broken into thousands of rows, it copied the rest of the word each time
@@ -613,7 +622,10 @@ public class TextFrame implements Drawable {
     // all joined, is measured in linear time and not in quadratic time.
     private float joinedWidth(Paragraph paragraph, int index, float before, float available) {
         float width = 0f;
-        for (int i = index + 1; i < paragraph.lines.size() && paragraph.joinsPrevious(i); i++) {
+        // The caller knows the first one is joined: the test looks through
+        // the text of the text line, and a word broken into rows comes here
+        // for each
+        for (int i = index + 1; i < paragraph.lines.size() && (i == index + 1 || paragraph.joinsPrevious(i)); i++) {
             TextLine textLine = paragraph.lines.get(i);
             String[] words = Util.splitOnWhitespace(textLine.text);
             width += width(textLine, words[0]);
@@ -751,6 +763,33 @@ public class TextFrame implements Drawable {
         }
     }
 
+    // Moves the row down so that its tallest text is below the row before it,
+    // or the top of the frame: the row was placed for its first text line, and
+    // a larger word after that one rose out of it. Fonts of one size stay on
+    // the baseline they have, or the rows of a paragraph with a word in another
+    // font would not be evenly apart.
+    private void lowerRow() {
+        float ascent = rowLine.font.getAscent(rowLine.fontSize);
+        float rise = 0f;
+        for (RowPart part : row) {
+            if (!part.text.isEmpty() && part.textLine.fontSize > rowLine.fontSize) {
+                rise = Math.max(rise, part.textLine.font.getAscent(part.textLine.fontSize) - ascent);
+            }
+        }
+        if (rise == 0f) {
+            return;
+        }
+        yText += rise;
+        for (RowPart part : row) {
+            if (part.startsParagraph) {
+                part.paragraph.yText += rise;
+            }
+            if (part.endsTextLine) {
+                part.paragraph.y2 = yText + part.textLine.font.getDescent(part.textLine.fontSize);
+            }
+        }
+    }
+
     private void drawRow(Page page, boolean lastRowOfParagraph) throws Exception {
         joinReserved = false;
         leadingSpace = false;
@@ -759,6 +798,7 @@ public class TextFrame implements Drawable {
         if (row.isEmpty()) {
             return;
         }
+        lowerRow();
         for (RowPart part : row) {
             if (!part.text.isEmpty()) {
                 rowBottom = Math.max(rowBottom, yText + part.textLine.font.getDescent(part.textLine.fontSize));
@@ -937,9 +977,31 @@ public class TextFrame implements Drawable {
 
     // Splits the text of the text line into words, or, for CJK text, which has no
     // spaces between its words, into runs of characters that fit in the width.
+    // Splits the text of code into words at the last space of each run, which
+    // the frame draws after a word, as it does the space between two words. The
+    // other spaces of the run stay with the word before them, or the word after
+    // them at the start of the text: `a  b` is "a " and "b".
+    static List<String> splitKeepingSpaces(String text) {
+        List<String> list = new ArrayList<String>();
+        int start = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == ' ' && i > start && (i + 1 == text.length() || text.charAt(i + 1) != ' ')) {
+                list.add(text.substring(start, i));
+                start = i + 1;
+            }
+        }
+        if (start < text.length()) {
+            list.add(text.substring(start));
+        }
+        return list;
+    }
+
     private List<String> tokenize(TextLine textLine) {
         List<String> list = new ArrayList<String>();
         if (!Util.isCJK(textLine.text)) {
+            if (textLine.keepSpaces && textLine.text.contains("  ")) {
+                return splitKeepingSpaces(textLine.text);
+            }
             list.addAll(Arrays.asList(Util.splitOnWhitespace(textLine.text)));
             return list;
         }

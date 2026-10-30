@@ -227,6 +227,7 @@ public class Markup {
                 : ((flags & BOLD) != 0) ? bold
                 : ((flags & ITALIC) != 0) ? italic : regular;
         TextLine textLine = new TextLine(font, text);
+        textLine.keepSpaces = (flags & CODE) != 0;
         if ((flags & STRIKE) != 0) {
             textLine.setStrikeout(true);
         }
@@ -277,8 +278,9 @@ public class Markup {
         private final String text;
         // Where each ] that closes a [ is, by the index of the [.
         private final int[] closingBracket;
-        // The index of the next ) and of the next space at or after each index.
-        private final int[] nextParenthesis;
+        // Where each ) that closes a ( is, by the index of the (, and the index
+        // of the next space at or after each index.
+        private final int[] closingParenthesis;
         private final int[] nextSpace;
         // The runs of backticks, by their length: where each starts, in order,
         // and the first one of each length that can still close a code span.
@@ -301,14 +303,21 @@ public class Markup {
                     closingBracket[open.pop()] = i;
                 }
             }
-            nextParenthesis = new int[n + 1];
+            closingParenthesis = new int[n];
+            Arrays.fill(closingParenthesis, -1);
+            open.clear();
+            for (int i = 0; i < n; i++) {
+                char ch = text.charAt(i);
+                if (ch == '(') {
+                    open.push(i);
+                } else if (ch == ')' && !open.isEmpty()) {
+                    closingParenthesis[open.pop()] = i;
+                }
+            }
             nextSpace = new int[n + 1];
-            nextParenthesis[n] = n;
             nextSpace[n] = n;
             for (int i = n - 1; i >= 0; i--) {
-                char ch = text.charAt(i);
-                nextParenthesis[i] = (ch == ')') ? i : nextParenthesis[i + 1];
-                nextSpace[i] = Character.isWhitespace(ch) ? i : nextSpace[i + 1];
+                nextSpace[i] = Character.isWhitespace(text.charAt(i)) ? i : nextSpace[i + 1];
             }
             for (int i = 0; i < n; ) {
                 if (text.charAt(i) == '\\' && i + 1 < n && text.charAt(i + 1) != '`') {
@@ -437,7 +446,7 @@ public class Markup {
                     i = addressEnd;
                 } else if (ch == '[' && link == null && isLink(i, end)) {
                     int close = closingBracket[i];
-                    int urlEnd = nextParenthesis[close + 2];
+                    int urlEnd = closingParenthesis[close + 1];
                     flush(buf, link, nodes);
                     parse(i + 1, close, decoded(close + 2, urlEnd), nodes);
                     i = urlEnd + 1;
@@ -605,13 +614,15 @@ public class Markup {
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]
-        // at once, and a ) ends the URL before any space: [text](url).
+        // at once, and the ) that closes it ends the URL before any space:
+        // [text](url), with the parentheses in the URL in pairs, as in
+        // CommonMark: [Foo](https://x/Foo_(bar)).
         private boolean isLink(int i, int end) {
             int close = closingBracket[i];
             if (close == -1 || close + 1 >= end || text.charAt(close + 1) != '(') {
                 return false;
             }
-            int urlEnd = nextParenthesis[close + 2];
+            int urlEnd = closingParenthesis[close + 1];
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd;
         }
 

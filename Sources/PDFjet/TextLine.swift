@@ -21,6 +21,8 @@ public class TextLine : BaselineDrawable {
     private var uri: String?
     private var key: String?
     private var destination: String?
+    // Code: a TextFrame keeps the runs of spaces of the text.
+    internal var keepSpaces = false
 
     var isLastToken: Bool = false
     var xOffset: Float = 0.0
@@ -562,6 +564,7 @@ public class TextLine : BaselineDrawable {
         textLine.explicitOffset = explicitOffset
         textLine.uri = uri
         textLine.key = key
+        textLine.destination = destination
         textLine.language = language
         if altDescription != nil && altDescription != self.text {
             textLine.altDescription = altDescription

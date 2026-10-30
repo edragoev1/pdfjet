@@ -1249,7 +1249,9 @@ func (pdf *PDF) setDestinationObjNumbers() {
 			destination.pageObjNumber = page.objNumber
 			if destination.bookmark {
 				bookmarks = append(bookmarks, destination)
-			} else {
+			} else if pdf.destinations[destination.name] == nil {
+				// The first of a name: the parts of a text line wrapped by a
+				// TextFrame or a TextColumn all have its destination
 				pdf.destinations[destination.name] = destination
 			}
 		}

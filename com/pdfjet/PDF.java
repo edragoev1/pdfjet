@@ -1368,7 +1368,9 @@ final public class PDF {
                 destination.pageObjNumber = page.objNumber;
                 if (destination.bookmark) {
                     bookmarks.add(destination);
-                } else {
+                } else if (!destinations.containsKey(destination.name)) {
+                    // The first of a name: the parts of a text line wrapped
+                    // by a TextFrame or a TextColumn all have its destination
                     destinations.put(destination.name, destination);
                 }
             }
