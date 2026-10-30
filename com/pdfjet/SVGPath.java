@@ -21,7 +21,7 @@ class SVGPath {
     int fill = Color.transparent;   // The fill color, or transparent for none
     int stroke = Color.transparent; // The stroke color, or transparent for none
     float strokeWidth = 0f;         // The stroke width, in the space of the svg element
-    boolean evenOdd = false;        // Filled with the even-odd rule
+    boolean evenOdd = false;        // Filled, or clipped to, with the even-odd rule
     CapStyle lineCap = CapStyle.BUTT;
     JoinStyle lineJoin = JoinStyle.MITER;
     float fillAlpha = 1f;

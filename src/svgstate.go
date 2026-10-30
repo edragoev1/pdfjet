@@ -35,6 +35,7 @@ type svgState struct {
 	color         int32   // The color property
 	strokeWidth   float32 // In the user space of the element
 	evenOdd       bool    // fill-rule="evenodd"
+	clipEvenOdd   bool    // clip-rule="evenodd"
 	lineCap       capstyle.CapStyle
 	lineJoin      joinstyle.JoinStyle
 	fillOpacity   float32
@@ -256,6 +257,12 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 			state.evenOdd = true
 		} else if value == "nonzero" {
 			state.evenOdd = false
+		}
+	case "clip-rule":
+		if value == "evenodd" {
+			state.clipEvenOdd = true
+		} else if value == "nonzero" {
+			state.clipEvenOdd = false
 		}
 	case "stroke-linecap":
 		switch value {

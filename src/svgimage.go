@@ -684,34 +684,68 @@ func svgTransformAll(m [6]float64, operations []*svgPathOp) {
 
 // clip sets the clip paths of the element: those of its ancestors and the one
 // its clip-path names, the shapes of the clipPath element in the user space
-// of the element. A clip path that is not there, or one in objectBoundingBox
-// units, which PDFjet does not draw, is left out; one with no shape in it
-// hides the element, as SVG clips all of it away.
+// of the element. A use in it names a shape, moved by its x and y. A clip path
+// of one shape keeps the clip-rule of the shape; several are one path whose
+// nonzero rule draws their union, each turned the same way round, as opposite
+// ways would cancel out where they overlap. A clip path that is not there, or
+// one in objectBoundingBox units, which PDFjet does not draw, is left out; one
+// with no shape in it hides the element, as SVG clips all of it away.
 func (r *svgReader) clip(state *svgState) error {
 	clipPath := r.ids[state.clipPath]
 	if clipPath == nil || clipPath.LocalName() != "clipPath" ||
 		strings.TrimSpace(svgAttribute(clipPath, "clipPathUnits")) == "objectBoundingBox" {
 		return nil
 	}
-	m := state.matrix
-	if own, ok := parseSVGTransform(svgAttribute(clipPath, "transform")); ok {
-		m = svgMultiply(m, own)
+	base := newSVGState()
+	base.matrix = state.matrix
+	attributes, order := svgAttributes(clipPath)
+	base, err := elementState(base, r.colorMap, r.rules, attributes, order)
+	if err != nil {
+		return err
 	}
+	base.hidden = false // A clipPath element is not displayed anyway
 	clip := new(svgPath)
 	clip.operations = make([]*svgPathOp, 0)
+	shapes := make([][]*svgPathOp, 0)
 	for _, child := range clipPath.Children() {
-		attributes, _ := svgAttributes(child)
-		shape := m
-		if transform, ok := attributes["transform"]; ok {
-			if matrix, ok := parseSVGTransform(transform); ok {
-				shape = svgMultiply(m, matrix)
-			}
-		}
-		operations, err := shapeOperations(child.LocalName(), attributes)
+		attributes, order := svgAttributes(child)
+		shape, err := elementState(base, r.colorMap, r.rules, attributes, order)
 		if err != nil {
 			return err
 		}
-		svgTransformAll(shape, operations)
+		name := child.LocalName()
+		if name == "use" {
+			target := r.ids[svgHref(child)]
+			if target == nil {
+				continue
+			}
+			shape.matrix = svgMultiply(shape.matrix, [6]float64{
+				1, 0, 0, 1, parseSVGCoordinate(attributes["x"]), parseSVGCoordinate(attributes["y"])})
+			attributes, order = svgAttributes(target)
+			shape, err = elementState(shape, r.colorMap, r.rules, attributes, order)
+			if err != nil {
+				return err
+			}
+			name = target.LocalName()
+		}
+		operations, err := shapeOperations(name, attributes)
+		if err != nil {
+			return err
+		}
+		if len(operations) == 0 {
+			continue
+		}
+		svgTransformAll(shape.matrix, operations)
+		shapes = append(shapes, operations)
+		clip.evenOdd = shape.clipEvenOdd
+	}
+	for _, operations := range shapes {
+		if len(shapes) > 1 {
+			clip.evenOdd = false
+			if svgArea(operations) < 0.0 {
+				operations = svgReversed(operations)
+			}
+		}
 		clip.operations = append(clip.operations, operations...)
 	}
 	if err := r.countOperations(len(clipPath.Children()) + len(clip.operations)); err != nil {
@@ -726,6 +760,62 @@ func (r *svgReader) clip(state *svgState) error {
 	clips = append(clips, state.clips...)
 	state.clips = append(clips, clip)
 	return nil
+}
+
+// svgArea returns twice the area of the path, its sign the way it goes round,
+// by the points of its lines and curves, and closed.
+func svgArea(operations []*svgPathOp) float64 {
+	area := 0.0
+	var x0, y0, x, y float64
+	line := func(px, py float64) {
+		area += float64(x*py) - float64(px*y)
+		x = px
+		y = py
+	}
+	for _, op := range operations {
+		if op.cmd == 'M' {
+			line(x0, y0)
+			x0 = float64(op.x)
+			y0 = float64(op.y)
+			x = x0
+			y = y0
+			continue
+		}
+		if op.cmd == 'C' {
+			line(float64(op.x1), float64(op.y1))
+			line(float64(op.x2), float64(op.y2))
+		}
+		line(float64(op.x), float64(op.y))
+	}
+	line(x0, y0)
+	return area
+}
+
+// svgReversed returns the path going the other way round, each subpath from
+// its end. Only a clip path needs this, whose subpaths close of themselves.
+func svgReversed(operations []*svgPathOp) []*svgPathOp {
+	reversed := make([]*svgPathOp, 0, len(operations))
+	start := 0
+	for end := 1; end <= len(operations); end++ {
+		if end < len(operations) && operations[end].cmd != 'M' {
+			continue
+		}
+		last := operations[end-1]
+		reversed = append(reversed, newSVGPathOpXY('M', last.x, last.y))
+		for i := end - 1; i > start; i-- {
+			op := operations[i]
+			before := operations[i-1]
+			if op.cmd == 'C' {
+				curve := newSVGPathOp('C')
+				curve.setCubicPoints(op.x2, op.y2, op.x1, op.y1, before.x, before.y)
+				reversed = append(reversed, curve)
+			} else {
+				reversed = append(reversed, newSVGPathOpXY('L', before.x, before.y))
+			}
+		}
+		start = end
+	}
+	return reversed
 }
 
 // svgVertices returns the vertices of the path, where its markers are drawn,
@@ -1450,7 +1540,11 @@ func (image *SVGImage) clip(clips []*svgPath, page *Page) {
 				page.appendString("h\n")
 			}
 		}
-		page.ClipPath()
+		if clip.evenOdd {
+			page.appendString("W*\nn\n")
+		} else {
+			page.ClipPath()
+		}
 	}
 }
 

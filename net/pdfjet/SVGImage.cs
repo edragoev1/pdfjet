@@ -306,7 +306,7 @@ public class SVGImage : IDrawable {
             state.hidden = true;
         }
         if (state.clipPath != null && !state.hidden) {
-            Clip(state);
+            Clip(state, rules);
         }
         stack.Add(state);
 
@@ -649,35 +649,62 @@ public class SVGImage : IDrawable {
 
     // Sets the clip paths of the element: those of its ancestors and the one
     // its clip-path names, the shapes of the clipPath element in the user
-    // space of the element. A clip path that is not there, or one in
-    // objectBoundingBox units, which PDFjet does not draw, is left out; one
-    // with no shape in it hides the element, as SVG clips all of it away.
-    private void Clip(SVGState state) {
+    // space of the element. A use in it names a shape, moved by its x and y. A
+    // clip path of one shape keeps the clip-rule of the shape; several are
+    // one path whose nonzero rule draws their union, each turned the same way
+    // round, as opposite ways would cancel out where they overlap. A clip path
+    // that is not there, or one in objectBoundingBox units, which PDFjet does
+    // not draw, is left out; one with no shape in it hides the element, as SVG
+    // clips all of it away.
+    private void Clip(SVGState state, SVGStyleSheet rules) {
         XMLNode clipPath = ElementOf(state.clipPath);
         if (clipPath == null || !clipPath.GetLocalName().Equals("clipPath")
                 || SVGState.Trim(Attribute(clipPath, "clipPathUnits")).Equals("objectBoundingBox")) {
             return;
         }
-        double[] m = state.matrix;
-        double[] own = SVGState.ParseTransform(Attribute(clipPath, "transform"));
-        if (own != null) {
-            m = SVGState.Multiply(m, own);
-        }
+        SVGState svg = new SVGState();
+        svg.matrix = state.matrix;
+        List<String> order = new List<String>();
+        Dictionary<String, String> attributes = Attributes(clipPath, order);
+        SVGState parent = ElementState(svg, rules, attributes, order);
+        parent.hidden = false;  // A clipPath element is not displayed anyway
         SVGPath clip = new SVGPath();
         clip.operations = new List<PathOp>();
+        List<List<PathOp>> shapes = new List<List<PathOp>>();
         foreach (XMLNode child in clipPath.GetChildren()) {
-            Dictionary<String, String> attributes = Attributes(child, new List<String>());
-            double[] shape = m;
-            String transform;
-            if (attributes.TryGetValue("transform", out transform)) {
-                double[] matrix = SVGState.ParseTransform(transform);
-                if (matrix != null) {
-                    shape = SVGState.Multiply(m, matrix);
+            order = new List<String>();
+            attributes = Attributes(child, order);
+            SVGState shape = ElementState(parent, rules, attributes, order);
+            String name = child.GetLocalName();
+            if (name.Equals("use")) {
+                XMLNode target = ElementOf(Href(child));
+                if (target == null) {
+                    continue;
+                }
+                shape.matrix = SVGState.Multiply(shape.matrix, new double[] {
+                    1.0, 0.0, 0.0, 1.0, Number(attributes, "x"), Number(attributes, "y")});
+                order = new List<String>();
+                attributes = Attributes(target, order);
+                shape = ElementState(shape, rules, attributes, order);
+                name = target.GetLocalName();
+            }
+            List<PathOp> operations = ShapeOperations(name, attributes);
+            if (operations.Count == 0) {
+                continue;
+            }
+            Transform(shape.matrix, operations);
+            shapes.Add(operations);
+            clip.evenOdd = shape.clipEvenOdd;
+        }
+        foreach (List<PathOp> operations in shapes) {
+            List<PathOp> added = operations;
+            if (shapes.Count > 1) {
+                clip.evenOdd = false;
+                if (Area(operations) < 0.0) {
+                    added = Reversed(operations);
                 }
             }
-            List<PathOp> operations = ShapeOperations(child.GetLocalName(), attributes);
-            Transform(shape, operations);
-            clip.operations.AddRange(operations);
+            clip.operations.AddRange(added);
         }
         CountOperations(clipPath.GetChildren().Count + clip.operations.Count);
         if (clip.operations.Count == 0) {
@@ -688,6 +715,63 @@ public class SVGImage : IDrawable {
         List<SVGPath> clips = (state.clips == null) ? new List<SVGPath>() : new List<SVGPath>(state.clips);
         clips.Add(clip);
         state.clips = clips;
+    }
+
+    // Returns twice the area of the path, its sign the way it goes round, by
+    // the points of its lines and curves, and closed.
+    private static double Area(List<PathOp> operations) {
+        double area = 0.0;
+        double x0 = 0.0;
+        double y0 = 0.0;
+        double x = 0.0;
+        double y = 0.0;
+        foreach (PathOp op in operations) {
+            if (op.cmd == 'M') {
+                area += x*y0 - x0*y;
+                x0 = op.x;
+                y0 = op.y;
+                x = x0;
+                y = y0;
+                continue;
+            }
+            if (op.cmd == 'C') {
+                area += x*op.y1 - ((double) op.x1)*y;
+                area += ((double) op.x1)*op.y2 - ((double) op.x2)*op.y1;
+                x = op.x2;
+                y = op.y2;
+            }
+            area += x*op.y - ((double) op.x)*y;
+            x = op.x;
+            y = op.y;
+        }
+        return area + x*y0 - x0*y;
+    }
+
+    // Returns the path going the other way round, each subpath from its end.
+    // Only a clip path needs this, whose subpaths close of themselves.
+    private static List<PathOp> Reversed(List<PathOp> operations) {
+        List<PathOp> reversed = new List<PathOp>(operations.Count);
+        int start = 0;
+        for (int end = 1; end <= operations.Count; end++) {
+            if (end < operations.Count && operations[end].cmd != 'M') {
+                continue;
+            }
+            PathOp last = operations[end - 1];
+            reversed.Add(new PathOp('M', last.x, last.y));
+            for (int i = end - 1; i > start; i--) {
+                PathOp op = operations[i];
+                PathOp before = operations[i - 1];
+                if (op.cmd == 'C') {
+                    PathOp curve = new PathOp('C');
+                    curve.SetCubicPoints(op.x2, op.y2, op.x1, op.y1, before.x, before.y);
+                    reversed.Add(curve);
+                } else {
+                    reversed.Add(new PathOp('L', before.x, before.y));
+                }
+            }
+            start = end;
+        }
+        return reversed;
     }
 
     // The length of the vector x, y. Its coordinates come from floats, whose
@@ -1392,7 +1476,11 @@ public class SVGImage : IDrawable {
                     page.Append("h\n");
                 }
             }
-            page.ClipPath();
+            if (clip.evenOdd) {
+                page.Append("W*\nn\n");
+            } else {
+                page.ClipPath();
+            }
         }
     }
 

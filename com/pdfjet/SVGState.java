@@ -28,6 +28,7 @@ class SVGState {
     int color = Color.black;            // The color property
     float strokeWidth = 1f;             // In the user space of the element
     boolean evenOdd = false;            // fill-rule="evenodd"
+    boolean clipEvenOdd = false;        // clip-rule="evenodd"
     CapStyle lineCap = CapStyle.BUTT;
     JoinStyle lineJoin = JoinStyle.MITER;
     float fillOpacity = 1f;
@@ -68,6 +69,7 @@ class SVGState {
         this.color = parent.color;
         this.strokeWidth = parent.strokeWidth;
         this.evenOdd = parent.evenOdd;
+        this.clipEvenOdd = parent.clipEvenOdd;
         this.lineCap = parent.lineCap;
         this.lineJoin = parent.lineJoin;
         this.fillOpacity = parent.fillOpacity;
@@ -272,6 +274,12 @@ class SVGState {
                 this.evenOdd = true;
             } else if (value.equals("nonzero")) {
                 this.evenOdd = false;
+            }
+        } else if (name.equals("clip-rule")) {
+            if (value.equals("evenodd")) {
+                this.clipEvenOdd = true;
+            } else if (value.equals("nonzero")) {
+                this.clipEvenOdd = false;
             }
         } else if (name.equals("stroke-linecap")) {
             if (value.equals("butt")) {

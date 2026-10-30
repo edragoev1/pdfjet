@@ -1056,3 +1056,33 @@ func TestSVGImageTheOperationsDrawnAgainAreLimited(t *testing.T) {
 	testNewSVG(t, `<svg width="10" height="10"><defs>`+polygon(1000)+`</defs>`+
 		strings.Repeat(`<use href="#p"/>`, 1000)+`</svg>`)
 }
+
+func TestSVGImageAUseInAClipPathDrawsTheShapeItNames(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="200" height="100"><defs><rect id="r" width="50" height="50"/></defs><clipPath id="c"><use href="#r" x="5" y="5" transform="translate(10,0)"/></clipPath><g clip-path="url(#c)"><rect x="10" y="10" width="80" height="20"/></g></svg>`); content != "q\n15 787 m\n65 787 l\n65 737 l\n15 737 l\nh\nW\nn\n0 0 0 rg\n10 782 m\n90 782 l\n90 762 l\n10 762 l\nf\nQ\n" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="200" height="100"><clipPath id="c"><use href="#missing"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheClipRuleOfAClipPathIsDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><path clip-rule="evenodd" d="M0 0 H50 V50 H0 Z"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW*\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c" style="clip-rule:evenodd"><rect width="50" height="50"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW*\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="50" height="50"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheShapesOfAClipPathGoTheSameWayRound(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><polygon points="0,0 20,0 20,20 0,20"/><polygon clip-rule="evenodd" points="10,10 10,30 30,30 30,10"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "0 792 m\n20 792 l\n20 772 l\n0 772 l\nh\n10 782 m\n30 782 l\n30 762 l\n10 762 l\n10 782 l\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="20" height="20"/><path d="M50 0 C50 10 60 20 70 20 L70 0 Z"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}

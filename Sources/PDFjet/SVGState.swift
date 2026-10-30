@@ -20,6 +20,7 @@ struct SVGState {
     var color: Int32 = Color.black          // The color property
     var strokeWidth: Float = 1.0            // In the user space of the element
     var evenOdd = false                     // fill-rule="evenodd"
+    var clipEvenOdd = false                 // clip-rule="evenodd"
     var lineCap = CapStyle.BUTT
     var lineJoin = JoinStyle.MITER
     var fillOpacity: Float = 1.0
@@ -108,6 +109,12 @@ struct SVGState {
                 evenOdd = true
             } else if value == "nonzero" {
                 evenOdd = false
+            }
+        case "clip-rule":
+            if value == "evenodd" {
+                clipEvenOdd = true
+            } else if value == "nonzero" {
+                clipEvenOdd = false
             }
         case "stroke-linecap":
             switch value {

@@ -17,7 +17,7 @@ type svgPath struct {
 	fill        int32        // The fill color, or color.Transparent for none
 	stroke      int32        // The stroke color, or color.Transparent for none
 	strokeWidth float32      // The stroke width, in the space of the svg element
-	evenOdd     bool         // Filled with the even-odd rule
+	evenOdd     bool         // Filled, or clipped to, with the even-odd rule
 	lineCap     capstyle.CapStyle
 	lineJoin    joinstyle.JoinStyle
 	fillAlpha   float32

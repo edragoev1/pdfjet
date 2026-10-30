@@ -618,30 +618,58 @@ public class SVGImage : Drawable {
 
     // Sets the clip paths of the element: those of its ancestors and the one
     // its clip-path names, the shapes of the clipPath element in the user
-    // space of the element. A clip path that is not there, or one in
-    // objectBoundingBox units, which PDFjet does not draw, is left out; one
-    // with no shape in it hides the element, as SVG clips all of it away.
+    // space of the element. A use in it names a shape, moved by its x and y. A
+    // clip path of one shape keeps the clip-rule of the shape; several are
+    // one path whose nonzero rule draws their union, each turned the same way
+    // round, as opposite ways would cancel out where they overlap. A clip path
+    // that is not there, or one in objectBoundingBox units, which PDFjet does
+    // not draw, is left out; one with no shape in it hides the element, as SVG
+    // clips all of it away.
     private func clip(_ state: inout SVGState) throws {
         guard let id = state.clipPath, let clipPath = ids[Array(id.utf8)],
               clipPath.getLocalName() == "clipPath",
               SVGState.trimSpace(clipPath.getAttribute("clipPathUnits") ?? "") != "objectBoundingBox" else {
             return
         }
-        var m = state.matrix
-        if let own = SVGState.parseTransform(clipPath.getAttribute("transform") ?? "") {
-            m = SVGState.multiply(m, own)
-        }
+        var svg = SVGState()
+        svg.matrix = state.matrix
+        var order = [String]()
+        var attributes = SVGImage.attributes(clipPath, &order)
+        var base = try elementState(svg, attributes, order)
+        base.hidden = false     // A clipPath element is not displayed anyway
         let clip = SVGPath()
+        var shapes = [[PathOp]]()
         for child in clipPath.getChildren() {
-            var order = [String]()
-            let attributes = SVGImage.attributes(child, &order)
-            var shape = m
-            if let transform = attributes["transform"], let matrix = SVGState.parseTransform(transform) {
-                shape = SVGState.multiply(m, matrix)
+            order = []
+            attributes = SVGImage.attributes(child, &order)
+            var shape = try elementState(base, attributes, order)
+            var name = child.getLocalName()
+            if name == "use" {
+                guard let target = SVGImage.href(child).flatMap({ ids[Array($0.utf8)] }) else {
+                    continue
+                }
+                shape.matrix = SVGState.multiply(shape.matrix, [
+                        1.0, 0.0, 0.0, 1.0, SVGImage.number(attributes, "x"), SVGImage.number(attributes, "y")])
+                order = []
+                attributes = SVGImage.attributes(target, &order)
+                shape = try elementState(shape, attributes, order)
+                name = target.getLocalName()
             }
-            let operations = try SVGImage.shapeOperations(child.getLocalName(), attributes)
-            SVGImage.transform(shape, operations)
-            clip.operations.append(contentsOf: operations)
+            let operations = try SVGImage.shapeOperations(name, attributes)
+            if operations.isEmpty {
+                continue
+            }
+            SVGImage.transform(shape.matrix, operations)
+            shapes.append(operations)
+            clip.evenOdd = shape.clipEvenOdd
+        }
+        for operations in shapes {
+            if shapes.count > 1 {
+                clip.evenOdd = false
+                clip.operations += (SVGImage.area(operations) < 0.0) ? SVGImage.reversed(operations) : operations
+            } else {
+                clip.operations += operations
+            }
         }
         try countOperations(clipPath.getChildren().count + clip.operations.count)
         if clip.operations.isEmpty {
@@ -650,6 +678,65 @@ public class SVGImage : Drawable {
         }
         clipShapes.append(clip)
         state.clips = (state.clips ?? []) + [clip]
+    }
+
+    // Returns twice the area of the path, its sign the way it goes round, by
+    // the points of its lines and curves, and closed.
+    private static func area(_ operations: [PathOp]) -> Double {
+        var area = 0.0
+        var x0 = 0.0
+        var y0 = 0.0
+        var x = 0.0
+        var y = 0.0
+        func line(_ px: Double, _ py: Double) {
+            area += x*py - px*y
+            x = px
+            y = py
+        }
+        for op in operations {
+            if op.cmd == "M" {
+                line(x0, y0)
+                x0 = Double(op.x)
+                y0 = Double(op.y)
+                x = x0
+                y = y0
+                continue
+            }
+            if op.cmd == "C" {
+                line(Double(op.x1), Double(op.y1))
+                line(Double(op.x2), Double(op.y2))
+            }
+            line(Double(op.x), Double(op.y))
+        }
+        line(x0, y0)
+        return area
+    }
+
+    // Returns the path going the other way round, each subpath from its end.
+    // Only a clip path needs this, whose subpaths close of themselves.
+    private static func reversed(_ operations: [PathOp]) -> [PathOp] {
+        var reversed = [PathOp]()
+        var start = 0
+        for end in stride(from: 1, through: operations.count, by: 1) {
+            if end < operations.count && operations[end].cmd != "M" {
+                continue
+            }
+            let last = operations[end - 1]
+            reversed.append(PathOp("M", last.x, last.y))
+            for i in stride(from: end - 1, to: start, by: -1) {
+                let op = operations[i]
+                let before = operations[i - 1]
+                if op.cmd == "C" {
+                    let curve = PathOp("C")
+                    curve.setCubicPoints(op.x2, op.y2, op.x1, op.y1, before.x, before.y)
+                    reversed.append(curve)
+                } else {
+                    reversed.append(PathOp("L", before.x, before.y))
+                }
+            }
+            start = end
+        }
+        return reversed
     }
 
     // The degrees of a radian, and the radians of a degree, as Java's
@@ -1348,7 +1435,11 @@ public class SVGImage : Drawable {
                     page.append("h\n")
                 }
             }
-            page.clipPath()
+            if clip.evenOdd {
+                page.append("W*\nn\n")
+            } else {
+                page.clipPath()
+            }
         }
     }
 

@@ -26,6 +26,7 @@ internal class SVGState {
     internal int color = Color.black;           // The color property
     internal float strokeWidth = 1f;            // In the user space of the element
     internal bool evenOdd = false;              // fill-rule="evenodd"
+    internal bool clipEvenOdd = false;          // clip-rule="evenodd"
     internal CapStyle lineCap = CapStyle.BUTT;
     internal JoinStyle lineJoin = JoinStyle.MITER;
     internal float fillOpacity = 1f;
@@ -119,6 +120,13 @@ internal class SVGState {
                     evenOdd = true;
                 } else if (value.Equals("nonzero")) {
                     evenOdd = false;
+                }
+                break;
+            case "clip-rule":
+                if (value.Equals("evenodd")) {
+                    clipEvenOdd = true;
+                } else if (value.Equals("nonzero")) {
+                    clipEvenOdd = false;
                 }
                 break;
             case "stroke-linecap":

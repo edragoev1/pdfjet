@@ -307,7 +307,7 @@ public class SVGImage implements Drawable {
             state.hidden = true;
         }
         if (state.clipPath != null && !state.hidden) {
-            clip(state);
+            clip(state, colorMap, rules);
         }
         stack.add(state);
 
@@ -637,34 +637,60 @@ public class SVGImage implements Drawable {
 
     // Sets the clip paths of the element: those of its ancestors and the one
     // its clip-path names, the shapes of the clipPath element in the user
-    // space of the element. A clip path that is not there, or one in
-    // objectBoundingBox units, which PDFjet does not draw, is left out; one
-    // with no shape in it hides the element, as SVG clips all of it away.
-    private void clip(SVGState state) {
+    // space of the element. A use in it names a shape, moved by its x and y. A
+    // clip path of one shape keeps the clip-rule of the shape; several are
+    // one path whose nonzero rule draws their union, each turned the same way
+    // round, as opposite ways would cancel out where they overlap. A clip path
+    // that is not there, or one in objectBoundingBox units, which PDFjet does
+    // not draw, is left out; one with no shape in it hides the element, as SVG
+    // clips all of it away.
+    private void clip(SVGState state, ColorMap colorMap, SVGState.StyleSheet rules) throws Exception {
         XMLNode clipPath = ids.get(state.clipPath);
         if (clipPath == null || !clipPath.getLocalName().equals("clipPath")
                 || SVGState.trim(attribute(clipPath, "clipPathUnits")).equals("objectBoundingBox")) {
             return;
         }
-        double[] m = state.matrix;
-        double[] own = SVGState.parseTransform(attribute(clipPath, "transform"));
-        if (own != null) {
-            m = SVGState.multiply(m, own);
-        }
+        SVGState base = new SVGState();
+        base.matrix = state.matrix;
+        List<String> order = new ArrayList<String>();
+        Map<String, String> attributes = attributes(clipPath, order);
+        base = elementState(base, colorMap, rules, attributes, order);
+        base.hidden = false;    // A clipPath element is not displayed anyway
         SVGPath clip = new SVGPath();
         clip.operations = new ArrayList<PathOp>();
+        List<List<PathOp>> shapes = new ArrayList<List<PathOp>>();
         for (XMLNode child : clipPath.getChildren()) {
-            Map<String, String> attributes = attributes(child, new ArrayList<String>());
-            double[] shape = m;
-            String transform = attributes.get("transform");
-            if (transform != null) {
-                double[] matrix = SVGState.parseTransform(transform);
-                if (matrix != null) {
-                    shape = SVGState.multiply(m, matrix);
+            order = new ArrayList<String>();
+            attributes = attributes(child, order);
+            SVGState shape = elementState(base, colorMap, rules, attributes, order);
+            String name = child.getLocalName();
+            if (name.equals("use")) {
+                XMLNode target = ids.get(href(child));
+                if (target == null) {
+                    continue;
+                }
+                shape.matrix = SVGState.multiply(shape.matrix, new double[] {
+                        1, 0, 0, 1, number(attributes, "x"), number(attributes, "y")});
+                order = new ArrayList<String>();
+                attributes = attributes(target, order);
+                shape = elementState(shape, colorMap, rules, attributes, order);
+                name = target.getLocalName();
+            }
+            List<PathOp> operations = shapeOperations(name, attributes);
+            if (operations.isEmpty()) {
+                continue;
+            }
+            transform(shape.matrix, operations);
+            shapes.add(operations);
+            clip.evenOdd = shape.clipEvenOdd;
+        }
+        for (List<PathOp> operations : shapes) {
+            if (shapes.size() > 1) {
+                clip.evenOdd = false;
+                if (area(operations) < 0.0) {
+                    operations = reversed(operations);
                 }
             }
-            List<PathOp> operations = shapeOperations(child.getLocalName(), attributes);
-            transform(shape, operations);
             clip.operations.addAll(operations);
         }
         countOperations(clipPath.getChildren().size() + clip.operations.size());
@@ -676,6 +702,63 @@ public class SVGImage implements Drawable {
         List<SVGPath> clips = (state.clips == null) ? new ArrayList<SVGPath>() : new ArrayList<SVGPath>(state.clips);
         clips.add(clip);
         state.clips = clips;
+    }
+
+    // Returns twice the area of the path, its sign the way it goes round, by
+    // the points of its lines and curves, and closed.
+    private static double area(List<PathOp> operations) {
+        double area = 0.0;
+        double x0 = 0.0;
+        double y0 = 0.0;
+        double x = 0.0;
+        double y = 0.0;
+        for (PathOp op : operations) {
+            if (op.cmd == 'M') {
+                area += x*y0 - x0*y;
+                x0 = op.x;
+                y0 = op.y;
+                x = x0;
+                y = y0;
+                continue;
+            }
+            if (op.cmd == 'C') {
+                area += x*op.y1 - ((double) op.x1)*y;
+                area += ((double) op.x1)*op.y2 - ((double) op.x2)*op.y1;
+                x = op.x2;
+                y = op.y2;
+            }
+            area += x*op.y - ((double) op.x)*y;
+            x = op.x;
+            y = op.y;
+        }
+        return area + x*y0 - x0*y;
+    }
+
+    // Returns the path going the other way round, each subpath from its end.
+    // Only a clip path needs this, whose subpaths close of themselves.
+    private static List<PathOp> reversed(List<PathOp> operations) {
+        List<PathOp> reversed = new ArrayList<PathOp>(operations.size());
+        int start = 0;
+        for (int end = 1; end <= operations.size(); end++) {
+            if (end < operations.size() && operations.get(end).cmd != 'M') {
+                continue;
+            }
+            PathOp last = operations.get(end - 1);
+            reversed.add(new PathOp('M', last.x, last.y));
+            for (int i = end - 1; i > start; i--) {
+                PathOp op = operations.get(i);
+                PathOp before = operations.get(i - 1);
+                if (op.cmd == 'C') {
+                    PathOp curve = new PathOp('C');
+                    curve.setCubicPoints(op.x2, op.y2, op.x1, op.y1, before.x, before.y);
+                    reversed.add(curve);
+                } else {
+                    reversed.add(new PathOp('L', before.x, before.y));
+                }
+            }
+            start = end;
+        }
+        return reversed;
     }
 
     // Returns the vertices of the path, where its markers are drawn, in its
@@ -1426,7 +1509,11 @@ public class SVGImage implements Drawable {
                     page.append("h\n");
                 }
             }
-            page.clipPath();
+            if (clip.evenOdd) {
+                page.append("W*\nn\n");
+            } else {
+                page.clipPath();
+            }
         }
     }
 
