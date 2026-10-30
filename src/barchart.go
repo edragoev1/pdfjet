@@ -355,6 +355,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	if page == nil || n == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
 		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
+	if chart.maxFractionDigits > maxChartDigits {
+		page.pdf.fail(fractionDigitsMessage)
+		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+	}
 	f1 := chart.f1
 	f2 := chart.f2
 

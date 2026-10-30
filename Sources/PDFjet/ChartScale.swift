@@ -13,6 +13,12 @@ import Foundation
 /// the shortening of a long name, and the test of a value to draw.
 ///
 enum ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // setFractionDigits(1 << 31) crashed, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    static let maxDigits = 100
+    static let tooManyDigits = "The fraction digits of a chart are at most 100."
+
     // Formats a label with minDigits to maxDigits decimal places, rounding
     // the exact value half to even. The label has a "." decimal separator and
     // no grouping whatever the locale, and a value that rounds to zero has no

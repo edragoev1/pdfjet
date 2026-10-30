@@ -401,6 +401,9 @@ public class SimpleBarChart implements Drawable {
         if (page == null || values.isEmpty() || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
+        if (maxFractionDigits > ChartScale.MAX_DIGITS) {
+            page.pdf.fail(new IllegalArgumentException(ChartScale.TOO_MANY_DIGITS));
+        }
         float size = f2.getSize();
         float pad = pad();
 

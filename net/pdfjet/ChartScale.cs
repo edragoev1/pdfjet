@@ -16,6 +16,12 @@ namespace PDFjet.NET {
 /// the shortening of a long name, and the test of a value to draw.
 /// </summary>
 internal static class ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // SetFractionDigits(1 << 30) hung, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    internal const int MAX_DIGITS = 100;
+    internal const string TOO_MANY_DIGITS = "The fraction digits of a chart are at most 100.";
+
     /// <summary>
     /// Formats a label with minDigits to maxDigits decimal places, rounding the
     /// exact value half to even. The label has a "." decimal separator and no

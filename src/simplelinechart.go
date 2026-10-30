@@ -696,8 +696,10 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	// highlighted one first and then the others in their order: more were
 	// pushed up past the top of the chart
 	room := len(labels)
-	if f2.bodyHeight > 0 {
-		room = int((bottom-top)/f2.bodyHeight) + 1
+	if rows := (bottom - top) / f2.bodyHeight; f2.bodyHeight > 0 && rows < float32(room) {
+		// Held to the labels first, as a chart of a huge size has more rows
+		// than an int: it panicked (the review of 30 October 2026)
+		room = int(max(rows, 0)) + 1
 	}
 	if len(labels) > room {
 		kept := make([]endLabel, 0, room)

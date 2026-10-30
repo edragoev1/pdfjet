@@ -323,6 +323,15 @@ func fits(every int, centers, widths []float32, lo, hi, gap float32) bool {
 	return true
 }
 
+// maxChartDigits is the most digits after the decimal point that a chart
+// writes: SetFractionDigits(1<<31) hung, in the writing of its numbers (the
+// review of 30 October 2026).
+const maxChartDigits = 100
+
+// fractionDigitsMessage is the message of more digits than that, the same in
+// the four ports.
+const fractionDigitsMessage = "The fraction digits of a chart are at most 100."
+
 // isValue tells if the value is a number to draw: a value that is NaN or
 // infinite has no bar, like a value missing at the end of a series.
 func isValue(value float32) bool {

@@ -769,7 +769,9 @@ public class SimpleLineChart : Drawable {
         // highlighted one first and then the others in their order: more were
         // pushed up past the top of the chart
         let rows = (plotBottom - top) / f2.getBodyHeight()
-        let room = rows.isFinite ? Int(rows) + 1 : Int.max
+        // Held to the labels first, as a chart of a huge size has more rows
+        // than an Int: it trapped (the review of 30 October 2026)
+        let room = (rows < Float(labels.count)) ? Int(Swift.max(rows, 0)) + 1 : labels.count
         if labels.count > room {
             var kept = [EndLabel]()
             for label in labels where label.index == highlight {

@@ -15,6 +15,12 @@ import java.math.*;
  * the shortening of a long name, and the test of a value to draw.
  */
 final class ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // setFractionDigits(1 << 30) hung, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    static final int MAX_DIGITS = 100;
+    static final String TOO_MANY_DIGITS = "The fraction digits of a chart are at most 100.";
+
     private ChartScale() {
     }
 

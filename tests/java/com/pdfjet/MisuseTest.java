@@ -567,5 +567,46 @@ class MisuseTest {
             assertFalse(Util.isDecimalNumber(text), text);
         }
     }
+
+    // NaN and absurd sizes are the port's error, not a hang or a crash (the review
+    // of 30 October 2026, G6 to G8).
+    @Test
+    void naNAndAbsurdSizesAreRefused() throws Exception {
+        final PDF frames = TestSupport.newPDF();
+        final TextFrame frame = new TextFrame(TestSupport.helvetica(frames), java.util.Arrays.asList("Hello frame text"))
+                .setWidth(120f).setHeight(200f);
+        frame.setLocation(Float.NaN, Float.NaN);
+        String message = fails(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable { frame.drawOn(new Page(frames, Letter.PORTRAIT)); }
+        });
+        assertEquals("The text frame's location and size must be numbers, not NaN or infinite.", message);
+        assertFalse(frame.hasMoreText());
+
+        final PDF bars = TestSupport.newPDF();
+        final Font font = TestSupport.helvetica(bars);
+        message = fails(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable {
+                new BarChart(font, font).setCategories("a").addSeries("one", new float[] {1f})
+                        .setFractionDigits(1 << 30).drawOn(new Page(bars, Letter.PORTRAIT));
+            }
+        });
+        assertEquals("The fraction digits of a chart are at most 100.", message);
+        message = fails(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable {
+                new SimpleBarChart(font, font).add("a", 1f).setFractionDigits(1 << 30)
+                        .drawOn(new Page(TestSupport.newPDF(), Letter.PORTRAIT));
+            }
+        });
+        assertEquals("The fraction digits of a chart are at most 100.", message);
+
+        for (final float size : new float[] {Float.NaN, Float.POSITIVE_INFINITY, 1e30f}) {
+            fails(IllegalArgumentException.class, new Executable() {
+                public void execute() throws Throwable {
+                    new SimpleLineChart(font, font).setSize(size, size).setCategories("a", "b")
+                            .addLine("one", new float[] {1f, 2f}).drawOn(new Page(TestSupport.newPDF(), Letter.PORTRAIT));
+                }
+            });
+        }
+    }
 }
 

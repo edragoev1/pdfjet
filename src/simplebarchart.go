@@ -333,6 +333,10 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	if page == nil || len(chart.values) == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
 		return [2]float32{chart.x + chart.w, chart.y + h}
 	}
+	if chart.maxFractionDigits > maxChartDigits {
+		page.pdf.fail(fractionDigitsMessage)
+		return [2]float32{chart.x + chart.w, chart.y + h}
+	}
 	f1, f2 := chart.f1, chart.f2
 	size := f2.size
 	pad := chart.pad()

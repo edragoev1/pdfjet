@@ -453,5 +453,36 @@ import Testing
             #expect(!Util.isDecimalNumber(text), "\(text)")
         }
     }
+
+    // NaN and absurd sizes are the port's error, not a hang or a crash (the review
+    // of 30 October 2026, G6 to G8).
+    @Test func naNAndAbsurdSizesAreRefused() {
+        var pdf = TestSupport.newPDF()
+        let frame = TextFrame(TestSupport.helvetica(pdf), ["Hello frame text"]).setWidth(120).setHeight(200)
+        frame.setLocation(.nan, .nan)
+        while frame.hasMoreText() {
+            frame.drawOn(Page(pdf, Letter.PORTRAIT))
+        }
+        #expect(pdf.error == "The text frame's location and size must be numbers, not NaN or infinite.")
+
+        pdf = TestSupport.newPDF()
+        var font = TestSupport.helvetica(pdf)
+        BarChart(font, font).setCategories("a").addSeries("one", [1]).setFractionDigits(1 << 30)
+                .drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(pdf.error == "The fraction digits of a chart are at most 100.")
+
+        pdf = TestSupport.newPDF()
+        font = TestSupport.helvetica(pdf)
+        SimpleBarChart(font, font).add("a", 1).setFractionDigits(1 << 30).drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(pdf.error == "The fraction digits of a chart are at most 100.")
+
+        for size: Float in [.nan, .infinity, 1e30] {
+            pdf = TestSupport.newPDF()
+            font = TestSupport.helvetica(pdf)
+            SimpleLineChart(font, font).setSize(size, size).setCategories("a", "b")
+                    .addLine("one", [1, 2]).drawOn(Page(pdf, Letter.PORTRAIT))
+            #expect(pdf.error == notWritable)
+        }
+    }
 }
 

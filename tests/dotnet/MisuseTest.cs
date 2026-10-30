@@ -402,5 +402,35 @@ public class MisuseTest {
             Assert.False((bool) isDecimal.Invoke(null, new object[] {text}), text);
         }
     }
+
+    // NaN and absurd sizes are the port's error, not a hang or a crash (the review
+    // of 30 October 2026, G6 to G8).
+    [Fact]
+    public void NaNAndAbsurdSizesAreRefused() {
+        PDF frames = TestSupport.NewPDF();
+        TextFrame frame = new TextFrame(TestSupport.Helvetica(frames), new List<string> {"Hello frame text"})
+                .SetWidth(120f).SetHeight(200f);
+        frame.SetLocation(float.NaN, float.NaN);
+        string message = Assert.Throws<ArgumentException>(
+                () => frame.DrawOn(new Page(frames, Letter.PORTRAIT))).Message;
+        Assert.Equal("The text frame's location and size must be numbers, not NaN or infinite.", message);
+        Assert.False(frame.HasMoreText());
+
+        PDF bars = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(bars);
+        message = Assert.Throws<ArgumentException>(() => new BarChart(font, font).SetCategories("a")
+                .AddSeries("one", new float[] {1f}).SetFractionDigits(1 << 30)
+                .DrawOn(new Page(bars, Letter.PORTRAIT))).Message;
+        Assert.Equal("The fraction digits of a chart are at most 100.", message);
+        message = Assert.Throws<ArgumentException>(() => new SimpleBarChart(font, font).Add("a", 1f)
+                .SetFractionDigits(1 << 30).DrawOn(new Page(TestSupport.NewPDF(), Letter.PORTRAIT))).Message;
+        Assert.Equal("The fraction digits of a chart are at most 100.", message);
+
+        foreach (float size in new float[] {float.NaN, float.PositiveInfinity, 1e30f}) {
+            Assert.Throws<ArgumentException>(() => new SimpleLineChart(font, font).SetSize(size, size)
+                    .SetCategories("a", "b").AddLine("one", new float[] {1f, 2f})
+                    .DrawOn(new Page(TestSupport.NewPDF(), Letter.PORTRAIT)));
+        }
+    }
 }
 }
