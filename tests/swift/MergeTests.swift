@@ -495,6 +495,24 @@ import Testing
         #expect(pageObj.getResourcesObject(objects)?.dict.contains("/GS1") == true)
     }
 
+    @Test func anImageOnAPageThatWasReadIsInItsResources() throws {
+        var objects = try TestSupport.read(onePagePDF(""))
+        let image = try Image(&objects, TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG"))
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+        page.addResource(image, &objects)
+        image.setLocation(72, 72)
+        image.drawOn(page)
+        page.complete(&objects)
+        try memory.pdf.addObjects(objects)
+        try memory.pdf.complete()
+        let name = "/Im\(image.objNumber!)"
+        let value = try resource(memory.bytes, "/XObject", name)
+        #expect(value.contains("/Image"), "\(value)")
+        let content = try pageContents(TestSupport.read(memory.bytes))[0]
+        #expect(content.contains(name + " Do"), "\(content)")
+    }
+
     @Test func thePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() throws {
         // Both gave a PDF of no pages, and no error (review of 30 October 2026,
         // B3). The two are read and merged as the pages they are.

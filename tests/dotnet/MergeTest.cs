@@ -533,6 +533,24 @@ public class MergeTest {
     }
 
     [Fact]
+    public void AnImageOnAPageThatWasReadIsInItsResources() {
+        List<PDFobj> objects = TestSupport.Read(OnePagePDF(""));
+        Image image = new Image(objects, TestSupport.Open("tests/data/PngSuite/TBRN2C08.PNG"));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        page.AddResource(image, objects);
+        image.SetLocation(72f, 72f);
+        image.DrawOn(page);
+        page.Complete(objects);
+        pdf.AddObjects(objects);
+        pdf.Complete();
+        string name = "/Im" + image.objNumber;
+        Assert.Contains("/Image", Resource(stream.ToArray(), "/XObject", name));
+        Assert.Contains(name + " Do", PageContents(TestSupport.Read(stream.ToArray()))[0]);
+    }
+
+    [Fact]
     public void ThePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() {
         // Both gave a PDF of no pages, and no error (review of 30 October 2026,
         // B3). The two are read and merged as the pages they are.

@@ -609,6 +609,32 @@ func TestMergeAPageWithNoResourcesGetsThem(t *testing.T) {
 	}
 }
 
+func TestMergeAnImageOnAPageThatWasReadIsInItsResources(t *testing.T) {
+	png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/TBRN2C08.PNG"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	objects := testRead(t, testOnePagePDF(""))
+	image := NewImageForObjects(&objects, bytes.NewReader(png))
+	doc := testNewDoc()
+	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+	page.AddImageResource(image, &objects)
+	image.SetLocation(72, 72)
+	image.DrawOn(page)
+	page.Complete(&objects)
+	if err := doc.pdf.AddObjects(objects); err != nil {
+		t.Fatal(err)
+	}
+	buf := doc.complete()
+	name := "/Im" + strconv.Itoa(image.objNumber)
+	if value := testResource(t, buf, "/XObject", name); !slices.Contains(value, "/Image") {
+		t.Errorf("the image is %v", value)
+	}
+	if contents := testPageContents(testRead(t, buf))[0]; !strings.Contains(contents, name+" Do") {
+		t.Errorf("the page does not draw %s:\n%s", name, contents)
+	}
+}
+
 func TestMergeAPageWithAnEmptyContentsArrayIsDrawnOn(t *testing.T) {
 	// An empty array is valid, and it failed the document (review of
 	// 30 October 2026, B4).

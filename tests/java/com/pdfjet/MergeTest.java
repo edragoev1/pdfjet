@@ -568,6 +568,27 @@ class MergeTest {
     }
 
     @Test
+    void anImageOnAPageThatWasReadIsInItsResources() throws Exception {
+        List<PDFobj> objects = TestSupport.read(onePagePDF(""));
+        Image image;
+        try (java.io.InputStream in = TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG")) {
+            image = new Image(objects, in);
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        page.addResource(image, objects);
+        image.setLocation(72f, 72f);
+        image.drawOn(page);
+        page.complete(objects);
+        pdf.addObjects(objects);
+        pdf.complete();
+        String name = "/Im" + image.objNumber;
+        assertTrue(resource(bos.toByteArray(), "/XObject", name).contains("/Image"));
+        assertTrue(pageContents(TestSupport.read(bos.toByteArray())).get(0).contains(name + " Do"));
+    }
+
+    @Test
     void thePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() throws Exception {
         // Both gave a PDF of no pages, and no error (review of 30 October 2026,
         // B3). The two are read and merged as the pages they are.
