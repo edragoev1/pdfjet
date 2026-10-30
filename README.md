@@ -616,7 +616,10 @@ embed. In this order:
 2. **Google Fonts**, [fonts.google.com](https://fonts.google.com), next:
    every family there is under the SIL Open Font License, the Apache License
    2.0 or the Ubuntu Font Licence, each of which lets a document embed the
-   font.
+   font. Use the files of the `static` folder of the download, one for each
+   weight. A variable font, such as `Roboto[wght].ttf`, is drawn in its
+   default weight only, so it gives Regular even for Bold, and a CFF2
+   variable font is refused.
 3. **Any other font only once its license says so.** The SIL Open Font
    License is the one to look for. The fonts that come with Windows or
    macOS, such as Georgia, Tahoma, Arial, Calibri or Helvetica Neue, are
