@@ -87,6 +87,40 @@ class MarkdownAdditionsTest {
         assertEquals("0", markup.paragraphs("0  ").get(0).lines.get(0).text);
     }
 
+    // The spaces before a hard line break are not in the text line before
+    // it, as in CommonMark.
+    @Test
+    void theSpacesBeforeAHardLineBreakAreNotText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+                "**one**  \ntwo", "[one  \ntwo](u)"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(Arrays.asList(true, false), breaks(paragraph), text);
+            assertEquals("one", paragraph.lines.get(0).text, text);
+            assertEquals("two", paragraph.lines.get(1).text, text);
+        }
+    }
+
+    // A backslash at the end of a text is a backslash, and no hard line
+    // break, as in CommonMark; in the middle it is a break, as before.
+    @Test
+    void aBackslashAtTheEndIsText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(1, paragraph.lines.size(), text);
+            assertEquals("0\\", paragraph.lines.get(0).text, text);
+            assertEquals(0, paragraph.lines.get(0).lineBreaks, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(1, paragraphs.get(0).lines.size(), text);
+            assertEquals("0\\", paragraphs.get(0).lines.get(0).text, text);
+        }
+        Paragraph two = markup.paragraph("one\\\ntwo\\\n");
+        assertEquals(Arrays.asList(true, false), breaks(two));
+        assertEquals("two\\", two.lines.get(1).text);
+    }
+
     @Test
     void aTextFrameStartsARowAtABreak() throws Exception {
         TestSupport.allowCoreFonts(true);

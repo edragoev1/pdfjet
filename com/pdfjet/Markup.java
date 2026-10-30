@@ -24,9 +24,10 @@ import java.util.*;
  * between them: the paragraph joins its text lines with Paragraph.addJoined.
  * <p>
  * A line that ends in two spaces or a backslash, and a &lt;br&gt;, are hard
- * line breaks, which TextFrame draws as the end of a row; two spaces and a
- * line break at the end of the text are not, and are dropped, as in
- * CommonMark. Any other line break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+ * line breaks, which TextFrame draws as the end of a row, and the spaces
+ * before the line break are not in the text; two spaces and a line break at
+ * the end of the text are not, and are dropped, and a backslash at the end of
+ * the text is a backslash, as in CommonMark. Any other line break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
  * &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
  * &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
  * &amp;#8212; and &amp;#x2014;, are the characters they name.
@@ -339,7 +340,22 @@ public class Markup {
                 int addressEnd;
                 int breakEnd = breakEnd(i, end);
                 int[] entity;
-                if (breakEnd > i) {
+                if (breakEnd > i && ch == '\\' && onlySpaceFrom(breakEnd)) {
+                    // A backslash at the end of the text is text, and no hard
+                    // line break, as in CommonMark: "0\\\n" is the text line
+                    // "0\\"
+                    buf.append(ch);
+                    i = end;
+                } else if (breakEnd > i) {
+                    if (ch == '\r' || ch == '\n') {
+                        // The spaces before a hard line break are not in the
+                        // text, as in CommonMark: "one  \ntwo" is "one", a
+                        // break and "two"
+                        for (int k = i; k > start && Character.isWhitespace(text.charAt(k - 1))
+                                && buf.length() > 0 && buf.charAt(buf.length() - 1) == ' '; k--) {
+                            buf.setLength(buf.length() - 1);
+                        }
+                    }
                     flush(buf, link, nodes);
                     nodes.add(new Node("", BREAK, link));
                     i = breakEnd;
@@ -425,6 +441,17 @@ public class Markup {
                 }
             }
             return n;
+        }
+
+        // Returns whether the text from i to its end is whitespace, or
+        // nothing.
+        private boolean onlySpaceFrom(int i) {
+            for (; i < text.length(); i++) {
+                if (!Character.isWhitespace(text.charAt(i))) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // Returns where a hard line break at i ends, or i when there is none:

@@ -217,6 +217,15 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   `paragraphs("0  \n")` is `0`, where it was `0  `. Example:
   `paragraphs("Total \n\nNext")` gives the text lines `Total` and `Next`,
   where the first was `Total `.
+- Behavior change: Markup, the four ports: the spaces before a hard line
+  break in the middle of a text are not in the text line before it, as in
+  CommonMark. Example: `paragraph("one  \ntwo")` is the text line `one`, a
+  line break and `two`, where the first was `one  `.
+- Behavior change: Markup, the four ports: a backslash at the very end of a
+  text is a backslash, and no hard line break, as in CommonMark. Example:
+  `paragraph("0\\\n")` is the one text line `0\`, with no line break after
+  it, where it was `0` and a line break. A backslash before a line break in
+  the middle of a text is a hard line break, as before.
 
 ## v9.1.5 — 2026-10-28
 

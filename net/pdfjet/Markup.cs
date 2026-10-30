@@ -26,9 +26,10 @@ namespace PDFjet.NET {
 /// lines with Paragraph.AddJoined.
 /// <para>
 /// A line that ends in two spaces or a backslash, and a &lt;br&gt;, are hard
-/// line breaks, which TextFrame draws as the end of a row; two spaces and a
-/// line break at the end of the text are not, and are dropped, as in
-/// CommonMark. Any other line break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+/// line breaks, which TextFrame draws as the end of a row, and the spaces
+/// before the line break are not in the text; two spaces and a line break at
+/// the end of the text are not, and are dropped, and a backslash at the end of
+/// the text is a backslash, as in CommonMark. Any other line break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
 /// &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
 /// &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
 /// &amp;#8212; and &amp;#x2014;, are the characters they name.
@@ -341,7 +342,22 @@ public class Markup {
                 int autolinkEnd;
                 int breakEnd = BreakEnd(i, end);
                 int[] entity;
-                if (breakEnd > i) {
+                if (breakEnd > i && ch == '\\' && OnlySpaceFrom(breakEnd)) {
+                    // A backslash at the end of the text is text, and no hard
+                    // line break, as in CommonMark: "0\\\n" is the text line
+                    // "0\\"
+                    buf.Append(ch);
+                    i = end;
+                } else if (breakEnd > i) {
+                    if (ch == '\r' || ch == '\n') {
+                        // The spaces before a hard line break are not in the
+                        // text, as in CommonMark: "one  \ntwo" is "one", a
+                        // break and "two"
+                        for (int k = i; k > start && Util.IsJavaWhitespace(text[k - 1])
+                                && buf.Length > 0 && buf[buf.Length - 1] == ' '; k--) {
+                            buf.Length--;
+                        }
+                    }
                     Flush(buf, link, nodes);
                     nodes.Add(new Node("", BREAK, link));
                     i = breakEnd;
@@ -429,6 +445,17 @@ public class Markup {
                 }
             }
             return n;
+        }
+
+        // Returns whether the text from i to its end is whitespace, or
+        // nothing.
+        private bool OnlySpaceFrom(int i) {
+            for (; i < text.Length; i++) {
+                if (!Util.IsJavaWhitespace(text[i])) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // Returns where a hard line break at i ends, or i when there is none:

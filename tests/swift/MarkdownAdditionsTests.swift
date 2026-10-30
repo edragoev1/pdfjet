@@ -69,6 +69,38 @@ import Testing
         #expect(markup.paragraphs("0  ").first?.lines.first?.text == "0")
     }
 
+    // The spaces before a hard line break are not in the text line before
+    // it, as in CommonMark.
+    @Test func theSpacesBeforeAHardLineBreakAreNotText() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+                     "**one**  \ntwo", "[one  \ntwo](u)"] {
+            let paragraph = markup.paragraph(text)
+            #expect(MarkdownAdditionsTests.breaks(paragraph) == [true, false], "\(text)")
+            #expect(paragraph.lines.count == 2 && paragraph.lines[0].text == "one", "\(text)")
+            #expect(paragraph.lines.count == 2 && paragraph.lines[1].text == "two", "\(text)")
+        }
+    }
+
+    // A backslash at the end of a text is a backslash, and no hard line
+    // break, as in CommonMark; in the middle it is a break, as before.
+    @Test func aBackslashAtTheEndIsText() {
+        let markup = MarkdownAdditionsTests.markup(TestSupport.newPDF())
+        for text in ["0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"] {
+            let paragraph = markup.paragraph(text)
+            #expect(paragraph.lines.count == 1, "\(text)")
+            #expect(paragraph.lines.first?.text == "0\\", "\(text)")
+            #expect(paragraph.lines.first?.lineBreaks == 0, "\(text)")
+            let paragraphs = markup.paragraphs(text)
+            #expect(paragraphs.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.count == 1, "\(text)")
+            #expect(paragraphs.first?.lines.first?.text == "0\\", "\(text)")
+        }
+        let two = markup.paragraph("one\\\ntwo\\\n")
+        #expect(MarkdownAdditionsTests.breaks(two) == [true, false])
+        #expect(two.lines.count == 2 && two.lines[1].text == "two\\")
+    }
+
     @Test func aTextFrameStartsARowAtABreak() {
         let page = TestSupport.newPage()
         let markup = MarkdownAdditionsTests.markup(page.pdf)
