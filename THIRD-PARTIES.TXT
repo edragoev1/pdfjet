@@ -135,8 +135,8 @@ under the following license:
     dealings in these Data Files or Software without prior written
     authorization of the copyright holder.
 
-The icons of the examples, the SVG files in resources/images/svg and those
-named *_FILL0_* in resources/images/svg-test, are Material Symbols of Google,
+The icons of the examples and the tests, the files named *_FILL0_* in
+resources/images/svg, are Material Symbols of Google,
 licensed under the Apache License, Version 2.0. A copy of the license is in
 resources/images/svg/LICENSE-2.0.txt.
 
