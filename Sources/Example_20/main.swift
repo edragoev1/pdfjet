@@ -119,7 +119,7 @@ public class Example_20 {
         // One car of the data, its photo and its VIN in their cells
         TextLine(f1, "One car of the data").setStructureType(StructElem.H2)
                 .setFontSize(14.0).setLocation(50.0, y).drawOn(page)
-        let image = try Image(pdf, "images/TeslaX.png")
+        let image = try Image(pdf, "resources/images/TeslaX.png")
         image.setAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.")
         image.scaleBy(1.0 / 3.0)    // The image is 120 DPI, so 0.6 of its pixels
         let vin = try Barcode(Barcode.CODE_128, modelX![0])

@@ -341,7 +341,7 @@ public class PDFTest {
         pdf.SetTitle("Title");
         new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/up-arrow.png"));
         image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
         image.DrawOn(page);
         pdf.Complete();
@@ -366,7 +366,7 @@ public class PDFTest {
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         page.BeginStructElement(StructElem.L);
-        new Image(pdf, TestSupport.Open("images/up-arrow.png")).SetURIAction("https://pdfjet.com").DrawOn(page);
+        new Image(pdf, TestSupport.Open("resources/images/up-arrow.png")).SetURIAction("https://pdfjet.com").DrawOn(page);
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
         page.EndStructElement();
         // No structure element is left begun
@@ -397,7 +397,7 @@ public class PDFTest {
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/up-arrow.png"));
         image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
         image.DrawOn(page);
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 200f).DrawOn(page);

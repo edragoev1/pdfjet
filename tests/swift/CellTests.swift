@@ -242,7 +242,7 @@ private final class Box: Drawable {
     @Test func aDrawableOfACellStaysWhereTheCallerPutIt() throws {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
-        let image = try Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let image = try Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         _ = image.setLocation(7, 8)
         let barcode = try Barcode(Barcode.CODE_128, "12345")
         _ = barcode.setLocation(7, 8)

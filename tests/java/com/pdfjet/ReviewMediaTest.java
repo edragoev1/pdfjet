@@ -222,18 +222,18 @@ class ReviewMediaTest {
         // PDF/A-1 has no soft masks, and 8 bits per component at most.
         assertEquals("A document of PDF_A_2B cannot hold a CMYK image: "
                 + "its output intent is sRGB, so its images are gray or RGB.",
-                pdfaError(Compliance.PDF_A_2B, "images/cmyk.jpg"));
+                pdfaError(Compliance.PDF_A_2B, "resources/images/cmyk.jpg"));
         assertEquals("A document of PDF_A_1B cannot hold an image with transparency: "
                 + "PDF/A-1 has no soft masks, so its images are opaque.",
-                pdfaError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"));
+                pdfaError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"));
         assertEquals("A document of PDF_A_1A cannot hold an image of 16 bits per component: "
                 + "PDF/A-1 has 8 at most.",
-                pdfaError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"));
+                pdfaError(Compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"));
         // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-        assertEquals("", pdfaError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"));
-        assertEquals("", pdfaError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"));
-        assertEquals("", pdfaError(Compliance.PDF_UA_1, "images/cmyk.jpg"));
-        assertEquals("", pdfaError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
+        assertEquals("", pdfaError(Compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"));
+        assertEquals("", pdfaError(Compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"));
+        assertEquals("", pdfaError(Compliance.PDF_UA_1, "resources/images/cmyk.jpg"));
+        assertEquals("", pdfaError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"));
     }
 
     // The message that a document of the compliance fails with when the image
@@ -281,18 +281,18 @@ class ReviewMediaTest {
     void aPDFADocumentHoldsNoCopiedImageItsLevelHasNot() throws Exception {
         assertEquals("A document of PDF_A_2B cannot hold a CMYK image: "
                 + "its output intent is sRGB, so its images are gray or RGB.",
-                pdfaCopyError(Compliance.PDF_A_2B, "images/cmyk.jpg"));
+                pdfaCopyError(Compliance.PDF_A_2B, "resources/images/cmyk.jpg"));
         assertEquals("A document of PDF_A_1B cannot hold an image with transparency: "
                 + "PDF/A-1 has no soft masks, so its images are opaque.",
-                pdfaCopyError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"));
+                pdfaCopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"));
         assertEquals("A document of PDF_A_1A cannot hold an image of 16 bits per component: "
                 + "PDF/A-1 has 8 at most.",
-                pdfaCopyError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"));
+                pdfaCopyError(Compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"));
         // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-        assertEquals("", pdfaCopyError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"));
-        assertEquals("", pdfaCopyError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"));
-        assertEquals("", pdfaCopyError(Compliance.PDF_UA_1, "images/cmyk.jpg"));
-        assertEquals("", pdfaCopyError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
+        assertEquals("", pdfaCopyError(Compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"));
+        assertEquals("", pdfaCopyError(Compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"));
+        assertEquals("", pdfaCopyError(Compliance.PDF_UA_1, "resources/images/cmyk.jpg"));
+        assertEquals("", pdfaCopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"));
     }
 
     interface Drawing {
@@ -619,7 +619,7 @@ class ReviewMediaTest {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             PDF pdf = new PDF(bos);
             Page page = new Page(pdf, Letter.PORTRAIT);
-            Image image = new Image(pdf, TestSupport.open("images/GLA250.png"));
+            Image image = new Image(pdf, TestSupport.open("resources/images/GLA250.png"));
             image.setRotation(degrees).setURIAction("https://pdfjet.com").setLocation(10f, 20f);
             image.drawOn(page);
             pdf.complete();

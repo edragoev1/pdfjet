@@ -358,7 +358,7 @@ class ReviewRound3Test {
     @Test
     void anImageTurnedAQuarterHasItsDrawnSize() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));   // 32 by 32
+        Image image = new Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));   // 32 by 32
         image.scaleBy(0.75f, 0.375f);                                               // 24 by 12
         image.setLocation(50f, 50f);
         for (int degrees : new int[] {90, 270}) {

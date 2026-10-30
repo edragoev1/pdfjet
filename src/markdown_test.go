@@ -395,7 +395,7 @@ func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
 		t.Error("the text of the image is not drawn")
 	}
 	// From the directory, the image is a figure.
-	images := testRepoPath(t, "images")
+	images := testRepoPath(t, "resources/images")
 	drawn = testDrawMarkdown(text, images)
 	testAssertStructures(t, drawn, "Figure", 1)
 	alt := regexp.MustCompile(`/Alt <([0-9A-Fa-f]+)>`).FindStringSubmatch(drawn.pdf)
@@ -404,7 +404,7 @@ func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
 	}
 	// Not above it, not an absolute path, not a URL.
 	for _, source := range []string{"../images/circles.png", "/etc/passwd",
-		testRepoPath(t, "images/circles.png"), "https://pdfjet.com/logo.png",
+		testRepoPath(t, "resources/images/circles.png"), "https://pdfjet.com/logo.png",
 		"missing.png"} {
 		drawn = testDrawMarkdown("![Not read]("+source+")", images)
 		if n := testCountStructures(drawn.pdf, "Figure"); n != 0 {

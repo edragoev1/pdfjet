@@ -22,8 +22,7 @@ on:
             - "Package.swift"
             - "examples/**"
             - "resources/**"
-            - "images/**"
-            - "PngSuite/**"
+            - "tests/data/PngSuite/**"
             - "examples-java.html"
             - "examples-dotnet.html"
             - "generate-documentation.sh"
@@ -44,11 +43,11 @@ jobs:
         # Pinned to the Ubuntu release the Swift toolchain is built for.
         runs-on: ubuntu-24.04
         steps:
-            # Only the ports, the DocFX configuration, the examples, the images
-            # the examples read, resources (the fonts PDFjet carries and the
-            # data files the examples read), .github (for the Install Swift
-            # action), and tests/swift, tests/corpus/swift, tests/crossport/swift
-            # and booklet/snippets/swift, the paths of the test target, of the
+            # Only the ports, the DocFX configuration, the examples,
+            # resources (the fonts PDFjet carries, and the images and the data
+            # files the examples read), tests/data/PngSuite, .github (for the
+            # Install Swift action), and tests/swift, tests/corpus/swift,
+            # tests/crossport/swift and booklet/snippets/swift, the paths of the test target, of the
             # corpus and cross-port harnesses and of the booklet snippets,
             # which SwiftPM checks for every target of
             # Package.swift, are checked out. Files in the repository root are
@@ -63,9 +62,8 @@ jobs:
                       src
                       Sources
                       examples
-                      images
                       resources
-                      PngSuite
+                      tests/data/PngSuite
                       tests/swift
                       tests/corpus/swift
                       tests/crossport/swift

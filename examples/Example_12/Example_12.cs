@@ -20,7 +20,7 @@ public class Example_12 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Switzerland");
 
-        Image image1 = new Image(pdf, "images/swiss-admin.jpg");
+        Image image1 = new Image(pdf, "resources/images/swiss-admin.jpg");
         image1.SetAltDescription(
                 "A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.");
 

@@ -193,20 +193,20 @@ import Testing
         // The output intent of PDF/A is sRGB, so its images are not CMYK;
         // PDF/A-1 has no soft masks, and 8 bits per component at most.
         let failed = "The PDF was not completed because of an earlier error: "
-        #expect(try pdfAError(Compliance.PDF_A_2B, "images/cmyk.jpg") == failed
+        #expect(try pdfAError(Compliance.PDF_A_2B, "resources/images/cmyk.jpg") == failed
                 + "A document of PDF_A_2B cannot hold a CMYK image: "
                 + "its output intent is sRGB, so its images are gray or RGB.")
-        #expect(try pdfAError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG") == failed
+        #expect(try pdfAError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG") == failed
                 + "A document of PDF_A_1B cannot hold an image with transparency: "
                 + "PDF/A-1 has no soft masks, so its images are opaque.")
-        #expect(try pdfAError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG") == failed
+        #expect(try pdfAError(Compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG") == failed
                 + "A document of PDF_A_1A cannot hold an image of 16 bits per component: "
                 + "PDF/A-1 has 8 at most.")
         // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-        #expect(try pdfAError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG") == "")
-        #expect(try pdfAError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG") == "")
-        #expect(try pdfAError(Compliance.PDF_UA_1, "images/cmyk.jpg") == "")
-        #expect(try pdfAError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG") == "")
+        #expect(try pdfAError(Compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG") == "")
+        #expect(try pdfAError(Compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG") == "")
+        #expect(try pdfAError(Compliance.PDF_UA_1, "resources/images/cmyk.jpg") == "")
+        #expect(try pdfAError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG") == "")
     }
 
     // The error of completing a document of the compliance that holds the
@@ -247,20 +247,20 @@ import Testing
     @Test
     func aPDFADocumentHoldsNoCopiedImageItsLevelHasNot() throws {
         let failed = "The PDF was not completed because of an earlier error: "
-        #expect(try pdfACopyError(Compliance.PDF_A_2B, "images/cmyk.jpg") == failed
+        #expect(try pdfACopyError(Compliance.PDF_A_2B, "resources/images/cmyk.jpg") == failed
                 + "A document of PDF_A_2B cannot hold a CMYK image: "
                 + "its output intent is sRGB, so its images are gray or RGB.")
-        #expect(try pdfACopyError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG") == failed
+        #expect(try pdfACopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG") == failed
                 + "A document of PDF_A_1B cannot hold an image with transparency: "
                 + "PDF/A-1 has no soft masks, so its images are opaque.")
-        #expect(try pdfACopyError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG") == failed
+        #expect(try pdfACopyError(Compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG") == failed
                 + "A document of PDF_A_1A cannot hold an image of 16 bits per component: "
                 + "PDF/A-1 has 8 at most.")
         // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-        #expect(try pdfACopyError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG") == "")
-        #expect(try pdfACopyError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG") == "")
-        #expect(try pdfACopyError(Compliance.PDF_UA_1, "images/cmyk.jpg") == "")
-        #expect(try pdfACopyError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG") == "")
+        #expect(try pdfACopyError(Compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG") == "")
+        #expect(try pdfACopyError(Compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG") == "")
+        #expect(try pdfACopyError(Compliance.PDF_UA_1, "resources/images/cmyk.jpg") == "")
+        #expect(try pdfACopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG") == "")
     }
 
     // The error of completing a document of the compliance that draws, or ""
@@ -553,7 +553,7 @@ import Testing
         for degrees in [0, 90, 180, 270] {
             let memory = MemoryPDF()
             let page = Page(memory.pdf, Letter.PORTRAIT)
-            let image = try Image(memory.pdf, TestSupport.path("images/GLA250.png"))
+            let image = try Image(memory.pdf, TestSupport.path("resources/images/GLA250.png"))
             try image.setRotation(degrees).setURIAction("https://pdfjet.com").setLocation(10, 20)
             image.drawOn(page)
             try memory.pdf.complete()

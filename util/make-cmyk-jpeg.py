@@ -5,19 +5,19 @@
 # Copyright (c) 2026 PDFjet Software
 # Licensed under the MIT License. See LICENSE file in the project root.
 #
-# Writes images/cmyk.jpg, a test file with the structure of a CMYK JPEG that
-# Photoshop saves: four components, an Adobe APP14 marker, and the inks stored
-# inverted, 255 for no ink, as Adobe applications store them. The picture is a
-# print test chart drawn in CMYK: a ramp of each ink from 0 to 100 percent, and
-# the colors two inks make, red, green and blue, and rich black. It was made
-# for the tests and examples of PDFjet. Run it from the project root; it needs
-# Pillow.
+# Writes resources/images/cmyk.jpg, a test file with the structure of a CMYK
+# JPEG that Photoshop saves: four components, an Adobe APP14 marker, and the
+# inks stored inverted, 255 for no ink, as Adobe applications store them. The
+# picture is a print test chart drawn in CMYK: a ramp of each ink from 0 to 100
+# percent, and the colors two inks make, red, green and blue, and rich black.
+# It was made for the tests and examples of PDFjet. Run it from the project
+# root; it needs Pillow.
 #
 #     python3 util/make-cmyk-jpeg.py
 
 from PIL import Image, ImageDraw, ImageFont
 
-OUTPUT = "images/cmyk.jpg"
+OUTPUT = "resources/images/cmyk.jpg"
 FONT = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
 
 WIDTH, HEIGHT = 1200, 800       # 4 by 2.67 inches at 300 pixels per inch

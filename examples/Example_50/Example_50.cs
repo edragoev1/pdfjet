@@ -37,7 +37,7 @@ public class Example_50 {
 
         Image image = new Image(objects,
                 new BufferedStream(new FileStream(
-                        "images/qrcode.png", FileMode.Open, FileAccess.Read)));
+                        "resources/images/qrcode.png", FileMode.Open, FileAccess.Read)));
         image.SetLocation(495f, 65f);
         image.ScaleBy(0.40f);
 

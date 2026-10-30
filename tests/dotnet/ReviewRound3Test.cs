@@ -312,7 +312,7 @@ public class ReviewRound3Test {
     [Fact]
     public void AnImageTurnedAQuarterHasItsDrawnSize() {
         PDF pdf = TestSupport.NewPDF();
-        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));   // 32 by 32
+        Image image = new Image(pdf, TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG"));   // 32 by 32
         image.ScaleBy(0.75f, 0.375f);                                               // 24 by 12
         image.SetLocation(50f, 50f);
         foreach (int degrees in new int[] {90, 270}) {

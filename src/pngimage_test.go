@@ -112,7 +112,7 @@ func testInflate(t *testing.T, data []byte) []byte {
 
 func testDecodePNG(t *testing.T, name string) *pngImage {
 	t.Helper()
-	file, err := os.Open(testRepoPath(t, "PngSuite/"+name+".PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestPNGImageTheBitsOfTheImageAreReadOfATrnsSampleAndAChunkOfAnotherLengthIs
 func TestPNGImageTheImageOfAPngWithATransparentColorHasItsMask(t *testing.T) {
 	doc := testNewDoc()
 	for _, name := range []string{"TBRN2C08", "TBWN1G16"} {
-		file, err := os.Open(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -230,7 +230,7 @@ func TestPNGImageTheImageOfAPngWithATransparentColorHasItsMask(t *testing.T) {
 		t.Error("a soft mask")
 	}
 	// And an image added to the objects of a PDF that was read.
-	file, err := os.Open(testRepoPath(t, "PngSuite/TBRN2C08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/TBRN2C08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func TestPNGImageRejectsDataThatIsNotAPng(t *testing.T) {
 }
 
 func TestPNGImageAnImageFromAPngHasItsSize(t *testing.T) {
-	file, err := os.Open(testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +284,7 @@ func TestPNGImageDecodesGrayscaleWithAlpha(t *testing.T) {
 }
 
 func TestPNGImageAnImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask(t *testing.T) {
-	file, err := os.Open(testRepoPath(t, "PngSuite/BASN4A08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/BASN4A08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -445,7 +445,7 @@ func TestPNGImageRejectsAChunkLengthThatTheFileDoesNotHave(t *testing.T) {
 }
 
 func TestPNGImageReadsAStreamThatReturnsFewBytesAtATime(t *testing.T) {
-	file, err := os.Open(testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -509,7 +509,7 @@ func TestPNGImageThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt(t *testing.T)
 	// to be, so it is drawn that size rather than one point for each of its
 	// pixels. 11811 pixels per metre is 300 dots per inch, and 1520 by 400 of
 	// them are 364.8 by 96 points.
-	path := testRepoPath(t, "images/rgba-8bit-chunks.png")
+	path := testRepoPath(t, "resources/images/rgba-8bit-chunks.png")
 	file, err := os.Open(path)
 	if err != nil {
 		t.Fatal(err)
@@ -924,7 +924,7 @@ func TestPNGImageTheDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes(t *te
 	embedded := 0
 	for _, row := range testPngSuite {
 		name := row.name
-		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1063,7 +1063,7 @@ func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsMasks(t *testing.T) {
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, letter.Portrait())
 	for _, name := range []string{"BASN6A08", "TBRN2C08"} {
-		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1148,7 +1148,7 @@ func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsStencilMask(t *testing.
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, letter.Portrait())
 	for _, name := range []string{"BASN2C08", "BASN0G01"} {
-		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1217,7 +1217,7 @@ func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsStencilMask(t *testing.
 // PDFjet writes no /Matte, so the soft mask of a PNG with alpha has one
 // added after it was read.
 func TestPNGImageTheSoftMaskOfACopiedImageKeepsItsMatte(t *testing.T) {
-	png, err := os.ReadFile(testRepoPath(t, "PngSuite/BASN6A08.PNG"))
+	png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/BASN6A08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}

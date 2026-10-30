@@ -85,7 +85,7 @@ func testPlexSans(pdf *PDF) *Font {
 		panic(err)
 	}
 	for {
-		if info, err := os.Stat(filepath.Join(dir, "PngSuite")); err == nil && info.IsDir() {
+		if info, err := os.Stat(filepath.Join(dir, "tests/data/PngSuite")); err == nil && info.IsDir() {
 			return NewFontFromFile(pdf, filepath.Join(dir, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 		}
 		parent := filepath.Dir(dir)
@@ -98,7 +98,7 @@ func testPlexSans(pdf *PDF) *Font {
 
 // testRepoPath returns the path of a file of the repository: the tests run in
 // their package directory, so the root is the first directory above it that
-// has the PngSuite directory.
+// has the tests/data/PngSuite directory.
 func testRepoPath(t *testing.T, path string) string {
 	t.Helper()
 	dir, err := os.Getwd()
@@ -106,12 +106,12 @@ func testRepoPath(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	for {
-		if info, err := os.Stat(filepath.Join(dir, "PngSuite")); err == nil && info.IsDir() {
+		if info, err := os.Stat(filepath.Join(dir, "tests/data/PngSuite")); err == nil && info.IsDir() {
 			return filepath.Join(dir, path)
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			t.Fatal("no PngSuite directory above the working directory")
+			t.Fatal("no tests/data/PngSuite directory above the working directory")
 		}
 		dir = parent
 	}

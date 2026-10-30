@@ -268,7 +268,7 @@ class CellTest {
     void aDrawableOfACellStaysWhereTheCallerPutIt() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
-        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));
         image.setLocation(7f, 8f);
         Barcode barcode = new Barcode(Barcode.CODE_128, "12345");
         barcode.setLocation(7f, 8f);

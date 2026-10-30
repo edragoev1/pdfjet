@@ -84,7 +84,7 @@ public class Snippets {
                 .setLocation(50f, 50f).drawOn(page);
         new TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
                 .setLocation(50f, 70f).setWidth(400f).drawOn(page);
-        Image image = new Image(pdf, "images/circles.png");
+        Image image = new Image(pdf, "resources/images/circles.png");
         image.setAltDescription("Three circles that overlap");
         image.setLocation(50f, 110f).drawOn(page);
         pdf.complete();
@@ -316,7 +316,7 @@ public class Snippets {
                 new Paragraph(new TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
                 new Paragraph(new TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))), 6f);
         flow.addSpace(12f);
-        Image map = new Image(pdf, "images/gr-map.jpg");
+        Image map = new Image(pdf, "resources/images/gr-map.jpg");
         map.setAltDescription("A map of Greece and its regions.");
         flow.add(map.resizeHeight(400f), Alignment.CENTER);   // Whole, here or on the next page
         flow.add(new Paragraph(new TextLine(font, "Greece: its regions.").setFontSize(9f))
@@ -414,7 +414,7 @@ public class Snippets {
 
     // @snippet cell-content
     static void cellContent(PDF pdf, Font font) throws Exception {
-        Image image = new Image(pdf, "images/circles.png").scaleBy(0.25f);
+        Image image = new Image(pdf, "resources/images/circles.png").scaleBy(0.25f);
         image.setAltDescription("Circles");
         Cell imageCell = new Cell(font).setImage(image);
         Cell barcodeCell = new Cell(font).setBarcode(new Barcode(Barcode.CODE_128, "PDFjet"));
@@ -574,7 +574,7 @@ public class Snippets {
 
     // @snippet images
     static void images(PDF pdf, Font font) throws Exception {
-        Image photo = new Image(pdf, "images/gr-map.jpg");    // JPEG, PNG or BMP
+        Image photo = new Image(pdf, "resources/images/gr-map.jpg");    // JPEG, PNG or BMP
         photo.setAltDescription("A map of Greece");
         Page page = new Page(pdf, Letter.PORTRAIT);
         photo.setLocation(50f, 50f);
@@ -587,7 +587,7 @@ public class Snippets {
 
     // @snippet svg-images
     static void svgImages(PDF pdf, Font font) throws Exception {
-        SVGImage icon = new SVGImage("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
+        SVGImage icon = new SVGImage("resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
         icon.setAltDescription("A star");
         icon.setLocation(50f, 50f);
         icon.scaleBy(2f);    // Vector graphics stay sharp at any size

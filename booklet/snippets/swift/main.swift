@@ -70,7 +70,7 @@ func accessibleDocument() throws {
             .setLocation(50, 50).drawOn(page)
     TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
             .setLocation(50, 70).setWidth(400).drawOn(page)
-    let image = try Image(pdf, "images/circles.png")
+    let image = try Image(pdf, "resources/images/circles.png")
     image.setAltDescription("Three circles that overlap")
     image.setLocation(50, 110).drawOn(page)
     try pdf.complete()
@@ -304,7 +304,7 @@ func textFlow(_ pdf: PDF, _ font: Font) throws {
             Paragraph(TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
             Paragraph(TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))], 6)
     flow.addSpace(12)
-    let map = try Image(pdf, "images/gr-map.jpg")
+    let map = try Image(pdf, "resources/images/gr-map.jpg")
     map.setAltDescription("A map of Greece and its regions.")
     flow.add(map.resizeHeight(400), Alignment.CENTER)   // Whole, here or on the next page
     flow.add(Paragraph(TextLine(font, "Greece: its regions.").setFontSize(9))
@@ -401,7 +401,7 @@ func cells(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet cell-content
 func cellContent(_ pdf: PDF, _ font: Font) throws {
-    let image = try Image(pdf, "images/circles.png").scaleBy(0.25)
+    let image = try Image(pdf, "resources/images/circles.png").scaleBy(0.25)
     image.setAltDescription("Circles")
     let imageCell = Cell(font).setImage(image)
     let barcodeCell = try Cell(font).setBarcode(Barcode(Barcode.CODE_128, "PDFjet"))
@@ -561,7 +561,7 @@ func stamps(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet images
 func images(_ pdf: PDF, _ font: Font) throws {
-    let photo = try Image(pdf, "images/gr-map.jpg")    // JPEG, PNG or BMP
+    let photo = try Image(pdf, "resources/images/gr-map.jpg")    // JPEG, PNG or BMP
     photo.setAltDescription("A map of Greece")
     let page = Page(pdf, Letter.PORTRAIT)
     photo.setLocation(50, 50)
@@ -574,7 +574,7 @@ func images(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet svg-images
 func svgImages(_ pdf: PDF, _ font: Font) throws {
-    let icon = try SVGImage(fileAtPath: "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")!
+    let icon = try SVGImage(fileAtPath: "resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")!
     icon.setAltDescription("A star")
     icon.setLocation(50, 50)
     icon.scaleBy(2)    // Vector graphics stay sharp at any size

@@ -46,7 +46,7 @@ func Example50(fileName string) {
 		log.Fatal(err)
 	}
 
-	file1, err := os.Open("images/qrcode.png")
+	file1, err := os.Open("resources/images/qrcode.png")
 	if err != nil {
 		log.Fatal(err)
 	}

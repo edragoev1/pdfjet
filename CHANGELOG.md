@@ -148,6 +148,15 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   `resources/data` has a `go.mod` of its own, so that the Go module, which
   `go get` downloads, leaves the data files out. The Java and .NET zips
   have them in `resources/data` too.
+- The example images are in `resources/images`, where they were in
+  `images`, and the PNG test suite, PngSuite, is in `tests/data/PngSuite`,
+  where it was in `PngSuite`, so that the root of the repository has no data
+  folders. The examples, the tests, the scripts and the Java and .NET zips
+  read them there: Example_32 reads `resources/images/gr-map.jpg` and
+  `tests/data/PngSuite/BASN2C08.PNG`.
+  `resources/images` keeps its `go.mod`, now the module
+  `github.com/edragoev1/pdfjet/v9/resources/images`, so that the Go module
+  leaves the images out as before.
 - Example_24, the four ports, draws the 10-page sample,
   `resources/data/Electric_Vehicle_Population_10_Pages.csv`, 12 pages, by
   default, and the CSV file given as its first argument, such as the full

@@ -1,5 +1,6 @@
-// Makes images/svg/d3-life-expectancy-by-region.svg, the chart of Example_33,
-// with D3: a chart as D3 draws it in a browser, which SVGImage draws in a PDF.
+// Makes resources/images/svg/d3-life-expectancy-by-region.svg, the chart of
+// Example_33, with D3: a chart as D3 draws it in a browser, which SVGImage
+// draws in a PDF.
 // The data is the World Bank's life expectancy at birth of 2023, the regions
 // and the world as its API gave them on 29 October 2026 (World Development
 // Indicators, SP.DYN.LE00.IN, licensed under CC BY 4.0).
@@ -10,7 +11,7 @@
 //     npm install d3@7.9.0 jsdom@25.0.1
 //     NODE_PATH=$PWD/node_modules node /path/to/pdfjet/util/make-d3-chart.mjs
 //
-// It writes the file into the images/svg folder next to this one.
+// It writes the file into the resources/images/svg folder of the repository.
 
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
@@ -112,7 +113,7 @@ svg.append("text")
     .attr("font-weight", "bold")
     .text(`World ${world.toFixed(1)}`);
 
-const out = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "images", "svg",
-    "d3-life-expectancy-by-region.svg");
+const out = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "resources",
+    "images", "svg", "d3-life-expectancy-by-region.svg");
 fs.writeFileSync(out, dom.window.document.body.innerHTML + "\n");
 console.log("Wrote " + out);

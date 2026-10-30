@@ -17,7 +17,7 @@ enum TestSupport {
     static let root: URL = {
         var url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         while url.path != "/" {
-            if FileManager.default.fileExists(atPath: url.appendingPathComponent("PngSuite").path) {
+            if FileManager.default.fileExists(atPath: url.appendingPathComponent("tests/data/PngSuite").path) {
                 return url
             }
             url = url.deletingLastPathComponent()

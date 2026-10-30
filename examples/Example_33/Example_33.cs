@@ -42,7 +42,7 @@ public class Example_33 {
         textBlock.SetWidth(495f);
         float[] xy = textBlock.DrawOn(page);
 
-        SVGImage map = new SVGImage("images/svg-test/europe.svg");
+        SVGImage map = new SVGImage("resources/images/svg-test/europe.svg");
         map.SetAltDescription(
                 "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in light gray.");
         map.ScaleBy(0.5f);
@@ -82,7 +82,7 @@ public class Example_33 {
         textBlock.SetWidth(495f);
         xy = textBlock.DrawOn(page);
 
-        SVGImage chart = new SVGImage("images/svg/d3-life-expectancy-by-region.svg");
+        SVGImage chart = new SVGImage("resources/images/svg/d3-life-expectancy-by-region.svg");
         chart.SetAltDescription("A bar chart of the life expectancy at birth of the World Bank's "
                 + "regions in 2023: North America 78.7 years, Europe and Central Asia 78.4, "
                 + "East Asia and Pacific 76.7, Latin America and the Caribbean 75.6, South Asia 72.3, "

@@ -18,7 +18,7 @@ for .NET Framework 4.8.
 | `build-dotnet.sh`, `build-dotnet.cmd` | Build and run all the examples. |
 | `run-dotnet.sh`, `run-dotnet.cmd` | Build and run one example. |
 | `resources/fonts/` | The fonts PDFjet carries, each family in a folder of its name with its license, which `PDFjet.dll` reads from there. |
-| `resources/data/`, `images/`, `PngSuite/` | The files the examples read; `resources/data/README.md` says where the data comes from. |
+| `resources/data/`, `resources/images/`, `tests/data/PngSuite/` | The files the examples read; `resources/data/README.md` says where the data comes from. |
 | `CHANGELOG.md` | What changed in each release. |
 | `LICENSE`, `THIRD-PARTIES.TXT` | The license of PDFjet and of the work it includes. |
 

@@ -185,7 +185,7 @@ import Testing
         #expect(pdf1.error == "The font belongs to another PDF.")
 
         let pdf2 = TestSupport.newPDF()
-        let image = try Image(other, TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let image = try Image(other, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         image.setLocation(50, 50).drawOn(Page(pdf2, Letter.PORTRAIT))
         #expect(pdf2.error == "The image belongs to another PDF.")
 
@@ -311,7 +311,7 @@ import Testing
     @Test func aZeroSizeImageStampOrContainerDrawsNothing() throws {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
-        let image = try Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let image = try Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         _ = image.scaleBy(0)
         image.setLocation(50, 50).drawOn(page)
         let stamp = Stamp(pdf).setSize(50, 50)

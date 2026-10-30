@@ -50,7 +50,7 @@ func Example33() error {
 	textBlock.SetWidth(495.0)
 	xy := textBlock.DrawOn(page)
 
-	svgMap, err := pdfjet.NewSVGImageFromFile("images/svg-test/europe.svg")
+	svgMap, err := pdfjet.NewSVGImageFromFile("resources/images/svg-test/europe.svg")
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func Example33() error {
 	textBlock.SetWidth(495.0)
 	xy = textBlock.DrawOn(page)
 
-	chart, err := pdfjet.NewSVGImageFromFile("images/svg/d3-life-expectancy-by-region.svg")
+	chart, err := pdfjet.NewSVGImageFromFile("resources/images/svg/d3-life-expectancy-by-region.svg")
 	if err != nil {
 		return err
 	}

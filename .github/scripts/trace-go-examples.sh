@@ -22,7 +22,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 mkdir -p "$1"
 out=$(cd "$1" && pwd)
 
-for dir in resources images PngSuite examples src; do
+for dir in resources tests examples src; do
     ln -sfn "$root/$dir" "$out/$dir"
 done
 rm -f "$out"/Example_*.pdf "$out/text-trace.jsonl"

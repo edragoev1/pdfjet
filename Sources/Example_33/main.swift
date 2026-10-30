@@ -47,7 +47,7 @@ public class Example_33 {
         textBlock.setWidth(495.0)
         var xy = textBlock.drawOn(page)
 
-        let map = try loadSVG("images/svg-test/europe.svg")
+        let map = try loadSVG("resources/images/svg-test/europe.svg")
         map.setAltDescription(
                 "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in light gray.")
         map.scaleBy(0.5)
@@ -87,7 +87,7 @@ public class Example_33 {
         textBlock.setWidth(495.0)
         xy = textBlock.drawOn(page)
 
-        let chart = try loadSVG("images/svg/d3-life-expectancy-by-region.svg")
+        let chart = try loadSVG("resources/images/svg/d3-life-expectancy-by-region.svg")
         chart.setAltDescription("A bar chart of the life expectancy at birth of the World Bank's "
                 + "regions in 2023: North America 78.7 years, Europe and Central Asia 78.4, "
                 + "East Asia and Pacific 76.7, Latin America and the Caribbean 75.6, South Asia 72.3, "

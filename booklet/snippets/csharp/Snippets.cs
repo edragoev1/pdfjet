@@ -76,7 +76,7 @@ public class Snippets {
                 .SetLocation(50f, 50f).DrawOn(page);
         new TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
                 .SetLocation(50f, 70f).SetWidth(400f).DrawOn(page);
-        Image image = new Image(pdf, "images/circles.png");
+        Image image = new Image(pdf, "resources/images/circles.png");
         image.SetAltDescription("Three circles that overlap");
         image.SetLocation(50f, 110f).DrawOn(page);
         pdf.Complete();
@@ -310,7 +310,7 @@ public class Snippets {
                 new Paragraph(new TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
                 new Paragraph(new TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))}, 6f);
         flow.AddSpace(12f);
-        Image map = new Image(pdf, "images/gr-map.jpg");
+        Image map = new Image(pdf, "resources/images/gr-map.jpg");
         map.SetAltDescription("A map of Greece and its regions.");
         flow.Add(map.ResizeHeight(400f), Alignment.CENTER);   // Whole, here or on the next page
         flow.Add(new Paragraph(new TextLine(font, "Greece: its regions.").SetFontSize(9f))
@@ -408,7 +408,7 @@ public class Snippets {
 
     // @snippet cell-content
     static void CellContent(PDF pdf, Font font) {
-        Image image = new Image(pdf, "images/circles.png").ScaleBy(0.25f);
+        Image image = new Image(pdf, "resources/images/circles.png").ScaleBy(0.25f);
         image.SetAltDescription("Circles");
         Cell imageCell = new Cell(font).SetImage(image);
         Cell barcodeCell = new Cell(font).SetBarcode(new Barcode(Barcode.CODE_128, "PDFjet"));
@@ -568,7 +568,7 @@ public class Snippets {
 
     // @snippet images
     static void Images(PDF pdf, Font font) {
-        Image photo = new Image(pdf, "images/gr-map.jpg");    // JPEG, PNG or BMP
+        Image photo = new Image(pdf, "resources/images/gr-map.jpg");    // JPEG, PNG or BMP
         photo.SetAltDescription("A map of Greece");
         Page page = new Page(pdf, Letter.PORTRAIT);
         photo.SetLocation(50f, 50f);
@@ -581,7 +581,7 @@ public class Snippets {
 
     // @snippet svg-images
     static void SvgImages(PDF pdf, Font font) {
-        SVGImage icon = new SVGImage("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
+        SVGImage icon = new SVGImage("resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
         icon.SetAltDescription("A star");
         icon.SetLocation(50f, 50f);
         icon.ScaleBy(2f);    // Vector graphics stay sharp at any size

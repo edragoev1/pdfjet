@@ -13,10 +13,10 @@ WORK=$ROOT/build/check-snippets
 rm -rf "$WORK"
 
 # Each port runs its snippets in a folder of its own, with links to the
-# resources (the fonts and the data files) and the images they read.
+# resources (the fonts, and the data files and the images they read).
 for port in java csharp go swift; do
     mkdir -p "$WORK/$port/out"
-    for dir in resources images; do
+    for dir in resources; do
         ln -s "$ROOT/$dir" "$WORK/$port/out/$dir"
     done
 done

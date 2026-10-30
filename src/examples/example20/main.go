@@ -144,7 +144,7 @@ func Example20() {
 	heading.SetStructureType(structelem.H2).SetFontSize(14.0)
 	heading.SetLocation(50.0, y)
 	heading.DrawOn(page)
-	image := pdfjet.NewImageFromFile(pdf, "images/TeslaX.png")
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/TeslaX.png")
 	image.SetAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.")
 	image.ScaleBy(1.0 / 3.0) // The image is 120 DPI, so 0.6 of its pixels
 	vin := pdfjet.NewBarcode(pdfjet.CODE_128, modelX[0])

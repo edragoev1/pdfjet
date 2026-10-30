@@ -3,4 +3,4 @@
 // the data files out, so go get downloads the library source and the fonts
 // it carries only. The directory has no Go code and nothing imports this
 // module.
-module github.com/edragoev1/pdfjet/images
+module github.com/edragoev1/pdfjet/v9/resources/images

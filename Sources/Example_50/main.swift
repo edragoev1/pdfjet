@@ -30,7 +30,7 @@ public class Example_50 {
 
         let image = try Image(
                 &objects,
-                InputStream(fileAtPath: "images/qrcode.png")!)
+                InputStream(fileAtPath: "resources/images/qrcode.png")!)
         image.setLocation(495.0, 65.0)
         image.scaleBy(0.40)
 

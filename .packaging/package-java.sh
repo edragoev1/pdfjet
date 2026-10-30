@@ -101,7 +101,7 @@ TAR=$PWD/$STAGE.tar
 # README that says where they come from.
 git archive -o "$TAR" HEAD \
     .packaging/java .packaging/java-pro LICENSE \
-    com examples images PngSuite resources/fonts resources/data \
+    com examples resources/images tests/data/PngSuite resources/fonts resources/data \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
 tar -x -C "$STAGE" -f "$TAR"
 rm "$TAR"
@@ -109,7 +109,7 @@ rm "$TAR"
 # The C# example projects and the Go and Swift files of resources and images
 # are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-rm -f "$STAGE/images/go.mod" "$STAGE/resources/data/go.mod" \
+rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod" \
     "$STAGE/resources/fonts/PDFjetFonts.swift"
 # Every .go file of resources/fonts: fonts.go, the package cjk and the
 # packages of the CJK families that embed them for Go.

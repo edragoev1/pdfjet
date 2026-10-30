@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/edragoev1/pdfjet/main/images/readme/pdfjet-logo-dark.svg">
-    <img src="images/readme/pdfjet-logo.svg" alt="PDFjet" width="320">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/edragoev1/pdfjet/main/resources/images/readme/pdfjet-logo-dark.svg">
+    <img src="resources/images/readme/pdfjet-logo.svg" alt="PDFjet" width="320">
   </picture>
 </p>
 
@@ -91,10 +91,10 @@ same output come in four languages, and none of them needs a third-party library
 
 <table>
   <tr>
-    <td align="center"><a href="examples/Example_01.java"><img src="images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in many scripts</td>
-    <td align="center"><a href="examples/Example_23.java"><img src="images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
-    <td align="center"><a href="examples/Example_20.java"><img src="images/readme/example-chart.png" alt="Two simple bar charts of electric vehicles, by make and by model year, over a table of the same numbers" width="200"></a><br>Charts</td>
-    <td align="center"><a href="examples/Example_37.java"><img src="images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
+    <td align="center"><a href="examples/Example_01.java"><img src="resources/images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in many scripts</td>
+    <td align="center"><a href="examples/Example_23.java"><img src="resources/images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
+    <td align="center"><a href="examples/Example_20.java"><img src="resources/images/readme/example-chart.png" alt="Two simple bar charts of electric vehicles, by make and by model year, over a table of the same numbers" width="200"></a><br>Charts</td>
+    <td align="center"><a href="examples/Example_37.java"><img src="resources/images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
   </tr>
 </table>
 
@@ -233,9 +233,9 @@ func main() {
 The module path carries the major version, as Go requires from v2 on. The Go
 module has the source of the library and the examples, and the fonts PDFjet
 carries, in `resources/fonts`. The data files of the examples, in
-`resources/data`, and the images, in `images`, are not in it: each folder has
-a `go.mod` of its own, which keeps it out. The module of 9.1.5 has no fonts:
-use the font files of its package from the release on GitHub.
+`resources/data`, and the images, in `resources/images`, are not in it: each
+folder has a `go.mod` of its own, which keeps it out. The module of 9.1.5 has
+no fonts: use the font files of its package from the release on GitHub.
 
 Go builds the fonts a program embeds into the program itself, uncompressed.
 So the fonts of every script but Chinese, Japanese and Korean are built in,
@@ -421,10 +421,10 @@ The tests are not part of the libraries and add no dependency to them.
 and checks its SHA-256, and builds and runs the tests on Java 8 as on later
 releases. The C# tests compile the library sources into the test project, so
 they can test internal classes, and restore xUnit from NuGet. The tests of
-every port read the PngSuite images, the fonts of `resources/fonts` and the
-data files of `resources/data` from the repository. The PDFs the tests make stay in
-memory, and the files they need to write go to the system's temporary
-directory. `./check-examples.sh` runs the unit tests of each port after its
+every port read the PngSuite images of `tests/data/PngSuite`, the fonts of
+`resources/fonts` and the data files of `resources/data` from the repository.
+The PDFs the tests make stay in memory, and the files they need to write go to
+the system's temporary directory. `./check-examples.sh` runs the unit tests of each port after its
 examples.
 
 ## Documentation

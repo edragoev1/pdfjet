@@ -387,7 +387,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     map; a test in each port. **The example and the snippet, the same day:**
     Example_22, which drew a table of text columns (the owner chose it as
     the weakest), is now "Four Countries and Their Regions", the four maps
-    of images/ with their captions on 4 pages, PDF/UA, the same in the four
+    of resources/images/ with their captions on 4 pages, PDF/UA, the same in the four
     ports to the pixel; the booklet has the text-flow snippet, after the
     text frames.
   - Size: about 150 to 250 lines in each port with its comments, Go first,

@@ -128,7 +128,7 @@ public class Example_20 {
         // One car of the data, its photo and its VIN in their cells
         new TextLine(f1, "One car of the data").setStructureType(StructElem.H2)
                 .setFontSize(14f).setLocation(50f, y).drawOn(page);
-        Image image = new Image(pdf, "images/TeslaX.png");
+        Image image = new Image(pdf, "resources/images/TeslaX.png");
         image.setAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.");
         image.scaleBy(1f / 3f);     // The image is 120 DPI, so 0.6 of its pixels
         Barcode vin = new Barcode(Barcode.CODE_128, modelX[0]);

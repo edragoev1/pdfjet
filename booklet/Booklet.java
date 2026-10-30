@@ -466,7 +466,7 @@ public class Booklet {
 
         // The logo of pdfjet.com, drawn from its SVG file with PDFjet itself,
         // so it stays sharp at any size the booklet is printed at.
-        SVGImage logo = new SVGImage("images/readme/pdfjet-logo.svg");
+        SVGImage logo = new SVGImage("resources/images/readme/pdfjet-logo.svg");
         logo.setAltDescription("The PDFjet logo");
         logo.scaleBy(320f / logo.getWidth());
         logo.setLocation(306f - logo.getWidth() / 2f, 350f);

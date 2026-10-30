@@ -357,7 +357,7 @@ class MarkdownTest {
         assertEquals(0, count(drawn.pdf, "Figure"));
         assertTrue(drawn.text.contains(TestSupport.hex("Circles")));
         // From the directory, the image is a figure.
-        String images = TestSupport.file("images").getPath();
+        String images = TestSupport.file("resources/images").getPath();
         drawn = draw(text, images);
         assertEquals(1, count(drawn.pdf, "Figure"));
         java.util.regex.Matcher alt = java.util.regex.Pattern.compile("/Alt <([0-9A-Fa-f]+)>").matcher(drawn.pdf);
@@ -365,7 +365,7 @@ class MarkdownTest {
                 "the text of the image is its description");
         // Not above it, not an absolute path, not a URL.
         for (String source : new String[] {"../images/circles.png", "/etc/passwd",
-                TestSupport.file("images/circles.png").getAbsolutePath(), "https://pdfjet.com/logo.png",
+                TestSupport.file("resources/images/circles.png").getAbsolutePath(), "https://pdfjet.com/logo.png",
                 "missing.png"}) {
             drawn = draw("![Not read](" + source + ")", images);
             assertEquals(0, count(drawn.pdf, "Figure"), source);

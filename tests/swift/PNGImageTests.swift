@@ -77,7 +77,7 @@ import Testing
     ]
 
     private func decode(_ name: String) throws -> PNGImage {
-        return try PNGImage(TestSupport.open("PngSuite/\(name).PNG"))
+        return try PNGImage(TestSupport.open("tests/data/PngSuite/\(name).PNG"))
     }
 
     @Test func decodesThePngSuiteImages() throws {
@@ -143,11 +143,11 @@ import Testing
         }
     }
 
-    @Test(.enabled(if: TestSupport.exists("PngSuite/TBRN2C08.PNG"), "the PngSuite is not here"))
+    @Test(.enabled(if: TestSupport.exists("tests/data/PngSuite/TBRN2C08.PNG"), "the PngSuite is not here"))
     func theImageOfAPngWithATransparentColorHasItsMask() throws {
         let memory = MemoryPDF()
-        _ = try Image(memory.pdf, TestSupport.open("PngSuite/TBRN2C08.PNG"))
-        _ = try Image(memory.pdf, TestSupport.open("PngSuite/TBWN1G16.PNG"))
+        _ = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG"))
+        _ = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/TBWN1G16.PNG"))
         _ = Page(memory.pdf, Letter.PORTRAIT)
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
@@ -156,7 +156,7 @@ import Testing
         #expect(!raw.contains("/SMask"))
         // And an image added to the objects of a PDF that was read.
         var objects = [PDFobj]()
-        _ = try Image(&objects, TestSupport.open("PngSuite/TBRN2C08.PNG"))
+        _ = try Image(&objects, TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG"))
         let dict = objects[objects.count - 1].dict.joined(separator: " ")
         #expect(dict.contains("/Mask [ 127 127 127 127 127 127 ]"), "\(dict)")
     }
@@ -171,7 +171,7 @@ import Testing
     }
 
     @Test func anImageFromAPngHasItsSize() throws {
-        let image = try Image(TestSupport.newPDF(), TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         #expect(image.getWidth() == 32)
         #expect(image.getHeight() == 32)
     }
@@ -326,7 +326,7 @@ import Testing
     }
 
     @Test func readsAStreamThatReturnsFewBytesAtATime() throws {
-        let data = try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("PngSuite/BASN2C08.PNG")))
+        let data = try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("tests/data/PngSuite/BASN2C08.PNG")))
         let image = try PNGImage(SlowStream(data))
         #expect(TestSupport.crc32(try TestSupport.inflate(image.getData())) == "7855b9bf")
     }
@@ -353,7 +353,7 @@ import Testing
 
     @Test func anImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask() throws {
         let memory = MemoryPDF()
-        let image = try Image(memory.pdf, TestSupport.open("PngSuite/BASN4A08.PNG"))
+        let image = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/BASN4A08.PNG"))
         _ = image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
@@ -398,13 +398,13 @@ import Testing
         // meant to be, so it is drawn that size rather than one point for each
         // of its pixels. 11811 pixels per metre is 300 dots per inch, and 1520
         // by 400 of them are 364.8 by 96 points.
-        let png = try PNGImage(TestSupport.open("images/rgba-8bit-chunks.png"))
+        let png = try PNGImage(TestSupport.open("resources/images/rgba-8bit-chunks.png"))
         #expect(png.getWidth() == 1520)
         #expect(png.getHeight() == 400)
         #expect(abs(png.getPhysicalWidth() - 364.8) < 0.01)
         #expect(abs(png.getPhysicalHeight() - 96.0) < 0.01)
 
-        let image = try Image(TestSupport.newPDF(), TestSupport.open("images/rgba-8bit-chunks.png"))
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("resources/images/rgba-8bit-chunks.png"))
         #expect(abs(image.getWidth() - 364.8) < 0.01, "the image is not drawn at the size it asks for")
         #expect(abs(image.getHeight() - 96.0) < 0.01, "the image is not drawn at the size it asks for")
     }
@@ -413,7 +413,7 @@ import Testing
         // The size the image is drawn at is not the size of its samples: the
         // image object of the PDF holds the pixels, whatever the chunk says.
         let memory = MemoryPDF()
-        let image = try Image(memory.pdf, TestSupport.open("images/rgba-8bit-chunks.png"))
+        let image = try Image(memory.pdf, TestSupport.open("resources/images/rgba-8bit-chunks.png"))
         image.setLocation(0.0, 0.0)
         image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
@@ -424,10 +424,10 @@ import Testing
 
     @Test func anImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel() throws {
         // Most PNG files carry no pHYs chunk, and are drawn as they were.
-        let png = try PNGImage(TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let png = try PNGImage(TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         #expect(png.getPhysicalWidth() == 0.0)
         #expect(png.getPhysicalHeight() == 0.0)
-        let image = try Image(TestSupport.newPDF(), TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         #expect(abs(image.getWidth() - 32.0) < 0.01)
         #expect(abs(image.getHeight() - 32.0) < 0.01)
     }
@@ -736,7 +736,7 @@ import Testing
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
         for name in ["BASN6A08", "TBRN2C08"] {
-            _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG")).drawOn(page)
+            _ = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/\(name).PNG")).drawOn(page)
         }
         try memory.pdf.complete()
         let read = try TestSupport.read(memory.bytes)
@@ -779,7 +779,7 @@ import Testing
             let memory = MemoryPDF()
             let page = Page(memory.pdf, Letter.PORTRAIT)
             for name in ["BASN6A08", "TBRN2C08"] {
-                _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG")).drawOn(page)
+                _ = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/\(name).PNG")).drawOn(page)
             }
             try memory.pdf.complete()
             return drawnImages(try TestSupport.read(memory.bytes))
@@ -824,7 +824,7 @@ import Testing
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
         for name in names {
-            _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG")).drawOn(page)
+            _ = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/\(name).PNG")).drawOn(page)
         }
         try memory.pdf.complete()
         return memory.bytes
@@ -909,7 +909,7 @@ import Testing
         var embedded = 0
         for (name, width, height, colorType, bitDepth, _, _, _, _) in PNGImageTests.suite {
             let memory = MemoryPDF()
-            _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG"))
+            _ = try Image(memory.pdf, TestSupport.open("tests/data/PngSuite/\(name).PNG"))
                     .drawOn(Page(memory.pdf, Letter.PORTRAIT))
             try memory.pdf.complete()
             for obj in imageObjects(try TestSupport.read(memory.bytes)) where obj.getValue("/DecodeParms") != "" {

@@ -231,18 +231,18 @@ public class ReviewMediaTest {
         // PDF/A-1 has no soft masks, and 8 bits per component at most.
         Assert.Equal("A document of PDF_A_2B cannot hold a CMYK image: "
                 + "its output intent is sRGB, so its images are gray or RGB.",
-                PDFAError(Compliance.PDF_A_2B, "images/cmyk.jpg"));
+                PDFAError(Compliance.PDF_A_2B, "resources/images/cmyk.jpg"));
         Assert.Equal("A document of PDF_A_1B cannot hold an image with transparency: "
                 + "PDF/A-1 has no soft masks, so its images are opaque.",
-                PDFAError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"));
+                PDFAError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"));
         Assert.Equal("A document of PDF_A_1A cannot hold an image of 16 bits per component: "
                 + "PDF/A-1 has 8 at most.",
-                PDFAError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"));
+                PDFAError(Compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"));
         // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-        Assert.Equal("", PDFAError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"));
-        Assert.Equal("", PDFAError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"));
-        Assert.Equal("", PDFAError(Compliance.PDF_UA_1, "images/cmyk.jpg"));
-        Assert.Equal("", PDFAError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
+        Assert.Equal("", PDFAError(Compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"));
+        Assert.Equal("", PDFAError(Compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"));
+        Assert.Equal("", PDFAError(Compliance.PDF_UA_1, "resources/images/cmyk.jpg"));
+        Assert.Equal("", PDFAError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"));
     }
 
     // The message a document of the compliance fails with when the image of
@@ -284,18 +284,18 @@ public class ReviewMediaTest {
     public void APDFADocumentHoldsNoCopiedImageItsLevelHasNot() {
         Assert.Equal("A document of PDF_A_2B cannot hold a CMYK image: "
                 + "its output intent is sRGB, so its images are gray or RGB.",
-                PDFACopyError(Compliance.PDF_A_2B, "images/cmyk.jpg"));
+                PDFACopyError(Compliance.PDF_A_2B, "resources/images/cmyk.jpg"));
         Assert.Equal("A document of PDF_A_1B cannot hold an image with transparency: "
                 + "PDF/A-1 has no soft masks, so its images are opaque.",
-                PDFACopyError(Compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"));
+                PDFACopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"));
         Assert.Equal("A document of PDF_A_1A cannot hold an image of 16 bits per component: "
                 + "PDF/A-1 has 8 at most.",
-                PDFACopyError(Compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"));
+                PDFACopyError(Compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"));
         // PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-        Assert.Equal("", PDFACopyError(Compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"));
-        Assert.Equal("", PDFACopyError(Compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"));
-        Assert.Equal("", PDFACopyError(Compliance.PDF_UA_1, "images/cmyk.jpg"));
-        Assert.Equal("", PDFACopyError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
+        Assert.Equal("", PDFACopyError(Compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"));
+        Assert.Equal("", PDFACopyError(Compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"));
+        Assert.Equal("", PDFACopyError(Compliance.PDF_UA_1, "resources/images/cmyk.jpg"));
+        Assert.Equal("", PDFACopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"));
     }
 
     // The message that a document of the compliance that draws fails with, or
@@ -629,7 +629,7 @@ public class ReviewMediaTest {
             MemoryStream stream = new MemoryStream();
             PDF pdf = new PDF(stream);
             Page page = new Page(pdf, Letter.PORTRAIT);
-            Image image = new Image(pdf, TestSupport.RepoPath("images/GLA250.png"));
+            Image image = new Image(pdf, TestSupport.RepoPath("resources/images/GLA250.png"));
             image.SetRotation(degrees).SetURIAction("https://pdfjet.com").SetLocation(10f, 20f);
             image.DrawOn(page);
             pdf.Complete();

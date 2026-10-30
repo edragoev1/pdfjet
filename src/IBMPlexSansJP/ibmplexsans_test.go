@@ -24,7 +24,7 @@ import (
 // the CJK fonts are not built in.
 
 // testRepoRoot returns the root of the repository, the folder above the
-// working directory that has PngSuite.
+// working directory that has tests/data/PngSuite.
 func testRepoRoot(t *testing.T) string {
 	t.Helper()
 	dir, err := os.Getwd()
@@ -32,12 +32,12 @@ func testRepoRoot(t *testing.T) string {
 		t.Fatal(err)
 	}
 	for {
-		if info, err := os.Stat(filepath.Join(dir, "PngSuite")); err == nil && info.IsDir() {
+		if info, err := os.Stat(filepath.Join(dir, "tests/data/PngSuite")); err == nil && info.IsDir() {
 			return dir
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			t.Fatal("no PngSuite directory above the working directory")
+			t.Fatal("no tests/data/PngSuite directory above the working directory")
 		}
 		dir = parent
 	}

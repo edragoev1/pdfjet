@@ -35,7 +35,7 @@ class Example_50 {
         List<PDFobj> objects = pdf.read(
                 new BufferedInputStream(new FileInputStream(fileName)));
 
-        FileInputStream stream = new FileInputStream("images/qrcode.png");
+        FileInputStream stream = new FileInputStream("resources/images/qrcode.png");
         Image image = new Image(objects, stream);
         image.setLocation(495f, 65f);
         image.scaleBy(0.40f);

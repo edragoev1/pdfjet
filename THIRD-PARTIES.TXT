@@ -135,10 +135,10 @@ under the following license:
     dealings in these Data Files or Software without prior written
     authorization of the copyright holder.
 
-The icons of the examples, the SVG files in images/svg and those named
-*_FILL0_* in images/svg-test, are Material Symbols of Google, licensed under
-the Apache License, Version 2.0. A copy of the license is in
-images/svg/LICENSE-2.0.txt.
+The icons of the examples, the SVG files in resources/images/svg and those
+named *_FILL0_* in resources/images/svg-test, are Material Symbols of Google,
+licensed under the Apache License, Version 2.0. A copy of the license is in
+resources/images/svg/LICENSE-2.0.txt.
 
     ============================================================================
     Material Symbols
@@ -181,6 +181,6 @@ https://opendatacommons.org/licenses/odbl/1-0/, as the data they come from.
 This software includes data of the World Bank, World Development Indicators
 (SP.DYN.LE00.IN, SP.DYN.TFRT.IN and the region of each country), in
 resources/data/life-expectancy-and-fertility-2023.txt and the chart drawn from
-it in images/svg/d3-life-expectancy-by-region.svg, licensed under the Creative
-Commons Attribution 4.0 International License (CC BY 4.0),
+it in resources/images/svg/d3-life-expectancy-by-region.svg, licensed under the
+Creative Commons Attribution 4.0 International License (CC BY 4.0),
 https://creativecommons.org/licenses/by/4.0/.

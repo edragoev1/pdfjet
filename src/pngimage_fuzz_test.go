@@ -37,7 +37,7 @@ import (
 
 // fuzzPNGSeeds returns the images of PngSuite.
 func fuzzPNGSeeds(f *testing.F) [][]byte {
-	paths, err := filepath.Glob("../PngSuite/*.[Pp][Nn][Gg]")
+	paths, err := filepath.Glob("../tests/data/PngSuite/*.[Pp][Nn][Gg]")
 	if err != nil || len(paths) == 0 {
 		f.Fatal("no PngSuite images")
 	}

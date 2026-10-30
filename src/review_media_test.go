@@ -199,18 +199,18 @@ func TestReviewMediaAPDFADocumentHoldsNoImageItsLevelHasNot(t *testing.T) {
 	failed := "The PDF was not completed because of an earlier error: "
 	testWant(t, failed+"A document of PDF_A_2B cannot hold a CMYK image: "+
 		"its output intent is sRGB, so its images are gray or RGB.",
-		testPDFAError(t, compliance.PDF_A_2B, "images/cmyk.jpg"))
+		testPDFAError(t, compliance.PDF_A_2B, "resources/images/cmyk.jpg"))
 	testWant(t, failed+"A document of PDF_A_1B cannot hold an image with transparency: "+
 		"PDF/A-1 has no soft masks, so its images are opaque.",
-		testPDFAError(t, compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"))
+		testPDFAError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"))
 	testWant(t, failed+"A document of PDF_A_1A cannot hold an image of 16 bits per component: "+
 		"PDF/A-1 has 8 at most.",
-		testPDFAError(t, compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"))
+		testPDFAError(t, compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"))
 	// PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-	testWant(t, "", testPDFAError(t, compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"))
-	testWant(t, "", testPDFAError(t, compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"))
-	testWant(t, "", testPDFAError(t, compliance.PDF_UA_1, "images/cmyk.jpg"))
-	testWant(t, "", testPDFAError(t, compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_UA_1, "resources/images/cmyk.jpg"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"))
 }
 
 // testPDFACopyError draws the image of a file into a document, reads it back,
@@ -252,18 +252,18 @@ func TestReviewMediaAPDFADocumentHoldsNoCopiedImageItsLevelHasNot(t *testing.T) 
 	failed := "The PDF was not completed because of an earlier error: "
 	testWant(t, failed+"A document of PDF_A_2B cannot hold a CMYK image: "+
 		"its output intent is sRGB, so its images are gray or RGB.",
-		testPDFACopyError(t, compliance.PDF_A_2B, "images/cmyk.jpg"))
+		testPDFACopyError(t, compliance.PDF_A_2B, "resources/images/cmyk.jpg"))
 	testWant(t, failed+"A document of PDF_A_1B cannot hold an image with transparency: "+
 		"PDF/A-1 has no soft masks, so its images are opaque.",
-		testPDFACopyError(t, compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"))
+		testPDFACopyError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"))
 	testWant(t, failed+"A document of PDF_A_1A cannot hold an image of 16 bits per component: "+
 		"PDF/A-1 has 8 at most.",
-		testPDFACopyError(t, compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"))
+		testPDFACopyError(t, compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"))
 	// PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"))
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"))
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_UA_1, "images/cmyk.jpg"))
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_UA_1, "resources/images/cmyk.jpg"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"))
 }
 
 // testPDFADrawError returns the error of completing a document of the
@@ -506,7 +506,7 @@ func TestReviewMediaTheLinkOfATurnedImageCoversItAsItIsDrawn(t *testing.T) {
 	for _, degrees := range []int{0, 90, 180, 270} {
 		doc := testNewDoc()
 		page := NewPage(doc.pdf, letter.Portrait())
-		image := NewImageFromFile(doc.pdf, testRepoPath(t, "images/GLA250.png"))
+		image := NewImageFromFile(doc.pdf, testRepoPath(t, "resources/images/GLA250.png"))
 		image.SetRotation(degrees).SetURIAction("https://pdfjet.com").SetLocation(10, 20)
 		image.DrawOn(page)
 		raw := string(doc.complete())

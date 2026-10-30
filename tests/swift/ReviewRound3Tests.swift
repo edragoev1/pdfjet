@@ -235,7 +235,7 @@ import Testing
     /// its corner unturned, and in a table cell ran over the rows after it (F3).
     @Test func anImageTurnedAQuarterHasItsDrawnSize() throws {
         let pdf = TestSupport.newPDF()
-        let image = try Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"))   // 32 by 32
+        let image = try Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))   // 32 by 32
         _ = image.scaleBy(0.75, 0.375)                                           // 24 by 12
         _ = image.setLocation(50, 50)
         for degrees in [90, 270] {

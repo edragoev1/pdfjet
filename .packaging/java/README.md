@@ -16,7 +16,7 @@ This package has the library ready to use, built for Java 8 and later.
 | `build-java.sh`, `build-java.cmd` | Compile and run all the examples. |
 | `run-java.sh`, `run-java.cmd` | Compile and run one example. |
 | `resources/fonts/` | The fonts `PDFjet.jar` carries, as files, each family with its license. |
-| `resources/data/`, `images/`, `PngSuite/` | The files the examples read; `resources/data/README.md` says where the data comes from. |
+| `resources/data/`, `resources/images/`, `tests/data/PngSuite/` | The files the examples read; `resources/data/README.md` says where the data comes from. |
 | `CHANGELOG.md` | What changed in each release. |
 | `LICENSE`, `THIRD-PARTIES.TXT` | The license of PDFjet and of the work it includes. |
 

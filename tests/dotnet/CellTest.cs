@@ -261,7 +261,7 @@ public class CellTest {
         // at 202, 319.9 (review of 12 October 2026, R22).
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
-        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(pdf, TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG"));
         image.SetLocation(7f, 8f);
         Barcode barcode = new Barcode(Barcode.CODE_128, "12345");
         barcode.SetLocation(7f, 8f);

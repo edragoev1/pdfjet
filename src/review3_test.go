@@ -129,7 +129,7 @@ func TestReview3ANaNLocationOrMarginIsRefused(t *testing.T) {
 // not panic: Markdown from a user could stop a server (F5).
 func TestReview3AnImageThatCannotBeReadFailsTheMarkdown(t *testing.T) {
 	dir := t.TempDir()
-	png, err := os.ReadFile(testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	png, err := os.ReadFile(testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -444,7 +444,7 @@ func TestGPOSAnExtensionOffsetPastTheTableIsNoSubtable(t *testing.T) {
 // corner unturned, and in a table cell ran over the rows after it (F3).
 func TestReview3AnImageTurnedAQuarterHasItsDrawnSize(t *testing.T) {
 	pdf := testNewPDF()
-	image := NewImageFromFile(pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG")) // 32 by 32
+	image := NewImageFromFile(pdf, testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG")) // 32 by 32
 	image.ScaleByWidthAndHeight(0.75, 0.375)                                 // 24 by 12
 	image.SetLocation(50, 50)
 	for _, degrees := range []int{90, 270} {
@@ -688,7 +688,7 @@ func TestReview3NothingIsWrittenAfterTheEndOfThePDF(t *testing.T) {
 	doc := testNewDoc()
 	NewPage(doc.pdf, testLetterPortrait())
 	raw := doc.complete()
-	NewImageFromFile(doc.pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	NewImageFromFile(doc.pdf, testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	doc.writer.Flush()
 	if after := doc.buf.Bytes(); len(after) != len(raw) {
 		t.Errorf("%d bytes written after %%%%EOF", len(after)-len(raw))
@@ -866,7 +866,7 @@ func TestReview3AMediaBoxOfANaNSizeIsLetter(t *testing.T) {
 func TestReview3ADrawableOfACellStaysWhereTheCallerPutIt(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
-	image := NewImageFromFile(pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	image := NewImageFromFile(pdf, testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
 	image.SetLocation(7, 8)
 	barcode := NewBarcode(CODE_128, "12345")
 	barcode.SetLocation(7, 8)

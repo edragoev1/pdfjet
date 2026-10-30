@@ -155,8 +155,8 @@ def image_files(images, made):
     files = []
     roots = [(os.path.join(images, 'pillow', 'Tests', 'images'), 'pillow/Tests/images'),
              (os.path.join(images, 'bmpsuite'), 'bmpsuite'),
-             (os.path.join(ROOT, 'PngSuite'), 'PngSuite'),
-             (os.path.join(ROOT, 'images'), 'images'),
+             (os.path.join(ROOT, 'tests', 'data', 'PngSuite'), 'tests/data/PngSuite'),
+             (os.path.join(ROOT, 'resources', 'images'), 'resources/images'),
              (made, 'made')]
     for root, name in roots:
         for dirpath, dirnames, filenames in os.walk(root):

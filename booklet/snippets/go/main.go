@@ -108,7 +108,7 @@ func accessibleDocument() {
 		SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextBlock(font, "A paragraph, which a screen reader reads after the heading.").
 		SetWidth(400).SetLocation(50, 70).DrawOn(page)
-	image := pdfjet.NewImageFromFile(pdf, "images/circles.png")
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/circles.png")
 	image.SetAltDescription("Three circles that overlap")
 	image.SetLocation(50, 110).DrawOn(page)
 	if err := pdf.Complete(); err != nil {
@@ -350,7 +350,7 @@ func textFlow(pdf *pdfjet.PDF, font *pdfjet.Font) {
 		pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
 		pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))}, 6)
 	flow.AddSpace(12)
-	mapImage := pdfjet.NewImageFromFile(pdf, "images/gr-map.jpg")
+	mapImage := pdfjet.NewImageFromFile(pdf, "resources/images/gr-map.jpg")
 	mapImage.SetAltDescription("A map of Greece and its regions.")
 	flow.AddImageAligned(mapImage.ResizeHeight(400), alignment.Center) // Whole, here or on the next page
 	flow.Add(pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece: its regions.").SetFontSize(9)).
@@ -454,7 +454,7 @@ func cells(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet cell-content
 func cellContent(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	image := pdfjet.NewImageFromFile(pdf, "images/circles.png").ScaleBy(0.25)
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/circles.png").ScaleBy(0.25)
 	image.SetAltDescription("Circles")
 	imageCell := pdfjet.NewEmptyCell(font).SetImage(image)
 	barcodeCell := pdfjet.NewEmptyCell(font).
@@ -624,7 +624,7 @@ func stamps(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet images
 func images(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	photo := pdfjet.NewImageFromFile(pdf, "images/gr-map.jpg") // JPEG, PNG or BMP
+	photo := pdfjet.NewImageFromFile(pdf, "resources/images/gr-map.jpg") // JPEG, PNG or BMP
 	photo.SetAltDescription("A map of Greece")
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	photo.SetLocation(50, 50)
@@ -637,7 +637,7 @@ func images(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet svg-images
 func svgImages(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	icon, err := pdfjet.NewSVGImageFromFile("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
+	icon, err := pdfjet.NewSVGImageFromFile("resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
 	if err != nil {
 		log.Fatal(err)
 	}

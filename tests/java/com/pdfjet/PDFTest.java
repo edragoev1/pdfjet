@@ -379,7 +379,7 @@ class PDFTest {
         pdf.setTitle("Title");
         new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/up-arrow.png"));
         image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70f, 80f);
         image.drawOn(page);
         pdf.complete();
@@ -405,7 +405,7 @@ class PDFTest {
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         page.beginStructElement(StructElem.L);
-        new Image(pdf, TestSupport.open("images/up-arrow.png")).setURIAction("https://pdfjet.com").drawOn(page);
+        new Image(pdf, TestSupport.open("resources/images/up-arrow.png")).setURIAction("https://pdfjet.com").drawOn(page);
         new TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70f, 80f).drawOn(page);
         page.endStructElement();
         Field stack = Page.class.getDeclaredField("structElementStack");
@@ -439,7 +439,7 @@ class PDFTest {
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/up-arrow.png"));
         image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70f, 80f);
         image.drawOn(page);
         new TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70f, 200f).drawOn(page);

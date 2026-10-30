@@ -127,7 +127,7 @@ public class Example_20 {
         // One car of the data, its photo and its VIN in their cells
         new TextLine(f1, "One car of the data").SetStructureType(StructElem.H2)
                 .SetFontSize(14f).SetLocation(50f, y).DrawOn(page);
-        Image image = new Image(pdf, "images/TeslaX.png");
+        Image image = new Image(pdf, "resources/images/TeslaX.png");
         image.SetAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.");
         image.ScaleBy(1f / 3f);     // The image is 120 DPI, so 0.6 of its pixels
         Barcode vin = new Barcode(Barcode.CODE_128, modelX[0]);

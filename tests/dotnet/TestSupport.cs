@@ -38,7 +38,7 @@ public static class TestSupport {
             return env;
         }
         DirectoryInfo dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir != null && !Directory.Exists(System.IO.Path.Combine(dir.FullName, "PngSuite"))) {
+        while (dir != null && !Directory.Exists(System.IO.Path.Combine(dir.FullName, "tests/data/PngSuite"))) {
             dir = dir.Parent;
         }
         return dir != null ? dir.FullName : Directory.GetCurrentDirectory();

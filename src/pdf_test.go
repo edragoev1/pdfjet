@@ -565,7 +565,7 @@ func TestPDFALinkedImageIsTheFigureOfItsLink(t *testing.T) {
 	doc.pdf.SetTitle("Title")
 	testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	file, err := os.Open(testRepoPath(t, "resources/images/up-arrow.png"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -596,7 +596,7 @@ func TestPDFALinkOfADocumentNotTaggedIsNoElement(t *testing.T) {
 	doc := testNewDoc()
 	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	file, err := os.Open(testRepoPath(t, "resources/images/up-arrow.png"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1084,7 +1084,7 @@ func TestPDFAnInlineElementStandingAsABlockSaysSo(t *testing.T) {
 	doc.pdf.SetTitle("Title")
 	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	file, err := os.Open(testRepoPath(t, "resources/images/up-arrow.png"))
 	if err != nil {
 		t.Fatal(err)
 	}

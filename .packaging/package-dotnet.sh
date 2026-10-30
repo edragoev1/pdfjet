@@ -113,7 +113,7 @@ mkdir -p "$STAGE" .commercial-packages
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/dotnet-pro LICENSE \
-    net net48 PDFjet.csproj resources/fonts resources/data examples images PngSuite docfx \
+    net net48 PDFjet.csproj resources/fonts resources/data examples resources/images tests/data/PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
 tar -x -C "$STAGE" -f "$TAR"
 rm "$TAR"
@@ -126,7 +126,7 @@ rm "$TAR"
 # The Java examples and the Go files of resources and images are not needed,
 # but Example_42 attaches Example_02.java.
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
-rm -f "$STAGE/images/go.mod" "$STAGE/resources/data/go.mod"
+rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
 find "$STAGE/resources/fonts" -maxdepth 1 -type f -delete
 find "$STAGE/resources/fonts" -mindepth 2 \( -type d -o \( -type f ! -name '*.ttf' ! -name '*.otf' \
     ! -name '*.txt' ! -name LICENSE \) \) -prune -exec rm -rf {} +
