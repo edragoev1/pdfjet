@@ -333,9 +333,10 @@ public class PDFobj {
         for (int i = 0; i < filters.Count; i++) {
             String filter = filters[i];
             if (filter.Equals("/FlateDecode") || filter.Equals("/Fl")) {
-                decoded = ApplyDecodeParms(Decoded(Decompressor.Inflate(decoded, MaxDecodedLength())), i);
+                decoded = ApplyDecodeParms(Decoded(Decompressor.InflateStream(decoded, MaxDecodedLength())), i);
             } else if (filter.Equals("/LZWDecode") || filter.Equals("/LZW")) {
-                decoded = ApplyDecodeParms(Decoded(Decompressor.LZWDecode(decoded, MaxDecodedLength())), i);
+                int earlyChange = GetDecodeParm(GetDecodeParms(i), "/EarlyChange", 1);
+                decoded = ApplyDecodeParms(Decoded(Decompressor.LZWDecode(decoded, MaxDecodedLength(), earlyChange)), i);
             } else if (filter.Equals("/ASCIIHexDecode") || filter.Equals("/AHx")) {
                 decoded = DecodedHex(Decompressor.ASCIIHexDecode(decoded));
             } else if (filter.Equals("/ASCII85Decode") || filter.Equals("/A85")) {

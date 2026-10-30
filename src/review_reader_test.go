@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -475,4 +476,70 @@ func TestReviewReaderTheNumbersOfAnObjectStreamAreDigits(t *testing.T) {
 	// An offset past the end of the stream, which overflowed an int of 32 bits.
 	testWant(t, "(no error)",
 		testReadError(t, "1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj"))
+}
+
+// testLZW returns the bytes as LZW data with a code for each, in codes that get
+// one bit longer as the /EarlyChange says.
+func testLZW(data []byte, earlyChange int) []byte {
+	out := make([]byte, 0)
+	bits, bitCount := 0, 0
+	write := func(code, length int) {
+		bits = bits<<length | code
+		bitCount += length
+		for bitCount >= 8 {
+			bitCount -= 8
+			out = append(out, byte(bits>>bitCount))
+		}
+		bits &= 1<<bitCount - 1
+	}
+	next, length := 258, 9
+	write(256, length)
+	for _, b := range data {
+		write(int(b), length)
+		next++
+		if next+earlyChange-1 >= 1<<length {
+			length++
+		}
+	}
+	write(257, length)
+	return append(out, byte(bits<<(8-bitCount)))
+}
+
+// testStreamData returns the data of a stream, of hexadecimal digits, with the
+// entries of its dictionary, in a PDF.
+func testStreamData(t *testing.T, entries string, hex string) []byte {
+	t.Helper()
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		fmt.Sprintf("<< /Length %d %s >>\nstream\n%s\nendstream", len(hex), entries, hex)))
+	return objects[3].GetData()
+}
+
+func TestReviewReaderAnLZWStreamHasItsEarlyChange(t *testing.T) {
+	// /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+	// no error (review of 30 October 2026, B7).
+	data := make([]byte, 600)
+	for i := range data {
+		data[i] = byte(i * i % 251)
+	}
+	for _, earlyChange := range []int{1, 0} {
+		entries := fmt.Sprintf("/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange %d >>]", earlyChange)
+		got := testStreamData(t, entries, fmt.Sprintf("%x>", testLZW(data, earlyChange)))
+		if !bytes.Equal(got, data) {
+			t.Errorf("EarlyChange %d: %d bytes", earlyChange, len(got))
+		}
+	}
+}
+
+func TestReviewReaderAFlateStreamCanLackItsChecksum(t *testing.T) {
+	// It was refused, and in an object stream that failed the PDF (review of
+	// 30 October 2026, B8).
+	data := []byte("0 0 1 rg 10 10 50 50 re f\n")
+	deflated := compressor.Deflate(data)
+	got := testStreamData(t, "/Filter [/ASCIIHexDecode /FlateDecode]", fmt.Sprintf("%x>", deflated[:len(deflated)-4]))
+	if !bytes.Equal(got, data) {
+		t.Errorf("got %q", got)
+	}
 }

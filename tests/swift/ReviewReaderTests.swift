@@ -474,4 +474,67 @@ import Testing
         #expect(readError("1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj")
                 == "(no error)")
     }
+
+    // Returns the bytes as LZW data with a code for each, in codes that get one
+    // bit longer as the /EarlyChange says.
+    private func lzw(_ data: [UInt8], _ earlyChange: Int) -> [UInt8] {
+        var output = [UInt8]()
+        var bits = 0
+        var bitCount = 0
+        func write(_ code: Int, _ length: Int) {
+            bits = (bits << length) | code
+            bitCount += length
+            while bitCount >= 8 {
+                bitCount -= 8
+                output.append(UInt8((bits >> bitCount) & 0xFF))
+            }
+            bits &= (1 << bitCount) - 1
+        }
+        var next = 258
+        var length = 9
+        write(256, length)
+        for byte in data {
+            write(Int(byte), length)
+            next += 1
+            if next + earlyChange - 1 >= (1 << length) {
+                length += 1
+            }
+        }
+        write(257, length)
+        output.append(UInt8((bits << (8 - bitCount)) & 0xFF))
+        return output
+    }
+
+    private func hex(_ bytes: [UInt8]) -> String {
+        return bytes.map { String(format: "%02x", $0) }.joined()
+    }
+
+    // Returns the data of a stream, of hexadecimal digits, with the entries of
+    // its dictionary, in a PDF.
+    private func streamData(_ entries: String, _ hex: String) throws -> [UInt8] {
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+            "<< /Length \(hex.utf8.count) \(entries) >>\nstream\n\(hex)\nendstream"]))
+        return objects[3].getData()
+    }
+
+    @Test func anLZWStreamHasItsEarlyChange() throws {
+        // /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+        // no error (review of 30 October 2026, B7).
+        let data = (0..<600).map { UInt8($0 * $0 % 251) }
+        for earlyChange in [1, 0] {
+            let entries = "/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange \(earlyChange) >>]"
+            #expect(try streamData(entries, hex(lzw(data, earlyChange)) + ">") == data)
+        }
+    }
+
+    @Test func aFlateStreamCanLackItsChecksum() throws {
+        // It was refused, and in an object stream that failed the PDF (review of
+        // 30 October 2026, B8).
+        let data = Array("0 0 1 rg 10 10 50 50 re f\n".utf8)
+        let deflated = TestSupport.deflate(data)
+        #expect(try streamData("/Filter [/ASCIIHexDecode /FlateDecode]", hex(Array(deflated.dropLast(4))) + ">") == data)
+    }
 }

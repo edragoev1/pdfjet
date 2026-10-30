@@ -378,9 +378,10 @@ public class PDFobj {
         for (int i = 0; i < filters.size(); i++) {
             String filter = filters.get(i);
             if (filter.equals("/FlateDecode") || filter.equals("/Fl")) {
-                decoded = applyDecodeParms(decoded(Decompressor.inflate(decoded, maxDecodedLength())), i);
+                decoded = applyDecodeParms(decoded(Decompressor.inflateStream(decoded, maxDecodedLength())), i);
             } else if (filter.equals("/LZWDecode") || filter.equals("/LZW")) {
-                decoded = applyDecodeParms(decoded(Decompressor.lzwDecode(decoded, maxDecodedLength())), i);
+                int earlyChange = getDecodeParm(getDecodeParms(i), "/EarlyChange", 1);
+                decoded = applyDecodeParms(decoded(Decompressor.lzwDecode(decoded, maxDecodedLength(), earlyChange)), i);
             } else if (filter.equals("/ASCIIHexDecode") || filter.equals("/AHx")) {
                 decoded = decodedHex(Decompressor.asciiHexDecode(decoded));
             } else if (filter.equals("/ASCII85Decode") || filter.equals("/A85")) {

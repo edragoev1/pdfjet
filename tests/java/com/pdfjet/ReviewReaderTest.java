@@ -541,4 +541,70 @@ class ReviewReaderTest {
         assertEquals("(no error)",
                 readError("1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj"));
     }
+
+    // Returns the bytes as LZW data with a code for each, in codes that get one
+    // bit longer as the /EarlyChange says.
+    private static byte[] lzw(byte[] data, int earlyChange) {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        int[] state = {0, 0};   // The bits still to write, and how many
+        int next = 258;
+        int length = 9;
+        writeCode(out, state, 256, length);
+        for (byte b : data) {
+            writeCode(out, state, b & 0xFF, length);
+            next++;
+            if (next + earlyChange - 1 >= (1 << length)) {
+                length++;
+            }
+        }
+        writeCode(out, state, 257, length);
+        out.write(state[0] << (8 - state[1]));
+        return out.toByteArray();
+    }
+
+    private static void writeCode(java.io.ByteArrayOutputStream out, int[] state, int code, int length) {
+        state[0] = (state[0] << length) | code;
+        state[1] += length;
+        while (state[1] >= 8) {
+            state[1] -= 8;
+            out.write(state[0] >> state[1]);
+        }
+        state[0] &= (1 << state[1]) - 1;
+    }
+
+    // Returns the data of a stream, of hexadecimal digits, with the entries of
+    // its dictionary, in a PDF.
+    private static byte[] streamData(String entries, String hex) throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length " + hex.length() + " " + entries + " >>\nstream\n" + hex + "\nendstream"));
+        return objects.get(3).getData();
+    }
+
+    @Test
+    void anLZWStreamHasItsEarlyChange() throws Exception {
+        // /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+        // no error (review of 30 October 2026, B7).
+        byte[] data = new byte[600];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte) (i * i % 251);
+        }
+        for (int earlyChange : new int[] {1, 0}) {
+            String entries = "/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange " + earlyChange + " >>]";
+            org.junit.jupiter.api.Assertions.assertArrayEquals(data,
+                    streamData(entries, Util.toHexString(lzw(data, earlyChange)) + ">"));
+        }
+    }
+
+    @Test
+    void aFlateStreamCanLackItsChecksum() throws Exception {
+        // It was refused, and in an object stream that failed the PDF (review of
+        // 30 October 2026, B8).
+        byte[] data = "0 0 1 rg 10 10 50 50 re f\n".getBytes(StandardCharsets.US_ASCII);
+        byte[] deflated = Compressor.deflate(data);
+        org.junit.jupiter.api.Assertions.assertArrayEquals(data, streamData("/Filter [/ASCIIHexDecode /FlateDecode]",
+                Util.toHexString(Arrays.copyOf(deflated, deflated.length - 4)) + ">"));
+    }
 }

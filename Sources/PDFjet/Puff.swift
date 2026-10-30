@@ -62,6 +62,17 @@ func inflate(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws -> [
     return output
 }
 
+/// Decodes the Flate stream of a PDF like inflate, and takes one whose Deflate
+/// data ends and whose Adler-32 is cut off, all or part of it, as other readers
+/// do: an object stream like that failed the whole PDF (review of 30 October
+/// 2026, B8). What is left of the checksum has to be right.
+func inflateStream(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws -> [UInt8] {
+    var input = data
+    var output = [UInt8]()
+    _ = try Puff(output: &output, input: &input, maxLength: maxLength, prefix: false, cutChecksum: true)
+    return output
+}
+
 /// Returns the first length bytes that a zlib stream decodes to, or all of them
 /// when there are fewer, and ignores the rest of the stream. A stream that ends
 /// in the middle, before those bytes, throws.
@@ -110,6 +121,7 @@ final class Puff {
     // output limit
     let maxLength: Int          // the most bytes the output may have
     let prefix: Bool            // stop at maxLength bytes instead of throwing
+    let cutChecksum: Bool       // the Adler-32 can be cut off
 
     // input state
     var incnt = 0               // bytes read so far from the input
@@ -212,9 +224,11 @@ final class Puff {
             input: inout [UInt8],
             maxLength: Int = MAX_DECODED_LENGTH,
             prefix: Bool = false,
-            sized: Bool = false) throws {
+            sized: Bool = false,
+            cutChecksum: Bool = false) throws {
         self.maxLength = maxLength
         self.prefix = prefix
+        self.cutChecksum = cutChecksum
         let tableSize = 1 << Puff.FASTBITS
         self.lenTable = UnsafeMutablePointer<UInt16>.allocate(capacity: tableSize)
         self.distTable = UnsafeMutablePointer<UInt16>.allocate(capacity: tableSize)
@@ -313,12 +327,12 @@ final class Puff {
 
         // The Adler-32 of the output follows the last block, from the next
         // whole byte. A stream without it is cut short.
-        if self.incnt + 4 > input.count {
+        if self.incnt + 4 > input.count && !cutChecksum {
             throw PuffError.read(error: 2)          // not enough input
         }
-        let checksum = UInt32(input[self.incnt]) << 24 | UInt32(input[self.incnt + 1]) << 16 |
-                UInt32(input[self.incnt + 2]) << 8 | UInt32(input[self.incnt + 3])
-        if checksum != adler32(UnsafeBufferPointer(start: out, count: outCount)) {
+        let checksum = adler32(UnsafeBufferPointer(start: out, count: outCount))
+        for i in 0..<min(4, input.count - self.incnt)
+                where input[self.incnt + i] != UInt8((checksum >> UInt32(24 - 8 * i)) & 0xFF) {
             throw PDFjetError(message: "Invalid zlib checksum")
         }
     }

@@ -350,11 +350,12 @@ func (obj *PDFobj) decode(stream []byte) []byte {
 	for i, filter := range obj.getValues("/Filter") {
 		switch filter {
 		case "/FlateDecode", "/Fl":
-			data, err := decompressor.InflateWithMaxLength(decoded, obj.maxDecodedLength())
+			data, err := decompressor.InflateStream(decoded, obj.maxDecodedLength())
 			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/LZWDecode", "/LZW":
-			data, err := decompressor.LZWDecodeWithMaxLength(decoded, obj.maxDecodedLength())
+			earlyChange := getDecodeParm(obj.getDecodeParms(i), "/EarlyChange", 1)
+			data, err := decompressor.LZWDecodeWithEarlyChange(decoded, obj.maxDecodedLength(), earlyChange)
 			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/ASCIIHexDecode", "/AHx":

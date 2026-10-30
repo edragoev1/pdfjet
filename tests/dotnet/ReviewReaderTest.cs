@@ -519,5 +519,70 @@ public class ReviewReaderTest {
         Assert.Equal("(no error)",
                 ReadError("1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj"));
     }
+
+    // Returns the bytes as LZW data with a code for each, in codes that get one
+    // bit longer as the /EarlyChange says.
+    private static byte[] Lzw(byte[] data, int earlyChange) {
+        List<byte> output = new List<byte>();
+        int bits = 0;
+        int bitCount = 0;
+        void Write(int code, int length) {
+            bits = (bits << length) | code;
+            bitCount += length;
+            while (bitCount >= 8) {
+                bitCount -= 8;
+                output.Add((byte) (bits >> bitCount));
+            }
+            bits &= (1 << bitCount) - 1;
+        }
+        int next = 258;
+        int codeLength = 9;
+        Write(256, codeLength);
+        foreach (byte b in data) {
+            Write(b, codeLength);
+            next++;
+            if (next + earlyChange - 1 >= (1 << codeLength)) {
+                codeLength++;
+            }
+        }
+        Write(257, codeLength);
+        output.Add((byte) (bits << (8 - bitCount)));
+        return output.ToArray();
+    }
+
+    // Returns the data of a stream, of hexadecimal digits, with the entries of
+    // its dictionary, in a PDF.
+    private static byte[] StreamData(string entries, string hex) {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length " + hex.Length + " " + entries + " >>\nstream\n" + hex + "\nendstream"));
+        return objects[3].GetData();
+    }
+
+    [Fact]
+    public void AnLZWStreamHasItsEarlyChange() {
+        // /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+        // no error (review of 30 October 2026, B7).
+        byte[] data = new byte[600];
+        for (int i = 0; i < data.Length; i++) {
+            data[i] = (byte) (i * i % 251);
+        }
+        foreach (int earlyChange in new int[] {1, 0}) {
+            string entries = "/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange " + earlyChange + " >>]";
+            Assert.Equal(data, StreamData(entries, Util.ToHexString(Lzw(data, earlyChange)) + ">"));
+        }
+    }
+
+    [Fact]
+    public void AFlateStreamCanLackItsChecksum() {
+        // It was refused, and in an object stream that failed the PDF (review of
+        // 30 October 2026, B8).
+        byte[] data = Encoding.ASCII.GetBytes("0 0 1 rg 10 10 50 50 re f\n");
+        byte[] deflated = Compressor.Deflate(data);
+        Assert.Equal(data, StreamData("/Filter [/ASCIIHexDecode /FlateDecode]",
+                Util.ToHexString(deflated[..^4]) + ">"));
+    }
 }
 }   // End of namespace PDFjet.NET

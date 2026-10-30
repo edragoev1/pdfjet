@@ -361,9 +361,10 @@ public final class PDFobj {
         for (i, filter) in getValues("/Filter").enumerated() {
             switch filter {
             case "/FlateDecode", "/Fl":
-                decoded = applyDecodeParms(self.decoded(try inflate(decoded, maxDecodedLength())), i)
+                decoded = applyDecodeParms(self.decoded(try inflateStream(decoded, maxDecodedLength())), i)
             case "/LZWDecode", "/LZW":
-                decoded = applyDecodeParms(self.decoded(try lzwDecode(decoded, maxDecodedLength())), i)
+                let earlyChange = getDecodeParm(getDecodeParms(i), "/EarlyChange", 1)
+                decoded = applyDecodeParms(self.decoded(try lzwDecode(decoded, maxDecodedLength(), earlyChange)), i)
             case "/ASCIIHexDecode", "/AHx":
                 decoded = try decodedHex(asciiHexDecode(decoded))
             case "/ASCII85Decode", "/A85":

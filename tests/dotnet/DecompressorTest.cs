@@ -119,6 +119,20 @@ public class DecompressorTest {
     }
 
     [Fact]
+    public void InflateStreamTakesACutChecksumAndNoOtherCut() {
+        byte[] data = Encoding.ASCII.GetBytes("Some text of a page. Some text of a page. Some text of a page.");
+        byte[] deflated = Compressor.Deflate(data);
+        for (int cut = 1; cut <= 4; cut++) {
+            Assert.Equal(data, Decompressor.InflateStream(deflated[..^cut], Decompressor.MAX_DECODED_LENGTH));
+        }
+        Assert.ThrowsAny<Exception>(() => Decompressor.InflateStream(deflated[..^5], Decompressor.MAX_DECODED_LENGTH));
+        byte[] wrongChecksum = deflated[..^2];
+        wrongChecksum[^1] ^= 1;
+        Assert.ThrowsAny<Exception>(() => Decompressor.InflateStream(wrongChecksum, Decompressor.MAX_DECODED_LENGTH));
+        Assert.ThrowsAny<Exception>(() => Decompressor.InflateStream(deflated[..^4], data.Length - 1));
+    }
+
+    [Fact]
     public void InflateRejectsEveryTruncationOfAStream() {
         byte[] data = new byte[2000];
         new Random(3).NextBytes(data.AsSpan(0, 1000));
