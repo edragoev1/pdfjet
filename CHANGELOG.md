@@ -603,6 +603,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   file Example_26 draws, in place of a file of world communications of the
   mid-2000s. Its markers and row colors are found by country and by value,
   not by row number, and it is four pages, the table in the middle of each.
+- Example_50, the four ports: it reads an existing PDF, stamps every page
+  APPROVED with a fixed date, so that the ports stay comparable, and adds
+  "Page 1 of 2" at the foot, which is what people do with a PDF they have,
+  in place of drawing text at the coordinates of a form. It embeds IBM Plex
+  Sans, in place of Helvetica.
+- `resources/data/testPDFs/rc65-16e.pdf`, a real government form, is gone:
+  PDFjet has no recorded right to pass it on. Example_49, the snippets of
+  the booklet and the tests read `sample-document.pdf`, a report of a
+  made-up company in IBM Plex, which `util/make-sample-pdf.sh` writes.
 - BarChart, the four ports: the look of the simple charts. The title and
   the subtitle at the left, in ink and in a muted gray, and the legend under
   them at the left; light gray solid grid lines along the value axis; one
