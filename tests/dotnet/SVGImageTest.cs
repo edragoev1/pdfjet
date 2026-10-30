@@ -893,5 +893,22 @@ public class SVGImageTest {
         thread.Join();
         Assert.Null(failure);
     }
+
+    [Fact]
+    public void ManyGradientsOfOneGradientOfManyStopsAreReadOnce() {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">");
+        for (int i = 0; i < 10000; i++) {
+            svg.Append("<stop stop-color=\"red\"/>");
+        }
+        svg.Append("</linearGradient>");
+        for (int i = 0; i < 10000; i++) {
+            svg.Append("<linearGradient id=\"g").Append(i).Append("\" href=\"#s\"/>");
+        }
+        svg.Append("<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>");
+        System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+        string content = Draw(svg.ToString());
+        Assert.True(watch.ElapsedMilliseconds < 5000, watch.ElapsedMilliseconds + " ms");
+        Assert.StartsWith("1 0 0 rg\n", content);
+    }
 }
 }

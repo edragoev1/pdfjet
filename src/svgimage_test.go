@@ -1010,3 +1010,22 @@ func TestSVGImageTheDepthOfWhatIsDrawnIsLimited(t *testing.T) {
 		}
 	}
 }
+
+func TestSVGImageManyGradientsOfOneGradientOfManyStopsAreReadOnce(t *testing.T) {
+	var svg strings.Builder
+	svg.WriteString(`<svg width="10" height="10"><linearGradient id="s">`)
+	svg.WriteString(strings.Repeat(`<stop stop-color="red"/>`, 10000))
+	svg.WriteString(`</linearGradient>`)
+	for i := 0; i < 10000; i++ {
+		svg.WriteString(`<linearGradient id="g` + strconv.Itoa(i) + `" href="#s"/>`)
+	}
+	svg.WriteString(`<rect width="5" height="5" fill="url(#g7)"/></svg>`)
+	start := time.Now()
+	content := testDrawSVG(t, svg.String())
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Errorf("took %v", elapsed)
+	}
+	if !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+}

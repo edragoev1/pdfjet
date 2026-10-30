@@ -903,4 +903,22 @@ class SVGImageTest {
             throw new AssertionError(failure[0]);
         }
     }
+
+    @Test
+    void manyGradientsOfOneGradientOfManyStopsAreReadOnce() throws Exception {
+        StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">");
+        for (int i = 0; i < 10000; i++) {
+            svg.append("<stop stop-color=\"red\"/>");
+        }
+        svg.append("</linearGradient>");
+        for (int i = 0; i < 10000; i++) {
+            svg.append("<linearGradient id=\"g").append(i).append("\" href=\"#s\"/>");
+        }
+        svg.append("<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>");
+        long start = System.nanoTime();
+        String content = draw(svg.toString());
+        long elapsed = (System.nanoTime() - start)/1000000;
+        assertTrue(elapsed < 5000, elapsed + " ms");
+        assertTrue(content.startsWith("1 0 0 rg\n"), content);
+    }
 }

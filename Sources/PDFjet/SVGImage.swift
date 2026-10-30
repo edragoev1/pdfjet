@@ -149,42 +149,67 @@ public class SVGImage : Drawable {
     // stops is none, and is left out.
     private func gradientColors() throws -> [[UInt8]: Int32] {
         var colors = [[UInt8]: Int32]()
+        var read = [ObjectIdentifier: Stops]()
         for (id, element) in ids {
             var gradient: PDFjetXMLNode? = element
             var i = 0
             // Up to ten gradients along the hrefs, which may go round in a circle.
             while i < 10, let node = gradient, SVGImage.isGradient(node) {
-                var red: Int64 = 0
-                var green: Int64 = 0
-                var blue: Int64 = 0
-                var count: Int64 = 0
-                for stop in node.getChildren() where stop.getLocalName() == "stop" {
-                    var state = SVGState()
-                    state.fill = Color.black    // stop-color is black unless given
-                    if let color = stop.getAttribute("stop-color") {
-                        try state.setProperty("fill", color)
-                    }
-                    for (name, value) in SVGRule.parseDeclarations(stop.getAttribute("style") ?? "")
-                            where name == "stop-color" {
-                        try state.setProperty("fill", value)
-                    }
-                    let c = (state.fill == Color.transparent) ? Color.black : state.fill
-                    red += Int64((c >> 16) & 0xFF)
-                    green += Int64((c >> 8) & 0xFF)
-                    blue += Int64(c & 0xFF)
-                    count += 1
+                var stops = read[ObjectIdentifier(node)]
+                if stops == nil {
+                    stops = try gradientStops(node)
+                    read[ObjectIdentifier(node)] = stops
                 }
-                if count > 0 {
-                    let half = count / 2
-                    colors[id] = Int32(truncatingIfNeeded: (((red + half) / count) << 16)
-                            | (((green + half) / count) << 8) | ((blue + half) / count))
+                if let color = stops!.color {
+                    colors[id] = color
                     break
                 }
-                gradient = SVGImage.href(node).flatMap { ids[Array($0.utf8)] }
+                gradient = stops!.next
                 i += 1
             }
         }
         return colors
+    }
+
+    // What a gradient itself says of its color: the mean of its stops, if it
+    // has any, and the gradient its href names.
+    private struct Stops {
+        var color: Int32?
+        var next: PDFjetXMLNode?
+    }
+
+    // Reads the gradient, once however many gradients name it: N gradients
+    // that name one of N stops were N x N stops read, 50 s for 3.4 MB (review
+    // of 30 October 2026).
+    private func gradientStops(_ node: PDFjetXMLNode) throws -> Stops {
+        var red: Int64 = 0
+        var green: Int64 = 0
+        var blue: Int64 = 0
+        var count: Int64 = 0
+        for stop in node.getChildren() where stop.getLocalName() == "stop" {
+            var state = SVGState()
+            state.fill = Color.black    // stop-color is black unless given
+            if let color = stop.getAttribute("stop-color") {
+                try state.setProperty("fill", color)
+            }
+            for (name, value) in SVGRule.parseDeclarations(stop.getAttribute("style") ?? "")
+                    where name == "stop-color" {
+                try state.setProperty("fill", value)
+            }
+            let c = (state.fill == Color.transparent) ? Color.black : state.fill
+            red += Int64((c >> 16) & 0xFF)
+            green += Int64((c >> 8) & 0xFF)
+            blue += Int64(c & 0xFF)
+            count += 1
+        }
+        var stops = Stops()
+        if count > 0 {
+            let half = count / 2
+            stops.color = Int32(truncatingIfNeeded: (((red + half) / count) << 16)
+                    | (((green + half) / count) << 8) | ((blue + half) / count))
+        }
+        stops.next = SVGImage.href(node).flatMap { ids[Array($0.utf8)] }
+        return stops
     }
 
     private static func isGradient(_ node: PDFjetXMLNode) -> Bool {

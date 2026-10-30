@@ -155,47 +155,78 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 // is left out.
 func (r *svgReader) gradientColors() (map[string]int32, error) {
 	colors := make(map[string]int32)
+	read := make(map[*xmlparser.XMLNode]*svgStops)
 	for id, gradient := range r.ids {
 		// Up to ten gradients along the hrefs, which may go round in a circle.
 		for i := 0; i < 10 && gradient != nil && isSVGGradient(gradient); i++ {
-			var red, green, blue int64
-			count := int64(0)
-			for _, stop := range gradient.Children() {
-				if stop.LocalName() != "stop" {
-					continue
+			stops := read[gradient]
+			if stops == nil {
+				var err error
+				stops, err = r.gradientStops(gradient)
+				if err != nil {
+					return nil, err
 				}
-				state := newSVGState()
-				state.fill = color.Black // stop-color is black unless given
-				if c, ok := stop.Attribute("stop-color"); ok {
-					if err := state.setProperty(r.colorMap, "fill", c); err != nil {
-						return nil, err
-					}
-				}
-				style, _ := stop.Attribute("style")
-				for _, declaration := range parseSVGDeclarations(style) {
-					if declaration[0] == "stop-color" {
-						if err := state.setProperty(r.colorMap, "fill", declaration[1]); err != nil {
-							return nil, err
-						}
-					}
-				}
-				c := int64(state.fill)
-				if state.fill == color.Transparent {
-					c = int64(color.Black)
-				}
-				red += (c >> 16) & 0xFF
-				green += (c >> 8) & 0xFF
-				blue += c & 0xFF
-				count++
+				read[gradient] = stops
 			}
-			if count > 0 {
-				colors[id] = int32((red+count/2)/count<<16 | (green+count/2)/count<<8 | (blue+count/2)/count)
+			if stops.found {
+				colors[id] = stops.color
 				break
 			}
-			gradient = r.ids[svgHref(gradient)]
+			gradient = stops.next
 		}
 	}
 	return colors, nil
+}
+
+// svgStops is what a gradient itself says of its color: the mean of its stops,
+// if it has any, and the gradient its href names.
+type svgStops struct {
+	color int32
+	found bool
+	next  *xmlparser.XMLNode
+}
+
+// gradientStops reads the gradient, once however many gradients name it: N
+// gradients that name one of N stops were N x N stops read, 50 s for 3.4 MB
+// (review of 30 October 2026).
+func (r *svgReader) gradientStops(gradient *xmlparser.XMLNode) (*svgStops, error) {
+	var red, green, blue int64
+	count := int64(0)
+	for _, stop := range gradient.Children() {
+		if stop.LocalName() != "stop" {
+			continue
+		}
+		state := newSVGState()
+		state.fill = color.Black // stop-color is black unless given
+		if c, ok := stop.Attribute("stop-color"); ok {
+			if err := state.setProperty(r.colorMap, "fill", c); err != nil {
+				return nil, err
+			}
+		}
+		style, _ := stop.Attribute("style")
+		for _, declaration := range parseSVGDeclarations(style) {
+			if declaration[0] == "stop-color" {
+				if err := state.setProperty(r.colorMap, "fill", declaration[1]); err != nil {
+					return nil, err
+				}
+			}
+		}
+		c := int64(state.fill)
+		if state.fill == color.Transparent {
+			c = int64(color.Black)
+		}
+		red += (c >> 16) & 0xFF
+		green += (c >> 8) & 0xFF
+		blue += c & 0xFF
+		count++
+	}
+	stops := new(svgStops)
+	if count > 0 {
+		stops.color = int32((red+count/2)/count<<16 | (green+count/2)/count<<8 | (blue+count/2)/count)
+		stops.found = true
+	}
+	stops.next = r.ids[svgHref(gradient)]
+	return stops, nil
 }
 
 // isSVGGradient reports whether the element is a gradient.

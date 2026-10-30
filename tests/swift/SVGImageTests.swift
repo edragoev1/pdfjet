@@ -850,4 +850,19 @@ import Testing
         finished.wait()
         #expect(failures.isEmpty, "\(failures)")
     }
+
+    @Test func manyGradientsOfOneGradientOfManyStopsAreReadOnce() throws {
+        var svg = "<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">"
+        svg += String(repeating: "<stop stop-color=\"red\"/>", count: 10000)
+        svg += "</linearGradient>"
+        for i in 0..<10000 {
+            svg += "<linearGradient id=\"g\(i)\" href=\"#s\"/>"
+        }
+        svg += "<rect width=\"5\" height=\"5\" fill=\"url(#g7)\"/></svg>"
+        let start = Date()
+        let content = try draw(svg)
+        let elapsed = Date().timeIntervalSince(start)
+        #expect(elapsed < 20.0, "\(elapsed)")
+        #expect(content.hasPrefix("1 0 0 rg\n"), "\(content.prefix(80))")
+    }
 }

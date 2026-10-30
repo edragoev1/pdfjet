@@ -140,44 +140,70 @@ public class SVGImage implements Drawable {
     // is left out.
     private Map<String, Integer> gradientColors(ColorMap colorMap) {
         Map<String, Integer> colors = new HashMap<String, Integer>();
+        Map<XMLNode, Stops> read = new HashMap<XMLNode, Stops>();
         for (Map.Entry<String, XMLNode> entry : ids.entrySet()) {
             XMLNode gradient = entry.getValue();
             // Up to ten gradients along the hrefs, which may go round in a circle.
             for (int i = 0; i < 10 && gradient != null && isGradient(gradient); i++) {
-                long r = 0;
-                long g = 0;
-                long b = 0;
-                int count = 0;
-                for (XMLNode stop : gradient.getChildren()) {
-                    if (!stop.getLocalName().equals("stop")) {
-                        continue;
-                    }
-                    SVGState state = new SVGState();
-                    state.fill = Color.black;   // stop-color is black unless given
-                    String color = stop.getAttribute("stop-color");
-                    if (color != null) {
-                        state.setProperty(colorMap, "fill", color);
-                    }
-                    for (String[] declaration : SVGState.parseDeclarations(attribute(stop, "style"))) {
-                        if (declaration[0].equals("stop-color")) {
-                            state.setProperty(colorMap, "fill", declaration[1]);
-                        }
-                    }
-                    int c = (state.fill == Color.transparent) ? Color.black : state.fill;
-                    r += (c >> 16) & 0xFF;
-                    g += (c >> 8) & 0xFF;
-                    b += c & 0xFF;
-                    count++;
+                Stops stops = read.get(gradient);
+                if (stops == null) {
+                    stops = gradientStops(gradient, colorMap);
+                    read.put(gradient, stops);
                 }
-                if (count > 0) {
-                    colors.put(entry.getKey(), (int) (
-                            (r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count));
+                if (stops.found) {
+                    colors.put(entry.getKey(), stops.color);
                     break;
                 }
-                gradient = ids.get(href(gradient));
+                gradient = stops.next;
             }
         }
         return colors;
+    }
+
+    // What a gradient itself says of its color: the mean of its stops, if it
+    // has any, and the gradient its href names.
+    private static class Stops {
+        int color = 0;
+        boolean found = false;
+        XMLNode next = null;
+    }
+
+    // Reads the gradient, once however many gradients name it: N gradients
+    // that name one of N stops were N x N stops read, 50 s for 3.4 MB (review
+    // of 30 October 2026).
+    private Stops gradientStops(XMLNode gradient, ColorMap colorMap) {
+        long r = 0;
+        long g = 0;
+        long b = 0;
+        int count = 0;
+        for (XMLNode stop : gradient.getChildren()) {
+            if (!stop.getLocalName().equals("stop")) {
+                continue;
+            }
+            SVGState state = new SVGState();
+            state.fill = Color.black;   // stop-color is black unless given
+            String color = stop.getAttribute("stop-color");
+            if (color != null) {
+                state.setProperty(colorMap, "fill", color);
+            }
+            for (String[] declaration : SVGState.parseDeclarations(attribute(stop, "style"))) {
+                if (declaration[0].equals("stop-color")) {
+                    state.setProperty(colorMap, "fill", declaration[1]);
+                }
+            }
+            int c = (state.fill == Color.transparent) ? Color.black : state.fill;
+            r += (c >> 16) & 0xFF;
+            g += (c >> 8) & 0xFF;
+            b += c & 0xFF;
+            count++;
+        }
+        Stops stops = new Stops();
+        if (count > 0) {
+            stops.color = (int) ((r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count);
+            stops.found = true;
+        }
+        stops.next = ids.get(href(gradient));
+        return stops;
     }
 
     private static boolean isGradient(XMLNode node) {

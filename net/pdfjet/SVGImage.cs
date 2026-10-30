@@ -139,44 +139,70 @@ public class SVGImage : IDrawable {
     // is left out.
     private Dictionary<String, int> GradientColors() {
         Dictionary<String, int> colors = new Dictionary<String, int>();
+        Dictionary<XMLNode, Stops> read = new Dictionary<XMLNode, Stops>();
         foreach (KeyValuePair<String, XMLNode> entry in ids) {
             XMLNode gradient = entry.Value;
             // Up to ten gradients along the hrefs, which may go round in a circle.
             for (int i = 0; i < 10 && gradient != null && IsGradient(gradient); i++) {
-                long r = 0;
-                long g = 0;
-                long b = 0;
-                int count = 0;
-                foreach (XMLNode stop in gradient.GetChildren()) {
-                    if (!stop.GetLocalName().Equals("stop")) {
-                        continue;
-                    }
-                    SVGState state = new SVGState();
-                    state.fill = Color.black;   // stop-color is black unless given
-                    String color = stop.GetAttribute("stop-color");
-                    if (color != null) {
-                        state.SetProperty("fill", color);
-                    }
-                    foreach (String[] declaration in SVGRule.ParseDeclarations(Attribute(stop, "style"))) {
-                        if (declaration[0].Equals("stop-color")) {
-                            state.SetProperty("fill", declaration[1]);
-                        }
-                    }
-                    int c = (state.fill == Color.transparent) ? Color.black : state.fill;
-                    r += (c >> 16) & 0xFF;
-                    g += (c >> 8) & 0xFF;
-                    b += c & 0xFF;
-                    count++;
+                Stops stops;
+                if (!read.TryGetValue(gradient, out stops)) {
+                    stops = GradientStops(gradient);
+                    read[gradient] = stops;
                 }
-                if (count > 0) {
-                    colors[entry.Key] = (int) (
-                            (r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count);
+                if (stops.found) {
+                    colors[entry.Key] = stops.color;
                     break;
                 }
-                gradient = ElementOf(Href(gradient));
+                gradient = stops.next;
             }
         }
         return colors;
+    }
+
+    // What a gradient itself says of its color: the mean of its stops, if it
+    // has any, and the gradient its href names.
+    private class Stops {
+        internal int color = 0;
+        internal bool found = false;
+        internal XMLNode next = null;
+    }
+
+    // Reads the gradient, once however many gradients name it: N gradients
+    // that name one of N stops were N x N stops read, 50 s for 3.4 MB (review
+    // of 30 October 2026).
+    private Stops GradientStops(XMLNode gradient) {
+        long r = 0;
+        long g = 0;
+        long b = 0;
+        int count = 0;
+        foreach (XMLNode stop in gradient.GetChildren()) {
+            if (!stop.GetLocalName().Equals("stop")) {
+                continue;
+            }
+            SVGState state = new SVGState();
+            state.fill = Color.black;   // stop-color is black unless given
+            String color = stop.GetAttribute("stop-color");
+            if (color != null) {
+                state.SetProperty("fill", color);
+            }
+            foreach (String[] declaration in SVGRule.ParseDeclarations(Attribute(stop, "style"))) {
+                if (declaration[0].Equals("stop-color")) {
+                    state.SetProperty("fill", declaration[1]);
+                }
+            }
+            int c = (state.fill == Color.transparent) ? Color.black : state.fill;
+            r += (c >> 16) & 0xFF;
+            g += (c >> 8) & 0xFF;
+            b += c & 0xFF;
+            count++;
+        }
+        Stops stops = new Stops();
+        if (count > 0) {
+            stops.color = (int) ((r + count/2)/count << 16 | (g + count/2)/count << 8 | (b + count/2)/count);
+            stops.found = true;
+        }
+        stops.next = ElementOf(Href(gradient));
+        return stops;
     }
 
     private static bool IsGradient(XMLNode node) {
