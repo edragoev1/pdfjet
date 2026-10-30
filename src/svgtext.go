@@ -14,6 +14,7 @@ package pdfjet
 import (
 	"math"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 )
@@ -50,11 +51,36 @@ type svgTextRun struct {
 	strokeFirst bool
 	miterLimit  float32
 	lineJoin    joinstyle.JoinStyle
+	invisible   bool // It keeps its place in the text, and a clip path leaves it out
 
 	// Where the run is placed: its start, on its baseline, and its width.
 	px, py float32
 	width  float32
 	font   *Font
+}
+
+// clips reports whether the run has glyphs for a clip path to clip with.
+func (run *svgTextRun) clips() bool {
+	return run.text != "" && run.fontSize > 0.0 && !run.invisible
+}
+
+// clips reports whether the text has glyphs for a clip path to clip with.
+func (text *svgText) clips() bool {
+	for _, run := range text.runs {
+		if run.clips() {
+			return true
+		}
+	}
+	return false
+}
+
+// operations returns what a clip path writes for the text, as operations.
+func (text *svgText) operations() int {
+	count := 0
+	for _, run := range text.runs {
+		count += 1 + utf8.RuneCountInString(run.text)
+	}
+	return count
 }
 
 // collapseSpaces collapses the white space of the runs as a browser does: a

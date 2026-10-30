@@ -892,6 +892,11 @@ import Testing
                         + String(repeating: "<tspan>a</tspan>", count: 1000) + "</text></g></svg>",
                 "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + String(repeating: "a", count: 10000)
                         + "</text></defs>" + String(repeating: "<use href=\"#p\"/>", count: 1000) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><text>" + String(repeating: "a", count: 1000)
+                        + "</text></clipPath><g clip-path=\"url(#c)\">"
+                        + String(repeating: "<rect width=\"1\" height=\"1\"/>", count: 5000) + "</g></svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><text>a" + String(repeating: "<tspan/>", count: 100000)
+                        + "</text></clipPath>" + String(repeating: "<g clip-path=\"url(#c)\"/>", count: 100) + "</svg>",
                 nested("<svg width=\"1\" height=\"1\">", "</svg>",
                         String(repeating: "<rect width=\"1\" height=\"1\"/>", count: 20000), 45)] {
             #expect(throws: (any Error).self) {
@@ -932,6 +937,51 @@ import Testing
             let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
             #expect(content.contains("h\nW\nn\n"), "\(content)")
         }
+    }
+
+    @Test func aTextInAClipPathClips() throws {
+        var content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>")
+        #expect(content.hasPrefix("q\nBT\n7 Tr\n/"), "\(content)")
+        #expect(content.contains(" 12 Tf\n1 0 0 1 10 772 Tm\n<"), "\(content)")
+        #expect(content.contains("> Tj\nET\n0 0 0 rg\n0 792 m\n"), "\(content)")
+        #expect(content.hasSuffix("f\nQ\n"), "\(content)")
+        #expect(!content.contains("W\n"), "\(content)")
+        // A text drawn in it is drawn in the mode of its own.
+        content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\">Hi</text></clipPath><text y=\"20\" clip-path=\"url(#c)\">Hi</text></svg>")
+        #expect(content.contains("0 Tr\n1 0 0 1 0 772 Tm\n"), "\(content)")
+        // All the texts are in one text object, each with its transform.
+        content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\" transform=\"translate(5,0)\"><text x=\"1\" y=\"20\">a<tspan x=\"1\" y=\"40\" font-weight=\"bold\">b</tspan></text><text x=\"1\" y=\"60\" transform=\"scale(2)\">c</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>")
+        #expect(content.components(separatedBy: "BT\n").count == 2, "\(content)")
+        #expect(content.components(separatedBy: "> Tj\n").count == 4, "\(content)")
+        #expect(content.components(separatedBy: " Tf\n").count == 4, "\(content)")
+        #expect(content.contains("1 0 0 1 6 772 Tm\n"), "\(content)")
+        #expect(content.contains("1 0 0 1 6 752 Tm\n"), "\(content)")
+        #expect(content.contains("2 0 0 2 7 672 Tm\n"), "\(content)")
+        // A use names a text.
+        content = try draw("<svg width=\"100\" height=\"100\"><defs><text id=\"t\" y=\"20\">Hi</text></defs><clipPath id=\"c\"><use href=\"#t\" x=\"5\"/></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>")
+        #expect(content.contains("1 0 0 1 5 772 Tm\n"), "\(content)")
+        // Shapes and texts: a PDF cannot have them in one path, and the shapes stay.
+        content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\">Hi</text><rect width=\"5\" height=\"5\"/></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>")
+        #expect(!content.contains(" Tr\n"), "\(content)")
+        #expect(content.contains("h\nW\nn\n"), "\(content)")
+        // With no glyph it clips all away; out of the range of a PDF nothing is drawn.
+        for text in ["<text y=\"20\"> </text>", "<text y=\"20\" font-size=\"0\">Hi</text>", "<text y=\"20\" display=\"none\">Hi</text>", "<text y=\"20\" visibility=\"hidden\">Hi</text>", "<text y=\"20\"><tspan visibility=\"hidden\">Hi</tspan></text>", "<text y=\"20\" transform=\"scale(0)\">Hi</text>", "<text y=\"20\" transform=\"scale(1e30)\">Hi</text>"] {
+            #expect(try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\">" + text + "</clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>") == "", "\(text)")
+        }
+        // In the fill of no color, too: a clip path takes the shape of the glyphs.
+        content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\" fill=\"none\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>")
+        #expect(content.contains("7 Tr\n"), "\(content)")
+        // In the space of the image, and of its scale.
+        let svgImage = try image("<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><clipPath id=\"c\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>")
+        var page = TestSupport.newPage()
+        _ = svgImage.setLocation(0, 0)
+        _ = svgImage.drawOn(page)
+        #expect(TestSupport.content(page).contains(" 12 Tf\n2 0 0 2 20 752 Tm\n"))
+        svgImage.scaleBy(0.5)
+        _ = svgImage.setLocation(10, 0)
+        page = TestSupport.newPage()
+        _ = svgImage.drawOn(page)
+        #expect(TestSupport.content(page).contains(" 12 Tf\n1 0 0 1 20 772 Tm\n"))
     }
 
     @Test func theShapesOfAClipPathGoTheSameWayRound() throws {

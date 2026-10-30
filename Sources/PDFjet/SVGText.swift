@@ -38,12 +38,28 @@ class SVGText {
         var strokeFirst = false
         var lineJoin = JoinStyle.MITER
         var miterLimit: Float = 4.0
+        var invisible = false           // It keeps its place in the text, and a clip path leaves it out
 
         // Where the run is placed: its start, on its baseline, and its width.
         var px: Float = 0.0
         var py: Float = 0.0
         var width: Float = 0.0
         var font: Font?
+
+        // Returns true when the run has glyphs for a clip path to clip with.
+        func clips() -> Bool {
+            return !text.isEmpty && fontSize > 0.0 && !invisible
+        }
+    }
+
+    // Returns true when the text has glyphs for a clip path to clip with.
+    func clips() -> Bool {
+        return runs.contains { $0.clips() }
+    }
+
+    // Returns what a clip path writes for the text, as operations.
+    func operations() -> Int {
+        return runs.reduce(0) { $0 + 1 + $1.text.unicodeScalars.count }
     }
 
     // Collapses the white space of the runs as a browser does: a newline or a

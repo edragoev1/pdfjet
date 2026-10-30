@@ -945,6 +945,10 @@ public class SVGImageTest {
                 clipped + "<g clip-path=\"url(#c)\"><text>" + Repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
                 "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + Repeat("a", 10000) + "</text></defs>"
                         + Repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><text>" + Repeat("a", 1000)
+                        + "</text></clipPath><g clip-path=\"url(#c)\">" + Repeat("<rect width=\"1\" height=\"1\"/>", 5000) + "</g></svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><text>a" + Repeat("<tspan/>", 100000)
+                        + "</text></clipPath>" + Repeat("<g clip-path=\"url(#c)\"/>", 100) + "</svg>",
                 Nested("<svg width=\"1\" height=\"1\">", "</svg>", Repeat("<rect width=\"1\" height=\"1\"/>", 20000), 45)}) {
             ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
             Assert.Contains("path operations", e.Message);
@@ -981,6 +985,49 @@ public class SVGImageTest {
             string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
             Assert.Contains("h\nW\nn\n", content);
         }
+    }
+
+    [Fact]
+    public void ATextInAClipPathClips() {
+        string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        Assert.StartsWith("q\nBT\n7 Tr\n/", content);
+        Assert.Contains(" 12 Tf\n1 0 0 1 10 772 Tm\n<", content);
+        Assert.Contains("> Tj\nET\n0 0 0 rg\n0 792 m\n", content);
+        Assert.EndsWith("f\nQ\n", content);
+        Assert.DoesNotContain("W\n", content);
+        // A text drawn in it is drawn in the mode of its own.
+        Assert.Contains("0 Tr\n1 0 0 1 0 772 Tm\n", Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\">Hi</text></clipPath><text y=\"20\" clip-path=\"url(#c)\">Hi</text></svg>"));
+        // All the texts are in one text object, each with its transform.
+        content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\" transform=\"translate(5,0)\"><text x=\"1\" y=\"20\">a<tspan x=\"1\" y=\"40\" font-weight=\"bold\">b</tspan></text><text x=\"1\" y=\"60\" transform=\"scale(2)\">c</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        Assert.Equal(2, content.Split(new[] {"BT\n"}, StringSplitOptions.None).Length);
+        Assert.Equal(4, content.Split(new[] {"> Tj\n"}, StringSplitOptions.None).Length);
+        Assert.Equal(4, content.Split(new[] {" Tf\n"}, StringSplitOptions.None).Length);
+        Assert.Contains("1 0 0 1 6 772 Tm\n", content);
+        Assert.Contains("1 0 0 1 6 752 Tm\n", content);
+        Assert.Contains("2 0 0 2 7 672 Tm\n", content);
+        // A use names a text.
+        Assert.Contains("1 0 0 1 5 772 Tm\n", Draw("<svg width=\"100\" height=\"100\"><defs><text id=\"t\" y=\"20\">Hi</text></defs><clipPath id=\"c\"><use href=\"#t\" x=\"5\"/></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>"));
+        // Shapes and texts: a PDF cannot have them in one path, and the shapes stay.
+        content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\">Hi</text><rect width=\"5\" height=\"5\"/></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        Assert.DoesNotContain(" Tr\n", content);
+        Assert.Contains("h\nW\nn\n", content);
+        // With no glyph it clips all away; out of the range of a PDF nothing is drawn.
+        foreach (string text in new[] {"<text y=\"20\"> </text>", "<text y=\"20\" font-size=\"0\">Hi</text>", "<text y=\"20\" display=\"none\">Hi</text>", "<text y=\"20\" visibility=\"hidden\">Hi</text>", "<text y=\"20\"><tspan visibility=\"hidden\">Hi</tspan></text>", "<text y=\"20\" transform=\"scale(0)\">Hi</text>", "<text y=\"20\" transform=\"scale(1e30)\">Hi</text>"}) {
+            Assert.Equal("", Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\">" + text + "</clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>"));
+        }
+        // In the fill of no color, too: a clip path takes the shape of the glyphs.
+        Assert.Contains("7 Tr\n", Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\" fill=\"none\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>"));
+        // In the space of the image, and of its scale.
+        SVGImage image = Parse("<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><clipPath id=\"c\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        image.SetLocation(0f, 0f);
+        image.DrawOn(page);
+        Assert.Contains(" 12 Tf\n2 0 0 2 20 752 Tm\n", TestSupport.Content(page));
+        image.ScaleBy(0.5f);
+        image.SetLocation(10f, 0f);
+        page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        image.DrawOn(page);
+        Assert.Contains(" 12 Tf\n1 0 0 1 20 772 Tm\n", TestSupport.Content(page));
     }
 
     [Fact]

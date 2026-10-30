@@ -85,6 +85,7 @@ type svgReader struct {
 	useSize  [2]string // The width and the height of the use element of the element drawn next
 	counted  int64     // The operations maxSVGOperations limits
 	switches map[*xmlparser.XMLNode]*svgSwitch
+	clipping bool // A text of a clip path is read, for each element it clips
 }
 
 // NewSVGImageFromFile reads and parses an svgParser image from a file.
@@ -126,7 +127,12 @@ var svgTemplates = map[string]bool{
 // preserveAspectRatio of the <svg> element give the size of the image, and
 // what is drawn outside it is cut off, as a browser does, and so is what a
 // <symbol> or a nested <svg> draws outside its viewport, unless its overflow is
-// visible or auto. It returns an error
+// visible or auto. A <clipPath> clips with its shapes or, when it has none, with
+// its <text> elements, in those fonts, by the text rendering mode 7 of a PDF.
+// A text cannot be in one path with other shapes, as a text object holds no
+// path and clip paths do not add up, so the texts of a <clipPath> that has
+// shapes too are left out, and the glyphs of a text clip by the nonzero rule,
+// whatever its clip-rule. It returns an error
 // for a file that nests what it draws more than 48 deep, or that draws more
 // than 4,000,000 path operations again, by use elements, markers and clip paths.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
@@ -329,7 +335,7 @@ func (r *svgReader) countOperations(count int) error {
 func svgClipOperations(clips []*svgPath) int {
 	count := 0
 	for _, clip := range clips {
-		count += len(clip.operations)
+		count += len(clip.operations) + clip.glyphs
 	}
 	return count
 }
@@ -850,9 +856,11 @@ func svgTransformAll(m [6]float64, operations []*svgPathOp) {
 // of the element. A use in it names a shape, moved by its x and y. A clip path
 // of one shape keeps the clip-rule of the shape; several are one path whose
 // nonzero rule draws their union, each turned the same way round, as opposite
-// ways would cancel out where they overlap. A clip path that is not there, or
-// one in objectBoundingBox units, which PDFjet does not draw, is left out; one
-// with no shape in it hides the element, as SVG clips all of it away.
+// ways would cancel out where they overlap. A clip path with no shape clips
+// with its texts, which are read again, as their matrices are, for each element
+// it clips. A clip path that is not there, or one in objectBoundingBox units,
+// which PDFjet does not draw, is left out; one with neither a shape nor a glyph
+// hides the element, as SVG clips all of it away.
 func (r *svgReader) clip(state *svgState) error {
 	clipPath := r.ids[state.clipPath]
 	if clipPath == nil || clipPath.LocalName() != "clipPath" ||
@@ -870,12 +878,15 @@ func (r *svgReader) clip(state *svgState) error {
 	clip := new(svgPath)
 	clip.operations = make([]*svgPathOp, 0)
 	shapes := make([][]*svgPathOp, 0)
+	texts := make([]*svgPath, 0)
+	read := 0 // What is read of the texts
 	for _, child := range clipPath.Children() {
 		attributes, order := svgAttributes(child)
 		shape, err := elementState(base, r.colorMap, r.rules, attributes, order)
 		if err != nil {
 			return err
 		}
+		node := child
 		name := child.LocalName()
 		if name == "use" {
 			target := r.ids[svgHref(child)]
@@ -889,9 +900,26 @@ func (r *svgReader) clip(state *svgState) error {
 			if err != nil {
 				return err
 			}
+			node = target
 			name = target.LocalName()
 		}
 		if shape.hidden || shape.invisible {
+			continue
+		}
+		if name == "text" {
+			r.clipping = true
+			text, err := r.readText(node, shape, attributes)
+			r.clipping = false
+			if err != nil {
+				return err
+			}
+			read += text.operations()
+			m := shape.matrix
+			if text.clips() && float64(m[0]*m[3])-float64(m[1]*m[2]) != 0.0 {
+				part := new(svgPath)
+				part.text = text
+				texts = append(texts, part)
+			}
 			continue
 		}
 		operations, err := shapeOperations(name, attributes)
@@ -914,10 +942,15 @@ func (r *svgReader) clip(state *svgState) error {
 		}
 		clip.operations = append(clip.operations, operations...)
 	}
-	if err := r.countOperations(len(clipPath.Children()) + len(clip.operations)); err != nil {
+	if err := r.countOperations(len(clipPath.Children()) + len(clip.operations) + read); err != nil {
 		return err
 	}
-	if len(clip.operations) == 0 {
+	if len(shapes) == 0 {
+		clip.parts = texts
+		clip.glyphs = read
+		r.image.clipShapes = append(r.image.clipShapes, texts...)
+	}
+	if len(clip.operations) == 0 && len(clip.parts) == 0 {
 		state.hidden = true
 		return nil
 	}
@@ -1296,13 +1329,10 @@ func svgMarkerSize(value string) float64 {
 // addText adds a text element, with its tspan elements, as the runs of its
 // characters.
 func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes map[string]string) error {
-	text := new(svgText)
-	text.matrix = state.matrix
-	pending := [4]float64{math.NaN(), math.NaN(), 0, 0}
-	if err := r.addRuns(text, node, state, attributes, &pending, len(r.stack)); err != nil {
+	text, err := r.readText(node, state, attributes)
+	if err != nil {
 		return err
 	}
-	text.collapseSpaces()
 	empty := true
 	count := 0
 	for _, run := range text.runs {
@@ -1330,6 +1360,18 @@ func (r *svgReader) addText(node *xmlparser.XMLNode, state svgState, attributes 
 	return nil
 }
 
+// readText returns the text of a text element, as its runs.
+func (r *svgReader) readText(node *xmlparser.XMLNode, state svgState, attributes map[string]string) (*svgText, error) {
+	text := new(svgText)
+	text.matrix = state.matrix
+	pending := [4]float64{math.NaN(), math.NaN(), 0, 0}
+	if err := r.addRuns(text, node, state, attributes, &pending, len(r.stack)); err != nil {
+		return nil, err
+	}
+	text.collapseSpaces()
+	return text, nil
+}
+
 // addRuns adds the runs of a text or a tspan element. Its x, y, dx and dy
 // apply to its first character, which may be in a tspan in it; they are kept
 // in pending until then. A tspan counts as a level of the depth of the elements.
@@ -1337,6 +1379,11 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 	attributes map[string]string, pending *[4]float64, depth int) error {
 	if depth > maxSVGDepth {
 		return errSVGDepth()
+	}
+	if r.clipping {
+		if err := r.countOperations(1); err != nil {
+			return err
+		}
 	}
 	x := svgTextLength(attributes["x"], state.fontSize)
 	y := svgTextLength(attributes["y"], state.fontSize)
@@ -1390,6 +1437,7 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				// It keeps its place in the text
 				run.fill = color.Transparent
 				run.stroke = color.Transparent
+				run.invisible = true
 			}
 			*pending = [4]float64{math.NaN(), math.NaN(), 0, 0}
 			text.runs = append(text.runs, run)
@@ -1849,6 +1897,10 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 // clip clips what is drawn next to the clip paths, each in turn.
 func (image *SVGImage) clip(clips []*svgPath, page *Page) {
 	for _, clip := range clips {
+		if len(clip.parts) > 0 {
+			image.clipToText(clip, page)
+			continue
+		}
 		for _, op := range clip.operations {
 			if op.cmd == 'M' {
 				page.MoveTo(op.x+image.x, op.y+image.y)
@@ -1868,9 +1920,37 @@ func (image *SVGImage) clip(clips []*svgPath, page *Page) {
 	}
 }
 
+// clipToText clips what is drawn next to the glyphs of the texts of the clip
+// path, their union, as they are in one text object.
+func (image *SVGImage) clipToText(clip *svgPath, page *Page) {
+	page.beginSVGClipText()
+	for _, part := range clip.parts {
+		for _, run := range part.text.runs {
+			if run.clips() {
+				page.addSVGClipText(run.font, run.fontSize, run.drawn(), image.textMatrix(part.text, run, page))
+			}
+		}
+	}
+	page.endText()
+}
+
+// textMatrix returns the text matrix that takes the glyphs of the run, whose y
+// goes up, to where the run is on the page.
+func (image *SVGImage) textMatrix(text *svgText, run *svgTextRun, page *Page) [6]float32 {
+	m := text.matrix
+	px := float64(run.px)
+	py := float64(run.py)
+	return [6]float32{
+		float32(m[0]),
+		float32(-m[1]),
+		float32(-m[2]),
+		float32(m[3]),
+		float32(float64(m[0]*px)+float64(m[2]*py)+m[4]) + image.x,
+		page.height - (float32(float64(m[1]*px)+float64(m[3]*py)+m[5]) + image.y)}
+}
+
 // drawText draws a text: each run filled and then stroked, or stroked first
-// when its paint-order says, with the text matrix that takes its glyphs, whose
-// y goes up, to where the run is on the page.
+// when its paint-order says.
 func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 	m := text.matrix
 	scale := math.Sqrt(math.Abs(float64(m[0]*m[3]) - float64(m[1]*m[2])))
@@ -1879,15 +1959,7 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 		if str == "" || !(run.fontSize > 0.0) {
 			continue
 		}
-		px := float64(run.px)
-		py := float64(run.py)
-		tm := [6]float32{
-			float32(m[0]),
-			float32(-m[1]),
-			float32(-m[2]),
-			float32(m[3]),
-			float32(float64(m[0]*px)+float64(m[2]*py)+m[4]) + image.x,
-			page.height - (float32(float64(m[1]*px)+float64(m[3]*py)+m[5]) + image.y)}
+		tm := image.textMatrix(text, run, page)
 		writable := image.clipsAreWritable(clips, page)
 		for _, value := range tm {
 			writable = writable && fastfloat.IsWritable(value)
@@ -2048,6 +2120,15 @@ func (image *SVGImage) clipsAreWritable(clips []*svgPath, page *Page) bool {
 		if !image.areWritable(clip.operations, page) {
 			return false
 		}
+		for _, part := range clip.parts {
+			for _, run := range part.text.runs {
+				for _, value := range image.textMatrix(part.text, run, page) {
+					if run.clips() && !fastfloat.IsWritable(value) {
+						return false
+					}
+				}
+			}
+		}
 	}
 	return true
 }
@@ -2079,12 +2160,14 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	}
 	page.AddBDC(structelem.Figure, image.language, image.actualText, image.altDescription)
 	paths := image.chosenPaths(page.pdf.language)
-	for _, path := range paths {
-		if path.text != nil {
-			for _, run := range path.text.runs {
-				run.font = image.fontOf(run, page.pdf)
+	for _, drawn := range [][]*svgPath{paths, image.clipShapes} {
+		for _, path := range drawn {
+			if path.text != nil {
+				for _, run := range path.text.runs {
+					run.font = image.fontOf(run, page.pdf)
+				}
+				path.text.place()
 			}
-			path.text.place()
 		}
 	}
 	// The miter limit, set once: a stroked map has as many paths as a PDF

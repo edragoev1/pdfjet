@@ -633,6 +633,12 @@ public class Page {
             append(mode)
             append(" Tr\n")
         }
+        showSVGText(font, text, tm)
+        append(Token.endText)
+    }
+
+    // Shows the string of an SVG image with the text matrix.
+    private func showSVGText(_ font: Font, _ text: String, _ tm: [Float]) {
         for i in 0..<6 {
             append(tm[i])
             append(Token.space)
@@ -647,6 +653,27 @@ public class Page {
             drawUnicodeString(font, text)
             append("> Tj\n")
         }
+    }
+
+    // Begins a text object whose glyphs clip what is drawn after it, by the
+    // rendering mode 7 of ISO 32000-1, 9.3.6: at its ET they are one path,
+    // filled by the nonzero rule, which the clip path is intersected with. The
+    // graphics state saved around it brings the mode back.
+    final func beginSVGClipText() {
+        append(Token.beginText)
+        self.renderingModeSet = true
+        append("7 Tr\n")
+    }
+
+    // Adds the string of an SVG image to the text object begun by
+    // beginSVGClipText.
+    final func addSVGClipText(_ font: Font, _ fontSize: Float, _ text: String, _ tm: [Float]) {
+        setTextFont(font, fontSize)
+        showSVGText(font, text, tm)
+    }
+
+    // Ends that text object.
+    final func endSVGClipText() {
         append(Token.endText)
     }
 

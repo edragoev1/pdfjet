@@ -29,6 +29,8 @@ type svgPath struct {
 	clips       []*svgPath  // The clip paths it is drawn inside, all of them
 	choices     []svgChoice // The children of the switches it is in
 	text        *svgText    // A text, drawn instead of the operations
+	parts       []*svgPath  // Of a clip path that clips with texts: one for each, with its text
+	glyphs      int         // Of such a clip path: what is written for its texts, as operations
 }
 
 // isChosen reports whether it is in the children chosen of the switches it is in.

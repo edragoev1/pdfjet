@@ -25,6 +25,8 @@ class SVGPath {
     var clips: [SVGPath]? = nil             // The clip paths it is drawn inside, all of them
     var choices: [Choice]? = nil            // The children of the switches it is in
     var text: SVGText? = nil                // A text, drawn instead of the operations
+    var parts: [SVGPath]? = nil             // Of a clip path that clips with texts: one for each, with its text
+    var glyphs = 0                          // Of such a clip path: what is written for its texts, as operations
 
     // Returns true when it is in the children chosen of the switches it is in.
     func isChosen() -> Bool {

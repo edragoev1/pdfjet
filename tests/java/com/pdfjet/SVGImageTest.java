@@ -955,6 +955,10 @@ class SVGImageTest {
                 clipped + "<g clip-path=\"url(#c)\"><text>" + repeat("<tspan>a</tspan>", 1000) + "</text></g></svg>",
                 "<svg width=\"10\" height=\"10\"><defs><text id=\"p\">" + repeat("a", 10000) + "</text></defs>"
                         + repeat("<use href=\"#p\"/>", 1000) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><text>" + repeat("a", 1000)
+                        + "</text></clipPath><g clip-path=\"url(#c)\">" + repeat("<rect width=\"1\" height=\"1\"/>", 5000) + "</g></svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><text>a" + repeat("<tspan/>", 100000)
+                        + "</text></clipPath>" + repeat("<g clip-path=\"url(#c)\"/>", 100) + "</svg>",
                 nested("<svg width=\"1\" height=\"1\">", "</svg>", repeat("<rect width=\"1\" height=\"1\"/>", 20000), 45)}) {
             IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> read(svg));
             assertTrue(e.getMessage().contains("path operations"), e.getMessage());
@@ -991,6 +995,52 @@ class SVGImageTest {
             String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"50\" height=\"50\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
             assertTrue(content.contains("h\nW\nn\n"), content);
         }
+    }
+
+    @Test
+    void aTextInAClipPathClips() throws Exception {
+        String content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        assertTrue(content.startsWith("q\nBT\n7 Tr\n/"), content);
+        assertTrue(content.contains(" 12 Tf\n1 0 0 1 10 772 Tm\n<"), content);
+        assertTrue(content.contains("> Tj\nET\n0 0 0 rg\n0 792 m\n"), content);
+        assertTrue(content.endsWith("f\nQ\n"), content);
+        assertFalse(content.contains("W\n"), content);
+        // A text drawn in it is drawn in the mode of its own.
+        content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\">Hi</text></clipPath><text y=\"20\" clip-path=\"url(#c)\">Hi</text></svg>");
+        assertTrue(content.contains("0 Tr\n1 0 0 1 0 772 Tm\n"), content);
+        // All the texts are in one text object, each with its transform.
+        content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\" transform=\"translate(5,0)\"><text x=\"1\" y=\"20\">a<tspan x=\"1\" y=\"40\" font-weight=\"bold\">b</tspan></text><text x=\"1\" y=\"60\" transform=\"scale(2)\">c</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        assertEquals(2, content.split("BT\n", -1).length, content);
+        assertEquals(4, content.split("> Tj\n", -1).length, content);
+        assertEquals(4, content.split(" Tf\n", -1).length, content);
+        assertTrue(content.contains("1 0 0 1 6 772 Tm\n"), content);
+        assertTrue(content.contains("1 0 0 1 6 752 Tm\n"), content);
+        assertTrue(content.contains("2 0 0 2 7 672 Tm\n"), content);
+        // A use names a text.
+        content = draw("<svg width=\"100\" height=\"100\"><defs><text id=\"t\" y=\"20\">Hi</text></defs><clipPath id=\"c\"><use href=\"#t\" x=\"5\"/></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        assertTrue(content.contains("1 0 0 1 5 772 Tm\n"), content);
+        // Shapes and texts: a PDF cannot have them in one path, and the shapes stay.
+        content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\">Hi</text><rect width=\"5\" height=\"5\"/></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        assertFalse(content.contains(" Tr\n"), content);
+        assertTrue(content.contains("h\nW\nn\n"), content);
+        // With no glyph it clips all away; out of the range of a PDF nothing is drawn.
+        for (String text : new String[] {"<text y=\"20\"> </text>", "<text y=\"20\" font-size=\"0\">Hi</text>", "<text y=\"20\" display=\"none\">Hi</text>", "<text y=\"20\" visibility=\"hidden\">Hi</text>", "<text y=\"20\"><tspan visibility=\"hidden\">Hi</tspan></text>", "<text y=\"20\" transform=\"scale(0)\">Hi</text>", "<text y=\"20\" transform=\"scale(1e30)\">Hi</text>"}) {
+            assertEquals("", draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\">" + text + "</clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>"), text);
+        }
+        // In the fill of no color, too: a clip path takes the shape of the glyphs.
+        content = draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><text y=\"20\" fill=\"none\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>");
+        assertTrue(content.contains("7 Tr\n"), content);
+        // In the space of the image, and of its scale.
+        SVGImage image = new SVGImage(new ByteArrayInputStream("<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><clipPath id=\"c\"><text x=\"10\" y=\"20\" font-size=\"12\">Hi</text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>".getBytes(StandardCharsets.UTF_8)));
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        image.setLocation(0f, 0f);
+        image.drawOn(page);
+        assertTrue(TestSupport.content(page).contains(" 12 Tf\n2 0 0 2 20 752 Tm\n"), TestSupport.content(page));
+        image.scaleBy(0.5f);
+        image.setLocation(10f, 0f);
+        page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        image.drawOn(page);
+        assertTrue(TestSupport.content(page).contains(" 12 Tf\n1 0 0 1 20 772 Tm\n"), TestSupport.content(page));
     }
 
     @Test

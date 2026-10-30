@@ -43,12 +43,37 @@ internal class SVGText {
         internal bool strokeFirst;
         internal JoinStyle lineJoin;
         internal float miterLimit;
+        internal bool invisible;        // It keeps its place in the text, and a clip path leaves it out
 
         // Where the run is placed: its start, on its baseline, and its width.
         internal float px;
         internal float py;
         internal float width;
         internal Font font;
+
+        // Returns true when the run has glyphs for a clip path to clip with.
+        internal bool Clips() {
+            return text.Length > 0 && fontSize > 0f && !invisible;
+        }
+    }
+
+    // Returns true when the text has glyphs for a clip path to clip with.
+    internal bool Clips() {
+        foreach (Run run in runs) {
+            if (run.Clips()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Returns what a clip path writes for the text, as operations.
+    internal int Operations() {
+        int count = 0;
+        foreach (Run run in runs) {
+            count += 1 + run.text.Length;
+        }
+        return count;
     }
 
     // Collapses the white space of the runs as a browser does: a newline or a

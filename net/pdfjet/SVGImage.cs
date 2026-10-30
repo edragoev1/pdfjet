@@ -34,7 +34,12 @@ namespace PDFjet.NET {
 /// height, viewBox and preserveAspectRatio of the svg element give the size of
 /// the image, and what is drawn outside it is cut off, as a browser does, and so
 /// is what a symbol or a nested svg draws outside its viewport, unless its
-/// overflow is visible or auto. It
+/// overflow is visible or auto. A clipPath clips with its shapes or, when it has
+/// none, with its text elements, in those fonts, by the text rendering mode 7 of
+/// a PDF. A text cannot be in one path with other shapes, as a text object holds
+/// no path and clip paths do not add up, so the texts of a clipPath that has
+/// shapes too are left out, and the glyphs of a text clip by the nonzero rule,
+/// whatever its clip-rule. It
 /// throws for a file that nests what it draws more than 48 deep, or that draws
 /// more than 4,000,000 path operations again, by use elements, markers and clip
 /// paths.
@@ -69,6 +74,7 @@ public class SVGImage : IDrawable {
     private long reused = 0;
     private long counted = 0;
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
+    private bool clipping = false;      // A text of a clip path is read, for each element it clips
     private Dictionary<XMLNode, Switch> switchOf;
     private List<Switch> switches = new List<Switch>();
     // The elements drawn again, by use elements and as markers, at most: a
@@ -279,7 +285,7 @@ public class SVGImage : IDrawable {
         int count = 0;
         if (clips != null) {
             foreach (SVGPath clip in clips) {
-                count += clip.operations.Count;
+                count += clip.operations.Count + clip.glyphs;
             }
         }
         return count;
@@ -319,7 +325,7 @@ public class SVGImage : IDrawable {
             state.hidden = true;
         }
         if (state.clipPath != null && !state.hidden) {
-            Clip(state, rules);
+            Clip(state, rules, stack.Count);
         }
         String[] size = useSize;
         useSize = null;
@@ -521,6 +527,18 @@ public class SVGImage : IDrawable {
             inChild.Add(new Choice(choice, i));
             state.choices = inChild;
             Draw(choice.children[i], stack, rules, ref root, false);
+        }
+    }
+
+    // Places the texts of the paths, in the fonts of the PDF of the page.
+    private void PlaceTexts(List<SVGPath> paths, Page page) {
+        foreach (SVGPath path in paths) {
+            if (path.text != null) {
+                foreach (SVGText.Run run in path.text.runs) {
+                    run.font = FontOf(run, page.pdf);
+                }
+                path.text.Place();
+            }
         }
     }
 
@@ -818,10 +836,12 @@ public class SVGImage : IDrawable {
     // clip path of one shape keeps the clip-rule of the shape; several are
     // one path whose nonzero rule draws their union, each turned the same way
     // round, as opposite ways would cancel out where they overlap. A clip path
-    // that is not there, or one in objectBoundingBox units, which PDFjet does
-    // not draw, is left out; one with no shape in it hides the element, as SVG
-    // clips all of it away.
-    private void Clip(SVGState state, SVGStyleSheet rules) {
+    // with no shape clips with its texts, which are read again, as their
+    // matrices are, for each element it clips. A clip path that is not there,
+    // or one in objectBoundingBox units, which PDFjet does not draw, is left
+    // out; one with neither a shape nor a glyph hides the element, as SVG clips
+    // all of it away.
+    private void Clip(SVGState state, SVGStyleSheet rules, int depth) {
         XMLNode clipPath = ElementOf(state.clipPath);
         if (clipPath == null || !clipPath.GetLocalName().Equals("clipPath")
                 || SVGState.Trim(Attribute(clipPath, "clipPathUnits")).Equals("objectBoundingBox")) {
@@ -836,10 +856,13 @@ public class SVGImage : IDrawable {
         SVGPath clip = new SVGPath();
         clip.operations = new List<PathOp>();
         List<List<PathOp>> shapes = new List<List<PathOp>>();
+        List<SVGPath> texts = new List<SVGPath>();
+        int read = 0;   // What is read of the texts
         foreach (XMLNode child in clipPath.GetChildren()) {
             order = new List<String>();
             attributes = Attributes(child, order);
             SVGState shape = ElementState(parent, rules, attributes, order);
+            XMLNode node = child;
             String name = child.GetLocalName();
             if (name.Equals("use")) {
                 XMLNode target = ElementOf(Href(child));
@@ -851,9 +874,24 @@ public class SVGImage : IDrawable {
                 order = new List<String>();
                 attributes = Attributes(target, order);
                 shape = ElementState(shape, rules, attributes, order);
+                node = target;
                 name = target.GetLocalName();
             }
             if (shape.hidden || shape.invisible) {
+                continue;
+            }
+            if (name.Equals("text")) {
+                clipping = true;
+                SVGText text = ReadText(node, rules, shape, attributes, depth);
+                clipping = false;
+                read += text.Operations();
+                double[] m = shape.matrix;
+                if (text.Clips() && m[0]*m[3] - m[1]*m[2] != 0.0) {
+                    SVGPath part = new SVGPath();
+                    part.operations = new List<PathOp>();
+                    part.text = text;
+                    texts.Add(part);
+                }
                 continue;
             }
             List<PathOp> operations = ShapeOperations(name, attributes);
@@ -874,8 +912,13 @@ public class SVGImage : IDrawable {
             }
             clip.operations.AddRange(added);
         }
-        CountOperations(clipPath.GetChildren().Count + clip.operations.Count);
-        if (clip.operations.Count == 0) {
+        CountOperations(clipPath.GetChildren().Count + clip.operations.Count + read);
+        if (shapes.Count == 0 && texts.Count > 0) {
+            clip.parts = texts;
+            clip.glyphs = read;
+            clipShapes.AddRange(texts);
+        }
+        if (clip.operations.Count == 0 && clip.parts == null) {
             state.hidden = true;
             return;
         }
@@ -1240,10 +1283,7 @@ public class SVGImage : IDrawable {
     // characters.
     private void AddText(XMLNode node, SVGStyleSheet rules, SVGState state,
             Dictionary<String, String> attributes, int depth) {
-        SVGText text = new SVGText();
-        text.matrix = state.matrix;
-        AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0}, depth);
-        text.CollapseSpaces();
+        SVGText text = ReadText(node, rules, state, attributes, depth);
         bool empty = true;
         long count = 0;
         foreach (SVGText.Run run in text.runs) {
@@ -1268,6 +1308,16 @@ public class SVGImage : IDrawable {
         paths.Add(path);
     }
 
+    // Returns the text of a text element, as its runs.
+    private SVGText ReadText(XMLNode node, SVGStyleSheet rules, SVGState state,
+            Dictionary<String, String> attributes, int depth) {
+        SVGText text = new SVGText();
+        text.matrix = state.matrix;
+        AddRuns(text, node, rules, state, attributes, new double[] {double.NaN, double.NaN, 0.0, 0.0}, depth);
+        text.CollapseSpaces();
+        return text;
+    }
+
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
     // pending until then. A tspan counts as a level of the depth of the
@@ -1276,6 +1326,9 @@ public class SVGImage : IDrawable {
             SVGState state, Dictionary<String, String> attributes, double[] pending, int depth) {
         if (depth > MAX_DEPTH) {
             throw DepthError();
+        }
+        if (clipping) {
+            CountOperations(1);
         }
         double x = TextLength(Attribute(attributes, "x"), state.fontSize);
         double y = TextLength(Attribute(attributes, "y"), state.fontSize);
@@ -1322,6 +1375,7 @@ public class SVGImage : IDrawable {
                     // It keeps its place in the text
                     run.fill = Color.transparent;
                     run.stroke = Color.transparent;
+                    run.invisible = true;
                 }
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
@@ -1690,8 +1744,27 @@ public class SVGImage : IDrawable {
     private bool ClipsAreWritable(List<SVGPath> clips, Page page) {
         if (clips != null) {
             foreach (SVGPath clip in clips) {
-                if (!AreWritable(clip.operations, page)) {
+                if (!AreWritable(clip.operations, page) || !PartsAreWritable(clip, page)) {
                     return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Returns true when a PDF can hold the text matrices of the texts of the
+    // clip path.
+    private bool PartsAreWritable(SVGPath clip, Page page) {
+        if (clip.parts != null) {
+            foreach (SVGPath part in clip.parts) {
+                foreach (SVGText.Run run in part.text.runs) {
+                    if (run.Clips()) {
+                        foreach (float value in TextMatrix(part.text, run, page)) {
+                            if (!FastFloat.IsWritable(value)) {
+                                return false;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1823,6 +1896,10 @@ public class SVGImage : IDrawable {
             return;
         }
         foreach (SVGPath clip in path.clips) {
+            if (clip.parts != null) {
+                ClipToText(clip, page);
+                continue;
+            }
             foreach (PathOp op in clip.operations) {
                 if (op.cmd == 'M') {
                     page.MoveTo(op.x + x, op.y + y);
@@ -1842,9 +1919,35 @@ public class SVGImage : IDrawable {
         }
     }
 
+    // Clips what is drawn next to the glyphs of the texts of the clip path,
+    // their union, as they are in one text object.
+    private void ClipToText(SVGPath clip, Page page) {
+        page.BeginSVGClipText();
+        foreach (SVGPath part in clip.parts) {
+            foreach (SVGText.Run run in part.text.runs) {
+                if (run.Clips()) {
+                    page.AddSVGClipText(run.font, run.fontSize, SVGText.Text(run), TextMatrix(part.text, run, page));
+                }
+            }
+        }
+        page.EndSVGClipText();
+    }
+
+    // Returns the text matrix that takes the glyphs of the run, whose y goes
+    // up, to where the run is on the page.
+    private float[] TextMatrix(SVGText text, SVGText.Run run, Page page) {
+        double[] m = text.matrix;
+        return new float[] {
+            (float) m[0],
+            (float) -m[1],
+            (float) -m[2],
+            (float) m[3],
+            (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
+            page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
+    }
+
     // Draws a text: each run filled and then stroked, or stroked first when
-    // its paint-order says, with the text matrix that takes its glyphs, whose
-    // y goes up, to where the run is on the page.
+    // its paint-order says.
     private void DrawText(SVGText text, List<SVGPath> clips, Page page) {
         double[] m = text.matrix;
         double scale = Math.Sqrt(Math.Abs(m[0]*m[3] - m[1]*m[2]));
@@ -1853,13 +1956,7 @@ public class SVGImage : IDrawable {
             if (str.Length == 0 || !(run.fontSize > 0f)) {
                 continue;
             }
-            float[] tm = {
-                (float) m[0],
-                (float) -m[1],
-                (float) -m[2],
-                (float) m[3],
-                (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
-                page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
+            float[] tm = TextMatrix(text, run, page);
             bool writable = ClipsAreWritable(clips, page);
             foreach (float value in tm) {
                 writable = writable && FastFloat.IsWritable(value);
@@ -1986,14 +2083,8 @@ public class SVGImage : IDrawable {
         }
         page.AddBDC(StructElem.FIGURE, language, actualText, altDescription);
         List<SVGPath> paths = ChosenPaths(page.pdf.language);
-        foreach (SVGPath path in paths) {
-            if (path.text != null) {
-                foreach (SVGText.Run run in path.text.runs) {
-                    run.font = FontOf(run, page.pdf);
-                }
-                path.text.Place();
-            }
-        }
+        PlaceTexts(paths, page);
+        PlaceTexts(clipShapes, page);
         // The miter limit, set once: a stroked map has as many paths as a PDF
         // would hold, and the few with another limit set their own.
         bool miter = StrokesMiters(paths);

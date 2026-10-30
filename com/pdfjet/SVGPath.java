@@ -33,6 +33,8 @@ class SVGPath {
     List<SVGPath> clips = null;     // The clip paths it is drawn inside, all of them
     List<SVGImage.Choice> choices = null;   // The children of the switches it is in
     SVGText text = null;            // A text, drawn instead of the operations
+    List<SVGPath> parts = null;     // Of a clip path that clips with texts: one for each, with its text
+    int glyphs = 0;                 // Of such a clip path: what is written for its texts, as operations
 
     // Returns true when it is in the children chosen of the switches it is in.
     boolean isChosen() {

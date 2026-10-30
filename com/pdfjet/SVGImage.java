@@ -42,7 +42,12 @@ import java.util.Set;
  * height, viewBox and preserveAspectRatio of the svg element give the size of
  * the image, and what is drawn outside it is cut off, as a browser does, and so
  * is what a symbol or a nested svg draws outside its viewport, unless its
- * overflow is visible or auto. It
+ * overflow is visible or auto. A clipPath clips with its shapes or, when it has
+ * none, with its text elements, in those fonts, by the text rendering mode 7 of
+ * a PDF. A text cannot be in one path with other shapes, as a text object holds
+ * no path and clip paths do not add up, so the texts of a clipPath that has
+ * shapes too are left out, and the glyphs of a text clip by the nonzero rule,
+ * whatever its clip-rule. It
  * throws for a file that nests what it draws more than 48 deep, or that draws
  * more than 4,000,000 path operations again, by use elements, markers and clip
  * paths.
@@ -76,6 +81,7 @@ public class SVGImage implements Drawable {
     private long reused = 0;
     private long counted = 0;
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
+    private boolean clipping = false;   // A text of a clip path is read, for each element it clips
     private Map<XMLNode, Switch> switchOf;
     private List<Switch> switches = new ArrayList<Switch>();
     // The elements drawn again, by use elements and as markers, at most: a
@@ -282,7 +288,7 @@ public class SVGImage implements Drawable {
         int count = 0;
         if (clips != null) {
             for (SVGPath clip : clips) {
-                count += clip.operations.size();
+                count += clip.operations.size() + clip.glyphs;
             }
         }
         return count;
@@ -322,7 +328,7 @@ public class SVGImage implements Drawable {
             state.hidden = true;
         }
         if (state.clipPath != null && !state.hidden) {
-            clip(state, colorMap, rules);
+            clip(state, colorMap, rules, stack.size());
         }
         String[] size = useSize;
         useSize = null;
@@ -524,6 +530,18 @@ public class SVGImage implements Drawable {
             inChild.add(new Choice(choice, i));
             state.choices = inChild;
             draw(choice.children.get(i), colorMap, rules, stack, root, false);
+        }
+    }
+
+    // Places the texts of the paths, in the fonts of the PDF of the page.
+    private void placeTexts(List<SVGPath> paths, Page page) {
+        for (SVGPath path : paths) {
+            if (path.text != null) {
+                for (SVGText.Run run : path.text.runs) {
+                    run.font = fontOf(run, page.pdf);
+                }
+                path.text.place();
+            }
         }
     }
 
@@ -808,10 +826,12 @@ public class SVGImage implements Drawable {
     // clip path of one shape keeps the clip-rule of the shape; several are
     // one path whose nonzero rule draws their union, each turned the same way
     // round, as opposite ways would cancel out where they overlap. A clip path
-    // that is not there, or one in objectBoundingBox units, which PDFjet does
-    // not draw, is left out; one with no shape in it hides the element, as SVG
-    // clips all of it away.
-    private void clip(SVGState state, ColorMap colorMap, SVGState.StyleSheet rules) throws Exception {
+    // with no shape clips with its texts, which are read again, as their
+    // matrices are, for each element it clips. A clip path that is not there,
+    // or one in objectBoundingBox units, which PDFjet does not draw, is left
+    // out; one with neither a shape nor a glyph hides the element, as SVG clips
+    // all of it away.
+    private void clip(SVGState state, ColorMap colorMap, SVGState.StyleSheet rules, int depth) throws Exception {
         XMLNode clipPath = ids.get(state.clipPath);
         if (clipPath == null || !clipPath.getLocalName().equals("clipPath")
                 || SVGState.trim(attribute(clipPath, "clipPathUnits")).equals("objectBoundingBox")) {
@@ -826,10 +846,13 @@ public class SVGImage implements Drawable {
         SVGPath clip = new SVGPath();
         clip.operations = new ArrayList<PathOp>();
         List<List<PathOp>> shapes = new ArrayList<List<PathOp>>();
+        List<SVGPath> texts = new ArrayList<SVGPath>();
+        int read = 0;   // What is read of the texts
         for (XMLNode child : clipPath.getChildren()) {
             order = new ArrayList<String>();
             attributes = attributes(child, order);
             SVGState shape = elementState(base, colorMap, rules, attributes, order);
+            XMLNode node = child;
             String name = child.getLocalName();
             if (name.equals("use")) {
                 XMLNode target = ids.get(href(child));
@@ -841,9 +864,24 @@ public class SVGImage implements Drawable {
                 order = new ArrayList<String>();
                 attributes = attributes(target, order);
                 shape = elementState(shape, colorMap, rules, attributes, order);
+                node = target;
                 name = target.getLocalName();
             }
             if (shape.hidden || shape.invisible) {
+                continue;
+            }
+            if (name.equals("text")) {
+                clipping = true;
+                SVGText text = readText(node, colorMap, rules, shape, attributes, depth);
+                clipping = false;
+                read += text.operations();
+                double[] m = shape.matrix;
+                if (text.clips() && m[0]*m[3] - m[1]*m[2] != 0.0) {
+                    SVGPath part = new SVGPath();
+                    part.operations = new ArrayList<PathOp>();
+                    part.text = text;
+                    texts.add(part);
+                }
                 continue;
             }
             List<PathOp> operations = shapeOperations(name, attributes);
@@ -863,8 +901,13 @@ public class SVGImage implements Drawable {
             }
             clip.operations.addAll(operations);
         }
-        countOperations(clipPath.getChildren().size() + clip.operations.size());
-        if (clip.operations.isEmpty()) {
+        countOperations(clipPath.getChildren().size() + clip.operations.size() + read);
+        if (shapes.isEmpty() && !texts.isEmpty()) {
+            clip.parts = texts;
+            clip.glyphs = read;
+            clipShapes.addAll(texts);
+        }
+        if (clip.operations.isEmpty() && clip.parts == null) {
             state.hidden = true;
             return;
         }
@@ -1225,10 +1268,7 @@ public class SVGImage implements Drawable {
     // characters.
     private void addText(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
             SVGState state, Map<String, String> attributes, int depth) {
-        SVGText text = new SVGText();
-        text.matrix = state.matrix;
-        addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0}, depth);
-        text.collapseSpaces();
+        SVGText text = readText(node, colorMap, rules, state, attributes, depth);
         boolean empty = true;
         long count = 0;
         for (SVGText.Run run : text.runs) {
@@ -1253,6 +1293,16 @@ public class SVGImage implements Drawable {
         paths.add(path);
     }
 
+    // Returns the text of a text element, as its runs.
+    private SVGText readText(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
+            SVGState state, Map<String, String> attributes, int depth) {
+        SVGText text = new SVGText();
+        text.matrix = state.matrix;
+        addRuns(text, node, colorMap, rules, state, attributes, new double[] {Double.NaN, Double.NaN, 0, 0}, depth);
+        text.collapseSpaces();
+        return text;
+    }
+
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
     // pending until then. A tspan counts as a level of the depth of the
@@ -1261,6 +1311,9 @@ public class SVGImage implements Drawable {
             SVGState state, Map<String, String> attributes, double[] pending, int depth) {
         if (depth > MAX_DEPTH) {
             throw depthError();
+        }
+        if (clipping) {
+            countOperations(1);
         }
         double x = textLength(attribute(attributes, "x"), state.fontSize);
         double y = textLength(attribute(attributes, "y"), state.fontSize);
@@ -1306,6 +1359,7 @@ public class SVGImage implements Drawable {
                     // It keeps its place in the text
                     run.fill = Color.transparent;
                     run.stroke = Color.transparent;
+                    run.invisible = true;
                 }
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
@@ -1720,8 +1774,27 @@ public class SVGImage implements Drawable {
     private boolean clipsAreWritable(List<SVGPath> clips, Page page) {
         if (clips != null) {
             for (SVGPath clip : clips) {
-                if (!areWritable(clip.operations, page)) {
+                if (!areWritable(clip.operations, page) || !partsAreWritable(clip, page)) {
                     return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Returns true when a PDF can hold the text matrices of the texts of the
+    // clip path.
+    private boolean partsAreWritable(SVGPath clip, Page page) {
+        if (clip.parts != null) {
+            for (SVGPath part : clip.parts) {
+                for (SVGText.Run run : part.text.runs) {
+                    if (run.clips()) {
+                        for (float value : textMatrix(part.text, run, page)) {
+                            if (!FastFloat.isWritable(value)) {
+                                return false;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1862,6 +1935,10 @@ public class SVGImage implements Drawable {
             return;
         }
         for (SVGPath clip : path.clips) {
+            if (clip.parts != null) {
+                clipToText(clip, page);
+                continue;
+            }
             for (PathOp op : clip.operations) {
                 if (op.cmd == 'M') {
                     page.moveTo(op.x + x, op.y + y);
@@ -1881,9 +1958,35 @@ public class SVGImage implements Drawable {
         }
     }
 
+    // Clips what is drawn next to the glyphs of the texts of the clip path,
+    // their union, as they are in one text object.
+    private void clipToText(SVGPath clip, Page page) {
+        page.beginSVGClipText();
+        for (SVGPath part : clip.parts) {
+            for (SVGText.Run run : part.text.runs) {
+                if (run.clips()) {
+                    page.addSVGClipText(run.font, run.fontSize, SVGText.text(run), textMatrix(part.text, run, page));
+                }
+            }
+        }
+        page.endSVGClipText();
+    }
+
+    // Returns the text matrix that takes the glyphs of the run, whose y goes
+    // up, to where the run is on the page.
+    private float[] textMatrix(SVGText text, SVGText.Run run, Page page) {
+        double[] m = text.matrix;
+        return new float[] {
+            (float) m[0],
+            (float) -m[1],
+            (float) -m[2],
+            (float) m[3],
+            (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
+            page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
+    }
+
     // Draws a text: each run filled and then stroked, or stroked first when
-    // its paint-order says, with the text matrix that takes its glyphs, whose
-    // y goes up, to where the run is on the page.
+    // its paint-order says.
     private void drawText(SVGText text, List<SVGPath> clips, Page page) {
         double[] m = text.matrix;
         double scale = Math.sqrt(Math.abs(m[0]*m[3] - m[1]*m[2]));
@@ -1892,13 +1995,7 @@ public class SVGImage implements Drawable {
             if (str.isEmpty() || !(run.fontSize > 0f)) {
                 continue;
             }
-            float[] tm = {
-                (float) m[0],
-                (float) -m[1],
-                (float) -m[2],
-                (float) m[3],
-                (float) (m[0]*run.px + m[2]*run.py + m[4]) + x,
-                page.height - ((float) (m[1]*run.px + m[3]*run.py + m[5]) + y)};
+            float[] tm = textMatrix(text, run, page);
             boolean writable = clipsAreWritable(clips, page);
             for (float value : tm) {
                 writable = writable && FastFloat.isWritable(value);
@@ -2030,14 +2127,8 @@ public class SVGImage implements Drawable {
         }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription);
         List<SVGPath> paths = chosenPaths(page.pdf.language);
-        for (SVGPath path : paths) {
-            if (path.text != null) {
-                for (SVGText.Run run : path.text.runs) {
-                    run.font = fontOf(run, page.pdf);
-                }
-                path.text.place();
-            }
-        }
+        placeTexts(paths, page);
+        placeTexts(clipShapes, page);
         // The miter limit, set once: a stroked map has as many paths as a PDF
         // would hold, and the few with another limit set their own.
         boolean miter = strokesMiters(paths);

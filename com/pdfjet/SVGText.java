@@ -43,12 +43,37 @@ class SVGText {
         boolean strokeFirst;
         JoinStyle lineJoin;
         float miterLimit;
+        boolean invisible;          // It keeps its place in the text, and a clip path leaves it out
 
         // Where the run is placed: its start, on its baseline, and its width.
         float px;
         float py;
         float width;
         Font font;
+
+        // Returns true when the run has glyphs for a clip path to clip with.
+        boolean clips() {
+            return !text.isEmpty() && fontSize > 0f && !invisible;
+        }
+    }
+
+    // Returns true when the text has glyphs for a clip path to clip with.
+    boolean clips() {
+        for (Run run : runs) {
+            if (run.clips()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Returns what a clip path writes for the text, as operations.
+    int operations() {
+        int count = 0;
+        for (Run run : runs) {
+            count += 1 + run.text.length();
+        }
+        return count;
     }
 
     // Collapses the white space of the runs as a browser does: a newline or a

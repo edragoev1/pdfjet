@@ -817,6 +817,12 @@ final public class Page {
             append(mode);
             append(" Tr\n");
         }
+        showSVGText(font, str, tm);
+        append("ET\n");
+    }
+
+    // Shows the string of an SVG image with the text matrix.
+    private void showSVGText(Font font, String str, float[] tm) {
         for (int i = 0; i < 6; i++) {
             append(tm[i]);
             append(' ');
@@ -831,6 +837,27 @@ final public class Page {
             drawUnicodeString(font, str);
             append("> Tj\n");
         }
+    }
+
+    // Begins a text object whose glyphs clip what is drawn after it, by the
+    // rendering mode 7 of ISO 32000-1, 9.3.6: at its ET they are one path,
+    // filled by the nonzero rule, which the clip path is intersected with. The
+    // graphics state saved around it brings the mode back.
+    void beginSVGClipText() {
+        append("BT\n");
+        renderingModeSet = true;
+        append("7 Tr\n");
+    }
+
+    // Adds the string of an SVG image to the text object begun by
+    // beginSVGClipText.
+    void addSVGClipText(Font font, float fontSize, String str, float[] tm) {
+        setTextFont(font, fontSize);
+        showSVGText(font, str, tm);
+    }
+
+    // Ends that text object.
+    void endSVGClipText() {
         append("ET\n");
     }
 

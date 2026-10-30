@@ -1057,6 +1057,10 @@ func TestSVGImageTheOperationsDrawnAgainAreLimited(t *testing.T) {
 			strings.Repeat(`<tspan>a</tspan>`, 1000) + `</text></g></svg>`,
 		"uses of a text": `<svg width="10" height="10"><defs><text id="p">` + strings.Repeat("a", 10000) +
 			`</text></defs>` + strings.Repeat(`<use href="#p"/>`, 1000) + `</svg>`,
+		"paths in a text clip": `<svg width="10" height="10"><clipPath id="c"><text>` + strings.Repeat("a", 1000) +
+			`</text></clipPath><g clip-path="url(#c)">` + strings.Repeat(`<rect width="1" height="1"/>`, 5000) + `</g></svg>`,
+		"tspans in a text clip": `<svg width="10" height="10"><clipPath id="c"><text>a` + strings.Repeat(`<tspan/>`, 100000) +
+			`</text></clipPath>` + strings.Repeat(`<g clip-path="url(#c)"/>`, 100) + `</svg>`,
 		"clips of viewports": testSVGNested(`<svg width="1" height="1">`, `</svg>`,
 			strings.Repeat(`<rect width="1" height="1"/>`, 20000), 45),
 	} {
@@ -1088,6 +1092,62 @@ func TestSVGImageTheClipRuleOfAClipPathIsDrawn(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="50" height="50"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "h\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageATextInAClipPathClips(t *testing.T) {
+	const svg, clipped = `<svg width="100" height="100"><clipPath id="c">`, `</clipPath><rect width="50" height="50" clip-path="url(#c)"/></svg>`
+	content := testDrawSVG(t, svg+`<text x="10" y="20" font-size="12">Hi</text>`+clipped)
+	if !strings.HasPrefix(content, "q\nBT\n7 Tr\n/") || !strings.Contains(content, " 12 Tf\n1 0 0 1 10 772 Tm\n<") ||
+		!strings.Contains(content, "> Tj\nET\n0 0 0 rg\n0 792 m\n") || !strings.HasSuffix(content, "f\nQ\n") ||
+		strings.Contains(content, "W\n") {
+		t.Errorf("content %q", content)
+	}
+	// A text drawn in it is drawn in the mode of its own.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><text y="20">Hi</text></clipPath><text y="20" clip-path="url(#c)">Hi</text></svg>`); !strings.Contains(content, "0 Tr\n1 0 0 1 0 772 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	// All the texts are in one text object, each with its transform.
+	content = testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c" transform="translate(5,0)"><text x="1" y="20">a<tspan x="1" y="40" font-weight="bold">b</tspan></text><text x="1" y="60" transform="scale(2)">c</text>`+clipped)
+	if strings.Count(content, "BT\n") != 1 || strings.Count(content, "> Tj\n") != 3 || strings.Count(content, " Tf\n") != 3 ||
+		!strings.Contains(content, "1 0 0 1 6 772 Tm\n") || !strings.Contains(content, "1 0 0 1 6 752 Tm\n") ||
+		!strings.Contains(content, "2 0 0 2 7 672 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	// A use names a text.
+	if content := testDrawSVG(t, `<svg width="100" height="100"><defs><text id="t" y="20">Hi</text></defs><clipPath id="c"><use href="#t" x="5"/>`+clipped); !strings.Contains(content, "1 0 0 1 5 772 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	// Shapes and texts: a PDF cannot have them in one path, and the shapes stay.
+	if content := testDrawSVG(t, svg+`<text y="20">Hi</text><rect width="5" height="5"/>`+clipped); strings.Contains(content, " Tr\n") || !strings.Contains(content, "h\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+	// With no glyph it clips all away; out of the range of a PDF nothing is drawn.
+	for _, text := range []string{`<text y="20"> </text>`, `<text y="20" font-size="0">Hi</text>`, `<text y="20" display="none">Hi</text>`,
+		`<text y="20" visibility="hidden">Hi</text>`, `<text y="20"><tspan visibility="hidden">Hi</tspan></text>`,
+		`<text y="20" transform="scale(0)">Hi</text>`, `<text y="20" transform="scale(1e30)">Hi</text>`} {
+		if content := testDrawSVG(t, svg+text+clipped); content != "" {
+			t.Errorf("%s content %q", text, content)
+		}
+	}
+	// In the fill of no color, too: a clip path takes the shape of the glyphs.
+	if content := testDrawSVG(t, svg+`<text y="20" fill="none">Hi</text>`+clipped); !strings.Contains(content, "7 Tr\n") {
+		t.Errorf("content %q", content)
+	}
+	// In the space of the image, and of its scale.
+	image := testNewSVG(t, `<svg width="200" height="200" viewBox="0 0 100 100"><clipPath id="c"><text x="10" y="20" font-size="12">Hi</text>`+clipped)
+	page := testNewPage()
+	image.SetLocation(0, 0)
+	image.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, " 12 Tf\n2 0 0 2 20 752 Tm\n") {
+		t.Errorf("content %q", content)
+	}
+	image.ScaleBy(0.5)
+	image.SetLocation(10, 0)
+	page = testNewPage()
+	image.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, " 12 Tf\n1 0 0 1 20 772 Tm\n") {
 		t.Errorf("content %q", content)
 	}
 }

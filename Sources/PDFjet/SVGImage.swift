@@ -37,6 +37,7 @@ public class SVGImage : Drawable {
     private var reused = 0
     private var counted = 0
     private var useSize: (String, String)?  // The width and the height of the use element of the element drawn next
+    private var clipping = false    // A text of a clip path is read, for each element it clips
     private var switchOf = [ObjectIdentifier: Switch]()
     private var switches = [Switch]()
     private var rules = SVGStyleSheet()
@@ -111,7 +112,13 @@ public class SVGImage : Drawable {
      * drawn in the mean color of its stops. The width, height, viewBox and preserveAspectRatio of the <svg> element
      * give the size of the image, and what is drawn outside it is cut off, as
      * a browser does, and so is what a <symbol> or a nested <svg> draws outside
-     * its viewport, unless its overflow is visible or auto. It throws for a file that nests what it draws more than
+     * its viewport, unless its overflow is visible or auto. A <clipPath> clips
+     * with its shapes or, when it has none, with its <text> elements, in those
+     * fonts, by the text rendering mode 7 of a PDF. A text cannot be in one path
+     * with other shapes, as a text object holds no path and clip paths do not
+     * add up, so the texts of a <clipPath> that has shapes too are left out, and
+     * the glyphs of a text clip by the nonzero rule, whatever its clip-rule. It
+     * throws for a file that nests what it draws more than
      * 48 deep, or that draws more than 4,000,000 path operations again, by use
      * elements, markers and clip paths.
      *
@@ -296,7 +303,7 @@ public class SVGImage : Drawable {
     // Returns the operations written for the clip paths of one path, and of
     // a run of a text.
     private static func clipOperations(_ clips: [SVGPath]?) -> Int {
-        return (clips ?? []).reduce(0) { $0 + $1.operations.count }
+        return (clips ?? []).reduce(0) { $0 + $1.operations.count + $1.glyphs }
     }
 
     // The error of elements nested too deep.
@@ -724,9 +731,11 @@ public class SVGImage : Drawable {
     // clip path of one shape keeps the clip-rule of the shape; several are
     // one path whose nonzero rule draws their union, each turned the same way
     // round, as opposite ways would cancel out where they overlap. A clip path
-    // that is not there, or one in objectBoundingBox units, which PDFjet does
-    // not draw, is left out; one with no shape in it hides the element, as SVG
-    // clips all of it away.
+    // with no shape clips with its texts, which are read again, as their
+    // matrices are, for each element it clips. A clip path that is not there,
+    // or one in objectBoundingBox units, which PDFjet does not draw, is left
+    // out; one with neither a shape nor a glyph hides the element, as SVG clips
+    // all of it away.
     private func clip(_ state: inout SVGState) throws {
         guard let id = state.clipPath, let clipPath = ids[Array(id.utf8)],
               clipPath.getLocalName() == "clipPath",
@@ -741,10 +750,13 @@ public class SVGImage : Drawable {
         base.hidden = false     // A clipPath element is not displayed anyway
         let clip = SVGPath()
         var shapes = [[PathOp]]()
+        var texts = [SVGPath]()
+        var read = 0    // What is read of the texts
         for child in clipPath.getChildren() {
             order = []
             attributes = SVGImage.attributes(child, &order)
             var shape = try elementState(base, attributes, order)
+            var node = child
             var name = child.getLocalName()
             if name == "use" {
                 guard let target = SVGImage.href(child).flatMap({ ids[Array($0.utf8)] }) else {
@@ -755,9 +767,23 @@ public class SVGImage : Drawable {
                 order = []
                 attributes = SVGImage.attributes(target, &order)
                 shape = try elementState(shape, attributes, order)
+                node = target
                 name = target.getLocalName()
             }
             if shape.hidden || shape.invisible {
+                continue
+            }
+            if name == "text" {
+                clipping = true
+                let text = try readText(node, shape, attributes)
+                clipping = false
+                read += text.operations()
+                let m = shape.matrix
+                if text.clips() && m[0]*m[3] - m[1]*m[2] != 0.0 {
+                    let part = SVGPath()
+                    part.text = text
+                    texts.append(part)
+                }
                 continue
             }
             let operations = try SVGImage.shapeOperations(name, attributes)
@@ -776,8 +802,13 @@ public class SVGImage : Drawable {
                 clip.operations += operations
             }
         }
-        try countOperations(clipPath.getChildren().count + clip.operations.count)
-        if clip.operations.isEmpty {
+        try countOperations(clipPath.getChildren().count + clip.operations.count + read)
+        if shapes.isEmpty && !texts.isEmpty {
+            clip.parts = texts
+            clip.glyphs = read
+            clipShapes += texts
+        }
+        if clip.operations.isEmpty && clip.parts == nil {
             state.hidden = true
             return
         }
@@ -1126,11 +1157,7 @@ public class SVGImage : Drawable {
     // Adds a text element, with its tspan elements, as the runs of its
     // characters.
     private func addText(_ node: PDFjetXMLNode, _ state: SVGState, _ attributes: [String: String]) throws {
-        let text = SVGText()
-        text.matrix = state.matrix
-        var pending = [Double.nan, Double.nan, 0.0, 0.0]
-        try addRuns(text, node, state, attributes, &pending, stack.count)
-        text.collapseSpaces()
+        let text = try readText(node, state, attributes)
         let empty = text.runs.allSatisfy { $0.text.isEmpty }
         var count = text.runs.count * SVGImage.clipOperations(state.clips)
         if !reusing.isEmpty {
@@ -1148,6 +1175,16 @@ public class SVGImage : Drawable {
         paths.append(path)
     }
 
+    // Returns the text of a text element, as its runs.
+    private func readText(_ node: PDFjetXMLNode, _ state: SVGState, _ attributes: [String: String]) throws -> SVGText {
+        let text = SVGText()
+        text.matrix = state.matrix
+        var pending = [Double.nan, Double.nan, 0.0, 0.0]
+        try addRuns(text, node, state, attributes, &pending, stack.count)
+        text.collapseSpaces()
+        return text
+    }
+
     // Adds the runs of a text or a tspan element. Its x, y, dx and dy apply to
     // its first character, which may be in a tspan in it; they are kept in
     // pending until then. A tspan counts as a level of the depth of the
@@ -1156,6 +1193,9 @@ public class SVGImage : Drawable {
             _ attributes: [String: String], _ pending: inout [Double], _ depth: Int) throws {
         if depth > SVGImage.MAX_DEPTH {
             throw SVGImage.depthError()
+        }
+        if clipping {
+            try countOperations(1)
         }
         let x = SVGImage.textLength(attributes["x"] ?? "", state.fontSize)
         let y = SVGImage.textLength(attributes["y"] ?? "", state.fontSize)
@@ -1199,6 +1239,7 @@ public class SVGImage : Drawable {
                     // It keeps its place in the text
                     run.fill = Color.transparent
                     run.stroke = Color.transparent
+                    run.invisible = true
                 }
                 run.strokeWidth = state.strokeWidth
                 run.strokeFirst = state.strokeFirst
@@ -1671,7 +1712,20 @@ public class SVGImage : Drawable {
 
     // Returns true when a PDF can hold the clip paths.
     private func clipsAreWritable(_ clips: [SVGPath]?, _ page: Page) -> Bool {
-        return (clips ?? []).allSatisfy { areWritable($0.operations, page) }
+        return (clips ?? []).allSatisfy { areWritable($0.operations, page) && partsAreWritable($0, page) }
+    }
+
+    // Returns true when a PDF can hold the text matrices of the texts of the
+    // clip path.
+    private func partsAreWritable(_ clip: SVGPath, _ page: Page) -> Bool {
+        for part in clip.parts ?? [] {
+            for run in part.text!.runs where run.clips() {
+                if !textMatrix(part.text!, run, page).allSatisfy({ FastFloat.isWritable($0) }) {
+                    return false
+                }
+            }
+        }
+        return true
     }
 
     // Returns true when a PDF can hold the points of the operations.
@@ -1696,6 +1750,10 @@ public class SVGImage : Drawable {
             return
         }
         for clip in clips {
+            if clip.parts != nil {
+                clipToText(clip, page)
+                continue
+            }
             for op in clip.operations {
                 if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
@@ -1715,9 +1773,35 @@ public class SVGImage : Drawable {
         }
     }
 
+    // Clips what is drawn next to the glyphs of the texts of the clip path,
+    // their union, as they are in one text object.
+    private func clipToText(_ clip: SVGPath, _ page: Page) {
+        page.beginSVGClipText()
+        for part in clip.parts ?? [] {
+            for run in part.text!.runs where run.clips() {
+                page.addSVGClipText(run.font!, run.fontSize, SVGText.text(run), textMatrix(part.text!, run, page))
+            }
+        }
+        page.endSVGClipText()
+    }
+
+    // Returns the text matrix that takes the glyphs of the run, whose y goes
+    // up, to where the run is on the page.
+    private func textMatrix(_ text: SVGText, _ run: SVGText.Run, _ page: Page) -> [Float] {
+        let m = text.matrix
+        let px = Double(run.px)
+        let py = Double(run.py)
+        return [
+            Float(m[0]),
+            Float(-m[1]),
+            Float(-m[2]),
+            Float(m[3]),
+            Float(m[0]*px + m[2]*py + m[4]) + x,
+            page.height - (Float(m[1]*px + m[3]*py + m[5]) + y)]
+    }
+
     // Draws a text: each run filled and then stroked, or stroked first when
-    // its paint-order says, with the text matrix that takes its glyphs, whose
-    // y goes up, to where the run is on the page.
+    // its paint-order says.
     private func drawText(_ text: SVGText, _ clips: [SVGPath]?, _ page: Page) {
         let m = text.matrix
         let scale = abs(m[0]*m[3] - m[1]*m[2]).squareRoot()
@@ -1726,15 +1810,7 @@ public class SVGImage : Drawable {
             if str.isEmpty || !(run.fontSize > 0.0) {
                 continue
             }
-            let px = Double(run.px)
-            let py = Double(run.py)
-            let tm: [Float] = [
-                Float(m[0]),
-                Float(-m[1]),
-                Float(-m[2]),
-                Float(m[3]),
-                Float(m[0]*px + m[2]*py + m[4]) + x,
-                page.height - (Float(m[1]*px + m[3]*py + m[5]) + y)]
+            let tm = textMatrix(text, run, page)
             let writable = clipsAreWritable(clips, page) && tm.allSatisfy { FastFloat.isWritable($0) }
             let strokeWidth = Float(Double(run.strokeWidth) * scale)
             let fill = run.fill != Color.transparent && run.fillAlpha > 0.0
@@ -1859,7 +1935,7 @@ public class SVGImage : Drawable {
         let paths = chosenPaths(page.pdf.language)
         // A font that is missing is refused, and nothing is drawn, as the
         // other ports throw; the figure is closed, empty
-        for path in paths {
+        for path in paths + clipShapes {
             if let text = path.text {
                 for run in text.runs {
                     guard let font = fontOf(run, page.pdf) else {

@@ -585,6 +585,12 @@ func (page *Page) drawSVGText(font *Font, fontSize float32, str string, tm [6]fl
 		page.appendInteger(mode)
 		page.appendString(" Tr\n")
 	}
+	page.showSVGText(font, str, tm)
+	page.appendString("ET\n")
+}
+
+// showSVGText shows the string of an SVG image with the text matrix.
+func (page *Page) showSVGText(font *Font, str string, tm [6]float32) {
 	for _, value := range tm {
 		page.appendFloat32(value)
 		page.appendString(" ")
@@ -599,7 +605,23 @@ func (page *Page) drawSVGText(font *Font, fontSize float32, str string, tm [6]fl
 		page.drawUnicodeString(font, str)
 		page.appendString("> Tj\n")
 	}
-	page.appendString("ET\n")
+}
+
+// beginSVGClipText begins a text object whose glyphs clip what is drawn after
+// it, by the rendering mode 7 of ISO 32000-1, 9.3.6: at its ET they are one
+// path, filled by the nonzero rule, which the clip path is intersected with.
+// The graphics state saved around it brings the mode back.
+func (page *Page) beginSVGClipText() {
+	page.appendString("BT\n")
+	page.renderingModeSet = true
+	page.appendString("7 Tr\n")
+}
+
+// addSVGClipText adds the string of an SVG image to the text object begun by
+// beginSVGClipText.
+func (page *Page) addSVGClipText(font *Font, fontSize float32, str string, tm [6]float32) {
+	page.setTextFont(font, fontSize)
+	page.showSVGText(font, str, tm)
 }
 
 // The hooks that a build with the texttrace tag sets, in texttrace.go, to
