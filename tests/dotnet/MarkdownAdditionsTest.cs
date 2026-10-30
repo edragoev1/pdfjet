@@ -78,6 +78,40 @@ public class MarkdownAdditionsTest {
         Assert.Equal("0", markup.Paragraphs("0  ")[0].lines[0].text);
     }
 
+    // The spaces before a hard line break are not in the text line before
+    // it, as in CommonMark.
+    [Fact]
+    public void TheSpacesBeforeAHardLineBreakAreNotText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+                "**one**  \ntwo", "[one  \ntwo](u)"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Equal(new List<bool> {true, false}, Breaks(paragraph));
+            Assert.Equal("one", paragraph.lines[0].text);
+            Assert.Equal("two", paragraph.lines[1].text);
+        }
+    }
+
+    // A backslash at the end of a text is a backslash, and no hard line
+    // break, as in CommonMark; in the middle it is a break, as before.
+    [Fact]
+    public void ABackslashAtTheEndIsText() {
+        Markup markup = NewMarkup(TestSupport.NewPDF());
+        foreach (String text in new String[] {"0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"}) {
+            Paragraph paragraph = markup.Paragraph(text);
+            Assert.Single(paragraph.lines);
+            Assert.Equal("0\\", paragraph.lines[0].text);
+            Assert.Equal(0, paragraph.lines[0].lineBreaks);
+            List<Paragraph> paragraphs = markup.Paragraphs(text);
+            Assert.Single(paragraphs);
+            Assert.Single(paragraphs[0].lines);
+            Assert.Equal("0\\", paragraphs[0].lines[0].text);
+        }
+        Paragraph two = markup.Paragraph("one\\\ntwo\\\n");
+        Assert.Equal(new List<bool> {true, false}, Breaks(two));
+        Assert.Equal("two\\", two.lines[1].text);
+    }
+
     [Fact]
     public void ATextFrameStartsARowAtABreak() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();

@@ -22,9 +22,10 @@ import Foundation
 /// between them: the paragraph joins its text lines with Paragraph.addJoined.
 ///
 /// A line that ends in two spaces or a backslash, and a <br>, are hard line
-/// breaks, which TextFrame draws as the end of a row; two spaces and a line
-/// break at the end of the text are not, and are dropped, as in CommonMark.
-/// Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+/// breaks, which TextFrame draws as the end of a row, and the spaces before
+/// the line break are not in the text; two spaces and a line break at the end
+/// of the text are not, and are dropped, and a backslash at the end of the text
+/// is a backslash, as in CommonMark. Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 /// &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 /// the numbers &#8212; and &#x2014;, are the characters they name.
 ///
@@ -391,7 +392,24 @@ public class Markup {
             while i < end {
                 let ch = text[i]
                 let breakEnd = self.breakEnd(i, end)
-                if breakEnd > i {
+                if breakEnd > i && ch == Parser.backslash && onlySpaceFrom(breakEnd) {
+                    // A backslash at the end of the text is text, and no hard
+                    // line break, as in CommonMark: "0\\\n" is the text line
+                    // "0\\"
+                    buf.append(ch)
+                    i = end
+                } else if breakEnd > i {
+                    if ch == Parser.carriageReturn || ch == Parser.newline {
+                        // The spaces before a hard line break are not in the
+                        // text, as in CommonMark: "one  \ntwo" is "one", a
+                        // break and "two"
+                        var k = i
+                        while k > start && Markup.isWhitespace(text[k - 1]) &&
+                            !buf.isEmpty && buf[buf.count - 1] == Parser.space {
+                            buf.removeLast()
+                            k -= 1
+                        }
+                    }
                     Parser.flush(&buf, link, &nodes)
                     nodes.append(Node("", Markup.BREAK, link))
                     i = breakEnd
@@ -481,6 +499,19 @@ public class Markup {
                 i += 1
             }
             return n
+        }
+
+        // Returns whether the text from i to its end is whitespace, or
+        // nothing.
+        private func onlySpaceFrom(_ from: Int) -> Bool {
+            var i = from
+            while i < text.count {
+                if !Markup.isWhitespace(text[i]) {
+                    return false
+                }
+                i += 1
+            }
+            return true
         }
 
         // Returns where a hard line break at i ends, or i when there is none:

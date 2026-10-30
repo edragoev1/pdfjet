@@ -88,6 +88,40 @@ func TestMarkdownAdditionsAHardLineBreakAtTheEndIsNoBreak(t *testing.T) {
 	testWant(t, "0", markup.Paragraphs("0  ")[0].lines[0].text)
 }
 
+// The spaces before a hard line break are not in the text line before it, as
+// in CommonMark.
+func TestMarkdownAdditionsTheSpacesBeforeAHardLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+		"**one**  \ntwo", "[one  \ntwo](u)"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) ||
+			paragraph.lines[0].text != "one" || paragraph.lines[1].text != "two" {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+	}
+}
+
+// A backslash at the end of a text is a backslash, and no hard line break, as
+// in CommonMark; in the middle it is a break, as before.
+func TestMarkdownAdditionsABackslashAtTheEndIsText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"} {
+		paragraph := markup.Paragraph(text)
+		if len(paragraph.lines) != 1 || paragraph.lines[0].text != "0\\" || paragraph.lines[0].lineBreaks != 0 {
+			t.Errorf("%q: %d text lines", text, len(paragraph.lines))
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 1 || paragraphs[0].lines[0].text != "0\\" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	two := markup.Paragraph("one\\\ntwo\\\n")
+	if got := testBreaks(two); !reflect.DeepEqual(got, []bool{true, false}) || two.lines[1].text != "two\\" {
+		t.Errorf("one two: breaks %v", got)
+	}
+}
+
 func TestMarkdownAdditionsATextFrameStartsARowAtABreak(t *testing.T) {
 	testAllowCoreFonts(t)
 	pdf := testNewPDF()

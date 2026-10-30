@@ -27,9 +27,10 @@ import (
 // Paragraph.AddJoined.
 //
 // A line that ends in two spaces or a backslash, and a <br>, are hard line
-// breaks, which TextFrame draws as the end of a row; two spaces and a line
-// break at the end of the text are not, and are dropped, as in CommonMark.
-// Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
+// breaks, which TextFrame draws as the end of a row, and the spaces before
+// the line break are not in the text; two spaces and a line break at the end
+// of the text are not, and are dropped, and a backslash at the end of the text
+// is a backslash, as in CommonMark. Any other line break is a space. The entities &amp;, &lt;, &gt;, &quot;, &apos;, &nbsp;, &copy;,
 // &reg;, &trade;, &mdash;, &ndash;, &hellip;, the quotes and a few more, and
 // the numbers &#8212; and &#x2014;, are the characters they name.
 //
@@ -337,6 +338,22 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 	for i < end {
 		ch := text[i]
 		if breakEnd := parser.breakEnd(i, end); breakEnd > i {
+			if ch == '\\' && parser.onlySpaceFrom(breakEnd) {
+				// A backslash at the end of the text is text, and no hard
+				// line break, as in CommonMark: "0\\\n" is the text line
+				// "0\\"
+				buf = append(buf, ch)
+				i = end
+				continue
+			}
+			if ch == '\r' || ch == '\n' {
+				// The spaces before a hard line break are not in the text,
+				// as in CommonMark: "one  \ntwo" is "one", a break and "two"
+				for k := i; k > start && isJavaWhitespace(text[k-1]) &&
+					len(buf) > 0 && buf[len(buf)-1] == ' '; k-- {
+					buf = buf[:len(buf)-1]
+				}
+			}
 			buf, nodes = markupFlush(buf, link, nodes)
 			nodes = append(nodes, &markupNode{flags: markupBreak, link: link})
 			i = breakEnd
@@ -434,6 +451,17 @@ func (parser *markupParser) trailingBreak() int {
 		}
 	}
 	return n
+}
+
+// onlySpaceFrom returns whether the text from the index to its end is
+// whitespace, or nothing.
+func (parser *markupParser) onlySpaceFrom(i int) bool {
+	for ; i < len(parser.text); i++ {
+		if !isJavaWhitespace(parser.text[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // breakEnd returns where a hard line break at the index ends, or i when there
