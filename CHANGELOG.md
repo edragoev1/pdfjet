@@ -135,7 +135,10 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   European ones, Chinese, Japanese, Korean, Arabic, Hebrew and Thai, are in
   one package of their own in every port, which a program that draws in
   them adds; they are in `resources/fonts/world`, where the small
-  `PDFjet.jar` and `PDFjet.dll` of the release packages read them.
+  `PDFjet.jar` and `PDFjet.dll` of the release packages read them. A folder
+  `resources/fonts` kept next to a program as in 9.1.5 moves these families
+  into `resources/fonts/world`: `resources/fonts/IBMPlexSansJP` is no longer
+  found.
   Examples: a Java program that draws `new Font(pdf,
   IBMPlexSansArabic.Regular)` or `new Font(pdf, IBMPlexSansJP.Regular)` with
   the jar of Maven Central adds next to `com.pdfjet:pdfjet`
@@ -283,6 +286,81 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 - Behavior change: Markup, the four ports: a `\r\n` that is no hard line
   break is one line ending, so one space, where it was two. Example:
   `paragraph("one\r\ntwo")` is `one two`, where it was `one  two`.
+- The code review of 30 October 2026, in all four ports unless a port is
+  named:
+  - Read pages: a drawing on a read page survives `Merge`, where the page
+    lost its content and the PDF was invalid; graphics states, stamps and
+    optional content get their resources; a page with no `/Resources` gets
+    one, where its text was lost.
+  - Reading: indirect `/Kids`, leaf pages with no `/Type`, `/EarlyChange 0`,
+    a missing Adler-32, an indirect `/Filter`, a `/Crypt` filter and a
+    `/Length` that is real or null; `/Contents []` (Go).
+  - Scales keep five decimals; `\r` in a title passes PDF/A-1B.
+  - SVG: a depth limit of 48 and a limit of 4,000,000 path operations drawn
+    again, where a small file crashed the process or used gigabytes;
+    gradients are read in linear time.
+  - SVG: `use` in a `clipPath`, `clip-rule`, shapes that overlap in a clip;
+    the alpha of a color (`rgba()`, `#rgba`, `#rrggbbaa`), `hsl()`, keywords
+    in any case; `visibility`, `switch`, the size of a `use` of a `symbol`,
+    a nested `svg`, `stroke-miterlimit`, `paint-order` on shapes; dash
+    offsets below zero; huge dashes and clip paths skip that path.
+  - PNG: 16-bit gray with alpha and RGBA, which `ReadImageSize` accepted and
+    `NewImage` refused.
+  - Swift: a program with no font bundle gets an error, not a crash. Java:
+    `pdfjet-fonts-world` is also found through the context class loader.
+    .NET: `PDFjet.Fonts.World` survives trimming and NativeAOT.
+  - Markup: balanced parentheses in link URLs; `&#32;` kept before a break;
+    a line ending is `\n`, `\r\n` or `\r`, in code spans too.
+  - TextFrame: wrapped lines keep their destinations and alt text, inline
+    code keeps its spaces, and large texts draw in linear time.
+  - Bidi: presentation forms and every right-to-left block. Kinsoku: no line
+    starts with a combining mark. Java: Unicode 15.0 categories on any
+    runtime.
+  - Charts: an axis end is never inside the values, so a point at 59.1 is
+    drawn. Table: a width set before `SetTableData` is kept. BigTable: "of N"
+    always matches the pages drawn. Barcode and PDF417: solid bars on a page
+    with a dash pattern. Markdown: a tall wrapped header starts a new page.
+  - NaN and absurd sizes in TextFrame and the charts, and wrong table
+    indexes, are errors, not hangs or crashes.
+- Build: the package scripts take the POM, nuspec and README from the tagged
+  commit and run `util/check-version.sh`; the POM and the nuspec say
+  `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
+  `check-api.sh` and `test-go.sh` cover the font packages; actions are pinned
+  by commit. Two photos of cars in `resources/images` were replaced with
+  images of our own drawing, `car.png` and `dusk.png`.
+- Behavior change: a Table sum reads each cell once, and a number has to be
+  the whole cell. Example: 1,234,567.89 wrapped in a narrow column counts
+  once, and `boxes 12` adds nothing, where it added 12.
+- Behavior change: a header or footer row that runs off the page is an
+  error, as a body row is. Example: a Table with a header at y 780 on Letter.
+- Behavior change: bottom-aligned cell text rises by its descent. Example:
+  about 2.7 pt at 12 pt.
+- Behavior change: Markup: the spaces and tabs before a soft line break are
+  not in the text, and a line ending after `<br>` or a hard break starts no
+  space. Example: `one \ntwo` is `one two`, and `one<br>\ntwo` starts `two`.
+- Behavior change: Markup: `[a](b(c)` is no link, and `[a]([b](c))` links to
+  `[b](c)`.
+- Behavior change: a destination name used twice goes to the first, where it
+  went to the last. A 48 pt word after 12 pt text lowers its row in a
+  TextFrame, where it rose above the frame.
+- Behavior change: SVG nested past 48 levels, or over 4,000,000 reused path
+  operations, is an error. Example: 47 nested `g` elements are refused. A
+  negative viewBox and a color like `#abcz` are errors.
+- Behavior change: SVG strokes get a miter limit of 4, as SVG says, where it
+  was PDF's 10, so sharp corners bevel. A size in a unit with no viewBox
+  scales the content: `width="100pt"` with a rectangle of 100 fills 75.
+- Behavior change: `SetLanguage` writes `/Lang` on a plain PDF too. Example:
+  `fr-CA`; unset writes none.
+- Behavior change: the name of an embedded file is cut at a backslash on every
+  system. Example: `C:\Users\alice\x.xml` is `x.xml`, and `a\b.xml` on Linux
+  is `b.xml`.
+- Behavior change: Read takes what it refused. Example: a Flate stream with no
+  Adler-32, or `/Length null`.
+- Behavior change: `SetFractionDigits` above 100 is an error.
+- Behavior change: the package scripts refuse a HEAD that is not the tag of
+  the version. Example: `package-nuget.sh 9.1.7` on main stops; with
+  `PDFJET_REF` or `PDFJET_UNSIGNED` the version says so, as in
+  `PDFjet.9.1.7-draft-unsigned.nupkg`.
 
 ## v9.1.5 — 2026-10-28
 
