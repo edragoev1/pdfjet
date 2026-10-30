@@ -33,6 +33,9 @@ type svgState struct {
 	fillCurrent   bool // currentColor: the color property, as it is where it is used
 	strokeCurrent bool
 	color         int32   // The color property
+	fillAlpha     float32 // The alpha of the fill color, as #f008 or rgba() has one
+	strokeAlpha   float32
+	colorAlpha    float32
 	strokeWidth   float32 // In the user space of the element
 	evenOdd       bool    // fill-rule="evenodd"
 	clipEvenOdd   bool    // clip-rule="evenodd"
@@ -68,6 +71,9 @@ func newSVGState() svgState {
 		fill:          color.Black,
 		stroke:        color.Transparent,
 		color:         color.Black,
+		fillAlpha:     1.0,
+		strokeAlpha:   1.0,
+		colorAlpha:    1.0,
 		strokeWidth:   1.0,
 		lineCap:       capstyle.Butt,
 		lineJoin:      joinstyle.Miter,
@@ -222,7 +228,7 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 	}
 	switch name {
 	case "fill", "stroke":
-		paint, current, ok, err := parseSVGPaint(colorMap, state.paints, value)
+		paint, alpha, current, ok, err := parseSVGPaint(colorMap, state.paints, value)
 		if err != nil {
 			return fmt.Errorf("invalid SVG %s: %w", name, err)
 		}
@@ -231,18 +237,21 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 		}
 		if name == "fill" {
 			state.fill = paint
+			state.fillAlpha = alpha
 			state.fillCurrent = current
 		} else {
 			state.stroke = paint
+			state.strokeAlpha = alpha
 			state.strokeCurrent = current
 		}
 	case "color":
-		c, ok, err := parseSVGColor(colorMap, value)
+		c, alpha, ok, err := parseSVGColor(colorMap, value)
 		if err != nil {
 			return fmt.Errorf("invalid SVG color: %w", err)
 		}
 		if ok {
 			state.color = c
+			state.colorAlpha = alpha
 		}
 	case "stroke-width":
 		if strings.HasSuffix(value, "%") {
@@ -364,6 +373,25 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 		state.clipPath = svgURLId(value)
 	}
 	return nil
+}
+
+// drawnFillAlpha returns the alpha the fill is drawn with: its opacities and
+// the alpha of its color.
+func (state *svgState) drawnFillAlpha() float32 {
+	alpha := state.fillAlpha
+	if state.fillCurrent {
+		alpha = state.colorAlpha
+	}
+	return float32(float32(state.fillOpacity*state.opacity) * alpha)
+}
+
+// drawnStrokeAlpha returns the alpha the stroke is drawn with.
+func (state *svgState) drawnStrokeAlpha() float32 {
+	alpha := state.strokeAlpha
+	if state.strokeCurrent {
+		alpha = state.colorAlpha
+	}
+	return float32(float32(state.strokeOpacity*state.opacity) * alpha)
 }
 
 // svgURLId returns the id of a reference, url(#id), with or without quotes,
@@ -556,16 +584,17 @@ func (state *svgState) setFont(value string) {
 // stops, its color in the paints. A url of anything else, a pattern or an
 // element that is not there, is the color after it, which SVG draws when it
 // cannot draw the url, or none, as a browser draws it. ok is false for a
-// value that leaves the paint as it is inherited.
-func parseSVGPaint(colorMap, paints map[string]int32, value string) (paint int32, current, ok bool, err error) {
+// value that leaves the paint as it is inherited. none and currentColor are
+// keywords of CSS, in any case.
+func parseSVGPaint(colorMap, paints map[string]int32, value string) (paint int32, alpha float32, current, ok bool, err error) {
 	if strings.HasPrefix(value, "url(") {
 		end := strings.Index(value, ")")
 		if end < 0 {
-			return 0, false, false, nil
+			return 0, 1.0, false, false, nil
 		}
 		if id := svgURLId(value[:end+1]); id != "" {
 			if gradient, found := paints[id]; found {
-				return gradient, false, true, nil
+				return gradient, 1.0, false, true, nil
 			}
 		}
 		value = strings.TrimSpace(value[end+1:])
@@ -573,46 +602,70 @@ func parseSVGPaint(colorMap, paints map[string]int32, value string) (paint int32
 			value = "none"
 		}
 	}
-	switch value {
+	switch strings.ToLower(value) {
 	case "none":
-		return color.Transparent, false, true, nil
-	case "currentColor":
-		return 0, true, true, nil
+		return color.Transparent, 1.0, false, true, nil
+	case "currentcolor":
+		return 0, 1.0, true, true, nil
 	}
-	paint, ok, err = parseSVGColor(colorMap, value)
-	return paint, false, ok, err
+	paint, alpha, ok, err = parseSVGColor(colorMap, value)
+	return paint, alpha, false, ok, err
 }
 
-// parseSVGColor reads a color: #rgb, #rrggbb, rgb() of three numbers or
-// percentages, or a name. ok is false for a color it does not know, and err
-// is set for one that starts with # but is not hexadecimal.
-func parseSVGColor(colorMap map[string]int32, value string) (int32, bool, error) {
+// parseSVGColor reads a color and its alpha: #rgb, #rgba, #rrggbb, #rrggbbaa,
+// rgb() of three numbers or percentages, hsl(), with an alpha after them in
+// either, or a name. ok is false for a color it does not know, and err is set
+// for one that starts with # but is not hexadecimal.
+func parseSVGColor(colorMap map[string]int32, value string) (int32, float32, bool, error) {
 	if strings.HasPrefix(value, "#") {
 		hex := value[1:]
-		if len(hex) == 3 {
-			hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+		if len(hex) == 3 || len(hex) == 4 {
+			doubled := make([]byte, 0, 8)
+			for i := 0; i < len(hex); i++ {
+				doubled = append(doubled, hex[i], hex[i])
+			}
+			hex = string(doubled)
 		}
-		if len(hex) != 6 {
-			return 0, false, nil
+		if len(hex) != 6 && len(hex) != 8 {
+			return 0, 1.0, false, nil
 		}
-		c, err := strconv.ParseInt(hex, 16, 32)
+		c, err := strconv.ParseInt(hex[:6], 16, 32)
 		if err != nil {
-			return 0, false, fmt.Errorf("invalid color %q: %w", value, err)
+			return 0, 1.0, false, fmt.Errorf("invalid color %q: %w", value, err)
 		}
-		return int32(c), true, nil
+		alpha := float32(1.0)
+		if len(hex) == 8 {
+			a, err := strconv.ParseInt(hex[6:], 16, 32)
+			if err != nil {
+				return 0, 1.0, false, fmt.Errorf("invalid color %q: %w", value, err)
+			}
+			alpha = float32(max(a, 0)) / 255.0
+		}
+		return int32(c), alpha, true, nil
 	}
 	lower := strings.ToLower(value)
-	if strings.HasPrefix(lower, "rgb(") || strings.HasPrefix(lower, "rgba(") {
+	hsl := strings.HasPrefix(lower, "hsl(") || strings.HasPrefix(lower, "hsla(")
+	if hsl || strings.HasPrefix(lower, "rgb(") || strings.HasPrefix(lower, "rgba(") {
 		open := strings.Index(lower, "(")
 		end := strings.Index(lower, ")")
 		if end < open {
-			return 0, false, nil
+			return 0, 1.0, false, nil
 		}
 		parts := strings.FieldsFunc(lower[open+1:end], func(ch rune) bool {
 			return ch == ',' || ch == '/' || isSVGSpace(ch)
 		})
 		if len(parts) < 3 {
-			return 0, false, nil
+			return 0, 1.0, false, nil
+		}
+		alpha := float32(1.0)
+		if len(parts) > 3 {
+			if opacity, ok := parseSVGOpacity(parts[3]); ok {
+				alpha = opacity
+			}
+		}
+		if hsl {
+			rgb, ok := parseSVGHSL(parts)
+			return rgb, alpha, ok, nil
 		}
 		var rgb int32
 		for _, part := range parts[:3] {
@@ -623,17 +676,71 @@ func parseSVGColor(colorMap map[string]int32, value string) (int32, bool, error)
 			}
 			number, err := parseSVGFloat(part, 64)
 			if err != nil || math.IsNaN(number) || math.IsInf(number, 0) {
-				return 0, false, nil
+				return 0, 1.0, false, nil
 			}
 			channel := math.Round(float64(number * scale))
 			rgb = rgb<<8 | int32(math.Max(0.0, math.Min(255.0, channel)))
 		}
-		return rgb, true, nil
+		return rgb, alpha, true, nil
 	}
 	if c, ok := colorMap[lower]; ok {
-		return c, true, nil
+		return c, 1.0, true, nil
 	}
-	return 0, false, nil
+	return 0, 1.0, false, nil
+}
+
+// parseSVGHSL returns the color of the hue, the saturation and the lightness
+// of hsl(), by the formula of CSS Color 4; ok is false for one it cannot read.
+func parseSVGHSL(parts []string) (int32, bool) {
+	hue, ok := parseSVGHue(parts[0])
+	saturation, ok2 := parseSVGPercentage(parts[1])
+	lightness, ok3 := parseSVGPercentage(parts[2])
+	if !ok || !ok2 || !ok3 {
+		return 0, false
+	}
+	a := float64(saturation * math.Min(lightness, 1.0-lightness))
+	var rgb int32
+	for _, n := range [3]float64{0.0, 8.0, 4.0} {
+		k := math.Mod(n+hue/30.0, 12.0)
+		channel := lightness - float64(a*math.Max(-1.0, math.Min(math.Min(k-3.0, 9.0-k), 1.0)))
+		rgb = rgb<<8 | int32(math.Max(0.0, math.Min(255.0, math.Round(float64(channel*255.0)))))
+	}
+	return rgb, true
+}
+
+// parseSVGHue reads a hue, in degrees unless it has a unit, and returns it
+// from 0 to 360.
+func parseSVGHue(text string) (float64, bool) {
+	scale := 1.0
+	for _, unit := range []struct {
+		suffix string
+		scale  float64
+	}{{"deg", 1.0}, {"grad", 0.9}, {"rad", 57.29577951308232}, {"turn", 360.0}} {
+		if strings.HasSuffix(text, unit.suffix) {
+			text = strings.TrimSuffix(text, unit.suffix)
+			scale = unit.scale
+			break
+		}
+	}
+	number, err := parseSVGFloat(text, 64)
+	if err != nil || math.IsNaN(number) || math.IsInf(number, 0) {
+		return 0.0, false
+	}
+	hue := math.Mod(float64(number*scale), 360.0)
+	if hue < 0.0 {
+		hue += 360.0
+	}
+	return hue, true
+}
+
+// parseSVGPercentage reads a saturation or a lightness, with or without its
+// percent sign, and returns it between 0 and 1.
+func parseSVGPercentage(text string) (float64, bool) {
+	number, err := parseSVGFloat(strings.TrimSuffix(text, "%"), 64)
+	if err != nil || math.IsNaN(number) || math.IsInf(number, 0) {
+		return 0.0, false
+	}
+	return math.Max(0.0, math.Min(1.0, number/100.0)), true
 }
 
 // parseSVGOpacity reads an opacity, a number or a percentage, and returns it

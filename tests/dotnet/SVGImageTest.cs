@@ -435,7 +435,7 @@ public class SVGImageTest {
             new string[] {"fill=\"#F00\"", "1 0 0 rg"},
             new string[] {"fill=\"rgb(255, 0, 0)\"", "1 0 0 rg"},
             new string[] {"fill=\"rgb(100%,0%,0%)\"", "1 0 0 rg"},
-            new string[] {"fill=\"RGBA(255 0 0 / 0.5)\"", "1 0 0 rg"},
+            new string[] {"fill=\"RGBA(255 0 0 / 1)\"", "1 0 0 rg"},
             new string[] {"fill=\"Red\"", "1 0 0 rg"},
             new string[] {"fill=\"currentColor\" color=\"red\"", "1 0 0 rg"},
             new string[] {"fill=\"currentColor\"", "0 0 0 rg"},
@@ -638,9 +638,9 @@ public class SVGImageTest {
     public void ADottedCapitalIInAColorIsI() {
         var parse = typeof(PDF).Assembly.GetType("PDFjet.NET.SVGState").GetMethod("ParseColor",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        object[] args = {"fill", "L\u0130ME", 0};
+        object[] args = {"fill", "L\u0130ME", 0, 0f};
         Assert.True((bool) parse.Invoke(null, args));
-        object[] lime = {"fill", "lime", 0};
+        object[] lime = {"fill", "lime", 0, 0f};
         parse.Invoke(null, lime);
         Assert.Equal(lime[2], args[2]);
     }
@@ -980,6 +980,81 @@ public class SVGImageTest {
         {
             string content = Draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"20\" height=\"20\"/><path d=\"M50 0 C50 10 60 20 70 20 L70 0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>");
             Assert.Contains("50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n", content);
+        }
+    }
+
+    [Fact]
+    public void TheAlphaOfAColorIsDrawn() {
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.25f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgb(255 0 0 / 25%)\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.25f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\" fill-opacity=\"0.5\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.2509804f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.26666668f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.5019608f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" stroke=\"#00ff0080\"/></svg>").paths[0].strokeAlpha);
+        Assert.Equal(1.0f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><g fill=\"rgba(0,0,0,0.5)\"><path d=\"M0 0 L10 0 L10 10 Z\"/></g></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"rgba(0,0,255,0.5)\" fill=\"currentColor\"/></svg>").paths[0].fillAlpha);
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(0,0,0,0.5)\"/></svg>");
+            Assert.StartsWith("q\n/GS1 gs\n0 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>");
+            Assert.StartsWith("q\n/GS1 gs\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>");
+            Assert.StartsWith("q\n/GS1 gs\n1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000000\"/></svg>");
+            Assert.Equal("", content);
+        }
+    }
+
+    [Fact]
+    public void HslColorsAreDrawn() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(120, 100%, 50%)\"/></svg>");
+            Assert.StartsWith("0 1 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(240deg 100% 50%)\"/></svg>");
+            Assert.StartsWith("0 0 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"HSL(-120, 100%, 50%)\"/></svg>");
+            Assert.StartsWith("0 0 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0.5turn 100% 50%)\"/></svg>");
+            Assert.StartsWith("0 1 1 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0, 0%, 100%)\"/></svg>");
+            Assert.StartsWith("1 1 1 rg\n", content);
+        }
+        Assert.Equal(0.5f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsla(0, 100%, 50%, 0.5)\"/></svg>").paths[0].fillAlpha);
+        Assert.Equal(0.25f, Parse("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0 100% 50% / 25%)\"/></svg>").paths[0].fillAlpha);
+    }
+
+    [Fact]
+    public void TheKeywordsOfAPaintAreInAnyCase() {
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"currentcolor\"/></svg>");
+            Assert.StartsWith("1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"CURRENTCOLOR\"/></svg>");
+            Assert.StartsWith("1 0 0 rg\n", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"NONE\"/></svg>");
+            Assert.Equal("", content);
+        }
+        {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"None\"/></svg>");
+            Assert.Equal("", content);
         }
     }
 }

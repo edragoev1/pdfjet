@@ -577,8 +577,8 @@ public class SVGImage : Drawable {
         path.operations = operations
         path.fill = state.fillCurrent ? state.color : state.fill
         path.stroke = state.strokeCurrent ? state.color : state.stroke
-        path.fillAlpha = state.fillOpacity * state.opacity
-        path.strokeAlpha = state.strokeOpacity * state.opacity
+        path.fillAlpha = state.drawnFillAlpha()
+        path.strokeAlpha = state.drawnStrokeAlpha()
         if path.fillAlpha == 0.0 {
             path.fill = Color.transparent
         }
@@ -982,8 +982,8 @@ public class SVGImage : Drawable {
                 run.baseline = state.baseline
                 run.fill = state.fillCurrent ? state.color : state.fill
                 run.stroke = state.strokeCurrent ? state.color : state.stroke
-                run.fillAlpha = state.fillOpacity * state.opacity
-                run.strokeAlpha = state.strokeOpacity * state.opacity
+                run.fillAlpha = state.drawnFillAlpha()
+                run.strokeAlpha = state.drawnStrokeAlpha()
                 run.strokeWidth = state.strokeWidth
                 run.strokeFirst = state.strokeFirst
                 run.lineJoin = state.lineJoin

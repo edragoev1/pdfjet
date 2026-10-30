@@ -507,7 +507,7 @@ func TestSVGImageColorsAreHexadecimalRGBNamesOrTheCurrentColor(t *testing.T) {
 		`fill="#F00"`:                                "1 0 0 rg",
 		`fill="rgb(255, 0, 0)"`:                      "1 0 0 rg",
 		`fill="rgb(100%,0%,0%)"`:                     "1 0 0 rg",
-		`fill="RGBA(255 0 0 / 0.5)"`:                 "1 0 0 rg",
+		`fill="RGBA(255 0 0 / 1)"`:                   "1 0 0 rg",
 		`fill="Red"`:                                 "1 0 0 rg",
 		`fill="currentColor" color="red"`:            "1 0 0 rg",
 		`fill="currentColor"`:                        "0 0 0 rg",
@@ -1083,6 +1083,87 @@ func TestSVGImageTheShapesOfAClipPathGoTheSameWayRound(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 	if content := testDrawSVG(t, `<svg width="100" height="100"><clipPath id="c"><rect width="20" height="20"/><path d="M50 0 C50 10 60 20 70 20 L70 0 Z"/></clipPath><rect width="5" height="5" clip-path="url(#c)"/></svg>`); !strings.Contains(content, "50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageTheAlphaOfAColorIsDrawn(t *testing.T) {
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(255,0,0,0.5)"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgb(255 0 0 / 25%)"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(255,0,0,0.5)" fill-opacity="0.5"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000040"/></svg>`).paths[0].fillAlpha; alpha != 0.2509804 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#f004"/></svg>`).paths[0].fillAlpha; alpha != 0.26666668 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" stroke="#00ff0080"/></svg>`).paths[0].strokeAlpha; alpha != 0.5019608 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="red"/></svg>`).paths[0].fillAlpha; alpha != 1.0 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><g fill="rgba(0,0,0,0.5)"><path d="M0 0 L10 0 L10 10 Z"/></g></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="rgba(0,0,255,0.5)" fill="currentColor"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="rgba(0,0,0,0.5)"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n0 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000040"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#f004"/></svg>`); !strings.HasPrefix(content, "q\n/GS1 gs\n1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="#ff000000"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageHslColorsAreDrawn(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(120, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 1 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(240deg 100% 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="HSL(-120, 100%, 50%)"/></svg>`); !strings.HasPrefix(content, "0 0 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0.5turn 100% 50%)"/></svg>`); !strings.HasPrefix(content, "0 1 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0, 0%, 100%)"/></svg>`); !strings.HasPrefix(content, "1 1 1 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsla(0, 100%, 50%, 0.5)"/></svg>`).paths[0].fillAlpha; alpha != 0.5 {
+		t.Errorf("alpha %v", alpha)
+	}
+	if alpha := testNewSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="hsl(0 100% 50% / 25%)"/></svg>`).paths[0].fillAlpha; alpha != 0.25 {
+		t.Errorf("alpha %v", alpha)
+	}
+}
+
+func TestSVGImageTheKeywordsOfAPaintAreInAnyCase(t *testing.T) {
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="red" fill="currentcolor"/></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" color="red" fill="CURRENTCOLOR"/></svg>`); !strings.HasPrefix(content, "1 0 0 rg\n") {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="NONE"/></svg>`); content != "" {
+		t.Errorf("content %q", content)
+	}
+	if content := testDrawSVG(t, `<svg width="100" height="100"><path d="M0 0 L10 0 L10 10 Z" fill="None"/></svg>`); content != "" {
 		t.Errorf("content %q", content)
 	}
 }

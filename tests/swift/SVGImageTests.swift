@@ -420,7 +420,7 @@ import Testing
             ("fill=\"#F00\"", "1 0 0 rg"),
             ("fill=\"rgb(255, 0, 0)\"", "1 0 0 rg"),
             ("fill=\"rgb(100%,0%,0%)\"", "1 0 0 rg"),
-            ("fill=\"RGBA(255 0 0 / 0.5)\"", "1 0 0 rg"),
+            ("fill=\"RGBA(255 0 0 / 1)\"", "1 0 0 rg"),
             ("fill=\"Red\"", "1 0 0 rg"),
             ("fill=\"currentColor\" color=\"red\"", "1 0 0 rg"),
             ("fill=\"currentColor\"", "0 0 0 rg"),
@@ -930,6 +930,78 @@ import Testing
         do {
             let content = try draw("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><rect width=\"20\" height=\"20\"/><path d=\"M50 0 C50 10 60 20 70 20 L70 0 Z\"/></clipPath><rect width=\"5\" height=\"5\" clip-path=\"url(#c)\"/></svg>")
             #expect(content.contains("50 792 m\n70 792 l\n70 772 l\n60 772 50 782 50 792 c\nW\nn\n"), "\(content)")
+        }
+    }
+
+    @Test func theAlphaOfAColorIsDrawn() throws {
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\"/></svg>").paths[0].fillAlpha == Float(0.5))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgb(255 0 0 / 25%)\"/></svg>").paths[0].fillAlpha == Float(0.25))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(255,0,0,0.5)\" fill-opacity=\"0.5\"/></svg>").paths[0].fillAlpha == Float(0.25))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>").paths[0].fillAlpha == Float(0.2509804))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>").paths[0].fillAlpha == Float(0.26666668))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" stroke=\"#00ff0080\"/></svg>").paths[0].strokeAlpha == Float(0.5019608))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"red\"/></svg>").paths[0].fillAlpha == Float(1.0))
+        #expect(try image("<svg width=\"100\" height=\"100\"><g fill=\"rgba(0,0,0,0.5)\"><path d=\"M0 0 L10 0 L10 10 Z\"/></g></svg>").paths[0].fillAlpha == Float(0.5))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"rgba(0,0,255,0.5)\" fill=\"currentColor\"/></svg>").paths[0].fillAlpha == Float(0.5))
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"rgba(0,0,0,0.5)\"/></svg>")
+            #expect(content.hasPrefix("q\n/GS1 gs\n0 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000040\"/></svg>")
+            #expect(content.hasPrefix("q\n/GS1 gs\n1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#f004\"/></svg>")
+            #expect(content.hasPrefix("q\n/GS1 gs\n1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"#ff000000\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func hslColorsAreDrawn() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(120, 100%, 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 1 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(240deg 100% 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 0 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"HSL(-120, 100%, 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 0 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0.5turn 100% 50%)\"/></svg>")
+            #expect(content.hasPrefix("0 1 1 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0, 0%, 100%)\"/></svg>")
+            #expect(content.hasPrefix("1 1 1 rg\n"), "\(content)")
+        }
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsla(0, 100%, 50%, 0.5)\"/></svg>").paths[0].fillAlpha == Float(0.5))
+        #expect(try image("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"hsl(0 100% 50% / 25%)\"/></svg>").paths[0].fillAlpha == Float(0.25))
+    }
+
+    @Test func theKeywordsOfAPaintAreInAnyCase() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"currentcolor\"/></svg>")
+            #expect(content.hasPrefix("1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" color=\"red\" fill=\"CURRENTCOLOR\"/></svg>")
+            #expect(content.hasPrefix("1 0 0 rg\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"NONE\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" fill=\"None\"/></svg>")
+            #expect(content == "", "\(content)")
         }
     }
 }

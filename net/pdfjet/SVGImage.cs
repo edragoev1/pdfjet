@@ -579,8 +579,8 @@ public class SVGImage : IDrawable {
         path.operations = operations;
         path.fill = state.fillCurrent ? state.color : state.fill;
         path.stroke = state.strokeCurrent ? state.color : state.stroke;
-        path.fillAlpha = state.fillOpacity * state.opacity;
-        path.strokeAlpha = state.strokeOpacity * state.opacity;
+        path.fillAlpha = state.DrawnFillAlpha();
+        path.strokeAlpha = state.DrawnStrokeAlpha();
         if (path.fillAlpha == 0f) {
             path.fill = Color.transparent;
         }
@@ -1040,8 +1040,8 @@ public class SVGImage : IDrawable {
                 run.baseline = state.baseline;
                 run.fill = state.fillCurrent ? state.color : state.fill;
                 run.stroke = state.strokeCurrent ? state.color : state.stroke;
-                run.fillAlpha = state.fillOpacity * state.opacity;
-                run.strokeAlpha = state.strokeOpacity * state.opacity;
+                run.fillAlpha = state.DrawnFillAlpha();
+                run.strokeAlpha = state.DrawnStrokeAlpha();
                 run.strokeWidth = state.strokeWidth;
                 run.strokeFirst = state.strokeFirst;
                 run.lineJoin = state.lineJoin;

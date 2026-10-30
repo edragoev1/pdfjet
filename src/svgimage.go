@@ -640,8 +640,8 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	if state.strokeCurrent {
 		path.stroke = state.color
 	}
-	path.fillAlpha = float32(state.fillOpacity * state.opacity)
-	path.strokeAlpha = float32(state.strokeOpacity * state.opacity)
+	path.fillAlpha = state.drawnFillAlpha()
+	path.strokeAlpha = state.drawnStrokeAlpha()
 	if path.fillAlpha == 0.0 {
 		path.fill = color.Transparent
 	}
@@ -1090,8 +1090,8 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 				baseline:    state.baseline,
 				fill:        state.fill,
 				stroke:      state.stroke,
-				fillAlpha:   float32(state.fillOpacity * state.opacity),
-				strokeAlpha: float32(state.strokeOpacity * state.opacity),
+				fillAlpha:   state.drawnFillAlpha(),
+				strokeAlpha: state.drawnStrokeAlpha(),
 				strokeWidth: state.strokeWidth,
 				strokeFirst: state.strokeFirst,
 				lineJoin:    state.lineJoin,

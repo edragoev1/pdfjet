@@ -18,6 +18,9 @@ struct SVGState {
     var fillCurrent = false                 // currentColor: the color property, as it is where it is used
     var strokeCurrent = false
     var color: Int32 = Color.black          // The color property
+    var fillAlpha: Float = 1.0              // The alpha of the fill color, as #f008 or rgba() has one
+    var strokeAlpha: Float = 1.0
+    var colorAlpha: Float = 1.0
     var strokeWidth: Float = 1.0            // In the user space of the element
     var evenOdd = false                     // fill-rule="evenodd"
     var clipEvenOdd = false                 // clip-rule="evenodd"
@@ -73,26 +76,29 @@ struct SVGState {
         }
         switch name {
         case "fill", "stroke":
-            let paint: (Int32, Bool)?
+            let paint: (Int32, Float, Bool)?
             do {
                 paint = try SVGState.parsePaint(value, paints)
             } catch let error as PDFjetError {
                 throw PDFjetError(message: "invalid SVG " + name + ": " + error.description)
             }
-            guard let (color, current) = paint else {
+            guard let (color, alpha, current) = paint else {
                 return
             }
             if name == "fill" {
                 fill = color
+                fillAlpha = alpha
                 fillCurrent = current
             } else {
                 stroke = color
+                strokeAlpha = alpha
                 strokeCurrent = current
             }
         case "color":
             do {
-                if let c = try SVGState.parseColor(value) {
+                if let (c, alpha) = try SVGState.parseColor(value) {
                     color = c
+                    colorAlpha = alpha
                 }
             } catch let error as PDFjetError {
                 throw PDFjetError(message: "invalid SVG color: " + error.description)
@@ -361,7 +367,7 @@ struct SVGState {
     // color after it, which SVG draws when it cannot draw the url, or none, as
     // a browser draws it. Returns the paint and whether it is currentColor, or
     // nil for a value that leaves the paint as it is inherited.
-    private static func parsePaint(_ value: String, _ paints: [[UInt8]: Int32]?) throws -> (Int32, Bool)? {
+    private static func parsePaint(_ value: String, _ paints: [[UInt8]: Int32]?) throws -> (Int32, Float, Bool)? {
         var value = value
         if hasPrefix(value, "url(") {
             let scalars = Array(value.unicodeScalars)
@@ -369,45 +375,65 @@ struct SVGState {
                 return nil
             }
             if let id = urlId(string(scalars[...end])), let gradient = paints?[Array(id.utf8)] {
-                return (gradient, false)
+                return (gradient, 1.0, false)
             }
             value = trimSpace(string(scalars[(end + 1)...]))
             if value.isEmpty {
                 value = "none"
             }
         }
-        if value == "none" {
-            return (Color.transparent, false)
+        let keyword = toLower(value)
+        if keyword == "none" {
+            return (Color.transparent, 1.0, false)
         }
-        if value == "currentColor" {
-            return (0, true)
+        if keyword == "currentcolor" {
+            return (0, 1.0, true)
         }
-        guard let color = try parseColor(value) else {
+        guard let (color, alpha) = try parseColor(value) else {
             return nil
         }
-        return (color, false)
+        return (color, alpha, false)
     }
 
-    // Reads a color: #rgb, #rrggbb, rgb() of three numbers or percentages, or
-    // a name. Returns nil for a color it does not know, and throws for one
+    // The alpha the fill is drawn with: its opacities and the alpha of its
+    // color.
+    func drawnFillAlpha() -> Float {
+        return fillOpacity * opacity * (fillCurrent ? colorAlpha : fillAlpha)
+    }
+
+    // The alpha the stroke is drawn with.
+    func drawnStrokeAlpha() -> Float {
+        return strokeOpacity * opacity * (strokeCurrent ? colorAlpha : strokeAlpha)
+    }
+
+    // Reads a color and its alpha: #rgb, #rgba, #rrggbb, #rrggbbaa, rgb() of
+    // three numbers or percentages, hsl(), with an alpha after them in either,
+    // or a name. Returns nil for a color it does not know, and throws for one
     // that starts with # but is not hexadecimal.
-    private static func parseColor(_ value: String) throws -> Int32? {
+    private static func parseColor(_ value: String) throws -> (Int32, Float)? {
         if hasPrefix(value, "#") {
             // The digits are counted in bytes, as the other ports count them.
             var hex = Array(value.utf8.dropFirst())
-            if hex.count == 3 {
-                hex = [hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]]
+            if hex.count == 3 || hex.count == 4 {
+                hex = hex.flatMap { [$0, $0] }
             }
-            if hex.count != 6 {
+            if hex.count != 6 && hex.count != 8 {
                 return nil
             }
-            guard let c = Int32(String(decoding: hex, as: UTF8.self), radix: 16) else {
+            guard let c = Int32(String(decoding: hex[0..<6], as: UTF8.self), radix: 16) else {
                 throw PDFjetError(message: "invalid color \"" + value + "\"")
             }
-            return c
+            if hex.count == 6 {
+                return (c, 1.0)
+            }
+            guard let a = Int32(String(decoding: hex[6...], as: UTF8.self), radix: 16) else {
+                throw PDFjetError(message: "invalid color \"" + value + "\"")
+            }
+            return (c, Float(max(a, 0)) / 255.0)
         }
         let lower = toLower(value)
-        if hasPrefix(lower, "rgb(") || hasPrefix(lower, "rgba(") {
+        let hsl = hasPrefix(lower, "hsl(") || hasPrefix(lower, "hsla(")
+        if hsl || hasPrefix(lower, "rgb(") || hasPrefix(lower, "rgba(") {
             let scalars = Array(lower.unicodeScalars)
             let open = scalars.firstIndex(of: "(")!
             guard let end = scalars.firstIndex(of: ")"), end >= open else {
@@ -418,6 +444,10 @@ struct SVGState {
             })
             if parts.count < 3 {
                 return nil
+            }
+            let alpha = (parts.count > 3) ? parseOpacity(string(parts[parts.startIndex + 3])) ?? 1.0 : 1.0
+            if hsl {
+                return parseHSL(parts.map { string($0) }).map { ($0, alpha) }
             }
             var rgb: Int32 = 0
             for part in parts[0..<3] {
@@ -433,9 +463,54 @@ struct SVGState {
                 let channel = (number * scale).rounded()
                 rgb = rgb << 8 | Int32(goMax(0.0, goMin(255.0, channel)))
             }
-            return rgb
+            return (rgb, alpha)
         }
-        return colorMap[lower]
+        return colorMap[lower].map { ($0, 1.0) }
+    }
+
+    // Returns the color of the hue, the saturation and the lightness of
+    // hsl(), by the formula of CSS Color 4, or nil for one it cannot read.
+    private static func parseHSL(_ parts: [String]) -> Int32? {
+        guard let hue = parseHue(parts[0]), let saturation = parsePercentage(parts[1]),
+              let lightness = parsePercentage(parts[2]) else {
+            return nil
+        }
+        let a = saturation * goMin(lightness, 1.0 - lightness)
+        var rgb: Int32 = 0
+        for n in [0.0, 8.0, 4.0] {
+            let k = (n + hue / 30.0).truncatingRemainder(dividingBy: 12.0)
+            let channel = lightness - a * goMax(-1.0, goMin(goMin(k - 3.0, 9.0 - k), 1.0))
+            rgb = rgb << 8 | Int32(goMax(0.0, goMin(255.0, (channel * 255.0).rounded())))
+        }
+        return rgb
+    }
+
+    // Reads a hue, in degrees unless it has a unit, and returns it from 0 to
+    // 360, or nil for one it cannot read.
+    private static func parseHue(_ text: String) -> Double? {
+        var scale = 1.0
+        var digits = text
+        for (unit, degrees) in [("deg", 1.0), ("grad", 0.9), ("rad", 57.29577951308232), ("turn", 360.0)]
+                where hasSuffix(digits, unit) {
+            digits = string(digits.unicodeScalars.dropLast(unit.unicodeScalars.count))
+            scale = degrees
+            break
+        }
+        guard let number = parseDouble(digits), number.isFinite else {
+            return nil
+        }
+        let hue = (number * scale).truncatingRemainder(dividingBy: 360.0)
+        return (hue < 0.0) ? hue + 360.0 : hue
+    }
+
+    // Reads a saturation or a lightness, with or without its percent sign,
+    // and returns it between 0 and 1, or nil for one it cannot read.
+    private static func parsePercentage(_ text: String) -> Double? {
+        let digits = hasSuffix(text, "%") ? string(text.unicodeScalars.dropLast()) : text
+        guard let number = parseDouble(digits), number.isFinite else {
+            return nil
+        }
+        return goMax(0.0, goMin(1.0, number / 100.0))
     }
 
     // Reads an opacity, a number or a percentage, and returns it between 0 and 1.
