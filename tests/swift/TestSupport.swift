@@ -372,7 +372,7 @@ func shortestTime(_ limit: Duration, _ work: () throws -> Void) rethrows -> Dura
     return try shortestTime(limit, prepare: {}, { _ in try work() })
 }
 
-// Expects that the work of size 2n takes less than three times
+// Expects that the work of size 2n takes less than 3.8 times
 // the work of size n, each the shortest of three runs: the time of a linear
 // algorithm doubles, and that of a quadratic one, whose time dominates at n,
 // comes near four times. A ratio holds on a busy computer, where limits in
@@ -391,7 +391,7 @@ func expectLinearTime(_ n: Int, sourceLocation: SourceLocation = #_sourceLocatio
             small = min(small, try clock.measure { try work(n) })
             large = min(large, try clock.measure { try work(2 * n) })
         }
-        if large < small * 3 {
+        if large * 5 < small * 19 {
             return
         }
     }

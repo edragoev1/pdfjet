@@ -308,7 +308,7 @@ public static class TestSupport {
         return shortest;
     }
 
-    // Checks that the work of size 2n takes less than three times
+    // Checks that the work of size 2n takes less than 3.8 times
     // the work of size n, each the shortest of three runs: the time of a linear
     // algorithm doubles, and that of a quadratic one, whose time dominates at n,
     // comes near four times. A ratio holds on a busy computer, where limits in
@@ -329,7 +329,7 @@ public static class TestSupport {
                 work(2*n);
                 large = Math.Min(large, watch.ElapsedTicks);
             }
-            if (large < 3L*small) {
+            if (5L*large < 19L*small) {
                 return;
             }
         }

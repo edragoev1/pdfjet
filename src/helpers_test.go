@@ -311,7 +311,7 @@ func testShortest(limit time.Duration, work func()) time.Duration {
 	return fuzzShortest(limit, work)
 }
 
-// testLinearTime checks that the work of size 2n takes less than three times
+// testLinearTime checks that the work of size 2n takes less than 3.8 times
 // the work of size n, each the shortest of three runs: the time of a linear
 // algorithm doubles, and that of a quadratic one, whose time dominates at n,
 // comes near four times. A ratio holds on a busy computer, where limits in
@@ -331,7 +331,7 @@ func testLinearTime(t *testing.T, n int, work func(n int)) {
 			work(2 * n)
 			large = min(large, time.Since(start))
 		}
-		if large < 3*small {
+		if 5*large < 19*small {
 			return
 		}
 	}

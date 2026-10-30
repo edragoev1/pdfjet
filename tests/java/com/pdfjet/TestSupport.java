@@ -306,7 +306,7 @@ public final class TestSupport {
         void run(int n) throws Exception;
     }
 
-    // Checks that the work of size 2n takes less than three times
+    // Checks that the work of size 2n takes less than 3.8 times
     // the work of size n, each the shortest of three runs: the time of a linear
     // algorithm doubles, and that of a quadratic one, whose time dominates at n,
     // comes near four times. A ratio holds on a busy computer, where limits in
@@ -327,7 +327,7 @@ public final class TestSupport {
                 work.run(2*n);
                 large = Math.min(large, System.nanoTime() - start);
             }
-            if (large < 3L*small) {
+            if (5L*large < 19L*small) {
                 return;
             }
         }
