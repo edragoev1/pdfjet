@@ -14,7 +14,9 @@ import java.util.*;
  * darker, a few of them highlighted, navy and labeled with their names beside
  * them, and the trend line of the points if asked, labeled at its end. A light
  * horizontal grid alone, no border or legend, on a light panel, with a title
- * and a subtitle at the top left, in the look of SimpleBarChart.
+ * and a subtitle at the top left, in the look of SimpleBarChart. Any point can
+ * be a link, a dot with a description that a hover or a screen reader gets, so
+ * that all of 200 points are links without a name printed for each.
  * <p>
  * In a PDF/UA document the chart is one figure, described from its data: the
  * number of points, the highlighted ones and their values, and which way the
@@ -31,13 +33,18 @@ public class SimpleScatterChart implements Drawable {
     static final int GRID = 0xD5D9DE;
     static final int TREND = 0x5F6873;
     static final float ALPHA = 0.55f;
+    // The least width and height of the link of a dot, which PDF writes in
+    // hundredths: 8 points that stay 8 however the two sides round.
+    static final float HIT_SIZE = 8.02f;
 
-    // A point of the chart, highlighted when it has a name.
+    // A point of the chart, highlighted when it has a name, but for a dot:
+    // its name describes it and is not printed.
     static final class Point {
         final float x;
         final float y;
         final String name;
-        final String uri;       // The link of a highlighted point, or null
+        final String uri;       // The link of the point, or null
+        boolean dot = false;    // Drawn as a point that is not highlighted
         int series = -1;        // The index of its series, or -1 for none
 
         Point(float x, float y, String name) {
@@ -49,6 +56,17 @@ public class SimpleScatterChart implements Drawable {
             this.y = y;
             this.name = (name == null) ? "" : name;
             this.uri = uri;
+        }
+
+        // Tells if the point is drawn in the highlight color, its name
+        // beside it.
+        boolean highlighted() {
+            return !name.isEmpty() && !dot;
+        }
+
+        // Tells if the point is a dot that is a link.
+        boolean linkedDot() {
+            return dot && uri != null;
         }
     }
 
@@ -207,6 +225,30 @@ public class SimpleScatterChart implements Drawable {
     public SimpleScatterChart add(String name, float x, float y, String uri) {
         // An empty URI is no link, as in the Go port
         return addPoint(new Point(x, y, name, (uri == null || uri.isEmpty()) ? null : uri));
+    }
+
+    /**
+     * Adds a point that is a link and not highlighted: a dot as add(x, y)
+     * draws it, in its series if any, with nothing beside it. Its name is not
+     * printed: it is the description of the link, and in a PDF/UA document
+     * that of a figure of its own in the Link that holds its annotation, as
+     * with add(name, x, y, uri), and it counts in the description of the chart
+     * as a point of add(x, y) does. The link is at least 8 points square
+     * around the dot, so that it can be hit, and inside the page. A name left
+     * empty is described by the URI; a URI left empty is no link.
+     *
+     * @param name the description of the point.
+     * @param x the x of the point.
+     * @param y the y of the point.
+     * @param uri the URI the point links to.
+     * @return this chart.
+     */
+    public SimpleScatterChart addLinkedDot(String name, float x, float y, String uri) {
+        String link = (uri == null || uri.isEmpty()) ? null : uri;
+        // A figure needs a description
+        Point p = new Point(x, y, (name == null || Util.trimSpace(name).isEmpty()) ? link : name, link);
+        p.dot = true;
+        return addPoint(p);
     }
 
     /**
@@ -567,7 +609,7 @@ public class SimpleScatterChart implements Drawable {
         }
         int named = 0;
         for (Point p : shown) {
-            if (p.name.isEmpty()) {
+            if (!p.highlighted()) {
                 continue;
             }
             sb.append(named == 0 ? "; " : ", ");
@@ -649,6 +691,16 @@ public class SimpleScatterChart implements Drawable {
         // annotation, as PDF/UA asks: a link inside the chart's figure has
         // nothing to hold
         boolean linksApart = page.tagsContent();
+
+        // The dots that are links, drawn so after the chart
+        List<Point> linkedDots = new ArrayList<Point>();
+        if (linksApart) {
+            for (Point p : points) {
+                if (p.linkedDot() && onPlot(p, xAxis, yAxis)) {
+                    linkedDots.add(p);
+                }
+            }
+        }
 
         page.addBDC(StructElem.FIGURE, null, altDescription());
         page.saveGraphicsState();
@@ -755,16 +807,11 @@ public class SimpleScatterChart implements Drawable {
 
         // The dots, then the highlighted points and their names over them
         page.saveGraphicsState();
-        if (!page.pdf.isPDFA1()) {
-            GraphicsState gs = new GraphicsState();
-            gs.setAlphaNonStroking(ALPHA);
-            page.setGraphicsState(gs);
-        }
+        setTransparent(page);
         page.setBrushColor(dotColor);
-        float r = 0.3f * size;
         for (Point p : points) {
-            if (p.series < 0 && p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
-                page.fillCircle(xAt(p.x, xAxis, plotLeft, right), yAt(p.y, yAxis, top, plotBottom), r);
+            if (p.series < 0 && !p.highlighted() && !(linksApart && p.linkedDot()) && onPlot(p, xAxis, yAxis)) {
+                drawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
             }
         }
         page.restoreGraphicsState();
@@ -774,19 +821,29 @@ public class SimpleScatterChart implements Drawable {
             page.setPenWidth(0.12f * size);
         }
         for (Point p : points) {
-            if (p.series >= 0 && p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
-                page.setPenColor(seriesColor(p.series));
-                drawShape(page, p.series % SHAPES, xAt(p.x, xAxis, plotLeft, right),
-                        yAt(p.y, yAxis, top, plotBottom), 0.35f * size, false);
+            if (p.series >= 0 && !p.highlighted() && !(linksApart && p.linkedDot()) && onPlot(p, xAxis, yAxis)) {
+                drawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+        }
+        // The links of the dots first, for those of the highlighted points to
+        // be over them
+        for (Point p : points) {
+            if (p.linkedDot() && !linksApart && onPlot(p, xAxis, yAxis)) {
+                page.addAnnotation(linkOf(p, dotBox(p, xAxis, yAxis, plotLeft, right, top, plotBottom)));
             }
         }
         List<Point> linked = new ArrayList<Point>();
+        List<Point> over = new ArrayList<Point>();
         for (Point p : points) {
-            if (p.name.isEmpty() || !onPlot(p, xAxis, yAxis)) {
+            if (!p.highlighted() || !onPlot(p, xAxis, yAxis)) {
                 continue;
             }
             if (p.uri != null && linksApart) {
                 linked.add(p);
+                continue;
+            }
+            if (!linkedDots.isEmpty()) {
+                over.add(p);    // Over the dots, drawn after the chart
                 continue;
             }
             float[] box = drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
@@ -799,20 +856,90 @@ public class SimpleScatterChart implements Drawable {
         page.setFigureBoundingBox(x, y, w, h);
         page.addEMC();
 
-        for (Point p : linked) {
+        if (!linkedDots.isEmpty()) {
+            // As in the chart, whose graphics state ended with it
             page.saveGraphicsState();
-            StructElement link = page.beginLink();
-            page.addBDC(StructElem.FIGURE, null, p.name);
-            float[] box = drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
-            page.setFigureBoundingBox(box[0], box[1], box[2], box[3]);
-            page.addEMC();
-            page.endLink(link);
+            page.setDefaultStrokeDashPattern();
+            setTransparent(page);
+            if (!series.isEmpty()) {
+                page.setPenWidth(0.12f * size);
+            }
+            for (Point p : linkedDots) {
+                drawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
             page.restoreGraphicsState();
-            Annotation annotation = linkOf(p, box);
-            annotation.linkElement = link;
-            page.addAnnotation(annotation);
+        }
+        // A highlighted point that is no link is in the description of the
+        // chart, and over the dots that are drawn after it
+        if (!over.isEmpty()) {
+            page.saveGraphicsState();
+            page.addArtifactBMC();
+            for (Point p : over) {
+                drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+            page.addEMC();
+            page.restoreGraphicsState();
+        }
+        for (Point p : linked) {
+            drawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
         }
         return new float[] {x + w, y + h};
+    }
+
+    // Draws a point that is a link as a figure of its own in its Link.
+    private void drawFigure(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        page.saveGraphicsState();
+        StructElement link = page.beginLink();
+        page.addBDC(StructElem.FIGURE, null, p.name);
+        float[] box;
+        if (p.dot) {
+            drawDot(page, p, xAxis, yAxis, left, right, top, bottom);
+            box = dotBox(p, xAxis, yAxis, left, right, top, bottom);
+        } else {
+            box = drawNamed(page, p, xAxis, yAxis, left, right, top, bottom);
+        }
+        page.setFigureBoundingBox(box[0], box[1], box[2], box[3]);
+        page.addEMC();
+        page.endLink(link);
+        page.restoreGraphicsState();
+        Annotation annotation = linkOf(p, box);
+        annotation.linkElement = link;
+        page.addAnnotation(annotation);
+    }
+
+    // Draws what follows a little transparent, but in PDF/A-1.
+    private static void setTransparent(Page page) {
+        if (!page.pdf.isPDFA1()) {
+            GraphicsState gs = new GraphicsState();
+            gs.setAlphaNonStroking(ALPHA);
+            page.setGraphicsState(gs);
+        }
+    }
+
+    // Draws a point that is not highlighted, with the transparency, and the
+    // width of the outlines, set.
+    private void drawDot(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float size = f2.getSize();
+        float px = xAt(p.x, xAxis, left, right);
+        float py = yAt(p.y, yAxis, top, bottom);
+        if (p.series >= 0) {
+            page.setPenColor(seriesColor(p.series));
+            drawShape(page, p.series % SHAPES, px, py, 0.35f * size, false);
+        } else {
+            page.setBrushColor(dotColor);
+            page.fillCircle(px, py, 0.3f * size);
+        }
+    }
+
+    // The box of a dot, x, y, w, h: a little past the tip of its outline in
+    // the shape that reaches farthest, the triangle.
+    private float[] dotBox(Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float reach = 0.55f * f2.getSize();
+        return new float[] {xAt(p.x, xAxis, left, right) - reach, yAt(p.y, yAxis, top, bottom) - reach,
+                2f * reach, 2f * reach};
     }
 
     // Draws a highlighted point and its name, and returns the box of the two:
@@ -856,10 +983,10 @@ public class SimpleScatterChart implements Drawable {
         return new float[] {x1, y1, x2 - x1, y2 - y1};
     }
 
-    // The link annotation of a point, over the box of its dot and its name,
+    // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static Annotation linkOf(Point p, float[] box) {
-        return new Annotation(
+        Annotation annotation = new Annotation(
                 Annotation.Link,
                 box[0],
                 box[1],
@@ -875,6 +1002,8 @@ public class SimpleScatterChart implements Drawable {
                 null,
                 null,
                 p.name);
+        annotation.hitSize = p.dot ? HIT_SIZE : 0f;
+        return annotation;
     }
 
     // Tells if the point is on the plot: a point outside a range that is set

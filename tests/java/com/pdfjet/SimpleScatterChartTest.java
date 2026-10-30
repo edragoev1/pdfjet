@@ -131,6 +131,169 @@ class SimpleScatterChartTest {
         assertEquals(2, raw.split("/Subtype /Link", -1).length - 1);
     }
 
+    // A linked dot is drawn as a point of add(x, y) is, stroke for stroke, with
+    // nothing beside it: in a document that is not tagged it adds a link alone,
+    // described by its name, and the chart's description counts it and does
+    // not name it.
+    @Test
+    void aLinkedDotIsADotWithADescription() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        for (boolean withSeries : new boolean[] {false, true}) {
+            String[] plain = drawDot(withSeries, false);
+            String[] dot = drawDot(withSeries, true);
+            assertEquals(plain[0], dot[0], "not drawn as a plain point");
+            assertEquals(plain[1], dot[1], "not described as a plain point");
+            assertEquals(1, dot[2].split("/Subtype /Link", -1).length - 1);
+            assertTrue(dot[2].contains("/Contents " + TestSupport.textString("Andorra: 84.0 years")), "the name");
+            assertTrue(dot[2].contains("/URI <" + TestSupport.hex("https://pdfjet.com/a").toLowerCase() + ">"), "the URI");
+        }
+    }
+
+    // The content, the description and the bytes of a chart with a third point
+    // that is a linked dot, or a plain one.
+    private static String[] drawDot(boolean withSeries, boolean linked) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).setTitle("T").setTrendLine(true)
+                .add(1f, 1f).add(3f, 4f);
+        if (withSeries) {
+            chart.addSeries("Series");
+        }
+        if (linked) {
+            chart.addLinkedDot("Andorra: 84.0 years", 2f, 2f, "https://pdfjet.com/a");
+        } else {
+            chart.add(2f, 2f);
+        }
+        String alt = chart.altDescription();
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        pdf.complete();
+        return new String[] {content, alt, TestSupport.latin1(bos.toByteArray())};
+    }
+
+    // In a PDF/UA document a linked dot is a figure of its own in the Link that
+    // holds its annotation, as a linked point is, and looks as it does in the
+    // chart: transparent, or the outline of its series, undashed. A highlighted
+    // point stays over it.
+    @Test
+    void aLinkedDotIsAFigureInItsLink() throws Exception {
+        for (boolean withSeries : new boolean[] {false, true}) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
+            Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            page.setStrokeDashPattern("[3 3] 0");
+            SimpleScatterChart chart = new SimpleScatterChart(font, font).setSize(300f, 200f).setLocation(50f, 50f)
+                    .setHighlightColor(Color.red).add(1f, 1f);
+            if (withSeries) {
+                chart.addSeries("Series");
+            }
+            chart.addLinkedDot("Andorra", 2f, 2f, "https://pdfjet.com/a")
+                    .addLinkedDot("Belize", 3f, 1f, "https://pdfjet.com/b")
+                    .add("Chad", 4f, 3f, "https://pdfjet.com/c").add("Dominica", 2f, 3f);
+            String alt = chart.altDescription();
+            chart.drawOn(page);
+            String content = TestSupport.content(page);
+            pdf.complete();
+            String raw = TestSupport.latin1(bos.toByteArray());
+            java.util.Map<String, String[]> elements = TestSupport.structElements(raw);
+            int links = 0;
+            for (java.util.Map.Entry<String, String[]> entry : elements.entrySet()) {
+                String[] link = entry.getValue();
+                if (!link[0].equals("Link")) {
+                    continue;
+                }
+                links++;
+                String figure = link[2].substring(1).split(" ")[0];
+                assertEquals("Figure", elements.get(figure)[0], link[2]);
+                assertEquals(entry.getKey(), elements.get(figure)[1]);
+                assertTrue(link[2].contains("/Type /OBJR"), link[2]);
+            }
+            assertEquals(3, links);
+            for (String name : new String[] {"Andorra", "Belize", "Chad"}) {
+                assertTrue(raw.contains("/Alt " + TestSupport.textString(name)), name);
+            }
+            assertFalse(alt.contains("Andorra") || alt.contains("Belize"), alt);
+            // The chart, the dots' figures, the named point over them, Chad's
+            int first = content.indexOf("/Figure <</MCID 1>>");
+            int second = content.indexOf("/Figure <</MCID 2>>");
+            int last = content.indexOf("/Figure <</MCID 3>>");
+            int artifact = content.indexOf("/Artifact BMC");
+            assertTrue(content.indexOf("/Figure <</MCID 0>>") != -1 && first != -1 && second > first
+                    && artifact > second && last > artifact, "the order of the figures");
+            String dot = content.substring(first, second);
+            assertFalse(dot.contains("1 0 0 rg"), dot);
+            assertEquals(withSeries, dot.contains("\nS\n"), dot);
+            assertEquals(!withSeries, dot.contains("\nf\n"), dot);
+            String before = content.substring(content.lastIndexOf("EMC", first), first);
+            assertTrue(before.contains("[] 0 d\n") && before.contains(" gs\n"), before);
+        }
+    }
+
+    // A dot's description is its name, or its URI when it has no name, and a
+    // dot without a URI is a plain point; one outside a range that is set is
+    // no link.
+    @Test
+    void aLinkedDotWithoutANameOrAURI() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).setSize(300f, 200f).setLocation(50f, 50f).setXAxisRange(0f, 5f)
+                .addLinkedDot("", 1f, 1f, "https://pdfjet.com/a").addLinkedDot("Belize", 2f, 2f, "")
+                .addLinkedDot("Chad", 9f, 3f, "https://pdfjet.com/c").drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, raw.split("/Subtype /Link", -1).length - 1);
+        assertTrue(raw.contains("/Alt " + TestSupport.textString("https://pdfjet.com/a")), "the URI");
+        assertFalse(raw.contains(TestSupport.textString("Belize")) || raw.contains(TestSupport.textString("Chad")));
+    }
+
+    // The link of a dot is at least 8 points square and holds the dot, on the
+    // page as written, and inside the page, in a corner too.
+    @Test
+    void theLinkOfADotCanBeHit() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        for (float size : new float[] {2f, 9f, 30f}) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            Font font = TestSupport.helvetica(pdf);
+            font.setSize(size);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new SimpleScatterChart(font, font).setSize(612f, 792f).setLocation(0f, 0f)
+                    .setXAxisRange(0f, 4f).setYAxisRange(0f, 4f)
+                    .addLinkedDot("Middle", 2f, 2f, "https://pdfjet.com/m")
+                    .addLinkedDot("Left", 0f, 2f, "https://pdfjet.com/l").drawOn(page);
+            // Past the corners of the page, as a chart that hangs over it
+            page.addAnnotation(corner(-1f, -1f, 0f, 0f));
+            page.addAnnotation(corner(612f, 792f, 613f, 793f));
+            pdf.complete();
+            String[] rects = TestSupport.latin1(bos.toByteArray()).split("/Rect \\[");
+            assertEquals(5, rects.length);
+            for (int i = 1; i < rects.length; i++) {
+                String[] box = rects[i].substring(0, rects[i].indexOf(']')).split(" ");
+                float x1 = Float.parseFloat(box[0]);
+                float y1 = Float.parseFloat(box[1]);
+                float x2 = Float.parseFloat(box[2]);
+                float y2 = Float.parseFloat(box[3]);
+                String rect = rects[i].substring(0, rects[i].indexOf(']'));
+                assertTrue(x2 - x1 >= 7.999f && Math.abs(y2 - y1) >= 7.999f, rect);
+                assertTrue(i > 2 || x2 - x1 >= 0.9f * size, rect);
+                assertTrue(x1 >= 0f && x2 <= 612f && Math.min(y1, y2) >= 0f && Math.max(y1, y2) <= 792f, rect);
+            }
+        }
+    }
+
+    // A link with the hit size of a dot, at the box.
+    private static Annotation corner(float x1, float y1, float x2, float y2) {
+        Annotation annotation = new Annotation(Annotation.Link, x1, y1, x2, y2, null, null, 0f, null, null,
+                "https://pdfjet.com/c", null, null, null, "Corner");
+        annotation.hitSize = SimpleScatterChart.HIT_SIZE;
+        return annotation;
+    }
+
     // In a document that is not tagged, a linked point is drawn in the chart,
     // its dot and its name the link, and no elements are made.
     @Test
