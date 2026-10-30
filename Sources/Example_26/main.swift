@@ -12,9 +12,10 @@ import PDFjet
  * This example draws a SimpleScatterChart of the life expectancy and the
  * children per woman of 217 countries and economies, from the World Bank's
  * data of 2023: a series for each of the World Bank's seven regions, in its
- * color and shape, seven of the countries named, each point a link to its page
- * of the World Bank's data, described by its figures, and the trend line, with
- * a table of the named ones under the chart.
+ * color and shape, seven of the countries named, each point a link to its row
+ * of a table on pdfjet.com, with its life expectancy and children per woman,
+ * described by its figures, and the trend line, with a table of the named ones
+ * under the chart.
  */
 public class Example_26 {
     // The countries named on the chart, by their codes
@@ -52,7 +53,7 @@ public class Example_26 {
                 .setLocation(50.0, 70.0).drawOn(page)
         let intro = [Paragraph(TextLine(f2, "Where women have fewer children, people live longer: the "
                 + "\(total) countries and economies of the World Bank's data of 2023, in a color and "
-                + "a shape for each of its seven regions, seven of them named, each point a link to its page of the World Bank's data, and the trend line "
+                + "a shape for each of its seven regions, seven of them named, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "
                 + "through them, with the named ones in the table "
                 + "under the chart.").setFontSize(10.0))]
         let frame = TextFrame(intro).setLocation(50.0, 84.0).setWidth(512.0)
@@ -76,7 +77,7 @@ public class Example_26 {
                 }
                 let life = Float(field[2]) ?? 0
                 let children = Float(field[3]) ?? 0
-                let uri = "https://data.worldbank.org/country/" + field[5]
+                let uri = "https://pdfjet.com/countries.html#" + field[5]
                 if Example_26.named.contains(field[1]) {
                     chart.add(field[0], children, life, uri)    // Its shape filled, named, a link
                 } else {

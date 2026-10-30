@@ -17,9 +17,10 @@ using PDFjet.NET;
  * This example draws a SimpleScatterChart of the life expectancy and the
  * children per woman of 217 countries and economies, from the World Bank's
  * data of 2023: a series for each of the World Bank's seven regions, in its
- * color and shape, seven of the countries named, each point a link to its page
- * of the World Bank's data, described by its figures, and the trend line, with
- * a table of the named ones under the chart.
+ * color and shape, seven of the countries named, each point a link to its row
+ * of a table on pdfjet.com, with its life expectancy and children per woman,
+ * described by its figures, and the trend line, with a table of the named ones
+ * under the chart.
  */
 public class Example_26 {
     // The countries named on the chart, by their codes
@@ -59,7 +60,7 @@ public class Example_26 {
         List<Paragraph> intro = new List<Paragraph>();
         intro.Add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
                 + total + " countries and economies of the World Bank's data of 2023, in a color and "
-                + "a shape for each of its seven regions, seven of them named, each point a link to its page of the World Bank's data, and the trend line "
+                + "a shape for each of its seven regions, seven of them named, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "
                 + "through them, with the named ones in the table "
                 + "under the chart.").SetFontSize(10f)));
         TextFrame frame = new TextFrame(intro).SetLocation(50f, 84f).SetWidth(512f);
@@ -83,7 +84,7 @@ public class Example_26 {
                 }
                 float life = float.Parse(field[2], CultureInfo.InvariantCulture);
                 float children = float.Parse(field[3], CultureInfo.InvariantCulture);
-                String uri = "https://data.worldbank.org/country/" + field[5];
+                String uri = "https://pdfjet.com/countries.html#" + field[5];
                 if (NAMED.Contains(field[1])) {
                     chart.Add(field[0], children, life, uri);   // Its shape filled, named, a link
                 } else {

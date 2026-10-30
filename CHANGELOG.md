@@ -38,10 +38,11 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   least 8 points square around the dot, however small the dot is, and inside
   the page. The point counts in the description of the chart as a plain
   point does, unnamed. Example_26 uses it: every one of its 217 countries is
-  now a link, to the World Bank's page by its two-letter code, a new last
-  field of the data file, the seven named ones as before and the rest
-  described by their figures ("Albania: 79.6 years, 1.35 children per
-  woman"), which takes its PDF from 53 KB to 269 KB.
+  now a link, to its row of a table on pdfjet.com, with its life expectancy
+  and children per woman (`https://pdfjet.com/countries.html#CA`), by its
+  two-letter code, a new last field of the data file, the seven named ones
+  as well and the rest described by their figures ("Albania: 79.6 years,
+  1.35 children per woman"), which takes its PDF from 53 KB to 268 KB.
 - SimpleScatterChart and SimpleLineChart, all four ports, say how much of
   their data a range leaves out. With a range set, `setXAxisRange` or
   `setYAxisRange`, the scatter chart did not draw a point outside it and the
