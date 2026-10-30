@@ -8,8 +8,11 @@ import Foundation
 
 ///
 /// Bar chart renderer for PDF pages: one slot per category, the bars of the
-/// series grouped inside each slot. See Example_27, of horizontal and
-/// vertical bars.
+/// series grouped inside each slot. A value of a line series outside a range
+/// that is set cuts its line at the edge of the plot, and the chart says how
+/// many are: "2 values outside the range", small, under the plot at its right
+/// end, and in its description, in that alone when the plot would not be left
+/// room to draw. See Example_27, of horizontal and vertical bars.
 ///
 public class BarChart : Drawable {
     /// One series of the chart: a name, a value per category and a color, or
@@ -132,7 +135,9 @@ public class BarChart : Drawable {
     /// Sets the alternate description of the chart, which a screen reader reads
     /// in a PDF/UA document, where the chart is a figure. The default is the
     /// title and the subtitle, or "Bar chart" without them, and the values of
-    /// each series by category. Describe what the chart shows.
+    /// each series by category. Describe what the chart shows. The number of
+    /// values of the line series outside a range that is set follows it, as the
+    /// chart prints it.
     ///
     /// - Parameter altDescription: the alternate description.
     /// - Returns: this BarChart object.
@@ -239,7 +244,9 @@ public class BarChart : Drawable {
     /// Adds a series drawn as a line over the bars, in ink, a dot at each
     /// category: a target, the average, or last year. It shares the value
     /// axis with the bars, is not stacked, and is in the legend and the
-    /// description. A value that is NaN or infinite leaves a gap in the line.
+    /// description. A value that is NaN or infinite leaves a gap in the line, and
+    /// the chart says how many values are outside a range set with
+    /// setValueAxisRange.
     ///
     /// - Parameter name: the series name, shown in the legend; empty for none.
     /// - Parameter values: one value per category.
@@ -453,7 +460,10 @@ public class BarChart : Drawable {
     /// Sets the range of the value axis, with grid lines on a round step, as
     /// setYAxisRange does in SimpleLineChart and SimpleScatterChart. Without it
     /// the range is that of the data, rounded to steps, and always includes 0.
-    /// A range whose end is not past its start is not set.
+    /// A range whose end is not past its start is not set. A value of a line
+    /// series outside the range is drawn past the plot, which clips it, and the
+    /// chart says how many are, under the plot, which is that much shorter, and
+    /// in its description.
     ///
     /// - Parameter min: the value at the start of the axis.
     /// - Parameter max: the value at the end of the axis.
@@ -645,7 +655,21 @@ public class BarChart : Drawable {
         let x5 = x1 + leftMargin
         let y5 = y1 + topMargin
         let x6 = x2 - rightMargin
-        let y8 = y2 - bottomMargin
+        var y8 = y2 - bottomMargin
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        var note = outsideNote()
+        let small = 0.8 * f2.getSize()
+        var noteRow: Float = 0.0
+        if !note.isEmpty {
+            let above = y8 - 1.4 * small
+            if above > y5 {
+                noteRow = 1.4 * small
+                y8 = above
+            } else {
+                note = ""
+            }
+        }
         // No room for the plot, or an axis whose span is past the largest
         // float, as a set range of -3e38 to 3e38, whose steps are infinite
         if x6 <= x5 || y8 <= y5 || !ChartScale.isValue(step) {
@@ -936,8 +960,11 @@ public class BarChart : Drawable {
                 BarChart.MUTED)
         page.setTextRotation(0)
         let xTitle = ChartScale.shorten(f2, f2.getSize(), xAxisTitle, x6 - x5)
-        BarChart.drawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.stringWidth(xTitle)) / 2.0, y2 - bodyHeight / 2.0,
-                BarChart.MUTED)
+        BarChart.drawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.stringWidth(xTitle)) / 2.0,
+                y2 - bodyHeight / 2.0 - noteRow, BarChart.MUTED)
+        if !note.isEmpty {
+            ChartScale.drawOutsideNote(page, f2, small, note, x6, x1, x2, y2 - bodyHeight / 2.0)
+        }
 
         page.restoreGraphicsState()
         page.setFigureBoundingBox(x1, y1, w, h)
@@ -946,13 +973,31 @@ public class BarChart : Drawable {
         return [x1 + w, y1 + h]
     }
 
+    // What the chart says of the values of its line series outside a range
+    // that is set, or "" when there are none.
+    private func outsideNote() -> String {
+        var count = 0
+        if rangeSet {
+            let axis = ChartScale.Axis(min: min, max: max, lines: 0)
+            let n = numberOfCategories()
+            for s in lineSeries {
+                for i in 0..<Swift.min(s.values.count, n)
+                        where ChartScale.isValue(s.values[i]) && !ChartScale.onAxis(s.values[i], axis) {
+                    count += 1
+                }
+            }
+        }
+        return ChartScale.outsideNote(count, "value")
+    }
+
     // The alternate description: the one set, or the title, the subtitle and,
     // for each series, its name and its values by category, with the digits
     // of the labels, or, without setFractionDigits, with two significant
-    // digits at least.
-    private func getAltDescription(_ digits: Int) -> String {
+    // digits at least; and the values of the line series outside a range that
+    // is set.
+    func getAltDescription(_ digits: Int) -> String {
         if let altDescription, !altDescription.isEmpty {
-            return altDescription
+            return ChartScale.withNote(altDescription, outsideNote())
         }
         var sb = ChartScale.join(title, subtitle)
         if sb.isEmpty {
@@ -985,6 +1030,10 @@ public class BarChart : Drawable {
             }
             sb += values
             separator = "; "
+        }
+        let note = outsideNote()
+        if !note.isEmpty {
+            sb += "; " + note
         }
         return sb + "."
     }

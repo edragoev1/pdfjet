@@ -389,4 +389,32 @@ import Testing
         #expect(TestSupport.latin1(memory.bytes).contains("/Alt " +
                 TestSupport.textString("Line chart: a from 1 to 50; 1 value outside the range.")))
     }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    @Test func theNoteNeverCostsThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        func plotChart(_ height: Float, _ middle: Float) -> SimpleLineChart {
+            return SimpleLineChart(font, font).setSize(300, height).setYAxisRange(0, 10)
+                    .addLine("a", [1, middle, 3])
+        }
+        // The least height that draws, found from below
+        var height: Float = 1
+        while !noteContent(pdf, plotChart(height, 2)).contains(" Td\n") {
+            height += 0.25
+        }
+        for h in [height, height + 1, height + 5] {
+            let without = noteContent(pdf, plotChart(h, 2))
+            let chart = plotChart(h, 50)
+            let with = noteContent(pdf, chart)
+            #expect(!with.contains(TestSupport.hex(" outside")), "the note left no room for the plot")
+            #expect(with.contains("W\nn\n"), "the plot is not drawn")
+            #expect(without.components(separatedBy: " Td\n").count == with.components(separatedBy: " Td\n").count,
+                    "the plot is not drawn")
+            #expect(chart.getAltDescription().hasSuffix("; 1 value outside the range."))
+        }
+        // With the room, the note
+        #expect(noteContent(pdf, plotChart(height + 20, 50)).contains(TestSupport.hex(" outside")))
+    }
 }
