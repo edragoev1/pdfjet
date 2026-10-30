@@ -20,12 +20,13 @@ import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
 
 /**
- * A CMYK JPEG that Adobe software wrote, as images/cmyk.jpg is, has an APP14
- * marker and stores its inks inverted, so the image is written with a Decode
- * array that inverts them back; one without the marker is written as it is.
+ * A CMYK JPEG that Adobe software wrote, as resources/images/cmyk.jpg is, has
+ * an APP14 marker and stores its inks inverted, so the image is written with a
+ * Decode array that inverts them back; one without the marker is written as
+ * it is.
  */
 class JPGImageTest {
-    private static final String CMYK = "images/cmyk.jpg";
+    private static final String CMYK = "resources/images/cmyk.jpg";
 
     // Returns the JPEG without its APP14 segment.
     private static byte[] withoutAPP14(byte[] jpeg) {
@@ -318,14 +319,14 @@ class JPGImageTest {
         // The JFIF segment of a JPEG holds the pixel density and the unit it
         // is in, and says how large the image is meant to be. cmyk.jpg is
         // 1200 by 800 pixels at 300 dots per inch, which is 288 by 192 points.
-        JPGImage jpg = new JPGImage(TestSupport.open("images/cmyk.jpg"));
+        JPGImage jpg = new JPGImage(TestSupport.open("resources/images/cmyk.jpg"));
         assertEquals(1200, jpg.getWidth());
         assertEquals(800, jpg.getHeight());
         assertEquals(288f, jpg.getPhysicalWidth(), 0.01f);
         assertEquals(192f, jpg.getPhysicalHeight(), 0.01f);
 
         PDF pdf = TestSupport.newPDF();
-        Image image = new Image(pdf, TestSupport.open("images/cmyk.jpg"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/cmyk.jpg"));
         assertEquals(288f, image.getWidth(), 0.01f, "the image is not drawn at the size it asks for");
         assertEquals(192f, image.getHeight(), 0.01f, "the image is not drawn at the size it asks for");
     }
@@ -336,13 +337,13 @@ class JPGImageTest {
         // nothing about how large the image is, and a JPEG with no JFIF
         // segment at all gives no size either. Both keep one point for each
         // of their pixels.
-        JPGImage ratio = new JPGImage(TestSupport.open("images/italy-admin.jpg"));
+        JPGImage ratio = new JPGImage(TestSupport.open("resources/images/italy-admin.jpg"));
         assertEquals(0f, ratio.getPhysicalWidth(), "a ratio is not a size");
-        JPGImage none = new JPGImage(TestSupport.open("images/gr-map.jpg"));
+        JPGImage none = new JPGImage(TestSupport.open("resources/images/gr-map.jpg"));
         assertEquals(0f, none.getPhysicalWidth(), "there is no JFIF segment");
 
         PDF pdf = TestSupport.newPDF();
-        Image image = new Image(pdf, TestSupport.open("images/italy-admin.jpg"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/italy-admin.jpg"));
         assertEquals(ratio.getWidth(), image.getWidth(), 0.01f);
         assertEquals(ratio.getHeight(), image.getHeight(), 0.01f);
     }
@@ -353,7 +354,7 @@ class JPGImageTest {
         // image object of the PDF holds the pixels, whatever the segment says.
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        Image image = new Image(pdf, TestSupport.open("images/cmyk.jpg"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/cmyk.jpg"));
         image.setLocation(0f, 0f);
         image.drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
@@ -395,7 +396,7 @@ class JPGImageTest {
     // it compared a code path with itself (the review of 28 October 2026).
     @Test
     void theBytesOfAnImageFileCanBeReusedAfterTheImageIsMade() throws Exception {
-        for (String name : new String[] {"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
+        for (String name : new String[] {"resources/images/italy-admin.jpg", "resources/images/cmyk.jpg", "resources/images/ee-map.png",
                 "tests/data/jpeg/restart.jpg"}) {
             assumeTrue(TestSupport.file(name).exists(), "the images directory is not here");
             byte[] file = Files.readAllBytes(TestSupport.file(name).toPath());

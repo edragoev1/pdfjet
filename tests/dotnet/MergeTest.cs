@@ -304,8 +304,8 @@ public class MergeTest {
     public void MergesTheTestDocuments() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        foreach (string name in new string[] {"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"}) {
-            pdf.Merge(new PDF().Read(TestSupport.Open("data/testPDFs/" + name)));
+        foreach (string name in new string[] {"scanned-linearized.pdf", "sample-document.pdf", "PDFjetLogo.pdf"}) {
+            pdf.Merge(new PDF().Read(TestSupport.Open("resources/data/testPDFs/" + name)));
         }
         pdf.Complete();
         List<PDFobj> objects = TestSupport.Read(stream.ToArray());
@@ -361,7 +361,7 @@ public class MergeTest {
         // was left empty when the objects were merged rather than added (the
         // review of 9 October 2026), and its text was lost.
         List<PDFobj> objects = TestSupport.Read(Document("Existing"));
-        Font font = new Font(objects, TestSupport.Open("fonts/NotoSans/NotoSans-Regular.ttf"));
+        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
@@ -375,11 +375,208 @@ public class MergeTest {
         bool found = false;
         foreach (PDFobj obj in merged) {
             if (obj.GetValue("/Subtype") == "/Type0"
-                    && obj.GetValue("/BaseFont").EndsWith("+NotoSans-Regular", StringComparison.Ordinal)) {
+                    && obj.GetValue("/BaseFont").EndsWith("+IBMPlexSans", StringComparison.Ordinal)) {
                 found = true;
             }
         }
-        Assert.True(found, "no Type0 font of a subset of Noto Sans");
+        Assert.True(found, "no Type0 font of a subset of IBM Plex Sans");
+    }
+
+    [Fact]
+    public void WhatWasDrawnOnAPageThatWasReadIsMerged() {
+        // The content streams that Page.Complete adds have no dictionary, and
+        // Merge took them for missing: /Contents [ null 3 0 R null ], and both
+        // the drawing and the text of the page were lost (review of 30 October
+        // 2026, B1).
+        List<PDFobj> objects = TestSupport.Read(Document("Existing"));
+        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        page.AddResource(font, objects);
+        page.DrawString(font, null, 12f, "Hello", 72f, 72f);
+        page.Complete(objects);
+        pdf.Merge(objects);
+        pdf.Complete();
+        List<PDFobj> merged = TestSupport.Read(stream.ToArray());
+        PDFobj pageObj = pdf.GetPageObjects(merged)[0];
+        Assert.DoesNotContain("null", pageObj.dict);
+        StringBuilder text = new StringBuilder();
+        foreach (PDFobj obj in merged) {
+            if (obj.stream != null) {
+                text.Append(Encoding.Latin1.GetString(obj.GetData()));
+            }
+        }
+        Assert.Contains(TestSupport.Hex("Existing"), text.ToString());
+        Assert.Contains("72 720 Td", text.ToString());
+    }
+
+    // Returns a PDF of one page with the entries, a content stream as its object
+    // 4, and the other objects after it.
+    private static byte[] OnePagePDF(string entries, params string[] others) {
+        List<string> objects = new List<string>();
+        objects.Add("<< /Type /Catalog /Pages 2 0 R >>");
+        objects.Add("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+        objects.Add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R " + entries + " >>");
+        objects.Add("<< /Length 25 >>\nstream\n0 0 1 rg 10 10 50 50 re f\nendstream");
+        objects.AddRange(others);
+        return PDFTest.PdfWithObjects(objects.ToArray());
+    }
+
+    // Returns the value of the name in the dictionary of the resources of the
+    // first page of the PDF, the tokens of the object it refers to when it is a
+    // reference.
+    private static List<string> Resource(byte[] buf, string category, string name) {
+        List<PDFobj> objects = TestSupport.Read(buf);
+        PDFobj page = new PDF(new MemoryStream()).GetPageObjects(objects)[0];
+        List<string> dict = page.GetResourcesObject(objects).dict;
+        int i = dict.IndexOf(category);
+        Assert.True(i != -1, "no " + category);
+        if (PDF.IsReference(dict, i + 1)) {
+            dict = objects[int.Parse(dict[i + 1]) - 1].dict;
+        } else {
+            dict = dict.GetRange(i, dict.Count - i);
+        }
+        i = dict.IndexOf(name);
+        Assert.True(i != -1, "no " + name);
+        if (PDF.IsReference(dict, i + 1)) {
+            return objects[int.Parse(dict[i + 1]) - 1].dict;
+        }
+        return dict.GetRange(i + 1, dict.Count - i - 1);
+    }
+
+    [Fact]
+    public void AGraphicsStateOnAPageThatWasReadIsInItsResources() {
+        // The content named a /GS that the resources of the page did not have,
+        // so the alpha was lost; the name has to be one the page does not use
+        // (review of 30 October 2026, B2).
+        foreach (bool merge in new bool[] {true, false}) {
+            List<PDFobj> objects = TestSupport.Read(
+                    OnePagePDF("/Resources << /ExtGState << /GS1 << /ca 0.1 >> >> >>"));
+            MemoryStream stream = new MemoryStream();
+            PDF pdf = new PDF(stream);
+            Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+            GraphicsState state = new GraphicsState();
+            state.SetAlphaNonStroking(0.5f);
+            page.SetGraphicsState(state);
+            page.FillRect(300f, 300f, 100f, 100f);
+            page.Complete(objects);
+            if (merge) {
+                pdf.Merge(objects);
+            } else {
+                pdf.AddObjects(objects);
+            }
+            pdf.Complete();
+            byte[] buf = stream.ToArray();
+            List<string> value = Resource(buf, "/ExtGState", "/GS2");
+            Assert.Equal("<<", value[0]);
+            Assert.Equal("/ca", value[3]);
+            Assert.Equal("0.5", value[4]);
+            Assert.Equal("0.1", Resource(buf, "/ExtGState", "/GS1")[2]);
+            bool found = false;
+            foreach (PDFobj obj in TestSupport.Read(buf)) {
+                found = found || (obj.stream != null
+                        && Encoding.Latin1.GetString(obj.GetData()).Contains("/GS2 gs\n"));
+            }
+            Assert.True(found, "the content does not use /GS2");
+        }
+    }
+
+    [Fact]
+    public void AStampAndOptionalContentOnAPageThatWasReadAreInItsResources() {
+        // They are objects of the PDF being written, and the page has to refer
+        // to them by their numbers there (review of 30 October 2026, B2).
+        List<PDFobj> objects = TestSupport.Read(
+                OnePagePDF("/Resources << /XObject 5 0 R >>", "<< /Fm9 4 0 R >>"));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        Stamp stamp = new Stamp(pdf);
+        stamp.SetSize(100f, 100f);
+        stamp.Complete();
+        stamp.SetLocation(200f, 200f);
+        stamp.DrawOn(page);
+        OptionalContentGroup group = new OptionalContentGroup(pdf, "Layer");
+        group.Add(new Rect(300f, 300f, 100f, 100f));
+        group.DrawOn(page);
+        page.Complete(objects);
+        pdf.Merge(objects);
+        pdf.Complete();
+        byte[] buf = stream.ToArray();
+        Assert.Contains("/Form", Resource(buf, "/XObject", "/Fm" + (9 + stamp.objNumber)));
+        Assert.Contains("/Length", Resource(buf, "/XObject", "/Fm9"));
+        Assert.Contains("/OCG", Resource(buf, "/Properties", "/OC10"));
+    }
+
+    [Fact]
+    public void APageWithNoResourcesGetsThem() {
+        // A font added to it did nothing, and the text was lost with no error
+        // (review of 30 October 2026, B5).
+        List<PDFobj> objects = TestSupport.Read(OnePagePDF(""));
+        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        page.AddResource(font, objects);
+        page.DrawString(font, null, 12f, "Hello", 72f, 72f);
+        page.Complete(objects);
+        pdf.AddObjects(objects);
+        pdf.Complete();
+        Assert.Contains("/Type0", Resource(stream.ToArray(), "/Font", "/F" + font.objNumber));
+
+        objects = TestSupport.Read(OnePagePDF(""));
+        PDFobj pageObj = pdf.GetPageObjects(objects)[0];
+        GraphicsState state = new GraphicsState();
+        state.SetAlphaNonStroking(0.5f);
+        pageObj.SetGraphicsState(state, objects);
+        Assert.Contains("/GS1", pageObj.GetResourcesObject(objects).dict);
+    }
+
+    [Fact]
+    public void AnImageOnAPageThatWasReadIsInItsResources() {
+        List<PDFobj> objects = TestSupport.Read(OnePagePDF(""));
+        Image image = new Image(objects, TestSupport.Open("tests/data/PngSuite/TBRN2C08.PNG"));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        page.AddResource(image, objects);
+        image.SetLocation(72f, 72f);
+        image.DrawOn(page);
+        page.Complete(objects);
+        pdf.AddObjects(objects);
+        pdf.Complete();
+        string name = "/Im" + image.objNumber;
+        Assert.Contains("/Image", Resource(stream.ToArray(), "/XObject", name));
+        Assert.Contains(name + " Do", PageContents(TestSupport.Read(stream.ToArray()))[0]);
+    }
+
+    [Fact]
+    public void ThePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() {
+        // Both gave a PDF of no pages, and no error (review of 30 October 2026,
+        // B3). The two are read and merged as the pages they are.
+        byte[][] pdfs = {
+            PDFTest.PdfWithObjects(new string[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids 5 0 R /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 500] >>",
+                "[3 0 R 4 0 R]"}),
+            PDFTest.PdfWithObjects(new string[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 400 500] >>"})};
+        foreach (byte[] buf in pdfs) {
+            List<PDFobj> objects = TestSupport.Read(buf);
+            MemoryStream stream = new MemoryStream();
+            PDF pdf = new PDF(stream);
+            List<PDFobj> pages = pdf.GetPageObjects(objects);
+            Assert.Equal(2, pages.Count);
+            Assert.Equal(500f, pages[1].GetPageSize().GetHeight());
+            pdf.Merge(objects);
+            pdf.Complete();
+            Assert.Equal(2, pdf.GetPageObjects(TestSupport.Read(stream.ToArray())).Count);
+        }
     }
 
     // Returns a PDF of pages under one node that holds an inline /Resources of

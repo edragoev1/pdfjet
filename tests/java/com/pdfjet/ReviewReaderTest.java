@@ -51,6 +51,27 @@ class ReviewReaderTest {
         return objects.get(0);
     }
 
+    // Checks that the PDF of size 2n takes less than three times the PDF of size
+    // n to read, and returns the objects of the PDF of size n, or null when it
+    // cannot be read.
+    private static List<PDFobj> readLinearly(int n, java.util.function.IntFunction<byte[]> pdf) throws Exception {
+        final byte[] small = pdf.apply(n);
+        final byte[] large = pdf.apply(2*n);
+        final int size = n;
+        TestSupport.assertLinearTime(n, k -> {
+            try {
+                TestSupport.read((k == size) ? small : large);
+            } catch (Exception e) {
+                // The time of a PDF that cannot be read counts as well
+            }
+        });
+        try {
+            return TestSupport.read(small);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private static String repeat(String text, int count) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; i++) {
@@ -242,18 +263,20 @@ class ReviewReaderTest {
     }
 
     @Test
-    void aStreamThatTheTableListsManyTimesIsSearchedWithinABudget() {
+    void aStreamThatTheTableListsManyTimesIsSearchedWithinABudget() throws Exception {
         // Each entry of the stream is an object of its own, which ends at the
         // end of the PDF, and its endstream was looked for there 10,000 times.
         // What the reader may read in all is eight times the length of the
         // PDF: the streams past it keep their /Length.
-        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
-        sb.append(repeat("x", 1000000));
-        int xref = sb.length();
-        sb.append("\nxref\n");
-        sb.append(repeat("1 1\n0000000009 00000 n \n", 10000));
-        sb.append("trailer\n<< /Size 2 >>\nstartxref\n").append(xref + 1).append("\n%%EOF\n");
-        List<PDFobj> objects = readQuickly(latin1(sb.toString()));
+        List<PDFobj> objects = readLinearly(5000, entries -> {
+            StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
+            sb.append(repeat("x", 100*entries));
+            int xref = sb.length();
+            sb.append("\nxref\n");
+            sb.append(repeat("1 1\n0000000009 00000 n \n", entries));
+            sb.append("trailer\n<< /Size 2 >>\nstartxref\n").append(xref + 1).append("\n%%EOF\n");
+            return latin1(sb.toString());
+        });
         assertNotNull(objects);
         assertEquals(1, objects.size());
         assertEquals("1", objects.get(0).getValue("/Length"));
@@ -281,17 +304,19 @@ class ReviewReaderTest {
     }
 
     @Test
-    void anObjectThatTheTableListsManyTimesIsReadWithinABudget() {
+    void anObjectThatTheTableListsManyTimesIsReadWithinABudget() throws Exception {
         // The object with no endobj was read to the end of the PDF for each of
         // its 1,000 entries.
-        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
-        sb.append(repeat("1 ", 500000));
-        sb.append("] >>\n");
-        int xref = sb.length();
-        sb.append("xref\n");
-        sb.append(repeat("1 1\n0000000009 00000 n \n", 1000));
-        sb.append("trailer\n<< /Size 2 >>\nstartxref\n").append(xref).append("\n%%EOF\n");
-        List<PDFobj> objects = readQuickly(latin1(sb.toString()));
+        List<PDFobj> objects = readLinearly(100, entries -> {
+            StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
+            sb.append(repeat("1 ", 500*entries));
+            sb.append("] >>\n");
+            int xref = sb.length();
+            sb.append("xref\n");
+            sb.append(repeat("1 1\n0000000009 00000 n \n", entries));
+            sb.append("trailer\n<< /Size 2 >>\nstartxref\n").append(xref).append("\n%%EOF\n");
+            return latin1(sb.toString());
+        });
         assertNotNull(objects);
         assertEquals(1, objects.size());
         assertEquals("1 0 obj << /A [ 1", String.join(" ", objects.get(0).dict.subList(0, 7)));
@@ -345,18 +370,20 @@ class ReviewReaderTest {
     @Test
     void theLengthOfAStreamIsFoundByItsNumber() throws Exception {
         // Every stream looked for its /Length among all the objects.
-        List<String> objects = new ArrayList<String>(Arrays.asList(
-                "<< /Type /Catalog /Pages 2 0 R >>",
-                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"));
-        for (int i = 0; i < 60000; i++) {
-            objects.add("<< /Length " + (objects.size() + 2) + " 0 R >>\nstream\nq Q\nendstream");
-            objects.add("3");
-        }
-        List<PDFobj> read = readQuickly(pdfWithObjects(objects));
+        List<PDFobj> read = readLinearly(10000, count -> {
+            List<String> objects = new ArrayList<String>(Arrays.asList(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"));
+            for (int i = 0; i < count; i++) {
+                objects.add("<< /Length " + (objects.size() + 2) + " 0 R >>\nstream\nq Q\nendstream");
+                objects.add("3");
+            }
+            return pdfWithObjects(objects);
+        });
         assertNotNull(read);
-        assertEquals(120003, read.size());
-        assertEquals("q Q", new String(read.get(119999).getData(), StandardCharsets.ISO_8859_1));
+        assertEquals(20003, read.size());
+        assertEquals("q Q", new String(read.get(19999).getData(), StandardCharsets.ISO_8859_1));
     }
 
     @Test
@@ -540,5 +567,119 @@ class ReviewReaderTest {
         // An offset past the end of the stream, which overflowed an int.
         assertEquals("(no error)",
                 readError("1 0 obj<</Type/ObjStm/N 2/First 2147483000/Length 13>>stream\n5 1000 6 1001\nendstream endobj"));
+    }
+
+    // Returns the bytes as LZW data with a code for each, in codes that get one
+    // bit longer as the /EarlyChange says.
+    private static byte[] lzw(byte[] data, int earlyChange) {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        int[] state = {0, 0};   // The bits still to write, and how many
+        int next = 258;
+        int length = 9;
+        writeCode(out, state, 256, length);
+        for (byte b : data) {
+            writeCode(out, state, b & 0xFF, length);
+            next++;
+            if (next + earlyChange - 1 >= (1 << length)) {
+                length++;
+            }
+        }
+        writeCode(out, state, 257, length);
+        out.write(state[0] << (8 - state[1]));
+        return out.toByteArray();
+    }
+
+    private static void writeCode(java.io.ByteArrayOutputStream out, int[] state, int code, int length) {
+        state[0] = (state[0] << length) | code;
+        state[1] += length;
+        while (state[1] >= 8) {
+            state[1] -= 8;
+            out.write(state[0] >> state[1]);
+        }
+        state[0] &= (1 << state[1]) - 1;
+    }
+
+    // Returns the data of a stream, of hexadecimal digits, with the entries of
+    // its dictionary, in a PDF.
+    private static byte[] streamData(String entries, String hex) throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length " + hex.length() + " " + entries + " >>\nstream\n" + hex + "\nendstream"));
+        return objects.get(3).getData();
+    }
+
+    @Test
+    void anLZWStreamHasItsEarlyChange() throws Exception {
+        // /EarlyChange 0 was ignored, and the stream decoded to wrong bytes with
+        // no error (review of 30 October 2026, B7).
+        byte[] data = new byte[600];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte) (i * i % 251);
+        }
+        for (int earlyChange : new int[] {1, 0}) {
+            String entries = "/Filter [/ASCIIHexDecode /LZWDecode] /DecodeParms [null << /EarlyChange " + earlyChange + " >>]";
+            org.junit.jupiter.api.Assertions.assertArrayEquals(data,
+                    streamData(entries, Util.toHexString(lzw(data, earlyChange)) + ">"));
+        }
+    }
+
+    @Test
+    void aFlateStreamCanLackItsChecksum() throws Exception {
+        // It was refused, and in an object stream that failed the PDF (review of
+        // 30 October 2026, B8).
+        byte[] data = "0 0 1 rg 10 10 50 50 re f\n".getBytes(StandardCharsets.US_ASCII);
+        byte[] deflated = Compressor.deflate(data);
+        org.junit.jupiter.api.Assertions.assertArrayEquals(data, streamData("/Filter [/ASCIIHexDecode /FlateDecode]",
+                Util.toHexString(Arrays.copyOf(deflated, deflated.length - 4)) + ">"));
+    }
+
+    @Test
+    void aFilterThatIsAnObjectAndACryptFilterAreDecoded() throws Exception {
+        // The data was the raw bytes (review of 30 October 2026, B10).
+        for (String filter : new String[] {"/ASCIIHexDecode", "[/ASCIIHexDecode]"}) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length 5 /Filter 5 0 R >>\nstream\n4142>\nendstream",
+                    filter));
+            assertEquals("AB", TestSupport.latin1(objects.get(3).getData()), filter);
+        }
+        assertEquals("AB", TestSupport.latin1(streamData(
+                "/Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]", "4142>")));
+    }
+
+    @Test
+    void anIdentityCryptFilterSaysTheStreamIsNotEncrypted() throws Exception {
+        String[] entries = {
+            "/Filter /Crypt",
+            "/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]",
+            "/Filter /Crypt /DecodeParms << /Name /StdCF >>",
+            "/Filter /FlateDecode"};
+        boolean[] wanted = {true, true, false, false};
+        for (int i = 0; i < entries.length; i++) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length 1 " + entries[i] + " >>\nstream\nx\nendstream"));
+            assertEquals(wanted[i], objects.get(3).hasIdentityCrypt(), entries[i]);
+        }
+    }
+
+    @Test
+    void aLengthThatIsARealOrNullIsRead() throws Exception {
+        // The PDF was refused (review of 30 October 2026, B11).
+        for (String length : new String[] {"5.0", "null", "5 0 R"}) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length " + length + " >>\nstream\n0 0 m\nendstream",
+                    "5.0"));
+            assertEquals("0 0 m", TestSupport.latin1(objects.get(3).getData()), length);
+        }
     }
 }

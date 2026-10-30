@@ -21,9 +21,35 @@ class SVGPath {
     int fill = Color.transparent;   // The fill color, or transparent for none
     int stroke = Color.transparent; // The stroke color, or transparent for none
     float strokeWidth = 0f;         // The stroke width, in the space of the svg element
-    boolean evenOdd = false;        // Filled with the even-odd rule
+    boolean evenOdd = false;        // Filled, or clipped to, with the even-odd rule
     CapStyle lineCap = CapStyle.BUTT;
     JoinStyle lineJoin = JoinStyle.MITER;
+    float miterLimit = 4f;
     float fillAlpha = 1f;
     float strokeAlpha = 1f;
+    float[] dashArray = null;       // The dashes and the gaps, in the space of the svg element; null is solid
+    float dashOffset = 0f;
+    boolean strokeFirst = false;    // paint-order: the stroke drawn before the fill
+    List<SVGPath> clips = null;     // The clip paths it is drawn inside, all of them
+    List<SVGImage.Choice> choices = null;   // The children of the switches it is in
+    SVGText text = null;            // A text, drawn instead of the operations
+    List<SVGPath> parts = null;     // Of a clip path that clips with texts: one for each, with its text
+    int glyphs = 0;                 // Of such a clip path: what is written for its texts, as operations
+
+    // Returns true when it is in the children chosen of the switches it is in.
+    boolean isChosen() {
+        return areChosen(choices);
+    }
+
+    // Returns true when each of the choices is the child chosen.
+    static boolean areChosen(List<SVGImage.Choice> choices) {
+        if (choices != null) {
+            for (SVGImage.Choice choice : choices) {
+                if (!choice.isChosen()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

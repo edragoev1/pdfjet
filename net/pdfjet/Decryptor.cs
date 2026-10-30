@@ -463,7 +463,7 @@ internal sealed class Decryptor {
 
     // Returns the decrypted stream of the object.
     internal byte[] DecryptStream(PDFobj obj, byte[] stream) {
-        if (!encryptMetadata && obj.GetValue("/Type").Equals("/Metadata")) {
+        if ((!encryptMetadata && obj.GetValue("/Type").Equals("/Metadata")) || obj.HasIdentityCrypt()) {
             return stream;
         }
         return Decrypt(stream, streamMethod, obj);

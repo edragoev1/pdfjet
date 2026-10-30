@@ -38,6 +38,17 @@ class Decompressor {
     }
 
     static byte[] lzwDecode(byte[] data, int maxLength) throws DataFormatException {
+        return lzwDecode(data, maxLength, 1);
+    }
+
+    /**
+     * Decodes the data of an LZWDecode stream, with the /EarlyChange of its
+     * /DecodeParms: with 0 the codes get one bit longer only when the table
+     * needs it. It was ignored, and such data decoded to wrong bytes with no
+     * error (review of 30 October 2026, B7).
+     */
+    static byte[] lzwDecode(byte[] data, int maxLength, int earlyChange) throws DataFormatException {
+        int early = Math.min(Math.max(earlyChange, 0), 1);
         ByteArrayOutputStream bos = new ByteArrayOutputStream((int) Math.min(data.length * 2L, maxLength));
         byte[][] table = new byte[4096][];
         for (int i = 0; i < 256; i++) {
@@ -77,7 +88,7 @@ class Decompressor {
                     table[next++] = added;
                 }
                 previous = entry;
-                if (next + 1 >= (1 << codeLength) && codeLength < 12) {
+                if (next + early >= (1 << codeLength) && codeLength < 12) {
                     codeLength++;
                 }
             }
@@ -365,6 +376,69 @@ class Decompressor {
     }
 
     /**
+     * Decodes the Flate stream of a PDF like inflate, and takes one whose
+     * Deflate data ends and whose Adler-32 is cut off, all or part of it, as
+     * other readers do: an object stream like that failed the whole PDF (review
+     * of 30 October 2026, B8). What is left of the checksum has to be right.
+     */
+    static byte[] inflateStream(byte[] data, int maxLength) throws Exception {
+        try {
+            return inflate(data, maxLength);
+        } catch (DataFormatException e) {
+            byte[] inflated = inflateWithCutChecksum(data, maxLength);
+            if (inflated == null) {
+                throw e;
+            }
+            return inflated;
+        }
+    }
+
+    // Returns what the Deflate data of the zlib stream decodes to, when it ends
+    // less than four bytes before the stream does and those are the start of
+    // its Adler-32, or else null. The Inflater needs a byte after the data.
+    private static byte[] inflateWithCutChecksum(byte[] data, int maxLength) {
+        if (data.length < 2 || !isZlibHeader(data)) {
+            return null;
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, maxLength));
+        Inflater inflater = new Inflater(true);
+        try {
+            inflater.setInput(Arrays.copyOfRange(data, 2, data.length + 1));
+            byte[] buf = new byte[4096];
+            while (!inflater.finished()) {
+                int count = inflater.inflate(
+                        buf, 0, (int) Math.min(buf.length, (long) maxLength - bos.size() + 1));
+                if ((count == 0 && !inflater.finished()) || (long) bos.size() + count > maxLength) {
+                    return null;
+                }
+                bos.write(buf, 0, count);
+            }
+            int left = inflater.getRemaining() - 1;
+            if (left < 0 || left >= 4) {
+                return null;
+            }
+            int checksum = adler32(bos.toByteArray());
+            for (int i = 0; i < left; i++) {
+                if (data[data.length - left + i] != (byte) (checksum >>> (24 - 8 * i))) {
+                    return null;
+                }
+            }
+            return bos.toByteArray();
+        } catch (DataFormatException e) {
+            return null;
+        } finally {
+            inflater.end();
+        }
+    }
+
+    // Returns true for the two bytes that a zlib stream of Deflate data starts with.
+    private static boolean isZlibHeader(byte[] data) {
+        int cmf = data[0] & 0xFF;
+        int flg = data[1] & 0xFF;
+        return (cmf & 0x0F) == 8 && (cmf >> 4) <= 7 && (cmf << 8 | flg) % 31 == 0 && (flg & 0x20) == 0;
+    }
+
+    /**
      * Returns the first length bytes that a zlib stream decodes to, or all of
      * them when there are fewer, and ignores the rest of the stream. A stream
      * that ends in the middle, before those bytes, throws.
@@ -399,9 +473,7 @@ class Decompressor {
         if (data.length < 2) {
             throw new DataFormatException("Truncated or invalid Flate stream");
         }
-        int cmf = data[0] & 0xFF;
-        int flg = data[1] & 0xFF;
-        if ((cmf & 0x0F) != 8 || (cmf >> 4) > 7 || (cmf << 8 | flg) % 31 != 0 || (flg & 0x20) != 0) {
+        if (!isZlibHeader(data)) {
             throw new DataFormatException("Invalid zlib header");
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, length));

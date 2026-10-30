@@ -115,6 +115,17 @@ public class MarkupTest {
         Assert.Equal(Lines("[b](u) c|R v"), Parse("[[b](u) c](v)"));
     }
 
+    // The parentheses of a URL in pairs are in the URL, as in CommonMark; one
+    // that no ) closes makes no link.
+    [Fact]
+    public void TheParenthesesOfAURLInPairsAreInTheURL() {
+        Assert.Equal(new List<String> {"Foo|R https://x/Foo_(bar)"}, Parse("[Foo](https://x/Foo_(bar))"));
+        Assert.Equal(new List<String> {"Foo|R https://x/a(b)c(d)", " e|R"}, Parse("[Foo](https://x/a(b)c(d)) e"));
+        Assert.Equal(new List<String> {"Foo|R https://x/((b))"}, Parse("[Foo](https://x/((b)))"));
+        Assert.Equal(new List<String> {"[a](b(c)|R"}, Parse("[a](b(c)"));
+        Assert.Equal(new List<String> {"a|R b", "+(c)|R"}, Parse("[a](b)(c)"));
+    }
+
     [Fact]
     public void MarksWithNoMatchAreText() {
         Assert.Equal(Lines("2 * 3 = 6|R"), Parse("2 * 3 = 6"));

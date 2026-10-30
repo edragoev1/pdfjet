@@ -29,8 +29,8 @@ public class DrawableTest {
         Add("TextLine", (pdf, font) => new TextLine(font, "Hello line"));
         Add("CompositeTextLine", (pdf, font) => new CompositeTextLine(0f, 0f).AddComponent(new TextLine(font, "Composite")));
         Add("Title", (pdf, font) => new Title(font, "Title", 0f, 0f));
-        Add("Image", (pdf, font) => new Image(pdf, TestSupport.Open("images/up-arrow.png")));
-        Add("SVGImage", (pdf, font) => new SVGImage(TestSupport.Open("images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg")));
+        Add("Image", (pdf, font) => new Image(pdf, TestSupport.Open("resources/images/up-arrow.png")));
+        Add("SVGImage", (pdf, font) => new SVGImage(TestSupport.Open("resources/images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg")));
         Add("Barcode", (pdf, font) => new Barcode(Barcode.CODE_128, "Hello"));
         Add("QRCode", (pdf, font) => new QRCode("Hello", ErrorCorrectionLevel.M));
         Add("PDF417", (pdf, font) => new PDF417("Hello"));

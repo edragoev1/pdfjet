@@ -479,12 +479,12 @@ public class BigTable {
     // so the pages are counted when the table is drawn.
     private int countPages() {
         float pageHeight = pageSize.getHeight();
-        float yTop = this.y + f1.ascent + f1.descent + f2.ascent + 3*verticalPadding;
+        float yTop = firstRowY(this.y);
         float yPos = yTop;
         if (startsOnFirstPage()) {
             // The first page can be of another size than the next ones.
             pageHeight = firstPage.height;
-            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent + 3*verticalPadding;
+            yPos = firstRowY(firstPageY);
         }
         int count = 1;
         boolean newPage = false;
@@ -501,6 +501,15 @@ public class BigTable {
             }
         }
         return count;
+    }
+
+    // Returns the baseline of the first row of a page, of a table whose top is
+    // there, in the order newPage adds it up: added up otherwise, it can round
+    // to another float, and the count was a page off the drawing.
+    private float firstRowY(float top) {
+        float y = top + verticalPadding + f1.ascent;
+        y += f1.descent + 2*verticalPadding + f2.ascent;
+        return y;
     }
 
     // Draws a row of the table. In a PDF/UA document the row is a TR element

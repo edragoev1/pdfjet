@@ -207,13 +207,13 @@ public class Container implements Drawable {
         float sin = (float)Math.sin(rad);
         page.appendRotation(cos, sin);
 
-        page.append(scaleX);
+        page.appendPrecise(scaleX);
         page.append(' ');
         page.append('0');
         page.append(' ');
         page.append('0');
         page.append(' ');
-        page.append(scaleY);
+        page.appendPrecise(scaleY);
         page.append(' ');
         page.append('0');
         page.append(' ');
