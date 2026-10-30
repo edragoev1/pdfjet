@@ -3373,6 +3373,25 @@ public class Page {
         Append("ET\n");
     }
 
+    // Returns the span lo to hi of an annotation at least size long around its
+    // center, and moved inside 0 to limit, not cut, as long as it fits.
+    private static float[] HitSpan(float lo, float hi, float size, float limit) {
+        if (hi - lo < size) {
+            float center = (lo + hi) / 2f;
+            lo = center - size / 2f;
+            hi = lo + size;
+        }
+        if (hi > limit) {
+            lo -= hi - limit;
+            hi = limit;
+        }
+        if (lo < 0f) {
+            hi = Math.Min(hi - lo, limit);
+            lo = 0f;
+        }
+        return new float[] {lo, hi};
+    }
+
     // Returns where the point x, y of what is drawn is on the page, after the
     // transform of the containers it is drawn in.
     internal float[] Transformed(float x, float y) {
@@ -3484,6 +3503,14 @@ public class Page {
                     + "draw on a page before creating the next page or completing the PDF."));
         }
         TransformAnnotation(annotation);
+        if (annotation.hitSize > 0f) {
+            float[] across = HitSpan(annotation.x1, annotation.x2, annotation.hitSize, this.width);
+            float[] down = HitSpan(annotation.y1, annotation.y2, annotation.hitSize, this.height);
+            annotation.x1 = across[0];
+            annotation.x2 = across[1];
+            annotation.y1 = down[0];
+            annotation.y2 = down[1];
+        }
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.Add(annotation);

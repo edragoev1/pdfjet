@@ -125,6 +125,176 @@ public class SimpleScatterChartTest {
         Assert.Equal(2, raw.Split("/Subtype /Link").Length - 1);
     }
 
+    // A linked dot is drawn as a point of Add(x, y) is, stroke for stroke, with
+    // nothing beside it: in a document that is not tagged it adds a link alone,
+    // described by its name, and the chart's description counts it and does
+    // not name it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ALinkedDotIsADotWithADescription(bool withSeries) {
+        using (TestSupport.AllowCoreFonts()) {
+            string[] plain = DrawDot(withSeries, false);
+            string[] dot = DrawDot(withSeries, true);
+            Assert.Equal(plain[0], dot[0]);
+            Assert.Equal(plain[1], dot[1]);
+            Assert.Equal(1, dot[2].Split("/Subtype /Link").Length - 1);
+            Assert.Contains("/Contents " + TestSupport.TextString("Andorra: 84.0 years"), dot[2]);
+            Assert.Contains("/URI <" + TestSupport.Hex("https://pdfjet.com/a").ToLowerInvariant() + ">", dot[2]);
+        }
+    }
+
+    // The content, the description and the bytes of a chart with a third point
+    // that is a linked dot, or a plain one.
+    private static string[] DrawDot(bool withSeries, bool linked) {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).SetTitle("T").SetTrendLine(true)
+                .Add(1f, 1f).Add(3f, 4f);
+        if (withSeries) {
+            chart.AddSeries("Series");
+        }
+        if (linked) {
+            chart.AddLinkedDot("Andorra: 84.0 years", 2f, 2f, "https://pdfjet.com/a");
+        } else {
+            chart.Add(2f, 2f);
+        }
+        string alt = chart.AltDescription();
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        pdf.Complete();
+        return new string[] {content, alt, TestSupport.Latin1(output.ToArray())};
+    }
+
+    // In a PDF/UA document a linked dot is a figure of its own in the Link that
+    // holds its annotation, as a linked point is, and looks as it does in the
+    // chart: transparent, or the outline of its series, undashed. A highlighted
+    // point stays over it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ALinkedDotIsAFigureInItsLink(bool withSeries) {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetStrokeDashPattern("[3 3] 0");
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f)
+                .SetHighlightColor(Color.red).Add(1f, 1f);
+        if (withSeries) {
+            chart.AddSeries("Series");
+        }
+        chart.AddLinkedDot("Andorra", 2f, 2f, "https://pdfjet.com/a")
+                .AddLinkedDot("Belize", 3f, 1f, "https://pdfjet.com/b")
+                .Add("Chad", 4f, 3f, "https://pdfjet.com/c").Add("Dominica", 2f, 3f);
+        string alt = chart.AltDescription();
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(output.ToArray());
+        Dictionary<string, string[]> elements = PDFTest.Elements(raw);
+        int links = 0;
+        foreach (KeyValuePair<string, string[]> entry in elements) {
+            string[] link = entry.Value;
+            if (link[0] != "Link") {
+                continue;
+            }
+            links++;
+            string figure = link[2].Substring(1).Split(' ')[0];
+            Assert.Equal("Figure", elements[figure][0]);
+            Assert.Equal(entry.Key, elements[figure][1]);
+            Assert.Contains("/Type /OBJR", link[2]);
+        }
+        Assert.Equal(3, links);
+        foreach (string name in new[] {"Andorra", "Belize", "Chad"}) {
+            Assert.Contains("/Alt " + TestSupport.TextString(name), raw);
+        }
+        Assert.DoesNotContain("Andorra", alt);
+        Assert.DoesNotContain("Belize", alt);
+        // The chart, the dots' figures, the named point over them, Chad's
+        int first = content.IndexOf("/Figure <</MCID 1>>", StringComparison.Ordinal);
+        int second = content.IndexOf("/Figure <</MCID 2>>", StringComparison.Ordinal);
+        int last = content.IndexOf("/Figure <</MCID 3>>", StringComparison.Ordinal);
+        int artifact = content.IndexOf("/Artifact BMC", StringComparison.Ordinal);
+        Assert.True(content.Contains("/Figure <</MCID 0>>") && first != -1 && second > first
+                && artifact > second && last > artifact, "the order of the figures");
+        string dot = content.Substring(first, second - first);
+        Assert.DoesNotContain("1 0 0 rg", dot);
+        Assert.Equal(withSeries, dot.Contains("\nS\n"));
+        Assert.Equal(!withSeries, dot.Contains("\nf\n"));
+        string before = content.Substring(content.LastIndexOf("EMC", first, StringComparison.Ordinal));
+        before = before.Substring(0, before.IndexOf("/Figure <</MCID 1>>", StringComparison.Ordinal));
+        Assert.Contains("[] 0 d\n", before);
+        Assert.Contains(" gs\n", before);
+    }
+
+    // A dot's description is its name, or its URI when it has no name, and a
+    // dot without a URI is a plain point; one outside a range that is set is
+    // no link.
+    [Fact]
+    public void ALinkedDotWithoutANameOrAURI() {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f).SetXAxisRange(0f, 5f)
+                .AddLinkedDot("", 1f, 1f, "https://pdfjet.com/a").AddLinkedDot("Belize", 2f, 2f, "")
+                .AddLinkedDot("Chad", 9f, 3f, "https://pdfjet.com/c").DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(output.ToArray());
+        Assert.Equal(1, raw.Split("/Subtype /Link").Length - 1);
+        Assert.Contains("/Alt " + TestSupport.TextString("https://pdfjet.com/a"), raw);
+        Assert.DoesNotContain(TestSupport.TextString("Belize"), raw);
+        Assert.DoesNotContain(TestSupport.TextString("Chad"), raw);
+    }
+
+    // The link of a dot is at least 8 points square and holds the dot, on the
+    // page as written, and inside the page, in a corner too.
+    [Theory]
+    [InlineData(2f)]
+    [InlineData(9f)]
+    [InlineData(30f)]
+    public void TheLinkOfADotCanBeHit(float size) {
+        using (TestSupport.AllowCoreFonts()) {
+            MemoryStream output = new MemoryStream();
+            PDF pdf = new PDF(output);
+            Font font = TestSupport.Helvetica(pdf);
+            font.SetSize(size);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new SimpleScatterChart(font, font).SetSize(612f, 792f).SetLocation(0f, 0f)
+                    .SetXAxisRange(0f, 4f).SetYAxisRange(0f, 4f)
+                    .AddLinkedDot("Middle", 2f, 2f, "https://pdfjet.com/m")
+                    .AddLinkedDot("Left", 0f, 2f, "https://pdfjet.com/l").DrawOn(page);
+            // Past the corners of the page, as a chart that hangs over it
+            page.AddAnnotation(Corner(-1f, -1f, 0f, 0f));
+            page.AddAnnotation(Corner(612f, 792f, 613f, 793f));
+            pdf.Complete();
+            string[] rects = TestSupport.Latin1(output.ToArray()).Split("/Rect [");
+            Assert.Equal(5, rects.Length);
+            for (int i = 1; i < rects.Length; i++) {
+                string rect = rects[i].Substring(0, rects[i].IndexOf(']'));
+                string[] box = rect.Split(' ');
+                float x1 = float.Parse(box[0], System.Globalization.CultureInfo.InvariantCulture);
+                float y1 = float.Parse(box[1], System.Globalization.CultureInfo.InvariantCulture);
+                float x2 = float.Parse(box[2], System.Globalization.CultureInfo.InvariantCulture);
+                float y2 = float.Parse(box[3], System.Globalization.CultureInfo.InvariantCulture);
+                Assert.True(x2 - x1 >= 7.999f && Math.Abs(y2 - y1) >= 7.999f, rect);
+                Assert.True(i > 2 || x2 - x1 >= 0.9f * size, rect);
+                Assert.True(x1 >= 0f && x2 <= 612f && Math.Min(y1, y2) >= 0f && Math.Max(y1, y2) <= 792f, rect);
+            }
+        }
+    }
+
+    // A link with the hit size of a dot, at the box.
+    private static Annotation Corner(float x1, float y1, float x2, float y2) {
+        Annotation annotation = new Annotation(Annotation.Link, x1, y1, x2, y2, null, null, 0f, null, null,
+                "https://pdfjet.com/c", null, null, null, "Corner");
+        annotation.hitSize = SimpleScatterChart.HIT_SIZE;
+        return annotation;
+    }
+
     // In a document that is not tagged, a linked point is drawn in the chart,
     // its dot and its name the link, and no elements are made.
     [Fact]

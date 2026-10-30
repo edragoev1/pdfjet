@@ -15,7 +15,9 @@ namespace PDFjet.NET {
 /// darker, a few of them highlighted, navy and labeled with their names beside
 /// them, and the trend line of the points if asked, labeled at its end. A light
 /// horizontal grid alone, no border or legend, on a light panel, with a title
-/// and a subtitle at the top left, in the look of SimpleBarChart.
+/// and a subtitle at the top left, in the look of SimpleBarChart. Any point can
+/// be a link, a dot with a description that a hover or a screen reader gets, so
+/// that all of 200 points are links without a name printed for each.
 ///
 /// In a PDF/UA document the chart is one figure, described from its data: the
 /// number of points, the highlighted ones and their values, and which way the
@@ -32,13 +34,18 @@ public class SimpleScatterChart : IDrawable {
     internal const int GRID = 0xD5D9DE;
     internal const int TREND = 0x5F6873;
     internal const float ALPHA = 0.55f;
+    // The least width and height of the link of a dot, which PDF writes in
+    // hundredths: 8 points that stay 8 however the two sides round.
+    internal const float HIT_SIZE = 8.02f;
 
-    // A point of the chart, highlighted when it has a name.
+    // A point of the chart, highlighted when it has a name, but for a dot:
+    // its name describes it and is not printed.
     internal sealed class Point {
         internal readonly float x;
         internal readonly float y;
         internal readonly String name;
-        internal readonly String uri;      // The link of a highlighted point, or null
+        internal readonly String uri;      // The link of the point, or null
+        internal bool dot = false;         // Drawn as a point that is not highlighted
         internal int series = -1;          // The index of its series, or -1 for none
 
         internal Point(float x, float y, String name) : this(x, y, name, null) {
@@ -49,6 +56,17 @@ public class SimpleScatterChart : IDrawable {
             this.y = y;
             this.name = name ?? "";
             this.uri = uri;
+        }
+
+        // Tells if the point is drawn in the highlight color, its name
+        // beside it.
+        internal bool Highlighted() {
+            return name.Length > 0 && !dot;
+        }
+
+        // Tells if the point is a dot that is a link.
+        internal bool LinkedDot() {
+            return dot && uri != null;
         }
     }
 
@@ -196,6 +214,29 @@ public class SimpleScatterChart : IDrawable {
     public SimpleScatterChart Add(String name, float x, float y, String uri) {
         // An empty URI is no link, as in the Go port
         return AddPoint(new Point(x, y, name, (uri == null || uri.Length == 0) ? null : uri));
+    }
+
+    /// <summary>
+    /// Adds a point that is a link and not highlighted: a dot as Add(x, y)
+    /// draws it, in its series if any, with nothing beside it. Its name is not
+    /// printed: it is the description of the link, and in a PDF/UA document
+    /// that of a figure of its own in the Link that holds its annotation, as
+    /// with Add(name, x, y, uri), and it counts in the description of the chart
+    /// as a point of Add(x, y) does. The link is at least 8 points square
+    /// around the dot, so that it can be hit, and inside the page. A name left
+    /// empty is described by the URI; a URI left empty is no link.
+    /// </summary>
+    /// <param name="name">the description of the point.</param>
+    /// <param name="x">the x of the point.</param>
+    /// <param name="y">the y of the point.</param>
+    /// <param name="uri">the URI the point links to.</param>
+    /// <returns>this chart.</returns>
+    public SimpleScatterChart AddLinkedDot(String name, float x, float y, String uri) {
+        String link = (uri == null || uri.Length == 0) ? null : uri;
+        // A figure needs a description
+        Point p = new Point(x, y, (name == null || name.Trim().Length == 0) ? link : name, link);
+        p.dot = true;
+        return AddPoint(p);
     }
 
     /// <summary>
@@ -552,7 +593,7 @@ public class SimpleScatterChart : IDrawable {
         }
         int named = 0;
         foreach (Point p in shown) {
-            if (p.name.Length == 0) {
+            if (!p.Highlighted()) {
                 continue;
             }
             sb.Append(named == 0 ? "; " : ", ");
@@ -632,6 +673,16 @@ public class SimpleScatterChart : IDrawable {
         // annotation, as PDF/UA asks: a link inside the chart's figure has
         // nothing to hold
         bool linksApart = page.TagsContent();
+
+        // The dots that are links, drawn so after the chart
+        List<Point> linkedDots = new List<Point>();
+        if (linksApart) {
+            foreach (Point p in points) {
+                if (p.LinkedDot() && OnPlot(p, xAxis, yAxis)) {
+                    linkedDots.Add(p);
+                }
+            }
+        }
 
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         page.SaveGraphicsState();
@@ -738,16 +789,11 @@ public class SimpleScatterChart : IDrawable {
 
         // The dots, then the highlighted points and their names over them
         page.SaveGraphicsState();
-        if (!page.pdf.IsPDFA1()) {
-            GraphicsState gs = new GraphicsState();
-            gs.SetAlphaNonStroking(ALPHA);
-            page.SetGraphicsState(gs);
-        }
+        SetTransparent(page);
         page.SetBrushColor(dotColor);
-        float r = 0.3f * size;
         foreach (Point p in points) {
-            if (p.series < 0 && p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
-                page.FillCircle(XAt(p.x, xAxis, plotLeft, right), YAt(p.y, yAxis, top, plotBottom), r);
+            if (p.series < 0 && !p.Highlighted() && !(linksApart && p.LinkedDot()) && OnPlot(p, xAxis, yAxis)) {
+                DrawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
             }
         }
         page.RestoreGraphicsState();
@@ -757,19 +803,29 @@ public class SimpleScatterChart : IDrawable {
             page.SetPenWidth(0.12f * size);
         }
         foreach (Point p in points) {
-            if (p.series >= 0 && p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
-                page.SetPenColor(SeriesColor(p.series));
-                DrawShape(page, p.series % SHAPES, XAt(p.x, xAxis, plotLeft, right),
-                        YAt(p.y, yAxis, top, plotBottom), 0.35f * size, false);
+            if (p.series >= 0 && !p.Highlighted() && !(linksApart && p.LinkedDot()) && OnPlot(p, xAxis, yAxis)) {
+                DrawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+        }
+        // The links of the dots first, for those of the highlighted points to
+        // be over them
+        foreach (Point p in points) {
+            if (p.LinkedDot() && !linksApart && OnPlot(p, xAxis, yAxis)) {
+                page.AddAnnotation(LinkOf(p, DotBox(p, xAxis, yAxis, plotLeft, right, top, plotBottom)));
             }
         }
         List<Point> linked = new List<Point>();
+        List<Point> over = new List<Point>();
         foreach (Point p in points) {
-            if (p.name.Length == 0 || !OnPlot(p, xAxis, yAxis)) {
+            if (!p.Highlighted() || !OnPlot(p, xAxis, yAxis)) {
                 continue;
             }
             if (p.uri != null && linksApart) {
                 linked.Add(p);
+                continue;
+            }
+            if (linkedDots.Count > 0) {
+                over.Add(p);    // Over the dots, drawn after the chart
                 continue;
             }
             float[] box = DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
@@ -782,20 +838,90 @@ public class SimpleScatterChart : IDrawable {
         page.SetFigureBoundingBox(x, y, w, h);
         page.AddEMC();
 
-        foreach (Point p in linked) {
+        if (linkedDots.Count > 0) {
+            // As in the chart, whose graphics state ended with it
             page.SaveGraphicsState();
-            StructElement link = page.BeginLink();
-            page.AddBDC(StructElem.FIGURE, null, p.name);
-            float[] box = DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
-            page.SetFigureBoundingBox(box[0], box[1], box[2], box[3]);
-            page.AddEMC();
-            page.EndLink(link);
+            page.SetDefaultStrokeDashPattern();
+            SetTransparent(page);
+            if (series.Count > 0) {
+                page.SetPenWidth(0.12f * size);
+            }
+            foreach (Point p in linkedDots) {
+                DrawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
             page.RestoreGraphicsState();
-            Annotation annotation = LinkOf(p, box);
-            annotation.linkElement = link;
-            page.AddAnnotation(annotation);
+        }
+        // A highlighted point that is no link is in the description of the
+        // chart, and over the dots that are drawn after it
+        if (over.Count > 0) {
+            page.SaveGraphicsState();
+            page.AddArtifactBMC();
+            foreach (Point p in over) {
+                DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+            page.AddEMC();
+            page.RestoreGraphicsState();
+        }
+        foreach (Point p in linked) {
+            DrawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
         }
         return new float[] {x + w, y + h};
+    }
+
+    // Draws a point that is a link as a figure of its own in its Link.
+    private void DrawFigure(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        page.SaveGraphicsState();
+        StructElement link = page.BeginLink();
+        page.AddBDC(StructElem.FIGURE, null, p.name);
+        float[] box;
+        if (p.dot) {
+            DrawDot(page, p, xAxis, yAxis, left, right, top, bottom);
+            box = DotBox(p, xAxis, yAxis, left, right, top, bottom);
+        } else {
+            box = DrawNamed(page, p, xAxis, yAxis, left, right, top, bottom);
+        }
+        page.SetFigureBoundingBox(box[0], box[1], box[2], box[3]);
+        page.AddEMC();
+        page.EndLink(link);
+        page.RestoreGraphicsState();
+        Annotation annotation = LinkOf(p, box);
+        annotation.linkElement = link;
+        page.AddAnnotation(annotation);
+    }
+
+    // Draws what follows a little transparent, but in PDF/A-1.
+    private static void SetTransparent(Page page) {
+        if (!page.pdf.IsPDFA1()) {
+            GraphicsState gs = new GraphicsState();
+            gs.SetAlphaNonStroking(ALPHA);
+            page.SetGraphicsState(gs);
+        }
+    }
+
+    // Draws a point that is not highlighted, with the transparency, and the
+    // width of the outlines, set.
+    private void DrawDot(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float size = f2.GetSize();
+        float px = XAt(p.x, xAxis, left, right);
+        float py = YAt(p.y, yAxis, top, bottom);
+        if (p.series >= 0) {
+            page.SetPenColor(SeriesColor(p.series));
+            DrawShape(page, p.series % SHAPES, px, py, 0.35f * size, false);
+        } else {
+            page.SetBrushColor(dotColor);
+            page.FillCircle(px, py, 0.3f * size);
+        }
+    }
+
+    // The box of a dot, x, y, w, h: a little past the tip of its outline in
+    // the shape that reaches farthest, the triangle.
+    private float[] DotBox(Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float reach = 0.55f * f2.GetSize();
+        return new float[] {XAt(p.x, xAxis, left, right) - reach, YAt(p.y, yAxis, top, bottom) - reach,
+                2f * reach, 2f * reach};
     }
 
     // Draws a highlighted point and its name, and returns the box of the two:
@@ -839,10 +965,10 @@ public class SimpleScatterChart : IDrawable {
         return new float[] {x1, y1, x2 - x1, y2 - y1};
     }
 
-    // The link annotation of a point, over the box of its dot and its name,
+    // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static Annotation LinkOf(Point p, float[] box) {
-        return new Annotation(
+        Annotation annotation = new Annotation(
                 Annotation.Link,
                 box[0],
                 box[1],
@@ -858,6 +984,8 @@ public class SimpleScatterChart : IDrawable {
                 null,
                 null,
                 p.name);
+        annotation.hitSize = p.dot ? HIT_SIZE : 0f;
+        return annotation;
     }
 
     // Tells if the point is on the plot: a point outside a range that is set
