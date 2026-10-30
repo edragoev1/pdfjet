@@ -49,6 +49,11 @@ class PNGImageTest {
         {"BASN0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
         {"BASN2C08", "32", "32", "2", "8", "3072", "7855b9bf", "", ""},
         {"BASN2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        {"BASN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        {"BASN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        {"BGAN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        {"BGGN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        {"BGYN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
         {"BASN3P01", "32", "32", "3", "1", "3072", "31ec284b", "", ""},
         {"BASN3P02", "32", "32", "3", "2", "3072", "279a463a", "", ""},
         {"BASN3P04", "32", "32", "3", "4", "3072", "3a9e038e", "", ""},
@@ -209,12 +214,6 @@ class PNGImageTest {
         new Image(objects, TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG"));
         String dict = String.join(" ", objects.get(objects.size() - 1).dict);
         assertTrue(dict.contains("/Mask [ 127 127 127 127 127 127 ]"), dict);
-    }
-
-    @Test
-    void rejects16BitRgbaWithAMessage() {
-        Exception e = assertThrows(Exception.class, () -> decode("BASN6A16"));
-        assertEquals("Image with unsupported bit depth == 16", e.getMessage());
     }
 
     @Test
@@ -423,9 +422,18 @@ class PNGImageTest {
     }
 
     @Test
-    void rejects16BitGrayscaleWithAlphaWithAMessage() {
-        Exception e = assertThrows(Exception.class, () -> decode("BASN4A16"));
-        assertEquals("Image with unsupported bit depth == 16", e.getMessage());
+    void anImageFromA16BitPngWithAlphaKeeps16BitsWithASoftMask() throws Exception {
+        for (String name : new String[] {"BASN4A16", "BASN6A16"}) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            try (InputStream in = TestSupport.open("tests/data/PngSuite/" + name + ".PNG")) {
+                new Image(pdf, in).drawOn(new Page(pdf, Letter.PORTRAIT));
+            }
+            pdf.complete();
+            String raw = TestSupport.latin1(bos.toByteArray());
+            assertTrue(raw.contains("/BitsPerComponent 16"), name);
+            assertTrue(raw.contains("/SMask"), name);
+        }
     }
 
     @Test

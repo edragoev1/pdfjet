@@ -44,6 +44,11 @@ var testPngSuite = []struct {
 	{"BASN0G16", 32, 32, 0, 16, 2048, "9362f0f0", 0, ""},
 	{"BASN2C08", 32, 32, 2, 8, 3072, "7855b9bf", 0, ""},
 	{"BASN2C16", 32, 32, 2, 16, 6144, "c278125a", 0, ""},
+	{"BASN4A16", 32, 32, 4, 16, 2048, "992bd988", 1024, "8ce873a2"},
+	{"BASN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"},
+	{"BGAN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"},
+	{"BGGN4A16", 32, 32, 4, 16, 2048, "992bd988", 1024, "8ce873a2"},
+	{"BGYN6A16", 32, 32, 6, 16, 6144, "cd7d40ad", 1024, "8ce873a2"},
 	{"BASN3P01", 32, 32, 3, 1, 3072, "31ec284b", 0, ""},
 	{"BASN3P02", 32, 32, 3, 2, 3072, "279a463a", 0, ""},
 	{"BASN3P04", 32, 32, 3, 4, 3072, "3a9e038e", 0, ""},
@@ -242,13 +247,6 @@ func TestPNGImageTheImageOfAPngWithATransparentColorHasItsMask(t *testing.T) {
 	}
 }
 
-func TestPNGImageRejects16BitRgbaWithAMessage(t *testing.T) {
-	message, panicked := testPanic(func() { testDecodePNG(t, "BASN6A16") })
-	if !panicked || message != "Image with unsupported bit depth == 16" {
-		t.Errorf("panicked %v with %q", panicked, message)
-	}
-}
-
 func TestPNGImageRejectsDataThatIsNotAPng(t *testing.T) {
 	if _, panicked := testPanic(func() { newPNGImage(strings.NewReader("not a png file")) }); !panicked {
 		t.Error("did not panic")
@@ -298,10 +296,20 @@ func TestPNGImageAnImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask(t *testing
 	}
 }
 
-func TestPNGImageRejects16BitGrayscaleWithAlphaWithAMessage(t *testing.T) {
-	message, panicked := testPanic(func() { testDecodePNG(t, "BASN4A16") })
-	if !panicked || message != "Image with unsupported bit depth == 16" {
-		t.Errorf("panicked %v with %q", panicked, message)
+func TestPNGImageAnImageFromA16BitPngWithAlphaKeeps16BitsWithASoftMask(t *testing.T) {
+	for _, name := range []string{"BASN4A16", "BASN6A16"} {
+		file, err := os.Open(testRepoPath(t, "tests/data/PngSuite/"+name+".PNG"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer file.Close()
+		doc := testNewDoc()
+		image := NewImage(doc.pdf, file)
+		image.DrawOn(NewPage(doc.pdf, testLetterPortrait()))
+		raw := string(doc.complete())
+		if !strings.Contains(raw, "/BitsPerComponent 16") || !strings.Contains(raw, "/SMask") {
+			t.Errorf("%s: not 16 bits with a soft mask", name)
+		}
 	}
 }
 
