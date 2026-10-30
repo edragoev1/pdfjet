@@ -24,6 +24,8 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
   `testPDFs/scanned-linearized.pdf` is written by `util/make-scanned-pdf.py`
   of PDFjet, and `testPDFs/sample-document.pdf`, the report of a made-up
   company, by `util/make-sample-pdf.sh`, from `util/MakeSamplePDF.java`.
+- `pdf417-sample.java` is PDFjet's own: the source of an older `Example_12`,
+  the program whose barcode holds itself, which Example_38 encodes.
 - `life-expectancy-and-fertility-2023.txt` is the life expectancy at birth,
   in years, and the children per woman of 2023 of the 217 countries and
   economies that have both, separated by `|`: the World Bank's World
