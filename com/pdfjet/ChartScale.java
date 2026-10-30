@@ -15,6 +15,12 @@ import java.math.*;
  * the shortening of a long name, and the test of a value to draw.
  */
 final class ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // setFractionDigits(1 << 30) hung, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    static final int MAX_DIGITS = 100;
+    static final String TOO_MANY_DIGITS = "The fraction digits of a chart are at most 100.";
+
     private ChartScale() {
     }
 
@@ -182,6 +188,11 @@ final class ChartScale {
             round.numOfGridLines = roundLines(minValue, maxValue, numOfGridLines);
             return round;
         }
+        // The product of a step can round to inside the values: 591 steps of
+        // 0.1 are 59.100002, and a point at 59.1 was not on its axis (the
+        // review of 30 October 2026)
+        round.maxValue = Math.max(round.maxValue, maxValue);
+        round.minValue = Math.min(round.minValue, minValue);
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Math.round((round.maxValue - round.minValue) / step);

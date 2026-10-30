@@ -584,3 +584,34 @@ func TestADecimalNumber(t *testing.T) {
 		}
 	}
 }
+
+// NaN and absurd sizes are the port's error, not a hang or a crash (the review
+// of 30 October 2026, G6 to G8).
+func TestMisuseNaNAndAbsurdSizesAreRefused(t *testing.T) {
+	pdf := testNewPDF()
+	frame := NewTextFrame(testHelvetica(pdf), []string{"Hello frame text"}).SetWidth(120).SetHeight(200)
+	frame.SetLocation(float32(math.NaN()), float32(math.NaN()))
+	for frame.HasMoreText() {
+		frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	}
+	testRefused(t, pdf, "The text frame's location and size must be numbers, not NaN or infinite.")
+
+	pdf = testNewPDF()
+	font := testHelvetica(pdf)
+	NewBarChart(font, font).SetCategories("a").AddSeries("one", []float32{1}).SetFractionDigits(1 << 30).
+		DrawOn(NewPage(pdf, testLetterPortrait()))
+	testRefused(t, pdf, "The fraction digits of a chart are at most 100.")
+
+	pdf = testNewPDF()
+	font = testHelvetica(pdf)
+	NewSimpleBarChart(font, font).Add("a", 1).SetFractionDigits(1 << 30).DrawOn(NewPage(pdf, testLetterPortrait()))
+	testRefused(t, pdf, "The fraction digits of a chart are at most 100.")
+
+	for _, size := range []float32{float32(math.NaN()), float32(math.Inf(1)), 1e30} {
+		pdf = testNewPDF()
+		font = testHelvetica(pdf)
+		NewSimpleLineChart(font, font).SetSize(size, size).SetCategories("a", "b").
+			AddLine("one", []float32{1, 2}).DrawOn(NewPage(pdf, testLetterPortrait()))
+		testRefused(t, pdf, "A coordinate, size or width is NaN, infinite or too large for a PDF.")
+	}
+}

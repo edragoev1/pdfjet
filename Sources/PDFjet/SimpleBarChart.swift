@@ -401,6 +401,10 @@ public class SimpleBarChart : Drawable {
         guard let page = page, !values.isEmpty else {   // Measured, or nothing to draw
             return [x + w, y + h]
         }
+        if maxFractionDigits > ChartScale.maxDigits {
+            page.pdf.fail(ChartScale.tooManyDigits)
+            return [x + w, y + h]
+        }
         let size = f2.getSize()
         let pad = pad()
 

@@ -543,4 +543,23 @@ import Testing
         #expect(markdown.imagePath("fifo-link.png") == nil)
         #expect(markdown.imagePath("circles.png") == directory + "/circles.png")
     }
+
+    // A table split over pages whose header wraps tall starts the next page
+    // when the header does not fit: drawn at the foot of the page, it ran off
+    // it (the review of 30 October 2026, E3).
+    @Test func aTallHeaderOfATableStaysOnThePage() throws {
+        var text = ""
+        for i in 0..<25 {
+            text += "line \(i)\n\n"
+        }
+        text += String(repeating: "| " + String(repeating: "word ", count: 20) + " ", count: 6) + "|\n"
+        text += String(repeating: "|---", count: 6) + "|\n"
+        text += String(repeating: String(repeating: "| a ", count: 6) + "|\n", count: 80)
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        var pages = [Page]()
+        try Markdown(font, font, font, font, font).drawOn(memory.pdf, text, &pages, Letter.PORTRAIT)
+        memory.pdf.addPages(pages)
+        try memory.pdf.complete()
+    }
 }

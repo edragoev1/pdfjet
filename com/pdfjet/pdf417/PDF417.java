@@ -337,6 +337,7 @@ public class PDF417 implements Drawable {
             }
             page.saveGraphicsState();
             page.setPenColor(color);
+            page.setDefaultStrokeDashPattern(); // Not the caller's, which broke the bars
         }
         float[] xy = drawBars(page);
         if (page != null) {

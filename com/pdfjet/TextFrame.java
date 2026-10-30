@@ -292,6 +292,15 @@ public class TextFrame implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
+        if (!finite(x) || !finite(y) || !finite(w) || !finite(h)) {
+            // No word is placed at NaN, and the frame hung (the review of 30
+            // October 2026)
+            if (page != null) {
+                paragraphIndex = paragraphs.size(); // No more text to ask for
+                page.pdf.fail(new IllegalArgumentException("The text frame's location and size must be numbers, not NaN or infinite."));
+            }
+            return new float[] {x + w, y};
+        }
         int startParagraph = paragraphIndex;
         int startLine = lineIndex;
         boolean continued = startLine > 0 || tokens != null;

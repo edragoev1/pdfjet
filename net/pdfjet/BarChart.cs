@@ -425,6 +425,9 @@ public class BarChart : IDrawable {
         if (page == null || n == 0 || f1 == null || f2 == null) {  // Measured, or nothing to draw
             return new float[] {x1 + w, y1 + h};
         }
+        if (maxFractionDigits > ChartScale.MAX_DIGITS) {
+            page.pdf.Fail(new ArgumentException(ChartScale.TOO_MANY_DIGITS));
+        }
 
         float vMin;
         float vMax;

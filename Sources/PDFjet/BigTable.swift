@@ -386,18 +386,27 @@ public class BigTable {
         footerDrawn = true
     }
 
+    // Returns the baseline of the first row of a page, of a table whose top is
+    // there, in the order newPage adds it up: added up otherwise, it can round
+    // to another Float, and the count was a page off the drawing.
+    private func firstRowY(_ top: Float) -> Float {
+        var y = top + verticalPadding + f1.ascent
+        y += f1.descent + 2 * verticalPadding + f2.ascent
+        return y
+    }
+
     // Counts the pages the rows take, as drawTextAndLine breaks them, so that
     // the "Page i of N" footer of a page can be drawn before the next page is
     // created. The location and the bottom margin are set after setTableData,
     // so the pages are counted when the table is drawn.
     private func countPages() -> Int {
         var pageHeight = pageSize.getHeight()
-        let yTop: Float = self.y + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding
+        let yTop = firstRowY(self.y)
         var yPos = yTop
         if startsOnFirstPage() {
             // The first page can be of another size than the next ones.
             pageHeight = firstPage!.height
-            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding
+            yPos = firstRowY(firstPageY)
         }
         var count = 1
         var isNewPage = false

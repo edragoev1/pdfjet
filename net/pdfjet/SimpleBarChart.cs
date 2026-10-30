@@ -378,6 +378,9 @@ public class SimpleBarChart : IDrawable {
         if (page == null || values.Count == 0 || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
+        if (maxFractionDigits > ChartScale.MAX_DIGITS) {
+            page.pdf.Fail(new ArgumentException(ChartScale.TOO_MANY_DIGITS));
+        }
         float size = f2.GetSize();
         float pad = Pad();
 

@@ -13,6 +13,12 @@ import Foundation
 /// the shortening of a long name, and the test of a value to draw.
 ///
 enum ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // setFractionDigits(1 << 31) crashed, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    static let maxDigits = 100
+    static let tooManyDigits = "The fraction digits of a chart are at most 100."
+
     // Formats a label with minDigits to maxDigits decimal places, rounding
     // the exact value half to even. The label has a "." decimal separator and
     // no grouping whatever the locale, and a value that rounds to zero has no
@@ -247,6 +253,11 @@ enum ChartScale {
             round.numOfGridLines = roundLines(minValue, maxValue, numOfGridLines)
             return round
         }
+        // The product of a step can round to inside the values: 591 steps of
+        // 0.1 are 59.100002, and a point at 59.1 was not on its axis (the
+        // review of 30 October 2026)
+        round.maxValue = Swift.max(round.maxValue, maxValue)
+        round.minValue = Swift.min(round.minValue, minValue)
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Int(((round.maxValue - round.minValue) / step).rounded())

@@ -590,4 +590,37 @@ class MarkdownTest {
             assertTrue(drawn.contents.get(i).contains("0.69 0.71 0.75 RG"), "no bar on page " + i);
         }
     }
+
+    // A table split over pages whose header wraps tall starts the next page
+    // when the header does not fit: drawn at the foot of the page, it ran off
+    // it (the review of 30 October 2026, E3).
+    @Test
+    void aTallHeaderOfATableStaysOnThePage() throws Exception {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 25; i++) {
+            text.append("line ").append(i).append("\n\n");
+        }
+        StringBuilder header = new StringBuilder();
+        StringBuilder rule = new StringBuilder();
+        StringBuilder row = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            header.append("| ");
+            for (int j = 0; j < 20; j++) {
+                header.append("word ");
+            }
+            header.append(' ');
+            rule.append("|---");
+            row.append("| a ");
+        }
+        text.append(header).append("|\n").append(rule).append("|\n");
+        for (int i = 0; i < 80; i++) {
+            text.append(row).append("|\n");
+        }
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<Page> pages = new ArrayList<Page>();
+        new Markdown(font, font, font, font, font).drawOn(pdf, text.toString(), pages, Letter.PORTRAIT);
+        pdf.addPages(pages);
+        pdf.complete();
+    }
 }

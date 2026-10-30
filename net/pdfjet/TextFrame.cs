@@ -277,6 +277,15 @@ public class TextFrame : IDrawable {
     /// bottom of the text in either case.
     /// </summary>
     public float[] DrawOn(Page page) {
+        if (!Finite(x) || !Finite(y) || !Finite(w) || !Finite(h)) {
+            // No word is placed at NaN, and the frame hung (the review of 30
+            // October 2026)
+            if (page != null) {
+                paragraphIndex = paragraphs.Count;  // No more text to ask for
+                page.pdf.Fail(new ArgumentException("The text frame's location and size must be numbers, not NaN or infinite."));
+            }
+            return new float[] {x + w, y};
+        }
         int startParagraph = paragraphIndex;
         int startLine = lineIndex;
         bool continued = startLine > 0 || tokens != null;

@@ -214,4 +214,24 @@ import Testing
         chart = SimpleScatterChart(font, font).setTitle("Life expectancy?").add(1, 2).add(2, 3)
         #expect(chart.getAltDescription() == "Life expectancy? 2 points.")
     }
+
+    // The end of an axis rounded to steps is never inside the values: 591
+    // steps of 0.1 come to 59.100002 in Float, and a point at 59.1 was not
+    // drawn (the review of 30 October 2026, E1).
+    @Test func anAxisHoldsItsValues() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(400, 300).add("Only", 59.1, 59.1).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("Only")), "\(content)")
+        for i in 1...20000 {
+            let value = Float(i) * 0.1
+            let axis = ChartScale.axisOf([value], 0, 0, false)
+            #expect(ChartScale.onAxis(value, axis), "\(value) on \(axis.min) to \(axis.max)")
+            let flat = ChartScale.flatRange(value)
+            let round = ChartScale.roundMaxAndMinValues(flat.hi, flat.lo)
+            #expect(round.minValue <= flat.lo && round.maxValue >= flat.hi, "\(flat.lo) to \(flat.hi)")
+        }
+    }
 }

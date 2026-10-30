@@ -267,6 +267,15 @@ public class TextFrame : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        if !x.isFinite || !y.isFinite || !w.isFinite || !h.isFinite {
+            // No word is placed at NaN, and the frame hung (the review of 30
+            // October 2026)
+            if let page = page {
+                page.pdf.fail("The text frame's location and size must be numbers, not NaN or infinite.")
+                paragraphIndex = paragraphs.count   // No more text to ask for
+            }
+            return [x + w, y]
+        }
         let startParagraph = paragraphIndex
         let startLine = lineIndex
         let continued = startLine > 0 || tokens != nil

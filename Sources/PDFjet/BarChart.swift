@@ -482,6 +482,10 @@ public class BarChart : Drawable {
             return [x1 + w, y1 + h]
         }
         let page = page!
+        if maxFractionDigits > ChartScale.maxDigits {
+            page.pdf.fail(ChartScale.tooManyDigits)
+            return [x1 + w, y1 + h]
+        }
 
         var vMin: Float
         var vMax: Float

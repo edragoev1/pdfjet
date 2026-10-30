@@ -254,4 +254,25 @@ class SimpleScatterChartTest {
         chart = new SimpleScatterChart(font, font).setTitle("Life expectancy?").add(1f, 2f).add(2f, 3f);
         assertEquals("Life expectancy? 2 points.", chart.altDescription());
     }
+
+    // The end of an axis rounded to steps is never inside the values: 591
+    // steps of 0.1 come to 59.100002 in float, and a point at 59.1 was not
+    // drawn (the review of 30 October 2026, E1).
+    @Test
+    void anAxisHoldsItsValues() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).setSize(400f, 300f).add("Only", 59.1f, 59.1f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("Only")), content);
+        for (int i = 1; i <= 20000; i++) {
+            float value = i * 0.1f;
+            ChartScale.Axis axis = ChartScale.axisOf(new float[] {value}, 0f, 0f, false);
+            assertTrue(ChartScale.onAxis(value, axis), value + " on " + axis.min + " to " + axis.max);
+            float[] flat = ChartScale.flatRange(value);
+            Round round = ChartScale.roundMaxAndMinValues(flat[1], flat[0]);
+            assertTrue(round.minValue <= flat[0] && round.maxValue >= flat[1], flat[0] + " to " + flat[1]);
+        }
+    }
 }

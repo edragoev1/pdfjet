@@ -263,6 +263,15 @@ func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Pag
 // text when the frame has no height; GetTextBottom gives the bottom of the text
 // in either case.
 func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
+	if !finite(tf.x, tf.y, tf.w, tf.h) {
+		// No word is placed at NaN, and the frame hung (the review of 30
+		// October 2026)
+		if page != nil {
+			page.pdf.fail("The text frame's location and size must be numbers, not NaN or infinite.")
+			tf.paragraphIndex = len(tf.paragraphs) // No more text to ask for
+		}
+		return [2]float32{tf.x + tf.w, tf.y}
+	}
 	startParagraph := tf.paragraphIndex
 	startLine := tf.lineIndex
 	continued := startLine > 0 || tf.tokens != nil
