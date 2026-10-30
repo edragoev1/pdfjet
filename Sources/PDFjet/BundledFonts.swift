@@ -220,7 +220,8 @@ enum BundledFonts {
     }
 
     /// Returns the face for the document, read once for it, or nil when it is
-    /// neither in resources/fonts nor in the bundle of PDFjetFonts.
+    /// neither in resources/fonts nor in the bundle of PDFjetFonts, which
+    /// PDFjet depends on.
     static func get(_ pdf: PDF, _ family: Int, _ weight: Int, _ italic: Bool) -> Font? {
         let name = fileName(family, weight, italic)
         if let font = pdf.bundledFonts[name] {

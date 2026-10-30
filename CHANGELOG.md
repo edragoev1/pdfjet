@@ -50,21 +50,34 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   and Text) and Cascadia Mono (Light to Bold), each upright and italic; IBM Plex Sans Arabic, Hebrew and Thai (Thin to Bold); IBM
   Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and
   Bold, as .otf. 72 faces, under the SIL Open Font License, each family
-  with its license in `resources/fonts` (THIRD-PARTIES.TXT). A font path,
-  such as the constant `IBMPlexSans.Regular`, is read from the file of the
-  path, else from the folder `resources/fonts`, else from the library, with
-  the same API in every case:
-  - Java: the jar of Maven Central carries the fonts, about 46 MB; the
-    `PDFjet.jar` of the release packages on GitHub, and the one built from
-    the repository, does not, 0.7 MB, its package having `resources/fonts`.
-  - .NET: the package of NuGet carries them in `PDFjet.dll`, about 67 MB;
-    the `PDFjet.dll` of the release packages on GitHub does not, 0.9 MB.
+  with its license in `resources/fonts`, the CJK ones in
+  `resources/fonts/cjk` (THIRD-PARTIES.TXT). A font path, such as the
+  constant `IBMPlexSans.Regular`, is read from the file of the path, else
+  from the folder `resources/fonts`, else from the library, with the same
+  API in every case. The Chinese, Japanese and Korean fonts, IBM Plex Sans
+  JP, KR, SC and TC, about 48 MB, are in a package of their own in every
+  port, which a program adds when it draws in them; a CJK font found in
+  none of those places says what to add:
+  - Java: the jar of Maven Central, `com.pdfjet:pdfjet`, carries the fonts
+    but the CJK ones, about 7 MB; `com.pdfjet:pdfjet-fonts-cjk`, the same
+    version, adds those, a jar of about 39 MB. The `PDFjet.jar` of the
+    release packages on GitHub, and the one built from the repository,
+    carries none, 0.7 MB, its package having `resources/fonts`.
+  - .NET: the package of NuGet, `PDFjet`, carries them but the CJK ones in
+    `PDFjet.dll`, about 16 MB, a package of about 14 MB with the DLLs for
+    .NET 8 and .NET Framework 4.8; the package `PDFjet.Fonts.CJK` adds
+    those, one assembly for .NET Standard 2.0 that serves both, a package
+    of about 39 MB. The `PDFjet.dll` of the release packages on GitHub
+    carries none, 0.9 MB.
   - Go: a program built with PDFjet carries the fonts of every script but
     Chinese, Japanese and Korean, about 20 MB in all; `import _
     "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"` adds those, 48
     MB more.
-  - Swift: the fonts come with the product `PDFjetFonts`, about 63 MB in
-    an app that adds it; the library alone has none.
+  - Swift: the product `PDFjet` carries the fonts but the CJK ones, about
+    16 MB, in the bundle of its target `PDFjetFonts`; the product
+    `PDFjetFontsCJK` adds those, about 48 MB. `PDFjetFonts` is still a
+    product, so that a `Package.swift` that names it builds; it adds
+    nothing to `PDFjet`.
   New: `IBMPlexSerif` and `CascadiaMono` constants, and `Font(objects,
   path)`, a font added to an existing PDF by its path. A font PDFjet does
   not carry throws, saying so. Every face carried has a constant, and every
@@ -112,6 +125,20 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   SourceSerif4.Regular)` in Swift throw, saying PDFjet does not carry the
   font, where 9.1.5 read it from the folder `fonts` of its package; use
   `IBMPlexSerif.Regular` instead.
+- Behavior change: the CJK fonts PDFjet carries are in packages of their
+  own, which a program that draws in them adds, as Go already had them
+  apart; they are in `resources/fonts/cjk`, where the small `PDFjet.jar`
+  and `PDFjet.dll` of the release packages read them. Example: a Java
+  program that draws `new Font(pdf, IBMPlexSansJP.Regular)` with the jar of
+  Maven Central adds next to `com.pdfjet:pdfjet`
+  `<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-cjk</artifactId><version>9.1.7</version></dependency>`
+  (Gradle: `implementation("com.pdfjet:pdfjet-fonts-cjk:9.1.7")`); without
+  it, the constructor throws a `FileNotFoundException` that names that
+  line. In C#, `dotnet add package PDFjet.Fonts.CJK`; in Swift,
+  `.product(name: "PDFjetFontsCJK", package: "pdfjet")` in
+  `Package.swift`, where an app that named `PDFjetFonts` for its fonts
+  keeps them, but not the CJK ones; in Go, `import _
+  "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"`, as before.
 - Behavior change: BarChart and DonutChart draw their series and slices in
   the Tableau 10 palette, the colors of D3's charts: blue #4E79A7, orange
   #F28E2C, red #E15759, teal #76B7B2, green #59A14F, yellow #EDC949, purple

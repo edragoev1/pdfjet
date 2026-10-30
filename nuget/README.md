@@ -22,6 +22,12 @@ and Swift.
 
 For .NET 8 and later, and .NET Framework 4.8.
 
+> **For Chinese, Japanese or Korean, also add the package
+> [PDFjet.Fonts.CJK](https://www.nuget.org/packages/PDFjet.Fonts.CJK):**
+> `dotnet add package PDFjet.Fonts.CJK`, the same version as PDFjet. Without
+> it, `IBMPlexSansJP`, `IBMPlexSansKR`, `IBMPlexSansSC` and `IBMPlexSansTC`
+> throw an error that names that package.
+
 ## Hello, World
 
 ```csharp
@@ -35,12 +41,6 @@ new TextLine(font, "Hello, World!").SetLocation(50f, 100f).DrawOn(page);
 pdf.Complete();
 ```
 
-> **For Chinese, Japanese or Korean, also add the package
-> [PDFjet.Fonts.CJK](https://www.nuget.org/packages/PDFjet.Fonts.CJK):**
-> `dotnet add package PDFjet.Fonts.CJK`, the same version as PDFjet. Without
-> it, `IBMPlexSansJP`, `IBMPlexSansKR`, `IBMPlexSansSC` and `IBMPlexSansTC`
-> throw an error that names that package.
-
 The core fonts, such as Helvetica, need no files. For text in other scripts,
 the `PDFjet.dll` of this package carries IBM Plex Sans and Serif, Cascadia
 Mono, IBM Plex Sans Arabic, Hebrew and Thai, and IBM Plex Math, all under the
@@ -51,8 +51,8 @@ and TC, about 40 MB, are in the package `PDFjet.Fonts.CJK`, which PDFjet
 finds on its own when your project has it. Only the glyphs a document draws
 are embedded in it. Any other .ttf or .otf font is read by its path.
 
-The fonts make its `PDFjet.dll` larger, about 22 MB, and the package about
-30 MB, as it has one for .NET 8 and one for .NET Framework 4.8. Want a much
+The fonts make its `PDFjet.dll` larger, about 16 MB, and the package about
+14 MB, as it has one for .NET 8 and one for .NET Framework 4.8. Want a much
 smaller DLL? The `PDFjet.dll` of the
 [releases on GitHub](https://github.com/edragoev1/pdfjet/releases) is under
 1 MB: it reads the same fonts from the folder `resources/fonts`, which its

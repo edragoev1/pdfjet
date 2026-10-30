@@ -328,8 +328,10 @@ public class Font {
     /// to one of the fonts PDFjet carries, such as the constants of the font
     /// structs, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read,
     /// when there is no such file, from the folder resources/fonts of the
-    /// working directory, or else from the product PDFjetFonts, which a
-    /// program that wants the fonts built in depends on. A path to a
+    /// working directory, or else from the bundle of PDFjetFonts, which PDFjet
+    /// depends on; the CJK fonts, such as IBMPlexSansJP.Regular, from
+    /// resources/fonts/cjk, or else from the product PDFjetFontsCJK, which an
+    /// app that draws in them adds, and a CJK font not found says so. A path to a
     /// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
     /// opens the .ttf or else the .otf file of the same name beside it.
     ///

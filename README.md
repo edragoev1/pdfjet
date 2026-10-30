@@ -32,17 +32,32 @@ same output come in four languages, and none of them needs a third-party library
 
 > [!IMPORTANT]
 > **PDFjet works out of the box: its fonts come with it.** From 9.1.7 the
-> jar of Maven Central and the package of NuGet carry the fonts PDFjet
-> carries, embedded in the documents that use them: IBM Plex Sans and
-> Serif, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai,
-> JP, KR, SC and TC, and IBM Plex Math, for Latin, Greek, Cyrillic, Arabic,
-> Hebrew, Thai, Chinese, Japanese and Korean. That jar is about 46 MB.
+> jar of Maven Central, the package of NuGet and the Swift product carry
+> the fonts PDFjet carries, embedded in the documents that use them: IBM
+> Plex Sans and Serif, Cascadia Mono, IBM Plex Sans Arabic, Hebrew and
+> Thai, and IBM Plex Math, for Latin, Greek, Cyrillic, Arabic, Hebrew and
+> Thai. That jar is about 7 MB.
+>
+> **For Chinese, Japanese or Korean, also add the CJK fonts, IBM Plex Sans
+> JP, KR, SC and TC, a package of their own, the same version:**
+>
+> | | Add |
+> |---|---|
+> | Maven | `<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-cjk</artifactId><version>9.1.7</version></dependency>` |
+> | Gradle | `implementation("com.pdfjet:pdfjet-fonts-cjk:9.1.7")` |
+> | NuGet | `dotnet add package PDFjet.Fonts.CJK` |
+> | Go | `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"` |
+> | Swift | `.product(name: "PDFjetFontsCJK", package: "pdfjet")` |
+>
+> Without it, a CJK font such as `IBMPlexSansJP.Regular` throws an error
+> that names the line to add.
 >
 > **Want a much smaller jar? Take PDFjet.jar from the
 > [releases on GitHub](https://github.com/edragoev1/pdfjet/releases): it is
 > 0.7 MB.** Its package has the same fonts as files, in `resources/fonts`,
-> which PDFjet reads from there with the same code; keep that folder next to
-> your program, or only the fonts you use.
+> the CJK ones too, in `resources/fonts/cjk`, which PDFjet reads from there
+> with the same code; keep that folder next to your program, or only the
+> fonts you use.
 >
 > This repository has all that the examples and the tests read: the fonts in
 > `resources/fonts` and the examples' data in `resources/data`. Nothing is
@@ -126,9 +141,27 @@ With Gradle:
 implementation("com.pdfjet:pdfjet:9.1.5")
 ```
 
-From 9.1.7 the jar of Maven Central carries PDFjet's fonts, so the
-constants of `com.pdfjet.fonts`, such as `IBMPlexSans.Regular`, work with
-nothing else to download; that jar is about 46 MB. The `PDFjet.jar` of the
+**For Chinese, Japanese or Korean, also add `com.pdfjet:pdfjet-fonts-cjk`,
+the same version:**
+
+```xml
+<dependency>
+  <groupId>com.pdfjet</groupId>
+  <artifactId>pdfjet-fonts-cjk</artifactId>
+  <version>9.1.7</version>
+</dependency>
+```
+
+```groovy
+implementation("com.pdfjet:pdfjet-fonts-cjk:9.1.7")
+```
+
+From 9.1.7 the jar of Maven Central carries PDFjet's fonts but the CJK
+ones, so the constants of `com.pdfjet.fonts`, such as
+`IBMPlexSans.Regular`, work with nothing else to download; that jar is
+about 7 MB. `pdfjet-fonts-cjk`, about 39 MB, has IBM Plex Sans JP, KR, SC
+and TC, which PDFjet finds on the classpath; without it, `IBMPlexSansJP` and
+the other CJK constants throw an error that names it. The `PDFjet.jar` of the
 [releases on GitHub](https://github.com/edragoev1/pdfjet/releases), and the
 one `./build-java.sh` builds from this repository, is 0.7 MB: it reads the
 same fonts from the folder `resources/fonts`, which its package has.
@@ -167,8 +200,19 @@ Or in the project file:
 <PackageReference Include="PDFjet" Version="9.1.5" />
 ```
 
-From 9.1.7 the package of NuGet carries PDFjet's fonts, so the constants
-such as `IBMPlexSans.Regular` work with nothing else to download. The
+**For Chinese, Japanese or Korean, also add the package `PDFjet.Fonts.CJK`,
+the same version:**
+
+```bash
+dotnet add package PDFjet.Fonts.CJK
+```
+
+From 9.1.7 the package of NuGet carries PDFjet's fonts but the CJK ones, so
+the constants such as `IBMPlexSans.Regular` work with nothing else to
+download; it is about 14 MB. `PDFjet.Fonts.CJK`, about 39 MB, has IBM Plex
+Sans JP, KR, SC and TC, which PDFjet finds on its own; without it,
+`IBMPlexSansJP` and the other CJK constants throw an error that names it.
+The
 `PDFjet.dll` of the [releases on GitHub](https://github.com/edragoev1/pdfjet/releases)
 is small: it reads the same fonts from the folder `resources/fonts`, which
 its package has.
@@ -237,6 +281,9 @@ carries, in `resources/fonts`. The data files of the examples, in
 folder has a `go.mod` of its own, which keeps it out. The module of 9.1.5 has
 no fonts: use the font files of its package from the release on GitHub.
 
+**For Chinese, Japanese or Korean, also add this line to your program:**
+`import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"`.
+
 Go builds the fonts a program embeds into the program itself, uncompressed.
 So the fonts of every script but Chinese, Japanese and Korean are built in,
 15 MB: a program like the one above is about 20 MB. The Chinese, Japanese
@@ -248,7 +295,7 @@ import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"
 ```
 
 Without it, `IBMPlexSansJP.Regular` and the other CJK fonts are read from the
-folder `resources/fonts` of the working directory when it has them, and are an
+folder `resources/fonts/cjk` of the working directory when it has them, and are an
 error that names this line when it does not.
 </details>
 
@@ -270,21 +317,24 @@ dependencies: [
 targets: [
     .executableTarget(name: "App", dependencies: [
         .product(name: "PDFjet", package: "pdfjet"),
-        .product(name: "PDFjetFonts", package: "pdfjet"),   // The fonts, about 63 MB
+        .product(name: "PDFjetFontsCJK", package: "pdfjet"),   // Only for Chinese, Japanese or Korean
     ]),
 ]
 ```
 
-**The fonts come with the `PDFjetFonts` product, not with `PDFjet`.** A Swift
-program is often an iPhone or Mac app, which should not carry about 63 MB of
-fonts unless you choose it. With the `PDFjetFonts` line above, every font
-PDFjet carries is built into your app, and the constants such as
-`IBMPlexSans.Regular` work anywhere; no code is needed, as PDFjet finds the
-fonts' bundle on its own. Without that line, PDFjet reads the same fonts from
-the folder `resources/fonts` of the working directory, as in this repository
-and the release packages, or you give it font files of your own, such as only
-the fonts you use, by their paths. A constant of a font that is in neither
-place throws an error that says to add `PDFjetFonts`.
+**For Chinese, Japanese or Korean, also add the `PDFjetFontsCJK` line
+above;** leave it out otherwise. The product `PDFjet` carries every font
+PDFjet carries but the CJK ones, about 16 MB, so the constants such as
+`IBMPlexSans.Regular` work anywhere. A Swift program is often an iPhone or
+Mac app, which should not carry the 48 MB of the CJK fonts, IBM Plex Sans
+JP, KR, SC and TC, unless it draws in them: with the `PDFjetFontsCJK` line,
+they are built into your app, and no code is needed, as PDFjet finds their
+bundle on its own. Without it, PDFjet reads them from the folder
+`resources/fonts/cjk` of the working directory, as in this repository and
+the release packages, and a CJK constant that is in neither place throws an
+error that names the line to add. An app that named the product
+`PDFjetFonts` before 9.1.7 still builds; that product is now part of
+`PDFjet`.
 
 ```swift
 import Foundation

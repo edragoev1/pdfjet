@@ -157,9 +157,13 @@ Sans, Sans Arabic, Sans Hebrew, Sans Thai, Sans JP, Sans KR, Sans SC, Sans TC,
 Serif and Math, and Cascadia Mono. A font path names one of
 them, and the text of SVG images is drawn in them. They are licensed under the
 SIL Open Font License, Version 1.1, whose text, with the copyright of each, is
-beside each family in resources/fonts, and goes with them wherever they are
-carried: in the Maven jar, in the PDFjet.dll of the NuGet package, built into
-Go programs, and in the Swift product PDFjetFonts.
+beside each family in resources/fonts (resources/fonts/cjk for Sans JP, KR, SC
+and TC), and goes with them wherever they are carried: in the Maven jars
+com.pdfjet:pdfjet and, for the CJK fonts, com.pdfjet:pdfjet-fonts-cjk; in the
+PDFjet.dll of the NuGet package PDFjet and, for the CJK fonts, the
+PDFjet.Fonts.CJK.dll of the package PDFjet.Fonts.CJK; built into Go programs,
+the CJK fonts by the package resources/fonts/cjk; and in the Swift product
+PDFjet and, for the CJK fonts, the product PDFjetFontsCJK.
 
     ============================================================================
     IBM Plex: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"

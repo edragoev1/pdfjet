@@ -74,7 +74,7 @@ Add PDFjet to the Package.swift of your package, and the PDFjet product to the t
     ]
 @end
 
-The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. They are IBM Plex Sans and Serif, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, in the folder resources/fonts of the repository.
+The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. They are IBM Plex Sans and Serif, Cascadia Mono, IBM Plex Sans Arabic, Hebrew, Thai, JP, KR, SC and TC, and IBM Plex Math, in the folder resources/fonts of the repository, the CJK ones in resources/fonts/cjk. For Chinese, Japanese or Korean, also add the CJK fonts, a package of their own: com.pdfjet:pdfjet-fonts-cjk with Maven or Gradle, PDFjet.Fonts.CJK with NuGet, import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk" in Go, and the product PDFjetFontsCJK in Swift. Without it, a CJK font throws an error that names what to add.
 
 ## Hello, World
 
