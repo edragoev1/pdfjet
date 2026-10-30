@@ -31,6 +31,7 @@ struct SVGState {
     var opacity: Float = 1.0                // The opacities of the element and its ancestors, multiplied
     var ownOpacity: Float = 1.0             // The opacity of the element itself, not inherited
     var matrix = SVGState.identity
+    var viewport = [0.0, 0.0]               // The width and the height of the viewport, in user units
     var hidden = false                      // In <defs> and the like, or under display="none": not drawn
     var invisible = false                   // visibility: not painted, but its children may be
     var dashArray: [Float]? = nil           // stroke-dasharray, in the user space; nil is a solid line

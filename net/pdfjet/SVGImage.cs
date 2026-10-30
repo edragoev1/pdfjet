@@ -59,6 +59,7 @@ public class SVGImage : IDrawable {
     private HashSet<XMLNode> reusing;
     private long reused = 0;
     private long counted = 0;
+    private String[] useSize = null;    // The width and the height of the use element of the element drawn next
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
@@ -308,8 +309,8 @@ public class SVGImage : IDrawable {
         if (state.clipPath != null && !state.hidden) {
             Clip(state, rules);
         }
-        stack.Add(state);
-
+        String[] size = useSize;
+        useSize = null;
         if (name.Equals("svg") && root) {
             root = false;
             this.w = ParseLength(Attribute(attributes, "width"));
@@ -320,7 +321,14 @@ public class SVGImage : IDrawable {
                 attributes.TryGetValue("viewbox", out this.viewBox);
             }
             attributes.TryGetValue("preserveAspectRatio", out this.preserveAspectRatio);
+            List<double> box = SVGState.ParseNumbers(this.viewBox ?? "");
+            state.viewport = (box != null && box.Count == 4)
+                    ? new double[] {box[2], box[3]} : new double[] {this.w, this.h};
+        } else if (name.Equals("svg") || (name.Equals("symbol") && used)) {
+            EnterViewport(state, attributes, size);
         }
+        stack.Add(state);
+
         if (name.Equals("text")) {
             if (!state.hidden) {
                 AddText(node, rules, state, attributes, stack.Count);
@@ -338,6 +346,7 @@ public class SVGImage : IDrawable {
                     1.0, 0.0, 0.0, 1.0, Number(attributes, "x"), Number(attributes, "y")});
                 stack.Add(parent);
                 reusing.Add(target);
+                useSize = new String[] {Attribute(attributes, "width"), Attribute(attributes, "height")};
                 Draw(target, stack, rules, ref root, true);
                 reusing.Remove(target);
                 stack.RemoveAt(stack.Count - 1);
@@ -737,6 +746,84 @@ public class SVGImage : IDrawable {
         List<SVGPath> clips = (state.clips == null) ? new List<SVGPath>() : new List<SVGPath>(state.clips);
         clips.Add(clip);
         state.clips = clips;
+    }
+
+    // Sets the user space of a nested svg element, or of a symbol a use
+    // element draws: moved by its x and y, and its viewBox fitted to its width
+    // and height, which the use element may give, and which are those of the
+    // viewport it is in unless given; a percentage is of that viewport. A
+    // viewBox or a size of nothing draws nothing.
+    private static void EnterViewport(SVGState state, Dictionary<String, String> attributes, String[] size) {
+        String width = (size != null && size[0].Length > 0) ? size[0] : Attribute(attributes, "width");
+        String height = (size != null && size[1].Length > 0) ? size[1] : Attribute(attributes, "height");
+        double w = ViewportLength(width, state.viewport[0], state.viewport[0]);
+        double h = ViewportLength(height, state.viewport[1], state.viewport[1]);
+        double[] m = new double[] {1.0, 0.0, 0.0, 1.0,
+            ViewportLength(Attribute(attributes, "x"), state.viewport[0], 0.0),
+            ViewportLength(Attribute(attributes, "y"), state.viewport[1], 0.0)};
+        List<double> box = SVGState.ParseNumbers(Attribute(attributes, "viewBox"));
+        if (box == null || box.Count != 4) {
+            state.viewport = new double[] {w, h};
+            state.matrix = SVGState.Multiply(state.matrix, m);
+            return;
+        }
+        // A viewport of no known size, of an svg element with neither a size
+        // nor a viewBox, leaves the viewBox as it is.
+        if (w == 0.0 && width.Length == 0) {
+            w = box[2];
+        }
+        if (h == 0.0 && height.Length == 0) {
+            h = box[3];
+        }
+        if (box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0) {
+            state.hidden = true;
+            return;
+        }
+        double sx = w/box[2];
+        double sy = h/box[3];
+        double tx = 0.0;
+        double ty = 0.0;
+        List<String> fields = SVGState.Fields(Attribute(attributes, "preserveAspectRatio"));
+        if (fields.Count > 0 && fields[0].Equals("defer")) {
+            fields.RemoveAt(0);
+        }
+        // The alignment is read in the bytes of UTF-8, one char for each
+        // byte, as the Go port reads it.
+        String align = (fields.Count > 0) ? Encoding.Latin1.GetString(Encoding.UTF8.GetBytes(fields[0])) : "xMidYMid";
+        if (!align.Equals("none")) {
+            sx = Math.Min(sx, sy);
+            if (fields.Count > 1 && fields[1].Equals("slice")) {
+                sx = Math.Max(w/box[2], h/box[3]);
+            }
+            sy = sx;
+            if (align.Length != 8) {
+                align = "xMidYMid";
+            }
+            tx = AlignOffset(align.Substring(1, 3), 1f)*(w - box[2]*sx);
+            ty = AlignOffset(align.Substring(5, 3), 1f)*(h - box[3]*sy);
+        }
+        m = SVGState.Multiply(m, new double[] {sx, 0.0, 0.0, sy, tx, ty});
+        m = SVGState.Multiply(m, new double[] {1.0, 0.0, 0.0, 1.0, -box[0], -box[1]});
+        state.viewport = new double[] {box[2], box[3]};
+        state.matrix = SVGState.Multiply(state.matrix, m);
+    }
+
+    // Reads an x, a y, a width or a height of a viewport, which may be a
+    // percentage of the size of the one it is in, the given one if it has none.
+    private static double ViewportLength(String value, double whole, double given) {
+        value = SVGState.Trim(value);
+        if (value.Length == 0) {
+            return given;
+        }
+        if (value.EndsWith("%", StringComparison.Ordinal)) {
+            double number;
+            if (!SVGState.ParseDouble(value.Substring(0, value.Length - 1), out number)
+                    || double.IsNaN(number) || double.IsInfinity(number)) {
+                return given;
+            }
+            return number*whole/100.0;
+        }
+        return SVGState.ParseCoordinate(value);
     }
 
     // Returns twice the area of the path, its sign the way it goes round, by

@@ -35,6 +35,7 @@ public class SVGImage : Drawable {
     private var reusing = Set<ObjectIdentifier>()
     private var reused = 0
     private var counted = 0
+    private var useSize: (String, String)?  // The width and the height of the use element of the element drawn next
     private var rules = SVGStyleSheet()
     private var stack = [SVGState]()
     private var root = true
@@ -315,11 +316,8 @@ public class SVGImage : Drawable {
         if state.clipPath != nil && !state.hidden {
             try clip(&state)
         }
-        stack.append(state)
-        defer {
-            stack.removeLast()
-        }
-
+        let size = useSize
+        useSize = nil
         if name == "svg" && root {
             root = false
             w = SVGImage.parseLength(values["width"] ?? "")
@@ -328,7 +326,19 @@ public class SVGImage : Drawable {
             // HTML page's parser reads an inline svg, whose files keep it
             viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
             preserveAspectRatio = values["preserveAspectRatio"] ?? ""
+            if let box = SVGState.parseNumbers(viewBox), box.count == 4 {
+                state.viewport = [box[2], box[3]]
+            } else {
+                state.viewport = [Double(w), Double(h)]
+            }
+        } else if name == "svg" || name == "symbol" && used {
+            SVGImage.enterViewport(&state, values, size)
         }
+        stack.append(state)
+        defer {
+            stack.removeLast()
+        }
+
         if name == "text" {
             if !state.hidden {
                 try addText(node, state, values)
@@ -345,6 +355,7 @@ public class SVGImage : Drawable {
                         1.0, 0.0, 0.0, 1.0, SVGImage.number(values, "x"), SVGImage.number(values, "y")])
                 stack.append(parent)
                 reusing.insert(ObjectIdentifier(target))
+                useSize = (values["width"] ?? "", values["height"] ?? "")
                 try draw(target, true)
                 reusing.remove(ObjectIdentifier(target))
                 stack.removeLast()
@@ -700,6 +711,81 @@ public class SVGImage : Drawable {
         }
         clipShapes.append(clip)
         state.clips = (state.clips ?? []) + [clip]
+    }
+
+    // Sets the user space of a nested svg element, or of a symbol a use
+    // element draws: moved by its x and y, and its viewBox fitted to its width
+    // and height, which the use element may give, and which are those of the
+    // viewport it is in unless given; a percentage is of that viewport. A
+    // viewBox or a size of nothing draws nothing.
+    private static func enterViewport(_ state: inout SVGState, _ attributes: [String: String],
+            _ size: (String, String)?) {
+        let width = (size != nil && !size!.0.isEmpty) ? size!.0 : attributes["width"] ?? ""
+        let height = (size != nil && !size!.1.isEmpty) ? size!.1 : attributes["height"] ?? ""
+        var w = viewportLength(width, state.viewport[0], state.viewport[0])
+        var h = viewportLength(height, state.viewport[1], state.viewport[1])
+        var m = [1.0, 0.0, 0.0, 1.0,
+                viewportLength(attributes["x"] ?? "", state.viewport[0], 0.0),
+                viewportLength(attributes["y"] ?? "", state.viewport[1], 0.0)]
+        guard let box = SVGState.parseNumbers(attributes["viewBox"] ?? ""), box.count == 4 else {
+            state.viewport = [w, h]
+            state.matrix = SVGState.multiply(state.matrix, m)
+            return
+        }
+        // A viewport of no known size, of an svg element with neither a size
+        // nor a viewBox, leaves the viewBox as it is.
+        if w == 0.0 && width.isEmpty {
+            w = box[2]
+        }
+        if h == 0.0 && height.isEmpty {
+            h = box[3]
+        }
+        if box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0 {
+            state.hidden = true
+            return
+        }
+        var sx = w / box[2]
+        var sy = h / box[3]
+        var tx = 0.0
+        var ty = 0.0
+        var fields = SVGState.fields(attributes["preserveAspectRatio"] ?? "")
+        if !fields.isEmpty && fields[0] == "defer" {
+            fields.removeFirst()
+        }
+        var align = Array((fields.first ?? "xMidYMid").utf8)
+        if !SVGState.equal(fields.first ?? "", "none") {
+            sx = SVGState.goMin(sx, sy)
+            if fields.count > 1 && fields[1] == "slice" {
+                sx = SVGState.goMax(w / box[2], h / box[3])
+            }
+            sy = sx
+            if align.count != 8 {
+                align = Array("xMidYMid".utf8)
+            }
+            tx = Double(alignOffset(align[1..<4], 1.0)) * (w - box[2]*sx)
+            ty = Double(alignOffset(align[5..<8], 1.0)) * (h - box[3]*sy)
+        }
+        m = SVGState.multiply(m, [sx, 0.0, 0.0, sy, tx, ty])
+        m = SVGState.multiply(m, [1.0, 0.0, 0.0, 1.0, -box[0], -box[1]])
+        state.viewport = [box[2], box[3]]
+        state.matrix = SVGState.multiply(state.matrix, m)
+    }
+
+    // Reads an x, a y, a width or a height of a viewport, which may be a
+    // percentage of the size of the one it is in, the given one if it has none.
+    private static func viewportLength(_ value: String, _ whole: Double, _ given: Double) -> Double {
+        let value = SVGState.trimSpace(value)
+        if value.isEmpty {
+            return given
+        }
+        if SVGState.hasSuffix(value, "%") {
+            guard let number = SVGState.parseDouble(SVGState.string(value.unicodeScalars.dropLast())),
+                  number.isFinite else {
+                return given
+            }
+            return number*whole/100.0
+        }
+        return SVGState.parseCoordinate(value)
     }
 
     // Returns twice the area of the path, its sign the way it goes round, by

@@ -39,6 +39,7 @@ class SVGState {
     float opacity = 1f;                 // The opacities of the element and its ancestors, multiplied
     float ownOpacity = 1f;              // The opacity of the element itself, not inherited
     double[] matrix = IDENTITY;         // Never changed in place: a new transform is a new array
+    double[] viewport = {0.0, 0.0};     // The width and the height of the viewport, in user units; replaced too
     boolean hidden = false;             // In <defs> and the like, or under display="none": not drawn
     boolean invisible = false;          // visibility: not painted, but its children may be
     float[] dashArray = null;           // stroke-dasharray, in the user space; null is a solid line
@@ -84,6 +85,7 @@ class SVGState {
         this.opacity = parent.opacity;
         this.ownOpacity = parent.ownOpacity;
         this.matrix = parent.matrix;
+        this.viewport = parent.viewport;
         this.hidden = parent.hidden;
         this.invisible = parent.invisible;
         this.dashArray = parent.dashArray;

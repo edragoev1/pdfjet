@@ -1058,4 +1058,66 @@ import Testing
             #expect(content.components(separatedBy: "1 0 0 rg").count - 1 == 1, "\(content)")
         }
     }
+
+    @Test func aUseGivesASymbolItsSize() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" x=\"5\" y=\"5\" width=\"20\" height=\"20\"/></svg>")
+            #expect(content.contains("5 787 m\n25 787 l\n25 767 l\n5 767 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("0 782 m\n20 782 l\n20 762 l\n0 762 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMinYMin\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("0 792 m\n20 792 l\n20 772 l\n0 772 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"none\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("0 792 m\n20 792 l\n20 752 l\n0 752 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMaxYMax slice\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"20\" height=\"40\"/></svg>")
+            #expect(content.contains("-20 792 m\n20 792 l\n20 752 l\n-20 752 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\"/></svg>")
+            #expect(content.contains("0 792 m\n100 792 l\n100 692 l\n0 692 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><symbol id=\"s\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></symbol><use href=\"#s\" width=\"0\" height=\"20\"/></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
+
+    @Test func aNestedSvgIsAViewport() throws {
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\" width=\"20\" height=\"20\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("10 772 m\n30 772 l\n30 752 l\n10 752 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg x=\"10\" y=\"20\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("10 772 m\n20 772 l\n20 762 l\n10 762 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg x=\"50%\" y=\"10%\" width=\"20\" height=\"20\" viewBox=\"5 5 10 10\"><rect x=\"5\" y=\"5\" width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("50 782 m\n70 782 l\n70 762 l\n50 762 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 200 200\"><svg width=\"50%\" height=\"50%\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("0 792 m\n50 792 l\n50 742 l\n0 742 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg><svg viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content.contains("0 792 m\n10 792 l\n10 782 l\n0 782 l\n"), "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg width=\"0\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content == "", "\(content)")
+        }
+        do {
+            let content = try draw("<svg width=\"100\" height=\"100\"><svg viewBox=\"0 0 -10 10\"><rect width=\"10\" height=\"10\"/></svg></svg>")
+            #expect(content == "", "\(content)")
+        }
+    }
 }

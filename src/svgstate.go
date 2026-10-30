@@ -46,6 +46,7 @@ type svgState struct {
 	opacity       float32 // The opacities of the element and its ancestors, multiplied
 	ownOpacity    float32 // The opacity of the element itself, not inherited
 	matrix        [6]float64
+	viewport      [2]float64 // The width and the height of the viewport, in user units
 	hidden        bool      // In <defs> and the like, or under display="none": not drawn
 	invisible     bool      // visibility: not painted, but its children may be
 	dashArray     []float32 // stroke-dasharray, in the user space; nil is a solid line

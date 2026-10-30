@@ -79,6 +79,7 @@ type svgReader struct {
 	ids      map[string]*xmlparser.XMLNode
 	reusing  map[*xmlparser.XMLNode]bool
 	reused   int64
+	useSize  [2]string // The width and the height of the use element of the element drawn next
 	counted  int64 // The operations maxSVGOperations limits
 }
 
@@ -354,9 +355,8 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 			return err
 		}
 	}
-	r.stack = append(r.stack, state)
-	defer func() { r.stack = r.stack[:len(r.stack)-1] }()
-
+	size := r.useSize
+	r.useSize = [2]string{}
 	if name == "svg" && r.root {
 		r.root = false
 		image.w = parseLength(attributes["width"])
@@ -369,7 +369,16 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 			image.viewBox = attributes["viewbox"]
 		}
 		image.preserveAspectRatio = attributes["preserveAspectRatio"]
+		state.viewport = [2]float64{float64(image.w), float64(image.h)}
+		if box, err := parseSVGNumbers(image.viewBox); err == nil && len(box) == 4 {
+			state.viewport = [2]float64{box[2], box[3]}
+		}
+	} else if name == "svg" || name == "symbol" && used {
+		state.enterViewport(attributes, size)
 	}
+	r.stack = append(r.stack, state)
+	defer func() { r.stack = r.stack[:len(r.stack)-1] }()
+
 	if name == "text" {
 		if !state.hidden {
 			return r.addText(node, state, attributes)
@@ -386,6 +395,7 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 				1, 0, 0, 1, parseSVGCoordinate(attributes["x"]), parseSVGCoordinate(attributes["y"])})
 			r.stack = append(r.stack, parent)
 			r.reusing[target] = true
+			r.useSize = [2]string{attributes["width"], attributes["height"]}
 			err := r.draw(target, true)
 			delete(r.reusing, target)
 			r.stack = r.stack[:len(r.stack)-1]
@@ -839,6 +849,91 @@ func svgReversed(operations []*svgPathOp) []*svgPathOp {
 		start = end
 	}
 	return reversed
+}
+
+// enterViewport sets the user space of a nested svg element, or of a symbol a use
+// element draws: moved by its x and y, and its viewBox fitted to its width
+// and height, which the use element may give, and which are those of the
+// viewport it is in unless given; a percentage is of that viewport. A
+// viewBox or a size of nothing draws nothing.
+func (state *svgState) enterViewport(attributes map[string]string, size [2]string) {
+	width := attributes["width"]
+	if size[0] != "" {
+		width = size[0]
+	}
+	height := attributes["height"]
+	if size[1] != "" {
+		height = size[1]
+	}
+	w := svgViewportLength(width, state.viewport[0], state.viewport[0])
+	h := svgViewportLength(height, state.viewport[1], state.viewport[1])
+	m := [6]float64{1, 0, 0, 1,
+		svgViewportLength(attributes["x"], state.viewport[0], 0.0),
+		svgViewportLength(attributes["y"], state.viewport[1], 0.0)}
+	box, err := parseSVGNumbers(attributes["viewBox"])
+	if err != nil || len(box) != 4 {
+		state.viewport = [2]float64{w, h}
+		state.matrix = svgMultiply(state.matrix, m)
+		return
+	}
+	// A viewport of no known size, of an svg element with neither a size nor
+	// a viewBox, leaves the viewBox as it is.
+	if w == 0.0 && width == "" {
+		w = box[2]
+	}
+	if h == 0.0 && height == "" {
+		h = box[3]
+	}
+	if box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0 {
+		state.hidden = true
+		return
+	}
+	sx := w / box[2]
+	sy := h / box[3]
+	tx := 0.0
+	ty := 0.0
+	fields := strings.Fields(attributes["preserveAspectRatio"])
+	if len(fields) > 0 && fields[0] == "defer" {
+		fields = fields[1:]
+	}
+	align := "xMidYMid"
+	if len(fields) > 0 {
+		align = fields[0]
+	}
+	if align != "none" {
+		sx = math.Min(sx, sy)
+		if len(fields) > 1 && fields[1] == "slice" {
+			sx = math.Max(w/box[2], h/box[3])
+		}
+		sy = sx
+		if len(align) != 8 {
+			align = "xMidYMid"
+		}
+		tx = float64(float64(alignOffset(align[1:4], 1.0)) * (w - float64(box[2]*sx)))
+		ty = float64(float64(alignOffset(align[5:8], 1.0)) * (h - float64(box[3]*sy)))
+	}
+	m = svgMultiply(m, [6]float64{sx, 0, 0, sy, tx, ty})
+	m = svgMultiply(m, [6]float64{1, 0, 0, 1, -box[0], -box[1]})
+	state.viewport = [2]float64{box[2], box[3]}
+	state.matrix = svgMultiply(state.matrix, m)
+}
+
+// svgViewportLength reads an x, a y, a width or a height of a viewport, which
+// may be a percentage of the size of the one it is in, the given one if it has
+// none.
+func svgViewportLength(value string, whole, given float64) float64 {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return given
+	}
+	if strings.HasSuffix(value, "%") {
+		number, err := parseSVGFloat(strings.TrimSuffix(value, "%"), 64)
+		if err != nil || math.IsNaN(number) || math.IsInf(number, 0) {
+			return given
+		}
+		return float64(number*whole) / 100.0
+	}
+	return parseSVGCoordinate(value)
 }
 
 // svgVertices returns the vertices of the path, where its markers are drawn,

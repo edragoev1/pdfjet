@@ -64,6 +64,7 @@ public class SVGImage implements Drawable {
     private Set<XMLNode> reusing;
     private long reused = 0;
     private long counted = 0;
+    private String[] useSize = null;    // The width and the height of the use element of the element drawn next
     // The elements drawn again, by use elements and as markers, at most: a
     // use of a group of uses, and so on, draws ten to the power of the
     // number of groups, as an XML of entities in entities does.
@@ -309,8 +310,8 @@ public class SVGImage implements Drawable {
         if (state.clipPath != null && !state.hidden) {
             clip(state, colorMap, rules);
         }
-        stack.add(state);
-
+        String[] size = useSize;
+        useSize = null;
         if (name.equals("svg") && root[0]) {
             root[0] = false;
             this.w = parseLength(attribute(attributes, "width"));
@@ -320,7 +321,14 @@ public class SVGImage implements Drawable {
             this.viewBox = attributes.containsKey("viewBox")
                     ? attribute(attributes, "viewBox") : attribute(attributes, "viewbox");
             this.preserveAspectRatio = attribute(attributes, "preserveAspectRatio");
+            double[] box = SVGState.parseNumbers(this.viewBox);
+            state.viewport = (box != null && box.length == 4)
+                    ? new double[] {box[2], box[3]} : new double[] {this.w, this.h};
+        } else if (name.equals("svg") || name.equals("symbol") && used) {
+            enterViewport(state, attributes, size);
         }
+        stack.add(state);
+
         if (name.equals("text")) {
             if (!state.hidden) {
                 addText(node, colorMap, rules, state, attributes, stack.size());
@@ -338,6 +346,7 @@ public class SVGImage implements Drawable {
                         1, 0, 0, 1, number(attributes, "x"), number(attributes, "y")});
                 stack.add(parent);
                 reusing.add(target);
+                useSize = new String[] {attribute(attributes, "width"), attribute(attributes, "height")};
                 draw(target, colorMap, rules, stack, root, true);
                 reusing.remove(target);
                 stack.remove(stack.size() - 1);
@@ -723,6 +732,88 @@ public class SVGImage implements Drawable {
         List<SVGPath> clips = (state.clips == null) ? new ArrayList<SVGPath>() : new ArrayList<SVGPath>(state.clips);
         clips.add(clip);
         state.clips = clips;
+    }
+
+    // Sets the user space of a nested svg element, or of a symbol a use
+    // element draws: moved by its x and y, and its viewBox fitted to its width
+    // and height, which the use element may give, and which are those of the
+    // viewport it is in unless given; a percentage is of that viewport. A
+    // viewBox or a size of nothing draws nothing.
+    private static void enterViewport(SVGState state, Map<String, String> attributes, String[] size) {
+        String width = (size != null && !size[0].isEmpty()) ? size[0] : attribute(attributes, "width");
+        String height = (size != null && !size[1].isEmpty()) ? size[1] : attribute(attributes, "height");
+        double w = viewportLength(width, state.viewport[0], state.viewport[0]);
+        double h = viewportLength(height, state.viewport[1], state.viewport[1]);
+        double[] m = {1, 0, 0, 1,
+                viewportLength(attribute(attributes, "x"), state.viewport[0], 0.0),
+                viewportLength(attribute(attributes, "y"), state.viewport[1], 0.0)};
+        double[] box = SVGState.parseNumbers(attribute(attributes, "viewBox"));
+        if (box == null || box.length != 4) {
+            state.viewport = new double[] {w, h};
+            state.matrix = SVGState.multiply(state.matrix, m);
+            return;
+        }
+        // A viewport of no known size, of an svg element with neither a size
+        // nor a viewBox, leaves the viewBox as it is.
+        if (w == 0.0 && width.isEmpty()) {
+            w = box[2];
+        }
+        if (h == 0.0 && height.isEmpty()) {
+            h = box[3];
+        }
+        if (box[2] <= 0.0 || box[3] <= 0.0 || w <= 0.0 || h <= 0.0) {
+            state.hidden = true;
+            return;
+        }
+        double sx = w/box[2];
+        double sy = h/box[3];
+        double tx = 0.0;
+        double ty = 0.0;
+        List<String> fields = SVGState.fields(attribute(attributes, "preserveAspectRatio"));
+        if (!fields.isEmpty() && fields.get(0).equals("defer")) {
+            fields = fields.subList(1, fields.size());
+        }
+        String align = fields.isEmpty() ? "xMidYMid" : fields.get(0);
+        if (!align.equals("none")) {
+            sx = Math.min(sx, sy);
+            if (fields.size() > 1 && fields.get(1).equals("slice")) {
+                sx = Math.max(w/box[2], h/box[3]);
+            }
+            sy = sx;
+            // The value is read in bytes of UTF-8, as the Go port reads it.
+            byte[] bytes = Util.utf8(align);
+            if (bytes.length != 8) {
+                bytes = "xMidYMid".getBytes(StandardCharsets.US_ASCII);
+            }
+            tx = alignOffset(new String(bytes, 1, 3, StandardCharsets.ISO_8859_1), 1f)*(w - box[2]*sx);
+            ty = alignOffset(new String(bytes, 5, 3, StandardCharsets.ISO_8859_1), 1f)*(h - box[3]*sy);
+        }
+        m = SVGState.multiply(m, new double[] {sx, 0, 0, sy, tx, ty});
+        m = SVGState.multiply(m, new double[] {1, 0, 0, 1, -box[0], -box[1]});
+        state.viewport = new double[] {box[2], box[3]};
+        state.matrix = SVGState.multiply(state.matrix, m);
+    }
+
+    // Reads an x, a y, a width or a height of a viewport, which may be a
+    // percentage of the size of the one it is in, the given one if it has none.
+    private static double viewportLength(String value, double whole, double given) {
+        value = SVGState.trim(value);
+        if (value.isEmpty()) {
+            return given;
+        }
+        if (value.endsWith("%")) {
+            double number;
+            try {
+                number = SVGState.parseNumber(value.substring(0, value.length() - 1), false);
+            } catch (NumberFormatException e) {
+                return given;
+            }
+            if (Double.isNaN(number) || Double.isInfinite(number)) {
+                return given;
+            }
+            return number*whole/100.0;
+        }
+        return SVGState.parseCoordinate(value);
     }
 
     // Returns twice the area of the path, its sign the way it goes round, by

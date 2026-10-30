@@ -37,6 +37,7 @@ internal class SVGState {
     internal float opacity = 1f;                // The opacities of the element and its ancestors, multiplied
     internal float ownOpacity = 1f;             // The opacity of the element itself, not inherited
     internal double[] matrix = IDENTITY;        // Replaced, never changed in place
+    internal double[] viewport = {0.0, 0.0};    // The width and the height of the viewport, in user units; replaced too
     internal bool hidden = false;               // In <defs> and the like, or under display="none": not drawn
     internal bool invisible = false;            // visibility: not painted, but its children may be
     internal float[] dashArray = null;          // stroke-dasharray, in the user space; null is a solid line
