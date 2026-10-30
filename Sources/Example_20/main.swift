@@ -11,7 +11,7 @@ import PDFjet
  * Example_20.swift
  * This example draws a page of results from a CSV file of electric vehicles:
  * two simple bar charts, the five makes and the model years, and under them a
- * table of the same numbers, then a table of one car with its photo and its
+ * table of the same numbers, then a table of one car with a picture and its
  * VIN as a barcode, in their cells.
  */
 public class Example_20 {
@@ -116,11 +116,11 @@ public class Example_20 {
         table.setLocation(50.0, y + 10.0)
         y = table.drawOn(page)[1] + 30.0
 
-        // One car of the data, its photo and its VIN in their cells
+        // One car of the data, a picture of a car and its VIN in their cells
         TextLine(f1, "One car of the data").setStructureType(StructElem.H2)
                 .setFontSize(14.0).setLocation(50.0, y).drawOn(page)
-        let image = try Image(pdf, "resources/images/TeslaX.png")
-        image.setAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.")
+        let image = try Image(pdf, "resources/images/car.png")
+        image.setAltDescription("A drawing of a blue car, seen from the side.")
         image.scaleBy(1.0 / 3.0)    // The image is 120 DPI, so 0.6 of its pixels
         let vin = try Barcode(Barcode.CODE_128, modelX![0])
         vin.setModuleLength(0.75)

@@ -553,7 +553,7 @@ import Testing
         for degrees in [0, 90, 180, 270] {
             let memory = MemoryPDF()
             let page = Page(memory.pdf, Letter.PORTRAIT)
-            let image = try Image(memory.pdf, TestSupport.path("resources/images/GLA250.png"))
+            let image = try Image(memory.pdf, TestSupport.path("resources/images/dusk.png"))
             try image.setRotation(degrees).setURIAction("https://pdfjet.com").setLocation(10, 20)
             image.drawOn(page)
             try memory.pdf.complete()

@@ -15,7 +15,7 @@ using PDFjet.NET;
  * Example_20.cs
  * This example draws a page of results from a CSV file of electric vehicles:
  * two simple bar charts, the five makes and the model years, and under them a
- * table of the same numbers, then a table of one car with its photo and its
+ * table of the same numbers, then a table of one car with a picture and its
  * VIN as a barcode, in their cells.
  */
 public class Example_20 {
@@ -124,11 +124,11 @@ public class Example_20 {
         table.SetLocation(50f, y + 10f);
         y = table.DrawOn(page)[1] + 30f;
 
-        // One car of the data, its photo and its VIN in their cells
+        // One car of the data, a picture of a car and its VIN in their cells
         new TextLine(f1, "One car of the data").SetStructureType(StructElem.H2)
                 .SetFontSize(14f).SetLocation(50f, y).DrawOn(page);
-        Image image = new Image(pdf, "resources/images/TeslaX.png");
-        image.SetAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.");
+        Image image = new Image(pdf, "resources/images/car.png");
+        image.SetAltDescription("A drawing of a blue car, seen from the side.");
         image.ScaleBy(1f / 3f);     // The image is 120 DPI, so 0.6 of its pixels
         Barcode vin = new Barcode(Barcode.CODE_128, modelX[0]);
         vin.SetModuleLength(0.75f);
