@@ -22,7 +22,8 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
 - `testPDFs/PDFjetLogo.pdf`, `markdown` and `invoice` are PDFjet's own
   (`invoice/logo.svg` is the logo of a fictional print shop);
   `testPDFs/scanned-linearized.pdf` is written by `util/make-scanned-pdf.py`
-  of PDFjet.
+  of PDFjet, and `testPDFs/sample-document.pdf`, the report of a made-up
+  company, by `util/make-sample-pdf.sh`, from `util/MakeSamplePDF.java`.
 - `life-expectancy-and-fertility-2023.txt` is the life expectancy at birth,
   in years, and the children per woman of 2023 of the 217 countries and
   economies that have both, separated by `|`: the World Bank's World
@@ -46,5 +47,5 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
   [Open Data Commons Open Database License (ODbL)
   1.0](https://opendatacommons.org/licenses/odbl/1-0/); the two files, a
   part of it and counts made from it, are under the same license.
-- The other files are sample data for the examples: the tables they draw, an
-  invoice in the Factur-X format, and a form they read pages from.
+- The other files are sample data for the examples: the tables they draw and an
+  invoice in the Factur-X format.
