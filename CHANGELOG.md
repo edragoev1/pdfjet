@@ -42,6 +42,26 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   field of the data file, the seven named ones as before and the rest
   described by their figures ("Albania: 79.6 years, 1.35 children per
   woman"), which takes its PDF from 53 KB to 269 KB.
+- SimpleScatterChart and SimpleLineChart, all four ports, say how much of
+  their data a range leaves out. With a range set, `setXAxisRange` or
+  `setYAxisRange`, the scatter chart did not draw a point outside it and the
+  line chart cut its line at the edge of the plot, without a word, so that
+  an outlier in a report could vanish. The chart now prints "1 point outside
+  the range" or "2 points outside the range", in SimpleLineChart "1 value" or
+  "2 values", small and in the gray of its numbers, on a row of its own
+  inside the chart, under the plot at its right end. A point outside both
+  ranges is one point; a value that is NaN or infinite is not outside. The
+  same words end the alternate description, and follow a description set
+  with `setAltDescription`, for a screen reader to have what the chart
+  prints; in a tagged document the note is text of the chart's figure. With
+  nothing outside the output is the same, byte for byte but for the date and
+  the document ID.
+- Behavior change: a chart with a value outside its range has a plot lower
+  by 1.4 times its small size, for the row of the note. A scatter chart of
+  12-point numbers with 3 of its 100 points past `setYAxisRange(0f, 10f)`,
+  described as "T: 97 points." before, has a plot 13.44 points shorter, the
+  note under it, and is described as "T: 97 points; 3 points outside the
+  range."
 - SVGImage, all four ports, draws the charts of D3 and the like as a
   browser does:
   - `text` and `tspan` elements: x, y, dx and dy (in em too), font-size,
