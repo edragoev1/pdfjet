@@ -923,6 +923,30 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(164300 + 1400, carried);
     }
 
+    // A sum reads each cell once, its whole text: the lines of a number wrapped
+    // in a narrow column were read as numbers, and 1,234,567.89 and
+    // 1,000,000.00 came to 686.89; the lines "12" and "30" of "boxes 12" and
+    // "pallets 30" came to 42 (the review of 30 October 2026, E2).
+    [Theory]
+    [InlineData("1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89")]
+    [InlineData("boxes 12", "pallets 30", "0.00", "42.00")]
+    public void ASumReadsTheWholeTextOfACell(String first, String second, String want, String not) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>>();
+        foreach (String text in new String[] {"Sum", first, second, ""}) {
+            data.Add(new List<Cell> {new Cell(font, text)});
+        }
+        Table table = new Table().SetTableData(data, 1).SetNumberOfFooterRows(1).SetRunningSum(3, 0, 2);
+        table.SetColumnWidth(0, 30f);
+        table.SetLocation(50f, 50f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        table.DrawOn(page);
+        String content = TestSupport.Content(page);
+        Assert.Contains("<" + TestSupport.Hex(want) + ">", content);
+        Assert.DoesNotContain("<" + TestSupport.Hex(not) + ">", content);
+    }
+
     [Fact]
     public void ASumReadsTheNumbersAsRightAlignNumbersDoes() {
         Assert.Equal(123450L, Table.NumberOf("1,234.50", 2));

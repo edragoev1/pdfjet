@@ -868,6 +868,27 @@ import Testing
         #expect(carried == 164300 + 1400)
     }
 
+    // A sum reads each cell once, its whole text: the lines of a number wrapped
+    // in a narrow column were read as numbers, and 1,234,567.89 and
+    // 1,000,000.00 came to 686.89; the lines "12" and "30" of "boxes 12" and
+    // "pallets 30" came to 42 (the review of 30 October 2026, E2).
+    @Test func aSumReadsTheWholeTextOfACell() {
+        for c in [["1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89"],
+                  ["boxes 12", "pallets 30", "0.00", "42.00"]] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            let data = ["Sum", c[0], c[1], ""].map { [Cell(font, $0)] }
+            let table = Table().setTableData(data, 1).setNumberOfFooterRows(1).setRunningSum(3, 0, 2)
+            table.setColumnWidth(0, 30)
+            table.setLocation(50, 50)
+            let page = Page(pdf, Letter.PORTRAIT)
+            table.drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(content.contains("<" + TestSupport.hex(c[2]) + ">"), "\(content)")
+            #expect(!content.contains("<" + TestSupport.hex(c[3]) + ">"), "\(content)")
+        }
+    }
+
     @Test func aSumReadsTheNumbersAsRightAlignNumbersDoes() {
         #expect(Table.numberOf("1,234.50", 2) == 123450)
         #expect(Table.numberOf("(1,234.50)", 2) == -123450)

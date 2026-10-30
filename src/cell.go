@@ -41,9 +41,12 @@ import (
 // The fields are in the order of their size, so that a cell takes no bytes
 // for the padding between them that it does not have to.
 type Cell struct {
-	text     string
-	drawable Drawable // The image, barcode, text block, text column or other drawable
-	uri      string
+	text string
+	// The whole text of a cell whose text wraps, which holds its first line
+	// after the wrap: what a sum reads
+	wholeText string
+	drawable  Drawable // The image, barcode, text block, text column or other drawable
+	uri       string
 
 	font         *Font
 	fallbackFont *Font
@@ -228,6 +231,7 @@ func (cell *Cell) GetFallbackFont() *Font {
 //   - text: the cell text.
 func (cell *Cell) SetText(text string) *Cell {
 	cell.text = text
+	cell.wholeText = ""
 	cell.hasText = true
 	return cell
 }

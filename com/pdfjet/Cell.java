@@ -39,6 +39,9 @@ public class Cell {
     protected float fontSize;
     /** The cell text. */
     protected String text;
+    // The whole text of a cell whose text wraps, which holds its first line
+    // after the wrap: what a sum reads
+    String wholeText;
     /** The image, barcode, text block, text column or other drawable in this cell. */
     protected Drawable drawable;
     /** The point drawn in this cell. */
@@ -187,6 +190,7 @@ public class Cell {
         this.fallbackFont = cell.fallbackFont;
         this.fontSize = cell.fontSize;
         this.text = cell.text;
+        this.wholeText = cell.wholeText;
         this.drawable = cell.drawable;
         this.point = cell.point;
         this.width = cell.width;
@@ -254,6 +258,7 @@ public class Cell {
      */
     public Cell setText(String text) {
         this.text = text;
+        this.wholeText = null;
         return this;
     }
 

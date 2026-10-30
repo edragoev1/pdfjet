@@ -466,7 +466,10 @@ public class Table implements Drawable {
     }
 
     // Reads the number of each row of the column, in units of the decimals: 0
-    // for a cell that has no number, or that a cell above it covers.
+    // for a cell that has no number, or that a cell above it covers. A cell is
+    // read once, from its whole text, and the lines it wraps into add nothing:
+    // they were read as numbers, and 1,234,567.89 wrapped in a narrow column
+    // added 567.89 (the review of 30 October 2026).
     private ColumnSums readColumn(int column, int decimals) {
         int rows = tableData.size();
         ColumnSums sums = new ColumnSums();
@@ -480,10 +483,10 @@ public class Table implements Drawable {
                 continue;
             }
             Cell cell = row.get(column);
-            if ((cell.properties & Cell.COVERED) != 0 || cell.text == null) {
+            if ((cell.properties & (Cell.COVERED | Cell.CONTINUED)) != 0 || cell.text == null) {
                 continue;
             }
-            Long value = numberOf(cell.text, decimals);
+            Long value = numberOf((cell.wholeText != null) ? cell.wholeText : cell.text, decimals);
             if (value != null) {
                 sums.values[r] = value;
                 if (sums.exact) {
@@ -2024,9 +2027,14 @@ public class Table implements Drawable {
             for (int j = 0; j < row.size(); j++) {
                 List<String> cellLines = lines.get(j);
                 if (cellLines != null) {
+                    String wholeText = row.get(j).wholeText;
+                    if (wholeText == null && cellLines.size() > 1) {
+                        wholeText = row.get(j).text;
+                    }
                     for (int n = 0; n < cellLines.size(); n++) {
                         tableData2.get(first + n).get(j).setText(cellLines.get(n));
                     }
+                    row.get(j).wholeText = wholeText;
                 }
             }
             // The stacked rows are wrapped in their turn, as they were when

@@ -428,7 +428,10 @@ public class Table : Drawable {
     }
 
     // Reads the number of each row of the column, in units of the decimals: 0
-    // for a cell that has no number, or that a cell above it covers.
+    // for a cell that has no number, or that a cell above it covers. A cell is
+    // read once, from its whole text, and the lines it wraps into add nothing:
+    // they were read as numbers, and 1,234,567.89 wrapped in a narrow column
+    // added 567.89 (the review of 30 October 2026).
     private func readColumn(_ column: Int, _ decimals: Int) -> ColumnSums {
         let sums = ColumnSums(tableData.count)
         var magnitude: Int64 = 0
@@ -438,10 +441,10 @@ public class Table : Drawable {
                 continue
             }
             let cell = row[column]
-            if (cell.properties & Cell.COVERED) != 0 {
+            if (cell.properties & (Cell.COVERED | Cell.CONTINUED)) != 0 {
                 continue
             }
-            if let text = cell.text, let value = Table.numberOf(text, decimals) {
+            if let text = cell.wholeText ?? cell.text, let value = Table.numberOf(text, decimals) {
                 sums.values[r] = value
                 if sums.exact {
                     // A value is at most MAX_SUM, so the sums cannot overflow
@@ -2027,9 +2030,14 @@ public class Table : Drawable {
             }
             for j in 0..<row.count {
                 if let cellLines = lines[j] {
+                    var wholeText = row[j].wholeText
+                    if wholeText == nil && cellLines.count > 1 {
+                        wholeText = row[j].text
+                    }
                     for (n, line) in cellLines.enumerated() {
                         tableData2[first + n][j].setText(line)
                     }
+                    row[j].wholeText = wholeText
                 }
             }
             // The stacked rows are wrapped in their turn, as they were when

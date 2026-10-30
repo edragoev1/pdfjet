@@ -456,7 +456,10 @@ func (table *Table) sumOf(column, first, end, decimals int) int64 {
 }
 
 // readColumn reads the number of each row of the column, in units of the
-// decimals: 0 for a cell that has no number, or that a cell above it covers.
+// decimals: 0 for a cell that has no number, or that a cell above it covers. A
+// cell is read once, from its whole text, and the lines it wraps into add
+// nothing: they were read as numbers, and 1,234,567.89 wrapped in a narrow
+// column added 567.89 (the review of 30 October 2026).
 func (table *Table) readColumn(column, decimals int) *columnSums {
 	rows := len(table.tableData)
 	sums := &columnSums{values: make([]int64, rows), sums: make([]int64, rows+1), exact: true}
@@ -467,10 +470,14 @@ func (table *Table) readColumn(column, decimals int) *columnSums {
 			continue
 		}
 		cell := row[column]
-		if cell.properties&cellCovered != 0 || !cell.hasText {
+		if cell.properties&(cellCovered|cellContinued) != 0 || !cell.hasText {
 			continue
 		}
-		if value, ok := numberOf(cell.text, decimals); ok {
+		text := cell.text
+		if cell.wholeText != "" {
+			text = cell.wholeText
+		}
+		if value, ok := numberOf(text, decimals); ok {
 			sums.values[r] = value
 			if sums.exact {
 				// A value is at most maxSum, so the sums cannot overflow
@@ -1953,9 +1960,14 @@ func (table *Table) wrapAroundCellText() {
 			tableData2 = append(tableData2, row2)
 		}
 		for j := 0; j < len(row); j++ {
+			wholeText := row[j].wholeText
+			if wholeText == "" && len(lines[j]) > 1 {
+				wholeText = row[j].text
+			}
 			for n, line := range lines[j] {
 				tableData2[first+n][j].SetText(line)
 			}
+			row[j].wholeText = wholeText
 		}
 		// The stacked rows are wrapped in their turn, as they were when the
 		// rows were all added first and the table wrapped in one pass

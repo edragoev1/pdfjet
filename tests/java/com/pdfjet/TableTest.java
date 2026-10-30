@@ -954,6 +954,36 @@ class TableTest {
         assertEquals(164300 + 1400, carried);
     }
 
+    // A sum reads each cell once, its whole text: the lines of a number wrapped
+    // in a narrow column were read as numbers, and 1,234,567.89 and
+    // 1,000,000.00 came to 686.89; the lines "12" and "30" of "boxes 12" and
+    // "pallets 30" came to 42 (the review of 30 October 2026, E2).
+    @Test
+    void aSumReadsTheWholeTextOfACell() throws Exception {
+        String[][] cases = {
+            {"1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89"},
+            {"boxes 12", "pallets 30", "0.00", "42.00"},
+        };
+        for (String[] c : cases) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            List<List<Cell>> data = new ArrayList<List<Cell>>();
+            for (String text : new String[] {"Sum", c[0], c[1], ""}) {
+                List<Cell> row = new ArrayList<Cell>();
+                row.add(new Cell(font, text));
+                data.add(row);
+            }
+            Table table = new Table().setTableData(data, 1).setNumberOfFooterRows(1).setRunningSum(3, 0, 2);
+            table.setColumnWidth(0, 30f);
+            table.setLocation(50f, 50f);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            table.drawOn(page);
+            String content = TestSupport.content(page);
+            assertTrue(content.contains("<" + TestSupport.hex(c[2]) + ">"), content);
+            assertFalse(content.contains("<" + TestSupport.hex(c[3]) + ">"), content);
+        }
+    }
+
     @Test
     void aSumReadsTheNumbersAsRightAlignNumbersDoes() {
         assertEquals(Long.valueOf(123450), Table.numberOf("1,234.50", 2));

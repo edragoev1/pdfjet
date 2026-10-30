@@ -1069,6 +1069,32 @@ func TestTableTheFooterSumsAreTheTotalsOfThePageAndOfThePagesUpToIt(t *testing.T
 	}
 }
 
+// A sum reads each cell once, its whole text: the lines of a number wrapped in
+// a narrow column were read as numbers, and 1,234,567.89 and 1,000,000.00 came
+// to 686.89; the lines "12" and "30" of "boxes 12" and "pallets 30" came to 42
+// (the review of 30 October 2026, E2).
+func TestTableASumReadsTheWholeTextOfACell(t *testing.T) {
+	for _, c := range []struct{ first, second, want, not string }{
+		{"1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89"},
+		{"boxes 12", "pallets 30", "0.00", "42.00"},
+	} {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		data := [][]*Cell{
+			{NewCell(font, "Sum")}, {NewCell(font, c.first)}, {NewCell(font, c.second)}, {NewCell(font, "")},
+		}
+		table := NewTable().SetTableData(data, 1).SetNumberOfFooterRows(1).SetRunningSum(3, 0, 2)
+		table.SetColumnWidth(0, 30)
+		table.SetLocation(50, 50)
+		page := NewPage(doc.pdf, letter.Portrait())
+		table.DrawOn(page)
+		content := testContent(page)
+		if !strings.Contains(content, "<"+testHex(c.want)+">") || strings.Contains(content, "<"+testHex(c.not)+">") {
+			t.Errorf("%s and %s: no sum %s: %q", c.first, c.second, c.want, content)
+		}
+	}
+}
+
 func TestTableASumReadsTheNumbersAsRightAlignNumbersDoes(t *testing.T) {
 	for _, c := range []struct {
 		text     string

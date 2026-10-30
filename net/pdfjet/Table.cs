@@ -442,7 +442,10 @@ public class Table : IDrawable {
     }
 
     // Reads the number of each row of the column, in units of the decimals: 0
-    // for a cell that has no number, or that a cell above it covers.
+    // for a cell that has no number, or that a cell above it covers. A cell is
+    // read once, from its whole text, and the lines it wraps into add nothing:
+    // they were read as numbers, and 1,234,567.89 wrapped in a narrow column
+    // added 567.89 (the review of 30 October 2026).
     private ColumnSums ReadColumn(int column, int decimals) {
         int rows = tableData.Count;
         ColumnSums sums = new ColumnSums();
@@ -457,10 +460,10 @@ public class Table : IDrawable {
                 continue;
             }
             Cell cell = row[column];
-            if ((cell.properties & Cell.COVERED) != 0 || cell.text == null) {
+            if ((cell.properties & (Cell.COVERED | Cell.CONTINUED)) != 0 || cell.text == null) {
                 continue;
             }
-            long? value = NumberOf(cell.text, decimals);
+            long? value = NumberOf(cell.wholeText ?? cell.text, decimals);
             if (value != null) {
                 sums.values[r] = value.Value;
                 if (sums.exact) {
@@ -1989,9 +1992,14 @@ public class Table : IDrawable {
             for (int j = 0; j < row.Count; j++) {
                 List<String> cellLines = lines[j];
                 if (cellLines != null) {
+                    String wholeText = row[j].wholeText;
+                    if (wholeText == null && cellLines.Count > 1) {
+                        wholeText = row[j].text;
+                    }
                     for (int n = 0; n < cellLines.Count; n++) {
                         tableData2[first + n][j].SetText(cellLines[n]);
                     }
+                    row[j].wholeText = wholeText;
                 }
             }
             // The stacked rows are wrapped in their turn, as they were when

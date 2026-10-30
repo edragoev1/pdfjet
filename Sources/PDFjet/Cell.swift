@@ -33,6 +33,9 @@ public class Cell {
     internal var fallbackFont: Font?
     internal var fontSize: Float = 12.0
     var text: String?
+    // The whole text of a cell whose text wraps, which holds its first line
+    // after the wrap: what a sum reads
+    var wholeText: String?
     var drawable: Drawable?     // The image, barcode, text block, text column or other drawable
     var point: Point?
     var width: Float = 75.0
@@ -162,6 +165,7 @@ public class Cell {
     // 11 October 2026, #12).
     func copy() -> Cell {
         let cell = Cell(font, text)
+        cell.wholeText = wholeText
         cell.fallbackFont = fallbackFont
         cell.fontSize = fontSize
         cell.drawable = drawable
@@ -234,6 +238,7 @@ public class Cell {
     @discardableResult
     public func setText(_ text: String?) -> Cell {
         self.text = text
+        self.wholeText = nil
         return self
     }
 

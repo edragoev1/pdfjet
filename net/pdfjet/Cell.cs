@@ -35,6 +35,9 @@ public class Cell {
     internal Font fallbackFont;
     internal float fontSize;
     internal String text;
+    // The whole text of a cell whose text wraps, which holds its first line
+    // after the wrap: what a sum reads
+    internal String wholeText;
     internal IDrawable drawable;    // The image, barcode, text block, text column or other drawable
     internal Point point;
     internal float width = 75f;
@@ -209,6 +212,7 @@ public class Cell {
     /// <returns>this Cell object.</returns>
     public Cell SetText(String text) {
         this.text = text;
+        this.wholeText = null;
         return this;
     }
 
