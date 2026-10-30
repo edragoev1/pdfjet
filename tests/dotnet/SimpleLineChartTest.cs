@@ -346,5 +346,122 @@ public sealed class SimpleLineChartTest {
         Assert.Equal(4, ChartScale.StepSignificant(4.84e15f, 2e12f));
         Assert.Equal(3, ChartScale.StepSignificant(12345f, 1000f));
     }
+
+    // The content of the chart, on a page of its own.
+    private static String NoteContent(PDF pdf, SimpleLineChart chart) {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.SetLocation(50f, 50f).DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    private static SimpleLineChart NoteChart(Font font) {
+        return new SimpleLineChart(font, font).SetTitle("T").SetSize(300f, 200f).SetCategories("a", "b", "c");
+    }
+
+    // A value outside a range that is set cuts its line, and the chart says
+    // so, in print and in its description: an outlier was clipped without a
+    // word. A value that is no number is not outside, and a chart with none
+    // outside adds nothing.
+    [Fact]
+    public void ItSaysHowManyValuesAreOutsideTheRange() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        float nan = float.NaN;
+        float inf = float.PositiveInfinity;
+        String one = "1 value outside the range";
+        String two = "2 values outside the range";
+        Object[][] cases = {
+            new Object[] {NoteChart(font).AddLine("x", new float[] {1f, 100f, 3f}), ""},
+            new Object[] {NoteChart(font).AddLine("x", new float[] {0f, 5f, 10f}).SetYAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(font).AddLine("x", new float[] {1f, nan, inf}).SetYAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(font).AddLine("x", new float[] {1f, 2f, 3f, 50f}).SetYAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(font).AddLine("x", new float[] {1f, 50f, 3f}).SetYAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).AddLine("x", new float[] {1f, 2f, -50f}).SetYAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).AddLine("x", new float[] {1f, 50f, -50f}).SetYAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(font).AddLine("x", new float[] {1f, 50f, 3f}).AddLine("y", new float[] {50f, 2f, 3f})
+                    .SetYAxisRange(0f, 10f), two},
+        };
+        foreach (Object[] c in cases) {
+            SimpleLineChart chart = (SimpleLineChart) c[0];
+            String note = (String) c[1];
+            String content = NoteContent(pdf, chart);
+            String description = chart.AltDescription();
+            if (note.Length == 0) {
+                Assert.DoesNotContain(TestSupport.Hex(" outside"), content);
+                Assert.DoesNotContain("outside", description);
+            } else {
+                Assert.Contains("<" + TestSupport.Hex(note) + ">", content);
+                Assert.EndsWith("; " + note + ".", description);
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the categories and the x title, with the
+    // plot that much lower and nothing else moved; its right end at the plot's.
+    [Fact]
+    public void TheNoteIsUnderThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        String note = "1 value outside the range";
+        float size = font.GetSize();
+        float small = 0.8f * size;
+        foreach (String title in new String[] {"", "year"}) {
+            String[] drawn = new String[2];
+            for (int k = 0; k < 2; k++) {
+                drawn[k] = NoteContent(pdf, new SimpleLineChart(font, font).SetSize(300f, 200f)
+                        .SetXAxisTitle(title).SetCategories("a", "b", "c").SetYAxisRange(0f, 10f)
+                        .AddLine("x", new float[] {1f, k == 0 ? 2f : 50f, 3f}));
+            }
+            String with = drawn[1];
+            float[] at = TestSupport.PositionOf(with, note);
+            float end = at[0] + font.StringWidth(small, note);
+            float[] c = TestSupport.PositionOf(with, "c");
+            Assert.True(Math.Abs(c[0] + font.StringWidth(size, "c") / 2f - end) <= 0.1f);
+            Assert.True(at[0] >= 50f && end <= 350f, "the note at " + at[0]);
+            Assert.True(Math.Abs(792f - (250f - size) - at[1]) <= 0.01f);
+            Assert.True(Math.Abs(TestSupport.PositionOf(drawn[0], "c")[1] + 1.4f * small - c[1]) <= 0.02f);
+            float last = title.Length == 0 ? c[1] : TestSupport.PositionOf(with, title)[1];
+            Assert.True(at[1] + font.GetAscent(small) <= last - font.GetDescent(size),
+                    "the note over the row above it");
+            Assert.Equal(TestSupport.FillColorBefore(with, "c"), TestSupport.FillColorBefore(with, note));
+        }
+        // In a chart too narrow for it, shortened and inside
+        SimpleLineChart chart = new SimpleLineChart(font, font).SetSize(110f, 200f)
+                .SetYAxisRange(0f, 10f).AddLine("", new float[] {1f, 50f, 3f});
+        Assert.True(TestSupport.PositionOf(NoteContent(pdf, chart), "1 value")[0] >= 50f + size);
+        Assert.EndsWith("; " + note + ".", chart.AltDescription());
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    [Fact]
+    public void TheNoteFollowsADescriptionThatIsSet() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        SimpleLineChart chart = new SimpleLineChart(font, font).AddLine("a", new float[] {1f, 2f})
+                .SetAltDescription("A line");
+        Assert.Equal("A line", chart.AltDescription());
+        chart.AddLine("b", new float[] {1f, 50f}).SetYAxisRange(0f, 10f);
+        Assert.Equal("A line. 1 value outside the range.", chart.AltDescription());
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    [Fact]
+    public void TheNoteIsInTheFigure() {
+        System.IO.MemoryStream bos = new System.IO.MemoryStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).SetSize(300f, 200f).SetYAxisRange(0f, 10f)
+                .AddLine("a", new float[] {1f, 50f}).DrawOn(page);
+        String content = TestSupport.Content(page);
+        Assert.Equal(content.IndexOf("BDC\n"), content.LastIndexOf("BDC\n"));
+        Assert.Equal(content.IndexOf("EMC\n"), content.LastIndexOf("EMC\n"));
+        Assert.True(content.LastIndexOf("ET\n") < content.LastIndexOf("EMC\n"));
+        pdf.Complete();
+        Assert.Contains("/Alt " + TestSupport.TextString("Line chart: a from 1 to 50; 1 value outside the range."),
+                TestSupport.Latin1(bos.ToArray()));
+    }
 }
 }   // End of namespace PDFjet.NET

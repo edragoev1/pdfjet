@@ -504,6 +504,48 @@ internal static class ChartScale {
     }
 
     /// <summary>
+    /// The words of a chart for its values outside a range that is set, of
+    /// which it would say nothing otherwise, or "" when there are none: "1 point
+    /// outside the range", "2 points outside the range".
+    /// </summary>
+    /// <param name="count">the number of values outside.</param>
+    /// <param name="noun">what the chart counts, in the singular.</param>
+    /// <returns>the note.</returns>
+    internal static String OutsideNote(int count, String noun) {
+        if (count == 0) {
+            return "";
+        }
+        return count.ToString(CultureInfo.InvariantCulture) + " " + noun + (count > 1 ? "s" : "") + " outside the range";
+    }
+
+    /// <summary>
+    /// The description set by the caller with the note, if any, as a sentence
+    /// after it: the note is in the figure, and in what a screen reader gets of
+    /// it, whoever wrote the description.
+    /// </summary>
+    /// <param name="description">the description set.</param>
+    /// <param name="note">the note, or "".</param>
+    /// <returns>the description.</returns>
+    internal static String WithNote(String description, String note) {
+        if (note.Length == 0) {
+            return description;
+        }
+        return description + SimpleBarChart.PunctuationAfter(new System.Text.StringBuilder(description), ".") + " " + note + ".";
+    }
+
+    /// <summary>
+    /// Draws the note, small and in the gray of the numbers, on the baseline,
+    /// its right end at x and inside the width from lo to hi, past which it is
+    /// shortened.
+    /// </summary>
+    internal static void DrawOutsideNote(Page page, Font font, float size, String note,
+            float x, float lo, float hi, float baseline) {
+        String text = Shorten(font, size, note, hi - lo);
+        page.DrawString(font, size, text, Math.Max(lo, x - font.StringWidth(size, text)), baseline,
+                Util.ToRGB(SimpleBarChart.MUTED), null);
+    }
+
+    /// <summary>
     /// Tells if the axis can be drawn: the span of a range that is set, or of
     /// values that are, can be past the largest float.
     /// </summary>

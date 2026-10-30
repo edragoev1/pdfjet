@@ -439,5 +439,128 @@ public class SimpleScatterChartTest {
             Assert.True(round.minValue <= flat[0] && round.maxValue >= flat[1], flat[0] + " to " + flat[1]);
         }
     }
+
+    // The content of the chart, on a page of its own.
+    private static String NoteContent(PDF pdf, SimpleScatterChart chart) {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.SetLocation(50f, 50f).DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    private static SimpleScatterChart NoteChart(Font font) {
+        return new SimpleScatterChart(font, font).SetTitle("T").SetSize(300f, 200f).Add(1f, 1f).Add(2f, 2f);
+    }
+
+    // A point outside a range that is set is not drawn, and the chart says so,
+    // in print and in its description: an outlier vanished without a word. A
+    // value that is no number is not outside, and a chart with none outside
+    // adds nothing.
+    [Fact]
+    public void ItSaysHowManyPointsAreOutsideTheRange() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        float nan = float.NaN;
+        float inf = float.PositiveInfinity;
+        String one = "1 point outside the range";
+        String two = "2 points outside the range";
+        Object[][] cases = {
+            new Object[] {NoteChart(font).Add(100f, 100f), ""},
+            new Object[] {NoteChart(font).Add(0f, 10f).Add(10f, 0f).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(font).Add(nan, 50f).Add(50f, inf).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(font).Add(50f, 1f).SetXAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).Add(1f, -50f).SetYAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).Add(50f, 50f).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).Add(50f, 1f).Add(-50f, 1f).SetXAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(font).Add(1f, 50f).Add("far", 2f, 60f).SetYAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(font).Add(50f, 1f).Add(1f, 50f).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(font).AddLinkedDot("a", 50f, 1f, "https://pdfjet.com/a").SetXAxisRange(0f, 10f), one},
+        };
+        foreach (Object[] c in cases) {
+            SimpleScatterChart chart = (SimpleScatterChart) c[0];
+            String note = (String) c[1];
+            String content = NoteContent(pdf, chart);
+            String description = chart.AltDescription();
+            if (note.Length == 0) {
+                Assert.DoesNotContain(TestSupport.Hex(" outside"), content);
+                Assert.DoesNotContain("outside", description);
+            } else {
+                Assert.Contains("<" + TestSupport.Hex(note) + ">", content);
+                Assert.EndsWith("; " + note + ".", description);
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the numbers and the x title, with the
+    // plot that much lower and nothing else moved; right under the plot's
+    // right end.
+    [Fact]
+    public void TheNoteIsUnderThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        String note = "2 points outside the range";
+        float size = font.GetSize();
+        float small = 0.8f * size;
+        foreach (String title in new String[] {"", "children per woman"}) {
+            String without = NoteContent(pdf, new SimpleScatterChart(font, font).SetSize(300f, 200f)
+                    .SetXAxisTitle(title).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f).Add(1f, 1f).Add(2f, 2f));
+            String with = NoteContent(pdf, new SimpleScatterChart(font, font).SetSize(300f, 200f)
+                    .SetXAxisTitle(title).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f).Add(1f, 1f).Add(2f, 2f)
+                    .Add(50f, 1f).Add(1f, 50f));
+            float[] at = TestSupport.PositionOf(with, note);
+            float end = at[0] + font.StringWidth(small, note);
+            float right = Math.Min(350f - size, 350f - size / 2f - font.StringWidth(size, "10") / 2f);
+            Assert.True(Math.Abs(right - end) <= 0.1f);
+            Assert.True(at[0] >= 50f && end <= 350f, "the note at " + at[0]);
+            Assert.True(Math.Abs(792f - (250f - size) - at[1]) <= 0.01f);
+            float[] number = TestSupport.PositionOf(with, "0");
+            Assert.True(Math.Abs(TestSupport.PositionOf(without, "0")[1] + 1.4f * small - number[1]) <= 0.02f);
+            // The numbers of the x axis, or the title under them
+            float last = number[1] + font.GetAscent(size) / 2f - 1.4f * size;
+            if (title.Length > 0) {
+                last = TestSupport.PositionOf(with, title)[1];
+            }
+            Assert.True(at[1] + font.GetAscent(small) <= last - font.GetDescent(size), "the note over the row above it");
+            Assert.Equal(TestSupport.FillColorBefore(with, "0"), TestSupport.FillColorBefore(with, note));
+        }
+        // In a chart too narrow for it, shortened and inside
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).SetSize(90f, 200f)
+                .SetXAxisRange(0f, 1f).Add(0f, 1f).Add(5f, 1f).Add(6f, 1f);
+        Assert.True(TestSupport.PositionOf(NoteContent(pdf, chart), "2 points")[0] >= 50f + size);
+        Assert.EndsWith("; " + note + ".", chart.AltDescription());
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    [Fact]
+    public void TheNoteFollowsADescriptionThatIsSet() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).Add(1f, 1f).Add(2f, 2f)
+                .SetAltDescription("Two points");
+        Assert.Equal("Two points", chart.AltDescription());
+        chart.Add(50f, 1f).SetXAxisRange(0f, 10f);
+        Assert.Equal("Two points. 1 point outside the range.", chart.AltDescription());
+        chart.SetAltDescription("Two points.");
+        Assert.Equal("Two points. 1 point outside the range.", chart.AltDescription());
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    [Fact]
+    public void TheNoteIsInTheFigure() {
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetSize(300f, 200f).Add(1f, 1f).Add(50f, 1f)
+                .SetXAxisRange(0f, 10f).DrawOn(page);
+        String content = TestSupport.Content(page);
+        Assert.Equal(content.IndexOf("BDC\n"), content.LastIndexOf("BDC\n"));
+        Assert.Equal(content.IndexOf("EMC\n"), content.LastIndexOf("EMC\n"));
+        Assert.True(content.LastIndexOf("ET\n") < content.LastIndexOf("EMC\n"));
+        pdf.Complete();
+        Assert.Contains("/Alt " + TestSupport.TextString("Scatter chart: 1 points; 1 point outside the range."),
+                TestSupport.Latin1(bos.ToArray()));
+    }
 }
 }   // End of namespace PDFjet.NET

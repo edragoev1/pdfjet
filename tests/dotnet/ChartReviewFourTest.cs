@@ -150,11 +150,11 @@ public class ChartReviewFourTest {
                 .Add(1f, 1f).Add(2f, 1f).Add(3f, 1f).SetTrendLine(true);
         Assert.Equal("Flat: 3 points; the trend is flat.", chart.AltDescription());
         chart.SetYAxisRange(100f, 200f);
-        Assert.Equal("Flat: 0 points.", chart.AltDescription());
-        // The points outside a range that is set are not counted
+        Assert.Equal("Flat: 0 points; 3 points outside the range.", chart.AltDescription());
+        // The points outside a range that is set are counted apart
         chart = new SimpleScatterChart(font, font).SetTitle("Some")
                 .Add(1f, 5f).Add(2f, 6f).Add("far", 3f, 50f).SetYAxisRange(0f, 10f);
-        Assert.Equal("Some: 2 points.", chart.AltDescription());
+        Assert.Equal("Some: 2 points; 1 point outside the range.", chart.AltDescription());
     }
 
     [Fact]
