@@ -2264,6 +2264,21 @@ public class Table implements Drawable {
      * @return this Table object.
      */
     public Table setVisibleColumns(Integer... columns) {
+        if (tableData.isEmpty()) {
+            return this;
+        }
+        if (columns.length == 0) {
+            throw new IllegalArgumentException("The table has no visible column: name at least one.");
+        }
+        int count = 0;
+        for (List<Cell> row : tableData) {
+            count = Math.max(count, row.size());
+        }
+        for (int column : columns) {
+            if (column < 0 || column >= count) {
+                throw new IllegalArgumentException("The table has no row or column at the index " + column + ".");
+            }
+        }
         List<List<Cell>> list = new ArrayList<List<Cell>>();
         List<Integer> visible = Arrays.asList(columns);
         for (List<Cell> row : tableData) {

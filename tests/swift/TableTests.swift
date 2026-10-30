@@ -1376,4 +1376,41 @@ import Testing
         }
         #expect(moved > 0 && moved < 31, "the rows tried are of every height: \(moved)")
     }
+
+    // A row or column that is not there is the port's error, not a panic: a
+    // SetVisibleColumns past the last column left rows of no cells, which panicked
+    // when they were drawn (the review of 30 October 2026, E7 and G9).
+    @Test func aWrongIndexFailsTheDocument() throws {
+        let misuses: [(Table, Font) -> Void] = [
+            { table, _ in table.setVisibleColumns(5) },
+            { table, _ in table.setVisibleColumns(-1) },
+            { table, _ in table.setVisibleColumns() },
+            { table, _ in table.setTextAlignmentInColumn(-1, Alignment.LEFT) },
+            { table, _ in table.setTextColorInColumn(-1, 0) },
+            { table, font in table.setFontInColumn(-1, font) },
+            { table, _ in table.setColumnWidth(-1, 10) },
+            { table, _ in table.setTextColorInRow(-1, 0) },
+            { table, font in table.setFontInRow(-1, font) },
+            { table, _ in table.removeLineBetweenRows(-1, 0) },
+            { table, _ in table.removeLineBetweenRows(0, 5) },
+            { table, _ in table.getCellAt(5, 0).setText("x") },
+            { table, _ in table.getCellAt(-5, 0).setText("x") },
+            { table, _ in table.getCellAt(0, 5).setText("x") },
+            { table, _ in _ = table.getRow(5) },
+            { table, _ in _ = table.getRow(-1) },
+            { table, _ in _ = table.getColumn(-1) },
+            { table, _ in _ = table.getColumnWidth(5) },
+        ]
+        #expect(Table().getCellAt(0, 0).getText() == nil)
+        for misuse in misuses {
+            let memory = MemoryPDF()
+            let font = TestSupport.helvetica(memory.pdf)
+            let table = Table().setTableData([[Cell(font, "a")], [Cell(font, "b")]], 1)
+            misuse(table, font)
+            table.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            let error = #expect(throws: PDFjetError.self) { try memory.pdf.complete() }
+            let message = TestSupport.message(error)
+            #expect(message.contains("The table has no"), "got \(message)")
+        }
+    }
 }

@@ -1549,5 +1549,25 @@ class TableTest {
             return false;
         }
     }
+
+    // A row or column that is not there is the port's error, not a panic: a
+    // SetVisibleColumns past the last column left rows of no cells, which panicked
+    // when they were drawn (the review of 30 October 2026, E7 and G9).
+    @Test
+    void aWrongIndexIsAnError() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "b"))));
+        Table table = new Table().setTableData(data, 1);
+        assertThrows(IllegalArgumentException.class, () -> table.setVisibleColumns(5));
+        assertThrows(IllegalArgumentException.class, () -> table.setVisibleColumns(-1));
+        assertThrows(IllegalArgumentException.class, () -> table.setVisibleColumns());
+        assertThrows(IndexOutOfBoundsException.class, () -> table.setColumnWidth(-1, 10f));
+        assertThrows(IndexOutOfBoundsException.class, () -> table.setTextColorInRow(-1, 0));
+        assertThrows(IndexOutOfBoundsException.class, () -> table.getRow(5));
+        assertThrows(IndexOutOfBoundsException.class, () -> table.getCellAt(0, 5));
+    }
 }
 

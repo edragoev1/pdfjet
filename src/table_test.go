@@ -1749,3 +1749,39 @@ func TestARowDrawnWholeGoesOnTheNextPageWhenTheFirstHasNoRoom(t *testing.T) {
 		t.Errorf("the rows tried are not of every height: %d", moved)
 	}
 }
+
+// A row or column that is not there is the port's error, not a panic: a
+// SetVisibleColumns past the last column left rows of no cells, which panicked
+// when they were drawn (the review of 30 October 2026, E7 and G9).
+func TestTableAWrongIndexFailsTheDocument(t *testing.T) {
+	for i, misuse := range []func(table *Table, font *Font){
+		func(table *Table, font *Font) { table.SetVisibleColumns(5) },
+		func(table *Table, font *Font) { table.SetVisibleColumns(-1) },
+		func(table *Table, font *Font) { table.SetVisibleColumns() },
+		func(table *Table, font *Font) { table.SetTextAlignmentInColumn(-1, alignment.Left) },
+		func(table *Table, font *Font) { table.SetTextColorInColumn(-1, 0) },
+		func(table *Table, font *Font) { table.SetFontInColumn(-1, font) },
+		func(table *Table, font *Font) { table.SetColumnWidth(-1, 10) },
+		func(table *Table, font *Font) { table.SetTextColorInRow(-1, 0) },
+		func(table *Table, font *Font) { table.SetFontInRow(-1, font) },
+		func(table *Table, font *Font) { table.RemoveLineBetweenRows(-1, 0) },
+		func(table *Table, font *Font) { table.RemoveLineBetweenRows(0, 5) },
+		func(table *Table, font *Font) { table.GetCellAt(5, 0).SetText("x") },
+		func(table *Table, font *Font) { table.GetCellAt(-5, 0).SetText("x") },
+		func(table *Table, font *Font) { table.GetCellAt(0, 5).SetText("x") },
+		func(table *Table, font *Font) { table.GetRow(5) },
+		func(table *Table, font *Font) { table.GetRow(-1) },
+		func(table *Table, font *Font) { table.GetColumn(-1) },
+		func(table *Table, font *Font) { table.GetColumnWidth(5) },
+	} {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		table := NewTable().SetTableData([][]*Cell{{NewCell(font, "a")}, {NewCell(font, "b")}}, 1)
+		misuse(table, font)
+		table.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+		err := doc.pdf.Complete()
+		if err == nil || !strings.Contains(err.Error(), "The table has no") {
+			t.Errorf("misuse %d: got %v", i, err)
+		}
+	}
+}

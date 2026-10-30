@@ -1502,5 +1502,25 @@ public sealed class TableTest : IDisposable {
             return false;
         }
     }
+
+    // A row or column that is not there is the port's error, not a panic: a
+    // SetVisibleColumns past the last column left rows of no cells, which panicked
+    // when they were drawn (the review of 30 October 2026, E7 and G9).
+    [Fact]
+    public void AWrongIndexIsAnError() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "a")}, new List<Cell> {new Cell(font, "b")}
+        };
+        Table table = new Table().SetTableData(data, 1);
+        Assert.Throws<ArgumentException>(() => table.SetVisibleColumns(5));
+        Assert.Throws<ArgumentException>(() => table.SetVisibleColumns(-1));
+        Assert.Throws<ArgumentException>(() => table.SetVisibleColumns());
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.SetColumnWidth(-1, 10f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.SetTextColorInRow(-1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.GetRow(5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.GetCellAt(0, 5));
+    }
 }
 }

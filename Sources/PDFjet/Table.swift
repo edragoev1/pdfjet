@@ -57,6 +57,9 @@ public class Table : Drawable {
     private var columnSums: [Int: ColumnSums]?
     // The height of the header rows, wrapped, that getTotalHeight measures.
     var wrappedHeaderHeight: Float = 0.0
+    // The first wrong index given, which the methods that take one have no
+    // error to return for, and which drawOn fails the document with.
+    private var misuse: String?
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -215,6 +218,31 @@ public class Table : Drawable {
 
     // The index of the first footer row, after the header rows and the rows
     // of the table.
+    // Records the misuse of an index, which drawOn fails the document with: a
+    // row or column that is not there trapped (the review of 30 October 2026).
+    private func refuse(_ message: String) {
+        if misuse == nil {
+            misuse = message
+        }
+    }
+
+    // Records that the table has no row or column at the index.
+    @discardableResult
+    private func noIndex(_ index: Int) -> Table {
+        refuse("The table has no row or column at the index \(index).")
+        return self
+    }
+
+    // Fails the document when an index was misused, and draws nothing.
+    private func refused(_ pdf: PDF) -> Bool {
+        guard let misuse = misuse else {
+            return false
+        }
+        pdf.fail(misuse)
+        rendered = -1   // Nothing more is drawn, and no more pages are asked for
+        return true
+    }
+
     private func footerStart() -> Int {
         return max(numOfHeaderRows, tableData.count - numOfFooterRows)
     }
@@ -620,6 +648,12 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func removeLineBetweenRows(_ index1: Int, _ index2: Int) -> Table {
+        if index1 < index2 && index1 < 0 {
+            return noIndex(index1)
+        }
+        if index1 < index2 && index2 >= tableData.count {
+            return noIndex(index2)
+        }
         var j = index1
         while j < index2 {
             var row = tableData[j]
@@ -644,6 +678,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setTextAlignmentInColumn(_ index: Int, _ alignment: Alignment) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -664,6 +701,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setTextColorInColumn(_ index: Int, _ color: Int32) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -684,6 +724,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setFontInColumn(_ index: Int, _ font: Font) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -704,6 +747,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setTextColorInRow(_ index: Int, _ color: Int32) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
@@ -724,6 +770,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setFontInRow(_ index: Int, _ font: Font) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
@@ -938,6 +987,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setColumnWidth(_ index: Int, _ width: Float) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 row[index].setWidth(width)
@@ -965,10 +1017,22 @@ public class Table : Drawable {
     /// - Returns: the cell at the specified row and column.
     ///
     public func getCellAt(_ row: Int, _ col: Int) -> Cell {
-        if row >= 0 {
-            return tableData[row][col]
+        let r = (row >= 0) ? row : tableData.count + row    // A row counted from the last
+        if r < 0 || r >= tableData.count {
+            noIndex(row)
+            return notInTheTable()
         }
-        return tableData[tableData.count + row][col]
+        if col < 0 || col >= tableData[r].count {
+            noIndex(col)
+            return notInTheTable()
+        }
+        return tableData[r][col]
+    }
+
+    // Returns a cell that is not in the table, for a wrong index, in the font
+    // of the first cell, or a font of no PDF when the table has no cells.
+    private func notInTheTable() -> Cell {
+        return Cell((tableData.first { !$0.isEmpty }?[0].font ?? (try? Font(CoreFont.HELVETICA)))!)
     }
 
     ///
@@ -979,6 +1043,10 @@ public class Table : Drawable {
     /// - Returns: the list of cells.
     ///
     public func getRow(_ index: Int) -> [Cell] {
+        if index < 0 || index >= tableData.count {
+            noIndex(index)
+            return []
+        }
         return tableData[index]
     }
 
@@ -991,6 +1059,10 @@ public class Table : Drawable {
     ///
     public func getColumn(_ index: Int) -> [Cell] {
         var column = [Cell]()
+        if index < 0 {
+            noIndex(index)
+            return column
+        }
         for row in tableData {
             if index < row.count {
                 column.append(row[index])
@@ -1010,6 +1082,9 @@ public class Table : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         if tableData.isEmpty {
             return [x1, y1]     // An empty table draws nothing.
+        }
+        if let page = page, refused(page.pdf) {
+            return [x1, y1]
         }
         wrapAroundCellText()
         applyRowSpans()
@@ -1055,6 +1130,9 @@ public class Table : Drawable {
     public func drawOn(_ pdf: PDF, _ first: Page?, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
         if tableData.isEmpty {
             return [x1, y1]     // An empty table needs no page.
+        }
+        if refused(pdf) {
+            return [x1, y1]
         }
         wrapAroundCellText()
         applyRowSpans()
@@ -2237,6 +2315,17 @@ public class Table : Drawable {
     /// Keeps only the columns with the specified indexes.
     @discardableResult
     public func setVisibleColumns(_ visible: Int...) -> Table {
+        if tableData.isEmpty {
+            return self
+        }
+        if visible.isEmpty {
+            refuse(Table.noVisibleColumn)
+            return self
+        }
+        let columns = tableData.map { $0.count }.max() ?? 0
+        for index in visible where index < 0 || index >= columns {
+            return noIndex(index)
+        }
         var list = [[Cell]]()
         for row in tableData {
             var row2 = [Cell]()
@@ -2252,6 +2341,10 @@ public class Table : Drawable {
         tableData = list
         return self
     }
+
+    // The message of setVisibleColumns with no column, which left rows of no
+    // cells, the same in the four ports.
+    private static let noVisibleColumn = "The table has no visible column: name at least one."
 
     /// Sets the top margin on the first page when the table spans several pages.
     @discardableResult

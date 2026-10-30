@@ -2195,6 +2195,21 @@ public class Table : IDrawable {
 
     /// <summary>Keeps only the columns with the specified indexes.</summary>
     public Table SetVisibleColumns(params int[] columns) {
+        if (tableData.Count == 0) {
+            return this;
+        }
+        if (columns.Length == 0) {
+            throw new ArgumentException("The table has no visible column: name at least one.");
+        }
+        int count = 0;
+        foreach (List<Cell> row in tableData) {
+            count = Math.Max(count, row.Count);
+        }
+        foreach (int column in columns) {
+            if (column < 0 || column >= count) {
+                throw new ArgumentException("The table has no row or column at the index " + column + ".");
+            }
+        }
         List<List<Cell>> list = new List<List<Cell>>();
         List<int> visible = new List<int>(columns);
         foreach (List<Cell> row in tableData) {
