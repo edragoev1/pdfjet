@@ -135,7 +135,8 @@ public class Example_23 {
                 print("Only pipes and tabs can be used as delimiters")
             }
 
-            for i in 0..<cols!.count {
+            // The first five fields: not the two-letter code at the end
+            for i in 0..<Swift.min(cols!.count, 5) {
                 let text = cols![i].trimmingCharacters(in: .whitespacesAndNewlines)
                 var cell: Cell?
                 if currentRow < numOfHeaderRows {

@@ -29,8 +29,9 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
   Development Indicators SP.DYN.LE00.IN and SP.DYN.TFRT.IN, as its API gave
   them on 26 October 2026 (last updated 8 October 2026), rounded to 1 and 2
   decimals, without the aggregates of regions and income groups; then the
-  World Bank region of each, as its API gave it on 29 October 2026. Source:
-  World Bank, World Development Indicators, licensed under
+  World Bank region of each, as its API gave it on 29 October 2026, and the
+  World Bank's two-letter code of each, as its API gave it on 30 October
+  2026. Source: World Bank, World Development Indicators, licensed under
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - `Electric_Vehicle_Population_10_Pages.csv` is the header and the first
   549 rows of the Washington State Electric Vehicle Population Data, the

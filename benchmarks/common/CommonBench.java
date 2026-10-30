@@ -106,7 +106,7 @@ public class CommonBench {
         for (int r = 0; r < lines.size(); r++) {
             String[] fields = lines.get(r).split("\\|", -1);
             List<Cell> row = new ArrayList<>();
-            for (int c = 0; c < fields.length; c++) {
+            for (int c = 0; c < Math.min(fields.length, 5); c++) {    // Not the two-letter code at the end
                 row.add(new Cell(r == 0 ? smallBold : small, fields[c]));
             }
             rows.add(row);

@@ -158,7 +158,8 @@ func getData(fileName, delimiter string, numOfHeaderRows int, f1, f2 *pdfjet.Fon
 		} else {
 			log.Fatal("Only pipes and tabs can be used as delimiters")
 		}
-		for i := 0; i < len(cols); i++ {
+		// The first five fields: not the two-letter code at the end
+		for i := 0; i < min(len(cols), 5); i++ {
 			text := strings.TrimSpace(cols[i])
 			var cell *pdfjet.Cell
 			if currentRow < numOfHeaderRows {

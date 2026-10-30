@@ -136,7 +136,8 @@ public class Example_23 {
                 throw new Exception(
                         "Only pipes and tabs can be used as delimiters");
             }
-            for (int i = 0; i < cols.Length; i++) {
+            // The first five fields: not the two-letter code at the end
+            for (int i = 0; i < Math.Min(cols.Length, 5); i++) {
                 String text = cols[i].Trim();
                 Cell cell = null;
                 if (currentRow < numOfHeaderRows) {
