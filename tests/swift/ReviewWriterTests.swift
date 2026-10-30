@@ -109,6 +109,31 @@ import Testing
         attachment.drawOn(page)
     }
 
+    @Test func aCarriageReturnInATitleIsAReferenceInTheMetadata() throws {
+        // An XML reader turns it into a line feed, and PDF/A refused the title
+        // (review of 30 October 2026, B9).
+        let memory = MemoryPDF(Compliance.PDF_A_2B)
+        _ = memory.pdf.setTitle("One\rTwo")
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains(">One&#13;Two</rdf:li>"))
+    }
+
+    @Test func aLanguageSetOnAnyPDFIsInItsCatalog() throws {
+        // setLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+        // says no language of itself (review of 30 October 2026, B12).
+        let plain = MemoryPDF()
+        _ = Page(plain.pdf, Letter.PORTRAIT)
+        try plain.pdf.complete()
+        #expect(!TestSupport.latin1(plain.bytes).contains("/Lang <"))
+        let memory = MemoryPDF()
+        _ = memory.pdf.setLanguage("fr-CA")
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        try memory.pdf.complete()
+        let hex = Array("fr-CA".utf8).map { String(format: "%02x", $0) }.joined()
+        #expect(TestSupport.latin1(memory.bytes).lowercased().contains("/lang <\(hex)>"))
+    }
+
     @Test func aScaleIsWrittenWithItsDecimals() throws {
         // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
         // that drew nothing (review of 30 October 2026, B6).

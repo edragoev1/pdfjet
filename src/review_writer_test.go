@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
@@ -149,6 +150,35 @@ func TestWriterAScaleIsWrittenWithItsDecimals(t *testing.T) {
 	}
 	if strings.Count(content, "0.125 0 0 0.125 0 0 cm\n") != 2 {
 		t.Errorf("the stamp and the container: %q", content)
+	}
+}
+
+func TestWriterACarriageReturnInATitleIsAReferenceInTheMetadata(t *testing.T) {
+	// An XML reader turns it into a line feed, and PDF/A refused the title
+	// (review of 30 October 2026, B9).
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_A_2B)
+	doc.pdf.SetTitle("One\rTwo")
+	NewPage(doc.pdf, letter.Portrait())
+	if raw := string(doc.complete()); !strings.Contains(raw, ">One&#13;Two</rdf:li>") {
+		t.Error(raw)
+	}
+}
+
+func TestWriterALanguageSetOnAnyPDFIsInItsCatalog(t *testing.T) {
+	// SetLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+	// says no language of itself (review of 30 October 2026, B12).
+	for _, language := range []string{"", "fr-CA"} {
+		doc := testNewDoc()
+		if language != "" {
+			doc.pdf.SetLanguage(language)
+		}
+		NewPage(doc.pdf, letter.Portrait())
+		lang := "/Lang <" + hex.EncodeToString([]byte(language)) + ">"
+		if raw := string(doc.complete()); strings.Contains(raw, "/Lang <") != (language != "") ||
+			(language != "" && !strings.Contains(raw, lang)) {
+			t.Errorf("language %q: %s", language, raw)
+		}
 	}
 }
 

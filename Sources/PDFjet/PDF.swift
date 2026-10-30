@@ -138,6 +138,7 @@ public final class PDF {
     private var pageLayout: PageLayout?
     private var pageMode: PageMode?
     private var language: String = "en-US"
+    private var languageSet = false     // A PDF that is not of PDF/A or PDF/UA says it only then
     // The document ID for the trailer and the XMP metadata: 16 random bytes as
     // 32 hexadecimal digits, so documents made at the same time get different IDs.
     private var uuid: String = Cryptography.randomBytes(16).map {
@@ -615,6 +616,11 @@ public final class PDF {
                 result.append(contentsOf: "&lt;".unicodeScalars)
             case ">":
                 result.append(contentsOf: "&gt;".unicodeScalars)
+            case "\r":
+                // An XML reader turns the character itself into a line feed, and
+                // the metadata did not say what the information dictionary says,
+                // which PDF/A refused (review of 30 October 2026, B9)
+                result.append(contentsOf: "&#13;".unicodeScalars)
             default:
                 result.append(scalar)
             }
@@ -1153,11 +1159,13 @@ public final class PDF {
         newObj()
         append(Token.beginDictionary)
         append("/Type /Catalog\n")
-        if compliance != Compliance.PDF_1_7 {
+        if compliance != Compliance.PDF_1_7 || languageSet {
             append("/Lang <")
             append(toHexString(language))
             append(">\n")
+        }
 
+        if compliance != Compliance.PDF_1_7 {
             // Only a tagged document has a structure tree: a PDF/A of level B
             // that said it was marked would say its content is tagged, which
             // it is not.
@@ -2192,6 +2200,7 @@ public final class PDF {
     @discardableResult
     public func setLanguage(_ language: String) -> PDF {
         self.language = language
+        self.languageSet = true
         return self
     }
 

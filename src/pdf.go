@@ -64,6 +64,7 @@ type PDF struct {
 	pageLayout            pagelayout.PageLayout
 	pageMode              pagemode.PageMode
 	language              string
+	languageSet           bool // A PDF that is not of PDF/A or PDF/UA says it only then
 	toc                   *Bookmark
 	// The headings of a tagged document, and of a Markdown text in any
 	// document, in the order they are drawn, which its bookmarks are made of
@@ -546,6 +547,11 @@ func escapeXML(text string) string {
 			sb.WriteString("&lt;")
 		case '>':
 			sb.WriteString("&gt;")
+		case '\r':
+			// An XML reader turns the character itself into a line feed, and
+			// the metadata did not say what the information dictionary says,
+			// which PDF/A refused (review of 30 October 2026, B9)
+			sb.WriteString("&#13;")
 		default:
 			sb.WriteRune(r)
 		}
@@ -1103,7 +1109,7 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Catalog\n")
 
-	if pdf.compliance != compliance.PDF_1_7 {
+	if pdf.compliance != compliance.PDF_1_7 || pdf.languageSet {
 		languageBytes := []byte(pdf.language)
 		if pdf.encryption != nil {
 			languageBytes = pdf.encryption.encrypt(languageBytes)
@@ -1112,7 +1118,9 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 		pdf.appendString("/Lang <")
 		pdf.appendString(hex.EncodeToString(languageBytes))
 		pdf.appendString(">\n")
+	}
 
+	if pdf.compliance != compliance.PDF_1_7 {
 		// Only a tagged document has a structure tree: a PDF/A of level B
 		// that said it was marked would say its content is tagged, which it
 		// is not.
@@ -2639,6 +2647,7 @@ func (pdf *PDF) AddMetadata(rdfDescription string) *PDF {
 // SetLanguage sets the "Language" document property of the PDF file.
 func (pdf *PDF) SetLanguage(language string) *PDF {
 	pdf.language = language
+	pdf.languageSet = true
 	return pdf
 }
 

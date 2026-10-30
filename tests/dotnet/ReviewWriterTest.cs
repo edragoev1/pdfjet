@@ -110,6 +110,36 @@ public class ReviewWriterTest {
     }
 
     [Fact]
+    public void ACarriageReturnInATitleIsAReferenceInTheMetadata() {
+        // An XML reader turns it into a line feed, and PDF/A refused the title
+        // (review of 30 October 2026, B9).
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_A_2B);
+        pdf.SetTitle("One\rTwo");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        Assert.Contains(">One&#13;Two</rdf:li>", TestSupport.Latin1(stream.ToArray()));
+    }
+
+    [Fact]
+    public void ALanguageSetOnAnyPDFIsInItsCatalog() {
+        // SetLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+        // says no language of itself (review of 30 October 2026, B12).
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        Assert.DoesNotContain("/Lang <", TestSupport.Latin1(stream.ToArray()));
+        stream = new MemoryStream();
+        pdf = new PDF(stream);
+        pdf.SetLanguage("fr-CA");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        Assert.Contains("/Lang <" + Util.ToHexString(Encoding.ASCII.GetBytes("fr-CA")) + ">",
+                TestSupport.Latin1(stream.ToArray()));
+    }
+
+    [Fact]
     public void AScaleIsWrittenWithItsDecimals() {
         // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
         // that drew nothing (review of 30 October 2026, B6).

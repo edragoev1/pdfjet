@@ -140,6 +140,37 @@ class ReviewWriterTest {
     }
 
     @Test
+    void aCarriageReturnInATitleIsAReferenceInTheMetadata() throws Exception {
+        // An XML reader turns it into a line feed, and PDF/A refused the title
+        // (review of 30 October 2026, B9).
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_A_2B);
+        pdf.setTitle("One\rTwo");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertTrue(raw.contains(">One&#13;Two</rdf:li>"), raw);
+    }
+
+    @Test
+    void aLanguageSetOnAnyPDFIsInItsCatalog() throws Exception {
+        // setLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+        // says no language of itself (review of 30 October 2026, B12).
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        assertFalse(TestSupport.latin1(bos.toByteArray()).contains("/Lang <"));
+        bos = new ByteArrayOutputStream();
+        pdf = new PDF(bos);
+        pdf.setLanguage("fr-CA");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        String lang = "/Lang <" + Util.toHexString("fr-CA".getBytes(StandardCharsets.US_ASCII)) + ">";
+        assertTrue(TestSupport.latin1(bos.toByteArray()).contains(lang));
+    }
+
+    @Test
     void aScaleIsWrittenWithItsDecimals() throws Exception {
         // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
         // that drew nothing (review of 30 October 2026, B6).

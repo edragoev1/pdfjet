@@ -135,6 +135,7 @@ public sealed class PDF {
     private PageLayout? pageLayout = null;
     private PageMode? pageMode = null;
     private String language = "en-US";
+    private bool languageSet;       // A PDF that is not of PDF/A or PDF/UA says it only then
     // The files the document carries, in the order they were added.
     private readonly List<EmbeddedFile> associatedFiles = new List<EmbeddedFile>();
     // The files embedded in the document, and whether one is attached to a
@@ -579,6 +580,11 @@ public sealed class PDF {
                 sb.Append("&lt;");
             } else if (ch == '>') {
                 sb.Append("&gt;");
+            } else if (ch == '\r') {
+                // An XML reader turns the character itself into a line feed, and
+                // the metadata did not say what the information dictionary says,
+                // which PDF/A refused (review of 30 October 2026, B9)
+                sb.Append("&#13;");
             } else {
                 sb.Append(ch);
             }
@@ -1191,7 +1197,7 @@ public sealed class PDF {
         Append(Token.BeginDictionary);
         Append("/Type /Catalog\n");
 
-        if (compliance != Compliance.PDF_1_7) {
+        if (compliance != Compliance.PDF_1_7 || languageSet) {
             byte[] languageBytes = Encoding.UTF8.GetBytes(this.language);
             if (encryption != null) {
                 languageBytes = AES256.Encrypt(languageBytes, encryption.GetKey());
@@ -1199,7 +1205,9 @@ public sealed class PDF {
             Append("/Lang <");
             Append(Util.ToHexString(languageBytes));
             Append(">\n");
+        }
 
+        if (compliance != Compliance.PDF_1_7) {
             // Only a tagged document has a structure tree: a PDF/A of level B
             // that said it was marked would say its content is tagged, which
             // it is not.
@@ -2717,6 +2725,7 @@ public sealed class PDF {
     /// <returns>this PDF object.</returns>
     public PDF SetLanguage(String language) {
         this.language = language;
+        this.languageSet = true;
         return this;
     }
 

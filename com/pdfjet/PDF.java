@@ -131,6 +131,7 @@ final public class PDF {
     private PageLayout pageLayout = null;
     private PageMode pageMode = null;
     private String language = "en-US";
+    private boolean languageSet;    // A PDF that is not of PDF/A or PDF/UA says it only then
     private String uuid = newDocumentID();
     // The files the document carries, in the order they were added.
     private final List<EmbeddedFile> associatedFiles = new ArrayList<EmbeddedFile>();
@@ -623,6 +624,11 @@ final public class PDF {
                 sb.append("&lt;");
             } else if (ch == '>') {
                 sb.append("&gt;");
+            } else if (ch == '\r') {
+                // An XML reader turns the character itself into a line feed, and
+                // the metadata did not say what the information dictionary says,
+                // which PDF/A refused (review of 30 October 2026, B9)
+                sb.append("&#13;");
             } else {
                 sb.append(ch);
             }
@@ -1234,7 +1240,7 @@ final public class PDF {
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Catalog\n");
 
-        if (compliance != Compliance.PDF_1_7) {
+        if (compliance != Compliance.PDF_1_7 || languageSet) {
             byte[] languageBytes = Util.utf8(this.language);
             if (encryption != null) {
                 languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
@@ -1242,7 +1248,9 @@ final public class PDF {
             append("/Lang <");
             append(Util.toHexString(languageBytes));
             append(">\n");
+        }
 
+        if (compliance != Compliance.PDF_1_7) {
             // Only a tagged document has a structure tree: a PDF/A of level B
             // that said it was marked would say its content is tagged, which
             // it is not.
@@ -2763,6 +2771,7 @@ final public class PDF {
      */
     public PDF setLanguage(String language) {
         this.language = language;
+        this.languageSet = true;
         return this;
     }
 
