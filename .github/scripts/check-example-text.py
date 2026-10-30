@@ -78,9 +78,9 @@ EXCEPTIONS = {
     (49, 7, 'extra'): 'Pages 7 and 8 are merged from resources/data/testPDFs/sample-document.pdf, with its '
                       'text, which the example did not draw.',
     (49, 8, 'extra'): 'Merged from resources/data/testPDFs/sample-document.pdf, as page 7.',
-    (50, 1, 'extra'): 'The pages are read from resources/data/testPDFs/rc65-16e.pdf, a form, whose labels are '
-                      'text; the example draws the answers on the first page.',
-    (50, 2, 'extra'): 'Read from resources/data/testPDFs/rc65-16e.pdf, as page 1.',
+    (50, 1, 'extra'): 'The pages are read from resources/data/testPDFs/sample-document.pdf, with its text; the '
+                      'example draws the stamp and the page number.',
+    (50, 2, 'extra'): 'Read from resources/data/testPDFs/sample-document.pdf, as page 1.',
 }
 
 

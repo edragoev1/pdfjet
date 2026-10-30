@@ -35,8 +35,8 @@ fonts: Example_04 (Helvetica and the CID fonts), Example_05 (Helvetica),
 Example_44 (a Chinese CID font) and Example_50 (Helvetica).
 Since 7 October 2026 Example_04 and Example_44 embed IBM Plex Sans JP, KR
 and SC, as no example uses the Adobe CJK fonts, and Example_05 IBM Plex
-Sans, in place of its kerning in Helvetica; Example_50 keeps Helvetica. On
-the same day Example_05, 07 (PDF/A-3a and PDF/UA-1), 34 (PDF/A-1a) and 44
+Sans, in place of its kerning in Helvetica; Example_50 kept Helvetica until
+30 October 2026, and now embeds IBM Plex Sans. On 7 October Example_05, 07 (PDF/A-3a and PDF/UA-1), 34 (PDF/A-1a) and 44
 became tagged, so that Acrobat does not offer to make them accessible.
 
 ## Known PAC warnings, left as they are
