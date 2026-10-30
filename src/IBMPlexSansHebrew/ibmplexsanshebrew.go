@@ -3,11 +3,13 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-// Package IBMPlexSansHebrew has the paths to the IBM Plex Sans Hebrew fonts.
-// Each constant is the path of a font file, embedded as a subset of the glyphs
-// a document draws; pass it to NewFontFromFile. PDFjet carries these fonts in
-// itself: the path is read from the folder resources/fonts when there is no
-// such file, else from the library.
+// Package IBMPlexSansHebrew has the paths to the IBM Plex Sans Hebrew fonts. Each
+// constant is the path of a font file, embedded as a subset of the glyphs a
+// document draws; pass it to NewFontFromFile. PDFjet carries these fonts in
+// the package world, with its fonts for Chinese, Japanese, Korean, Arabic,
+// Hebrew and Thai: the path is read, when there is no such file, from the
+// folder resources/fonts/world, else from the library when the program
+// imports github.com/edragoev1/pdfjet/v9/resources/fonts/world.
 package IBMPlexSansHebrew
 
 // The paths of the font files.

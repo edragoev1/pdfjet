@@ -5,44 +5,68 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 import Foundation
+import PDFjetFonts
 
 /// The fonts PDFjet carries, in resources/fonts, each family in a folder of
 /// its name, with its license: IBM Plex Sans and Serif, from Thin to Bold,
-/// and Cascadia Mono, from Light to Bold, upright and italic;
-/// IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; IBM Plex Math; and IBM
-/// Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf. All are
-/// under the SIL Open Font License 1.1. A path to one of them, such as
-/// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the font
-/// structs, is read, when there is no such file, from the folder
-/// resources/fonts of the working directory, or else from the resource bundle
-/// of the product PDFjetFonts, and the text of an SVG image is drawn in them
-/// unless a font is set.
+/// and Cascadia Mono, from Light to Bold, upright and italic, for every
+/// European language, in Latin, Greek and Cyrillic; and, in
+/// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to
+/// Bold, and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as
+/// .otf. All are under the SIL Open Font License 1.1. A path to one of them,
+/// such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the
+/// font structs, is read, when there is no such file, from the folder
+/// resources/fonts of the working directory, or else from the resource
+/// bundle of the module PDFjetFonts, which PDFjet depends on, or of the
+/// product PDFjetFontsWorld for the fonts of resources/fonts/world, and the
+/// text of an SVG image is drawn in them unless a font is set.
 ///
-/// The library does not depend on PDFjetFonts, so that an app carries the 63
-/// MB of the fonts only when its developer adds that product (the owner, 29
-/// October 2026). Swift has no code run on import, so PDFjet finds the bundle
-/// by its name, which SwiftPM gives it, PackageName_TargetName: from the
-/// command line, PDFjet_PDFjetFonts.bundle, or .resources on Linux with the
-/// native build system, beside the executable; in an app that Xcode builds,
-/// PDFjet_PDFjetFonts.bundle among the resources of the app, or of the
-/// framework that links PDFjet. Those are the places the bundle's own
-/// accessor, Bundle.module, looks in, so the bundle is found where the module
-/// would find it, and the developer writes no code.
+/// The library does not depend on PDFjetFontsWorld, so that an app carries
+/// the 52 MB of those fonts only when its developer adds that product (the
+/// owner, 30 October 2026). Swift has no code run on import, so PDFjet finds
+/// the bundle by its name, which SwiftPM gives it, PackageName_TargetName:
+/// from the command line, PDFjet_PDFjetFontsWorld.bundle, or .resources on
+/// Linux with the native build system, beside the executable; in an app that
+/// Xcode builds, PDFjet_PDFjetFontsWorld.bundle among the resources of the
+/// app, or of the framework that links PDFjet. Those are the places the
+/// bundle's own accessor, Bundle.module, looks in, so the bundle is found
+/// where the module would find it, and the developer writes no code.
 enum BundledFonts {
     // Where the fonts are on disk: the folder resources/fonts of the working
     // directory, as in the repository and the packages of the releases.
     static let FOLDER = "resources/fonts/"
 
-    // The names SwiftPM gives the resource bundle of the target PDFjetFonts
-    // of the package PDFjet, on Apple's systems and on Linux.
-    private static let bundleNames = ["PDFjet_PDFjetFonts.bundle", "PDFjet_PDFjetFonts.resources"]
+    // The families of the fonts of resources/fonts/world and the product
+    // PDFjetFontsWorld, apart from the European ones, as they are about 52
+    // MB, and the files of the faces of each that PDFjet carries: IBM Plex
+    // Sans JP, KR, SC and TC as .otf, the others as .ttf.
+    private static let worldFaces: [String: [String]] = {
+        var faces = [String: [String]]()
+        for family in ["IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"] {
+            faces[family] = ["Regular", "SemiBold", "Bold"].map { family + "-" + $0 + ".otf" }
+        }
+        for family in ["IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"] {
+            faces[family] = ["Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"].map {
+                family + "-" + $0 + ".ttf"
+            }
+        }
+        return faces
+    }()
 
-    // The resource bundle of the product PDFjetFonts, or nil when the program
-    // was built without it, found once.
-    static let bundle: Bundle? = findBundle()
+    // The names SwiftPM gives the resource bundle of the target
+    // PDFjetFontsWorld of the package PDFjet, on Apple's systems and on Linux.
+    private static let worldBundleNames = ["PDFjet_PDFjetFontsWorld.bundle", "PDFjet_PDFjetFontsWorld.resources"]
 
-    // Looks for the bundle of PDFjetFonts where SwiftPM and Xcode put it.
-    private static func findBundle() -> Bundle? {
+    // The resource bundle of the European fonts, of the module PDFjetFonts,
+    // which PDFjet depends on.
+    static let bundle: Bundle? = PDFjetFonts.bundle
+
+    // The resource bundle of the product PDFjetFontsWorld, or nil when the
+    // program was built without it, found once.
+    static let worldBundle: Bundle? = findBundle(worldBundleNames)
+
+    // Looks for a bundle of one of the names where SwiftPM and Xcode put it.
+    private static func findBundle(_ names: [String]) -> Bundle? {
         var folders = [URL]()
         if let url = Bundle.main.resourceURL {
             folders.append(url)
@@ -61,7 +85,7 @@ enum BundledFonts {
             folders.append(other.bundleURL.deletingLastPathComponent())
         }
         for folder in folders {
-            for name in bundleNames {
+            for name in names {
                 let url = folder.appendingPathComponent(name)
                 if FileManager.default.fileExists(atPath: url.path), let bundle = Bundle(url: url) {
                     return bundle
@@ -71,18 +95,11 @@ enum BundledFonts {
         return nil
     }
 
-    // Says whether the fonts are there, in resources/fonts or in the bundle:
-    // a font that is in neither, of a program that has them, is one PDFjet
-    // does not carry.
-    static func available(_ folder: String = FOLDER, _ bundle: Bundle? = BundledFonts.bundle) -> Bool {
-        return bundle != nil || FileManager.default.fileExists(atPath: folder)
-    }
+    // The line of the product PDFjetFontsWorld for Package.swift.
+    static let WORLD_PRODUCT = ".product(name: \"PDFjetFontsWorld\", package: \"pdfjet\")"
 
-    // What to do when a font PDFjet carries is not there: the line of the
-    // product PDFjetFonts for Package.swift.
-    static let ADD_PDFJET_FONTS = "add the product PDFjetFonts, which has them, to the dependencies of your target "
-            + "in Package.swift, .product(name: \"PDFjetFonts\", package: \"pdfjet\"), or keep the folder "
-            + "resources/fonts in the working directory"
+    // What the fonts of the product PDFjetFontsWorld are for.
+    static let WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai"
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
@@ -98,25 +115,68 @@ enum BundledFonts {
         return path
     }
 
+    // Returns the family of a name, Family/File, if it is one of the
+    // families of resources/fonts/world, or nil.
+    private static func worldFamilyOf(_ name: String) -> String? {
+        guard let family = name.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
+                .first.map(String.init), worldFaces[family] != nil else {
+            return nil
+        }
+        return family
+    }
+
+    // Returns the name of a family as people write it, such as IBM Plex Sans
+    // Arabic of IBMPlexSansArabic.
+    static func familyName(_ family: String) -> String {
+        var name = "IBM Plex " + family.dropFirst("IBMPlex".count)
+        if let sans = name.range(of: "Sans"), sans.upperBound < name.endIndex {
+            name.insert(" ", at: sans.upperBound)
+        }
+        return name
+    }
+
+    // Returns the path of a font under resources/fonts by its name,
+    // Family/File: the name, or world/ and the name for a font of
+    // resources/fonts/world, such as world/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
+    static func folderPathOf(_ name: String) -> String {
+        return (worldFamilyOf(name) != nil) ? "world/" + name : name
+    }
+
     // Returns the URL of the font of the path that PDFjet carries, or nil:
-    // in the folder resources/fonts, or else in the bundle of PDFjetFonts.
+    // in the folder resources/fonts, or else in the bundle of PDFjetFonts,
+    // or of PDFjetFontsWorld for a font of resources/fonts/world.
     static func url(_ fontPath: String, _ folder: String = FOLDER,
-            _ bundle: Bundle? = BundledFonts.bundle) -> URL? {
+            _ bundle: Bundle? = BundledFonts.bundle, _ worldBundle: Bundle? = BundledFonts.worldBundle) -> URL? {
         guard let name = nameOf(fontPath), !name.contains(".."), !name.hasPrefix("/") else {
             return nil
         }
-        let file = folder + name
+        let file = folder + folderPathOf(name)
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: file, isDirectory: &isDirectory), !isDirectory.boolValue {
             return URL(fileURLWithPath: file)
         }
         // The bundle has the files of the family folders side by side, as
         // .process puts them, each font's name its own
-        guard let bundle = bundle, let slash = name.firstIndex(of: "/") else {
+        guard let bundle = (worldFamilyOf(name) != nil) ? worldBundle : bundle,
+                let slash = name.firstIndex(of: "/") else {
             return nil
         }
         let base = String(name[name.index(after: slash)...]) as NSString
         return bundle.url(forResource: base.deletingPathExtension, withExtension: base.pathExtension)
+    }
+
+    // Returns what to do when the font of the path is one of the fonts of
+    // resources/fonts/world that PDFjet carries, which is in neither that
+    // folder nor the program, or nil for any other font: add the product
+    // PDFjetFontsWorld.
+    static func worldMissing(_ fontPath: String) -> String? {
+        guard let name = nameOf(fontPath), let family = worldFamilyOf(name),
+                worldFaces[family]!.contains(String(name.dropFirst(family.count + 1))) else {
+            return nil
+        }
+        return fontPath + " is not a file, nor in resources/fonts/world. " + familyName(family)
+                + " is in the product PDFjetFontsWorld, " + WORLD_SCRIPTS
+                + ": add it to the dependencies of your target in Package.swift, " + WORLD_PRODUCT
     }
 
     static let SANS = 0
@@ -185,7 +245,8 @@ enum BundledFonts {
     }
 
     /// Returns the face for the document, read once for it, or nil when it is
-    /// neither in resources/fonts nor in the bundle of PDFjetFonts.
+    /// neither in resources/fonts nor in the bundle of PDFjetFonts, which
+    /// PDFjet depends on.
     static func get(_ pdf: PDF, _ family: Int, _ weight: Int, _ italic: Bool) -> Font? {
         let name = fileName(family, weight, italic)
         if let font = pdf.bundledFonts[name] {

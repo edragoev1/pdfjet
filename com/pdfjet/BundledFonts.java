@@ -10,17 +10,20 @@ import java.io.InputStream;
 
 /**
  * The fonts PDFjet carries in itself, in resources/fonts, each family in a
- * folder of its name, with its license: IBM Plex Sans
- * and Serif, from Thin to Bold, and Cascadia Mono, from
- * Light to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to
- * Bold; IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular,
- * SemiBold and Bold, as .otf. All are under the SIL Open Font License 1.1.
- * A path to one of them, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf,
- * the constants of com.pdfjet.fonts, is read from the folder resources/fonts
- * when there is no such file, or else from the jar, and the text of an SVG
- * image is drawn in them unless a font is set. The jar of Maven Central
- * carries them; the PDFjet.jar of the releases on GitHub does not, and is
- * small, its package having them in resources/fonts.
+ * folder of its name, with its license: IBM Plex Sans and Serif, from Thin
+ * to Bold, and Cascadia Mono, from Light to Bold, upright and italic, for
+ * every European language, in Latin, Greek and Cyrillic; and, in
+ * resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
+ * and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
+ * All are under the SIL Open Font License 1.1. A path to one of them, such as
+ * fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of
+ * com.pdfjet.fonts, is read from the folder resources/fonts when there is no
+ * such file, or else from the classpath, and the text of an SVG image is
+ * drawn in them unless a font is set. The jar of Maven Central,
+ * com.pdfjet:pdfjet, carries the European fonts; the others are in the jar
+ * com.pdfjet:pdfjet-fonts-world, at com/pdfjet/fonts/world, found on the
+ * classpath when a program has it. The PDFjet.jar of the releases on GitHub
+ * carries none, and is small, its package having them in resources/fonts.
  */
 final class BundledFonts {
     private BundledFonts() {
@@ -28,10 +31,25 @@ final class BundledFonts {
 
     // Where the fonts are: the folder resources/fonts of the working
     // directory, as in the repository and the packages of the releases on
-    // GitHub, whose PDFjet.jar is small; or else the resources of the jar,
-    // as in the jar of Maven Central, which carries them.
-    private static final String FOLDER = "resources/fonts/";
-    private static final String RESOURCES = "/com/pdfjet/fonts/";
+    // GitHub, whose PDFjet.jar is small; or else the classpath, as with the
+    // jar of Maven Central, which carries the European fonts, and the jar
+    // com.pdfjet:pdfjet-fonts-world, which carries the others.
+    static final String FOLDER = "resources/fonts/";
+    private static final String RESOURCES = "com/pdfjet/fonts/";
+
+    // The families of the fonts of resources/fonts/world and the jar
+    // com.pdfjet:pdfjet-fonts-world, apart from the European ones, as they
+    // are about 52 MB, and the styles of the faces of each that PDFjet
+    // carries: IBM Plex Sans JP, KR, SC and TC as .otf, the others as .ttf.
+    private static final String[] WORLD_FAMILIES = {
+        "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC",
+        "IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai",
+    };
+    private static final String[] CJK_STYLES = {"Regular", "SemiBold", "Bold"};
+    private static final String[] THIN_TO_BOLD = {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"};
+
+    // What the fonts of the jar com.pdfjet:pdfjet-fonts-world are for.
+    static final String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai";
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
@@ -46,14 +64,50 @@ final class BundledFonts {
         return path.substring(family + 1);
     }
 
+    // Returns the family of a name, Family/File, if it is one of the families
+    // of resources/fonts/world, or null.
+    private static String worldFamilyOf(String name) {
+        int slash = name.indexOf('/');
+        String family = (slash < 0) ? name : name.substring(0, slash);
+        for (String world : WORLD_FAMILIES) {
+            if (world.equals(family)) {
+                return world;
+            }
+        }
+        return null;
+    }
+
+    // Returns the name of a family as people write it, such as IBM Plex Sans
+    // Arabic of IBMPlexSansArabic.
+    static String familyName(String family) {
+        return family.replaceFirst("IBMPlex", "IBM Plex ").replaceFirst("Sans", "Sans ");
+    }
+
+    // Returns the path of a font under resources/fonts, and under
+    // com/pdfjet/fonts in the jars, by its name, Family/File: the name, or
+    // world/ and the name for a font of resources/fonts/world, such as
+    // world/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
+    static String folderPathOf(String name) {
+        return (worldFamilyOf(name) != null) ? "world/" + name : name;
+    }
+
     // Opens the font of the path that PDFjet carries, or returns null: from
-    // the folder resources/fonts, or else from the jar.
+    // the folder resources/fonts, or else from the classpath.
     static InputStream open(String fontPath) {
+        return open(fontPath, FOLDER, BundledFonts.class.getClassLoader());
+    }
+
+    // Opens the font of the path that PDFjet carries, or returns null: from
+    // the folder, or else from the jar of the library, or else, for a font of
+    // resources/fonts/world, from the classpath of the loader, which has the
+    // jar com.pdfjet:pdfjet-fonts-world when the program does.
+    static InputStream open(String fontPath, String folder, ClassLoader loader) {
         String name = nameOf(fontPath);
         if (name == null || name.indexOf("..") >= 0) {
             return null;
         }
-        java.io.File file = new java.io.File(FOLDER + name);
+        String path = folderPathOf(name);
+        java.io.File file = new java.io.File(folder + path);
         if (file.isFile()) {
             try {
                 return new java.io.FileInputStream(file);
@@ -61,7 +115,44 @@ final class BundledFonts {
                 // Read from the jar then
             }
         }
-        return BundledFonts.class.getResourceAsStream(RESOURCES + name);
+        // The resources of a jar of a named module are read through the
+        // class loader, as they are not in the module of PDFjet.
+        InputStream stream = BundledFonts.class.getResourceAsStream("/" + RESOURCES + path);
+        if (stream == null && loader != null) {
+            stream = loader.getResourceAsStream(RESOURCES + path);
+        }
+        return stream;
+    }
+
+    // Returns what to do when the font of the path is one of the fonts of
+    // resources/fonts/world that PDFjet carries, which is in neither that
+    // folder nor the classpath, or null for any other font: add the jar
+    // com.pdfjet:pdfjet-fonts-world.
+    static String worldMissing(String fontPath) {
+        String name = nameOf(fontPath);
+        if (name == null) {
+            return null;
+        }
+        String family = worldFamilyOf(name);
+        if (family == null) {
+            return null;
+        }
+        String file = name.substring(family.length() + 1);
+        // The first four families are IBM Plex Sans JP, KR, SC and TC
+        boolean cjk = java.util.Arrays.asList(WORLD_FAMILIES).indexOf(family) < 4;
+        boolean carried = false;
+        for (String style : cjk ? CJK_STYLES : THIN_TO_BOLD) {
+            carried |= file.equals(family + "-" + style + (cjk ? ".otf" : ".ttf"));
+        }
+        if (!carried) {
+            return null;
+        }
+        return fontPath + " is not a file, nor in resources/fonts/world. "
+                + familyName(family) + " is in the package com.pdfjet:pdfjet-fonts-world, " + WORLD_SCRIPTS + ". "
+                + "Add it next to com.pdfjet:pdfjet: "
+                + "<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId>"
+                + "<version>" + PDF.VERSION + "</version></dependency> "
+                + "(Gradle: implementation(\"com.pdfjet:pdfjet-fonts-world:" + PDF.VERSION + "\"))";
     }
 
     static final int SANS = 0;

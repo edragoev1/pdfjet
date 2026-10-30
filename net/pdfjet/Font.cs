@@ -315,7 +315,11 @@ public class Font {
     /// Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
     /// to one of the fonts PDFjet carries, such as the constants of the font
     /// classes, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from
-    /// the library when there is no such file. A path to a .ttf.stream or
+    /// the folder resources/fonts, else from the library, when there is no
+    /// such file: the NuGet package PDFjet carries the European fonts; the
+    /// others, such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular,
+    /// are in the NuGet package PDFjet.Fonts.World, which a program adds next
+    /// to PDFjet, and such a font not found says so. A path to a .ttf.stream or
     /// .otf.stream file, the fonts PDFjet shipped before 9.0.5, opens the .ttf
     /// or else the .otf file of the same name beside it.
     /// </summary>
@@ -338,6 +342,10 @@ public class Font {
             Stream bundled = BundledFonts.Open(fontPath);
             if (bundled != null) {
                 return bundled;
+            }
+            String world = BundledFonts.WorldMissing(fontPath);
+            if (world != null) {
+                throw new FileNotFoundException(world, fontPath);
             }
             String path = fontPath.Replace('\\', '/');
             if (path.StartsWith("fonts/", StringComparison.Ordinal) || path.Contains("/fonts/")) {

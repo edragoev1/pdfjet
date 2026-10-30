@@ -36,17 +36,25 @@ class BundledFontsTest {
     void everyFontCarriedHasAConstantAndEveryConstantNotDeprecatedIsCarried() throws Exception {
         Set<String> carried = new TreeSet<String>();
         File root = TestSupport.file("resources/fonts");
+        List<File> families = new java.util.ArrayList<File>();
         for (File family : root.listFiles()) {
-            if (!family.isDirectory()) {
-                continue;   // The Go and Swift files that carry the fonts in those ports
+            if (family.isDirectory() && !family.getName().equals("world") && !family.getName().equals("cjk")) {
+                families.add(family);   // Not the Go and Swift files beside them
             }
+        }
+        for (File family : new File(root, "world").listFiles()) {
+            if (family.isDirectory()) {
+                families.add(family);   // The fonts of the other scripts, in resources/fonts/world
+            }
+        }
+        for (File family : families) {
             for (File font : family.listFiles()) {
                 if (font.getName().endsWith(".ttf") || font.getName().endsWith(".otf")) {
                     carried.add("fonts/" + family.getName() + "/" + font.getName());
                 }
             }
         }
-        assertEquals(72, carried.size());
+        assertEquals(71, carried.size());
         Set<String> constants = new TreeSet<String>();
         for (String name : CLASSES) {
             Class<?> c = Class.forName("com.pdfjet.fonts." + name);
@@ -88,6 +96,70 @@ class BundledFontsTest {
         java.io.FileNotFoundException e = assertThrows(java.io.FileNotFoundException.class,
                 () -> new Font(objects, "fonts/NotoSans/NotoSans-Regular.ttf"));
         assertTrue(e.getMessage().contains("nor one of the fonts PDFjet carries"), e.getMessage());
+    }
+
+    @Test
+    void aWorldFontNotFoundNamesThePackageAndTheLinesToAdd() throws Exception {
+        // No folder resources/fonts and a classpath without the jar
+        // com.pdfjet:pdfjet-fonts-world: the font is not found, and the
+        // error says what to add, in Maven's and in Gradle's words
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(new java.net.URL[0], null)) {
+            assertEquals(null, BundledFonts.open(com.pdfjet.fonts.IBMPlexSansJP.Regular, "no-such-folder/", loader));
+            assertEquals(null, BundledFonts.open(com.pdfjet.fonts.IBMPlexSansArabic.Regular, "no-such-folder/", loader));
+        }
+        assertEquals("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf is not a file, nor in resources/fonts/world. "
+                + "IBM Plex Sans Arabic is in the package com.pdfjet:pdfjet-fonts-world, with PDFjet's fonts for "
+                + "Chinese, Japanese, Korean, Arabic, Hebrew and Thai. Add it next to com.pdfjet:pdfjet: "
+                + "<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId>"
+                + "<version>" + PDF.VERSION + "</version></dependency> "
+                + "(Gradle: implementation(\"com.pdfjet:pdfjet-fonts-world:" + PDF.VERSION + "\"))",
+                BundledFonts.worldMissing(com.pdfjet.fonts.IBMPlexSansArabic.Regular));
+        assertTrue(PDF.VERSION.matches("[0-9]+\\.[0-9]+\\.[0-9]+"), PDF.VERSION);
+        assertTrue(BundledFonts.worldMissing(com.pdfjet.fonts.IBMPlexSansJP.Regular)
+                .startsWith("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf is not a file, nor in resources/fonts/world. "
+                + "IBM Plex Sans JP is in the package com.pdfjet:pdfjet-fonts-world"));
+        assertTrue(BundledFonts.worldMissing(com.pdfjet.fonts.IBMPlexSansTC.Bold).contains("IBM Plex Sans TC is in"));
+        assertTrue(BundledFonts.worldMissing(com.pdfjet.fonts.IBMPlexSansThai.Thin).contains("IBM Plex Sans Thai is in"));
+        assertTrue(BundledFonts.worldMissing(com.pdfjet.fonts.IBMPlexSansHebrew.Text).contains("IBM Plex Sans Hebrew is in"));
+        // Not for the European fonts, nor for a face PDFjet does not carry,
+        // nor for IBM Plex Math, which it no longer carries
+        assertEquals(null, BundledFonts.worldMissing(com.pdfjet.fonts.IBMPlexSans.Regular));
+        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"));
+        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf"));
+        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf"));
+    }
+
+    @Test
+    void aWorldFontIsFoundInTheJarOfTheWorldFontsOnTheClasspath() throws Exception {
+        // A jar laid out as com.pdfjet:pdfjet-fonts-world is (package-maven.sh),
+        // with no folder resources/fonts: the font is read from it
+        File jar = File.createTempFile("pdfjet-fonts-world", ".jar");
+        jar.deleteOnExit();
+        String[] paths = {com.pdfjet.fonts.IBMPlexSansJP.Regular, com.pdfjet.fonts.IBMPlexSansKR.Bold,
+                com.pdfjet.fonts.IBMPlexSansArabic.Regular};
+        try (java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String path : paths) {
+                String name = BundledFonts.nameOf(path);
+                zip.putNextEntry(new java.util.zip.ZipEntry("com/pdfjet/fonts/world/" + name));
+                zip.write(java.nio.file.Files.readAllBytes(TestSupport.file("resources/fonts/world/" + name).toPath()));
+                zip.closeEntry();
+            }
+        }
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(new java.net.URL[] {jar.toURI().toURL()}, null)) {
+            for (String path : paths) {
+                try (InputStream stream = BundledFonts.open(path, "no-such-folder/", loader)) {
+                    assertNotNull(stream, path);
+                    Font font = new Font(new PDF(new java.io.ByteArrayOutputStream()), stream);
+                    String family = BundledFonts.nameOf(path);
+                    assertTrue(font.name.startsWith(family.substring(0, family.indexOf('/'))), font.name);
+                }
+            }
+        }
+        // And from the folder resources/fonts/world of the repository, the
+        // working directory of the tests, before the classpath
+        try (InputStream stream = BundledFonts.open(com.pdfjet.fonts.IBMPlexSansThai.SemiBold)) {
+            assertTrue(stream instanceof java.io.FileInputStream);
+        }
     }
 
     @Test

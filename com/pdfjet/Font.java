@@ -389,7 +389,10 @@ final public class Font {
      * to one of the fonts PDFjet carries, such as the constants of
      * com.pdfjet.fonts, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is
      * read from the folder resources/fonts when there is no such file, or else
-     * from PDFjet.jar, which carries the fonts in the jar of Maven Central. A path to a
+     * from the classpath: the jar of Maven Central, com.pdfjet:pdfjet, carries
+     * the European fonts; the others, such as IBMPlexSansJP.Regular and
+     * IBMPlexSansArabic.Regular, are in the jar com.pdfjet:pdfjet-fonts-world,
+     * which a program adds next to it, and such a font not found says so. A path to a
      * .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
      * opens the .ttf or else the .otf file of the same name beside it.
      *
@@ -414,6 +417,10 @@ final public class Font {
             InputStream bundled = BundledFonts.open(fontPath);
             if (bundled != null) {
                 return new BufferedInputStream(bundled);
+            }
+            String world = BundledFonts.worldMissing(fontPath);
+            if (world != null) {
+                throw new FileNotFoundException(world);
             }
             String path = fontPath.replace('\\', '/');
             if (path.startsWith("fonts/") || path.contains("/fonts/")) {

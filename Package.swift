@@ -7,58 +7,74 @@ let package = Package(
     // .product(name: "PDFjet", package: "pdfjet"); the examples are
     // executable targets that only this package builds.
     products: [
+        // PDFjet, with the fonts PDFjet carries for every European language,
+        // in Latin, Greek and Cyrillic, about 11 MB, in the bundle of its
+        // target PDFjetFonts.
         .library(name: "PDFjet", targets: ["PDFjet"]),
-        // The fonts PDFjet carries, about 63 MB, for an app that wants them
-        // built in: .product(name: "PDFjetFonts", package: "pdfjet").
+        // The fonts of every other script, IBM Plex Sans JP, KR, SC and TC,
+        // and IBM Plex Sans Arabic, Hebrew and Thai, about 52 MB, for an app
+        // that draws in them:
+        // .product(name: "PDFjetFontsWorld", package: "pdfjet").
+        .library(name: "PDFjetFontsWorld", targets: ["PDFjetFontsWorld"]),
+        // The European fonts, which the product PDFjet has from 9.1.7: kept
+        // so that an app that listed it still builds; it adds nothing to
+        // PDFjet.
         .library(name: "PDFjetFonts", targets: ["PDFjetFonts"]),
     ],
     targets: [
         // The fonts PDFjet carries, resources/fonts, each family in a folder
         // with its license: the one copy of them in the repository, which
         // the other ports read too. SwiftPM takes the resources of a target in
-        // its folder alone, so they are a target of their own, the product
-        // PDFjetFonts, which PDFjet does not depend on: it finds their bundle
-        // in an app that has it (29 October 2026). .process puts the files
-        // of the family folders in the bundle side by side, and leaves out
-        // what exclude names, as .copy of a folder does not: the .go files,
-        // the Go port's, and the license of IBM Plex but one, the same text
-        // in each IBM Plex folder.
+        // its folder alone, so they are targets of their own: PDFjetFonts,
+        // the European fonts, which PDFjet depends on, and PDFjetFontsWorld,
+        // those of the other scripts, the folder world, which PDFjet does not
+        // depend on: it finds their bundle, PDFjet_PDFjetFontsWorld, by its
+        // name, in an app that has it (the owner, 30 October 2026). .process
+        // puts the files of the family folders in the bundle side by side,
+        // and leaves out what exclude names, as .copy of a folder does not:
+        // the .go files, the Go port's, the folder cjk, its deprecated
+        // package, and the license of IBM Plex but one, the same text in
+        // each IBM Plex folder.
         .target(
             name: "PDFjetFonts",
             path: "resources/fonts",
             exclude: [
                 "fonts.go",
                 "cjk",
-                "IBMPlexSansJP/ibmplexsansjp.go",
-                "IBMPlexSansKR/ibmplexsanskr.go",
-                "IBMPlexSansSC/ibmplexsanssc.go",
-                "IBMPlexSansTC/ibmplexsanstc.go",
-                "IBMPlexMath/license.txt",
-                "IBMPlexSansArabic/license.txt",
-                "IBMPlexSansHebrew/license.txt",
-                "IBMPlexSansJP/license.txt",
-                "IBMPlexSansKR/license.txt",
-                "IBMPlexSansSC/license.txt",
-                "IBMPlexSansTC/license.txt",
-                "IBMPlexSansThai/license.txt",
+                "world",
                 "IBMPlexSerif/license.txt",
             ],
             sources: ["PDFjetFonts.swift"],
             resources: [
                 .process("CascadiaMono"),
-                .process("IBMPlexMath"),
                 .process("IBMPlexSans"),
-                .process("IBMPlexSansArabic"),
-                .process("IBMPlexSansHebrew"),
+                .process("IBMPlexSerif"),
+            ]
+        ),
+        .target(
+            name: "PDFjetFontsWorld",
+            path: "resources/fonts/world",
+            exclude: [
+                "world.go",
+                "IBMPlexSansKR/license.txt",
+                "IBMPlexSansSC/license.txt",
+                "IBMPlexSansTC/license.txt",
+                "IBMPlexSansArabic/license.txt",
+                "IBMPlexSansHebrew/license.txt",
+                "IBMPlexSansThai/license.txt",
+            ],
+            sources: ["PDFjetFontsWorld.swift"],
+            resources: [
                 .process("IBMPlexSansJP"),
                 .process("IBMPlexSansKR"),
                 .process("IBMPlexSansSC"),
                 .process("IBMPlexSansTC"),
+                .process("IBMPlexSansArabic"),
+                .process("IBMPlexSansHebrew"),
                 .process("IBMPlexSansThai"),
-                .process("IBMPlexSerif"),
             ]
         ),
-        .target(name: "PDFjet"),
+        .target(name: "PDFjet", dependencies: ["PDFjetFonts"]),
         .executableTarget(name: "Example_01", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_02", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_03", dependencies: ["PDFjet"]),
@@ -115,8 +131,9 @@ let package = Package(
         // The Swift side of tests/crossport/check-crossport.sh.
         .executableTarget(name: "CrossPortSwift", dependencies: ["PDFjet"], path: "tests/crossport/swift"),
         // The unit tests, run with ./test-swift.sh or swift test, which read
-        // the fonts from resources/fonts and from the bundle of PDFjetFonts.
-        // The examples run in the repository, and read resources/fonts.
-        .testTarget(name: "PDFjetTests", dependencies: ["PDFjet", "PDFjetFonts"], path: "tests/swift"),
+        // the fonts from resources/fonts and from the bundles of PDFjetFonts
+        // and PDFjetFontsWorld. The examples run in the repository, and read
+        // resources/fonts.
+        .testTarget(name: "PDFjetTests", dependencies: ["PDFjet", "PDFjetFontsWorld"], path: "tests/swift"),
     ]
 )

@@ -379,7 +379,7 @@ import Testing
     }
 
     @Test func aLocaFormatOtherThan0Or1IsRefused() throws {
-        var ttf = try fontBytes("fonts/IBMPlexMath/IBMPlexMath-Regular.ttf")
+        var ttf = try fontBytes("tests/fonts/IBMPlexMath-Regular.ttf")
         put16(&ttf, table(ttf, "head") + 50, 0xFFFF)
         expectRefused(ttf, used(36))
     }

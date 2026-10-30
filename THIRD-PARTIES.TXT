@@ -153,13 +153,21 @@ http://scripts.sil.org/OFL
 
 
 This software includes, unmodified, the fonts in resources/fonts: IBM Plex
-Sans, Sans Arabic, Sans Hebrew, Sans Thai, Sans JP, Sans KR, Sans SC, Sans TC,
-Serif and Math, and Cascadia Mono. A font path names one of
-them, and the text of SVG images is drawn in them. They are licensed under the
-SIL Open Font License, Version 1.1, whose text, with the copyright of each, is
-beside each family in resources/fonts, and goes with them wherever they are
-carried: in the Maven jar, in the PDFjet.dll of the NuGet package, built into
-Go programs, and in the Swift product PDFjetFonts.
+Sans and Serif and Cascadia Mono, and, in resources/fonts/world, IBM Plex
+Sans Arabic, Sans Hebrew, Sans Thai, Sans JP, Sans KR, Sans SC and Sans TC.
+A font path names one of them, and the text of SVG images is drawn in them.
+They are licensed under the SIL Open Font License, Version 1.1, whose text,
+with the copyright of each, is beside each family, and goes with them
+wherever they are carried: IBM Plex Sans and Serif and Cascadia Mono in the
+Maven jar com.pdfjet:pdfjet, in the PDFjet.dll of the NuGet package PDFjet,
+built into Go programs and in the Swift product PDFjet; the fonts of
+resources/fonts/world in the Maven jar com.pdfjet:pdfjet-fonts-world, in
+the PDFjet.Fonts.World.dll of the NuGet package PDFjet.Fonts.World, built
+into Go programs by the package resources/fonts/world, and in the Swift
+product PDFjetFontsWorld. The test data in tests/fonts, which no package
+carries, has fonts under the same license, each with its license beside it:
+IBM Plex Math and Source Serif 4, which PDFjet no longer carries, IBM Plex
+Sans as .otf, and Source Han Sans JP.
 
     ============================================================================
     IBM Plex: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"

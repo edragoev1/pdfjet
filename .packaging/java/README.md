@@ -51,13 +51,20 @@ On Windows, separate the class path entries with `;` instead of `:`.
 
 ## Fonts
 
-`PDFjet.jar` carries IBM Plex Sans and Serif and Cascadia Mono, from Light
-or Thin to Bold, upright and italic; IBM Plex Sans Arabic, Hebrew and Thai;
-IBM Plex Math; and IBM Plex Sans JP, KR, SC and TC. Their constants, such as
+PDFjet carries IBM Plex Sans and Serif and Cascadia Mono, from Light or Thin
+to Bold, upright and italic, for every European language; and IBM Plex Sans
+Arabic, Hebrew and Thai and IBM Plex Sans JP, KR, SC and TC, for Arabic,
+Hebrew, Thai, Chinese, Japanese and Korean. They are in `resources/fonts` of
+this package, with their licenses, those of the other scripts in
+`resources/fonts/world`. Their constants, such as
 `IBMPlexSans.Regular`, are paths like
 `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, which the `Font` constructor
-reads from `PDFjet.jar` when there is no such file: they need no files. The
-same fonts are in `resources/fonts` of this package, with their licenses. A
+reads from the file of that path if there is one, else from the folder
+`resources/fonts` of the working directory, else from the classpath. The
+`PDFjet.jar` of this package is small and does not carry them: keep
+`resources/fonts` next to your program, or only the fonts you use. The jar
+of Maven Central, `com.pdfjet:pdfjet`, carries the European fonts; the others
+are the jar `com.pdfjet:pdfjet-fonts-world`, added next to it. A
 font can also be read from any `.otf` or `.ttf` file by its path; the fonts
 PDFjet came with before 9.1.7, Noto Sans among them, are at
 [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts). The 14 core PDF

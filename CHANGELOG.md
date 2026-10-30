@@ -45,26 +45,39 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
     with `setFont()` and `setBoldFont()`. A stroke drawn under text is a
     second copy of its characters in the content, which copying the text
     from the PDF gives twice.
-- The fonts PDFjet carries, all four ports, for every language it draws,
-  so that it works out of the box: IBM Plex Sans and Serif (Thin to Bold,
-  and Text) and Cascadia Mono (Light to Bold), each upright and italic; IBM Plex Sans Arabic, Hebrew and Thai (Thin to Bold); IBM
-  Plex Math; and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and
-  Bold, as .otf. 72 faces, under the SIL Open Font License, each family
-  with its license in `resources/fonts` (THIRD-PARTIES.TXT). A font path,
-  such as the constant `IBMPlexSans.Regular`, is read from the file of the
-  path, else from the folder `resources/fonts`, else from the library, with
-  the same API in every case:
-  - Java: the jar of Maven Central carries the fonts, about 46 MB; the
-    `PDFjet.jar` of the release packages on GitHub, and the one built from
-    the repository, does not, 0.7 MB, its package having `resources/fonts`.
-  - .NET: the package of NuGet carries them in `PDFjet.dll`, about 67 MB;
-    the `PDFjet.dll` of the release packages on GitHub does not, 0.9 MB.
-  - Go: a program built with PDFjet carries the fonts of every script but
-    Chinese, Japanese and Korean, about 20 MB in all; `import _
-    "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"` adds those, 48
-    MB more.
-  - Swift: the fonts come with the product `PDFjetFonts`, about 63 MB in
-    an app that adds it; the library alone has none.
+- The fonts PDFjet carries, all four ports, so that it works out of the
+  box: PDFjet includes every European language (Latin, Greek, Cyrillic) in
+  IBM Plex Sans and Serif (Thin to Bold, and Text) and Cascadia Mono (Light
+  to Bold), each upright and italic. For other scripts, one package adds
+  the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: IBM
+  Plex Sans Arabic, Hebrew and Thai (Thin to Bold) and IBM Plex Sans JP,
+  KR, SC and TC, Regular, SemiBold and Bold, as .otf. 71 faces, under the
+  SIL Open Font License, each family with its license in `resources/fonts`,
+  those of the add-on in `resources/fonts/world` (THIRD-PARTIES.TXT). A
+  font path, such as the constant `IBMPlexSans.Regular`, is read from the
+  file of the path, else from the folder `resources/fonts`, else from the
+  library, with the same API in every case; a font of the add-on found in
+  none of those places says what to add, the package and the exact line:
+  - Java: the jar of Maven Central, `com.pdfjet:pdfjet`, carries the
+    European fonts, about 5 MB; `com.pdfjet:pdfjet-fonts-world`, the same
+    version, the others, a jar of about 41 MB. The `PDFjet.jar` of the
+    release packages on GitHub, and the one built from the repository,
+    carries none, 0.7 MB, its package having `resources/fonts`.
+  - .NET: the package of NuGet, `PDFjet`, carries the European fonts in
+    `PDFjet.dll`, about 12 MB, a package of about 10 MB with the DLLs for
+    .NET 8 and .NET Framework 4.8; the package `PDFjet.Fonts.World`, the
+    others, one assembly for .NET Standard 2.0 that serves both, a package
+    of about 41 MB. The `PDFjet.dll` of the release packages on GitHub
+    carries none, 0.9 MB.
+  - Go: a program built with PDFjet carries the European fonts, 11 MB, a
+    small program about 15 MB in all; `import _
+    "github.com/edragoev1/pdfjet/v9/resources/fonts/world"` adds the
+    others, 52 MB more.
+  - Swift: the product `PDFjet` carries the European fonts, about 11 MB,
+    in the bundle of its target `PDFjetFonts`; the product
+    `PDFjetFontsWorld` adds the others, about 52 MB. `PDFjetFonts` is
+    still a product, so that a `Package.swift` that names it builds; it
+    adds nothing to `PDFjet`.
   New: `IBMPlexSerif` and `CascadiaMono` constants, and `Font(objects,
   path)`, a font added to an existing PDF by its path. A font PDFjet does
   not carry throws, saying so. Every face carried has a constant, and every
@@ -92,13 +105,19 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 - `SourceSerif4`, all four ports: PDFjet does not carry Source Serif 4 from
   9.1.7, and carries IBM Plex Serif in its place. Its constants read the
   font file when it is there; the release packages before 9.1.7 have it.
+- `IBMPlexMath`, all four ports: PDFjet does not carry IBM Plex Math from
+  9.1.7. It has no formula layout, and the math signs of business
+  documents, such as ± × ÷ ≤ ≥ ≠ and √, are in IBM Plex Sans and Serif. Its
+  constant reads the font file when it is there; the release packages
+  before 9.1.7 have it.
 - The CJK constants Regular, SemiBold and Bold name the .otf of the font,
   where they named the .ttf; the same font, with smaller subsets.
 
 ### Changed
 - PDFjet no longer carries Source Serif 4: IBM Plex Serif, which it carried
   already, is its serif font, so that the fonts it carries are the IBM Plex
-  families and Cascadia Mono, 72 faces. The fonts are 2.7 MB smaller: the
+  families and Cascadia Mono, 72 faces (71 without IBM Plex Math, below).
+  The fonts are 2.7 MB smaller: the
   `PDFjet.dll` of NuGet, a Go program and the Swift product `PDFjetFonts`
   by 2.7 MB, the jar of Maven Central by about 1 MB. The examples (07, 10,
   16, 17), the snippets of the booklet and the text benchmark use IBM Plex
@@ -112,6 +131,35 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   SourceSerif4.Regular)` in Swift throw, saying PDFjet does not carry the
   font, where 9.1.5 read it from the folder `fonts` of its package; use
   `IBMPlexSerif.Regular` instead.
+- Behavior change: the fonts PDFjet carries for the scripts but the
+  European ones, Chinese, Japanese, Korean, Arabic, Hebrew and Thai, are in
+  one package of their own in every port, which a program that draws in
+  them adds; they are in `resources/fonts/world`, where the small
+  `PDFjet.jar` and `PDFjet.dll` of the release packages read them.
+  Examples: a Java program that draws `new Font(pdf,
+  IBMPlexSansArabic.Regular)` or `new Font(pdf, IBMPlexSansJP.Regular)` with
+  the jar of Maven Central adds next to `com.pdfjet:pdfjet`
+  `<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId><version>9.1.7</version></dependency>`
+  (Gradle: `implementation("com.pdfjet:pdfjet-fonts-world:9.1.7")`);
+  without it, the constructor throws a `FileNotFoundException` that names
+  that line. In C#, `new Font(pdf, IBMPlexSansHebrew.Regular)` needs
+  `dotnet add package PDFjet.Fonts.World`; in Go,
+  `pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)` needs `import _
+  "github.com/edragoev1/pdfjet/v9/resources/fonts/world"`, and panics
+  without it, naming the line; in Swift, `.product(name: "PDFjetFontsWorld", package: "pdfjet")`
+  in `Package.swift`, where an app that named `PDFjetFonts` for its fonts
+  keeps the European ones. The Go package
+  `github.com/edragoev1/pdfjet/v9/resources/fonts/cjk` is deprecated: it
+  imports `world`, so a program that imports it still builds.
+- Behavior change: PDFjet no longer carries IBM Plex Math, as Source Serif
+  4 above. Example: `new Font(pdf, IBMPlexMath.Regular)` in Java and C#,
+  `try Font(pdf, IBMPlexMath.Regular)` in Swift and
+  `pdfjet.NewFontFromFile(pdf, IBMPlexMath.Regular)` in Go read the font
+  only from the program's own file, at that path or as
+  `resources/fonts/IBMPlexMath/IBMPlexMath-Regular.ttf`, and throw or
+  panic without it, saying PDFjet does not carry the font. Its file is at
+  `tests/fonts/IBMPlexMath-Regular.ttf` of the repository, test data with
+  its license, and in the release packages before 9.1.7.
 - Behavior change: BarChart and DonutChart draw their series and slices in
   the Tableau 10 palette, the colors of D3's charts: blue #4E79A7, orange
   #F28E2C, red #E15759, teal #76B7B2, green #59A14F, yellow #EDC949, purple

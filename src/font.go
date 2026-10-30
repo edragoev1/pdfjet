@@ -324,13 +324,14 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // constants of the packages IBMPlexSans and the others,
 // fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from the folder
 // resources/fonts when there is no such file, or else from the library, which
-// has the CJK fonts, IBMPlexSansJP and the others, when the program imports
-// the package github.com/edragoev1/pdfjet/v9/resources/fonts/cjk. A path to a
+// has the fonts of every script but the European ones, IBMPlexSansJP,
+// IBMPlexSansArabic and the others, when the program imports the package
+// github.com/edragoev1/pdfjet/v9/resources/fonts/world. A path to a
 // .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
 // opens the .ttf or else the .otf file of the same name beside it. It panics
-// if the font cannot be read: for a font PDFjet does not carry, or a CJK font
-// it has not built in, with an error that is fs.ErrNotExist and says what to
-// do.
+// if the font cannot be read: for a font PDFjet does not carry, or a font of
+// the package world it has not built in, with an error that is
+// fs.ErrNotExist and says what to do.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	buf, err := readFontFile(fontFileOf(filePath))
 	if err != nil {
@@ -377,17 +378,15 @@ func (e *fontNotFoundError) Is(target error) bool {
 // readFontFile returns the font file of the path in one read, or, when there
 // is no such file, the font of that name that PDFjet carries, from the folder
 // resources/fonts or else from the library; a font it does not carry is an
-// error, and so is a CJK font of a program that does not import the package
-// cjk, which says so.
+// error, and so is a font of the package world of a program that does not
+// import it, which says so.
 func readFontFile(fontPath string) ([]byte, error) {
 	if _, err := os.Stat(fontPath); err != nil {
 		if buf := bundledFontData(fontPath); buf != nil {
 			return buf, nil
 		}
-		if bundledCJKMissing(fontPath) {
-			return nil, &fontNotFoundError{fontPath + " is not a file, nor in resources/fonts; " +
-				"PDFjet builds its Chinese, Japanese and Korean fonts into a program that imports them: " +
-				cjkImport}
+		if message := bundledWorldMissing(fontPath); message != "" {
+			return nil, &fontNotFoundError{message}
 		}
 		path := strings.ReplaceAll(fontPath, "\\", "/")
 		if strings.HasPrefix(path, "fonts/") || strings.Contains(path, "/fonts/") {

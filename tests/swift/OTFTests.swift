@@ -194,7 +194,7 @@ import Testing
         // before 9.1.7), so sCapHeight is changed to 999 to tell the two
         // apart. IBM Plex Sans Thai has the short offsets of loca, and IBM
         // Plex Math the long ones, as Noto Sans had.
-        for path in [thai, "fonts/IBMPlexMath/IBMPlexMath-Regular.ttf"] {
+        for path in [thai, "tests/fonts/IBMPlexMath-Regular.ttf"] {
             var data = font(path)
             let os2 = table(data, "OS/2")
             data = with(data, os2 + 88, 999)

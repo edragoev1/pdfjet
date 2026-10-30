@@ -5,10 +5,11 @@
 
 // Package IBMPlexSansKR has the paths to the IBM Plex Sans KR fonts. Each
 // constant is the path of a font file, embedded as a subset of the glyphs a
-// document draws; pass it to NewFontFromFile. PDFjet carries these fonts: the
-// path is read, when there is no such file, from the folder resources/fonts,
-// else from the library when the program imports
-// github.com/edragoev1/pdfjet/v9/resources/fonts/cjk.
+// document draws; pass it to NewFontFromFile. PDFjet carries these fonts in
+// the package world, with its fonts for Chinese, Japanese, Korean, Arabic,
+// Hebrew and Thai: the path is read, when there is no such file, from the
+// folder resources/fonts/world, else from the library when the program
+// imports github.com/edragoev1/pdfjet/v9/resources/fonts/world.
 package IBMPlexSansKR
 
 // The paths of the font files.

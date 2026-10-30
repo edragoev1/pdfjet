@@ -212,7 +212,7 @@ func TestOTFTheCapHeightIsReadOnlyFromAnOS2TableThatHasIt(t *testing.T) {
 	// IBM Plex Sans Thai has the short offsets of loca, and IBM Plex Math the
 	// long ones, as Noto Sans had.
 	for _, path := range []string{"fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf",
-		"fonts/IBMPlexMath/IBMPlexMath-Regular.ttf"} {
+		"tests/fonts/IBMPlexMath-Regular.ttf"} {
 		font := testOpenTypeFontBytes(t, path)
 		os2 := testOpenTypeTable(t, font, "OS/2")
 		font = testOpenTypeWith(font, os2+88, 999)

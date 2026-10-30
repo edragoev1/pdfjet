@@ -16,27 +16,56 @@ import (
 
 // The fonts PDFjet carries in itself, in resources/fonts, each family in a
 // folder of its name, with its license: IBM Plex Sans and Serif, from Thin to
-// Bold, and Cascadia Mono, from Light to Bold, upright and
-// italic; IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold; IBM Plex Math;
-// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
-// All are under the SIL Open Font License 1.1. A path to one of them, such as
+// Bold, and Cascadia Mono, from Light to Bold, upright and italic, for the
+// European languages; and, in resources/fonts/world, IBM Plex Sans Arabic,
+// Hebrew and Thai, Thin to Bold, and IBM Plex Sans JP, KR, SC and TC,
+// Regular, SemiBold and Bold, as .otf. All are under the SIL Open
+// Font License 1.1. A path to one of them, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the packages
 // IBMPlexSans and the others, is read from the folder resources/fonts of the
 // working directory when there is no such file, or else from the library,
 // and the text of an SVG image is drawn in them unless a font is set. The
-// package fonts of resources/fonts embeds all but the CJK fonts, which a
-// program builds in by importing the package cjk (cjkImport): Go builds the
-// files embedded into every program, uncompressed, and they are 48 MB.
+// package fonts of resources/fonts embeds the European fonts; a program
+// builds in the others by importing the package world (worldImport): Go
+// builds the files embedded into every program, uncompressed, and they are
+// 53 MB.
 
 // bundledFolder is the folder of the fonts PDFjet carries, in the working
 // directory, as in the repository and the packages of the releases.
 const bundledFolder = "resources/fonts"
 
-// cjkFamilies are the families that the package cjk builds in.
-var cjkFamilies = []string{"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"}
+// worldFaces are the families that the package world builds in, and the
+// files of the faces of each that PDFjet carries.
+var worldFaces = map[string][]string{}
 
-// cjkImport is the line that builds the CJK fonts into a program.
-const cjkImport = `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/cjk"`
+func init() {
+	cjk := []string{"Regular", "SemiBold", "Bold"}
+	thinToBold := []string{"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}
+	for _, family := range []string{"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"} {
+		for _, style := range cjk {
+			worldFaces[family] = append(worldFaces[family], family+"-"+style+".otf")
+		}
+	}
+	for _, family := range []string{"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"} {
+		for _, style := range thinToBold {
+			worldFaces[family] = append(worldFaces[family], family+"-"+style+".ttf")
+		}
+	}
+}
+
+// worldImport is the line that builds the fonts of the package world into a
+// program.
+const worldImport = `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"`
+
+// worldScripts says what the fonts of the package world are for.
+const worldScripts = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai"
+
+// bundledFamilyName returns the name of a family as people write it, such
+// as IBM Plex Sans Arabic of IBMPlexSansArabic.
+func bundledFamilyName(family string) string {
+	name := strings.Replace(family, "IBMPlex", "IBM Plex ", 1)
+	return strings.Replace(name, "Sans", "Sans ", 1)
+}
 
 // bundledFontName returns the name of a font under resources/fonts,
 // Family/File, of a path to it, such as
@@ -52,6 +81,19 @@ func bundledFontName(fontPath string) string {
 	return path[family+1:]
 }
 
+// bundledFontFolderPath returns the path under resources/fonts of a font
+// PDFjet carries, by its name, Family/File: the name itself, or, for the
+// fonts of the package world, which are apart so that a program, a jar or a
+// package carries them only when it asks for them, world/ and the name, such
+// as world/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.
+func bundledFontFolderPath(name string) string {
+	family, _, _ := strings.Cut(name, "/")
+	if _, ok := worldFaces[family]; ok {
+		return "world/" + name
+	}
+	return name
+}
+
 // bundledFontData returns the font of the path that PDFjet carries, from the
 // folder resources/fonts or else from the library, or nil.
 func bundledFontData(fontPath string) []byte {
@@ -59,7 +101,7 @@ func bundledFontData(fontPath string) []byte {
 	if name == "" || strings.Contains(name, "..") {
 		return nil
 	}
-	if buf, err := os.ReadFile(filepath.Join(bundledFolder, filepath.FromSlash(name))); err == nil {
+	if buf, err := os.ReadFile(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil {
 		return buf
 	}
 	if buf, err := fonts.ReadFile(name); err == nil {
@@ -75,28 +117,25 @@ func bundledFontHas(fontPath string) bool {
 	if name == "" || strings.Contains(name, "..") {
 		return false
 	}
-	if info, err := os.Stat(filepath.Join(bundledFolder, filepath.FromSlash(name))); err == nil && info.Mode().IsRegular() {
+	if info, err := os.Stat(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil && info.Mode().IsRegular() {
 		return true
 	}
 	_, err := fonts.Stat(name)
 	return err == nil
 }
 
-// bundledCJKMissing tells if the font of the path is one of the CJK fonts
-// PDFjet carries, Regular, SemiBold or Bold, which neither the folder
-// resources/fonts nor the program has: the program does not import the
-// package cjk.
-func bundledCJKMissing(fontPath string) bool {
+// bundledWorldMissing returns what to do when the font of the path is one of
+// the fonts of the package world that PDFjet carries, which neither the
+// folder resources/fonts/world nor the program has, or "" for any other
+// font: import the package world.
+func bundledWorldMissing(fontPath string) string {
 	family, file, _ := strings.Cut(bundledFontName(fontPath), "/")
-	if !slices.Contains(cjkFamilies, family) || bundledFontHas(fontPath) {
-		return false
+	faces, ok := worldFaces[family]
+	if !ok || !slices.Contains(faces, file) || bundledFontHas(fontPath) {
+		return ""
 	}
-	for _, style := range []string{"Regular", "SemiBold", "Bold"} {
-		if file == family+"-"+style+".otf" {
-			return true
-		}
-	}
-	return false
+	return fontPath + " is not a file, nor in resources/fonts/world. " + bundledFamilyName(family) +
+		" is in the package world, " + worldScripts + ". Add this line to your program: " + worldImport
 }
 
 // The families of the fonts PDFjet carries that SVG text is drawn in.
