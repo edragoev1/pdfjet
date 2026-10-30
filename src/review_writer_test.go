@@ -125,6 +125,33 @@ func testAnnotations(pdf *PDF, page *Page) {
 	attachment.DrawOn(page)
 }
 
+func TestWriterAScaleIsWrittenWithItsDecimals(t *testing.T) {
+	// Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros that
+	// drew nothing (review of 30 October 2026, B6).
+	page := testNewPage()
+	stamp := NewStamp(page.pdf).SetSize(50, 50)
+	stamp.Complete()
+	stamp.ScaleBy(0.125).SetLocation(50, 50).DrawOn(page)
+	stamp.ScaleBy(0.004).SetLocation(50, 50).DrawOn(page)
+	container := NewContainer(100, 100)
+	container.Add(NewRect(0, 0, 10, 10))
+	container.ScaleBy(0.125).SetLocation(50, 50).DrawOn(page)
+	page.DrawContents([]byte("n"), 10, 20, 30, 0.125, 0.004)
+	values := make([]float32, 9)
+	values[MScaleX], values[MSkewX], values[MSkewY], values[MScaleY] = 0.125, 0.004, 0.006, 0.375
+	page.Transform(values)
+	content := testContent(page)
+	for _, want := range []string{"0.125 0 0 0.125 0 0 cm\n", "0.004 0 0 0.004 0 0 cm\n", "\n0.125 0 0 0.004 ",
+		"\n0.125 0.004 0.006 0.375 "} {
+		if !strings.Contains(content, want) {
+			t.Errorf("no %q in %q", want, content)
+		}
+	}
+	if strings.Count(content, "0.125 0 0 0.125 0 0 cm\n") != 2 {
+		t.Errorf("the stamp and the container: %q", content)
+	}
+}
+
 func TestWriterEveryAnnotationIsPrintedAndHasAnAppearance(t *testing.T) {
 	testAllowCoreFonts(t)
 	for _, level := range []compliance.Compliance{compliance.PDF_1_7, compliance.PDF_A_2B, compliance.PDF_A_3A} {

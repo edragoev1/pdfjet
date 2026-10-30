@@ -140,6 +140,33 @@ class ReviewWriterTest {
     }
 
     @Test
+    void aScaleIsWrittenWithItsDecimals() throws Exception {
+        // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
+        // that drew nothing (review of 30 October 2026, B6).
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf).setSize(50f, 50f);
+        stamp.complete();
+        stamp.scaleBy(0.125f).setLocation(50f, 50f).drawOn(page);
+        stamp.scaleBy(0.004f).setLocation(50f, 50f).drawOn(page);
+        Container container = new Container(100f, 100f);
+        container.add(new Rect(0f, 0f, 10f, 10f));
+        container.scaleBy(0.125f).setLocation(50f, 50f).drawOn(page);
+        page.drawContents(new byte[] {'n'}, 10f, 20f, 30f, 0.125f, 0.004f);
+        float[] values = new float[9];
+        values[Page.MSCALE_X] = 0.125f;
+        values[Page.MSKEW_X] = 0.004f;
+        values[Page.MSKEW_Y] = 0.006f;
+        values[Page.MSCALE_Y] = 0.375f;
+        page.transform(values);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("0.004 0 0 0.004 0 0 cm\n"), content);
+        assertTrue(content.contains("\n0.125 0 0 0.004 "), content);
+        assertTrue(content.contains("\n0.125 0.004 0.006 0.375 "), content);
+        assertEquals(2, content.split("0\\.125 0 0 0\\.125 0 0 cm\n", -1).length - 1, content);
+    }
+
+    @Test
     @SuppressWarnings("deprecation")
     void everyAnnotationIsPrintedAndHasAnAppearance() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font

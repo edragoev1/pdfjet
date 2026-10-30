@@ -735,9 +735,9 @@ public class Stamp implements Drawable {
 
         // SCALE: around the center, like a Container
         if (scaleX != 1f || scaleY != 1f) {
-            page.append(scaleX);
+            page.appendPrecise(scaleX);
             page.append(" 0 0 ");
-            page.append(scaleY);
+            page.appendPrecise(scaleY);
             page.append(" 0 0 cm\n");
         }
 

@@ -527,13 +527,13 @@ public class Page {
         float transx = values[MTRANS_X];
         float transy = values[MTRANS_Y];
 
-        Append(scalex);
+        AppendPrecise(scalex);
         Append(Token.Space);
-        Append(values[MSKEW_X]);
+        AppendPrecise(values[MSKEW_X]);
         Append(Token.Space);
-        Append(values[MSKEW_Y]);
+        AppendPrecise(values[MSKEW_Y]);
         Append(Token.Space);
-        Append(scaley);
+        AppendPrecise(scaley);
         Append(Token.Space);
 
         if (Math.Asin(values[MSKEW_Y]) != 0f) {
@@ -2674,6 +2674,16 @@ public class Page {
         buf.Write(bytes.Slice(0, FastFloat.Write(f, bytes)));
     }
 
+    // Appends a number of a scale, written with five decimals, as hundredths
+    // would change the size: 0.125 was written as 0.13, 4% too large, and 0.004
+    // as 0, which drew nothing (review of 30 October 2026, B6).
+    internal void AppendPrecise(float f) {
+        if (!FastFloat.IsWritable(f)) {
+            pdf.Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        Append(FastFloat.ToPreciseByteArray(f));
+    }
+
     // Appends the cm operator of the rotation with the cosine and the sine,
     // written with five decimals, as hundredths would turn it by another
     // angle, by 1.15 degrees for 1.
@@ -3226,9 +3236,9 @@ public class Page {
             float x, float y, float xScale, float yScale) {
         SaveGraphicsState();
 
-        Append(xScale);
+        AppendPrecise(xScale);
         Append(" 0 0 ");
-        Append(yScale);
+        AppendPrecise(yScale);
         Append(' ');
         Append(x);
         Append(' ');

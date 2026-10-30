@@ -580,9 +580,9 @@ public class Stamp : IDrawable {
 
         // SCALE: around the center, like a Container
         if (scaleX != 1f || scaleY != 1f) {
-            page.Append(scaleX);
+            page.AppendPrecise(scaleX);
             page.Append(" 0 0 ");
-            page.Append(scaleY);
+            page.AppendPrecise(scaleY);
             page.Append(" 0 0 cm\n");
         }
 

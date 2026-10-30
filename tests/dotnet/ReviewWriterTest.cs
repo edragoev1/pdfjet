@@ -110,6 +110,33 @@ public class ReviewWriterTest {
     }
 
     [Fact]
+    public void AScaleIsWrittenWithItsDecimals() {
+        // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
+        // that drew nothing (review of 30 October 2026, B6).
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf).SetSize(50f, 50f);
+        stamp.Complete();
+        stamp.ScaleBy(0.125f).SetLocation(50f, 50f).DrawOn(page);
+        stamp.ScaleBy(0.004f).SetLocation(50f, 50f).DrawOn(page);
+        Container container = new Container(100f, 100f);
+        container.Add(new Rect(0f, 0f, 10f, 10f));
+        container.ScaleBy(0.125f).SetLocation(50f, 50f).DrawOn(page);
+        page.DrawContents(new byte[] {(byte) 'n'}, 10f, 20f, 30f, 0.125f, 0.004f);
+        float[] values = new float[9];
+        values[Page.MSCALE_X] = 0.125f;
+        values[Page.MSKEW_X] = 0.004f;
+        values[Page.MSKEW_Y] = 0.006f;
+        values[Page.MSCALE_Y] = 0.375f;
+        page.Transform(values);
+        string content = TestSupport.Content(page);
+        Assert.Contains("0.004 0 0 0.004 0 0 cm\n", content);
+        Assert.Contains("\n0.125 0 0 0.004 ", content);
+        Assert.Contains("\n0.125 0.004 0.006 0.375 ", content);
+        Assert.Equal(2, content.Split("0.125 0 0 0.125 0 0 cm\n").Length - 1);
+    }
+
+    [Fact]
     public void EveryAnnotationIsPrintedAndHasAnAppearance() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();
 #pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written

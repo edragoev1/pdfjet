@@ -2959,9 +2959,9 @@ func (page *Page) transformAnnotation(annotation *annotationObject) {
 func (page *Page) beginTransform(x, y, xScale, yScale float32) {
 	page.SaveGraphicsState()
 
-	page.appendFloat32(xScale)
+	page.appendPrecise(xScale)
 	page.appendString(" 0 0 ")
-	page.appendFloat32(yScale)
+	page.appendPrecise(yScale)
 	page.appendString(" ")
 	page.appendFloat32(x)
 	page.appendString(" ")
@@ -3054,13 +3054,13 @@ func (page *Page) Transform(values []float32) {
 	transx := values[MTransX]
 	transy := values[MTransY]
 
-	page.appendFloat32(scalex)
+	page.appendPrecise(scalex)
 	page.appendString(" ")
-	page.appendFloat32(values[MSkewX])
+	page.appendPrecise(values[MSkewX])
 	page.appendString(" ")
-	page.appendFloat32(values[MSkewY])
+	page.appendPrecise(values[MSkewY])
 	page.appendString(" ")
-	page.appendFloat32(scaley)
+	page.appendPrecise(scaley)
 	page.appendString(" ")
 
 	if math.Asin(float64(values[MSkewY])) != 0.0 {
@@ -3176,6 +3176,19 @@ func (page *Page) appendFloat32(value float32) {
 		}
 		page.grow(24) // The digits of a float and its sign and point
 		page.buf = fastfloat.Append(page.buf, value)
+	}
+}
+
+// appendPrecise appends a number of a scale, written with five decimals, as
+// hundredths would change the size: 0.125 was written as 0.13, 4% too large,
+// and 0.004 as 0, which drew nothing (review of 30 October 2026, B6).
+func (page *Page) appendPrecise(value float32) {
+	if page.open() {
+		if !fastfloat.IsWritable(value) {
+			page.pdf.fail(notWritable)
+		}
+		page.grow(fastfloat.MaxLength)
+		page.buf = fastfloat.AppendPrecise(page.buf, value)
 	}
 }
 

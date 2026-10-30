@@ -109,6 +109,32 @@ import Testing
         attachment.drawOn(page)
     }
 
+    @Test func aScaleIsWrittenWithItsDecimals() throws {
+        // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
+        // that drew nothing (review of 30 October 2026, B6).
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let stamp = Stamp(pdf).setSize(50, 50)
+        try stamp.complete()
+        stamp.scaleBy(0.125).setLocation(50, 50).drawOn(page)
+        stamp.scaleBy(0.004).setLocation(50, 50).drawOn(page)
+        let container = Container(100, 100)
+        _ = container.add(Rect(0, 0, 10, 10))
+        _ = container.scaleBy(0.125).setLocation(50, 50).drawOn(page)
+        page.drawContents(Array("n".utf8), 10, 20, 30, 0.125, 0.004)
+        var values = [Float](repeating: 0, count: 9)
+        values[Page.MSCALE_X] = 0.125
+        values[Page.MSKEW_X] = 0.004
+        values[Page.MSKEW_Y] = 0.006
+        values[Page.MSCALE_Y] = 0.375
+        page.transform(values)
+        let content = TestSupport.content(page)
+        #expect(content.contains("0.004 0 0 0.004 0 0 cm\n"), "\(content)")
+        #expect(content.contains("\n0.125 0 0 0.004 "), "\(content)")
+        #expect(content.contains("\n0.125 0.004 0.006 0.375 "), "\(content)")
+        #expect(content.components(separatedBy: "0.125 0 0 0.125 0 0 cm\n").count == 3, "\(content)")
+    }
+
     @Test func everyAnnotationIsPrintedAndHasAnAppearance() throws {
         for compliance in [Compliance.PDF_1_7, Compliance.PDF_A_2B, PDF.complianceA3A] {
             let raw = try document(compliance, annotations)

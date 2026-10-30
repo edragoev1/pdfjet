@@ -2742,6 +2742,16 @@ final public class Page {
         ((ContentBuffer) buf).writeFloat(f);
     }
 
+    // Appends a number of a scale, written with five decimals, as hundredths
+    // would change the size: 0.125 was written as 0.13, 4% too large, and 0.004
+    // as 0, which drew nothing (review of 30 October 2026, B6).
+    void appendPrecise(float f) {
+        if (!FastFloat.isWritable(f)) {
+            pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        append(FastFloat.toPreciseByteArray(f));
+    }
+
     // Appends the cm operator of the rotation with the cosine and the sine,
     // written with five decimals, as hundredths would turn it by another
     // angle, by 1.15 degrees for 1.
@@ -3369,9 +3379,9 @@ final public class Page {
             float x, float y, float xScale, float yScale) {
         saveGraphicsState();
 
-        append(xScale);
+        appendPrecise(xScale);
         append(" 0 0 ");
-        append(yScale);
+        appendPrecise(yScale);
         append(' ');
         append(x);
         append(' ');
@@ -3496,13 +3506,13 @@ final public class Page {
         float transx = values[MTRANS_X];
         float transy = values[MTRANS_Y];
 
-        append(scalex);
+        appendPrecise(scalex);
         append(Token.SPACE);
-        append(values[MSKEW_X]);
+        appendPrecise(values[MSKEW_X]);
         append(Token.SPACE);
-        append(values[MSKEW_Y]);
+        appendPrecise(values[MSKEW_Y]);
         append(Token.SPACE);
-        append(scaley);
+        appendPrecise(scaley);
         append(Token.SPACE);
 
         if (Math.asin(values[MSKEW_Y]) != 0f) {

@@ -2584,6 +2584,16 @@ public class Page {
         append(String(num))
     }
 
+    // Appends a number of a scale, written with five decimals, as hundredths
+    // would change the size: 0.125 was written as 0.13, 4% too large, and 0.004
+    // as 0, which drew nothing (review of 30 October 2026, B6).
+    func appendPrecise(_ val: Float) {
+        if !FastFloat.isWritable(val) {
+            pdf.fail(FastFloat.NOT_WRITABLE)
+        }
+        append(FastFloat.toPreciseByteArray(val))
+    }
+
     func append(_ val: Float) {
         if !FastFloat.isWritable(val) {
             // The misuse is recorded, and the number is written all the same:
@@ -3151,9 +3161,9 @@ public class Page {
             _ yScale: Float) {
         saveGraphicsState()
 
-        append(xScale)
+        appendPrecise(xScale)
         append(" 0 0 ")
-        append(yScale)
+        appendPrecise(yScale)
         append(Token.space)
         append(x)
         append(Token.space)
@@ -3385,13 +3395,13 @@ public class Page {
         var transx = values[Page.MTRANS_X]
         let transy = values[Page.MTRANS_Y]
 
-        append(scalex)
+        appendPrecise(scalex)
         append(Token.space)
-        append(values[Page.MSKEW_X])
+        appendPrecise(values[Page.MSKEW_X])
         append(Token.space)
-        append(values[Page.MSKEW_Y])
+        appendPrecise(values[Page.MSKEW_Y])
         append(Token.space)
-        append(scaley)
+        appendPrecise(scaley)
         append(Token.space)
 
         if asin(Double(values[Page.MSKEW_Y])) != 0.0 {

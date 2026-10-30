@@ -601,9 +601,9 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 
 	// SCALE: around the center, like a Container
 	if s.scaleX != 1.0 || s.scaleY != 1.0 {
-		page.appendFloat32(s.scaleX)
+		page.appendPrecise(s.scaleX)
 		page.appendString(" 0 0 ")
-		page.appendFloat32(s.scaleY)
+		page.appendPrecise(s.scaleY)
 		page.appendString(" 0 0 cm\n")
 	}
 
