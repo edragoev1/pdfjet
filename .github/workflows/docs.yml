@@ -21,10 +21,8 @@ on:
             - "Sources/**"
             - "Package.swift"
             - "examples/**"
-            - "fonts"
-            - "images/**"
-            - "data"
-            - "PngSuite/**"
+            - "resources/**"
+            - "tests/data/PngSuite/**"
             - "examples-java.html"
             - "examples-dotnet.html"
             - "generate-documentation.sh"
@@ -45,15 +43,16 @@ jobs:
         # Pinned to the Ubuntu release the Swift toolchain is built for.
         runs-on: ubuntu-24.04
         steps:
-            # Only the ports, the DocFX configuration, the examples, the images
-            # the examples read, .github (for the Install Swift action), and
-            # tests/swift, tests/corpus/swift, tests/crossport/swift and
-            # booklet/snippets/swift, the paths of the test target, of the
+            # Only the ports, the DocFX configuration, the examples,
+            # resources (the fonts PDFjet carries, and the images and the data
+            # files the examples read), tests/data/PngSuite, .github (for the
+            # Install Swift action), and tests/swift, tests/corpus/swift,
+            # tests/crossport/swift and booklet/snippets/swift, the paths of the test target, of the
             # corpus and cross-port harnesses and of the booklet snippets,
             # which SwiftPM checks for every target of
             # Package.swift, are checked out. Files in the repository root are
-            # always checked out, get-fonts-and-data.sh among them.
-            - uses: actions/checkout@v7
+            # always checked out.
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   sparse-checkout: |
                       .github
@@ -63,23 +62,19 @@ jobs:
                       src
                       Sources
                       examples
-                      images
-                      PngSuite
+                      resources
+                      tests/data/PngSuite
                       tests/swift
                       tests/corpus/swift
                       tests/crossport/swift
                       booklet/snippets/swift
 
-            # The fonts and the data files the examples read.
-            - name: Get the fonts and the data files
-              run: ./get-fonts-and-data.sh
-
-            - uses: actions/setup-java@v6
+            - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
               with:
                   distribution: temurin
                   java-version: "25"
 
-            - uses: actions/setup-dotnet@v6
+            - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
               with:
                   dotnet-version: "8.0.x"
 
@@ -88,7 +83,7 @@ jobs:
                   dotnet tool install -g docfx --version 2.78.5
                   echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
-            - uses: actions/setup-go@v7
+            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version-file: go.mod
                   cache: false
@@ -150,13 +145,13 @@ jobs:
                   </html>
                   EOF
 
-            - uses: actions/upload-pages-artifact@v5
+            - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
               with:
                   path: ${{ runner.temp }}/site
 
     deploy:
         needs: build
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         permissions:
             pages: write
             id-token: write
@@ -165,4 +160,4 @@ jobs:
             url: ${{ steps.deployment.outputs.page_url }}
         steps:
             - id: deployment
-              uses: actions/deploy-pages@v5
+              uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -1,8 +1,11 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-For.NET-Pro-vX.Y.Z.zip, a self-contained
 # package for .NET clients: PDFjet.dll, the DocFX reference, the example
-# projects with the PDFs they create, the files they read (data, the fonts,
-# images, PngSuite), and scripts that build and run the examples against PDFjet.dll.
+# projects with the PDFs they create, the files they read (resources/data,
+# images, PngSuite), the fonts PDFjet carries (resources/fonts, each family
+# with its license, which PDFjet.dll reads from there: the DLL of the package
+# is small, that of NuGet carries them, see package-nuget.sh), and scripts
+# that build and run the examples against PDFjet.dll.
 # The library sources and the font tools in util are not in the package.
 #
 # The README, the commercial LICENSE and the build and run scripts of the
@@ -45,10 +48,22 @@ if [ -z "$VERSION" ]; then
     echo "Could not read the version from net/pdfjet/PDF.cs"
     exit 1
 fi
-NAME="PDFjet-For.NET-Pro-$VERSION"
+# A package is made from HEAD, so HEAD must be the tag of the version: a run
+# on a later commit deleted the zip of the release and made another under its
+# name (review of 30 October 2026). PDFJET_DRAFT=1 makes one to look at before
+# the release instead, -draft in its name, with its folder inside, and leaves
+# the zips of the release as they are.
+DRAFT=""
+if [ -n "${PDFJET_DRAFT:-}" ]; then
+    DRAFT="-draft"
+elif [ "$(git rev-parse HEAD)" != "$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}")" ]; then
+    echo "HEAD is $(git describe --tags --always HEAD), not the tag $VERSION: check out the tag, or set PDFJET_DRAFT=1."
+    exit 1
+fi
+NAME="PDFjet-For.NET-Pro-$VERSION$DRAFT"
 STAGE="build/package-dotnet/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
-CORE_NAME="PDFjet-For.NET-Core-$VERSION"
+CORE_NAME="PDFjet-For.NET-Core-$VERSION$DRAFT"
 REPO=$PWD
 PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
 if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
@@ -56,8 +71,8 @@ if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     exit 1
 fi
 # The version is the same in the four ports, their tests and Example_37, and
-# CHANGELOG.md gives it its date; PDFJET_DRAFT=1 asks for no date, for a
-# package made to look at before the release (review of 17 October 2026).
+# CHANGELOG.md gives it its date; PDFJET_DRAFT=1 asks for no date (review of
+# 17 October 2026).
 if ! util/check-version.sh ${PDFJET_DRAFT:+--draft} > /dev/null; then
     exit 1
 fi
@@ -110,41 +125,42 @@ mkdir -p "$STAGE" .commercial-packages
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/dotnet-pro LICENSE \
-    net net48 PDFjet.csproj examples images PngSuite docfx \
+    net net48 PDFjet.csproj resources/fonts resources/data examples resources/images tests/data/PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
 tar -x -C "$STAGE" -f "$TAR"
-
-# fonts and data are the repositories pdfjet-fonts and pdfjet-data, which
-# get-fonts-and-data.sh fetches and git archive does not have: each is
-# archived at the commit that fonts-and-data.txt of the last commit pins,
-# whatever commit the folder is at, and its README, about the repository, is
-# left out.
-bash get-fonts-and-data.sh
-for dir in fonts data; do
-    commit=$(git show HEAD:fonts-and-data.txt | sed -n "s/^$dir [^ ]* \([0-9a-f]*\).*/\1/p")
-    if [ -z "$commit" ] || ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
-        echo "$dir does not have the commit ${commit:-that} fonts-and-data.txt of the last commit pins: run get-fonts-and-data.sh"
-        exit 1
-    fi
-    git -C "$dir" archive -o "$TAR" --prefix="$dir/" "$commit"
-    tar -x -C "$STAGE" -f "$TAR"
-    rm -f "$STAGE/$dir/README.md"
-done
 rm "$TAR"
 
-# The Java examples and the go.mod file of the Go port are not needed, but
-# Example_42 attaches Example_02.java.
+# resources/data is as it is in the repository, the data files the examples
+# read with the README that says where they come from. resources/fonts is the
+# fonts PDFjet carries, each family with its license, which the small
+# PDFjet.dll of the package reads from there (the owner, 29 October 2026): the
+# font files and the licenses alone, not the Go and Swift files beside them.
+# The Java examples and the Go files of resources and images are not needed,
+# but Example_42 attaches Example_02.java.
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
-rm -f "$STAGE/images/go.mod"
-
-# The fonts of the package are the fonts directory as it is: the .ttf files,
-# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 07, 48
-# and 50 read.
+rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
+# The fonts of the other scripts than the European ones stay in
+# resources/fonts/world, each family in a folder of its name, where
+# PDFjet.dll reads them.
+find "$STAGE/resources/fonts" -maxdepth 1 -type f -delete
+find "$STAGE/resources/fonts" -mindepth 2 -type f ! -name '*.ttf' ! -name '*.otf' \
+    ! -name '*.txt' ! -name LICENSE -delete
+find "$STAGE/resources/fonts" -mindepth 1 -type d -empty -delete
+for family in "$STAGE"/resources/fonts/*/ "$STAGE"/resources/fonts/world/*/; do
+    if [ "$family" = "$STAGE/resources/fonts/world/" ]; then
+        continue
+    fi
+    if [ ! -f "$family/license.txt" ] && [ ! -f "$family/OFL.txt" ] && [ ! -f "$family/LICENSE" ]; then
+        echo "$family has no license"
+        exit 1
+    fi
+done
 
 cd "$STAGE"
 
 # The same build as build-dotnet.sh, strong-named, with the release as the file
-# version: 9.0.3 of v9.0.3.
+# version: 9.0.3 of v9.0.3. Without -p:PDFjetFonts=true, the DLL is small and
+# reads the fonts from resources/fonts.
 dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
     -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
     -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
@@ -221,12 +237,16 @@ mkdir pro-src
 git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD net/pdfjet/Sign net/pdfjet/Invoice \
-    examples/package/dotnet tests/data/rsa-signer.p12
+    net/pdfjet/Hyphenation src/hyphenation/patterns \
+    examples/package/dotnet tests/data/rsa-signer.p12 \
+    tests/ltv-server.py tests/data/ltv-signer.p12 tests/data/ltv-root.pem tests/data/ltv-root.key \
+    tests/data/ltv-root-index.txt tests/data/ltv-ca.pem tests/data/ltv-ca.key tests/data/ltv-ca-index.txt \
+    tests/data/ltv-tsa.pem tests/data/ltv-tsa.key tests/data/ltv-ocsp.pem tests/data/ltv-ocsp.key
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
-perl -0pi -e 's|(    <Compile Include="net/pdfjet/Encryption/\*\.cs" />\n)|$1    <Compile Include="net/pdfjet/Sign/*.cs" />\n    <Compile Include="net/pdfjet/Invoice/*.cs" />\n|' \
+perl -0pi -e 's|(    <Compile Include="net/pdfjet/Encryption/\*\.cs" />\n)|$1    <Compile Include="net/pdfjet/Sign/*.cs" />\n    <Compile Include="net/pdfjet/Invoice/*.cs" />\n    <Compile Include="net/pdfjet/Hyphenation/*.cs" />\n    <EmbeddedResource Include="src/hyphenation/patterns/*.txt" LogicalName="PDFjet.Hyphenation.%(Filename)%(Extension)" />\n|' \
     pro-src/PDFjet.csproj
-if ! grep -q 'net/pdfjet/Invoice/\*\.cs' pro-src/PDFjet.csproj; then
+if ! grep -q 'net/pdfjet/Hyphenation/\*\.cs' pro-src/PDFjet.csproj; then
     echo "The sources of PDFjet Pro could not be added to PDFjet.csproj"
     exit 1
 fi
@@ -238,6 +258,22 @@ cp pro-out/PDFjet.dll PDFjet.dll
 mkdir -p examples/pro
 cp -r pro-src/examples/package/dotnet/* examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
+# The test PKI of the long-term signature example, SignLongTerm, which no one
+# trusts, and ltv-server.py, its OCSP responder, CRLs, CA certificates and time
+# stamp authority on 127.0.0.1:19180, which build-pro.sh starts
+mkdir -p examples/pro/ltv
+cp pro-src/tests/ltv-server.py pro-src/tests/data/ltv-* examples/pro/ltv/
+# The packages are under PDFjet Pro's commercial license, so the server's
+# copy carries the header of the packaged examples, not the repository's.
+sed -i -e '/^# Licensed under the GNU Affero General Public License/,/^# SPDX-License-Identifier: AGPL-3.0-only/c\
+# A test server of PDFjet Pro, for the packages of PDFjet.' examples/pro/ltv/ltv-server.py
+if grep -q AGPL examples/pro/ltv/ltv-server.py; then
+    echo "examples/pro/ltv/ltv-server.py still names the AGPL." >&2
+    exit 1
+fi
+# The licenses of the hyphenation patterns built into PDFjet.dll, beside it,
+# as their MIT licenses ask that the notice go with every copy
+cp pro-src/src/hyphenation/patterns/LICENSES.txt HYPHENATION-PATTERNS-LICENSES.txt
 rm -rf pro-src pro-out
 mv ../dotnet-pro/build-pro.sh ../dotnet-pro/build-pro.cmd .
 cat ../dotnet-pro/README-PRO.md >> README.md
@@ -246,7 +282,8 @@ rm -rf ../dotnet-pro
 # Creates the PDFs of PDFjet Pro with the package's own script.
 ./build-pro.sh
 rm -rf examples/pro/*/bin examples/pro/*/obj
-for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode; do
+for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText \
+        Pro_SignLongTerm_B-LT Pro_SignLongTerm_B-LTA Pro_SignLongTerm_B-LTA-renewed; do
     if ! tail -c 32 "$pdf.pdf" 2>/dev/null | grep -q '%%EOF'; then
         echo "$pdf.pdf was not created or is incomplete"
         exit 1
@@ -264,8 +301,12 @@ rm -rf build/package-dotnet
 # GitHub sends to the latest release's file of that name, so that the link
 # never changes; the version is in the name of the folder inside.
 LATEST_ZIP="$(dirname "$CORE_ZIP")/PDFjet-For.NET-Core.zip"
-cp "$CORE_ZIP" "$LATEST_ZIP"
+if [ -z "$DRAFT" ]; then
+    cp "$CORE_ZIP" "$LATEST_ZIP"
+fi
 
 echo "Created $ZIP"
 echo "Created $CORE_ZIP"
-echo "Created $LATEST_ZIP, the same, for the GitHub release"
+if [ -z "$DRAFT" ]; then
+    echo "Created $LATEST_ZIP, the same, for the GitHub release"
+fi

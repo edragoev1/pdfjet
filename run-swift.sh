@@ -1,5 +1,5 @@
-bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
-# The folder of this script, which has fonts and data, from wherever it is run.
+#!/bin/bash
+# The folder of this script, which has the files the examples read, from wherever it is run.
 cd "$(dirname "$0")" || exit 1
 if [ $# -eq 0 ]; then
     echo "Please provide an example number:"

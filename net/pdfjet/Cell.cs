@@ -35,6 +35,9 @@ public class Cell {
     internal Font fallbackFont;
     internal float fontSize;
     internal String text;
+    // The whole text of a cell whose text wraps, which holds its first line
+    // after the wrap: what a sum reads
+    internal String wholeText;
     internal IDrawable drawable;    // The image, barcode, text block, text column or other drawable
     internal Point point;
     internal float width = 75f;
@@ -209,6 +212,7 @@ public class Cell {
     /// <returns>this Cell object.</returns>
     public Cell SetText(String text) {
         this.text = text;
+        this.wholeText = null;
         return this;
     }
 
@@ -908,7 +912,8 @@ public class Cell {
         } else if (AlignmentAt(VALIGN) == Alignment.CENTER) {
             yText = y + cellH/2 + ascent/2;
         } else if (AlignmentAt(VALIGN) == Alignment.BOTTOM) {
-            yText = (y + cellH) - PaddingAt(BOTTOM_PADDING);
+            // Over the padding by the descent, which went into it
+            yText = (y + cellH) - PaddingAt(BOTTOM_PADDING) - Descent();
         } else {
             // The same message in the four ports (review of 12 October 2026)
             page.pdf.Fail(new ArgumentException("The vertical alignment of a cell is top, center or bottom."));

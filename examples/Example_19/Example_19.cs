@@ -13,10 +13,10 @@ using PDFjet.NET;
 
 /**
  * Example_19.cs
- * A Markdown text, data/markdown/pdfjet.md, drawn down the pages by Markdown
+ * A Markdown text, resources/data/markdown/pdfjet.md, drawn down the pages by Markdown
  * as a PDF/UA document: its headings, paragraphs, lists, quote, code, table
  * and image, each tagged for screen readers, with a number at the foot of
- * every page. The image is read from data/markdown, the directory that
+ * every page. The image is read from resources/data/markdown, the directory that
  * SetImageDirectory names.
  */
 public class Example_19 {
@@ -30,12 +30,12 @@ public class Example_19 {
         Font bold = new Font(pdf, IBMPlexSans.Bold).SetSize(11f);
         Font italic = new Font(pdf, IBMPlexSans.Italic).SetSize(11f);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic).SetSize(11f);
-        Font code = new Font(pdf, IBMPlexMono.Regular).SetSize(9.5f);
+        Font code = new Font(pdf, CascadiaMono.Regular).SetSize(9.5f);
 
         Markdown markdown = new Markdown(regular, bold, italic, boldItalic, code);
-        markdown.SetImageDirectory("data/markdown");
+        markdown.SetImageDirectory("resources/data/markdown");
         List<Page> pages = new List<Page>();
-        markdown.DrawOn(pdf, Content.OfTextFile("data/markdown/pdfjet.md"), pages, Letter.PORTRAIT);
+        markdown.DrawOn(pdf, Content.OfTextFile("resources/data/markdown/pdfjet.md"), pages, Letter.PORTRAIT);
 
         for (int i = 0; i < pages.Count; i++) {
             TextLine number = new TextLine(regular, (i + 1).ToString());

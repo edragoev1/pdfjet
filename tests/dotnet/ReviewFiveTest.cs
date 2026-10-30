@@ -166,7 +166,7 @@ public class ReviewFiveTest {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         SimpleScatterChart chart = new SimpleScatterChart(font, font).SetTitle("T")
                 .Add(1f, 1f).Add(2f, 2f).Add(3f, 3f).Add(4f, -1000f).SetTrendLine(true).SetYAxisRange(0f, 10f);
-        Assert.Equal("T: 3 points; the trend rises.", chart.AltDescription());
+        Assert.Equal("T: 3 points; the trend rises; 1 point outside the range.", chart.AltDescription());
     }
 
     [Fact]

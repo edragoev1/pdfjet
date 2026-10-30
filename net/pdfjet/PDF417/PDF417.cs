@@ -201,6 +201,7 @@ public class PDF417 : IDrawable {
             }
             page.SaveGraphicsState();
             page.SetPenColor(color);
+            page.SetDefaultStrokeDashPattern();     // Not the caller's, which broke the bars
         }
         float[] xy = DrawPdf417(page);
         if (page != null) {

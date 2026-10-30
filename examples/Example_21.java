@@ -43,7 +43,7 @@ final public class Example_21 {
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
         BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream("data/winter-2009.txt"), "UTF-8"));
+                new InputStreamReader(new FileInputStream("resources/data/winter-2009.txt"), "UTF-8"));
         String line;
         while ((line = reader.readLine()) != null) {
             List<Cell> row = new ArrayList<Cell>();
@@ -149,7 +149,7 @@ final public class Example_21 {
     }
 
     private void drawSpans(PDF pdf) throws Exception {
-        font = new Font(pdf, IBMPlexMono.Regular);
+        font = new Font(pdf, CascadiaMono.Regular);
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
 

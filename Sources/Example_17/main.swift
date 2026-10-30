@@ -12,7 +12,7 @@ import PDFjet
  * A whole novel, "The Idiot" by Fyodor Dostoyevsky, set as a book: a title
  * page, and each chapter on new A5 pages that a TextFrame flows onto, with
  * the words in italics and a number on every page. The time it prints is the
- * time PDFjet takes to set the 241,527 words of data/the-idiot.txt.
+ * time PDFjet takes to set the 241,527 words of resources/data/the-idiot.txt.
  */
 public class Example_17 {
     public init() throws {
@@ -21,15 +21,15 @@ public class Example_17 {
         pdf.setTitle("The Idiot")
         pdf.setAuthor("Fyodor Dostoyevsky")
 
-        let regular = try Font(pdf, SourceSerif4.Regular)
-        let italic = try Font(pdf, SourceSerif4.Italic)
-        let semiBold = try Font(pdf, SourceSerif4.SemiBold)
+        let regular = try Font(pdf, IBMPlexSerif.Regular)
+        let italic = try Font(pdf, IBMPlexSerif.Italic)
+        let semiBold = try Font(pdf, IBMPlexSerif.SemiBold)
         regular.setSize(10.0)
         italic.setSize(10.0)
 
-        // Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+        // Kerning, from the GPOS table of IBM Plex Serif: pairs such as "Te", "Yo"
         // and "r." drawn closer, as the font's designers spaced them. The novel
-        // sets on 736 pages kerned, 745 not.
+        // sets on 694 pages kerned, 696 not.
         regular.setKernPairs(true)
         italic.setKernPairs(true)
         semiBold.setKernPairs(true)
@@ -50,7 +50,7 @@ public class Example_17 {
         // "I.", and the paragraphs are separated by an empty line.
         var blocks = [String]()
         var lines = [Substring]()
-        for line in try Content.ofTextFile("data/the-idiot.txt").split(separator: "\n",
+        for line in try Content.ofTextFile("resources/data/the-idiot.txt").split(separator: "\n",
                 omittingEmptySubsequences: false) {
             if line.trimmingCharacters(in: .whitespaces).isEmpty {
                 if !lines.isEmpty {

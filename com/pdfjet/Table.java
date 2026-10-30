@@ -61,6 +61,8 @@ public class Table implements Drawable {
     // decimals, or null when the table is not being drawn: they were read
     // again for every page, which took 33 seconds for 40,000 rows.
     private Map<Integer, ColumnSums> columnSums;
+    // The height of the header rows, wrapped, that getTotalHeight measures.
+    float wrappedHeaderHeight;
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -199,6 +201,11 @@ public class Table implements Drawable {
         this.rendered = numOfHeaderRows;
         this.headerDrawn = false;
         addCellsToCompleteTheGrid();
+        if (tableWidth > 0f) {
+            // The width and the percentages given before the data: they were
+            // lost (the review of 30 October 2026)
+            setWidth(tableWidth);
+        }
         return this;
     }
 
@@ -466,7 +473,10 @@ public class Table implements Drawable {
     }
 
     // Reads the number of each row of the column, in units of the decimals: 0
-    // for a cell that has no number, or that a cell above it covers.
+    // for a cell that has no number, or that a cell above it covers. A cell is
+    // read once, from its whole text, and the lines it wraps into add nothing:
+    // they were read as numbers, and 1,234,567.89 wrapped in a narrow column
+    // added 567.89 (the review of 30 October 2026).
     private ColumnSums readColumn(int column, int decimals) {
         int rows = tableData.size();
         ColumnSums sums = new ColumnSums();
@@ -480,10 +490,10 @@ public class Table implements Drawable {
                 continue;
             }
             Cell cell = row.get(column);
-            if ((cell.properties & Cell.COVERED) != 0 || cell.text == null) {
+            if ((cell.properties & (Cell.COVERED | Cell.CONTINUED)) != 0 || cell.text == null) {
                 continue;
             }
-            Long value = numberOf(cell.text, decimals);
+            Long value = numberOf((cell.wholeText != null) ? cell.wholeText : cell.text, decimals);
             if (value != null) {
                 sums.values[r] = value;
                 if (sums.exact) {
@@ -1114,6 +1124,13 @@ public class Table implements Drawable {
         if (page != null && !first && !repeatsHeaderOn(page)) {
             return new float[] {x, y};
         }
+        float height = 0f;
+        for (int i = 0; i < numOfHeaderRows && i < tableData.size(); i++) {
+            if (!(first && isBroughtForwardRow(i))) {
+                height += this.heights[i];
+            }
+        }
+        checkFits(page, "header", y, height);
         if (page != null && !first && numOfHeaderRows > 0) {
             page.addArtifactBMC();
         }
@@ -1495,6 +1512,11 @@ public class Table implements Drawable {
     private float drawFooterRows(Page page, float x, float y, float[] heights, boolean last)
             throws Exception {
         int footer = footerStart();
+        float height = 0f;
+        for (int r = footer; r < tableData.size(); r++) {
+            height += heights[r];
+        }
+        checkFits(page, "footer", y, height);
         if (page != null && !last && footer < tableData.size()) {
             page.addArtifactBMC();
         }
@@ -1514,6 +1536,22 @@ public class Table implements Drawable {
             page.addEMC();
         }
         return y;
+    }
+
+    // Fails the document, as a row of the body does, when the header or footer
+    // rows of the height, drawn at y, run off the page: what did not fit was
+    // lost with no error, a page total among it (the review of 30 October
+    // 2026). Rows that only reach into the bottom margin are drawn, as those
+    // of the body are.
+    private void checkFits(Page page, String rows, float y, float height) {
+        if (page == null || height <= 0f || y + height <= page.height) {
+            return;
+        }
+        rendered = -1; // Nothing more is drawn, and no more pages are asked for
+        page.pdf.fail(new IllegalStateException(String.format(Locale.ROOT,
+                "The %s rows of the table are %.0f points tall, and run off the page, "
+                + "which has %.0f points for them. Make them smaller, or give the table more of the page.",
+                rows, height, Math.max(page.height - bottomMargin - y, 0f))));
     }
 
     // Works out what each cell that spans rows covers, after the text is
@@ -2024,9 +2062,14 @@ public class Table implements Drawable {
             for (int j = 0; j < row.size(); j++) {
                 List<String> cellLines = lines.get(j);
                 if (cellLines != null) {
+                    String wholeText = row.get(j).wholeText;
+                    if (wholeText == null && cellLines.size() > 1) {
+                        wholeText = row.get(j).text;
+                    }
                     for (int n = 0; n < cellLines.size(); n++) {
                         tableData2.get(first + n).get(j).setText(cellLines.get(n));
                     }
+                    row.get(j).wholeText = wholeText;
                 }
             }
             // The stacked rows are wrapped in their turn, as they were when
@@ -2069,8 +2112,13 @@ public class Table implements Drawable {
             wrapAroundCellText();
             applyRowSpans();
             float total = 0f;
-            for (float height : getRowHeights()) {
-                total += height;
+            float[] heights = getRowHeights();
+            wrappedHeaderHeight = 0f;
+            for (int r = 0; r < heights.length; r++) {
+                total += heights[r];
+                if (r < numOfHeaderRows) {
+                    wrappedHeaderHeight += heights[r];
+                }
             }
             return total;
         } finally {
@@ -2221,6 +2269,21 @@ public class Table implements Drawable {
      * @return this Table object.
      */
     public Table setVisibleColumns(Integer... columns) {
+        if (tableData.isEmpty()) {
+            return this;
+        }
+        if (columns.length == 0) {
+            throw new IllegalArgumentException("The table has no visible column: name at least one.");
+        }
+        int count = 0;
+        for (List<Cell> row : tableData) {
+            count = Math.max(count, row.size());
+        }
+        for (int column : columns) {
+            if (column < 0 || column >= count) {
+                throw new IllegalArgumentException("The table has no row or column at the index " + column + ".");
+            }
+        }
         List<List<Cell>> list = new ArrayList<List<Cell>>();
         List<Integer> visible = Arrays.asList(columns);
         for (List<Cell> row : tableData) {

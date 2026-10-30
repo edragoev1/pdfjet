@@ -284,6 +284,23 @@ public class Font {
     }
 
     /// <summary>
+    /// Constructor for OpenType and TrueType fonts, .otf and .ttf files, added
+    /// to the objects of an existing PDF. A path to one of the fonts PDFjet
+    /// carries, such as the constants of the font classes, is read from the
+    /// library when there is no such file, as by the constructor that takes a
+    /// PDF and a path.
+    /// </summary>
+    /// <param name="objects">the list of objects</param>
+    /// <param name="fontPath">the font path</param>
+    /// <exception cref="System.IO.FileNotFoundException">thrown if the font is not found.</exception>
+    public Font(List<PDFobj> objects, String fontPath) {
+        using (Stream inputStream = Open(FontFileOf(fontPath))) {
+            OpenTypeFont.Register(objects, this, inputStream);
+        }
+        SetSize(size);
+    }
+
+    /// <summary>
     /// Constructor for OpenType and TrueType fonts, .otf and .ttf.
     /// </summary>
     /// <param name="pdf">the PDF object that requires this font.</param>
@@ -296,8 +313,15 @@ public class Font {
 
     /// <summary>
     /// Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
-    /// to a .ttf.stream or .otf.stream file, the fonts PDFjet shipped before
-    /// 9.0.5, opens the .ttf or else the .otf file of the same name beside it.
+    /// to one of the fonts PDFjet carries, such as the constants of the font
+    /// classes, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from
+    /// the folder resources/fonts, else from the library, when there is no
+    /// such file: the NuGet package PDFjet carries the European fonts; the
+    /// others, such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular,
+    /// are in the NuGet package PDFjet.Fonts.World, which a program adds next
+    /// to PDFjet, and such a font not found says so. A path to a .ttf.stream or
+    /// .otf.stream file, the fonts PDFjet shipped before 9.0.5, opens the .ttf
+    /// or else the .otf file of the same name beside it.
     /// </summary>
     /// <param name="pdf">the pdf object.</param>
     /// <param name="fontPath">the font path.</param>
@@ -305,10 +329,31 @@ public class Font {
     public Font(PDF pdf, String fontPath) {
         this.pdf = pdf;
         fontPath = FontFileOf(fontPath);
-        using (FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read)) {
+        using (Stream inputStream = Open(fontPath)) {
             OpenTypeFont.Register(pdf, this, inputStream);
         }
         SetSize(size);
+    }
+
+    // Opens the font file of the path, or, when there is no such file, the
+    // font of that name that PDFjet carries; a font it does not carry throws.
+    internal static Stream Open(String fontPath) {
+        if (!File.Exists(fontPath)) {
+            Stream bundled = BundledFonts.Open(fontPath);
+            if (bundled != null) {
+                return bundled;
+            }
+            String world = BundledFonts.WorldMissing(fontPath);
+            if (world != null) {
+                throw new FileNotFoundException(world, fontPath);
+            }
+            String path = fontPath.Replace('\\', '/');
+            if (path.StartsWith("fonts/", StringComparison.Ordinal) || path.Contains("/fonts/")) {
+                throw new FileNotFoundException(fontPath + " is not a file, nor one of the fonts PDFjet carries, "
+                        + "in resources/fonts or in PDFjet.dll: use a font file of your own.", fontPath);
+            }
+        }
+        return new FileStream(fontPath, FileMode.Open, FileAccess.Read);
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream
@@ -323,6 +368,14 @@ public class Font {
                 foreach (String ext in new String[] {".ttf", ".otf"}) {
                     if (File.Exists(basePath + ext)) {
                         return basePath + ext;
+                    }
+                }
+                // The font PDFjet carries of that name, when there is no file
+                foreach (String ext in new String[] {".ttf", ".otf"}) {
+                    using (Stream bundled = BundledFonts.Open(basePath + ext)) {
+                        if (bundled != null) {
+                            return basePath + ext;
+                        }
                     }
                 }
             }

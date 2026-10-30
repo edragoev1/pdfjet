@@ -84,7 +84,7 @@ public class Snippets {
                 .setLocation(50f, 50f).drawOn(page);
         new TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
                 .setLocation(50f, 70f).setWidth(400f).drawOn(page);
-        Image image = new Image(pdf, "images/circles.png");
+        Image image = new Image(pdf, "resources/images/circles.png");
         image.setAltDescription("Three circles that overlap");
         image.setLocation(50f, 110f).drawOn(page);
         pdf.complete();
@@ -106,21 +106,21 @@ public class Snippets {
 
     // @snippet fonts
     static void fonts(PDF pdf, Font font) throws Exception {
-        Font serif = new Font(pdf, SourceSerif4.Regular).setSize(14f);
+        Font serif = new Font(pdf, IBMPlexSerif.Regular).setSize(14f);
         Font bold = new Font(pdf, IBMPlexSans.Bold);
-        Font mono = new Font(pdf, JetBrainsMono.Regular).setSize(10f);
+        Font mono = new Font(pdf, CascadiaMono.Regular).setSize(10f);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(serif, "Source Serif 4 at 14 points").setLocation(50f, 50f).drawOn(page);
+        new TextLine(serif, "IBM Plex Serif at 14 points").setLocation(50f, 50f).drawOn(page);
         new TextLine(bold, "IBM Plex Sans Bold at 12 points").setLocation(50f, 75f).drawOn(page);
-        new TextLine(mono, "JetBrains Mono at 10 points").setLocation(50f, 100f).drawOn(page);
+        new TextLine(mono, "Cascadia Mono at 10 points").setLocation(50f, 100f).drawOn(page);
         new TextLine(bold, "The same font at 24 points").setFontSize(24f)
                 .setLocation(50f, 135f).drawOn(page);
     }
 
     // @snippet font-files
     static void fontFiles(PDF pdf, Font font) throws Exception {
-        Font otf = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf");
-        Font ttf = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf");
+        Font otf = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        Font ttf = new Font(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(otf, "An OpenType font").setLocation(50f, 50f).drawOn(page);
         new TextLine(ttf, "A TrueType font").setLocation(50f, 75f).drawOn(page);
@@ -241,7 +241,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).setSize(11f);
+        Font code = new Font(pdf, CascadiaMono.Regular).setSize(11f);
         Markup markup = new Markup(font, bold, italic, boldItalic, code);
         List<Paragraph> paragraphs = markup.paragraphs(
                 "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
@@ -255,7 +255,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).setSize(10f);
+        Font code = new Font(pdf, CascadiaMono.Regular).setSize(10f);
         Markdown markdown = new Markdown(font, bold, italic, boldItalic, code);
         List<Page> pages = new ArrayList<Page>();
         markdown.drawOn(pdf, "# A heading\n"
@@ -283,7 +283,7 @@ public class Snippets {
 
     // @snippet text-frame-pages
     static void textFramePages(PDF pdf, Font font) throws Exception {
-        List<String> text = Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\n\n"));
+        List<String> text = Arrays.asList(Content.ofTextFile("resources/data/dostoevsky.txt").split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         frame.setLocation(72f, 72f);
         frame.setWidth(468f);
@@ -294,7 +294,7 @@ public class Snippets {
 
     // @snippet text-frame-columns
     static void textFrameColumns(PDF pdf, Font font) throws Exception {
-        List<String> text = Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\n\n"));
+        List<String> text = Arrays.asList(Content.ofTextFile("resources/data/dostoevsky.txt").split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         while (frame.hasMoreText()) {
             Page page = new Page(pdf, Letter.LANDSCAPE);
@@ -316,7 +316,7 @@ public class Snippets {
                 new Paragraph(new TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
                 new Paragraph(new TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))), 6f);
         flow.addSpace(12f);
-        Image map = new Image(pdf, "images/gr-map.jpg");
+        Image map = new Image(pdf, "resources/images/gr-map.jpg");
         map.setAltDescription("A map of Greece and its regions.");
         flow.add(map.resizeHeight(400f), Alignment.CENTER);   // Whole, here or on the next page
         flow.add(new Paragraph(new TextLine(font, "Greece: its regions.").setFontSize(9f))
@@ -414,7 +414,7 @@ public class Snippets {
 
     // @snippet cell-content
     static void cellContent(PDF pdf, Font font) throws Exception {
-        Image image = new Image(pdf, "images/circles.png").scaleBy(0.25f);
+        Image image = new Image(pdf, "resources/images/circles.png").scaleBy(0.25f);
         image.setAltDescription("Circles");
         Cell imageCell = new Cell(font).setImage(image);
         Cell barcodeCell = new Cell(font).setBarcode(new Barcode(Barcode.CODE_128, "PDFjet"));
@@ -474,7 +474,7 @@ public class Snippets {
         Font body = new Font(pdf, IBMPlexSans.Regular).setSize(9f);
         BigTable table = new BigTable(pdf, bold, body, Letter.LANDSCAPE);
         table.setNumberOfColumns(9);    // Set in this order
-        table.setTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",");
+        table.setTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",");
         table.setLocation(0f, 0f);
         table.setBottomMargin(20f);
         table.setVerticalPadding(1f);   // Room above and below each row
@@ -574,7 +574,7 @@ public class Snippets {
 
     // @snippet images
     static void images(PDF pdf, Font font) throws Exception {
-        Image photo = new Image(pdf, "images/gr-map.jpg");    // JPEG, PNG or BMP
+        Image photo = new Image(pdf, "resources/images/gr-map.jpg");    // JPEG, PNG or BMP
         photo.setAltDescription("A map of Greece");
         Page page = new Page(pdf, Letter.PORTRAIT);
         photo.setLocation(50f, 50f);
@@ -587,7 +587,7 @@ public class Snippets {
 
     // @snippet svg-images
     static void svgImages(PDF pdf, Font font) throws Exception {
-        SVGImage icon = new SVGImage("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
+        SVGImage icon = new SVGImage("resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
         icon.setAltDescription("A star");
         icon.setLocation(50f, 50f);
         icon.scaleBy(2f);    // Vector graphics stay sharp at any size
@@ -721,7 +721,7 @@ public class Snippets {
 
     // @snippet attachments
     static void attachments(PDF pdf, Font font) throws Exception {
-        EmbeddedFile file = new EmbeddedFile(pdf, "data/winter-2009.txt", true);
+        EmbeddedFile file = new EmbeddedFile(pdf, "resources/data/winter-2009.txt", true);
         Page page = new Page(pdf, Letter.PORTRAIT);
         FileAttachment attachment = new FileAttachment(file);
         attachment.setLocation(50f, 50f);
@@ -782,7 +782,7 @@ public class Snippets {
     // @snippet merge
     static void merge() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("merged.pdf")));
-        for (String file : new String[] {"data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"}) {
+        for (String file : new String[] {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"}) {
             InputStream stream = new BufferedInputStream(new FileInputStream(file));
             pdf.merge(pdf.read(stream));
             stream.close();
@@ -792,7 +792,7 @@ public class Snippets {
 
     // @snippet split
     static void split() throws Exception {
-        InputStream stream = new BufferedInputStream(new FileInputStream("data/testPDFs/rc65-16e.pdf"));
+        InputStream stream = new BufferedInputStream(new FileInputStream("resources/data/testPDFs/sample-document.pdf"));
         List<PDFobj> objects = new PDF().read(stream);
         stream.close();
         PDF firstPage = new PDF(new BufferedOutputStream(new FileOutputStream("page1.pdf")));
@@ -803,8 +803,9 @@ public class Snippets {
     // @snippet existing-pages
     static void existingPages() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("stamped.pdf")));
-        List<PDFobj> objects = pdf.read(new FileInputStream("data/testPDFs/rc65-16e.pdf"));
-        Font font = new Font(objects, new FileInputStream(IBMPlexSans.Regular)).setSize(24f);
+        List<PDFobj> objects = pdf.read(new FileInputStream("resources/data/testPDFs/sample-document.pdf"));
+        // IBM Plex Sans, which PDFjet carries
+        Font font = new Font(objects, IBMPlexSans.Regular).setSize(24f);
         for (PDFobj pageObj : pdf.getPageObjects(objects)) {
             Page page = new Page(pdf, pageObj);
             page.addResource(font, objects);

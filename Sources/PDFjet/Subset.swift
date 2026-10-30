@@ -221,7 +221,7 @@ class Subset {
         let program = font.program!
         let data = embeddedProgram(font)
         var compressed = [UInt8]()
-        FlateEncode(&compressed, data)
+        FlateEncode(&compressed, data, pdf.flateMemory)
         let length = data.count
 
         let metadataObjNumber = pdf.addMetadataObject(font.info, true)

@@ -7,37 +7,39 @@
 import Foundation
 
 ///
-/// The Source Serif 4 fonts. Each constant is the path of a font file in the
-/// TrueType (.ttf) format, embedded as a subset of the glyphs a document
-/// draws; pass it to the Font constructor that takes a font path.
+/// The Source Serif 4 fonts, which PDFjet does not carry from 9.1.7: each constant
+/// is the path of a font file of the packages of PDFjet before 9.1.7,
+/// which the Font constructor that takes a font path reads when the file is
+/// there.
 ///
+@available(*, deprecated, message: "PDFjet carries IBM Plex Serif, which every constant of IBMPlexSerif reads with nothing to download.")
 public struct SourceSerif4 {
     /// Source Serif 4 Black
     public static let Black            = "fonts/SourceSerif4/SourceSerif4-Black.ttf"
-    /// Source Serif 4 Black Italic
+    /// Source Serif 4 BlackItalic
     public static let BlackItalic      = "fonts/SourceSerif4/SourceSerif4-BlackItalic.ttf"
     /// Source Serif 4 Bold
     public static let Bold             = "fonts/SourceSerif4/SourceSerif4-Bold.ttf"
-    /// Source Serif 4 Bold Italic
+    /// Source Serif 4 BoldItalic
     public static let BoldItalic       = "fonts/SourceSerif4/SourceSerif4-BoldItalic.ttf"
     /// Source Serif 4 ExtraLight
     public static let ExtraLight       = "fonts/SourceSerif4/SourceSerif4-ExtraLight.ttf"
-    /// Source Serif 4 ExtraLight Italic
+    /// Source Serif 4 ExtraLightItalic
     public static let ExtraLightItalic = "fonts/SourceSerif4/SourceSerif4-ExtraLightItalic.ttf"
     /// Source Serif 4 Italic
     public static let Italic           = "fonts/SourceSerif4/SourceSerif4-Italic.ttf"
     /// Source Serif 4 Light
     public static let Light            = "fonts/SourceSerif4/SourceSerif4-Light.ttf"
-    /// Source Serif 4 Light Italic
+    /// Source Serif 4 LightItalic
     public static let LightItalic      = "fonts/SourceSerif4/SourceSerif4-LightItalic.ttf"
     /// Source Serif 4 Medium
     public static let Medium           = "fonts/SourceSerif4/SourceSerif4-Medium.ttf"
-    /// Source Serif 4 Medium Italic
+    /// Source Serif 4 MediumItalic
     public static let MediumItalic     = "fonts/SourceSerif4/SourceSerif4-MediumItalic.ttf"
     /// Source Serif 4 Regular
     public static let Regular          = "fonts/SourceSerif4/SourceSerif4-Regular.ttf"
     /// Source Serif 4 SemiBold
     public static let SemiBold         = "fonts/SourceSerif4/SourceSerif4-SemiBold.ttf"
-    /// Source Serif 4 SemiBold Italic
+    /// Source Serif 4 SemiBoldItalic
     public static let SemiBoldItalic   = "fonts/SourceSerif4/SourceSerif4-SemiBoldItalic.ttf"
 }

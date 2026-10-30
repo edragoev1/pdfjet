@@ -7,8 +7,6 @@
 #
 # The editions are java, csharp, go, swift and all. The booklets are written to
 # booklet/PDFjet-Booklet-*.pdf.
-
-bash "$(dirname "$0")/../get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")/.." || exit 1
 
 # --release 8 builds Java 8 class files, as the library's own scripts do. Java
@@ -66,4 +64,7 @@ javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -d build/booklet \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     booklet/Booklet.java || exit 1
+# The fonts PDFjet carries, resources of com.pdfjet.fonts, as build-java.sh copies them
+mkdir -p build/booklet/com/pdfjet/fonts
+cp -R resources/fonts/* build/booklet/com/pdfjet/fonts/ || exit 1
 java -cp build/booklet Booklet "$@"

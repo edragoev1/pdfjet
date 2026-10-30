@@ -11,21 +11,19 @@ import PDFjet
  * Example_24.swift
  */
 public class Example_24 {
-    public init() throws {
+    public init(_ fileName: String, _ pdfUA: Bool) throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_24.pdf", append: false)!)
-        // Uncomment the line below to make this a PDF/UA document. A BigTable
-        // is tagged as a table: a TR for each row, holding a TH or a TD with
-        // the text of each cell, which is what a screen reader reads a table
-        // from. It is off here because of what it costs at this size: every
-        // tagged cell is an object of its own, so this document goes from
-        // 5,108 objects and 11.8 MB to 1.25 million objects and 249 MB. The
-        // 10-page file below is the size to see the tagging at.
-        // pdf.setCompliance(Compliance.PDF_UA_1)
+        // The sample is a PDF/UA document: a BigTable is tagged as a table, a
+        // TR for each row holding a TH or a TD with the text of each cell,
+        // which is what a screen reader reads a table from. A file given as
+        // the argument is left untagged, so that the benchmark stays
+        // comparable with earlier releases: every tagged cell is an object of
+        // its own, and the full data file goes from 5,108 objects and 11.8 MB
+        // to 1.25 million objects and 249 MB.
+        if pdfUA {
+            pdf.setCompliance(Compliance.PDF_UA_1)
+        }
         pdf.setTitle("Electric Vehicle Population Data")    // Required for PDF/UA !
-
-        // Used for performance testing. Results in 2000+ pages PDF.
-        let fileName = "data/Electric_Vehicle_Population_Data.csv"
-        // let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
 
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         f1.setSize(10.0)
@@ -44,7 +42,12 @@ public class Example_24 {
     }
 }   // End of Example_24.swift
 
+// The 10-page sample, or the file given as the first argument: the full
+// Electric Vehicle Population Data, 124,716 rows, makes 2,546 pages and is
+// used for performance testing.
+let fileName = (CommandLine.arguments.count > 1) ?
+        CommandLine.arguments[1] : "resources/data/Electric_Vehicle_Population_10_Pages.csv"
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = try Example_24()
+_ = try Example_24(fileName, CommandLine.arguments.count == 1)
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Example_24 => \(String(format: "%4lld", time1 - time0)) ms")

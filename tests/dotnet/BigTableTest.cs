@@ -623,5 +623,24 @@ public sealed class BigTableTest : IDisposable {
         Exception refused = Assert.Throws<ArgumentException>(() => margin.SetLocation(400f, 20f));
         Assert.Equal("The margin of the table, its x, is half the width of the page or more: the columns have no room.", refused.Message);
     }
+
+    // The pages are counted with the arithmetic of the drawing, rounded as it
+    // rounds: at the bottom margin to the last bit, the count was a page off, and
+    // the footer read "of 1" on two pages (the review of 30 October 2026, E6).
+    [Fact]
+    public void ThePagesAreCountedAsTheyAreDrawn() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<string[]> rows = new List<string[]> {
+            new string[] {"a"}, new string[] {"b"}, new string[] {"c"}, new string[] {"d"}, new string[] {"e"}
+        };
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT).SetNumberOfColumns(1)
+                .SetTableData(new string[] {"Name"}, rows).SetVerticalPadding(0f).SetBottomMargin(649.968f);
+        table.SetLocation(10f, 61.5f);
+        table.Complete();
+        List<Page> pages = table.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Contains(TestSupport.Hex("Page 2 of 2"), TestSupport.Content(pages[1]));
+    }
 }
 }

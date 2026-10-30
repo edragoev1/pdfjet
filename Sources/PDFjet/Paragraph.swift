@@ -173,7 +173,7 @@ public class Paragraph {
 
     /// Returns true if the first line of this paragraph starts with the specified token.
     public func startsWith(_ token: String) -> Bool {
-        return lines[0].getText()!.hasPrefix(token)
+        return !lines.isEmpty && lines[0].getText()!.hasPrefix(token)
     }
 
     /// Sets the text color of all lines in this paragraph as a 0xRRGGBB value.

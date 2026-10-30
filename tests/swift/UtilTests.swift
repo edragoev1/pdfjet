@@ -70,6 +70,19 @@ import Testing
         #expect(try Content.getFromStream(InputStream(data: Data(data)), 17) == data)
     }
 
+    // Read in pieces of the buffer's size, joined once: none, one, an exact
+    // number of them and one byte more.
+    @Test func getFromStreamJoinsThePiecesInOrder() throws {
+        for count in [0, 1, 16, 48, 49] {
+            let data = TestSupport.randomBytes(count, 11)
+            #expect(try Content.getFromStream(InputStream(data: Data(data)), 16) == data)
+        }
+        for count in [65536, 65537, 200000] {
+            let data = TestSupport.randomBytes(count, 11)
+            #expect(try Content.getFromStream(InputStream(data: Data(data))) == data)
+        }
+    }
+
     @Test func ofBinaryFileReadsTheBytes() throws {
         let data: [UInt8] = [0, 1, 2, 0xFF]
         #expect(try Content.ofBinaryFile(try write("data.bin", data)) == data)
@@ -154,6 +167,9 @@ import Testing
             cjkLineEnd(Array(line.unicodeScalars), next)
         }
         #expect(end("あいう", "え") == 3)
+        #expect(end("あいか", "\u{3099}") == 2)   // か moves down with its dakuten
+        #expect(end("あか\u{3099}", "う") == 3)
+        #expect(end("あか\u{3099}", "。") == 1)   // か and its dakuten move down with 。
         #expect(end("あいう", "。") == 2)  // う moves down with 。
         #expect(end("あい」", "。") == 1)  // and so does 」
         #expect(end("あい「", "う") == 2)  // 「 moves down
@@ -211,5 +227,45 @@ import Testing
             i = j
         }
         return bytes
+    }
+
+    // A short color fails the document when it is drawn, as on a page; it
+    // stopped the process in the setter of a cell (the review of 30 October 2026).
+    @Test func aShortColorIsAnArgumentError() throws {
+        #expect(Util.toPackedRGB([0.5]) == Util.shortColor)
+        #expect(Util.toRGB(Util.shortColor).isEmpty)
+        for set in [{ (cell: Cell) in cell.setTextColor([Float]([0.5])) },
+                { (cell: Cell) in cell.setBackgroundColor([0.5]) },
+                { (cell: Cell) in cell.setBorderColor([0.5, 0.5]) }] {
+            let memory = MemoryPDF()
+            let cell = Cell(TestSupport.helvetica(memory.pdf), "text")
+            _ = set(cell)
+            cell.drawOn(Page(memory.pdf, Letter.PORTRAIT), 10, 50, 100, 24)
+            #expect(throws: (any Error).self) {
+                try memory.pdf.complete()
+            }
+        }
+    }
+
+    // Int.min has no negative: the angle was negated before it was a Double.
+    @Test func anyRotationOfATextLineIsDrawn() {
+        let page = TestSupport.newPage()
+        let font = TestSupport.helvetica(page.pdf)
+        for degrees in [Int.min, Int.max, Int(Int32.min)] {
+            let line = TextLine(font, "text").setTextRotation(degrees).setUnderline(true)
+            line.setLocation(100, 100)
+            line.drawOn(page)
+            _ = line.getWidth()
+        }
+    }
+
+    // Literally: Foundation's search does not find a \r\n, a \n, a quote or a
+    // {page} before a combining mark.
+    @Test func aLineEndingBeforeACombiningMarkIsALineEnding() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        #expect(TextBlock(font, "a\r\n\u{0301}b").getTextLines().count == 2)
+        #expect(TextBlock(font, "a\n\u{0301}b").getTextLines().count == 2)
+        #expect(try Util.split("\"a\"\"\u{0301}b\",c", ",") == ["a\"\u{0301}b", "c"])
     }
 }

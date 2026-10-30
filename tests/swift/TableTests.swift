@@ -24,6 +24,33 @@ import Testing
     // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
     // the page with no error, and what did not fit was lost (issue #4, 15 October
     // 2026): it fails, and the same text in a text cell goes on over the pages.
+    private func completeThreeRows(_ y: Float, _ bodySize: Float) throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let data = [[Cell(font, "header")], [Cell(font, "x").setFontSize(bodySize)], [Cell(font, "footer")]]
+        let table = Table().setTableData(data, 1).setNumberOfFooterRows(1)
+        table.setLocation(50, y)
+        table.setBottomMargin(20)
+        var pages = [Page]()
+        table.drawOn(memory.pdf, &pages, Letter.PORTRAIT)
+        memory.pdf.addPages(pages)
+        try memory.pdf.complete()
+    }
+
+    // Header and footer rows that run off the page were lost with no error: a
+    // page total was drawn at 781.9 to 799.7 of 792 (the review of 30 October
+    // 2026, E3). They fail as a row of the body does, and rows that only reach
+    // into the bottom margin are drawn, as those of the body are.
+    @Test func headerAndFooterRowsThatRunOffThePageFail() throws {
+        var error = #expect(throws: PDFjetError.self) { try completeThreeRows(780, 12) }
+        var message = TestSupport.message(error)
+        #expect(message.contains("The header rows of the table"), "got \(message)")
+        error = #expect(throws: PDFjetError.self) { try completeThreeRows(50, 610) }
+        message = TestSupport.message(error)
+        #expect(message.contains("The footer rows of the table"), "got \(message)")
+        try completeThreeRows(30, 610)
+    }
+
     @Test func aCellTallerThanAPageThatCannotBeSplitFails() throws {
         var words = ""
         for i in 0..<200 {
@@ -868,6 +895,27 @@ import Testing
         #expect(carried == 164300 + 1400)
     }
 
+    // A sum reads each cell once, its whole text: the lines of a number wrapped
+    // in a narrow column were read as numbers, and 1,234,567.89 and
+    // 1,000,000.00 came to 686.89; the lines "12" and "30" of "boxes 12" and
+    // "pallets 30" came to 42 (the review of 30 October 2026, E2).
+    @Test func aSumReadsTheWholeTextOfACell() {
+        for c in [["1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89"],
+                  ["boxes 12", "pallets 30", "0.00", "42.00"]] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            let data = ["Sum", c[0], c[1], ""].map { [Cell(font, $0)] }
+            let table = Table().setTableData(data, 1).setNumberOfFooterRows(1).setRunningSum(3, 0, 2)
+            table.setColumnWidth(0, 30)
+            table.setLocation(50, 50)
+            let page = Page(pdf, Letter.PORTRAIT)
+            table.drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(content.contains("<" + TestSupport.hex(c[2]) + ">"), "\(content)")
+            #expect(!content.contains("<" + TestSupport.hex(c[3]) + ">"), "\(content)")
+        }
+    }
+
     @Test func aSumReadsTheNumbersAsRightAlignNumbersDoes() {
         #expect(Table.numberOf("1,234.50", 2) == 123450)
         #expect(Table.numberOf("(1,234.50)", 2) == -123450)
@@ -1327,5 +1375,53 @@ import Testing
             moved += 1
         }
         #expect(moved > 0 && moved < 31, "the rows tried are of every height: \(moved)")
+    }
+
+    // A row or column that is not there is the port's error, not a panic: a
+    // SetVisibleColumns past the last column left rows of no cells, which panicked
+    // when they were drawn (the review of 30 October 2026, E7 and G9).
+    @Test func aWrongIndexFailsTheDocument() throws {
+        let misuses: [(Table, Font) -> Void] = [
+            { table, _ in table.setVisibleColumns(5) },
+            { table, _ in table.setVisibleColumns(-1) },
+            { table, _ in table.setVisibleColumns() },
+            { table, _ in table.setTextAlignmentInColumn(-1, Alignment.LEFT) },
+            { table, _ in table.setTextColorInColumn(-1, 0) },
+            { table, font in table.setFontInColumn(-1, font) },
+            { table, _ in table.setColumnWidth(-1, 10) },
+            { table, _ in table.setTextColorInRow(-1, 0) },
+            { table, font in table.setFontInRow(-1, font) },
+            { table, _ in table.removeLineBetweenRows(-1, 0) },
+            { table, _ in table.removeLineBetweenRows(0, 5) },
+            { table, _ in table.getCellAt(5, 0).setText("x") },
+            { table, _ in table.getCellAt(-5, 0).setText("x") },
+            { table, _ in table.getCellAt(0, 5).setText("x") },
+            { table, _ in _ = table.getRow(5) },
+            { table, _ in _ = table.getRow(-1) },
+            { table, _ in _ = table.getColumn(-1) },
+            { table, _ in _ = table.getColumnWidth(5) },
+        ]
+        #expect(Table().getCellAt(0, 0).getText() == nil)
+        for misuse in misuses {
+            let memory = MemoryPDF()
+            let font = TestSupport.helvetica(memory.pdf)
+            let table = Table().setTableData([[Cell(font, "a")], [Cell(font, "b")]], 1)
+            misuse(table, font)
+            table.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            let error = #expect(throws: PDFjetError.self) { try memory.pdf.complete() }
+            let message = TestSupport.message(error)
+            #expect(message.contains("The table has no"), "got \(message)")
+        }
+    }
+
+    // The width and the percentages take effect whichever comes first, the data
+    // or they: given before the data, they were lost (the review of 30 October
+    // 2026, E8).
+    @Test func aWidthSetBeforeTheDataIsKept() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let table = Table().setColumnWidthsInPercent(25, 75).setWidth(400)
+                .setTableData([[Cell(font, "a"), Cell(font, "b")]], 0)
+        #expect(abs(table.getColumnWidth(0) - 100) < 1e-3)
+        #expect(abs(table.getColumnWidth(1) - 300) < 1e-3)
     }
 }

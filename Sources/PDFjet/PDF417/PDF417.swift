@@ -211,6 +211,7 @@ public class PDF417 : Drawable {
             }
             page.saveGraphicsState()
             page.setPenColor(color)
+            page.setDefaultStrokeDashPattern()      // Not the caller's, which broke the bars
         }
         let xy = drawPdf417(page)
         if let page = page {

@@ -31,6 +31,11 @@ public sealed class XMLNode {
     private KeyValuePair<string, string>[] attributes = NoAttributes;
     private List<XMLNode> children;
     private StringBuilder text;
+    // Where the text after a child starts, for an element with both: the
+    // number of children before it and its offset in the text, one pair after
+    // the other; null for the many elements without, as an SVG's text has.
+    private int[] marks;
+    private int markCount;
 
     private static readonly KeyValuePair<string, string>[] NoAttributes = new KeyValuePair<string, string>[0];
 
@@ -40,6 +45,12 @@ public sealed class XMLNode {
         this.name = name;
         this.localName = localName;
         this.ns = ns;
+    }
+
+    // The name without its prefix, the part after its colon.
+    internal static string LocalNameOf(string name) {
+        int colon = name.IndexOf(':');
+        return (colon == -1) ? name : name.Substring(colon + 1);
     }
 
     internal void SetAttributes(KeyValuePair<string, string>[] attributes) {
@@ -57,7 +68,40 @@ public sealed class XMLNode {
         if (text == null) {
             text = new StringBuilder();
         }
+        if (children != null) {
+            if (marks == null) {
+                marks = new int[4];
+            } else if (markCount + 2 > marks.Length) {
+                Array.Resize(ref marks, marks.Length*2);
+            }
+            marks[markCount++] = children.Count;
+            marks[markCount++] = text.Length;
+        }
         text.Append(characters);
+    }
+
+    // Returns the text and the elements in this one in the order of the
+    // document: a string for each piece of text, an XMLNode for each element.
+    internal List<object> GetContent() {
+        List<object> content = new List<object>();
+        int childCount = (children == null) ? 0 : children.Count;
+        int textLength = (text == null) ? 0 : text.Length;
+        int child = 0;
+        int from = 0;
+        for (int i = 0; i <= markCount; i += 2) {
+            // The text up to the next mark, or to the end, then the children
+            // before the text after the mark.
+            int nextChild = (i < markCount) ? marks[i] : childCount;
+            int to = (i < markCount) ? marks[i + 1] : textLength;
+            if (to > from) {
+                content.Add(text.ToString(from, to - from));
+                from = to;
+            }
+            while (child < nextChild) {
+                content.Add(children[child++]);
+            }
+        }
+        return content;
     }
 
     /// <summary>

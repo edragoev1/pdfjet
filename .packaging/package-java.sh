@@ -1,8 +1,10 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-ForJava-Pro-vX.Y.Z.zip, a self-contained
 # package for Java clients: PDFjet.jar, the Javadoc reference, the examples
-# with the PDFs they create, the files they read (data, the fonts,
-# images, PngSuite), and scripts that build and run the examples against PDFjet.jar.
+# with the PDFs they create, the files they read (resources/data, images,
+# PngSuite), the fonts PDFjet carries (resources/fonts, which PDFjet.jar reads
+# from there: the jar of the package is small, that of Maven Central carries them),
+# and scripts that build and run the examples against PDFjet.jar.
 # The library sources and the font tools in util are not in the package.
 #
 # The README, the commercial LICENSE and the build and run scripts of the
@@ -31,10 +33,22 @@ if [ -z "$VERSION" ]; then
     echo "Could not read the version from com/pdfjet/PDF.java"
     exit 1
 fi
-NAME="PDFjet-ForJava-Pro-$VERSION"
+# A package is made from HEAD, so HEAD must be the tag of the version: a run
+# on a later commit deleted the zip of the release and made another under its
+# name (review of 30 October 2026). PDFJET_DRAFT=1 makes one to look at before
+# the release instead, -draft in its name, with its folder inside, and leaves
+# the zips of the release as they are.
+DRAFT=""
+if [ -n "${PDFJET_DRAFT:-}" ]; then
+    DRAFT="-draft"
+elif [ "$(git rev-parse HEAD)" != "$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}")" ]; then
+    echo "HEAD is $(git describe --tags --always HEAD), not the tag $VERSION: check out the tag, or set PDFJET_DRAFT=1."
+    exit 1
+fi
+NAME="PDFjet-ForJava-Pro-$VERSION$DRAFT"
 STAGE="build/package-java/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
-CORE_NAME="PDFjet-ForJava-Core-$VERSION"
+CORE_NAME="PDFjet-ForJava-Core-$VERSION$DRAFT"
 REPO=$PWD
 PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
 if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
@@ -42,8 +56,8 @@ if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     exit 1
 fi
 # The version is the same in the four ports, their tests and Example_37, and
-# CHANGELOG.md gives it its date; PDFJET_DRAFT=1 asks for no date, for a
-# package made to look at before the release (review of 17 October 2026).
+# CHANGELOG.md gives it its date; PDFJET_DRAFT=1 asks for no date (review of
+# 17 October 2026).
 if ! util/check-version.sh ${PDFJET_DRAFT:+--draft} > /dev/null; then
     exit 1
 fi
@@ -94,37 +108,27 @@ mkdir -p "$STAGE" .commercial-packages
 
 # Through a file, not a pipe, so that a failing git archive stops the script.
 TAR=$PWD/$STAGE.tar
+# resources is as it is in the repository: the fonts PDFjet carries, each
+# family with its license, and the data files the examples read, with the
+# README that says where they come from.
 git archive -o "$TAR" HEAD \
     .packaging/java .packaging/java-pro LICENSE \
-    com examples images PngSuite \
+    com examples resources/images tests/data/PngSuite resources/fonts resources/data \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
 tar -x -C "$STAGE" -f "$TAR"
-
-# fonts and data are the repositories pdfjet-fonts and pdfjet-data, which
-# get-fonts-and-data.sh fetches and git archive does not have: each is
-# archived at the commit that fonts-and-data.txt of the last commit pins,
-# whatever commit the folder is at, and its README, about the repository, is
-# left out.
-bash get-fonts-and-data.sh
-for dir in fonts data; do
-    commit=$(git show HEAD:fonts-and-data.txt | sed -n "s/^$dir [^ ]* \([0-9a-f]*\).*/\1/p")
-    if [ -z "$commit" ] || ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
-        echo "$dir does not have the commit ${commit:-that} fonts-and-data.txt of the last commit pins: run get-fonts-and-data.sh"
-        exit 1
-    fi
-    git -C "$dir" archive -o "$TAR" --prefix="$dir/" "$commit"
-    tar -x -C "$STAGE" -f "$TAR"
-    rm -f "$STAGE/$dir/README.md"
-done
 rm "$TAR"
 
-# The C# example projects and the go.mod file of the Go port are not needed.
+# The C# example projects and the Go and Swift files of resources and images
+# are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-rm -f "$STAGE/images/go.mod"
-
-# The fonts of the package are the fonts directory as it is: the .ttf files,
-# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 07, 48
-# and 50 read.
+rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
+# Every .go and .swift file of resources/fonts: fonts.go and the packages
+# world and cjk, which embed the fonts for Go, and the sources of the Swift
+# targets PDFjetFonts and PDFjetFontsWorld. The fonts of the other scripts
+# than the European ones stay in resources/fonts/world, where PDFjet.jar
+# reads them.
+find "$STAGE/resources/fonts" \( -name '*.go' -o -name '*.swift' \) -delete
+find "$STAGE/resources/fonts" -type d -empty -delete
 
 cd "$STAGE"
 
@@ -202,7 +206,8 @@ zip_sorted "$CORE_ZIP" "$CORE_NAME"
 # repository, compiled into PDFjet.jar with the library (the owner, 12 October
 # 2026: one PDFjet.jar), for Java 8, with "PDFjet Pro" in its manifest so that
 # it is told from the jar of PDFjet Core; the API reference of both; its
-# examples and the certificate of the signing one; and the POM of the jar,
+# examples, the certificate of the signing one and the test PKI of the
+# long-term signature one; and the POM of the jar,
 # com.pdfjet:pdfjet-pro, to install it in a Maven repository.
 cd "$NAME"
 PRO_TAR=$PWD/../pro.tar
@@ -210,7 +215,11 @@ mkdir pro-src
 git -C "$REPO" archive -o "$PRO_TAR" HEAD com
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD com/pdfjet/sign com/pdfjet/invoice \
-    examples/package/java tests/data/rsa-signer.p12
+    com/pdfjet/hyphenation src/hyphenation/patterns \
+    examples/package/java tests/data/rsa-signer.p12 \
+    tests/ltv-server.py tests/data/ltv-signer.p12 tests/data/ltv-root.pem tests/data/ltv-root.key \
+    tests/data/ltv-root-index.txt tests/data/ltv-ca.pem tests/data/ltv-ca.key tests/data/ltv-ca-index.txt \
+    tests/data/ltv-tsa.pem tests/data/ltv-tsa.key tests/data/ltv-ocsp.pem tests/data/ltv-ocsp.key
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
 javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
@@ -224,7 +233,14 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     pro-src/com/pdfjet/encryption/*.java \
     pro-src/com/pdfjet/sign/*.java \
     pro-src/com/pdfjet/invoice/*.java \
+    pro-src/com/pdfjet/hyphenation/*.java \
     -d out/library
+# The hyphenation patterns, resources of com.pdfjet.hyphenation, with their
+# licenses; and those beside the jar too, as their MIT licenses ask that the
+# notice go with every copy
+mkdir -p out/library/com/pdfjet/hyphenation/patterns
+cp pro-src/src/hyphenation/patterns/*.txt out/library/com/pdfjet/hyphenation/patterns/
+cp pro-src/src/hyphenation/patterns/LICENSES.txt HYPHENATION-PATTERNS-LICENSES.txt
 stamp out/library
 printf 'Implementation-Title: PDFjet Pro\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
     "${VERSION#v}" > pro-manifest.txt
@@ -248,10 +264,24 @@ javadoc -quiet -notimestamp -public -doctitle "PDFjet Pro for Java" -windowtitle
     pro-src/com/pdfjet/datamatrix/*.java \
     pro-src/com/pdfjet/sign/*.java \
     pro-src/com/pdfjet/invoice/*.java \
+    pro-src/com/pdfjet/hyphenation/*.java \
     -d docs/java
 mkdir -p examples/pro
 cp pro-src/examples/package/java/*.java examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
+# The test PKI of the long-term signature example, SignLongTerm, which no one
+# trusts, and ltv-server.py, its OCSP responder, CRLs, CA certificates and time
+# stamp authority on 127.0.0.1:19180, which build-pro.sh starts
+mkdir -p examples/pro/ltv
+cp pro-src/tests/ltv-server.py pro-src/tests/data/ltv-* examples/pro/ltv/
+# The packages are under PDFjet Pro's commercial license, so the server's
+# copy carries the header of the packaged examples, not the repository's.
+sed -i -e '/^# Licensed under the GNU Affero General Public License/,/^# SPDX-License-Identifier: AGPL-3.0-only/c\
+# A test server of PDFjet Pro, for the packages of PDFjet.' examples/pro/ltv/ltv-server.py
+if grep -q AGPL examples/pro/ltv/ltv-server.py; then
+    echo "examples/pro/ltv/ltv-server.py still names the AGPL." >&2
+    exit 1
+fi
 rm -rf pro-src out
 mv ../java-pro/build-pro.sh ../java-pro/build-pro.cmd .
 # The POM and the README of PDFjet Pro, with its version: the jar installed
@@ -263,7 +293,8 @@ rm -rf ../java-pro
 # Creates the PDFs of PDFjet Pro with the package's own script.
 ./build-pro.sh
 rm -rf out-pro
-for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode; do
+for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText \
+        Pro_SignLongTerm_B-LT Pro_SignLongTerm_B-LTA Pro_SignLongTerm_B-LTA-renewed; do
     if ! tail -c 32 "$pdf.pdf" 2>/dev/null | grep -q '%%EOF'; then
         echo "$pdf.pdf was not created or is incomplete"
         exit 1
@@ -281,8 +312,12 @@ rm -rf build/package-java
 # GitHub sends to the latest release's file of that name, so that the link
 # never changes; the version is in the name of the folder inside.
 LATEST_ZIP="$(dirname "$CORE_ZIP")/PDFjet-ForJava-Core.zip"
-cp "$CORE_ZIP" "$LATEST_ZIP"
+if [ -z "$DRAFT" ]; then
+    cp "$CORE_ZIP" "$LATEST_ZIP"
+fi
 
 echo "Created $ZIP"
 echo "Created $CORE_ZIP"
-echo "Created $LATEST_ZIP, the same, for the GitHub release"
+if [ -z "$DRAFT" ]; then
+    echo "Created $LATEST_ZIP, the same, for the GitHub release"
+fi

@@ -826,7 +826,8 @@ public class Markdown {
         // does: a short table went to the next page alone
         float rowHeight = 2f * regular.GetBodyHeight(Size());
         if (y + height > bottom) {
-            Ensure(2f * rowHeight);
+            // A header that wraps tall starts the page as well: it ran off this one
+            Ensure(Math.Max(2f * rowHeight, table.wrappedHeaderHeight + rowHeight));
         }
         table.SetLocation(x, marginTop);
         table.SetFirstPageTopMargin(y);

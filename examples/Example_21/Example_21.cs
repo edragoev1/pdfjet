@@ -42,7 +42,7 @@ public class Example_21 {
 
         List<List<Cell>> tableData = new List<List<Cell>>();
         StreamReader reader = new StreamReader(
-                new FileStream("data/winter-2009.txt", FileMode.Open, FileAccess.Read));
+                new FileStream("resources/data/winter-2009.txt", FileMode.Open, FileAccess.Read));
         String line;
         while ((line = reader.ReadLine()) != null) {
             List<Cell> row = new List<Cell>();
@@ -150,7 +150,7 @@ public class Example_21 {
     }
 
     private void DrawSpans(PDF pdf) {
-        font = new Font(pdf, IBMPlexMono.Regular);
+        font = new Font(pdf, CascadiaMono.Regular);
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
 

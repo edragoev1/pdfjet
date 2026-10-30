@@ -38,7 +38,7 @@ public class Example_02 {
         TextLine(f0, "This block is Simplified Chinese: 简体中文").setFallbackFont(f1).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         var textBlock = TextBlock(
-                f1, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
+                f1, try Content.ofTextFile("resources/data/languages/simplified-chinese.txt"))
         textBlock.setLanguage("zh-Hans")
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)
@@ -49,7 +49,7 @@ public class Example_02 {
         TextLine(f0, "This block is Traditional Chinese: 繁體中文").setFallbackFont(f2).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
-                f2, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
+                f2, try Content.ofTextFile("resources/data/languages/traditional-chinese.txt"))
         textBlock.setLanguage("zh-Hant")
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)

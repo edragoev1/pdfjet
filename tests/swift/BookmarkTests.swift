@@ -106,7 +106,7 @@ import Testing
     // A tagged document with headings and no bookmarks of its own has the
     // bookmarks of its headings, each under the heading of a higher level
     // before it, and each at the top of its heading on its page, as PAC asks.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aTaggedDocumentHasTheBookmarksOfItsHeadings() throws {
         let memory = try headingsPDF(true, [("H1", "Intro"), ("H2", "What  it is"), ("H3", "In short"),
                                             ("H2", "Why"), ("H1", "Use")])
@@ -139,7 +139,7 @@ import Testing
 
     // A document that is not tagged has no headings, and one with bookmarks
     // of its own keeps them.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func ofHeadingsOnlyInATaggedDocumentWithoutBookmarks() throws {
         let untagged = try headingsPDF(false, [("H1", "Intro")])
         try untagged.pdf.complete()

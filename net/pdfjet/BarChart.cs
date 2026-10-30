@@ -11,8 +11,11 @@ using System.Text;
 namespace PDFjet.NET {
 /// <summary>
 /// Bar chart renderer for PDF pages: one slot per category, the bars of the
-/// series grouped inside each slot. See Example_27, of horizontal and
-/// vertical bars.
+/// series grouped inside each slot. A value of a line series outside a range
+/// that is set cuts its line at the edge of the plot, and the chart says how
+/// many are: "2 values outside the range", small, under the plot at its right
+/// end, and in its description, in that alone when the plot would not be left
+/// room to draw. See Example_27, of horizontal and vertical bars.
 /// </summary>
 public class BarChart : IDrawable {
     /// <summary>
@@ -49,22 +52,24 @@ public class BarChart : IDrawable {
     private const int NO_COLOR = -1;
 
     // The look of the simple charts: ink for the title and the values, a
-    // muted gray for the rest of the text, light grid lines, and a palette
-    // whose colors differ in lightness, so that they stay apart in grayscale
-    // and for a reader who does not tell red from green.
+    // muted gray for the rest of the text, light grid lines, and the colors
+    // of the series from the Tableau 10 palette, which D3 draws its charts
+    // with: ten colors chosen to stay apart from one another.
     private const int INK = SimpleBarChart.INK;
     private const int MUTED = SimpleBarChart.MUTED;
     private const int GRID = 0xE1E4E8;
     private const int BASELINE = 0x8C96A3;
     internal static readonly int[] PALETTE = {
-        0x1F3A5F,   // navy
-        0x6F95C2,   // steel blue
-        0xD08C3C,   // amber
-        0x76987C,   // sage
-        0xA7AFB8,   // gray
-        0x9C5B5B,   // brick
-        0x4F7A8C,   // slate
-        0xC9B458    // ochre
+        0x4E79A7,   // blue
+        0xF28E2C,   // orange
+        0xE15759,   // red
+        0x76B7B2,   // teal
+        0x59A14F,   // green
+        0xEDC949,   // yellow
+        0xAF7AA1,   // purple
+        0xFF9DA7,   // pink
+        0x9C755F,   // brown
+        0xBAB0AB    // gray
     };
 
     private float x1;
@@ -138,7 +143,9 @@ public class BarChart : IDrawable {
     /// Sets the alternate description of the chart, which a screen reader reads
     /// in a PDF/UA document, where the chart is a figure. The default is the
     /// title and the subtitle, or "Bar chart" without them, and the values of
-    /// each series by category. Describe what the chart shows.
+    /// each series by category. Describe what the chart shows. The number of
+    /// values of the line series outside a range that is set follows it, as the
+    /// chart prints it.
     /// </summary>
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this BarChart object.</returns>
@@ -221,7 +228,9 @@ public class BarChart : IDrawable {
     /// Adds a series drawn as a line over the bars, in ink, a dot at each
     /// category: a target, the average, or last year. It shares the value
     /// axis with the bars, is not stacked, and is in the legend and the
-    /// description. A value that is NaN or infinite leaves a gap in the line.
+    /// description. A value that is NaN or infinite leaves a gap in the line, and
+    /// the chart says how many values are outside a range set with
+    /// SetValueAxisRange.
     /// </summary>
     /// <param name="name">the series name, shown in the legend; empty for none.</param>
     /// <param name="values">one value per category.</param>
@@ -399,7 +408,10 @@ public class BarChart : IDrawable {
     /// Sets the range of the value axis, with grid lines on a round step, as
     /// SetYAxisRange does in SimpleLineChart and SimpleScatterChart. Without it
     /// the range is that of the data, rounded to steps, and always includes 0.
-    /// A range whose end is not past its start is not set.
+    /// A range whose end is not past its start is not set. A value of a line
+    /// series outside the range is drawn past the plot, which clips it, and the
+    /// chart says how many are, under the plot, which is that much shorter, and
+    /// in its description.
     /// </summary>
     /// <param name="min">the value at the start of the axis.</param>
     /// <param name="max">the value at the end of the axis.</param>
@@ -422,6 +434,9 @@ public class BarChart : IDrawable {
         int n = NumberOfCategories();
         if (page == null || n == 0 || f1 == null || f2 == null) {  // Measured, or nothing to draw
             return new float[] {x1 + w, y1 + h};
+        }
+        if (maxFractionDigits > ChartScale.MAX_DIGITS) {
+            page.pdf.Fail(new ArgumentException(ChartScale.TOO_MANY_DIGITS));
         }
 
         float vMin;
@@ -595,6 +610,20 @@ public class BarChart : IDrawable {
         float y5 = y1 + topMargin;
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        String note = OutsideNote();
+        float small = 0.8f * f2.GetSize();
+        float noteRow = 0f;
+        if (note.Length > 0) {
+            float above = y8 - 1.4f * small;
+            if (above > y5) {
+                noteRow = 1.4f * small;
+                y8 = above;
+            } else {
+                note = "";
+            }
+        }
         // No room for the plot, or an axis whose span is past the largest
         // float, as a set range of -3e38 to 3e38, whose steps are infinite
         if (x6 <= x5 || y8 <= y5 || !ChartScale.IsValue(step)) {
@@ -876,7 +905,11 @@ public class BarChart : IDrawable {
         DrawText(page, f2, yTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.StringWidth(yTitle)) / 2f, MUTED);
         page.SetTextRotation(0);
         String xTitle = ChartScale.Shorten(f2, f2.GetSize(), xAxisTitle, x6 - x5);
-        DrawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.StringWidth(xTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
+        DrawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.StringWidth(xTitle)) / 2f,
+                y2 - bodyHeight / 2f - noteRow, MUTED);
+        if (note.Length > 0) {
+            ChartScale.DrawOutsideNote(page, f2, small, note, x6, x1, x2, y2 - bodyHeight / 2f);
+        }
 
         page.RestoreGraphicsState();
         page.SetFigureBoundingBox(x1, y1, w, h);
@@ -885,13 +918,32 @@ public class BarChart : IDrawable {
         return new float[] {x1 + w, y1 + h};
     }
 
+    // What the chart says of the values of its line series outside a range
+    // that is set, or "" when there are none.
+    private String OutsideNote() {
+        int count = 0;
+        if (rangeSet) {
+            ChartScale.Axis axis = new ChartScale.Axis(min, max, 0);
+            int n = NumberOfCategories();
+            foreach (Series s in lineSeries) {
+                for (int i = 0; i < Math.Min(s.values.Length, n); i++) {
+                    if (ChartScale.IsValue(s.values[i]) && !ChartScale.OnAxis(s.values[i], axis)) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return ChartScale.OutsideNote(count, "value");
+    }
+
     // The alternate description: the one set, or the title, the subtitle and,
     // for each series, its name and its values by category, with the digits
     // of the labels, or, without SetFractionDigits, with two significant
-    // digits at least.
-    private String AltDescription(int digits) {
+    // digits at least; and the values of the line series outside a range that
+    // is set.
+    internal String AltDescription(int digits) {
         if (!String.IsNullOrEmpty(altDescription)) {
-            return altDescription;
+            return ChartScale.WithNote(altDescription, OutsideNote());
         }
         StringBuilder sb = new StringBuilder(ChartScale.Join(title, subtitle));
         if (sb.Length == 0) {
@@ -924,6 +976,10 @@ public class BarChart : IDrawable {
             }
             sb.Append(values);
             separator = "; ";
+        }
+        String note = OutsideNote();
+        if (note.Length > 0) {
+            sb.Append("; ").Append(note);
         }
         return sb.Append('.').ToString();
     }
@@ -1011,15 +1067,24 @@ public class BarChart : IDrawable {
         page.DrawString(font, font.GetSize(), text, x, y, Util.ToRGB(color), null);
     }
 
+    // The label on a color that neither white nor ink contrasts with as WCAG
+    // asks, 4.5:1: the red, the purple and the brown of the palette.
+    internal const int DARK = 0x111111;
+
     /// <summary>
     /// Returns the color of a label on a bar of the color: white or ink,
-    /// whichever contrasts more with it, by the WCAG contrast ratio.
+    /// whichever contrasts more with it, by the WCAG contrast ratio, or a
+    /// near black when that is less than 4.5:1.
     /// </summary>
     internal static int LabelColorOn(int color) {
         // White contrasts more when (1 + 0.05) / (L + 0.05) is the larger of
         // the two ratios, (L + 0.05) / (ink + 0.05) the other
         double l = Luminance(color) + 0.05;
-        return l * l <= 1.05 * (Luminance(INK) + 0.05) ? Color.white : INK;
+        double ink = Luminance(INK) + 0.05;
+        if (l * l <= 1.05 * ink) {
+            return (1.05 / l >= 4.5) ? Color.white : DARK;
+        }
+        return (l / ink >= 4.5) ? INK : DARK;
     }
 
     /// <summary>Returns the relative luminance of the color, as WCAG defines it.</summary>

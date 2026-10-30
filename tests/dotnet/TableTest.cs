@@ -113,6 +113,37 @@ public sealed class TableTest : IDisposable {
     // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
     // the page with no error, and what did not fit was lost (issue #4, 15 October
     // 2026): it fails, and the same text in a text cell goes on over the pages.
+    private static void DrawThreeRows(PDF pdf, float y, float bodySize) {
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "header")},
+            new List<Cell> {new Cell(font, "x").SetFontSize(bodySize)},
+            new List<Cell> {new Cell(font, "footer")}
+        };
+        Table table = new Table().SetTableData(data, 1).SetNumberOfFooterRows(1);
+        table.SetLocation(50f, y);
+        table.SetBottomMargin(20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        pdf.AddPages(pages);
+    }
+
+    // Header and footer rows that run off the page were lost with no error: a
+    // page total was drawn at 781.9 to 799.7 of 792 (the review of 30 October
+    // 2026, E3). They fail as a row of the body does, and rows that only reach
+    // into the bottom margin are drawn, as those of the body are.
+    [Fact]
+    public void HeaderAndFooterRowsThatRunOffThePageFail() {
+        InvalidOperationException e = Assert.Throws<InvalidOperationException>(
+                () => DrawThreeRows(TestSupport.NewPDF(), 780f, 12f));
+        Assert.Contains("The header rows of the table", e.Message);
+        e = Assert.Throws<InvalidOperationException>(() => DrawThreeRows(TestSupport.NewPDF(), 50f, 610f));
+        Assert.Contains("The footer rows of the table", e.Message);
+        PDF pdf = TestSupport.NewPDF();
+        DrawThreeRows(pdf, 30f, 610f);
+        pdf.Complete();
+    }
+
     [Fact]
     public void ACellTallerThanAPageThatCannotBeSplitFails() {
         StringBuilder words = new StringBuilder();
@@ -923,6 +954,30 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(164300 + 1400, carried);
     }
 
+    // A sum reads each cell once, its whole text: the lines of a number wrapped
+    // in a narrow column were read as numbers, and 1,234,567.89 and
+    // 1,000,000.00 came to 686.89; the lines "12" and "30" of "boxes 12" and
+    // "pallets 30" came to 42 (the review of 30 October 2026, E2).
+    [Theory]
+    [InlineData("1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89")]
+    [InlineData("boxes 12", "pallets 30", "0.00", "42.00")]
+    public void ASumReadsTheWholeTextOfACell(String first, String second, String want, String not) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>>();
+        foreach (String text in new String[] {"Sum", first, second, ""}) {
+            data.Add(new List<Cell> {new Cell(font, text)});
+        }
+        Table table = new Table().SetTableData(data, 1).SetNumberOfFooterRows(1).SetRunningSum(3, 0, 2);
+        table.SetColumnWidth(0, 30f);
+        table.SetLocation(50f, 50f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        table.DrawOn(page);
+        String content = TestSupport.Content(page);
+        Assert.Contains("<" + TestSupport.Hex(want) + ">", content);
+        Assert.DoesNotContain("<" + TestSupport.Hex(not) + ">", content);
+    }
+
     [Fact]
     public void ASumReadsTheNumbersAsRightAlignNumbersDoes() {
         Assert.Equal(123450L, Table.NumberOf("1,234.50", 2));
@@ -1446,6 +1501,38 @@ public sealed class TableTest : IDisposable {
         } catch (InvalidOperationException) {
             return false;
         }
+    }
+
+    // A row or column that is not there is the port's error, not a panic: a
+    // SetVisibleColumns past the last column left rows of no cells, which panicked
+    // when they were drawn (the review of 30 October 2026, E7 and G9).
+    [Fact]
+    public void AWrongIndexIsAnError() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "a")}, new List<Cell> {new Cell(font, "b")}
+        };
+        Table table = new Table().SetTableData(data, 1);
+        Assert.Throws<ArgumentException>(() => table.SetVisibleColumns(5));
+        Assert.Throws<ArgumentException>(() => table.SetVisibleColumns(-1));
+        Assert.Throws<ArgumentException>(() => table.SetVisibleColumns());
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.SetColumnWidth(-1, 10f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.SetTextColorInRow(-1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.GetRow(5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => table.GetCellAt(0, 5));
+    }
+
+    // The width and the percentages take effect whichever comes first, the data
+    // or they: given before the data, they were lost (the review of 30 October
+    // 2026, E8).
+    [Fact]
+    public void AWidthSetBeforeTheDataIsKept() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        List<List<Cell>> data = new List<List<Cell>> {new List<Cell> {new Cell(font, "a"), new Cell(font, "b")}};
+        Table table = new Table().SetColumnWidthsInPercent(25f, 75f).SetWidth(400f).SetTableData(data, 0);
+        Assert.Equal(100f, table.GetColumnWidth(0), 3);
+        Assert.Equal(300f, table.GetColumnWidth(1), 3);
     }
 }
 }
