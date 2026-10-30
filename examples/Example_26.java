@@ -16,13 +16,13 @@ import com.pdfjet.fonts.*;
  * This example draws a SimpleScatterChart of the life expectancy and the
  * children per woman of 217 countries and economies, from the World Bank's
  * data of 2023: a series for each of the World Bank's seven regions, in its
- * color and shape, seven of the countries named, each point a link to its row
+ * color and shape, each point a link to its row
  * of a table on pdfjet.com, with its life expectancy and children per woman,
- * described by its figures, and the trend line, with a table of the named ones
+ * described by its figures, and the trend line, with a table of seven of them
  * under the chart.
  */
 public class Example_26 {
-    // The countries named on the chart, by their codes
+    // Seven of the countries, by their codes
     static final List<String> NAMED = Arrays.asList("BRA", "CAN", "IND", "JPN", "NER", "NGA", "USA");
     // The World Bank's regions, a series each, in the order of its list
     static final String[] REGIONS = {
@@ -59,8 +59,8 @@ public class Example_26 {
         List<Paragraph> intro = new ArrayList<Paragraph>();
         intro.add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
                 + total + " countries and economies of the World Bank's data of 2023, in a color and "
-                + "a shape for each of its seven regions, seven of them named, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "
-                + "through them, with the named ones in the table "
+                + "a shape for each of its seven regions, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "
+                + "through them, with seven of them in the table "
                 + "under the chart.").setFontSize(10f)));
         TextFrame frame = new TextFrame(intro).setLocation(50f, 84f).setWidth(512f);
         frame.drawOn(page);
@@ -84,14 +84,10 @@ public class Example_26 {
                 float life = Float.parseFloat(field[2]);
                 float children = Float.parseFloat(field[3]);
                 String uri = "https://pdfjet.com/countries.html#" + field[5];
-                if (NAMED.contains(field[1])) {
-                    chart.add(field[0], children, life, uri);   // Its shape filled, named, a link
-                } else {
-                    // The outline of its shape, a link described by its figures
-                    String name = field[0] + ": " + decimals(field[2], 1) + " years, "
-                            + decimals(field[3], 2) + " children per woman";
-                    chart.addLinkedDot(name, children, life, uri);
-                }
+                // The outline of its shape, a link described by its figures
+                String name = field[0] + ": " + decimals(field[2], 1) + " years, "
+                        + decimals(field[3], 2) + " children per woman";
+                chart.addLinkedDot(name, children, life, uri);
             }
         }
         for (String line : lines.subList(1, lines.size())) {
@@ -105,8 +101,8 @@ public class Example_26 {
         chart.setLocation(50f, y).setSize(512f, 340f);
         y = chart.drawOn(page)[1] + 30f;
 
-        // The countries named on the chart
-        new TextLine(f1, "The countries named on the chart").setStructureType(StructElem.H2)
+        // Seven of the countries
+        new TextLine(f1, "Seven of the countries").setStructureType(StructElem.H2)
                 .setFontSize(14f).setLocation(50f, y).drawOn(page);
         Table table = new Table();
         table.setTableData(data, 1);

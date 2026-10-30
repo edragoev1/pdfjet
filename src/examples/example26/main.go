@@ -22,7 +22,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// The countries named on the chart, by their codes
+// Seven of the countries, by their codes
 var named = map[string]bool{"BRA": true, "CAN": true, "IND": true, "JPN": true, "NER": true, "NGA": true, "USA": true}
 
 // The World Bank's regions, a series each, in the order of its list
@@ -39,9 +39,9 @@ var regions = []string{
 // Example26 draws a SimpleScatterChart of the life expectancy and the
 // children per woman of 217 countries and economies, from the World Bank's
 // data of 2023: a series for each of the World Bank's seven regions, in its
-// color and shape, seven of the countries named, each point a link to its row
+// color and shape, each point a link to its row
 // of a table on pdfjet.com, with its life expectancy and children per woman,
-// described by its figures, and the trend line, with a table of the named ones
+// described by its figures, and the trend line, with a table of seven of them
 // under the chart.
 func Example26() {
 	pdf, err := pdfjet.NewPDFFile("Example_26.pdf")
@@ -70,8 +70,8 @@ func Example26() {
 	intro := []*pdfjet.Paragraph{pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f2,
 		"Where women have fewer children, people live longer: the "+strconv.Itoa(total)+
 			" countries and economies of the World Bank's data of 2023, in a color and "+
-			"a shape for each of its seven regions, seven of them named, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "+
-			"through them, with the named ones in the table "+
+			"a shape for each of its seven regions, each point a link to its row of a table on pdfjet.com, with its life expectancy and children per woman, and the trend line "+
+			"through them, with seven of them in the table "+
 			"under the chart.").SetFontSize(10.0))}
 	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)
 	frame.SetLocation(50.0, 84.0)
@@ -95,13 +95,9 @@ func Example26() {
 			life, _ := strconv.ParseFloat(field[2], 32)
 			children, _ := strconv.ParseFloat(field[3], 32)
 			uri := "https://pdfjet.com/countries.html#" + field[5]
-			if named[field[1]] {
-				chart.AddLinked(field[0], float32(children), float32(life), uri) // Its shape filled, named, a link
-			} else {
-				// The outline of its shape, a link described by its figures
-				name := field[0] + ": " + decimals(field[2], 1) + " years, " + decimals(field[3], 2) + " children per woman"
-				chart.AddLinkedDot(name, float32(children), float32(life), uri)
-			}
+			// The outline of its shape, a link described by its figures
+			name := field[0] + ": " + decimals(field[2], 1) + " years, " + decimals(field[3], 2) + " children per woman"
+			chart.AddLinkedDot(name, float32(children), float32(life), uri)
 		}
 	}
 	for _, line := range lines[1:] {
@@ -116,8 +112,8 @@ func Example26() {
 	chart.SetLocation(50.0, y)
 	y = chart.DrawOn(page)[1] + 30.0
 
-	// The countries named on the chart
-	heading := pdfjet.NewTextLine(f1, "The countries named on the chart")
+	// Seven of the countries
+	heading := pdfjet.NewTextLine(f1, "Seven of the countries")
 	heading.SetStructureType(structelem.H2).SetFontSize(14.0)
 	heading.SetLocation(50.0, y)
 	heading.DrawOn(page)
