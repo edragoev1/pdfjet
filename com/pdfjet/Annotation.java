@@ -53,6 +53,9 @@ class Annotation {
     // annotation joins, so that the text of a link and its annotation are one
     // element, as PDF/UA asks; null for a link over content that is not tagged
     StructElement linkElement = null;
+    // The least width and height of the annotation on the page, which then
+    // stays inside the page, so that a small target can be hit; 0 for none
+    float hitSize = 0f;
     // Set once the annotation has been written with a /StructParent key.
     boolean structParentWritten = false;
 

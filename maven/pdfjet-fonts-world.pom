@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The POM of com.pdfjet:pdfjet-fonts-world on Maven Central, made by
+     package-maven.sh: the fonts PDFjet carries for the other scripts than
+     the European ones, as resources, which
+     com.pdfjet:pdfjet finds on the classpath; $version$ and $commit$ are
+     written in by the script. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.pdfjet</groupId>
+  <artifactId>pdfjet-fonts-world</artifactId>
+  <version>$version$</version>
+  <packaging>jar</packaging>
+  <name>PDFjet world fonts</name>
+  <description>The fonts of PDFjet for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: IBM Plex Sans JP, KR, SC and TC, and IBM Plex Sans Arabic, Hebrew and Thai, under the SIL Open Font License 1.1, for com.pdfjet:pdfjet of the same version: add it next to com.pdfjet:pdfjet, and constants such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular work. No code and no dependencies.</description>
+  <url>https://github.com/edragoev1/pdfjet</url>
+  <licenses>
+    <license>
+      <name>SIL Open Font License 1.1</name>
+      <url>https://openfontlicense.org</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>PDFjet Software</name>
+      <email>support@pdfjet.com</email>
+      <organization>PDFjet Software</organization>
+      <organizationUrl>https://pdfjet.com</organizationUrl>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/edragoev1/pdfjet.git</connection>
+    <developerConnection>scm:git:https://github.com/edragoev1/pdfjet.git</developerConnection>
+    <url>https://github.com/edragoev1/pdfjet/tree/$commit$</url>
+    <tag>v$version$</tag>
+  </scm>
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/edragoev1/pdfjet/issues</url>
+  </issueManagement>
+</project>

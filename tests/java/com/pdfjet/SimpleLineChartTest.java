@@ -341,4 +341,150 @@ class SimpleLineChartTest {
         assertEquals(4, ChartScale.stepSignificant(4.84e15f, 2e12f));
         assertEquals(3, ChartScale.stepSignificant(12345f, 1000f));
     }
+
+    // The content of the chart, on a page of its own.
+    private static String noteContent(PDF pdf, SimpleLineChart chart) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.setLocation(50f, 50f).drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    private static SimpleLineChart noteChart(Font font) {
+        return new SimpleLineChart(font, font).setTitle("T").setSize(300f, 200f).setCategories("a", "b", "c");
+    }
+
+    // A value outside a range that is set cuts its line, and the chart says
+    // so, in print and in its description: an outlier was clipped without a
+    // word. A value that is no number is not outside, and a chart with none
+    // outside adds nothing.
+    @Test
+    void itSaysHowManyValuesAreOutsideTheRange() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        float nan = Float.NaN;
+        float inf = Float.POSITIVE_INFINITY;
+        String one = "1 value outside the range";
+        String two = "2 values outside the range";
+        Object[][] cases = {
+            {noteChart(font).addLine("x", new float[] {1f, 100f, 3f}), ""},
+            {noteChart(font).addLine("x", new float[] {0f, 5f, 10f}).setYAxisRange(0f, 10f), ""},
+            {noteChart(font).addLine("x", new float[] {1f, nan, inf}).setYAxisRange(0f, 10f), ""},
+            {noteChart(font).addLine("x", new float[] {1f, 2f, 3f, 50f}).setYAxisRange(0f, 10f), ""},
+            {noteChart(font).addLine("x", new float[] {1f, 50f, 3f}).setYAxisRange(0f, 10f), one},
+            {noteChart(font).addLine("x", new float[] {1f, 2f, -50f}).setYAxisRange(0f, 10f), one},
+            {noteChart(font).addLine("x", new float[] {1f, 50f, -50f}).setYAxisRange(0f, 10f), two},
+            {noteChart(font).addLine("x", new float[] {1f, 50f, 3f}).addLine("y", new float[] {50f, 2f, 3f})
+                    .setYAxisRange(0f, 10f), two},
+        };
+        for (Object[] c : cases) {
+            SimpleLineChart chart = (SimpleLineChart) c[0];
+            String note = (String) c[1];
+            String content = noteContent(pdf, chart);
+            String description = chart.altDescription();
+            if (note.isEmpty()) {
+                assertFalse(content.contains(TestSupport.hex(" outside")), description);
+                assertFalse(description.contains("outside"), description);
+            } else {
+                assertTrue(content.contains("<" + TestSupport.hex(note) + ">"), note);
+                assertTrue(description.endsWith("; " + note + "."), description);
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the categories and the x title, with the
+    // plot that much lower and nothing else moved; its right end at the plot's.
+    @Test
+    void theNoteIsUnderThePlot() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        String note = "1 value outside the range";
+        float size = font.getSize();
+        float small = 0.8f * size;
+        for (String title : new String[] {"", "year"}) {
+            String[] drawn = new String[2];
+            for (int k = 0; k < 2; k++) {
+                drawn[k] = noteContent(pdf, new SimpleLineChart(font, font).setSize(300f, 200f)
+                        .setXAxisTitle(title).setCategories("a", "b", "c").setYAxisRange(0f, 10f)
+                        .addLine("x", new float[] {1f, k == 0 ? 2f : 50f, 3f}));
+            }
+            String with = drawn[1];
+            float[] at = TestSupport.positionOf(with, note);
+            float end = at[0] + font.stringWidth(small, note);
+            float[] c = TestSupport.positionOf(with, "c");
+            assertEquals(c[0] + font.stringWidth(size, "c") / 2f, end, 0.1f, "the right end");
+            assertTrue(at[0] >= 50f && end <= 350f, "the note at " + at[0]);
+            assertEquals(792f - (250f - size), at[1], 0.01f, "the baseline");
+            assertEquals(TestSupport.positionOf(drawn[0], "c")[1] + 1.4f * small, c[1], 0.02f, "the plot");
+            float last = title.isEmpty() ? c[1] : TestSupport.positionOf(with, title)[1];
+            assertTrue(at[1] + font.getAscent(small) <= last - font.getDescent(size),
+                    "the note over the row above it");
+            assertEquals(TestSupport.fillColorBefore(with, "c"), TestSupport.fillColorBefore(with, note));
+        }
+        // In a chart too narrow for it, shortened and inside
+        SimpleLineChart chart = new SimpleLineChart(font, font).setSize(110f, 200f)
+                .setYAxisRange(0f, 10f).addLine("", new float[] {1f, 50f, 3f});
+        assertTrue(TestSupport.positionOf(noteContent(pdf, chart), "1 value")[0] >= 50f + size);
+        assertTrue(chart.altDescription().endsWith("; " + note + "."), chart.altDescription());
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    @Test
+    void theNoteFollowsADescriptionThatIsSet() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        SimpleLineChart chart = new SimpleLineChart(font, font).addLine("a", new float[] {1f, 2f})
+                .setAltDescription("A line");
+        assertEquals("A line", chart.altDescription());
+        chart.addLine("b", new float[] {1f, 50f}).setYAxisRange(0f, 10f);
+        assertEquals("A line. 1 value outside the range.", chart.altDescription());
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    @Test
+    void theNoteIsInTheFigure() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).setSize(300f, 200f).setYAxisRange(0f, 10f)
+                .addLine("a", new float[] {1f, 50f}).drawOn(page);
+        String content = TestSupport.content(page);
+        assertEquals(content.indexOf("BDC\n"), content.lastIndexOf("BDC\n"), content);
+        assertEquals(content.indexOf("EMC\n"), content.lastIndexOf("EMC\n"), content);
+        assertTrue(content.lastIndexOf("ET\n") < content.lastIndexOf("EMC\n"), content);
+        pdf.complete();
+        assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/Alt "
+                + TestSupport.textString("Line chart: a from 1 to 50; 1 value outside the range.")));
+    }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    @Test
+    void theNoteNeverCostsThePlot() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        // The least height that draws, found from below
+        float height = 1f;
+        while (!noteContent(pdf, plotChart(font, height, 2f)).contains(" Td\n")) {
+            height += 0.25f;
+        }
+        for (float h : new float[] {height, height + 1f, height + 5f}) {
+            String without = noteContent(pdf, plotChart(font, h, 2f));
+            SimpleLineChart chart = plotChart(font, h, 50f);
+            String with = noteContent(pdf, chart);
+            assertFalse(with.contains(TestSupport.hex(" outside")), "the note left no room for the plot");
+            assertTrue(with.contains("W\nn\n"), "the plot is not drawn");
+            assertEquals(without.split(" Td\n", -1).length, with.split(" Td\n", -1).length, "the plot is not drawn");
+            assertTrue(chart.altDescription().endsWith("; 1 value outside the range."), chart.altDescription());
+        }
+        // With the room, the note
+        assertTrue(noteContent(pdf, plotChart(font, height + 20f, 50f)).contains(TestSupport.hex(" outside")));
+    }
+
+    private static SimpleLineChart plotChart(Font font, float height, float middle) {
+        return new SimpleLineChart(font, font).setSize(300f, height).setYAxisRange(0f, 10f)
+                .addLine("a", new float[] {1f, middle, 3f});
+    }
 }

@@ -45,6 +45,10 @@ type PDFobj struct {
 	// The objects of the PDF it was read from, by number, for the masks of
 	// an image copied into another PDF; nil for an object not read
 	readObjects map[int]*PDFobj
+	// The number in the PDF being written of an object that a page that was
+	// read uses, like a stamp: this object stands for it among the objects,
+	// and only Merge reads the number
+	writtenNumber int
 }
 
 // maxDecodedTotal is what all the streams of one PDF may decode to together,
@@ -343,14 +347,18 @@ func (obj *PDFobj) setLength(length int) {
 // decompressor.MaxDecodedLength bytes.
 func (obj *PDFobj) decode(stream []byte) []byte {
 	decoded := stream
-	for i, filter := range obj.getValues("/Filter") {
+	for i, filter := range obj.getFilters() {
 		switch filter {
+		case "/Crypt":
+			// What it does is done: decryptStream reads it (review of
+			// 30 October 2026, B10)
 		case "/FlateDecode", "/Fl":
-			data, err := decompressor.InflateWithMaxLength(decoded, obj.maxDecodedLength())
+			data, err := decompressor.InflateStream(decoded, obj.maxDecodedLength())
 			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/LZWDecode", "/LZW":
-			data, err := decompressor.LZWDecodeWithMaxLength(decoded, obj.maxDecodedLength())
+			earlyChange := getDecodeParm(obj.getDecodeParms(i), "/EarlyChange", 1)
+			data, err := decompressor.LZWDecodeWithEarlyChange(decoded, obj.maxDecodedLength(), earlyChange)
 			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/ASCIIHexDecode", "/AHx":
@@ -403,6 +411,38 @@ func (obj *PDFobj) decodedHex(data []byte) []byte {
 	}
 	obj.decoded(data, nil)
 	return data
+}
+
+// getFilters returns the filters of the stream, whose /Filter can be an object
+// of its own, a name or an array: the data was the bytes as they are.
+func (obj *PDFobj) getFilters() []string {
+	i := slices.Index(obj.dict, "/Filter") + 1
+	if i == 0 || !isObjectReference(obj.dict, i) {
+		return obj.getValues("/Filter")
+	}
+	filters := make([]string, 0)
+	number, _ := strconv.Atoi(obj.dict[i])
+	if filter := obj.readObjects[number]; filter != nil {
+		for _, token := range objectValueTokens(filter) {
+			if token != "[" && token != "]" {
+				filters = append(filters, token)
+			}
+		}
+	}
+	return filters
+}
+
+// hasIdentityCrypt returns true for a stream with a /Crypt filter that is the
+// Identity one, whose name is the default: the stream is not encrypted.
+func (obj *PDFobj) hasIdentityCrypt() bool {
+	for i, filter := range obj.getFilters() {
+		if filter == "/Crypt" {
+			parms := obj.getDecodeParms(i)
+			j := slices.Index(parms, "/Name")
+			return j == -1 || tokenAt(parms, j+1) == "/Identity"
+		}
+	}
+	return false
 }
 
 // getValues returns the elements of the array that is the value of the key,
@@ -693,10 +733,7 @@ func (obj *PDFobj) getLength(numbered map[int]*PDFobj) int {
 		return 0
 	}
 	i += open
-	number, err := strconv.Atoi(tokenAt(obj.dict, i+1))
-	if err != nil {
-		panic(errors.New("The /Length of a stream is not a number."))
-	}
+	number := toLength(tokenAt(obj.dict, i+1))
 	if i+2 >= len(obj.dict) {
 		panic(errors.New("The dictionary ends after the /Length."))
 	}
@@ -718,11 +755,25 @@ func getLengthFromObject(numbered map[int]*PDFobj, number int) int {
 	if !ok {
 		return 0
 	}
-	length, err := strconv.Atoi(tokenAt(obj.dict, 3))
-	if err != nil {
+	return toLength(tokenAt(obj.dict, 3))
+}
+
+// toLength returns the length that the token holds. A real number and null are
+// other programs' ways to write it, and were refused: the stream ends at its
+// endstream when the length is wrong, as with null, for which it is 0 (review
+// of 30 October 2026, B11).
+func toLength(token string) int {
+	if token == "null" {
+		return 0
+	}
+	if number, err := strconv.Atoi(token); err == nil {
+		return number
+	}
+	value, err := strconv.ParseFloat(token, 64)
+	if err != nil || !isDecimalNumber(token) || math.Abs(value) > math.MaxInt32 {
 		panic(errors.New("The /Length of a stream is not a number."))
 	}
-	return length
+	return int(value)
 }
 
 // GetContentObject returns the content object of the page, or nil if it has
@@ -856,13 +907,18 @@ func indexAt(dict []string, index int) int {
 
 // ownResources gives the page a copy of the /Resources it shares with the
 // others under its node, before a resource is added to it, so that the
-// resource is the page's alone, as it was when every page had a copy.
+// resource is the page's alone, as it was when every page had a copy. A page
+// with no /Resources gets an empty one: the fonts added to it were lost, with
+// no error (review of 30 October 2026, B5).
 func (obj *PDFobj) ownResources() {
+	entry := append([]string{"/Resources"}, obj.inheritedResources...)
 	if obj.inheritedResources == nil {
-		return
+		if obj.entryIndexOf("/Resources") != -1 {
+			return
+		}
+		entry = []string{"/Resources", "<<", ">>"}
 	}
 	if open := slices.Index(obj.dict, "<<"); open != -1 {
-		entry := append([]string{"/Resources"}, obj.inheritedResources...)
 		obj.dict = insertArrayAt(obj.dict, entry, open+1)
 	}
 	obj.inheritedResources = nil
@@ -1142,7 +1198,7 @@ func (obj *PDFobj) contentRefs(objects []*PDFobj) (refs []string, start, end int
 	}
 	start = i + 1
 	array := func(tokens []string, from int) ([]string, int) {
-		var refs []string
+		refs := []string{} // An empty array is valid, and not nil
 		for j := from; j < len(tokens); j += 3 {
 			if tokens[j] == "]" {
 				return refs, j + 1
@@ -1269,8 +1325,75 @@ func getMaxGSNumber(obj *PDFobj) int {
 	return maxGSNumber
 }
 
-// SetGraphicsState sets the graphics state.
-func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFobj {
+// maxResourceNumber returns the largest number of the /GS, /Fm and /OC names
+// in the resources of this page, or 0, so that the names of what is drawn on
+// it are not those of what it holds. They are all read from the objects of the
+// PDF, in the resources or in an /ExtGState, /XObject or /Properties dictionary
+// that is an object of its own.
+func (obj *PDFobj) maxResourceNumber() int {
+	dict := obj.inheritedResources
+	if dict == nil {
+		i := obj.entryIndexOf("/Resources")
+		if i == -1 {
+			return 0
+		}
+		dict = obj.dict
+		if isObjectReference(obj.dict, i+1) {
+			number, _ := strconv.Atoi(obj.dict[i+1])
+			resources := obj.readObjects[number]
+			if resources == nil {
+				return 0
+			}
+			dict = resources.dict
+		}
+	}
+	maximum := maxNameNumber(dict)
+	for i, token := range dict {
+		if (token == "/ExtGState" || token == "/XObject" || token == "/Properties") &&
+			isObjectReference(dict, i+1) {
+			number, _ := strconv.Atoi(dict[i+1])
+			if entries := obj.readObjects[number]; entries != nil {
+				maximum = max(maximum, maxNameNumber(entries.dict))
+			}
+		}
+	}
+	return maximum
+}
+
+// maxNameNumber returns the largest number of the names in the tokens that
+// are /GS, /Fm or /OC and one to nine digits, or 0.
+func maxNameNumber(tokens []string) int {
+	maximum := 0
+	for _, token := range tokens {
+		if len(token) >= 4 && (token[:3] == "/GS" || token[:3] == "/Fm" || token[:3] == "/OC") &&
+			isGSName("/GS"+token[3:]) {
+			number, _ := strconv.Atoi(token[3:])
+			maximum = max(maximum, number)
+		}
+	}
+	return maximum
+}
+
+// addResourceEntry adds the name and its value to a dictionary of the
+// resources of this page, like /ExtGState, unless it has the name.
+func (obj *PDFobj) addResourceEntry(category, name string, value []string, objects *[]*PDFobj) {
+	resources, index := obj.resourceEntries(category, objects)
+	if resources == nil {
+		return
+	}
+	for i := index; i < len(resources.dict) && resources.dict[i] != ">>"; i = dictValueEnd(resources.dict, i+1) {
+		if resources.dict[i] == name {
+			return
+		}
+	}
+	resources.dict = insertArrayAt(resources.dict, append([]string{name}, value...), index)
+}
+
+// resourceEntries returns the object that holds a dictionary of the resources
+// of this page, like /ExtGState, and the index of its first entry, or nil. The
+// resources and the dictionary can be objects of their own, and resources
+// without the dictionary get it.
+func (obj *PDFobj) resourceEntries(category string, objects *[]*PDFobj) (*PDFobj, int) {
 	obj.ownResources()
 	var resources *PDFobj
 	index := -1
@@ -1293,26 +1416,31 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 		}
 	}
 	if resources == nil || index == -1 {
-		return obj
+		return nil, -1
 	}
-	// The graphics states go in the /ExtGState dictionary of the resources,
-	// which can be an object of its own. Resources without one get it.
 	i := index
-	for i < len(resources.dict) && resources.dict[i] != "/ExtGState" {
+	for i < len(resources.dict) && resources.dict[i] != category {
 		i++
 	}
 	if i == len(resources.dict) {
-		resources.dict = insertArrayAt(resources.dict, []string{"/ExtGState", "<<", ">>"}, index)
-		index += 2
-	} else if tokenAt(resources.dict, i+1) == "<<" {
-		index = i + 2
-	} else { // "/ExtGState 12 0 R"
-		o := objectAt(*objects, tokenAt(resources.dict, i+1))
-		if o == nil {
-			return obj
-		}
-		resources = o
-		index = slices.Index(resources.dict, "<<") + 1
+		resources.dict = insertArrayAt(resources.dict, []string{category, "<<", ">>"}, index)
+		return resources, index + 2
+	}
+	if tokenAt(resources.dict, i+1) == "<<" {
+		return resources, i + 2
+	}
+	o := objectAt(*objects, tokenAt(resources.dict, i+1)) // "/ExtGState 12 0 R"
+	if o == nil {
+		return nil, -1
+	}
+	return o, slices.Index(o.dict, "<<") + 1
+}
+
+// SetGraphicsState sets the graphics state.
+func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFobj {
+	resources, index := obj.resourceEntries("/ExtGState", objects)
+	if resources == nil {
+		return obj
 	}
 	entries := strings.Split(gs.entries(), " ")
 	name := sameState(resources, index, entries)

@@ -54,6 +54,9 @@ class Annotation {
     // annotation joins, so that the text of a link and its annotation are one
     // element, as PDF/UA asks; nil for a link over content that is not tagged
     var linkElement: StructElement?
+    // The least width and height of the annotation on the page, which then
+    // stays inside the page, so that a small target can be hit; 0 for none
+    var hitSize: Float = 0.0
     // Set once the annotation has been written with a /StructParent key.
     var structParentWritten = false
 

@@ -109,6 +109,69 @@ import Testing
         attachment.drawOn(page)
     }
 
+    @Test func aCarriageReturnInATitleIsAReferenceInTheMetadata() throws {
+        // An XML reader turns it into a line feed, and PDF/A refused the title
+        // (review of 30 October 2026, B9).
+        let memory = MemoryPDF(Compliance.PDF_A_2B)
+        _ = memory.pdf.setTitle("One\rTwo")
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains(">One&#13;Two</rdf:li>"))
+    }
+
+    @Test func aLanguageSetOnAnyPDFIsInItsCatalog() throws {
+        // setLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+        // says no language of itself (review of 30 October 2026, B12).
+        let plain = MemoryPDF()
+        _ = Page(plain.pdf, Letter.PORTRAIT)
+        try plain.pdf.complete()
+        #expect(!TestSupport.latin1(plain.bytes).contains("/Lang <"))
+        let memory = MemoryPDF()
+        _ = memory.pdf.setLanguage("fr-CA")
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        try memory.pdf.complete()
+        let hex = Array("fr-CA".utf8).map { String(format: "%02x", $0) }.joined()
+        #expect(TestSupport.latin1(memory.bytes).lowercased().contains("/lang <\(hex)>"))
+    }
+
+    @Test func anEmbeddedFileIsNamedWithoutItsFolders() throws {
+        // A path of Windows put its folders, the name of the user in them, in
+        // the /F of the PDF (review of 30 October 2026, F1).
+        let folder = NSTemporaryDirectory() + "/pdfjet-" + UUID().uuidString
+        try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: folder) }
+        let path = folder + "/C:\\Users\\alice\\x.xml"
+        #expect(FileManager.default.createFile(atPath: path, contents: Data("<a/>".utf8)))
+        let file = try EmbeddedFile(TestSupport.newPDF(), path, false)
+        #expect(file.fileName == "x.xml")
+    }
+
+    @Test func aScaleIsWrittenWithItsDecimals() throws {
+        // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
+        // that drew nothing (review of 30 October 2026, B6).
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let stamp = Stamp(pdf).setSize(50, 50)
+        try stamp.complete()
+        stamp.scaleBy(0.125).setLocation(50, 50).drawOn(page)
+        stamp.scaleBy(0.004).setLocation(50, 50).drawOn(page)
+        let container = Container(100, 100)
+        _ = container.add(Rect(0, 0, 10, 10))
+        _ = container.scaleBy(0.125).setLocation(50, 50).drawOn(page)
+        page.drawContents(Array("n".utf8), 10, 20, 30, 0.125, 0.004)
+        var values = [Float](repeating: 0, count: 9)
+        values[Page.MSCALE_X] = 0.125
+        values[Page.MSKEW_X] = 0.004
+        values[Page.MSKEW_Y] = 0.006
+        values[Page.MSCALE_Y] = 0.375
+        page.transform(values)
+        let content = TestSupport.content(page)
+        #expect(content.contains("0.004 0 0 0.004 0 0 cm\n"), "\(content)")
+        #expect(content.contains("\n0.125 0 0 0.004 "), "\(content)")
+        #expect(content.contains("\n0.125 0.004 0.006 0.375 "), "\(content)")
+        #expect(content.components(separatedBy: "0.125 0 0 0.125 0 0 cm\n").count == 3, "\(content)")
+    }
+
     @Test func everyAnnotationIsPrintedAndHasAnAppearance() throws {
         for compliance in [Compliance.PDF_1_7, Compliance.PDF_A_2B, PDF.complianceA3A] {
             let raw = try document(compliance, annotations)
@@ -359,7 +422,26 @@ import Testing
 
     @Test func theFontFileRefersToItsMetadataWhoseNoticeIsEscaped() throws {
         let memory = MemoryPDF(Compliance.PDF_A_2B)
-        let font = try Font(memory.pdf, TestSupport.path("fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+        // Noto Sans JP, which this test read before 9.1.7, has "&" in its
+        // designer and its description; no font PDFjet carries has one in
+        // its names, so the license of IBM Plex Sans is made to say "with &
+        // FAQ" in place of "with a FAQ", a character for a character.
+        var ttf = try TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        var withA = [UInt8]()
+        for unit in " with a FAQ".utf16 {
+            withA += [UInt8(unit >> 8), UInt8(unit & 0xFF)]
+        }
+        var at = -1
+        var i = 0
+        while at == -1 && i + withA.count <= ttf.count {
+            if ttf[i..<(i + withA.count)].elementsEqual(withA) {
+                at = i
+            }
+            i += 1
+        }
+        try #require(at != -1, "the license of the font has no \"with a FAQ\"")
+        ttf[at + 2 * " with ".utf16.count + 1] = UInt8(ascii: "&")
+        let font = try Font(memory.pdf, InputStream(data: Data(ttf)))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         _ = TextLine(font, "Hello").setLocation(50, 50).drawOn(page)
         try memory.pdf.complete()

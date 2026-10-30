@@ -35,9 +35,9 @@ public class Example_47 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(36f);
 
-        Image image = new Image(pdf, "images/ee-map.png");
+        Image image = new Image(pdf, "resources/images/ee-map.png");
 
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/circles.png", false);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "resources/images/circles.png", false);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

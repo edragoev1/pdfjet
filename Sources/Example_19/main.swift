@@ -9,10 +9,10 @@ import PDFjet
 
 /**
  * Example_19.swift
- * A Markdown text, data/markdown/pdfjet.md, drawn down the pages by Markdown
+ * A Markdown text, resources/data/markdown/pdfjet.md, drawn down the pages by Markdown
  * as a PDF/UA document: its headings, paragraphs, lists, quote, code, table
  * and image, each tagged for screen readers, with a number at the foot of
- * every page. The image is read from data/markdown, the directory that
+ * every page. The image is read from resources/data/markdown, the directory that
  * setImageDirectory names.
  */
 public class Example_19 {
@@ -25,12 +25,12 @@ public class Example_19 {
         let bold = try Font(pdf, IBMPlexSans.Bold).setSize(11.0)
         let italic = try Font(pdf, IBMPlexSans.Italic).setSize(11.0)
         let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic).setSize(11.0)
-        let code = try Font(pdf, IBMPlexMono.Regular).setSize(9.5)
+        let code = try Font(pdf, CascadiaMono.Regular).setSize(9.5)
 
         let markdown = Markdown(regular, bold, italic, boldItalic, code)
-        markdown.setImageDirectory("data/markdown")
+        markdown.setImageDirectory("resources/data/markdown")
         var pages = [Page]()
-        try markdown.drawOn(pdf, try Content.ofTextFile("data/markdown/pdfjet.md"), &pages, Letter.PORTRAIT)
+        try markdown.drawOn(pdf, try Content.ofTextFile("resources/data/markdown/pdfjet.md"), &pages, Letter.PORTRAIT)
 
         for (i, page) in pages.enumerated() {
             let number = TextLine(regular, String(i + 1))

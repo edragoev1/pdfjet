@@ -181,9 +181,10 @@ class BMPImage {
             rows.Add(GetBytes(stream, rowsize));
         }
         // Some files end without the padding of the last row, which holds no
-        // pixels, as Pillow and browsers read them.
+        // pixels, as Pillow and browsers read them: what there is of it is
+        // read without a check of the count, as in the Swift port.
         byte[] last = GetBytes(stream, (int) ((bpp * (long) w + 7) / 8));
-        stream.Read(new byte[rowsize - last.Length], 0, rowsize - last.Length);
+        _ = stream.Read(new byte[rowsize - last.Length], 0, rowsize - last.Length);
         rows.Add(last);
 
         image = new byte[w * h * 3];

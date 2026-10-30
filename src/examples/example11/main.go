@@ -50,8 +50,8 @@ func Example11() {
 	xy := textBlock.DrawOn(page)
 
 	imageFiles := []string{
-		"images/ee-map.png",
-		"images/spain-admin.jpg",
+		"resources/images/ee-map.png",
+		"resources/images/spain-admin.jpg",
 	}
 	titles := []string{
 		"The European Union",

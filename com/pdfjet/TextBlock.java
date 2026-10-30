@@ -779,7 +779,7 @@ public class TextBlock implements Drawable {
     // Returns a line of the text from the index on, without its trailing spaces.
     private TextLine newTextLine(String text, int from) {
         int to = text.length();
-        while (to > from && Character.isWhitespace(text.charAt(to - 1))) {
+        while (to > from && Util.isWhitespace(text.charAt(to - 1))) {
             to--;
         }
         return new TextLine(font, part(text, from, to));
@@ -864,7 +864,7 @@ public class TextBlock implements Drawable {
         if (ch == 0x200C || ch == 0x200D) {         // ZWNJ, ZWJ
             return true;
         }
-        int type = Character.getType(ch);
+        int type = UnicodeCategories.of(ch);
         return type == Character.NON_SPACING_MARK ||
                 type == Character.COMBINING_SPACING_MARK ||
                 type == Character.ENCLOSING_MARK ||

@@ -70,7 +70,7 @@ func accessibleDocument() throws {
             .setLocation(50, 50).drawOn(page)
     TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
             .setLocation(50, 70).setWidth(400).drawOn(page)
-    let image = try Image(pdf, "images/circles.png")
+    let image = try Image(pdf, "resources/images/circles.png")
     image.setAltDescription("Three circles that overlap")
     image.setLocation(50, 110).drawOn(page)
     try pdf.complete()
@@ -92,21 +92,21 @@ func archivalDocument() throws {
 
 // @snippet fonts
 func fonts(_ pdf: PDF, _ font: Font) throws {
-    let serif = try Font(pdf, SourceSerif4.Regular).setSize(14)
+    let serif = try Font(pdf, IBMPlexSerif.Regular).setSize(14)
     let bold = try Font(pdf, IBMPlexSans.Bold)
-    let mono = try Font(pdf, JetBrainsMono.Regular).setSize(10)
+    let mono = try Font(pdf, CascadiaMono.Regular).setSize(10)
     let page = Page(pdf, Letter.PORTRAIT)
-    TextLine(serif, "Source Serif 4 at 14 points").setLocation(50, 50).drawOn(page)
+    TextLine(serif, "IBM Plex Serif at 14 points").setLocation(50, 50).drawOn(page)
     TextLine(bold, "IBM Plex Sans Bold at 12 points").setLocation(50, 75).drawOn(page)
-    TextLine(mono, "JetBrains Mono at 10 points").setLocation(50, 100).drawOn(page)
+    TextLine(mono, "Cascadia Mono at 10 points").setLocation(50, 100).drawOn(page)
     TextLine(bold, "The same font at 24 points").setFontSize(24)
             .setLocation(50, 135).drawOn(page)
 }
 
 // @snippet font-files
 func fontFiles(_ pdf: PDF, _ font: Font) throws {
-    let otf = try Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
-    let ttf = try Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf")
+    let otf = try Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
+    let ttf = try Font(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")
     let page = Page(pdf, Letter.PORTRAIT)
     TextLine(otf, "An OpenType font").setLocation(50, 50).drawOn(page)
     TextLine(ttf, "A TrueType font").setLocation(50, 75).drawOn(page)
@@ -227,7 +227,7 @@ func markup(_ pdf: PDF, _ font: Font) throws {
     let bold = try Font(pdf, IBMPlexSans.Bold)
     let italic = try Font(pdf, IBMPlexSans.Italic)
     let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic)
-    let code = try Font(pdf, JetBrainsMono.Regular).setSize(11)
+    let code = try Font(pdf, CascadiaMono.Regular).setSize(11)
     let markup = Markup(font, bold, italic, boldItalic, code)
     let paragraphs = markup.paragraphs(
             "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
@@ -241,7 +241,7 @@ func markdown(_ pdf: PDF, _ font: Font) throws {
     let bold = try Font(pdf, IBMPlexSans.Bold)
     let italic = try Font(pdf, IBMPlexSans.Italic)
     let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic)
-    let code = try Font(pdf, JetBrainsMono.Regular).setSize(10)
+    let code = try Font(pdf, CascadiaMono.Regular).setSize(10)
     let markdown = Markdown(font, bold, italic, boldItalic, code)
     var pages = [Page]()
     try markdown.drawOn(pdf, "# A heading\n"
@@ -269,7 +269,7 @@ func textColumn(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet text-frame-pages
 func textFramePages(_ pdf: PDF, _ font: Font) throws {
-    let text = try Content.ofTextFile("data/dostoevsky.txt").components(separatedBy: "\n\n")
+    let text = try Content.ofTextFile("resources/data/dostoevsky.txt").components(separatedBy: "\n\n")
     let frame = TextFrame(font, text)
     frame.setLocation(72, 72)
     frame.setWidth(468)
@@ -280,7 +280,7 @@ func textFramePages(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet text-frame-columns
 func textFrameColumns(_ pdf: PDF, _ font: Font) throws {
-    let text = try Content.ofTextFile("data/dostoevsky.txt").components(separatedBy: "\n\n")
+    let text = try Content.ofTextFile("resources/data/dostoevsky.txt").components(separatedBy: "\n\n")
     let frame = TextFrame(font, text)
     while frame.hasMoreText() {
         let page = Page(pdf, Letter.LANDSCAPE)
@@ -304,7 +304,7 @@ func textFlow(_ pdf: PDF, _ font: Font) throws {
             Paragraph(TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
             Paragraph(TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))], 6)
     flow.addSpace(12)
-    let map = try Image(pdf, "images/gr-map.jpg")
+    let map = try Image(pdf, "resources/images/gr-map.jpg")
     map.setAltDescription("A map of Greece and its regions.")
     flow.add(map.resizeHeight(400), Alignment.CENTER)   // Whole, here or on the next page
     flow.add(Paragraph(TextLine(font, "Greece: its regions.").setFontSize(9))
@@ -401,7 +401,7 @@ func cells(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet cell-content
 func cellContent(_ pdf: PDF, _ font: Font) throws {
-    let image = try Image(pdf, "images/circles.png").scaleBy(0.25)
+    let image = try Image(pdf, "resources/images/circles.png").scaleBy(0.25)
     image.setAltDescription("Circles")
     let imageCell = Cell(font).setImage(image)
     let barcodeCell = try Cell(font).setBarcode(Barcode(Barcode.CODE_128, "PDFjet"))
@@ -461,7 +461,7 @@ func bigTable(_ pdf: PDF, _ font: Font) throws {
     let body = try Font(pdf, IBMPlexSans.Regular).setSize(9)
     let table = BigTable(pdf, bold, body, Letter.LANDSCAPE)
     table.setNumberOfColumns(9)    // Set in this order
-    try table.setTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",")
+    try table.setTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",")
     table.setLocation(0, 0)
     table.setBottomMargin(20)
     table.setVerticalPadding(1)    // Room above and below each row
@@ -561,7 +561,7 @@ func stamps(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet images
 func images(_ pdf: PDF, _ font: Font) throws {
-    let photo = try Image(pdf, "images/gr-map.jpg")    // JPEG, PNG or BMP
+    let photo = try Image(pdf, "resources/images/gr-map.jpg")    // JPEG, PNG or BMP
     photo.setAltDescription("A map of Greece")
     let page = Page(pdf, Letter.PORTRAIT)
     photo.setLocation(50, 50)
@@ -574,7 +574,7 @@ func images(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet svg-images
 func svgImages(_ pdf: PDF, _ font: Font) throws {
-    let icon = try SVGImage(fileAtPath: "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")!
+    let icon = try SVGImage(fileAtPath: "resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")!
     icon.setAltDescription("A star")
     icon.setLocation(50, 50)
     icon.scaleBy(2)    // Vector graphics stay sharp at any size
@@ -708,7 +708,7 @@ func bookmarks(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet attachments
 func attachments(_ pdf: PDF, _ font: Font) throws {
-    let file = try EmbeddedFile(pdf, "data/winter-2009.txt", true)
+    let file = try EmbeddedFile(pdf, "resources/data/winter-2009.txt", true)
     let page = Page(pdf, Letter.PORTRAIT)
     let attachment = FileAttachment(file)
     attachment.setLocation(50, 50)
@@ -769,7 +769,7 @@ func formFields(_ pdf: PDF, _ font: Font) throws {
 // @snippet merge
 func merge() throws {
     let pdf = PDF(OutputStream(toFileAtPath: "merged.pdf", append: false)!)
-    for file in ["data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"] {
+    for file in ["resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"] {
         let stream = InputStream(fileAtPath: file)!
         try pdf.merge(pdf.read(from: stream))
         stream.close()
@@ -779,7 +779,7 @@ func merge() throws {
 
 // @snippet split
 func split() throws {
-    let stream = InputStream(fileAtPath: "data/testPDFs/rc65-16e.pdf")!
+    let stream = InputStream(fileAtPath: "resources/data/testPDFs/sample-document.pdf")!
     let objects = try PDF().read(from: stream)
     stream.close()
     let firstPage = PDF(OutputStream(toFileAtPath: "page1.pdf", append: false)!)
@@ -790,8 +790,9 @@ func split() throws {
 // @snippet existing-pages
 func existingPages() throws {
     let pdf = PDF(OutputStream(toFileAtPath: "stamped.pdf", append: false)!)
-    var objects = try pdf.read(from: InputStream(fileAtPath: "data/testPDFs/rc65-16e.pdf")!)
-    let font = try Font(&objects, InputStream(fileAtPath: IBMPlexSans.Regular)!).setSize(24)
+    var objects = try pdf.read(from: InputStream(fileAtPath: "resources/data/testPDFs/sample-document.pdf")!)
+    // IBM Plex Sans, which PDFjet carries
+    let font = try Font(&objects, IBMPlexSans.Regular).setSize(24)
     for pageObj in pdf.getPageObjects(from: objects) {
         let page = Page(pdf, pageObj)
         page.addResource(font, &objects)

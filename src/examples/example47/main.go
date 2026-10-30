@@ -45,9 +45,9 @@ func Example47() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(36.0)
 
-	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/ee-map.png")
 
-	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/circles.png", false)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "resources/images/circles.png", false)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 

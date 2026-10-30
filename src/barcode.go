@@ -251,6 +251,7 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 		// The bars are in their color whatever pen color the page was left with
 		page.SaveGraphicsState()
 		page.SetPenColor(barcode.color)
+		page.SetDefaultStrokeDashPattern() // Not the caller's, which broke the bars
 		defer page.RestoreGraphicsState()
 	}
 	var extent *barcodeExtent

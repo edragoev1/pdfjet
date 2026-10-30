@@ -68,7 +68,7 @@ public class Example_14 {
         colorMap["physics"] = Color.firebrick;
         colorMap["Experimentation"] = Color.sienna;
         colorMap["science"] = Color.blue;
-        paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
+        paragraphs = Paragraph.ParagraphsFromFile(f1, "resources/data/physics.txt");
         foreach (Paragraph p in paragraphs) {
             if (p.StartsWith("**")) {
                 p.SetStructureType(StructElem.H1);

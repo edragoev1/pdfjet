@@ -64,7 +64,7 @@ public class Example_14 {
         colorMap["physics"] = Color.firebrick
         colorMap["Experimentation"] =  Color.sienna
         colorMap["science"] = Color.blue
-        paragraphs = try Paragraph.paragraphsFromFile(f1, "data/physics.txt")
+        paragraphs = try Paragraph.paragraphsFromFile(f1, "resources/data/physics.txt")
         // The paragraphs under each heading are a numbered list.
         paragraphNumber = 1
         for p in paragraphs {

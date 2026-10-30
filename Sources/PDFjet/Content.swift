@@ -42,7 +42,10 @@ public class Content {
 
     /// Returns all the bytes read from the stream, reading bufferSize bytes at a time.
     public static func getFromStream( _ stream: InputStream, _ bufferSize: Int) throws -> [UInt8] {
-        var contents = [UInt8]()
+        // The pieces as they are read, joined once at the end: an array grown
+        // as it is read is copied each time it doubles (28 October 2026).
+        var pieces = [[UInt8]]()
+        var total = 0
         var buffer = [UInt8](repeating: 0, count: bufferSize)
         stream.open()
         defer { stream.close() }
@@ -53,10 +56,19 @@ public class Content {
             if read <= 0 {
                 break
             }
-            contents.append(contentsOf: buffer[0..<read])
+            pieces.append(Array(buffer[0..<read]))
+            total += read
         }
         if stream.streamStatus == .error {
             throw stream.streamError ?? PDFjetError(message: "Cannot read the stream.")
+        }
+        if pieces.count == 1 {
+            return pieces[0]
+        }
+        var contents = [UInt8]()
+        contents.reserveCapacity(total)
+        for piece in pieces {
+            contents.append(contentsOf: piece)
         }
         return contents
     }

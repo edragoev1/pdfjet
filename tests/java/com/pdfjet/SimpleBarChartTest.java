@@ -197,4 +197,83 @@ class SimpleBarChartTest {
         SimpleBarChart chart = new SimpleBarChart(font, font).setTitle("Sales.").add("a", 5f).add("b", 6f);
         assertEquals("Sales. a 5, b 6.", chart.altDescription());
     }
+
+    // The polish of 29 October 2026: the bar the chart highlights itself, a
+    // reference line and rounded bars, each off unless set.
+
+    @Test
+    void theChartHighlightsTheLowestOrTheHighestValue() throws Exception {
+        SimpleBarChart chart = chart(TestSupport.newPDF());     // 7.3, 72.6, 18.4, 44.1
+        assertEquals(-1, chart.highlighted());
+        assertEquals(0, chart.setHighlightLowest().highlighted());
+        assertEquals(1, chart.setHighlightHighest().highlighted());
+        // A bar added later counts, as the chart finds the bar when it is drawn
+        chart.add("Faster", 100f);
+        assertEquals(4, chart.highlighted());
+        // The index set takes the place of the value found, and the other way
+        assertEquals(2, chart.setHighlight(2).highlighted());
+        assertEquals(0, chart.setHighlightLowest().highlighted());
+    }
+
+    @Test
+    void theFirstOfEqualValuesIsHighlightedAndNoValueIsSkipped() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        SimpleBarChart chart = new SimpleBarChart(font, font)
+                .add("none", Float.NaN).add("a", 3f).add("b", 1f).add("c", 1f).add("d", 3f);
+        assertEquals(2, chart.setHighlightLowest().highlighted());
+        assertEquals(1, chart.setHighlightHighest().highlighted());
+        SimpleBarChart empty = new SimpleBarChart(font, font).add("none", Float.NaN).setHighlightLowest();
+        assertEquals(-1, empty.highlighted());
+    }
+
+    @Test
+    void aReferenceLineIsDashedAndLabeledUnderTheBars() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart plain = chart(pdf).setFractionDigits(1);
+        SimpleBarChart chart = chart(pdf).setFractionDigits(1).setReferenceLine(50f, "Target");
+        float size = TestSupport.helvetica(pdf).getSize();
+        assertEquals(plain.getHeight() + 1.4f * 0.8f * size, chart.getHeight(), TestSupport.DELTA);
+        assertEquals("Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1; "
+                + "Target 50.0.", chart.altDescription());
+        assertEquals("Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1; "
+                + "reference line at 50.0.", chart(pdf).setFractionDigits(1).setReferenceLine(50f, "").altDescription());
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        int dashed = content.indexOf("[2 2] 0 d");
+        assertTrue(dashed > 0, content);
+        assertTrue(content.indexOf("[] 0 d", dashed) > dashed, "the dash pattern set back");
+    }
+
+    @Test
+    void aReferenceLinePastTheLargestValueShortensTheBars() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).drawOn(page1);
+        List<Float> plain = rectWidths(TestSupport.content(page1));
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setReferenceLine(2f * 72.6f, "").drawOn(page2);
+        List<Float> shorter = rectWidths(TestSupport.content(page2));
+        assertEquals(plain.get(2) / 2f, shorter.get(2), 0.05f);
+    }
+
+    @Test
+    void aReferenceLineThatIsNoValueDrawsNothing() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart chart = chart(pdf).setReferenceLine(Float.NaN, "Target");
+        assertEquals(chart(pdf).getHeight(), chart.getHeight(), TestSupport.DELTA);
+        chart.drawOn(page);
+        assertFalse(TestSupport.content(page).contains("[2 2] 0 d"));
+    }
+
+    @Test
+    void roundedBarsAreCurvesNotRectangles() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setRoundedBars(true).drawOn(page);
+        String content = TestSupport.content(page);
+        assertEquals(1, rectWidths(content).size(), "the panel alone a rectangle: " + content);
+        assertTrue(content.contains(" c\n"), "the bars' corners are curves");
+    }
 }

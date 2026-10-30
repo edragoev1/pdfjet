@@ -16,8 +16,7 @@ public class Example_10 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Text block with highlighted keywords")
 
-        // let f1 = try Font(pdf, SourceSerif4.Regular)
-        // let f1 = try Font(pdf, NotoSans.Regular)
+        // let f1 = try Font(pdf, IBMPlexSerif.Regular)
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(15.0)
 
@@ -42,7 +41,7 @@ public class Example_10 {
         gs.setAlphaNonStroking(0.5)     // Non-Stroking alpha
         page.setGraphicsState(gs)
 
-        let englishText = try Content.ofTextFile("data/languages/english.txt")
+        let englishText = try Content.ofTextFile("resources/data/languages/english.txt")
         // f1.setSize(14.0)
         let textBlock = TextBlock(f1, englishText)
         textBlock.setLocation(100.0, 50.0)

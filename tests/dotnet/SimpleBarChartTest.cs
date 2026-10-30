@@ -188,5 +188,84 @@ public class SimpleBarChartTest {
         SimpleBarChart chart = new SimpleBarChart(font, font).SetTitle("Sales.").Add("a", 5f).Add("b", 6f);
         Assert.Equal("Sales. a 5, b 6.", chart.AltDescription());
     }
+
+    // The polish of 29 October 2026: the bar the chart highlights itself, a
+    // reference line and rounded bars, each off unless set.
+
+    [Fact]
+    public void TheChartHighlightsTheLowestOrTheHighestValue() {
+        SimpleBarChart chart = NewChart(TestSupport.NewPDF());     // 7.3, 72.6, 18.4, 44.1
+        Assert.Equal(-1, chart.Highlighted());
+        Assert.Equal(0, chart.SetHighlightLowest().Highlighted());
+        Assert.Equal(1, chart.SetHighlightHighest().Highlighted());
+        // A bar added later counts, as the chart finds the bar when it is drawn
+        chart.Add("Faster", 100f);
+        Assert.Equal(4, chart.Highlighted());
+        // The index set takes the place of the value found, and the other way
+        Assert.Equal(2, chart.SetHighlight(2).Highlighted());
+        Assert.Equal(0, chart.SetHighlightLowest().Highlighted());
+    }
+
+    [Fact]
+    public void TheFirstOfEqualValuesIsHighlightedAndNoValueIsSkipped() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        SimpleBarChart chart = new SimpleBarChart(font, font)
+                .Add("none", float.NaN).Add("a", 3f).Add("b", 1f).Add("c", 1f).Add("d", 3f);
+        Assert.Equal(2, chart.SetHighlightLowest().Highlighted());
+        Assert.Equal(1, chart.SetHighlightHighest().Highlighted());
+        SimpleBarChart empty = new SimpleBarChart(font, font).Add("none", float.NaN).SetHighlightLowest();
+        Assert.Equal(-1, empty.Highlighted());
+    }
+
+    [Fact]
+    public void AReferenceLineIsDashedAndLabeledUnderTheBars() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart plain = NewChart(pdf).SetFractionDigits(1);
+        SimpleBarChart chart = NewChart(pdf).SetFractionDigits(1).SetReferenceLine(50f, "Target");
+        float size = TestSupport.Helvetica(pdf).GetSize();
+        TestSupport.AssertNear(plain.GetHeight() + 1.4f * 0.8f * size, chart.GetHeight(), TestSupport.DELTA);
+        Assert.Equal("Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1; "
+                + "Target 50.0.", chart.AltDescription());
+        Assert.Equal("Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1; "
+                + "reference line at 50.0.", NewChart(pdf).SetFractionDigits(1).SetReferenceLine(50f, "").AltDescription());
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        int dashed = content.IndexOf("[2 2] 0 d", StringComparison.Ordinal);
+        Assert.True(dashed > 0, content);
+        Assert.True(content.IndexOf("[] 0 d", dashed, StringComparison.Ordinal) > dashed, "the dash pattern set back");
+    }
+
+    [Fact]
+    public void AReferenceLinePastTheLargestValueShortensTheBars() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).DrawOn(page1);
+        List<float> plain = RectWidths(TestSupport.Content(page1));
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetReferenceLine(2f * 72.6f, "").DrawOn(page2);
+        List<float> shorter = RectWidths(TestSupport.Content(page2));
+        TestSupport.AssertNear(plain[2] / 2f, shorter[2], 0.05f);
+    }
+
+    [Fact]
+    public void AReferenceLineThatIsNoValueDrawsNothing() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart chart = NewChart(pdf).SetReferenceLine(float.NaN, "Target");
+        TestSupport.AssertNear(NewChart(pdf).GetHeight(), chart.GetHeight(), TestSupport.DELTA);
+        chart.DrawOn(page);
+        Assert.DoesNotContain("[2 2] 0 d", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void RoundedBarsAreCurvesNotRectangles() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetRoundedBars(true).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Single(RectWidths(content));     // the panel alone a rectangle
+        Assert.Contains(" c\n", content);       // the bars' corners are curves
+    }
 }
 }   // End of namespace PDFjet.NET

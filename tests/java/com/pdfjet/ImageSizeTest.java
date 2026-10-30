@@ -80,7 +80,7 @@ class ImageSizeTest {
     @Test
     void theSizeIsTheOneImageDrawsAt() throws Exception {
         List<File> files = new ArrayList<>();
-        for (String dir : new String[] {"images", "tests/data", ".images"}) {
+        for (String dir : new String[] {"resources/images", "tests/data", ".images"}) {
             collect(TestSupport.file(dir), files);
         }
         List<String> problems = new ArrayList<>();

@@ -28,7 +28,7 @@ class Example_34 {
         // fonts and images, to this PDF. The logo itself is drawn with paths and
         // has none.
         BufferedInputStream bis = new BufferedInputStream(
-                new FileInputStream("data/testPDFs/PDFjetLogo.pdf"));
+                new FileInputStream("resources/data/testPDFs/PDFjetLogo.pdf"));
         List<PDFobj> objects = pdf.read(bis);
 
         pdf.addResourceObjects(objects);
@@ -89,7 +89,7 @@ class Example_34 {
         text.drawOn(page);
 
         TextBlock textBlock = new TextBlock(f1,
-                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
+                "The logo is the content of the first page of resources/data/testPDFs/PDFjetLogo.pdf, "
                 + "drawn here at half its size with page.drawContents. It stays sharp "
                 + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
                 + "The maple leaf below is a Path with curves, and the QR code "

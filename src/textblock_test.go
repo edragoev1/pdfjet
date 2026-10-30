@@ -300,14 +300,15 @@ func TestTextBlockALongWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
 func TestTextBlockALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
 	pdf := testNewPDF()
 	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
-	word := strings.Repeat("محمد", 25000) // 100,000 letters, which took about 20 minutes
-	block := NewTextBlock(font, word).SetRightToLeft(true).SetWidth(100)
+	// 100,000 letters took about 20 minutes
+	testLinearTime(t, 5000, func(n int) {
+		block := NewTextBlock(font, strings.Repeat("محمد", n)).SetRightToLeft(true).SetWidth(100)
+		block.SetLocation(0, 0)
+		block.getTextLines()
+	})
+	block := NewTextBlock(font, strings.Repeat("محمد", 25000)).SetRightToLeft(true).SetWidth(100)
 	block.SetLocation(0, 0)
-	start := time.Now()
 	lines := block.getTextLines()
-	if took := time.Since(start); took > 3*time.Second {
-		t.Errorf("breaking a right to left word of 100,000 letters took %v", took)
-	}
 	letters := 0
 	for _, line := range lines {
 		if w := font.StringWidth(block.fontSize, line.text); w > 100 {

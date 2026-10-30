@@ -38,7 +38,7 @@ public class Example_03 {
         new TextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         TextBlock textBlock = new TextBlock(
-                f1, Content.OfTextFile("data/languages/japanese.txt"));
+                f1, Content.OfTextFile("resources/data/languages/japanese.txt"));
         textBlock.SetLanguage("ja");
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);
@@ -49,7 +49,7 @@ public class Example_03 {
         new TextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
-                f2, Content.OfTextFile("data/languages/korean.txt"));
+                f2, Content.OfTextFile("resources/data/languages/korean.txt"));
         textBlock.SetLanguage("ko");
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);

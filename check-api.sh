@@ -1,16 +1,18 @@
 #!/bin/bash
-# Lists the public API of the four ports at a tag, v9.0.1 unless another is
-# given, and in this checkout, and prints what was added and what was removed
+# Lists the public API of the four ports at a tag, v9.1.5 (the last release)
+# unless another is given, and in this checkout, and prints what was added and what was removed
 # in each, as "The public API" of TODO.md asks before each release: nothing removed, no
 # signature changed, and nothing added but the members goal 6 lists.
 #
-#   ./check-api.sh            against v9.0.1
+#   ./check-api.sh            against v9.1.5, the last release
 #   ./check-api.sh v9.0.2     against another tag
 #
 # Java: javap -public of every class; Go: the exported declarations of every
-# package but internal ones and the examples, of util/goapi; C#: the public types and members of the
-# assembly, by reflection; Swift: the public symbols of the symbol graph. The
-# lists are kept in build/check-api, a directory of each tree, to read whole.
+# package but internal ones and the examples, of util/goapi, with the packages
+# of resources/fonts; C#: the public types and members of the assembly, by
+# reflection; Swift: the public symbols of the symbol graph of PDFjet and of
+# the products of the fonts, PDFjetFonts and PDFjetFontsWorld. The lists are
+# kept in build/check-api, a directory of each tree, to read whole.
 # It needs the four toolchains, as the build-*.sh scripts do.
 #
 # It prints the differences and leaves the judging of them to the one who
@@ -24,12 +26,12 @@ cd "$(dirname "$0")" || exit 1
 # CI c).
 set -o pipefail
 # A tag given empty, as a git describe that failed gives, is refused, not
-# taken for v9.0.1 (the review of 12 October 2026, C11)
+# taken for v9.1.5 (the review of 12 October 2026, C11)
 if [ $# -gt 0 ] && [ -z "$1" ]; then
     echo "The tag to compare with is empty."
     exit 1
 fi
-BASE=${1:-v9.0.1}
+BASE=${1:-v9.1.5}
 WORK=$(pwd)/build/check-api
 rm -rf "$WORK"
 mkdir -p "$WORK/base" "$WORK/head"
@@ -126,18 +128,27 @@ for line in sys.stdin:
 
     # Go: the exported declarations of every package, read from the source by
     # util/goapi with Go's own parser, each on one line and without comments
-    GODIRS=$(cd "$DIR" && go list -f '{{.Dir}}' ./src/... | grep -v -e /internal -e /examples) || {
+    GOFONTS=""
+    if [ -d "$DIR/resources/fonts" ]; then
+        GOFONTS=./resources/fonts/...
+    fi
+    GODIRS=$(cd "$DIR" && go list -f '{{.Dir}}' ./src/... $GOFONTS | grep -v -e /internal -e /examples) || {
         echo "go list failed on the $TREE tree."
         exit 1
     }
     # In a subshell, whose exit is the loop's: an exit of the loop itself
     # left the script before go.log was printed; and a package that lists
     # nothing is a failure of the lister too, which a package missing from
-    # both trees would not show (the review of 12 October 2026, C11).
+    # both trees would not show (the review of 12 October 2026, C11). The
+    # packages of the fonts are imported for their effect and may export
+    # nothing, so what a program uses of them is the import path, listed.
     (
         for dir in $GODIRS; do
             declarations=$("$WORK/goapi" "$dir") || exit 1
-            [ -n "$declarations" ] || { echo "Nothing exported was listed in $dir." >&2; exit 1; }
+            case $dir in
+                "$DIR"/resources/fonts*) printf 'package %s\n' "${dir#"$DIR"/}" ;;
+                *) [ -n "$declarations" ] || { echo "Nothing exported was listed in $dir." >&2; exit 1; } ;;
+            esac
             printf '%s\n' "$declarations"
         done
     ) > "$OUT/go.txt" 2> "$OUT/go.log" || {
@@ -161,18 +172,33 @@ for line in sys.stdin:
         cat "$OUT/swift.log"
         exit 1
     }
-    python3 - "$DIR/symbols/PDFjet.symbols.json" > "$OUT/swift.txt" <<'EOF'
-import json, sys
-graph = json.load(open(sys.argv[1]))
+    # The product of the fonts of the other scripts, which PDFjet does not
+    # depend on, in a tree that has it. Building PDFjet builds PDFjetFonts.
+    if grep -q 'name: "PDFjetFontsWorld"' "$DIR/Package.swift"; then
+        (cd "$DIR" && swift build --target PDFjetFontsWorld -Xswiftc -emit-symbol-graph \
+            -Xswiftc -emit-symbol-graph-dir -Xswiftc "$DIR/symbols") >> "$OUT/swift.log" 2>&1 || {
+            cat "$OUT/swift.log"
+            exit 1
+        }
+    fi
+    python3 - "$DIR/symbols" > "$OUT/swift.txt" <<'EOF'
+import json, os, sys
 lines = set()
-for symbol in graph["symbols"]:
-    if symbol.get("accessLevel") not in ("public", "open"):
-        continue
-    declaration = "".join(f["spelling"] for f in symbol.get("declarationFragments", []))
-    path = ".".join(symbol["pathComponents"])
-    deprecated = "[deprecated] " if any(a.get("isUnconditionallyDeprecated") or "deprecated" in a
-                                        for a in symbol.get("availability", [])) else ""
-    lines.add(deprecated + path + " :: " + declaration)
+for module in ("PDFjet", "PDFjetFonts", "PDFjetFontsWorld"):
+    path = os.path.join(sys.argv[1], module + ".symbols.json")
+    if module == "PDFjet" or os.path.exists(path):
+        graph = json.load(open(path))
+        # A product of the fonts may have no public symbol: its name is its API
+        if module != "PDFjet":
+            lines.add("product " + module)
+        for symbol in graph["symbols"]:
+            if symbol.get("accessLevel") not in ("public", "open"):
+                continue
+            declaration = "".join(f["spelling"] for f in symbol.get("declarationFragments", []))
+            path = ".".join(symbol["pathComponents"])
+            deprecated = "[deprecated] " if any(a.get("isUnconditionallyDeprecated") or "deprecated" in a
+                                                for a in symbol.get("availability", [])) else ""
+            lines.add(deprecated + path + " :: " + declaration)
 print("\n".join(sorted(lines)))
 EOF
     [ $? -eq 0 ] || { echo "The symbol graph of the $TREE tree was not read."; exit 1; }

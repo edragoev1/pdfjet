@@ -40,7 +40,7 @@ class TextFlowTest {
     // An image of the repository, 100 points wide and as tall as the height,
     // narrower than the text.
     private static Image image(PDF pdf, float height) throws Exception {
-        Image image = new Image(pdf, TestSupport.open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/up-arrow.png"));
         return image.scaleBy(100f / image.getWidth(), height / image.getHeight());
     }
 

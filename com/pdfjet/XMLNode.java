@@ -32,6 +32,11 @@ public final class XMLNode {
     private String[] attributes;
     private List<XMLNode> children;
     private StringBuilder text;
+    // Where the text after a child starts, for an element with both: the
+    // number of children before it and its offset in the text, one pair after
+    // the other; null for the many elements without, as an SVG's text has.
+    private int[] marks;
+    private int markCount;
 
     // The element of the name and of its name without its prefix, which the
     // parser keeps once for every element of that name.
@@ -63,7 +68,40 @@ public final class XMLNode {
         if (text == null) {
             text = new StringBuilder(characters.length());
         }
+        if (children != null) {
+            if (marks == null) {
+                marks = new int[4];
+            } else if (markCount + 2 > marks.length) {
+                marks = java.util.Arrays.copyOf(marks, marks.length*2);
+            }
+            marks[markCount++] = children.size();
+            marks[markCount++] = text.length();
+        }
         text.append(characters);
+    }
+
+    // Returns the text and the elements in this one in the order of the
+    // document: a String for each piece of text, an XMLNode for each element.
+    List<Object> getContent() {
+        List<Object> content = new ArrayList<Object>();
+        int childCount = (children == null) ? 0 : children.size();
+        int textLength = (text == null) ? 0 : text.length();
+        int child = 0;
+        int from = 0;
+        for (int i = 0; i <= markCount; i += 2) {
+            // The text up to the next mark, or to the end, then the children
+            // before the text after the mark.
+            int nextChild = (i < markCount) ? marks[i] : childCount;
+            int to = (i < markCount) ? marks[i + 1] : textLength;
+            if (to > from) {
+                content.add(text.substring(from, to));
+                from = to;
+            }
+            while (child < nextChild) {
+                content.add(children.get(child++));
+            }
+        }
+        return content;
     }
 
     /**

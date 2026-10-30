@@ -282,4 +282,22 @@ import Testing
         #expect(throws: (any Error).self) { try memory.pdf.complete() }
     }
 
+    @Test func drawStringWithDxPlacesEachCharacterOnItsOwn() {
+        // It writes no Tc: each character is a text of its own, dx after the last.
+        let pdf = MemoryPDF().pdf
+        let page = Page(pdf, Letter.PORTRAIT)
+        page.drawString(TestSupport.helvetica(pdf), 12, "ABC", 100, 200, 30)
+        let content = TestSupport.content(page)
+        #expect(TestSupport.positionOf(content, "A") == [100, 592])
+        #expect(TestSupport.positionOf(content, "B") == [130, 592])
+        #expect(TestSupport.positionOf(content, "C") == [160, 592])
+        #expect(!content.contains(" Tc\n"), "\(content)")
+    }
+
+    @Test func drawXMarkStrokesTwoCrossingLines() {
+        let page = TestSupport.newPage()
+        CheckBox.drawXMark(page, 10, 20, 5)
+        #expect(TestSupport.content(page) == "0 0 1 RG\n1 w\n10 772 m\n15 767 l\n10 767 m\n15 772 l\nS\n")
+    }
+
 }

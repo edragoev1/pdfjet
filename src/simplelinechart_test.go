@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
 func testSimpleLineChart(pdf *PDF) *SimpleLineChart {
@@ -346,5 +347,169 @@ func TestSimpleLineChartLargeNumbersOfAnAxisAreApart(t *testing.T) {
 	}
 	if got := stepSignificant(12345, 1000); got != 3 {
 		t.Errorf("%d significant digits", got)
+	}
+}
+
+// testLineNote draws the chart on a page of its own and returns its content
+// and its description.
+func testLineNote(pdf *PDF, chart *SimpleLineChart) (string, string) {
+	page := NewPage(pdf, testLetterPortrait())
+	chart.SetLocation(50, 50)
+	chart.DrawOn(page)
+	return testContent(page), chart.getAltDescription()
+}
+
+// A value outside a range that is set cuts its line, and the chart says so, in
+// print and in its description: an outlier was clipped without a word. A value
+// that is no number is not outside, and a chart with none outside adds nothing.
+func TestSimpleLineChartSaysHowManyValuesAreOutsideTheRange(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	nan, inf := float32(math.NaN()), float32(math.Inf(1))
+	base := func() *SimpleLineChart {
+		return NewSimpleLineChart(font, font).SetTitle("T").SetSize(300, 200).SetCategories("a", "b", "c")
+	}
+	cases := []struct {
+		name  string
+		chart *SimpleLineChart
+		note  string
+	}{
+		{"no range", base().AddLine("x", []float32{1, 100, 3}), ""},
+		{"on the ends", base().AddLine("x", []float32{0, 5, 10}).SetYAxisRange(0, 10), ""},
+		{"not numbers", base().AddLine("x", []float32{1, nan, inf}).SetYAxisRange(0, 10), ""},
+		{"past the categories", base().AddLine("x", []float32{1, 2, 3, 50}).SetYAxisRange(0, 10), ""},
+		{"above", base().AddLine("x", []float32{1, 50, 3}).SetYAxisRange(0, 10), "1 value outside the range"},
+		{"below", base().AddLine("x", []float32{1, 2, -50}).SetYAxisRange(0, 10), "1 value outside the range"},
+		{"both", base().AddLine("x", []float32{1, 50, -50}).SetYAxisRange(0, 10), "2 values outside the range"},
+		{"two lines", base().AddLine("x", []float32{1, 50, 3}).AddLine("y", []float32{50, 2, 3}).SetYAxisRange(0, 10),
+			"2 values outside the range"},
+	}
+	for _, c := range cases {
+		content, description := testLineNote(pdf, c.chart)
+		if c.note == "" {
+			if strings.Contains(content, testHex(" outside")) || strings.Contains(description, "outside") {
+				t.Errorf("%s: a note: %q", c.name, description)
+			}
+			continue
+		}
+		if !strings.Contains(content, "<"+testHex(c.note)+">") {
+			t.Errorf("%s: %q is not drawn", c.name, c.note)
+		}
+		if !strings.HasSuffix(description, "; "+c.note+".") {
+			t.Errorf("%s: description %q", c.name, description)
+		}
+	}
+}
+
+// The note is in the gray of the numbers, in the small size, on a row of its
+// own inside the chart, under the categories and the x title, with the plot
+// that much lower and nothing else moved; its right end at the plot's.
+func TestSimpleLineChartTheNoteIsUnderThePlot(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	note := "1 value outside the range"
+	for _, title := range []string{"", "year"} {
+		chart := func(middle float32) *SimpleLineChart {
+			return NewSimpleLineChart(font, font).SetSize(300, 200).SetXAxisTitle(title).
+				SetCategories("a", "b", "c").SetYAxisRange(0, 10).AddLine("x", []float32{1, middle, 3})
+		}
+		without, _ := testLineNote(pdf, chart(2))
+		with, _ := testLineNote(pdf, chart(50))
+		small := float32(0.8 * font.size)
+		at := testPositionOf(t, with, note)
+		c := testPositionOf(t, with, "c")
+		testNear(t, "the right end", c[0]+font.StringWidth(font.size, "c")/2.0, at[0]+font.StringWidth(small, note), 0.1)
+		if at[0] < 50 || at[0]+font.StringWidth(small, note) > 350 {
+			t.Errorf("the note at %v", at)
+		}
+		testNear(t, "the baseline", 792-(250-font.size), at[1], 0.01)
+		testNear(t, "the plot", testPositionOf(t, without, "c")[1]+float32(1.4*small), c[1], 0.02)
+		last := c[1]
+		if title != "" {
+			last = testPositionOf(t, with, title)[1]
+		}
+		if at[1]+font.GetAscent(small) > last-font.GetDescent(font.size) {
+			t.Errorf("the note at %v, the row above it at %v", at, last)
+		}
+		if got, want := testFillColorBefore(with, note), testFillColorBefore(with, "c"); got != want {
+			t.Errorf("the color of the note %q, of the categories %q", got, want)
+		}
+	}
+	// In a chart too narrow for it, shortened and inside
+	content, description := testLineNote(pdf, NewSimpleLineChart(font, font).SetSize(110, 200).
+		SetYAxisRange(0, 10).AddLine("", []float32{1, 50, 3}))
+	at := testPositionOf(t, content, "1 value")
+	if at[0] < 50+font.size {
+		t.Errorf("the note at %v", at)
+	}
+	if !strings.HasSuffix(description, "; "+note+".") {
+		t.Errorf("description %q", description)
+	}
+}
+
+// A description that is set is followed by the note, for a screen reader to
+// have what the chart prints; with none outside it stays as it is.
+func TestSimpleLineChartTheNoteFollowsADescriptionThatIsSet(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	chart := NewSimpleLineChart(font, font).AddLine("a", []float32{1, 2}).SetAltDescription("A line")
+	if got := chart.getAltDescription(); got != "A line" {
+		t.Errorf("description %q", got)
+	}
+	chart.AddLine("b", []float32{1, 50}).SetYAxisRange(0, 10)
+	if got := chart.getAltDescription(); got != "A line. 1 value outside the range." {
+		t.Errorf("description %q", got)
+	}
+}
+
+// In a tagged document the note is text of the chart's figure, and its
+// description says it.
+func TestSimpleLineChartTheNoteIsInTheFigure(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	font := testTrueTypeFont(t, doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	NewSimpleLineChart(font, font).SetSize(300, 200).SetYAxisRange(0, 10).AddLine("a", []float32{1, 50}).DrawOn(page)
+	content := testContent(page)
+	if strings.Count(content, "BDC\n") != 1 || strings.Count(content, "EMC\n") != 1 ||
+		strings.LastIndex(content, "ET\n") > strings.LastIndex(content, "EMC\n") {
+		t.Errorf("text outside the figure: %q", content)
+	}
+	if raw := string(doc.complete()); !strings.Contains(raw, "/Alt "+testTextString(
+		"Line chart: a from 1 to 50; 1 value outside the range.")) {
+		t.Error("the note is not in the description")
+	}
+}
+
+// A chart barely tall enough keeps its plot, as drawn without the note, and
+// its description says the number: the note cost it the plot.
+func TestSimpleLineChartTheNoteNeverCostsThePlot(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	draw := func(height, middle float32) (string, string) {
+		return testLineNote(pdf, NewSimpleLineChart(font, font).SetSize(300, height).
+			SetYAxisRange(0, 10).AddLine("a", []float32{1, middle, 3}))
+	}
+	// The least height that draws, found from below
+	height := float32(1)
+	for !strings.Contains(func() string { c, _ := draw(height, 2); return c }(), " Td\n") {
+		height += 0.25
+	}
+	for _, h := range []float32{height, height + 1, height + 5} {
+		without, _ := draw(h, 2)
+		with, description := draw(h, 50)
+		if strings.Contains(with, testHex(" outside")) {
+			t.Errorf("%v: the note left no room for the plot", h)
+		}
+		if !strings.Contains(with, "W\nn\n") || strings.Count(with, " Td\n") != strings.Count(without, " Td\n") {
+			t.Errorf("%v: the plot is not drawn", h)
+		}
+		if !strings.HasSuffix(description, "; 1 value outside the range.") {
+			t.Errorf("%v: description %q", h, description)
+		}
+	}
+	// With the room, the note
+	with, _ := draw(height+20, 50)
+	if !strings.Contains(with, testHex(" outside")) {
+		t.Error("no note in a chart with room for it")
 	}
 }

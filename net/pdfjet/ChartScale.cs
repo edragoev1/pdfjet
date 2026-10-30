@@ -16,6 +16,12 @@ namespace PDFjet.NET {
 /// the shortening of a long name, and the test of a value to draw.
 /// </summary>
 internal static class ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // SetFractionDigits(1 << 30) hung, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    internal const int MAX_DIGITS = 100;
+    internal const string TOO_MANY_DIGITS = "The fraction digits of a chart are at most 100.";
+
     /// <summary>
     /// Formats a label with minDigits to maxDigits decimal places, rounding the
     /// exact value half to even. The label has a "." decimal separator and no
@@ -194,6 +200,11 @@ internal static class ChartScale {
             round.numOfGridLines = RoundLines(minValue, maxValue, numOfGridLines);
             return round;
         }
+        // The product of a step can round to inside the values: 591 steps of
+        // 0.1 are 59.100002, and a point at 59.1 was not on its axis (the
+        // review of 30 October 2026)
+        round.maxValue = Math.Max(round.maxValue, maxValue);
+        round.minValue = Math.Min(round.minValue, minValue);
 
         round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
         if (round.numOfGridLines < 1 || round.maxValue <= round.minValue) {
@@ -490,6 +501,48 @@ internal static class ChartScale {
     /// <summary>Tells if the value is on the axis, its ends included.</summary>
     internal static bool OnAxis(float value, Axis axis) {
         return value >= axis.min && value <= axis.max;
+    }
+
+    /// <summary>
+    /// The words of a chart for its values outside a range that is set, of
+    /// which it would say nothing otherwise, or "" when there are none: "1 point
+    /// outside the range", "2 points outside the range".
+    /// </summary>
+    /// <param name="count">the number of values outside.</param>
+    /// <param name="noun">what the chart counts, in the singular.</param>
+    /// <returns>the note.</returns>
+    internal static String OutsideNote(int count, String noun) {
+        if (count == 0) {
+            return "";
+        }
+        return count.ToString(CultureInfo.InvariantCulture) + " " + noun + (count > 1 ? "s" : "") + " outside the range";
+    }
+
+    /// <summary>
+    /// The description set by the caller with the note, if any, as a sentence
+    /// after it: the note is in the figure, and in what a screen reader gets of
+    /// it, whoever wrote the description.
+    /// </summary>
+    /// <param name="description">the description set.</param>
+    /// <param name="note">the note, or "".</param>
+    /// <returns>the description.</returns>
+    internal static String WithNote(String description, String note) {
+        if (note.Length == 0) {
+            return description;
+        }
+        return description + SimpleBarChart.PunctuationAfter(new System.Text.StringBuilder(description), ".") + " " + note + ".";
+    }
+
+    /// <summary>
+    /// Draws the note, small and in the gray of the numbers, on the baseline,
+    /// its right end at x and inside the width from lo to hi, past which it is
+    /// shortened.
+    /// </summary>
+    internal static void DrawOutsideNote(Page page, Font font, float size, String note,
+            float x, float lo, float hi, float baseline) {
+        String text = Shorten(font, size, note, hi - lo);
+        page.DrawString(font, size, text, Math.Max(lo, x - font.StringWidth(size, text)), baseline,
+                Util.ToRGB(SimpleBarChart.MUTED), null);
     }
 
     /// <summary>

@@ -64,7 +64,7 @@ func Example35() {
 	textBlock.SetWidth(512.0)
 	textBlock.DrawOn(page)
 
-	image := pdfjet.NewImageFromFile(pdf, "images/europe-relief.png")
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/europe-relief.png")
 	image.ResizeWidth(w)
 	image.SetLocation(x0, y0)
 	image.SetAltDescription("A relief map of Europe, from Ireland to Turkey")

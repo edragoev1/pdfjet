@@ -1,4 +1,7 @@
 #!/bin/bash
+# The folder of this script: run from anywhere else, it deleted the bin, obj,
+# *.pdf and *.dll of that folder.
+cd "$(dirname "$0")" || exit 1
 rm -rf out/production
 rm -f net/pdfjet/*.exe.mdb
 rm -f examples/*.exe.mdb
