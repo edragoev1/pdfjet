@@ -760,6 +760,19 @@ import Testing
         #expect(readError("1 0 obj 1 0 obj/Type/ObjStm/First 0") == "(no error)")
     }
 
+    @Test func aContentStreamThatCannotBeDecodedAddsNothingToThePage() throws {
+        // The second stream is no Flate data: the content is the first one
+        // and its newline, as in the other ports.
+        let raw = "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                + "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+                + "3 0 obj<</Type/Page/Parent 2 0 R/Contents[4 0 R 5 0 R]>>endobj\n"
+                + "4 0 obj<</Length 1>>stream\nq\nendstream endobj\n"
+                + "5 0 obj<</Length 4/Filter/FlateDecode>>stream\nxxxx\nendstream endobj\n"
+        let objects = try TestSupport.read(raw.unicodeScalars.map { UInt8($0.value) })
+        let content = TestSupport.pageObjects(objects)[0].getContentObject(objects)
+        #expect(content?.data == Array("q\n".utf8))
+    }
+
     @Test func aReferenceToAnObjectThatIsNotThereHasNoContents() throws {
         // A page whose /Contents names an object the PDF does not have, and
         // one whose dictionary ends where a value belongs.

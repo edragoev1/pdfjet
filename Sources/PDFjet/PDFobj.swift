@@ -25,6 +25,7 @@ public final class PDFobj {
     var stream: [UInt8]?            // The compressed stream
     final var data = [UInt8]()      // The decompressed data
     final var undecoded = false     // The stream is decoded when the data is first asked for
+    final var undecodable = false   // A stream that cannot be decoded has no data, as in the other ports
     final var budget: DecodeBudget? // What the streams of the PDF this was read from may still decode to
     var gsNumber = -1
     var root = false                // The catalog that the trailer's /Root names
@@ -197,6 +198,7 @@ public final class PDFobj {
         do {
             return try decode(stream)
         } catch {
+            undecodable = true
             return []
         }
     }
@@ -844,8 +846,8 @@ public final class PDFobj {
             guard let object = getObject(number: number, from: objects) else {
                 continue
             }
-            if object.stream != nil {
-                let data = object.getData()
+            let data = object.getData()
+            if object.stream != nil && !object.undecodable {
                 if let budget = object.budget {
                     budget.left -= data.count + 1
                     if budget.left < 0 {
