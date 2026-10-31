@@ -59,30 +59,11 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
-- **Release v9.1.5 next; 9.1.3 is skipped** (the owner, 26 October 2026:
-  "I have decided to skip v9.1.3 and just go directly to 9.1.5 - let's
-  stop backporting things to 9.1.3"). What was done for 9.1.3, kerning, an
-  image copied from a PDF keeping its masks, Java's Deflater for each
-  thread, Swift's faster text and page compression, CalendarMonth removed,
-  getTextBottom, TextFlow and the BarChart axis fix, goes out in 9.1.5,
-  with SimpleBarChart and the charts work (CHANGELOG.md); the items below
-  that said 9.1.3 say 9.1.5 now. Before it: the checks before each release
-  (above), and PDFjet Pro 9.1.5 the same day. The font subsetters were
-  fuzzed 8 hours each on 25 October 2026. Was: 9.1.3 in early December
-  2026 on its own, 9.1.5 the charts in 2027.
-  **First, then the Forms launch** (the owner, 27 October 2026: "9.1.5
-  first, then the Forms launch"): 9.1.5 about 3 November 2026, the Forms
-  launch about 16 and 17 November on it. Was: in November, after the Forms
-  launch (26 October 2026). The chart items of 9.1.5 below that are not done
-  by then go to 9.1.7; SimpleBarChart is done and goes in 9.1.5.
-  **9.1.5 is the long-term support version, and nothing more is added to
-  it** (the owner, 27 October 2026: "I really don't want to add anything
-  more to 9.1.5 - it will be our LTS version"): only the fixes of the
-  review below; new work goes after it.
-  **A complete code review before the release** (the owner, 27 October
-  2026: "another complete code review before we release 9.1.5 but not
-  now"): the four ports, everything changed since v9.1.1, before the
-  release checks, so before the Forms launch too.
+- **Release v9.1.7 next, by the end of November 2026** (the owner, 30
+  October 2026): frozen, no new features or chart types; every bug found in
+  existing code is fixed before the tag. v9.1.5, the long-term support
+  version, was released on 28 October 2026. Before the tag: the checks
+  above, then PDFjet Pro 9.1.7 the same day; the Forms launch comes after it.
 
 - **Replace Example_13** (the owner, 28 October 2026: "looks like very weak
   example - mark for replacement"). Its title is "Switzerland, in English and
@@ -692,13 +673,13 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   work again before they fail. The net48 build takes the categories of
   the characters from a table of .NET 8's, Unicode 15.0, which a test holds
   to .NET 8's own (K3).
-- **For 9.0.9: a cell's drawable put back exactly** (the final review of
-  12 October 2026): a table puts the image or barcode of a cell back where
-  the caller had it, its location found as its corner less its size, in
-  float arithmetic, so 7.13, 8.29 comes back as 7.130005, 8.290001, in every
-  port alike; the measuring costs two more drawOn(null) calls a draw. A
-  getter of the location, or the cell drawing at an offset without moving
-  the drawable, would put it back exactly.
+- **A barcode in a cell put back exactly** (the final review of 12 October
+  2026): an image is, for 9.1.7, its location read directly. A barcode, or
+  any other drawable, still has its location found as its corner less its
+  size, in float arithmetic, so 7.13, 8.29 comes back as 7.130005, 8.290001,
+  and the measuring costs two more drawOn(null) calls a draw. Java's Barcode
+  is in another package, so reading its location needs a public getter,
+  which waits on the owner's word as 9.1.7 is frozen.
 - **Dropped: Swift's Flate to compress as zlib does** (the owner, 25
   October 2026: the 9% larger size is OK, not worth complicating things).
   Swift's PDFs stay about 9% larger than Go's, from its own Deflate encoder.

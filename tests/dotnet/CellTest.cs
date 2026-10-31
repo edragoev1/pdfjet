@@ -275,6 +275,24 @@ public class CellTest {
         TestSupport.AssertXY(before[1][0], before[1][1], barcode.DrawOn(null));
     }
 
+    // An image is put back exactly, not as its corner less its size in float
+    // arithmetic, which brought 7.13 back as 7.130005.
+    [Fact]
+    public void AnImageOfACellIsPutBackExactly() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Image image = new Image(pdf, TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG"));
+        image.SetLocation(7.13f, 8.29f);
+        float[] before = image.DrawOn(null);
+        Cell cell = new Cell(font).SetImage(image);
+        cell.SetTextAlignment(Alignment.RIGHT);
+        Table table = new Table();
+        table.SetTableData(new List<List<Cell>> {new List<Cell> {cell}}, 0);
+        table.SetLocation(200f, 300f);
+        table.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        Assert.Equal(before, image.DrawOn(null));
+    }
+
     // Text at the bottom of a cell is over the padding, descent and all: in a cell
     // as tall as its line it is where text at the top is (the review of 30 October
     // 2026, E5).

@@ -66,8 +66,8 @@ reads from the file of that path if there is one, else from the folder
 of Maven Central, `com.pdfjet:pdfjet`, carries the European fonts; the others
 are the jar `com.pdfjet:pdfjet-fonts-world`, added next to it. A
 font can also be read from any `.otf` or `.ttf` file by its path; the fonts
-PDFjet came with before 9.1.7, Noto Sans among them, are at
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts). The 14 core PDF
+PDFjet came with before 9.1.7, Noto Sans among them, are in the release
+packages before 9.1.7. The 14 core PDF
 fonts, such as `CoreFont.HELVETICA`, need no files either.
 
 Every font is embedded as a subset, only the glyphs a document draws: a page

@@ -255,6 +255,23 @@ private final class Box: Drawable {
         TestSupport.expectXY(before[1][0], before[1][1], barcode.drawOn(nil))
     }
 
+    // An image is put back exactly, not as its corner less its size in float
+    // arithmetic, which brought 7.13 back as 7.130005.
+    @Test func anImageOfACellIsPutBackExactly() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let image = try Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
+        _ = image.setLocation(7.13, 8.29)
+        let cell = Cell(font).setImage(image)
+        _ = cell.setTextAlignment(Alignment.RIGHT)
+        let table = Table()
+        _ = table.setTableData([[cell]], 0)
+        _ = table.setLocation(200, 300)
+        _ = table.drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(image.x == 7.13)
+        #expect(image.y == 8.29)
+    }
+
     // Text at the bottom of a cell is over the padding, descent and all: in a cell
     // as tall as its line it is where text at the top is (the review of 30 October
     // 2026, E5).

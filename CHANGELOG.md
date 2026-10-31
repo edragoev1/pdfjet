@@ -268,6 +268,12 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   `EV_CSV`, and says what to do when it is missing.
 
 ### Fixed
+- Table, all four ports: an image in a cell goes back exactly where the
+  caller had it. It was found as its corner less its size, so 7.13, 8.29 came
+  back as 7.130005, 8.290001. Two measurements a draw fewer too.
+- Swift: a stream of a page's `/Contents` array that cannot be decoded adds
+  nothing to the joined content, as in the other ports; it added a
+  newline.
 - The four ports: the `/F` of an embedded file's file specification is a
   string of bytes, as ISO 32000-2, 7.11.3, Table 43, asks of a file
   specification string; it was the name in UTF-16, as `/UF` is. Each

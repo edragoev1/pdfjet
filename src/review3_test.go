@@ -880,6 +880,23 @@ func TestReview3ADrawableOfACellStaysWhereTheCallerPutIt(t *testing.T) {
 	}
 }
 
+// An image is put back exactly, not as its corner less its size in float
+// arithmetic, which brought 7.13 back as 7.130005.
+func TestReview3AnImageOfACellIsPutBackExactly(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	image := NewImageFromFile(pdf, testRepoPath(t, "tests/data/PngSuite/BASN2C08.PNG"))
+	image.SetLocation(7.13, 8.29)
+	cell := NewEmptyCell(font).SetImage(image).SetTextAlignment(alignment.Right)
+	table := NewTable()
+	table.SetTableData([][]*Cell{{cell}}, 0)
+	table.SetLocation(200, 300)
+	table.DrawOn(NewPage(pdf, testLetterPortrait()))
+	if image.x != 7.13 || image.y != 8.29 {
+		t.Errorf("the image is at %v, %v", image.x, image.y)
+	}
+}
+
 // A word of a text column too wide for its line breaks at a soft hyphen, the
 // line ending with a hyphen, as TextBlock and TextFrame break it: TextColumn
 // never broke at one.

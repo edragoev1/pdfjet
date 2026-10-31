@@ -689,12 +689,17 @@ func measureDrawable(drawable Drawable) [2]float32 {
 	return drawable.DrawOn(nil)
 }
 
-// keepLocation returns what puts the drawable back where it is now: its
-// corner, measured where it is, less its size, measured at 0, 0. A drawable
-// has no location to read, and the image or barcode of a cell was left where
-// the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October 2026,
-// R22).
+// keepLocation returns what puts the drawable back where it is now. An image
+// has its location; another drawable has none to read, so it is its corner,
+// measured where it is, less its size, measured at 0, 0, in float arithmetic:
+// 7.13 can come back as 7.130005. The image or barcode of a cell was left
+// where the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October
+// 2026, R22).
 func keepLocation(drawable Drawable) func() {
+	if image, ok := drawable.(*Image); ok {
+		x, y := image.x, image.y
+		return func() { image.x, image.y = x, y }
+	}
 	corner := drawable.DrawOn(nil)
 	drawable.SetLocation(0, 0)
 	size := drawable.DrawOn(nil)

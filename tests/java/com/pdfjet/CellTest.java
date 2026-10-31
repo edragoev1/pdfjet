@@ -281,6 +281,24 @@ class CellTest {
         TestSupport.assertXY(before[1][0], before[1][1], barcode.drawOn(null));
     }
 
+    // An image is put back exactly, not as its corner less its size in float
+    // arithmetic, which brought 7.13 back as 7.130005.
+    @Test
+    void anImageOfACellIsPutBackExactly() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Image image = new Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));
+        image.setLocation(7.13f, 8.29f);
+        Cell cell = new Cell(font).setImage(image);
+        cell.setTextAlignment(Alignment.RIGHT);
+        Table table = new Table();
+        table.setTableData(Arrays.asList(Arrays.asList(cell)), 0);
+        table.setLocation(200f, 300f);
+        table.drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertEquals(7.13f, image.x);
+        assertEquals(8.29f, image.y);
+    }
+
     // Text at the bottom of a cell is over the padding, descent and all: in a cell
     // as tall as its line it is where text at the top is (the review of 30 October
     // 2026, E5).

@@ -1074,12 +1074,16 @@ public class Cell {
         return drawable.drawOn(nil)
     }
 
-    // Returns where the drawable is now: its corner, measured where it is,
-    // less its size, measured at 0, 0, where it is put back. A drawable has
-    // no location to read, and the image or barcode of a cell was left where
-    // the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October
-    // 2026, R22).
+    // Returns where the drawable is now. An image has its location; another
+    // drawable has none to read, so it is its corner, measured where it is,
+    // less its size, measured at 0, 0, where it is put back, in float
+    // arithmetic: 7.13 can come back as 7.130005. The image or barcode of a
+    // cell was left where the table drew it, 7, 8 moved to 202, 319.9 (review
+    // of 12 October 2026, R22).
     static func locationOf(_ drawable: Drawable) -> [Float] {
+        if let image = drawable as? Image {
+            return [image.x, image.y]
+        }
         let corner = drawable.drawOn(nil)
         drawable.setLocation(0, 0)
         let size = drawable.drawOn(nil)

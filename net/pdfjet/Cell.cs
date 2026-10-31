@@ -836,12 +836,16 @@ public class Cell {
         }
     }
 
-    // Returns where the drawable is now: its corner, measured where it is,
-    // less its size, measured at 0, 0, where it is put back. A drawable has
-    // no location to read, and the image or barcode of a cell was left where
-    // the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October
-    // 2026, R22).
+    // Returns where the drawable is now. An image has its location; another
+    // drawable has none to read, so it is its corner, measured where it is,
+    // less its size, measured at 0, 0, where it is put back, in float
+    // arithmetic: 7.13 can come back as 7.130005. The image or barcode of a
+    // cell was left where the table drew it, 7, 8 moved to 202, 319.9 (review
+    // of 12 October 2026, R22).
     internal static float[] LocationOf(IDrawable drawable) {
+        if (drawable is Image image) {
+            return new float[] {image.x, image.y};
+        }
         float[] corner = drawable.DrawOn(null);
         drawable.SetLocation(0f, 0f);
         float[] size = drawable.DrawOn(null);
