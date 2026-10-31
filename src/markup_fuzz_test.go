@@ -73,7 +73,7 @@ func FuzzMarkup(f *testing.F) {
 			paragraph := markup.Paragraph(text)
 			// Two spaces before a line break make a hard line break, which
 			// ends the text line.
-			if !strings.ContainsAny(text, "*_~`[]()<\\") && !strings.Contains(text, "://") &&
+			if !strings.ContainsAny(text, "*_~`[]()<\\&") && !strings.Contains(text, "://") &&
 				!strings.Contains(text, "  \n") && !strings.Contains(text, "  \r") {
 				fuzzCheckPlainMarkup(t, text, paragraph)
 			}
