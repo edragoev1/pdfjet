@@ -7,7 +7,9 @@ package pdfjet
 
 import (
 	"fmt"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"math"
 	"regexp"
 	"slices"
 	"strconv"
@@ -647,5 +649,21 @@ func TestMarkdownATallHeaderOfATableStaysOnThePage(t *testing.T) {
 	doc.pdf.AddPages(pages)
 	if err := doc.pdf.Complete(); err != nil {
 		t.Error(err)
+	}
+}
+
+// Code in a table is smaller than the text, and its baseline is the row's.
+func TestMarkdownTheCodeOfATableCellIsOnTheBaselineOfItsRow(t *testing.T) {
+	testAllowCoreFonts(t)
+	doc := testNewDoc()
+	regular := NewCoreFont(doc.pdf, corefont.Helvetica()).SetSize(11.0)
+	code := NewCoreFont(doc.pdf, corefont.Courier()).SetSize(7.0)
+	markdown := NewMarkdown(regular, regular, regular, regular, code)
+	cell := markdown.makeTable(&markdownBlock{rows: [][]string{{"A", "B"}, {"x", "`y`"}},
+		alignments: []alignment.Alignment{alignment.Left, alignment.Left}}, 400.0).tableData[1][1]
+	got := float32(cell.paddingAt(cellTopPadding)) + code.GetAscent(7.0)
+	want := float32(2.0) + regular.GetAscent(11.0)
+	if math.Abs(float64(got-want)) > 0.25 { // Padding is kept in steps
+		t.Errorf("the baseline is at %v, the row's at %v", got, want)
 	}
 }

@@ -964,6 +964,8 @@ func (markdown *Markdown) makeTable(block *markdownBlock, width float32) *Table 
 			cell := NewCell(font, plain)
 			cell.properties |= cellLineBreaks // At its <br>
 			cell.SetTextAlignment(block.alignments[c])
+			// The text of a smaller font, as code, is on the baseline of the row
+			cell.SetTopPadding(2.0 + max(0, markdown.regular.GetAscent(markdown.regular.size)-font.GetAscent(font.size)))
 			if r > 0 && strings.HasPrefix(plain, markdownCheckMark) {
 				cell.SetTextColor(markdown.checkColor)
 			}

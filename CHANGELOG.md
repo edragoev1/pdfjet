@@ -373,6 +373,8 @@ The next release, with PDFjet Pro's 9.1.7 (TODO.md).
   none is set. What a `tspan` left out would have started at goes to the next
   text drawn, and spaces collapse among what is drawn. The children of a
   `clipPath` are read with no language, as a clip path is one path.
+- Markdown: code in a table cell is on the baseline of its row, where the
+  smaller font sat higher.
 - Build: the package scripts take the POM, nuspec and README from the tagged
   commit and run `util/check-version.sh`; the POM and the nuspec say
   `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;

@@ -925,9 +925,12 @@ public class Markdown {
             for c in 0..<blockRows[r].count {
                 let text = blockRows[r][c]
                 let plain = plainText(text)
-                let cell = Cell((r == 0) ? bold : cellFont(text), plain)
+                let font = (r == 0) ? bold : cellFont(text)
+                let cell = Cell(font, plain)
                 cell.properties |= Cell.LINE_BREAKS     // At its <br>
                 cell.setTextAlignment(alignments[c])
+                // The text of a smaller font, as code, is on the baseline of the row
+                _ = cell.setTopPadding(2.0 + max(0.0, regular.getAscent() - font.getAscent()))
                 // The first code point, as the other ports compare the first
                 // code unit: the first Character of "✓️" holds U+FE0F too
                 if r > 0 && plain.unicodeScalars.first == Markdown.CHECK_MARK {

@@ -874,9 +874,12 @@ public class Markdown {
             for (int c = 0; c < block.rows.get(r).size(); c++) {
                 String text = block.rows.get(r).get(c);
                 String plain = plainText(text);
-                Cell cell = new Cell((r == 0) ? bold : cellFont(text), plain);
+                Font font = (r == 0) ? bold : cellFont(text);
+                Cell cell = new Cell(font, plain);
                 cell.properties |= Cell.LINE_BREAKS;     // At its <br>
                 cell.setTextAlignment(block.alignments.get(c));
+                // The text of a smaller font, as code, is on the baseline of the row
+                cell.setTopPadding(2f + Math.max(0f, regular.getAscent() - font.getAscent()));
                 if (r > 0 && plain.startsWith(CHECK_MARK)) {
                     cell.setTextColor(checkColor);
                 }

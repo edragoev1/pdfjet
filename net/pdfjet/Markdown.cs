@@ -905,9 +905,12 @@ public class Markdown {
             for (int c = 0; c < block.rows[r].Count; c++) {
                 String text = block.rows[r][c];
                 String plain = PlainText(text);
-                Cell cell = new Cell((r == 0) ? bold : CellFont(text), plain);
+                Font font = (r == 0) ? bold : CellFont(text);
+                Cell cell = new Cell(font, plain);
                 cell.properties |= Cell.LINE_BREAKS;     // At its <br>
                 cell.SetTextAlignment(block.alignments[c]);
+                // The text of a smaller font, as code, is on the baseline of the row
+                cell.SetTopPadding(2f + Math.Max(0f, regular.GetAscent() - font.GetAscent()));
                 if (r > 0 && plain.StartsWith(CHECK_MARK, StringComparison.Ordinal)) {
                     cell.SetTextColor(checkColor);
                 }
