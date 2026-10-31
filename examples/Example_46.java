@@ -115,7 +115,7 @@ public class Example_46 {
         pdf.addAssociatedFile(new EmbeddedFile(
                 pdf,
                 "factur-x.xml",
-                new FileInputStream("data/invoice/factur-x.xml"),
+                new FileInputStream("resources/data/invoice/factur-x.xml"),
                 true,
                 "text/xml",
                 Relationship.ALTERNATIVE,
@@ -133,7 +133,7 @@ public class Example_46 {
         float middle = 345f;
 
         // The letterhead: the logo, and the address of the seller beside it
-        SVGImage logo = new SVGImage("data/invoice/logo.svg");
+        SVGImage logo = new SVGImage("resources/data/invoice/logo.svg");
         logo.setAltDescription("The logo of Lindenberg Paper & Print: a sheet of paper on a navy tile.");
         logo.setLocation(left, 50f);
         logo.drawOn(page);

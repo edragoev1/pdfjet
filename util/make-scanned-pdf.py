@@ -5,7 +5,7 @@
 # Copyright (c) 2026 PDFjet Software
 # Licensed under the MIT License. See LICENSE file in the project root.
 #
-# Writes data/testPDFs/scanned-linearized.pdf, a test file with the structure
+# Writes resources/data/testPDFs/scanned-linearized.pdf, a test file with the structure
 # of a scanned article that Acrobat PDFWriter 2.0 wrote in 1998: PDF 1.2 with
 # lines that end in a carriage return, linearized, with five pages that are
 # each a CCITT Group 4 image drawn by an array of two LZW content streams, and
@@ -21,7 +21,7 @@ import zlib
 
 from PIL import Image, ImageDraw, ImageFont
 
-OUTPUT = "data/testPDFs/scanned-linearized.pdf"
+OUTPUT = "resources/data/testPDFs/scanned-linearized.pdf"
 SERIF = "fonts/IBMPlexSerif/IBMPlexSerif-"
 
 WIDTH = 2560                                # Pixels across every scan

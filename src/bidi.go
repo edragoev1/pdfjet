@@ -161,9 +161,24 @@ func IsArabic(ch rune) bool {
 	return ch >= 0x0600 && ch <= 0x06FF
 }
 
-// isHebrew reports whether the code point is in the Hebrew block (U+0590..U+05FF).
-func isHebrew(ch rune) bool {
-	return ch >= 0x0590 && ch <= 0x05FF
+// isRightToLeftBlock reports whether the code point is in a block of the
+// scripts written from right to left, whose letters are of the bidirectional
+// type R; isArabicBlock those of the type AL: the blocks of Hebrew and Arabic
+// and their presentation forms, and those of the other such scripts, as
+// DerivedBidiClass.txt of Unicode gives them.
+func isRightToLeftBlock(ch rune) bool {
+	return (ch >= 0x0590 && ch <= 0x05FF) || (ch >= 0x07C0 && ch <= 0x085F) ||
+		(ch >= 0xFB1D && ch <= 0xFB4F) || (ch >= 0x10800 && ch <= 0x10FFF) ||
+		(ch >= 0x1E800 && ch <= 0x1EFFF)
+}
+
+func isArabicBlock(ch rune) bool {
+	return (ch >= 0x0600 && ch <= 0x07BF) || (ch >= 0x0860 && ch <= 0x08FF) ||
+		(ch >= 0xFB50 && ch <= 0xFD3D) || (ch >= 0xFD50 && ch <= 0xFDCE) ||
+		(ch >= 0xFDF0 && ch <= 0xFDFC) || (ch >= 0xFE70 && ch <= 0xFEFC) ||
+		(ch >= 0x10D00 && ch <= 0x10D3F) || (ch >= 0x10EC0 && ch <= 0x10EFF) ||
+		(ch >= 0x10F30 && ch <= 0x10F6F) || (ch >= 0x1EC70 && ch <= 0x1ECBF) ||
+		(ch >= 0x1ED00 && ch <= 0x1ED4F) || (ch >= 0x1EE00 && ch <= 0x1EEFF)
 }
 
 // JoinsForward reports whether the Arabic character joins the character that
@@ -379,7 +394,7 @@ func bidiType(ch rune) int {
 	case (ch >= 0x0660 && ch <= 0x0669) || // Arabic-Indic digits
 		ch == 0x066B || ch == 0x066C: // Arabic decimal and thousands separators
 		return bidiAN
-	case ch == '+' || ch == '-' || ch == 0x2212: // minus sign
+	case ch == '+' || ch == '-' || ch == 0x2212 || ch == 0xFB29: // minus sign, Hebrew plus sign
 		return bidiES
 	case ch == ',' || ch == '.' || ch == '/' || ch == ':' ||
 		ch == 0x00A0 || ch == 0x060C: // no-break space, Arabic comma
@@ -389,10 +404,10 @@ func bidiType(ch rune) int {
 		ch == 0x0609 || ch == 0x060A || ch == 0x066A || // Arabic per mille, per ten thousand, percent
 		(ch >= 0x2030 && ch <= 0x2034): // per mille, per ten thousand, primes
 		return bidiET
-	case isHebrew(ch):
-		return bidiR
-	case IsArabic(ch):
+	case isArabicBlock(ch):
 		return bidiAL
+	case isRightToLeftBlock(ch):
+		return bidiR
 	case unicode.Is(unicode.Sc, ch):
 		return bidiET
 	case isAlphaNumeric(ch):

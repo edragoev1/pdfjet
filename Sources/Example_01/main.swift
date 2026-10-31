@@ -44,7 +44,7 @@ public class Example_01 {
 
         // Read English text from a file
         var textBlock = TextBlock(
-                font, try Content.ofTextFile("data/languages/english.txt"))
+                font, try Content.ofTextFile("resources/data/languages/english.txt"))
         textBlock.setLocation(50, 50)   // Set the position for the English text
         textBlock.setWidth(473)         // Why 473f? To match the Google Fonts samples.
         textBlock.setPadding(10)    // Set padding around the text
@@ -58,7 +58,7 @@ public class Example_01 {
         rect.drawOn(page)
 
         // Read Greek text from a file and draw it on the page
-        textBlock = TextBlock(font, try Content.ofTextFile("data/languages/greek.txt"))
+        textBlock = TextBlock(font, try Content.ofTextFile("resources/data/languages/greek.txt"))
         textBlock.setLanguage("el")             // So that a screen reader reads it in Greek
         textBlock.setLocation(50, xy[1] + 30)   // Set location below the previous text
         textBlock.setWidth(473)                 // Set width for Greek text block
@@ -66,7 +66,7 @@ public class Example_01 {
         xy = textBlock.drawOn(page)             // Draw Greek text and update coordinates
 
         // Read Bulgarian text from a file and draw it with a blue border and rounded corners
-        textBlock = TextBlock(font, try Content.ofTextFile("data/languages/bulgarian.txt"))
+        textBlock = TextBlock(font, try Content.ofTextFile("resources/data/languages/bulgarian.txt"))
         textBlock.setLanguage("bg")             // So that a screen reader reads it in Bulgarian
         textBlock.setLocation(50, xy[1] + 30)   // Set location below Greek text
         textBlock.setWidth(473)                 // Set width for Bulgarian text block

@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# Check if an argument is provided (example number)
-bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
-# The folder of this script, which has fonts and data, from wherever it is run.
+# The folder of this script, which has the files the examples read, from wherever it is run.
 cd "$(dirname "$0")" || exit 1
+# Check if an argument is provided (example number)
 if [ -z "$1" ]; then
     echo "Usage: $0 <example_number>"
     exit 1

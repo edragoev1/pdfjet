@@ -97,8 +97,7 @@ public class SimpleScatterChartTest {
     public void ALinkedPointIsAFigureInItsLink() {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, new FileStream(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-                FileMode.Open, FileAccess.Read));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f)
                 .Add(1f, 1f).Add("Andorra", 2f, 2f, "https://pdfjet.com/a")
@@ -124,6 +123,176 @@ public class SimpleScatterChartTest {
             Assert.Contains("/Alt " + TestSupport.TextString(name), raw);
         }
         Assert.Equal(2, raw.Split("/Subtype /Link").Length - 1);
+    }
+
+    // A linked dot is drawn as a point of Add(x, y) is, stroke for stroke, with
+    // nothing beside it: in a document that is not tagged it adds a link alone,
+    // described by its name, and the chart's description counts it and does
+    // not name it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ALinkedDotIsADotWithADescription(bool withSeries) {
+        using (TestSupport.AllowCoreFonts()) {
+            string[] plain = DrawDot(withSeries, false);
+            string[] dot = DrawDot(withSeries, true);
+            Assert.Equal(plain[0], dot[0]);
+            Assert.Equal(plain[1], dot[1]);
+            Assert.Equal(1, dot[2].Split("/Subtype /Link").Length - 1);
+            Assert.Contains("/Contents " + TestSupport.TextString("Andorra: 84.0 years"), dot[2]);
+            Assert.Contains("/URI <" + TestSupport.Hex("https://pdfjet.com/a").ToLowerInvariant() + ">", dot[2]);
+        }
+    }
+
+    // The content, the description and the bytes of a chart with a third point
+    // that is a linked dot, or a plain one.
+    private static string[] DrawDot(bool withSeries, bool linked) {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).SetTitle("T").SetTrendLine(true)
+                .Add(1f, 1f).Add(3f, 4f);
+        if (withSeries) {
+            chart.AddSeries("Series");
+        }
+        if (linked) {
+            chart.AddLinkedDot("Andorra: 84.0 years", 2f, 2f, "https://pdfjet.com/a");
+        } else {
+            chart.Add(2f, 2f);
+        }
+        string alt = chart.AltDescription();
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        pdf.Complete();
+        return new string[] {content, alt, TestSupport.Latin1(output.ToArray())};
+    }
+
+    // In a PDF/UA document a linked dot is a figure of its own in the Link that
+    // holds its annotation, as a linked point is, and looks as it does in the
+    // chart: transparent, or the outline of its series, undashed. A highlighted
+    // point stays over it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ALinkedDotIsAFigureInItsLink(bool withSeries) {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetStrokeDashPattern("[3 3] 0");
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f)
+                .SetHighlightColor(Color.red).Add(1f, 1f);
+        if (withSeries) {
+            chart.AddSeries("Series");
+        }
+        chart.AddLinkedDot("Andorra", 2f, 2f, "https://pdfjet.com/a")
+                .AddLinkedDot("Belize", 3f, 1f, "https://pdfjet.com/b")
+                .Add("Chad", 4f, 3f, "https://pdfjet.com/c").Add("Dominica", 2f, 3f);
+        string alt = chart.AltDescription();
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(output.ToArray());
+        Dictionary<string, string[]> elements = PDFTest.Elements(raw);
+        int links = 0;
+        foreach (KeyValuePair<string, string[]> entry in elements) {
+            string[] link = entry.Value;
+            if (link[0] != "Link") {
+                continue;
+            }
+            links++;
+            string figure = link[2].Substring(1).Split(' ')[0];
+            Assert.Equal("Figure", elements[figure][0]);
+            Assert.Equal(entry.Key, elements[figure][1]);
+            Assert.Contains("/Type /OBJR", link[2]);
+        }
+        Assert.Equal(3, links);
+        foreach (string name in new[] {"Andorra", "Belize", "Chad"}) {
+            Assert.Contains("/Alt " + TestSupport.TextString(name), raw);
+        }
+        Assert.DoesNotContain("Andorra", alt);
+        Assert.DoesNotContain("Belize", alt);
+        // The chart, the dots' figures, the named point over them, Chad's
+        int first = content.IndexOf("/Figure <</MCID 1>>", StringComparison.Ordinal);
+        int second = content.IndexOf("/Figure <</MCID 2>>", StringComparison.Ordinal);
+        int last = content.IndexOf("/Figure <</MCID 3>>", StringComparison.Ordinal);
+        int artifact = content.IndexOf("/Artifact BMC", StringComparison.Ordinal);
+        Assert.True(content.Contains("/Figure <</MCID 0>>") && first != -1 && second > first
+                && artifact > second && last > artifact, "the order of the figures");
+        string dot = content.Substring(first, second - first);
+        Assert.DoesNotContain("1 0 0 rg", dot);
+        Assert.Equal(withSeries, dot.Contains("\nS\n"));
+        Assert.Equal(!withSeries, dot.Contains("\nf\n"));
+        string before = content.Substring(content.LastIndexOf("EMC", first, StringComparison.Ordinal));
+        before = before.Substring(0, before.IndexOf("/Figure <</MCID 1>>", StringComparison.Ordinal));
+        Assert.Contains("[] 0 d\n", before);
+        Assert.Contains(" gs\n", before);
+    }
+
+    // A dot's description is its name, or its URI when it has no name, and a
+    // dot without a URI is a plain point; one outside a range that is set is
+    // no link.
+    [Fact]
+    public void ALinkedDotWithoutANameOrAURI() {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f).SetXAxisRange(0f, 5f)
+                .AddLinkedDot("", 1f, 1f, "https://pdfjet.com/a").AddLinkedDot("Belize", 2f, 2f, "")
+                .AddLinkedDot("Chad", 9f, 3f, "https://pdfjet.com/c").DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(output.ToArray());
+        Assert.Equal(1, raw.Split("/Subtype /Link").Length - 1);
+        Assert.Contains("/Alt " + TestSupport.TextString("https://pdfjet.com/a"), raw);
+        Assert.DoesNotContain(TestSupport.TextString("Belize"), raw);
+        Assert.DoesNotContain(TestSupport.TextString("Chad"), raw);
+    }
+
+    // The link of a dot is at least 8 points square and holds the dot, on the
+    // page as written, and inside the page, in a corner too.
+    [Theory]
+    [InlineData(2f)]
+    [InlineData(9f)]
+    [InlineData(30f)]
+    public void TheLinkOfADotCanBeHit(float size) {
+        using (TestSupport.AllowCoreFonts()) {
+            MemoryStream output = new MemoryStream();
+            PDF pdf = new PDF(output);
+            Font font = TestSupport.Helvetica(pdf);
+            font.SetSize(size);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new SimpleScatterChart(font, font).SetSize(612f, 792f).SetLocation(0f, 0f)
+                    .SetXAxisRange(0f, 4f).SetYAxisRange(0f, 4f)
+                    .AddLinkedDot("Middle", 2f, 2f, "https://pdfjet.com/m")
+                    .AddLinkedDot("Left", 0f, 2f, "https://pdfjet.com/l").DrawOn(page);
+            // Past the corners of the page, as a chart that hangs over it
+            page.AddAnnotation(Corner(-1f, -1f, 0f, 0f));
+            page.AddAnnotation(Corner(612f, 792f, 613f, 793f));
+            pdf.Complete();
+            string[] rects = TestSupport.Latin1(output.ToArray()).Split("/Rect [");
+            Assert.Equal(5, rects.Length);
+            for (int i = 1; i < rects.Length; i++) {
+                string rect = rects[i].Substring(0, rects[i].IndexOf(']'));
+                string[] box = rect.Split(' ');
+                float x1 = float.Parse(box[0], System.Globalization.CultureInfo.InvariantCulture);
+                float y1 = float.Parse(box[1], System.Globalization.CultureInfo.InvariantCulture);
+                float x2 = float.Parse(box[2], System.Globalization.CultureInfo.InvariantCulture);
+                float y2 = float.Parse(box[3], System.Globalization.CultureInfo.InvariantCulture);
+                Assert.True(x2 - x1 >= 7.999f && Math.Abs(y2 - y1) >= 7.999f, rect);
+                Assert.True(i > 2 || x2 - x1 >= 0.9f * size, rect);
+                Assert.True(x1 >= 0f && x2 <= 612f && Math.Min(y1, y2) >= 0f && Math.Max(y1, y2) <= 792f, rect);
+            }
+        }
+    }
+
+    // A link with the hit size of a dot, at the box.
+    private static Annotation Corner(float x1, float y1, float x2, float y2) {
+        Annotation annotation = new Annotation(Annotation.Link, x1, y1, x2, y2, null, null, 0f, null, null,
+                "https://pdfjet.com/c", null, null, null, "Corner");
+        annotation.hitSize = SimpleScatterChart.HIT_SIZE;
+        return annotation;
     }
 
     // In a document that is not tagged, a linked point is drawn in the chart,
@@ -249,6 +418,177 @@ public class SimpleScatterChartTest {
         Font font = TestSupport.Helvetica(pdf);
         chart = new SimpleScatterChart(font, font).SetTitle("Life expectancy?").Add(1f, 2f).Add(2f, 3f);
         Assert.Equal("Life expectancy? 2 points.", chart.AltDescription());
+    }
+
+    // The end of an axis rounded to steps is never inside the values: 591
+    // steps of 0.1 come to 59.100002 in float, and a point at 59.1 was not
+    // drawn (the review of 30 October 2026, E1).
+    [Fact]
+    public void AnAxisHoldsItsValues() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetSize(400f, 300f).Add("Only", 59.1f, 59.1f).DrawOn(page);
+        Assert.Contains(TestSupport.Hex("Only"), TestSupport.Content(page));
+        for (int i = 1; i <= 20000; i++) {
+            float value = i * 0.1f;
+            ChartScale.Axis axis = ChartScale.AxisOf(new float[] {value}, 0f, 0f, false);
+            Assert.True(ChartScale.OnAxis(value, axis), value + " on " + axis.min + " to " + axis.max);
+            float[] flat = ChartScale.FlatRange(value);
+            Round round = ChartScale.RoundMaxAndMinValues(flat[1], flat[0]);
+            Assert.True(round.minValue <= flat[0] && round.maxValue >= flat[1], flat[0] + " to " + flat[1]);
+        }
+    }
+
+    // The content of the chart, on a page of its own.
+    private static String NoteContent(PDF pdf, SimpleScatterChart chart) {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.SetLocation(50f, 50f).DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    private static SimpleScatterChart NoteChart(Font font) {
+        return new SimpleScatterChart(font, font).SetTitle("T").SetSize(300f, 200f).Add(1f, 1f).Add(2f, 2f);
+    }
+
+    // A point outside a range that is set is not drawn, and the chart says so,
+    // in print and in its description: an outlier vanished without a word. A
+    // value that is no number is not outside, and a chart with none outside
+    // adds nothing.
+    [Fact]
+    public void ItSaysHowManyPointsAreOutsideTheRange() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        float nan = float.NaN;
+        float inf = float.PositiveInfinity;
+        String one = "1 point outside the range";
+        String two = "2 points outside the range";
+        Object[][] cases = {
+            new Object[] {NoteChart(font).Add(100f, 100f), ""},
+            new Object[] {NoteChart(font).Add(0f, 10f).Add(10f, 0f).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(font).Add(nan, 50f).Add(50f, inf).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), ""},
+            new Object[] {NoteChart(font).Add(50f, 1f).SetXAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).Add(1f, -50f).SetYAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).Add(50f, 50f).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), one},
+            new Object[] {NoteChart(font).Add(50f, 1f).Add(-50f, 1f).SetXAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(font).Add(1f, 50f).Add("far", 2f, 60f).SetYAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(font).Add(50f, 1f).Add(1f, 50f).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f), two},
+            new Object[] {NoteChart(font).AddLinkedDot("a", 50f, 1f, "https://pdfjet.com/a").SetXAxisRange(0f, 10f), one},
+        };
+        foreach (Object[] c in cases) {
+            SimpleScatterChart chart = (SimpleScatterChart) c[0];
+            String note = (String) c[1];
+            String content = NoteContent(pdf, chart);
+            String description = chart.AltDescription();
+            if (note.Length == 0) {
+                Assert.DoesNotContain(TestSupport.Hex(" outside"), content);
+                Assert.DoesNotContain("outside", description);
+            } else {
+                Assert.Contains("<" + TestSupport.Hex(note) + ">", content);
+                Assert.EndsWith("; " + note + ".", description);
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the numbers and the x title, with the
+    // plot that much lower and nothing else moved; right under the plot's
+    // right end.
+    [Fact]
+    public void TheNoteIsUnderThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        String note = "2 points outside the range";
+        float size = font.GetSize();
+        float small = 0.8f * size;
+        foreach (String title in new String[] {"", "children per woman"}) {
+            String without = NoteContent(pdf, new SimpleScatterChart(font, font).SetSize(300f, 200f)
+                    .SetXAxisTitle(title).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f).Add(1f, 1f).Add(2f, 2f));
+            String with = NoteContent(pdf, new SimpleScatterChart(font, font).SetSize(300f, 200f)
+                    .SetXAxisTitle(title).SetXAxisRange(0f, 10f).SetYAxisRange(0f, 10f).Add(1f, 1f).Add(2f, 2f)
+                    .Add(50f, 1f).Add(1f, 50f));
+            float[] at = TestSupport.PositionOf(with, note);
+            float end = at[0] + font.StringWidth(small, note);
+            float right = Math.Min(350f - size, 350f - size / 2f - font.StringWidth(size, "10") / 2f);
+            Assert.True(Math.Abs(right - end) <= 0.1f);
+            Assert.True(at[0] >= 50f && end <= 350f, "the note at " + at[0]);
+            Assert.True(Math.Abs(792f - (250f - size) - at[1]) <= 0.01f);
+            float[] number = TestSupport.PositionOf(with, "0");
+            Assert.True(Math.Abs(TestSupport.PositionOf(without, "0")[1] + 1.4f * small - number[1]) <= 0.02f);
+            // The numbers of the x axis, or the title under them
+            float last = number[1] + font.GetAscent(size) / 2f - 1.4f * size;
+            if (title.Length > 0) {
+                last = TestSupport.PositionOf(with, title)[1];
+            }
+            Assert.True(at[1] + font.GetAscent(small) <= last - font.GetDescent(size), "the note over the row above it");
+            Assert.Equal(TestSupport.FillColorBefore(with, "0"), TestSupport.FillColorBefore(with, note));
+        }
+        // In a chart too narrow for it, shortened and inside
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).SetSize(90f, 200f)
+                .SetXAxisRange(0f, 1f).Add(0f, 1f).Add(5f, 1f).Add(6f, 1f);
+        Assert.True(TestSupport.PositionOf(NoteContent(pdf, chart), "2 points")[0] >= 50f + size);
+        Assert.EndsWith("; " + note + ".", chart.AltDescription());
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    [Fact]
+    public void TheNoteFollowsADescriptionThatIsSet() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        SimpleScatterChart chart = new SimpleScatterChart(font, font).Add(1f, 1f).Add(2f, 2f)
+                .SetAltDescription("Two points");
+        Assert.Equal("Two points", chart.AltDescription());
+        chart.Add(50f, 1f).SetXAxisRange(0f, 10f);
+        Assert.Equal("Two points. 1 point outside the range.", chart.AltDescription());
+        chart.SetAltDescription("Two points.");
+        Assert.Equal("Two points. 1 point outside the range.", chart.AltDescription());
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    [Fact]
+    public void TheNoteIsInTheFigure() {
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetSize(300f, 200f).Add(1f, 1f).Add(50f, 1f)
+                .SetXAxisRange(0f, 10f).DrawOn(page);
+        String content = TestSupport.Content(page);
+        Assert.Equal(content.IndexOf("BDC\n"), content.LastIndexOf("BDC\n"));
+        Assert.Equal(content.IndexOf("EMC\n"), content.LastIndexOf("EMC\n"));
+        Assert.True(content.LastIndexOf("ET\n") < content.LastIndexOf("EMC\n"));
+        pdf.Complete();
+        Assert.Contains("/Alt " + TestSupport.TextString("Scatter chart: 1 points; 1 point outside the range."),
+                TestSupport.Latin1(bos.ToArray()));
+    }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    [Fact]
+    public void TheNoteNeverCostsThePlot() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        // The least height that draws, found from below
+        float height = 1f;
+        while (!NoteContent(pdf, PlotChart(font, height, 3f)).Contains(" Td\n")) {
+            height += 0.25f;
+        }
+        foreach (float h in new float[] {height, height + 1f, height + 5f}) {
+            String without = NoteContent(pdf, PlotChart(font, h, 3f));
+            SimpleScatterChart chart = PlotChart(font, h, 50f);
+            String with = NoteContent(pdf, chart);
+            Assert.DoesNotContain(TestSupport.Hex(" outside"), with);
+            Assert.Equal(without.Split(" Td\n").Length, with.Split(" Td\n").Length);
+            Assert.EndsWith("; 1 point outside the range.", chart.AltDescription());
+        }
+        // With the room, the note
+        Assert.Contains(TestSupport.Hex(" outside"), NoteContent(pdf, PlotChart(font, height + 20f, 50f)));
+    }
+
+    private static SimpleScatterChart PlotChart(Font font, float height, float far) {
+        return new SimpleScatterChart(font, font).SetSize(300f, height).SetXAxisRange(0f, 10f)
+                .Add(1f, 1f).Add(2f, 2f).Add(far, 1f);
     }
 }
 }   // End of namespace PDFjet.NET

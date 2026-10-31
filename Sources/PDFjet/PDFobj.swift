@@ -40,6 +40,10 @@ public final class PDFobj {
     // The objects of the PDF it was read from, by number, for the masks of an
     // image copied into another PDF; nil for an object not read
     var readObjects: ReadObjects?
+    // The number in the PDF being written of an object that a page that was
+    // read uses, like a stamp: this object stands for it among the objects,
+    // and only merge reads the number
+    var writtenNumber = 0
     // The soft mask and the stencil mask of an image that was read, held by
     // the image, as the other objects are held weakly: copied after the list
     // read() returned was let go, it lost them (the review of 28 October 2026)
@@ -354,12 +358,15 @@ public final class PDFobj {
     // data is what the filters before it decoded.
     private final func decode(_ stream: [UInt8]) throws -> [UInt8] {
         var decoded = stream
-        for (i, filter) in getValues("/Filter").enumerated() {
+        for (i, filter) in getFilters().enumerated() {
             switch filter {
+            case "/Crypt":
+                break   // decryptStream reads it (review of 30 October 2026, B10)
             case "/FlateDecode", "/Fl":
-                decoded = applyDecodeParms(self.decoded(try inflate(decoded, maxDecodedLength())), i)
+                decoded = applyDecodeParms(self.decoded(try inflateStream(decoded, maxDecodedLength())), i)
             case "/LZWDecode", "/LZW":
-                decoded = applyDecodeParms(self.decoded(try lzwDecode(decoded, maxDecodedLength())), i)
+                let earlyChange = getDecodeParm(getDecodeParms(i), "/EarlyChange", 1)
+                decoded = applyDecodeParms(self.decoded(try lzwDecode(decoded, maxDecodedLength(), earlyChange)), i)
             case "/ASCIIHexDecode", "/AHx":
                 decoded = try decodedHex(asciiHexDecode(decoded))
             case "/ASCII85Decode", "/A85":
@@ -399,6 +406,31 @@ public final class PDFobj {
             throw PDFjetError(message: "The stream decodes to more than \(maxDecodedLength()) bytes")
         }
         return decoded(data)
+    }
+
+    // Returns the filters of the stream, whose /Filter can be an object of its
+    // own, a name or an array: the data was the bytes as they are.
+    private final func getFilters() -> [String] {
+        guard let k = dict.firstIndex(of: "/Filter"), PDF.isReference(dict, k + 1) else {
+            return getValues("/Filter")
+        }
+        guard let filter = readObjects?.object(Int(dict[k + 1])!) else {
+            return []
+        }
+        return PDF.valueOf(filter).filter { $0 != "[" && $0 != "]" }
+    }
+
+    // Returns true for a stream with a /Crypt filter that is the Identity one,
+    // whose name is the default: the stream is not encrypted.
+    final func hasIdentityCrypt() -> Bool {
+        for (i, filter) in getFilters().enumerated() where filter == "/Crypt" {
+            let parms = getDecodeParms(i)
+            guard let j = parms.firstIndex(of: "/Name") else {
+                return true
+            }
+            return tokenAt(parms, j + 1) == "/Identity"
+        }
+        return false
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -680,9 +712,10 @@ public final class PDFobj {
             return 0
         }
         let i = key + open
-        guard i + 1 < dict.count, let number = Int(dict[i + 1]) else {
+        guard i + 1 < dict.count else {
             throw PDFjetError(message: "The /Length of a stream is not a number.")
         }
+        let number = try PDFobj.toLength(dict[i + 1])
         guard i + 2 < dict.count else {
             throw PDFjetError(message: "The dictionary ends after the /Length.")
         }
@@ -705,10 +738,27 @@ public final class PDFobj {
         guard let obj = numbered[number] else {
             return 0
         }
-        guard obj.dict.count > 3, let length = Int(obj.dict[3]) else {
+        guard obj.dict.count > 3 else {
             throw PDFjetError(message: "The /Length of a stream is not a number.")
         }
-        return length
+        return try toLength(obj.dict[3])
+    }
+
+    // Returns the length the token holds, which a PDF that was read can write
+    // as anything. A real number and null are other programs' ways to write it,
+    // and were refused: the stream ends at its endstream when the length is
+    // wrong, as with null, for which it is 0 (review of 30 October 2026, B11).
+    private static func toLength(_ token: String) throws -> Int {
+        if token == "null" {
+            return 0
+        }
+        if let number = Int(token) {
+            return number
+        }
+        guard Util.isDecimalNumber(token), let value = Double(token), abs(value) <= Double(Int32.max) else {
+            throw PDFjetError(message: "The /Length of a stream is not a number.")
+        }
+        return Int(value)
     }
 
     // Returns the object with the number, or nil when the PDF that was read
@@ -844,13 +894,15 @@ public final class PDFobj {
 
     // Gives the page a copy of the /Resources it shares with the others
     // under its node, before a resource is added to it, so that the resource
-    // is the page's alone, as it was when every page had a copy.
+    // is the page's alone, as it was when every page had a copy. A page with
+    // no /Resources gets an empty one: the fonts added to it were lost, with
+    // no error (review of 30 October 2026, B5).
     private final func ownResources() {
-        guard let inherited = inheritedResources else {
+        if inheritedResources == nil && entryIndexOf("/Resources") != -1 {
             return
         }
         if let open = dict.firstIndex(of: "<<") {
-            dict.insert(contentsOf: ["/Resources"] + inherited, at: open + 1)
+            dict.insert(contentsOf: ["/Resources"] + (inheritedResources ?? ["<<", ">>"]), at: open + 1)
         }
         inheritedResources = nil
     }
@@ -1277,9 +1329,77 @@ public final class PDFobj {
         return maxGSNumber
     }
 
-    /// Adds the graphics state to the resources of this page.
-    @discardableResult
-    public final func setGraphicsState(_ gs: GraphicsState, _ objects: inout [PDFobj]) -> PDFobj {
+    // Returns the largest number of the /GS, /Fm and /OC names in the resources
+    // of this page, or 0, so that the names of what is drawn on it are not
+    // those of what it holds. They are all read from the objects of the PDF, in
+    // the resources or in an /ExtGState, /XObject or /Properties dictionary
+    // that is an object of its own.
+    final func maxResourceNumber() -> Int {
+        guard let readObjects = readObjects else {
+            return 0
+        }
+        var tokens: [String]
+        if let inherited = inheritedResources {
+            tokens = inherited
+        } else {
+            let i = entryIndexOf("/Resources")
+            if i == -1 {
+                return 0
+            }
+            tokens = dict
+            if PDF.isReference(dict, i + 1) {
+                guard let resources = readObjects.object(Int(dict[i + 1])!) else {
+                    return 0
+                }
+                tokens = resources.dict
+            }
+        }
+        var maximum = PDFobj.maxNameNumber(tokens)
+        for (i, token) in tokens.enumerated()
+                where (token == "/ExtGState" || token == "/XObject" || token == "/Properties")
+                    && PDF.isReference(tokens, i + 1) {
+            if let entries = readObjects.object(Int(tokens[i + 1])!) {
+                maximum = max(maximum, PDFobj.maxNameNumber(entries.dict))
+            }
+        }
+        return maximum
+    }
+
+    // Returns the largest number of the names in the tokens that are /GS, /Fm
+    // or /OC and one to nine digits, or 0.
+    private static func maxNameNumber(_ tokens: [String]) -> Int {
+        var maximum = 0
+        for token in tokens
+                where (token.hasPrefix("/GS") || token.hasPrefix("/Fm") || token.hasPrefix("/OC"))
+                    && isGSName("/GS" + token.dropFirst(3)) {
+            maximum = max(maximum, Int(token.dropFirst(3))!)
+        }
+        return maximum
+    }
+
+    // Adds the name and its value to a dictionary of the resources of this
+    // page, like /ExtGState, unless it has the name.
+    final func addResourceEntry(
+            _ category: String, _ name: String, _ value: [String], _ objects: inout [PDFobj]) {
+        guard let (resources, index) = resourceEntries(category, &objects) else {
+            return
+        }
+        var i = index
+        while i < resources.dict.count && resources.dict[i] != ">>" {
+            if resources.dict[i] == name {
+                return
+            }
+            i = PDF.valueEnd(resources.dict, i + 1)
+        }
+        resources.dict.insert(contentsOf: [name] + value, at: index)
+    }
+
+    // Returns the object that holds a dictionary of the resources of this page,
+    // like /ExtGState, and the index of its first entry, or nil. The resources
+    // and the dictionary can be objects of their own, and resources without the
+    // dictionary get it.
+    private final func resourceEntries(
+            _ category: String, _ objects: inout [PDFobj]) -> (PDFobj, Int)? {
         ownResources()
         var obj: PDFobj?
         var index = -1
@@ -1305,26 +1425,31 @@ public final class PDFobj {
             }
             i += 1
         }
-        guard var resources = obj, index != -1 else {
-            return self
+        guard let resources = obj, index != -1 else {
+            return nil
         }
-        // The graphics states go in the /ExtGState dictionary of the resources,
-        // which can be an object of its own. Resources without one get it.
         var k = index
-        while k < resources.dict.count && resources.dict[k] != "/ExtGState" {
+        while k < resources.dict.count && resources.dict[k] != category {
             k += 1
         }
         if k == resources.dict.count {
-            resources.dict.insert(contentsOf: ["/ExtGState", "<<", ">>"], at: index)
-            index += 2
-        } else if tokenAt(resources.dict, k + 1) == "<<" {
-            index = k + 2
-        } else {                                        // "/ExtGState 12 0 R"
-            guard let object = objectAt(objects, tokenAt(resources.dict, k + 1)) else {
-                return self
-            }
-            resources = object
-            index = (resources.dict.firstIndex(of: "<<") ?? -1) + 1
+            resources.dict.insert(contentsOf: [category, "<<", ">>"], at: index)
+            return (resources, index + 2)
+        }
+        if tokenAt(resources.dict, k + 1) == "<<" {
+            return (resources, k + 2)
+        }
+        guard let object = objectAt(objects, tokenAt(resources.dict, k + 1)) else {     // "/ExtGState 12 0 R"
+            return nil
+        }
+        return (object, (object.dict.firstIndex(of: "<<") ?? -1) + 1)
+    }
+
+    /// Adds the graphics state to the resources of this page.
+    @discardableResult
+    public final func setGraphicsState(_ gs: GraphicsState, _ objects: inout [PDFobj]) -> PDFobj {
+        guard let (resources, index) = resourceEntries("/ExtGState", &objects) else {
+            return self
         }
         let entries = gs.entries().split(separator: " ").map(String.init)
         var name: String

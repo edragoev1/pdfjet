@@ -109,10 +109,16 @@ class ReviewRound3Test {
      * presentation form, need no actual text for the second: Arabic text had
      * three times the spans it needed, its content 27% larger (T2).
      */
+    // Noto Sans Arabic, which this test read before 9.1.7, draws ل and its
+    // isolated form ﻝ with one glyph, and ١ and ۱ with one; IBM Plex Sans
+    // Arabic draws each with its own, so its character map is made to draw
+    // them as Noto Sans Arabic's does.
     @Test
     void aCharacterCopiedAsTheFirstHasNoActualText() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, new java.io.ByteArrayInputStream(TestSupport.withSharedGlyphs(
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                new int[][] {{0x0644, 0xFEDD}, {0x0661, 0x06F1}})));
         assertEquals(font.unicodeToGID.get(0x0644), font.unicodeToGID.get(0xFEDD));
         font.useChar(0xFEDD, font.unicodeToGID.get(0xFEDD));
         assertFalse(font.drawnAsAnother(0x0644));
@@ -129,7 +135,7 @@ class ReviewRound3Test {
     @Test
     void aWordWithMarksIsCopiedWithoutASpaceInside() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "\u0628").setLocation(50f, 50f).drawOn(page);
         // The glyph of ة as drawn first for another character, which no two
@@ -192,7 +198,9 @@ class ReviewRound3Test {
     @Test
     void aJoinerInARunIsInItsActualText() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/NotoSansJP/NotoSansJP-Regular.ttf"));
+        // IBM Plex Sans JP, the .otf PDFjet carries, has no glyph for the
+        // joiners or the LRM, as Noto Sans JP, before 9.1.7, had none.
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"));
         assertEquals(0, font.unicodeToGID.get(0x200D));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "d\u200D\u200E\u200Ce\u200D").setLocation(50f, 50f).drawOn(page);
@@ -350,7 +358,7 @@ class ReviewRound3Test {
     @Test
     void anImageTurnedAQuarterHasItsDrawnSize() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));   // 32 by 32
+        Image image = new Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));   // 32 by 32
         image.scaleBy(0.75f, 0.375f);                                               // 24 by 12
         image.setLocation(50f, 50f);
         for (int degrees : new int[] {90, 270}) {

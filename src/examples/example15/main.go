@@ -33,7 +33,7 @@ func Example15() {
 
 	// Use regexp.Split to match Java's split("\\n\\n") regex behavior
 	re := regexp.MustCompile(`\n\n`)
-	paragraphs := re.Split(content.OfTextFile("data/dostoevsky.txt"), -1)
+	paragraphs := re.Split(content.OfTextFile("resources/data/dostoevsky.txt"), -1)
 
 	x := float32(50.0)
 	y := float32(50.0)

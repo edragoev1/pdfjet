@@ -10,8 +10,8 @@ standing for java, dotnet, go or swift. The check fails when:
   The pages are rendered with PyMuPDF at RESOLUTION dpi and compared pixel by
   pixel, so any visible difference counts. Their text is compared too, every
   run of text with its font, size, color and position, because PyMuPDF draws
-  fonts that are not embedded, like the Helvetica of Example_50, with one
-  fallback font, so text in the wrong font can render the same.
+  fonts that are not embedded with one fallback font, so text in the wrong
+  font can render the same.
 - the content stream of any page, its drawing instructions, differs from
   Java's in any token. That catches differences too small to change a pixel,
   like a coordinate written as 511.6 where Java writes 511.59.
@@ -105,7 +105,7 @@ def render(path, password):
                     for span in line['spans']:
                         spans.append((i + 1, span['text'], span['font'], round(span['size'], 2),
                                       span['color'], tuple(round(v, 2) for v in span['bbox'])))
-        # Only hashes are kept, because Example_24 has thousands of pages.
+        # Only hashes are kept, because Example_24 can have thousands of pages.
         content = [hashlib.sha256(b' '.join(doc[i].read_contents().split())).digest()
                    for i in range(doc.page_count)]
         return doc.page_count, pages, spans, content
@@ -284,7 +284,9 @@ def operator_states(template, n):
 
 
 def verapdf(profile, paths):
-    """Runs veraPDF and returns (path, failures) for every file that fails."""
+    """Runs veraPDF and returns (path, failures) for every file that fails, or that it has no
+    result for. A veraPDF that stopped early, or reported fewer files than it was given, used to
+    pass what it never checked (review of 30 October 2026)."""
     command = os.environ.get('VERAPDF', 'verapdf')
     result = subprocess.run([command, '--flavour', profile, '--format', 'mrr', *paths],
                             capture_output=True, text=True)
@@ -293,8 +295,10 @@ def verapdf(profile, paths):
     except ET.ParseError:
         raise RuntimeError(f'veraPDF did not produce a report:\n{result.stderr}')
     failed = []
+    checked = set()
     for job in report.iter('job'):
-        path = job.findtext('item/name')
+        path = job.findtext('item/name') or ''
+        checked.add(os.path.realpath(path))
         validation = job.find('validationReport')
         if validation is None:
             failed.append((path, [job.findtext('.//exceptionMessage') or 'veraPDF could not check the file']))
@@ -303,6 +307,10 @@ def verapdf(profile, paths):
                 f"{rule.get('clause')}-{rule.get('testNumber')}: {(rule.findtext('description') or '').strip()}"
                 for rule in validation.iter('rule') if rule.get('status') == 'failed'
             ]))
+    failed += [(path, ['veraPDF gave no result for the file'])
+               for path in paths if os.path.realpath(path) not in checked]
+    if result.returncode != 0 and not failed:
+        raise RuntimeError(f'veraPDF exited with {result.returncode} and no file failed:\n{result.stderr}')
     return failed
 
 
@@ -325,6 +333,8 @@ def main():
     for n in EXAMPLES:
         for profile in compliance_profiles(java_source(n)):
             by_profile.setdefault(profile, []).append(n)
+    if not by_profile:
+        problems.append('no example declares a PDF/A or PDF/UA profile: veraPDF checked nothing')
     for profile, examples in sorted(by_profile.items()):
         port_of = {
             os.path.realpath(os.path.join(template.format(port=port), f'Example_{n:02d}.pdf')): port

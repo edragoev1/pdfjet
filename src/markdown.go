@@ -909,7 +909,8 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	// does: a short table went to the next page alone
 	rowHeight := float32(2 * markdown.regular.GetBodyHeight(markdown.size()))
 	if markdown.y+height > markdown.bottom {
-		markdown.ensure(float32(2 * rowHeight))
+		// A header that wraps tall starts the page as well: it ran off this one
+		markdown.ensure(max(float32(2*rowHeight), table.wrappedHeaderHeight+rowHeight))
 	}
 	table.SetLocation(x, markdown.marginTop)
 	table.SetFirstPageTopMargin(markdown.y)
@@ -963,6 +964,8 @@ func (markdown *Markdown) makeTable(block *markdownBlock, width float32) *Table 
 			cell := NewCell(font, plain)
 			cell.properties |= cellLineBreaks // At its <br>
 			cell.SetTextAlignment(block.alignments[c])
+			// The text of a smaller font, as code, is on the baseline of the row
+			cell.SetTopPadding(2.0 + max(0, markdown.regular.GetAscent(markdown.regular.size)-font.GetAscent(font.size)))
 			if r > 0 && strings.HasPrefix(plain, markdownCheckMark) {
 				cell.SetTextColor(markdown.checkColor)
 			}

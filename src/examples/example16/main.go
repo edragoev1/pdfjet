@@ -11,7 +11,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -29,16 +29,16 @@ func Example16() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Paragraphs with mixed text styles")
 
-	f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Regular)
 	f1.SetSize(14.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Italic)
 	f2.SetSize(14.0)
 
-	f3 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.SemiBold)
 	f3.SetSize(14.0)
 
-	f4 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.SemiBold)
 	f4.SetSize(9.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())

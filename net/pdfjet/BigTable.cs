@@ -432,18 +432,27 @@ namespace PDFjet.NET {
             }
         }
 
+        // Returns the baseline of the first row of a page, of a table whose top
+        // is there, in the order NewPage adds it up: added up otherwise, it can
+        // round to another float, and the count was a page off the drawing.
+        private float FirstRowY(float top) {
+            float y = top + verticalPadding + f1.ascent;
+            y += f1.descent + 2 * verticalPadding + f2.ascent;
+            return y;
+        }
+
         // Counts the pages the rows take, as DrawTextAndLine breaks them, so that
         // the "Page i of N" footer of a page can be drawn before the next page is
         // created. The location and the bottom margin are set after SetTableData,
         // so the pages are counted when the table is drawn.
         private int CountPages() {
             float pageHeight = pageSize.GetHeight();
-            float yTop = this.y + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding;
+            float yTop = FirstRowY(this.y);
             float yPos = yTop;
             if (StartsOnFirstPage()) {
                 // The first page can be of another size than the next ones.
                 pageHeight = firstPage.GetHeight();
-                yPos = firstPageY + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding;
+                yPos = FirstRowY(firstPageY);
             }
             int count = 1;
             bool newPage = false;

@@ -6,12 +6,32 @@
 # and fails. The package scripts run it, as the version was read from one file
 # of each and nothing saw a port left behind (review of 17 October 2026).
 #
-#   util/check-version.sh            the version, checked
-#   util/check-version.sh --draft    the same, with no date asked of CHANGELOG
+#   util/check-version.sh                the version, checked
+#   util/check-version.sh --draft        the same, with no date asked of CHANGELOG
+#   util/check-version.sh --at v9.1.7    the files of that commit, not of this tree
 
 cd "$(dirname "$0")/.." || exit 1
 
-VERSION=$(sed -n 's/.*producer = "PDFjet \(v[0-9.]*\)".*/\1/p' com/pdfjet/PDF.java)
+DRAFT=""
+AT=""
+while [ $# -gt 0 ]; do
+    case $1 in
+        --draft) DRAFT=1; shift ;;
+        --at) AT=$2; shift 2 ;;
+        *) echo "Unknown option $1" >&2; exit 1 ;;
+    esac
+done
+
+# The text of a file, of the commit asked for or of this tree.
+content() {
+    if [ -n "$AT" ]; then
+        git show "$AT:$1"
+    else
+        cat "$1"
+    fi
+}
+
+VERSION=$(content com/pdfjet/PDF.java | sed -n 's/.*producer = "PDFjet \(v[0-9.]*\)".*/\1/p')
 if [ -z "$VERSION" ]; then
     echo "Could not read the version from com/pdfjet/PDF.java" >&2
     exit 1
@@ -21,7 +41,7 @@ failed=0
 
 # Each file must hold the text.
 expect() {
-    if ! grep -qF -- "$2" "$1"; then
+    if ! content "$1" | grep -qF -- "$2"; then
         echo "$1 does not hold $2" >&2
         failed=1
     fi
@@ -38,8 +58,8 @@ for file in tests/java/com/pdfjet/ReviewWriterTest.java tests/dotnet/ReviewWrite
         src/review_writer_test.go tests/swift/ReviewWriterTests.swift; do
     expect "$file" "PDFjet $VERSION"
 done
-if [ "$1" != "--draft" ]; then
-    if ! grep -qE "^## $VERSION — [0-9]{4}-[0-9]{2}-[0-9]{2}\$" CHANGELOG.md; then
+if [ -z "$DRAFT" ]; then
+    if ! content CHANGELOG.md | grep -qE "^## $VERSION — [0-9]{4}-[0-9]{2}-[0-9]{2}\$"; then
         echo "CHANGELOG.md has no \"## $VERSION — YYYY-MM-DD\": give the release its date" >&2
         failed=1
     fi

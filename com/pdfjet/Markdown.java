@@ -827,7 +827,8 @@ public class Markdown {
         // does: a short table went to the next page alone
         float rowHeight = 2f * regular.getBodyHeight(size());
         if (y + height > bottom) {
-            ensure(2f * rowHeight);
+            // A header that wraps tall starts the page as well: it ran off this one
+            ensure(Math.max(2f * rowHeight, table.wrappedHeaderHeight + rowHeight));
         }
         table.setLocation(x, marginTop);
         table.setFirstPageTopMargin(y);
@@ -873,9 +874,12 @@ public class Markdown {
             for (int c = 0; c < block.rows.get(r).size(); c++) {
                 String text = block.rows.get(r).get(c);
                 String plain = plainText(text);
-                Cell cell = new Cell((r == 0) ? bold : cellFont(text), plain);
+                Font font = (r == 0) ? bold : cellFont(text);
+                Cell cell = new Cell(font, plain);
                 cell.properties |= Cell.LINE_BREAKS;     // At its <br>
                 cell.setTextAlignment(block.alignments.get(c));
+                // The text of a smaller font, as code, is on the baseline of the row
+                cell.setTopPadding(2f + Math.max(0f, regular.getAscent() - font.getAscent()));
                 if (r > 0 && plain.startsWith(CHECK_MARK)) {
                     cell.setTextColor(checkColor);
                 }

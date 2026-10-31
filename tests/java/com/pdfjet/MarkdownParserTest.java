@@ -156,7 +156,7 @@ class MarkdownParserTest {
 
     @Test
     void anImageAloneInItsParagraph() {
-        assertEquals("IMG(A map|images/map.png)", parse("![A map](images/map.png)"));
+        assertEquals("IMG(A map|resources/images/map.png)", parse("![A map](resources/images/map.png)"));
         assertEquals("P(See ![a](b.png) here)", parse("See ![a](b.png) here"));
         assertEquals("P(![a](b c.png))", parse("![a](b c.png)"));
     }

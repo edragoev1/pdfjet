@@ -48,16 +48,16 @@ func Example32() {
 
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/gr-map.jpg")
+	image1 := pdfjet.NewImageFromFile(pdf, "resources/images/gr-map.jpg")
 	image1.SetAltDescription(
 		"A map of Greece with its cities, roads and airports, the Ionian Sea to the west, the Aegean Sea to the east and Crete to the south.")
-	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
+	image2 := pdfjet.NewImageFromFile(pdf, "resources/images/ee-map.png")
 	image2.SetAltDescription(
 		"A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.")
-	image3 := pdfjet.NewImageFromFile(pdf, "images/rgb24pal.bmp")
+	image3 := pdfjet.NewImageFromFile(pdf, "resources/images/rgb24pal.bmp")
 	image3.SetAltDescription(
 		"The letters BMP in white over bars of red, green, blue, yellow, magenta and cyan.")
-	image4 := pdfjet.NewImageFromFile(pdf, "images/cmyk.jpg")
+	image4 := pdfjet.NewImageFromFile(pdf, "resources/images/cmyk.jpg")
 	image4.SetAltDescription(
 		"A CMYK test chart: rows of cyan, magenta, yellow and black from 0 to 100 percent in steps of 10, and bars of red, green, blue and rich black.")
 
@@ -143,7 +143,7 @@ func drawPngKinds(pdf *pdfjet.PDF, font *pdfjet.Font) {
 			page.AddEMC()
 		}
 
-		image := pdfjet.NewImageFromFile(pdf, "PngSuite/"+row[0]+".PNG")
+		image := pdfjet.NewImageFromFile(pdf, "tests/data/PngSuite/"+row[0]+".PNG")
 		image.SetAltDescription(row[2])
 		image.ScaleBy(4.0)
 		image.SetLocation(x, y)
@@ -177,7 +177,7 @@ func drawPngKinds(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	note.SetWidth(512.0)
 	xy2 := note.DrawOn(page)
 
-	chunks := pdfjet.NewImageFromFile(pdf, "images/rgba-8bit-chunks.png")
+	chunks := pdfjet.NewImageFromFile(pdf, "resources/images/rgba-8bit-chunks.png")
 	chunks.SetAltDescription(
 		"Three half transparent circles in red, green and blue that overlap, " +
 			"beside the heading 8-bit RGBA PNG, 1520 by 400, and the note that the " +

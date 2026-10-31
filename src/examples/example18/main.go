@@ -12,7 +12,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexMono"
+	"github.com/edragoev1/pdfjet/v9/src/CascadiaMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -36,7 +36,7 @@ func Example18() {
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold).SetSize(11.0)
 	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic).SetSize(11.0)
 	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic).SetSize(11.0)
-	code := pdfjet.NewFontFromFile(pdf, IBMPlexMono.Regular).SetSize(10.0)
+	code := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(10.0)
 	heading := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	markup := pdfjet.NewMarkup(regular, bold, italic, boldItalic, code)
 

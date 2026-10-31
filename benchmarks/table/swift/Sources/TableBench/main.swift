@@ -14,7 +14,7 @@ import PDFjet
 //
 // Run from the root of the repository, as the paths are relative to it.
 
-let csvFile = "data/Electric_Vehicle_Population_10_Pages.csv"
+let csvFile = "resources/data/Electric_Vehicle_Population_10_Pages.csv"
 let semibold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
 let regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 let columns = 9

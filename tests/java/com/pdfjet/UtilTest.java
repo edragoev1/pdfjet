@@ -157,6 +157,9 @@ class UtilTest {
         assertEquals(2, Util.cjkLineEnd("あい「", "う".codePointAt(0)));    // 「 moves down
         assertEquals(1, Util.cjkLineEnd("中文", ','));
         assertEquals(1, Util.cjkLineEnd("」", "。".codePointAt(0)));        // no other place to break
+        assertEquals(2, Util.cjkLineEnd("あいか", 0x3099));                 // か moves down with its dakuten
+        assertEquals(3, Util.cjkLineEnd("あか\u3099", "う".codePointAt(0)));
+        assertEquals(1, Util.cjkLineEnd("あか\u3099", "。".codePointAt(0))); // か and its dakuten move down with 。
     }
 
     @Test

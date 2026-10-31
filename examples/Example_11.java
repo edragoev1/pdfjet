@@ -45,8 +45,8 @@ public class Example_11 {
         float[] xy = textBlock.drawOn(page);
 
         String[] imageFiles = {
-            "images/ee-map.png",
-            "images/spain-admin.jpg",
+            "resources/images/ee-map.png",
+            "resources/images/spain-admin.jpg",
         };
         String[] titles = {
             "The European Union",

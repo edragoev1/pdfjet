@@ -258,7 +258,7 @@ import Testing
         }
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -304,7 +304,7 @@ import Testing
     // A text line that is a link is the Link of its paragraph, holding its
     // text and its annotation both, as PDF/UA asks and PAC checks: a Link that
     // holds only the annotation is read as a link of no text.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkedTextLineIsTheLinkOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -329,7 +329,7 @@ import Testing
 
     // A word of a paragraph that is a link is a Link among the words, in its
     // place, holding its text and its annotation.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkedWordIsALinkAmongTheWordsOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -360,7 +360,7 @@ import Testing
     }
 
     // A linked image is the Figure of its Link, which holds its annotation too.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkedImageIsTheFigureOfItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -368,7 +368,7 @@ import Testing
         _ = pdf.setTitle("Title")
         _ = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
-        let image = try Image(pdf, TestSupport.open("images/up-arrow.png"))
+        let image = try Image(pdf, TestSupport.open("resources/images/up-arrow.png"))
         _ = image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70, 80)
         _ = image.drawOn(page)
         try pdf.complete()
@@ -387,14 +387,14 @@ import Testing
 
     // In a document that is not tagged, a link is drawn as before, and a
     // linked image leaves the structure elements begun around it as they were.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aLinkOfADocumentNotTaggedIsNoElement() throws {
         let memory = MemoryPDF()
         let pdf = memory.pdf
         let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         page.beginStructElement(StructElem.L)
-        _ = try Image(pdf, TestSupport.open("images/up-arrow.png")).setURIAction("https://pdfjet.com").drawOn(page)
+        _ = try Image(pdf, TestSupport.open("resources/images/up-arrow.png")).setURIAction("https://pdfjet.com").drawOn(page)
         TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(page)
         page.endStructElement()
         #expect(page.structElementStack.isEmpty)
@@ -422,7 +422,7 @@ import Testing
     // the Document, stands as a block and says so, as PAC asks of an element
     // that PDF makes inline; one in a paragraph, or a figure in its link, does
     // not.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func anInlineElementStandingAsABlockSaysSo() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -430,7 +430,7 @@ import Testing
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
-        let image = try Image(pdf, TestSupport.open("images/up-arrow.png"))
+        let image = try Image(pdf, TestSupport.open("resources/images/up-arrow.png"))
         _ = image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70, 80)
         _ = image.drawOn(page)
         TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 200).drawOn(page)
@@ -451,7 +451,7 @@ import Testing
 
     // The text of a cell is drawn whole, and has no description of its own,
     // which PAC warns of on text.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func theTextOfACellHasNoAlt() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -488,7 +488,7 @@ import Testing
     // An annotation that is not a link has an element described by what it
     // says, or by its title, so that it has text, which PAC reads as only
     // whitespace without it; a file attached is described by its own.
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func anAnnotationIsDescribedByWhatItSays() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -515,7 +515,7 @@ import Testing
         }
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -539,7 +539,7 @@ import Testing
         #expect(try dest.first == pageNumbers(memory.bytes)[1])
     }
 
-    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    @Test
     func theStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -647,18 +647,39 @@ import Testing
         }
     }
 
-    @Test func theNameOfAnEmbeddedFileIsATextStringInFAndUF() throws {
+    // /UF is the name of an embedded file as a text string, and /F is the file
+    // specification string of bytes, its characters from space to tilde as they
+    // are and each other one, a pair of surrogates in UTF-16 too, an underscore.
+    @Test func theNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF() throws {
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        let file = try EmbeddedFile(memory.pdf, "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9}.txt",
+        let file = try EmbeddedFile(memory.pdf, "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9} \u{1F600}.txt",
                 InputStream(data: Data("Hello".utf8)), false)
         FileAttachment(file).setLocation(100, 100).drawOn(page)
         try memory.pdf.complete()
         let spec = try #require(TestSupport.findObject(try TestSupport.read(memory.bytes), "/UF"))
         #expect(spec.getValue("/Type") == "/Filespec")
-        #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9}.txt")
-        #expect(spec.getValue("/F") == spec.getValue("/UF"))
+        #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9} \u{1F600}.txt")
+        #expect(spec.getValue("/F").lowercased() == "<5f6265727369636874205f20725f73756d5f205f2e747874>")
     }
+
+    // /F is a file specification string of one component, the file name (ISO
+    // 32000-2, 7.11.2): a solidus is preceded by a reverse solidus, and a
+    // reverse solidus, which a reader removes, is an underscore; /UF is the
+    // name as it is.
+    @Test func theFOfAnEmbeddedFileEscapesASolidus() throws {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let file = try EmbeddedFile(memory.pdf, "in/out\\a.txt",
+                InputStream(data: Data("Hello".utf8)), false)
+        FileAttachment(file).setLocation(100, 100).drawOn(page)
+        try memory.pdf.complete()
+        let spec = try #require(TestSupport.findObject(try TestSupport.read(memory.bytes), "/UF"))
+        #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "in/out\\a.txt")
+        // in\/out_a.txt
+        #expect(spec.getValue("/F").lowercased() == "<696e5c2f6f75745f612e747874>")
+    }
+
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads
     // past the file, allocates what the file does not have or traps.
@@ -874,21 +895,24 @@ import Testing
         // isartor-6-1-12-t01-fail-a, whose /Kids it copied and walked each
         // time: reading its pages and merging them took over a minute. What
         // a node has or inherits is looked for once.
-        let count = 4000
-        var objects = ["<< /Type /Catalog /Pages 2 0 R >>",
-                "<< /Type /Pages /Kids [" + (3..<(count + 3)).map { "\($0) 0 R" }.joined(separator: " ")
-                        + "] /Count \(count) /Resources << >> >>"]
-        for _ in 0..<count {
-            objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>")
+        func pdf(_ count: Int) -> [UInt8] {
+            var objects = ["<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [" + (3..<(count + 3)).map { "\($0) 0 R" }.joined(separator: " ")
+                            + "] /Count \(count) /Resources << >> >>"]
+            for _ in 0..<count {
+                objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>")
+            }
+            return pdfWithObjects(objects)
         }
-        let bytes = pdfWithObjects(objects)
-        let elapsed = try shortestTime(.seconds(10), prepare: { try TestSupport.read(bytes) }) { source in
-            #expect(TestSupport.pageObjects(source).count == count)
+        let count = 2000
+        let bytes = [count: pdf(count), 2 * count: pdf(2 * count)]
+        try expectLinearTime(count) { n in
+            let source = try TestSupport.read(bytes[n]!)
+            #expect(TestSupport.pageObjects(source).count == n)
             let memory = MemoryPDF()
             try memory.pdf.merge(source)
             try memory.pdf.complete()
         }
-        #expect(elapsed < .seconds(10), "\(elapsed)")
     }
 
     @Test func aResourcesObjectThatNamesItsOwnPageIsAddedToOnce() throws {

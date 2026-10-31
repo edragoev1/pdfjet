@@ -152,13 +152,13 @@ func fuzzReadPDF(t *testing.T, data []byte, password string) string {
 	return report.String()
 }
 
-// fuzzPDFSeeds are documents that PDFjet writes, the PDFs of the repository
-// that other programs wrote, and one with a cross-reference stream and an
-// object stream, which PDFjet reads and does not write.
+// fuzzPDFSeeds are documents that PDFjet writes, the PDFs of the repository,
+// and one with a cross-reference stream and an object stream, which PDFjet
+// reads and does not write.
 func fuzzPDFSeeds(f *testing.F) [][]byte {
 	seeds := [][]byte{fuzzPDFDocument(f, ""), fuzzPDFDocument(f, "secret"), fuzzPDFStreamXref()}
-	for _, name := range []string{"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"} {
-		data, err := os.ReadFile("../data/testPDFs/" + name)
+	for _, name := range []string{"scanned-linearized.pdf", "sample-document.pdf", "PDFjetLogo.pdf"} {
+		data, err := os.ReadFile("../resources/data/testPDFs/" + name)
 		if err != nil {
 			f.Fatal(err)
 		}
@@ -284,11 +284,11 @@ const fuzzDecodedTotal = 1 << 20
 
 // fuzzReadMaxAlloc is what FuzzPDFRead may allocate for an input of the size:
 // the empty objects of a PDF that numbers one minObjNumberLimit, which any PDF
-// may, 58 MB read, merged and split; a few times fuzzDecodedTotal; and the
+// may, 71 MB read and more merged and split; a few times fuzzDecodedTotal; and the
 // objects of the input. The PDFs of the seeds allocate a few MB, and a way
 // past the budget hundreds.
 func fuzzReadMaxAlloc(size int) uint64 {
-	return fuzzRaceAlloc * (96<<20 + 128*uint64(size))
+	return fuzzRaceAlloc * (192<<20 + 128*uint64(size))
 }
 
 // fuzzReadMaxTime is how long FuzzPDFRead may take for an input of the size,

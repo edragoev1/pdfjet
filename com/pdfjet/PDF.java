@@ -101,6 +101,8 @@ final public class PDF {
     List<Image> images = new ArrayList<Image>();
     List<OptionalContentGroup> groups = new ArrayList<OptionalContentGroup>();
     Map<String, Integer> states = new LinkedHashMap<String, Integer>();
+    // The fonts PDFjet carries that the document draws in, by their files
+    final Map<String, Font> bundledFonts = new HashMap<String, Font>();
     List<Stamp> stamps = new ArrayList<Stamp>();
     Encryption encryption = null;
 
@@ -110,7 +112,9 @@ final public class PDF {
     private final Map<String, Destination> destinations = new HashMap<String, Destination>();
     private OutputStream os = null;
     private final List<Long> objOffset = new ArrayList<Long>();
-    private final String producer = "PDFjet v9.1.5";
+    private static final String producer = "PDFjet v9.1.5";
+    // The version of the library, such as 9.1.7, of the producer string
+    static final String VERSION = producer.substring("PDFjet v".length());
     private String title;
     private String author;
     private String subject;
@@ -126,7 +130,8 @@ final public class PDF {
     private List<String> acroForm = null;
     private PageLayout pageLayout = null;
     private PageMode pageMode = null;
-    private String language = "en-US";
+    String language = "en-US";
+    private boolean languageSet;    // A PDF that is not of PDF/A or PDF/UA says it only then
     private String uuid = newDocumentID();
     // The files the document carries, in the order they were added.
     private final List<EmbeddedFile> associatedFiles = new ArrayList<EmbeddedFile>();
@@ -619,6 +624,11 @@ final public class PDF {
                 sb.append("&lt;");
             } else if (ch == '>') {
                 sb.append("&gt;");
+            } else if (ch == '\r') {
+                // An XML reader turns the character itself into a line feed, and
+                // the metadata did not say what the information dictionary says,
+                // which PDF/A refused (review of 30 October 2026, B9)
+                sb.append("&#13;");
             } else {
                 sb.append(ch);
             }
@@ -1230,7 +1240,7 @@ final public class PDF {
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Catalog\n");
 
-        if (compliance != Compliance.PDF_1_7) {
+        if (compliance != Compliance.PDF_1_7 || languageSet) {
             byte[] languageBytes = Util.utf8(this.language);
             if (encryption != null) {
                 languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
@@ -1238,7 +1248,9 @@ final public class PDF {
             append("/Lang <");
             append(Util.toHexString(languageBytes));
             append(">\n");
+        }
 
+        if (compliance != Compliance.PDF_1_7) {
             // Only a tagged document has a structure tree: a PDF/A of level B
             // that said it was marked would say its content is tagged, which
             // it is not.
@@ -1364,7 +1376,9 @@ final public class PDF {
                 destination.pageObjNumber = page.objNumber;
                 if (destination.bookmark) {
                     bookmarks.add(destination);
-                } else {
+                } else if (!destinations.containsKey(destination.name)) {
+                    // The first of a name: the parts of a text line wrapped
+                    // by a TextFrame or a TextColumn all have its destination
                     destinations.put(destination.name, destination);
                 }
             }
@@ -2122,9 +2136,14 @@ final public class PDF {
             for (int j = 0; j < value.size(); j++) {
                 if (isReference(value, j)) {
                     int number = Integer.parseInt(value.get(j));
-                    if (!numbers.containsKey(number) && isMergedObject(number, objects, mergedPages)) {
-                        numbers.put(number, reserveObjNumber());
-                        queue.add(objects.get(number - 1));
+                    if (!numbers.containsKey(number)) {
+                        PDFobj written = PDFobj.objectNumbered(objects, number);
+                        if (written != null && written.writtenNumber != 0) {
+                            numbers.put(number, written.writtenNumber);
+                        } else if (isMergedObject(number, objects, mergedPages)) {
+                            numbers.put(number, reserveObjNumber());
+                            queue.add(objects.get(number - 1));
+                        }
                     }
                     j += 2;
                 }
@@ -2192,7 +2211,8 @@ final public class PDF {
             return false;
         }
         PDFobj obj = objects.get(number - 1);
-        if (obj.dict == null || obj.dict.isEmpty()) {
+        // A stream with no dictionary is the content that was drawn on a page.
+        if ((obj.dict == null || obj.dict.isEmpty()) && obj.stream == null) {
             return false;
         }
         String type = obj.getValue("/Type");
@@ -2213,6 +2233,10 @@ final public class PDF {
             Shared shared) {
         List<String> value = valueOf(obj);
         if (obj.stream != null) {
+            if (value.isEmpty()) {
+                value.add("<<"); // Content that was drawn on a page
+                value.add(">>");
+            }
             setEntry(value, "/Length", Collections.singletonList(String.valueOf(obj.stream.length)));
         }
         if (isPage) {
@@ -2749,6 +2773,7 @@ final public class PDF {
      */
     public PDF setLanguage(String language) {
         this.language = language;
+        this.languageSet = true;
         return this;
     }
 
@@ -2940,7 +2965,7 @@ final public class PDF {
     }
 
     // The highest object number read in a file of any size: its empty objects
-    // take about 30 MB.
+    // take about 70 MB.
     private static final int MIN_OBJ_NUMBER_LIMIT = 262144;
 
     // Returns the objects by their number, with an empty object at the number
@@ -3047,6 +3072,7 @@ final public class PDF {
                 decryptor.decryptStrings(obj);
             }
             if (obj.dict.contains("stream")) {
+                obj.readObjects = numbered;     // For a /Filter that is an object of its own
                 obj.setStreamAndData(buf, obj.getLength(numbered), decryptor, budget);
             }
 
@@ -3977,7 +4003,8 @@ final public class PDF {
         for (boolean first = true; !stack.isEmpty(); first = false) {
             PDFobj obj = stack.remove(stack.size() - 1);
             // The root is a node, whatever it is.
-            if (!first && (prepared.contains(obj) || isPageObject(obj))) {
+            if (!first && (prepared.contains(obj) || isPageObject(obj)
+                    || (!visited.contains(obj.number) && typeLeaf(obj)))) {
                 if (prepared.add(obj)) {
                     addInheritedEntries(obj, objects, nodes);
                     resolveMediaBox(obj, objects);
@@ -3989,7 +4016,7 @@ final public class PDF {
             if (!visited.add(obj.number)) {
                 continue;
             }
-            List<Integer> kids = obj.getObjectNumbers("/Kids");
+            List<Integer> kids = getKids(obj, objects);
             for (int i = kids.size() - 1; i >= 0; i--) {
                 int number = kids.get(i);
                 if (number >= 1 && number <= objects.size()) {  // A kid that the document has.
@@ -3997,6 +4024,40 @@ final public class PDF {
                 }
             }
         }
+    }
+
+    // Gives a dictionary in the page tree with no /Type and no /Kids the /Type
+    // /Page it is, which is required but which other programs leave out, and
+    // returns true then: the PDF had no pages, with no error (review of 30
+    // October 2026, B3).
+    private static boolean typeLeaf(PDFobj obj) {
+        List<String> value = valueTokens(obj);
+        if (value.isEmpty() || !value.get(0).equals("<<")
+                || entryIndex(value, "/Type") != -1 || entryIndex(value, "/Kids") != -1) {
+            return false;
+        }
+        obj.dict.addAll(obj.dict.indexOf("<<") + 1, Arrays.asList("/Type", "/Page"));
+        return true;
+    }
+
+    // Returns the object numbers of the /Kids of the node, which can be an array
+    // that is an object of its own, "/Kids 5 0 R".
+    private static List<Integer> getKids(PDFobj node, List<PDFobj> objects) {
+        List<Integer> kids = node.getObjectNumbers("/Kids");
+        int i = node.entryIndexOf("/Kids");
+        if (i != -1 && isReference(node.dict, i + 1) && kids.size() == 1) {
+            PDFobj array = PDFobj.objectNumbered(objects, kids.get(0));
+            if (array != null) {
+                List<String> tokens = valueTokens(array);
+                if (!tokens.isEmpty() && tokens.get(0).equals("[")) {
+                    kids = new ArrayList<Integer>();
+                    for (int j = 1; isReference(tokens, j); j += 3) {
+                        kids.add(Integer.parseInt(tokens.get(j)));
+                    }
+                }
+            }
+        }
+        return kids;
     }
 
     // Adds to the page the entries it inherits from the page tree and does

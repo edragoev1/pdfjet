@@ -826,7 +826,8 @@ public class Markdown {
         // does: a short table went to the next page alone
         float rowHeight = 2f * regular.GetBodyHeight(Size());
         if (y + height > bottom) {
-            Ensure(2f * rowHeight);
+            // A header that wraps tall starts the page as well: it ran off this one
+            Ensure(Math.Max(2f * rowHeight, table.wrappedHeaderHeight + rowHeight));
         }
         table.SetLocation(x, marginTop);
         table.SetFirstPageTopMargin(y);
@@ -904,9 +905,12 @@ public class Markdown {
             for (int c = 0; c < block.rows[r].Count; c++) {
                 String text = block.rows[r][c];
                 String plain = PlainText(text);
-                Cell cell = new Cell((r == 0) ? bold : CellFont(text), plain);
+                Font font = (r == 0) ? bold : CellFont(text);
+                Cell cell = new Cell(font, plain);
                 cell.properties |= Cell.LINE_BREAKS;     // At its <br>
                 cell.SetTextAlignment(block.alignments[c]);
+                // The text of a smaller font, as code, is on the baseline of the row
+                cell.SetTopPadding(2f + Math.Max(0f, regular.GetAscent() - font.GetAscent()));
                 if (r > 0 && plain.StartsWith(CHECK_MARK, StringComparison.Ordinal)) {
                     cell.SetTextColor(checkColor);
                 }

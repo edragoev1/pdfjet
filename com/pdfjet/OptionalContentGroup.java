@@ -170,8 +170,8 @@ public class OptionalContentGroup {
         }
 
         if (!components.isEmpty()) {
-            page.append("/OC /OC");
-            page.append(ocgNumber);
+            page.append("/OC ");
+            page.append(page.resourceName("/Properties", "/OC", ocgNumber, null, objNumber));
             page.append(" BDC\n");
             for (Drawable component : components) {
                 float[] corner = component.drawOn(page);

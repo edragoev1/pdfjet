@@ -132,7 +132,8 @@ func fuzzDrawMarkdown(t *testing.T, text string) {
 	pages := make([]*Page, 0)
 	markdown.DrawOnPages(pdf, text, &pages, letter.Portrait())
 	if len(pages) == 0 {
-		if trimSpace(text) != "" {
+		// A table of too many columns, or tables too large, are an error.
+		if trimSpace(text) != "" && pdf.err == nil {
 			t.Fatalf("%q: no pages", text)
 		}
 		return // A text with no blocks needs no page.

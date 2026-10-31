@@ -602,7 +602,7 @@ class ReviewLayoutTest {
     void markdownReadsTheSourceOfAnImageTheSameWayInEveryPort() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
-        String images = TestSupport.file("images").getPath();
+        String images = TestSupport.file("resources/images").getPath();
         Markdown markdown = new Markdown(font, font, font, font, font).setImageDirectory(images);
         Map<String, Boolean> sources = new LinkedHashMap<String, Boolean>();
         sources.put("circles.png", true);
@@ -624,8 +624,8 @@ class ReviewLayoutTest {
         }
         // An empty directory is the working directory.
         Markdown here = new Markdown(font, font, font, font, font).setImageDirectory("");
-        if (new File("images/circles.png").isFile()) {
-            assertNotNull(here.imagePath("images/circles.png"));
+        if (new File("resources/images/circles.png").isFile()) {
+            assertNotNull(here.imagePath("resources/images/circles.png"));
         }
         assertNull(here.imagePath("circles.png/"));
     }

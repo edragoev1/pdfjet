@@ -7,6 +7,435 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.1.7 — not released yet
+
+The next release, with PDFjet Pro's 9.1.7 (TODO.md).
+
+### Added
+- Go: `XMLNode.Content()` in the package xmlparser returns the text and the
+  child elements of a node in the order of the document, a string for each
+  piece of text and an `*XMLNode` for each element. The SVG reader draws
+  text with it; Java, C# and Swift have the same, inside the library.
+- SimpleBarChart, all four ports, three additions, each off unless set, so
+  that a chart drawn before draws the same (checked against 9.1.5, byte for
+  byte but for the date and the document ID):
+  - `setHighlightLowest()` and `setHighlightHighest()`: the chart
+    highlights the bar of the lowest or the highest value itself, the first
+    of them on a tie, values that are NaN or infinite left out; bars added
+    later count. `setHighlight(index)` and these take each other's place.
+  - `setReferenceLine(value, label)`: a thin dashed line across the bars at
+    a value, a target or an average, labeled under them ("Average 1,234"),
+    the bars scaled so that it fits; it leaves out the rows where it would
+    cross a bar's value, and the PDF/UA description ends with it.
+  - `setRoundedBars(true)`: bars with slightly rounded ends.
+  Example_20's chart by model year uses all three.
+- SimpleScatterChart, all four ports: `addLinkedDot(name, x, y, uri)` (Go
+  and C# `AddLinkedDot`), a point drawn as an ordinary dot, in its series if
+  any, not highlighted and with no name beside it, that is a link to the
+  URI. Its name is its description, what a hover or a screen reader gets:
+  the alternative text of the annotation, and in PDF/UA that of a figure of
+  its own in the Link that holds it, as with a linked point. The link is at
+  least 8 points square around the dot, however small the dot is, and inside
+  the page. The point counts in the description of the chart as a plain
+  point does, unnamed. Example_26 uses it: every one of its 217 countries is
+  now a link, to its row of a table on pdfjet.com, with its life expectancy
+  and children per woman (`https://pdfjet.com/countries.html#CA`), by its
+  two-letter code, a new last field of the data file, the seven named ones
+  as well and the rest described by their figures ("Albania: 79.6 years,
+  1.35 children per woman"), which takes its PDF from 53 KB to 268 KB.
+- SimpleScatterChart, SimpleLineChart and the line series of BarChart, all
+  four ports, say how much of their data a range leaves out. With a range
+  set, `setXAxisRange`, `setYAxisRange` or `setValueAxisRange`, the scatter
+  chart did not draw a point outside it and the lines were cut at the edge
+  of the plot, without a word, so that an outlier in a report could vanish.
+  The chart now prints "1 point outside the range" or "2 points outside the
+  range", in SimpleLineChart and BarChart "1 value" or "2 values", small and
+  in the gray of its numbers, on a row of its own inside the chart, under
+  the plot at its right end. A point outside both ranges is one point; a
+  value that is NaN or infinite is not outside, nor is a bar of BarChart.
+  The same words end the alternate description, and follow a description
+  set with `setAltDescription`, for a screen reader to have what the chart
+  prints; in a tagged document the note is text of the chart's figure. A
+  chart never loses its plot to the note: one that would be left no room to
+  draw it keeps the plot as it was, without the note, and its description
+  still says the number. With nothing outside the output is the same, byte
+  for byte but for the date and the document ID.
+- Behavior change: a chart with a value outside its range has a plot shorter
+  by 1.4 times its small size, for the row of the note. A scatter chart of
+  12-point numbers with 3 of its 100 points past `setYAxisRange(0f, 10f)`,
+  described as "T: 97 points." before, has a plot 13.44 points shorter, the
+  note under it, and is described as "T: 97 points; 3 points outside the
+  range."
+- SVGImage, all four ports, draws the charts of D3 and the like as a
+  browser does:
+  - `text` and `tspan` elements: x, y, dx and dy (in em too), font-size,
+    font-family, font-weight, font-style and the `font` shorthand,
+    text-anchor for each chunk, dominant-baseline, and a stroke drawn under
+    the text with `paint-order: stroke`, the white halo of a label. The
+    text is drawn in the fonts PDFjet carries (below), embedded, so that a
+    PDF/A or PDF/UA document needs nothing set: IBM Plex Sans for
+    sans-serif, Helvetica, Arial and the like, IBM Plex Serif for serif,
+    Times and the like, Cascadia Mono for monospace, Courier and the like,
+    in the weight and the style the text asks for; monospace text of weight
+    400 is drawn in Cascadia Mono SemiLight, whose strokes match IBM Plex
+    Sans Regular. A font of one's own, for Chinese for instance, is set
+    with `setFont()` and `setBoldFont()`. A stroke drawn under text is a
+    second copy of its characters in the content, which copying the text
+    from the PDF gives twice.
+- The fonts PDFjet carries, all four ports, so that it works out of the
+  box: PDFjet includes every European language (Latin, Greek, Cyrillic) in
+  IBM Plex Sans and Serif (Thin to Bold, and Text) and Cascadia Mono (Light
+  to Bold), each upright and italic. For other scripts, one package adds
+  the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: IBM
+  Plex Sans Arabic, Hebrew and Thai (Thin to Bold) and IBM Plex Sans JP,
+  KR, SC and TC, Regular, SemiBold and Bold, as .otf. 71 faces, under the
+  SIL Open Font License, each family with its license in `resources/fonts`,
+  those of the add-on in `resources/fonts/world` (THIRD-PARTIES.TXT). A
+  font path, such as the constant `IBMPlexSans.Regular`, is read from the
+  file of the path, else from the folder `resources/fonts`, else from the
+  library, with the same API in every case; a font of the add-on found in
+  none of those places says what to add, the package and the exact line:
+  - Java: the jar of Maven Central, `com.pdfjet:pdfjet`, carries the
+    European fonts, about 5 MB; `com.pdfjet:pdfjet-fonts-world`, the same
+    version, the others, a jar of about 41 MB. The `PDFjet.jar` of the
+    release packages on GitHub, and the one built from the repository,
+    carries none, 0.7 MB, its package having `resources/fonts`.
+  - .NET: the package of NuGet, `PDFjet`, carries the European fonts in
+    `PDFjet.dll`, about 12 MB, a package of about 10 MB with the DLLs for
+    .NET 8 and .NET Framework 4.8; the package `PDFjet.Fonts.World`, the
+    others, one assembly for .NET Standard 2.0 that serves both, a package
+    of about 41 MB. The `PDFjet.dll` of the release packages on GitHub
+    carries none, 0.9 MB.
+  - Go: a program built with PDFjet carries the European fonts, 11 MB, a
+    small program about 15 MB in all; `import _
+    "github.com/edragoev1/pdfjet/v9/resources/fonts/world"` adds the
+    others, 52 MB more.
+  - Swift: the product `PDFjet` carries the European fonts, about 11 MB,
+    in the bundle of its target `PDFjetFonts`; the product
+    `PDFjetFontsWorld` adds the others, about 52 MB. `PDFjetFonts` is
+    still a product, so that a `Package.swift` that names it builds; it
+    adds nothing to `PDFjet`.
+  New: `IBMPlexSerif` and `CascadiaMono` constants, and `Font(objects,
+  path)`, a font added to an existing PDF by its path. A font PDFjet does
+  not carry throws, saying so. Every face carried has a constant, and every
+  face for Latin text has all of Greek and of the Cyrillic of Russian,
+  Ukrainian, Belarusian, Bulgarian, Serbian and Macedonian, which tests
+  check.
+  - `use` elements, of symbols too, and `marker-start`, `marker-mid` and
+    `marker-end`, the arrowheads of a graph. A file that draws more than a
+    million elements again through them throws.
+  - `stroke-dasharray` and `stroke-dashoffset`, and `clip-path`.
+  - What is drawn outside the size of the image is cut off.
+  - A gradient is drawn in one color, the mean of its stops.
+- SimpleScatterChart, all four ports: `addSeries(name)`. The points added
+  after it are its points, drawn as the outlines of its shape in its color,
+  circle, square, triangle, star, diamond and cross in turn, with a legend
+  under the title; a highlighted point of a series is its shape filled.
+  Points added before the first series are gray dots, as before.
+
+### Deprecated
+- `NotoSans`, `IBMPlexMono` (no Greek) and `JetBrainsMono` (no Ѐ Ѝ ѐ ѝ),
+  and the ExtraLight and Black weights and, of IBM Plex Sans JP, KR, SC and
+  TC, Thin, Light, Text and Medium: PDFjet does not carry them. Their
+  constants read the font file when it is there; the release packages
+  before 9.1.7 have them.
+- `SourceSerif4`, all four ports: PDFjet does not carry Source Serif 4 from
+  9.1.7, and carries IBM Plex Serif in its place. Its constants read the
+  font file when it is there; the release packages before 9.1.7 have it.
+- `IBMPlexMath`, all four ports: PDFjet does not carry IBM Plex Math from
+  9.1.7. It has no formula layout, and the math signs of business
+  documents, such as ± × ÷ ≤ ≥ ≠ and √, are in IBM Plex Sans and Serif. Its
+  constant reads the font file when it is there; the release packages
+  before 9.1.7 have it.
+- The CJK constants Regular, SemiBold and Bold name the .otf of the font,
+  where they named the .ttf; the same font, with smaller subsets.
+
+### Changed
+- PDFjet no longer carries Source Serif 4: IBM Plex Serif, which it carried
+  already, is its serif font, so that the fonts it carries are the IBM Plex
+  families and Cascadia Mono, 72 faces (71 without IBM Plex Math, below).
+  The fonts are 2.7 MB smaller: the
+  `PDFjet.dll` of NuGet, a Go program and the Swift product `PDFjetFonts`
+  by 2.7 MB, the jar of Maven Central by about 1 MB. The examples (07, 10,
+  16, 17), the snippets of the booklet and the text benchmark use IBM Plex
+  Serif; Example_17 sets the novel on 694 pages kerned, 696 not. Like the
+  ExtraLight faces above, `SourceSerif4` is deprecated, not removed.
+- Behavior change: a Source Serif 4 constant finds the font only if the
+  program supplies its file, in the folder `resources/fonts` or at its path;
+  PDFjet no longer reads it from the library. Example:
+  `pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)` panics in Go, and
+  `new Font(pdf, SourceSerif4.Regular)` in Java and C# and `try Font(pdf,
+  SourceSerif4.Regular)` in Swift throw, saying PDFjet does not carry the
+  font, where 9.1.5 read it from the folder `fonts` of its package; use
+  `IBMPlexSerif.Regular` instead.
+- Behavior change: the fonts PDFjet carries for the scripts but the
+  European ones, Chinese, Japanese, Korean, Arabic, Hebrew and Thai, are in
+  one package of their own in every port, which a program that draws in
+  them adds; they are in `resources/fonts/world`, where the small
+  `PDFjet.jar` and `PDFjet.dll` of the release packages read them. A folder
+  `resources/fonts` kept next to a program as in 9.1.5 moves these families
+  into `resources/fonts/world`: `resources/fonts/IBMPlexSansJP` is no longer
+  found.
+  Examples: a Java program that draws `new Font(pdf,
+  IBMPlexSansArabic.Regular)` or `new Font(pdf, IBMPlexSansJP.Regular)` with
+  the jar of Maven Central adds next to `com.pdfjet:pdfjet`
+  `<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId><version>9.1.7</version></dependency>`
+  (Gradle: `implementation("com.pdfjet:pdfjet-fonts-world:9.1.7")`);
+  without it, the constructor throws a `FileNotFoundException` that names
+  that line. In C#, `new Font(pdf, IBMPlexSansHebrew.Regular)` needs
+  `dotnet add package PDFjet.Fonts.World`; in Go,
+  `pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)` needs `import _
+  "github.com/edragoev1/pdfjet/v9/resources/fonts/world"`, and panics
+  without it, naming the line; in Swift, `.product(name: "PDFjetFontsWorld", package: "pdfjet")`
+  in `Package.swift`, where an app that named `PDFjetFonts` for its fonts
+  keeps the European ones.
+- Behavior change: PDFjet no longer carries IBM Plex Math, as Source Serif
+  4 above. Example: `new Font(pdf, IBMPlexMath.Regular)` in Java and C#,
+  `try Font(pdf, IBMPlexMath.Regular)` in Swift and
+  `pdfjet.NewFontFromFile(pdf, IBMPlexMath.Regular)` in Go read the font
+  only from the program's own file, at that path or as
+  `resources/fonts/IBMPlexMath/IBMPlexMath-Regular.ttf`, and throw or
+  panic without it, saying PDFjet does not carry the font. Its file is at
+  `tests/fonts/IBMPlexMath-Regular.ttf` of the repository, test data with
+  its license, and in the release packages before 9.1.7.
+- Behavior change: BarChart and DonutChart draw their series and slices in
+  the Tableau 10 palette, the colors of D3's charts: blue #4E79A7, orange
+  #F28E2C, red #E15759, teal #76B7B2, green #59A14F, yellow #EDC949, purple
+  #AF7AA1, pink #FF9DA7, brown #9C755F and gray #BAB0AB. A chart that sets
+  no colors looks different from 9.1.5: its first series was navy #1F3A5F,
+  and is blue.
+- Bars and slices label their values in white or ink, whichever contrasts
+  more, as before, and in a near black, #111111, where neither contrasts
+  4.5:1, as WCAG asks: on the red, the purple and the brown of the palette,
+  and on a color as pure red.
+- Behavior change: in SVGImage, a fill or a stroke of `url(#id)` that names
+  no gradient, with no color after it, is none, as a browser draws it; it
+  was the inherited color, black unless set. Example: `fill="url(#missing)"`
+  drew a black shape and now draws nothing.
+- Swift: less memory for every document with fonts. The font program and
+  the ToUnicode map of each font were compressed with Deflate tables of
+  their own, about 450 KB a stream, made again for each: 1.8 MB for a
+  document in two fonts. They now use the tables the PDF keeps for the
+  content of its pages, one stream after another. And
+  `Content.getFromStream` keeps the pieces of a stream as they are read and
+  joins them once, instead of an array copied each time it grew: 0.8 MB
+  less for a font of the size of Noto Sans. An invoice of one page in IBM
+  Plex Sans allocates 4.0 MB instead of 5.9, the same in Noto Sans 6.9
+  instead of 10.3. The PDFs are the same, byte for byte, but for their date
+  and document ID. The other three ports compress with the Deflate of
+  their platform, and were not changed.
+- The repository needs nothing fetched to build, test and run the examples.
+  The fonts PDFjet carries are in `resources/fonts`, read from the library,
+  and the data files the examples and the tests read, those of the
+  repository pdfjet-data, are in `resources/data`: the examples read
+  `resources/data/the-idiot.txt` where they read `data/the-idiot.txt`.
+  `get-fonts-and-data.sh`, `get-fonts-and-data.cmd` and
+  `fonts-and-data.txt` are gone, and the scripts no longer call them.
+  `resources/data` has a `go.mod` of its own, so that the Go module, which
+  `go get` downloads, leaves the data files out. The Java and .NET zips
+  have them in `resources/data` too.
+- The example images are in `resources/images`, where they were in
+  `images`, and the PNG test suite, PngSuite, is in `tests/data/PngSuite`,
+  where it was in `PngSuite`, so that the root of the repository has no data
+  folders. The examples, the tests, the scripts and the Java and .NET zips
+  read them there: Example_32 reads `resources/images/gr-map.jpg` and
+  `tests/data/PngSuite/BASN2C08.PNG`.
+  `resources/images` keeps its `go.mod`, now the module
+  `github.com/edragoev1/pdfjet/v9/resources/images`, so that the Go module
+  leaves the images out as before.
+- Example_24, the four ports, draws the 10-page sample,
+  `resources/data/Electric_Vehicle_Population_10_Pages.csv`, 12 pages, by
+  default, and the CSV file given as its first argument, such as the full
+  Electric Vehicle Population Data, 2,546 pages, for performance testing.
+  The commented-out line that chose the sample is gone.
+- Behavior change: Example_24 run with no argument draws 12 pages, where it
+  drew 2,546. Example: `go run ./src/examples/example24
+  path/to/Electric_Vehicle_Population_Data.csv` draws the 2,546 pages as
+  before.
+- Example_24's sample is now a PDF/UA document, its table tagged for screen
+  readers. A file given as the argument is drawn as before, without PDF/UA,
+  so that the benchmark stays comparable with earlier releases.
+- Example_25, the four ports, reads its counts from
+  `resources/data/Electric_Vehicles_by_Model_Year.csv`, the vehicles of the
+  Washington State Electric Vehicle Population Data by model year and by
+  kind, written once from the full data by `util/make-ev-by-model-year.py`,
+  where they were written into the example. The chart is the same, with the
+  same numbers; its text names the summary, not the full data file.
+- The full data file, `resources/data/Electric_Vehicle_Population_Data.csv`,
+  30 MB, is no longer in the repository or the packages.
+  `benchmarks/run.sh table` reads it from
+  `../pdfjet-test/Electric_Vehicle_Population_Data.csv`, or from the path in
+  `EV_CSV`, and says what to do when it is missing.
+
+### Fixed
+- The four ports: the `/F` of an embedded file's file specification is a
+  string of bytes, as ISO 32000-2, 7.11.3, Table 43, asks of a file
+  specification string; it was the name in UTF-16, as `/UF` is. Each
+  character from space to tilde is written as it is, and each other one, a
+  Unicode code point, as an underscore: `résumé.txt` is `r_sum_.txt` in
+  `/F`. `/UF` keeps the full name in UTF-16, the one readers of PDF 1.7 and
+  later use, and the name tree of `/EmbeddedFiles` is the same. Example:
+  for `notes.txt`, `/F` is `<6e6f7465732e747874>`, where it was
+  `<feff006e006f007400650073002e007400780074>`.
+- C#, on .NET 10: a stream of no bytes, such as the content of an empty
+  page, is the zlib stream of no bytes, 8 bytes, as on .NET 8. .NET 10's
+  ZLibStream writes nothing for no bytes, so such a `/FlateDecode` stream
+  had length 0, which is no zlib stream. On .NET 8 nothing changes.
+- The four ports: the `/F` of an embedded file follows ISO 32000-2, 7.11.2,
+  on file specification strings. The name is one component, the file name:
+  a solidus in it is preceded by a reverse solidus, which tells it from the
+  separator of components, as 7.11.2 asks, and a reverse solidus in it is an
+  underscore, as a reader removes each reverse solidus and 7.11.2 gives no
+  way to write one that stays. `/UF` keeps the full name.
+- Behavior change: a solidus or a reverse solidus in the name of an
+  embedded file is written differently in `/F`. Example: for `in/out.txt`,
+  `/F` is the bytes `in\/out.txt`, where it was `in/out.txt`, a folder `in`
+  and a file `out.txt` to a reader; for `C:\temp\a.txt` it is
+  `C:_temp_a.txt`, where it was `C:\temp\a.txt`, which a reader reads as
+  `C:tempa.txt`.
+- Markup, the four ports: a hard line break at the very end of a text, two
+  spaces and a line break, is no break, as in CommonMark, and the spaces
+  are no longer in the last text line. `paragraphs` strips the whitespace
+  at the end of each paragraph, as CommonMark strips a paragraph's final
+  spaces and as Markdown did already.
+- Behavior change: `paragraph("0  \n")` is the one text line `0`, with no
+  line break after it, where it was `0  ` and a line break, and
+  `paragraphs("0  \n")` is `0`, where it was `0  `. Example:
+  `paragraphs("Total \n\nNext")` gives the text lines `Total` and `Next`,
+  where the first was `Total `.
+- Behavior change: Markup, the four ports: the spaces before a hard line
+  break in the middle of a text are not in the text line before it, as in
+  CommonMark. Example: `paragraph("one  \ntwo")` is the text line `one`, a
+  line break and `two`, where the first was `one  `.
+- Behavior change: Markup, the four ports: a backslash at the very end of a
+  text is a backslash, and no hard line break, as in CommonMark. Example:
+  `paragraph("0\\\n")` is the one text line `0\`, with no line break after
+  it, where it was `0` and a line break. A backslash before a line break in
+  the middle of a text is a hard line break, as before.
+- Behavior change: Markup, the four ports: the spaces and tabs at the start
+  of the line after a line break, hard or not, are not in the text, as in
+  CommonMark. Example: `paragraph("one  \n  two")` is the text line `one`,
+  a line break and `two`, where the second was `  two`, and
+  `paragraph("one\n  two")` is `one two`, where it was `one   two`. A space
+  written `&#32;` is text, and so are the spaces after a `<br>`, as before.
+- Behavior change: Markup, the four ports: a `\r\n` that is no hard line
+  break is one line ending, so one space, where it was two. Example:
+  `paragraph("one\r\ntwo")` is `one two`, where it was `one  two`.
+- The code review of 30 October 2026, in all four ports unless a port is
+  named:
+  - Read pages: a drawing on a read page survives `Merge`, where the page
+    lost its content and the PDF was invalid; graphics states, stamps and
+    optional content get their resources; a page with no `/Resources` gets
+    one, where its text was lost.
+  - Reading: indirect `/Kids`, leaf pages with no `/Type`, `/EarlyChange 0`,
+    a missing Adler-32, an indirect `/Filter`, a `/Crypt` filter and a
+    `/Length` that is real or null; `/Contents []` (Go).
+  - Scales keep five decimals; `\r` in a title passes PDF/A-1B.
+  - SVG: a depth limit of 48 and a limit of 4,000,000 path operations drawn
+    again, where a small file crashed the process or used gigabytes;
+    gradients are read in linear time.
+  - SVG: `use` in a `clipPath`, `clip-rule`, shapes that overlap in a clip;
+    the alpha of a color (`rgba()`, `#rgba`, `#rrggbbaa`), `hsl()`, keywords
+    in any case; `visibility`, `switch`, the size of a `use` of a `symbol`,
+    a nested `svg`, `stroke-miterlimit`, `paint-order` on shapes; dash
+    offsets below zero; huge dashes and clip paths skip that path.
+  - PNG: 16-bit gray with alpha and RGBA, which `ReadImageSize` accepted and
+    `NewImage` refused.
+  - Swift: a program with no font bundle gets an error, not a crash. Java:
+    `pdfjet-fonts-world` is also found through the context class loader.
+    .NET: `PDFjet.Fonts.World` survives trimming and NativeAOT.
+  - Markup: balanced parentheses in link URLs; `&#32;` kept before a break;
+    a line ending is `\n`, `\r\n` or `\r`, in code spans too.
+  - TextFrame: wrapped lines keep their destinations and alt text, inline
+    code keeps its spaces, and large texts draw in linear time.
+  - Bidi: presentation forms and every right-to-left block. Kinsoku: no line
+    starts with a combining mark. Java: Unicode 15.0 categories on any
+    runtime.
+  - Charts: an axis end is never inside the values, so a point at 59.1 is
+    drawn. Table: a width set before `SetTableData` is kept. BigTable: "of N"
+    always matches the pages drawn. Barcode and PDF417: solid bars on a page
+    with a dash pattern. Markdown: a tall wrapped header starts a new page.
+  - NaN and absurd sizes in TextFrame and the charts, and wrong table
+    indexes, are errors, not hangs or crashes.
+- SVG: `switch` honors `systemLanguage`, by the language of the PDF, or `en`
+  when none is set; `symbol` and nested `svg` clip to their viewports, unless
+  overflow is visible or auto; `text` in a `clipPath` clips, with text
+  rendering mode 7. A clip path with several shapes keeps no `evenodd`, as
+  a PDF clip has one rule for its path.
+- SVG: `marker` clips to its viewport, unless overflow is visible or auto,
+  as `symbol` and nested `svg` do; its viewBox is fitted as theirs is, with
+  the alignment and `slice` of its preserveAspectRatio.
+- SVG: `overflow="inherit"` takes the value of the parent, a group's being
+  visible unless given, where it read as hidden.
+- SVG: `systemLanguage` is honored on any element, a `tspan` too, not only on
+  the children of a `switch`: an element that does not match is not drawn, by
+  the same rule, the primary subtag of the language of the PDF, or `en` when
+  none is set. What a `tspan` left out would have started at goes to the next
+  text drawn, and spaces collapse among what is drawn. The children of a
+  `clipPath` are read with no language, as a clip path is one path.
+- Markdown: code in a table cell is on the baseline of its row, where the
+  smaller font sat higher.
+- Build: the package scripts take the POM, nuspec and README from the tagged
+  commit and run `util/check-version.sh`; the POM and the nuspec say
+  `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
+  `check-api.sh` and `test-go.sh` cover the font packages; actions are pinned
+  by commit. Two photos of cars in `resources/images` were replaced with
+  images of our own drawing, `car.png` and `dusk.png`, and 69 files nothing
+  used left `resources/images`.
+- Behavior change: a Table sum reads each cell once, and a number has to be
+  the whole cell. Example: 1,234,567.89 wrapped in a narrow column counts
+  once, and `boxes 12` adds nothing, where it added 12.
+- Behavior change: a header or footer row that runs off the page is an
+  error, as a body row is. Example: a Table with a header at y 780 on Letter.
+- Behavior change: bottom-aligned cell text rises by its descent. Example:
+  about 2.7 pt at 12 pt.
+- Behavior change: Markup: the spaces and tabs before a soft line break are
+  not in the text, and a line ending after `<br>` or a hard break starts no
+  space. Example: `one \ntwo` is `one two`, and `one<br>\ntwo` starts `two`.
+- Behavior change: Markup: `[a](b(c)` is no link, and `[a]([b](c))` links to
+  `[b](c)`.
+- Behavior change: a destination name used twice goes to the first, where it
+  went to the last. A 48 pt word after 12 pt text lowers its row in a
+  TextFrame, where it rose above the frame.
+- Behavior change: SVG nested past 48 levels, or over 4,000,000 reused path
+  operations, is an error. Example: 47 nested `g` elements are refused. A
+  negative viewBox and a color like `#abcz` are errors.
+- Behavior change: SVG strokes get a miter limit of 4, as SVG says, where it
+  was PDF's 10, so sharp corners bevel. A size in a unit with no viewBox
+  scales the content: `width="100pt"` with a rectangle of 100 fills 75.
+- Behavior change: SVG: `<switch><rect systemLanguage="de"/><rect/></switch>`
+  in an English PDF draws the second, where it drew the first. A nested
+  `<svg width="9" height="9">` clips a larger rectangle. The children of a
+  `switch` that are not drawn are read, so bad data in them is an error.
+- Behavior change: SVG: a `marker` cuts off what is outside its viewport.
+  Example: a rectangle of 20 in `<marker markerWidth="4" markerHeight="4">`
+  draws 4 by 4 of it; `overflow="visible"` keeps all of it. A `marker` of
+  `markerWidth="0"` draws nothing, where it drew its content without a
+  viewBox.
+- Behavior change: SVG: `overflow="inherit"` no longer clips under a parent
+  that is visible. Example: `<g><svg width="9" height="9" overflow="inherit">`
+  draws all of a larger rectangle, where it clipped it.
+- Behavior change: SVG: an element whose `systemLanguage` does not match is
+  not drawn, outside a `switch` too. Example: `<rect systemLanguage="de"/>`
+  draws nothing in an English PDF, where it drew the rectangle.
+- Behavior change: the folders `fonts` and `data` of the repository are
+  `resources/fonts` and `resources/data`, and PDFjet carries IBM Plex Sans as
+  `.ttf` only. Example: a program of 9.1.5 that opens
+  `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf` itself, or an `.otf` of the
+  family, keeps that folder beside it or changes the path.
+- Behavior change: `SetLanguage` writes `/Lang` on a plain PDF too. Example:
+  `fr-CA`; unset writes none.
+- Behavior change: the name of an embedded file is cut at a backslash on every
+  system. Example: `C:\Users\alice\x.xml` is `x.xml`, and `a\b.xml` on Linux
+  is `b.xml`.
+- Behavior change: Read takes what it refused. Example: a Flate stream with no
+  Adler-32, or `/Length null`.
+- Behavior change: `SetFractionDigits` above 100 is an error.
+- Behavior change: the package scripts refuse a HEAD that is not the tag of
+  the version. Example: `package-nuget.sh 9.1.7` on main stops; with
+  `PDFJET_REF` or `PDFJET_UNSIGNED` the version says so, as in
+  `PDFjet.9.1.7-draft-unsigned.nupkg`.
+
 ## v9.1.5 — 2026-10-28
 
 There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
@@ -203,6 +632,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   file Example_26 draws, in place of a file of world communications of the
   mid-2000s. Its markers and row colors are found by country and by value,
   not by row number, and it is four pages, the table in the middle of each.
+- Example_50, the four ports: it reads an existing PDF, stamps every page
+  APPROVED with a fixed date, so that the ports stay comparable, and adds
+  "Page 1 of 2" at the foot, which is what people do with a PDF they have,
+  in place of drawing text at the coordinates of a form. It embeds IBM Plex
+  Sans, in place of Helvetica.
+- `resources/data/testPDFs/rc65-16e.pdf`, a real government form, is gone:
+  PDFjet has no recorded right to pass it on. Example_49, the snippets of
+  the booklet and the tests read `sample-document.pdf`, a report of a
+  made-up company in IBM Plex, which `util/make-sample-pdf.sh` writes.
 - BarChart, the four ports: the look of the simple charts. The title and
   the subtitle at the left, in ink and in a muted gray, and the legend under
   them at the left; light gray solid grid lines along the value axis; one
