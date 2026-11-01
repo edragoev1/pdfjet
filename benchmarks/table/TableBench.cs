@@ -20,7 +20,7 @@ using PDFjet.NET;
 /// Run from the root of the repository, as the paths are relative to it.
 /// </summary>
 public class TableBench {
-    const String CSV = "data/Electric_Vehicle_Population_10_Pages.csv";
+    const String CSV = "resources/data/Electric_Vehicle_Population_10_Pages.csv";
     const String SEMIBOLD = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf";
     const String REGULAR = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
     const int COLUMNS = 9;

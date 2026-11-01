@@ -29,7 +29,7 @@ public class TextFlowTest {
     // An image of the repository, 100 points wide and as tall as the height,
     // narrower than the text.
     private static Image NewImage(PDF pdf, float height) {
-        Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/up-arrow.png"));
         return image.ScaleBy(100f / image.GetWidth(), height / image.GetHeight());
     }
 

@@ -11,12 +11,13 @@ using Xunit;
 namespace PDFjet.NET {
 
 /// <summary>
-/// A CMYK JPEG that Adobe software wrote, as images/cmyk.jpg is, has an APP14
-/// marker and stores its inks inverted, so the image is written with a Decode
-/// array that inverts them back; one without the marker is written as it is.
+/// A CMYK JPEG that Adobe software wrote, as resources/images/cmyk.jpg is, has
+/// an APP14 marker and stores its inks inverted, so the image is written with a
+/// Decode array that inverts them back; one without the marker is written as
+/// it is.
 /// </summary>
 public sealed class JPGImageTest {
-    private const string CMYK = "images/cmyk.jpg";
+    private const string CMYK = "resources/images/cmyk.jpg";
 
     // Returns the JPEG without its APP14 segment.
     private static byte[] WithoutAPP14(byte[] jpeg) {
@@ -289,14 +290,14 @@ public sealed class JPGImageTest {
         // The JFIF segment of a JPEG holds the pixel density and the unit it
         // is in, and says how large the image is meant to be. cmyk.jpg is
         // 1200 by 800 pixels at 300 dots per inch, which is 288 by 192 points.
-        JPGImage jpg = new JPGImage(TestSupport.Open("images/cmyk.jpg"));
+        JPGImage jpg = new JPGImage(TestSupport.Open("resources/images/cmyk.jpg"));
         Assert.Equal(1200, jpg.GetWidth());
         Assert.Equal(800, jpg.GetHeight());
         Assert.True(Math.Abs(jpg.GetPhysicalWidth() - 288f) < 0.01f);
         Assert.True(Math.Abs(jpg.GetPhysicalHeight() - 192f) < 0.01f);
 
         PDF pdf = TestSupport.NewPDF();
-        Image image = new Image(pdf, TestSupport.Open("images/cmyk.jpg"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/cmyk.jpg"));
         Assert.True(Math.Abs(image.GetWidth() - 288f) < 0.01f,
                 "the image is not drawn at the size it asks for");
         Assert.True(Math.Abs(image.GetHeight() - 192f) < 0.01f,
@@ -308,13 +309,13 @@ public sealed class JPGImageTest {
         // Unit 0 of the JFIF segment is the ratio of the two axes and says
         // nothing about how large the image is, and a JPEG with no JFIF
         // segment at all gives no size either.
-        JPGImage ratio = new JPGImage(TestSupport.Open("images/italy-admin.jpg"));
+        JPGImage ratio = new JPGImage(TestSupport.Open("resources/images/italy-admin.jpg"));
         Assert.Equal(0f, ratio.GetPhysicalWidth());
-        JPGImage none = new JPGImage(TestSupport.Open("images/gr-map.jpg"));
+        JPGImage none = new JPGImage(TestSupport.Open("resources/images/gr-map.jpg"));
         Assert.Equal(0f, none.GetPhysicalWidth());
 
         PDF pdf = TestSupport.NewPDF();
-        Image image = new Image(pdf, TestSupport.Open("images/italy-admin.jpg"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/italy-admin.jpg"));
         Assert.True(Math.Abs(image.GetWidth() - ratio.GetWidth()) < 0.01f);
         Assert.True(Math.Abs(image.GetHeight() - ratio.GetHeight()) < 0.01f);
     }
@@ -325,7 +326,7 @@ public sealed class JPGImageTest {
         // image object of the PDF holds the pixels, whatever the segment says.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream);
-        Image image = new Image(pdf, TestSupport.Open("images/cmyk.jpg"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/cmyk.jpg"));
         image.SetLocation(0f, 0f);
         image.DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
@@ -386,7 +387,7 @@ public sealed class JPGImageTest {
     // it compared a code path with itself (the review of 28 October 2026).
     [Fact]
     public void TheBytesOfAnImageFileCanBeReusedAfterTheImageIsMade() {
-        foreach (string name in new[] {"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
+        foreach (string name in new[] {"resources/images/italy-admin.jpg", "resources/images/cmyk.jpg", "resources/images/ee-map.png",
                 "tests/data/jpeg/restart.jpg"}) {
             byte[] file = File.ReadAllBytes(TestSupport.RepoPath(name));
             Assert.Equal(PdfOf(file, false), PdfOf(file, true));

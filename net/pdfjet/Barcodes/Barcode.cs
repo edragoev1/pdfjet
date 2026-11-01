@@ -275,6 +275,7 @@ public class Barcode : IDrawable {
             // The bars are in their color whatever pen color the page was left with
             page.SaveGraphicsState();
             page.SetPenColor(color);
+            page.SetDefaultStrokeDashPattern();     // Not the caller's, which broke the bars
         }
         try {
             Extent extent;

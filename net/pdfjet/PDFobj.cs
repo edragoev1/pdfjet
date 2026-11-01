@@ -37,6 +37,10 @@ public class PDFobj {
     // The objects of the PDF it was read from, by number, for the masks of an
     // image copied into another PDF; null for an object not read
     internal Dictionary<int, PDFobj> readObjects;
+    // The number in the PDF being written of an object that a page that was
+    // read uses, like a stamp: this object stands for it among the objects,
+    // and only Merge reads the number
+    internal int writtenNumber;
 
     /// <summary>
     /// Creates an object with an empty dictionary.
@@ -324,22 +328,23 @@ public class PDFobj {
     // filter that is not supported, like DCTDecode, ends the decoding, and
     // the data is what the filters before it decoded.
     private byte[] Decode(byte[] stream) {
-        List<String> filters = GetValues("/Filter");
+        List<String> filters = GetFilters();
         byte[] decoded = stream;
         for (int i = 0; i < filters.Count; i++) {
             String filter = filters[i];
             if (filter.Equals("/FlateDecode") || filter.Equals("/Fl")) {
-                decoded = ApplyDecodeParms(Decoded(Decompressor.Inflate(decoded, MaxDecodedLength())), i);
+                decoded = ApplyDecodeParms(Decoded(Decompressor.InflateStream(decoded, MaxDecodedLength())), i);
             } else if (filter.Equals("/LZWDecode") || filter.Equals("/LZW")) {
-                decoded = ApplyDecodeParms(Decoded(Decompressor.LZWDecode(decoded, MaxDecodedLength())), i);
+                int earlyChange = GetDecodeParm(GetDecodeParms(i), "/EarlyChange", 1);
+                decoded = ApplyDecodeParms(Decoded(Decompressor.LZWDecode(decoded, MaxDecodedLength(), earlyChange)), i);
             } else if (filter.Equals("/ASCIIHexDecode") || filter.Equals("/AHx")) {
                 decoded = DecodedHex(Decompressor.ASCIIHexDecode(decoded));
             } else if (filter.Equals("/ASCII85Decode") || filter.Equals("/A85")) {
                 decoded = Decoded(Decompressor.ASCII85Decode(decoded, MaxDecodedLength()));
             } else if (filter.Equals("/RunLengthDecode") || filter.Equals("/RL")) {
                 decoded = Decoded(Decompressor.RunLengthDecode(decoded, MaxDecodedLength()));
-            } else {
-                break;
+            } else if (!filter.Equals("/Crypt")) {  // DecryptStream reads that one (review
+                break;                              // of 30 October 2026, B10)
             }
         }
         return decoded;
@@ -372,6 +377,40 @@ public class PDFobj {
                     "the stream decodes to more than " + MaxDecodedLength() + " bytes");
         }
         return Decoded(data);
+    }
+
+    // Returns the filters of the stream, whose /Filter can be an object of its
+    // own, a name or an array: the data was the bytes as they are.
+    private List<String> GetFilters() {
+        int i = dict.IndexOf("/Filter") + 1;
+        if (i == 0 || !PDF.IsReference(dict, i)) {
+            return GetValues("/Filter");
+        }
+        List<String> filters = new List<String>();
+        PDFobj filter;
+        if (readObjects != null
+                && readObjects.TryGetValue(Int32.Parse(dict[i], CultureInfo.InvariantCulture), out filter)) {
+            foreach (String token in PDF.ValueOf(filter)) {
+                if (token != "[" && token != "]") {
+                    filters.Add(token);
+                }
+            }
+        }
+        return filters;
+    }
+
+    // Returns true for a stream with a /Crypt filter that is the Identity one,
+    // whose name is the default: the stream is not encrypted.
+    internal bool HasIdentityCrypt() {
+        List<String> filters = GetFilters();
+        for (int i = 0; i < filters.Count; i++) {
+            if (filters[i].Equals("/Crypt")) {
+                List<String> parms = GetDecodeParms(i);
+                int j = parms.IndexOf("/Name");
+                return j == -1 || TokenAt(parms, j + 1).Equals("/Identity");
+            }
+        }
+        return false;
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -681,13 +720,24 @@ public class PDFobj {
     }
 
     // Returns the length the token holds, which a PDF that was read can write
-    // as anything.
+    // as anything. A real number and null are other programs' ways to write it,
+    // and were refused: the stream ends at its endstream when the length is
+    // wrong, as with null, for which it is 0 (review of 30 October 2026, B11).
     private static int ToLength(String token) {
-        int length;
-        if (!Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out length)) {
-            throw new InvalidDataException("The /Length of a stream is not a number.");
+        if (token == "null") {
+            return 0;
         }
-        return length;
+        int length;
+        if (Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out length)) {
+            return length;
+        }
+        if (Util.IsDecimalNumber(token)) {
+            double value = Double.Parse(token, CultureInfo.InvariantCulture);
+            if (Math.Abs(value) <= Int32.MaxValue) {
+                return (int) value;
+            }
+        }
+        throw new InvalidDataException("The /Length of a stream is not a number.");
     }
 
     /// <summary>
@@ -809,14 +859,20 @@ public class PDFobj {
 
     // Gives the page a copy of the /Resources it shares with the others under
     // its node, before a resource is added to it, so that the resource is the
-    // page's alone, as it was when every page had a copy.
+    // page's alone, as it was when every page had a copy. A page with no
+    // /Resources gets an empty one: the fonts added to it were lost, with no
+    // error (review of 30 October 2026, B5).
     internal void OwnResources() {
-        if (inheritedResources == null) {
-            return;
+        List<String> entry = inheritedResources;
+        if (entry == null) {
+            if (EntryIndexOf("/Resources") != -1) {
+                return;
+            }
+            entry = new List<String> {"<<", ">>"};
         }
         int open = dict.IndexOf("<<");
         if (open != -1) {
-            dict.InsertRange(open + 1, inheritedResources);
+            dict.InsertRange(open + 1, entry);
             dict.Insert(open + 1, "/Resources");
         }
         inheritedResources = null;
@@ -1227,9 +1283,85 @@ public class PDFobj {
         return maxGSNumber;
     }
 
-    /// <summary>Adds the graphics state to the resources of this page.</summary>
-    public PDFobj SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+    // Returns the largest number of the /GS, /Fm and /OC names in the resources
+    // of this page, or 0, so that the names of what is drawn on it are not those
+    // of what it holds. They are all read from the objects of the PDF, in the
+    // resources or in an /ExtGState, /XObject or /Properties dictionary that is
+    // an object of its own.
+    internal int MaxResourceNumber() {
+        if (readObjects == null) {
+            return 0;
+        }
+        List<String> tokens = inheritedResources;
+        if (tokens == null) {
+            int i = EntryIndexOf("/Resources");
+            if (i == -1) {
+                return 0;
+            }
+            tokens = dict;
+            if (PDF.IsReference(dict, i + 1)) {
+                PDFobj resources;
+                if (!readObjects.TryGetValue(Int32.Parse(dict[i + 1], CultureInfo.InvariantCulture), out resources)) {
+                    return 0;
+                }
+                tokens = resources.dict;
+            }
+        }
+        int maximum = MaxNameNumber(tokens);
+        for (int i = 0; i < tokens.Count; i++) {
+            String token = tokens[i];
+            if ((token == "/ExtGState" || token == "/XObject" || token == "/Properties")
+                    && PDF.IsReference(tokens, i + 1)) {
+                PDFobj entries;
+                if (readObjects.TryGetValue(Int32.Parse(tokens[i + 1], CultureInfo.InvariantCulture), out entries)) {
+                    maximum = Math.Max(maximum, MaxNameNumber(entries.dict));
+                }
+            }
+        }
+        return maximum;
+    }
+
+    // Returns the largest number of the names in the tokens that are /GS, /Fm
+    // or /OC and one to nine digits, or 0.
+    private static int MaxNameNumber(List<String> tokens) {
+        int maximum = 0;
+        foreach (String token in tokens) {
+            if (token.Length >= 4
+                    && (token.StartsWith("/GS", StringComparison.Ordinal)
+                            || token.StartsWith("/Fm", StringComparison.Ordinal)
+                            || token.StartsWith("/OC", StringComparison.Ordinal))
+                    && IsGSName("/GS" + token.Substring(3))) {
+                maximum = Math.Max(maximum, Int32.Parse(token.Substring(3), CultureInfo.InvariantCulture));
+            }
+        }
+        return maximum;
+    }
+
+    // Adds the name and its value to a dictionary of the resources of this
+    // page, like /ExtGState, unless it has the name.
+    internal void AddResourceEntry(String category, String name, List<String> value, List<PDFobj> objects) {
+        PDFobj resources;
+        int index = ResourceEntries(category, objects, out resources);
+        if (resources == null) {
+            return;
+        }
+        for (int i = index; i < resources.dict.Count && resources.dict[i] != ">>";
+                i = PDF.ValueEnd(resources.dict, i + 1)) {
+            if (resources.dict[i] == name) {
+                return;
+            }
+        }
+        resources.dict.InsertRange(index, value);
+        resources.dict.Insert(index, name);
+    }
+
+    // Returns the index of the first entry of a dictionary of the resources of
+    // this page, like /ExtGState, and the object that holds it, or null. The
+    // resources and the dictionary can be objects of their own, and resources
+    // without the dictionary get it.
+    private int ResourceEntries(String category, List<PDFobj> objects, out PDFobj holder) {
         OwnResources();
+        holder = null;
         PDFobj obj = null;
         int index = -1;
         for (int i = 0; i < dict.Count; i++) {
@@ -1250,26 +1382,31 @@ public class PDFobj {
             }
         }
         if (obj == null || index == -1) {
-            return this;
+            return -1;
         }
-        // The graphics states go in the /ExtGState dictionary of the resources,
-        // which can be an object of its own. Resources without one get it.
         int k = index;
-        while (k < obj.dict.Count && !obj.dict[k].Equals("/ExtGState")) {
+        while (k < obj.dict.Count && !obj.dict[k].Equals(category)) {
             k++;
         }
         if (k == obj.dict.Count) {
-            obj.dict.InsertRange(index, new String[] {"/ExtGState", "<<", ">>"});
-            index += 2;
-        } else if (TokenAt(obj.dict, k + 1).Equals("<<")) {
-            index = k + 2;
-        } else {                                    // "/ExtGState 12 0 R"
-            PDFobj extGState = ObjectAt(objects, TokenAt(obj.dict, k + 1));
-            if (extGState == null) {
-                return this;
-            }
-            obj = extGState;
-            index = obj.dict.IndexOf("<<") + 1;
+            obj.dict.InsertRange(index, new String[] {category, "<<", ">>"});
+            holder = obj;
+            return index + 2;
+        }
+        if (TokenAt(obj.dict, k + 1).Equals("<<")) {
+            holder = obj;
+            return k + 2;
+        }
+        holder = ObjectAt(objects, TokenAt(obj.dict, k + 1));   // "/ExtGState 12 0 R"
+        return (holder == null) ? -1 : holder.dict.IndexOf("<<") + 1;
+    }
+
+    /// <summary>Adds the graphics state to the resources of this page.</summary>
+    public PDFobj SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+        PDFobj obj;
+        int index = ResourceEntries("/ExtGState", objects, out obj);
+        if (obj == null) {
+            return this;
         }
         List<String> entries = new List<String>(gs.Entries().Split(' '));
         String name = SameState(obj, index, entries);
