@@ -203,7 +203,7 @@ public class Paragraph {
      * @return true if the first line starts with the specified token.
      */
     public boolean startsWith(String token) {
-        return lines.get(0).getText().startsWith(token);
+        return !lines.isEmpty() && lines.get(0).getText().startsWith(token);
     }
 
     /**

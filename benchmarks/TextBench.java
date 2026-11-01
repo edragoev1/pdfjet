@@ -7,7 +7,9 @@ import java.util.*;
  * Latin, Greek and Cyrillic text, one drawing call per line, with an embedded
  * font.
  *
- * Configurations: jet-plex (IBM Plex Sans) and jet-noto (Noto Sans).
+ * Configurations: jet-plex (IBM Plex Sans) and jet-serif (IBM Plex Serif,
+ * which replaced Noto Sans, jet-noto, when PDFjet stopped coming with it in 9.1.7;
+ * during the work on 9.1.7 it was Source Serif 4, which PDFjet does not carry either).
  *
  * Usage: TextBench bench|cold <config> <pages>
  *        TextBench sample <config> <pages> <file>
@@ -17,7 +19,7 @@ import java.util.*;
 public class TextBench {
     static final String ROOT = System.getProperty("pdfjet.root", ".") + "/";
     static final String PLEX = ROOT + "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
-    static final String NOTO = ROOT + "fonts/NotoSans/NotoSans-Regular.ttf";
+    static final String SERIF = ROOT + "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf";
     static final int LINES = 60;
     static final String[] SAMPLES = {
         "The quick brown fox jumps over the lazy dog",
@@ -46,7 +48,7 @@ public class TextBench {
     static byte[] run(String config, int pages) throws Exception {
         switch (config) {
         case "jet-plex": return pdfjet(PLEX, pages);
-        case "jet-noto": return pdfjet(NOTO, pages);
+        case "jet-serif": return pdfjet(SERIF, pages);
         default: throw new IllegalArgumentException(config);
         }
     }

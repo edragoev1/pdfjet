@@ -21,8 +21,7 @@ public class Example_10 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("Text block with highlighted keywords");
 
-        // Font f1 = new Font(pdf, SourceSerif4.Regular);
-        // Font f1 = new Font(pdf, NotoSans.Regular);
+        // Font f1 = new Font(pdf, IBMPlexSerif.Regular);
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(15f);
 
@@ -47,7 +46,7 @@ public class Example_10 {
         gs.setAlphaNonStroking(0.5f);               // Non-Stroking alpha
         page.setGraphicsState(gs);
 
-        String englishText = Content.ofTextFile("data/languages/english.txt");
+        String englishText = Content.ofTextFile("resources/data/languages/english.txt");
         // f1.setSize(14f);
         TextBlock textBlock = new TextBlock(f1, englishText);
         textBlock.setLocation(100f, 50f);

@@ -467,7 +467,7 @@ final class MarkdownParser {
         }
         for (int k = 0; k < source.length(); k++) {
             char ch = source.charAt(k);
-            if (Character.isWhitespace(ch) || ch == '(' || ch == ')') {
+            if (Util.isWhitespace(ch) || ch == '(' || ch == ')') {
                 return null;
             }
         }

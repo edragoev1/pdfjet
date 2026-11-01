@@ -59,7 +59,7 @@ public class Example_01 {
 
         // Add English text from a file
         TextBlock textBlock = new TextBlock(
-            font, Content.ofTextFile("data/languages/english.txt"));
+            font, Content.ofTextFile("resources/data/languages/english.txt"));
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(473f);   // Why 473f? To match the Google Fonts samples.
         textBlock.setPadding(10f);
@@ -73,7 +73,7 @@ public class Example_01 {
         rect.drawOn(page);
 
         // Add Greek text from a file
-        textBlock = new TextBlock(font, Content.ofTextFile("data/languages/greek.txt"));
+        textBlock = new TextBlock(font, Content.ofTextFile("resources/data/languages/greek.txt"));
         textBlock.setLanguage("el");    // So that a screen reader reads it in Greek
         textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(473f);
@@ -81,7 +81,7 @@ public class Example_01 {
         xy = textBlock.drawOn(page);
 
         // Add Bulgarian text from a file with a blue border and rounded corners
-        textBlock = new TextBlock(font, Content.ofTextFile("data/languages/bulgarian.txt"));
+        textBlock = new TextBlock(font, Content.ofTextFile("resources/data/languages/bulgarian.txt"));
         textBlock.setLanguage("bg");    // So that a screen reader reads it in Bulgarian
         textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(473f);

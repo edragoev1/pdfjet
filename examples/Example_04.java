@@ -23,17 +23,14 @@ public class Example_04 {
 
         // Thai font, whose GPOS table places the tone marks above the upper
         // vowels.
-        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
         Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
         f1.setSize(12f);
 
         // Hebrew font
-        // Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf");
         Font f2 = new Font(pdf, IBMPlexSansHebrew.Regular);
         f2.setSize(12f);
 
         // Arabic font
-        // Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf");
         Font f3 = new Font(pdf, IBMPlexSansArabic.Regular);
         f3.setSize(12f);
 
@@ -121,7 +118,7 @@ public class Example_04 {
         textLine.setLocation(x - f2.stringWidth(str), y += 20f);
         textLine.drawOn(page);
 
-        TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("data/languages/thai.txt"));
+        TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("resources/data/languages/thai.txt"));
         textBlock.setLocation(30f, y + 35f);
         textBlock.setWidth(430f);
         textBlock.setBorderColor(Color.blue);
@@ -132,7 +129,7 @@ public class Example_04 {
         // Right to left text in text blocks, wrapped at their width.
         page = new Page(pdf, Letter.PORTRAIT);
 
-        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/arabic.txt"));
+        textBlock = new TextBlock(f3, Content.ofTextFile("resources/data/languages/arabic.txt"));
         textBlock.setLocation(180f, 30f);
         textBlock.setWidth(400f);
         textBlock.setBorderColor(Color.blue);
@@ -141,7 +138,7 @@ public class Example_04 {
         textBlock.setLanguage("ar");
         xy = textBlock.drawOn(page);
 
-        textBlock = new TextBlock(f2, Content.ofTextFile("data/languages/hebrew.txt"));
+        textBlock = new TextBlock(f2, Content.ofTextFile("resources/data/languages/hebrew.txt"));
         textBlock.setLocation(180f, xy[1] + 30f);
         textBlock.setWidth(400f);
         textBlock.setBorderColor(Color.blue);
@@ -150,7 +147,7 @@ public class Example_04 {
         textBlock.setLanguage("he");
         xy = textBlock.drawOn(page);
 
-        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/persian.txt"));
+        textBlock = new TextBlock(f3, Content.ofTextFile("resources/data/languages/persian.txt"));
         textBlock.setLocation(180f, xy[1] + 30f);
         textBlock.setWidth(400f);
         textBlock.setBorderColor(Color.blue);

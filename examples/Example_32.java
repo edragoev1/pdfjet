@@ -44,16 +44,16 @@ public class Example_32 {
 
         Font font = new Font(pdf, IBMPlexSans.Regular);
 
-        Image image1 = new Image(pdf, "images/gr-map.jpg");
+        Image image1 = new Image(pdf, "resources/images/gr-map.jpg");
         image1.setAltDescription(
                 "A map of Greece with its cities, roads and airports, the Ionian Sea to the west, the Aegean Sea to the east and Crete to the south.");
-        Image image2 = new Image(pdf, "images/ee-map.png");
+        Image image2 = new Image(pdf, "resources/images/ee-map.png");
         image2.setAltDescription(
                 "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.");
-        Image image3 = new Image(pdf, "images/rgb24pal.bmp");
+        Image image3 = new Image(pdf, "resources/images/rgb24pal.bmp");
         image3.setAltDescription(
                 "The letters BMP in white over bars of red, green, blue, yellow, magenta and cyan.");
-        Image image4 = new Image(pdf, "images/cmyk.jpg");
+        Image image4 = new Image(pdf, "resources/images/cmyk.jpg");
         image4.setAltDescription(
                 "A CMYK test chart: rows of cyan, magenta, yellow and black from 0 to 100 percent in steps of 10, and bars of red, green, blue and rich black.");
 
@@ -136,7 +136,7 @@ public class Example_32 {
                 page.addEMC();
             }
 
-            Image image = new Image(pdf, "PngSuite/" + IMAGES[i][0] + ".PNG");
+            Image image = new Image(pdf, "tests/data/PngSuite/" + IMAGES[i][0] + ".PNG");
             image.setAltDescription(IMAGES[i][2]);
             image.scaleBy(4f);
             image.setLocation(x, y);
@@ -170,7 +170,7 @@ public class Example_32 {
         note.setWidth(512f);
         float[] xy2 = note.drawOn(page);
 
-        Image chunks = new Image(pdf, "images/rgba-8bit-chunks.png");
+        Image chunks = new Image(pdf, "resources/images/rgba-8bit-chunks.png");
         chunks.setAltDescription(
                 "Three half transparent circles in red, green and blue that overlap, "
                 + "beside the heading 8-bit RGBA PNG, 1520 by 400, and the note that the "

@@ -23,16 +23,16 @@ public class Example_16 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("Paragraphs with mixed text styles");
 
-        Font f1 = new Font(pdf, SourceSerif4.Regular);
+        Font f1 = new Font(pdf, IBMPlexSerif.Regular);
         f1.setSize(14f);
 
-        Font f2 = new Font(pdf, SourceSerif4.Italic);
+        Font f2 = new Font(pdf, IBMPlexSerif.Italic);
         f2.setSize(14f);
 
-        Font f3 = new Font(pdf, SourceSerif4.SemiBold);
+        Font f3 = new Font(pdf, IBMPlexSerif.SemiBold);
         f3.setSize(14f);
 
-        Font f4 = new Font(pdf, SourceSerif4.SemiBold);
+        Font f4 = new Font(pdf, IBMPlexSerif.SemiBold);
         f4.setSize(9f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
