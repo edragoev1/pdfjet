@@ -59,7 +59,7 @@ public class Example_35 {
         textBlock.setWidth(512f);
         textBlock.drawOn(page);
 
-        Image image = new Image(pdf, "images/europe-relief.png");
+        Image image = new Image(pdf, "resources/images/europe-relief.png");
         image.resizeWidth(w);
         image.setLocation(x0, y0);
         image.setAltDescription("A relief map of Europe, from Ireland to Turkey");

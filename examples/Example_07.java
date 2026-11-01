@@ -38,8 +38,8 @@ public class Example_07 {
         TextBlock textBlock = new TextBlock(f1,
                 "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
                 + "of any .otf or .ttf file on the computer to the Font constructor. "
-                + "The IBMPlexSans and NotoSans constants are the paths of the fonts "
-                + "that come with PDFjet. A font is embedded with only the "
+                + "The font constants, such as IBMPlexSans and IBMPlexSansJP, "
+                + "are the paths of the fonts that come with PDFjet. A font is embedded with only the "
                 + "glyphs the document draws, which keeps the file small, whatever its "
                 + "outlines. The paragraph below is drawn four times.");
         textBlock.setFontSize(12f);
@@ -49,10 +49,10 @@ public class Example_07 {
         float[] xy = textBlock.drawOn(page);
 
         String[] files = {
-            "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+            IBMPlexSansJP.Regular,
             IBMPlexSans.Regular,
-            SourceSerif4.Regular,
-            NotoSans.Regular,
+            IBMPlexSerif.Italic,
+            IBMPlexSerif.Regular,
         };
         String[] kinds = {
             "OpenType with CFF outlines, from the .otf file, embedded as a subset",

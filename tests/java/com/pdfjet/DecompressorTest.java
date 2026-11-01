@@ -124,6 +124,23 @@ class DecompressorTest {
     }
 
     @Test
+    void inflateStreamTakesACutChecksumAndNoOtherCut() throws Exception {
+        byte[] data = "Some text of a page. Some text of a page. Some text of a page.".getBytes(StandardCharsets.US_ASCII);
+        byte[] deflated = Compressor.deflate(data);
+        for (int cut = 1; cut <= 4; cut++) {
+            assertArrayEquals(data, Decompressor.inflateStream(
+                    Arrays.copyOf(deflated, deflated.length - cut), Decompressor.MAX_DECODED_LENGTH), "cut " + cut);
+        }
+        byte[] inDeflate = Arrays.copyOf(deflated, deflated.length - 5);
+        assertThrows(Exception.class, () -> Decompressor.inflateStream(inDeflate, Decompressor.MAX_DECODED_LENGTH));
+        byte[] wrongChecksum = Arrays.copyOf(deflated, deflated.length - 2);
+        wrongChecksum[wrongChecksum.length - 1] ^= 1;
+        assertThrows(Exception.class, () -> Decompressor.inflateStream(wrongChecksum, Decompressor.MAX_DECODED_LENGTH));
+        byte[] noChecksum = Arrays.copyOf(deflated, deflated.length - 4);
+        assertThrows(Exception.class, () -> Decompressor.inflateStream(noChecksum, data.length - 1));
+    }
+
+    @Test
     void inflateRejectsEveryTruncationOfAStream() throws Exception {
         byte[] data = new byte[2000];
         new Random(3).nextBytes(data);

@@ -31,7 +31,7 @@ import com.pdfjet.Table;
  * Run from the root of the repository, as the paths are relative to it.
  */
 public class TableBench {
-    static final String CSV = "data/Electric_Vehicle_Population_10_Pages.csv";
+    static final String CSV = "resources/data/Electric_Vehicle_Population_10_Pages.csv";
     static final String SEMIBOLD = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf";
     static final String REGULAR = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
     static final int COLUMNS = 9;

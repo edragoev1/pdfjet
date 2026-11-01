@@ -70,7 +70,7 @@ public class Example_14 {
         colorMap.put("physics", Color.firebrick);
         colorMap.put("Experimentation", Color.sienna);
         colorMap.put("science", Color.blue);
-        paragraphs = Paragraph.paragraphsFromFile(f1, "data/physics.txt");
+        paragraphs = Paragraph.paragraphsFromFile(f1, "resources/data/physics.txt");
         // The paragraphs under each heading are a numbered list.
         paragraphNumber = 1;
         for (Paragraph p : paragraphs) {

@@ -47,7 +47,7 @@ public class Example_38 {
         float[] xy = textBlock.drawOn(page);
 
         // A barcode that holds a whole source file.
-        List<String> lines = Content.linesOfTextFile("data/pdf417-sample.java");
+        List<String> lines = Content.linesOfTextFile("resources/data/pdf417-sample.java");
         StringBuilder buf = new StringBuilder();
         for (String line : lines) {
             buf.append(line);
@@ -60,7 +60,7 @@ public class Example_38 {
         barcode.setLocation(70f, xy[1] + 30f);
         xy = barcode.drawOn(page);
 
-        text = new TextLine(f1, "The source code of data/pdf417-sample.java, "
+        text = new TextLine(f1, "The source code of resources/data/pdf417-sample.java, "
                 + lines.size() + " lines");
         text.setFontSize(10f);
         text.setTextColor(Color.dimgray);

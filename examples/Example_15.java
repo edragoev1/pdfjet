@@ -25,7 +25,7 @@ public class Example_15 {
         f1.setSize(14f);
 
         List<String> paragraphs = new ArrayList<>(
-                Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\\n\\n")));
+                Arrays.asList(Content.ofTextFile("resources/data/dostoevsky.txt").split("\\n\\n")));
 
         float x = 50f;
         float y = 50f;

@@ -40,7 +40,7 @@ public class Example_03 {
                 .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
         TextBlock textBlock = new TextBlock(
-                f1, Content.ofTextFile("data/languages/japanese.txt"));
+                f1, Content.ofTextFile("resources/data/languages/japanese.txt"));
         textBlock.setLanguage("ja");
         textBlock.setLocation(50f, 70f);
         textBlock.setWidth(512f);
@@ -52,7 +52,7 @@ public class Example_03 {
                 .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
         textBlock = new TextBlock(
-                f2, Content.ofTextFile("data/languages/korean.txt"));
+                f2, Content.ofTextFile("resources/data/languages/korean.txt"));
         textBlock.setLanguage("ko");
         textBlock.setLocation(50f, 70f);
         textBlock.setWidth(512f);

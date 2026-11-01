@@ -126,7 +126,7 @@ public class Example_40 {
         path.drawOn(page);
 
         // And so does an image of an arrow.
-        Image image = new Image(pdf, "images/up-arrow.png");
+        Image image = new Image(pdf, "resources/images/up-arrow.png");
         image.setAltDescription(
                 "An arrow pointing up, which goes back to the contents of the document when it is clicked.");
         image.setLocation(50f, 20f);

@@ -151,11 +151,11 @@ class ChartReviewFourTest {
                 .add(1f, 1f).add(2f, 1f).add(3f, 1f).setTrendLine(true);
         assertEquals("Flat: 3 points; the trend is flat.", chart.altDescription());
         chart.setYAxisRange(100f, 200f);
-        assertEquals("Flat: 0 points.", chart.altDescription());
-        // The points outside a range that is set are not counted
+        assertEquals("Flat: 0 points; 3 points outside the range.", chart.altDescription());
+        // The points outside a range that is set are counted apart
         chart = new SimpleScatterChart(font, font).setTitle("Some")
                 .add(1f, 5f).add(2f, 6f).add("far", 3f, 50f).setYAxisRange(0f, 10f);
-        assertEquals("Some: 2 points.", chart.altDescription());
+        assertEquals("Some: 2 points; 1 point outside the range.", chart.altDescription());
     }
 
     @Test

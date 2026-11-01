@@ -15,11 +15,15 @@ import java.util.*;
  * navy, its label bold, the others gray. A light horizontal grid alone, no
  * border, on a light panel, with a title and a subtitle at the top left, in
  * the look of SimpleBarChart and SimpleScatterChart. A value that is NaN
- * leaves a gap in its line.
+ * leaves a gap in its line. A value outside a range that is set cuts its line
+ * at the edge of the plot, and the chart says how many are: "2 values outside
+ * the range", small, under the plot at its right end, and in its description,
+ * in that alone when the plot would not be left room to draw.
  * <p>
  * In a PDF/UA document the chart is one figure, described from its data: the
- * lines, their first and last values and their highest, unless an alternate
- * description is set. It draws with the page alone, and needs no other chart.
+ * lines, their first and last values and their highest, and the values outside
+ * a range, unless an alternate description is set, which is then followed by
+ * those values alone. It draws with the page alone, and needs no other chart.
  * Please see Example_25.
  */
 public class SimpleLineChart implements Drawable {
@@ -141,7 +145,8 @@ public class SimpleLineChart implements Drawable {
 
     /**
      * Sets the alternate description of the chart in a PDF/UA document.
-     * Without one the chart is described from its data.
+     * Without one the chart is described from its data. The number of values
+     * outside a range that is set follows it, as the chart prints it.
      *
      * @param altDescription the alternate description.
      * @return this chart.
@@ -241,7 +246,9 @@ public class SimpleLineChart implements Drawable {
     /**
      * Sets the range of the vertical axis. Without it the range is that of
      * the values, rounded to steps. A range whose end is not past its start
-     * is not set.
+     * is not set. A value outside the range is drawn past the plot, which
+     * clips it, and the chart says how many are, under the plot, which is that
+     * much lower, and in its description.
      *
      * @param min the first value of the axis.
      * @param max the last value of the axis.
@@ -394,11 +401,29 @@ public class SimpleLineChart implements Drawable {
         return -1;
     }
 
+    // What the chart says of its values outside a range that is set, or ""
+    // when there are none.
+    private String outsideNote() {
+        int count = 0;
+        if (yRangeSet) {
+            ChartScale.Axis yRange = new ChartScale.Axis(yMin, yMax, 0);
+            for (Line line : lines) {
+                for (int j = 0; j < count(); j++) {
+                    if (line.has(j) && !ChartScale.onAxis(line.values[j], yRange)) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return ChartScale.outsideNote(count, "value");
+    }
+
     // The alternate description: the one set, or the title, the categories
-    // and, for each line, its first and last values and its highest.
+    // and, for each line, its first and last values and its highest; and the
+    // values outside a range that is set.
     String altDescription() {
         if (!altDescription.isEmpty()) {
-            return altDescription;
+            return ChartScale.withNote(altDescription, outsideNote());
         }
         // The values in the digits of the numbers of the axis
         List<Float> all = new ArrayList<Float>();
@@ -472,6 +497,10 @@ public class SimpleLineChart implements Drawable {
                 }
             }
         }
+        String note = outsideNote();
+        if (!note.isEmpty()) {
+            sb.append("; ").append(note);
+        }
         return sb.append(SimpleBarChart.punctuationAfter(sb, ".")).toString();
     }
 
@@ -542,6 +571,17 @@ public class SimpleLineChart implements Drawable {
         float bottom = y + h - pad - 1.4f * size;
         if (!xAxisTitle.isEmpty()) {
             bottom -= 1.4f * size;
+        }
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        String note = outsideNote();
+        if (!note.isEmpty()) {
+            float above = bottom - 1.4f * subtitleSize();
+            if (above > top) {
+                bottom = above;
+            } else {
+                note = "";
+            }
         }
         if (right <= left || bottom <= top || !ChartScale.drawable(axis)) {
             return new float[] {x + w, y + h};
@@ -616,6 +656,9 @@ public class SimpleLineChart implements Drawable {
                     bottom - (bottom - top - f2.stringWidth(size, yTitle)) / 2f,
                     Util.toRGB(SimpleBarChart.INK), null);
             page.setTextRotation(0);
+        }
+        if (!note.isEmpty()) {
+            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
         }
 
         // The lines, the highlighted one last, over the others, broken where a
