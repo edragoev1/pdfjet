@@ -43,7 +43,9 @@ func TestGlyphMapPastTheBasicMultilingualPlane(t *testing.T) {
 func TestACharacterPastU0xFFFFIsDrawnInTheFallbackFont(t *testing.T) {
 	pdf := testNewPDF()
 	plex := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
-	tc := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+	// IBM Plex Sans TC, the .otf PDFjet carries, maps 𨋢 in its format 12
+	// subtable, as its .ttf, which this test read before 9.1.7, does.
+	tc := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"))
 	if !tc.hasGlyph(0x282E2) || plex.hasGlyph(0x282E2) {
 		t.Fatalf("TC has 𨋢: %v; Plex Sans has it: %v", tc.hasGlyph(0x282E2), plex.hasGlyph(0x282E2))
 	}

@@ -133,11 +133,11 @@ import Testing
                 .add(1, 1).add(2, 1).add(3, 1).setTrendLine(true)
         #expect(chart.getAltDescription() == "Flat: 3 points; the trend is flat.")
         chart.setYAxisRange(100, 200)
-        #expect(chart.getAltDescription() == "Flat: 0 points.")
-        // The points outside a range that is set are not counted
+        #expect(chart.getAltDescription() == "Flat: 0 points; 3 points outside the range.")
+        // The points outside a range that is set are counted apart
         chart = SimpleScatterChart(font, font).setTitle("Some")
                 .add(1, 5).add(2, 6).add("far", 3, 50).setYAxisRange(0, 10)
-        #expect(chart.getAltDescription() == "Some: 2 points.")
+        #expect(chart.getAltDescription() == "Some: 2 points; 1 point outside the range.")
     }
 
     @Test func lineChartDescriptionOfOneCategory() {

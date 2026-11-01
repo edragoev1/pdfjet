@@ -17,7 +17,7 @@ enum TestSupport {
     static let root: URL = {
         var url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         while url.path != "/" {
-            if FileManager.default.fileExists(atPath: url.appendingPathComponent("PngSuite").path) {
+            if FileManager.default.fileExists(atPath: url.appendingPathComponent("tests/data/PngSuite").path) {
                 return url
             }
             url = url.deletingLastPathComponent()
@@ -33,8 +33,63 @@ enum TestSupport {
         return FileManager.default.fileExists(atPath: path(relative))
     }
 
+    /// A file of the repository, or a font PDFjet carries, as the Font
+    /// initializer that takes a path reads it.
     static func open(_ relative: String) -> InputStream {
+        if !exists(relative) && relative.hasPrefix("fonts/"), let url = BundledFonts.url(relative) {
+            return InputStream(url: url)!
+        }
         return InputStream(fileAtPath: path(relative))!
+    }
+
+    /// The bytes of a file of the repository, or of a font PDFjet carries, as
+    /// open reads them: for the tests that read or patch a font file itself.
+    static func fontBytes(_ relative: String) throws -> [UInt8] {
+        if !exists(relative) && relative.hasPrefix("fonts/") {
+            return try Font.open(relative)
+        }
+        return [UInt8](try Data(contentsOf: URL(fileURLWithPath: path(relative))))
+    }
+
+    /// Returns the font with its character map rewritten so that the second
+    /// character of each pair is drawn with the glyph of the first, as Noto
+    /// Sans Arabic draws ١ and ۱, and ل and its isolated form ﻝ, with one
+    /// glyph, which no font PDFjet carries does in Arabic. The map is a format
+    /// 12 subtable of the Windows platform, of every character of the font to
+    /// its glyph, put at the end of the font in place of its cmap table, which
+    /// PDFjet reads as it reads any font's.
+    static func withSharedGlyphs(_ font: [UInt8], _ pairs: [[Int]]) throws -> [UInt8] {
+        var map = [Int: Int]()
+        try OTF(font).unicodeToGID.forEach { c, gid in map[c] = gid }
+        for pair in pairs {
+            guard let gid = map[pair[0]] else {
+                throw PDFjetError(message: String(format: "the font has no U+%04X", pair[0]))
+            }
+            map[pair[1]] = gid
+        }
+        var cmap = [UInt8]()
+        func u16(_ v: Int) { cmap += [UInt8((v >> 8) & 0xFF), UInt8(v & 0xFF)] }
+        func u32(_ v: Int) { u16((v >> 16) & 0xFFFF); u16(v & 0xFFFF) }
+        u16(0); u16(1)                  // The version, one record
+        u16(3); u16(10); u32(12)        // Windows, Unicode full
+        u16(12); u16(0); u32(16 + 12 * map.count); u32(0); u32(map.count)
+        for c in map.keys.sorted() {
+            u32(c); u32(c); u32(map[c]!)
+        }
+        var patched = font + cmap
+        let tables = Int(font[4]) << 8 | Int(font[5])
+        for i in 0..<tables {
+            let entry = 12 + 16 * i
+            if font[entry..<(entry + 4)].elementsEqual("cmap".utf8) {
+                for (k, v) in [font.count, cmap.count].enumerated() {
+                    for b in 0..<4 {
+                        patched[entry + 8 + 4 * k + b] = UInt8((v >> (24 - 8 * b)) & 0xFF)
+                    }
+                }
+                return patched
+            }
+        }
+        throw PDFjetError(message: "the font has no cmap table")
     }
 
     static func newPDF() -> PDF {
@@ -315,6 +370,32 @@ func shortestTime<T>(_ limit: Duration, prepare: () throws -> T, _ work: (T) thr
 
 func shortestTime(_ limit: Duration, _ work: () throws -> Void) rethrows -> Duration {
     return try shortestTime(limit, prepare: {}, { _ in try work() })
+}
+
+// Expects that the work of size 2n takes less than 3.8 times
+// the work of size n, each the shortest of three runs: the time of a linear
+// algorithm doubles, and that of a quadratic one, whose time dominates at n,
+// comes near four times. A ratio holds on a busy computer, where limits in
+// seconds failed (CI, 30 October 2026); the sizes are timed in turns, and all
+// again up to three times, as load can fall on one of them only, where a
+// quadratic algorithm fails every time.
+func expectLinearTime(_ n: Int, sourceLocation: SourceLocation = #_sourceLocation,
+        _ work: (Int) throws -> Void) rethrows {
+    let clock = ContinuousClock()
+    var small = Duration.zero
+    var large = Duration.zero
+    for _ in 0..<3 {
+        small = Duration.seconds(Int64.max / 2)
+        large = small
+        for _ in 0..<3 {
+            small = min(small, try clock.measure { try work(n) })
+            large = min(large, try clock.measure { try work(2 * n) })
+        }
+        if large * 5 < small * 19 {
+            return
+        }
+    }
+    Issue.record("size \(2 * n) took \(large), and size \(n) \(small)", sourceLocation: sourceLocation)
 }
 
 final class MemoryPDF {

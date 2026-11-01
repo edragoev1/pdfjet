@@ -11,7 +11,7 @@ import PDFjet
  * Example_20.swift
  * This example draws a page of results from a CSV file of electric vehicles:
  * two simple bar charts, the five makes and the model years, and under them a
- * table of the same numbers, then a table of one car with its photo and its
+ * table of the same numbers, then a table of one car with a picture and its
  * VIN as a barcode, in their cells.
  */
 public class Example_20 {
@@ -33,7 +33,7 @@ public class Example_20 {
 
         // The cars of the file: by make, the battery electric ones and the
         // electric range of those that give one, and by model year
-        let lines = try Content.linesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv")
+        let lines = try Content.linesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv")
         let makes = Example_20.makes
         var cars = [Int](repeating: 0, count: makes.count)
         var battery = [Int](repeating: 0, count: makes.count)
@@ -70,7 +70,7 @@ public class Example_20 {
                 .setStructureType(StructElem.H1).setFontSize(20.0)
                 .setLocation(50.0, 70.0).drawOn(page)
         let intro = [Paragraph(TextLine(f2, "The \(total) electric vehicles of the first rows of "
-                + "the data file that Example_24 draws whole: the five makes with the most cars, and the "
+                + "the data file that Example_24 draws as a table: the five makes with the most cars, and the "
                 + "cars of each model year from \(Example_20.firstYear) to \(Example_20.lastYear), with the numbers "
                 + "in the table under the charts.").setFontSize(10.0))]
         let frame = TextFrame(intro).setLocation(50.0, 84.0).setWidth(512.0)
@@ -83,13 +83,16 @@ public class Example_20 {
         }
         byMake.setLocation(50.0, y).setWidth(248.0).drawOn(page)
 
+        // The chart highlights the busiest year itself, and marks the
+        // average, in whole cars, with a dashed line; its bars are rounded
         let byYear = SimpleBarChart(f1, f2).setTitle("By model year").setSubtitle("cars")
-        var busiest = 0
+                .setHighlightHighest().setRoundedBars(true)
+        var allYears = 0
         for i in 0..<years.count {
             byYear.add(String(Example_20.firstYear + i), Float(years[i]))
-            busiest = (years[i] > years[busiest]) ? i : busiest
+            allYears += years[i]
         }
-        byYear.setHighlight(busiest)
+        byYear.setReferenceLine(Float(allYears / years.count), "Average")
         byYear.setLocation(314.0, y).setWidth(248.0).drawOn(page)
         y += max(byMake.getHeight(), byYear.getHeight()) + 30.0
 
@@ -113,11 +116,11 @@ public class Example_20 {
         table.setLocation(50.0, y + 10.0)
         y = table.drawOn(page)[1] + 30.0
 
-        // One car of the data, its photo and its VIN in their cells
+        // One car of the data, a picture of a car and its VIN in their cells
         TextLine(f1, "One car of the data").setStructureType(StructElem.H2)
                 .setFontSize(14.0).setLocation(50.0, y).drawOn(page)
-        let image = try Image(pdf, "images/TeslaX.png")
-        image.setAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.")
+        let image = try Image(pdf, "resources/images/car.png")
+        image.setAltDescription("A drawing of a blue car, seen from the side.")
         image.scaleBy(1.0 / 3.0)    // The image is 120 DPI, so 0.6 of its pixels
         let vin = try Barcode(Barcode.CODE_128, modelX![0])
         vin.setModuleLength(0.75)

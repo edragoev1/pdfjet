@@ -24,7 +24,7 @@ public class Example_42 {
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
         f2.setSize(14.0)
 
-        let file1 = try EmbeddedFile(pdf, "images/circles.png", false)
+        let file1 = try EmbeddedFile(pdf, "resources/images/circles.png", false)
         let file2 = try EmbeddedFile(pdf, "Sources/Example_02/main.swift", true)
 
         let page = Page(pdf, Letter.PORTRAIT)

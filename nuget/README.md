@@ -6,7 +6,8 @@ and Swift.
 - **Accessible and archival PDFs in one setting:** PDF/UA-1 and PDF/A-1a,
   1b, 2a, 2b, 3a and 3b.
 - **Text in Latin, Greek, Cyrillic, Chinese, Japanese, Korean, Arabic,
-  Persian, Hebrew and Thai.** TrueType and OpenType fonts (.ttf and .otf),
+  Persian, Hebrew and Thai.** (The fonts of the scripts but the European
+  ones: `PDFjet.Fonts.World`.) TrueType and OpenType fonts (.ttf and .otf),
   embedded as subsets of the glyphs a document draws.
 - **Layout:** tables that break across pages and repeat their headers,
   BigTable for tables of any length, text blocks, charts, Markdown to PDF.
@@ -20,6 +21,14 @@ and Swift.
   fonts, is fuzzed.
 
 For .NET 8 and later, and .NET Framework 4.8.
+
+> **PDFjet includes every European language (Latin, Greek, Cyrillic). For
+> other scripts, add one package,
+> [PDFjet.Fonts.World](https://www.nuget.org/packages/PDFjet.Fonts.World):**
+> `dotnet add package PDFjet.Fonts.World`, the same version as PDFjet, for
+> Chinese, Japanese, Korean, Arabic, Hebrew and Thai. Without it,
+> `IBMPlexSansJP`, `IBMPlexSansArabic` and the other constants of those
+> fonts throw an error that names that package.
 
 ## Hello, World
 
@@ -35,9 +44,23 @@ pdf.Complete();
 ```
 
 The core fonts, such as Helvetica, need no files. For text in other scripts,
-load a .ttf or .otf font: the 252 fonts of
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts), IBM Plex, Noto and
-others, are ready to use.
+the `PDFjet.dll` of this package carries IBM Plex Sans and Serif and
+Cascadia Mono, for Latin, Greek and Cyrillic, under the SIL Open Font
+License, with their licenses in the package: their constants, such as
+`IBMPlexSans.Regular`, work out of the box, with nothing else to download.
+The fonts of the other scripts, IBM Plex Sans JP, KR, SC and TC and IBM
+Plex Sans Arabic, Hebrew and Thai, about 41 MB, are in the package
+`PDFjet.Fonts.World`, which PDFjet finds on its own when your project has
+it. Only the glyphs a document draws
+are embedded in it. Any other .ttf or .otf font is read by its path.
+
+The fonts make its `PDFjet.dll` larger, about 12 MB, and the package about
+10 MB, as it has one for .NET 8 and one for .NET Framework 4.8. Want a much
+smaller DLL? The `PDFjet.dll` of the
+[releases on GitHub](https://github.com/edragoev1/pdfjet/releases) is under
+1 MB: it reads the same fonts from the folder `resources/fonts`, which its
+package has as files; keep that folder next to your program, or only the
+fonts you use.
 
 ## More
 

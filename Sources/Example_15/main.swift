@@ -20,7 +20,7 @@ public class Example_15 {
         f1.setSize(14.0)
 
         let paragraphs = try Content.ofTextFile(
-                "data/dostoevsky.txt").components(separatedBy: "\n\n")
+                "resources/data/dostoevsky.txt").components(separatedBy: "\n\n")
 
         var x: Float = 50.0
         var y: Float = 50.0

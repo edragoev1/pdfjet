@@ -18,16 +18,16 @@ public class Example_16 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Paragraphs with mixed text styles")
 
-        let f1 = try Font(pdf, SourceSerif4.Regular)
+        let f1 = try Font(pdf, IBMPlexSerif.Regular)
         f1.setSize(14.0)
 
-        let f2 = try Font(pdf, SourceSerif4.Italic)
+        let f2 = try Font(pdf, IBMPlexSerif.Italic)
         f2.setSize(14.0)
 
-        let f3 = try Font(pdf, SourceSerif4.SemiBold)
+        let f3 = try Font(pdf, IBMPlexSerif.SemiBold)
         f3.setSize(14.0)
 
-        let f4 = try Font(pdf, SourceSerif4.SemiBold)
+        let f4 = try Font(pdf, IBMPlexSerif.SemiBold)
         f4.setSize(9.0)
 
         let page = Page(pdf, Letter.PORTRAIT)

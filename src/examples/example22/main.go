@@ -23,10 +23,10 @@ import (
 var countries = []string{"Spain", "Italy", "Switzerland", "Greece"}
 
 var maps = []string{
-	"images/spain-admin.jpg",
-	"images/italy-admin.jpg",
-	"images/swiss-admin.jpg",
-	"images/gr-map.jpg",
+	"resources/images/spain-admin.jpg",
+	"resources/images/italy-admin.jpg",
+	"resources/images/swiss-admin.jpg",
+	"resources/images/gr-map.jpg",
 }
 
 var texts = [][]string{

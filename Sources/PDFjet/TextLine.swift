@@ -21,6 +21,8 @@ public class TextLine : BaselineDrawable {
     private var uri: String?
     private var key: String?
     private var destination: String?
+    // Code: a TextFrame keeps the runs of spaces of the text.
+    internal var keepSpaces = false
 
     var isLastToken: Bool = false
     var xOffset: Float = 0.0
@@ -562,6 +564,7 @@ public class TextLine : BaselineDrawable {
         textLine.explicitOffset = explicitOffset
         textLine.uri = uri
         textLine.key = key
+        textLine.destination = destination
         textLine.language = language
         if altDescription != nil && altDescription != self.text {
             textLine.altDescription = altDescription
@@ -616,7 +619,7 @@ public class TextLine : BaselineDrawable {
 
         // The trigonometry is done in double precision, as in the other ports, and
         // turns counterclockwise, where the rotation turns clockwise.
-        let radians = Double.pi * Double(-degrees) / 180.0
+        let radians = Double.pi * -Double(degrees) / 180.0
         if underline || strikeout {
             // The pen of the lines is their own, and the page is left with the one it had.
             page!.saveGraphicsState()
@@ -699,7 +702,7 @@ public class TextLine : BaselineDrawable {
         // The corners of the box, along the baseline and across it, turned as
         // the underline is; the trigonometry turns counterclockwise, where the
         // rotation turns clockwise.
-        let radians = Double.pi * Double(-degrees) / 180.0
+        let radians = Double.pi * -Double(degrees) / 180.0
         let cosValue = cos(radians)
         let sinValue = sin(radians)
         var x1 = Double.infinity
@@ -762,7 +765,7 @@ public class TextLine : BaselineDrawable {
     private func getCorner(_ verticalOffset: Float) -> [Float] {
         // The trigonometry is done in double precision, as in the other ports, and
         // turns counterclockwise, where the rotation turns clockwise.
-        let radians = Double.pi * Double(-degrees) / 180.0
+        let radians = Double.pi * -Double(degrees) / 180.0
         let len = Double(font!.stringWidth(fallbackFont, fontSize, text!))
         let xMax = max(Double(x), Double(x) + len*cos(radians))
         let yMax = max(Double(y + verticalOffset), Double(y + verticalOffset) - len*sin(radians))

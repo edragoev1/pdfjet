@@ -222,7 +222,7 @@ func TestBMPImageThePixelsPerMeterOfTheHeaderGiveTheSizeTheImageIsDrawnAt(t *tes
 	// The header of a BMP holds the pixels per metre of each axis.
 	// palette.bmp is 100 by 100 pixels at 4724 per metre, which is 120 dots
 	// per inch and 60 by 60 points.
-	path := testRepoPath(t, "images/palette.bmp")
+	path := testRepoPath(t, "resources/images/palette.bmp")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -253,7 +253,7 @@ func TestBMPImageAHeaderWithNoPixelsPerMeterLeavesTheSizeOfThePixels(t *testing.
 	// large the image is, so it keeps one point for each of its pixels. The
 	// header is built here because the files of the repository both carry a
 	// resolution.
-	data, err := os.ReadFile(testRepoPath(t, "images/palette.bmp"))
+	data, err := os.ReadFile(testRepoPath(t, "resources/images/palette.bmp"))
 	if err != nil {
 		t.Fatal(err)
 	}

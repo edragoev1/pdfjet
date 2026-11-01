@@ -303,6 +303,7 @@ public class Barcode : Drawable {
             // The bars are in their color whatever pen color the page was left with
             page.saveGraphicsState()
             page.setPenColor(color)
+            page.setDefaultStrokeDashPattern()      // Not the caller's, which broke the bars
         }
         defer {
             page?.restoreGraphicsState()

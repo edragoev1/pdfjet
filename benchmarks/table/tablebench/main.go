@@ -27,7 +27,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-const csvFile = "data/Electric_Vehicle_Population_10_Pages.csv"
+const csvFile = "resources/data/Electric_Vehicle_Population_10_Pages.csv"
 const semibold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
 const regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 const columns = 9

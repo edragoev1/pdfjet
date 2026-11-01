@@ -5,8 +5,6 @@
 # not of the library: the script downloads its standalone jar once, into
 # build/junit, and checks its SHA-256. JUnit 5 runs on Java 8, so the tests build
 # and run there too.
-
-bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")" || exit 1
 
 JUNIT_VERSION=1.14.4

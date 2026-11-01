@@ -139,8 +139,8 @@ public class OptionalContentGroup {
         }
 
         if components.count > 0 {
-            page.append("/OC /OC")
-            page.append(ocgNumber)
+            page.append("/OC ")
+            page.append(page.resourceName("/Properties", "/OC", ocgNumber, [], objNumber))
             page.append(" BDC\n")
             for component in components {
                 let corner = component.drawOn(page)

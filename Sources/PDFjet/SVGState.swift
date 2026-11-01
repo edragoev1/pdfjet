@@ -18,16 +18,40 @@ struct SVGState {
     var fillCurrent = false                 // currentColor: the color property, as it is where it is used
     var strokeCurrent = false
     var color: Int32 = Color.black          // The color property
+    var fillAlpha: Float = 1.0              // The alpha of the fill color, as #f008 or rgba() has one
+    var strokeAlpha: Float = 1.0
+    var colorAlpha: Float = 1.0
     var strokeWidth: Float = 1.0            // In the user space of the element
     var evenOdd = false                     // fill-rule="evenodd"
+    var clipEvenOdd = false                 // clip-rule="evenodd"
     var lineCap = CapStyle.BUTT
     var lineJoin = JoinStyle.MITER
+    var miterLimit: Float = 4.0
     var fillOpacity: Float = 1.0
     var strokeOpacity: Float = 1.0
     var opacity: Float = 1.0                // The opacities of the element and its ancestors, multiplied
     var ownOpacity: Float = 1.0             // The opacity of the element itself, not inherited
     var matrix = SVGState.identity
+    var viewport = [0.0, 0.0]               // The width and the height of the viewport, in user units
     var hidden = false                      // In <defs> and the like, or under display="none": not drawn
+    var invisible = false                   // visibility: not painted, but its children may be
+    var dashArray: [Float]? = nil           // stroke-dasharray, in the user space; nil is a solid line
+    var dashOffset: Float = 0.0
+    var strokeFirst = false                 // paint-order: the stroke drawn before the fill
+    var fontSize: Float = 16.0              // In the user space; medium, as a browser has it
+    var fontWeight = 400                    // normal 400, bold 700
+    var italic = false                      // A font-style of italic or oblique
+    var fontFamily = BundledFonts.SANS      // The family of the bundled fonts its names stand for
+    var textAnchor = 0                      // 0 start, 1 middle, 2 end
+    var baseline = 0                        // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
+    var markerStart: String? = nil          // The ids of the markers, inherited
+    var markerMid: String? = nil
+    var markerEnd: String? = nil
+    var clipPath: String? = nil             // The id of the clip path of the element itself, not inherited
+    var overflow: String? = nil             // The overflow of the element, not inherited unless it says inherit
+    var clips: [SVGPath]? = nil             // The clip paths of the element and of its ancestors
+    var choices: [Choice]? = nil            // The children of the switches it is in, and its tests of systemLanguage
+    var paints: [[UInt8]: Int32]? = nil     // The colors of the gradients, by the bytes of their ids
 
     // The matrices of transforms are [a b c d e f], which take x, y to
     // a*x + c*y + e, b*x + d*y + f, as SVG writes them.
@@ -52,31 +76,38 @@ struct SVGState {
     /// that starts with # and is not hexadecimal, as it always has.
     mutating func setProperty(_ name: String, _ value: String) throws {
         let value = SVGState.trimSpace(value)
+        if name == "overflow" {     // Read by elementState, inherit too
+            overflow = SVGState.toLower(value)
+            return
+        }
         if value == "inherit" {
             return
         }
         switch name {
         case "fill", "stroke":
-            let paint: (Int32, Bool)?
+            let paint: (Int32, Float, Bool)?
             do {
-                paint = try SVGState.parsePaint(value)
+                paint = try SVGState.parsePaint(value, paints)
             } catch let error as PDFjetError {
                 throw PDFjetError(message: "invalid SVG " + name + ": " + error.description)
             }
-            guard let (color, current) = paint else {
+            guard let (color, alpha, current) = paint else {
                 return
             }
             if name == "fill" {
                 fill = color
+                fillAlpha = alpha
                 fillCurrent = current
             } else {
                 stroke = color
+                strokeAlpha = alpha
                 strokeCurrent = current
             }
         case "color":
             do {
-                if let c = try SVGState.parseColor(value) {
+                if let (c, alpha) = try SVGState.parseColor(value) {
                     color = c
+                    colorAlpha = alpha
                 }
             } catch let error as PDFjetError {
                 throw PDFjetError(message: "invalid SVG color: " + error.description)
@@ -93,6 +124,12 @@ struct SVGState {
                 evenOdd = true
             } else if value == "nonzero" {
                 evenOdd = false
+            }
+        case "clip-rule":
+            if value == "evenodd" {
+                clipEvenOdd = true
+            } else if value == "nonzero" {
+                clipEvenOdd = false
             }
         case "stroke-linecap":
             switch value {
@@ -123,60 +160,306 @@ struct SVGState {
             if value == "none" {
                 hidden = true
             }
+        case "stroke-miterlimit":
+            // Below 1 is an error in SVG, and a PDF has to be able to hold it
+            if let limit = SVGState.parseLength(value), limit >= 1.0, FastFloat.isWritable(limit) {
+                miterLimit = limit
+            }
+        case "visibility":
+            if value == "hidden" || value == "collapse" {
+                invisible = true
+            } else if value == "visible" {
+                invisible = false
+            }
+        case "stroke-dasharray":
+            dashArray = SVGState.parseDashArray(value)
+        case "stroke-dashoffset":
+            if !SVGState.hasSuffix(value, "%"), let offset = SVGState.parseLength(value) {
+                dashOffset = offset
+            }
+        case "paint-order":
+            // The stroke is drawn first when it comes before the fill, and
+            // the markers, which PDFjet draws last, are left out.
+            let order = SVGState.fields(value)
+            if let stroke = order.firstIndex(of: "stroke") {
+                let fill = order.firstIndex(of: "fill")
+                strokeFirst = fill == nil || stroke < fill!
+            } else {
+                strokeFirst = false
+            }
+        case "font-size":
+            if let size = SVGState.parseFontSize(value, fontSize) {
+                fontSize = size
+            }
+        case "font-weight":
+            if let weight = SVGState.parseFontWeight(value, fontWeight) {
+                fontWeight = weight
+            }
+        case "font-style":
+            if value == "italic" || SVGState.hasPrefix(value, "oblique") {
+                italic = true
+            } else if value == "normal" {
+                italic = false
+            }
+        case "font-family":
+            fontFamily = BundledFonts.familyOf(value)
+        case "font":
+            setFont(value)
+        case "text-anchor":
+            switch value {
+            case "start": textAnchor = 0
+            case "middle": textAnchor = 1
+            case "end": textAnchor = 2
+            default: break
+            }
+        case "dominant-baseline", "alignment-baseline":
+            switch value {
+            case "middle", "central": baseline = 1
+            case "hanging", "text-before-edge": baseline = 2
+            case "auto", "alphabetic", "baseline": baseline = 0
+            default: break
+            }
+        case "marker-start":
+            markerStart = SVGState.urlId(value)
+        case "marker-mid":
+            markerMid = SVGState.urlId(value)
+        case "marker-end":
+            markerEnd = SVGState.urlId(value)
+        case "marker":
+            markerStart = SVGState.urlId(value)
+            markerMid = markerStart
+            markerEnd = markerStart
+        case "clip-path":
+            clipPath = SVGState.urlId(value)
         default:
             break
         }
     }
 
+    /// Returns the id of a reference, url(#id), with or without quotes, and
+    /// nil for none or for a value of another kind.
+    static func urlId(_ value: String) -> String? {
+        let value = trimSpace(value)
+        if !hasPrefix(value, "url(") {
+            return nil
+        }
+        let scalars = Array(value.unicodeScalars)
+        guard let end = scalars.firstIndex(of: ")") else {
+            return nil
+        }
+        var id = Array(trimSpace(string(scalars[4..<end])).unicodeScalars)
+        if id.count >= 2 && (id[0] == "\"" || id[0] == "'") && id[id.count - 1] == id[0] {
+            id = Array(trimSpace(string(id[1..<(id.count - 1)])).unicodeScalars)
+        }
+        if id.count < 2 || id[0] != "#" {
+            return nil
+        }
+        return string(id[1...])
+    }
+
+    /// Reads a stroke-dasharray: the lengths of the dashes and the gaps, as
+    /// many again when they are an odd number. Returns nil, a solid line, for
+    /// none, for a length below zero or one it cannot read, and for lengths
+    /// that are all zero.
+    static func parseDashArray(_ value: String) -> [Float]? {
+        if value == "none" {
+            return nil
+        }
+        var lengths = [Float]()
+        for field in fields(string(value.unicodeScalars.map { $0 == "," ? " " : $0 })) {
+            guard !hasSuffix(field, "%"), let length = parseLength(field),
+                  length >= 0.0, length.isFinite else {
+                return nil
+            }
+            lengths.append(length)
+        }
+        var sum: Float = 0.0
+        for length in lengths {
+            sum += length
+        }
+        if lengths.isEmpty || sum == 0.0 {
+            return nil
+        }
+        let count = lengths.count
+        var dashes = [Float]()
+        for i in 0..<((count % 2 == 0) ? count : 2*count) {
+            dashes.append(lengths[i % count])
+        }
+        return dashes
+    }
+
+    // The font sizes of the keywords, as a browser has them.
+    private static let sizeNames = ["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]
+    private static let sizes: [Float] = [9.0, 10.0, 13.0, 16.0, 18.0, 24.0, 32.0]
+
+    /// Reads a font-size: a length, a number of em or a percentage of the
+    /// font size of the parent, or a keyword. Returns nil for a size it
+    /// cannot read or one below zero.
+    static func parseFontSize(_ value: String, _ parentSize: Float) -> Float? {
+        for (i, name) in sizeNames.enumerated() where value == name {
+            return sizes[i]
+        }
+        var size: Float?
+        if hasSuffix(value, "em") && !hasSuffix(value, "rem") {
+            if let factor = parseFactor(string(value.unicodeScalars.dropLast(2))) {
+                size = factor * parentSize
+            }
+        } else if hasSuffix(value, "%") {
+            if let factor = parseFactor(string(value.unicodeScalars.dropLast(1))) {
+                size = factor * parentSize / 100.0
+            }
+        } else {
+            size = parseLength(value)
+        }
+        guard let fontSize = size, fontSize >= 0.0, fontSize.isFinite else {
+            return nil
+        }
+        return fontSize
+    }
+
+    // Reads a number, or returns nil.
+    private static func parseFactor(_ text: String) -> Float? {
+        return parseFloat(trimSpace(text))
+    }
+
+    /// Reads a font-weight, from 1 to 1000: normal is 400 and bold 700, and
+    /// bolder and lighter are those of CSS, from the weight of the parent.
+    /// Returns nil for a weight it cannot read.
+    static func parseFontWeight(_ value: String, _ parentWeight: Int) -> Int? {
+        if value == "normal" {
+            return 400
+        } else if value == "bold" {
+            return 700
+        } else if value == "bolder" {
+            return (parentWeight < 350) ? 400 : (parentWeight < 550) ? 700 : 900
+        } else if value == "lighter" {
+            return (parentWeight < 550) ? 100 : (parentWeight < 750) ? 400 : 700
+        }
+        guard let weight = parseFactor(value), weight >= 1.0, weight <= 1000.0 else {
+            return nil
+        }
+        return Int((weight + 0.5).rounded(.down))     // Java's Math.round
+    }
+
+    // Sets the size, the weight, the style and the family of the font
+    // shorthand, such as "bold 10px sans-serif": the words before the size,
+    // then the size, which may have a line height after a slash, then the
+    // family. A shorthand without a weight is normal.
+    private mutating func setFont(_ value: String) {
+        var weight = 400
+        var italic = false
+        let fields = SVGState.fields(value)
+        for (i, field) in fields.enumerated() {
+            let slash = field.unicodeScalars.contains("/")
+            let size = SVGState.string(field.unicodeScalars.prefix(while: { $0 != "/" }))
+            // A size has a unit or is a keyword; a number alone is a weight.
+            // A digit is a decimal digit of one UTF-16 code unit, as Java's
+            // Character.isDigit reads a char.
+            if let last = size.unicodeScalars.last,
+                    !(last.value <= 0xFFFF && last.properties.generalCategory == .decimalNumber),
+                    let fontSize = SVGState.parseFontSize(size, self.fontSize) {
+                self.fontSize = fontSize
+                self.fontWeight = weight
+                self.italic = italic
+                // The family after the size, and a line height after a slash
+                // written apart from it
+                var from = i + 1
+                if !slash && from < fields.count && SVGState.hasPrefix(fields[from], "/") {
+                    from += (fields[from] == "/") ? 2 : 1
+                }
+                self.fontFamily = BundledFonts.familyOf(
+                        (from < fields.count) ? fields[from...].joined(separator: " ") : "")
+                return
+            }
+            if field == "italic" || field == "oblique" {
+                italic = true
+                continue
+            }
+            if let w = SVGState.parseFontWeight(field, self.fontWeight) {
+                weight = w
+            }
+        }
+    }
+
     // Reads the value of a fill or a stroke: none, currentColor, a color, or a
-    // url of a gradient or a pattern, which PDFjet does not draw, and the
-    // color after it, if any, which SVG draws when it cannot. Returns the
-    // paint and whether it is currentColor, or nil for a value that leaves
-    // the paint as it is inherited.
-    private static func parsePaint(_ value: String) throws -> (Int32, Bool)? {
+    // url of a gradient, which PDFjet draws in the mean color of its stops. A
+    // url of anything else, a pattern or an element that is not there, is the
+    // color after it, which SVG draws when it cannot draw the url, or none, as
+    // a browser draws it. Returns the paint and whether it is currentColor, or
+    // nil for a value that leaves the paint as it is inherited.
+    private static func parsePaint(_ value: String, _ paints: [[UInt8]: Int32]?) throws -> (Int32, Float, Bool)? {
         var value = value
         if hasPrefix(value, "url(") {
             let scalars = Array(value.unicodeScalars)
             guard let end = scalars.firstIndex(of: ")") else {
                 return nil
             }
+            if let id = urlId(string(scalars[...end])), let gradient = paints?[Array(id.utf8)] {
+                return (gradient, 1.0, false)
+            }
             value = trimSpace(string(scalars[(end + 1)...]))
             if value.isEmpty {
-                return nil
+                value = "none"
             }
         }
-        if value == "none" {
-            return (Color.transparent, false)
+        let keyword = toLower(value)
+        if keyword == "none" {
+            return (Color.transparent, 1.0, false)
         }
-        if value == "currentColor" {
-            return (0, true)
+        if keyword == "currentcolor" {
+            return (0, 1.0, true)
         }
-        guard let color = try parseColor(value) else {
+        guard let (color, alpha) = try parseColor(value) else {
             return nil
         }
-        return (color, false)
+        return (color, alpha, false)
     }
 
-    // Reads a color: #rgb, #rrggbb, rgb() of three numbers or percentages, or
-    // a name. Returns nil for a color it does not know, and throws for one
+    // Reports whether what the element draws outside its viewport is cut off:
+    // hidden and scroll are, as a page has no scrolling.
+    func clipsOverflow() -> Bool {
+        return overflow != "visible" && overflow != "auto"
+    }
+
+    // The alpha the fill is drawn with: its opacities and the alpha of its
+    // color.
+    func drawnFillAlpha() -> Float {
+        return fillOpacity * opacity * (fillCurrent ? colorAlpha : fillAlpha)
+    }
+
+    // The alpha the stroke is drawn with.
+    func drawnStrokeAlpha() -> Float {
+        return strokeOpacity * opacity * (strokeCurrent ? colorAlpha : strokeAlpha)
+    }
+
+    // Reads a color and its alpha: #rgb, #rgba, #rrggbb, #rrggbbaa, rgb() of
+    // three numbers or percentages, hsl(), with an alpha after them in either,
+    // or a name. Returns nil for a color it does not know, and throws for one
     // that starts with # but is not hexadecimal.
-    private static func parseColor(_ value: String) throws -> Int32? {
+    private static func parseColor(_ value: String) throws -> (Int32, Float)? {
         if hasPrefix(value, "#") {
             // The digits are counted in bytes, as the other ports count them.
             var hex = Array(value.utf8.dropFirst())
-            if hex.count == 3 {
-                hex = [hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]]
+            if hex.count == 3 || hex.count == 4 {
+                hex = hex.flatMap { [$0, $0] }
             }
-            if hex.count != 6 {
+            if hex.count != 6 && hex.count != 8 {
                 return nil
             }
-            guard let c = Int32(String(decoding: hex, as: UTF8.self), radix: 16) else {
+            guard let c = Int32(String(decoding: hex[0..<6], as: UTF8.self), radix: 16) else {
                 throw PDFjetError(message: "invalid color \"" + value + "\"")
             }
-            return c
+            if hex.count == 6 {
+                return (c, 1.0)
+            }
+            guard let a = Int32(String(decoding: hex[6...], as: UTF8.self), radix: 16) else {
+                throw PDFjetError(message: "invalid color \"" + value + "\"")
+            }
+            return (c, Float(max(a, 0)) / 255.0)
         }
         let lower = toLower(value)
-        if hasPrefix(lower, "rgb(") || hasPrefix(lower, "rgba(") {
+        let hsl = hasPrefix(lower, "hsl(") || hasPrefix(lower, "hsla(")
+        if hsl || hasPrefix(lower, "rgb(") || hasPrefix(lower, "rgba(") {
             let scalars = Array(lower.unicodeScalars)
             let open = scalars.firstIndex(of: "(")!
             guard let end = scalars.firstIndex(of: ")"), end >= open else {
@@ -187,6 +470,10 @@ struct SVGState {
             })
             if parts.count < 3 {
                 return nil
+            }
+            let alpha = (parts.count > 3) ? parseOpacity(string(parts[parts.startIndex + 3])) ?? 1.0 : 1.0
+            if hsl {
+                return parseHSL(parts.map { string($0) }).map { ($0, alpha) }
             }
             var rgb: Int32 = 0
             for part in parts[0..<3] {
@@ -202,9 +489,57 @@ struct SVGState {
                 let channel = (number * scale).rounded()
                 rgb = rgb << 8 | Int32(goMax(0.0, goMin(255.0, channel)))
             }
-            return rgb
+            return (rgb, alpha)
         }
-        return colorMap[lower]
+        return colorMap[lower].map { ($0, 1.0) }
+    }
+
+    // Returns the color of the hue, the saturation and the lightness of
+    // hsl(), by the formula of CSS Color 4, or nil for one it cannot read.
+    private static func parseHSL(_ parts: [String]) -> Int32? {
+        guard let hue = parseHue(parts[0]), let saturation = parsePercentage(parts[1]),
+              let lightness = parsePercentage(parts[2]) else {
+            return nil
+        }
+        let a = saturation * goMin(lightness, 1.0 - lightness)
+        var rgb: Int32 = 0
+        for n in [0.0, 8.0, 4.0] {
+            let k = (n + hue / 30.0).truncatingRemainder(dividingBy: 12.0)
+            let channel = lightness - a * goMax(-1.0, goMin(goMin(k - 3.0, 9.0 - k), 1.0))
+            rgb = rgb << 8 | Int32(goMax(0.0, goMin(255.0, (channel * 255.0).rounded())))
+        }
+        return rgb
+    }
+
+    // Reads a hue, in degrees unless it has a unit, and returns it from 0 to
+    // 360, or nil for one it cannot read.
+    private static func parseHue(_ text: String) -> Double? {
+        var scale = 1.0
+        var digits = text
+        for (unit, degrees) in [("deg", 1.0), ("grad", 0.9), ("rad", 57.29577951308232), ("turn", 360.0)]
+                where hasSuffix(digits, unit) {
+            digits = string(digits.unicodeScalars.dropLast(unit.unicodeScalars.count))
+            scale = degrees
+            break
+        }
+        guard let number = parseDouble(digits), number.isFinite else {
+            return nil
+        }
+        let hue = (number * scale).truncatingRemainder(dividingBy: 360.0)
+        if hue.isNaN {
+            return nil      // Too large for its unit
+        }
+        return (hue < 0.0) ? hue + 360.0 : hue
+    }
+
+    // Reads a saturation or a lightness, with or without its percent sign,
+    // and returns it between 0 and 1, or nil for one it cannot read.
+    private static func parsePercentage(_ text: String) -> Double? {
+        let digits = hasSuffix(text, "%") ? string(text.unicodeScalars.dropLast()) : text
+        guard let number = parseDouble(digits), number.isFinite else {
+            return nil
+        }
+        return goMax(0.0, goMin(1.0, number / 100.0))
     }
 
     // Reads an opacity, a number or a percentage, and returns it between 0 and 1.
@@ -358,10 +693,9 @@ struct SVGState {
     // compares characters, of one or more code points, and treats canonically
     // equivalent ones as equal.
 
-    // Returns true for the white space that separates the numbers of a list:
-    // the white space of XML.
+    // Returns true for the white space of Unicode, as Go's unicode.IsSpace.
     static func isSpace(_ ch: Unicode.Scalar) -> Bool {
-        return ch == " " || ch == "\t" || ch == "\n" || ch == "\r"
+        return ch.properties.isWhitespace
     }
 
     static func string<S: Sequence>(_ scalars: S) -> String where S.Element == Unicode.Scalar {
@@ -402,7 +736,7 @@ struct SVGState {
     }
 
     // Returns the text in lower case, a code point at a time.
-    private static func toLower(_ text: String) -> String {
+    static func toLower(_ text: String) -> String {
         var lower = String.UnicodeScalarView()
         for scalar in text.unicodeScalars {
             if scalar == "\u{130}" {

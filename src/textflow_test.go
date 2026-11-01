@@ -38,7 +38,7 @@ func testFlowParagraph(font *Font, text string) *Paragraph {
 // tall as the height, narrower than the text.
 func testFlowImage(t *testing.T, pdf *PDF, height float32) *Image {
 	t.Helper()
-	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	file, err := os.Open(testRepoPath(t, "resources/images/up-arrow.png"))
 	if err != nil {
 		t.Fatal(err)
 	}

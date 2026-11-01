@@ -41,9 +41,12 @@ import (
 // The fields are in the order of their size, so that a cell takes no bytes
 // for the padding between them that it does not have to.
 type Cell struct {
-	text     string
-	drawable Drawable // The image, barcode, text block, text column or other drawable
-	uri      string
+	text string
+	// The whole text of a cell whose text wraps, which holds its first line
+	// after the wrap: what a sum reads
+	wholeText string
+	drawable  Drawable // The image, barcode, text block, text column or other drawable
+	uri       string
 
 	font         *Font
 	fallbackFont *Font
@@ -228,6 +231,7 @@ func (cell *Cell) GetFallbackFont() *Font {
 //   - text: the cell text.
 func (cell *Cell) SetText(text string) *Cell {
 	cell.text = text
+	cell.wholeText = ""
 	cell.hasText = true
 	return cell
 }
@@ -685,12 +689,17 @@ func measureDrawable(drawable Drawable) [2]float32 {
 	return drawable.DrawOn(nil)
 }
 
-// keepLocation returns what puts the drawable back where it is now: its
-// corner, measured where it is, less its size, measured at 0, 0. A drawable
-// has no location to read, and the image or barcode of a cell was left where
-// the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October 2026,
-// R22).
+// keepLocation returns what puts the drawable back where it is now. An image
+// has its location; another drawable has none to read, so it is its corner,
+// measured where it is, less its size, measured at 0, 0, in float arithmetic:
+// 7.13 can come back as 7.130005. The image or barcode of a cell was left
+// where the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October
+// 2026, R22).
 func keepLocation(drawable Drawable) func() {
+	if image, ok := drawable.(*Image); ok {
+		x, y := image.x, image.y
+		return func() { image.x, image.y = x, y }
+	}
 	corner := drawable.DrawOn(nil)
 	drawable.SetLocation(0, 0)
 	size := drawable.DrawOn(nil)
@@ -849,7 +858,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	case alignment.Center:
 		yText = y + float32(cellH/2.0) + float32(ascent/2.0)
 	case alignment.Bottom:
-		yText = (y + cellH) - cell.paddingAt(cellBottomPadding)
+		// Over the padding by the descent, which went into it
+		yText = (y + cellH) - cell.paddingAt(cellBottomPadding) - cell.descent()
 	default:
 		// alignment.Left, the zero value, panicked (review of 12 October
 		// 2026, F18)

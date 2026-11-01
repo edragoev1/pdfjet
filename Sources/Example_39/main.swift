@@ -26,7 +26,7 @@ public class Example_39 {
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
         let titles = ["Europe", "Spain"]
-        let files = ["images/ee-map.png", "images/spain-admin.jpg"]
+        let files = ["resources/images/ee-map.png", "resources/images/spain-admin.jpg"]
         let descriptions = [
                 "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
                 "A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",

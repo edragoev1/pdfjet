@@ -36,9 +36,9 @@ func merge() {
 	}
 
 	fileNames := []string{
-		"data/testPDFs/scanned-linearized.pdf",
-		"data/testPDFs/rc65-16e.pdf",
-		"data/testPDFs/PDFjetLogo.pdf",
+		"resources/data/testPDFs/scanned-linearized.pdf",
+		"resources/data/testPDFs/sample-document.pdf",
+		"resources/data/testPDFs/PDFjetLogo.pdf",
 	}
 	documents := make([][]*pdfjet.PDFobj, 0)
 	for _, fileName := range fileNames {
@@ -83,7 +83,7 @@ func merge() {
 }
 
 func split() {
-	buf, err := os.ReadFile("data/testPDFs/scanned-linearized.pdf")
+	buf, err := os.ReadFile("resources/data/testPDFs/scanned-linearized.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}

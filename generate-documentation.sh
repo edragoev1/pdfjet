@@ -1,6 +1,8 @@
 #!/bin/bash
 # Stop at the first failure, so a missing tool cannot leave out a reference.
 set -e
+# The folder of this script: run from anywhere else, it deleted the docs of that folder.
+cd "$(dirname "$0")"
 
 rm -rf docs/java
 
