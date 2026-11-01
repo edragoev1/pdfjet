@@ -40,7 +40,9 @@ public class EmbeddedFile {
      * @throws Exception if there is an issue.
      */
     public EmbeddedFile(PDF pdf, String fileName, boolean compress) throws Exception {
-        this(pdf, fileName.substring(fileName.lastIndexOf("/") + 1),
+        // A Windows path too: its folders gave the name of the user away
+        // (review of 30 October 2026, F1)
+        this(pdf, fileName.substring(Math.max(fileName.lastIndexOf('/'), fileName.lastIndexOf('\\')) + 1),
                 new BufferedInputStream(new FileInputStream(fileName)), compress);
     }
 
@@ -128,11 +130,12 @@ public class EmbeddedFile {
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /Filespec\n");
 
-        // The file name as a text string, which every reader decodes the same
-        // way. /UF is the name that readers of PDF 1.7 look for first, and /F
-        // is the one that older readers know; PDF/A-3 requires both.
+        // /UF is the file name as a text string, the one that readers of PDF
+        // 1.7 use, and /F is the file specification string that older readers
+        // know, a string of bytes (ISO 32000-2, 7.11.3, Table 43); PDF/A-3
+        // requires both.
         pdf.append("/F ");
-        pdf.appendTextString(fileName);
+        pdf.appendByteString(fileSpecBytes(fileName));
         pdf.append("\n");
         pdf.append("/UF ");
         pdf.appendTextString(fileName);
@@ -159,6 +162,34 @@ public class EmbeddedFile {
 
         this.objNumber = pdf.getObjNumber();
         pdf.embeddedFiles.put(this.objNumber, fileName);
+    }
+
+    // The file name as the bytes of /F, a file specification string of one
+    // component, the file name (ISO 32000-2, 7.11.2): a solidus in the name
+    // is preceded by a reverse solidus, which tells it from a separator of
+    // components, so that "in/out" is "in\/out"; a reverse solidus in the
+    // name is an underscore, as a reader removes each reverse solidus and
+    // 7.11.2 gives no way to write one that stays, so that "C:\temp\a.txt"
+    // is "C:_temp_a.txt"; each other character from space to tilde (0x20 to
+    // 0x7E) is as it is, and each other one, one Unicode code point, an
+    // underscore, so that "résumé.txt" is "r_sum_.txt". The full name is in
+    // /UF.
+    static byte[] fileSpecBytes(String fileName) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        int i = 0;
+        while (i < fileName.length()) {
+            int ch = fileName.codePointAt(i);
+            if (ch == '/') {
+                bytes.write('\\');
+                bytes.write('/');
+            } else if (ch == '\\') {
+                bytes.write('_');
+            } else {
+                bytes.write((ch >= 0x20 && ch <= 0x7E) ? ch : '_');
+            }
+            i += Character.charCount(ch);
+        }
+        return bytes.toByteArray();
     }
 
     // The media type as a name of PDF: the characters a name cannot hold

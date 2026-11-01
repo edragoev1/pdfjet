@@ -26,8 +26,13 @@ namespace PDFjet.NET {
 /// lines with Paragraph.AddJoined.
 /// <para>
 /// A line that ends in two spaces or a backslash, and a &lt;br&gt;, are hard
-/// line breaks, which TextFrame draws as the end of a row; any other line
-/// break is a space. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
+/// line breaks, which TextFrame draws as the end of a row, and the spaces
+/// before the line break are not in the text; two spaces and a line break at
+/// the end of the text are not, and are dropped, and a backslash at the end of
+/// the text is a backslash, as in CommonMark. Any other line break is a space,
+/// none at the start of a row. \n, \r\n and \r are each a line break. The
+/// spaces and tabs around a line break, hard or not, are not in the text, as
+/// in CommonMark, and a space written &amp;#32; is. The entities &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;,
 /// &amp;apos;, &amp;nbsp;, &amp;copy;, &amp;reg;, &amp;trade;, &amp;mdash;,
 /// &amp;ndash;, &amp;hellip;, the quotes and a few more, and the numbers
 /// &amp;#8212; and &amp;#x2014;, are the characters they name.
@@ -123,11 +128,7 @@ public class Markup {
     public List<Paragraph> Paragraphs(String text) {
         List<Paragraph> paragraphs = new List<Paragraph>();
         StringBuilder buf = new StringBuilder();
-        foreach (String part in text.Split('\n')) {
-            String line = part;
-            if (line.EndsWith('\r')) {
-                line = line.Substring(0, line.Length - 1);
-            }
+        foreach (String line in LineFeeds(text).Split('\n')) {
             if (Util.Trim(line).Length == 0) {
                 AddParagraph(paragraphs, buf);
             } else {
@@ -142,14 +143,25 @@ public class Markup {
         if (buf.Length > 0) {
             // Without the line break after the last line, which made a
             // backslash at the end of the paragraph a hard line break, and
-            // dropped it
+            // dropped it, and without the whitespace at its end, as
+            // CommonMark strips the final spaces of a paragraph: "0  \n" is
+            // "0"
             buf.Length = buf.Length - 1;
+            while (buf.Length > 0 && Util.IsJavaWhitespace(buf[buf.Length - 1])) {
+                buf.Length = buf.Length - 1;
+            }
             Paragraph paragraph = Paragraph(buf.ToString());
             if (paragraph.lines.Count > 0) {
                 paragraphs.Add(paragraph);
             }
             buf.Length = 0;
         }
+    }
+
+    // Returns the text with its line endings \n: the parser sees no \r\n or
+    // \r.
+    private static String LineFeeds(String text) {
+        return text.Replace("\r\n", "\n").Replace('\r', '\n');
     }
 
     /// <summary>
@@ -159,7 +171,16 @@ public class Markup {
     /// <param name="text">the text with its markup.</param>
     /// <returns>the paragraph.</returns>
     public Paragraph Paragraph(String text) {
+        text = LineFeeds(text);
         Parser parser = new Parser(text);
+        int end = parser.TrailingBreak();
+        if (end < text.Length) {
+            // A hard line break at the end of the text is no break, as in
+            // CommonMark, and the whitespace at the end is dropped: "0  \n"
+            // is the text line "0"
+            text = text.Substring(0, end);
+            parser = new Parser(text);
+        }
         List<Node> nodes = new List<Node>();
         parser.Parse(0, text.Length, null, nodes);
         Paragraph paragraph = new Paragraph();
@@ -208,6 +229,7 @@ public class Markup {
                 : ((flags & BOLD) != 0) ? bold
                 : ((flags & ITALIC) != 0) ? italic : regular;
         TextLine textLine = new TextLine(font, text);
+        textLine.keepSpaces = (flags & CODE) != 0;
         if ((flags & STRIKE) != 0) {
             textLine.SetStrikeout(true);
         }
@@ -257,8 +279,9 @@ public class Markup {
         private readonly String text;
         // Where each ] that closes a [ is, by the index of the [.
         private readonly int[] closingBracket;
-        // The index of the next ) and of the next space at or after each index.
-        private readonly int[] nextParenthesis;
+        // Where each ) that closes a ( is, by the index of the (, and the index
+        // of the next space at or after each index.
+        private readonly int[] closingParenthesis;
         private readonly int[] nextSpace;
         // The runs of backticks, by their length: where each starts, in order,
         // and the first one of each length that can still close a code span.
@@ -281,14 +304,21 @@ public class Markup {
                     closingBracket[open.Pop()] = i;
                 }
             }
-            nextParenthesis = new int[n + 1];
+            closingParenthesis = new int[n];
+            open.Clear();
+            for (int i = 0; i < n; i++) {
+                char ch = text[i];
+                closingParenthesis[i] = -1;
+                if (ch == '(') {
+                    open.Push(i);
+                } else if (ch == ')' && open.Count > 0) {
+                    closingParenthesis[open.Pop()] = i;
+                }
+            }
             nextSpace = new int[n + 1];
-            nextParenthesis[n] = n;
             nextSpace[n] = n;
             for (int i = n - 1; i >= 0; i--) {
-                char ch = text[i];
-                nextParenthesis[i] = (ch == ')') ? i : nextParenthesis[i + 1];
-                nextSpace[i] = Util.IsJavaWhitespace(ch) ? i : nextSpace[i + 1];
+                nextSpace[i] = Util.IsJavaWhitespace(text[i]) ? i : nextSpace[i + 1];
             }
             for (int i = 0; i < n; ) {
                 if (text[i] == '\\' && i + 1 < n && text[i + 1] != '`') {
@@ -321,16 +351,48 @@ public class Markup {
         internal void Parse(int start, int end, String link, List<Node> nodes) {
             int first = nodes.Count;
             StringBuilder buf = new StringBuilder();
+            // The spaces and tabs that end at spaceEnd, each one space in the
+            // buffer.
+            int spaces = 0;
+            int spaceEnd = start;
             int i = start;
             while (i < end) {
                 char ch = text[i];
                 int autolinkEnd;
                 int breakEnd = BreakEnd(i, end);
                 int[] entity;
-                if (breakEnd > i) {
-                    Flush(buf, link, nodes);
-                    nodes.Add(new Node("", BREAK, link));
-                    i = breakEnd;
+                if (breakEnd > i && ch == '\\' && OnlySpaceFrom(breakEnd)) {
+                    // A backslash at the end of the text is text, and no hard
+                    // line break, as in CommonMark: "0\\\n" is the text line
+                    // "0\\"
+                    buf.Append(ch);
+                    i = end;
+                } else if (breakEnd > i || ch == '\n') {
+                    if (ch == '\n' && spaceEnd == i) {
+                        // The spaces before a line break are not in the text,
+                        // as in CommonMark: "one  \ntwo" is "one", a break
+                        // and "two"
+                        buf.Length -= spaces;
+                    }
+                    spaces = 0;
+                    if (breakEnd > i) {
+                        Flush(buf, link, nodes);
+                        nodes.Add(new Node("", BREAK, link));
+                        i = breakEnd;
+                    } else {
+                        // A line break is a space, but for one at the start of
+                        // a row
+                        if (buf.Length > 0 || (nodes.Count > 0
+                                && (nodes[nodes.Count - 1].flags & BREAK) == 0)) {
+                            buf.Append(' ');
+                            spaces = 1;
+                        }
+                        i++;
+                    }
+                    if (text[i - 1] == '\n') {
+                        i = LineStart(i, end);
+                        spaceEnd = i;
+                    }
                 } else if ((entity = Entity(i, end)) != null) {
                     AppendCodePoint(buf, entity[0]);
                     i = entity[1];
@@ -387,11 +449,18 @@ public class Markup {
                     i = autolinkEnd;
                 } else if (ch == '[' && link == null && IsLink(i, end)) {
                     int close = closingBracket[i];
-                    int urlEnd = nextParenthesis[close + 2];
+                    int urlEnd = closingParenthesis[close + 1];
                     Flush(buf, link, nodes);
                     Parse(i + 1, close, Decoded(close + 2, urlEnd), nodes);
                     i = urlEnd + 1;
                 } else {
+                    if (ch == ' ' || ch == '\t') {
+                        if (spaceEnd != i) {
+                            spaces = 0;
+                        }
+                        spaces++;
+                        spaceEnd = i + 1;
+                    }
                     buf.Append(Util.IsJavaWhitespace(ch) ? ' ' : ch);
                     i++;
                 }
@@ -400,21 +469,55 @@ public class Markup {
             MatchEmphasis(nodes, first);
         }
 
+        // Returns where the whitespace at the end of the text starts when a
+        // hard line break is in it, two spaces before a line break, or the
+        // length of the text when none is.
+        internal int TrailingBreak() {
+            int n = text.Length;
+            int start = n;
+            while (start > 0 && Util.IsJavaWhitespace(text[start - 1])) {
+                start--;
+            }
+            for (int i = start; i < n; i++) {
+                if (BreakEnd(i, n) > i) {
+                    return start;
+                }
+            }
+            return n;
+        }
+
+        // Returns whether the text from i to its end is whitespace, or
+        // nothing.
+        private bool OnlySpaceFrom(int i) {
+            for (; i < text.Length; i++) {
+                if (!Util.IsJavaWhitespace(text[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Returns where the text of the line at i starts before the end:
+        // after its spaces and tabs, which are not in the text after a line
+        // break, hard or not, as in CommonMark: "one  \n  two" is "one", a
+        // break and "two". A space written &#32; is text.
+        private int LineStart(int i, int end) {
+            while (i < end && (text[i] == ' ' || text[i] == '\t')) {
+                i++;
+            }
+            return i;
+        }
+
         // Returns where a hard line break at i ends, or i when there is none:
         // a line break after two spaces, a backslash and a line break, or a
         // <br>, <br/> or <br /> in capitals or not.
         private int BreakEnd(int i, int end) {
             char ch = text[i];
-            // The line break of a text of \r\n line ends too
-            int newline = (ch == '\r' && i + 1 < end && text[i + 1] == '\n') ? i + 1 : i;
-            if (text[newline] == '\n' && i >= 2 && text[i - 1] == ' ' && text[i - 2] == ' ') {
-                return newline + 1;
+            if (ch == '\n' && i >= 2 && text[i - 1] == ' ' && text[i - 2] == ' ') {
+                return i + 1;
             }
             if (ch == '\\' && i + 1 < end && text[i + 1] == '\n') {
                 return i + 2;
-            }
-            if (ch == '\\' && i + 2 < end && text[i + 1] == '\r' && text[i + 2] == '\n') {
-                return i + 3;
             }
             if (ch == '<' && i + 3 < end && (text[i + 1] == 'b' || text[i + 1] == 'B')
                     && (text[i + 2] == 'r' || text[i + 2] == 'R')) {
@@ -523,13 +626,15 @@ public class Markup {
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]
-        // at once, and a ) ends the URL before any space: [text](url).
+        // at once, and the ) that closes it ends the URL before any space:
+        // [text](url), with the parentheses in the URL in pairs, as in
+        // CommonMark: [Foo](https://x/Foo_(bar)).
         private bool IsLink(int i, int end) {
             int close = closingBracket[i];
             if (close == -1 || close + 1 >= end || text[close + 1] != '(') {
                 return false;
             }
-            int urlEnd = nextParenthesis[close + 2];
+            int urlEnd = closingParenthesis[close + 1];
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd;
         }
 
@@ -642,7 +747,7 @@ public class Markup {
         // The text of a code span: a line break is a space, and one space at
         // each end is taken away when both ends have one, as in `` `a` ``.
         private static String CodeText(String code) {
-            code = code.Replace('\n', ' ').Replace('\r', ' ');
+            code = code.Replace('\n', ' ');
             if (code.Length >= 2 && code[0] == ' ' && code[code.Length - 1] == ' '
                     && Util.Trim(code).Length > 0) {
                 code = code.Substring(1, code.Length - 2);

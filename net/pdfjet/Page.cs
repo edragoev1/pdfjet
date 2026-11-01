@@ -40,6 +40,10 @@ public class Page {
 
     internal PDF pdf;
     internal PDFobj pageObj;
+    // On a page that was read: what the names of the resources of the PDF are
+    // raised by, past the names it holds, and the resources drawn with
+    private int resourceBase;
+    private readonly List<ReadResource> readResources = new List<ReadResource>();
     internal int objNumber;
 
     internal MemoryStream buf;
@@ -116,6 +120,9 @@ public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     internal StructElement mcidParent = null;
+    // The element of the text line with an alternate description that is being
+    // drawn among the words of mcidParent; see DescribedWords.
+    private StructElement words = null;
     // The figure AddBDC began last, whose bounding box SetFigureBoundingBox
     // sets, or null.
     private StructElement figure = null;
@@ -199,6 +206,7 @@ public class Page {
         this.width = pageSize.GetWidth();
         this.height = pageSize.GetHeight();
         this.buf = new MemoryStream(8192);
+        resourceBase = pageObj.MaxResourceNumber();
         SaveGraphicsState();
         float[] origin = pageObj.MediaBoxOrigin();
         if (origin[0] != 0f || origin[1] != 0f) {
@@ -226,6 +234,17 @@ public class Page {
         // this one (review of 12 October 2026, F2).
         RestoreGraphicsState();
         CheckBalanced();
+        foreach (ReadResource resource in readResources) {
+            List<String> value = resource.value;
+            if (resource.number != 0) {
+                PDFobj written = new PDFobj();
+                written.number = objects.Count + 1;
+                written.writtenNumber = resource.number;
+                objects.Add(written);
+                value = new List<String> {written.number.ToString(CultureInfo.InvariantCulture), "0", "R"};
+            }
+            pageObj.AddResourceEntry(resource.category, resource.name, value, objects);
+        }
         byte[] content = GetContent();
         byte[] after = new byte[content.Length + 2];
         after[0] = (byte) 'Q';
@@ -235,6 +254,26 @@ public class Page {
             pdf.Fail(new InvalidOperationException(
                     "The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it."));
         }
+    }
+
+    // Returns the name for a resource of the PDF on this page, and keeps it for
+    // Complete on a page that was read: the resources of the PDF do not reach
+    // that page, whose own resources have to name it, and its own names stay as
+    // they are. The graphics states, stamps and optional content drawn on such a
+    // page had no resource: the alpha was lost, and a stamp did not draw (review
+    // of 30 October 2026, B2).
+    internal String ResourceName(String category, String prefix, int n, List<String> value, int number) {
+        if (pageObj == null) {
+            return prefix + n.ToString(CultureInfo.InvariantCulture);
+        }
+        String name = prefix + (resourceBase + n).ToString(CultureInfo.InvariantCulture);
+        foreach (ReadResource resource in readResources) {
+            if (resource.name == name) {
+                return name;
+            }
+        }
+        readResources.Add(new ReadResource(category, name, value, number));
+        return name;
     }
 
     // Checks that every SaveGraphicsState has its RestoreGraphicsState and every
@@ -491,13 +530,13 @@ public class Page {
         float transx = values[MTRANS_X];
         float transy = values[MTRANS_Y];
 
-        Append(scalex);
+        AppendPrecise(scalex);
         Append(Token.Space);
-        Append(values[MSKEW_X]);
+        AppendPrecise(values[MSKEW_X]);
         Append(Token.Space);
-        Append(values[MSKEW_Y]);
+        AppendPrecise(values[MSKEW_Y]);
         Append(Token.Space);
-        Append(scaley);
+        AppendPrecise(scaley);
         Append(Token.Space);
 
         if (Math.Asin(values[MSKEW_Y]) != 0f) {
@@ -704,6 +743,60 @@ public class Page {
         } else {
             DrawColoredString(font, str, textColor, highlightColors);
         }
+        Append("ET\n");
+    }
+
+    // Draws the string of an SVG image with the text matrix, in the brush
+    // color, or stroked in the pen color and width for the rendering mode 1.
+    internal void DrawSVGText(Font font, float fontSize, String str, float[] tm, int mode) {
+        Append("BT\n");
+        SetTextFont(font, fontSize);
+        if (mode != 0 || renderingModeSet) {
+            renderingModeSet = true;
+            Append(mode);
+            Append(" Tr\n");
+        }
+        ShowSVGText(font, str, tm);
+        Append("ET\n");
+    }
+
+    // Shows the string of an SVG image with the text matrix.
+    private void ShowSVGText(Font font, String str, float[] tm) {
+        for (int i = 0; i < 6; i++) {
+            Append(tm[i]);
+            Append(' ');
+        }
+        Append("Tm\n");
+        if (font.isCoreFont) {
+            Append("[<");
+            DrawASCIIString(font, str);
+            Append(">] TJ\n");
+        } else {
+            Append("<");
+            DrawUnicodeString(font, str);
+            Append("> Tj\n");
+        }
+    }
+
+    // Begins a text object whose glyphs clip what is drawn after it, by the
+    // rendering mode 7 of ISO 32000-1, 9.3.6: at its ET they are one path,
+    // filled by the nonzero rule, which the clip path is intersected with. The
+    // graphics state saved around it brings the mode back.
+    internal void BeginSVGClipText() {
+        Append("BT\n");
+        renderingModeSet = true;
+        Append("7 Tr\n");
+    }
+
+    // Adds the string of an SVG image to the text object begun by
+    // BeginSVGClipText.
+    internal void AddSVGClipText(Font font, float fontSize, String str, float[] tm) {
+        SetTextFont(font, fontSize);
+        ShowSVGText(font, str, tm);
+    }
+
+    // Ends that text object.
+    internal void EndSVGClipText() {
         Append("ET\n");
     }
 
@@ -2533,8 +2626,10 @@ public class Page {
             n = pdf.states.Count + 1;
             pdf.states[state] = n;
         }
-        Append("/GS");
-        Append(n);
+        List<String> value = new List<String>(state.Split(' '));
+        value.Insert(0, "<<");
+        value.Add(">>");
+        Append(ResourceName("/ExtGState", "/GS", n, value, 0));
         Append(" gs\n");
         return this;
     }
@@ -2607,6 +2702,16 @@ public class Page {
         }
         Span<byte> bytes = stackalloc byte[FastFloat.MAX_LENGTH];
         buf.Write(bytes.Slice(0, FastFloat.Write(f, bytes)));
+    }
+
+    // Appends a number of a scale, written with five decimals, as hundredths
+    // would change the size: 0.125 was written as 0.13, 4% too large, and 0.004
+    // as 0, which drew nothing (review of 30 October 2026, B6).
+    internal void AppendPrecise(float f) {
+        if (!FastFloat.IsWritable(f)) {
+            pdf.Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        Append(FastFloat.ToPreciseByteArray(f));
     }
 
     // Appends the cm operator of the rotation with the cosine and the sine,
@@ -2875,9 +2980,15 @@ public class Page {
             // linked marker of a wrapped table cell, is an element of its own,
             // with its description (the review of 9 October 2026: it was lost).
             if (mcidParent != null && structure != StructElem.FIGURE) {
-                mcidParent.mcids.Add(mcid);
+                StructElement parent = mcidParent;
+                if (!string.IsNullOrEmpty(altDescription)) {
+                    parent = DescribedWords(parent, altDescription);
+                } else {
+                    words = null;
+                }
+                parent.mcids.Add(mcid);
                 Append("/");
-                Append(mcidParent.structure);
+                Append(parent.structure);
                 Append(" <</MCID ");
                 Append(mcid++);
                 // A word of another language than its paragraph says so in its
@@ -2915,6 +3026,22 @@ public class Page {
                 figure = element;
             }
         }
+    }
+
+    // Returns the Span of a text line with an alternate description that is
+    // drawn in a paragraph word by word or row by row: the description is of
+    // the whole text line, so its words are the marked content of one element,
+    // which takes its place among the words of the paragraph and is read once.
+    private StructElement DescribedWords(StructElement parent, String altDescription) {
+        if (words == null || words.parent != parent || altDescription != words.altDescription) {
+            words = new StructElement();
+            words.structure = StructElem.SPAN.Type();
+            words.mcid = -1;
+            words.altDescription = altDescription;
+            AddStructure(words, parent);
+            parent.mcids.Add(-words.objNumber);
+        }
+        return words;
     }
 
     /// <summary>
@@ -3041,6 +3168,7 @@ public class Page {
         link.language = language;
         if (mcidParent != null) {
             // A word of a paragraph: the Link takes its place among the words
+            link.altDescription = altDescription;
             AddStructure(link, mcidParent);
             mcidParent.mcids.Add(-link.objNumber);
         } else if (structure == StructElem.LINK) {
@@ -3161,9 +3289,9 @@ public class Page {
             float x, float y, float xScale, float yScale) {
         SaveGraphicsState();
 
-        Append(xScale);
+        AppendPrecise(xScale);
         Append(" 0 0 ");
-        Append(yScale);
+        AppendPrecise(yScale);
         Append(' ');
         Append(x);
         Append(' ');
@@ -3243,6 +3371,25 @@ public class Page {
             Append("> Tj\n");
         }
         Append("ET\n");
+    }
+
+    // Returns the span lo to hi of an annotation at least size long around its
+    // center, and moved inside 0 to limit, not cut, as long as it fits.
+    private static float[] HitSpan(float lo, float hi, float size, float limit) {
+        if (hi - lo < size) {
+            float center = (lo + hi) / 2f;
+            lo = center - size / 2f;
+            hi = lo + size;
+        }
+        if (hi > limit) {
+            lo -= hi - limit;
+            hi = limit;
+        }
+        if (lo < 0f) {
+            hi = Math.Min(hi - lo, limit);
+            lo = 0f;
+        }
+        return new float[] {lo, hi};
     }
 
     // Returns where the point x, y of what is drawn is on the page, after the
@@ -3356,6 +3503,14 @@ public class Page {
                     + "draw on a page before creating the next page or completing the PDF."));
         }
         TransformAnnotation(annotation);
+        if (annotation.hitSize > 0f) {
+            float[] across = HitSpan(annotation.x1, annotation.x2, annotation.hitSize, this.width);
+            float[] down = HitSpan(annotation.y1, annotation.y2, annotation.hitSize, this.height);
+            annotation.x1 = across[0];
+            annotation.x2 = across[1];
+            annotation.y1 = down[0];
+            annotation.y2 = down[1];
+        }
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.Add(annotation);
@@ -3570,6 +3725,23 @@ public class Page {
             chars[7 + 4 * i] = digits[ch & 0xF];
         }
         return new String(chars);
+    }
+
+    // A resource of the PDF that a page that was read draws with. It goes in the
+    // category of the resources of the page, like /ExtGState, under the name: the
+    // value, or a reference to the object of the PDF with the number.
+    private sealed class ReadResource {
+        internal readonly String category;
+        internal readonly String name;
+        internal readonly List<String> value;
+        internal readonly int number;
+
+        internal ReadResource(String category, String name, List<String> value, int number) {
+            this.category = category;
+            this.name = name;
+            this.value = value;
+            this.number = number;
+        }
     }
 }   // End of Page.cs
 }   // End of namespace PDFjet.NET

@@ -96,7 +96,6 @@ class FontTest {
     @Test
     void readsATrueTypeFont() throws Exception {
         String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
-        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
         InputStream in = TestSupport.open(path);
         try {
             Font font = new Font(TestSupport.newPDF(), in);
@@ -116,9 +115,9 @@ class FontTest {
 
     @Test
     void theLineGapOfAFontSpacesTheLinesOfATextBlock() throws Exception {
-        // IBM Plex Sans SC has a line gap of one em.
-        String path = "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.ttf";
-        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
+        // IBM Plex Sans SC has a line gap of one em, its ascent 880 and its
+        // descent 120, in its .otf, which PDFjet carries, as in its .ttf.
+        String path = "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf";
         PDF pdf = TestSupport.newPDF();
         Font sc = new Font(pdf, TestSupport.open(path));
         assertEquals(10f, sc.getLineGap(10f), 0.001f);
@@ -132,12 +131,37 @@ class FontTest {
     @Test
     void aStreamFontPathOpensTheTrueTypeFont() throws Exception {
         // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
-        // .stream file opens the .ttf file of the same name.
-        for (String path : new String[] {
-                "fonts/NotoSans/NotoSans-Regular.ttf.stream", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"}) {
-            String want = path.substring(0, path.indexOf('.')) + ".ttf";
-            assertEquals(TestSupport.file(want).getPath(), Font.fontFileOf(TestSupport.file(path).getPath()), path);
-            assertFalse(new Font(TestSupport.newPDF(), TestSupport.file(path).getPath()).getName().isEmpty(), path);
+        // .stream file opens the .ttf file of the same name, or else the .otf
+        // file: a file beside it, or a font PDFjet carries. Before 9.1.7 the
+        // fonts folder had Noto Sans and both files of IBM Plex Sans; the
+        // folder of .ttf and .otf files is made here.
+        java.io.File dir = java.nio.file.Files.createTempDirectory("pdfjet").toFile();
+        java.io.File ttf = new java.io.File(dir, "IBMPlexSans-Regular.ttf");
+        java.io.File otf = new java.io.File(dir, "IBMPlexSans-Regular.otf");
+        try {
+            java.nio.file.Files.write(ttf.toPath(), TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+            java.nio.file.Files.write(otf.toPath(), TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.otf"));
+            String[][] paths = {
+                // The .ttf beside the .otf
+                {otf.getPath() + ".stream", ttf.getPath()},
+                {ttf.getPath() + ".stream", ttf.getPath()},
+                // The .otf, with no .ttf beside it
+                {TestSupport.file("tests/fonts/IBMPlexSans-Regular.otf.stream").getPath(),
+                    TestSupport.file("tests/fonts/IBMPlexSans-Regular.otf").getPath()},
+                // The fonts PDFjet carries
+                {TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream").getPath(),
+                    TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf").getPath()},
+                {TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").getPath(),
+                    TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").getPath()},
+            };
+            for (String[] path : paths) {
+                assertEquals(path[1], Font.fontFileOf(path[0]), path[0]);
+                assertFalse(new Font(TestSupport.newPDF(), path[0]).getName().isEmpty(), path[0]);
+            }
+        } finally {
+            ttf.delete();
+            otf.delete();
+            dir.delete();
         }
         // Any other font is refused in PDFjet's words.
         Exception e = assertThrows(Exception.class, () -> new Font(TestSupport.newPDF(),
@@ -174,7 +198,6 @@ class FontTest {
     // and its .notdef 472, of 1000 units to the em; it has the characters
     // from U+0020 to U+FFFD, and no Thai.
     private static Font ibmPlexSans(PDF pdf) throws Exception {
-        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").exists(), "the fonts directory is not here");
         return new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
     }
 
@@ -294,10 +317,11 @@ class FontTest {
 
     @Test
     void aFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor() throws Exception {
-        assumeTrue(TestSupport.file("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf").exists(), "the fonts directory is not here");
+        // IBM Plex Sans JP, the .otf PDFjet carries: it has 日本東京, and no
+        // Thai, as its .ttf, which this test read before 9.1.7.
         PDF pdf = TestSupport.newPDF();
         Font latin = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
-        Font jp = new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"));
+        Font jp = new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"));
         Font helvetica = TestSupport.helvetica(pdf);
         // The Latin letters after the Japanese ones are in the font again.
         assertEquals(latin.stringWidth(10f, "abc") + jp.stringWidth(10f, "\u65e5\u672c") + latin.stringWidth(10f, "def"),
@@ -338,11 +362,9 @@ class FontTest {
         // subset of it made by a font tool are, are two font programs. A PDF
         // embedded the font file of the first of two fonts of one name for
         // both, so the text drawn with the second came out in the glyphs of
-        // the first: 中文字 read as Ι㈜♡. The other is Noto Sans with a wider
-        // .notdef.
-        String path = "fonts/NotoSans/NotoSans-Regular.ttf";
-        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
-        byte[] ttf = java.nio.file.Files.readAllBytes(TestSupport.file(path).toPath());
+        // the first: 中文字 read as Ι㈜♡. The other is IBM Plex Sans (Noto
+        // Sans before 9.1.7) with a wider .notdef.
+        byte[] ttf = TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
         byte[] other = ttf.clone();
         int tables = (ttf[4] & 0xFF) << 8 | (ttf[5] & 0xFF);
         for (int i = 0; i < tables; i++) {
@@ -370,28 +392,30 @@ class FontTest {
     @Test
     void oneFontProgramIsEmbeddedOnce() throws Exception {
         // The same font added twice is one font program.
-        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf").exists(),
+        assumeTrue(TestSupport.file("tests/fonts/IBMPlexSans-Regular.otf").exists(),
                 "the fonts directory is not here");
         assertEquals(1, embeddedFonts(documentWithFonts(
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
+                "tests/fonts/IBMPlexSans-Regular.otf",
+                "tests/fonts/IBMPlexSans-Regular.otf")));
         assertEquals(1, embeddedFonts(documentWithFonts(
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
+                "tests/fonts/IBMPlexSans-Regular.otf",
+                "tests/fonts/IBMPlexSans-Regular.otf")));
     }
 
     @Test
     void theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws Exception {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
         // whole degree.
-        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Italic.otf").exists(),
+        assumeTrue(TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf").exists(),
                 "the fonts directory is not here");
         String[][] fonts = {
-            {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
+            {"tests/fonts/IBMPlexSans-Italic.otf", "-11.31"},
             {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"},
             {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"},
-            {"fonts/IBMPlexMono/IBMPlexMono-Italic.ttf", "-9"},
-            {"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf", "-9"},
+            // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
+            // 9.1.7), its italic angle -10 in its post table
+            {"fonts/CascadiaMono/CascadiaMono-Italic.ttf", "-10"},
+            {"fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf", "-10"},
             {"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"},
         };
         for (String[] font : fonts) {
@@ -456,14 +480,18 @@ class FontTest {
         // A glyph a font draws for several characters maps to the character
         // the document drew with it, not to the lowest of them: a Persian ۱۳۹۸
         // was copied as the Arabic ١٣٩٨, and the full-width slash of km／h as a
-        // division slash (review of 11 October 2026, #8).
-        assumeTrue(TestSupport.file("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf").exists(),
-                "the fonts directory is not here");
+        // division slash (review of 11 October 2026, #8). Noto Sans Arabic,
+        // which this test read before 9.1.7, draws ۱, ۳, ۹ and ۸ with the
+        // glyphs of ١, ٣, ٩ and ٨; IBM Plex Sans Arabic draws each with its
+        // own, so its character map is made to draw them as Noto Sans
+        // Arabic's does. IBM Plex Sans TC draws ／ with the glyph of ∕.
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Font arabic = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
-        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        Font arabic = new Font(pdf, new ByteArrayInputStream(TestSupport.withSharedGlyphs(
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                new int[][] {{0x0661, 0x06F1}, {0x0663, 0x06F3}, {0x0669, 0x06F9}, {0x0668, 0x06F8}})));
+        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"));
         new TextLine(arabic, "\u06F1\u06F3\u06F9\u06F8").setLocation(50f, 50f).drawOn(page);
         new TextLine(tc, "60km\uFF0Fh").setLocation(50f, 100f).drawOn(page);
         pdf.complete();
@@ -481,10 +509,16 @@ class FontTest {
     // own as actual text, as the ToUnicode map gives the glyph the first: "١٢٣"
     // and then "۱۲۳" copied the second as "١۲٣", and "∕" then "／" in a stamp
     // gave "∕" twice (review of 12 October 2026, R15).
+    // Noto Sans Arabic, which this test read before 9.1.7, draws ۱ and ۳
+    // with the glyphs of ١ and ٣, and ۲ with its own; IBM Plex Sans Arabic's
+    // character map is made to draw them so. IBM Plex Sans TC draws ／ with
+    // the glyph of ∕.
     @Test
     void theSecondCharacterOfAGlyphHasItsActualText() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font arabic = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Font arabic = new Font(pdf, new ByteArrayInputStream(TestSupport.withSharedGlyphs(
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                new int[][] {{0x0661, 0x06F1}, {0x0663, 0x06F3}})));
         assertEquals(arabic.unicodeToGID.get(0x0661), arabic.unicodeToGID.get(0x06F1));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(arabic, "\u0661\u0662\u0663").setLocation(50f, 50f).drawOn(page);
@@ -495,7 +529,7 @@ class FontTest {
             assertTrue(content.contains("/ActualText <" + Page.toUTF16Hex(c) + ">"), content);
         }
 
-        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"));
         assertEquals(tc.unicodeToGID.get(0x2215), tc.unicodeToGID.get(0xFF0F));
         Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
         stamp.drawText(tc, 12f, 0f, 12f, "1\u22152");
@@ -576,7 +610,7 @@ class FontTest {
     // refused, not embedded as TrueType (review of 17 October 2026)
     @Test
     void aFontWithoutOutlinesPDFjetCanEmbedIsRefused() throws Exception {
-        byte[] font = TestSupport.readAll(TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
+        byte[] font = TestSupport.readAll(TestSupport.open("tests/fonts/IBMPlexSans-Regular.otf"));
         int tables = ((font[4] & 0xFF) << 8) | (font[5] & 0xFF);
         for (int i = 0; i < tables; i++) {
             int entry = 12 + 16 * i;

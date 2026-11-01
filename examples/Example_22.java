@@ -23,7 +23,7 @@ public class Example_22 {
     static final String[] COUNTRIES = {"Spain", "Italy", "Switzerland", "Greece"};
 
     static final String[] MAPS = {
-        "images/spain-admin.jpg", "images/italy-admin.jpg", "images/swiss-admin.jpg", "images/gr-map.jpg"};
+        "resources/images/spain-admin.jpg", "resources/images/italy-admin.jpg", "resources/images/swiss-admin.jpg", "resources/images/gr-map.jpg"};
 
     static final String[][] TEXT = {
         {

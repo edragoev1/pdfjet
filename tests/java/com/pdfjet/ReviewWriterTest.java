@@ -140,6 +140,80 @@ class ReviewWriterTest {
     }
 
     @Test
+    void aCarriageReturnInATitleIsAReferenceInTheMetadata() throws Exception {
+        // An XML reader turns it into a line feed, and PDF/A refused the title
+        // (review of 30 October 2026, B9).
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_A_2B);
+        pdf.setTitle("One\rTwo");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertTrue(raw.contains(">One&#13;Two</rdf:li>"), raw);
+    }
+
+    @Test
+    void aLanguageSetOnAnyPDFIsInItsCatalog() throws Exception {
+        // setLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+        // says no language of itself (review of 30 October 2026, B12).
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        assertFalse(TestSupport.latin1(bos.toByteArray()).contains("/Lang <"));
+        bos = new ByteArrayOutputStream();
+        pdf = new PDF(bos);
+        pdf.setLanguage("fr-CA");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        String lang = "/Lang <" + Util.toHexString("fr-CA".getBytes(StandardCharsets.US_ASCII)) + ">";
+        assertTrue(TestSupport.latin1(bos.toByteArray()).contains(lang));
+    }
+
+    @Test
+    void anEmbeddedFileIsNamedWithoutItsFolders() throws Exception {
+        // A path of Windows put its folders, the name of the user in them, in
+        // the /F of the PDF (review of 30 October 2026, F1).
+        java.nio.file.Path folder = java.nio.file.Files.createTempDirectory("pdfjet");
+        java.nio.file.Path path = folder.resolve("C:\\Users\\alice\\x.xml");
+        java.nio.file.Files.write(path, new byte[] {'<', 'a', '/', '>'});
+        try {
+            EmbeddedFile file = new EmbeddedFile(TestSupport.newPDF(), path.toString(), false);
+            assertEquals("x.xml", file.fileName);
+        } finally {
+            java.nio.file.Files.delete(path);
+            java.nio.file.Files.delete(folder);
+        }
+    }
+
+    @Test
+    void aScaleIsWrittenWithItsDecimals() throws Exception {
+        // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
+        // that drew nothing (review of 30 October 2026, B6).
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf).setSize(50f, 50f);
+        stamp.complete();
+        stamp.scaleBy(0.125f).setLocation(50f, 50f).drawOn(page);
+        stamp.scaleBy(0.004f).setLocation(50f, 50f).drawOn(page);
+        Container container = new Container(100f, 100f);
+        container.add(new Rect(0f, 0f, 10f, 10f));
+        container.scaleBy(0.125f).setLocation(50f, 50f).drawOn(page);
+        page.drawContents(new byte[] {'n'}, 10f, 20f, 30f, 0.125f, 0.004f);
+        float[] values = new float[9];
+        values[Page.MSCALE_X] = 0.125f;
+        values[Page.MSKEW_X] = 0.004f;
+        values[Page.MSKEW_Y] = 0.006f;
+        values[Page.MSCALE_Y] = 0.375f;
+        page.transform(values);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("0.004 0 0 0.004 0 0 cm\n"), content);
+        assertTrue(content.contains("\n0.125 0 0 0.004 "), content);
+        assertTrue(content.contains("\n0.125 0.004 0.006 0.375 "), content);
+        assertEquals(2, content.split("0\\.125 0 0 0\\.125 0 0 cm\n", -1).length - 1, content);
+    }
+
+    @Test
     @SuppressWarnings("deprecation")
     void everyAnnotationIsPrintedAndHasAnAppearance() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font
@@ -452,7 +526,21 @@ class ReviewWriterTest {
     void theFontFileRefersToItsMetadataWhoseNoticeIsEscaped() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_A_2B);
-        Font font = new Font(pdf, TestSupport.file("fonts/NotoSansJP/NotoSansJP-Regular.ttf").getPath());
+        // Noto Sans JP, which this test read before 9.1.7, has "&" in its
+        // designer and its description; no font PDFjet carries has one in
+        // its names, so the license of IBM Plex Sans is made to say "with &
+        // FAQ" in place of "with a FAQ", a character for a character.
+        byte[] ttf = TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] withA = " with a FAQ".getBytes(StandardCharsets.UTF_16BE);
+        int at = -1;
+        for (int i = 0; at == -1 && i + withA.length <= ttf.length; i++) {
+            if (java.util.Arrays.equals(withA, java.util.Arrays.copyOfRange(ttf, i, i + withA.length))) {
+                at = i;
+            }
+        }
+        assertTrue(at != -1, "the license of the font has no \"with a FAQ\"");
+        ttf[at + 2 * " with ".length() + 1] = '&';
+        Font font = new Font(pdf, new java.io.ByteArrayInputStream(ttf));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Hello").setLocation(50f, 50f).drawOn(page);
         pdf.complete();

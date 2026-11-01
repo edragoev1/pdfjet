@@ -27,7 +27,7 @@ public class Example_15 {
 
         // Use Regex.Split to match Java's split("\\n\\n") regex behavior
         List<string> paragraphs = new List<string>(
-                Regex.Split(Content.OfTextFile("data/dostoevsky.txt"), "\\n\\n"));
+                Regex.Split(Content.OfTextFile("resources/data/dostoevsky.txt"), "\\n\\n"));
 
         float x = 50f;
         float y = 50f;

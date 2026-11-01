@@ -20,10 +20,9 @@ class Example_48 {
         List<PDFobj> objects = pdf.read(new FileInputStream(fileName));
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
-        Font f1 = new Font(
-                objects,
-                new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        // drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+        // from the library; the path of a font file of your own reads that file.
+        Font f1 = new Font(objects, IBMPlexSans.Regular);
         f1.setSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");
@@ -52,7 +51,7 @@ class Example_48 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        new Example_48("data/testPDFs/scanned-linearized.pdf");
+        new Example_48("resources/data/testPDFs/scanned-linearized.pdf");
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_48 => %4d ms%n", time1 - time0);
     }

@@ -341,7 +341,7 @@ public class PDFTest {
         pdf.SetTitle("Title");
         new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/up-arrow.png"));
         image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
         image.DrawOn(page);
         pdf.Complete();
@@ -366,7 +366,7 @@ public class PDFTest {
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         page.BeginStructElement(StructElem.L);
-        new Image(pdf, TestSupport.Open("images/up-arrow.png")).SetURIAction("https://pdfjet.com").DrawOn(page);
+        new Image(pdf, TestSupport.Open("resources/images/up-arrow.png")).SetURIAction("https://pdfjet.com").DrawOn(page);
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
         page.EndStructElement();
         // No structure element is left begun
@@ -397,7 +397,7 @@ public class PDFTest {
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/up-arrow.png"));
         image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
         image.DrawOn(page);
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 200f).DrawOn(page);
@@ -622,29 +622,32 @@ public class PDFTest {
         // in isartor-6-1-12-t01-fail-a: the node was read again for each
         // entry of each page, which took time that grew as the square of the
         // number of pages, and more than a minute for that file.
-        const int count = 10000;
-        StringBuilder kids = new StringBuilder();
-        string[] objects = new string[count + 2];
-        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
-        for (int i = 0; i < count; i++) {
-            kids.Append(i + 3).Append(" 0 R ");
-            objects[i + 2] = "<< /Type /Page /Parent 2 0 R >>";
-        }
-        objects[1] = "<< /Type /Pages /MediaBox [0 0 595 842] /Kids [" + kids + "] /Count " + count + " >>";
-        byte[] bytes = PdfWithObjects(objects);
+        const int count = 2000;
+        Func<int, byte[]> pdfOf = pageCount => {
+            StringBuilder kids = new StringBuilder();
+            string[] objects = new string[pageCount + 2];
+            objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+            for (int i = 0; i < pageCount; i++) {
+                kids.Append(i + 3).Append(" 0 R ");
+                objects[i + 2] = "<< /Type /Page /Parent 2 0 R >>";
+            }
+            objects[1] = "<< /Type /Pages /MediaBox [0 0 595 842] /Kids [" + kids + "] /Count " + pageCount + " >>";
+            return PdfWithObjects(objects);
+        };
+        byte[] small = pdfOf(count);
+        byte[] large = pdfOf(2*count);
         List<PDFobj> pages = null;
         // Timed on objects read again for each run, as GetPageObjects changes
         // the objects it reads
-        long milliseconds = TestSupport.ShortestMillis(5000, () => {
-            List<PDFobj> read = TestSupport.Read(bytes);
+        TestSupport.AssertLinearTime(count, n => {
+            List<PDFobj> read = TestSupport.Read((n == count) ? small : large);
             pages = new PDF().GetPageObjects(read);
             PDF pdf = new PDF(new MemoryStream());
             pdf.Merge(read);
             pdf.Complete();
         });
-        Assert.Equal(count, pages.Count);
-        Assert.Equal(842f, pages[count - 1].GetPageSize().GetHeight());
-        Assert.True(milliseconds < 5000, "It took " + milliseconds + " ms.");
+        Assert.Equal(2*count, pages.Count);
+        Assert.Equal(842f, pages[2*count - 1].GetPageSize().GetHeight());
     }
 
     [Fact]
@@ -653,21 +656,45 @@ public class PDFTest {
         Assert.Empty(new PDF().GetPageObjects(objects));
     }
 
+    // /UF is the name of an embedded file as a text string, and /F is the file
+    // specification string of bytes, its characters from space to tilde as they
+    // are and each other one, a pair of surrogates in UTF-16 too, an underscore.
     [Fact]
-    public void TheNameOfAnEmbeddedFileIsATextStringInFAndUF() {
+    public void TheNameOfAnEmbeddedFileIsATextStringInUFAndBytesInF() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt",
+        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt",
                 new MemoryStream(Encoding.ASCII.GetBytes("Hello")), false);
         new FileAttachment(file).SetLocation(100f, 100f).DrawOn(page);
         pdf.Complete();
         PDFobj spec = TestSupport.FindObject(TestSupport.Read(stream.ToArray()), "/UF");
         Assert.NotNull(spec);
         Assert.Equal("/Filespec", spec.GetValue("/Type"));
-        Assert.Equal("\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
-        Assert.Equal(spec.GetValue("/UF"), spec.GetValue("/F"));
+        Assert.Equal("\u00dcbersicht \u2013 r\u00e9sum\u00e9 \U0001F600.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
+        Assert.Equal("<5f6265727369636874205f20725f73756d5f205f2e747874>", spec.GetValue("/F").ToLowerInvariant());
     }
+
+    // /F is a file specification string of one component, the file name (ISO
+    // 32000-2, 7.11.2): a solidus is preceded by a reverse solidus, and a
+    // reverse solidus, which a reader removes, is an underscore; /UF is the
+    // name as it is.
+    [Fact]
+    public void TheFOfAnEmbeddedFileEscapesASolidus() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        EmbeddedFile file = new EmbeddedFile(pdf, "in/out\\a.txt",
+                new MemoryStream(Encoding.ASCII.GetBytes("Hello")), false);
+        new FileAttachment(file).SetLocation(100f, 100f).DrawOn(page);
+        pdf.Complete();
+        PDFobj spec = TestSupport.FindObject(TestSupport.Read(stream.ToArray()), "/UF");
+        Assert.NotNull(spec);
+        Assert.Equal("in/out\\a.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
+        // in\/out_a.txt
+        Assert.Equal("<696e5c2f6f75745f612e747874>", spec.GetValue("/F").ToLowerInvariant());
+    }
+
     // The PDFs that are not valid, as the Go fuzz target of the reader found
     // them: each fails with a message or reads what it can, and none reads
     // past the file, allocates what the file does not have or traps in Swift.

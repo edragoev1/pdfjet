@@ -22,16 +22,16 @@ public class Example_16 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Paragraphs with mixed text styles");
 
-        Font f1 = new Font(pdf, SourceSerif4.Regular);
+        Font f1 = new Font(pdf, IBMPlexSerif.Regular);
         f1.SetSize(14f);
 
-        Font f2 = new Font(pdf, SourceSerif4.Italic);
+        Font f2 = new Font(pdf, IBMPlexSerif.Italic);
         f2.SetSize(14f);
 
-        Font f3 = new Font(pdf, SourceSerif4.SemiBold);
+        Font f3 = new Font(pdf, IBMPlexSerif.SemiBold);
         f3.SetSize(14f);
 
-        Font f4 = new Font(pdf, SourceSerif4.SemiBold);
+        Font f4 = new Font(pdf, IBMPlexSerif.SemiBold);
         f4.SetSize(9f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

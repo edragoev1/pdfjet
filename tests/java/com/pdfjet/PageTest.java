@@ -337,4 +337,24 @@ class PageTest {
                 e.getMessage());
     }
 
+    @Test
+    void drawStringWithDxPlacesEachCharacterOnItsOwn() throws Exception {
+        // It writes no Tc: each character is a text of its own, dx after the last.
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.drawString(TestSupport.helvetica(pdf), 12f, "ABC", 100f, 200f, 30f);
+        String content = TestSupport.content(page);
+        assertArrayEquals(new float[] {100f, 592f}, TestSupport.positionOf(content, "A"));
+        assertArrayEquals(new float[] {130f, 592f}, TestSupport.positionOf(content, "B"));
+        assertArrayEquals(new float[] {160f, 592f}, TestSupport.positionOf(content, "C"));
+        assertTrue(!content.contains(" Tc\n"), content);
+    }
+
+    @Test
+    void drawXMarkStrokesTwoCrossingLines() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        CheckBox.drawXMark(page, 10f, 20f, 5f);
+        assertEquals("0 0 1 RG\n1 w\n10 772 m\n15 767 l\n10 767 m\n15 772 l\nS\n", TestSupport.content(page));
+    }
+
 }

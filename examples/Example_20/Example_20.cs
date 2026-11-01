@@ -15,7 +15,7 @@ using PDFjet.NET;
  * Example_20.cs
  * This example draws a page of results from a CSV file of electric vehicles:
  * two simple bar charts, the five makes and the model years, and under them a
- * table of the same numbers, then a table of one car with its photo and its
+ * table of the same numbers, then a table of one car with a picture and its
  * VIN as a barcode, in their cells.
  */
 public class Example_20 {
@@ -38,7 +38,7 @@ public class Example_20 {
 
         // The cars of the file: by make, the battery electric ones and the
         // electric range of those that give one, and by model year
-        List<String> lines = Content.LinesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv");
+        List<String> lines = Content.LinesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv");
         int[] cars = new int[MAKES.Length];
         int[] battery = new int[MAKES.Length];
         int[] ranges = new int[MAKES.Length];
@@ -76,7 +76,7 @@ public class Example_20 {
                 .SetLocation(50f, 70f).DrawOn(page);
         List<Paragraph> intro = new List<Paragraph>();
         intro.Add(new Paragraph(new TextLine(f2, "The " + total + " electric vehicles of the first rows of "
-                + "the data file that Example_24 draws whole: the five makes with the most cars, and the "
+                + "the data file that Example_24 draws as a table: the five makes with the most cars, and the "
                 + "cars of each model year from " + FIRST_YEAR + " to " + LAST_YEAR + ", with the numbers "
                 + "in the table under the charts.").SetFontSize(10f)));
         TextFrame frame = new TextFrame(intro).SetLocation(50f, 84f).SetWidth(512f);
@@ -90,14 +90,17 @@ public class Example_20 {
         }
         byMake.SetLocation(50f, y).SetWidth(248f).DrawOn(page);
 
+        // The chart highlights the busiest year itself, and marks the
+        // average, in whole cars, with a dashed line; its bars are rounded
         SimpleBarChart byYear = new SimpleBarChart(f1, f2)
-                .SetTitle("By model year").SetSubtitle("cars");
-        int busiest = 0;
+                .SetTitle("By model year").SetSubtitle("cars")
+                .SetHighlightHighest().SetRoundedBars(true);
+        int allYears = 0;
         for (int i = 0; i < years.Length; i++) {
             byYear.Add((FIRST_YEAR + i).ToString(CultureInfo.InvariantCulture), years[i]);
-            busiest = (years[i] > years[busiest]) ? i : busiest;
+            allYears += years[i];
         }
-        byYear.SetHighlight(busiest);
+        byYear.SetReferenceLine(allYears / years.Length, "Average");
         byYear.SetLocation(314f, y).SetWidth(248f).DrawOn(page);
         y += Math.Max(byMake.GetHeight(), byYear.GetHeight()) + 30f;
 
@@ -121,11 +124,11 @@ public class Example_20 {
         table.SetLocation(50f, y + 10f);
         y = table.DrawOn(page)[1] + 30f;
 
-        // One car of the data, its photo and its VIN in their cells
+        // One car of the data, a picture of a car and its VIN in their cells
         new TextLine(f1, "One car of the data").SetStructureType(StructElem.H2)
                 .SetFontSize(14f).SetLocation(50f, y).DrawOn(page);
-        Image image = new Image(pdf, "images/TeslaX.png");
-        image.SetAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.");
+        Image image = new Image(pdf, "resources/images/car.png");
+        image.SetAltDescription("A drawing of a blue car, seen from the side.");
         image.ScaleBy(1f / 3f);     // The image is 120 DPI, so 0.6 of its pixels
         Barcode vin = new Barcode(Barcode.CODE_128, modelX[0]);
         vin.SetModuleLength(0.75f);

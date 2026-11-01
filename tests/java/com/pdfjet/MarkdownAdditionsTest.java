@@ -58,6 +58,151 @@ class MarkdownAdditionsTest {
         assertFalse(bold.joinsPrevious(1));
     }
 
+    // A hard line break at the end of a text is no break, as in CommonMark,
+    // and the spaces before it are not in the last text line; paragraphs
+    // strips the whitespace at the end of each paragraph.
+    @Test
+    void aHardLineBreakAtTheEndIsNoBreak() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(1, paragraph.lines.size(), text);
+            assertEquals("0", paragraph.lines.get(0).text, text);
+            assertEquals(0, paragraph.lines.get(0).lineBreaks, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(1, paragraphs.get(0).lines.size(), text);
+            assertEquals("0", paragraphs.get(0).lines.get(0).text, text);
+        }
+        // In bold, and a break before the last line
+        Paragraph bold = markup.paragraph("**0**  \n");
+        assertEquals(1, bold.lines.size());
+        assertEquals("0", bold.lines.get(0).text);
+        assertEquals(0, bold.lines.get(0).lineBreaks);
+        Paragraph two = markup.paragraph("one  \ntwo  \n");
+        assertEquals(Arrays.asList(true, false), breaks(two));
+        assertEquals("two", two.lines.get(1).text);
+        // Spaces at the end without a line break are text in paragraph
+        assertEquals("0  ", markup.paragraph("0  ").lines.get(0).text);
+        assertEquals("0", markup.paragraphs("0  ").get(0).lines.get(0).text);
+    }
+
+    // The spaces before a hard line break are not in the text line before
+    // it, as in CommonMark.
+    @Test
+    void theSpacesBeforeAHardLineBreakAreNotText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+                "**one**  \ntwo", "[one  \ntwo](u)"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(Arrays.asList(true, false), breaks(paragraph), text);
+            assertEquals("one", paragraph.lines.get(0).text, text);
+            assertEquals("two", paragraph.lines.get(1).text, text);
+        }
+    }
+
+    // A backslash at the end of a text is a backslash, and no hard line
+    // break, as in CommonMark; in the middle it is a break, as before.
+    @Test
+    void aBackslashAtTheEndIsText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(1, paragraph.lines.size(), text);
+            assertEquals("0\\", paragraph.lines.get(0).text, text);
+            assertEquals(0, paragraph.lines.get(0).lineBreaks, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(1, paragraphs.get(0).lines.size(), text);
+            assertEquals("0\\", paragraphs.get(0).lines.get(0).text, text);
+        }
+        Paragraph two = markup.paragraph("one\\\ntwo\\\n");
+        assertEquals(Arrays.asList(true, false), breaks(two));
+        assertEquals("two\\", two.lines.get(1).text);
+    }
+
+    // The spaces and tabs at the start of the line after a hard line break are
+    // not in the text, as in CommonMark; a space written &#32; is, and so are
+    // the spaces after a <br>, which is no line ending.
+    @Test
+    void theSpacesAfterAHardLineBreakAreNotText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one  \n  two", "one  \r\n  two", "one   \n\t two", "one\\\n  two",
+                "one\\\r\n  two", "**one**  \n  two", "[one  \n  two](u)"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(Arrays.asList(true, false), breaks(paragraph), text);
+            assertEquals("one", paragraph.lines.get(0).text, text);
+            assertEquals("two", paragraph.lines.get(1).text, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(2, paragraphs.get(0).lines.size(), text);
+            assertEquals("two", paragraphs.get(0).lines.get(1).text, text);
+        }
+        assertEquals(" two", markup.paragraph("one  \n&#32;two").lines.get(1).text);
+        assertEquals("  two", markup.paragraph("one<br>  two").lines.get(1).text);
+    }
+
+    // The spaces and tabs at the start of the line after a soft line break
+    // are not in the text, as in CommonMark: the line break is one space; a
+    // space written &#32; is text.
+    @Test
+    void theSpacesAfterASoftLineBreakAreNotText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one\n  two", "one\r\n  two", "one\n\t two", "one\ntwo", "one\r\ntwo"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(1, paragraph.lines.size(), text);
+            assertEquals("one two", paragraph.lines.get(0).text, text);
+            assertEquals(0, paragraph.lines.get(0).lineBreaks, text);
+            List<Paragraph> paragraphs = markup.paragraphs(text);
+            assertEquals(1, paragraphs.size(), text);
+            assertEquals(1, paragraphs.get(0).lines.size(), text);
+            assertEquals("one two", paragraphs.get(0).lines.get(0).text, text);
+        }
+        assertEquals("one  two", markup.paragraph("one\n&#32;two").lines.get(0).text);
+    }
+
+    // The spaces and tabs before a soft line break are not in the text, as in
+    // CommonMark, and those before any line break are counted as they were
+    // appended: a space written &#32; stays.
+    @Test
+    void theSpacesBeforeASoftLineBreakAreNotText() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one \ntwo", "one\t\ntwo", "one \t\n  two", "one \r\ntwo", "one \rtwo"}) {
+            assertEquals("one two", markup.paragraph(text).lines.get(0).text, text);
+            assertEquals("one two", markup.paragraphs(text).get(0).lines.get(0).text, text);
+        }
+        assertEquals("one  two", markup.paragraph("one&#32;\ntwo").lines.get(0).text);
+        assertEquals("one ", markup.paragraph("one&#32;\n  \ntwo").lines.get(0).text);
+    }
+
+    // A line break right after a hard line break adds no space to the next row.
+    @Test
+    void noSpaceStartsARowAfterAHardLineBreak() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        for (String text : new String[] {"one<br>\ntwo", "one<br>\n  two", "one<br> \ntwo", "one<br>\r\ntwo",
+                "one<br>\rtwo", "one  \n\ntwo", "one\\\n\ntwo"}) {
+            Paragraph paragraph = markup.paragraph(text);
+            assertEquals(Arrays.asList(true, false), breaks(paragraph), text);
+            assertEquals("one", paragraph.lines.get(0).text, text);
+            assertEquals("two", paragraph.lines.get(1).text, text);
+        }
+        assertEquals("two", markup.paragraph("\ntwo").lines.get(0).text);
+    }
+
+    // \r\n and a lone \r are line endings as \n is, in text, in hard line
+    // breaks, in code and between paragraphs.
+    @Test
+    void everyLineEndingIsOne() throws Exception {
+        Markup markup = markup(TestSupport.newPDF());
+        assertEquals("one two", markup.paragraph("one\rtwo").lines.get(0).text);
+        assertEquals("a b", markup.paragraph("`a\r\nb`").lines.get(0).text);
+        assertEquals("a b", markup.paragraph("`a\rb`").lines.get(0).text);
+        assertEquals(Arrays.asList(true, false), breaks(markup.paragraph("one  \rtwo")));
+        assertEquals(Arrays.asList(true, false), breaks(markup.paragraph("one\\\rtwo")));
+        assertEquals("0\\", markup.paragraph("0\\\r").lines.get(0).text);
+        assertEquals(2, markup.paragraphs("one\r\rtwo").size());
+    }
+
     @Test
     void aTextFrameStartsARowAtABreak() throws Exception {
         TestSupport.allowCoreFonts(true);

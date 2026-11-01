@@ -206,10 +206,11 @@ public class TextBlockTest {
         for (int i = 0; i < 25000; i++) {
             word.Append("محمد");      // 100,000 letters, which took about 20 minutes
         }
-        TextBlock block = new TextBlock(font, word.ToString()).SetRightToLeft(true).SetWidth(100f);
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        float[] xy = block.SetLocation(0f, 0f).DrawOn(null);
-        Assert.True(watch.ElapsedMilliseconds < 3000, "breaking a right to left word of 100,000 letters took " + watch.ElapsedMilliseconds + " ms");
+        string text = word.ToString();
+        TestSupport.AssertLinearTime(5000, n => {
+            new TextBlock(font, text.Substring(0, 4*n)).SetRightToLeft(true).SetWidth(100f).SetLocation(0f, 0f).DrawOn(null);
+        });
+        float[] xy = new TextBlock(font, text).SetRightToLeft(true).SetWidth(100f).SetLocation(0f, 0f).DrawOn(null);
         TestSupport.AssertXY(100f, 120006f, xy);    // As the Go port breaks it
     }
 

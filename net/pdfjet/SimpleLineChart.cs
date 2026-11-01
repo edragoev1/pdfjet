@@ -16,11 +16,15 @@ namespace PDFjet.NET {
 /// in navy, its label bold, the others gray. A light horizontal grid alone, no
 /// border, on a light panel, with a title and a subtitle at the top left, in
 /// the look of SimpleBarChart and SimpleScatterChart. A value that is NaN
-/// leaves a gap in its line.
+/// leaves a gap in its line. A value outside a range that is set cuts its line
+/// at the edge of the plot, and the chart says how many are: "2 values outside
+/// the range", small, under the plot at its right end, and in its description,
+/// in that alone when the plot would not be left room to draw.
 ///
 /// In a PDF/UA document the chart is one figure, described from its data: the
-/// lines, their first and last values and their highest, unless an alternate
-/// description is set. It draws with the page alone, and needs no other chart.
+/// lines, their first and last values and their highest, and the values outside
+/// a range, unless an alternate description is set, which is then followed by
+/// those values alone. It draws with the page alone, and needs no other chart.
 /// Please see Example_25.
 /// </summary>
 public class SimpleLineChart : IDrawable {
@@ -135,7 +139,8 @@ public class SimpleLineChart : IDrawable {
 
     /// <summary>
     /// Sets the alternate description of the chart in a PDF/UA document.
-    /// Without one the chart is described from its data.
+    /// Without one the chart is described from its data. The number of values
+    /// outside a range that is set follows it, as the chart prints it.
     /// </summary>
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this chart.</returns>
@@ -228,7 +233,9 @@ public class SimpleLineChart : IDrawable {
     /// <summary>
     /// Sets the range of the vertical axis. Without it the range is that of
     /// the values, rounded to steps. A range whose end is not past its start
-    /// is not set.
+    /// is not set. A value outside the range is drawn past the plot, which
+    /// clips it, and the chart says how many are, under the plot, which is that
+    /// much lower, and in its description.
     /// </summary>
     /// <param name="min">the first value of the axis.</param>
     /// <param name="max">the last value of the axis.</param>
@@ -379,11 +386,29 @@ public class SimpleLineChart : IDrawable {
         return -1;
     }
 
+    // What the chart says of its values outside a range that is set, or ""
+    // when there are none.
+    private String OutsideNote() {
+        int count = 0;
+        if (yRangeSet) {
+            ChartScale.Axis yRange = new ChartScale.Axis(yMin, yMax, 0);
+            foreach (Line line in lines) {
+                for (int j = 0; j < Count(); j++) {
+                    if (line.Has(j) && !ChartScale.OnAxis(line.values[j], yRange)) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return ChartScale.OutsideNote(count, "value");
+    }
+
     // The alternate description: the one set, or the title, the categories
-    // and, for each line, its first and last values and its highest.
+    // and, for each line, its first and last values and its highest; and the
+    // values outside a range that is set.
     internal String AltDescription() {
         if (altDescription.Length > 0) {
-            return altDescription;
+            return ChartScale.WithNote(altDescription, OutsideNote());
         }
         // The values in the digits of the numbers of the axis
         List<float> all = new List<float>();
@@ -453,6 +478,10 @@ public class SimpleLineChart : IDrawable {
                 }
             }
         }
+        String note = OutsideNote();
+        if (note.Length > 0) {
+            sb.Append("; ").Append(note);
+        }
         return sb.Append(SimpleBarChart.PunctuationAfter(sb, ".")).ToString();
     }
 
@@ -517,6 +546,17 @@ public class SimpleLineChart : IDrawable {
         float bottom = y + h - pad - 1.4f * size;
         if (xAxisTitle.Length > 0) {
             bottom -= 1.4f * size;
+        }
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        String note = OutsideNote();
+        if (note.Length > 0) {
+            float above = bottom - 1.4f * SubtitleSize();
+            if (above > top) {
+                bottom = above;
+            } else {
+                note = "";
+            }
         }
         if (right <= left || bottom <= top || !ChartScale.Drawable(axis)) {
             return new float[] {x + w, y + h};
@@ -591,6 +631,9 @@ public class SimpleLineChart : IDrawable {
                     bottom - (bottom - top - f2.StringWidth(size, yTitle)) / 2f,
                     Util.ToRGB(SimpleBarChart.INK), null);
             page.SetTextRotation(0);
+        }
+        if (note.Length > 0) {
+            ChartScale.DrawOutsideNote(page, f2, SubtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
         }
 
         // The lines, the highlighted one last, over the others, broken where a
