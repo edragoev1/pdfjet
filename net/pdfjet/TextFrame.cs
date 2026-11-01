@@ -50,6 +50,7 @@ public class TextFrame : IDrawable {
     private float yText;
     private bool rowOpen;
     private bool rowPlaced;
+    private TextLine rowLine;       // The text line the row was placed for
     private float nextBaseline;
     private bool startsParagraph;   // The next row starts a paragraph
     private float rowBottom;        // The bottom of the last row drawn
@@ -276,14 +277,26 @@ public class TextFrame : IDrawable {
     /// bottom of the text in either case.
     /// </summary>
     public float[] DrawOn(Page page) {
+        if (!Finite(x) || !Finite(y) || !Finite(w) || !Finite(h)) {
+            // No word is placed at NaN, and the frame hung (the review of 30
+            // October 2026)
+            if (page != null) {
+                paragraphIndex = paragraphs.Count;  // No more text to ask for
+                page.pdf.Fail(new ArgumentException("The text frame's location and size must be numbers, not NaN or infinite."));
+            }
+            return new float[] {x + w, y};
+        }
         int startParagraph = paragraphIndex;
         int startLine = lineIndex;
-        List<String> startTokens = (tokens == null) ? null : new List<String>(tokens);
+        bool continued = startLine > 0 || tokens != null;
+        // Measured, not drawn, so the text is kept: copied only then, as for
+        // every frame it made the time grow with the square of the words
+        List<String> startTokens = (page != null || tokens == null) ? null : new List<String>(tokens);
         int startToken = tokenIndex;
 
         elementParagraph = null;
         element = null;
-        continuedParagraph = (startLine > 0 || startTokens != null) ? paragraphs[startParagraph] : null;
+        continuedParagraph = continued ? paragraphs[startParagraph] : null;
         float bottom = DrawParagraphs(page);
         CloseList(page);
         textBottom = bottom;
@@ -401,6 +414,7 @@ public class TextFrame : IDrawable {
         xText = x;
         yText = baseline;
         rowOpen = true;
+        rowLine = textLine;
         rowPlaced = true;
         startsParagraph = false;
         return true;
@@ -421,6 +435,10 @@ public class TextFrame : IDrawable {
         // seconds where 200,000 took 0.08 in Java); it is copied once, when
         // the frame is full.
         int start = 0;
+        // Found once: each looks through the text of the text lines, and a
+        // word broken into rows comes here for every row
+        bool joinsNextLine = paragraph.JoinsPrevious(lineIndex + 1);
+        bool spaceMoves = !joinsNextLine && paragraph.SpaceMovesToNext(lineIndex);
         while (tokenIndex < tokens.Count) {
             if (!rowOpen && !OpenRow(textLine)) {
                 if (start > 0) {
@@ -434,10 +452,10 @@ public class TextFrame : IDrawable {
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
             bool last = (tokenIndex == tokens.Count - 1);
-            bool joinsNext = last && paragraph.JoinsPrevious(lineIndex + 1);
+            bool joinsNext = last && joinsNextLine;
             // The space after the last word goes at the start of the next text
             // line when that one's space is narrower.
-            bool spaceToNext = last && !joinsNext && paragraph.SpaceMovesToNext(lineIndex);
+            bool spaceToNext = last && spaceMoves;
             // Whether the token is drawn with the space after it; the text is made
             // only when the token is drawn whole: made for each row of a word
             // broken into thousands of rows, it copied the rest of the word each time
@@ -544,7 +562,10 @@ public class TextFrame : IDrawable {
     // all joined, is measured in linear time and not in quadratic time.
     private float JoinedWidth(Paragraph paragraph, int index, float before, float available) {
         float width = 0f;
-        for (int i = index + 1; i < paragraph.lines.Count && paragraph.JoinsPrevious(i); i++) {
+        // The caller knows the first one is joined: the test looks through
+        // the text of the text line, and a word broken into rows comes here
+        // for each
+        for (int i = index + 1; i < paragraph.lines.Count && (i == index + 1 || paragraph.JoinsPrevious(i)); i++) {
             TextLine textLine = paragraph.lines[i];
             String[] words = Util.SplitOnWhitespace(textLine.text);
             width += Width(textLine, words[0]);
@@ -679,6 +700,33 @@ public class TextFrame : IDrawable {
         }
     }
 
+    // Moves the row down so that its tallest text is below the row before it,
+    // or the top of the frame: the row was placed for its first text line, and
+    // a larger word after that one rose out of it. Fonts of one size stay on
+    // the baseline they have, or the rows of a paragraph with a word in another
+    // font would not be evenly apart.
+    private void LowerRow() {
+        float ascent = rowLine.font.GetAscent(rowLine.fontSize);
+        float rise = 0f;
+        foreach (RowPart part in row) {
+            if (part.text.Length > 0 && part.textLine.fontSize > rowLine.fontSize) {
+                rise = Math.Max(rise, part.textLine.font.GetAscent(part.textLine.fontSize) - ascent);
+            }
+        }
+        if (rise == 0f) {
+            return;
+        }
+        yText += rise;
+        foreach (RowPart part in row) {
+            if (part.startsParagraph) {
+                part.paragraph.yText += rise;
+            }
+            if (part.endsTextLine) {
+                part.paragraph.y2 = yText + part.textLine.font.GetDescent(part.textLine.fontSize);
+            }
+        }
+    }
+
     private void DrawRow(Page page, bool lastRowOfParagraph) {
         joinReserved = false;
         leadingSpace = false;
@@ -687,6 +735,7 @@ public class TextFrame : IDrawable {
         if (row.Count == 0) {
             return;
         }
+        LowerRow();
         foreach (RowPart part in row) {
             if (part.text.Length > 0) {
                 rowBottom = Math.Max(rowBottom, yText + part.textLine.font.GetDescent(part.textLine.fontSize));
@@ -863,9 +912,31 @@ public class TextFrame : IDrawable {
     // Splits the text of the text line into words, or, for CJK text, which has no
     // spaces between its words, into runs of characters that fit in the width,
     // never between the two halves of a surrogate pair.
+    // Splits the text of code into words at the last space of each run, which
+    // the frame draws after a word, as it does the space between two words. The
+    // other spaces of the run stay with the word before them, or the word after
+    // them at the start of the text: `a  b` is "a " and "b".
+    internal static List<String> SplitKeepingSpaces(String text) {
+        List<String> list = new List<String>();
+        int start = 0;
+        for (int i = 0; i < text.Length; i++) {
+            if (text[i] == ' ' && i > start && (i + 1 == text.Length || text[i + 1] != ' ')) {
+                list.Add(text.Substring(start, i - start));
+                start = i + 1;
+            }
+        }
+        if (start < text.Length) {
+            list.Add(text.Substring(start));
+        }
+        return list;
+    }
+
     private List<String> Tokenize(TextLine textLine) {
         List<String> list = new List<String>();
         if (!Util.IsCJK(textLine.text)) {
+            if (textLine.keepSpaces && textLine.text.Contains("  ")) {
+                return SplitKeepingSpaces(textLine.text);
+            }
             list.AddRange(Util.SplitOnWhitespace(textLine.text));
             return list;
         }

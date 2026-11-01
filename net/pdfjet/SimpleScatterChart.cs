@@ -15,11 +15,17 @@ namespace PDFjet.NET {
 /// darker, a few of them highlighted, navy and labeled with their names beside
 /// them, and the trend line of the points if asked, labeled at its end. A light
 /// horizontal grid alone, no border or legend, on a light panel, with a title
-/// and a subtitle at the top left, in the look of SimpleBarChart.
+/// and a subtitle at the top left, in the look of SimpleBarChart. Any point can
+/// be a link, a dot with a description that a hover or a screen reader gets, so
+/// that all of 200 points are links without a name printed for each. A point
+/// outside a range that is set is not drawn, and the chart says how many are:
+/// "2 points outside the range", small, under the plot at its right end, and in
+/// its description, in that alone when the plot would not be left room to draw.
 ///
 /// In a PDF/UA document the chart is one figure, described from its data: the
-/// number of points, the highlighted ones and their values, and which way the
-/// trend goes, unless an alternate description is set. It draws with the page
+/// number of points, the highlighted ones and their values, which way the
+/// trend goes and the points outside a range, unless an alternate description
+/// is set, which is then followed by those points alone. It draws with the page
 /// alone, and needs no other chart. In PDF/A-1, which has no transparency, the
 /// dots are drawn opaque. Please see Example_26.
 /// </summary>
@@ -32,13 +38,19 @@ public class SimpleScatterChart : IDrawable {
     internal const int GRID = 0xD5D9DE;
     internal const int TREND = 0x5F6873;
     internal const float ALPHA = 0.55f;
+    // The least width and height of the link of a dot, which PDF writes in
+    // hundredths: 8 points that stay 8 however the two sides round.
+    internal const float HIT_SIZE = 8.02f;
 
-    // A point of the chart, highlighted when it has a name.
+    // A point of the chart, highlighted when it has a name, but for a dot:
+    // its name describes it and is not printed.
     internal sealed class Point {
         internal readonly float x;
         internal readonly float y;
         internal readonly String name;
-        internal readonly String uri;      // The link of a highlighted point, or null
+        internal readonly String uri;      // The link of the point, or null
+        internal bool dot = false;         // Drawn as a point that is not highlighted
+        internal int series = -1;          // The index of its series, or -1 for none
 
         internal Point(float x, float y, String name) : this(x, y, name, null) {
         }
@@ -48,6 +60,17 @@ public class SimpleScatterChart : IDrawable {
             this.y = y;
             this.name = name ?? "";
             this.uri = uri;
+        }
+
+        // Tells if the point is drawn in the highlight color, its name
+        // beside it.
+        internal bool Highlighted() {
+            return name.Length > 0 && !dot;
+        }
+
+        // Tells if the point is a dot that is a link.
+        internal bool LinkedDot() {
+            return dot && uri != null;
         }
     }
 
@@ -63,6 +86,7 @@ public class SimpleScatterChart : IDrawable {
     private String yAxisTitle = "";
     private String altDescription = "";
     private readonly List<Point> points = new List<Point>();
+    private readonly List<String> series = new List<String>();     // The names of the series
     private bool trendLine = false;
     private float xMin;
     private float xMax;
@@ -127,7 +151,8 @@ public class SimpleScatterChart : IDrawable {
 
     /// <summary>
     /// Sets the alternate description of the chart in a PDF/UA document.
-    /// Without one the chart is described from its data.
+    /// Without one the chart is described from its data. The number of points
+    /// outside a range that is set follows it, as the chart prints it.
     /// </summary>
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this chart.</returns>
@@ -144,7 +169,28 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="y">the y of the point.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(float x, float y) {
-        points.Add(new Point(x, y, ""));
+        return AddPoint(new Point(x, y, ""));
+    }
+
+    // Adds the point to the series added last, if any.
+    private SimpleScatterChart AddPoint(Point p) {
+        p.series = series.Count - 1;
+        points.Add(p);
+        return this;
+    }
+
+    /// <summary>
+    /// Starts a series: the points added after it are its points, drawn in its
+    /// color and its shape, and its name is in the legend over the plot. The
+    /// series take the colors of the palette of BarChart, blue, orange, red,
+    /// teal and so on, and the shapes circle, square, triangle, star, diamond
+    /// and cross, in turn. The points added before the first series are gray
+    /// dots, as those of a chart without series.
+    /// </summary>
+    /// <param name="name">the name of the series, in the legend.</param>
+    /// <returns>this chart.</returns>
+    public SimpleScatterChart AddSeries(String name) {
+        series.Add(name ?? "");
         return this;
     }
 
@@ -156,8 +202,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="y">the y of the point.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(String name, float x, float y) {
-        points.Add(new Point(x, y, name));
-        return this;
+        return AddPoint(new Point(x, y, name));
     }
 
     /// <summary>
@@ -173,8 +218,30 @@ public class SimpleScatterChart : IDrawable {
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(String name, float x, float y, String uri) {
         // An empty URI is no link, as in the Go port
-        points.Add(new Point(x, y, name, (uri == null || uri.Length == 0) ? null : uri));
-        return this;
+        return AddPoint(new Point(x, y, name, (uri == null || uri.Length == 0) ? null : uri));
+    }
+
+    /// <summary>
+    /// Adds a point that is a link and not highlighted: a dot as Add(x, y)
+    /// draws it, in its series if any, with nothing beside it. Its name is not
+    /// printed: it is the description of the link, and in a PDF/UA document
+    /// that of a figure of its own in the Link that holds its annotation, as
+    /// with Add(name, x, y, uri), and it counts in the description of the chart
+    /// as a point of Add(x, y) does. The link is at least 8 points square
+    /// around the dot, so that it can be hit, and inside the page. A name left
+    /// empty is described by the URI; a URI left empty is no link.
+    /// </summary>
+    /// <param name="name">the description of the point.</param>
+    /// <param name="x">the x of the point.</param>
+    /// <param name="y">the y of the point.</param>
+    /// <param name="uri">the URI the point links to.</param>
+    /// <returns>this chart.</returns>
+    public SimpleScatterChart AddLinkedDot(String name, float x, float y, String uri) {
+        String link = (uri == null || uri.Length == 0) ? null : uri;
+        // A figure needs a description
+        Point p = new Point(x, y, (name == null || name.Trim().Length == 0) ? link : name, link);
+        p.dot = true;
+        return AddPoint(p);
     }
 
     /// <summary>
@@ -191,7 +258,9 @@ public class SimpleScatterChart : IDrawable {
     /// <summary>
     /// Sets the range of the horizontal axis. Without it the range is that of
     /// the points, rounded to steps. A range whose end is not past its start
-    /// is not set.
+    /// is not set. A point outside the range is not drawn, and the chart says
+    /// how many are, under the plot, which is that much lower, and in its
+    /// description.
     /// </summary>
     /// <param name="min">the first value of the axis.</param>
     /// <param name="max">the last value of the axis.</param>
@@ -206,7 +275,8 @@ public class SimpleScatterChart : IDrawable {
     /// <summary>
     /// Sets the range of the vertical axis. Without it the range is that of the
     /// points, rounded to steps. A range whose end is not past its start is not
-    /// set.
+    /// set. A point outside the range is not drawn, and the chart says how many
+    /// are, under the plot, which is that much lower, and in its description.
     /// </summary>
     /// <param name="min">the first value of the axis.</param>
     /// <param name="max">the last value of the axis.</param>
@@ -302,7 +372,109 @@ public class SimpleScatterChart : IDrawable {
         if (title.Length > 0 || subtitle.Length > 0) {
             top += f2.GetSize();
         }
-        return top;
+        // The legend, and half a size of the numbers under it, so that the
+        // top number of the axis is not against its last row
+        int rows = DrawLegend(null, 0f);
+        return top + rows*LEGEND_ROW*f2.GetSize() + ((rows > 0) ? 0.5f*f2.GetSize() : 0f);
+    }
+
+    // The shapes of the series, in turn, as D3 draws its symbols.
+    internal const int CIRCLE = 0;
+    internal const int SQUARE = 1;
+    internal const int TRIANGLE = 2;
+    internal const int STAR = 3;
+    internal const int DIAMOND = 4;
+    internal const int CROSS = 5;
+    internal const int SHAPES = 6;
+    // The height of a row of the legend, in sizes of the numbers.
+    private const float LEGEND_ROW = 1.5f;
+
+    // The color of a series.
+    private static int SeriesColor(int index) {
+        return BarChart.PALETTE[index % BarChart.PALETTE.Length];
+    }
+
+    // Draws the legend, the shape and the name of each series, from the
+    // baseline of its first row, its rows wrapped at the right of the chart,
+    // when there is a page; and returns the number of its rows, 0 for a chart
+    // without series.
+    private int DrawLegend(Page page, float baseline) {
+        if (series.Count == 0) {
+            return 0;
+        }
+        float size = f2.GetSize();
+        float pad = Pad();
+        float r = 0.35f*size;
+        float gap = size/2f;
+        float left = x + pad;
+        float px = left;
+        int rows = 1;
+        for (int i = 0; i < series.Count; i++) {
+            String name = ChartScale.Shorten(f2, size, series[i], w - 2f*pad - 2f*r - gap);
+            float width = 2f*r + gap + f2.StringWidth(size, name);
+            if (px > left && px + width > x + w - pad) {
+                px = left;
+                baseline += LEGEND_ROW*size;
+                rows++;
+            }
+            if (page != null) {
+                page.SetPenColor(SeriesColor(i));
+                page.SetPenWidth(0.12f*size);
+                DrawShape(page, i % SHAPES, px + r, baseline - f2.GetAscent(size)/2f, r, false);
+                page.DrawString(f2, size, name, px + 2f*r + gap, baseline, Util.ToRGB(SimpleBarChart.INK), null);
+            }
+            px += width + size;
+        }
+        return rows;
+    }
+
+    // Draws a shape of a series centered on cx, cy, of about the area of a
+    // circle of radius r, its outline in the pen color, or filled in the
+    // brush color.
+    internal static void DrawShape(Page page, int shape, float cx, float cy, float r, bool fill) {
+        if (shape == CIRCLE) {
+            if (fill) {
+                page.FillCircle(cx, cy, r);
+            } else {
+                page.DrawCircle(cx, cy, r);
+            }
+            return;
+        }
+        float[] xy;
+        if (shape == SQUARE) {
+            float a = 0.886f*r;
+            xy = new float[] {-a, -a, a, -a, a, a, -a, a};
+        } else if (shape == TRIANGLE) {
+            // Pointing up, its center halfway down its height
+            float a = 1.35f*r;
+            xy = new float[] {0f, -a, 0.866f*a, 0.5f*a, -0.866f*a, 0.5f*a};
+        } else if (shape == STAR) {
+            xy = new float[20];
+            for (int i = 0; i < 10; i++) {
+                double angle = Math.PI*i/5.0;
+                float radius = (i % 2 == 0) ? 1.3f*r : 0.5f*r;
+                xy[2*i] = (float) (radius*Math.Sin(angle));
+                xy[2*i + 1] = (float) (-radius*Math.Cos(angle));
+            }
+        } else if (shape == DIAMOND) {
+            float a = 1.15f*r;
+            float b = 0.75f*r;
+            xy = new float[] {0f, -a, b, 0f, 0f, a, -b, 0f};
+        } else {
+            // A cross of five squares, as wide as three
+            float a = 1.1f*r;
+            float b = a/3f;
+            xy = new float[] {-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b};
+        }
+        page.MoveTo(cx + xy[0], cy + xy[1]);
+        for (int i = 2; i < xy.Length; i += 2) {
+            page.LineTo(cx + xy[i], cy + xy[i + 1]);
+        }
+        if (fill) {
+            page.FillPath();
+        } else {
+            page.ClosePath();   // Closed and stroked
+        }
     }
 
     // A number of an axis, with the decimals its step needs.
@@ -390,11 +562,26 @@ public class SimpleScatterChart : IDrawable {
         return line;
     }
 
+    // What the chart says of the points with a value outside a range that is
+    // set, or "" when there are none. A point outside both ranges is one point.
+    private String OutsideNote() {
+        ChartScale.Axis xRange = new ChartScale.Axis(xMin, xMax, 0);
+        ChartScale.Axis yRange = new ChartScale.Axis(yMin, yMax, 0);
+        int count = 0;
+        foreach (Point p in Valid()) {
+            if ((xRangeSet && !ChartScale.OnAxis(p.x, xRange)) || (yRangeSet && !ChartScale.OnAxis(p.y, yRange))) {
+                count++;
+            }
+        }
+        return ChartScale.OutsideNote(count, "point");
+    }
+
     // The alternate description: the one set, or the title, the number of
-    // points, the highlighted ones and the trend.
+    // points, the highlighted ones and the trend; and the points outside a
+    // range that is set.
     internal String AltDescription() {
         if (altDescription.Length > 0) {
-            return altDescription;
+            return ChartScale.WithNote(altDescription, OutsideNote());
         }
         List<Point> points = Valid();
         ChartScale.Axis[] axes = points.Count == 0 ? null : Axes(points);
@@ -417,9 +604,19 @@ public class SimpleScatterChart : IDrawable {
         if (xAxisTitle.Length > 0 && yAxisTitle.Length > 0) {
             sb.Append(", ").Append(yAxisTitle).Append(" against ").Append(xAxisTitle);
         }
+        if (series.Count > 0) {
+            // in the series A, B and C
+            sb.Append(", in the series ");
+            for (int i = 0; i < series.Count; i++) {
+                if (i > 0) {
+                    sb.Append((i == series.Count - 1) ? " and " : ", ");
+                }
+                sb.Append(series[i]);
+            }
+        }
         int named = 0;
         foreach (Point p in shown) {
-            if (p.name.Length == 0) {
+            if (!p.Highlighted()) {
                 continue;
             }
             sb.Append(named == 0 ? "; " : ", ");
@@ -432,6 +629,10 @@ public class SimpleScatterChart : IDrawable {
             if (line != null) {
                 sb.Append(line[0] > 0 ? "; the trend rises" : line[0] < 0 ? "; the trend falls" : "; the trend is flat");
             }
+        }
+        String note = OutsideNote();
+        if (note.Length > 0) {
+            sb.Append("; ").Append(note);
         }
         return sb.Append(SimpleBarChart.PunctuationAfter(sb, ".")).ToString();
     }
@@ -488,6 +689,17 @@ public class SimpleScatterChart : IDrawable {
         if (xAxisTitle.Length > 0) {
             bottom -= 1.4f * size;
         }
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        String note = OutsideNote();
+        if (note.Length > 0) {
+            float above = bottom - 1.4f * SubtitleSize();
+            if (above > top) {
+                bottom = above;
+            } else {
+                note = "";
+            }
+        }
         if (right <= left || bottom <= top || !ChartScale.Drawable(xAxis) || !ChartScale.Drawable(yAxis)) {
             return new float[] {x + w, y + h};
         }
@@ -499,6 +711,16 @@ public class SimpleScatterChart : IDrawable {
         // annotation, as PDF/UA asks: a link inside the chart's figure has
         // nothing to hold
         bool linksApart = page.TagsContent();
+
+        // The dots that are links, drawn so after the chart
+        List<Point> linkedDots = new List<Point>();
+        if (linksApart) {
+            foreach (Point p in points) {
+                if (p.LinkedDot() && OnPlot(p, xAxis, yAxis)) {
+                    linkedDots.Add(p);
+                }
+            }
+        }
 
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         page.SaveGraphicsState();
@@ -518,6 +740,12 @@ public class SimpleScatterChart : IDrawable {
             baseline += 1.4f * SubtitleSize();
             page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
                     x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
+        }
+        if (series.Count > 0) {
+            if (title.Length > 0 || subtitle.Length > 0) {
+                baseline += f2.GetSize();
+            }
+            DrawLegend(page, baseline + LEGEND_ROW*size - (LEGEND_ROW*size - ascent)/2f);
         }
 
         // The horizontal grid and the numbers of both axes, each where it
@@ -568,6 +796,9 @@ public class SimpleScatterChart : IDrawable {
                     Util.ToRGB(SimpleBarChart.INK), null);
             page.SetTextRotation(0);
         }
+        if (note.Length > 0) {
+            ChartScale.DrawOutsideNote(page, f2, SubtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
+        }
 
         // The trend line, from the left of the plot to its right, within its
         // height
@@ -599,26 +830,43 @@ public class SimpleScatterChart : IDrawable {
 
         // The dots, then the highlighted points and their names over them
         page.SaveGraphicsState();
-        if (!page.pdf.IsPDFA1()) {
-            GraphicsState gs = new GraphicsState();
-            gs.SetAlphaNonStroking(ALPHA);
-            page.SetGraphicsState(gs);
-        }
+        SetTransparent(page);
         page.SetBrushColor(dotColor);
-        float r = 0.3f * size;
         foreach (Point p in points) {
-            if (p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
-                page.FillCircle(XAt(p.x, xAxis, plotLeft, right), YAt(p.y, yAxis, top, plotBottom), r);
+            if (p.series < 0 && !p.Highlighted() && !(linksApart && p.LinkedDot()) && OnPlot(p, xAxis, yAxis)) {
+                DrawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
             }
         }
         page.RestoreGraphicsState();
-        List<Point> linked = new List<Point>();
+        // The points of the series, the outlines of their shapes, opaque;
+        // a chart without series draws as it did
+        if (series.Count > 0) {
+            page.SetPenWidth(0.12f * size);
+        }
         foreach (Point p in points) {
-            if (p.name.Length == 0 || !OnPlot(p, xAxis, yAxis)) {
+            if (p.series >= 0 && !p.Highlighted() && !(linksApart && p.LinkedDot()) && OnPlot(p, xAxis, yAxis)) {
+                DrawDot(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+        }
+        // The links of the dots first, for those of the highlighted points to
+        // be over them
+        foreach (Point p in points) {
+            if (p.LinkedDot() && !linksApart && OnPlot(p, xAxis, yAxis)) {
+                page.AddAnnotation(LinkOf(p, DotBox(p, xAxis, yAxis, plotLeft, right, top, plotBottom)));
+            }
+        }
+        List<Point> linked = new List<Point>();
+        List<Point> over = new List<Point>();
+        foreach (Point p in points) {
+            if (!p.Highlighted() || !OnPlot(p, xAxis, yAxis)) {
                 continue;
             }
             if (p.uri != null && linksApart) {
                 linked.Add(p);
+                continue;
+            }
+            if (linkedDots.Count > 0) {
+                over.Add(p);    // Over the dots, drawn after the chart
                 continue;
             }
             float[] box = DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
@@ -631,20 +879,90 @@ public class SimpleScatterChart : IDrawable {
         page.SetFigureBoundingBox(x, y, w, h);
         page.AddEMC();
 
-        foreach (Point p in linked) {
+        if (linkedDots.Count > 0) {
+            // As in the chart, whose graphics state ended with it
             page.SaveGraphicsState();
-            StructElement link = page.BeginLink();
-            page.AddBDC(StructElem.FIGURE, null, p.name);
-            float[] box = DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
-            page.SetFigureBoundingBox(box[0], box[1], box[2], box[3]);
-            page.AddEMC();
-            page.EndLink(link);
+            page.SetDefaultStrokeDashPattern();
+            SetTransparent(page);
+            if (series.Count > 0) {
+                page.SetPenWidth(0.12f * size);
+            }
+            foreach (Point p in linkedDots) {
+                DrawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
             page.RestoreGraphicsState();
-            Annotation annotation = LinkOf(p, box);
-            annotation.linkElement = link;
-            page.AddAnnotation(annotation);
+        }
+        // A highlighted point that is no link is in the description of the
+        // chart, and over the dots that are drawn after it
+        if (over.Count > 0) {
+            page.SaveGraphicsState();
+            page.AddArtifactBMC();
+            foreach (Point p in over) {
+                DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            }
+            page.AddEMC();
+            page.RestoreGraphicsState();
+        }
+        foreach (Point p in linked) {
+            DrawFigure(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
         }
         return new float[] {x + w, y + h};
+    }
+
+    // Draws a point that is a link as a figure of its own in its Link.
+    private void DrawFigure(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        page.SaveGraphicsState();
+        StructElement link = page.BeginLink();
+        page.AddBDC(StructElem.FIGURE, null, p.name);
+        float[] box;
+        if (p.dot) {
+            DrawDot(page, p, xAxis, yAxis, left, right, top, bottom);
+            box = DotBox(p, xAxis, yAxis, left, right, top, bottom);
+        } else {
+            box = DrawNamed(page, p, xAxis, yAxis, left, right, top, bottom);
+        }
+        page.SetFigureBoundingBox(box[0], box[1], box[2], box[3]);
+        page.AddEMC();
+        page.EndLink(link);
+        page.RestoreGraphicsState();
+        Annotation annotation = LinkOf(p, box);
+        annotation.linkElement = link;
+        page.AddAnnotation(annotation);
+    }
+
+    // Draws what follows a little transparent, but in PDF/A-1.
+    private static void SetTransparent(Page page) {
+        if (!page.pdf.IsPDFA1()) {
+            GraphicsState gs = new GraphicsState();
+            gs.SetAlphaNonStroking(ALPHA);
+            page.SetGraphicsState(gs);
+        }
+    }
+
+    // Draws a point that is not highlighted, with the transparency, and the
+    // width of the outlines, set.
+    private void DrawDot(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float size = f2.GetSize();
+        float px = XAt(p.x, xAxis, left, right);
+        float py = YAt(p.y, yAxis, top, bottom);
+        if (p.series >= 0) {
+            page.SetPenColor(SeriesColor(p.series));
+            DrawShape(page, p.series % SHAPES, px, py, 0.35f * size, false);
+        } else {
+            page.SetBrushColor(dotColor);
+            page.FillCircle(px, py, 0.3f * size);
+        }
+    }
+
+    // The box of a dot, x, y, w, h: a little past the tip of its outline in
+    // the shape that reaches farthest, the triangle.
+    private float[] DotBox(Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float reach = 0.55f * f2.GetSize();
+        return new float[] {XAt(p.x, xAxis, left, right) - reach, YAt(p.y, yAxis, top, bottom) - reach,
+                2f * reach, 2f * reach};
     }
 
     // Draws a highlighted point and its name, and returns the box of the two:
@@ -656,8 +974,13 @@ public class SimpleScatterChart : IDrawable {
         float big = 0.42f * size;
         float px = XAt(p.x, xAxis, left, right);
         float py = YAt(p.y, yAxis, top, bottom);
-        page.SetBrushColor(highlightColor);
-        page.FillCircle(px, py, big);
+        int color = (p.series >= 0) ? SeriesColor(p.series) : highlightColor;
+        page.SetBrushColor(color);
+        if (p.series >= 0) {
+            DrawShape(page, p.series % SHAPES, px, py, big, true);
+        } else {
+            page.FillCircle(px, py, big);
+        }
         // A name of two fifths of the plot at most, and in the plot
         String name = ChartScale.Shorten(f1, size, p.name, 0.4f * (right - left));
         float width = f1.StringWidth(size, name);
@@ -672,7 +995,10 @@ public class SimpleScatterChart : IDrawable {
         page.SetBrushColor(panelColor >= 0 ? panelColor : Color.white);
         page.FillRect(lx - 1f, baseline - f1.GetAscent(size) - 1f,
                 width + 2f, f1.GetAscent(size) + f1.GetDescent(size) + 2f);
-        page.DrawString(f1, size, name, lx, baseline, Util.ToRGB(highlightColor), null);
+        // The name of a point of a series in ink, which reads on the panel
+        // whatever the color of the series
+        page.DrawString(f1, size, name, lx, baseline,
+                Util.ToRGB((p.series >= 0) ? SimpleBarChart.INK : highlightColor), null);
         float x1 = Math.Min(px - big, lx);
         float y1 = Math.Min(py - big, baseline - f1.GetAscent(size));
         float x2 = Math.Max(px + big, lx + width);
@@ -680,10 +1006,10 @@ public class SimpleScatterChart : IDrawable {
         return new float[] {x1, y1, x2 - x1, y2 - y1};
     }
 
-    // The link annotation of a point, over the box of its dot and its name,
+    // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static Annotation LinkOf(Point p, float[] box) {
-        return new Annotation(
+        Annotation annotation = new Annotation(
                 Annotation.Link,
                 box[0],
                 box[1],
@@ -699,6 +1025,8 @@ public class SimpleScatterChart : IDrawable {
                 null,
                 null,
                 p.name);
+        annotation.hitSize = p.dot ? HIT_SIZE : 0f;
+        return annotation;
     }
 
     // Tells if the point is on the plot: a point outside a range that is set

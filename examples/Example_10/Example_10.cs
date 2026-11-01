@@ -20,8 +20,7 @@ public class Example_10 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Text block with highlighted keywords");
 
-        // Font f1 = new Font(pdf, SourceSerif4.Regular);
-        // Font f1 = new Font(pdf, NotoSans.Regular);
+        // Font f1 = new Font(pdf, IBMPlexSerif.Regular);
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(15f);
 
@@ -46,7 +45,7 @@ public class Example_10 {
         gs.SetAlphaNonStroking(0.5f);               // Non-Stroking alpha
         page.SetGraphicsState(gs);
 
-        String englishText = Content.OfTextFile("data/languages/english.txt");
+        String englishText = Content.OfTextFile("resources/data/languages/english.txt");
         // f1.SetSize(14f);
         TextBlock textBlock = new TextBlock(f1, englishText);
         textBlock.SetLocation(100f, 50f);

@@ -29,6 +29,9 @@ internal class Util {
         if (color == null) {
             return -1;
         }
+        if (color.Length < 3) {
+            throw new ArgumentException(Page.RGB_COUNT);
+        }
         return (ToByte(color[0]) << 16) | (ToByte(color[1]) << 8) | ToByte(color[2]);
     }
 
@@ -312,7 +315,7 @@ internal class Util {
     }
 
     private static bool Cased(char c) {
-        UnicodeCategory category = char.GetUnicodeCategory(c);
+        UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
         return category == UnicodeCategory.UppercaseLetter || category == UnicodeCategory.LowercaseLetter
                 || category == UnicodeCategory.TitlecaseLetter;
     }
@@ -323,7 +326,7 @@ internal class Util {
         case '\u00AD': case '\u00B7': case '\u2018': case '\u2019': case '\u2024': case '\u2027':
             return true;
         }
-        UnicodeCategory category = char.GetUnicodeCategory(c);
+        UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
         return category == UnicodeCategory.NonSpacingMark || category == UnicodeCategory.EnclosingMark
                 || category == UnicodeCategory.Format || category == UnicodeCategory.ModifierLetter
                 || category == UnicodeCategory.ModifierSymbol;
@@ -468,11 +471,11 @@ internal class Util {
     /// </summary>
     internal static int CjkLineEnd(String line, String next) {
         int end = line.Length;
-        if (NOT_AT_LINE_START.Contains(next)) {
+        if (CannotStartLine(next)) {
             while (end > 0) {
                 String ch = LastCharacter(line, end);
                 end -= ch.Length;
-                if (!NOT_AT_LINE_START.Contains(ch)) {
+                if (!CannotStartLine(ch)) {
                     break;
                 }
             }
@@ -481,6 +484,13 @@ internal class Util {
             end -= LastCharacter(line, end).Length;
         }
         return (end > 0) ? end : line.Length;
+    }
+
+    // Returns true for a character that does not start a line of Chinese or
+    // Japanese text: those of NOT_AT_LINE_START, and a combining mark, as the
+    // dakuten U+3099, which stays with the letter before it.
+    private static bool CannotStartLine(String ch) {
+        return NOT_AT_LINE_START.Contains(ch) || TextBlock.StaysWithPrevious(CodePointAt(ch, 0));
     }
 
     // The character that ends at index end of the string.

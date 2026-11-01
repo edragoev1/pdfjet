@@ -192,13 +192,13 @@ public class Container : IDrawable {
         page.AppendRotation(cos, sin);
 
         // 4) Scale around the container center
-        page.Append(scaleX);
+        page.AppendPrecise(scaleX);
         page.Append(' ');
         page.Append('0');
         page.Append(' ');
         page.Append('0');
         page.Append(' ');
-        page.Append(scaleY);
+        page.AppendPrecise(scaleY);
         page.Append(' ');
         page.Append('0');
         page.Append(' ');
