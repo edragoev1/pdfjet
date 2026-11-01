@@ -688,3 +688,22 @@ func TestBigTableTheColumnsCanBeGivenWidthsInPercent(t *testing.T) {
 		}
 	}
 }
+
+// The pages are counted with the arithmetic of the drawing, rounded as it
+// rounds: at the bottom margin to the last bit, the count was a page off, and
+// the footer read "of 1" on two pages (the review of 30 October 2026, E6).
+func TestBigTableThePagesAreCountedAsTheyAreDrawn(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	rows := [][]string{{"a"}, {"b"}, {"c"}, {"d"}, {"e"}}
+	table := NewBigTable(pdf, font, font, letter.Portrait()).SetNumberOfColumns(1).
+		SetTableRows([]string{"Name"}, slices.Values(rows)).SetVerticalPadding(0).SetBottomMargin(649.968)
+	table.SetLocation(10, 61.5)
+	if err := table.Complete(); err != nil {
+		t.Fatal(err)
+	}
+	pages := table.GetPages()
+	if len(pages) != 2 || !strings.Contains(testContent(pages[1]), testHex("Page 2 of 2")) {
+		t.Errorf("%d pages, the footer of the last %q", len(pages), testContent(pages[len(pages)-1]))
+	}
+}

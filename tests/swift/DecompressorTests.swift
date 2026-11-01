@@ -94,6 +94,25 @@ import Testing
         #expect(try TestSupport.inflate(padded) == data)
     }
 
+    @Test func inflateStreamTakesACutChecksumAndNoOtherCut() throws {
+        let data = Array("Some text of a page. Some text of a page. Some text of a page.".utf8)
+        let deflated = TestSupport.deflate(data)
+        for cut in 1...4 {
+            #expect(try inflateStream(Array(deflated.dropLast(cut))) == data, "cut \(cut)")
+        }
+        #expect(throws: (any Error).self) {
+            _ = try inflateStream(Array(deflated.dropLast(5)))
+        }
+        var wrongChecksum = Array(deflated.dropLast(2))
+        wrongChecksum[wrongChecksum.count - 1] ^= 1
+        #expect(throws: (any Error).self) {
+            _ = try inflateStream(wrongChecksum)
+        }
+        #expect(throws: (any Error).self) {
+            _ = try inflateStream(Array(deflated.dropLast(4)), data.count - 1)
+        }
+    }
+
     @Test func inflateRejectsEveryTruncationOfAStream() throws {
         var data = TestSupport.randomBytes(1000, 3)
         data.append(contentsOf: [UInt8](repeating: UInt8(ascii: "a"), count: 1000))

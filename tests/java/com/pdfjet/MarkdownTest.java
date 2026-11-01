@@ -357,7 +357,7 @@ class MarkdownTest {
         assertEquals(0, count(drawn.pdf, "Figure"));
         assertTrue(drawn.text.contains(TestSupport.hex("Circles")));
         // From the directory, the image is a figure.
-        String images = TestSupport.file("images").getPath();
+        String images = TestSupport.file("resources/images").getPath();
         drawn = draw(text, images);
         assertEquals(1, count(drawn.pdf, "Figure"));
         java.util.regex.Matcher alt = java.util.regex.Pattern.compile("/Alt <([0-9A-Fa-f]+)>").matcher(drawn.pdf);
@@ -365,7 +365,7 @@ class MarkdownTest {
                 "the text of the image is its description");
         // Not above it, not an absolute path, not a URL.
         for (String source : new String[] {"../images/circles.png", "/etc/passwd",
-                TestSupport.file("images/circles.png").getAbsolutePath(), "https://pdfjet.com/logo.png",
+                TestSupport.file("resources/images/circles.png").getAbsolutePath(), "https://pdfjet.com/logo.png",
                 "missing.png"}) {
             drawn = draw("![Not read](" + source + ")", images);
             assertEquals(0, count(drawn.pdf, "Figure"), source);
@@ -589,5 +589,38 @@ class MarkdownTest {
         for (int i = 0; i < drawn.contents.size(); i++) {
             assertTrue(drawn.contents.get(i).contains("0.69 0.71 0.75 RG"), "no bar on page " + i);
         }
+    }
+
+    // A table split over pages whose header wraps tall starts the next page
+    // when the header does not fit: drawn at the foot of the page, it ran off
+    // it (the review of 30 October 2026, E3).
+    @Test
+    void aTallHeaderOfATableStaysOnThePage() throws Exception {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 25; i++) {
+            text.append("line ").append(i).append("\n\n");
+        }
+        StringBuilder header = new StringBuilder();
+        StringBuilder rule = new StringBuilder();
+        StringBuilder row = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            header.append("| ");
+            for (int j = 0; j < 20; j++) {
+                header.append("word ");
+            }
+            header.append(' ');
+            rule.append("|---");
+            row.append("| a ");
+        }
+        text.append(header).append("|\n").append(rule).append("|\n");
+        for (int i = 0; i < 80; i++) {
+            text.append(row).append("|\n");
+        }
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<Page> pages = new ArrayList<Page>();
+        new Markdown(font, font, font, font, font).drawOn(pdf, text.toString(), pages, Letter.PORTRAIT);
+        pdf.addPages(pages);
+        pdf.complete();
     }
 }

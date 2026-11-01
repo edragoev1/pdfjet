@@ -33,9 +33,9 @@ type barSeries struct {
 const noColor int32 = -1
 
 // The look of the simple charts: ink for the title and the values, a muted gray
-// for the rest of the text, light grid lines, and a palette whose colors differ
-// in lightness, so that they stay apart in grayscale and for a reader who does
-// not tell red from green.
+// for the rest of the text, light grid lines, and the colors of the series from
+// the Tableau 10 palette, which D3 draws its charts with: ten colors chosen to
+// stay apart from one another.
 const (
 	barChartInk      = simpleBarInk
 	barChartMuted    = simpleBarMuted
@@ -44,19 +44,24 @@ const (
 )
 
 var barChartPalette = []int32{
-	0x1F3A5F, // navy
-	0x6F95C2, // steel blue
-	0xD08C3C, // amber
-	0x76987C, // sage
-	0xA7AFB8, // gray
-	0x9C5B5B, // brick
-	0x4F7A8C, // slate
-	0xC9B458, // ochre
+	0x4E79A7, // blue
+	0xF28E2C, // orange
+	0xE15759, // red
+	0x76B7B2, // teal
+	0x59A14F, // green
+	0xEDC949, // yellow
+	0xAF7AA1, // purple
+	0xFF9DA7, // pink
+	0x9C755F, // brown
+	0xBAB0AB, // gray
 }
 
 // BarChart is a bar chart renderer for PDF pages: one slot per category, the
-// bars of the series grouped inside each slot. See Example_27, of horizontal
-// and vertical bars.
+// bars of the series grouped inside each slot. A value of a line series outside
+// a range that is set cuts its line at the edge of the plot, and the chart says
+// how many are: "2 values outside the range", small, under the plot at its
+// right end, and in its description, in that alone when the plot would not be
+// left room to draw. See Example_27, of horizontal and vertical bars.
 type BarChart struct {
 	x1, y1 float32
 	w, h   float32
@@ -138,7 +143,9 @@ func (chart *BarChart) SetSubtitle(subtitle string) *BarChart {
 // SetAltDescription sets the alternate description of the chart, which a
 // screen reader reads in a PDF/UA document, where the chart is a figure. The
 // default is the title and the subtitle, or "Bar chart" without them, and the
-// values of each series by category. Describe what the chart shows.
+// values of each series by category. Describe what the chart shows. The number
+// of values of the line series outside a range that is set follows it, as the
+// chart prints it.
 func (chart *BarChart) SetAltDescription(altDescription string) *BarChart {
 	chart.altDescription = altDescription
 	return chart
@@ -201,7 +208,8 @@ func (chart *BarChart) AddSeriesWithColors(name string, values []float32, colors
 // AddLineSeries adds a series drawn as a line over the bars, in ink, a dot at
 // each category: a target, the average, or last year. It shares the value axis
 // with the bars, is not stacked, and is in the legend and the description. A
-// value that is NaN or infinite leaves a gap in the line.
+// value that is NaN or infinite leaves a gap in the line, and the chart says
+// how many values are outside a range set with SetValueAxisRange.
 //   - name: the series name, shown in the legend; empty for none.
 //   - values: one value per category.
 func (chart *BarChart) AddLineSeries(name string, values []float32) *BarChart {
@@ -334,7 +342,10 @@ func (chart *BarChart) SetFractionDigits(digits int) *BarChart {
 // SetValueAxisRange sets the range of the value axis, with grid lines on a
 // round step, as SetYAxisRange does in SimpleLineChart and SimpleScatterChart.
 // Without it the range is that of the data, rounded to steps, and always
-// includes 0. A range whose end is not past its start is not set.
+// includes 0. A range whose end is not past its start is not set. A value of a
+// line series outside the range is drawn past the plot, which clips it, and the
+// chart says how many are, under the plot, which is that much shorter, and in
+// its description.
 //   - min: the value at the start of the axis.
 //   - max: the value at the end of the axis.
 func (chart *BarChart) SetValueAxisRange(min, max float32) *BarChart {
@@ -351,6 +362,10 @@ func (chart *BarChart) SetValueAxisRange(min, max float32) *BarChart {
 func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	n := chart.numberOfCategories()
 	if page == nil || n == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
+		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+	}
+	if chart.maxFractionDigits > maxChartDigits {
+		page.pdf.fail(fractionDigitsMessage)
 		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 	f1 := chart.f1
@@ -571,6 +586,19 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	y5 := chart.y1 + topMargin
 	x6 := x2 - rightMargin
 	y8 := y2 - bottomMargin
+	// Room for the note, a row of its own under the rest; a chart that has
+	// not the room keeps its plot, and its description says the number
+	note := chart.outsideNote()
+	small := float32(0.8 * f2.size)
+	noteRow := float32(0.0)
+	if note != "" {
+		if above := y8 - float32(1.4*small); above > y5 {
+			noteRow = float32(1.4 * small)
+			y8 = above
+		} else {
+			note = ""
+		}
+	}
 	// No room for the plot, or an axis whose span is past the largest
 	// float, as a set range of -3e38 to 3e38, whose steps are infinite
 	if x6 <= x5 || y8 <= y5 || !isValue(step) {
@@ -924,7 +952,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	page.SetTextRotation(0)
 	xTitle := shorten(f2, f2.size, chart.xAxisTitle, x6-x5)
 	barChartText(page, f2, xTitle, x5+float32(((x6-x5)-f2.StringWidth(f2.size, xTitle))/2.0),
-		y2-float32(bodyHeight/2.0), barChartMuted)
+		y2-float32(bodyHeight/2.0)-noteRow, barChartMuted)
+	if note != "" {
+		drawOutsideNote(page, f2, small, note, x6, chart.x1, x2, y2-float32(bodyHeight/2.0))
+	}
 
 	page.RestoreGraphicsState()
 	page.SetFigureBoundingBox(chart.x1, chart.y1, chart.w, chart.h)
@@ -933,13 +964,32 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 }
 
+// outsideNote returns what the chart says of the values of its line series
+// outside a range that is set, or "" when there are none.
+func (chart *BarChart) outsideNote() string {
+	count := 0
+	if chart.rangeSet {
+		axis := chartAxis{min: chart.min, max: chart.max}
+		n := chart.numberOfCategories()
+		for _, s := range chart.lineSeries {
+			for i := 0; i < min(len(s.values), n); i++ {
+				if isValue(s.values[i]) && !onAxis(s.values[i], axis) {
+					count++
+				}
+			}
+		}
+	}
+	return outsideNote(count, "value")
+}
+
 // getAltDescription returns the alternate description: the one set, or the
 // title, the subtitle and, for each series, its name and its values by
 // category, with the digits of the labels, or, without SetFractionDigits, with
-// two significant digits at least.
+// two significant digits at least; and the values of the line series outside a
+// range that is set.
 func (chart *BarChart) getAltDescription(digits int) string {
 	if chart.altDescription != "" {
-		return chart.altDescription
+		return withNote(chart.altDescription, chart.outsideNote())
 	}
 	var sb strings.Builder
 	sb.WriteString(join(chart.title, chart.subtitle))
@@ -987,6 +1037,9 @@ func (chart *BarChart) getAltDescription(digits int) string {
 		}
 		sb.WriteString(values.String())
 		separator = "; "
+	}
+	if note := chart.outsideNote(); note != "" {
+		sb.WriteString("; " + note)
 	}
 	sb.WriteString(".")
 	return sb.String()
@@ -1087,16 +1140,28 @@ func barChartText(page *Page, font *Font, text string, x, y float32, c int32) {
 	page.drawString(font, font.size, text, x, y, colorToRGB(c), nil)
 }
 
+// barChartDark is the label on a color that neither white nor ink contrasts
+// with as WCAG asks, 4.5:1: the red, the purple and the brown of the palette.
+const barChartDark int32 = 0x111111
+
 // labelColorOn returns the color of a label on a bar of the color: white or
-// ink, whichever contrasts more with it, by the WCAG contrast ratio.
+// ink, whichever contrasts more with it, by the WCAG contrast ratio, or a near
+// black when that is less than 4.5:1.
 func labelColorOn(c int32) int32 {
 	// White contrasts more when (1 + 0.05) / (L + 0.05) is the larger of the
 	// two ratios, (L + 0.05) / (ink + 0.05) the other
 	l := luminance(c) + 0.05
-	if float64(l*l) <= float64(1.05*(luminance(barChartInk)+0.05)) {
-		return color.White
+	ink := luminance(barChartInk) + 0.05
+	if float64(l*l) <= float64(1.05*ink) {
+		if 1.05/l >= 4.5 {
+			return color.White
+		}
+		return barChartDark
 	}
-	return barChartInk
+	if l/ink >= 4.5 {
+		return barChartInk
+	}
+	return barChartDark
 }
 
 // luminance returns the relative luminance of the color, as WCAG defines it.

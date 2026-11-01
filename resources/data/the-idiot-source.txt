@@ -1,0 +1,9 @@
+the-idiot.txt is "The Idiot" by Fyodor Dostoyevsky, in the English translation
+by Eva Martin (1915), from Project Gutenberg, eBook #2638:
+https://www.gutenberg.org/ebooks/2638
+The translation is in the public domain. The file holds the text of the novel
+only, from "PART I" to its last line, with the header, the license and the
+footer of Project Gutenberg left out, and Unix line ends. Paragraphs are
+separated by an empty line, a part begins with "PART I" to "PART IV", a
+chapter with its number in Roman numerals and a period, and _underscores_
+mark the words in italics.

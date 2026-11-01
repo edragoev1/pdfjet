@@ -33,7 +33,7 @@ import Testing
 
     @Test func theSizeIsTheOneImageDrawsAt() throws {
         var files = [String]()
-        for dir in ["images", "tests/data", ".images"] {
+        for dir in ["resources/images", "tests/data", ".images"] {
             let root = TestSupport.path(dir)
             guard let walk = FileManager.default.enumerator(atPath: root) else {
                 continue

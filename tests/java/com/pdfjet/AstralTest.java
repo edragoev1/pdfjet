@@ -46,7 +46,9 @@ class AstralTest {
     void aCharacterPastU0xFFFFIsDrawnInTheFallbackFont() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font plex = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
-        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        // IBM Plex Sans TC, the .otf PDFjet carries, maps 𨋢 in its format 12
+        // subtable, as its .ttf, which this test read before 9.1.7, does.
+        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"));
         assertTrue(tc.hasGlyph(0x282E2), "TC has 𨋢");
         assertFalse(plex.hasGlyph(0x282E2), "Plex Sans has 𨋢");
         int gid = tc.unicodeToGID.get(0x282E2);

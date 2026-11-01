@@ -203,6 +203,18 @@ func TestMarkupLongInputsAreReadInLinearTime(t *testing.T) {
 	}
 }
 
+// The parentheses of a URL in pairs are in the URL, as in CommonMark; one that
+// no ) closes makes no link.
+func TestMarkupTheParenthesesOfAURLInPairsAreInTheURL(t *testing.T) {
+	testAssertMarkup(t,
+		[]string{"[Foo](https://x/Foo_(bar))", "Foo|R https://x/Foo_(bar)"},
+		[]string{"[Foo](https://x/a(b)c(d)) e", "Foo|R https://x/a(b)c(d)", " e|R"},
+		[]string{"[Foo](https://x/((b)))", "Foo|R https://x/((b))"},
+		[]string{"[a](b(c)", "[a](b(c)|R"},
+		[]string{"[a](b)(c)", "a|R b", "+(c)|R"},
+	)
+}
+
 // GitHub's Markdown: _ emphasizes as * does, but only at the edge of a word,
 // so that snake_case and file names are text.
 func TestMarkupUnderscoresEmphasizeAtTheEdgesOfWords(t *testing.T) {

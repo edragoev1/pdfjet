@@ -80,7 +80,7 @@ public class CommonBench {
     static long[] report(OutputStream os) throws Exception {
         long t0 = System.nanoTime();
         PDF pdf = new PDF(os);
-        pdf.setTitle("World Communications");
+        pdf.setTitle("Life Expectancy and Fertility");
         Font regular = new Font(pdf, ROOT + IBMPlexSans.Regular).setSize(11f);
         Font bold = new Font(pdf, ROOT + IBMPlexSans.SemiBold).setSize(11f);
         Font italic = new Font(pdf, ROOT + IBMPlexSans.Italic).setSize(11f);
@@ -88,11 +88,11 @@ public class CommonBench {
         Font smallBold = new Font(pdf, ROOT + IBMPlexSans.SemiBold).setSize(8f);
         long t1 = System.nanoTime();
 
-        String prose = new String(Files.readAllBytes(Paths.get(ROOT + "data/the-idiot.txt")),
+        String prose = new String(Files.readAllBytes(Paths.get(ROOT + "resources/data/the-idiot.txt")),
                 StandardCharsets.UTF_8).substring(0, 7000);
         Markup markup = new Markup(regular, bold, italic, italic, regular);
         List<Paragraph> paragraphs = new ArrayList<>();
-        paragraphs.add(new Paragraph(new TextLine(bold, "World Communications").setFontSize(20f)));
+        paragraphs.add(new Paragraph(new TextLine(bold, "Life Expectancy and Fertility").setFontSize(20f)));
         paragraphs.addAll(markup.paragraphs(prose.replace("\n\n", "\u0000").replace('\n', ' ').replace('\u0000', '\n')
                 .replace("\n", "\n\n")));
         List<Page> pages = new ArrayList<>();
@@ -101,16 +101,13 @@ public class CommonBench {
         frame.setWidth(512f);
         frame.drawOn(pdf, pages, Letter.PORTRAIT);
 
-        List<String> lines = Files.readAllLines(Paths.get(ROOT + "data/world-communications.txt"), StandardCharsets.UTF_8);
+        List<String> lines = Files.readAllLines(Paths.get(ROOT + "resources/data/life-expectancy-and-fertility-2023.txt"), StandardCharsets.UTF_8);
         List<List<Cell>> rows = new ArrayList<>();
         for (int r = 0; r < lines.size(); r++) {
             String[] fields = lines.get(r).split("\\|", -1);
             List<Cell> row = new ArrayList<>();
-            for (int c = 0; c < 8 && c < fields.length; c++) {
+            for (int c = 0; c < Math.min(fields.length, 5); c++) {    // Not the two-letter code at the end
                 row.add(new Cell(r == 0 ? smallBold : small, fields[c]));
-            }
-            while (row.size() < 8) {
-                row.add(new Cell(small, ""));
             }
             rows.add(row);
         }
@@ -118,7 +115,7 @@ public class CommonBench {
         table.setTableData(rows, 1);
         table.setCellPadding(3f, 2f);
         table.setWidth(552f);
-        table.setColumnWidthsInPercent(16f, 12f, 12f, 12f, 12f, 12f, 12f, 12f);
+        table.setColumnWidthsInPercent(26f, 8f, 14f, 14f, 38f);
         table.setLocation(30f, 40f);
         table.setBottomMargin(40f);
         table.drawOn(pdf, pages, Letter.PORTRAIT);
@@ -141,7 +138,7 @@ public class CommonBench {
         Font bold = new Font(pdf, ROOT + IBMPlexSans.Bold).setSize(11f);
         Font italic = new Font(pdf, ROOT + IBMPlexSans.Italic).setSize(11f);
         Font boldItalic = new Font(pdf, ROOT + IBMPlexSans.BoldItalic).setSize(11f);
-        Font code = new Font(pdf, ROOT + IBMPlexMono.Regular).setSize(9.5f);
+        Font code = new Font(pdf, ROOT + CascadiaMono.Regular).setSize(9.5f);
         long t1 = System.nanoTime();
 
         String text = new String(Files.readAllBytes(Paths.get(ROOT + "README.md")), StandardCharsets.UTF_8);

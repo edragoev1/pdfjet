@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -230,5 +231,103 @@ func TestSimpleBarChartTheDescriptionAfterATitleThatEndsASentence(t *testing.T) 
 	chart := NewSimpleBarChart(font, font).SetTitle("Sales.").Add("a", 5).Add("b", 6)
 	if got, want := chart.getAltDescription(), "Sales. a 5, b 6."; got != want {
 		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+// The polish of 29 October 2026: the bar the chart highlights itself, a
+// reference line and rounded bars, each off unless set.
+
+func TestSimpleBarChartTheChartHighlightsTheLowestOrTheHighestValue(t *testing.T) {
+	chart := testSimpleBarChart(testNewPDF()) // 7.3, 72.6, 18.4, 44.1
+	check := func(what string, want, got int) {
+		t.Helper()
+		if got != want {
+			t.Errorf("%s: %d, want %d", what, got, want)
+		}
+	}
+	check("none", -1, chart.highlighted())
+	check("lowest", 0, chart.SetHighlightLowest().highlighted())
+	check("highest", 1, chart.SetHighlightHighest().highlighted())
+	// A bar added later counts, as the chart finds the bar when it is drawn
+	chart.Add("Faster", 100)
+	check("added later", 4, chart.highlighted())
+	// The index set takes the place of the value found, and the other way
+	check("index", 2, chart.SetHighlight(2).highlighted())
+	check("lowest again", 0, chart.SetHighlightLowest().highlighted())
+}
+
+func TestSimpleBarChartTheFirstOfEqualValuesIsHighlightedAndNoValueIsSkipped(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	nan := float32(math.NaN())
+	chart := NewSimpleBarChart(font, font).Add("none", nan).Add("a", 3).Add("b", 1).Add("c", 1).Add("d", 3)
+	if got := chart.SetHighlightLowest().highlighted(); got != 2 {
+		t.Errorf("lowest: %d", got)
+	}
+	if got := chart.SetHighlightHighest().highlighted(); got != 1 {
+		t.Errorf("highest: %d", got)
+	}
+	if got := NewSimpleBarChart(font, font).Add("none", nan).SetHighlightLowest().highlighted(); got != -1 {
+		t.Errorf("no value: %d", got)
+	}
+}
+
+func TestSimpleBarChartAReferenceLineIsDashedAndLabeledUnderTheBars(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	plain := testSimpleBarChart(pdf).SetFractionDigits(1)
+	chart := testSimpleBarChart(pdf).SetFractionDigits(1).SetReferenceLine(50, "Target")
+	size := testHelvetica(pdf).GetSize()
+	testNear(t, "the height", plain.GetHeight()+float32(1.4*float32(0.8*size)), chart.GetHeight(), testDelta)
+	want := "Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1; Target 50.0."
+	if got := chart.getAltDescription(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	want = "Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1; reference line at 50.0."
+	if got := testSimpleBarChart(pdf).SetFractionDigits(1).SetReferenceLine(50, "").getAltDescription(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	chart.DrawOn(page)
+	content := testContent(page)
+	dashed := strings.Index(content, "[2 2] 0 d")
+	if dashed <= 0 {
+		t.Fatalf("no dashed line: %s", content)
+	}
+	if !strings.Contains(content[dashed:], "[] 0 d") {
+		t.Error("the dash pattern not set back")
+	}
+}
+
+func TestSimpleBarChartAReferenceLinePastTheLargestValueShortensTheBars(t *testing.T) {
+	pdf := testNewPDF()
+	page1 := NewPage(pdf, testLetterPortrait())
+	testSimpleBarChart(pdf).DrawOn(page1)
+	plain := testRectWidths(t, testContent(page1))
+	page2 := NewPage(pdf, testLetterPortrait())
+	testSimpleBarChart(pdf).SetReferenceLine(float32(2*72.6), "").DrawOn(page2)
+	shorter := testRectWidths(t, testContent(page2))
+	testNear(t, "iText's bar", plain[2]/2, shorter[2], 0.05)
+}
+
+func TestSimpleBarChartAReferenceLineThatIsNoValueDrawsNothing(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testSimpleBarChart(pdf).SetReferenceLine(float32(math.NaN()), "Target")
+	testNear(t, "the height", testSimpleBarChart(pdf).GetHeight(), chart.GetHeight(), testDelta)
+	chart.DrawOn(page)
+	if strings.Contains(testContent(page), "[2 2] 0 d") {
+		t.Error("a line drawn for NaN")
+	}
+}
+
+func TestSimpleBarChartRoundedBarsAreCurvesNotRectangles(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testSimpleBarChart(pdf).SetRoundedBars(true).DrawOn(page)
+	content := testContent(page)
+	if n := len(testRectWidths(t, content)); n != 1 {
+		t.Errorf("%d rectangles, not the panel alone", n)
+	}
+	if !strings.Contains(content, " c\n") {
+		t.Error("the bars' corners are not curves")
 	}
 }

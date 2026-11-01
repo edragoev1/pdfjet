@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/edragoev1/pdfjet/main/images/readme/pdfjet-logo-dark.svg">
-    <img src="images/readme/pdfjet-logo.svg" alt="PDFjet" width="320">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/edragoev1/pdfjet/main/resources/images/readme/pdfjet-logo-dark.svg">
+    <img src="resources/images/readme/pdfjet-logo.svg" alt="PDFjet" width="320">
   </picture>
 </p>
 
@@ -30,12 +30,37 @@ PDFjet creates PDF documents: text in most scripts, tables, charts, barcodes and
 images, accessible and archival when you need it to be. The same API and the
 same output come in four languages, and none of them needs a third-party library.
 
-> [!NOTE]
-> The fonts and the examples' data live in
-> [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-> [pdfjet-data](https://github.com/edragoev1/pdfjet-data); the scripts fetch
-> them (see [Examples](#examples)). The packages from Maven Central, NuGet
-> and `go get` have no fonts, and the core fonts, such as Helvetica, need none.
+> [!IMPORTANT]
+> **PDFjet includes every European language (Latin, Greek, Cyrillic). For
+> other scripts, add one package:** the fonts for Chinese, Japanese, Korean,
+> Arabic, Hebrew and Thai, the same version as PDFjet.
+>
+> | | Add |
+> |---|---|
+> | Maven | `<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId><version>9.1.7</version></dependency>` |
+> | Gradle | `implementation("com.pdfjet:pdfjet-fonts-world:9.1.7")` |
+> | NuGet | `dotnet add package PDFjet.Fonts.World` |
+> | Go | `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"` |
+> | Swift | `.product(name: "PDFjetFontsWorld", package: "pdfjet")` |
+>
+> From 9.1.7 the jar of Maven Central, the package of NuGet, a Go program
+> and the Swift product carry IBM Plex Sans and Serif and Cascadia Mono,
+> embedded in the documents that use them: the jar is about 5 MB. The add-on
+> carries IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew
+> and Thai, about 41 MB. Without it, a constant such as
+> `IBMPlexSansJP.Regular` or `IBMPlexSansArabic.Regular` throws an error
+> that names the line to add.
+>
+> **Want a much smaller jar? Take PDFjet.jar from the
+> [releases on GitHub](https://github.com/edragoev1/pdfjet/releases): it is
+> 0.7 MB.** Its package has all the fonts as files, in `resources/fonts`,
+> those of the add-on in `resources/fonts/world`, which PDFjet reads from
+> there with the same code; keep that folder next to your program, or only
+> the fonts you use.
+>
+> This repository has all that the examples and the tests read: the fonts in
+> `resources/fonts` and the examples' data in `resources/data`. Nothing is
+> fetched.
 
 ## Why PDFjet
 
@@ -49,7 +74,7 @@ same output come in four languages, and none of them needs a third-party library
   starting, takes up to about 250 ms), and each page is written out and freed
   as soon as the next one starts.
 - **No third-party dependencies.** The Java library is a single 0.6 MB jar, and the .NET
-  library a single 0.8 MB DLL.
+  library a single 0.9 MB DLL.
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns and charts.
 - **Charts that read at a glance.** SimpleBarChart compares a few values in
@@ -60,14 +85,15 @@ same output come in four languages, and none of them needs a third-party library
   SimpleScatterChart in the same look, and bar and donut charts too.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
-- **Fonts ready to use.** 261 TrueType and OpenType fonts from the IBM Plex, Noto and
-  other families, with Unicode text in Latin, Greek, Cyrillic, CJK and right
-  to left scripts, embedded as subsets of the glyphs a document draws. IBM
+- **Fonts ready to use.** 71 TrueType and OpenType fonts, IBM Plex Sans and
+  Serif, Cascadia Mono, and IBM Plex Sans JP, KR, SC, TC, Arabic, Hebrew and
+  Thai, with Unicode text in Latin, Greek, Cyrillic, CJK and right to left
+  scripts, embedded as subsets of the glyphs a document draws. IBM
   Plex Sans alone covers all 24 official languages of the European Union,
   from Czech ř and Romanian ș to Greek and Bulgarian, with the euro sign and
   each language's quotation marks: a one-page PDF in it is about 28 KB. A
-  page of Chinese in Noto Sans SC is about 93 KB, where the whole font is
-  6.5 MB.
+  page of Chinese in IBM Plex Sans SC is about 180 KB, where the whole font
+  is 7 MB.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics. For
   logos, icons and drawings, use SVG: it stays sharp at any size and in
   print, and it is far smaller and faster than a PNG with transparency,
@@ -80,19 +106,21 @@ same output come in four languages, and none of them needs a third-party library
 
 <table>
   <tr>
-    <td align="center"><a href="examples/Example_01.java"><img src="images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in many scripts</td>
-    <td align="center"><a href="examples/Example_23.java"><img src="images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
-    <td align="center"><a href="examples/Example_20.java"><img src="images/readme/example-chart.png" alt="Two simple bar charts of electric vehicles, by make and by model year, over a table of the same numbers" width="200"></a><br>Charts</td>
-    <td align="center"><a href="examples/Example_37.java"><img src="images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
+    <td align="center"><a href="examples/Example_01.java"><img src="resources/images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in many scripts</td>
+    <td align="center"><a href="examples/Example_23.java"><img src="resources/images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
+    <td align="center"><a href="examples/Example_20.java"><img src="resources/images/readme/example-chart.png" alt="Two simple bar charts of electric vehicles, by make and by model year, over a table of the same numbers" width="200"></a><br>Charts</td>
+    <td align="center"><a href="examples/Example_37.java"><img src="resources/images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
   </tr>
 </table>
 
 ## Quick start
 
 Each snippet writes `hello.pdf` with a line in English, Greek and Bulgarian.
-The bundled fonts, such as `IBMPlexSans.Regular`, are paths relative to the
-working directory, so run the program in a folder that has this repository's
-`fonts` directory, which the build scripts fetch, as the note at the top says.
+The fonts PDFjet carries, such as `IBMPlexSans.Regular`, are paths like
+`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`: PDFjet reads the file of that
+path if there is one, else the font from the folder `resources/fonts`, else
+from the library itself, as the jar of Maven Central carries it. The same
+code runs with all three.
 
 <details open>
 <summary><b>Java</b></summary>
@@ -113,11 +141,32 @@ With Gradle:
 implementation("com.pdfjet:pdfjet:9.1.5")
 ```
 
-The jar has no fonts, as the Go module has none: clone pdfjet-fonts as
-`fonts/` next to your program, as the Go part below says, or copy the fonts
-you use from it; the core fonts need no files. Or build `PDFjet.jar` from
-this repository with `./build-java.sh`, which also runs the examples, and put
-it on the class path.
+PDFjet includes every European language (Latin, Greek, Cyrillic). **For
+other scripts, add one package, `com.pdfjet:pdfjet-fonts-world`, the same
+version:** the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai.
+
+```xml
+<dependency>
+  <groupId>com.pdfjet</groupId>
+  <artifactId>pdfjet-fonts-world</artifactId>
+  <version>9.1.7</version>
+</dependency>
+```
+
+```groovy
+implementation("com.pdfjet:pdfjet-fonts-world:9.1.7")
+```
+
+From 9.1.7 the jar of Maven Central carries IBM Plex Sans and Serif and
+Cascadia Mono, so their constants in `com.pdfjet.fonts`, such as
+`IBMPlexSans.Regular`, work with nothing else to download; that jar is
+about 5 MB. `pdfjet-fonts-world`, about 41 MB, has IBM Plex Sans JP, KR, SC
+and TC and IBM Plex Sans Arabic, Hebrew and Thai, which PDFjet finds on the
+classpath; without it, `IBMPlexSansJP`, `IBMPlexSansArabic` and the others
+throw an error that names it. The `PDFjet.jar` of the
+[releases on GitHub](https://github.com/edragoev1/pdfjet/releases), and the
+one `./build-java.sh` builds from this repository, is 0.7 MB: it reads the
+same fonts from the folder `resources/fonts`, which its package has.
 
 ```java
 import com.pdfjet.*;
@@ -153,10 +202,23 @@ Or in the project file:
 <PackageReference Include="PDFjet" Version="9.1.5" />
 ```
 
-The package has no fonts, as the jar has none: get pdfjet-fonts as the Go part
-below says, or copy the fonts you use from it; the core fonts need no files.
-Or build `bin/release/net8.0/PDFjet.dll` from this repository with
-`./build-dotnet.sh` and reference it.
+PDFjet includes every European language (Latin, Greek, Cyrillic). **For
+other scripts, add one package, `PDFjet.Fonts.World`, the same version:**
+the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai.
+
+```bash
+dotnet add package PDFjet.Fonts.World
+```
+
+From 9.1.7 the package of NuGet carries IBM Plex Sans and Serif and
+Cascadia Mono, so their constants, such as `IBMPlexSans.Regular`, work with
+nothing else to download; it is about 10 MB. `PDFjet.Fonts.World`, about 41
+MB, has IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew
+and Thai, which PDFjet finds on its own; without it, `IBMPlexSansJP`,
+`IBMPlexSansArabic` and the others throw an error that names it. The
+`PDFjet.dll` of the [releases on GitHub](https://github.com/edragoev1/pdfjet/releases)
+is small: it reads the same fonts from the folder `resources/fonts`, which
+its package has.
 
 ```csharp
 using System.IO;
@@ -216,17 +278,29 @@ func main() {
 ```
 
 The module path carries the major version, as Go requires from v2 on. The Go
-module has the source of the library and the examples only. The fonts and the
-data files are not in it: `fonts/` and `data/` are the repositories
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-[pdfjet-data](https://github.com/edragoev1/pdfjet-data), which the scripts of
-this repository fetch, and the module is made without them. `images/` has a `go.mod` that keeps it out. Clone
-pdfjet-fonts as `fonts/` next to your program, or copy the fonts you use from
-it; the core fonts need no files:
+module has the source of the library and the examples, and the fonts PDFjet
+carries, in `resources/fonts`. The data files of the examples, in
+`resources/data`, and the images, in `resources/images`, are not in it: each
+folder has a `go.mod` of its own, which keeps it out. The module of 9.1.5 has
+no fonts: use the font files of its package from the release on GitHub.
 
-```sh
-git clone --depth 1 https://github.com/edragoev1/pdfjet-fonts.git fonts
+PDFjet includes every European language (Latin, Greek, Cyrillic). **For
+other scripts, add one line to your program:** the fonts for Chinese,
+Japanese, Korean, Arabic, Hebrew and Thai.
+
+```go
+import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 ```
+
+Go builds the fonts a program embeds into the program itself, uncompressed.
+So only IBM Plex Sans and Serif and Cascadia Mono are built in, 11 MB: a
+program like the one above is about 15 MB. The fonts of the other scripts,
+IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai,
+are 52 MB more, built in only when the program has the line above, which
+makes it about 70 MB. Without it, `IBMPlexSansJP.Regular`,
+`IBMPlexSansArabic.Regular` and the others are read from the folder
+`resources/fonts/world` of the working directory when it has them, and are
+an error that names this line when it does not.
 </details>
 
 <details>
@@ -242,14 +316,31 @@ Add PDFjet to the `Package.swift` of your package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.5"),
+    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.7"),
 ],
 targets: [
     .executableTarget(name: "App", dependencies: [
         .product(name: "PDFjet", package: "pdfjet"),
+        .product(name: "PDFjetFontsWorld", package: "pdfjet"),   // Only for scripts not European
     ]),
 ]
 ```
+
+PDFjet includes every European language (Latin, Greek, Cyrillic). **For
+other scripts, add the `PDFjetFontsWorld` line above;** leave it out
+otherwise: the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and
+Thai. The product `PDFjet` carries IBM Plex Sans and Serif and Cascadia
+Mono, about 11 MB, so their constants, such as `IBMPlexSans.Regular`, work
+anywhere. A Swift program is often an iPhone or Mac app, which should not
+carry the 52 MB of the fonts of the other scripts, IBM Plex Sans JP, KR, SC
+and TC and IBM Plex Sans Arabic, Hebrew and Thai, unless it draws in them:
+with the `PDFjetFontsWorld` line, they are built into your app, and no code
+is needed, as PDFjet finds their bundle on its own. Without it, PDFjet reads
+them from the folder `resources/fonts/world` of the working directory, as
+in this repository and the release packages, and a constant of one of them
+that is in neither place throws an error that names the line to add. An app
+that named the product `PDFjetFonts` before 9.1.7 still builds; that
+product is now part of `PDFjet`.
 
 ```swift
 import Foundation
@@ -281,9 +372,10 @@ is that of the whole process writing the 500-page document, runtime included.
 ## Examples
 
 The [examples](examples) folder has 50 examples, the same in every port. They
-read the fonts and data files of the `fonts` and `data` folders, which these
-scripts fetch the first time they run. Build a port and run all of its
-examples, or run one example by its number:
+draw in the fonts PDFjet carries, which the library reads from
+`resources/fonts` or from itself, and
+read the data files of `resources/data`, so they need nothing fetched. Build
+a port and run all of its examples, or run one example by its number:
 
 | Port | All examples | One example |
 |---|---|---|
@@ -292,17 +384,10 @@ examples, or run one example by its number:
 | Go | `./build-go.sh` | `./run-go.sh 01` |
 | Swift | `./build-swift.sh` | `./run-swift.sh 01` |
 
-The fonts and the data files are two more repositories,
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-[pdfjet-data](https://github.com/edragoev1/pdfjet-data), at the commits that
-`fonts-and-data.txt` pins. The build, run and test scripts fetch them into
-the folders `fonts` and `data` the first time they run, the pinned commits
-alone, and move them to the new commits when a `git pull` changes a pin.
-`./get-fonts-and-data.sh`, or `get-fonts-and-data.cmd` on Windows, does it
-without building anything. They need git. Using PDFjet from Go with
-`go get`, from Maven Central or from NuGet? The module, the jar and the
-package have no fonts: the Go part of [Quick start](#quick-start) says how to
-get pdfjet-fonts.
+The examples read the data files by paths relative to the repository root,
+such as `resources/data/the-idiot.txt`, and the scripts run them there.
+`resources/data/README.md` says where each file comes from and under which
+license.
 
 On Linux, install these first:
 
@@ -391,11 +476,11 @@ The tests are not part of the libraries and add no dependency to them.
 `test-java.sh` downloads the JUnit console launcher once into `build/junit`
 and checks its SHA-256, and builds and runs the tests on Java 8 as on later
 releases. The C# tests compile the library sources into the test project, so
-they can test internal classes, and restore xUnit from NuGet. The Go tests read
-the PngSuite images from the repository, and skip the tests that need the
-fonts when the `fonts` directory is not there. The PDFs the tests make stay in
-memory, and the files they need to write go to the system's temporary
-directory. `./check-examples.sh` runs the unit tests of each port after its
+they can test internal classes, and restore xUnit from NuGet. The tests of
+every port read the PngSuite images of `tests/data/PngSuite`, the fonts of
+`resources/fonts` and the data files of `resources/data` from the repository.
+The PDFs the tests make stay in memory, and the files they need to write go to
+the system's temporary directory. `./check-examples.sh` runs the unit tests of each port after its
 examples.
 
 ## Documentation
@@ -457,9 +542,10 @@ file, or with `setTableData(header, rows)` from an `Iterable` in Java, an
 `IEnumerable` in C#, a sequence in Swift or an `iter.Seq` in Go
 (`SetTableRows`). It goes through the rows twice, once to measure the columns
 and once to draw them, keeps none of them and writes each page when it is full,
-so its memory stays flat; Example_24 draws 2,546 pages that way. A tagged
-document, PDF/UA or PDF/A of level A, keeps a little of each row until
-`complete()`, for the structure tree it writes at the end.
+so its memory stays flat; Example_24, given the full data file of its sample,
+draws 2,546 pages that way. A tagged document, PDF/UA or PDF/A of level A,
+keeps a little of each row until `complete()`, for the structure tree it
+writes at the end.
 
 **Table or BigTable?** Use `BigTable` for a table of plain one-line rows,
 however long: statements, transaction lists, reports and exports. Every row
@@ -479,8 +565,8 @@ null text.
 
 ## Fonts, and what a PDF embeds
 
-The bundled fonts are TrueType `.ttf` files, and IBM Plex Sans is also there as
-`.otf`, a font of CFF outlines. Any `.ttf` or `.otf`
+The fonts PDFjet carries are TrueType `.ttf` files, and IBM Plex Sans JP, KR,
+SC and TC are `.otf`, fonts of CFF outlines. Any `.ttf` or `.otf`
 file on the computer is a font for PDFjet as well. Every font is embedded as a
 subset when the document is completed, the outlines of the glyphs it does not
 draw left out. What a PDF embeds:
@@ -510,27 +596,30 @@ draw left out. What a PDF embeds:
   is added and filled in when the objects are added to the PDF, after the
   pages are drawn. `setSubset(false)` is called before then.
 
-The SIL Open Font License of the bundled fonts allows a document to embed
+The SIL Open Font License of the fonts PDFjet carries allows a document to embed
 them, whole or subset: a document is not a distribution of the font.
 
 ### Choosing a font you may embed
 
 A font is software with a license, and a PDF that embeds a font carries a
 copy of it, a subset at least. That a font is on a computer does not mean
-that any program may embed it in documents. This is why PDFjet comes with a
-large set of fonts, chosen for their scripts and their licenses: so that a
-program has the fonts it needs, for most of the world's languages, that any
-document may embed. In this order:
+that any program may embed it in documents. This is why PDFjet carries a set
+of fonts, chosen for their scripts and their licenses: so that a program has
+the fonts it needs, for most of the world's languages, that any document may
+embed. In this order:
 
-1. **The fonts that come with PDFjet** first: IBM Plex Sans, Serif and Mono,
-   and Plex's Arabic, Hebrew, Thai, Japanese, Korean and Chinese families;
-   Noto Sans and its families; Source Serif 4; JetBrains Mono. All are under
-   the SIL Open Font License, which lets any document embed them, for any
-   use.
+1. **The fonts PDFjet carries** first, in `resources/fonts` and read from the
+   library itself: IBM Plex Sans and Serif and Cascadia Mono; and, in the
+   add-on of the other scripts, IBM Plex Sans Arabic, Hebrew and Thai and IBM
+   Plex Sans JP, KR, SC and TC. All are under the SIL Open Font License, which
+   lets any document embed them, for any use.
 2. **Google Fonts**, [fonts.google.com](https://fonts.google.com), next:
    every family there is under the SIL Open Font License, the Apache License
    2.0 or the Ubuntu Font Licence, each of which lets a document embed the
-   font.
+   font. Use the files of the `static` folder of the download, one for each
+   weight. A variable font, such as `Roboto[wght].ttf`, is drawn in its
+   default weight only, so it gives Regular even for Bold, and a CFF2
+   variable font is refused.
 3. **Any other font only once its license says so.** The SIL Open Font
    License is the one to look for. The fonts that come with Windows or
    macOS, such as Georgia, Tahoma, Arial, Calibri or Helvetica Neue, are
@@ -620,7 +709,7 @@ is broken between its characters, so text without zero width spaces still fits
 in the text block, but its lines can break inside words. A right to left word is
 shaped as a whole before it is broken, so its letters keep their joined forms on
 both sides of the break. The Thai text of Example_04,
-`data/languages/thai.txt`, has a zero width space between its words.
+`resources/data/languages/thai.txt`, has a zero width space between its words.
 
 ## Marks
 

@@ -222,11 +222,12 @@ class TextBlockTest {
         for (int i = 0; i < 25000; i++) {
             word.append("محمد");     // 100,000 letters, which took about 20 minutes
         }
-        TextBlock block = new TextBlock(font, word.toString()).setRightToLeft(true).setWidth(100f);
-        final float[][] xy = new float[1][];
-        long took = TestSupport.shortestMillis(3000L, () -> xy[0] = block.setLocation(0f, 0f).drawOn(null));
-        assertTrue(took < 3000L, "breaking a right to left word of 100,000 letters took " + took + " ms");
-        TestSupport.assertXY(100f, 120006f, xy[0]);    // As the Go port breaks it
+        String text = word.toString();
+        TestSupport.assertLinearTime(5000, n -> {
+            new TextBlock(font, text.substring(0, 4*n)).setRightToLeft(true).setWidth(100f).setLocation(0f, 0f).drawOn(null);
+        });
+        float[] xy = new TextBlock(font, text).setRightToLeft(true).setWidth(100f).setLocation(0f, 0f).drawOn(null);
+        TestSupport.assertXY(100f, 120006f, xy);    // As the Go port breaks it
     }
 
     // A right to left text cut to its height keeps the start of its last line,

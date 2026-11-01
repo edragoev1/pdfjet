@@ -16,7 +16,7 @@ import com.pdfjet.fonts.*;
  * A whole novel, "The Idiot" by Fyodor Dostoyevsky, set as a book: a title
  * page, and each chapter on new A5 pages that a TextFrame flows onto, with
  * the words in italics and a number on every page. The time it prints is the
- * time PDFjet takes to set the 241,527 words of data/the-idiot.txt.
+ * time PDFjet takes to set the 241,527 words of resources/data/the-idiot.txt.
  */
 public class Example_17 {
     public Example_17() throws Exception {
@@ -26,15 +26,15 @@ public class Example_17 {
         pdf.setTitle("The Idiot");
         pdf.setAuthor("Fyodor Dostoyevsky");
 
-        Font regular = new Font(pdf, SourceSerif4.Regular);
-        Font italic = new Font(pdf, SourceSerif4.Italic);
-        Font semiBold = new Font(pdf, SourceSerif4.SemiBold);
+        Font regular = new Font(pdf, IBMPlexSerif.Regular);
+        Font italic = new Font(pdf, IBMPlexSerif.Italic);
+        Font semiBold = new Font(pdf, IBMPlexSerif.SemiBold);
         regular.setSize(10f);
         italic.setSize(10f);
 
-        // Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+        // Kerning, from the GPOS table of IBM Plex Serif: pairs such as "Te", "Yo"
         // and "r." drawn closer, as the font's designers spaced them. The novel
-        // sets on 736 pages kerned, 745 not.
+        // sets on 694 pages kerned, 696 not.
         regular.setKernPairs(true);
         italic.setKernPairs(true);
         semiBold.setKernPairs(true);
@@ -52,7 +52,7 @@ public class Example_17 {
 
         // The novel: parts begin with "PART I" and chapters with their number,
         // "I.", and the paragraphs are separated by an empty line.
-        String[] blocks = Content.ofTextFile("data/the-idiot.txt").split("\n\\s*\n");
+        String[] blocks = Content.ofTextFile("resources/data/the-idiot.txt").split("\n\\s*\n");
         List<Paragraph> chapter = null;
         for (String block : blocks) {
             String text = block.trim().replaceAll("\\s+", " ");

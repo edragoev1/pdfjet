@@ -12,11 +12,17 @@ import Foundation
 /// darker, a few of them highlighted, navy and labeled with their names beside
 /// them, and the trend line of the points if asked, labeled at its end. A light
 /// horizontal grid alone, no border or legend, on a light panel, with a title
-/// and a subtitle at the top left, in the look of SimpleBarChart.
+/// and a subtitle at the top left, in the look of SimpleBarChart. Any point can
+/// be a link, a dot with a description that a hover or a screen reader gets, so
+/// that all of 200 points are links without a name printed for each. A point
+/// outside a range that is set is not drawn, and the chart says how many are:
+/// "2 points outside the range", small, under the plot at its right end, and in
+/// its description, in that alone when the plot would not be left room to draw.
 ///
 /// In a PDF/UA document the chart is one figure, described from its data: the
-/// number of points, the highlighted ones and their values, and which way the
-/// trend goes, unless an alternate description is set. It draws with the page
+/// number of points, the highlighted ones and their values, which way the
+/// trend goes and the points outside a range, unless an alternate description
+/// is set, which is then followed by those points alone. It draws with the page
 /// alone, and needs no other chart. In PDF/A-1, which has no transparency, the
 /// dots are drawn opaque. Please see Example_26.
 ///
@@ -29,13 +35,30 @@ public class SimpleScatterChart : Drawable {
     static let GRID: Int32 = 0xD5D9DE
     static let TREND: Int32 = 0x5F6873
     static let ALPHA: Float = 0.55
+    // The least width and height of the link of a dot, which PDF writes in
+    // hundredths: 8 points that stay 8 however the two sides round.
+    static let HIT_SIZE: Float = 8.02
 
-    // A point of the chart, highlighted when it has a name.
+    // A point of the chart, highlighted when it has a name, but for a dot:
+    // its name describes it and is not printed.
     struct Point {
         let x: Float
         let y: Float
         let name: String
-        var uri: String? = nil      // The link of a highlighted point, or nil
+        var uri: String? = nil      // The link of the point, or nil
+        var dot = false             // Drawn as a point that is not highlighted
+        var series = -1             // The index of its series, or -1 for none
+
+        // Tells if the point is drawn in the highlight color, its name
+        // beside it.
+        var highlighted: Bool {
+            return !name.isEmpty && !dot
+        }
+
+        // Tells if the point is a dot that is a link.
+        var linkedDot: Bool {
+            return dot && uri != nil
+        }
     }
 
     private let f1: Font    // The title and the names
@@ -50,6 +73,7 @@ public class SimpleScatterChart : Drawable {
     private var yAxisTitle = ""
     private var altDescription = ""
     private var points = [Point]()
+    private var series = [String]()     // The names of the series
     private var trendLine = false
     private var xMin: Float = 0.0
     private var xMax: Float = 0.0
@@ -124,7 +148,8 @@ public class SimpleScatterChart : Drawable {
 
     ///
     /// Sets the alternate description of the chart in a PDF/UA document.
-    /// Without one the chart is described from its data.
+    /// Without one the chart is described from its data. The number of points
+    /// outside a range that is set follows it, as the chart prints it.
     ///
     /// - Parameter altDescription: the alternate description.
     /// - Returns: this chart.
@@ -145,7 +170,31 @@ public class SimpleScatterChart : Drawable {
     ///
     @discardableResult
     public func add(_ x: Float, _ y: Float) -> SimpleScatterChart {
-        points.append(Point(x: x, y: y, name: ""))
+        return addPoint(Point(x: x, y: y, name: ""))
+    }
+
+    // Adds the point to the series added last, if any.
+    private func addPoint(_ point: Point) -> SimpleScatterChart {
+        var p = point
+        p.series = series.count - 1
+        points.append(p)
+        return self
+    }
+
+    ///
+    /// Starts a series: the points added after it are its points, drawn in its
+    /// color and its shape, and its name is in the legend over the plot. The
+    /// series take the colors of the palette of BarChart, blue, orange, red,
+    /// teal and so on, and the shapes circle, square, triangle, star, diamond
+    /// and cross, in turn. The points added before the first series are gray
+    /// dots, as those of a chart without series.
+    ///
+    /// - Parameter name: the name of the series, in the legend.
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func addSeries(_ name: String) -> SimpleScatterChart {
+        series.append(name)
         return self
     }
 
@@ -159,8 +208,7 @@ public class SimpleScatterChart : Drawable {
     ///
     @discardableResult
     public func add(_ name: String, _ x: Float, _ y: Float) -> SimpleScatterChart {
-        points.append(Point(x: x, y: y, name: name))
-        return self
+        return addPoint(Point(x: x, y: y, name: name))
     }
 
     ///
@@ -178,8 +226,30 @@ public class SimpleScatterChart : Drawable {
     @discardableResult
     public func add(_ name: String, _ x: Float, _ y: Float, _ uri: String) -> SimpleScatterChart {
         // An empty URI is no link, as in the Go port
-        points.append(Point(x: x, y: y, name: name, uri: uri.isEmpty ? nil : uri))
-        return self
+        return addPoint(Point(x: x, y: y, name: name, uri: uri.isEmpty ? nil : uri))
+    }
+
+    ///
+    /// Adds a point that is a link and not highlighted: a dot as add(x, y)
+    /// draws it, in its series if any, with nothing beside it. Its name is not
+    /// printed: it is the description of the link, and in a PDF/UA document
+    /// that of a figure of its own in the Link that holds its annotation, as
+    /// with add(name, x, y, uri), and it counts in the description of the chart
+    /// as a point of add(x, y) does. The link is at least 8 points square
+    /// around the dot, so that it can be hit, and inside the page. A name left
+    /// empty is described by the URI; a URI left empty is no link.
+    ///
+    /// - Parameter name: the description of the point.
+    /// - Parameter x: the x of the point.
+    /// - Parameter y: the y of the point.
+    /// - Parameter uri: the URI the point links to.
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func addLinkedDot(_ name: String, _ x: Float, _ y: Float, _ uri: String) -> SimpleScatterChart {
+        // A figure needs a description
+        let description = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? uri : name
+        return addPoint(Point(x: x, y: y, name: description, uri: uri.isEmpty ? nil : uri, dot: true))
     }
 
     ///
@@ -198,7 +268,9 @@ public class SimpleScatterChart : Drawable {
     ///
     /// Sets the range of the horizontal axis. Without it the range is that of
     /// the points, rounded to steps. A range whose end is not past its start
-    /// is not set.
+    /// is not set. A point outside the range is not drawn, and the chart says
+    /// how many are, under the plot, which is that much lower, and in its
+    /// description.
     ///
     /// - Parameter min: the first value of the axis.
     /// - Parameter max: the last value of the axis.
@@ -215,7 +287,8 @@ public class SimpleScatterChart : Drawable {
     ///
     /// Sets the range of the vertical axis. Without it the range is that of the
     /// points, rounded to steps. A range whose end is not past its start is not
-    /// set.
+    /// set. A point outside the range is not drawn, and the chart says how many
+    /// are, under the plot, which is that much lower, and in its description.
     ///
     /// - Parameter min: the first value of the axis.
     /// - Parameter max: the last value of the axis.
@@ -319,7 +392,115 @@ public class SimpleScatterChart : Drawable {
         if !title.isEmpty || !subtitle.isEmpty {
             top += f2.getSize()
         }
-        return top
+        // The legend, and half a size of the numbers under it, so that the
+        // top number of the axis is not against its last row
+        let rows = drawLegend(nil, 0.0)
+        return top + Float(rows) * SimpleScatterChart.LEGEND_ROW * f2.getSize()
+                + ((rows > 0) ? 0.5 * f2.getSize() : 0.0)
+    }
+
+    // The shapes of the series, in turn, as D3 draws its symbols.
+    static let CIRCLE = 0
+    static let SQUARE = 1
+    static let TRIANGLE = 2
+    static let STAR = 3
+    static let DIAMOND = 4
+    static let CROSS = 5
+    static let SHAPES = 6
+    // The height of a row of the legend, in sizes of the numbers.
+    private static let LEGEND_ROW: Float = 1.5
+
+    // The color of a series.
+    private static func seriesColor(_ index: Int) -> Int32 {
+        return BarChart.PALETTE[index % BarChart.PALETTE.count]
+    }
+
+    // Draws the legend, the shape and the name of each series, from the
+    // baseline of its first row, its rows wrapped at the right of the chart,
+    // when there is a page; and returns the number of its rows, 0 for a chart
+    // without series.
+    @discardableResult
+    private func drawLegend(_ page: Page?, _ baseline: Float) -> Int {
+        if series.isEmpty {
+            return 0
+        }
+        let size = f2.getSize()
+        let pad = pad()
+        let r = 0.35 * size
+        let gap = size / 2.0
+        let left = x + pad
+        var px = left
+        var baseline = baseline
+        var rows = 1
+        for i in 0..<series.count {
+            let name = ChartScale.shorten(f2, size, series[i], w - 2.0 * pad - 2.0 * r - gap)
+            let width = 2.0 * r + gap + f2.stringWidth(size, name)
+            if px > left && px + width > x + w - pad {
+                px = left
+                baseline += SimpleScatterChart.LEGEND_ROW * size
+                rows += 1
+            }
+            if let page = page {
+                page.setPenColor(SimpleScatterChart.seriesColor(i))
+                page.setPenWidth(0.12 * size)
+                SimpleScatterChart.drawShape(page, i % SimpleScatterChart.SHAPES, px + r,
+                        baseline - f2.getAscent(size) / 2.0, r, false)
+                page.drawString(f2, size, name, px + 2.0 * r + gap, baseline, Util.toRGB(SimpleBarChart.INK), nil)
+            }
+            px += width + size
+        }
+        return rows
+    }
+
+    // Draws a shape of a series centered on cx, cy, of about the area of a
+    // circle of radius r, its outline in the pen color, or filled in the
+    // brush color.
+    static func drawShape(_ page: Page, _ shape: Int, _ cx: Float, _ cy: Float, _ r: Float, _ fill: Bool) {
+        if shape == CIRCLE {
+            if fill {
+                page.fillCircle(cx, cy, r)
+            } else {
+                page.drawCircle(cx, cy, r)
+            }
+            return
+        }
+        var xy: [Float]
+        if shape == SQUARE {
+            let a = 0.886 * r
+            xy = [-a, -a, a, -a, a, a, -a, a]
+        } else if shape == TRIANGLE {
+            // Pointing up, its center halfway down its height
+            let a = 1.35 * r
+            xy = [0.0, -a, 0.866 * a, 0.5 * a, -0.866 * a, 0.5 * a]
+        } else if shape == STAR {
+            xy = [Float](repeating: 0.0, count: 20)
+            for i in 0..<10 {
+                let angle = Double.pi * Double(i) / 5.0
+                let radius: Float = (i % 2 == 0) ? 1.3 * r : 0.5 * r
+                xy[2*i] = Float(Double(radius) * sin(angle))
+                xy[2*i + 1] = Float(Double(-radius) * cos(angle))
+            }
+        } else if shape == DIAMOND {
+            let a = 1.15 * r
+            let b = 0.75 * r
+            xy = [0.0, -a, b, 0.0, 0.0, a, -b, 0.0]
+        } else {
+            // A cross of five squares, as wide as three
+            let a = 1.1 * r
+            let b = a / 3.0
+            xy = [-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b]
+        }
+        page.moveTo(cx + xy[0], cy + xy[1])
+        var i = 2
+        while i < xy.count {
+            page.lineTo(cx + xy[i], cy + xy[i + 1])
+            i += 2
+        }
+        if fill {
+            page.fillPath()
+        } else {
+            page.closePath()    // Closed and stroked
+        }
     }
 
     // A number of an axis, with the decimals its step needs.
@@ -389,11 +570,25 @@ public class SimpleScatterChart : Drawable {
         return nil
     }
 
+    // What the chart says of the points with a value outside a range that is
+    // set, or "" when there are none. A point outside both ranges is one point.
+    private func outsideNote() -> String {
+        let xRange = ChartScale.Axis(min: xMin, max: xMax, lines: 0)
+        let yRange = ChartScale.Axis(min: yMin, max: yMax, lines: 0)
+        var outside = 0
+        for p in valid() where (xRangeSet && !ChartScale.onAxis(p.x, xRange)) ||
+                (yRangeSet && !ChartScale.onAxis(p.y, yRange)) {
+            outside += 1
+        }
+        return ChartScale.outsideNote(outside, "point")
+    }
+
     // The alternate description: the one set, or the title, the number of
-    // points, the highlighted ones and the trend.
+    // points, the highlighted ones and the trend; and the points outside a
+    // range that is set.
     func getAltDescription() -> String {
         if !altDescription.isEmpty {
-            return altDescription
+            return ChartScale.withNote(altDescription, outsideNote())
         }
         let points = valid()
         let axes = points.isEmpty ? nil : self.axes(points)
@@ -414,8 +609,18 @@ public class SimpleScatterChart : Drawable {
         if !xAxisTitle.isEmpty && !yAxisTitle.isEmpty {
             text += ", " + yAxisTitle + " against " + xAxisTitle
         }
+        if !series.isEmpty {
+            // in the series A, B and C
+            text += ", in the series "
+            for (i, name) in series.enumerated() {
+                if i > 0 {
+                    text += (i == series.count - 1) ? " and " : ", "
+                }
+                text += name
+            }
+        }
         var named = 0
-        for p in shown where !p.name.isEmpty {
+        for p in shown where p.highlighted {
             text += (named == 0) ? "; " : ", "
             text += p.name + " " + ChartScale.groupDigits(ChartScale.format(p.x, 0, maxFractionDigits))
                     + " and " + ChartScale.groupDigits(ChartScale.format(p.y, 0, maxFractionDigits))
@@ -424,6 +629,10 @@ public class SimpleScatterChart : Drawable {
         // Not one that is not drawn
         if trendLine, let axes = axes, let line = SimpleScatterChart.shownTrend(points, axes.x, axes.y) {
             text += line.slope > 0 ? "; the trend rises" : line.slope < 0 ? "; the trend falls" : "; the trend is flat"
+        }
+        let note = outsideNote()
+        if !note.isEmpty {
+            text += "; " + note
         }
         return text + SimpleBarChart.punctuationAfter(text, ".")
     }
@@ -476,6 +685,17 @@ public class SimpleScatterChart : Drawable {
         if !xAxisTitle.isEmpty {
             bottom -= 1.4 * size
         }
+        // Room for the note, a row of its own under the rest; a chart that has
+        // not the room keeps its plot, and its description says the number
+        var note = outsideNote()
+        if !note.isEmpty {
+            let above = bottom - 1.4 * subtitleSize()
+            if above > top {
+                bottom = above
+            } else {
+                note = ""
+            }
+        }
         if right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis) {
             return [x + w, y + h]
         }
@@ -499,6 +719,9 @@ public class SimpleScatterChart : Drawable {
         // nothing to hold
         let linksApart = page.isTaggedHere()
 
+        // The dots that are links, drawn so after the chart
+        let linkedDots = linksApart ? points.filter { $0.linkedDot && onPlot($0) } : []
+
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
         page.saveGraphicsState()
         page.setDefaultStrokeDashPattern()      // Not the caller's, which dashed the lines
@@ -517,6 +740,13 @@ public class SimpleScatterChart : Drawable {
             baseline += 1.4 * subtitleSize()
             page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2.0 * pad),
                     x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
+        }
+        if !series.isEmpty {
+            if !title.isEmpty || !subtitle.isEmpty {
+                baseline += f2.getSize()
+            }
+            let row = SimpleScatterChart.LEGEND_ROW * size
+            drawLegend(page, baseline + row - (row - ascent) / 2.0)
         }
 
         // The horizontal grid and the numbers of both axes, each where it
@@ -567,6 +797,9 @@ public class SimpleScatterChart : Drawable {
                     Util.toRGB(SimpleBarChart.INK), nil)
             page.setTextRotation(0)
         }
+        if !note.isEmpty {
+            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad)
+        }
 
         // The trend line, from the left of the plot to its right, within its
         // height
@@ -597,25 +830,52 @@ public class SimpleScatterChart : Drawable {
 
         // The dots, then the highlighted points and their names over them
         page.saveGraphicsState()
-        if !page.pdf.isPDFA1() {
-            let gs = GraphicsState()
-            gs.setAlphaNonStroking(SimpleScatterChart.ALPHA)
-            page.setGraphicsState(gs)
+        func setTransparent() {
+            if !page.pdf.isPDFA1() {
+                let gs = GraphicsState()
+                gs.setAlphaNonStroking(SimpleScatterChart.ALPHA)
+                page.setGraphicsState(gs)
+            }
         }
+        setTransparent()
         page.setBrushColor(dotColor)
         let r = 0.3 * size
-        for p in points where p.name.isEmpty && onPlot(p) {
-            page.fillCircle(xAt(p.x), yAt(p.y), r)
+        // Draws a point that is not highlighted, with the transparency, and
+        // the width of the outlines, set
+        func dot(_ p: Point) {
+            if p.series >= 0 {
+                page.setPenColor(SimpleScatterChart.seriesColor(p.series))
+                SimpleScatterChart.drawShape(page, p.series % SimpleScatterChart.SHAPES, xAt(p.x), yAt(p.y),
+                        0.35 * size, false)
+            } else {
+                page.setBrushColor(dotColor)
+                page.fillCircle(xAt(p.x), yAt(p.y), r)
+            }
+        }
+        for p in points where p.series < 0 && !p.highlighted && !(linksApart && p.linkedDot) && onPlot(p) {
+            dot(p)
         }
         page.restoreGraphicsState()
+        // The points of the series, the outlines of their shapes, opaque;
+        // a chart without series draws as it did
+        if !series.isEmpty {
+            page.setPenWidth(0.12 * size)
+        }
+        for p in points where p.series >= 0 && !p.highlighted && !(linksApart && p.linkedDot) && onPlot(p) {
+            dot(p)
+        }
         let big = 0.42 * size
         // Draws a highlighted point and its name, and returns the box of the
         // two: x, y, w, h
         func named(_ p: Point) -> [Float] {
             let px = xAt(p.x)
             let py = yAt(p.y)
-            page.setBrushColor(highlightColor)
-            page.fillCircle(px, py, big)
+            page.setBrushColor((p.series >= 0) ? SimpleScatterChart.seriesColor(p.series) : highlightColor)
+            if p.series >= 0 {
+                SimpleScatterChart.drawShape(page, p.series % SimpleScatterChart.SHAPES, px, py, big, true)
+            } else {
+                page.fillCircle(px, py, big)
+            }
             // A name of two fifths of the plot at most, and in the plot
             let name = ChartScale.shorten(f1, size, p.name, 0.4 * (right - plotLeft))
             let width = f1.stringWidth(size, name)
@@ -630,17 +890,36 @@ public class SimpleScatterChart : Drawable {
             page.setBrushColor(panelColor >= 0 ? panelColor : Color.white)
             page.fillRect(lx - 1.0, baseline - f1.getAscent(size) - 1.0,
                     width + 2.0, f1.getAscent(size) + f1.getDescent(size) + 2.0)
-            page.drawString(f1, size, name, lx, baseline, Util.toRGB(highlightColor), nil)
+            // The name of a point of a series in ink, which reads on the panel
+            // whatever the color of the series
+            page.drawString(f1, size, name, lx, baseline,
+                    Util.toRGB((p.series >= 0) ? SimpleBarChart.INK : highlightColor), nil)
             let x1 = Swift.min(px - big, lx)
             let y1 = Swift.min(py - big, baseline - f1.getAscent(size))
             let x2 = Swift.max(px + big, lx + width)
             let y2 = Swift.max(py + big, baseline + f1.getDescent(size))
             return [x1, y1, x2 - x1, y2 - y1]
         }
+        // The box of a dot, x, y, w, h: a little past the tip of its outline in
+        // the shape that reaches farthest, the triangle
+        func dotBox(_ p: Point) -> [Float] {
+            let reach = 0.55 * size
+            return [xAt(p.x) - reach, yAt(p.y) - reach, 2.0 * reach, 2.0 * reach]
+        }
+        // The links of the dots first, for those of the highlighted points to
+        // be over them
+        for p in points where p.linkedDot && !linksApart && onPlot(p) {
+            page.addAnnotation(SimpleScatterChart.linkOf(p, dotBox(p)))
+        }
         var linked = [Point]()
-        for p in points where !p.name.isEmpty && onPlot(p) {
+        var over = [Point]()
+        for p in points where p.highlighted && onPlot(p) {
             if p.uri != nil && linksApart {
                 linked.append(p)
+                continue
+            }
+            if !linkedDots.isEmpty {
+                over.append(p)      // Over the dots, drawn after the chart
                 continue
             }
             let box = named(p)
@@ -653,24 +932,58 @@ public class SimpleScatterChart : Drawable {
         page.setFigureBoundingBox(x, y, w, h)
         page.addEMC()
 
-        for p in linked {
+        // Draws a point that is a link as a figure of its own in its Link
+        func figure(_ p: Point) {
             page.saveGraphicsState()
             let link = page.beginLink()
             page.addBDC(StructElem.FIGURE, nil, nil, p.name)
-            let box = named(p)
+            var box: [Float]
+            if p.dot {
+                dot(p)
+                box = dotBox(p)
+            } else {
+                box = named(p)
+            }
             page.setFigureBoundingBox(box[0], box[1], box[2], box[3])
             page.addEMC()
             page.endLink(link)
             page.restoreGraphicsState()
             page.addAnnotation(SimpleScatterChart.linkOf(p, box).joining(link))
         }
+        if !linkedDots.isEmpty {
+            // As in the chart, whose graphics state ended with it
+            page.saveGraphicsState()
+            page.setDefaultStrokeDashPattern()
+            setTransparent()
+            if !series.isEmpty {
+                page.setPenWidth(0.12 * size)
+            }
+            for p in linkedDots {
+                figure(p)
+            }
+            page.restoreGraphicsState()
+        }
+        // A highlighted point that is no link is in the description of the
+        // chart, and over the dots that are drawn after it
+        if !over.isEmpty {
+            page.saveGraphicsState()
+            page.addArtifactBMC()
+            for p in over {
+                _ = named(p)
+            }
+            page.addEMC()
+            page.restoreGraphicsState()
+        }
+        for p in linked {
+            figure(p)
+        }
         return [x + w, y + h]
     }
 
-    // The link annotation of a point, over the box of its dot and its name,
+    // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static func linkOf(_ p: Point, _ box: [Float]) -> Annotation {
-        return Annotation(
+        let annotation = Annotation(
                 Annotation.Link,
                 box[0],
                 box[1],
@@ -686,6 +999,8 @@ public class SimpleScatterChart : Drawable {
                 nil,
                 nil,
                 p.name)
+        annotation.hitSize = p.dot ? HIT_SIZE : 0.0
+        return annotation
     }
 
     // The point of the trend line at x, moved along the line to the top or

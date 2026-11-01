@@ -203,7 +203,7 @@ class MisuseTest {
             public void execute() throws Throwable { new TextLine(font, "Hello").setLocation(50f, 50f).drawOn(page); }
         }));
 
-        final Image image = new Image(other, TestSupport.open("PngSuite/BASN2C08.PNG"));
+        final Image image = new Image(other, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));
         assertEquals("The image belongs to another PDF.", fails(IllegalArgumentException.class, new Executable() {
             public void execute() throws Throwable { image.setLocation(50f, 50f).drawOn(page); }
         }));
@@ -335,7 +335,7 @@ class MisuseTest {
     void aZeroSizeImageStampOrContainerDrawsNothing() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));
         image.scaleBy(0f);
         image.setLocation(50f, 50f).drawOn(page);
         Stamp stamp = new Stamp(pdf).setSize(50f, 50f);
@@ -378,7 +378,7 @@ class MisuseTest {
         // An embedded font only reserves its number, written at complete: the
         // objects could take it too (the review of 9 October 2026).
         final PDF pdf4 = TestSupport.newPDF();
-        new Font(pdf4, TestSupport.file("fonts/NotoSans/NotoSans-Regular.ttf").getPath());
+        new Font(pdf4, TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").getPath());
         assertEquals(message, fails(IllegalStateException.class, new Executable() {
             public void execute() throws Throwable { pdf4.addObjects(objects); }
         }));
@@ -565,6 +565,47 @@ class MisuseTest {
         for (String text : new String[] {"", "+", ".", "-.", "e3", "1e", "1e+", "0x10", "1f", " 1", "1 ",
                 "1_0", "inf", "NaN", "1.2.3"}) {
             assertFalse(Util.isDecimalNumber(text), text);
+        }
+    }
+
+    // NaN and absurd sizes are the port's error, not a hang or a crash (the review
+    // of 30 October 2026, G6 to G8).
+    @Test
+    void naNAndAbsurdSizesAreRefused() throws Exception {
+        final PDF frames = TestSupport.newPDF();
+        final TextFrame frame = new TextFrame(TestSupport.helvetica(frames), java.util.Arrays.asList("Hello frame text"))
+                .setWidth(120f).setHeight(200f);
+        frame.setLocation(Float.NaN, Float.NaN);
+        String message = fails(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable { frame.drawOn(new Page(frames, Letter.PORTRAIT)); }
+        });
+        assertEquals("The text frame's location and size must be numbers, not NaN or infinite.", message);
+        assertFalse(frame.hasMoreText());
+
+        final PDF bars = TestSupport.newPDF();
+        final Font font = TestSupport.helvetica(bars);
+        message = fails(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable {
+                new BarChart(font, font).setCategories("a").addSeries("one", new float[] {1f})
+                        .setFractionDigits(1 << 30).drawOn(new Page(bars, Letter.PORTRAIT));
+            }
+        });
+        assertEquals("The fraction digits of a chart are at most 100.", message);
+        message = fails(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable {
+                new SimpleBarChart(font, font).add("a", 1f).setFractionDigits(1 << 30)
+                        .drawOn(new Page(TestSupport.newPDF(), Letter.PORTRAIT));
+            }
+        });
+        assertEquals("The fraction digits of a chart are at most 100.", message);
+
+        for (final float size : new float[] {Float.NaN, Float.POSITIVE_INFINITY, 1e30f}) {
+            fails(IllegalArgumentException.class, new Executable() {
+                public void execute() throws Throwable {
+                    new SimpleLineChart(font, font).setSize(size, size).setCategories("a", "b")
+                            .addLine("one", new float[] {1f, 2f}).drawOn(new Page(TestSupport.newPDF(), Letter.PORTRAIT));
+                }
+            });
         }
     }
 }

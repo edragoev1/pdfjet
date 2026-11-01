@@ -12,6 +12,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"math"
 	"strconv"
 	"strings"
 
@@ -29,12 +30,29 @@ const (
 	simpleScatterAlpha       = 0.55
 )
 
+// scatterHitSize is the least width and height of the link of a dot, which
+// PDF writes in hundredths: 8 points that stay 8 however the two sides round.
+const scatterHitSize float32 = 8.02
+
 // scatterPoint is a point of a simple scatter chart, highlighted when it has
-// a name.
+// a name, but for a dot: its name describes it and is not printed.
 type scatterPoint struct {
-	x, y float32
-	name string
-	uri  string // The link of a highlighted point, or ""
+	x, y   float32
+	name   string
+	uri    string // The link of the point, or ""
+	dot    bool   // Drawn as a point that is not highlighted
+	series int    // The index of its series, or -1 for none
+}
+
+// highlighted tells if the point is drawn in the highlight color, its name
+// beside it.
+func (p scatterPoint) highlighted() bool {
+	return p.name != "" && !p.dot
+}
+
+// linkedDot tells if the point is a dot that is a link.
+func (p scatterPoint) linkedDot() bool {
+	return p.dot && p.uri != ""
 }
 
 // SimpleScatterChart is a chart of points on two axes that shows how two
@@ -43,11 +61,17 @@ type scatterPoint struct {
 // with their names beside them, and the trend line of the points if asked,
 // labeled at its end. A light horizontal grid alone, no border or legend, on
 // a light panel, with a title and a subtitle at the top left, in the look of
-// SimpleBarChart.
+// SimpleBarChart. Any point can be a link, a dot with a description that a
+// hover or a screen reader gets, so that all of 200 points are links without a
+// name printed for each. A point outside a range that is set is not drawn, and
+// the chart says how many are: "2 points outside the range", small, under the
+// plot at its right end, and in its description, in that alone when the plot
+// would not be left room to draw.
 //
 // In a PDF/UA document the chart is one figure, described from its data: the
-// number of points, the highlighted ones and their values, and which way the
-// trend goes, unless an alternate description is set. It draws with the page
+// number of points, the highlighted ones and their values, which way the trend
+// goes and the points outside a range, unless an alternate description is set,
+// which is then followed by those points alone. It draws with the page
 // alone, and needs no other chart. In PDF/A-1, which has no transparency, the
 // dots are drawn opaque. Please see Example_26.
 type SimpleScatterChart struct {
@@ -57,6 +81,7 @@ type SimpleScatterChart struct {
 	xAxisTitle, yAxisTitle string
 	altDescription         string
 	points                 []scatterPoint
+	series                 []string // The names of the series
 	trendLine              bool
 	xMin, xMax, yMin, yMax float32
 	xRangeSet, yRangeSet   bool
@@ -101,7 +126,8 @@ func (chart *SimpleScatterChart) SetYAxisTitle(title string) *SimpleScatterChart
 }
 
 // SetAltDescription sets the alternate description of the chart in a PDF/UA
-// document. Without one the chart is described from its data.
+// document. Without one the chart is described from its data. The number of
+// points outside a range that is set follows it, as the chart prints it.
 func (chart *SimpleScatterChart) SetAltDescription(altDescription string) *SimpleScatterChart {
 	chart.altDescription = altDescription
 	return chart
@@ -110,15 +136,32 @@ func (chart *SimpleScatterChart) SetAltDescription(altDescription string) *Simpl
 // Add adds a point, drawn as a small gray dot. A point whose x or y is not a
 // number is left out.
 func (chart *SimpleScatterChart) Add(x, y float32) *SimpleScatterChart {
-	chart.points = append(chart.points, scatterPoint{x: x, y: y})
+	return chart.addPoint(scatterPoint{x: x, y: y})
+}
+
+// addPoint adds the point to the series added last, if any.
+func (chart *SimpleScatterChart) addPoint(p scatterPoint) *SimpleScatterChart {
+	p.series = len(chart.series) - 1
+	chart.points = append(chart.points, p)
+	return chart
+}
+
+// AddSeries starts a series: the points added after it are its points, drawn
+// in its color and its shape, and its name is in the legend over the plot.
+// The series take the colors of the palette of BarChart, blue, orange, red,
+// teal and so on, and the shapes circle, square, triangle, star, diamond and
+// cross, in turn. The points added before the first series are gray dots, as
+// those of a chart without series.
+//   - name: the name of the series, in the legend.
+func (chart *SimpleScatterChart) AddSeries(name string) *SimpleScatterChart {
+	chart.series = append(chart.series, name)
 	return chart
 }
 
 // AddNamed adds a point that is highlighted: a navy dot with its name beside
 // it.
 func (chart *SimpleScatterChart) AddNamed(name string, x, y float32) *SimpleScatterChart {
-	chart.points = append(chart.points, scatterPoint{x: x, y: y, name: name})
-	return chart
+	return chart.addPoint(scatterPoint{x: x, y: y, name: name})
 }
 
 // AddLinked adds a point that is highlighted and is a link: a navy dot with
@@ -126,8 +169,22 @@ func (chart *SimpleScatterChart) AddNamed(name string, x, y float32) *SimpleScat
 // each such point is a figure of its own, described by its name, in the Link
 // that holds its annotation, as PDF/UA asks.
 func (chart *SimpleScatterChart) AddLinked(name string, x, y float32, uri string) *SimpleScatterChart {
-	chart.points = append(chart.points, scatterPoint{x: x, y: y, name: name, uri: uri})
-	return chart
+	return chart.addPoint(scatterPoint{x: x, y: y, name: name, uri: uri})
+}
+
+// AddLinkedDot adds a point that is a link and not highlighted: a dot as Add
+// draws it, in its series if any, with nothing beside it. Its name is not
+// printed: it is the description of the link, and in a PDF/UA document that of
+// a figure of its own in the Link that holds its annotation, as with
+// AddLinked, and it counts in the description of the chart as a point of Add
+// does. The link is at least 8 points square around the dot, so that it can be
+// hit, and inside the page. A name left empty is described by the URI; a URI
+// left empty is no link.
+func (chart *SimpleScatterChart) AddLinkedDot(name string, x, y float32, uri string) *SimpleScatterChart {
+	if strings.TrimSpace(name) == "" {
+		name = uri // A figure needs a description
+	}
+	return chart.addPoint(scatterPoint{x: x, y: y, name: name, uri: uri, dot: true})
 }
 
 // SetTrendLine draws the trend line of the points, their least squares line,
@@ -139,7 +196,9 @@ func (chart *SimpleScatterChart) SetTrendLine(trendLine bool) *SimpleScatterChar
 
 // SetXAxisRange sets the range of the horizontal axis. Without it the range
 // is that of the points, rounded to steps. A range whose end is not past its
-// start is not set.
+// start is not set. A point outside the range is not drawn, and the chart says
+// how many are, under the plot, which is that much lower, and in its
+// description.
 func (chart *SimpleScatterChart) SetXAxisRange(lo, hi float32) *SimpleScatterChart {
 	chart.xMin, chart.xMax, chart.xRangeSet = lo, hi, hi > lo
 	return chart
@@ -147,7 +206,9 @@ func (chart *SimpleScatterChart) SetXAxisRange(lo, hi float32) *SimpleScatterCha
 
 // SetYAxisRange sets the range of the vertical axis. Without it the range is
 // that of the points, rounded to steps. A range whose end is not past its
-// start is not set.
+// start is not set. A point outside the range is not drawn, and the chart says
+// how many are, under the plot, which is that much lower, and in its
+// description.
 func (chart *SimpleScatterChart) SetYAxisRange(lo, hi float32) *SimpleScatterChart {
 	chart.yMin, chart.yMax, chart.yRangeSet = lo, hi, hi > lo
 	return chart
@@ -211,7 +272,122 @@ func (chart *SimpleScatterChart) top() float32 {
 	if chart.title != "" || chart.subtitle != "" {
 		top += chart.f2.size
 	}
-	return top
+	// The legend, and half a size of the numbers under it, so that the top
+	// number of the axis is not against its last row
+	rows := chart.drawLegend(nil, 0.0)
+	under := float32(0.0)
+	if rows > 0 {
+		under = float32(0.5 * chart.f2.size)
+	}
+	return top + float32(float32(float32(rows)*scatterLegendRow)*chart.f2.size) + under
+}
+
+// The shapes of the series, in turn, as D3 draws its symbols.
+const (
+	scatterCircle = iota
+	scatterSquare
+	scatterTriangle
+	scatterStar
+	scatterDiamond
+	scatterCross
+	scatterShapes
+)
+
+// scatterLegendRow is the height of a row of the legend, in sizes of the
+// numbers.
+const scatterLegendRow float32 = 1.5
+
+// scatterSeriesColor returns the color of a series.
+func scatterSeriesColor(index int) int32 {
+	return barChartPalette[index%len(barChartPalette)]
+}
+
+// drawLegend draws the legend, the shape and the name of each series, from
+// the baseline of its first row, its rows wrapped at the right of the chart,
+// when there is a page; and returns the number of its rows, 0 for a chart
+// without series.
+func (chart *SimpleScatterChart) drawLegend(page *Page, baseline float32) int {
+	if len(chart.series) == 0 {
+		return 0
+	}
+	f2 := chart.f2
+	size := f2.size
+	pad := chart.pad()
+	r := float32(0.35 * size)
+	gap := float32(size / 2.0)
+	left := chart.x + pad
+	px := left
+	rows := 1
+	for i, series := range chart.series {
+		name := shorten(f2, size, series, chart.w-float32(2.0*pad)-float32(2.0*r)-gap)
+		width := float32(2.0*r) + gap + f2.StringWidth(size, name)
+		if px > left && px+width > chart.x+chart.w-pad {
+			px = left
+			baseline += float32(scatterLegendRow * size)
+			rows++
+		}
+		if page != nil {
+			page.SetPenColor(scatterSeriesColor(i))
+			page.SetPenWidth(float32(0.12 * size))
+			drawScatterShape(page, i%scatterShapes, px+r, baseline-float32(f2.GetAscent(size)/2.0), r, false)
+			page.drawString(f2, size, name, px+float32(2.0*r)+gap, baseline, colorToRGB(simpleBarInk), nil)
+		}
+		px += width + size
+	}
+	return rows
+}
+
+// drawScatterShape draws a shape of a series centered on cx, cy, of about the
+// area of a circle of radius r, its outline in the pen color, or filled in
+// the brush color.
+func drawScatterShape(page *Page, shape int, cx, cy, r float32, fill bool) {
+	if shape == scatterCircle {
+		if fill {
+			page.FillCircle(cx, cy, r)
+		} else {
+			page.DrawCircle(cx, cy, r)
+		}
+		return
+	}
+	var xy []float32
+	switch shape {
+	case scatterSquare:
+		a := float32(0.886 * r)
+		xy = []float32{-a, -a, a, -a, a, a, -a, a}
+	case scatterTriangle:
+		// Pointing up, its center halfway down its height
+		a := float32(1.35 * r)
+		xy = []float32{0.0, -a, float32(0.866 * a), float32(0.5 * a), float32(-0.866 * a), float32(0.5 * a)}
+	case scatterStar:
+		xy = make([]float32, 20)
+		for i := 0; i < 10; i++ {
+			angle := float64(math.Pi*float64(i)) / 5.0
+			radius := float32(0.5 * r)
+			if i%2 == 0 {
+				radius = float32(1.3 * r)
+			}
+			xy[2*i] = float32(float64(radius) * math.Sin(angle))
+			xy[2*i+1] = float32(float64(-radius) * math.Cos(angle))
+		}
+	case scatterDiamond:
+		a := float32(1.15 * r)
+		b := float32(0.75 * r)
+		xy = []float32{0.0, -a, b, 0.0, 0.0, a, -b, 0.0}
+	default:
+		// A cross of five squares, as wide as three
+		a := float32(1.1 * r)
+		b := a / 3.0
+		xy = []float32{-b, -a, b, -a, b, -b, a, -b, a, b, b, b, b, a, -b, a, -b, b, -a, b, -a, -b, -b, -b}
+	}
+	page.MoveTo(cx+xy[0], cy+xy[1])
+	for i := 2; i < len(xy); i += 2 {
+		page.LineTo(cx+xy[i], cy+xy[i+1])
+	}
+	if fill {
+		page.FillPath()
+	} else {
+		page.ClosePath() // Closed and stroked
+	}
 }
 
 // label formats a number of an axis with the decimals its step needs.
@@ -299,11 +475,27 @@ func onPlot(p scatterPoint, xAxis, yAxis chartAxis) bool {
 	return onAxis(p.x, xAxis) && onAxis(p.y, yAxis)
 }
 
+// outsideNote returns what the chart says of the points with a value outside
+// a range that is set, or "" when there are none. A point outside both ranges
+// is one point.
+func (chart *SimpleScatterChart) outsideNote() string {
+	xRange := chartAxis{min: chart.xMin, max: chart.xMax}
+	yRange := chartAxis{min: chart.yMin, max: chart.yMax}
+	count := 0
+	for _, p := range chart.valid() {
+		if (chart.xRangeSet && !onAxis(p.x, xRange)) || (chart.yRangeSet && !onAxis(p.y, yRange)) {
+			count++
+		}
+	}
+	return outsideNote(count, "point")
+}
+
 // getAltDescription returns the alternate description: the one set, or the
-// title, the number of points, the highlighted ones and the trend.
+// title, the number of points, the highlighted ones and the trend; and the
+// points outside a range that is set.
 func (chart *SimpleScatterChart) getAltDescription() string {
 	if chart.altDescription != "" {
-		return chart.altDescription
+		return withNote(chart.altDescription, chart.outsideNote())
 	}
 	points := chart.valid()
 	var xAxis, yAxis chartAxis
@@ -328,9 +520,21 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 	if chart.xAxisTitle != "" && chart.yAxisTitle != "" {
 		sb.WriteString(", " + chart.yAxisTitle + " against " + chart.xAxisTitle)
 	}
+	if len(chart.series) > 0 {
+		// in the series A, B and C
+		sb.WriteString(", in the series ")
+		for i, series := range chart.series {
+			if i == len(chart.series)-1 && i > 0 {
+				sb.WriteString(" and ")
+			} else if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(series)
+		}
+	}
 	named := 0
 	for _, p := range shown {
-		if p.name == "" {
+		if !p.highlighted() {
 			continue
 		}
 		if named == 0 {
@@ -353,6 +557,9 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 				sb.WriteString("; the trend is flat")
 			}
 		}
+	}
+	if note := chart.outsideNote(); note != "" {
+		sb.WriteString("; " + note)
 	}
 	sb.WriteString(punctuationAfter(sb.String(), "."))
 	return sb.String()
@@ -405,6 +612,16 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	if chart.xAxisTitle != "" {
 		bottom -= float32(1.4 * size)
 	}
+	// Room for the note, a row of its own under the rest; a chart that has
+	// not the room keeps its plot, and its description says the number
+	note := chart.outsideNote()
+	if note != "" {
+		if above := bottom - float32(1.4*chart.subtitleSize()); above > top {
+			bottom = above
+		} else {
+			note = ""
+		}
+	}
 	if right <= left || bottom <= top || !drawable(xAxis) || !drawable(yAxis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
 	}
@@ -419,6 +636,19 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	// as a figure of its own in its Link, which holds its annotation, as
 	// PDF/UA asks: a link inside the chart's figure has nothing to hold
 	linksApart := page.pdf.isTagged() && page.artifactDepth == 0
+
+	// The dots that are links, drawn so after the chart
+	var linkedDots []scatterPoint
+	if linksApart {
+		for _, p := range points {
+			if p.linkedDot() && onPlot(p, xAxis, yAxis) {
+				linkedDots = append(linkedDots, p)
+			}
+		}
+	}
+	apart := func(p scatterPoint) bool {
+		return linksApart && p.linkedDot()
+	}
 
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 	page.SaveGraphicsState()
@@ -439,6 +669,13 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		baseline += float32(1.4 * chart.subtitleSize())
 		page.drawString(f2, chart.subtitleSize(), shorten(f2, chart.subtitleSize(), chart.subtitle, chart.w-float32(2.0*pad)),
 			chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
+	}
+	if len(chart.series) > 0 {
+		if chart.title != "" || chart.subtitle != "" {
+			baseline += f2.size
+		}
+		row := float32(scatterLegendRow * size)
+		chart.drawLegend(page, baseline+row-float32((row-ascent)/2.0))
 	}
 
 	// The horizontal grid and the numbers of both axes, each where it
@@ -491,6 +728,10 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 			bottom-float32((bottom-top-f2.StringWidth(size, title))/2.0), colorToRGB(simpleBarInk), nil)
 		page.SetTextRotation(0)
 	}
+	if note != "" {
+		drawOutsideNote(page, f2, chart.subtitleSize(), note, right, chart.x+pad, chart.x+chart.w-pad,
+			chart.y+chart.h-pad)
+	}
 
 	// The trend line, from the left of the plot to its right, within its
 	// height
@@ -530,26 +771,55 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 
 	// The dots, then the highlighted points and their names over them
 	page.SaveGraphicsState()
-	if !page.pdf.isPDFA1() {
-		gs := NewGraphicsState()
-		gs.SetAlphaNonStroking(simpleScatterAlpha)
-		page.SetGraphicsState(gs)
+	transparent := func() {
+		if !page.pdf.isPDFA1() {
+			gs := NewGraphicsState()
+			gs.SetAlphaNonStroking(simpleScatterAlpha)
+			page.SetGraphicsState(gs)
+		}
 	}
+	transparent()
 	page.SetBrushColor(chart.dotColor)
 	r := float32(0.3 * size)
-	for _, p := range points {
-		if p.name == "" && onPlot(p, xAxis, yAxis) {
+	// dot draws a point that is not highlighted, with the transparency, and
+	// the width of the outlines, set
+	dot := func(p scatterPoint) {
+		if p.series >= 0 {
+			page.SetPenColor(scatterSeriesColor(p.series))
+			drawScatterShape(page, p.series%scatterShapes, xAt(p.x), yAt(p.y), float32(0.35*size), false)
+		} else {
+			page.SetBrushColor(chart.dotColor)
 			page.FillCircle(xAt(p.x), yAt(p.y), r)
 		}
 	}
+	for _, p := range points {
+		if p.series < 0 && !p.highlighted() && !apart(p) && onPlot(p, xAxis, yAxis) {
+			dot(p)
+		}
+	}
 	page.RestoreGraphicsState()
+	// The points of the series, the outlines of their shapes, opaque; a chart
+	// without series draws as it did
+	if len(chart.series) > 0 {
+		page.SetPenWidth(float32(0.12 * size))
+	}
+	for _, p := range points {
+		if p.series >= 0 && !p.highlighted() && !apart(p) && onPlot(p, xAxis, yAxis) {
+			dot(p)
+		}
+	}
 	big := float32(0.42 * size)
 	// named draws a highlighted point and its name, and returns the box of the
 	// two: x, y, w, h
 	named := func(p scatterPoint) [4]float32 {
 		px, py := xAt(p.x), yAt(p.y)
-		page.SetBrushColor(chart.highlightColor)
-		page.FillCircle(px, py, big)
+		if p.series >= 0 {
+			page.SetBrushColor(scatterSeriesColor(p.series))
+			drawScatterShape(page, p.series%scatterShapes, px, py, big, true)
+		} else {
+			page.SetBrushColor(chart.highlightColor)
+			page.FillCircle(px, py, big)
+		}
 		// A name of two fifths of the plot at most, and in the plot
 		name := shorten(f1, size, p.name, float32(0.4*(right-left)))
 		width := f1.StringWidth(size, name)
@@ -568,50 +838,23 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		}
 		page.FillRect(lx-1.0, baseline-f1.GetAscent(size)-1.0,
 			width+2.0, f1.GetAscent(size)+f1.GetDescent(size)+2.0)
-		page.drawString(f1, size, name, lx, baseline, colorToRGB(chart.highlightColor), nil)
+		// The name of a point of a series in ink, which reads on the panel
+		// whatever the color of the series
+		ink := chart.highlightColor
+		if p.series >= 0 {
+			ink = simpleBarInk
+		}
+		page.drawString(f1, size, name, lx, baseline, colorToRGB(ink), nil)
 		x1 := min(px-big, lx)
 		y1 := min(py-big, baseline-f1.GetAscent(size))
 		x2 := max(px+big, lx+width)
 		y2 := max(py+big, baseline+f1.GetDescent(size))
 		return [4]float32{x1, y1, x2 - x1, y2 - y1}
 	}
-	var linked []scatterPoint
-	for _, p := range points {
-		if p.name == "" || !onPlot(p, xAxis, yAxis) {
-			continue
-		}
-		if p.uri != "" && linksApart {
-			linked = append(linked, p)
-			continue
-		}
-		box := named(p)
-		if p.uri != "" {
-			page.addAnnotation(&annotationObject{
-				annotationType: annotationLink,
-				x1:             box[0],
-				y1:             box[1],
-				x2:             box[0] + box[2],
-				y2:             box[1] + box[3],
-				uri:            p.uri,
-				altDescription: p.name,
-			})
-		}
-	}
-
-	page.RestoreGraphicsState()
-	page.SetFigureBoundingBox(chart.x, chart.y, chart.w, chart.h)
-	page.AddEMC()
-
-	for _, p := range linked {
-		page.SaveGraphicsState()
-		link := page.beginLink()
-		page.AddBDC(structelem.Figure, "", "", p.name)
-		box := named(p)
-		page.SetFigureBoundingBox(box[0], box[1], box[2], box[3])
-		page.AddEMC()
-		page.endLink(link)
-		page.RestoreGraphicsState()
-		page.addAnnotation(&annotationObject{
+	// addLink adds the annotation of a point over the box of what it draws,
+	// described by its name, in the Link element if it has one
+	addLink := func(p scatterPoint, box [4]float32, link *structElement) {
+		annotation := &annotationObject{
 			annotationType: annotationLink,
 			x1:             box[0],
 			y1:             box[1],
@@ -620,7 +863,92 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 			uri:            p.uri,
 			altDescription: p.name,
 			linkElement:    link,
-		})
+		}
+		if p.dot {
+			annotation.hitSize = scatterHitSize
+		}
+		page.addAnnotation(annotation)
+	}
+	// dotBox returns the box of a dot, x, y, w, h: a little past the tip of
+	// its outline in the shape that reaches farthest, the triangle
+	dotBox := func(p scatterPoint) [4]float32 {
+		reach := float32(0.55 * size)
+		return [4]float32{xAt(p.x) - reach, yAt(p.y) - reach, float32(2.0 * reach), float32(2.0 * reach)}
+	}
+	// The links of the dots first, for those of the highlighted points to be
+	// over them
+	for _, p := range points {
+		if p.linkedDot() && !apart(p) && onPlot(p, xAxis, yAxis) {
+			addLink(p, dotBox(p), nil)
+		}
+	}
+	var linked, over []scatterPoint
+	for _, p := range points {
+		if !p.highlighted() || !onPlot(p, xAxis, yAxis) {
+			continue
+		}
+		if p.uri != "" && linksApart {
+			linked = append(linked, p)
+			continue
+		}
+		if len(linkedDots) > 0 {
+			over = append(over, p) // Over the dots, drawn after the chart
+			continue
+		}
+		box := named(p)
+		if p.uri != "" {
+			addLink(p, box, nil)
+		}
+	}
+
+	page.RestoreGraphicsState()
+	page.SetFigureBoundingBox(chart.x, chart.y, chart.w, chart.h)
+	page.AddEMC()
+
+	// figure draws a point that is a link as a figure of its own in its Link
+	figure := func(p scatterPoint) {
+		page.SaveGraphicsState()
+		link := page.beginLink()
+		page.AddBDC(structelem.Figure, "", "", p.name)
+		var box [4]float32
+		if p.dot {
+			dot(p)
+			box = dotBox(p)
+		} else {
+			box = named(p)
+		}
+		page.SetFigureBoundingBox(box[0], box[1], box[2], box[3])
+		page.AddEMC()
+		page.endLink(link)
+		page.RestoreGraphicsState()
+		addLink(p, box, link)
+	}
+	if len(linkedDots) > 0 {
+		// As in the chart, whose graphics state ended with it
+		page.SaveGraphicsState()
+		page.SetDefaultStrokeDashPattern()
+		transparent()
+		if len(chart.series) > 0 {
+			page.SetPenWidth(float32(0.12 * size))
+		}
+		for _, p := range linkedDots {
+			figure(p)
+		}
+		page.RestoreGraphicsState()
+	}
+	// A highlighted point that is no link is in the description of the chart,
+	// and over the dots that are drawn after it
+	if len(over) > 0 {
+		page.SaveGraphicsState()
+		page.AddArtifactBMC()
+		for _, p := range over {
+			named(p)
+		}
+		page.AddEMC()
+		page.RestoreGraphicsState()
+	}
+	for _, p := range linked {
+		figure(p)
 	}
 	return [2]float32{chart.x + chart.w, chart.y + chart.h}
 }

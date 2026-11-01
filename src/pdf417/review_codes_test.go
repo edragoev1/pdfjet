@@ -68,3 +68,16 @@ func TestPDF417ADescribedBarcodeIsAFigure(t *testing.T) {
 		t.Errorf("the barcode is not a figure: %.80q", content)
 	}
 }
+
+// The bars are solid whatever dash pattern the page was left with, as in the
+// charts: a dashed bar is not a bar a scanner reads (the review of 30 October
+// 2026, E4).
+func TestPDF417TheBarsAreSolidOnADashedPage(t *testing.T) {
+	pdf := pdfjet.NewPDF(bufio.NewWriter(new(bytes.Buffer)))
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	page.SetStrokeDashPattern("[3 3] 0")
+	NewPDF417("Hello, World!").DrawOn(page)
+	if content := string(page.GetContent()); !strings.Contains(content, "q\n0 0 0 RG\n[] 0 d\n") {
+		t.Errorf("the bars are dashed: %.80q", content)
+	}
+}

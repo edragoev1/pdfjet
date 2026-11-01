@@ -489,7 +489,7 @@ func TestReviewLayoutMarkdownCodeInAFontOfSizeZeroIsDrawn(t *testing.T) {
 }
 
 func TestReviewLayoutMarkdownReadsTheSourceOfAnImageTheSameWayInEveryPort(t *testing.T) {
-	images := testRepoPath(t, "images")
+	images := testRepoPath(t, "resources/images")
 	markdown := NewMarkdown(nil, nil, nil, nil, nil).SetImageDirectory(images)
 	for source, read := range map[string]bool{
 		"circles.png":             true,

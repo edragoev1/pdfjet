@@ -13,7 +13,7 @@ PAC runs in Wine on Ubuntu (it ran on Windows before 28 October 2026).
 
 **Leave out Example_17, Example_33 and Example_52.** They claim PDF/UA and pass
 veraPDF, but they crash PAC (29 September 2026; Example_17 on 28 October 2026).
-Example_17 has 736 pages and Example_52 has 745.
+Example_17 has 694 pages and Example_52 has 745.
 
 **Only files that embed all their fonts go here.** PDF/UA asks for every font
 to be embedded (Matterhorn 31-001), so a file with one that is not fails for
@@ -35,8 +35,8 @@ fonts: Example_04 (Helvetica and the CID fonts), Example_05 (Helvetica),
 Example_44 (a Chinese CID font) and Example_50 (Helvetica).
 Since 7 October 2026 Example_04 and Example_44 embed IBM Plex Sans JP, KR
 and SC, as no example uses the Adobe CJK fonts, and Example_05 IBM Plex
-Sans, in place of its kerning in Helvetica; Example_50 keeps Helvetica. On
-the same day Example_05, 07 (PDF/A-3a and PDF/UA-1), 34 (PDF/A-1a) and 44
+Sans, in place of its kerning in Helvetica; Example_50 kept Helvetica until
+30 October 2026, and now embeds IBM Plex Sans. On 7 October Example_05, 07 (PDF/A-3a and PDF/UA-1), 34 (PDF/A-1a) and 44
 became tagged, so that Acrobat does not offer to make them accessible.
 
 ## Known PAC warnings, left as they are
