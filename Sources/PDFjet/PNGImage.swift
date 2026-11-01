@@ -282,16 +282,16 @@ class PNGImage {
             }
         } else if colorType == 4 {
             // Grayscale image with alpha
-            if bitDepth == 8 {
-                image = try getImageColorType4BitDepth8(inflatedImageData)
+            if bitDepth == 16 {
+                image = try getImageColorType4BitDepth16(inflatedImageData)
             } else {
-                throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
+                image = try getImageColorType4BitDepth8(inflatedImageData)
             }
         } else if colorType == 6 {
-            if bitDepth == 8 {
-                image = try getImageColorType6BitDepth8(inflatedImageData)
+            if bitDepth == 16 {
+                image = try getImageColorType6BitDepth16(inflatedImageData)
             } else {
-                throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
+                image = try getImageColorType6BitDepth8(inflatedImageData)
             }
         } else if colorType == 2 {
             // True color image; a PLTE chunk in it is only a suggested palette
@@ -317,7 +317,7 @@ class PNGImage {
         case 0:
             return ("DeviceGray", bitDepth)
         case 4:
-            return ("DeviceGray", 8)
+            return ("DeviceGray", bitDepth)
         case 3:
             return ("DeviceRGB", (palette != nil) ? bitDepth : 8)
         default:
@@ -683,6 +683,36 @@ class PNGImage {
         }
         setAlpha(alpha)
         return gray
+    }
+
+    // The gray samples of 16 bits are the image, as those of an image without
+    // alpha; the soft mask of a PDF image has 8 bits here, the high byte of
+    // each alpha sample.
+    private func getImageColorType4BitDepth16(_ buf: [UInt8]) throws -> [UInt8] {
+        let image = try unfilter(buf, self.h, 4 * self.w, 4)
+        var gray = [UInt8](repeating: 0, count: 2 * self.w * self.h)
+        var alpha = [UInt8](repeating: 0, count: self.w * self.h)
+        for i in 0..<alpha.count {
+            gray[2 * i] = image[4 * i]
+            gray[2 * i + 1] = image[4 * i + 1]
+            alpha[i] = image[4 * i + 2]
+        }
+        setAlpha(alpha)
+        return gray
+    }
+
+    // The samples of 16 bits of the colors are the image; the soft mask is
+    // the high byte of each alpha sample.
+    private func getImageColorType6BitDepth16(_ buf: [UInt8]) throws -> [UInt8] {
+        let image = try unfilter(buf, self.h, 8 * self.w, 8)
+        var idata = [UInt8](repeating: 0, count: 6 * self.w * self.h)   // Image data
+        var alpha = [UInt8](repeating: 0, count: self.w * self.h)       // Alpha values
+        for i in 0..<alpha.count {
+            idata[(6 * i)..<(6 * i + 6)] = image[(8 * i)..<(8 * i + 6)]
+            alpha[i] = image[8 * i + 6]
+        }
+        setAlpha(alpha)
+        return idata
     }
 
     private func getImageColorType6BitDepth8(_ buf: [UInt8]) throws -> [UInt8] {

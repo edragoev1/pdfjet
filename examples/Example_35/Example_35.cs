@@ -59,7 +59,7 @@ public class Example_35 {
         textBlock.SetWidth(512f);
         textBlock.DrawOn(page);
 
-        Image image = new Image(pdf, "images/europe-relief.png");
+        Image image = new Image(pdf, "resources/images/europe-relief.png");
         image.ResizeWidth(w);
         image.SetLocation(x0, y0);
         image.SetAltDescription("A relief map of Europe, from Ireland to Turkey");

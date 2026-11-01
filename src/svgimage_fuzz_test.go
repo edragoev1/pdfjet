@@ -21,7 +21,7 @@ import (
 // drawn and written, or fails with a message; see fuzzRun. FuzzSVGImage
 // fuzzes whole documents, and FuzzSVGPath the path data, which it writes out
 // of numbers no larger than a page, so that a path of them must draw. The
-// seeds are the icons of images/svg; go test runs them, and
+// seeds are the icons of resources/images/svg; go test runs them, and
 //
 //	go test ./src -run '^$' -fuzz '^FuzzSVGPath$' -fuzztime 5m -fuzzminimizetime 5s
 //
@@ -30,7 +30,7 @@ import (
 
 // FuzzSVGImage fuzzes whole SVG documents.
 func FuzzSVGImage(f *testing.F) {
-	paths, err := filepath.Glob("../images/svg/*.svg")
+	paths, err := filepath.Glob("../resources/images/svg/*.svg")
 	if err != nil || len(paths) == 0 {
 		f.Fatal("no SVG icons")
 	}

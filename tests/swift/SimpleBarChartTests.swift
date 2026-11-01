@@ -166,4 +166,79 @@ import Testing
         let chart = SimpleBarChart(font, font).setTitle("Sales.").add("a", 5).add("b", 6)
         #expect(chart.getAltDescription() == "Sales. a 5, b 6.")
     }
+
+    // The polish of 29 October 2026: the bar the chart highlights itself, a
+    // reference line and rounded bars, each off unless set.
+
+    @Test func theChartHighlightsTheLowestOrTheHighestValue() {
+        let chart = self.chart(TestSupport.newPDF())     // 7.3, 72.6, 18.4, 44.1
+        #expect(chart.highlighted() == -1)
+        #expect(chart.setHighlightLowest().highlighted() == 0)
+        #expect(chart.setHighlightHighest().highlighted() == 1)
+        // A bar added later counts, as the chart finds the bar when it is drawn
+        chart.add("Faster", 100)
+        #expect(chart.highlighted() == 4)
+        // The index set takes the place of the value found, and the other way
+        #expect(chart.setHighlight(2).highlighted() == 2)
+        #expect(chart.setHighlightLowest().highlighted() == 0)
+    }
+
+    @Test func theFirstOfEqualValuesIsHighlightedAndNoValueIsSkipped() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let chart = SimpleBarChart(font, font)
+                .add("none", Float.nan).add("a", 3).add("b", 1).add("c", 1).add("d", 3)
+        #expect(chart.setHighlightLowest().highlighted() == 2)
+        #expect(chart.setHighlightHighest().highlighted() == 1)
+        #expect(SimpleBarChart(font, font).add("none", Float.nan).setHighlightLowest().highlighted() == -1)
+    }
+
+    @Test func aReferenceLineIsDashedAndLabeledUnderTheBars() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let plain = chart(pdf).setFractionDigits(1)
+        let chart = self.chart(pdf).setFractionDigits(1).setReferenceLine(50, "Target")
+        let size = TestSupport.helvetica(pdf).getSize()
+        TestSupport.expectNear(plain.getHeight() + 1.4 * 0.8 * size, chart.getHeight())
+        #expect(chart.getAltDescription() == "Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, "
+                + "PDFBox 44.1; Target 50.0.")
+        #expect(self.chart(pdf).setFractionDigits(1).setReferenceLine(50, "").getAltDescription()
+                == "Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1; "
+                + "reference line at 50.0.")
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        let dashed = content.range(of: "[2 2] 0 d")
+        #expect(dashed != nil, "no dashed line")
+        if let dashed = dashed {
+            #expect(content[dashed.upperBound...].contains("[] 0 d"), "the dash pattern set back")
+        }
+    }
+
+    @Test func aReferenceLinePastTheLargestValueShortensTheBars() {
+        let pdf = TestSupport.newPDF()
+        let page1 = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).drawOn(page1)
+        let plain = rectWidths(TestSupport.content(page1))
+        let page2 = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setReferenceLine(2 * 72.6, "").drawOn(page2)
+        let shorter = rectWidths(TestSupport.content(page2))
+        TestSupport.expectNear(plain[2] / 2, shorter[2], 0.05)
+    }
+
+    @Test func aReferenceLineThatIsNoValueDrawsNothing() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = self.chart(pdf).setReferenceLine(Float.nan, "Target")
+        TestSupport.expectNear(self.chart(pdf).getHeight(), chart.getHeight())
+        chart.drawOn(page)
+        #expect(!TestSupport.content(page).contains("[2 2] 0 d"))
+    }
+
+    @Test func roundedBarsAreCurvesNotRectangles() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setRoundedBars(true).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(rectWidths(content).count == 1, "the panel alone a rectangle")
+        #expect(content.contains(" c\n"), "the bars' corners are curves")
+    }
 }

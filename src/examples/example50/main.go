@@ -6,200 +6,63 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"os"
-	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 )
 
-// Example50 fills in the fields of an existing PDF form: it reads the PDF, adds an image,
-// two fonts read from files and the core font Helvetica as resources of a page,
-// and writes the text on that page.
-//
-// The core font is added with AddCoreFontResource(font, objects), which writes a
-// font dictionary that names the font and nothing else. The advantage is that
-// the page grows by a few hundred bytes and needs no font file, which suits a
-// stamp or a field value added to a document that already exists. The
-// disadvantages are those of every font that is not embedded: the viewer draws
-// the text with its own Helvetica, only the WinAnsi characters can be drawn,
-// and the document cannot claim PDF/A or PDF/UA compliance. The two embedded
-// fonts of this example show the alternative.
+// Example50 does what programs most often do with an existing PDF: it reads
+// the PDF, stamps every page APPROVED with a date, and adds page numbers at
+// the foot. What is drawn on a page that was read goes on top of its content,
+// and the rest of the document stays as it was.
 func Example50(fileName string) {
 	pdf, err := pdfjet.NewPDFFile("Example_50.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	buf, err := os.ReadFile(fileName)
+	objects, err := pdf.Read(content.OfBinaryFile(fileName))
 	if err != nil {
 		log.Fatal(err)
 	}
-	objects, err := pdf.Read(buf)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	file1, err := os.Open("images/qrcode.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file1.Close()
-	reader := bufio.NewReader(file1)
-	image1 := pdfjet.NewImageForObjects(&objects, reader)
-	image1.SetLocation(495.0, 65.0)
-	image1.ScaleBy(0.40)
 
 	// A font added to an existing PDF is embedded as a subset of the glyphs
-	// drawn, as in a new PDF.
-	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file2.Close()
-	reader = bufio.NewReader(file2)
-	font1 := pdfjet.NewFontForObjects(&objects, reader)
-	font1.SetSize(12.0)
+	// drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+	// from the library; the path of a font file of your own reads that file.
+	bold := pdfjet.NewFontFromFileForObjects(&objects, IBMPlexSans.Bold)
+	bold.SetSize(14.0)
+	regular := pdfjet.NewFontFromFileForObjects(&objects, IBMPlexSans.Regular)
+	regular.SetSize(10.0)
 
-	file3, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file3.Close()
-	reader = bufio.NewReader(file3)
-	font2 := pdfjet.NewFontForObjects(&objects, reader)
-	font2.SetSize(12.0)
+	// The date is fixed, so that the four ports write the same PDF: a program
+	// would stamp the date of the day.
+	stamp := pdfjet.NewTextBlock(bold, "APPROVED\n2026-10-30")
+	stamp.SetWidth(120.0)
+	stamp.SetPadding(6.0)
+	stamp.SetTextColor(color.Red)
+	stamp.SetBorderColor(color.Red)
+	stamp.SetTextAlignment(alignment.Center)
 
 	pages := pdf.GetPageObjects(objects)
-	page := pdfjet.NewPageFromObject(pdf, pages[0])
-	// page.InvertYAxis()
+	for i, pageObj := range pages {
+		page := pdfjet.NewPageFromObject(pdf, pageObj)
+		page.AddFontResource(bold, &objects)
+		page.AddFontResource(regular, &objects)
 
-	page.AddImageResource(image1, &objects)
-	page.AddFontResource(font1, &objects)
-	page.AddFontResource(font2, &objects)
-	font3 := page.AddCoreFontResource(corefont.Helvetica(), &objects)
-	font3.SetSize(12.0)
+		stamp.SetLocation(page.GetWidth()-156.0, 36.0)
+		stamp.DrawOn(page)
 
-	image1.DrawOn(page)
+		text := fmt.Sprintf("Page %d of %d", i+1, len(pages))
+		x := float32((page.GetWidth() - regular.StringWidth(regular.GetSize(), text)) / 2.0)
+		pdfjet.NewTextLine(regular, text).SetLocation(x, page.GetHeight()-36.0).DrawOn(page)
 
-	x := float32(23.0)
-	y := float32(185.0)
-	dx := float32(15.0)
-	dy := float32(24.0)
-
-	page.SetBrushColor(color.Blue)
-
-	// First Name and Initial
-	page.DrawString(font2, nil, font2.GetSize(), "Иван", x, y)
-
-	// Last Name
-	page.DrawString(font3, nil, font3.GetSize(), "Jones", x+258.0, y)
-
-	// Social Insurance Number
-	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("243-590-129"), x+437.0, y, dx)
-
-	// Last Name at Birth
-	y += dy
-	page.DrawString(font1, nil, font1.GetSize(), "Culverton", x, y)
-
-	// Mailing Address
-	y += dy
-	page.DrawString(font1, nil, font1.GetSize(), "10 Elm Street", x, y)
-
-	// City
-	y += dy
-	page.DrawString(font1, nil, font1.GetSize(), "Toronto", x, y)
-
-	// Province or Territory
-	page.DrawString(font1, nil, font1.GetSize(), "Ontario", x+365.0, y)
-
-	// Postal Code
-	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
-
-	// Home Address
-	y += dy
-	page.DrawString(font1, nil, font1.GetSize(), "10 Oak Road", x, y)
-
-	// City
-	y += dy
-	page.DrawString(font1, nil, font1.GetSize(), "Toronto", x, y)
-
-	// Previous Province or Territory
-	page.DrawString(font1, nil, font1.GetSize(), "Ontario", x+365.0, y)
-
-	// Postal Code
-	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
-
-	// Home telephone number
-	page.DrawString(font1, nil, font1.GetSize(), "905-222-3333", x, y+dy)
-	// Work telephone number
-	y += dy
-	page.DrawString(font1, nil, font1.GetSize(), "416-567-9903", x+279.0, y)
-
-	// Previous province or territory
-	y += dy
-	page.DrawString(font1, nil, font1.GetSize(), "British Columbia", x+452.0, y)
-
-	// Move date from previous province or territory
-	y += dy
-	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("2016-04-12"), x+452.0, y, dx)
-
-	// Date new marital status began
-	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("2014-11-02"), x+452.0, 467.0, dx)
-
-	// First name of spouse
-	y = 521.0
-	page.DrawString(font1, nil, font1.GetSize(), "Melanie", x, y)
-	// Last name of spouse
-	page.DrawString(font1, nil, font1.GetSize(), "Jones", x+258.0, y)
-
-	// Social Insurance number of spouse
-	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("192-760-427"), x+437.0, y, dx)
-
-	// Spouse or common-law partner's address
-	page.DrawString(font1, nil, font1.GetSize(), "12 Smithfield Drive", x, 554.0)
-
-	// Signature Date
-	page.DrawString(font1, nil, font1.GetSize(), "2016-08-07", x+475.0, 615.0)
-
-	// Signature Date of spouse
-	page.DrawString(font1, nil, font1.GetSize(), "2016-08-07", x+475.0, 651.0)
-
-	// Female Checkbox 1
-	// pdfjet.DrawXMark(page, 477.5, 197.5, 7.0)
-
-	// Male Checkbox 1
-	pdfjet.DrawXMark(page, 534.5, 197.5, 7.0)
-
-	// Married
-	pdfjet.DrawXMark(page, 34.5, 424.0, 7.0)
-
-	// Living common-law
-	// pdfjet.DrawXMark(page, 121.5, 424.0, 7.0)
-
-	// Widowed
-	// pdfjet.DrawXMark(page, 235.5, 424.0, 7.0)
-
-	// Divorced
-	// pdfjet.DrawXMark(page, 325.5, 424.0, 7.0)
-
-	// Separated
-	// pdfjet.DrawXMark(page, 415.5, 424.0, 7.0)
-
-	// Single
-	// pdfjet.DrawXMark(page, 505.5, 424.0, 7.0)
-
-	// Female Checkbox 2
-	pdfjet.DrawXMark(page, 478.5, 536.5, 7.0)
-
-	// Male Checkbox 2
-	// pdfjet.DrawXMark(page, 535.5, 536.5, 7.0)
-	page.Complete(&objects)
+		page.Complete(&objects) // The graphics stack is unwinded automatically
+	}
 	if err := pdf.AddObjects(objects); err != nil {
 		log.Fatal(err)
 	}
@@ -209,19 +72,9 @@ func Example50(fileName string) {
 	}
 }
 
-func stripSpacesAndDashes(str string) string {
-	var buf strings.Builder
-	for _, ch := range str {
-		if ch != ' ' && ch != '-' {
-			buf.WriteRune(ch)
-		}
-	}
-	return buf.String()
-}
-
 func main() {
 	time0 := time.Now().UnixMilli()
-	Example50("data/testPDFs/rc65-16e.pdf")
+	Example50("resources/data/testPDFs/sample-document.pdf")
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_50 => %4d ms\n", time1-time0)
 }

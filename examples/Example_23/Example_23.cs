@@ -36,7 +36,7 @@ public class Example_23 {
         Table table = new Table();
         // Country|Code|Life expectancy|Children per woman, after a header line
         List<List<Cell>> tableData = GetData(
-                "data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2);
+                "resources/data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2);
 
         // A marker on three rows, found by their countries, each a link
         Point p1 = new Point();
@@ -136,7 +136,8 @@ public class Example_23 {
                 throw new Exception(
                         "Only pipes and tabs can be used as delimiters");
             }
-            for (int i = 0; i < cols.Length; i++) {
+            // The first five fields: not the two-letter code at the end
+            for (int i = 0; i < Math.Min(cols.Length, 5); i++) {
                 String text = cols[i].Trim();
                 Cell cell = null;
                 if (currentRow < numOfHeaderRows) {

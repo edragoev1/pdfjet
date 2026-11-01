@@ -61,6 +61,8 @@ public class Table : IDrawable {
     // decimals, or null when the table is not being drawn: they were read
     // again for every page, which took 33 seconds for 40,000 rows.
     private Dictionary<long, ColumnSums> columnSums;
+    // The height of the header rows, wrapped, that GetTotalHeight measures.
+    internal float wrappedHeaderHeight;
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -189,6 +191,11 @@ public class Table : IDrawable {
         this.rendered = numOfHeaderRows;
         this.headerDrawn = false;
         AddCellsToCompleteTheGrid();
+        if (tableWidth > 0f) {
+            // The width and the percentages given before the data: they were
+            // lost (the review of 30 October 2026)
+            SetWidth(tableWidth);
+        }
         return this;
     }
 
@@ -442,7 +449,10 @@ public class Table : IDrawable {
     }
 
     // Reads the number of each row of the column, in units of the decimals: 0
-    // for a cell that has no number, or that a cell above it covers.
+    // for a cell that has no number, or that a cell above it covers. A cell is
+    // read once, from its whole text, and the lines it wraps into add nothing:
+    // they were read as numbers, and 1,234,567.89 wrapped in a narrow column
+    // added 567.89 (the review of 30 October 2026).
     private ColumnSums ReadColumn(int column, int decimals) {
         int rows = tableData.Count;
         ColumnSums sums = new ColumnSums();
@@ -457,10 +467,10 @@ public class Table : IDrawable {
                 continue;
             }
             Cell cell = row[column];
-            if ((cell.properties & Cell.COVERED) != 0 || cell.text == null) {
+            if ((cell.properties & (Cell.COVERED | Cell.CONTINUED)) != 0 || cell.text == null) {
                 continue;
             }
-            long? value = NumberOf(cell.text, decimals);
+            long? value = NumberOf(cell.wholeText ?? cell.text, decimals);
             if (value != null) {
                 sums.values[r] = value.Value;
                 if (sums.exact) {
@@ -1070,6 +1080,13 @@ public class Table : IDrawable {
         if (page != null && !first && !RepeatsHeaderOn(page)) {
             return new float[] {x, y};
         }
+        float height = 0f;
+        for (int i = 0; i < numOfHeaderRows && i < tableData.Count; i++) {
+            if (!(first && IsBroughtForwardRow(i))) {
+                height += this.heights[i];
+            }
+        }
+        CheckFits(page, "header", y, height);
         if (page != null && !first && numOfHeaderRows > 0) {
             page.AddArtifactBMC();
         }
@@ -1450,6 +1467,11 @@ public class Table : IDrawable {
     // pages before.
     private float DrawFooterRows(Page page, float x, float y, float[] heights, bool last) {
         int footer = FooterStart();
+        float height = 0f;
+        for (int r = footer; r < tableData.Count; r++) {
+            height += heights[r];
+        }
+        CheckFits(page, "footer", y, height);
         bool artifact = (page != null && !last && footer < tableData.Count);
         if (artifact) {
             page.AddArtifactBMC();
@@ -1471,6 +1493,22 @@ public class Table : IDrawable {
         return y;
     }
 
+    // Fails the document, as a row of the body does, when the header or footer
+    // rows of the height, drawn at y, run off the page: what did not fit was
+    // lost with no error, a page total among it (the review of 30 October
+    // 2026). Rows that only reach into the bottom margin are drawn, as those
+    // of the body are.
+    private void CheckFits(Page page, String rows, float y, float height) {
+        if (page == null || height <= 0f || y + height <= page.height) {
+            return;
+        }
+        rendered = -1;  // Nothing more is drawn, and no more pages are asked for
+        page.pdf.Fail(new InvalidOperationException(String.Format(CultureInfo.InvariantCulture,
+                "The {0} rows of the table are {1:F0} points tall, and run off the page, "
+                + "which has {2:F0} points for them. Make them smaller, or give the table more of the page.",
+                rows, height, Math.Max(page.height - bottomMargin - y, 0f))));
+    }
+
     // Works out what each cell that spans rows covers, after the text is
     // wrapped: a row of the table is drawn as one row for each line its
     // tallest cell needs, so a cell that spans two rows of the table spans as
@@ -1488,8 +1526,13 @@ public class Table : IDrawable {
             WrapAroundCellText();
             ApplyRowSpans();
             float total = 0f;
-            foreach (float height in GetRowHeights()) {
-                total += height;
+            float[] heights = GetRowHeights();
+            wrappedHeaderHeight = 0f;
+            for (int r = 0; r < heights.Length; r++) {
+                total += heights[r];
+                if (r < numOfHeaderRows) {
+                    wrappedHeaderHeight += heights[r];
+                }
             }
             return total;
         } finally {
@@ -1989,9 +2032,14 @@ public class Table : IDrawable {
             for (int j = 0; j < row.Count; j++) {
                 List<String> cellLines = lines[j];
                 if (cellLines != null) {
+                    String wholeText = row[j].wholeText;
+                    if (wholeText == null && cellLines.Count > 1) {
+                        wholeText = row[j].text;
+                    }
                     for (int n = 0; n < cellLines.Count; n++) {
                         tableData2[first + n][j].SetText(cellLines[n]);
                     }
+                    row[j].wholeText = wholeText;
                 }
             }
             // The stacked rows are wrapped in their turn, as they were when
@@ -2152,6 +2200,21 @@ public class Table : IDrawable {
 
     /// <summary>Keeps only the columns with the specified indexes.</summary>
     public Table SetVisibleColumns(params int[] columns) {
+        if (tableData.Count == 0) {
+            return this;
+        }
+        if (columns.Length == 0) {
+            throw new ArgumentException("The table has no visible column: name at least one.");
+        }
+        int count = 0;
+        foreach (List<Cell> row in tableData) {
+            count = Math.Max(count, row.Count);
+        }
+        foreach (int column in columns) {
+            if (column < 0 || column >= count) {
+                throw new ArgumentException("The table has no row or column at the index " + column + ".");
+            }
+        }
         List<List<Cell>> list = new List<List<Cell>>();
         List<int> visible = new List<int>(columns);
         foreach (List<Cell> row in tableData) {

@@ -9,6 +9,19 @@ using Xunit;
 namespace PDFjet.NET {
 /// <summary>Right to left text in visual order: the Unicode Bidirectional Algorithm and Arabic shaping.</summary>
 public class BidiTest {
+    // Text pasted from a PDF often has presentation forms, and Persian and
+    // Urdu text the letters of Arabic Supplement.
+    [Fact]
+    public void TheOtherLettersOfRightToLeftScriptsAreRightToLeft() {
+        Assert.Equal("\uFB2C\uFB2A abc", Bidi.ReorderVisually("abc \uFB2A\uFB2C"));   // Hebrew presentation forms
+        Assert.Equal("\uFEE2\uFE8D abc", Bidi.ReorderVisually("abc \uFE8D\uFEE2"));   // Arabic presentation forms B
+        Assert.Equal("\uFB51\uFB50 abc", Bidi.ReorderVisually("abc \uFB50\uFB51"));   // Arabic presentation forms A
+        Assert.Equal("\u0751\u0750 abc", Bidi.ReorderVisually("abc \u0750\u0751"));   // Arabic Supplement
+        Assert.Equal("\u08A1\u08A0 abc", Bidi.ReorderVisually("abc \u08A0\u08A1"));   // Arabic Extended-A
+        Assert.Equal("\u07CB\u07CA abc", Bidi.ReorderVisually("abc \u07CA\u07CB"));   // NKo
+        Assert.Equal("\U00010801\U00010800 abc", Bidi.ReorderVisually("abc \U00010800\U00010801"));
+    }
+
     [Fact]
     public void LeftToRightTextIsUnchanged() {
         Assert.Equal("abc", Bidi.ReorderVisually("abc"));

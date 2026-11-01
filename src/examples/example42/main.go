@@ -34,7 +34,7 @@ func Example42() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	f2.SetSize(14.0)
 
-	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/circles.png", false)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "resources/images/circles.png", false)
 	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", true)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())

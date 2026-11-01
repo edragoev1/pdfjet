@@ -122,7 +122,7 @@ public class Example_40 {
         path.drawOn(page)
 
         // And so does an image of an arrow.
-        let image = try Image(pdf, "images/up-arrow.png")
+        let image = try Image(pdf, "resources/images/up-arrow.png")
         image.setAltDescription(
                 "An arrow pointing up, which goes back to the contents of the document when it is clicked.")
         image.setLocation(50.0, 20.0)

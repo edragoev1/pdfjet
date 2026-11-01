@@ -8,8 +8,12 @@ package decompressor
 
 import (
 	"bytes"
+	"compress/flate"
 	"compress/zlib"
+	"encoding/binary"
+	"errors"
 	"fmt"
+	"hash/adler32"
 	"io"
 	"math"
 )
@@ -37,6 +41,15 @@ func LZWDecode(buf []byte) ([]byte, error) {
 // LZWDecodeWithMaxLength decodes the data of an LZWDecode stream like
 // LZWDecode, and fails when it decodes to more than maxLength bytes.
 func LZWDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
+	return LZWDecodeWithEarlyChange(buf, maxLength, 1)
+}
+
+// LZWDecodeWithEarlyChange decodes the data of an LZWDecode stream like
+// LZWDecodeWithMaxLength, with the /EarlyChange of its /DecodeParms: with 0 the
+// codes get one bit longer only when the table needs it. It was ignored, and
+// such data decoded to wrong bytes with no error (review of 30 October 2026, B7).
+func LZWDecodeWithEarlyChange(buf []byte, maxLength, earlyChange int) ([]byte, error) {
+	early := min(max(earlyChange, 0), 1)
 	decoded := make([]byte, 0, min(len(buf)*2, maxLength))
 	table := make([][]byte, 4096)
 	for i := 0; i < 256; i++ {
@@ -76,7 +89,7 @@ func LZWDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
 				next++
 			}
 			previous = entry
-			if next+1 >= 1<<codeLength && codeLength < 12 {
+			if next+early >= 1<<codeLength && codeLength < 12 {
 				codeLength++
 			}
 		}
@@ -353,6 +366,29 @@ func Inflate(buf []byte) ([]byte, error) {
 func InflateWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
 	result, _, err := inflate(buf, maxLength, false)
 	return result, err
+}
+
+// InflateStream decodes the Flate stream of a PDF like InflateWithMaxLength, and
+// takes one whose Deflate data ends and whose Adler-32 is cut off, all or part
+// of it, as other readers do: an object stream like that failed the whole PDF
+// (review of 30 October 2026, B8). What is left of the checksum has to be right.
+func InflateStream(buf []byte, maxLength int) ([]byte, error) {
+	result, err := InflateWithMaxLength(buf, maxLength)
+	if err == nil || len(buf) < 2 || !errors.Is(err, io.ErrUnexpectedEOF) {
+		return result, err
+	}
+	input := bytes.NewReader(buf[2:])
+	var inflated bytes.Buffer
+	n, rawErr := io.Copy(&inflated, io.LimitReader(flate.NewReader(input), int64(maxLength)+1))
+	if rawErr != nil || n > int64(maxLength) || input.Len() >= 4 {
+		return nil, err
+	}
+	var checksum [4]byte
+	binary.BigEndian.PutUint32(checksum[:], adler32.Checksum(inflated.Bytes()))
+	if !bytes.HasPrefix(checksum[:], buf[len(buf)-input.Len():]) {
+		return nil, err
+	}
+	return inflated.Bytes(), nil
 }
 
 // InflatePrefix returns the first length bytes that a zlib stream decodes to,

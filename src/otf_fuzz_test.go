@@ -20,21 +20,22 @@ import (
 // an .otf or .ttf file. Any input either makes a font that draws text, or
 // panics with a message of PDFjet's own: an index out of range, a nil
 // pointer, a hang or gigabytes of memory is a bug. The seeds are fonts PDFjet
-// ships; go test runs them, and
+// carries; go test runs them, and
 //
 //	go test ./src -run '^$' -fuzz '^FuzzOpenTypeFontTables$' -fuzztime 5m -fuzzminimizetime 5s
 //
 // fuzzes. An input that fails is kept in testdata/fuzz, and go test runs it
 // from then on.
 
-// fuzzOpenTypeFontSeeds are shipped fonts: TrueType with the GPOS table of
-// marks that go on letters (Thai), TrueType with kerning and no marks
-// (JetBrains Mono), and an OpenType font whose glyphs are in a CFF table
-// (IBM Plex Sans).
+// fuzzOpenTypeFontSeeds are fonts PDFjet carries and a test font: TrueType
+// with the GPOS table of marks that go on letters and kerning (IBM Plex Sans
+// Thai, as Noto Sans Thai before 9.1.7), TrueType with the long offsets of
+// loca, marks and no kerning (Cascadia Mono, JetBrains Mono before 9.1.7),
+// and an OpenType font whose glyphs are in a CFF table (IBM Plex Sans).
 var fuzzOpenTypeFontSeeds = []string{
-	"../fonts/NotoSansThai/NotoSansThai-Regular.ttf",
-	"../fonts/JetBrainsMono/JetBrainsMono-Regular.ttf",
-	"../fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+	"../resources/fonts/world/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf",
+	"../resources/fonts/CascadiaMono/CascadiaMono-Regular.ttf",
+	"../tests/fonts/IBMPlexSans-Regular.otf",
 }
 
 // fuzzOpenTypeFont loads the font and draws with it.

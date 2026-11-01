@@ -458,7 +458,7 @@ final class Decryptor {
     /// Returns the decrypted stream of the object.
     ///
     func decryptStream(_ obj: PDFobj, _ stream: [UInt8]) -> [UInt8] {
-        if !encryptMetadata && obj.getValue("/Type") == "/Metadata" {
+        if (!encryptMetadata && obj.getValue("/Type") == "/Metadata") || obj.hasIdentityCrypt() {
             return stream
         }
         return decrypt(stream, streamMethod, obj)

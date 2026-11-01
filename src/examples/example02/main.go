@@ -10,6 +10,9 @@ import (
 	"log"
 	"time"
 
+	// The fonts PDFjet carries for the scripts but the European ones, built into
+	// the program
+	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -49,7 +52,7 @@ func Example02() {
 	// The line above each block is its heading
 	pdfjet.NewTextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f1).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/simplified-chinese.txt"))
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("resources/data/languages/simplified-chinese.txt"))
 	textBlock.SetLanguage("zh-Hans")
 	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(512.0)
@@ -59,7 +62,7 @@ func Example02() {
 
 	pdfjet.NewTextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f2).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/traditional-chinese.txt"))
+	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("resources/data/languages/traditional-chinese.txt"))
 	textBlock.SetLanguage("zh-Hant")
 	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(512.0)

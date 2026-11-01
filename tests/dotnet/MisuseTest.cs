@@ -166,7 +166,7 @@ public class MisuseTest {
         Assert.Equal("The font belongs to another PDF.", Assert.Throws<ArgumentException>(
                 () => new TextLine(font, "Hello").SetLocation(50f, 50f).DrawOn(page)).Message);
 
-        Image image = new Image(other, TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(other, TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG"));
         Assert.Equal("The image belongs to another PDF.", Assert.Throws<ArgumentException>(
                 () => image.SetLocation(50f, 50f).DrawOn(page)).Message);
 
@@ -277,7 +277,7 @@ public class MisuseTest {
     public void AZeroSizeImageStampOrContainerDrawsNothing() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(pdf, TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG"));
         image.ScaleBy(0f);
         image.SetLocation(50f, 50f).DrawOn(page);
         Stamp stamp = new Stamp(pdf).SetSize(50f, 50f);
@@ -318,7 +318,7 @@ public class MisuseTest {
         // An embedded font only reserves its number, written at Complete: the
         // objects could take it too (the review of 9 October 2026).
         PDF pdf3 = TestSupport.NewPDF();
-        new Font(pdf3, TestSupport.RepoPath("fonts/NotoSans/NotoSans-Regular.ttf"));
+        new Font(pdf3, TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Assert.Equal(message,
                 Assert.Throws<InvalidOperationException>(() => pdf3.AddObjects(objects)).Message);
 
@@ -400,6 +400,36 @@ public class MisuseTest {
         foreach (String text in new[] {"", "+", ".", "-.", "e3", "1e", "1e+", "0x10", "1f", " 1", "1 ",
                 "1_0", "inf", "NaN", "1.2.3", "\u0661"}) {
             Assert.False((bool) isDecimal.Invoke(null, new object[] {text}), text);
+        }
+    }
+
+    // NaN and absurd sizes are the port's error, not a hang or a crash (the review
+    // of 30 October 2026, G6 to G8).
+    [Fact]
+    public void NaNAndAbsurdSizesAreRefused() {
+        PDF frames = TestSupport.NewPDF();
+        TextFrame frame = new TextFrame(TestSupport.Helvetica(frames), new List<string> {"Hello frame text"})
+                .SetWidth(120f).SetHeight(200f);
+        frame.SetLocation(float.NaN, float.NaN);
+        string message = Assert.Throws<ArgumentException>(
+                () => frame.DrawOn(new Page(frames, Letter.PORTRAIT))).Message;
+        Assert.Equal("The text frame's location and size must be numbers, not NaN or infinite.", message);
+        Assert.False(frame.HasMoreText());
+
+        PDF bars = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(bars);
+        message = Assert.Throws<ArgumentException>(() => new BarChart(font, font).SetCategories("a")
+                .AddSeries("one", new float[] {1f}).SetFractionDigits(1 << 30)
+                .DrawOn(new Page(bars, Letter.PORTRAIT))).Message;
+        Assert.Equal("The fraction digits of a chart are at most 100.", message);
+        message = Assert.Throws<ArgumentException>(() => new SimpleBarChart(font, font).Add("a", 1f)
+                .SetFractionDigits(1 << 30).DrawOn(new Page(TestSupport.NewPDF(), Letter.PORTRAIT))).Message;
+        Assert.Equal("The fraction digits of a chart are at most 100.", message);
+
+        foreach (float size in new float[] {float.NaN, float.PositiveInfinity, 1e30f}) {
+            Assert.Throws<ArgumentException>(() => new SimpleLineChart(font, font).SetSize(size, size)
+                    .SetCategories("a", "b").AddLine("one", new float[] {1f, 2f})
+                    .DrawOn(new Page(TestSupport.NewPDF(), Letter.PORTRAIT)));
         }
     }
 }

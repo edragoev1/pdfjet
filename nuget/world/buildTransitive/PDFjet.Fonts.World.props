@@ -1,0 +1,7 @@
+<Project>
+  <!-- PDFjet loads this assembly by its name, with no reference to it, so
+       that PublishTrimmed and NativeAOT would leave it out. -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="PDFjet.Fonts.World" />
+  </ItemGroup>
+</Project>

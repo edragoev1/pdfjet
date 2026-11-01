@@ -26,7 +26,7 @@ import (
 // fuzzes. An input that fails is kept in testdata/fuzz, and go test runs it
 // from then on.
 func FuzzBMPImage(f *testing.F) {
-	for _, path := range []string{"../images/palette.bmp", "../images/rgb24pal.bmp"} {
+	for _, path := range []string{"../resources/images/palette.bmp", "../resources/images/rgb24pal.bmp"} {
 		bmp, err := os.ReadFile(path)
 		if err != nil {
 			f.Fatal(err)

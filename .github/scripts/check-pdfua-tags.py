@@ -458,6 +458,10 @@ def main():
             print(f'::error::{report.name}: {problem}')
             problems += 1
 
+    if not reports:
+        print(f'::error::no tagged document was read in {directory}')
+        problems += 1
+
     counts = Counter()
     for report in reports:
         counts.update(report.counts)

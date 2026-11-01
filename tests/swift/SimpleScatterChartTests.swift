@@ -79,7 +79,7 @@ import Testing
     // In a PDF/UA document a highlighted point that is a link is a figure of
     // its own, described by its name, in the Link that holds its annotation;
     // a point that is not a link stays in the chart's figure.
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"), "the fonts directory is not here"))
+    @Test
     func aLinkedPointIsAFigureInItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -104,6 +104,149 @@ import Testing
             #expect(raw.contains("/Alt " + TestSupport.textString(name)), "no figure is described as \(name)")
         }
         #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 2)
+    }
+
+    // A linked dot is drawn as a point of add(x, y) is, stroke for stroke, with
+    // nothing beside it: in a document that is not tagged it adds a link alone,
+    // described by its name, and the chart's description counts it and does
+    // not name it.
+    @Test(arguments: [false, true])
+    func aLinkedDotIsADotWithADescription(_ withSeries: Bool) throws {
+        let plain = try drawDot(withSeries, false)
+        let dot = try drawDot(withSeries, true)
+        #expect(dot.content == plain.content, "not drawn as a plain point")
+        #expect(dot.alt == plain.alt, "not described as a plain point")
+        #expect(dot.raw.components(separatedBy: "/Subtype /Link").count - 1 == 1)
+        #expect(dot.raw.contains("/Contents " + TestSupport.textString("Andorra: 84.0 years")), "the name")
+        #expect(dot.raw.contains("/URI <" + TestSupport.hex("https://pdfjet.com/a").lowercased() + ">"), "the URI")
+    }
+
+    // The content, the description and the bytes of a chart with a third point
+    // that is a linked dot, or a plain one.
+    private func drawDot(_ withSeries: Bool, _ linked: Bool) throws -> (content: String, alt: String, raw: String) {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let chart = SimpleScatterChart(font, font).setTitle("T").setTrendLine(true).add(1, 1).add(3, 4)
+        if withSeries {
+            chart.addSeries("Series")
+        }
+        if linked {
+            chart.addLinkedDot("Andorra: 84.0 years", 2, 2, "https://pdfjet.com/a")
+        } else {
+            chart.add(2, 2)
+        }
+        let alt = chart.getAltDescription()
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        try memory.pdf.complete()
+        return (content, alt, TestSupport.latin1(memory.bytes))
+    }
+
+    // In a PDF/UA document a linked dot is a figure of its own in the Link that
+    // holds its annotation, as a linked point is, and looks as it does in the
+    // chart: transparent, or the outline of its series, undashed. A highlighted
+    // point stays over it.
+    @Test(arguments: [false, true])
+    func aLinkedDotIsAFigureInItsLink(_ withSeries: Bool) throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        page.setStrokeDashPattern("[3 3] 0")
+        let chart = SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50)
+                .setHighlightColor(Color.red).add(1, 1)
+        if withSeries {
+            chart.addSeries("Series")
+        }
+        chart.addLinkedDot("Andorra", 2, 2, "https://pdfjet.com/a")
+                .addLinkedDot("Belize", 3, 1, "https://pdfjet.com/b")
+                .add("Chad", 4, 3, "https://pdfjet.com/c").add("Dominica", 2, 3)
+        let alt = chart.getAltDescription()
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let all = try TestSupport.structElements(raw)
+        let links = all.filter { $0.value[0] == "Link" }
+        #expect(links.count == 3)
+        for (number, link) in links {
+            let figure = link[2].trimmingCharacters(in: CharacterSet(charactersIn: "["))
+                .components(separatedBy: " ")[0]
+            #expect(all[figure]?[0] == "Figure" && all[figure]?[1] == number && link[2].contains("/Type /OBJR"),
+                    "the Link \(number) holds \(link[2])")
+        }
+        for name in ["Andorra", "Belize", "Chad"] {
+            #expect(raw.contains("/Alt " + TestSupport.textString(name)), "no figure is described as \(name)")
+        }
+        #expect(!alt.contains("Andorra") && !alt.contains("Belize"), "a dot named in \(alt)")
+        // The chart, the dots' figures, the named point over them, Chad's
+        let parts = content.components(separatedBy: "/Figure <</MCID ")
+        #expect(parts.count == 5, "the figures of the content")
+        #expect(parts.count == 5 && parts[1].hasPrefix("0>>"))
+        if parts.count == 5 {
+            let dot = parts[2]
+            #expect(!dot.contains("1 0 0 rg"), "\(dot)")
+            #expect(dot.contains("\nS\n") == withSeries, "\(dot)")
+            #expect(dot.contains("\nf\n") == !withSeries, "\(dot)")
+            let before = parts[1].components(separatedBy: "EMC").last ?? ""
+            #expect(before.contains("[] 0 d\n") && before.contains(" gs\n"), "\(before)")
+            #expect(parts[3].contains("/Artifact BMC"), "the named point is not over the dots")
+        }
+    }
+
+    // A dot's description is its name, or its URI when it has no name, and a
+    // dot without a URI is a plain point; one outside a range that is set is
+    // no link.
+    @Test func aLinkedDotWithoutANameOrAURI() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50).setXAxisRange(0, 5)
+                .addLinkedDot("", 1, 1, "https://pdfjet.com/a").addLinkedDot("Belize", 2, 2, "")
+                .addLinkedDot("Chad", 9, 3, "https://pdfjet.com/c").drawOn(page)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 1)
+        #expect(raw.contains("/Alt " + TestSupport.textString("https://pdfjet.com/a")), "the URI")
+        #expect(!raw.contains(TestSupport.textString("Belize")) && !raw.contains(TestSupport.textString("Chad")))
+    }
+
+    // The link of a dot is at least 8 points square and holds the dot, on the
+    // page as written, and inside the page, in a corner too.
+    @Test(arguments: [Float(2), Float(9), Float(30)])
+    func theLinkOfADotCanBeHit(_ size: Float) throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        font.setSize(size)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(612, 792).setLocation(0, 0)
+                .setXAxisRange(0, 4).setYAxisRange(0, 4)
+                .addLinkedDot("Middle", 2, 2, "https://pdfjet.com/m")
+                .addLinkedDot("Left", 0, 2, "https://pdfjet.com/l").drawOn(page)
+        // Past the corners of the page, as a chart that hangs over it
+        page.addAnnotation(corner(-1, -1, 0, 0))
+        page.addAnnotation(corner(612, 792, 613, 793))
+        try memory.pdf.complete()
+        let rects = TestSupport.latin1(memory.bytes).components(separatedBy: "/Rect [")
+        #expect(rects.count == 5)
+        for i in 1..<rects.count {
+            let rect = rects[i].components(separatedBy: "]")[0]
+            let box = rect.components(separatedBy: " ").map { Float($0) ?? -1000 }
+            #expect(box[2] - box[0] >= 7.999 && abs(box[3] - box[1]) >= 7.999, "\(rect)")
+            #expect(i > 2 || box[2] - box[0] >= 0.9 * size, "\(rect)")
+            #expect(box[0] >= 0 && box[2] <= 612 && Swift.min(box[1], box[3]) >= 0 && Swift.max(box[1], box[3]) <= 792,
+                    "\(rect)")
+        }
+    }
+
+    // A link with the hit size of a dot, at the box.
+    private func corner(_ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float) -> Annotation {
+        let annotation = Annotation(Annotation.Link, x1, y1, x2, y2, nil, nil, 0.0, nil, nil,
+                "https://pdfjet.com/c", nil, nil, nil, "Corner")
+        annotation.hitSize = SimpleScatterChart.HIT_SIZE
+        return annotation
     }
 
     // In a document that is not tagged, a linked point is drawn in the chart,
@@ -213,5 +356,164 @@ import Testing
         let font = TestSupport.helvetica(pdf)
         chart = SimpleScatterChart(font, font).setTitle("Life expectancy?").add(1, 2).add(2, 3)
         #expect(chart.getAltDescription() == "Life expectancy? 2 points.")
+    }
+
+    // The end of an axis rounded to steps is never inside the values: 591
+    // steps of 0.1 come to 59.100002 in Float, and a point at 59.1 was not
+    // drawn (the review of 30 October 2026, E1).
+    @Test func anAxisHoldsItsValues() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(400, 300).add("Only", 59.1, 59.1).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("Only")), "\(content)")
+        for i in 1...20000 {
+            let value = Float(i) * 0.1
+            let axis = ChartScale.axisOf([value], 0, 0, false)
+            #expect(ChartScale.onAxis(value, axis), "\(value) on \(axis.min) to \(axis.max)")
+            let flat = ChartScale.flatRange(value)
+            let round = ChartScale.roundMaxAndMinValues(flat.hi, flat.lo)
+            #expect(round.minValue <= flat.lo && round.maxValue >= flat.hi, "\(flat.lo) to \(flat.hi)")
+        }
+    }
+
+    // The content of the chart, on a page of its own.
+    private func noteContent(_ pdf: PDF, _ chart: SimpleScatterChart) -> String {
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart.setLocation(50, 50).drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    private func noteChart(_ font: Font) -> SimpleScatterChart {
+        return SimpleScatterChart(font, font).setTitle("T").setSize(300, 200).add(1, 1).add(2, 2)
+    }
+
+    // A point outside a range that is set is not drawn, and the chart says so,
+    // in print and in its description: an outlier vanished without a word. A
+    // value that is no number is not outside, and a chart with none outside
+    // adds nothing.
+    @Test func itSaysHowManyPointsAreOutsideTheRange() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let one = "1 point outside the range"
+        let two = "2 points outside the range"
+        let cases: [(SimpleScatterChart, String)] = [
+            (noteChart(font).add(100, 100), ""),
+            (noteChart(font).add(0, 10).add(10, 0).setXAxisRange(0, 10).setYAxisRange(0, 10), ""),
+            (noteChart(font).add(Float.nan, 50).add(50, Float.infinity).setXAxisRange(0, 10).setYAxisRange(0, 10), ""),
+            (noteChart(font).add(50, 1).setXAxisRange(0, 10), one),
+            (noteChart(font).add(1, -50).setYAxisRange(0, 10), one),
+            (noteChart(font).add(50, 50).setXAxisRange(0, 10).setYAxisRange(0, 10), one),
+            (noteChart(font).add(50, 1).add(-50, 1).setXAxisRange(0, 10), two),
+            (noteChart(font).add(1, 50).add("far", 2, 60).setYAxisRange(0, 10), two),
+            (noteChart(font).add(50, 1).add(1, 50).setXAxisRange(0, 10).setYAxisRange(0, 10), two),
+            (noteChart(font).addLinkedDot("a", 50, 1, "https://pdfjet.com/a").setXAxisRange(0, 10), one)
+        ]
+        for (chart, note) in cases {
+            let content = noteContent(pdf, chart)
+            let description = chart.getAltDescription()
+            if note.isEmpty {
+                #expect(!content.contains(TestSupport.hex(" outside")), "\(description)")
+                #expect(!description.contains("outside"), "\(description)")
+            } else {
+                #expect(content.contains("<" + TestSupport.hex(note) + ">"), "\(note)")
+                #expect(description.hasSuffix("; " + note + "."), "\(description)")
+            }
+        }
+    }
+
+    // The note is in the gray of the numbers, in the small size, on a row of
+    // its own inside the chart, under the numbers and the x title, with the
+    // plot that much lower and nothing else moved; right under the plot's
+    // right end.
+    @Test func theNoteIsUnderThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let note = "2 points outside the range"
+        let size = font.getSize()
+        let small = 0.8 * size
+        for title in ["", "children per woman"] {
+            let without = noteContent(pdf, SimpleScatterChart(font, font).setSize(300, 200).setXAxisTitle(title)
+                    .setXAxisRange(0, 10).setYAxisRange(0, 10).add(1, 1).add(2, 2))
+            let with = noteContent(pdf, SimpleScatterChart(font, font).setSize(300, 200).setXAxisTitle(title)
+                    .setXAxisRange(0, 10).setYAxisRange(0, 10).add(1, 1).add(2, 2).add(50, 1).add(1, 50))
+            let at = TestSupport.positionOf(with, note)
+            let end = at[0] + font.stringWidth(small, note)
+            let right = Swift.min(350 - size, 350 - size / 2 - font.stringWidth(size, "10") / 2)
+            #expect(abs(right - end) <= 0.1, "the right end")
+            #expect(at[0] >= 50 && end <= 350, "the note at \(at[0])")
+            #expect(abs(792 - (250 - size) - at[1]) <= 0.01, "the baseline")
+            let number = TestSupport.positionOf(with, "0")
+            #expect(abs(TestSupport.positionOf(without, "0")[1] + 1.4 * small - number[1]) <= 0.02, "the plot")
+            // The numbers of the x axis, or the title under them
+            var last = number[1] + font.getAscent(size) / 2 - 1.4 * size
+            if !title.isEmpty {
+                last = TestSupport.positionOf(with, title)[1]
+            }
+            #expect(at[1] + font.getAscent(small) <= last - font.getDescent(size), "the note over the row above it")
+            #expect(TestSupport.fillColorBefore(with, "0") == TestSupport.fillColorBefore(with, note))
+        }
+        // In a chart too narrow for it, shortened and inside
+        let chart = SimpleScatterChart(font, font).setSize(90, 200)
+                .setXAxisRange(0, 1).add(0, 1).add(5, 1).add(6, 1)
+        #expect(TestSupport.positionOf(noteContent(pdf, chart), "2 points")[0] >= 50 + size)
+        #expect(chart.getAltDescription().hasSuffix("; " + note + "."))
+    }
+
+    // A description that is set is followed by the note, for a screen reader
+    // to have what the chart prints; with none outside it stays as it is.
+    @Test func theNoteFollowsADescriptionThatIsSet() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let chart = SimpleScatterChart(font, font).add(1, 1).add(2, 2).setAltDescription("Two points")
+        #expect(chart.getAltDescription() == "Two points")
+        chart.add(50, 1).setXAxisRange(0, 10)
+        #expect(chart.getAltDescription() == "Two points. 1 point outside the range.")
+        chart.setAltDescription("Two points.")
+        #expect(chart.getAltDescription() == "Two points. 1 point outside the range.")
+    }
+
+    // In a tagged document the note is text of the chart's figure, and its
+    // description says it.
+    @Test func theNoteIsInTheFigure() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(300, 200).add(1, 1).add(50, 1).setXAxisRange(0, 10).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.components(separatedBy: "BDC\n").count == 2)
+        let parts = content.components(separatedBy: "EMC\n")
+        #expect(parts.count == 2 && !parts[1].contains("ET\n"))
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains("/Alt " +
+                TestSupport.textString("Scatter chart: 1 points; 1 point outside the range.")))
+    }
+
+    // A chart barely tall enough keeps its plot, as drawn without the note,
+    // and its description says the number: the note cost it the plot.
+    @Test func theNoteNeverCostsThePlot() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        func plotChart(_ height: Float, _ far: Float) -> SimpleScatterChart {
+            return SimpleScatterChart(font, font).setSize(300, height).setXAxisRange(0, 10)
+                    .add(1, 1).add(2, 2).add(far, 1)
+        }
+        // The least height that draws, found from below
+        var height: Float = 1
+        while !noteContent(pdf, plotChart(height, 3)).contains(" Td\n") {
+            height += 0.25
+        }
+        for h in [height, height + 1, height + 5] {
+            let without = noteContent(pdf, plotChart(h, 3))
+            let chart = plotChart(h, 50)
+            let with = noteContent(pdf, chart)
+            #expect(!with.contains(TestSupport.hex(" outside")), "the note left no room for the plot")
+            #expect(without.components(separatedBy: " Td\n").count == with.components(separatedBy: " Td\n").count,
+                    "the plot is not drawn")
+            #expect(chart.getAltDescription().hasSuffix("; 1 point outside the range."))
+        }
+        // With the room, the note
+        #expect(noteContent(pdf, plotChart(height + 20, 50)).contains(TestSupport.hex(" outside")))
     }
 }

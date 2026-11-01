@@ -8,11 +8,12 @@ import Foundation
 import Testing
 @testable import PDFjet
 
-/// A CMYK JPEG that Adobe software wrote, as images/cmyk.jpg is, has an APP14
-/// marker and stores its inks inverted, so the image is written with a Decode
-/// array that inverts them back; one without the marker is written as it is.
+/// A CMYK JPEG that Adobe software wrote, as resources/images/cmyk.jpg is, has
+/// an APP14 marker and stores its inks inverted, so the image is written with a
+/// Decode array that inverts them back; one without the marker is written as
+/// it is.
 @Suite struct JPGImageTests {
-    private static let cmyk = "images/cmyk.jpg"
+    private static let cmyk = "resources/images/cmyk.jpg"
 
     // Returns the JPEG without its APP14 segment.
     private func withoutAPP14(_ jpeg: [UInt8]) -> [UInt8] {
@@ -257,13 +258,13 @@ import Testing
         // The JFIF segment of a JPEG holds the pixel density and the unit it
         // is in, and says how large the image is meant to be. cmyk.jpg is
         // 1200 by 800 pixels at 300 dots per inch, which is 288 by 192 points.
-        let jpg = try JPGImage(TestSupport.open("images/cmyk.jpg"))
+        let jpg = try JPGImage(TestSupport.open("resources/images/cmyk.jpg"))
         #expect(jpg.getWidth() == 1200)
         #expect(jpg.getHeight() == 800)
         #expect(abs(jpg.getPhysicalWidth() - 288.0) < 0.01)
         #expect(abs(jpg.getPhysicalHeight() - 192.0) < 0.01)
 
-        let image = try Image(TestSupport.newPDF(), TestSupport.open("images/cmyk.jpg"))
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("resources/images/cmyk.jpg"))
         #expect(abs(image.getWidth() - 288.0) < 0.01, "the image is not drawn at the size it asks for")
         #expect(abs(image.getHeight() - 192.0) < 0.01, "the image is not drawn at the size it asks for")
     }
@@ -272,14 +273,14 @@ import Testing
         // Unit 0 of the JFIF segment is the ratio of the two axes and says
         // nothing about how large the image is, and a JPEG with no JFIF
         // segment at all gives no size either.
-        for (what, name) in [("a ratio is not a size", "images/italy-admin.jpg"),
-                             ("there is no JFIF segment", "images/gr-map.jpg")] {
+        for (what, name) in [("a ratio is not a size", "resources/images/italy-admin.jpg"),
+                             ("there is no JFIF segment", "resources/images/gr-map.jpg")] {
             let jpg = try JPGImage(TestSupport.open(name))
             #expect(jpg.getPhysicalWidth() == 0.0, "\(what)")
             #expect(jpg.getPhysicalHeight() == 0.0, "\(what)")
         }
-        let jpg = try JPGImage(TestSupport.open("images/italy-admin.jpg"))
-        let image = try Image(TestSupport.newPDF(), TestSupport.open("images/italy-admin.jpg"))
+        let jpg = try JPGImage(TestSupport.open("resources/images/italy-admin.jpg"))
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("resources/images/italy-admin.jpg"))
         #expect(abs(image.getWidth() - Float(jpg.getWidth())) < 0.01)
         #expect(abs(image.getHeight() - Float(jpg.getHeight())) < 0.01)
     }
@@ -288,7 +289,7 @@ import Testing
         // The size the image is drawn at is not the size of its samples: the
         // image object of the PDF holds the pixels, whatever the segment says.
         let memory = MemoryPDF()
-        let image = try Image(memory.pdf, TestSupport.open("images/cmyk.jpg"))
+        let image = try Image(memory.pdf, TestSupport.open("resources/images/cmyk.jpg"))
         image.setLocation(0.0, 0.0)
         image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
@@ -329,8 +330,8 @@ import Testing
     // This test compared the PDF of the bytes with the one of a stream of
     // them, which the initializer of a stream makes with the one of bytes, so
     // it compared a code path with itself (the review of 28 October 2026).
-    @Test(.enabled(if: TestSupport.exists("images/italy-admin.jpg"), "the images directory is not here"),
-          arguments: ["images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png", "tests/data/jpeg/restart.jpg"])
+    @Test(.enabled(if: TestSupport.exists("resources/images/italy-admin.jpg"), "the images directory is not here"),
+          arguments: ["resources/images/italy-admin.jpg", "resources/images/cmyk.jpg", "resources/images/ee-map.png", "tests/data/jpeg/restart.jpg"])
     func theBytesOfAnImageFileCanBeReusedAfterTheImageIsMade(_ name: String) throws {
         let file = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path(name))))
         #expect(try pdfOf(file, false) == pdfOf(file, true))

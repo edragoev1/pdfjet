@@ -314,6 +314,7 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 		}
 		page.SaveGraphicsState()
 		page.SetPenColor(barcode.color)
+		page.SetDefaultStrokeDashPattern() // Not the caller's, which broke the bars
 	}
 	xy := barcode.drawBars(page)
 	if page != nil {

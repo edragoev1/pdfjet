@@ -47,7 +47,7 @@ func TestImageSizeIsTheSizeNewImageDrawsAt(t *testing.T) {
 	// The images of the examples, of the tests, and the 1,440 of the
 	// references when they are fetched (tests/references/images)
 	var paths []string
-	for _, dir := range []string{"images", "tests/data", ".images"} {
+	for _, dir := range []string{"resources/images", "tests/data", ".images"} {
 		root := testRepoPath(t, dir)
 		_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 			if err == nil && !d.IsDir() {
@@ -106,7 +106,7 @@ func TestImageSizeRefusesEarly(t *testing.T) {
 //
 //	go test -run '^$' -fuzz FuzzReadImageSize -fuzztime 60s .
 func FuzzReadImageSize(f *testing.F) {
-	for _, name := range []string{"images/ee-map.png", "images/gr-map.jpg", "images/cmyk.jpg", "images/610-30x30.jpg"} {
+	for _, name := range []string{"resources/images/ee-map.png", "resources/images/gr-map.jpg", "resources/images/cmyk.jpg", "resources/images/610-30x30.jpg"} {
 		if data, err := os.ReadFile("../" + name); err == nil {
 			f.Add(data)
 		}

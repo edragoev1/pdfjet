@@ -14,11 +14,17 @@ namespace PDFjet.NET {
 // of the font loaders found them: each fails with a message, and none reads
 // past the font or allocates what the font does not have.
 public class OTFTest {
-    private const string THAI = "fonts/NotoSansThai/NotoSansThai-Regular.ttf";
-    private const string PLEX = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
+    // IBM Plex Sans Thai: TrueType outlines, the short offsets of loca, a
+    // format 4 character map with a glyph ID array, and GPOS lookups, as Noto
+    // Sans Thai, which these tests read before 9.1.7, has.
+    private const string THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
+    // IBM Plex Sans TC, as the .otf PDFjet carries: the same character map
+    // as its .ttf, of which these tests read the format 12 subtable.
+    private const string TC = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf";
+    private const string PLEX = "tests/fonts/IBMPlexSans-Regular.otf";
 
     private static byte[] FontBytes(string path) {
-        return File.ReadAllBytes(TestSupport.RepoPath(path));
+        return TestSupport.FontBytes(path);
     }
 
     // The message that loading the font fails with.
@@ -197,35 +203,37 @@ public class OTFTest {
     [Fact]
     public void TheCapHeightIsReadOnlyFromAnOS2TableThatHasIt() {
         // The cap height of both fonts, sCapHeight in OS/2 and the top of the
-        // H, is 714, so sCapHeight is changed to 999 to tell the two apart.
-        // Noto Sans Thai has the short offsets of loca, and Noto Sans the long
-        // ones.
-        foreach (string path in new string[] {THAI, "fonts/NotoSans/NotoSans-Regular.ttf"}) {
+        // H, is 698 (714 in Noto Sans Thai and Noto Sans, which this test read
+        // before 9.1.7), so sCapHeight is changed to 999 to tell the two
+        // apart. IBM Plex Sans Thai has the short offsets of loca, and IBM
+        // Plex Math the long ones, as Noto Sans had.
+        foreach (string path in new string[] {THAI, "tests/fonts/IBMPlexMath-Regular.ttf"}) {
             byte[] font = FontBytes(path);
             int os2 = Table(font, "OS/2");
             font = With(font, os2 + 88, 999);
             Assert.Equal(999, CapHeight(font));
             // A version 1 table ends before sCapHeight: the 999 is not its own.
-            Assert.Equal(714, CapHeight(With(font, os2, 1)));
+            Assert.Equal(698, CapHeight(With(font, os2, 1)));
             // Nor is it of a version 2 table that ends before it.
-            Assert.Equal(714, CapHeight(Length(font, "OS/2", 88)));
+            Assert.Equal(698, CapHeight(Length(font, "OS/2", 88)));
         }
     }
 
     [Fact]
     public void AFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() {
         // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
-        // of the H in; its ascent is 1025. Noto Sans Thai without its loca
-        // table has no offset for its H; its ascent is 1061.
+        // of the H in; its ascent is 1025. IBM Plex Sans Thai without its
+        // loca table has no offset for its H; its ascent is 1116 (Noto Sans
+        // Thai's, before 9.1.7, 1061).
         byte[] otf = FontBytes(PLEX);
         Assert.Equal(1025, CapHeight(With(otf, Table(otf, "OS/2"), 1)));
         byte[] ttf = FontBytes(THAI);
         ttf = With(ttf, Table(ttf, "OS/2"), 1);
-        Assert.Equal(1061, CapHeight(Without(ttf, "loca")));
+        Assert.Equal(1116, CapHeight(Without(ttf, "loca")));
         // A loca table that ends before the offsets of the H, and a glyf table
         // that ends before the header of the H.
-        Assert.Equal(1061, CapHeight(Length(ttf, "loca", 4)));
-        Assert.Equal(1061, CapHeight(Length(ttf, "glyf", 4)));
+        Assert.Equal(1116, CapHeight(Length(ttf, "loca", 4)));
+        Assert.Equal(1116, CapHeight(Length(ttf, "glyf", 4)));
     }
 
     // The font with the entries of two tables swapped in its directory, the
@@ -257,25 +265,44 @@ public class OTFTest {
         }
     }
 
+    // The font with its format 4 subtable of the Windows platform made empty,
+    // as IBM Plex Sans TC's .ttf has it: one segment, the 0xFFFF that ends
+    // every format 4 subtable, of 24 bytes, written over the start of the
+    // one it had.
+    private static byte[] EmptyFormat4(byte[] font) {
+        byte[] patched = (byte[]) font.Clone();
+        int subtable = Cmap4(font);
+        int[] empty = {4, 24, 0, 2, 2, 0, 0, 0xFFFF, 0, 0xFFFF, 1, 0};
+        for (int i = 0; i < empty.Length; i++) {
+            patched = With(patched, subtable + 2*i, empty[i]);
+        }
+        return patched;
+    }
+
     [Fact]
     public void AFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map() {
         // IBM Plex Sans TC, as a .ttf, maps its characters in its format 12
-        // subtable alone.
-        Font font = new Font(TestSupport.NewPDF(), TestSupport.RepoPath("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        // subtable alone: its format 4 subtable is empty. PDFjet carries the
+        // .otf, whose format 4 subtable maps the characters of the Basic
+        // Multilingual Plane too, so the test empties it as the .ttf has it.
+        byte[] tc = EmptyFormat4(FontBytes(TC));
+        Assert.Equal(2, UInt16(tc, Cmap4(tc) + 6));
+        Font font = new Font(TestSupport.NewPDF(), new MemoryStream(tc));
         foreach (char ch in "繁體中文A") {
             Assert.True(font.unicodeToGID.Get(ch) != 0, ch + " has no glyph");
         }
     }
 
-    private const string TC = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf";
-
     [Fact]
     public void AFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs() {
-        // IBM Plex Sans TC maps every character in its format 12 subtable. With
-        // its first character raised past the start of a group, the glyphs of
-        // the group were counted from the first character, not from the group's
-        // own start, and every one was off (the review of 9 October 2026).
-        byte[] ttf = FontBytes(TC);
+        // IBM Plex Sans TC maps every character in its format 12 subtable, its
+        // first group U+0020 to U+007E. With its first character raised past
+        // the start of a group, the glyphs of the group were counted from the
+        // first character, not from the group's own start, and every one was
+        // off (the review of 9 October 2026). The .otf PDFjet carries has its
+        // format 4 subtable emptied, as the .ttf has it, so that the glyphs
+        // come from the format 12 subtable alone.
+        byte[] ttf = EmptyFormat4(FontBytes(TC));
         OTF want = new OTF(new MemoryStream(ttf));
         OTF got = new OTF(new MemoryStream(With(ttf, Table(ttf, "OS/2") + 64, '0')));
         foreach (char ch in "0AZaz~") {
@@ -290,7 +317,10 @@ public class OTFTest {
         // third group of its format 12 subtable, after the group's characters
         // and before its first glyph, which was read as -1 and failed later
         // with an IndexOutOfRangeException (the review of 9 October 2026).
-        byte[] ttf = FontBytes(TC);
+        // The .otf PDFjet carries has its format 4 subtable emptied, as the
+        // .ttf has it, so that the glyphs come from the format 12 subtable
+        // alone.
+        byte[] ttf = EmptyFormat4(FontBytes(TC));
         int entry = Entry(ttf, "cmap");
         int cmap = Table(ttf, "cmap");
         int format12 = -1;
@@ -325,11 +355,11 @@ public class OTFTest {
     // applies.
     [Fact]
     public void AFontWhoseLicenseForbidsEmbeddingIsRefused() {
-        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        byte[] ttf = FontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
         int os2 = Table(ttf, "OS/2");
         string message = Error(With(ttf, os2 + 8, 0x0002));
         Assert.Contains("may not be embedded", message);
-        Assert.Contains("NotoSans", message);
+        Assert.Contains("IBMPlexSans", message);
         new Font(TestSupport.NewPDF(), new MemoryStream(With(ttf, os2 + 8, 0x0006)));
         // Bit 0 is reserved, and bit 9 allows the bitmaps alone (R13).
         foreach (int fsType in new int[] {0x0003, 0x0200, 0x0204}) {

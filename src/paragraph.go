@@ -187,7 +187,7 @@ func (paragraph *Paragraph) GetTextLines() []*TextLine {
 
 // StartsWith returns true if the first line of this paragraph starts with the specified token.
 func (paragraph *Paragraph) StartsWith(token string) bool {
-	return strings.HasPrefix(paragraph.lines[0].GetText(), token)
+	return len(paragraph.lines) > 0 && strings.HasPrefix(paragraph.lines[0].GetText(), token)
 }
 
 // SetTextColor sets the text color of all lines in this paragraph.

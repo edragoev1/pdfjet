@@ -506,12 +506,14 @@ public class TextFrameTest {
     // many lines take about four times the time, not sixteen; the two times
     // are measured in the same run, the shortest of three each, so that a
     // busy computer slows both (a limit of 3 s failed under a fuzzer's load,
-    // 9 October 2026).
+    // 9 October 2026). At most twelve times: a limit of ten failed at 10.4 on
+    // a slow runner of the CI (29 October 2026), and measuring over and over
+    // again would take sixteen.
     [Fact]
     public void ManyJoinedTextLinesAreMeasuredInLinearTime() {
         TimeSpan small = JoinedLinesTime(5000);
         TimeSpan large = JoinedLinesTime(20000);
-        Assert.True(large.Ticks <= 10 * small.Ticks, "20000 joined lines took "
+        Assert.True(large.Ticks <= 12 * small.Ticks, "20000 joined lines took "
                 + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
     }
 
@@ -632,7 +634,7 @@ public class TextFrameTest {
     [Fact]
     public void AJustifiedRowInAKernedFontEndsAtTheRightEdge() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = KerningTest.KernedFont(pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true);
+        Font font = KerningTest.KernedFont(pdf, "tests/fonts/SourceSerif4-Regular.ttf", true);
         font.SetSize(14f);
         string text = "A Vote Was Taken Yesterday To Vary The Way We Work, and To Try It Today: "
                 + "We Vote, You Wait, They Vary It, We Try Again, Today, Tomorrow, Yesterday.";
@@ -654,6 +656,163 @@ public class TextFrameTest {
             }
         }
         Assert.True(rows >= 2, rows + " justified rows");
+    }
+
+    // A text line wrapped into rows keeps its destination, in a TextFrame and
+    // a TextColumn, and the destination is where the text line starts: a link
+    // to it failed the document (the review of 30 October 2026).
+    [Fact]
+    public void AWrappedTextLineKeepsItsDestination() {
+        foreach (bool column in new bool[] {false, true}) {
+            System.IO.MemoryStream stream = new System.IO.MemoryStream();
+            PDF pdf = new PDF(stream);
+            Font font = TestSupport.Helvetica(pdf);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextLine(font, "Go").SetGoToAction("there").SetLocation(50f, 50f).DrawOn(page);
+            TextLine line = new TextLine(font, "one two three four five six seven").SetDestination("there");
+            Paragraph paragraph = new Paragraph().Add(line);
+            if (column) {
+                TextColumn textColumn = new TextColumn();
+                textColumn.SetWidth(60f);
+                textColumn.SetLocation(100f, 200f);
+                textColumn.AddParagraph(paragraph);
+                textColumn.DrawOn(page);
+            } else {
+                new TextFrame(new List<Paragraph> {paragraph}).SetLocation(100f, 200f).SetWidth(60f).DrawOn(page);
+            }
+            pdf.Complete();
+            string file = TestSupport.Latin1(stream.ToArray());
+            Assert.Equal(1, file.Split("/Dest [").Length - 1);
+            // The first row, a font size above its baseline, and not the last
+            float y = page.GetHeight() - (paragraph.GetTextY() - font.GetSize());
+            Match match = Regex.Match(file, "/XYZ 0 ([0-9.]+) 0\\]");
+            Assert.True(match.Success);
+            TestSupport.AssertNear(y, float.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture), 0.1f);
+        }
+    }
+
+    [Fact]
+    public void ADestinationNameUsedTwiceGoesToTheFirst() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Go").SetGoToAction("x").SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(font, "first").SetDestination("x").SetLocation(50f, 100f + font.GetSize()).DrawOn(page);
+        new TextLine(font, "second").SetDestination("x").SetLocation(50f, 200f + font.GetSize()).DrawOn(page);
+        pdf.Complete();
+        Assert.Contains("/XYZ 0 692 0]", TestSupport.Latin1(stream.ToArray()));
+    }
+
+    // A word broken into thousands of rows, with a text line joined to it,
+    // looked through the whole word for each row: quadratic time.
+    [Fact]
+    public void ALongWordJoinedToTheNextIsDrawnInLinearTime() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        const int letters = 80000;
+        Markup markup = new Markup(font, font, font, font, font);
+        var paragraphs = new Dictionary<int, Paragraph> {
+            {letters, markup.Paragraph("**" + new String('x', letters) + "**y")},
+            {2*letters, markup.Paragraph("**" + new String('x', 2*letters) + "**y")},
+        };
+        TestSupport.AssertLinearTime(letters, n => {
+            new TextFrame(new List<Paragraph> {paragraphs[n]}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(null);
+        });
+    }
+
+    // Each frame drawn copied the words left of the text line.
+    [Fact]
+    public void ManyFramesOfOneTextLineAreDrawnInLinearTime() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        const int words = 100000;
+        String text = new System.Text.StringBuilder().Insert(0, "word ", 2*words).ToString();
+        TestSupport.AssertLinearTime(words, n => {
+            TextLine line = new TextLine(font, text.Substring(0, 5*n));
+            TextFrame frame = new TextFrame(new List<Paragraph> {new Paragraph().Add(line)})
+                    .SetLocation(10f, 10f).SetWidth(300f).SetHeight(60f);
+            while (frame.HasMoreText()) {
+                frame.DrawOn(new Page(pdf, Letter.PORTRAIT, false));
+            }
+        });
+    }
+
+    // Measured, the text is kept for the frame that draws it.
+    [Fact]
+    public void MeasuringInsideATextLineKeepsItsWords() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        String text = new System.Text.StringBuilder().Insert(0, "alpha ", 40).ToString().Trim();
+        TextFrame frame = new TextFrame(new List<Paragraph> {new Paragraph().Add(new TextLine(font, text))})
+                .SetLocation(10f, 10f).SetWidth(100f).SetHeight(40f);
+        frame.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        frame.DrawOn(null);
+        Page second = new Page(pdf, Letter.PORTRAIT);
+        frame.DrawOn(second);
+        Assert.Contains(TestSupport.Hex("alpha"), TestSupport.Content(second));
+    }
+
+    // A row is below the row before it, or the top of the frame, by its tallest
+    // text: a 48 point word after 12 point text rose out of the frame.
+    [Fact]
+    public void ALargerWordLowersItsRow() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph().Add(new TextLine(font, "a").SetFontSize(12f))
+                .Add(new TextLine(font, "B").SetFontSize(48f));
+        TextFrame frame = new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 100f).SetWidth(300f);
+        frame.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        float want = 100f + font.GetAscent(48f);
+        TestSupport.AssertNear(want, paragraph.GetTextY(), 0.01f);
+        TestSupport.AssertNear(want + font.GetDescent(48f), paragraph.GetY2(), 0.01f);
+        TestSupport.AssertNear(want + font.GetDescent(48f), frame.GetTextBottom(), 0.01f);
+        // Words of one size in two fonts stay on the baseline of the first
+        Font mono = new Font(pdf, CoreFont.COURIER);
+        Paragraph even = new Paragraph().Add(new TextLine(font, "a")).Add(new TextLine(mono, "b"));
+        new TextFrame(new List<Paragraph> {even}).SetLocation(10f, 100f).SetWidth(300f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        Assert.Equal(100f + font.GetAscent(font.GetSize()), even.GetTextY());
+    }
+
+    // The alternate description of a text line in a paragraph, of a tagged
+    // document, is of one Span among the words, however many rows it wraps into.
+    [Fact]
+    public void ATextLineInATaggedParagraphKeepsItsDescription() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = TestSupport.PlexSans(pdf);
+        Paragraph paragraph = new Paragraph().Add(new TextLine(font, "Before"))
+                .Add(new TextLine(font, "H2O is a very long formula").SetAltDescription("Water"))
+                .Add(new TextLine(font, "after"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(60f).DrawOn(page);
+        Assert.True(TestSupport.Content(page).Split("/Span <</MCID").Length - 1 >= 2);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, raw.Split("/S /Span").Length - 1);
+        Assert.Equal(1, raw.Split("/Alt ").Length - 1);
+    }
+
+    // Spaces in code are as they are written: `a  b` was a b.
+    [Fact]
+    public void CodeKeepsItsSpaces() {
+        Assert.Equal(new List<String> {"a ", "b"}, TextFrame.SplitKeepingSpaces("a  b"));
+        Assert.Equal(new List<String> {"a  ", "b"}, TextFrame.SplitKeepingSpaces("a   b"));
+        Assert.Equal(new List<String> {" a", "b "}, TextFrame.SplitKeepingSpaces(" a b  "));
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(new List<Paragraph> {new Markup(font, font, font, font, font).Paragraph("x `a  b` y z  w")})
+                .SetLocation(10f, 10f).SetWidth(300f).DrawOn(page);
+        String content = TestSupport.Content(page);
+        Assert.Contains(TestSupport.Hex("a  b "), content);
+        Assert.Contains(TestSupport.Hex("y z w"), content);
+    }
+
+    [Fact]
+    public void AnEmptyParagraphStartsWithNothing() {
+        Assert.False(new Paragraph().StartsWith("a"));
+        Assert.False(new Paragraph().StartsWith(""));
     }
 }
 }

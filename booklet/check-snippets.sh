@@ -7,18 +7,16 @@
 # Needs the four toolchains and python3 with PyMuPDF; veraPDF, run as
 # "verapdf" or as the command in VERAPDF, checks the PDF/UA and PDF/A
 # snippets when it is there.
-
-bash "$(dirname "$0")/../get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")/.." || exit 1
 ROOT=$(pwd)
 WORK=$ROOT/build/check-snippets
 rm -rf "$WORK"
 
-# Each port runs its snippets in a folder of its own, with links to the fonts,
-# images and data they read.
+# Each port runs its snippets in a folder of its own, with links to the
+# resources (the fonts, and the data files and the images they read).
 for port in java csharp go swift; do
     mkdir -p "$WORK/$port/out"
-    for dir in fonts images data; do
+    for dir in resources; do
         ln -s "$ROOT/$dir" "$WORK/$port/out/$dir"
     done
 done
@@ -38,6 +36,9 @@ javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -d "$WORK/java/cla
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     booklet/snippets/java/Snippets.java || exit 1
+# The fonts PDFjet carries, resources of com.pdfjet.fonts, as build-java.sh copies them
+mkdir -p "$WORK/java/classes/com/pdfjet/fonts"
+cp -R resources/fonts/* "$WORK/java/classes/com/pdfjet/fonts/" || exit 1
 (cd "$WORK/java/out" && java -cp "$WORK/java/classes" Snippets) || exit 1
 
 echo "Building and running the csharp snippets"

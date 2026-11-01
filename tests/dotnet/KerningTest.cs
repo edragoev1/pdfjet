@@ -70,10 +70,16 @@ public class KerningTest {
     [Fact]
     public void KerningIsDrawnAsItIsMeasured() {
         PDF pdf = TestSupport.NewPDF();
+        // IBM Plex Serif, whose kern lookups have LookupFlag 8, as those of
+        // Noto Sans, which this test read before 9.1.7, have; the lookups of
+        // IBM Plex Sans have none. IBM Plex Sans JP, whose kern feature has
+        // Extension lookups of its pairs, as Source Serif 4, which PDFjet
+        // carried before, has.
         foreach (string path in new string[] {
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "fonts/NotoSans/NotoSans-Regular.ttf"}) {
+                "tests/fonts/IBMPlexSans-Regular.otf",
+                "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf",
+                "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"}) {
             Font font = KernedFont(pdf, path, true);
             foreach (string text in new string[] {
                     "AVATAR. To Wally, Tyler and LT: \"Yes,\" P.V. said.",
@@ -186,9 +192,12 @@ public class KerningTest {
     [Fact]
     public void KerningLeavesMarksAndRightToLeftTextAlone() {
         PDF pdf = TestSupport.NewPDF();
+        // IBM Plex Sans Hebrew kerns שלום עולם by 20 units without its
+        // marks, as Noto Sans Hebrew, which this test read before 9.1.7,
+        // kerned it by 10.
         foreach (string path in new string[] {
-                "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf",
-                "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"}) {
+                "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf",
+                "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"}) {
             Font kerned = KernedFont(pdf, path, true);
             Font plain = KernedFont(pdf, path, false);
             foreach (string text in new string[] {"שָׁלוֹם עוֹלָם", "مرحبا بالعالم"}) {
@@ -228,10 +237,12 @@ public class KerningTest {
     [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "AVATAR To Wally", 75.14f, -302)]
     [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "Тъй ТАТЯНА", 55.94f, -165)]
     [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "ΑΥΤΟ", 24.44f, -70)]
-    [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14f, -302)]
-    [InlineData("fonts/NotoSans/NotoSans-Regular.ttf", "AVATAR To Wally", 75.83f, -310)]
-    [InlineData("fonts/NotoSans/NotoSans-Regular.ttf", "Тъй ТАТЯНА", 56.79f, -150)]
-    [InlineData("fonts/NotoSans/NotoSans-Regular.ttf", "ΑΥΤΟ", 24.62f, -80)]
+    [InlineData("tests/fonts/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14f, -302)]
+    // IBM Plex Serif, from its hmtx and kern lookups (Noto Sans, before
+    // 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)
+    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", "AVATAR To Wally", 80.59f, -315)]
+    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", "Тъй ТАТЯНА", 61.57f, -147)]
+    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", "ΑΥΤΟ", 26.40f, -48)]
     public void KerningWidthsAreThoseOfTheOtherPorts(string path, string text, float kerned, int unitsOf) {
         Font font = KernedFont(TestSupport.NewPDF(), path, true);
         TestSupport.AssertNear(kerned, font.StringWidth(10f, text), 0.005f, path + ": " + text);

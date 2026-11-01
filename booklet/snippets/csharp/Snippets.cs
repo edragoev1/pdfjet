@@ -76,7 +76,7 @@ public class Snippets {
                 .SetLocation(50f, 50f).DrawOn(page);
         new TextBlock(font, "A paragraph, which a screen reader reads after the heading.")
                 .SetLocation(50f, 70f).SetWidth(400f).DrawOn(page);
-        Image image = new Image(pdf, "images/circles.png");
+        Image image = new Image(pdf, "resources/images/circles.png");
         image.SetAltDescription("Three circles that overlap");
         image.SetLocation(50f, 110f).DrawOn(page);
         pdf.Complete();
@@ -98,21 +98,21 @@ public class Snippets {
 
     // @snippet fonts
     static void Fonts(PDF pdf, Font font) {
-        Font serif = new Font(pdf, SourceSerif4.Regular).SetSize(14f);
+        Font serif = new Font(pdf, IBMPlexSerif.Regular).SetSize(14f);
         Font bold = new Font(pdf, IBMPlexSans.Bold);
-        Font mono = new Font(pdf, JetBrainsMono.Regular).SetSize(10f);
+        Font mono = new Font(pdf, CascadiaMono.Regular).SetSize(10f);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(serif, "Source Serif 4 at 14 points").SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(serif, "IBM Plex Serif at 14 points").SetLocation(50f, 50f).DrawOn(page);
         new TextLine(bold, "IBM Plex Sans Bold at 12 points").SetLocation(50f, 75f).DrawOn(page);
-        new TextLine(mono, "JetBrains Mono at 10 points").SetLocation(50f, 100f).DrawOn(page);
+        new TextLine(mono, "Cascadia Mono at 10 points").SetLocation(50f, 100f).DrawOn(page);
         new TextLine(bold, "The same font at 24 points").SetFontSize(24f)
                 .SetLocation(50f, 135f).DrawOn(page);
     }
 
     // @snippet font-files
     static void FontFiles(PDF pdf, Font font) {
-        Font otf = new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf");
-        Font ttf = new Font(pdf, "fonts/NotoSans/NotoSans-Regular.ttf");
+        Font otf = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        Font ttf = new Font(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(otf, "An OpenType font").SetLocation(50f, 50f).DrawOn(page);
         new TextLine(ttf, "A TrueType font").SetLocation(50f, 75f).DrawOn(page);
@@ -233,7 +233,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).SetSize(11f);
+        Font code = new Font(pdf, CascadiaMono.Regular).SetSize(11f);
         Markup markup = new Markup(font, bold, italic, boldItalic, code);
         List<Paragraph> paragraphs = markup.Paragraphs(
                 "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
@@ -247,7 +247,7 @@ public class Snippets {
         Font bold = new Font(pdf, IBMPlexSans.Bold);
         Font italic = new Font(pdf, IBMPlexSans.Italic);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
-        Font code = new Font(pdf, JetBrainsMono.Regular).SetSize(10f);
+        Font code = new Font(pdf, CascadiaMono.Regular).SetSize(10f);
         Markdown markdown = new Markdown(font, bold, italic, boldItalic, code);
         List<Page> pages = new List<Page>();
         markdown.DrawOn(pdf, "# A heading\n"
@@ -276,7 +276,7 @@ public class Snippets {
     // @snippet text-frame-pages
     static void TextFramePages(PDF pdf, Font font) {
         List<String> text = new List<String>(
-                Content.OfTextFile("data/dostoevsky.txt").Split("\n\n"));
+                Content.OfTextFile("resources/data/dostoevsky.txt").Split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         frame.SetLocation(72f, 72f);
         frame.SetWidth(468f);
@@ -288,7 +288,7 @@ public class Snippets {
     // @snippet text-frame-columns
     static void TextFrameColumns(PDF pdf, Font font) {
         List<String> text = new List<String>(
-                Content.OfTextFile("data/dostoevsky.txt").Split("\n\n"));
+                Content.OfTextFile("resources/data/dostoevsky.txt").Split("\n\n"));
         TextFrame frame = new TextFrame(font, text);
         while (frame.HasMoreText()) {
             Page page = new Page(pdf, Letter.LANDSCAPE);
@@ -310,7 +310,7 @@ public class Snippets {
                 new Paragraph(new TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
                 new Paragraph(new TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))}, 6f);
         flow.AddSpace(12f);
-        Image map = new Image(pdf, "images/gr-map.jpg");
+        Image map = new Image(pdf, "resources/images/gr-map.jpg");
         map.SetAltDescription("A map of Greece and its regions.");
         flow.Add(map.ResizeHeight(400f), Alignment.CENTER);   // Whole, here or on the next page
         flow.Add(new Paragraph(new TextLine(font, "Greece: its regions.").SetFontSize(9f))
@@ -408,7 +408,7 @@ public class Snippets {
 
     // @snippet cell-content
     static void CellContent(PDF pdf, Font font) {
-        Image image = new Image(pdf, "images/circles.png").ScaleBy(0.25f);
+        Image image = new Image(pdf, "resources/images/circles.png").ScaleBy(0.25f);
         image.SetAltDescription("Circles");
         Cell imageCell = new Cell(font).SetImage(image);
         Cell barcodeCell = new Cell(font).SetBarcode(new Barcode(Barcode.CODE_128, "PDFjet"));
@@ -468,7 +468,7 @@ public class Snippets {
         Font body = new Font(pdf, IBMPlexSans.Regular).SetSize(9f);
         BigTable table = new BigTable(pdf, bold, body, Letter.LANDSCAPE);
         table.SetNumberOfColumns(9);    // Set in this order
-        table.SetTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",");
+        table.SetTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",");
         table.SetLocation(0f, 0f);
         table.SetBottomMargin(20f);
         table.SetVerticalPadding(1f);   // Room above and below each row
@@ -568,7 +568,7 @@ public class Snippets {
 
     // @snippet images
     static void Images(PDF pdf, Font font) {
-        Image photo = new Image(pdf, "images/gr-map.jpg");    // JPEG, PNG or BMP
+        Image photo = new Image(pdf, "resources/images/gr-map.jpg");    // JPEG, PNG or BMP
         photo.SetAltDescription("A map of Greece");
         Page page = new Page(pdf, Letter.PORTRAIT);
         photo.SetLocation(50f, 50f);
@@ -581,7 +581,7 @@ public class Snippets {
 
     // @snippet svg-images
     static void SvgImages(PDF pdf, Font font) {
-        SVGImage icon = new SVGImage("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
+        SVGImage icon = new SVGImage("resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg");
         icon.SetAltDescription("A star");
         icon.SetLocation(50f, 50f);
         icon.ScaleBy(2f);    // Vector graphics stay sharp at any size
@@ -715,7 +715,7 @@ public class Snippets {
 
     // @snippet attachments
     static void Attachments(PDF pdf, Font font) {
-        EmbeddedFile file = new EmbeddedFile(pdf, "data/winter-2009.txt", true);
+        EmbeddedFile file = new EmbeddedFile(pdf, "resources/data/winter-2009.txt", true);
         Page page = new Page(pdf, Letter.PORTRAIT);
         FileAttachment attachment = new FileAttachment(file);
         attachment.SetLocation(50f, 50f);
@@ -776,7 +776,7 @@ public class Snippets {
     // @snippet merge
     static void Merge() {
         PDF pdf = new PDF(new BufferedStream(new FileStream("merged.pdf", FileMode.Create)));
-        String[] files = {"data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"};
+        String[] files = {"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"};
         foreach (String file in files) {
             Stream stream = new BufferedStream(
                     new FileStream(file, FileMode.Open, FileAccess.Read));
@@ -789,7 +789,7 @@ public class Snippets {
     // @snippet split
     static void Split() {
         Stream stream = new BufferedStream(
-                new FileStream("data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
+                new FileStream("resources/data/testPDFs/sample-document.pdf", FileMode.Open, FileAccess.Read));
         List<PDFobj> objects = new PDF().Read(stream);
         stream.Close();
         PDF firstPage = new PDF(new BufferedStream(new FileStream("page1.pdf", FileMode.Create)));
@@ -801,9 +801,9 @@ public class Snippets {
     static void ExistingPages() {
         PDF pdf = new PDF(new BufferedStream(new FileStream("stamped.pdf", FileMode.Create)));
         List<PDFobj> objects = pdf.Read(
-                new FileStream("data/testPDFs/rc65-16e.pdf", FileMode.Open, FileAccess.Read));
-        Font font = new Font(objects,
-                new FileStream(IBMPlexSans.Regular, FileMode.Open, FileAccess.Read)).SetSize(24f);
+                new FileStream("resources/data/testPDFs/sample-document.pdf", FileMode.Open, FileAccess.Read));
+        // IBM Plex Sans, which PDFjet carries
+        Font font = new Font(objects, IBMPlexSans.Regular).SetSize(24f);
         foreach (PDFobj pageObj in pdf.GetPageObjects(objects)) {
             Page page = new Page(pdf, pageObj);
             page.AddResource(font, objects);

@@ -56,7 +56,8 @@ someone else is untrusted input, and PDFjet is written on that footing.
 - **256 MB** is the most anything decompresses to, whether it is Flate, LZW
   or run length. A small stream cannot expand without bound. A BMP image
   larger than that is refused before it is decoded rather than after.
-- **16 MB** is the most a font's metrics may take.
+- **64 KB** is the most of the text of a font's name records that is kept,
+  for each platform, as its copyright, license and other information.
 - **32 levels** is as deep as the blocks of a Markdown text may nest. Deeper
   than that is drawn as the text it is.
 - **`Markdown` reads an image only from the directory `setImageDirectory`
@@ -83,11 +84,11 @@ someone else is untrusted input, and PDFjet is written on that footing.
 
 ### How that is checked
 
-- **Fuzzing.** The Go port carries ten fuzz targets — the PDF reader, the
-  decompressor, the font streams, OpenType fonts, PNG, JPEG, BMP and SVG
-  images, and the `Markup` and `Markdown` readers. Any input must leave them
-  without a runtime error, in under 10 seconds, and inside 256 MB. Several of
-  the fixes in the changelog came from them.
+- **Fuzzing.** The Go port carries 17 fuzz targets — the PDF reader, the
+  decompressor, OpenType fonts and their subsetting, PNG, JPEG, BMP and SVG
+  images, the image size reader, and the XML, `Markup` and `Markdown` readers.
+  Any input must leave them without a runtime error, in under 10 seconds, and
+  inside 256 MB. Several of the fixes in the changelog came from them.
 - **Real PDFs.** `tests/corpus` reads the pdf.js and veraPDF test corpora with
   each of the four ports, merges and splits every file, and holds the result
   against MuPDF. A crash, a file that takes too long, or a document MuPDF then

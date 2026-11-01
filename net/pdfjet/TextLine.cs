@@ -43,6 +43,8 @@ public class TextLine : IBaselineDrawable {
     private String uri;
     private String key;
     private String destination;
+    // Code: a TextFrame keeps the runs of spaces of the text.
+    internal bool keepSpaces = false;
     private String language = null;
     private String altDescription = null;
     private String uriLanguage = null;
@@ -512,6 +514,7 @@ public class TextLine : IBaselineDrawable {
         textLine.explicitOffset = explicitOffset;
         textLine.uri = uri;
         textLine.key = key;
+        textLine.destination = destination;
         textLine.language = language;
         if (altDescription != null && altDescription != this.text) {
             textLine.altDescription = altDescription;

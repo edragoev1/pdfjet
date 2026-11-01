@@ -75,6 +75,11 @@ type Table struct {
 	// decimals, or nil when the table is not being drawn: they were read
 	// again for every page, which took 33 seconds for 40,000 rows.
 	columnSums map[[2]int]*columnSums
+	// The height of the header rows, wrapped, that getTotalHeight measures.
+	wrappedHeaderHeight float32
+	// The first wrong index given, which the methods that take one have no
+	// error to return for, and which DrawOn fails the document with.
+	misuse string
 }
 
 // columnSums is the number of each row of a column, in units of the decimals,
@@ -220,6 +225,11 @@ func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Tabl
 	table.rendered = numOfHeaderRows
 	table.headerDrawn = false
 	table.addCellsToCompleteTheGrid()
+	if table.tableWidth > 0 {
+		// The width and the percentages given before the data: they were lost
+		// (the review of 30 October 2026)
+		table.SetWidth(table.tableWidth)
+	}
 	return table
 }
 
@@ -231,6 +241,30 @@ func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Tabl
 func (table *Table) SetNumberOfFooterRows(numOfFooterRows int) *Table {
 	table.numOfFooterRows = max(0, numOfFooterRows)
 	return table
+}
+
+// refuse records the misuse of an index, which DrawOn fails the document with:
+// a row or column that is not there panicked (the review of 30 October 2026).
+func (table *Table) refuse(message string) {
+	if table.misuse == "" {
+		table.misuse = message
+	}
+}
+
+// noIndex records that the table has no row or column at the index.
+func (table *Table) noIndex(index int) *Table {
+	table.refuse("The table has no row or column at the index " + strconv.Itoa(index) + ".")
+	return table
+}
+
+// refused fails the document when an index was misused, and draws nothing.
+func (table *Table) refused(pdf *PDF) bool {
+	if table.misuse == "" {
+		return false
+	}
+	pdf.fail(table.misuse)
+	table.rendered = -1 // Nothing more is drawn, and no more pages are asked for
+	return true
 }
 
 // footerStart returns the index of the first footer row, after the header
@@ -318,6 +352,12 @@ func isNumber(text string) bool {
 
 // RemoveLineBetweenRows removes the horizontal lines between the rows from index1 to index2.
 func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
+	if index1 < index2 && index1 < 0 {
+		return table.noIndex(index1)
+	}
+	if index1 < index2 && index2 >= len(table.tableData) {
+		return table.noIndex(index2)
+	}
 	for i := index1; i < index2; i++ {
 		row := table.tableData[i]
 		for _, cell := range row {
@@ -456,7 +496,10 @@ func (table *Table) sumOf(column, first, end, decimals int) int64 {
 }
 
 // readColumn reads the number of each row of the column, in units of the
-// decimals: 0 for a cell that has no number, or that a cell above it covers.
+// decimals: 0 for a cell that has no number, or that a cell above it covers. A
+// cell is read once, from its whole text, and the lines it wraps into add
+// nothing: they were read as numbers, and 1,234,567.89 wrapped in a narrow
+// column added 567.89 (the review of 30 October 2026).
 func (table *Table) readColumn(column, decimals int) *columnSums {
 	rows := len(table.tableData)
 	sums := &columnSums{values: make([]int64, rows), sums: make([]int64, rows+1), exact: true}
@@ -467,10 +510,14 @@ func (table *Table) readColumn(column, decimals int) *columnSums {
 			continue
 		}
 		cell := row[column]
-		if cell.properties&cellCovered != 0 || !cell.hasText {
+		if cell.properties&(cellCovered|cellContinued) != 0 || !cell.hasText {
 			continue
 		}
-		if value, ok := numberOf(cell.text, decimals); ok {
+		text := cell.text
+		if cell.wholeText != "" {
+			text = cell.wholeText
+		}
+		if value, ok := numberOf(text, decimals); ok {
 			sums.values[r] = value
 			if sums.exact {
 				// A value is at most maxSum, so the sums cannot overflow
@@ -630,6 +677,9 @@ func (table *Table) KeepRowWithNext(index int) *Table {
 //
 // Supported values: alignment.Left, alignment.Right, alignment.Center and alignment.Justify.
 func (table *Table) SetTextAlignmentInColumn(index int, textAlignment alignment.Alignment) *Table {
+	if index < 0 {
+		return table.noIndex(index)
+	}
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
@@ -646,6 +696,9 @@ func (table *Table) SetTextAlignmentInColumn(index int, textAlignment alignment.
 //   - index: the index of the specified column.
 //   - color: the color specified as an integer.
 func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
+	if index < 0 {
+		return table.noIndex(index)
+	}
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
@@ -662,6 +715,9 @@ func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
 //   - index: the column index.
 //   - font: the font.
 func (table *Table) SetFontInColumn(index int, font *Font) *Table {
+	if index < 0 {
+		return table.noIndex(index)
+	}
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
@@ -678,6 +734,9 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 //   - index: the index of the specified row.
 //   - color: the color specified as an integer.
 func (table *Table) SetTextColorInRow(index int, color int32) *Table {
+	if index < 0 {
+		return table.noIndex(index)
+	}
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
@@ -694,6 +753,9 @@ func (table *Table) SetTextColorInRow(index int, color int32) *Table {
 //   - index: the row index.
 //   - font: the font.
 func (table *Table) SetFontInRow(index int, font *Font) *Table {
+	if index < 0 {
+		return table.noIndex(index)
+	}
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
@@ -873,6 +935,9 @@ func (table *Table) FitToWidth(width float32) *Table {
 //   - index: the index of specified column.
 //   - width: the specified width.
 func (table *Table) SetColumnWidth(index int, width float32) *Table {
+	if index < 0 {
+		return table.noIndex(index)
+	}
 	for _, row := range table.tableData {
 		if index < len(row) {
 			row[index].SetWidth(width)
@@ -895,10 +960,19 @@ func (table *Table) GetColumnWidth(index int) float32 {
 //
 // Returns the cell at the specified row and column.
 func (table *Table) GetCellAt(rowIndex, colIndex int) *Cell {
-	if rowIndex >= 0 {
-		return table.tableData[rowIndex][colIndex]
+	row := rowIndex
+	if rowIndex < 0 {
+		row += len(table.tableData) // A row counted from the last
 	}
-	return table.tableData[len(table.tableData)+rowIndex][colIndex]
+	if row < 0 || row >= len(table.tableData) {
+		table.noIndex(rowIndex)
+		return new(Cell) // Not in the table
+	}
+	if colIndex < 0 || colIndex >= len(table.tableData[row]) {
+		table.noIndex(colIndex)
+		return new(Cell) // Not in the table
+	}
+	return table.tableData[row][colIndex]
 }
 
 // GetRow returns a list of cells for the specified row.
@@ -906,6 +980,10 @@ func (table *Table) GetCellAt(rowIndex, colIndex int) *Cell {
 //
 // Returns the list of cells.
 func (table *Table) GetRow(index int) []*Cell {
+	if index < 0 || index >= len(table.tableData) {
+		table.noIndex(index)
+		return nil
+	}
 	return table.tableData[index]
 }
 
@@ -915,6 +993,10 @@ func (table *Table) GetRow(index int) []*Cell {
 // Returns the list of cells.
 func (table *Table) GetColumn(index int) []*Cell {
 	column := make([]*Cell, 0)
+	if index < 0 {
+		table.noIndex(index)
+		return column
+	}
 	for _, row := range table.tableData {
 		if index < len(row) {
 			column = append(column, row[index])
@@ -930,6 +1012,9 @@ func (table *Table) GetColumn(index int) []*Cell {
 func (table *Table) DrawOn(page *Page) [2]float32 {
 	if len(table.tableData) == 0 {
 		return [2]float32{table.x1, table.y1} // An empty table draws nothing.
+	}
+	if page != nil && table.refused(page.pdf) {
+		return [2]float32{table.x1, table.y1}
 	}
 	table.wrapAroundCellText()
 	table.applyRowSpans()
@@ -965,6 +1050,9 @@ func (table *Table) DrawOnPagesFrom(pdf *PDF, first *Page, pages *[]*Page, pageS
 func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
 	if len(table.tableData) == 0 {
 		return [2]float32{table.x1, table.y1} // An empty table needs no page.
+	}
+	if table.refused(pdf) {
+		return [2]float32{table.x1, table.y1}
 	}
 	table.wrapAroundCellText()
 	table.applyRowSpans()
@@ -1027,6 +1115,15 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 			page.structParent, structelem.Table, "", true)
 	}
 	if page != nil && !first && !table.repeatsHeaderOn(page) {
+		return [2]float32{x, y}
+	}
+	height := float32(0.0)
+	for i := 0; i < table.numOfHeaderRows && i < len(table.tableData); i++ {
+		if !(first && table.isBroughtForwardRow(i)) {
+			height += table.heights[i]
+		}
+	}
+	if table.runsOff(page, "header", y, height) {
 		return [2]float32{x, y}
 	}
 	if page != nil && !first && table.numOfHeaderRows > 0 {
@@ -1423,6 +1520,13 @@ func (table *Table) spanAbove(r, column int) int {
 // the pages before.
 func (table *Table) drawFooterRows(page *Page, x, y float32, heights []float32, last bool) float32 {
 	footer := table.footerStart()
+	height := float32(0.0)
+	for r := footer; r < len(table.tableData); r++ {
+		height += heights[r]
+	}
+	if table.runsOff(page, "footer", y, height) {
+		return y
+	}
 	artifact := page != nil && !last && footer < len(table.tableData)
 	if artifact {
 		page.AddArtifactBMC()
@@ -1448,6 +1552,22 @@ func (table *Table) drawFooterRows(page *Page, x, y float32, heights []float32, 
 	return y
 }
 
+// runsOff tells if the header or footer rows of the height, drawn at y, run
+// off the page, which fails the document as a row of the body that does: what
+// did not fit was lost with no error, a page total among it (the review of 30
+// October 2026). Rows that only reach into the bottom margin are drawn, as
+// those of the body are.
+func (table *Table) runsOff(page *Page, rows string, y, height float32) bool {
+	if page == nil || height <= 0.0 || y+height <= page.height {
+		return false
+	}
+	page.pdf.fail(fmt.Sprintf("The %s rows of the table are %.0f points tall, and run off the page, "+
+		"which has %.0f points for them. Make them smaller, or give the table more of the page.",
+		rows, height, max(page.height-table.bottomMargin-y, 0.0)))
+	table.rendered = -1 // Nothing more is drawn, and no more pages are asked for
+	return true
+}
+
 // applyRowSpans works out what each cell that spans rows covers, after the
 // text is wrapped: a row of the table is drawn as one row for each line its
 // tallest cell needs, so a cell that spans two rows of the table spans as many
@@ -1470,8 +1590,12 @@ func (table *Table) getTotalHeight() float32 {
 	table.wrapAroundCellText()
 	table.applyRowSpans()
 	var total float32
-	for _, height := range table.getRowHeights() {
+	table.wrappedHeaderHeight = 0
+	for r, height := range table.getRowHeights() {
 		total += height
+		if r < table.numOfHeaderRows {
+			table.wrappedHeaderHeight += height
+		}
 	}
 	return total
 }
@@ -1953,9 +2077,14 @@ func (table *Table) wrapAroundCellText() {
 			tableData2 = append(tableData2, row2)
 		}
 		for j := 0; j < len(row); j++ {
+			wholeText := row[j].wholeText
+			if wholeText == "" && len(lines[j]) > 1 {
+				wholeText = row[j].text
+			}
 			for n, line := range lines[j] {
 				tableData2[first+n][j].SetText(line)
 			}
+			row[j].wholeText = wholeText
 		}
 		// The stacked rows are wrapped in their turn, as they were when the
 		// rows were all added first and the table wrapped in one pass
@@ -2131,8 +2260,28 @@ func (table *Table) contains(visible []int, index int) bool {
 	return false
 }
 
+// noVisibleColumn is the message of SetVisibleColumns with no column, which
+// left rows of no cells, the same in the four ports.
+const noVisibleColumn = "The table has no visible column: name at least one."
+
 // SetVisibleColumns keeps only the columns with the specified indexes.
 func (table *Table) SetVisibleColumns(visible ...int) *Table {
+	if len(table.tableData) == 0 {
+		return table
+	}
+	if len(visible) == 0 {
+		table.refuse(noVisibleColumn)
+		return table
+	}
+	columns := 0
+	for _, row := range table.tableData {
+		columns = max(columns, len(row))
+	}
+	for _, index := range visible {
+		if index < 0 || index >= columns {
+			return table.noIndex(index)
+		}
+	}
 	list := make([][]*Cell, 0)
 	for _, row := range table.tableData {
 		row2 := make([]*Cell, 0)

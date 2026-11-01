@@ -386,4 +386,19 @@ import Testing
         #expect(font.getFitChars("日本語", -.infinity) == 0)
         #expect(font.getFitChars("日本語", 25) == 2)
     }
+
+    // The bars are solid whatever dash pattern the page was left with, as in the
+    // charts: a dashed bar is not a bar a scanner reads (the review of 30 October
+    // 2026, E4).
+    @Test func theBarsAreSolidOnADashedPage() throws {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        page.setStrokeDashPattern("[3 3] 0")
+        try Barcode(Barcode.CODE_128, "A1").setFont(TestSupport.helvetica(pdf)).drawOn(page)
+        #expect(TestSupport.content(page).contains("q\n0 0 0 RG\n[] 0 d\n"))
+        page = Page(pdf, Letter.PORTRAIT)
+        page.setStrokeDashPattern("[3 3] 0")
+        try PDF417("Hello, World!").drawOn(page)
+        #expect(TestSupport.content(page).contains("q\n0 0 0 RG\n[] 0 d\n"))
+    }
 }

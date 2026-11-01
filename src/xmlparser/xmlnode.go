@@ -31,6 +31,10 @@ type XMLNode struct {
 	attributes []XMLAttribute
 	children   []*XMLNode
 	text       strings.Builder
+	// Where the text after a child starts, for an element with both: the
+	// number of children before it and its offset in the text, one pair after
+	// the other; nil for the many elements without, as an SVG's text has.
+	marks []int
 }
 
 func newXMLNode(name, namespace string) *XMLNode {
@@ -50,7 +54,38 @@ func (node *XMLNode) addChild(child *XMLNode) {
 }
 
 func (node *XMLNode) addText(characters string) {
+	if len(node.children) > 0 {
+		node.marks = append(node.marks, len(node.children), node.text.Len())
+	}
 	node.text.WriteString(characters)
+}
+
+// Content returns the text and the elements in this one in the order of the
+// document: a string for each piece of text, an *XMLNode for each element.
+func (node *XMLNode) Content() []any {
+	content := make([]any, 0)
+	text := node.text.String()
+	child := 0
+	from := 0
+	for i := 0; i <= len(node.marks); i += 2 {
+		// The text up to the next mark, or to the end, then the children
+		// before the text after the mark.
+		nextChild := len(node.children)
+		to := len(text)
+		if i < len(node.marks) {
+			nextChild = node.marks[i]
+			to = node.marks[i+1]
+		}
+		if to > from {
+			content = append(content, text[from:to])
+			from = to
+		}
+		for child < nextChild {
+			content = append(content, node.children[child])
+			child++
+		}
+	}
+	return content
 }
 
 // Name returns the name of the element as the document writes it, with its
