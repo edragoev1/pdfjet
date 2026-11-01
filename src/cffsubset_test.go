@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	testPlexOTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
-	testHanOTF  = "fonts/Test/SourceHanSansJP-Regular.otf"
+	testPlexOTF = "tests/fonts/IBMPlexSans-Regular.otf"
+	testHanOTF  = "tests/fonts/SourceHanSansJP-Regular.otf"
 )
 
 // testCFF returns the font and its CFF table.

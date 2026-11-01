@@ -13,6 +13,12 @@ import Foundation
 /// the shortening of a long name, and the test of a value to draw.
 ///
 enum ChartScale {
+    // The most digits after the decimal point that a chart writes:
+    // setFractionDigits(1 << 31) crashed, in the writing of its numbers (the
+    // review of 30 October 2026). The message is the same in the four ports.
+    static let maxDigits = 100
+    static let tooManyDigits = "The fraction digits of a chart are at most 100."
+
     // Formats a label with minDigits to maxDigits decimal places, rounding
     // the exact value half to even. The label has a "." decimal separator and
     // no grouping whatever the locale, and a value that rounds to zero has no
@@ -247,6 +253,11 @@ enum ChartScale {
             round.numOfGridLines = roundLines(minValue, maxValue, numOfGridLines)
             return round
         }
+        // The product of a step can round to inside the values: 591 steps of
+        // 0.1 are 59.100002, and a point at 59.1 was not on its axis (the
+        // review of 30 October 2026)
+        round.maxValue = Swift.max(round.maxValue, maxValue)
+        round.minValue = Swift.min(round.minValue, minValue)
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Int(((round.maxValue - round.minValue) / step).rounded())
@@ -506,6 +517,50 @@ enum ChartScale {
     /// Tells if the value is on the axis, its ends included.
     static func onAxis(_ value: Float, _ axis: Axis) -> Bool {
         return value >= axis.min && value <= axis.max
+    }
+
+    ///
+    /// The words of a chart for its values outside a range that is set, of
+    /// which it would say nothing otherwise, or "" when there are none: "1 point
+    /// outside the range", "2 points outside the range".
+    ///
+    /// - Parameter count: the number of values outside.
+    /// - Parameter noun: what the chart counts, in the singular.
+    /// - Returns: the note.
+    ///
+    static func outsideNote(_ count: Int, _ noun: String) -> String {
+        if count == 0 {
+            return ""
+        }
+        return "\(count) \(noun)\(count > 1 ? "s" : "") outside the range"
+    }
+
+    ///
+    /// The description set by the caller with the note, if any, as a sentence
+    /// after it: the note is in the figure, and in what a screen reader gets of
+    /// it, whoever wrote the description.
+    ///
+    /// - Parameter description: the description set.
+    /// - Parameter note: the note, or "".
+    /// - Returns: the description.
+    ///
+    static func withNote(_ description: String, _ note: String) -> String {
+        if note.isEmpty {
+            return description
+        }
+        return description + SimpleBarChart.punctuationAfter(description, ".") + " " + note + "."
+    }
+
+    ///
+    /// Draws the note, small and in the gray of the numbers, on the baseline,
+    /// its right end at x and inside the width from lo to hi, past which it is
+    /// shortened.
+    ///
+    static func drawOutsideNote(_ page: Page, _ font: Font, _ size: Float, _ note: String,
+            _ x: Float, _ lo: Float, _ hi: Float, _ baseline: Float) {
+        let text = shorten(font, size, note, hi - lo)
+        page.drawString(font, size, text, Swift.max(lo, x - font.stringWidth(size, text)), baseline,
+                Util.toRGB(SimpleBarChart.MUTED), nil)
     }
 
     ///

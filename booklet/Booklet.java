@@ -143,8 +143,8 @@ public class Booklet {
         body = new Font(pdf, IBMPlexSans.Regular);
         bold = new Font(pdf, IBMPlexSans.SemiBold);
         italic = new Font(pdf, IBMPlexSans.Italic);
-        mono = new Font(pdf, JetBrainsMono.Regular);
-        monoBold = new Font(pdf, JetBrainsMono.Bold);
+        mono = new Font(pdf, CascadiaMono.Regular);
+        monoBold = new Font(pdf, CascadiaMono.Bold);
 
         // The first pass draws on pages that are never added, to find the
         // page of every heading for the table of contents.
@@ -466,7 +466,7 @@ public class Booklet {
 
         // The logo of pdfjet.com, drawn from its SVG file with PDFjet itself,
         // so it stays sharp at any size the booklet is printed at.
-        SVGImage logo = new SVGImage("images/readme/pdfjet-logo.svg");
+        SVGImage logo = new SVGImage("resources/images/readme/pdfjet-logo.svg");
         logo.setAltDescription("The PDFjet logo");
         logo.scaleBy(320f / logo.getWidth());
         logo.setLocation(306f - logo.getWidth() / 2f, 350f);
@@ -727,7 +727,7 @@ public class Booklet {
 
     static final float CODE_PADDING = 7f;
 
-    // Draws code in JetBrains Mono on a light background, with the keywords of
+    // Draws code in Cascadia Mono on a light background, with the keywords of
     // its language in color and its comments in gray, a line of the source at a
     // time. Lines too long for the page wrap, and a listing that goes on to the
     // next page repeats its caption there.
@@ -802,7 +802,7 @@ public class Booklet {
         }
     }
 
-    // Writes a character that JetBrains Mono has no glyph for, in Chinese,
+    // Writes a character that Cascadia Mono has no glyph for, in Chinese,
     // Japanese, Korean, Hebrew, Arabic and emoji text, as a Unicode escape of
     // the language, so the listing draws no missing glyph and stays valid code.
     static String escape(String line, String language) {

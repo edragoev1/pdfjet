@@ -179,7 +179,7 @@ func TestTextLineSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T) 
 // before it (the review of 28 October 2026).
 func TestTextLineTheUnderlineOfALastTokenIsAsLongAsTheKernedToken(t *testing.T) {
 	pdf := testNewPDF()
-	font := testKernedFont(t, pdf, "fonts/SourceSerif4/SourceSerif4-Regular.ttf", true)
+	font := testKernedFont(t, pdf, "tests/fonts/SourceSerif4-Regular.ttf", true)
 	font.SetSize(14)
 	page := NewPage(pdf, letter.Portrait())
 	line := NewTextLine(font, "WAY ").SetUnderline(true).SetStrikeout(true)

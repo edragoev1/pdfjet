@@ -71,7 +71,7 @@ func TestReviewMediaAGposTableOfSubtablesThatAreOneAnotherLoadsAtOnce(t *testing
 	// The coverage index of the one glyph makes room for 65,536 glyphs, and
 	// each of the 20,000 subtables went through all of them: 40 KB of GPOS
 	// table kept a font from loading for a minute.
-	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	font = testOpenTypeWithTable(t, font, "GPOS", testGposBomb(20000))
 	start := time.Now()
 	testWant(t, "(no panic)", testOpenTypeFontDraws(font))
@@ -121,7 +121,7 @@ func TestReviewMediaTheCharacterMapIsReadInOnePassOverItsSegments(t *testing.T) 
 	// 32,766 segments of the character 0xFFFE alone, before the last one: a
 	// search of every segment for every character took 2^31 comparisons. The
 	// font has no OS/2 table, so that every character is looked up.
-	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	font = testOpenTypeWithout(t, font, "OS/2")
 	starts := make([]int, 32766)
 	ends := make([]int, 32766)
@@ -154,7 +154,7 @@ func TestReviewMediaAFontWithoutAnOS2TableHasItsCharacters(t *testing.T) {
 	// The OS/2 table says the first and the last character of the font; a
 	// font without one has every character of its character map, where it
 	// had none and drew every character as .notdef.
-	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	with := newOpenTypeFont(font)
 	without := newOpenTypeFont(testOpenTypeWithout(t, font, "OS/2"))
 	for _, ch := range []rune{'A', 'z', 'ก'} {
@@ -199,18 +199,18 @@ func TestReviewMediaAPDFADocumentHoldsNoImageItsLevelHasNot(t *testing.T) {
 	failed := "The PDF was not completed because of an earlier error: "
 	testWant(t, failed+"A document of PDF_A_2B cannot hold a CMYK image: "+
 		"its output intent is sRGB, so its images are gray or RGB.",
-		testPDFAError(t, compliance.PDF_A_2B, "images/cmyk.jpg"))
+		testPDFAError(t, compliance.PDF_A_2B, "resources/images/cmyk.jpg"))
 	testWant(t, failed+"A document of PDF_A_1B cannot hold an image with transparency: "+
 		"PDF/A-1 has no soft masks, so its images are opaque.",
-		testPDFAError(t, compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"))
+		testPDFAError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"))
 	testWant(t, failed+"A document of PDF_A_1A cannot hold an image of 16 bits per component: "+
 		"PDF/A-1 has 8 at most.",
-		testPDFAError(t, compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"))
+		testPDFAError(t, compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"))
 	// PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-	testWant(t, "", testPDFAError(t, compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"))
-	testWant(t, "", testPDFAError(t, compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"))
-	testWant(t, "", testPDFAError(t, compliance.PDF_UA_1, "images/cmyk.jpg"))
-	testWant(t, "", testPDFAError(t, compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_UA_1, "resources/images/cmyk.jpg"))
+	testWant(t, "", testPDFAError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"))
 }
 
 // testPDFACopyError draws the image of a file into a document, reads it back,
@@ -252,18 +252,18 @@ func TestReviewMediaAPDFADocumentHoldsNoCopiedImageItsLevelHasNot(t *testing.T) 
 	failed := "The PDF was not completed because of an earlier error: "
 	testWant(t, failed+"A document of PDF_A_2B cannot hold a CMYK image: "+
 		"its output intent is sRGB, so its images are gray or RGB.",
-		testPDFACopyError(t, compliance.PDF_A_2B, "images/cmyk.jpg"))
+		testPDFACopyError(t, compliance.PDF_A_2B, "resources/images/cmyk.jpg"))
 	testWant(t, failed+"A document of PDF_A_1B cannot hold an image with transparency: "+
 		"PDF/A-1 has no soft masks, so its images are opaque.",
-		testPDFACopyError(t, compliance.PDF_A_1B, "PngSuite/BASN6A08.PNG"))
+		testPDFACopyError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN6A08.PNG"))
 	testWant(t, failed+"A document of PDF_A_1A cannot hold an image of 16 bits per component: "+
 		"PDF/A-1 has 8 at most.",
-		testPDFACopyError(t, compliance.PDF_A_1A, "PngSuite/BASN2C16.PNG"))
+		testPDFACopyError(t, compliance.PDF_A_1A, "tests/data/PngSuite/BASN2C16.PNG"))
 	// PDF/A-2 and PDF/A-3 hold both, and a document that is not PDF/A all three.
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_2B, "PngSuite/BASN6A08.PNG"))
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_3B, "PngSuite/BASN2C16.PNG"))
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_UA_1, "images/cmyk.jpg"))
-	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_2B, "tests/data/PngSuite/BASN6A08.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_UA_1, "resources/images/cmyk.jpg"))
+	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"))
 }
 
 // testPDFADrawError returns the error of completing a document of the
@@ -506,7 +506,7 @@ func TestReviewMediaTheLinkOfATurnedImageCoversItAsItIsDrawn(t *testing.T) {
 	for _, degrees := range []int{0, 90, 180, 270} {
 		doc := testNewDoc()
 		page := NewPage(doc.pdf, letter.Portrait())
-		image := NewImageFromFile(doc.pdf, testRepoPath(t, "images/GLA250.png"))
+		image := NewImageFromFile(doc.pdf, testRepoPath(t, "resources/images/dusk.png"))
 		image.SetRotation(degrees).SetURIAction("https://pdfjet.com").SetLocation(10, 20)
 		image.DrawOn(page)
 		raw := string(doc.complete())
@@ -529,7 +529,7 @@ func TestReviewMediaTheLinkOfATurnedImageCoversItAsItIsDrawn(t *testing.T) {
 
 func TestReviewMediaTextFitsInAnyWidthAtAFontSizeOfZero(t *testing.T) {
 	// Text of no size has no width; the size divided the width.
-	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf"))
+	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"))
 	for _, f := range []*Font{testHelvetica(testNewPDF()), font} {
 		f.SetSize(0)
 		if got := f.GetFitChars("Hello", 10); got != 5 {
@@ -543,7 +543,7 @@ func TestReviewMediaTextFitsInAnyWidthAtAFontSizeOfZero(t *testing.T) {
 
 func TestReviewMediaAFontIsEmbeddedOnceWhenItIsAddedTwice(t *testing.T) {
 	doc := testNewDoc()
-	path := testRepoPath(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	path := testRepoPath(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
 	font1 := NewFontFromFile(doc.pdf, path)
 	font2 := NewFontFromFile(doc.pdf, path)
 	page := NewPage(doc.pdf, letter.Portrait())

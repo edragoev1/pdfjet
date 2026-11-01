@@ -26,6 +26,11 @@ public class PNGImageTest {
         new[] {"BASN0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
         new[] {"BASN2C08", "32", "32", "2", "8", "3072", "7855b9bf", "", ""},
         new[] {"BASN2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        new[] {"BASN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        new[] {"BASN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        new[] {"BGAN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        new[] {"BGGN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        new[] {"BGYN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
         new[] {"BASN3P01", "32", "32", "3", "1", "3072", "31ec284b", "", ""},
         new[] {"BASN3P02", "32", "32", "3", "2", "3072", "279a463a", "", ""},
         new[] {"BASN3P04", "32", "32", "3", "4", "3072", "3a9e038e", "", ""},
@@ -80,7 +85,7 @@ public class PNGImageTest {
     };
 
     private static PNGImage Decode(string name) {
-        using (Stream stream = TestSupport.Open("PngSuite/" + name + ".PNG")) {
+        using (Stream stream = TestSupport.Open("tests/data/PngSuite/" + name + ".PNG")) {
             return new PNGImage(stream);
         }
     }
@@ -161,8 +166,8 @@ public class PNGImageTest {
     public void TheImageOfAPngWithATransparentColorHasItsMask() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        new Image(pdf, TestSupport.Open("PngSuite/TBRN2C08.PNG"));
-        new Image(pdf, TestSupport.Open("PngSuite/TBWN1G16.PNG"));
+        new Image(pdf, TestSupport.Open("tests/data/PngSuite/TBRN2C08.PNG"));
+        new Image(pdf, TestSupport.Open("tests/data/PngSuite/TBWN1G16.PNG"));
         new Page(pdf, Letter.PORTRAIT);
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
@@ -171,14 +176,8 @@ public class PNGImageTest {
         Assert.DoesNotContain("/SMask", raw);
         // And an image added to the objects of a PDF that was read.
         System.Collections.Generic.List<PDFobj> objects = new System.Collections.Generic.List<PDFobj>();
-        new Image(objects, TestSupport.Open("PngSuite/TBRN2C08.PNG"));
+        new Image(objects, TestSupport.Open("tests/data/PngSuite/TBRN2C08.PNG"));
         Assert.Contains("/Mask [ 127 127 127 127 127 127 ]", string.Join(" ", objects[objects.Count - 1].dict));
-    }
-
-    [Fact]
-    public void Rejects16BitRgbaWithAMessage() {
-        Exception e = Assert.ThrowsAny<Exception>(() => Decode("BASN6A16"));
-        Assert.Equal("Image with unsupported bit depth == 16", e.Message);
     }
 
     [Fact]
@@ -188,7 +187,7 @@ public class PNGImageTest {
 
     [Fact]
     public void AnImageFromAPngHasItsSize() {
-        using (Stream stream = TestSupport.Open("PngSuite/BASN2C08.PNG")) {
+        using (Stream stream = TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG")) {
             Image image = new Image(TestSupport.NewPDF(), stream);
             Assert.Equal(32f, image.GetWidth());
             Assert.Equal(32f, image.GetHeight());
@@ -359,7 +358,7 @@ public class PNGImageTest {
 
     [Fact]
     public void ReadsAStreamThatReturnsFewBytesAtATime() {
-        byte[] file = File.ReadAllBytes(TestSupport.RepoPath("PngSuite/BASN2C08.PNG"));
+        byte[] file = File.ReadAllBytes(TestSupport.RepoPath("tests/data/PngSuite/BASN2C08.PNG"));
         PNGImage png = new PNGImage(new FewBytesStream(file));
         Assert.Equal("7855b9bf", TestSupport.Crc32(Decompressor.Inflate(png.GetData())));
     }
@@ -390,7 +389,7 @@ public class PNGImageTest {
     public void AnImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask() {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output);
-        using (Stream stream = TestSupport.Open("PngSuite/BASN4A08.PNG")) {
+        using (Stream stream = TestSupport.Open("tests/data/PngSuite/BASN4A08.PNG")) {
             Image image = new Image(pdf, stream);
             image.DrawOn(new Page(pdf, Letter.PORTRAIT));
         }
@@ -402,9 +401,19 @@ public class PNGImageTest {
     }
 
     [Fact]
-    public void Rejects16BitGrayscaleWithAlphaWithAMessage() {
-        Exception e = Assert.ThrowsAny<Exception>(() => Decode("BASN4A16"));
-        Assert.Equal("Image with unsupported bit depth == 16", e.Message);
+    public void AnImageFromA16BitPngWithAlphaKeeps16BitsWithASoftMask() {
+        foreach (string name in new string[] {"BASN4A16", "BASN6A16"}) {
+            MemoryStream output = new MemoryStream();
+            PDF pdf = new PDF(output);
+            using (Stream stream = TestSupport.Open("tests/data/PngSuite/" + name + ".PNG")) {
+                Image image = new Image(pdf, stream);
+                image.DrawOn(new Page(pdf, Letter.PORTRAIT));
+            }
+            pdf.Complete();
+            string raw = TestSupport.Latin1(output.ToArray());
+            Assert.Contains("/BitsPerComponent 16", raw);
+            Assert.Contains("/SMask", raw);
+        }
     }
 
     [Fact]
@@ -440,14 +449,14 @@ public class PNGImageTest {
         // meant to be, so it is drawn that size rather than one point for each
         // of its pixels. 11811 pixels per metre is 300 dots per inch, and 1520
         // by 400 of them are 364.8 by 96 points.
-        PNGImage png = new PNGImage(TestSupport.Open("images/rgba-8bit-chunks.png"));
+        PNGImage png = new PNGImage(TestSupport.Open("resources/images/rgba-8bit-chunks.png"));
         Assert.Equal(1520, png.GetWidth());
         Assert.Equal(400, png.GetHeight());
         Assert.True(Math.Abs(png.GetPhysicalWidth() - 364.8f) < 0.01f);
         Assert.True(Math.Abs(png.GetPhysicalHeight() - 96f) < 0.01f);
 
         PDF pdf = TestSupport.NewPDF();
-        Image image = new Image(pdf, TestSupport.Open("images/rgba-8bit-chunks.png"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/rgba-8bit-chunks.png"));
         Assert.True(Math.Abs(image.GetWidth() - 364.8f) < 0.01f,
                 "the image is not drawn at the size it asks for");
         Assert.True(Math.Abs(image.GetHeight() - 96f) < 0.01f,
@@ -460,7 +469,7 @@ public class PNGImageTest {
         // image object of the PDF holds the pixels, whatever the chunk says.
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        Image image = new Image(pdf, TestSupport.Open("images/rgba-8bit-chunks.png"));
+        Image image = new Image(pdf, TestSupport.Open("resources/images/rgba-8bit-chunks.png"));
         image.SetLocation(0f, 0f);
         image.DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
@@ -472,11 +481,11 @@ public class PNGImageTest {
     [Fact]
     public void AnImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel() {
         // Most PNG files carry no pHYs chunk, and are drawn as they were.
-        PNGImage png = new PNGImage(TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        PNGImage png = new PNGImage(TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG"));
         Assert.Equal(0f, png.GetPhysicalWidth());
         Assert.Equal(0f, png.GetPhysicalHeight());
         PDF pdf = TestSupport.NewPDF();
-        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(pdf, TestSupport.Open("tests/data/PngSuite/BASN2C08.PNG"));
         Assert.True(Math.Abs(image.GetWidth() - 32f) < 0.01f);
         Assert.True(Math.Abs(image.GetHeight() - 32f) < 0.01f);
     }
@@ -828,7 +837,7 @@ public class PNGImageTest {
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, Letter.PORTRAIT);
         foreach (string name in new string[] {"BASN6A08", "TBRN2C08"}) {
-            using (Stream png = TestSupport.Open("PngSuite/" + name + ".PNG")) {
+            using (Stream png = TestSupport.Open("tests/data/PngSuite/" + name + ".PNG")) {
                 new Image(pdf, png).DrawOn(page);
             }
         }
@@ -897,7 +906,7 @@ public class PNGImageTest {
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, Letter.PORTRAIT);
         foreach (string name in names) {
-            using (Stream png = TestSupport.Open("PngSuite/" + name + ".PNG")) {
+            using (Stream png = TestSupport.Open("tests/data/PngSuite/" + name + ".PNG")) {
                 new Image(pdf, png).DrawOn(page);
             }
         }
@@ -1004,7 +1013,7 @@ public class PNGImageTest {
         foreach (string[] row in SUITE) {
             MemoryStream stream = new MemoryStream();
             PDF pdf = new PDF(stream);
-            using (Stream input = TestSupport.Open("PngSuite/" + row[0] + ".PNG")) {
+            using (Stream input = TestSupport.Open("tests/data/PngSuite/" + row[0] + ".PNG")) {
                 new Image(pdf, input).DrawOn(new Page(pdf, Letter.PORTRAIT));
             }
             pdf.Complete();

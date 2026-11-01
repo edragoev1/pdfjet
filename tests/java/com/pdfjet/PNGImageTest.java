@@ -49,6 +49,11 @@ class PNGImageTest {
         {"BASN0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
         {"BASN2C08", "32", "32", "2", "8", "3072", "7855b9bf", "", ""},
         {"BASN2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        {"BASN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        {"BASN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        {"BGAN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
+        {"BGGN4A16", "32", "32", "4", "16", "2048", "992bd988", "1024", "8ce873a2"},
+        {"BGYN6A16", "32", "32", "6", "16", "6144", "cd7d40ad", "1024", "8ce873a2"},
         {"BASN3P01", "32", "32", "3", "1", "3072", "31ec284b", "", ""},
         {"BASN3P02", "32", "32", "3", "2", "3072", "279a463a", "", ""},
         {"BASN3P04", "32", "32", "3", "4", "3072", "3a9e038e", "", ""},
@@ -109,7 +114,7 @@ class PNGImageTest {
     }
 
     private static PNGImage decode(String name) throws Exception {
-        InputStream in = TestSupport.open("PngSuite/" + name + ".PNG");
+        InputStream in = TestSupport.open("tests/data/PngSuite/" + name + ".PNG");
         try {
             return new PNGImage(in);
         } finally {
@@ -196,8 +201,8 @@ class PNGImageTest {
     void theImageOfAPngWithATransparentColorHasItsMask() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        new Image(pdf, TestSupport.open("PngSuite/TBRN2C08.PNG"));
-        new Image(pdf, TestSupport.open("PngSuite/TBWN1G16.PNG"));
+        new Image(pdf, TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG"));
+        new Image(pdf, TestSupport.open("tests/data/PngSuite/TBWN1G16.PNG"));
         new Page(pdf, Letter.PORTRAIT);
         pdf.complete();
         String raw = TestSupport.latin1(bos.toByteArray());
@@ -206,15 +211,9 @@ class PNGImageTest {
         assertFalse(raw.contains("/SMask"));
         // And an image added to the objects of a PDF that was read.
         java.util.List<PDFobj> objects = new java.util.ArrayList<PDFobj>();
-        new Image(objects, TestSupport.open("PngSuite/TBRN2C08.PNG"));
+        new Image(objects, TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG"));
         String dict = String.join(" ", objects.get(objects.size() - 1).dict);
         assertTrue(dict.contains("/Mask [ 127 127 127 127 127 127 ]"), dict);
-    }
-
-    @Test
-    void rejects16BitRgbaWithAMessage() {
-        Exception e = assertThrows(Exception.class, () -> decode("BASN6A16"));
-        assertEquals("Image with unsupported bit depth == 16", e.getMessage());
     }
 
     @Test
@@ -224,7 +223,7 @@ class PNGImageTest {
 
     @Test
     void anImageFromAPngHasItsSize() throws Exception {
-        InputStream in = TestSupport.open("PngSuite/BASN2C08.PNG");
+        InputStream in = TestSupport.open("tests/data/PngSuite/BASN2C08.PNG");
         try {
             Image image = new Image(TestSupport.newPDF(), in);
             assertEquals(32f, image.getWidth(), 0f);
@@ -369,7 +368,7 @@ class PNGImageTest {
 
     @Test
     void readsAStreamThatReturnsFewBytesAtATime() throws Exception {
-        InputStream in = new FilterInputStream(TestSupport.open("PngSuite/BASN2C08.PNG")) {
+        InputStream in = new FilterInputStream(TestSupport.open("tests/data/PngSuite/BASN2C08.PNG")) {
             @Override
             public int read(byte[] b, int off, int len) throws IOException {
                 return super.read(b, off, Math.min(len, 3));
@@ -408,7 +407,7 @@ class PNGImageTest {
     void anImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        InputStream in = TestSupport.open("PngSuite/BASN4A08.PNG");
+        InputStream in = TestSupport.open("tests/data/PngSuite/BASN4A08.PNG");
         try {
             Image image = new Image(pdf, in);
             image.drawOn(new Page(pdf, Letter.PORTRAIT));
@@ -423,9 +422,18 @@ class PNGImageTest {
     }
 
     @Test
-    void rejects16BitGrayscaleWithAlphaWithAMessage() {
-        Exception e = assertThrows(Exception.class, () -> decode("BASN4A16"));
-        assertEquals("Image with unsupported bit depth == 16", e.getMessage());
+    void anImageFromA16BitPngWithAlphaKeeps16BitsWithASoftMask() throws Exception {
+        for (String name : new String[] {"BASN4A16", "BASN6A16"}) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            try (InputStream in = TestSupport.open("tests/data/PngSuite/" + name + ".PNG")) {
+                new Image(pdf, in).drawOn(new Page(pdf, Letter.PORTRAIT));
+            }
+            pdf.complete();
+            String raw = TestSupport.latin1(bos.toByteArray());
+            assertTrue(raw.contains("/BitsPerComponent 16"), name);
+            assertTrue(raw.contains("/SMask"), name);
+        }
     }
 
     @Test
@@ -457,14 +465,14 @@ class PNGImageTest {
         // meant to be, so it is drawn that size rather than one point for each
         // of its pixels. 11811 pixels per metre is 300 dots per inch, and 1520
         // by 400 of them are 364.8 by 96 points.
-        PNGImage png = new PNGImage(TestSupport.open("images/rgba-8bit-chunks.png"));
+        PNGImage png = new PNGImage(TestSupport.open("resources/images/rgba-8bit-chunks.png"));
         assertEquals(1520, png.getWidth());
         assertEquals(400, png.getHeight());
         assertEquals(364.8f, png.getPhysicalWidth(), 0.01f);
         assertEquals(96f, png.getPhysicalHeight(), 0.01f);
 
         PDF pdf = TestSupport.newPDF();
-        Image image = new Image(pdf, TestSupport.open("images/rgba-8bit-chunks.png"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/rgba-8bit-chunks.png"));
         assertEquals(364.8f, image.getWidth(), 0.01f, "the image is not drawn at the size it asks for");
         assertEquals(96f, image.getHeight(), 0.01f, "the image is not drawn at the size it asks for");
     }
@@ -475,7 +483,7 @@ class PNGImageTest {
         // image object of the PDF holds the pixels, whatever the chunk says.
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        Image image = new Image(pdf, TestSupport.open("images/rgba-8bit-chunks.png"));
+        Image image = new Image(pdf, TestSupport.open("resources/images/rgba-8bit-chunks.png"));
         image.setLocation(0f, 0f);
         image.drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
@@ -487,11 +495,11 @@ class PNGImageTest {
     @Test
     void anImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel() throws Exception {
         // Most PNG files carry no pHYs chunk, and are drawn as they were.
-        PNGImage png = new PNGImage(TestSupport.open("PngSuite/BASN2C08.PNG"));
+        PNGImage png = new PNGImage(TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));
         assertEquals(0f, png.getPhysicalWidth());
         assertEquals(0f, png.getPhysicalHeight());
         PDF pdf = TestSupport.newPDF();
-        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));
+        Image image = new Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"));
         assertEquals(32f, image.getWidth(), 0.01f);
         assertEquals(32f, image.getHeight(), 0.01f);
     }
@@ -863,7 +871,7 @@ class PNGImageTest {
         PDF pdf = new PDF(bos);
         Page page = new Page(pdf, Letter.PORTRAIT);
         for (String name : new String[] {"BASN6A08", "TBRN2C08"}) {
-            InputStream in = TestSupport.open("PngSuite/" + name + ".PNG");
+            InputStream in = TestSupport.open("tests/data/PngSuite/" + name + ".PNG");
             try {
                 new Image(pdf, in).drawOn(page);
             } finally {
@@ -935,7 +943,7 @@ class PNGImageTest {
         PDF pdf = new PDF(bos);
         Page page = new Page(pdf, Letter.PORTRAIT);
         for (String name : names) {
-            InputStream in = TestSupport.open("PngSuite/" + name + ".PNG");
+            InputStream in = TestSupport.open("tests/data/PngSuite/" + name + ".PNG");
             try {
                 new Image(pdf, in).drawOn(page);
             } finally {
@@ -1045,7 +1053,7 @@ class PNGImageTest {
         for (String[] row : SUITE) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             PDF pdf = new PDF(bos);
-            InputStream in = TestSupport.open("PngSuite/" + row[0] + ".PNG");
+            InputStream in = TestSupport.open("tests/data/PngSuite/" + row[0] + ".PNG");
             try {
                 new Image(pdf, in).drawOn(new Page(pdf, Letter.PORTRAIT));
             } finally {

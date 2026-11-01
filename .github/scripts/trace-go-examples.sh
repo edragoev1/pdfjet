@@ -7,7 +7,7 @@
 #     .github/scripts/trace-go-examples.sh /tmp/text/go
 #     python3 .github/scripts/check-example-text.py /tmp/text/go/text-trace.jsonl '/tmp/text/{port}'
 #
-# The examples run in the folder, with links to the fonts, images and data they
+# The examples run in the folder, with links to the resources, images and data they
 # read, so the Example_NN.pdf files in the repository are left alone. The
 # tagged build draws the same PDFs as the default one.
 
@@ -22,7 +22,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 mkdir -p "$1"
 out=$(cd "$1" && pwd)
 
-for dir in data fonts images PngSuite examples src; do
+for dir in resources tests examples src; do
     ln -sfn "$root/$dir" "$out/$dir"
 done
 rm -f "$out"/Example_*.pdf "$out/text-trace.jsonl"

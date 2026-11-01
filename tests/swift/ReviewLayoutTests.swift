@@ -475,7 +475,7 @@ import Testing
     @Test func markdownReadsTheSourceOfAnImageTheSameWayInEveryPort() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
-        let images = TestSupport.path("images")
+        let images = TestSupport.path("resources/images")
         let markdown = Markdown(font, font, font, font, font).setImageDirectory(images)
         let sources: [String: Bool] = [
             "circles.png": true,
@@ -503,7 +503,7 @@ import Testing
         if URL(fileURLWithPath: FileManager.default.currentDirectoryPath).standardizedFileURL.path
                 == TestSupport.root.standardizedFileURL.path {
             #expect(Markdown(font, font, font, font, font).setImageDirectory("")
-                    .imagePath("images/circles.png") == "images/circles.png")
+                    .imagePath("resources/images/circles.png") == "resources/images/circles.png")
         }
     }
 }

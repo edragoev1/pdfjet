@@ -14,181 +14,56 @@ import com.pdfjet.fonts.*;
 /**
  * Example_50.java
  *
- * Fills in the fields of an existing PDF form: it reads the PDF, adds an image,
- * two fonts read from files and the core font Helvetica as resources of a page,
- * and writes the text on that page.
- *
- * The core font is added with addResource(CoreFont, objects), which writes a
- * font dictionary that names the font and nothing else. The advantage is that
- * the page grows by a few hundred bytes and needs no font file, which suits a
- * stamp or a field value added to a document that already exists. The
- * disadvantages are those of every font that is not embedded: the viewer draws
- * the text with its own Helvetica, only the WinAnsi characters can be drawn,
- * and the document cannot claim PDF/A or PDF/UA compliance. The two embedded
- * fonts of this example show the alternative.
+ * Does what programs most often do with an existing PDF: it reads the PDF,
+ * stamps every page APPROVED with a date, and adds page numbers at the foot.
+ * What is drawn on a page that was read goes on top of its content, and the
+ * rest of the document stays as it was.
  */
 class Example_50 {
-    public Example_50(String fileNumber, String fileName) throws Exception {
-        PDF pdf = new PDF(new BufferedOutputStream(
-                new FileOutputStream("Example_" + fileNumber + ".pdf")));
-
-        List<PDFobj> objects = pdf.read(
-                new BufferedInputStream(new FileInputStream(fileName)));
-
-        FileInputStream stream = new FileInputStream("images/qrcode.png");
-        Image image = new Image(objects, stream);
-        image.setLocation(495f, 65f);
-        image.scaleBy(0.40f);
+    public Example_50(String fileName) throws Exception {
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_50.pdf")));
+        List<PDFobj> objects = pdf.read(new FileInputStream(fileName));
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
-        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
-        Font f1 = new Font(objects, stream);
-        f1.setSize(12f);
+        // drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+        // from the library; the path of a font file of your own reads that file.
+        Font bold = new Font(objects, IBMPlexSans.Bold);
+        bold.setSize(14f);
+        Font regular = new Font(objects, IBMPlexSans.Regular);
+        regular.setSize(10f);
 
-        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf");
-        Font f2 = new Font(objects, stream);
-        f2.setSize(12f);
+        // The date is fixed, so that the four ports write the same PDF: a program
+        // would stamp the date of the day.
+        TextBlock stamp = new TextBlock(bold, "APPROVED\n2026-10-30");
+        stamp.setWidth(120f);
+        stamp.setPadding(6f);
+        stamp.setTextColor(Color.red);
+        stamp.setBorderColor(Color.red);
+        stamp.setTextAlignment(Alignment.CENTER);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);
-        Page page = new Page(pdf, pages.get(0));
-        // page.invertYAxis();
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = new Page(pdf, pages.get(i));
+            page.addResource(bold, objects);
+            page.addResource(regular, objects);
 
-        page.addResource(image, objects);
-        page.addResource(f1, objects);
-        page.addResource(f2, objects);
-        Font f3 = page.addResource(CoreFont.HELVETICA, objects).setSize(12f);
+            stamp.setLocation(page.getWidth() - 156f, 36f);
+            stamp.drawOn(page);
 
-        image.drawOn(page);
+            String text = "Page " + (i + 1) + " of " + pages.size();
+            float x = (page.getWidth() - regular.stringWidth(text)) / 2f;
+            new TextLine(regular, text).setLocation(x, page.getHeight() - 36f).drawOn(page);
 
-        float x = 23f;
-        float y = 185f;
-        float dx = 15f;
-        float dy = 24f;
-
-        page.setBrushColor(Color.blue);
-
-        // First Name and Initial
-        page.drawString(f2, f2.getSize(), "Иван", x, y);
-
-        // Last Name
-        page.drawString(f3, f3.getSize(), "Jones", x + 258f, y);
-
-        // Social Insurance Number
-        page.drawString(f1, f1.getSize(), stripSpacesAndDashes("243-590-129"), x + 437f, y, dx);
-
-        // Last Name at Birth
-        page.drawString(f1, f1.getSize(), "Culverton", x, y += dy);
-
-        // Mailing Address
-        page.drawString(f1, f1.getSize(), "10 Elm Street", x, y += dy);
-
-        // City
-        page.drawString(f1, f1.getSize(), "Toronto", x, y + dy);
-
-        // Province or Territory
-        page.drawString(f1, f1.getSize(), "Ontario", x + 365f, y += dy);
-
-        // Postal Code
-        page.drawString(f1, f1.getSize(), stripSpacesAndDashes("L7B 2E9"), x + 482f, y, dx);
-
-        // Home Address
-        page.drawString(f1, f1.getSize(), "10 Oak Road", x, y += dy);
-
-        // City
-        y += dy;
-        page.drawString(f1, f1.getSize(), "Toronto", x, y);
-
-        // Previous Province or Territory
-        page.drawString(f1, f1.getSize(), "Ontario", x + 365f, y);
-
-        // Postal Code
-        page.drawString(f1, f1.getSize(), stripSpacesAndDashes("L7B 2E9"), x + 482f, y, dx);
-
-        // Home telephone number
-        page.drawString(f1, f1.getSize(), "905-222-3333", x, y + dy);
-        // Work telephone number
-        page.drawString(f1, f1.getSize(), "416-567-9903", x + 279f, y += dy);
-
-        // Previous province or territory
-        page.drawString(f1, f1.getSize(), "British Columbia", x + 452f, y += dy);
-
-        // Move date from previous province or territory
-        y += dy;
-        page.drawString(f1, f1.getSize(), stripSpacesAndDashes("2016-04-12"), x + 452f, y, dx);
-
-        // Date new marital status began
-        page.drawString(f1, f1.getSize(), stripSpacesAndDashes("2014-11-02"), x + 452f, 467f, dx);
-
-        // First name of spouse
-        y = 521f;
-        page.drawString(f1, f1.getSize(), "Melanie", x, y);
-        // Last name of spouse
-        page.drawString(f1, f1.getSize(), "Jones", x + 258f, y);
-
-        // Social Insurance number of spouse
-        page.drawString(f1, f1.getSize(), stripSpacesAndDashes("192-760-427"), x + 437f, y, dx);
-
-        // Spouse or common-law partner's address
-        page.drawString(f1, f1.getSize(), "12 Smithfield Drive", x, 554f);
-
-        // Signature Date
-        page.drawString(f1, f1.getSize(), "2016-08-07", x + 475f, 615f);
-
-        // Signature Date of spouse
-        page.drawString(f1, f1.getSize(), "2016-08-07", x + 475f, 651f);
-
-        // Female Checkbox 1
-        // CheckBox.drawXMark(page, 477.5f, 197.5f, 7f);
-
-        // Male Checkbox 1
-        CheckBox.drawXMark(page, 534.5f, 197.5f, 7f);
-
-        // Married
-        CheckBox.drawXMark(page, 34.5f, 424f, 7f);
-
-        // Living common-law
-        // CheckBox.drawXMark(page, 121.5f, 424f, 7f);
-
-        // Widowed
-        // CheckBox.drawXMark(page, 235.5f, 424f, 7f);
-
-        // Divorced
-        // CheckBox.drawXMark(page, 325.5f, 424f, 7f);
-
-        // Separated
-        // CheckBox.drawXMark(page, 415.5f, 424f, 7f);
-
-        // Single
-        // CheckBox.drawXMark(page, 505.5f, 424f, 7f);
-
-        // Female Checkbox 2
-        CheckBox.drawXMark(page, 478.5f, 536.5f, 7f);
-
-        // Male Checkbox 2
-        // CheckBox.drawXMark(page, 535.5f, 536.5f, 7f);
-
-        page.complete(objects);
-
+            page.complete(objects); // The graphics stack is unwinded automatically
+        }
         pdf.addObjects(objects);
 
         pdf.complete();
     }
 
-    private String stripSpacesAndDashes(String str) {
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < str.length(); i++) {
-            char ch = str.charAt(i);
-            if (ch != ' ' && ch != '-') {
-                buf.append(ch);
-            }
-        }
-        return buf.toString();
-    }
-
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        new Example_50("50", "data/testPDFs/rc65-16e.pdf");
+        new Example_50("resources/data/testPDFs/sample-document.pdf");
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_50 => %4d ms%n", time1 - time0);
     }

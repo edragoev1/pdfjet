@@ -116,6 +116,36 @@ class TableTest {
     // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
     // the page with no error, and what did not fit was lost (issue #4, 15 October
     // 2026): it fails, and the same text in a text cell goes on over the pages.
+    private static void drawThreeRows(PDF pdf, float y, float bodySize) throws Exception {
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "header"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "x").setFontSize(bodySize))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "footer"))));
+        Table table = new Table().setTableData(data, 1).setNumberOfFooterRows(1);
+        table.setLocation(50f, y);
+        table.setBottomMargin(20f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        pdf.addPages(pages);
+    }
+
+    // Header and footer rows that run off the page were lost with no error: a
+    // page total was drawn at 781.9 to 799.7 of 792 (the review of 30 October
+    // 2026, E3). They fail as a row of the body does, and rows that only reach
+    // into the bottom margin are drawn, as those of the body are.
+    @Test
+    void headerAndFooterRowsThatRunOffThePageFail() throws Exception {
+        Exception e = assertThrows(IllegalStateException.class,
+                () -> drawThreeRows(TestSupport.newPDF(), 780f, 12f));
+        assertTrue(e.getMessage().contains("The header rows of the table"), e.getMessage());
+        e = assertThrows(IllegalStateException.class, () -> drawThreeRows(TestSupport.newPDF(), 50f, 610f));
+        assertTrue(e.getMessage().contains("The footer rows of the table"), e.getMessage());
+        PDF pdf = TestSupport.newPDF();
+        drawThreeRows(pdf, 30f, 610f);
+        pdf.complete();
+    }
+
     @Test
     void aCellTallerThanAPageThatCannotBeSplitFails() throws Exception {
         StringBuilder words = new StringBuilder();
@@ -954,6 +984,36 @@ class TableTest {
         assertEquals(164300 + 1400, carried);
     }
 
+    // A sum reads each cell once, its whole text: the lines of a number wrapped
+    // in a narrow column were read as numbers, and 1,234,567.89 and
+    // 1,000,000.00 came to 686.89; the lines "12" and "30" of "boxes 12" and
+    // "pallets 30" came to 42 (the review of 30 October 2026, E2).
+    @Test
+    void aSumReadsTheWholeTextOfACell() throws Exception {
+        String[][] cases = {
+            {"1,234,567.89", "1,000,000.00", "2,234,567.89", "686.89"},
+            {"boxes 12", "pallets 30", "0.00", "42.00"},
+        };
+        for (String[] c : cases) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            List<List<Cell>> data = new ArrayList<List<Cell>>();
+            for (String text : new String[] {"Sum", c[0], c[1], ""}) {
+                List<Cell> row = new ArrayList<Cell>();
+                row.add(new Cell(font, text));
+                data.add(row);
+            }
+            Table table = new Table().setTableData(data, 1).setNumberOfFooterRows(1).setRunningSum(3, 0, 2);
+            table.setColumnWidth(0, 30f);
+            table.setLocation(50f, 50f);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            table.drawOn(page);
+            String content = TestSupport.content(page);
+            assertTrue(content.contains("<" + TestSupport.hex(c[2]) + ">"), content);
+            assertFalse(content.contains("<" + TestSupport.hex(c[3]) + ">"), content);
+        }
+    }
+
     @Test
     void aSumReadsTheNumbersAsRightAlignNumbersDoes() {
         assertEquals(Long.valueOf(123450), Table.numberOf("1,234.50", 2));
@@ -1488,6 +1548,39 @@ class TableTest {
         } catch (IllegalStateException e) {
             return false;
         }
+    }
+
+    // A row or column that is not there is the port's error, not a panic: a
+    // SetVisibleColumns past the last column left rows of no cells, which panicked
+    // when they were drawn (the review of 30 October 2026, E7 and G9).
+    @Test
+    void aWrongIndexIsAnError() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "b"))));
+        Table table = new Table().setTableData(data, 1);
+        assertThrows(IllegalArgumentException.class, () -> table.setVisibleColumns(5));
+        assertThrows(IllegalArgumentException.class, () -> table.setVisibleColumns(-1));
+        assertThrows(IllegalArgumentException.class, () -> table.setVisibleColumns());
+        assertThrows(IndexOutOfBoundsException.class, () -> table.setColumnWidth(-1, 10f));
+        assertThrows(IndexOutOfBoundsException.class, () -> table.setTextColorInRow(-1, 0));
+        assertThrows(IndexOutOfBoundsException.class, () -> table.getRow(5));
+        assertThrows(IndexOutOfBoundsException.class, () -> table.getCellAt(0, 5));
+    }
+
+    // The width and the percentages take effect whichever comes first, the data
+    // or they: given before the data, they were lost (the review of 30 October
+    // 2026, E8).
+    @Test
+    void aWidthSetBeforeTheDataIsKept() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), new Cell(font, "b"))));
+        Table table = new Table().setColumnWidthsInPercent(25f, 75f).setWidth(400f).setTableData(data, 0);
+        assertEquals(100f, table.getColumnWidth(0), 1e-3f);
+        assertEquals(300f, table.getColumnWidth(1), 1e-3f);
     }
 }
 

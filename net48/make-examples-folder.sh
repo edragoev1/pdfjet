@@ -1,8 +1,9 @@
 #!/bin/bash
 # Makes a folder to run the 50 examples on .NET Framework 4.8 on Windows, with
 # nothing to install: RunExamples.exe and the net48 PDFjet.dll with its DLLs,
-# and what the examples read, fonts (as the packages have them), data,
-# images, PngSuite, and the sources of examples/ some embed.
+# and what the examples read, resources/data, resources/images,
+# tests/data/PngSuite, and the sources of examples/ some embed. The fonts the
+# examples draw in are in PDFjet.dll.
 #
 #   net48/make-examples-folder.sh <folder>
 #
@@ -20,11 +21,12 @@ cd "$(dirname "$0")"
 DOTNET=${DOTNET:-$HOME/.dotnet10/dotnet}
 "$DOTNET" build run-examples/RunExamples.csproj -c release -p:TreatWarningsAsErrors=true > /dev/null
 cd ..
-bash get-fonts-and-data.sh > /dev/null
 cp net48/run-examples/bin/release/net48/*.exe net48/run-examples/bin/release/net48/*.exe.config \
     net48/run-examples/bin/release/net48/*.dll "$OUT/"
-rsync -a --delete data images PngSuite "$OUT/"
-rsync -a --delete --exclude='.git' fonts "$OUT/"
+mkdir -p "$OUT/resources"
+rsync -a --delete --exclude=go.mod resources/data resources/images "$OUT/resources/"
+mkdir -p "$OUT/tests/data"
+rsync -a --delete tests/data/PngSuite "$OUT/tests/data/"
 # The sources some examples embed or draw
 for file in $(grep -rhoE '"examples/[^"]+"' examples/*/Example_*.cs | tr -d '"' | sort -u); do
     mkdir -p "$OUT/$(dirname "$file")"

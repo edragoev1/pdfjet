@@ -347,3 +347,26 @@ func TestPageEndStructElementWithoutABeginIsRefused(t *testing.T) {
 		t.Errorf("want the mistake, got %v", err)
 	}
 }
+
+func TestPageDrawStringUsingSpacingPlacesEachCharacterOnItsOwn(t *testing.T) {
+	// It writes no Tc: each character is a text of its own, dx after the last.
+	page := testNewPage()
+	font := testHelvetica(page.pdf)
+	page.DrawStringUsingSpacing(font, 12, "ABC", 100, 200, 30)
+	content := testContent(page)
+	testAssertXY(t, 100, 592, testPositionOf(t, content, "A"))
+	testAssertXY(t, 130, 592, testPositionOf(t, content, "B"))
+	testAssertXY(t, 160, 592, testPositionOf(t, content, "C"))
+	if strings.Contains(content, " Tc\n") {
+		t.Errorf("the spacing is a Tc:\n%s", content)
+	}
+}
+
+func TestPageDrawXMarkStrokesTwoCrossingLines(t *testing.T) {
+	page := testNewPage()
+	DrawXMark(page, 10, 20, 5)
+	want := "0 0 1 RG\n1 w\n10 772 m\n15 767 l\n10 767 m\n15 772 l\nS\n"
+	if got := testContent(page); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}

@@ -23,9 +23,9 @@ import Testing
             ("TextLine", { _, font in TextLine(font, "Hello line") }),
             ("CompositeTextLine", { _, font in CompositeTextLine(0, 0).addComponent(TextLine(font, "Composite")) }),
             ("Title", { _, font in Title(font, "Title", 0, 0) }),
-            ("Image", { pdf, _ in try Image(pdf, TestSupport.open("images/up-arrow.png")) }),
+            ("Image", { pdf, _ in try Image(pdf, TestSupport.open("resources/images/up-arrow.png")) }),
             ("SVGImage", { _, _ in
-                try SVGImage(stream: TestSupport.open("images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg"))
+                try SVGImage(stream: TestSupport.open("resources/images/svg/arrow_forward_FILL0_wght400_GRAD0_opsz48.svg"))
             }),
             ("Barcode", { _, _ in try Barcode(Barcode.CODE_128, "Hello") }),
             ("QRCode", { _, _ in try QRCode("Hello", ErrorCorrectionLevel.M) }),

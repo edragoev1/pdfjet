@@ -1,6 +1,5 @@
 @echo off
-call "%~dp0get-fonts-and-data.cmd" || exit /b 1
-REM The folder of this script, which has fonts and data, from wherever it is run.
+REM The folder of this script, which has the files the examples read, from wherever it is run.
 cd /d "%~dp0"
 REM Windows batch script for building and running Java examples
 
@@ -30,6 +29,7 @@ javac -O -encoding utf-8 %RELEASE% -Xlint -Xlint:-options ^
     com\pdfjet\pdf417\*.java ^
     com\pdfjet\qrcode\*.java ^
     com\pdfjet\datamatrix\*.java ^
+    com\pdfjet\internal\*.java ^
     com\pdfjet\fonts\*.java ^
     com\pdfjet\encryption\*.java ^
     -d out\production

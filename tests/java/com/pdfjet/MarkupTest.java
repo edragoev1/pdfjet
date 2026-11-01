@@ -114,6 +114,17 @@ class MarkupTest {
         assertEquals(Arrays.asList("[b](u) c|R v"), parse("[[b](u) c](v)"));
     }
 
+    // The parentheses of a URL in pairs are in the URL, as in CommonMark; one
+    // that no ) closes makes no link.
+    @Test
+    void theParenthesesOfAURLInPairsAreInTheURL() throws Exception {
+        assertEquals(Arrays.asList("Foo|R https://x/Foo_(bar)"), parse("[Foo](https://x/Foo_(bar))"));
+        assertEquals(Arrays.asList("Foo|R https://x/a(b)c(d)", " e|R"), parse("[Foo](https://x/a(b)c(d)) e"));
+        assertEquals(Arrays.asList("Foo|R https://x/((b))"), parse("[Foo](https://x/((b)))"));
+        assertEquals(Arrays.asList("[a](b(c)|R"), parse("[a](b(c)"));
+        assertEquals(Arrays.asList("a|R b", "+(c)|R"), parse("[a](b)(c)"));
+    }
+
     @Test
     void marksWithNoMatchAreText() throws Exception {
         assertEquals(Arrays.asList("2 * 3 = 6|R"), parse("2 * 3 = 6"));

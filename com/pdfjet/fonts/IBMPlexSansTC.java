@@ -7,28 +7,71 @@
 package com.pdfjet.fonts;
 
 /**
- * The IBM Plex Sans TC fonts. Each constant is the path of a font file in the
- * TrueType (.ttf) format, embedded as a subset of the glyphs a document
- * draws; pass it to the Font constructor that takes a font path.
+ * The IBM Plex Sans TC fonts. Each constant is the path of a font file,
+ * embedded as a subset of the glyphs a document draws; pass it to the Font
+ * constructor that takes a font path. These fonts are not in the jar
+ * com.pdfjet:pdfjet: they are in the package com.pdfjet:pdfjet-fonts-world,
+ * with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai,
+ * which a program that draws in them adds next to it, with Maven
+ * {@code <dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId><version>9.1.7</version></dependency>},
+ * or with Gradle {@code implementation("com.pdfjet:pdfjet-fonts-world:9.1.7")},
+ * the same version as PDFjet's. The path is read from the file of that path,
+ * else from the folder resources/fonts/world, as in the release packages on
+ * GitHub, else from that jar, and a font found in none says what to add.
  */
 public class IBMPlexSansTC {
     private IBMPlexSansTC() {
     }
 
     /** IBM Plex Sans TC Bold */
-    public static final String Bold         = "fonts/IBMPlexSansTC/IBMPlexSansTC-Bold.ttf";
-    /** IBM Plex Sans TC ExtraLight */
-    public static final String ExtraLight   = "fonts/IBMPlexSansTC/IBMPlexSansTC-ExtraLight.ttf";
-    /** IBM Plex Sans TC Light */
-    public static final String Light        = "fonts/IBMPlexSansTC/IBMPlexSansTC-Light.ttf";
-    /** IBM Plex Sans TC Medium */
-    public static final String Medium       = "fonts/IBMPlexSansTC/IBMPlexSansTC-Medium.ttf";
+    public static final String Bold       = "fonts/IBMPlexSansTC/IBMPlexSansTC-Bold.otf";
+
+    /**
+     * IBM Plex Sans TC ExtraLight, which PDFjet does not carry
+     * from 9.1.7: a font file of its packages before, read when the file is there.
+     *
+     * @deprecated PDFjet carries the other weights of the family.
+     */
+    @Deprecated
+    public static final String ExtraLight = "fonts/IBMPlexSansTC/IBMPlexSansTC-ExtraLight.ttf";
+
+    /**
+     * IBM Plex Sans TC Light, which PDFjet does not carry
+     * from 9.1.7: a font file of its packages before, read when the file is there.
+     *
+     * @deprecated PDFjet carries the other weights of the family.
+     */
+    @Deprecated
+    public static final String Light      = "fonts/IBMPlexSansTC/IBMPlexSansTC-Light.ttf";
+
+    /**
+     * IBM Plex Sans TC Medium, which PDFjet does not carry
+     * from 9.1.7: a font file of its packages before, read when the file is there.
+     *
+     * @deprecated PDFjet carries the other weights of the family.
+     */
+    @Deprecated
+    public static final String Medium     = "fonts/IBMPlexSansTC/IBMPlexSansTC-Medium.ttf";
     /** IBM Plex Sans TC Regular */
-    public static final String Regular      = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf";
+    public static final String Regular    = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf";
     /** IBM Plex Sans TC SemiBold */
-    public static final String SemiBold     = "fonts/IBMPlexSansTC/IBMPlexSansTC-SemiBold.ttf";
-    /** IBM Plex Sans TC Text */
-    public static final String Text         = "fonts/IBMPlexSansTC/IBMPlexSansTC-Text.ttf";
-    /** IBM Plex Sans TC Thin */
-    public static final String Thin         = "fonts/IBMPlexSansTC/IBMPlexSansTC-Thin.ttf";
+    public static final String SemiBold   = "fonts/IBMPlexSansTC/IBMPlexSansTC-SemiBold.otf";
+
+    /**
+     * IBM Plex Sans TC Text, which PDFjet does not carry
+     * from 9.1.7: a font file of its packages before, read when the file is there.
+     *
+     * @deprecated PDFjet carries the other weights of the family.
+     */
+    @Deprecated
+    public static final String Text       = "fonts/IBMPlexSansTC/IBMPlexSansTC-Text.ttf";
+
+    /**
+     * IBM Plex Sans TC Thin, which PDFjet does not carry
+     * from 9.1.7: a font file of its packages before, read when the file is there.
+     *
+     * @deprecated PDFjet carries the other weights of the family.
+     */
+    @Deprecated
+    public static final String Thin       = "fonts/IBMPlexSansTC/IBMPlexSansTC-Thin.ttf";
 }

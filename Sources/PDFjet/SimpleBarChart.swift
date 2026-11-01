@@ -10,8 +10,11 @@ import Foundation
 /// A small chart of horizontal bars that compares a few values: a name at the
 /// left of each bar, the value at its end, and no axis, grid or legend, on a
 /// light panel, with a title and a subtitle at the top. One bar can be
-/// highlighted, in navy, its name and value bold, as the best of the values.
-/// Each bar is as long as its share of the largest value.
+/// highlighted, in navy, its name and value bold, as the best of the values:
+/// the bar of an index, or the lowest or the highest value, which the chart
+/// finds. Each bar is as long as its share of the largest value. A dashed line
+/// can mark a value across the bars, a target or an average, and the bars can
+/// have rounded ends.
 ///
 /// It is meant to stand beside a Table of the same numbers: the chart for the
 /// picture, the table for the record and for a screen reader. In a PDF/UA
@@ -39,6 +42,12 @@ public class SimpleBarChart : Drawable {
     private var names = [String]()
     private var values = [Float]()
     private var highlight = -1      // The index of the highlighted bar, or -1
+    // The bar the chart highlights itself: 0 none, -1 the lowest value, 1 the
+    // highest
+    private var highlightValue = 0
+    private var reference = Float.nan   // The value of the reference line, or NaN
+    private var referenceLabel = ""
+    private var roundedBars = false
     private var minFractionDigits = 0
     private var maxFractionDigits = 2
     private var panelColor = SimpleBarChart.PANEL
@@ -124,7 +133,89 @@ public class SimpleBarChart : Drawable {
     @discardableResult
     public func setHighlight(_ index: Int) -> SimpleBarChart {
         self.highlight = index
+        self.highlightValue = 0
         return self
+    }
+
+    ///
+    /// Highlights the bar of the lowest value, the best of times or prices;
+    /// the first of them when two are lowest. Bars added later count too, as
+    /// the chart finds the bar when it is drawn.
+    ///
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func setHighlightLowest() -> SimpleBarChart {
+        self.highlightValue = -1
+        return self
+    }
+
+    ///
+    /// Highlights the bar of the highest value, the best of sales or scores;
+    /// the first of them when two are highest. Bars added later count too, as
+    /// the chart finds the bar when it is drawn.
+    ///
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func setHighlightHighest() -> SimpleBarChart {
+        self.highlightValue = 1
+        return self
+    }
+
+    ///
+    /// Draws a thin dashed line across the bars at a value, a target or an
+    /// average, with its label and value under the bars: "Target 50". The
+    /// bars are scaled so that the line fits, should it be past the largest
+    /// value. A value that is NaN or infinite draws no line.
+    ///
+    /// - Parameter value: the value of the line.
+    /// - Parameter label: the label written before the value, or "".
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func setReferenceLine(_ value: Float, _ label: String) -> SimpleBarChart {
+        self.reference = value
+        self.referenceLabel = label
+        return self
+    }
+
+    ///
+    /// Draws the bars with slightly rounded ends. They are square unless set.
+    ///
+    /// - Parameter roundedBars: true for rounded ends.
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func setRoundedBars(_ roundedBars: Bool) -> SimpleBarChart {
+        self.roundedBars = roundedBars
+        return self
+    }
+
+    // The index of the highlighted bar: the one set, or the one of the lowest
+    // or highest value, or -1.
+    func highlighted() -> Int {
+        if highlightValue == 0 {
+            return highlight
+        }
+        var best = -1
+        for (i, value) in values.enumerated() where ChartScale.isValue(value) {
+            if best < 0 || (highlightValue < 0 ? value < values[best] : value > values[best]) {
+                best = i
+            }
+        }
+        return best
+    }
+
+    // True when a reference line is drawn.
+    private func hasReference() -> Bool {
+        return ChartScale.isValue(reference)
+    }
+
+    // The text under the reference line: its label and its value, "Target 50",
+    // or its value alone.
+    func referenceText() -> String {
+        return referenceLabel.isEmpty ? label(reference) : referenceLabel + " " + label(reference)
     }
 
     ///
@@ -215,7 +306,11 @@ public class SimpleBarChart : Drawable {
     /// - Returns: the height of the chart.
     ///
     public func getHeight() -> Float {
-        return top() + Float(values.count) * rowHeight() + pad()
+        var h = top() + Float(values.count) * rowHeight() + pad()
+        if hasReference() {
+            h += 1.4 * subtitleSize()       // The line's label under the bars
+        }
+        return h
     }
 
     // The space around the chart's content, a size of the text of the bars.
@@ -259,7 +354,7 @@ public class SimpleBarChart : Drawable {
 
     // The font of the name and the value of the bar of the index.
     private func fontOf(_ index: Int) -> Font {
-        return index == highlight ? f1 : f2
+        return index == highlighted() ? f1 : f2
     }
 
     // The alternate description: the one set, or the title, the subtitle and
@@ -276,6 +371,9 @@ public class SimpleBarChart : Drawable {
         for (i, name) in names.enumerated() where ChartScale.isValue(values[i]) {
             text += separator + name + " " + label(values[i])
             separator = ", "
+        }
+        if hasReference() {
+            text += "; " + (referenceLabel.isEmpty ? "reference line at " + label(reference) : referenceText())
         }
         return text + SimpleBarChart.punctuationAfter(text, ".")
     }
@@ -303,6 +401,10 @@ public class SimpleBarChart : Drawable {
         guard let page = page, !values.isEmpty else {   // Measured, or nothing to draw
             return [x + w, y + h]
         }
+        if maxFractionDigits > ChartScale.maxDigits {
+            page.pdf.fail(ChartScale.tooManyDigits)
+            return [x + w, y + h]
+        }
         let size = f2.getSize()
         let pad = pad()
 
@@ -317,6 +419,9 @@ public class SimpleBarChart : Drawable {
             if ChartScale.isValue(values[i]) {
                 largest = Swift.max(largest, values[i])
             }
+        }
+        if hasReference() {
+            largest = Swift.max(largest, reference)     // The line within the bars' room
         }
         // The names in what the values leave of the width, two fifths of it at
         // most: in a chart narrower than its values they were written past it
@@ -353,6 +458,7 @@ public class SimpleBarChart : Drawable {
         let rowTop = y + top()
         let barHeight = 1.6 * size
         let ascent = f2.getAscent(size)
+        let highlight = highlighted()
         for (i, name) in shown.enumerated() {
             let font = fontOf(i)
             let value = values[i]
@@ -367,10 +473,52 @@ public class SimpleBarChart : Drawable {
             }
             if length > 0.0 {
                 page.setBrushColor(highlighted ? highlightColor : barColor)
-                page.fillRect(barX, top, Swift.max(length, 1.5), barHeight)
+                let barW = Swift.max(length, 1.5)
+                // The radius a fifth of the bar's height, or half a short bar
+                let r = Swift.min(barHeight / 5.0, barW / 2.0)
+                if roundedBars && r > 0.25 {
+                    page.fillRoundedRect(barX, top, barW, barHeight, r, r)
+                } else {
+                    page.fillRect(barX, top, barW, barHeight)
+                }
             }
             page.drawString(font, size, label(value), barX + length + size / 2.0, textBaseline,
                     Util.toRGB(highlighted ? SimpleBarChart.INK : SimpleBarChart.MUTED), nil)
+        }
+
+        // The reference line, dashed, over the bars, from a little above the
+        // first to a little below the last, and its label under it. It leaves
+        // out the rows where it would cross a bar's value.
+        if hasReference() && largest > 0.0 && reference >= 0.0 {
+            let lineX = barX + barRoom * (reference / largest)
+            let lineBottom = rowTop + Float(names.count - 1) * rowHeight() + barHeight + size / 4.0
+            page.setPenColor(SimpleBarChart.INK)
+            page.setPenWidth(0.75)
+            page.setStrokeDashPattern("[2 2] 0")
+            var from = rowTop - size / 4.0
+            for i in 0..<names.count {
+                let value = values[i]
+                let length: Float = (ChartScale.isValue(value) && value > 0.0) ? barRoom * (value / largest) : 0.0
+                let labelX = barX + length + size / 2.0
+                let labelW = fontOf(i).stringWidth(size, label(value))
+                if labelW > 0.0 && lineX > labelX - size / 2.0 && lineX < labelX + labelW + size / 2.0 {
+                    let top = rowTop + Float(i) * rowHeight()
+                    if top > from {
+                        page.drawLine(lineX, from, lineX, top)
+                    }
+                    from = top + barHeight
+                }
+            }
+            if lineBottom > from {
+                page.drawLine(lineX, from, lineX, lineBottom)
+            }
+            page.setDefaultStrokeDashPattern()
+            let text = referenceText()
+            let width = f2.stringWidth(subtitleSize(), text)
+            // Centered under the line, within the chart
+            let textX = Swift.max(x + pad, Swift.min(lineX - width / 2.0, x + w - pad - width))
+            page.drawString(f2, subtitleSize(), text, textX, lineBottom + 1.2 * subtitleSize(),
+                    Util.toRGB(SimpleBarChart.INK), nil)
         }
 
         page.restoreGraphicsState()

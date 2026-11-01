@@ -7,6 +7,7 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
@@ -21,19 +22,15 @@ import com.pdfjet.fonts.*;
  * under the line filled and each count written above its year.
  */
 public class Example_25 {
-    // The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
-    // and kind, which Example_24 draws as a table: the rows of the file whose
-    // "Electric Vehicle Type" begins with "Battery Electric" and with
-    // "Plug-in Hybrid", counted by the "Model Year" column. The file holds
+    // The vehicles of the Washington State Electric Vehicle Population Data
+    // by model year and kind, summarized in
+    // resources/data/Electric_Vehicles_by_Model_Year.csv: the rows of the data
+    // whose "Electric Vehicle Type" begins with "Battery Electric" and with
+    // "Plug-in Hybrid", counted by the "Model Year" column. The data holds
     // 124,716 rows, of which 124,419 are registered in Washington State, and
     // model years from 1997; the years before 2011 are a few dozen vehicles
     // in all and are left out here.
-    private static final int[] YEARS =
-            {2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023};
-    private static final float[] BATTERY =
-            { 753,  798, 2936, 1805, 3612, 3891, 4458, 9946, 8576, 9315, 14755, 23507, 11853};
-    private static final float[] HYBRID =
-            {  75,  870, 1645, 1804, 1323, 1811, 4100, 4278, 1874, 1611,  3541,  4015,  1500};
+    private static final int FIRST_YEAR = 2011;
 
     public Example_25() throws Exception {
         PDF pdf = new PDF(
@@ -60,9 +57,9 @@ public class Example_25 {
                 + "of setMarkers show the count for each model year. In a PDF/UA "
                 + "document the chart describes itself from its data: each line's first "
                 + "and last values and its highest.\n\n"
-                + "The counts are the vehicles of "
-                + "data/Electric_Vehicle_Population_Data.csv, the file Example_24 draws "
-                + "as a table of 2,546 pages, by model year and by kind.");
+                + "The counts are of the Washington State Electric Vehicle Population "
+                + "Data, summarized by model year and by kind in "
+                + "resources/data/Electric_Vehicles_by_Model_Year.csv.");
         textBlock.setFontSize(11f);
         textBlock.setLineSpacing(1.4f);
         textBlock.setLocation(50f, 72f);
@@ -72,17 +69,30 @@ public class Example_25 {
         f1.setSize(12f);
         f2.setSize(9f);
 
-        String[] years = new String[YEARS.length];
-        for (int i = 0; i < YEARS.length; i++) {
-            years[i] = String.valueOf(YEARS[i]);
+        // The model years from FIRST_YEAR on, after the header line
+        List<String[]> rows = new ArrayList<String[]>();
+        List<String> lines = Content.linesOfTextFile("resources/data/Electric_Vehicles_by_Model_Year.csv");
+        for (String line : lines.subList(1, lines.size())) {
+            String[] field = line.split(",");
+            if (Integer.parseInt(field[0]) >= FIRST_YEAR) {
+                rows.add(field);
+            }
+        }
+        String[] years = new String[rows.size()];
+        float[] battery = new float[rows.size()];
+        float[] hybrid = new float[rows.size()];
+        for (int i = 0; i < rows.size(); i++) {
+            years[i] = rows.get(i)[0];
+            battery[i] = Float.parseFloat(rows.get(i)[1]);
+            hybrid[i] = Float.parseFloat(rows.get(i)[2]);
         }
         new SimpleLineChart(f1, f2)
                 .setTitle("Battery electric and plug-in hybrid vehicles")
                 .setSubtitle("By model year, in the Washington State data file")
                 .setYAxisTitle("Vehicles")
                 .setCategories(years)
-                .addLine("Battery electric", BATTERY)
-                .addLine("Plug-in hybrid", HYBRID)
+                .addLine("Battery electric", battery)
+                .addLine("Plug-in hybrid", hybrid)
                 .setHighlight(0)
                 .setMarkers(true)
                 .setLocation(50f, xy[1] + 30f)
@@ -95,7 +105,7 @@ public class Example_25 {
                 .setSubtitle("By model year, the area under the line filled and each count written")
                 .setYAxisTitle("Vehicles")
                 .setCategories(years)
-                .addLine("Plug-in hybrid", HYBRID)
+                .addLine("Plug-in hybrid", hybrid)
                 .setHighlight(0)
                 .setMarkers(true)
                 .setAreaFilled(true)

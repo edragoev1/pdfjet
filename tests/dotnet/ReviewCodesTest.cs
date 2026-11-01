@@ -383,5 +383,21 @@ public class ReviewCodesTest {
         GPOS gpos = GPOS.Of(table, 0, table.Length, 10, false).Read();
         Assert.Empty(gpos.markAnchors);
     }
+
+    // The bars are solid whatever dash pattern the page was left with, as in the
+    // charts: a dashed bar is not a bar a scanner reads (the review of 30 October
+    // 2026, E4).
+    [Fact]
+    public void TheBarsAreSolidOnADashedPage() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetStrokeDashPattern("[3 3] 0");
+        new Barcode(Barcode.CODE_128, "A1").SetFont(TestSupport.Helvetica(pdf)).DrawOn(page);
+        Assert.Contains("q\n0 0 0 RG\n[] 0 d\n", TestSupport.Content(page));
+        page = new Page(pdf, Letter.PORTRAIT);
+        page.SetStrokeDashPattern("[3 3] 0");
+        new PDF417("Hello, World!").DrawOn(page);
+        Assert.Contains("q\n0 0 0 RG\n[] 0 d\n", TestSupport.Content(page));
+    }
 }
 }   // End of namespace PDFjet.NET

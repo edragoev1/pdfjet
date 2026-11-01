@@ -162,8 +162,7 @@ import Testing
     // glyph and no character in it; in Go, the race detector found 9 data
     // races when one font was drawn on 4 PDFs at once (review of 12 October
     // 2026, R23).
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aFontOfAnotherPDFIsNotChanged() throws {
         let other = TestSupport.newPDF()
         let font = try TestSupport.plexSans(other)
@@ -186,7 +185,7 @@ import Testing
         #expect(pdf1.error == "The font belongs to another PDF.")
 
         let pdf2 = TestSupport.newPDF()
-        let image = try Image(other, TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let image = try Image(other, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         image.setLocation(50, 50).drawOn(Page(pdf2, Letter.PORTRAIT))
         #expect(pdf2.error == "The image belongs to another PDF.")
 
@@ -312,7 +311,7 @@ import Testing
     @Test func aZeroSizeImageStampOrContainerDrawsNothing() throws {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
-        let image = try Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"))
+        let image = try Image(pdf, TestSupport.open("tests/data/PngSuite/BASN2C08.PNG"))
         _ = image.scaleBy(0)
         image.setLocation(50, 50).drawOn(page)
         let stamp = Stamp(pdf).setSize(50, 50)
@@ -356,7 +355,7 @@ import Testing
         // An embedded font only reserves its number, written at complete():
         // the objects could take it too (the review of 9 October 2026).
         let pdf3 = TestSupport.newPDF()
-        _ = try Font(pdf3, TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf"))
+        _ = try Font(pdf3, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
         do {
             try pdf3.addObjects(objects)
             Issue.record("addObjects after an embedded font did not throw")
@@ -452,6 +451,37 @@ import Testing
         }
         for text in ["", "+", ".", "-.", "e3", "1e", "1e+", "0x10", "1f", " 1", "1 ", "1_0", "inf", "NaN", "1.2.3"] {
             #expect(!Util.isDecimalNumber(text), "\(text)")
+        }
+    }
+
+    // NaN and absurd sizes are the port's error, not a hang or a crash (the review
+    // of 30 October 2026, G6 to G8).
+    @Test func naNAndAbsurdSizesAreRefused() {
+        var pdf = TestSupport.newPDF()
+        let frame = TextFrame(TestSupport.helvetica(pdf), ["Hello frame text"]).setWidth(120).setHeight(200)
+        frame.setLocation(.nan, .nan)
+        while frame.hasMoreText() {
+            frame.drawOn(Page(pdf, Letter.PORTRAIT))
+        }
+        #expect(pdf.error == "The text frame's location and size must be numbers, not NaN or infinite.")
+
+        pdf = TestSupport.newPDF()
+        var font = TestSupport.helvetica(pdf)
+        BarChart(font, font).setCategories("a").addSeries("one", [1]).setFractionDigits(1 << 30)
+                .drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(pdf.error == "The fraction digits of a chart are at most 100.")
+
+        pdf = TestSupport.newPDF()
+        font = TestSupport.helvetica(pdf)
+        SimpleBarChart(font, font).add("a", 1).setFractionDigits(1 << 30).drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(pdf.error == "The fraction digits of a chart are at most 100.")
+
+        for size: Float in [.nan, .infinity, 1e30] {
+            pdf = TestSupport.newPDF()
+            font = TestSupport.helvetica(pdf)
+            SimpleLineChart(font, font).setSize(size, size).setCategories("a", "b")
+                    .addLine("one", [1, 2]).drawOn(Page(pdf, Letter.PORTRAIT))
+            #expect(pdf.error == notWritable)
         }
     }
 }

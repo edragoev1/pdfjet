@@ -140,6 +140,28 @@ func TestDecompressorInflateRejectsEveryTruncationOfAStream(t *testing.T) {
 	}
 }
 
+func TestDecompressorInflateStreamTakesACutChecksumAndNoOtherCut(t *testing.T) {
+	data := bytes.Repeat([]byte("Some text of a page. "), 40)
+	deflated := compressor.Deflate(data)
+	for cut := 1; cut <= 4; cut++ {
+		inflated, err := InflateStream(deflated[:len(deflated)-cut], MaxDecodedLength)
+		if err != nil || !bytes.Equal(data, inflated) {
+			t.Errorf("cut %d: %v", cut, err)
+		}
+	}
+	if _, err := InflateStream(deflated[:len(deflated)-5], MaxDecodedLength); err == nil {
+		t.Error("cut in the Deflate data: no error")
+	}
+	wrongChecksum := append([]byte(nil), deflated[:len(deflated)-2]...)
+	wrongChecksum[len(wrongChecksum)-1] ^= 1
+	if _, err := InflateStream(wrongChecksum, MaxDecodedLength); err == nil {
+		t.Error("a wrong part of the checksum: no error")
+	}
+	if _, err := InflateStream(deflated[:len(deflated)-4], len(data)-1); err == nil {
+		t.Error("over the limit: no error")
+	}
+}
+
 func TestDecompressorInflateRejectsAWrongChecksumOrHeader(t *testing.T) {
 	deflated := compressor.Deflate([]byte("PDFjet PDFjet PDFjet"))
 	wrongChecksum := append([]byte(nil), deflated...)

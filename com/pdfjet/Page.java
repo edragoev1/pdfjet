@@ -25,6 +25,10 @@ final public class Page {
     protected PDF pdf;
     /** The page object, when the page was read from an existing PDF. */
     protected PDFobj pageObj;
+    // On a page that was read: what the names of the resources of the PDF are
+    // raised by, past the names it holds, and the resources drawn with
+    private int resourceBase;
+    private final List<ReadResource> readResources = new ArrayList<ReadResource>();
     /** The object number of this page. */
     protected int objNumber;
     /** The content stream of this page. */
@@ -109,6 +113,9 @@ final public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     StructElement mcidParent = null;
+    // The element of the text line with an alternate description that is being
+    // drawn among the words of mcidParent; see describedWords.
+    private StructElement words = null;
     // The figure addBDC began last, whose bounding box setFigureBoundingBox
     // sets, or null.
     private StructElement figure = null;
@@ -223,6 +230,7 @@ final public class Page {
         width = pageSize.getWidth();
         height = pageSize.getHeight();
         buf = new ContentBuffer(8192);
+        resourceBase = pageObj.maxResourceNumber();
         this.saveGraphicsState();
         float[] origin = pageObj.mediaBoxOrigin();
         if (origin[0] != 0f || origin[1] != 0f) {
@@ -317,6 +325,17 @@ final public class Page {
     public void complete(List<PDFobj> objects) {
         restoreGraphicsState();
         checkBalanced();
+        for (ReadResource resource : readResources) {
+            List<String> value = resource.value;
+            if (resource.number != 0) {
+                PDFobj written = new PDFobj();
+                written.number = objects.size() + 1;
+                written.writtenNumber = resource.number;
+                objects.add(written);
+                value = Arrays.asList(String.valueOf(written.number), "0", "R");
+            }
+            pageObj.addResourceEntry(resource.category, resource.name, value, objects);
+        }
         byte[] content = getContent();
         byte[] after = new byte[content.length + 2];
         after[0] = 'Q';
@@ -326,6 +345,26 @@ final public class Page {
             pdf.fail(new IllegalStateException(
                     "The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it."));
         }
+    }
+
+    // Returns the name for a resource of the PDF on this page, and keeps it for
+    // complete on a page that was read: the resources of the PDF do not reach
+    // that page, whose own resources have to name it, and its own names stay as
+    // they are. The graphics states, stamps and optional content drawn on such a
+    // page had no resource: the alpha was lost, and a stamp did not draw (review
+    // of 30 October 2026, B2).
+    String resourceName(String category, String prefix, int n, List<String> value, int number) {
+        if (pageObj == null) {
+            return prefix + n;
+        }
+        String name = prefix + (resourceBase + n);
+        for (ReadResource resource : readResources) {
+            if (resource.name.equals(name)) {
+                return name;
+            }
+        }
+        readResources.add(new ReadResource(category, name, value, number));
+        return name;
     }
 
     /**
@@ -765,6 +804,60 @@ final public class Page {
         } else {
             drawColoredString(font, str, textColor, highlightColors);
         }
+        append("ET\n");
+    }
+
+    // Draws the string of an SVG image with the text matrix, in the brush
+    // color, or stroked in the pen color and width for the rendering mode 1.
+    void drawSVGText(Font font, float fontSize, String str, float[] tm, int mode) {
+        append("BT\n");
+        setTextFont(font, fontSize);
+        if (mode != 0 || renderingModeSet) {
+            renderingModeSet = true;
+            append(mode);
+            append(" Tr\n");
+        }
+        showSVGText(font, str, tm);
+        append("ET\n");
+    }
+
+    // Shows the string of an SVG image with the text matrix.
+    private void showSVGText(Font font, String str, float[] tm) {
+        for (int i = 0; i < 6; i++) {
+            append(tm[i]);
+            append(' ');
+        }
+        append("Tm\n");
+        if (font.isCoreFont) {
+            append("[<");
+            drawASCIIString(font, str);
+            append(">] TJ\n");
+        } else {
+            append("<");
+            drawUnicodeString(font, str);
+            append("> Tj\n");
+        }
+    }
+
+    // Begins a text object whose glyphs clip what is drawn after it, by the
+    // rendering mode 7 of ISO 32000-1, 9.3.6: at its ET they are one path,
+    // filled by the nonzero rule, which the clip path is intersected with. The
+    // graphics state saved around it brings the mode back.
+    void beginSVGClipText() {
+        append("BT\n");
+        renderingModeSet = true;
+        append("7 Tr\n");
+    }
+
+    // Adds the string of an SVG image to the text object begun by
+    // beginSVGClipText.
+    void addSVGClipText(Font font, float fontSize, String str, float[] tm) {
+        setTextFont(font, fontSize);
+        showSVGText(font, str, tm);
+    }
+
+    // Ends that text object.
+    void endSVGClipText() {
         append("ET\n");
     }
 
@@ -1384,7 +1477,7 @@ final public class Page {
     }
 
     static boolean isMark(int cp) {
-        int type = Character.getType(cp);
+        int type = UnicodeCategories.of(cp);
         return type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK;
     }
 
@@ -2549,8 +2642,10 @@ final public class Page {
             n = pdf.states.size() + 1;
             pdf.states.put(state, n);
         }
-        append("/GS");
-        append(n);
+        List<String> value = new ArrayList<String>(Arrays.asList(state.split(" ")));
+        value.add(0, "<<");
+        value.add(">>");
+        append(resourceName("/ExtGState", "/GS", n, value, 0));
         append(" gs\n");
         return this;
     }
@@ -2675,6 +2770,16 @@ final public class Page {
             pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
         }
         ((ContentBuffer) buf).writeFloat(f);
+    }
+
+    // Appends a number of a scale, written with five decimals, as hundredths
+    // would change the size: 0.125 was written as 0.13, 4% too large, and 0.004
+    // as 0, which drew nothing (review of 30 October 2026, B6).
+    void appendPrecise(float f) {
+        if (!FastFloat.isWritable(f)) {
+            pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        append(FastFloat.toPreciseByteArray(f));
     }
 
     // Appends the cm operator of the rotation with the cosine and the sine,
@@ -2860,7 +2965,7 @@ final public class Page {
             // word keeps its accents, which are placed on their letters and
             // matched with the word.
             if (!Util.isMark(cp)) {
-                inWord = Character.isLetterOrDigit(cp);
+                inWord = UnicodeCategories.isLetterOrDigit(cp);
             }
             if (inWord) {
                 drawWord(font, buf2, color, highlightColors);
@@ -2950,9 +3055,15 @@ final public class Page {
             // linked marker of a wrapped table cell, is an element of its own,
             // with its description (the review of 9 October 2026: it was lost).
             if (mcidParent != null && structure != StructElem.FIGURE) {
-                mcidParent.mcids.add(this.mcid);
+                StructElement parent = mcidParent;
+                if (altDescription != null && !altDescription.isEmpty()) {
+                    parent = describedWords(parent, altDescription);
+                } else {
+                    words = null;
+                }
+                parent.mcids.add(this.mcid);
                 append("/");
-                append(mcidParent.structure);
+                append(parent.structure);
                 append(" <</MCID ");
                 append(mcid++);
                 // A word of another language than its paragraph says so in its
@@ -2990,6 +3101,22 @@ final public class Page {
                 figure = element;
             }
         }
+    }
+
+    // Returns the Span of a text line with an alternate description that is
+    // drawn in a paragraph word by word or row by row: the description is of
+    // the whole text line, so its words are the marked content of one element,
+    // which takes its place among the words of the paragraph and is read once.
+    private StructElement describedWords(StructElement parent, String altDescription) {
+        if (words == null || words.parent != parent || !altDescription.equals(words.altDescription)) {
+            words = new StructElement();
+            words.structure = StructElem.SPAN.type;
+            words.mcid = -1;
+            words.altDescription = altDescription;
+            addStructure(words, parent);
+            parent.mcids.add(-words.objNumber);
+        }
+        return words;
     }
 
     /**
@@ -3126,6 +3253,7 @@ final public class Page {
         if (mcidParent != null) {
             // A word of a paragraph: the Link takes its place among the words
             StructElement parent = mcidParent;
+            link.altDescription = altDescription;
             addStructure(link, parent);
             parent.mcids.add(-link.objNumber);
         } else if (structure == StructElem.LINK) {
@@ -3252,6 +3380,14 @@ final public class Page {
                     + "draw on a page before creating the next page or completing the PDF."));
         }
         transformAnnotation(annotation);
+        if (annotation.hitSize > 0f) {
+            float[] across = hitSpan(annotation.x1, annotation.x2, annotation.hitSize, this.width);
+            float[] down = hitSpan(annotation.y1, annotation.y2, annotation.hitSize, this.height);
+            annotation.x1 = across[0];
+            annotation.x2 = across[1];
+            annotation.y1 = down[0];
+            annotation.y2 = down[1];
+        }
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.add(annotation);
@@ -3304,9 +3440,9 @@ final public class Page {
             float x, float y, float xScale, float yScale) {
         saveGraphicsState();
 
-        append(xScale);
+        appendPrecise(xScale);
         append(" 0 0 ");
-        append(yScale);
+        appendPrecise(yScale);
         append(' ');
         append(x);
         append(' ');
@@ -3431,13 +3567,13 @@ final public class Page {
         float transx = values[MTRANS_X];
         float transy = values[MTRANS_Y];
 
-        append(scalex);
+        appendPrecise(scalex);
         append(Token.SPACE);
-        append(values[MSKEW_X]);
+        appendPrecise(values[MSKEW_X]);
         append(Token.SPACE);
-        append(values[MSKEW_Y]);
+        appendPrecise(values[MSKEW_Y]);
         append(Token.SPACE);
-        append(scaley);
+        appendPrecise(scaley);
         append(Token.SPACE);
 
         if (Math.asin(values[MSKEW_Y]) != 0f) {
@@ -3545,6 +3681,25 @@ final public class Page {
             append("> Tj\n");
         }
         append("ET\n");
+    }
+
+    // Returns the span lo to hi of an annotation at least size long around its
+    // center, and moved inside 0 to limit, not cut, as long as it fits.
+    private static float[] hitSpan(float lo, float hi, float size, float limit) {
+        if (hi - lo < size) {
+            float center = (lo + hi) / 2f;
+            lo = center - size / 2f;
+            hi = lo + size;
+        }
+        if (hi > limit) {
+            lo -= hi - limit;
+            hi = limit;
+        }
+        if (lo < 0f) {
+            hi = Math.min(hi - lo, limit);
+            lo = 0f;
+        }
+        return new float[] {lo, hi};
     }
 
     // Returns where the point x, y of what is drawn is on the page, after the
@@ -3834,5 +3989,22 @@ final public class Page {
             sb.append(digits.charAt(ch & 0xF));
         }
         return sb.toString();
+    }
+
+    // A resource of the PDF that a page that was read draws with. It goes in the
+    // category of the resources of the page, like /ExtGState, under the name: the
+    // value, or a reference to the object of the PDF with the number.
+    private static final class ReadResource {
+        final String category;
+        final String name;
+        final List<String> value;
+        final int number;
+
+        ReadResource(String category, String name, List<String> value, int number) {
+            this.category = category;
+            this.name = name;
+            this.value = value;
+            this.number = number;
+        }
     }
 }   // End of Page.java

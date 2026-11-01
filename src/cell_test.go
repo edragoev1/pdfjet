@@ -254,3 +254,22 @@ func TestCellAPaddingIsKeptToTheNearestQuarterBetween0And63_75(t *testing.T) {
 		testNear(t, fmt.Sprint(c.set), c.want, cell.GetTopPadding(), 0)
 	}
 }
+
+// Text at the bottom of a cell is over the padding, descent and all: in a cell
+// as tall as its line it is where text at the top is (the review of 30 October
+// 2026, E5).
+func TestCellBottomAlignedTextIsOverThePadding(t *testing.T) {
+	draw := func(valign alignment.Alignment) string {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		table := NewTable().SetTableData([][]*Cell{
+			{NewCell(testHelvetica(pdf), "gyp").SetVerticalAlignment(valign)},
+		}, 0)
+		table.SetLocation(50, 50)
+		table.DrawOn(page)
+		return testContent(page)
+	}
+	if top, bottom := draw(alignment.Top), draw(alignment.Bottom); top != bottom {
+		t.Errorf("top %q, bottom %q", top, bottom)
+	}
+}

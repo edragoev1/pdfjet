@@ -593,4 +593,20 @@ import Testing
         margin.setLocation(400, 20)
         #expect(pdf.error == "The margin of the table, its x, is half the width of the page or more: the columns have no room.")
     }
+
+    // The pages are counted with the arithmetic of the drawing, rounded as it
+    // rounds: at the bottom margin to the last bit, the count was a page off, and
+    // the footer read "of 1" on two pages (the review of 30 October 2026, E6).
+    @Test func thePagesAreCountedAsTheyAreDrawn() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let table = BigTable(pdf, font, font, Letter.PORTRAIT).setNumberOfColumns(1)
+                .setTableData(["Name"], [["a"], ["b"], ["c"], ["d"], ["e"]])
+                .setVerticalPadding(0).setBottomMargin(649.968)
+        table.setLocation(10, 61.5)
+        try table.complete()
+        let pages = table.getPages()
+        #expect(pages.count == 2)
+        #expect(TestSupport.content(pages[pages.count - 1]).contains(TestSupport.hex("Page 2 of 2")))
+    }
 }

@@ -1,16 +1,12 @@
 @echo off
-call "%~dp0get-fonts-and-data.cmd" || exit /b 1
-:: The folder of this script, which has fonts and data, from wherever it is run.
+:: The folder of this script, which has the files the examples read, from wherever it is run.
 cd /d "%~dp0"
 
-:: Remove the .class files from the output directories. 2>nul keeps del quiet
-:: when there are none, as on the first build: "Could Not Find" otherwise.
-del /f /q out\production\com\pdfjet\*.class 2>nul
-del /f /q out\production\com\pdfjet\fonts\*.class 2>nul
-del /f /q out\production\examples\*.class 2>nul
-
-:: Create the output directory if it doesn't exist
-if not exist "out\production" mkdir "out\production"
+:: All the classes, of the subpackages too, so that a class that is removed is
+:: not left in PDFjet.jar. 2>nul keeps rmdir quiet when there are none, as on
+:: the first build.
+rmdir /s /q out\production 2>nul
+mkdir out\production
 
 :: --release 8 builds Java 8 class files, so PDFjet.jar and the examples run on
 :: Java 8 and later whichever JDK builds them, and rejects any API newer than
@@ -27,6 +23,7 @@ javac -O -encoding utf-8 %RELEASE% -Xlint -Xlint:-options -Werror ^
     com\pdfjet\pdf417\*.java ^
     com\pdfjet\qrcode\*.java ^
     com\pdfjet\datamatrix\*.java ^
+    com\pdfjet\internal\*.java ^
     com\pdfjet\fonts\*.java ^
     com\pdfjet\encryption\*.java ^
     -d out\production

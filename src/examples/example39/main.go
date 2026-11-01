@@ -35,7 +35,7 @@ func Example39() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
 	titles := []string{"Europe", "Spain"}
-	files := []string{"images/ee-map.png", "images/spain-admin.jpg"}
+	files := []string{"resources/images/ee-map.png", "resources/images/spain-admin.jpg"}
 	descriptions := []string{
 		"A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
 		"A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",

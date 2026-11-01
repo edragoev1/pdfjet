@@ -16,7 +16,7 @@ import com.pdfjet.barcodes.*;
  * Example_20.java
  * This example draws a page of results from a CSV file of electric vehicles:
  * two simple bar charts, the five makes and the model years, and under them a
- * table of the same numbers, then a table of one car with its photo and its
+ * table of the same numbers, then a table of one car with a picture and its
  * VIN as a barcode, in their cells.
  */
 public class Example_20 {
@@ -39,7 +39,7 @@ public class Example_20 {
 
         // The cars of the file: by make, the battery electric ones and the
         // electric range of those that give one, and by model year
-        List<String> lines = Content.linesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv");
+        List<String> lines = Content.linesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv");
         int[] cars = new int[MAKES.length];
         int[] battery = new int[MAKES.length];
         int[] ranges = new int[MAKES.length];
@@ -77,7 +77,7 @@ public class Example_20 {
                 .setLocation(50f, 70f).drawOn(page);
         List<Paragraph> intro = new ArrayList<Paragraph>();
         intro.add(new Paragraph(new TextLine(f2, "The " + total + " electric vehicles of the first rows of "
-                + "the data file that Example_24 draws whole: the five makes with the most cars, and the "
+                + "the data file that Example_24 draws as a table: the five makes with the most cars, and the "
                 + "cars of each model year from " + FIRST_YEAR + " to " + LAST_YEAR + ", with the numbers "
                 + "in the table under the charts.").setFontSize(10f)));
         TextFrame frame = new TextFrame(intro).setLocation(50f, 84f).setWidth(512f);
@@ -91,14 +91,17 @@ public class Example_20 {
         }
         byMake.setLocation(50f, y).setWidth(248f).drawOn(page);
 
+        // The chart highlights the busiest year itself, and marks the
+        // average, in whole cars, with a dashed line; its bars are rounded
         SimpleBarChart byYear = new SimpleBarChart(f1, f2)
-                .setTitle("By model year").setSubtitle("cars");
-        int busiest = 0;
+                .setTitle("By model year").setSubtitle("cars")
+                .setHighlightHighest().setRoundedBars(true);
+        int allYears = 0;
         for (int i = 0; i < years.length; i++) {
             byYear.add(String.valueOf(FIRST_YEAR + i), years[i]);
-            busiest = (years[i] > years[busiest]) ? i : busiest;
+            allYears += years[i];
         }
-        byYear.setHighlight(busiest);
+        byYear.setReferenceLine(allYears / years.length, "Average");
         byYear.setLocation(314f, y).setWidth(248f).drawOn(page);
         y += Math.max(byMake.getHeight(), byYear.getHeight()) + 30f;
 
@@ -122,11 +125,11 @@ public class Example_20 {
         table.setLocation(50f, y + 10f);
         y = table.drawOn(page)[1] + 30f;
 
-        // One car of the data, its photo and its VIN in their cells
+        // One car of the data, a picture of a car and its VIN in their cells
         new TextLine(f1, "One car of the data").setStructureType(StructElem.H2)
                 .setFontSize(14f).setLocation(50f, y).drawOn(page);
-        Image image = new Image(pdf, "images/TeslaX.png");
-        image.setAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.");
+        Image image = new Image(pdf, "resources/images/car.png");
+        image.setAltDescription("A drawing of a blue car, seen from the side.");
         image.scaleBy(1f / 3f);     // The image is 120 DPI, so 0.6 of its pixels
         Barcode vin = new Barcode(Barcode.CODE_128, modelX[0]);
         vin.setModuleLength(0.75f);

@@ -30,7 +30,7 @@ const lastYear = 2023
 
 // Example20 draws a page of results from a CSV file of electric vehicles: two
 // simple bar charts, the five makes and the model years, and under them a
-// table of the same numbers, then a table of one car with its photo and its
+// table of the same numbers, then a table of one car with a picture and its
 // VIN as a barcode, in their cells.
 func Example20() {
 	pdf, err := pdfjet.NewPDFFile("Example_20.pdf")
@@ -48,7 +48,7 @@ func Example20() {
 
 	// The cars of the file: by make, the battery electric ones and the
 	// electric range of those that give one, and by model year
-	lines := content.LinesOfTextFile("data/Electric_Vehicle_Population_10_Pages.csv")
+	lines := content.LinesOfTextFile("resources/data/Electric_Vehicle_Population_10_Pages.csv")
 	cars := make([]int, len(makes))
 	battery := make([]int, len(makes))
 	ranges := make([]int, len(makes))
@@ -86,7 +86,7 @@ func Example20() {
 	title.SetLocation(50.0, 70.0)
 	title.DrawOn(page)
 	intro := []*pdfjet.Paragraph{pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f2, "The "+strconv.Itoa(total)+
-		" electric vehicles of the first rows of the data file that Example_24 draws whole: the five makes "+
+		" electric vehicles of the first rows of the data file that Example_24 draws as a table: the five makes "+
 		"with the most cars, and the cars of each model year from "+strconv.Itoa(firstYear)+" to "+
 		strconv.Itoa(lastYear)+", with the numbers in the table under the charts.").SetFontSize(10.0))}
 	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)
@@ -102,15 +102,16 @@ func Example20() {
 	byMake.SetLocation(50.0, y)
 	byMake.DrawOn(page)
 
-	byYear := pdfjet.NewSimpleBarChart(f1, f2).SetTitle("By model year").SetSubtitle("cars")
-	busiest := 0
+	// The chart highlights the busiest year itself, and marks the average,
+	// in whole cars, with a dashed line; its bars are rounded
+	byYear := pdfjet.NewSimpleBarChart(f1, f2).SetTitle("By model year").SetSubtitle("cars").
+		SetHighlightHighest().SetRoundedBars(true)
+	allYears := 0
 	for i := range years {
 		byYear.Add(strconv.Itoa(firstYear+i), float32(years[i]))
-		if years[i] > years[busiest] {
-			busiest = i
-		}
+		allYears += years[i]
 	}
-	byYear.SetHighlight(busiest)
+	byYear.SetReferenceLine(float32(allYears/len(years)), "Average")
 	byYear.SetWidth(248.0)
 	byYear.SetLocation(314.0, y)
 	byYear.DrawOn(page)
@@ -138,13 +139,13 @@ func Example20() {
 	table.SetLocation(50.0, y+10.0)
 	y = table.DrawOn(page)[1] + 30.0
 
-	// One car of the data, its photo and its VIN in their cells
+	// One car of the data, a picture of a car and its VIN in their cells
 	heading = pdfjet.NewTextLine(f1, "One car of the data")
 	heading.SetStructureType(structelem.H2).SetFontSize(14.0)
 	heading.SetLocation(50.0, y)
 	heading.DrawOn(page)
-	image := pdfjet.NewImageFromFile(pdf, "images/TeslaX.png")
-	image.SetAltDescription("A white Tesla Model X with a black glass roof, seen from the front left.")
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/car.png")
+	image.SetAltDescription("A drawing of a blue car, seen from the side.")
 	image.ScaleBy(1.0 / 3.0) // The image is 120 DPI, so 0.6 of its pixels
 	vin := pdfjet.NewBarcode(pdfjet.CODE_128, modelX[0])
 	vin.SetModuleLength(0.75)

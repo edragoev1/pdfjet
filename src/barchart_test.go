@@ -129,7 +129,7 @@ func TestBarChartStackedBarsUseTheSumsOfTheCategoriesForTheValueAxis(t *testing.
 	}
 }
 
-// The first series in navy, the grid lines light gray and solid, the text gray
+// The first series in blue, the grid lines light gray and solid, the text gray
 // or ink, and no black line or text.
 func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 	pdf := testNewPDF()
@@ -137,7 +137,7 @@ func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 	chart := testBarChart(pdf).SetCategories("a", "b").SetTitle("t").SetSubtitle("s")
 	chart.AddSeries("one", []float32{20, 75}).AddSeries("two", []float32{30, 10})
 	content := testDrawBarChart(t, chart, page)
-	for _, want := range []string{"0.12 0.23 0.37 rg", "0.44 0.58 0.76 rg", "0.88 0.89 0.91 RG\n0.5 w\n"} {
+	for _, want := range []string{"0.31 0.47 0.65 rg", "0.95 0.56 0.17 rg", "0.88 0.89 0.91 RG\n0.5 w\n"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("%q missing from %q", want, content)
 		}
@@ -152,11 +152,16 @@ func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 		t.Errorf("the subtitle is drawn with %q", got)
 	}
 	// A label on a dark bar is white, on a light one ink: whichever contrasts
-	// more. On sage and on the old sage, which a rule by brightness gave
-	// white, ink contrasts more; on slate white.
+	// more. On sage, which a rule by brightness gave white, ink contrasts
+	// more; on slate white. Where neither contrasts 4.5:1, as on the old
+	// sage, ink 4.26:1, and on the red, the purple and the brown of the
+	// palette, a near black does.
 	for c, want := range map[int32]int32{
 		0x1F3A5F: color.White, 0x6F95C2: 0x22262B, 0x76987C: 0x22262B,
-		0x6B8F71: 0x22262B, 0x4F7A8C: color.White,
+		0x4F7A8C: color.White,
+		0x4E79A7: color.White, // blue
+		0xF28E2C: 0x22262B,    // orange
+		0x6B8F71: 0x111111, 0xE15759: 0x111111, 0xAF7AA1: 0x111111, 0x9C755F: 0x111111,
 	} {
 		if got := labelColorOn(c); got != want {
 			t.Errorf("the label on %06X is %06X", c, got)
@@ -180,7 +185,8 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 			t.Errorf("%q missing from %q", want, content)
 		}
 	}
-	if got := testFillColorBefore(content, "6,650"); got != "1 1 1 rg" {
+	// Inside the red bar, on which white contrasts 4:1
+	if got := testFillColorBefore(content, "6,650"); got != "0.07 0.07 0.07 rg" {
 		t.Errorf("the label inside the first bar is drawn with %q", got)
 	}
 	if got := testFillColorBefore(content, "sub"); got != "0.37 0.41 0.45 rg" {
@@ -305,10 +311,10 @@ func TestBarChartTheTopOfTheChartIsWhatItHas(t *testing.T) {
 	}
 }
 
-// testBarHeight returns the height of the first bar the content fills in navy.
+// testBarHeight returns the height of the first bar the content fills in blue.
 func testBarHeight(content string) float32 {
-	navy := strings.Index(content, "0.12 0.23 0.37 rg\n")
-	i := navy + strings.Index(content[navy:], " re\n")
+	blue := strings.Index(content, "0.31 0.47 0.65 rg\n")
+	i := blue + strings.Index(content[blue:], " re\n")
 	parts := strings.Split(content[strings.LastIndex(content[:i], "\n")+1:i], " ")
 	height, _ := strconv.ParseFloat(parts[3], 32)
 	return float32(math.Abs(height))
@@ -459,5 +465,166 @@ func TestBarChartTheThirdReviewOfTheCharts(t *testing.T) {
 	}
 	if strings.Contains(content, "<"+testHex("5")+">") {
 		t.Errorf("the bar below the range has its value: %q", content)
+	}
+}
+
+// A value of a line series outside a range that is set cuts its line, and the
+// chart says so, in print and in its description, as SimpleLineChart does. A
+// value that is no number is not outside, nor is a bar, and a chart with none
+// outside adds nothing.
+func TestBarChartSaysHowManyValuesOfItsLinesAreOutsideTheRange(t *testing.T) {
+	pdf := testNewPDF()
+	nan, inf := float32(math.NaN()), float32(math.Inf(1))
+	base := func() *BarChart {
+		return testBarChart(pdf).SetCategories("a", "b", "c").AddSeries("", []float32{1, 2, 3})
+	}
+	one, two := "1 value outside the range", "2 values outside the range"
+	cases := []struct {
+		name  string
+		chart *BarChart
+		note  string
+	}{
+		{"no range", base().AddLineSeries("x", []float32{1, 100, 3}), ""},
+		{"on the ends", base().AddLineSeries("x", []float32{0, 5, 10}).SetValueAxisRange(0, 10), ""},
+		{"not numbers", base().AddLineSeries("x", []float32{1, nan, inf}).SetValueAxisRange(0, 10), ""},
+		{"past the categories", base().AddLineSeries("x", []float32{1, 2, 3, 50}).SetValueAxisRange(0, 10), ""},
+		{"a bar", testBarChart(pdf).SetCategories("a").AddSeries("", []float32{50}).SetValueAxisRange(0, 10), ""},
+		{"above", base().AddLineSeries("x", []float32{1, 50, 3}).SetValueAxisRange(0, 10), one},
+		{"below", base().AddLineSeries("x", []float32{1, 2, -50}).SetValueAxisRange(0, 10), one},
+		{"both", base().AddLineSeries("x", []float32{1, 50, -50}).SetValueAxisRange(0, 10), two},
+		{"two lines", base().AddLineSeries("x", []float32{1, 50, 3}).AddLineSeries("y", []float32{50, 2, 3}).
+			SetValueAxisRange(0, 10), two},
+		{"horizontal", base().SetHorizontal(true).AddLineSeries("x", []float32{1, 50, 3}).SetValueAxisRange(0, 10), one},
+	}
+	for _, c := range cases {
+		page := NewPage(pdf, testLetterPortrait())
+		content := testDrawBarChart(t, c.chart, page)
+		description := c.chart.getAltDescription(2)
+		if c.note == "" {
+			if strings.Contains(content, testHex(" outside")) || strings.Contains(description, "outside") {
+				t.Errorf("%s: a note: %q", c.name, description)
+			}
+			continue
+		}
+		if !strings.Contains(content, "<"+testHex(c.note)+">") {
+			t.Errorf("%s: %q is not drawn", c.name, c.note)
+		}
+		if !strings.HasSuffix(description, "; "+c.note+".") {
+			t.Errorf("%s: description %q", c.name, description)
+		}
+	}
+}
+
+// The note is in the gray of the numbers, in the small size, on a row of its
+// own inside the chart, under the categories and the x title, the plot and
+// the title that much higher; its right end at the plot's.
+func TestBarChartTheNoteIsUnderThePlot(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	note := "1 value outside the range"
+	small := float32(0.8 * font.size)
+	for _, title := range []string{"", "year"} {
+		draw := func(middle float32) string {
+			chart := testBarChart(pdf).SetXAxisTitle(title).SetCategories("a", "b", "c").
+				AddSeries("", []float32{1, 2, 3}).AddLineSeries("", []float32{1, middle, 3}).SetValueAxisRange(0, 10)
+			return testDrawBarChart(t, chart, NewPage(pdf, testLetterPortrait()))
+		}
+		without, with := draw(2), draw(50)
+		at := testPositionOf(t, with, note)
+		end := at[0] + font.StringWidth(small, note)
+		testNear(t, "the right end", 350-font.bodyHeight/2.0, end, 0.1)
+		if at[0] < 50 || end > 350 {
+			t.Errorf("the note at %v", at)
+		}
+		testNear(t, "the baseline", 792-(250-font.bodyHeight/2.0), at[1], 0.01)
+		testNear(t, "the plot", testPositionOf(t, without, "0")[1]+float32(1.4*small), testPositionOf(t, with, "0")[1], 0.02)
+		last := testPositionOf(t, with, "a")[1]
+		if title != "" {
+			last = testPositionOf(t, with, title)[1]
+			testNear(t, "the x title", testPositionOf(t, without, title)[1]+float32(1.4*small), last, 0.02)
+		}
+		if at[1]+font.GetAscent(small) > last-font.GetDescent(font.size) {
+			t.Errorf("the note at %v, the row above it at %v", at, last)
+		}
+		if got, want := testFillColorBefore(with, note), testFillColorBefore(with, "0"); got != want {
+			t.Errorf("the color of the note %q, of the numbers %q", got, want)
+		}
+	}
+	// In a chart too narrow for it, shortened and inside
+	chart := testBarChart(pdf).SetSize(100, 200).SetCategories("a").AddSeries("", []float32{1}).
+		AddLineSeries("", []float32{50}).SetValueAxisRange(0, 10)
+	page := NewPage(pdf, testLetterPortrait())
+	chart.DrawOn(page)
+	if at := testPositionOf(t, testContent(page), "1 value"); at[0] < 50 {
+		t.Errorf("the note at %v", at)
+	}
+}
+
+// A description that is set is followed by the note, for a screen reader to
+// have what the chart prints; with none outside it stays as it is.
+func TestBarChartTheNoteFollowsADescriptionThatIsSet(t *testing.T) {
+	chart := testBarChart(testNewPDF()).SetCategories("a", "b").AddLineSeries("", []float32{1, 2}).
+		SetAltDescription("A line")
+	if got := chart.getAltDescription(2); got != "A line" {
+		t.Errorf("description %q", got)
+	}
+	chart.AddLineSeries("", []float32{1, 50}).SetValueAxisRange(0, 10)
+	if got := chart.getAltDescription(2); got != "A line. 1 value outside the range." {
+		t.Errorf("description %q", got)
+	}
+}
+
+// In a tagged document the note is text of the chart's figure, and its
+// description says it.
+func TestBarChartTheNoteIsInTheFigure(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	font := testTrueTypeFont(t, doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	NewBarChart(font, font).SetSize(300, 200).SetCategories("a", "b").SetValueAxisRange(0, 10).
+		AddLineSeries("", []float32{1, 50}).DrawOn(page)
+	content := testContent(page)
+	if strings.Count(content, "BDC\n") != 1 || strings.Count(content, "EMC\n") != 1 ||
+		strings.LastIndex(content, "ET\n") > strings.LastIndex(content, "EMC\n") {
+		t.Errorf("text outside the figure: %q", content)
+	}
+	if got := page.structures[0].altDescription; !strings.HasSuffix(got, "; 1 value outside the range.") {
+		t.Errorf("the chart is described as %q", got)
+	}
+}
+
+// A chart barely tall enough keeps its plot, as drawn without the note, and
+// its description says the number: the note cost it the plot.
+func TestBarChartTheNoteNeverCostsThePlot(t *testing.T) {
+	pdf := testNewPDF()
+	draw := func(height, middle float32) (string, string) {
+		chart := testBarChart(pdf).SetSize(300, height).SetCategories("a", "b", "c").SetValueAxisRange(0, 10).
+			AddLineSeries("", []float32{1, middle, 3})
+		page := NewPage(pdf, testLetterPortrait())
+		chart.DrawOn(page)
+		return testContent(page), chart.getAltDescription(2)
+	}
+	// The least height that draws, found from below
+	height := float32(1)
+	for !strings.Contains(func() string { c, _ := draw(height, 2); return c }(), " Td\n") {
+		height += 0.25
+	}
+	for _, h := range []float32{height, height + 1, height + 5} {
+		without, _ := draw(h, 2)
+		with, description := draw(h, 50)
+		if strings.Contains(with, testHex(" outside")) {
+			t.Errorf("%v: the note left no room for the plot", h)
+		}
+		if !strings.Contains(with, "W\nn\n") || strings.Count(with, " Td\n") != strings.Count(without, " Td\n") {
+			t.Errorf("%v: the plot is not drawn", h)
+		}
+		if !strings.HasSuffix(description, "; 1 value outside the range.") {
+			t.Errorf("%v: description %q", h, description)
+		}
+	}
+	// With the room, the note
+	with, _ := draw(height+20, 50)
+	if !strings.Contains(with, testHex(" outside")) {
+		t.Error("no note in a chart with room for it")
 	}
 }

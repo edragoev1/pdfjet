@@ -16,10 +16,9 @@ public class Example_48 {
         var objects = try pdf.read(from: InputStream(fileAtPath: fileName)!)
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
-        let f1 = try Font(
-                &objects,
-                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")!)
+        // drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+        // from the library; the path of a font file of your own reads that file.
+        let f1 = try Font(&objects, IBMPlexSans.Regular)
         f1.setSize(72.0)
 
         let text = TextLine(f1, "This is a test!")
@@ -48,6 +47,6 @@ public class Example_48 {
 }   // End of Example_48.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = try Example_48("data/testPDFs/scanned-linearized.pdf")
+_ = try Example_48("resources/data/testPDFs/scanned-linearized.pdf")
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Example_48 => \(String(format: "%4lld", time1 - time0)) ms")

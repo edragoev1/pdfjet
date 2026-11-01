@@ -314,5 +314,25 @@ public class PageTest {
                 e.Message);
     }
 
+    [Fact]
+    public void DrawStringWithDxPlacesEachCharacterOnItsOwn() {
+        // It writes no Tc: each character is a text of its own, dx after the last.
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.DrawString(TestSupport.Helvetica(pdf), 12f, "ABC", 100f, 200f, 30f);
+        string content = TestSupport.Content(page);
+        Assert.Equal(new float[] {100f, 592f}, TestSupport.PositionOf(content, "A"));
+        Assert.Equal(new float[] {130f, 592f}, TestSupport.PositionOf(content, "B"));
+        Assert.Equal(new float[] {160f, 592f}, TestSupport.PositionOf(content, "C"));
+        Assert.DoesNotContain(" Tc\n", content);
+    }
+
+    [Fact]
+    public void DrawXMarkStrokesTwoCrossingLines() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        CheckBox.DrawXMark(page, 10f, 20f, 5f);
+        Assert.Equal("0 0 1 RG\n1 w\n10 772 m\n15 767 l\n10 767 m\n15 772 l\nS\n", TestSupport.Content(page));
+    }
+
 }
 }

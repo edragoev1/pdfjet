@@ -312,8 +312,8 @@ class MergeTest {
     void mergesTheTestDocuments() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        for (String name : new String[] {"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"}) {
-            pdf.merge(new PDF().read(TestSupport.open("data/testPDFs/" + name)));
+        for (String name : new String[] {"scanned-linearized.pdf", "sample-document.pdf", "PDFjetLogo.pdf"}) {
+            pdf.merge(new PDF().read(TestSupport.open("resources/data/testPDFs/" + name)));
         }
         pdf.complete();
         List<PDFobj> objects = TestSupport.read(bos.toByteArray());
@@ -371,7 +371,7 @@ class MergeTest {
         // review of 9 October 2026), and its text was lost.
         List<PDFobj> objects = TestSupport.read(document("Existing"));
         Font font;
-        try (java.io.InputStream in = TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf")) {
+        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
             font = new Font(objects, in);
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -386,11 +386,11 @@ class MergeTest {
         assertNotNull(TestSupport.findObject(merged, "/Length1"), "no font program");
         boolean found = false;
         for (PDFobj obj : merged) {
-            if ("/Type0".equals(obj.getValue("/Subtype")) && obj.getValue("/BaseFont").endsWith("+NotoSans-Regular")) {
+            if ("/Type0".equals(obj.getValue("/Subtype")) && obj.getValue("/BaseFont").endsWith("+IBMPlexSans")) {
                 found = true;
             }
         }
-        assertTrue(found, "no Type0 font of a subset of Noto Sans");
+        assertTrue(found, "no Type0 font of a subset of IBM Plex Sans");
     }
 
     // Returns a PDF of the objects, numbered from 1, with a table of them.
@@ -409,6 +409,212 @@ class MergeTest {
         sb.append("trailer\n<< /Size ").append(objects.size() + 1)
                 .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
         return sb.toString().getBytes(StandardCharsets.ISO_8859_1);
+    }
+
+    @Test
+    void whatWasDrawnOnAPageThatWasReadIsMerged() throws Exception {
+        // The content streams that Page.complete adds have no dictionary, and
+        // merge took them for missing: /Contents [ null 3 0 R null ], and both
+        // the drawing and the text of the page were lost (review of 30 October
+        // 2026, B1).
+        List<PDFobj> objects = TestSupport.read(document("Existing"));
+        Font font;
+        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
+            font = new Font(objects, in);
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        page.addResource(font, objects);
+        page.drawString(font, null, 12f, "Hello", 72f, 72f);
+        page.complete(objects);
+        pdf.merge(objects);
+        pdf.complete();
+        List<PDFobj> merged = TestSupport.read(bos.toByteArray());
+        PDFobj pageObj = pdf.getPageObjects(merged).get(0);
+        assertFalse(pageObj.dict.contains("null"), pageObj.dict.toString());
+        StringBuilder text = new StringBuilder();
+        for (PDFobj obj : merged) {
+            if (obj.stream != null) {
+                text.append(new String(obj.getData(), StandardCharsets.ISO_8859_1));
+            }
+        }
+        assertTrue(text.indexOf(TestSupport.hex("Existing")) != -1, "the text of the page is lost");
+        assertTrue(text.indexOf("72 720 Td") != -1, "the drawing is lost");
+    }
+
+    // Returns a PDF of one page with the entries, a content stream as its object
+    // 4, and the other objects after it.
+    private static byte[] onePagePDF(String entries, String... others) {
+        List<String> objects = new ArrayList<String>();
+        objects.add("<< /Type /Catalog /Pages 2 0 R >>");
+        objects.add("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+        objects.add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R " + entries + " >>");
+        objects.add("<< /Length 25 >>\nstream\n0 0 1 rg 10 10 50 50 re f\nendstream");
+        objects.addAll(java.util.Arrays.asList(others));
+        return PDFTest.pdfWithObjects(objects.toArray(new String[0]));
+    }
+
+    // Returns the value of the name in the dictionary of the resources of the
+    // first page of the PDF, the tokens of the object it refers to when it is a
+    // reference.
+    private static List<String> resource(byte[] buf, String category, String name) throws Exception {
+        List<PDFobj> objects = TestSupport.read(buf);
+        PDFobj page = new PDF(new ByteArrayOutputStream()).getPageObjects(objects).get(0);
+        List<String> dict = page.getResourcesObject(objects).dict;
+        int i = dict.indexOf(category);
+        assertTrue(i != -1, "no " + category + " in " + dict);
+        if (PDF.isReference(dict, i + 1)) {
+            dict = objects.get(Integer.parseInt(dict.get(i + 1)) - 1).dict;
+        } else {
+            dict = dict.subList(i, dict.size());
+        }
+        i = dict.indexOf(name);
+        assertTrue(i != -1, "no " + name + " in " + dict);
+        if (PDF.isReference(dict, i + 1)) {
+            return objects.get(Integer.parseInt(dict.get(i + 1)) - 1).dict;
+        }
+        return dict.subList(i + 1, dict.size());
+    }
+
+    @Test
+    void aGraphicsStateOnAPageThatWasReadIsInItsResources() throws Exception {
+        // The content named a /GS that the resources of the page did not have,
+        // so the alpha was lost; the name has to be one the page does not use
+        // (review of 30 October 2026, B2).
+        for (boolean merge : new boolean[] {true, false}) {
+            List<PDFobj> objects = TestSupport.read(
+                    onePagePDF("/Resources << /ExtGState << /GS1 << /ca 0.1 >> >> >>"));
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+            GraphicsState state = new GraphicsState();
+            state.setAlphaNonStroking(0.5f);
+            page.setGraphicsState(state);
+            page.fillRect(300f, 300f, 100f, 100f);
+            page.complete(objects);
+            if (merge) {
+                pdf.merge(objects);
+            } else {
+                pdf.addObjects(objects);
+            }
+            pdf.complete();
+            byte[] buf = bos.toByteArray();
+            List<String> value = resource(buf, "/ExtGState", "/GS2");
+            assertEquals("<<", value.get(0));
+            assertEquals("/ca", value.get(3));
+            assertEquals("0.5", value.get(4));
+            assertEquals("0.1", resource(buf, "/ExtGState", "/GS1").get(2));
+            boolean found = false;
+            for (PDFobj obj : TestSupport.read(buf)) {
+                found = found || (obj.stream != null
+                        && new String(obj.getData(), StandardCharsets.ISO_8859_1).contains("/GS2 gs\n"));
+            }
+            assertTrue(found, "the content does not use /GS2");
+        }
+    }
+
+    @Test
+    void aStampAndOptionalContentOnAPageThatWasReadAreInItsResources() throws Exception {
+        // They are objects of the PDF being written, and the page has to refer
+        // to them by their numbers there (review of 30 October 2026, B2).
+        List<PDFobj> objects = TestSupport.read(
+                onePagePDF("/Resources << /XObject 5 0 R >>", "<< /Fm9 4 0 R >>"));
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        Stamp stamp = new Stamp(pdf);
+        stamp.setSize(100f, 100f);
+        stamp.complete();
+        stamp.setLocation(200f, 200f);
+        stamp.drawOn(page);
+        OptionalContentGroup group = new OptionalContentGroup(pdf, "Layer");
+        group.add(new Rect(300f, 300f, 100f, 100f));
+        group.drawOn(page);
+        page.complete(objects);
+        pdf.merge(objects);
+        pdf.complete();
+        byte[] buf = bos.toByteArray();
+        assertTrue(resource(buf, "/XObject", "/Fm" + (9 + stamp.objNumber)).contains("/Form"));
+        assertTrue(resource(buf, "/XObject", "/Fm9").contains("/Length"));
+        assertTrue(resource(buf, "/Properties", "/OC10").contains("/OCG"));
+    }
+
+    @Test
+    void aPageWithNoResourcesGetsThem() throws Exception {
+        // A font added to it did nothing, and the text was lost with no error
+        // (review of 30 October 2026, B5).
+        List<PDFobj> objects = TestSupport.read(onePagePDF(""));
+        Font font;
+        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
+            font = new Font(objects, in);
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        page.addResource(font, objects);
+        page.drawString(font, null, 12f, "Hello", 72f, 72f);
+        page.complete(objects);
+        pdf.addObjects(objects);
+        pdf.complete();
+        assertTrue(resource(bos.toByteArray(), "/Font", "/F" + font.objNumber).contains("/Type0"));
+
+        objects = TestSupport.read(onePagePDF(""));
+        PDFobj pageObj = pdf.getPageObjects(objects).get(0);
+        GraphicsState state = new GraphicsState();
+        state.setAlphaNonStroking(0.5f);
+        pageObj.setGraphicsState(state, objects);
+        assertTrue(pageObj.getResourcesObject(objects).dict.contains("/GS1"));
+    }
+
+    @Test
+    void anImageOnAPageThatWasReadIsInItsResources() throws Exception {
+        List<PDFobj> objects = TestSupport.read(onePagePDF(""));
+        Image image;
+        try (java.io.InputStream in = TestSupport.open("tests/data/PngSuite/TBRN2C08.PNG")) {
+            image = new Image(objects, in);
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        page.addResource(image, objects);
+        image.setLocation(72f, 72f);
+        image.drawOn(page);
+        page.complete(objects);
+        pdf.addObjects(objects);
+        pdf.complete();
+        String name = "/Im" + image.objNumber;
+        assertTrue(resource(bos.toByteArray(), "/XObject", name).contains("/Image"));
+        assertTrue(pageContents(TestSupport.read(bos.toByteArray())).get(0).contains(name + " Do"));
+    }
+
+    @Test
+    void thePagesOfAnArrayOfKidsThatIsAnObjectAndOfALeafWithNoType() throws Exception {
+        // Both gave a PDF of no pages, and no error (review of 30 October 2026,
+        // B3). The two are read and merged as the pages they are.
+        byte[][] pdfs = {
+            PDFTest.pdfWithObjects(new String[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids 5 0 R /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 500] >>",
+                "[3 0 R 4 0 R]"}),
+            PDFTest.pdfWithObjects(new String[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 200 300] >>",
+                "<< /Parent 2 0 R /MediaBox [0 0 400 500] >>"})};
+        for (byte[] buf : pdfs) {
+            List<PDFobj> objects = TestSupport.read(buf);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            List<PDFobj> pages = pdf.getPageObjects(objects);
+            assertEquals(2, pages.size());
+            assertEquals(500f, pages.get(1).getPageSize().getHeight());
+            pdf.merge(objects);
+            pdf.complete();
+            assertEquals(2, pdf.getPageObjects(TestSupport.read(bos.toByteArray())).size());
+        }
     }
 
     // Returns a PDF of pages under one node that holds an inline /Resources of
