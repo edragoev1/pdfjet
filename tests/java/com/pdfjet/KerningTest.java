@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -26,14 +25,18 @@ import org.junit.jupiter.api.Test;
 
 class KerningTest {
     private static final String PLEX_TTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
-    private static final String PLEX_OTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
-    private static final String NOTO_TTF = "fonts/NotoSans/NotoSans-Regular.ttf";
+    private static final String PLEX_OTF = "tests/fonts/IBMPlexSans-Regular.otf";
+    // IBM Plex Serif, whose kern lookups have LookupFlag 8, as those of Noto
+    // Sans, which these tests read before 9.1.7, have; the lookups of IBM Plex
+    // Sans have none. IBM Plex Sans JP, whose kern feature has Extension
+    // lookups of its pairs, as Source Serif 4, which PDFjet carried before, has.
+    private static final String SERIF_TTF = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf";
+    private static final String EXTENSION_OTF = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf";
 
     private static final Pattern DRAWN_TEXT = Pattern.compile("<([0-9A-F]*)> Tj|\\[(-?[0-9.]+)\\] TJ");
 
     // Opens a font of the repository, with its kerning on or off.
     static Font kernedFont(PDF pdf, String path, boolean kerned) throws Exception {
-        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
         try (InputStream in = TestSupport.open(path)) {
             Font font = new Font(pdf, in);
             font.setKernPairs(kerned);
@@ -85,7 +88,7 @@ class KerningTest {
     @Test
     void kerningIsDrawnAsItIsMeasured() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        for (String path : new String[] {PLEX_TTF, PLEX_OTF, NOTO_TTF}) {
+        for (String path : new String[] {PLEX_TTF, PLEX_OTF, SERIF_TTF, EXTENSION_OTF}) {
             Font font = kernedFont(pdf, path, true);
             for (String text : new String[] {
                     "AVATAR. To Wally, Tyler and LT: \"Yes,\" P.V. said.",
@@ -202,9 +205,12 @@ class KerningTest {
     @Test
     void kerningLeavesMarksAndRightToLeftTextAlone() throws Exception {
         PDF pdf = TestSupport.newPDF();
+        // IBM Plex Sans Hebrew kerns שלום עולם by 20 units without its
+        // marks, as Noto Sans Hebrew, which this test read before 9.1.7,
+        // kerned it by 10.
         for (String path : new String[] {
-                "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf",
-                "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"}) {
+                "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf",
+                "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"}) {
             Font kerned = kernedFont(pdf, path, true);
             Font plain = kernedFont(pdf, path, false);
             for (String text : new String[] {"שָׁלוֹם עוֹלָם", "مرحبا بالعالم"}) {
@@ -252,9 +258,11 @@ class KerningTest {
             {PLEX_TTF, "Тъй ТАТЯНА", 55.94f, -165},
             {PLEX_TTF, "ΑΥΤΟ", 24.44f, -70},
             {PLEX_OTF, "AVATAR To Wally", 75.14f, -302},
-            {NOTO_TTF, "AVATAR To Wally", 75.83f, -310},
-            {NOTO_TTF, "Тъй ТАТЯНА", 56.79f, -150},
-            {NOTO_TTF, "ΑΥΤΟ", 24.62f, -80},
+            // IBM Plex Serif, from its hmtx and kern lookups (Noto Sans, before
+            // 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)
+            {SERIF_TTF, "AVATAR To Wally", 80.59f, -315},
+            {SERIF_TTF, "Тъй ТАТЯНА", 61.57f, -147},
+            {SERIF_TTF, "ΑΥΤΟ", 26.40f, -48},
         };
         for (Object[] c : cases) {
             String path = (String) c[0];

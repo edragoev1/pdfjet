@@ -203,13 +203,13 @@ import Testing
         // The header of a BMP holds the pixels per metre of each axis.
         // palette.bmp is 100 by 100 pixels at 4724 per metre, which is 120
         // dots per inch and 60 by 60 points.
-        let bmp = try BMPImage(TestSupport.open("images/palette.bmp"))
+        let bmp = try BMPImage(TestSupport.open("resources/images/palette.bmp"))
         #expect(bmp.getWidth() == 100)
         #expect(bmp.getHeight() == 100)
         #expect(abs(bmp.getPhysicalWidth() - 60.0) < 0.05)
         #expect(abs(bmp.getPhysicalHeight() - 60.0) < 0.05)
 
-        let image = try Image(TestSupport.newPDF(), TestSupport.open("images/palette.bmp"))
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("resources/images/palette.bmp"))
         #expect(abs(image.getWidth() - 60.0) < 0.05, "the image is not drawn at the size it asks for")
         #expect(abs(image.getHeight() - 60.0) < 0.05, "the image is not drawn at the size it asks for")
     }
@@ -220,7 +220,7 @@ import Testing
         // pixels. The header is built here because the files of the
         // repository both carry a resolution.
         var data = [UInt8](try Data(contentsOf: URL(fileURLWithPath:
-                TestSupport.path("images/palette.bmp"))))
+                TestSupport.path("resources/images/palette.bmp"))))
         for i in 38..<46 {
             data[i] = 0
         }

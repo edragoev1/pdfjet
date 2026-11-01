@@ -33,14 +33,13 @@ import Testing
     @Test func aLongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord() throws {
         let memory = MemoryPDF()
         let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
-        let word = String(repeating: "محمد", count: 25000)    // 100,000 letters, which took about 20 minutes
-        let block = TextBlock(font, word).setRightToLeft(true).setWidth(100)
-        let start = Date()
-        let xy = block.setLocation(0, 0).drawOn(nil)
-        let took = Date().timeIntervalSince(start)
-        // 30 s, as above: the time that grew with the square of the word was
-        // about 20 minutes.
-        #expect(took < 30, "breaking a right to left word of 100,000 letters took \(took) s")
+        // 100,000 letters took about 20 minutes
+        expectLinearTime(1000) { n in
+            let word = String(repeating: "محمد", count: n)
+            _ = TextBlock(font, word).setRightToLeft(true).setWidth(100).setLocation(0, 0).drawOn(nil)
+        }
+        let word = String(repeating: "محمد", count: 25000)
+        let xy = TextBlock(font, word).setRightToLeft(true).setWidth(100).setLocation(0, 0).drawOn(nil)
         TestSupport.expectXY(100, 120006, xy)  // As the Go port breaks it
     }
 }

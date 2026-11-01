@@ -59,6 +59,154 @@ func TestMarkdownAdditionsHardLineBreaks(t *testing.T) {
 	}
 }
 
+// A hard line break at the end of a text is no break, as in CommonMark, and
+// the spaces before it are not in the last text line; Paragraphs strips the
+// whitespace at the end of each paragraph.
+func TestMarkdownAdditionsAHardLineBreakAtTheEndIsNoBreak(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"0  \n", "0  \r\n", "0   \n", "0  \n\n", "0  \n  "} {
+		paragraph := markup.Paragraph(text)
+		if len(paragraph.lines) != 1 || paragraph.lines[0].text != "0" || paragraph.lines[0].lineBreaks != 0 {
+			t.Errorf("%q: %d text lines", text, len(paragraph.lines))
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 1 || paragraphs[0].lines[0].text != "0" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	// In bold, and a break before the last line
+	bold := markup.Paragraph("**0**  \n")
+	if len(bold.lines) != 1 || bold.lines[0].text != "0" || bold.lines[0].lineBreaks != 0 {
+		t.Errorf("**0**: %d text lines", len(bold.lines))
+	}
+	two := markup.Paragraph("one  \ntwo  \n")
+	if got := testBreaks(two); !reflect.DeepEqual(got, []bool{true, false}) || two.lines[1].text != "two" {
+		t.Errorf("one two: breaks %v", got)
+	}
+	// Spaces at the end without a line break are text in Paragraph
+	testWant(t, "0  ", markup.Paragraph("0  ").lines[0].text)
+	testWant(t, "0", markup.Paragraphs("0  ")[0].lines[0].text)
+}
+
+// The spaces before a hard line break are not in the text line before it, as
+// in CommonMark.
+func TestMarkdownAdditionsTheSpacesBeforeAHardLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one  \ntwo", "one  \r\ntwo", "one   \ntwo", "one\t  \ntwo",
+		"**one**  \ntwo", "[one  \ntwo](u)"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) ||
+			paragraph.lines[0].text != "one" || paragraph.lines[1].text != "two" {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+	}
+}
+
+// A backslash at the end of a text is a backslash, and no hard line break, as
+// in CommonMark; in the middle it is a break, as before.
+func TestMarkdownAdditionsABackslashAtTheEndIsText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"0\\\n", "0\\\r\n", "0\\\n  ", "0\\\n\n"} {
+		paragraph := markup.Paragraph(text)
+		if len(paragraph.lines) != 1 || paragraph.lines[0].text != "0\\" || paragraph.lines[0].lineBreaks != 0 {
+			t.Errorf("%q: %d text lines", text, len(paragraph.lines))
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 1 || paragraphs[0].lines[0].text != "0\\" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	two := markup.Paragraph("one\\\ntwo\\\n")
+	if got := testBreaks(two); !reflect.DeepEqual(got, []bool{true, false}) || two.lines[1].text != "two\\" {
+		t.Errorf("one two: breaks %v", got)
+	}
+}
+
+// The spaces and tabs at the start of the line after a hard line break are not
+// in the text, as in CommonMark; a space written &#32; is, and so are the
+// spaces after a <br>, which is no line ending.
+func TestMarkdownAdditionsTheSpacesAfterAHardLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one  \n  two", "one  \r\n  two", "one   \n\t two", "one\\\n  two",
+		"one\\\r\n  two", "**one**  \n  two", "[one  \n  two](u)"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) ||
+			paragraph.lines[0].text != "one" || paragraph.lines[1].text != "two" {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 2 || paragraphs[0].lines[1].text != "two" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	testWant(t, " two", markup.Paragraph("one  \n&#32;two").lines[1].text)
+	testWant(t, "  two", markup.Paragraph("one<br>  two").lines[1].text)
+}
+
+// The spaces and tabs at the start of the line after a soft line break are not
+// in the text, as in CommonMark: the line break is one space; a space written
+// &#32; is text.
+func TestMarkdownAdditionsTheSpacesAfterASoftLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one\n  two", "one\r\n  two", "one\n\t two", "one\ntwo", "one\r\ntwo"} {
+		paragraph := markup.Paragraph(text)
+		if len(paragraph.lines) != 1 || paragraph.lines[0].text != "one two" || paragraph.lines[0].lineBreaks != 0 {
+			t.Errorf("%q: %d text lines", text, len(paragraph.lines))
+		}
+		paragraphs := markup.Paragraphs(text)
+		if len(paragraphs) != 1 || len(paragraphs[0].lines) != 1 || paragraphs[0].lines[0].text != "one two" {
+			t.Errorf("%q: %d paragraphs", text, len(paragraphs))
+		}
+	}
+	testWant(t, "one  two", markup.Paragraph("one\n&#32;two").lines[0].text)
+}
+
+// The spaces and tabs before a soft line break are not in the text, as in
+// CommonMark, and those before any line break are counted as they were
+// appended: a space written &#32; stays.
+func TestMarkdownAdditionsTheSpacesBeforeASoftLineBreakAreNotText(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one \ntwo", "one\t\ntwo", "one \t\n  two", "one \r\ntwo", "one \rtwo"} {
+		testWant(t, "one two", markup.Paragraph(text).lines[0].text)
+		testWant(t, "one two", markup.Paragraphs(text)[0].lines[0].text)
+	}
+	testWant(t, "one  two", markup.Paragraph("one&#32;\ntwo").lines[0].text)
+	testWant(t, "one ", markup.Paragraph("one&#32;\n  \ntwo").lines[0].text)
+}
+
+// A line break right after a hard line break adds no space to the next row.
+func TestMarkdownAdditionsNoSpaceStartsARowAfterAHardLineBreak(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	for _, text := range []string{"one<br>\ntwo", "one<br>\n  two", "one<br> \ntwo", "one<br>\r\ntwo",
+		"one<br>\rtwo", "one  \n\ntwo", "one\\\n\ntwo"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) ||
+			paragraph.lines[0].text != "one" || paragraph.lines[1].text != "two" {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+	}
+	testWant(t, "two", markup.Paragraph("\ntwo").lines[0].text)
+}
+
+// \r\n and a lone \r are line endings as \n is, in text, in hard line breaks,
+// in code and between paragraphs.
+func TestMarkdownAdditionsEveryLineEndingIsOne(t *testing.T) {
+	markup := testAdditionsMarkup(testNewPDF())
+	testWant(t, "one two", markup.Paragraph("one\rtwo").lines[0].text)
+	testWant(t, "a b", markup.Paragraph("`a\r\nb`").lines[0].text)
+	testWant(t, "a b", markup.Paragraph("`a\rb`").lines[0].text)
+	for _, text := range []string{"one  \rtwo", "one\\\rtwo"} {
+		paragraph := markup.Paragraph(text)
+		if got := testBreaks(paragraph); !reflect.DeepEqual(got, []bool{true, false}) {
+			t.Errorf("%q: breaks %v", text, got)
+		}
+	}
+	testWant(t, "0\\", markup.Paragraph("0\\\r").lines[0].text)
+	if got := len(markup.Paragraphs("one\r\rtwo")); got != 2 {
+		t.Errorf("%d paragraphs", got)
+	}
+}
+
 func TestMarkdownAdditionsATextFrameStartsARowAtABreak(t *testing.T) {
 	testAllowCoreFonts(t)
 	pdf := testNewPDF()

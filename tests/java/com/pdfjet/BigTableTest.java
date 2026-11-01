@@ -686,4 +686,22 @@ class BigTableTest {
         Exception e = assertThrows(IllegalArgumentException.class, () -> margin.setLocation(400f, 20f));
         assertEquals("The margin of the table, its x, is half the width of the page or more: the columns have no room.", e.getMessage());
     }
+
+    // The pages are counted with the arithmetic of the drawing, rounded as it
+    // rounds: at the bottom margin to the last bit, the count was a page off, and
+    // the footer read "of 1" on two pages (the review of 30 October 2026, E6).
+    @Test
+    void thePagesAreCountedAsTheyAreDrawn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<String[]> rows = Arrays.asList(new String[] {"a"}, new String[] {"b"}, new String[] {"c"},
+                new String[] {"d"}, new String[] {"e"});
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT).setNumberOfColumns(1)
+                .setTableData(new String[] {"Name"}, rows).setVerticalPadding(0f).setBottomMargin(649.968f);
+        table.setLocation(10f, 61.5f);
+        table.complete();
+        List<Page> pages = table.getPages();
+        assertEquals(2, pages.size());
+        assertTrue(TestSupport.content(pages.get(1)).contains(TestSupport.hex("Page 2 of 2")));
+    }
 }

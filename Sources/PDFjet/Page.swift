@@ -96,6 +96,10 @@ public class Page {
         return document
     }
     internal var pageObj: PDFobj?
+    // On a page that was read: what the names of the resources of the PDF are
+    // raised by, past the names it holds, and the resources drawn with
+    private var resourceBase = 0
+    private var readResources = [ReadResource]()
     internal var objNumber = 0
     internal var renderingMode = 0
     // Whether a text rendering mode other than 0 was written
@@ -176,6 +180,9 @@ public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     internal var mcidParent: StructElement?
+    // The element of the text line with an alternate description that is being
+    // drawn among the words of mcidParent; see describedWords.
+    private var words: StructElement?
     // The figure addBDC began last, whose bounding box setFigureBoundingBox
     // sets, or nil.
     private var figure: StructElement?
@@ -237,6 +244,7 @@ public class Page {
         let pageSize = self.pageObj!.getPageSize()
         self.width = pageSize.getWidth()
         self.height = pageSize.getHeight()
+        self.resourceBase = self.pageObj!.maxResourceNumber()
         saveGraphicsState()
         let origin = self.pageObj!.mediaBoxOrigin()
         if origin.x != 0 || origin.y != 0 {
@@ -264,9 +272,38 @@ public class Page {
         // this one (review of 12 October 2026, F2).
         restoreGraphicsState()
         checkBalanced()
+        for resource in readResources {
+            var value = resource.value
+            if resource.number != 0 {
+                let written = PDFobj()
+                written.setNumber(objects.count + 1)
+                written.writtenNumber = resource.number
+                objects.append(written)
+                value = [String(written.getNumber()), "0", "R"]
+            }
+            pageObj!.addResourceEntry(resource.category, resource.name, value, &objects)
+        }
         if !pageObj!.wrapContents(Array("q\n".utf8), Array("Q\n".utf8) + self.buf, &objects) {
             pdf.fail("The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it.")
         }
+    }
+
+    // Returns the name for a resource of the PDF on this page, and keeps it for
+    // complete on a page that was read: the resources of the PDF do not reach
+    // that page, whose own resources have to name it, and its own names stay as
+    // they are. The graphics states, stamps and optional content drawn on such
+    // a page had no resource: the alpha was lost, and a stamp did not draw
+    // (review of 30 October 2026, B2).
+    final func resourceName(
+            _ category: String, _ prefix: String, _ n: Int, _ value: [String], _ number: Int) -> String {
+        if pageObj == nil {
+            return prefix + String(n)
+        }
+        let name = prefix + String(resourceBase + n)
+        if !readResources.contains(where: { $0.name == name }) {
+            readResources.append(ReadResource(category: category, name: name, value: value, number: number))
+        }
+        return name
     }
 
     /// Checks that every saveGraphicsState has its restoreGraphicsState and every
@@ -583,6 +620,60 @@ public class Page {
         } else {
             drawColoredString(font, text!, textColor, highlightColors!)
         }
+        append(Token.endText)
+    }
+
+    // Draws the string of an SVG image with the text matrix, in the brush
+    // color, or stroked in the pen color and width for the rendering mode 1.
+    final func drawSVGText(_ font: Font, _ fontSize: Float, _ text: String, _ tm: [Float], _ mode: Int) {
+        append(Token.beginText)
+        setTextFont(font, fontSize)
+        if mode != 0 || self.renderingModeSet {
+            self.renderingModeSet = true
+            append(mode)
+            append(" Tr\n")
+        }
+        showSVGText(font, text, tm)
+        append(Token.endText)
+    }
+
+    // Shows the string of an SVG image with the text matrix.
+    private func showSVGText(_ font: Font, _ text: String, _ tm: [Float]) {
+        for i in 0..<6 {
+            append(tm[i])
+            append(Token.space)
+        }
+        append("Tm\n")
+        if font.isCoreFont {
+            append("[<")
+            drawASCIIString(font, text)
+            append(">] TJ\n")
+        } else {
+            append("<")
+            drawUnicodeString(font, text)
+            append("> Tj\n")
+        }
+    }
+
+    // Begins a text object whose glyphs clip what is drawn after it, by the
+    // rendering mode 7 of ISO 32000-1, 9.3.6: at its ET they are one path,
+    // filled by the nonzero rule, which the clip path is intersected with. The
+    // graphics state saved around it brings the mode back.
+    final func beginSVGClipText() {
+        append(Token.beginText)
+        self.renderingModeSet = true
+        append("7 Tr\n")
+    }
+
+    // Adds the string of an SVG image to the text object begun by
+    // beginSVGClipText.
+    final func addSVGClipText(_ font: Font, _ fontSize: Float, _ text: String, _ tm: [Float]) {
+        setTextFont(font, fontSize)
+        showSVGText(font, text, tm)
+    }
+
+    // Ends that text object.
+    final func endSVGClipText() {
         append(Token.endText)
     }
 
@@ -1346,8 +1437,8 @@ public class Page {
             n = pdf.states.count + 1
             pdf.states[state] = n
         }
-        append("/GS")
-        append(n!)
+        let value = ["<<"] + state.split(separator: " ").map(String.init) + [">>"]
+        append(resourceName("/ExtGState", "/GS", n!, value, 0))
         append(" gs\n")
         return self
     }
@@ -1381,6 +1472,10 @@ public class Page {
     @discardableResult
     public func setPenColor(_ color: Int32) -> Page {
         if color == Color.transparent {
+            return self
+        }
+        if color == Util.shortColor {
+            pdf.fail(Page.RGB_COUNT)
             return self
         }
         let r = Float((color >> 16) & 0xff)/255.0
@@ -1438,6 +1533,10 @@ public class Page {
     @discardableResult
     public func setBrushColor(_ color: Int32) -> Page {
         if color == Color.transparent {
+            return self
+        }
+        if color == Util.shortColor {
+            pdf.fail(Page.RGB_COUNT)
             return self
         }
         let r = Float((color >> 16) & 0xff)/255.0
@@ -2523,6 +2622,16 @@ public class Page {
         append(String(num))
     }
 
+    // Appends a number of a scale, written with five decimals, as hundredths
+    // would change the size: 0.125 was written as 0.13, 4% too large, and 0.004
+    // as 0, which drew nothing (review of 30 October 2026, B6).
+    func appendPrecise(_ val: Float) {
+        if !FastFloat.isWritable(val) {
+            pdf.fail(FastFloat.NOT_WRITABLE)
+        }
+        append(FastFloat.toPreciseByteArray(val))
+    }
+
     func append(_ val: Float) {
         if !FastFloat.isWritable(val) {
             // The misuse is recorded, and the number is written all the same:
@@ -2735,7 +2844,12 @@ public class Page {
             // belongs to the one element of the paragraph; a figure in it, as the
             // linked marker of a wrapped table cell, is an element of its own,
             // with its description (the review of 9 October 2026: it was lost).
-            if let parent = mcidParent, structure != StructElem.FIGURE {
+            if var parent = mcidParent, structure != StructElem.FIGURE {
+                if let altDescription = altDescription, !altDescription.isEmpty {
+                    parent = describedWords(parent, altDescription)
+                } else {
+                    words = nil
+                }
                 parent.mcids.append(mcid)
                 append("/")
                 append(parent.structure!)
@@ -2781,6 +2895,24 @@ public class Page {
                 figure = element
             }
         }
+    }
+
+    // Returns the Span of a text line with an alternate description that is
+    // drawn in a paragraph word by word or row by row: the description is of
+    // the whole text line, so its words are the marked content of one element,
+    // which takes its place among the words of the paragraph and is read once.
+    private func describedWords(_ parent: StructElement, _ altDescription: String) -> StructElement {
+        if let words = words, words.parent === parent, words.altDescription == altDescription {
+            return words
+        }
+        let element = StructElement()
+        element.structure = StructElem.SPAN.rawValue
+        element.mcid = -1
+        element.altDescription = altDescription
+        addStructure(element, parent)
+        parent.mcids.append(-(element.objNumber ?? 0))
+        words = element
+        return element
     }
 
     /// Sets the bounding box of the figure that AddBDC began last: the box it is
@@ -2906,6 +3038,7 @@ public class Page {
         link.language = language
         if let parent = mcidParent {
             // A word of a paragraph: the Link takes its place among the words
+            link.altDescription = altDescription
             addStructure(link, parent)
             parent.mcids.append(-(link.objNumber ?? 0))
         } else if structure == StructElem.LINK {
@@ -3033,6 +3166,10 @@ public class Page {
             return
         }
         transformAnnotation(annotation)
+        if annotation.hitSize > 0.0 {
+            (annotation.x1, annotation.x2) = Page.hitSpan(annotation.x1, annotation.x2, annotation.hitSize, self.width)
+            (annotation.y1, annotation.y2) = Page.hitSpan(annotation.y1, annotation.y2, annotation.hitSize, self.height)
+        }
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
@@ -3090,9 +3227,9 @@ public class Page {
             _ yScale: Float) {
         saveGraphicsState()
 
-        append(xScale)
+        appendPrecise(xScale)
         append(" 0 0 ")
-        append(yScale)
+        appendPrecise(yScale)
         append(Token.space)
         append(x)
         append(Token.space)
@@ -3324,13 +3461,13 @@ public class Page {
         var transx = values[Page.MTRANS_X]
         let transy = values[Page.MTRANS_Y]
 
-        append(scalex)
+        appendPrecise(scalex)
         append(Token.space)
-        append(values[Page.MSKEW_X])
+        appendPrecise(values[Page.MSKEW_X])
         append(Token.space)
-        append(values[Page.MSKEW_Y])
+        appendPrecise(values[Page.MSKEW_Y])
         append(Token.space)
-        append(scaley)
+        appendPrecise(scaley)
         append(Token.space)
 
         if asin(Double(values[Page.MSKEW_Y])) != 0.0 {
@@ -3412,6 +3549,27 @@ public class Page {
             append("> Tj\n")
         }
         append(Token.endText)
+    }
+
+    // Returns the span lo to hi of an annotation at least size long around its
+    // center, and moved inside 0 to limit, not cut, as long as it fits.
+    private static func hitSpan(_ low: Float, _ high: Float, _ size: Float, _ limit: Float) -> (Float, Float) {
+        var lo = low
+        var hi = high
+        if hi - lo < size {
+            let center = (lo + hi) / 2.0
+            lo = center - size / 2.0
+            hi = lo + size
+        }
+        if hi > limit {
+            lo -= hi - limit
+            hi = limit
+        }
+        if lo < 0.0 {
+            hi = Swift.min(hi - lo, limit)
+            lo = 0.0
+        }
+        return (lo, hi)
     }
 
     // Returns where the point x, y of what is drawn is on the page, after the
@@ -3688,4 +3846,14 @@ public class Page {
 
     // The hexadecimal digits of toUTF16Hex, made once.
     private static let upperHexDigits: [UInt8] = Array("0123456789ABCDEF".utf8)
+
+    // A resource of the PDF that a page that was read draws with. It goes in the
+    // category of the resources of the page, like /ExtGState, under the name:
+    // the value, or a reference to the object of the PDF with the number.
+    private struct ReadResource {
+        let category: String
+        let name: String
+        let value: [String]
+        let number: Int
+    }
 }   // End of Page.swift

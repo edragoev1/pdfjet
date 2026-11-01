@@ -110,6 +110,78 @@ public class ReviewWriterTest {
     }
 
     [Fact]
+    public void ACarriageReturnInATitleIsAReferenceInTheMetadata() {
+        // An XML reader turns it into a line feed, and PDF/A refused the title
+        // (review of 30 October 2026, B9).
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_A_2B);
+        pdf.SetTitle("One\rTwo");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        Assert.Contains(">One&#13;Two</rdf:li>", TestSupport.Latin1(stream.ToArray()));
+    }
+
+    [Fact]
+    public void ALanguageSetOnAnyPDFIsInItsCatalog() {
+        // SetLanguage did nothing on a PDF that is not of PDF/A or PDF/UA, which
+        // says no language of itself (review of 30 October 2026, B12).
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        Assert.DoesNotContain("/Lang <", TestSupport.Latin1(stream.ToArray()));
+        stream = new MemoryStream();
+        pdf = new PDF(stream);
+        pdf.SetLanguage("fr-CA");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        Assert.Contains("/Lang <" + Util.ToHexString(Encoding.ASCII.GetBytes("fr-CA")) + ">",
+                TestSupport.Latin1(stream.ToArray()));
+    }
+
+    [Fact]
+    public void AnEmbeddedFileIsNamedWithoutItsFolders() {
+        // A path of Windows put its folders, the name of the user in them, in
+        // the /F of the PDF (review of 30 October 2026, F1).
+        string folder = Directory.CreateTempSubdirectory("pdfjet").FullName;
+        string path = System.IO.Path.Combine(folder, "C:\\Users\\alice\\x.xml");
+        File.WriteAllBytes(path, Encoding.ASCII.GetBytes("<a/>"));
+        try {
+            EmbeddedFile file = new EmbeddedFile(TestSupport.NewPDF(), path, false);
+            Assert.Equal("x.xml", file.fileName);
+        } finally {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [Fact]
+    public void AScaleIsWrittenWithItsDecimals() {
+        // Hundredths made 0.125 a scale of 0.13, and 0.004 a matrix of zeros
+        // that drew nothing (review of 30 October 2026, B6).
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf).SetSize(50f, 50f);
+        stamp.Complete();
+        stamp.ScaleBy(0.125f).SetLocation(50f, 50f).DrawOn(page);
+        stamp.ScaleBy(0.004f).SetLocation(50f, 50f).DrawOn(page);
+        Container container = new Container(100f, 100f);
+        container.Add(new Rect(0f, 0f, 10f, 10f));
+        container.ScaleBy(0.125f).SetLocation(50f, 50f).DrawOn(page);
+        page.DrawContents(new byte[] {(byte) 'n'}, 10f, 20f, 30f, 0.125f, 0.004f);
+        float[] values = new float[9];
+        values[Page.MSCALE_X] = 0.125f;
+        values[Page.MSKEW_X] = 0.004f;
+        values[Page.MSKEW_Y] = 0.006f;
+        values[Page.MSCALE_Y] = 0.375f;
+        page.Transform(values);
+        string content = TestSupport.Content(page);
+        Assert.Contains("0.004 0 0 0.004 0 0 cm\n", content);
+        Assert.Contains("\n0.125 0 0 0.004 ", content);
+        Assert.Contains("\n0.125 0.004 0.006 0.375 ", content);
+        Assert.Equal(2, content.Split("0.125 0 0 0.125 0 0 cm\n").Length - 1);
+    }
+
+    [Fact]
     public void EveryAnnotationIsPrintedAndHasAnAppearance() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();
 #pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written
@@ -423,7 +495,21 @@ public class ReviewWriterTest {
     public void TheFontFileRefersToItsMetadataWhoseNoticeIsEscaped() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_A_2B);
-        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansJP/NotoSansJP-Regular.ttf"));
+        // Noto Sans JP, which this test read before 9.1.7, has "&" in its
+        // designer and its description; no font PDFjet carries has one in
+        // its names, so the license of IBM Plex Sans is made to say "with &
+        // FAQ" in place of "with a FAQ", a character for a character.
+        byte[] ttf = TestSupport.FontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] withA = Encoding.BigEndianUnicode.GetBytes(" with a FAQ");
+        int at = -1;
+        for (int i = 0; at == -1 && i + withA.Length <= ttf.Length; i++) {
+            if (new ReadOnlySpan<byte>(ttf, i, withA.Length).SequenceEqual(withA)) {
+                at = i;
+            }
+        }
+        Assert.True(at != -1, "the license of the font has no \"with a FAQ\"");
+        ttf[at + 2 * " with ".Length + 1] = (byte) '&';
+        Font font = new Font(pdf, new MemoryStream(ttf));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Hello").SetLocation(50f, 50f).DrawOn(page);
         pdf.Complete();

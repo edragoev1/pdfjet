@@ -29,7 +29,7 @@ public class Example_18 {
         Font bold = new Font(pdf, IBMPlexSans.Bold).SetSize(11f);
         Font italic = new Font(pdf, IBMPlexSans.Italic).SetSize(11f);
         Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic).SetSize(11f);
-        Font code = new Font(pdf, IBMPlexMono.Regular).SetSize(10f);
+        Font code = new Font(pdf, CascadiaMono.Regular).SetSize(10f);
         Font heading = new Font(pdf, IBMPlexSans.SemiBold);
         Markup markup = new Markup(regular, bold, italic, boldItalic, code);
 

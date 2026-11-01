@@ -348,6 +348,12 @@ public class TextBlock : Drawable {
         return self
     }
 
+    // Splits the text at each of the character, by Unicode scalars, keeping
+    // the empty strings between two of them.
+    private static func split(_ text: String, _ separator: Unicode.Scalar) -> [String] {
+        return text.unicodeScalars.split(separator: separator, omittingEmptySubsequences: false).map(String.init)
+    }
+
     func getTextLines() -> [TextLine] {
         var textLines = [TextLine]()
 
@@ -356,8 +362,9 @@ public class TextBlock : Drawable {
         let textAreaWidth = self.textAreaWidth()
         // Like String.split in Java: the trailing empty lines are dropped, but
         // an empty text is one empty line.
-        var lines = textContent.replacingOccurrences(of: "\r\n", with: "\n")
-                .components(separatedBy: "\n")
+        // Literally: Foundation's search takes a \n or a \r\n before a combining
+        // mark for another character, and does not find it.
+        var lines = TextBlock.split(textContent.replacingOccurrences(of: "\r\n", with: "\n", options: .literal), "\n")
         while lines.count > 1 && lines[lines.count - 1].isEmpty {
             lines.removeLast()
         }
@@ -368,7 +375,7 @@ public class TextBlock : Drawable {
             }
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
-            let text = line.replacingOccurrences(of: "\u{200B}", with: "")
+            let text = line.replacingOccurrences(of: "\u{200B}", with: "", options: .literal)
             if stringWidth(text) <= textAreaWidth {
                 textLines.append(TextLine(font, text))
             } else {
@@ -395,7 +402,7 @@ public class TextBlock : Drawable {
                     for token in line.splitOnWhitespace() {
                         // The words between the zero width spaces of a token
                         // are joined with no space.
-                        let words = token.components(separatedBy: "\u{200B}")
+                        let words = TextBlock.split(token, "\u{200B}")
                         for (i, word) in words.enumerated() {
                             let separator = (i == words.count - 1) ? " " : ""
                             var word = word
@@ -739,7 +746,7 @@ public class TextBlock : Drawable {
         for token in paragraph.splitOnWhitespace() {
             // The words between the zero width spaces of a token are joined
             // with no space.
-            let words = token.components(separatedBy: "\u{200B}")
+            let words = TextBlock.split(token, "\u{200B}")
             for (i, word) in words.enumerated() {
                 let separator = (i == words.count - 1) ? " " : ""
                 var word = word

@@ -68,8 +68,7 @@ import Testing
         #expect(draw("日本") == draw(marked))
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func readsATrueTypeFont() throws {
         let stream = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
         let font = try Font(TestSupport.newPDF(), stream)
@@ -83,12 +82,12 @@ import Testing
         #expect(throws: PDFjetError.self) { try Font(pdf, 15) }
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func theLineGapOfAFontSpacesTheLinesOfATextBlock() throws {
-        // IBM Plex Sans SC has a line gap of one em.
+        // IBM Plex Sans SC has a line gap of one em, its ascent 880 and its
+        // descent 120, in its .otf, which PDFjet carries, as in its .ttf.
         let pdf = TestSupport.newPDF()
-        let sc = try Font(pdf, TestSupport.open("fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.ttf"))
+        let sc = try Font(pdf, TestSupport.open("fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf"))
         TestSupport.expectNear(10, sc.getLineGap(10), 0.001)
         #expect(try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).getLineGap(10) == 0)
         // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
@@ -98,11 +97,33 @@ import Testing
 
     @Test func aStreamFontPathOpensTheTrueTypeFont() throws {
         // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
-        // .stream file opens the .ttf file of the same name.
-        for path in ["fonts/NotoSans/NotoSans-Regular.ttf.stream", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"] {
-            let want = String(path[..<path.firstIndex(of: ".")!]) + ".ttf"
-            #expect(Font.fontFileOf(TestSupport.path(path)) == TestSupport.path(want), "\(path)")
-            #expect(!(try Font(TestSupport.newPDF(), TestSupport.path(path))).getName().isEmpty, "\(path)")
+        // .stream file opens the .ttf file of the same name, or else the .otf
+        // file: a file beside it, or a font PDFjet carries. Before 9.1.7 the
+        // fonts folder had Noto Sans and both files of IBM Plex Sans; the
+        // folder of .ttf and .otf files is made here.
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("pdfjet-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let ttf = dir.appendingPathComponent("IBMPlexSans-Regular.ttf").path
+        let otf = dir.appendingPathComponent("IBMPlexSans-Regular.otf").path
+        try Data(TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).write(to: URL(fileURLWithPath: ttf))
+        try Data(TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.otf")).write(to: URL(fileURLWithPath: otf))
+        let paths = [
+            // The .ttf beside the .otf
+            (otf + ".stream", ttf),
+            (ttf + ".stream", ttf),
+            // The .otf, with no .ttf beside it
+            (TestSupport.path("tests/fonts/IBMPlexSans-Regular.otf.stream"),
+                TestSupport.path("tests/fonts/IBMPlexSans-Regular.otf")),
+            // The fonts PDFjet carries
+            (TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
+                TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")),
+            (TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
+                TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")),
+        ]
+        for (path, want) in paths {
+            #expect(Font.fontFileOf(path) == want, "\(path)")
+            #expect(!(try Font(TestSupport.newPDF(), path)).getName().isEmpty, "\(path)")
         }
         // Any other font is refused in PDFjet's words.
         do {
@@ -142,8 +163,7 @@ import Testing
         return try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aCharacterTheFontDoesNotHaveIsDrawnWithNotdef() throws {
         let pdf = TestSupport.newPDF()
         let font = try ibmPlexSans(pdf)
@@ -172,8 +192,7 @@ import Testing
         #expect(Page.textOf(font, 0x0085) == " ")
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aStampDrawsACharacterTheFontDoesNotHaveWithNotdef() throws {
         let memory = MemoryPDF()
         let font = try ibmPlexSans(memory.pdf)
@@ -187,8 +206,7 @@ import Testing
         #expect(TestSupport.latin1(memory.bytes).contains(want))
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aCompliantDocumentDrawsACharacterTheFontDoesNotHaveWithoutNotdef() throws {
         // PDF/UA and PDF/A forbid .notdef, so a PDF/UA document draws the
         // replacement character of the font, as wide as it is, with the missing
@@ -222,8 +240,7 @@ import Testing
         #expect(!font.hasGlyph(0x0E01), "a missing character has a glyph")
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aControlCharacterStaysInTheFontOfItsText() throws {
         // A control character is drawn as a space by the font, not by the
         // fallback font: the fallback font would draw it as a space too.
@@ -241,8 +258,7 @@ import Testing
     // A soft hyphen takes no width, as it is drawn only where a line breaks at
     // it, as a hyphen (review of 11 October 2026, #21); the kerning of the
     // characters on either side of it is kept.
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aSoftHyphenHasNoWidthAndANoBreakSpaceIsASpace() throws {
         let font = TestSupport.helvetica(TestSupport.newPDF())
         font.setKernPairs(true)
@@ -254,12 +270,13 @@ import Testing
         TestSupport.expectNear(4.96, font.stringWidth(10, ".\u{00A0}"), 0.001)
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor() throws {
+        // IBM Plex Sans JP, the .otf PDFjet carries: it has 日本東京, and no
+        // Thai, as its .ttf, which this test read before 9.1.7.
         let pdf = TestSupport.newPDF()
         let latin = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
-        let jp = try Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"))
+        let jp = try Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"))
         let helvetica = TestSupport.helvetica(pdf)
         // The Latin letters after the Japanese ones are in the font again.
         TestSupport.expectNear(latin.stringWidth(10, "abc") + jp.stringWidth(10, "\u{65E5}\u{672C}") + latin.stringWidth(10, "def"),
@@ -293,15 +310,15 @@ import Testing
         return memory.bytes
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/NotoSans/NotoSans-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func twoFontsOfOneNameWithOtherGlyphsAreBothEmbedded() throws {
         // A font and another of its name with other glyphs, as a font and a
         // subset of it made by a font tool are, are two font programs. A PDF
         // embedded the font file of the first of two fonts of one name for
         // both, so the text drawn with the second came out in the glyphs of
-        // the first. The other is Noto Sans with a wider .notdef.
-        let ttf = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("fonts/NotoSans/NotoSans-Regular.ttf"))))
+        // the first. The other is IBM Plex Sans (Noto Sans before 9.1.7) with
+        // a wider .notdef.
+        let ttf = try TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
         var other = ttf
         let tables = Int(ttf[4]) << 8 | Int(ttf[5])
         for i in 0..<tables {
@@ -324,29 +341,31 @@ import Testing
         #expect(embeddedFonts(memory.bytes) == 2)
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"),
+    @Test(.enabled(if: TestSupport.exists("tests/fonts/IBMPlexSans-Regular.otf"),
             "the fonts directory is not here"))
     func oneFontProgramIsEmbeddedOnce() throws {
         // The same font added twice is one font program.
         #expect(try embeddedFonts(documentWithFonts([
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"])) == 1)
+                "tests/fonts/IBMPlexSans-Regular.otf",
+                "tests/fonts/IBMPlexSans-Regular.otf"])) == 1)
         #expect(try embeddedFonts(documentWithFonts([
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"])) == 1)
+                "tests/fonts/IBMPlexSans-Regular.otf",
+                "tests/fonts/IBMPlexSans-Regular.otf"])) == 1)
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Italic.otf"),
+    @Test(.enabled(if: TestSupport.exists("tests/fonts/IBMPlexSans-Italic.otf"),
             "the fonts directory is not here"))
     func theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
         // whole degree.
         let fonts = [
-            ("fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"),
+            ("tests/fonts/IBMPlexSans-Italic.otf", "-11.31"),
             ("fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"),
             ("fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"),
-            ("fonts/IBMPlexMono/IBMPlexMono-Italic.ttf", "-9"),
-            ("fonts/JetBrainsMono/JetBrainsMono-Italic.ttf", "-9"),
+            // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
+            // 9.1.7), its italic angle -10 in its post table
+            ("fonts/CascadiaMono/CascadiaMono-Italic.ttf", "-10"),
+            ("fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf", "-10"),
             ("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"),
         ]
         for (path, angle) in fonts {
@@ -403,18 +422,22 @@ import Testing
         return values
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf") &&
-            TestSupport.exists("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"),
-            "the fonts directory is not here"))
+    @Test
     func aGlyphOfSeveralCharactersMapsToTheCharacterDrawn() throws {
         // A glyph a font draws for several characters maps to the character
         // the document drew with it, not to the lowest of them: a Persian ۱۳۹۸
         // was copied as the Arabic ١٣٩٨, and the full-width slash of km／h as a
-        // division slash (review of 11 October 2026, #8).
+        // division slash (review of 11 October 2026, #8). Noto Sans Arabic,
+        // which this test read before 9.1.7, draws ۱, ۳, ۹ and ۸ with the
+        // glyphs of ١, ٣, ٩ and ٨; IBM Plex Sans Arabic draws each with its
+        // own, so its character map is made to draw them as Noto Sans
+        // Arabic's does. IBM Plex Sans TC draws ／ with the glyph of ∕.
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        let arabic = try Font(memory.pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
-        let tc = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+        let arabic = try Font(memory.pdf, InputStream(data: Data(TestSupport.withSharedGlyphs(
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                [[0x0661, 0x06F1], [0x0663, 0x06F3], [0x0669, 0x06F9], [0x0668, 0x06F8]]))))
+        let tc = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"))
         TextLine(arabic, "\u{06F1}\u{06F3}\u{06F9}\u{06F8}").setLocation(50, 50).drawOn(page)
         TextLine(tc, "60km\u{FF0F}h").setLocation(50, 100).drawOn(page)
         try memory.pdf.complete()
@@ -431,9 +454,15 @@ import Testing
     // own as actual text, as the ToUnicode map gives the glyph the first: "١٢٣"
     // and then "۱۲۳" copied the second as "١۲٣", and "∕" then "／" in a stamp
     // gave "∕" twice (review of 12 October 2026, R15).
+    // Noto Sans Arabic, which this test read before 9.1.7, draws ۱ and ۳
+    // with the glyphs of ١ and ٣, and ۲ with its own; IBM Plex Sans Arabic's
+    // character map is made to draw them so. IBM Plex Sans TC draws ／ with
+    // the glyph of ∕.
     @Test func theSecondCharacterOfAGlyphHasItsActualText() throws {
         let pdf = TestSupport.newPDF()
-        let arabic = try Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+        let arabic = try Font(pdf, InputStream(data: Data(TestSupport.withSharedGlyphs(
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                [[0x0661, 0x06F1], [0x0663, 0x06F3]]))))
         try #require(arabic.unicodeToGID[0x0661] == arabic.unicodeToGID[0x06F1])
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(arabic, "\u{0661}\u{0662}\u{0663}").setLocation(50, 50).drawOn(page)
@@ -444,7 +473,7 @@ import Testing
             #expect(content.contains("/ActualText <" + Page.toUTF16Hex(c) + ">"), "\(content)")
         }
 
-        let tc = try Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+        let tc = try Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"))
         try #require(tc.unicodeToGID[0x2215] == tc.unicodeToGID[0xFF0F])
         let stamp = Stamp(pdf).setSize(100, 50)
         stamp.drawText(tc, 12, 0, 12, "1\u{2215}2")
@@ -471,11 +500,11 @@ import Testing
     }
 
     @Test func aWidthPastTheRangeOfAUInt16IsWritten() throws {
-        // Noto Sans made of 256 units per em, and its glyph 0 of 65,535 units,
-        // 255,996 of the thousandths of the PDF: the widths of the /W array
-        // were made UInt16s and trapped (the review of 9 October 2026).
-        var ttf = [UInt8](try Data(contentsOf: URL(fileURLWithPath:
-                TestSupport.path("fonts/NotoSans/NotoSans-Regular.ttf"))))
+        // IBM Plex Sans (Noto Sans before 9.1.7) made of 256 units per em,
+        // and its glyph 0 of 65,535 units, 255,996 of the thousandths of the
+        // PDF: the widths of the /W array were made UInt16s and trapped (the
+        // review of 9 October 2026).
+        var ttf = try TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
         func u16(_ at: Int) -> Int { Int(ttf[at]) << 8 | Int(ttf[at + 1]) }
         func table(_ name: String) throws -> Int {
             for i in 0..<u16(4) {

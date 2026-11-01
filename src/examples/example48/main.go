@@ -6,13 +6,12 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 )
@@ -28,13 +27,9 @@ func Example48(fileName string) {
 		log.Fatal(err)
 	}
 	// A font added to an existing PDF is embedded as a subset of the glyphs
-	// drawn, as in a new PDF.
-	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	reader := bufio.NewReader(file1)
-	font1 := pdfjet.NewFontForObjects(&objects, reader)
+	// drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+	// from the library; the path of a font file of your own reads that file.
+	font1 := pdfjet.NewFontFromFileForObjects(&objects, IBMPlexSans.Regular)
 	font1.SetSize(72.0)
 
 	text := pdfjet.NewTextLine(font1, "This is a test!")
@@ -67,7 +62,7 @@ func Example48(fileName string) {
 
 func main() {
 	time0 := time.Now().UnixMilli()
-	Example48("data/testPDFs/scanned-linearized.pdf")
+	Example48("resources/data/testPDFs/scanned-linearized.pdf")
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_48 => %4d ms\n", time1-time0)
 }

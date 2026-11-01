@@ -79,9 +79,9 @@ public class DonutChart : Drawable {
         return self
     }
 
-    /// Adds a slice in the next color of the palette, navy first, the palette
-    /// of BarChart, so that the charts of a document match; its eight colors
-    /// repeat from the ninth slice on. The slice's share of the sum of the
+    /// Adds a slice in the next color of the palette, blue first, the palette
+    /// of BarChart, so that the charts of a document match; its ten colors
+    /// repeat from the eleventh slice on. The slice's share of the sum of the
     /// values sets its angle; a value that is not above 0 has no slice.
     ///
     /// - Parameter name: the label of the slice; empty for none.
@@ -451,8 +451,8 @@ public class DonutChart : Drawable {
             }
         }
         // The last slice, next to the first around the circle, in the palette's
-        // next color when it would have the first's: the ninth of nine was navy
-        // by the navy first
+        // next color when it would have the first's: the eleventh of eleven was
+        // blue by the blue first
         var first = -1
         var last = -1
         for i in 0..<slices!.count {

@@ -114,9 +114,10 @@ public final class PDF {
     private var metadataObjNumber = 0
     private var outputIntentObjNumber = 0
     private var os: BufferedOutputStream?
-    // The memory the content of the pages is compressed in, one page after
-    // another, made once for the document
-    private lazy var flateMemory = FlateEncode.Memory()
+    // The memory the content of the pages and the fonts is compressed in, one
+    // stream after another, made once for the document: made for each font
+    // stream, its 450 KB were 1.8 MB of a page in two fonts (28 October 2026)
+    internal lazy var flateMemory = FlateEncode.Memory()
     // The digits of the number append(Int) writes, the most an Int has and its sign.
     private var digits = [UInt8](repeating: 0, count: 20)
     private var objOffset = [Int]()
@@ -136,7 +137,8 @@ public final class PDF {
     private var acroForm: [String]? = nil
     private var pageLayout: PageLayout?
     private var pageMode: PageMode?
-    private var language: String = "en-US"
+    private(set) var language: String = "en-US"
+    private var languageSet = false     // A PDF that is not of PDF/A or PDF/UA says it only then
     // The document ID for the trailer and the XMP metadata: 16 random bytes as
     // 32 hexadecimal digits, so documents made at the same time get different IDs.
     private var uuid: String = Cryptography.randomBytes(16).map {
@@ -154,6 +156,8 @@ public final class PDF {
     // otherwise. A property of the document, not a static, so that the tests
     // that run at the same time do not share it. Never set outside the tests.
     var coreFontsInCompliance = false
+    // The fonts PDFjet carries that the document draws in, by their files
+    var bundledFonts = [String: Font]()
     // The descriptions that a standard of its own asks the metadata to carry.
     private var metadata = [String]()
     private var prevPage: Page?
@@ -612,6 +616,11 @@ public final class PDF {
                 result.append(contentsOf: "&lt;".unicodeScalars)
             case ">":
                 result.append(contentsOf: "&gt;".unicodeScalars)
+            case "\r":
+                // An XML reader turns the character itself into a line feed, and
+                // the metadata did not say what the information dictionary says,
+                // which PDF/A refused (review of 30 October 2026, B9)
+                result.append(contentsOf: "&#13;".unicodeScalars)
             default:
                 result.append(scalar)
             }
@@ -1150,11 +1159,13 @@ public final class PDF {
         newObj()
         append(Token.beginDictionary)
         append("/Type /Catalog\n")
-        if compliance != Compliance.PDF_1_7 {
+        if compliance != Compliance.PDF_1_7 || languageSet {
             append("/Lang <")
             append(toHexString(language))
             append(">\n")
+        }
 
+        if compliance != Compliance.PDF_1_7 {
             // Only a tagged document has a structure tree: a PDF/A of level B
             // that said it was marked would say its content is tagged, which
             // it is not.
@@ -1287,7 +1298,9 @@ public final class PDF {
                 destination.pageObjNumber = page.objNumber
                 if destination.bookmark {
                     bookmarks.append(destination)
-                } else {
+                } else if destinations[destination.name!] == nil {
+                    // The first of a name: the parts of a text line wrapped
+                    // by a TextFrame or a TextColumn all have its destination
                     destinations[destination.name!] = destination
                 }
             }
@@ -2189,6 +2202,7 @@ public final class PDF {
     @discardableResult
     public func setLanguage(_ language: String) -> PDF {
         self.language = language
+        self.languageSet = true
         return self
     }
 
@@ -2327,7 +2341,7 @@ public final class PDF {
     }
 
     // The highest object number read in a file of any size: its empty objects
-    // take about 30 MB.
+    // take about 70 MB.
     private static let minObjNumberLimit = 262144
 
     // Returns the objects by their number, with an empty object at the number
@@ -2419,6 +2433,7 @@ public final class PDF {
         for obj in objects1 {
             numbered[obj.number] = obj
         }
+        let readSoFar = ReadObjects(Array(numbered.values))
 
         var objects2 = [PDFobj]()
         for obj in objects1 {
@@ -2433,6 +2448,7 @@ public final class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
+                obj.readObjects = readSoFar     // For a /Filter that is an object of its own
                 try obj.setStreamAndData(&buffer1, try obj.getLength(numbered), decryptor, budget)
             }
             if type == "/ObjStm" {
@@ -3386,9 +3402,13 @@ public final class PDF {
             while j < value.count {
                 if PDF.isReference(value, j) {
                     let number = Int(value[j])!
-                    if numbers[number] == nil && isMergedObject(number, objects, mergedPages) {
-                        numbers[number] = reserveObjNumber()
-                        queue.append(objects[number - 1])
+                    if numbers[number] == nil {
+                        if number >= 1 && number <= objects.count && objects[number - 1].writtenNumber != 0 {
+                            numbers[number] = objects[number - 1].writtenNumber
+                        } else if isMergedObject(number, objects, mergedPages) {
+                            numbers[number] = reserveObjNumber()
+                            queue.append(objects[number - 1])
+                        }
                     }
                     j += 2
                 }
@@ -3450,7 +3470,8 @@ public final class PDF {
             return false
         }
         let obj = objects[number - 1]
-        if obj.dict.isEmpty {
+        // A stream with no dictionary is the content that was drawn on a page.
+        if obj.dict.isEmpty && obj.stream == nil {
             return false
         }
         let type = obj.getValue("/Type")
@@ -3471,6 +3492,9 @@ public final class PDF {
             _ shared: (Int, [String]) -> [String]) -> [String] {
         var value = valueOf(obj)
         if let stream = obj.stream {
+            if value.isEmpty {
+                value = ["<<", ">>"] // Content that was drawn on a page
+            }
             setEntry(&value, "/Length", [String(stream.count)])
         }
         if isPage {
@@ -3863,7 +3887,8 @@ public final class PDF {
             let isRoot = first
             first = false
             // The root is a node, whatever it is.
-            if !isRoot && (prepared.contains(ObjectIdentifier(object)) || isPageObject(object)) {
+            if !isRoot && (prepared.contains(ObjectIdentifier(object)) || isPageObject(object)
+                    || (!visited.contains(object.number) && PDF.typeLeaf(object))) {
                 if prepared.insert(ObjectIdentifier(object)).inserted {
                     PDF.addInheritedEntries(object, objects, inherited)
                     PDF.resolveMediaBox(object, objects)
@@ -3874,11 +3899,46 @@ public final class PDF {
             if !visited.insert(object.number).inserted {
                 continue
             }
-            for number in object.getObjectNumbers("/Kids").reversed()
+            for number in PDF.getKids(object, objects).reversed()
                     where number >= 1 && number <= objects.count {  // A kid that the document has.
                 stack.append(objects[number - 1])
             }
         }
+    }
+
+    // Gives a dictionary in the page tree with no /Type and no /Kids the /Type
+    // /Page it is, which is required but which other programs leave out, and
+    // returns true then: the PDF had no pages, with no error (review of 30
+    // October 2026, B3).
+    private static func typeLeaf(_ obj: PDFobj) -> Bool {
+        let value = valueOf(obj)
+        guard value.first == "<<", entryIndex(value, "/Type") == -1, entryIndex(value, "/Kids") == -1,
+                let open = obj.dict.firstIndex(of: "<<") else {
+            return false
+        }
+        obj.dict.insert(contentsOf: ["/Type", "/Page"], at: open + 1)
+        return true
+    }
+
+    // Returns the object numbers of the /Kids of the node, which can be an
+    // array that is an object of its own, "/Kids 5 0 R".
+    private static func getKids(_ node: PDFobj, _ objects: [PDFobj]) -> [Int] {
+        let kids = node.getObjectNumbers("/Kids")
+        let i = node.entryIndexOf("/Kids")
+        if i != -1 && isReference(node.dict, i + 1) && kids.count == 1
+                && kids[0] >= 1 && kids[0] <= objects.count {
+            let tokens = valueOf(objects[kids[0] - 1])
+            if tokens.first == "[" {
+                var numbers = [Int]()
+                var j = 1
+                while isReference(tokens, j) {
+                    numbers.append(Int(tokens[j])!)
+                    j += 3
+                }
+                return numbers
+            }
+        }
+        return kids
     }
 
     // Adds to the page the entries it inherits from the page tree and does

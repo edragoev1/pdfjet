@@ -244,16 +244,16 @@ func (image *pngImage) decode(inflatedIDAT []byte) {
 		}
 	case 4:
 		// Grayscale image with alpha
-		if image.bitDepth == 8 {
-			imageData = image.getImageColorType4BitDepth8(inflatedIDAT)
+		if image.bitDepth == 16 {
+			imageData = image.getImageColorType4BitDepth16(inflatedIDAT)
 		} else {
-			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
+			imageData = image.getImageColorType4BitDepth8(inflatedIDAT)
 		}
 	case 6:
-		if image.bitDepth == 8 {
-			imageData = image.getImageColorType6BitDepth8(inflatedIDAT)
+		if image.bitDepth == 16 {
+			imageData = image.getImageColorType6BitDepth16(inflatedIDAT)
 		} else {
-			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
+			imageData = image.getImageColorType6BitDepth8(inflatedIDAT)
 		}
 	case 2:
 		// True color image; a PLTE chunk in it is only a suggested palette
@@ -279,7 +279,7 @@ func (image *pngImage) colorSpace() (string, int) {
 	case 0:
 		return device.Gray, image.bitDepth
 	case 4:
-		return device.Gray, 8
+		return device.Gray, image.bitDepth
 	case 3:
 		if image.palette != nil {
 			return device.RGB, image.bitDepth
@@ -583,6 +583,37 @@ func (image *pngImage) getImageColorType4BitDepth8(buf []byte) []byte {
 	image.setAlpha(alpha)
 
 	return gray
+}
+
+// getImageColorType4BitDepth16 returns the gray samples of 16 bits, as those
+// of an image without alpha; the soft mask of a PDF image has 8 bits here, the
+// high byte of each alpha sample.
+func (image *pngImage) getImageColorType4BitDepth16(buf []byte) []byte {
+	image2 := unfilter(buf, image.h, 4*image.w, 4)
+	gray := make([]byte, 2*image.w*image.h)
+	alpha := make([]byte, image.w*image.h)
+	for i := range alpha {
+		gray[2*i], gray[2*i+1] = image2[4*i], image2[4*i+1]
+		alpha[i] = image2[4*i+2]
+	}
+	image.setAlpha(alpha)
+
+	return gray
+}
+
+// getImageColorType6BitDepth16 returns the samples of 16 bits of the colors;
+// the soft mask is the high byte of each alpha sample.
+func (image *pngImage) getImageColorType6BitDepth16(buf []byte) []byte {
+	image2 := unfilter(buf, image.h, 8*image.w, 8)
+	idata := make([]byte, 6*image.w*image.h) // Image data
+	alpha := make([]byte, image.w*image.h)   // Alpha values
+	for i := range alpha {
+		copy(idata[6*i:6*i+6], image2[8*i:8*i+6])
+		alpha[i] = image2[8*i+6]
+	}
+	image.setAlpha(alpha)
+
+	return idata
 }
 
 func (image *pngImage) getImageColorType6BitDepth8(buf []byte) []byte {

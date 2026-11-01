@@ -486,7 +486,7 @@ func isSignatureDictFrom(dict []string, start int) bool {
 
 // decryptStream returns the decrypted stream of the object.
 func (d *decryptor) decryptStream(obj *PDFobj, stream []byte) []byte {
-	if !d.encryptMetadata && obj.GetValue("/Type") == "/Metadata" {
+	if (!d.encryptMetadata && obj.GetValue("/Type") == "/Metadata") || obj.hasIdentityCrypt() {
 		return stream
 	}
 	return d.decrypt(stream, d.streamMethod, obj)

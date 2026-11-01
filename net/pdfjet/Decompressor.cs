@@ -36,6 +36,17 @@ class Decompressor {
     }
 
     internal static byte[] LZWDecode(byte[] data, int maxLength) {
+        return LZWDecode(data, maxLength, 1);
+    }
+
+    /// <summary>
+    /// Decodes the data of an LZWDecode stream, with the /EarlyChange of its
+    /// /DecodeParms: with 0 the codes get one bit longer only when the table
+    /// needs it. It was ignored, and such data decoded to wrong bytes with no
+    /// error (review of 30 October 2026, B7).
+    /// </summary>
+    internal static byte[] LZWDecode(byte[] data, int maxLength, int earlyChange) {
+        int early = Math.Min(Math.Max(earlyChange, 0), 1);
         using var bos = new MemoryStream((int) Math.Min(data.Length * 2L, maxLength));
         byte[][] table = new byte[4096][];
         for (int i = 0; i < 256; i++) {
@@ -77,7 +88,7 @@ class Decompressor {
                     table[next++] = added;
                 }
                 previous = entry;
-                if (next + 1 >= (1 << codeLength) && codeLength < 12) {
+                if (next + early >= (1 << codeLength) && codeLength < 12) {
                     codeLength++;
                 }
             }
@@ -435,6 +446,70 @@ class Decompressor {
             // Decoded again below, with the errors of a prefix.
         }
         return (outStream.Length == length) ? outStream.ToArray() : InflatePrefix(data, length);
+    }
+
+    /// <summary>
+    /// Decodes the Flate stream of a PDF like Inflate, and takes one whose
+    /// Deflate data ends and whose Adler-32 is cut off, all or part of it, as
+    /// other readers do: an object stream like that failed the whole PDF (review
+    /// of 30 October 2026, B8). What is left of the checksum has to be right.
+    /// </summary>
+    internal static byte[] InflateStream(byte[] data, int maxLength) {
+        try {
+            return Inflate(data, maxLength);
+        } catch (InvalidDataException) {
+            byte[] inflated = InflateWithCutChecksum(data, maxLength);
+            if (inflated == null) {
+                throw;
+            }
+            return inflated;
+        }
+    }
+
+    // Returns what the zlib stream decodes to when it is whole with the rest of
+    // the Adler-32 of its bytes after it, or else null. ZLibStream cannot tell
+    // where the Deflate data ends, so the stream is made whole and decoded.
+    private static byte[] InflateWithCutChecksum(byte[] data, int maxLength) {
+        byte[] checksum;
+        try {
+            using var outStream = new MemoryStream();
+            using var zlib = new ZLibStream(new MemoryStream(data), CompressionMode.Decompress);
+            byte[] buffer = new byte[65536];
+            int count;
+            while (outStream.Length <= maxLength && (count = zlib.Read(buffer, 0, buffer.Length)) > 0) {
+                outStream.Write(buffer, 0, count);
+            }
+            if (outStream.Length > maxLength) {
+                return null;
+            }
+            uint adler = Adler32(outStream.GetBuffer(), (int) outStream.Length);
+            checksum = new byte[] {(byte) (adler >> 24), (byte) (adler >> 16), (byte) (adler >> 8), (byte) adler};
+        } catch (InvalidDataException) {
+            return null;
+        }
+        for (int left = 0; left < 4 && left <= data.Length; left++) {
+            if (data.AsSpan(data.Length - left).SequenceEqual(checksum.AsSpan(0, left))) {
+                try {
+                    byte[] whole = new byte[data.Length + 4 - left];
+                    data.CopyTo(whole, 0);
+                    Array.Copy(checksum, left, whole, data.Length, 4 - left);
+                    return Inflate(whole, maxLength);
+                } catch (InvalidDataException) {
+                    // Not the end of the Deflate data.
+                }
+            }
+        }
+        return null;
+    }
+
+    private static uint Adler32(byte[] data, int length) {
+        uint a = 1;
+        uint b = 0;
+        for (int i = 0; i < length; i++) {
+            a = (a + data[i]) % 65521;
+            b = (b + a) % 65521;
+        }
+        return (b << 16) | a;
     }
 
     /// <summary>The input of Inflate, which remembers a read at its end.</summary>

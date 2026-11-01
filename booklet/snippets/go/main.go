@@ -12,22 +12,23 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 
+	// The fonts PDFjet carries for the scripts but the European ones, built into
+	// the program
+	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/CascadiaMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
-	"github.com/edragoev1/pdfjet/v9/src/JetBrainsMono"
-	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
@@ -107,7 +108,7 @@ func accessibleDocument() {
 		SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextBlock(font, "A paragraph, which a screen reader reads after the heading.").
 		SetWidth(400).SetLocation(50, 70).DrawOn(page)
-	image := pdfjet.NewImageFromFile(pdf, "images/circles.png")
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/circles.png")
 	image.SetAltDescription("Three circles that overlap")
 	image.SetLocation(50, 110).DrawOn(page)
 	if err := pdf.Complete(); err != nil {
@@ -136,21 +137,21 @@ func archivalDocument() {
 
 // @snippet fonts
 func fonts(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	serif := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular).SetSize(14)
+	serif := pdfjet.NewFontFromFile(pdf, IBMPlexSerif.Regular).SetSize(14)
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	mono := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(10)
+	mono := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(10)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
-	pdfjet.NewTextLine(serif, "Source Serif 4 at 14 points").SetLocation(50, 50).DrawOn(page)
+	pdfjet.NewTextLine(serif, "IBM Plex Serif at 14 points").SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextLine(bold, "IBM Plex Sans Bold at 12 points").SetLocation(50, 75).DrawOn(page)
-	pdfjet.NewTextLine(mono, "JetBrains Mono at 10 points").SetLocation(50, 100).DrawOn(page)
+	pdfjet.NewTextLine(mono, "Cascadia Mono at 10 points").SetLocation(50, 100).DrawOn(page)
 	pdfjet.NewTextLine(bold, "The same font at 24 points").SetFontSize(24).
 		SetLocation(50, 135).DrawOn(page)
 }
 
 // @snippet font-files
 func fontFiles(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	otf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
-	ttf := pdfjet.NewFontFromFile(pdf, "fonts/NotoSans/NotoSans-Regular.ttf")
+	otf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
+	ttf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(otf, "An OpenType font").SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextLine(ttf, "A TrueType font").SetLocation(50, 75).DrawOn(page)
@@ -274,7 +275,7 @@ func markup(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
 	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
-	code := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(11)
+	code := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(11)
 	markup := pdfjet.NewMarkup(font, bold, italic, boldItalic, code)
 	paragraphs := markup.Paragraphs(
 		"Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n" +
@@ -288,7 +289,7 @@ func markdown(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
 	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
-	code := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(10)
+	code := pdfjet.NewFontFromFile(pdf, CascadiaMono.Regular).SetSize(10)
 	markdown := pdfjet.NewMarkdown(font, bold, italic, boldItalic, code)
 	pages := make([]*pdfjet.Page, 0)
 	markdown.DrawOnPages(pdf, "# A heading\n"+
@@ -316,7 +317,7 @@ func textColumn(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet text-frame-pages
 func textFramePages(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	text := strings.Split(content.OfTextFile("data/dostoevsky.txt"), "\n\n")
+	text := strings.Split(content.OfTextFile("resources/data/dostoevsky.txt"), "\n\n")
 	frame := pdfjet.NewTextFrame(font, text)
 	frame.SetLocation(72, 72)
 	frame.SetWidth(468)
@@ -327,7 +328,7 @@ func textFramePages(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet text-frame-columns
 func textFrameColumns(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	text := strings.Split(content.OfTextFile("data/dostoevsky.txt"), "\n\n")
+	text := strings.Split(content.OfTextFile("resources/data/dostoevsky.txt"), "\n\n")
 	frame := pdfjet.NewTextFrame(font, text)
 	for frame.HasMoreText() {
 		page := pdfjet.NewPage(pdf, letter.Landscape())
@@ -349,7 +350,7 @@ func textFlow(pdf *pdfjet.PDF, font *pdfjet.Font) {
 		pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
 		pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))}, 6)
 	flow.AddSpace(12)
-	mapImage := pdfjet.NewImageFromFile(pdf, "images/gr-map.jpg")
+	mapImage := pdfjet.NewImageFromFile(pdf, "resources/images/gr-map.jpg")
 	mapImage.SetAltDescription("A map of Greece and its regions.")
 	flow.AddImageAligned(mapImage.ResizeHeight(400), alignment.Center) // Whole, here or on the next page
 	flow.Add(pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece: its regions.").SetFontSize(9)).
@@ -453,7 +454,7 @@ func cells(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet cell-content
 func cellContent(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	image := pdfjet.NewImageFromFile(pdf, "images/circles.png").ScaleBy(0.25)
+	image := pdfjet.NewImageFromFile(pdf, "resources/images/circles.png").ScaleBy(0.25)
 	image.SetAltDescription("Circles")
 	imageCell := pdfjet.NewEmptyCell(font).SetImage(image)
 	barcodeCell := pdfjet.NewEmptyCell(font).
@@ -518,7 +519,7 @@ func bigTable(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	body := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(9)
 	table := pdfjet.NewBigTable(pdf, bold, body, letter.Landscape())
 	table.SetNumberOfColumns(9) // Set in this order
-	_, err := table.SetTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",")
+	_, err := table.SetTableData("resources/data/Electric_Vehicle_Population_10_Pages.csv", ",")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -623,7 +624,7 @@ func stamps(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet images
 func images(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	photo := pdfjet.NewImageFromFile(pdf, "images/gr-map.jpg") // JPEG, PNG or BMP
+	photo := pdfjet.NewImageFromFile(pdf, "resources/images/gr-map.jpg") // JPEG, PNG or BMP
 	photo.SetAltDescription("A map of Greece")
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	photo.SetLocation(50, 50)
@@ -636,7 +637,7 @@ func images(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet svg-images
 func svgImages(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	icon, err := pdfjet.NewSVGImageFromFile("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
+	icon, err := pdfjet.NewSVGImageFromFile("resources/images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -774,7 +775,7 @@ func bookmarks(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet attachments
 func attachments(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	file := pdfjet.NewEmbeddedFileAtPath(pdf, "data/winter-2009.txt", true)
+	file := pdfjet.NewEmbeddedFileAtPath(pdf, "resources/data/winter-2009.txt", true)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	attachment := pdfjet.NewFileAttachment(file)
 	attachment.SetLocation(50, 50)
@@ -838,7 +839,7 @@ func merge() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, file := range []string{"data/testPDFs/PDFjetLogo.pdf", "data/testPDFs/rc65-16e.pdf"} {
+	for _, file := range []string{"resources/data/testPDFs/PDFjetLogo.pdf", "resources/data/testPDFs/sample-document.pdf"} {
 		objects, err := pdf.Read(content.OfBinaryFile(file))
 		if err != nil {
 			log.Fatal(err)
@@ -854,7 +855,7 @@ func merge() {
 
 // @snippet split
 func split() {
-	objects, err := pdfjet.NewPDFReader().Read(content.OfBinaryFile("data/testPDFs/rc65-16e.pdf"))
+	objects, err := pdfjet.NewPDFReader().Read(content.OfBinaryFile("resources/data/testPDFs/sample-document.pdf"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -877,16 +878,12 @@ func existingPages() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	objects, err := pdf.Read(content.OfBinaryFile("data/testPDFs/rc65-16e.pdf"))
+	objects, err := pdf.Read(content.OfBinaryFile("resources/data/testPDFs/sample-document.pdf"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	file, err := os.Open(IBMPlexSans.Regular)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	font := pdfjet.NewFontForObjects(&objects, bufio.NewReader(file)).SetSize(24)
+	// IBM Plex Sans, which PDFjet carries
+	font := pdfjet.NewFontFromFileForObjects(&objects, IBMPlexSans.Regular).SetSize(24)
 	for _, pageObj := range pdf.GetPageObjects(objects) {
 		page := pdfjet.NewPageFromObject(pdf, pageObj)
 		page.AddFontResource(font, &objects)

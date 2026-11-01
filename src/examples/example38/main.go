@@ -54,7 +54,7 @@ func Example38() {
 	xy := textBlock.DrawOn(page)
 
 	// A barcode that holds a whole source file.
-	lines := content.LinesOfTextFile("data/pdf417-sample.java")
+	lines := content.LinesOfTextFile("resources/data/pdf417-sample.java")
 	var buf strings.Builder
 	for _, line := range lines {
 		buf.WriteString(line)
@@ -66,7 +66,7 @@ func Example38() {
 	barcode.SetLocation(70.0, xy[1]+30.0)
 	xy = barcode.DrawOn(page)
 
-	text = pdfjet.NewTextLine(f1, "The source code of data/pdf417-sample.java, "+
+	text = pdfjet.NewTextLine(f1, "The source code of resources/data/pdf417-sample.java, "+
 		fmt.Sprint(len(lines))+" lines")
 	text.SetFontSize(10.0)
 	text.SetTextColor(color.DimGray)

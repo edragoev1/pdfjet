@@ -27,7 +27,7 @@ public class Example_42 {
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
         f2.SetSize(14f);
 
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/circles.png", false);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "resources/images/circles.png", false);
         EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02/Example_02.cs", true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

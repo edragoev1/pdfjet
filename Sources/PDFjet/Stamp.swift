@@ -597,9 +597,9 @@ public class Stamp : Drawable {
 
         // SCALE: around the center, like a Container
         if scaleX != 1.0 || scaleY != 1.0 {
-            page.append(scaleX)
+            page.appendPrecise(scaleX)
             page.append(" 0 0 ")
-            page.append(scaleY)
+            page.appendPrecise(scaleY)
             page.append(" 0 0 cm\n")
         }
 
@@ -611,7 +611,7 @@ public class Stamp : Drawable {
         page.append(" cm\n")
 
         // 1. DRAW: draw the object
-        page.append("/Fm\(objNumber ?? 0) Do\n")
+        page.append(page.resourceName("/XObject", "/Fm", objNumber ?? 0, [], objNumber ?? 0) + " Do\n")
 
         page.restoreGraphicsState()
         page.addEMC()

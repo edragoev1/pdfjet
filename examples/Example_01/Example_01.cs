@@ -48,7 +48,7 @@ public class Example_01 {
 
         // Add English text from a file
         TextBlock textBlock = new TextBlock(font,
-                Content.OfTextFile("data/languages/english.txt"));
+                Content.OfTextFile("resources/data/languages/english.txt"));
         textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(473f);   // Why 473f? To match the Google Fonts samples.
         textBlock.SetPadding(10f);
@@ -63,7 +63,7 @@ public class Example_01 {
 
         // Add Greek text from a file
         textBlock = new TextBlock(font,
-                Content.OfTextFile("data/languages/greek.txt"));
+                Content.OfTextFile("resources/data/languages/greek.txt"));
         textBlock.SetLanguage("el");    // So that a screen reader reads it in Greek
         textBlock.SetLocation(50f, xy[1] + 30f);
         textBlock.SetWidth(473f);
@@ -71,7 +71,7 @@ public class Example_01 {
         xy = textBlock.DrawOn(page);  // Draw the Greek text and update coordinates
 
         // Add Bulgarian text from a file with a blue border and rounded corners
-        textBlock = new TextBlock(font, Content.OfTextFile("data/languages/bulgarian.txt"));
+        textBlock = new TextBlock(font, Content.OfTextFile("resources/data/languages/bulgarian.txt"));
         textBlock.SetLanguage("bg");    // So that a screen reader reads it in Bulgarian
         textBlock.SetLocation(50f, xy[1] + 30f);
         textBlock.SetWidth(473f);

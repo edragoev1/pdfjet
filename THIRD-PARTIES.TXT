@@ -135,10 +135,10 @@ under the following license:
     dealings in these Data Files or Software without prior written
     authorization of the copyright holder.
 
-The icons of the examples, the SVG files in images/svg and those named
-*_FILL0_* in images/svg-test, are Material Symbols of Google, licensed under
-the Apache License, Version 2.0. A copy of the license is in
-images/svg/LICENSE-2.0.txt.
+The icons of the examples and the tests, the files named *_FILL0_* in
+resources/images/svg, are Material Symbols of Google,
+licensed under the Apache License, Version 2.0. A copy of the license is in
+resources/images/svg/LICENSE-2.0.txt.
 
     ============================================================================
     Material Symbols
@@ -150,3 +150,45 @@ images/svg/LICENSE-2.0.txt.
 All the fonts included in the project are licensed under the SIL Open Font License, Version 1.1.
 You can obtain a copy of the license at:
 http://scripts.sil.org/OFL
+
+
+This software includes, unmodified, the fonts in resources/fonts: IBM Plex
+Sans and Serif and Cascadia Mono, and, in resources/fonts/world, IBM Plex
+Sans Arabic, Sans Hebrew, Sans Thai, Sans JP, Sans KR, Sans SC and Sans TC.
+A font path names one of them, and the text of SVG images is drawn in them.
+They are licensed under the SIL Open Font License, Version 1.1, whose text,
+with the copyright of each, is beside each family, and goes with them
+wherever they are carried: IBM Plex Sans and Serif and Cascadia Mono in the
+Maven jar com.pdfjet:pdfjet, in the PDFjet.dll of the NuGet package PDFjet,
+built into Go programs and in the Swift product PDFjet; the fonts of
+resources/fonts/world in the Maven jar com.pdfjet:pdfjet-fonts-world, in
+the PDFjet.Fonts.World.dll of the NuGet package PDFjet.Fonts.World, built
+into Go programs by the package resources/fonts/world, and in the Swift
+product PDFjetFontsWorld. The test data in tests/fonts, which no package
+carries, has fonts under the same license, each with its license beside it:
+IBM Plex Math and Source Serif 4, which PDFjet no longer carries, IBM Plex
+Sans as .otf, and Source Han Sans JP.
+
+    ============================================================================
+    IBM Plex: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
+    Cascadia Mono: Copyright (c) 2019 - Present, Microsoft Corporation,
+        with Reserved Font Name Cascadia Code.
+
+    This Font Software is licensed under the SIL Open Font License, Version 1.1.
+    This license is available with a FAQ at: https://openfontlicense.org
+
+
+This software includes data of the Washington State Department of Licensing,
+Electric Vehicle Population Data (https://data.wa.gov/d/f6w7-q2d2), in
+resources/data: Electric_Vehicle_Population_10_Pages.csv, a part of it, and
+Electric_Vehicles_by_Model_Year.csv, counts made from it. Both are licensed
+under the Open Data Commons Open Database License (ODbL) 1.0,
+https://opendatacommons.org/licenses/odbl/1-0/, as the data they come from.
+
+
+This software includes data of the World Bank, World Development Indicators
+(SP.DYN.LE00.IN, SP.DYN.TFRT.IN and the region of each country), in
+resources/data/life-expectancy-and-fertility-2023.txt and the chart drawn from
+it in resources/images/svg/d3-life-expectancy-by-region.svg, licensed under the
+Creative Commons Attribution 4.0 International License (CC BY 4.0),
+https://creativecommons.org/licenses/by/4.0/.

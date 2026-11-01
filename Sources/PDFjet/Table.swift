@@ -55,6 +55,11 @@ public class Table : Drawable {
     // decimals, or nil when the table is not being drawn: they were read
     // again for every page, which took 33 seconds for 40,000 rows.
     private var columnSums: [Int: ColumnSums]?
+    // The height of the header rows, wrapped, that getTotalHeight measures.
+    var wrappedHeaderHeight: Float = 0.0
+    // The first wrong index given, which the methods that take one have no
+    // error to return for, and which drawOn fails the document with.
+    private var misuse: String?
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -192,6 +197,11 @@ public class Table : Drawable {
         self.rendered = numOfHeaderRows
         self.headerDrawn = false
         addCellsToCompleteTheGrid()
+        if tableWidth > 0.0 {
+            // The width and the percentages given before the data: they were
+            // lost (the review of 30 October 2026)
+            setWidth(tableWidth)
+        }
         return self
     }
 
@@ -213,6 +223,31 @@ public class Table : Drawable {
 
     // The index of the first footer row, after the header rows and the rows
     // of the table.
+    // Records the misuse of an index, which drawOn fails the document with: a
+    // row or column that is not there trapped (the review of 30 October 2026).
+    private func refuse(_ message: String) {
+        if misuse == nil {
+            misuse = message
+        }
+    }
+
+    // Records that the table has no row or column at the index.
+    @discardableResult
+    private func noIndex(_ index: Int) -> Table {
+        refuse("The table has no row or column at the index \(index).")
+        return self
+    }
+
+    // Fails the document when an index was misused, and draws nothing.
+    private func refused(_ pdf: PDF) -> Bool {
+        guard let misuse = misuse else {
+            return false
+        }
+        pdf.fail(misuse)
+        rendered = -1   // Nothing more is drawn, and no more pages are asked for
+        return true
+    }
+
     private func footerStart() -> Int {
         return max(numOfHeaderRows, tableData.count - numOfFooterRows)
     }
@@ -428,7 +463,10 @@ public class Table : Drawable {
     }
 
     // Reads the number of each row of the column, in units of the decimals: 0
-    // for a cell that has no number, or that a cell above it covers.
+    // for a cell that has no number, or that a cell above it covers. A cell is
+    // read once, from its whole text, and the lines it wraps into add nothing:
+    // they were read as numbers, and 1,234,567.89 wrapped in a narrow column
+    // added 567.89 (the review of 30 October 2026).
     private func readColumn(_ column: Int, _ decimals: Int) -> ColumnSums {
         let sums = ColumnSums(tableData.count)
         var magnitude: Int64 = 0
@@ -438,10 +476,10 @@ public class Table : Drawable {
                 continue
             }
             let cell = row[column]
-            if (cell.properties & Cell.COVERED) != 0 {
+            if (cell.properties & (Cell.COVERED | Cell.CONTINUED)) != 0 {
                 continue
             }
-            if let text = cell.text, let value = Table.numberOf(text, decimals) {
+            if let text = cell.wholeText ?? cell.text, let value = Table.numberOf(text, decimals) {
                 sums.values[r] = value
                 if sums.exact {
                     // A value is at most MAX_SUM, so the sums cannot overflow
@@ -615,6 +653,12 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func removeLineBetweenRows(_ index1: Int, _ index2: Int) -> Table {
+        if index1 < index2 && index1 < 0 {
+            return noIndex(index1)
+        }
+        if index1 < index2 && index2 >= tableData.count {
+            return noIndex(index2)
+        }
         var j = index1
         while j < index2 {
             var row = tableData[j]
@@ -639,6 +683,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setTextAlignmentInColumn(_ index: Int, _ alignment: Alignment) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -659,6 +706,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setTextColorInColumn(_ index: Int, _ color: Int32) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -679,6 +729,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setFontInColumn(_ index: Int, _ font: Font) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -699,6 +752,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setTextColorInRow(_ index: Int, _ color: Int32) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
@@ -719,6 +775,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setFontInRow(_ index: Int, _ font: Font) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
@@ -933,6 +992,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func setColumnWidth(_ index: Int, _ width: Float) -> Table {
+        if index < 0 {
+            return noIndex(index)
+        }
         for row in tableData {
             if index < row.count {
                 row[index].setWidth(width)
@@ -960,10 +1022,22 @@ public class Table : Drawable {
     /// - Returns: the cell at the specified row and column.
     ///
     public func getCellAt(_ row: Int, _ col: Int) -> Cell {
-        if row >= 0 {
-            return tableData[row][col]
+        let r = (row >= 0) ? row : tableData.count + row    // A row counted from the last
+        if r < 0 || r >= tableData.count {
+            noIndex(row)
+            return notInTheTable()
         }
-        return tableData[tableData.count + row][col]
+        if col < 0 || col >= tableData[r].count {
+            noIndex(col)
+            return notInTheTable()
+        }
+        return tableData[r][col]
+    }
+
+    // Returns a cell that is not in the table, for a wrong index, in the font
+    // of the first cell, or a font of no PDF when the table has no cells.
+    private func notInTheTable() -> Cell {
+        return Cell((tableData.first { !$0.isEmpty }?[0].font ?? (try? Font(CoreFont.HELVETICA)))!)
     }
 
     ///
@@ -974,6 +1048,10 @@ public class Table : Drawable {
     /// - Returns: the list of cells.
     ///
     public func getRow(_ index: Int) -> [Cell] {
+        if index < 0 || index >= tableData.count {
+            noIndex(index)
+            return []
+        }
         return tableData[index]
     }
 
@@ -986,6 +1064,10 @@ public class Table : Drawable {
     ///
     public func getColumn(_ index: Int) -> [Cell] {
         var column = [Cell]()
+        if index < 0 {
+            noIndex(index)
+            return column
+        }
         for row in tableData {
             if index < row.count {
                 column.append(row[index])
@@ -1005,6 +1087,9 @@ public class Table : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         if tableData.isEmpty {
             return [x1, y1]     // An empty table draws nothing.
+        }
+        if let page = page, refused(page.pdf) {
+            return [x1, y1]
         }
         wrapAroundCellText()
         applyRowSpans()
@@ -1050,6 +1135,9 @@ public class Table : Drawable {
     public func drawOn(_ pdf: PDF, _ first: Page?, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
         if tableData.isEmpty {
             return [x1, y1]     // An empty table needs no page.
+        }
+        if refused(pdf) {
+            return [x1, y1]
         }
         wrapAroundCellText()
         applyRowSpans()
@@ -1110,6 +1198,13 @@ public class Table : Drawable {
                     page.structParent, StructElem.TABLE, nil, true)
         }
         if let page = page, !first && !repeatsHeaderOn(page) {
+            return [x, y]
+        }
+        var height: Float = 0.0
+        for i in 0..<min(numOfHeaderRows, tableData.count) where !(first && isBroughtForwardRow(i)) {
+            height += self.heights[i]
+        }
+        if runsOff(page, "header", y, height) {
             return [x, y]
         }
         if let page = page, !first && numOfHeaderRows > 0 {
@@ -1464,6 +1559,13 @@ public class Table : Drawable {
     // pages before.
     private func drawFooterRows(_ page: Page?, _ x: Float, _ y: Float, _ heights: [Float], _ last: Bool) -> Float {
         let footer = footerStart()
+        var height: Float = 0.0
+        for r in footer..<tableData.count {
+            height += heights[r]
+        }
+        if runsOff(page, "footer", y, height) {
+            return y
+        }
         let artifact = (page != nil && !last && footer < tableData.count)
         if artifact {
             page!.addArtifactBMC()
@@ -1484,6 +1586,23 @@ public class Table : Drawable {
             page!.addEMC()
         }
         return y
+    }
+
+    // Tells if the header or footer rows of the height, drawn at y, run off the
+    // page, which fails the document as a row of the body that does: what did
+    // not fit was lost with no error, a page total among it (the review of 30
+    // October 2026). Rows that only reach into the bottom margin are drawn, as
+    // those of the body are.
+    private func runsOff(_ page: Page?, _ rows: String, _ y: Float, _ height: Float) -> Bool {
+        guard let page = page, height > 0.0, y + height > page.height else {
+            return false
+        }
+        page.pdf.fail("The \(rows) rows of the table are \(String(format: "%.0f", height)) points tall, "
+                + "and run off the page, which has "
+                + "\(String(format: "%.0f", max(page.height - bottomMargin - y, 0.0))) points for them. "
+                + "Make them smaller, or give the table more of the page.")
+        rendered = -1   // Nothing more is drawn, and no more pages are asked for
+        return true
     }
 
     // Works out what each cell that spans rows covers, after the text is
@@ -1508,8 +1627,12 @@ public class Table : Drawable {
         wrapAroundCellText()
         applyRowSpans()
         var total: Float = 0.0
-        for height in getRowHeights() {
+        wrappedHeaderHeight = 0.0
+        for (r, height) in getRowHeights().enumerated() {
             total += height
+            if r < numOfHeaderRows {
+                wrappedHeaderHeight += height
+            }
         }
         return total
     }
@@ -2027,9 +2150,14 @@ public class Table : Drawable {
             }
             for j in 0..<row.count {
                 if let cellLines = lines[j] {
+                    var wholeText = row[j].wholeText
+                    if wholeText == nil && cellLines.count > 1 {
+                        wholeText = row[j].text
+                    }
                     for (n, line) in cellLines.enumerated() {
                         tableData2[first + n][j].setText(line)
                     }
+                    row[j].wholeText = wholeText
                 }
             }
             // The stacked rows are wrapped in their turn, as they were when
@@ -2192,6 +2320,17 @@ public class Table : Drawable {
     /// Keeps only the columns with the specified indexes.
     @discardableResult
     public func setVisibleColumns(_ visible: Int...) -> Table {
+        if tableData.isEmpty {
+            return self
+        }
+        if visible.isEmpty {
+            refuse(Table.noVisibleColumn)
+            return self
+        }
+        let columns = tableData.map { $0.count }.max() ?? 0
+        for index in visible where index < 0 || index >= columns {
+            return noIndex(index)
+        }
         var list = [[Cell]]()
         for row in tableData {
             var row2 = [Cell]()
@@ -2207,6 +2346,10 @@ public class Table : Drawable {
         tableData = list
         return self
     }
+
+    // The message of setVisibleColumns with no column, which left rows of no
+    // cells, the same in the four ports.
+    private static let noVisibleColumn = "The table has no visible column: name at least one."
 
     /// Sets the top margin on the first page when the table spans several pages.
     @discardableResult

@@ -10,8 +10,8 @@ import Testing
 
 /// The tests of the subsets of the fonts with CFF outlines.
 @Suite struct CFFSubsetTests {
-    static let plex = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
-    static let han = "fonts/Test/SourceHanSansJP-Regular.otf"
+    static let plex = "tests/fonts/IBMPlexSans-Regular.otf"
+    static let han = "tests/fonts/SourceHanSansJP-Regular.otf"
 
     private func otf(_ path: String) throws -> OTF {
         return try OTF(InputStream(data: try Data(contentsOf: URL(fileURLWithPath: TestSupport.path(path)))))

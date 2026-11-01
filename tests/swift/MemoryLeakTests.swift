@@ -48,7 +48,7 @@ import Testing
             link.drawOn(page)
             weak.annotation = page.annots.last
 
-            let image = try Image(pdf, TestSupport.open("images/circles.png"))
+            let image = try Image(pdf, TestSupport.open("resources/images/circles.png"))
             _ = image.setAltDescription("A penguin").setURIAction("https://pdfjet.com").setLocation(50, 100).drawOn(page)
 
             var rows = [[Cell]]()

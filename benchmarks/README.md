@@ -23,15 +23,27 @@ TABLE_CONFIGS="jet jet-table" benchmarks/run.sh table   # some of the table conf
 ```
 
 It needs a JDK (21 was used) and GNU time, and mutool for the checks of the
-sample files. The programs are compiled against the PDFjet classes of this
+sample files. The table benchmark needs the full data file of Example_24,
+`Electric_Vehicle_Population_Data.csv`, 124,716 rows and 30 MB, which is not in
+the repository: `run.sh` reads it from `../pdfjet-test/`, the folder
+`pdfjet-test` next to this checkout, or from the path in `EV_CSV`, as in
+`EV_CSV=/path/to/Electric_Vehicle_Population_Data.csv benchmarks/run.sh table`.
+The quick run draws `resources/data/Electric_Vehicle_Population_10_Pages.csv`
+instead. The programs are compiled against the PDFjet classes of this
 checkout and nothing else. Nothing else should run on the machine meanwhile.
 Each run writes its own `build/results-<date>-<time>.log`, and `build/` is not
 tracked.
 
 The text document has two configurations: `jet-plex`, with IBM Plex Sans
-(`IBMPlexSans-Regular.ttf`), and `jet-noto`, with Noto Sans
-(`NotoSans-Regular.ttf`), both embedded as subsets from 9.0.5; the runs
-before used the `.otf.stream` and `.ttf.stream` files. The table has four:
+(`IBMPlexSans-Regular.ttf`), and `jet-serif`, with IBM Plex Serif
+(`IBMPlexSerif-Regular.ttf`), both embedded as subsets from 9.0.5; the runs
+before used the `.otf.stream` and `.ttf.stream` files. Up to 9.1.5 the second
+was `jet-noto`, with Noto Sans (`NotoSans-Regular.ttf`), which PDFjet does not
+come with from 9.1.7: the results below with Noto Sans were measured
+with it. During the work on 9.1.7, `jet-serif` drew Source Serif 4, which
+PDFjet does not carry from 9.1.7 either; the text benchmark now uses IBM Plex
+Serif, and the figures published below are left as they were measured. The
+table has four:
 
 | Configuration | What it draws with |
 |---|---|
@@ -48,13 +60,17 @@ slower than the one before it without anyone knowing: the per-character
 tests of 9.0.3 to 9.0.5 made it 37% slower in Go, unseen until 15 October
 2026. A port more than 5% slower is looked into before the release.
 
+Example_24 draws the 10-page sample unless it is given the full data file as
+its first argument:
+
 ```
+EV=../pdfjet-test/Electric_Vehicle_Population_Data.csv
 TABLE_CONFIGS=jet benchmarks/run.sh table     # Java: the median of 7 runs
 dotnet build PDFjet.csproj -c release && dotnet build examples/Example_24/Example_24.csproj -c release
-dotnet examples/Example_24/bin/release/net8.0/Example_24.dll   # C#: 7 times, the median
+dotnet examples/Example_24/bin/release/net8.0/Example_24.dll $EV   # C#: 7 times, the median
 swift build -c release --product Example_24
-$(swift build -c release --show-bin-path)/Example_24           # Swift: 7 times, the median
-go run ./src/examples/example24                                # Go: 7 times, the median
+$(swift build -c release --show-bin-path)/Example_24 $EV           # Swift: 7 times, the median
+go run ./src/examples/example24 $EV                                # Go: 7 times, the median
 ```
 
 Each prints the time of the document in milliseconds; the PDF is checked

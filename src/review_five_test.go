@@ -168,7 +168,7 @@ func TestReviewFiveTheTrendIsOfThePointsDrawn(t *testing.T) {
 	font := testHelvetica(testNewPDF())
 	chart := NewSimpleScatterChart(font, font).SetTitle("T").
 		Add(1, 1).Add(2, 2).Add(3, 3).Add(4, -1000).SetTrendLine(true).SetYAxisRange(0, 10)
-	testWant(t, "T: 3 points; the trend rises.", chart.getAltDescription())
+	testWant(t, "T: 3 points; the trend rises; 1 point outside the range.", chart.getAltDescription())
 }
 
 func TestTheIgnorableCharactersAtTheEdgesOfTheGapsSkipped(t *testing.T) {

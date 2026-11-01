@@ -34,7 +34,7 @@ func Example34() {
 	// Read the logo from a PDF file, and add the resources of its pages, its
 	// fonts and images, to this PDF. The logo itself is drawn with paths and
 	// has none.
-	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
+	buf, err := os.ReadFile("resources/data/testPDFs/PDFjetLogo.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func Example34() {
 	text.DrawOn(page)
 
 	textBlock := pdfjet.NewTextBlock(f1,
-		"The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "+
+		"The logo is the content of the first page of resources/data/testPDFs/PDFjetLogo.pdf, "+
 			"drawn here at half its size with page.drawContents. It stays sharp "+
 			"at any zoom, because it is drawn as vector graphics and not as an image.\n\n"+
 			"The maple leaf below is a Path with curves, and the QR code "+

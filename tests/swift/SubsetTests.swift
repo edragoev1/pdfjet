@@ -11,8 +11,12 @@ import Testing
 /// The tests of the subsets of the TrueType fonts.
 @Suite struct SubsetTests {
     private func fontBytes(_ path: String) throws -> [UInt8] {
-        return [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path(path))))
+        return try TestSupport.fontBytes(path)
     }
+
+    // IBM Plex Sans, which has the short offsets of loca; the subsets of a
+    // font with the long ones read Cascadia Mono or IBM Plex Math.
+    private let plex = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     private func u16(_ font: [UInt8], _ at: Int) -> Int {
         return Int(font[at]) << 8 | Int(font[at + 1])
@@ -65,12 +69,16 @@ import Testing
     }
 
     @Test func keepsTheGlyphsUsedAndThePartsOfTheComposites() throws {
-        // In Noto Sans, Ä (134) is made of A (36) and the dieresis (106), and
-        // ǅ (913) of D (39), z (93) and the caron (331).
-        let ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
-        let (subset, kept) = try Subset.subsetTrueType(ttf, used(134, 913))
-        #expect(kept.count == 4503)
-        let want: Set<Int> = [0, 134, 36, 106, 913, 39, 93, 331]
+        // In Cascadia Mono, whose loca has the long offsets, as that of Noto
+        // Sans, which this test read before 9.1.7, had: Ä (16) is made of A
+        // (1) and the dieresis of capitals (3051), and ặ (229) of a (225),
+        // the dot below (3029) and the breve (3020); 4,319 glyphs. Noto Sans
+        // had Ä (134) of A (36) and the dieresis (106), and ǅ (913) of three.
+        let ttf = try fontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf")
+        #expect(u16(ttf, table(ttf, "head") + 50) == 1)
+        let (subset, kept) = try Subset.subsetTrueType(ttf, used(16, 229))
+        #expect(kept.count == 4319)
+        let want: Set<Int> = [0, 16, 1, 3051, 229, 225, 3029, 3020]
         for gid in 0..<kept.count {
             #expect(want.contains(gid) == kept[gid], "glyph \(gid)")
             let glyph = glyph(subset, gid)
@@ -101,7 +109,9 @@ import Testing
     }
 
     @Test func subsetsAFontWithShortOffsets() throws {
-        let ttf = try fontBytes("fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+        // IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
+        // Thai's had.
+        let ttf = try fontBytes("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
         #expect(u16(ttf, table(ttf, "head") + 50) == 0)
         let (subset, _) = try Subset.subsetTrueType(ttf, used(5))
         let whole = glyph(ttf, 5)
@@ -110,7 +120,7 @@ import Testing
     }
 
     @Test func isRefusedByAFontWhoseLicenseForbidsIt() throws {
-        var ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
+        var ttf = try fontBytes(plex)
         let os2 = table(ttf, "OS/2")
         ttf[os2 + 8] = 0x01
         ttf[os2 + 9] = 0x00
@@ -169,53 +179,58 @@ import Testing
         return program
     }
 
-    private let tagged = "/BaseFont /([A-Z]{6}\\+NotoSans-Regular)\n"
+    private let tagged = "/BaseFont /([A-Z]{6}\\+IBMPlexSans)\n"
 
     @Test func aTrueTypeFontIsEmbeddedAsASubsetUnderATaggedName() throws {
-        for path in ["fonts/NotoSans/NotoSans-Regular.ttf"] {
+        for path in [plex] {
             let raw = try document(Compliance.PDF_1_7, path, true, "Ä")
             let (groups, _) = try #require(try match(tagged, raw), "\(path)")
             #expect(raw.contains("/FontName /\(groups[1])\n"), "\(path)")
             #expect(try count(tagged, raw) == 2, "\(path)")
             let program = try program(raw)
-            #expect(!glyph(program, 134).isEmpty && !glyph(program, 36).isEmpty, "\(path)")
-            #expect(glyph(program, 37).isEmpty, "\(path)")
-            // The widths of the glyphs kept: .notdef, A, the dieresis and Ä.
-            #expect(try match("/W \\[\n0\\[\\d+ \\]\n36\\[\\d+ \\]\n106\\[\\d+ \\]\n134\\[\\d+ \\]\\]\n", raw) != nil,
+            // In IBM Plex Sans, Ä (395) is made of A (33) and the dieresis
+            // of capitals (971), and B is 34. Noto Sans had Ä (134), A (36),
+            // the dieresis (106) and B (37).
+            #expect(!glyph(program, 395).isEmpty && !glyph(program, 33).isEmpty, "\(path)")
+            #expect(glyph(program, 34).isEmpty, "\(path)")
+            // The widths of the glyphs kept: .notdef, A, Ä and the dieresis.
+            #expect(try match("/W \\[\n0\\[\\d+ \\]\n33\\[\\d+ \\]\n395\\[\\d+ \\]\n971\\[\\d+ \\]\\]\n", raw) != nil,
                     "\(path): the widths")
             #expect(!raw.contains("/CIDSet"), "\(path)")
         }
     }
 
     @Test func aFontSetToStayWholeIsEmbeddedWhole() throws {
-        let ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
-        for path in ["fonts/NotoSans/NotoSans-Regular.ttf"] {
+        let ttf = try fontBytes(plex)
+        for path in [plex] {
             let raw = try document(Compliance.PDF_1_7, path, false, "Ä")
-            #expect(raw.contains("/BaseFont /NotoSans-Regular\n") && !raw.contains("+NotoSans"), "\(path)")
+            #expect(raw.contains("/BaseFont /IBMPlexSans\n") && !raw.contains("+IBMPlexSans"), "\(path)")
             #expect(try program(raw) == ttf, "\(path)")
         }
     }
 
     @Test func twoFontsOfOneFileShareOneSubset() throws {
-        let raw = try document(Compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B")
+        let raw = try document(Compliance.PDF_1_7, plex, true, "A", "B")
         #expect(try count("/Length1 ", raw) == 1)
         let program = try program(raw)
-        #expect(!glyph(program, 36).isEmpty && !glyph(program, 37).isEmpty)
+        // A and B, 33 and 34 in IBM Plex Sans; 36 and 37 in Noto Sans.
+        #expect(!glyph(program, 33).isEmpty && !glyph(program, 34).isEmpty)
         // Two Type0 fonts and their CID font.
         #expect(try count(tagged, raw) == 3)
     }
 
     @Test func aPDFA1HasTheCIDSetOfTheGlyphsKept() throws {
-        let raw = try document(Compliance.PDF_A_1B, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A")
+        let raw = try document(Compliance.PDF_A_1B, plex, true, "A")
         let (groups, _) = try #require(try match("/CIDSet (\\d+) 0 R\n", raw), "no CIDSet")
         let at = (raw as NSString).range(of: "\n\(groups[1]) 0 obj\n").location
         #expect(at != NSNotFound)
         let (lengths, end) = try #require(try match("/Length (\\d+)\n>>\nstream\n", raw, from: at))
         let bits = try inflate(raw, end, Int(lengths[1])!)
-        // Glyphs 0 and 36 of 4503.
-        var want = [UInt8](repeating: 0, count: (4503 + 7) / 8)
+        // Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A
+        // at 36 of 4,503.
+        var want = [UInt8](repeating: 0, count: (1019 + 7) / 8)
         want[0] = 0x80
-        want[36 / 8] |= UInt8(0x80 >> (36 % 8))
+        want[33 / 8] |= UInt8(0x80 >> (33 % 8))
         #expect(bits == want)
     }
 
@@ -250,7 +265,7 @@ import Testing
         // The font held its objects, and its Type0 font the font, a cycle that
         // kept the font and its program when the objects were never added to a
         // PDF (the review of 9 October 2026).
-        let path = "fonts/NotoSans/NotoSans-Regular.ttf"
+        let path = plex
         weak var existing: Font?
         weak var new: Font?
         try {
@@ -277,7 +292,7 @@ import Testing
         let memory = MemoryPDF()
         weak var dropped: Font?
         try {
-            let font = try Font(&objects, TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf"))
+            let font = try Font(&objects, TestSupport.open(plex))
             dropped = font
             let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
             page.addResource(font, &objects)
@@ -290,7 +305,7 @@ import Testing
         let written = try TestSupport.read(memory.bytes)
         let file = try #require(TestSupport.findObject(written, "/Length1"))
         #expect(Int(file.getValue("/Length1")) ?? 0 > 0)
-        #expect(try subsetFontName(written).hasSuffix("+NotoSans-Regular"))
+        #expect(try subsetFontName(written).hasSuffix("+IBMPlexSans"))
         objects = []
         #expect(dropped == nil, "the font is not freed once its objects are written")
     }
@@ -302,11 +317,11 @@ import Testing
     }
 
     @Test func subsetOfATrueTypeFontAddedToAnExistingPDF() throws {
-        let path = "fonts/NotoSans/NotoSans-Regular.ttf"
+        let path = plex
         let whole = try fontBytes(path).count
         let objects = try subsetInExistingPDF(path, true)
         let name = try subsetFontName(objects)
-        #expect(name.range(of: "^/[A-Z]{6}\\+NotoSans-Regular$", options: .regularExpression) != nil, "\(name)")
+        #expect(name.range(of: "^/[A-Z]{6}\\+IBMPlexSans$", options: .regularExpression) != nil, "\(name)")
         #expect(TestSupport.findObject(objects, "/FontName")?.getValue("/FontName") == name)
         #expect(TestSupport.findObject(objects, "/CIDToGIDMap")?.getValue("/BaseFont") == name)
         let file = try #require(TestSupport.findObject(objects, "/Length1"))
@@ -319,16 +334,16 @@ import Testing
     }
 
     @Test func subsetOfACFFFontAddedToAnExistingPDF() throws {
-        let objects = try subsetInExistingPDF("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true)
+        let objects = try subsetInExistingPDF("tests/fonts/IBMPlexSans-Regular.otf", true)
         let name = try subsetFontName(objects)
         #expect(name.range(of: "^/[A-Z]{6}\\+IBMPlexSans$", options: .regularExpression) != nil, "\(name)")
         #expect(TestSupport.findObject(objects, "/FontFile3") != nil)
     }
 
     @Test func setSubsetFalseKeepsAFontAddedToAnExistingPDFWhole() throws {
-        let path = "fonts/NotoSans/NotoSans-Regular.ttf"
+        let path = plex
         let objects = try subsetInExistingPDF(path, false)
-        #expect(try subsetFontName(objects) == "/NotoSans-Regular")
+        #expect(try subsetFontName(objects) == "/IBMPlexSans")
         let length1 = Int(TestSupport.findObject(objects, "/Length1")?.getValue("/Length1") ?? "")
         #expect(try length1 == fontBytes(path).count)
     }
@@ -355,7 +370,7 @@ import Testing
         // The gasp table's entry made a second head table of 8 bytes, whose
         // checksum adjustment the subset wrote past its end (the review of
         // 9 October 2026).
-        var ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
+        var ttf = try fontBytes(plex)
         let gasp = entry(ttf, "gasp")
         try #require(gasp != -1)
         ttf.replaceSubrange(gasp..<(gasp + 4), with: Array("head".utf8))
@@ -364,7 +379,7 @@ import Testing
     }
 
     @Test func aLocaFormatOtherThan0Or1IsRefused() throws {
-        var ttf = try fontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf")
+        var ttf = try fontBytes("tests/fonts/IBMPlexMath-Regular.ttf")
         put16(&ttf, table(ttf, "head") + 50, 0xFFFF)
         expectRefused(ttf, used(36))
     }
@@ -374,7 +389,7 @@ import Testing
         // them copied it again for each (the review of 9 October 2026: 112 KB
         // made into 384 MB). A subset is never larger than the glyf table and the
         // padding of its glyphs.
-        var ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
+        var ttf = try fontBytes(plex)
         let head = table(ttf, "head")
         let loca = table(ttf, "loca")
         let glyfLength = u32(ttf, entry(ttf, "glyf") + 12)

@@ -20,11 +20,9 @@ class Example_48 {
         List<PDFobj> objects = pdf.Read(new FileStream(fileName, FileMode.Open, FileAccess.Read));
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
-        Font f1 = new Font(objects,
-                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
-                FileMode.Open,
-                FileAccess.Read));
+        // drawn, as in a new PDF. IBM Plex Sans, which PDFjet carries, is read
+        // from the library; the path of a font file of your own reads that file.
+        Font f1 = new Font(objects, IBMPlexSans.Regular);
         f1.SetSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");
@@ -54,7 +52,7 @@ class Example_48 {
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_48("data/testPDFs/scanned-linearized.pdf");
+        new Example_48("resources/data/testPDFs/scanned-linearized.pdf");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine($"Example_48 => {time1 - time0,4} ms");
     }

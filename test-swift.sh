@@ -4,8 +4,6 @@
 # with Swift Testing, which comes with the Swift toolchain. The tests are the
 # PDFjetTests target of Package.swift. -warnings-as-errors fails the build on
 # any warning, as in build-swift.sh.
-
-bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")" || exit 1
 
 swift test -Xswiftc -warnings-as-errors
