@@ -423,16 +423,29 @@ public final class PDFobj {
     }
 
     // Returns true for a stream with a /Crypt filter that is the Identity one,
-    // whose name is the default: the stream is not encrypted.
+    // whose name is the default: the stream is not encrypted. With parameters
+    // in an object of their own, which are not read, the name is not known, and
+    // the stream is taken to be encrypted, as most are.
     final func hasIdentityCrypt() -> Bool {
         for (i, filter) in getFilters().enumerated() where filter == "/Crypt" {
             let parms = getDecodeParms(i)
+            if parms.isEmpty && decodeParmsHaveReference() {
+                return false
+            }
             guard let j = parms.firstIndex(of: "/Name") else {
                 return true
             }
             return tokenAt(parms, j + 1) == "/Identity"
         }
         return false
+    }
+
+    // Returns true when /DecodeParms is a reference or an array with one.
+    private final func decodeParmsHaveReference() -> Bool {
+        guard let k = dict.firstIndex(of: "/DecodeParms") else {
+            return false
+        }
+        return PDF.isReference(dict, k + 1) || getValues("/DecodeParms").contains("R")
     }
 
     // Returns the elements of the array that is the value of the key, or the

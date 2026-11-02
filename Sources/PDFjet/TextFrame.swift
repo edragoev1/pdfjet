@@ -47,6 +47,7 @@ public class TextFrame : Drawable {
     private var yText: Float = 0.0
     private var rowOpen = false
     private var rowPlaced = false
+    private var firstRow = false        // The open row is the first of the frame
     private var rowLine: TextLine?      // The text line the row was placed for
     private var nextBaseline: Float = 0.0
     private var startsParagraph = false     // The next row starts a paragraph
@@ -321,6 +322,7 @@ public class TextFrame : Drawable {
         xText = x
         rowOpen = false
         rowPlaced = false
+        firstRow = false
         startsParagraph = false
         joinReserved = false
         leadingSpace = false
@@ -407,6 +409,7 @@ public class TextFrame : Drawable {
         yText = baseline
         rowOpen = true
         rowLine = textLine
+        firstRow = !rowPlaced
         rowPlaced = true
         startsParagraph = false
         return true
@@ -416,6 +419,9 @@ public class TextFrame : Drawable {
     // of the frame. Returns false when a row does not fit in the height of the
     // frame; the tokens that are left stay for the next frame.
     private func drawTokens(_ page: Page?, _ paragraph: Paragraph, _ textLine: TextLine) -> Bool {
+        if risesOutOfFrame(textLine) {
+            return false
+        }
         let font = textLine.font!
         let fallbackFont = textLine.fallbackFont
         let fontSize = textLine.fontSize
@@ -641,6 +647,19 @@ public class TextFrame : Drawable {
     }
 
     // Adds the string to the row, at the current text position.
+    // Returns true when the text line, which goes on the open row, is larger
+    // than the row was placed for, and lowerRow would then move the row past
+    // the height of the frame, where nothing would hold it back. The text line
+    // stays for the next frame. The first row of a frame always fits, as
+    // openRow says.
+    private func risesOutOfFrame(_ textLine: TextLine) -> Bool {
+        guard let rowLine = rowLine, h > 0.0, !firstRow, rowOpen, textLine.fontSize > rowLine.fontSize else {
+            return false
+        }
+        let rise = textLine.font!.getAscent(textLine.fontSize) - rowLine.font!.getAscent(rowLine.fontSize)
+        return yText + rise + textLine.font!.getDescent(textLine.fontSize) > y + h
+    }
+
     private func addToRow(_ paragraph: Paragraph, _ textLine: TextLine, _ str: String, _ endsTextLine: Bool) {
         let first = row.isEmpty && lineIndex == 0 && xText == paragraph.xText
                 && yText == paragraph.yText

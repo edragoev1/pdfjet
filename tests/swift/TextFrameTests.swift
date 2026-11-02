@@ -766,4 +766,45 @@ import Testing
         #expect(!Paragraph().startsWith("a"))
         #expect(!Paragraph().startsWith(""))
     }
+
+    // A larger word lowers its row: when that takes the row past the height of
+    // the frame, the word stays for the next frame, and the row is drawn without it.
+    @Test func aLargerWordThatLowersARowOutOfTheFrameStaysForTheNextFrame() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        font.setSize(10)
+        let big = TestSupport.helvetica(pdf)
+        big.setSize(40)
+        let page = Page(pdf, Letter.PORTRAIT)
+        func paragraphs(_ words: [TextLine]) -> [Paragraph] {
+            let second = Paragraph()
+            for word in words {
+                second.add(word)
+            }
+            return [Paragraph(TextLine(font, "one")), second]
+        }
+        let sized = paragraphs([TextLine(font, "two")])
+        TextFrame(sized).setLocation(10, 10).setWidth(300).drawOn(page)
+        let height = sized[1].getY2() - 10 + 1
+
+        let frame = TextFrame(paragraphs([TextLine(font, "two"), TextLine(big, "BIG")]))
+                .setLocation(10, 10).setWidth(300)
+        frame.setHeight(height)
+        frame.drawOn(page)
+        #expect(frame.getTextBottom() <= 10 + height)
+        #expect(frame.hasMoreText())
+        frame.setLocation(10, 100)
+        frame.setHeight(100)
+        frame.drawOn(page)
+        #expect(!frame.hasMoreText())
+    }
+
+    // The matrix of SVG text keeps a small scale: hundredths made 0.075 come out
+    // as 0.08, and 0.004 as nothing.
+    @Test func svgTextKeepsTheScaleOfItsMatrix() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        page.showSVGText(TestSupport.helvetica(pdf), "a", [0.075, 0, 0, 0.004, 1.5, 2])
+        #expect(TestSupport.latin1(page.buf).contains("0.075 0 0 0.004 1.5 2 Tm"))
+    }
 }

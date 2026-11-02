@@ -431,7 +431,7 @@ public class SVGImage : Drawable {
             }
         }
         if name == "style" {
-            rules.add(SVGRule.parseStyleSheet(node.getText()))
+            rules.addElement(node)
         }
     }
 

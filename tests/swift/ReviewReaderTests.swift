@@ -576,7 +576,9 @@ import Testing
                 ("/Filter /Crypt", true),
                 ("/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]", true),
                 ("/Filter /Crypt /DecodeParms << /Name /StdCF >>", false),
-                ("/Filter /FlateDecode", false)] {
+                ("/Filter /FlateDecode", false),
+                ("/Filter /Crypt /DecodeParms 5 0 R", false),
+                ("/Filter [/Crypt /FlateDecode] /DecodeParms [5 0 R null]", false)] {
             let objects = try TestSupport.read(pdfWithObjects([
                 "<< /Type /Catalog /Pages 2 0 R >>",
                 "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",

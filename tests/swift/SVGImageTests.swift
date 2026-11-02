@@ -1605,4 +1605,25 @@ import Testing
         // A clipPath reads its shapes and texts with no language.
         #expect(try !drawInLanguage("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><text y=\"20\"><tspan systemLanguage=\"de\">Hallo</tspan></text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>", "en").isEmpty)
     }
+
+    // A <style> in an element that is drawn again is added once.
+    @Test func aStyleElementThatIsReusedIsAddedOnce() throws {
+        var svg = "<svg viewBox=\"0 0 10 10\"><defs><g id=\"a\"><style>.c{fill:red}</style></g></defs>"
+        svg += String(repeating: "<use href=\"#a\"/>", count: 1000)
+        svg += "</svg>"
+        let document = try PDFjetXMLParser.parse(Array(svg.utf8))
+        var elements = [document]
+        var style: PDFjetXMLNode?
+        while let element = elements.popLast() {
+            if element.getLocalName() == "style" {
+                style = element
+            }
+            elements += element.getChildren()
+        }
+        var sheet = SVGStyleSheet()
+        sheet.addElement(try #require(style))
+        sheet.addElement(try #require(style))
+        #expect(try sheet.forClasses(["c"]).count == 1)
+        _ = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
+    }
 }

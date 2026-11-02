@@ -824,6 +824,17 @@ struct SVGStyleSheet {
     // declarations, 20 s for 416 KB (review of 17 October 2026)
     static let maxApplied = 1000000
     private var applied = 0
+    // The <style> elements added, each once, as an element that is drawn again
+    // by a use element or a marker adds nothing new.
+    private var added = Set<ObjectIdentifier>()
+
+    /// Adds the rules of the <style> element after those before it, unless it
+    /// was added.
+    mutating func addElement(_ node: PDFjetXMLNode) {
+        if added.insert(ObjectIdentifier(node)).inserted {
+            add(SVGRule.parseStyleSheet(node.getText()))
+        }
+    }
 
     /// Adds the rules of a <style> element after those before it.
     mutating func add(_ rules: [SVGRule]) {

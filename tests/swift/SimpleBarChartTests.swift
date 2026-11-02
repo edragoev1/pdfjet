@@ -241,4 +241,13 @@ import Testing
         #expect(rectWidths(content).count == 1, "the panel alone a rectangle")
         #expect(content.contains(" c\n"), "the bars' corners are curves")
     }
+
+    // A negative reference value draws no line, so it takes no room and is not described.
+    @Test func aNegativeReferenceIsNoLine() {
+        let pdf = TestSupport.newPDF()
+        let plain = chart(pdf)
+        let negative = chart(pdf).setReferenceLine(-5, "Target")
+        #expect(negative.getHeight() == plain.getHeight())
+        #expect(negative.getAltDescription() == plain.getAltDescription())
+    }
 }

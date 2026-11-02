@@ -167,7 +167,7 @@ public class SimpleBarChart : Drawable {
     /// Draws a thin dashed line across the bars at a value, a target or an
     /// average, with its label and value under the bars: "Target 50". The
     /// bars are scaled so that the line fits, should it be past the largest
-    /// value. A value that is NaN or infinite draws no line.
+    /// value. A value that is negative, NaN or infinite draws no line.
     ///
     /// - Parameter value: the value of the line.
     /// - Parameter label: the label written before the value, or "".
@@ -209,7 +209,7 @@ public class SimpleBarChart : Drawable {
 
     // True when a reference line is drawn.
     private func hasReference() -> Bool {
-        return ChartScale.isValue(reference)
+        return ChartScale.isValue(reference) && reference >= 0.0
     }
 
     // The text under the reference line: its label and its value, "Target 50",
@@ -352,9 +352,10 @@ public class SimpleBarChart : Drawable {
         return ChartScale.groupDigits(ChartScale.format(value, minFractionDigits, maxFractionDigits))
     }
 
-    // The font of the name and the value of the bar of the index.
-    private func fontOf(_ index: Int) -> Font {
-        return index == highlighted() ? f1 : f2
+    // The font of the name and the value of the bar of the index, with the
+    // index of the highlighted bar, which is found once for a chart.
+    private func fontOf(_ index: Int, _ highlight: Int) -> Font {
+        return index == highlight ? f1 : f2
     }
 
     // The alternate description: the one set, or the title, the subtitle and
@@ -414,8 +415,9 @@ public class SimpleBarChart : Drawable {
         var nameWidth: Float = 0.0
         var valueWidth: Float = 0.0
         var largest: Float = 0.0
+        let highlight = highlighted()
         for i in 0..<names.count {
-            valueWidth = Swift.max(valueWidth, fontOf(i).stringWidth(size, label(values[i])))
+            valueWidth = Swift.max(valueWidth, fontOf(i, highlight).stringWidth(size, label(values[i])))
             if ChartScale.isValue(values[i]) {
                 largest = Swift.max(largest, values[i])
             }
@@ -427,7 +429,7 @@ public class SimpleBarChart : Drawable {
         // most: in a chart narrower than its values they were written past it
         let nameRoom = Swift.max(Swift.min(0.4 * (w - 2.0 * pad), w - 3.0 * pad - valueWidth - size / 2.0), 0.0)
         for (i, name) in names.enumerated() {
-            let font = fontOf(i)
+            let font = fontOf(i, highlight)
             // No name where not even an ellipsis fits; the description has it
             shown.append(nameRoom < font.stringWidth(size, "\u{2026}")
                     ? "" : ChartScale.shorten(font, size, name, nameRoom))
@@ -458,9 +460,8 @@ public class SimpleBarChart : Drawable {
         let rowTop = y + top()
         let barHeight = 1.6 * size
         let ascent = f2.getAscent(size)
-        let highlight = highlighted()
         for (i, name) in shown.enumerated() {
-            let font = fontOf(i)
+            let font = fontOf(i, highlight)
             let value = values[i]
             let top = rowTop + Float(i) * rowHeight()
             let textBaseline = top + (barHeight + ascent - f2.getDescent(size)) / 2.0
@@ -500,7 +501,7 @@ public class SimpleBarChart : Drawable {
                 let value = values[i]
                 let length: Float = (ChartScale.isValue(value) && value > 0.0) ? barRoom * (value / largest) : 0.0
                 let labelX = barX + length + size / 2.0
-                let labelW = fontOf(i).stringWidth(size, label(value))
+                let labelW = fontOf(i, highlight).stringWidth(size, label(value))
                 if labelW > 0.0 && lineX > labelX - size / 2.0 && lineX < labelX + labelW + size / 2.0 {
                     let top = rowTop + Float(i) * rowHeight()
                     if top > from {

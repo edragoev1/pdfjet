@@ -638,9 +638,14 @@ public class Page {
     }
 
     // Shows the string of an SVG image with the text matrix.
-    private func showSVGText(_ font: Font, _ text: String, _ tm: [Float]) {
+    func showSVGText(_ font: Font, _ text: String, _ tm: [Float]) {
+        // The scale and the rotation need more than hundredths, as in appendPrecise.
         for i in 0..<6 {
-            append(tm[i])
+            if i < 4 {
+                appendPrecise(tm[i])
+            } else {
+                append(tm[i])
+            }
             append(Token.space)
         }
         append("Tm\n")
