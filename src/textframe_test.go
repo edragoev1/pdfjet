@@ -996,3 +996,14 @@ func TestTextFrameALargerWordThatLowersARowOutOfTheFrameStaysForTheNextFrame(t *
 		t.Error("the next frame did not take the larger word")
 	}
 }
+
+// The matrix of SVG text keeps a small scale: hundredths made 0.075 come out as
+// 0.08, and 0.004 as nothing.
+func TestSVGTextKeepsTheScaleOfItsMatrix(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	page.showSVGText(testHelvetica(pdf), "a", [6]float32{0.075, 0, 0, 0.004, 1.5, 2})
+	if !strings.Contains(string(page.buf), "0.075 0 0 0.004 1.5 2 Tm") {
+		t.Errorf("the page has %q", page.buf)
+	}
+}

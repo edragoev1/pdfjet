@@ -591,8 +591,13 @@ func (page *Page) drawSVGText(font *Font, fontSize float32, str string, tm [6]fl
 
 // showSVGText shows the string of an SVG image with the text matrix.
 func (page *Page) showSVGText(font *Font, str string, tm [6]float32) {
-	for _, value := range tm {
-		page.appendFloat32(value)
+	// The scale and the rotation need more than hundredths, as in appendPrecise.
+	for i, value := range tm {
+		if i < 4 {
+			page.appendPrecise(value)
+		} else {
+			page.appendFloat32(value)
+		}
 		page.appendString(" ")
 	}
 	page.appendString("Tm\n")

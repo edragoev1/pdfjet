@@ -130,7 +130,7 @@ func (chart *SimpleBarChart) SetHighlightHighest() *SimpleBarChart {
 // SetReferenceLine draws a thin dashed line across the bars at a value, a
 // target or an average, with its label and value under the bars: "Target 50".
 // The bars are scaled so that the line fits, should it be past the largest
-// value. A value that is NaN or infinite draws no line.
+// value. A value that is negative, NaN or infinite draws no line.
 func (chart *SimpleBarChart) SetReferenceLine(value float32, label string) *SimpleBarChart {
 	chart.reference = value
 	chart.referenceLabel = label
@@ -165,7 +165,7 @@ func (chart *SimpleBarChart) highlighted() int {
 
 // True when a reference line is drawn.
 func (chart *SimpleBarChart) hasReference() bool {
-	return isValue(chart.reference)
+	return isValue(chart.reference) && chart.reference >= 0
 }
 
 // The text under the reference line: its label and its value, "Target 50", or

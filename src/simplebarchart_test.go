@@ -331,3 +331,16 @@ func TestSimpleBarChartRoundedBarsAreCurvesNotRectangles(t *testing.T) {
 		t.Error("the bars' corners are not curves")
 	}
 }
+
+// A negative reference value draws no line, so it takes no room and is not described.
+func TestSimpleBarChartANegativeReferenceIsNoLine(t *testing.T) {
+	pdf := testNewPDF()
+	plain := testSimpleBarChart(pdf)
+	chart := testSimpleBarChart(pdf).SetReferenceLine(-5, "Target")
+	if chart.GetHeight() != plain.GetHeight() {
+		t.Errorf("the height is %v, not %v", chart.GetHeight(), plain.GetHeight())
+	}
+	if chart.getAltDescription() != plain.getAltDescription() {
+		t.Errorf("the description is %q", chart.getAltDescription())
+	}
+}

@@ -433,16 +433,31 @@ func (obj *PDFobj) getFilters() []string {
 }
 
 // hasIdentityCrypt returns true for a stream with a /Crypt filter that is the
-// Identity one, whose name is the default: the stream is not encrypted.
+// Identity one, whose name is the default: the stream is not encrypted. With
+// parameters in an object of their own, which are not read, the name is not
+// known, and the stream is taken to be encrypted, as most are.
 func (obj *PDFobj) hasIdentityCrypt() bool {
 	for i, filter := range obj.getFilters() {
 		if filter == "/Crypt" {
 			parms := obj.getDecodeParms(i)
+			if len(parms) == 0 && obj.decodeParmsHaveReference() {
+				return false
+			}
 			j := slices.Index(parms, "/Name")
 			return j == -1 || tokenAt(parms, j+1) == "/Identity"
 		}
 	}
 	return false
+}
+
+// decodeParmsHaveReference returns true when /DecodeParms is a reference or an
+// array with one.
+func (obj *PDFobj) decodeParmsHaveReference() bool {
+	i := slices.Index(obj.dict, "/DecodeParms") + 1
+	if i == 0 {
+		return false
+	}
+	return isObjectReference(obj.dict, i) || slices.Contains(obj.getValues("/DecodeParms"), "R")
 }
 
 // getValues returns the elements of the array that is the value of the key,
