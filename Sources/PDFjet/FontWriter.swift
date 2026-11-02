@@ -284,7 +284,8 @@ class FontWriter {
                 unicode.append(contentsOf: repeatElement(Int32(-1), count: gid + 1 - unicode.count))
             }
             if unicode[gid] == -1 ||
-                    (isSeldomText(Int(unicode[gid])) && !isSeldomText(cid)) {
+                    (isSeldomText(Int(unicode[gid])) && !isSeldomText(cid)) ||
+                    (Page.isMark(Int(unicode[gid])) && !Page.isMark(cid)) {
                 unicode[gid] = Int32(cid)
             }
         }

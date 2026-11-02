@@ -843,10 +843,6 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   in Go (57 not kerned), 142 in Java (69), 172 in C# (63), 341 in Swift
   (98). The subtables are arrays by glyph now, and the glyphs kerned and
   the pairs of printable ASCII are made once: 96, 118, 103 and 155 ms.
-  Left as they are, for later:
-  - Whether a glyph is kerned is decided by the character unicodeOf gives
-    it, so a glyph a font uses both for a mark and for a spacing character,
-    which is rare, is not kerned.
   Removed, 25 October 2026 (the owner): the reading of the kern table of
   an older TrueType font without GPOS, in the four ports. None of the 261
   fonts PDFjet ships has a kern table, and none of the 372 fonts of this

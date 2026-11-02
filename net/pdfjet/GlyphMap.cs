@@ -145,7 +145,8 @@ internal sealed class GlyphMap {
         }
         map.Each((c, gid) => {
             if (chars[gid] == -1 ||
-                    (FontWriter.IsSeldomText(chars[gid]) && !FontWriter.IsSeldomText(c))) {
+                    (FontWriter.IsSeldomText(chars[gid]) && !FontWriter.IsSeldomText(c)) ||
+                    (Page.IsMark(chars[gid]) && !Page.IsMark(c))) {
                 chars[gid] = c;
             }
         });

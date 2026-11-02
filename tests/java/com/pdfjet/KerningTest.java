@@ -366,4 +366,14 @@ class KerningTest {
             assertEquals(-50, kerning(kernTable(1, 1, format, 7), 1000).pair(7, 7), "format " + format + ": glyph 7");
         }
     }
+
+    // A glyph of a mark and of a spacing character seldom in text is the spacing
+    // one, so that it is kerned. None of the fonts PDFjet carries has one.
+    @Test
+    void aGlyphOfAMarkAndASpacingCharacterIsTheSpacingOne() {
+        GlyphMap map = new GlyphMap();
+        map.set(0x0301, 5);
+        map.set(0xE000, 5);
+        assertEquals(0xE000, GlyphMap.unicodeOfGlyphs(map)[5]);
+    }
 }

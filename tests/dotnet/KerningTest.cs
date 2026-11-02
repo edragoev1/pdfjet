@@ -334,5 +334,15 @@ public class KerningTest {
         Assert.Equal(-50, KerningOf(KernTable(1, 1, format, 7), 1000).Pair(7, 7));
         Assert.Equal(-50, KerningOf(KernTable(1, 400, format, 65535), 0).Pair(65535, 65535));
     }
+
+    // A glyph of a mark and of a spacing character seldom in text is the spacing
+    // one, so that it is kerned. None of the fonts PDFjet carries has one.
+    [Fact]
+    public void AGlyphOfAMarkAndASpacingCharacterIsTheSpacingOne() {
+        GlyphMap map = new GlyphMap();
+        map.Set(0x0301, 5);
+        map.Set(0xE000, 5);
+        Assert.Equal(0xE000, GlyphMap.UnicodeOfGlyphs(map)[5]);
+    }
 }
 }

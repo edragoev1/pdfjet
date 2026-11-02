@@ -348,4 +348,13 @@ import Testing
             #expect(v == -50, "format \(format): glyph 7 kerns \(v)")
         }
     }
+
+    // A glyph of a mark and of a spacing character seldom in text is the spacing
+    // one, so that it is kerned. None of the fonts PDFjet carries has one.
+    @Test func aGlyphOfAMarkAndASpacingCharacterIsTheSpacingOne() {
+        var map = GlyphMap()
+        map.set(0x0301, 5)
+        map.set(0xE000, 5)
+        #expect(FontWriter.unicodeOfGlyphs(map)[5] == 0xE000)
+    }
 }

@@ -148,7 +148,10 @@ func unicodeOfGlyphs(m *glyphMap) []int32 {
 				chars[i] = -1
 			}
 		}
-		if chars[gid] == -1 || (isSeldomText(int(chars[gid])) && !isSeldomText(int(c))) {
+		// A glyph of a mark and a spacing character is the spacing one, which is
+		// kerned.
+		if chars[gid] == -1 || (isSeldomText(int(chars[gid])) && !isSeldomText(int(c))) ||
+			(isMark(rune(chars[gid])) && !isMark(c)) {
 			chars[gid] = int32(c)
 		}
 	})

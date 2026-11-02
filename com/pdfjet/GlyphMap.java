@@ -177,7 +177,8 @@ class GlyphMap {
                 }
                 int c = b << 8 | i;
                 if (chars[gid] == -1 ||
-                        (FontWriter.isSeldomText(chars[gid]) && !FontWriter.isSeldomText(c))) {
+                        (FontWriter.isSeldomText(chars[gid]) && !FontWriter.isSeldomText(c))
+                        || (Page.isMark(chars[gid]) && !Page.isMark(c))) {
                     chars[gid] = c;
                 }
             }
@@ -187,7 +188,8 @@ class GlyphMap {
                 int gid = e.getValue();
                 int c = e.getKey();
                 if (chars[gid] == -1 ||
-                        (FontWriter.isSeldomText(chars[gid]) && !FontWriter.isSeldomText(c))) {
+                        (FontWriter.isSeldomText(chars[gid]) && !FontWriter.isSeldomText(c))
+                        || (Page.isMark(chars[gid]) && !Page.isMark(c))) {
                     chars[gid] = c;
                 }
             }

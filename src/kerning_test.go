@@ -385,3 +385,14 @@ func TestKerningOfATableThatNamesGlyph65535AgainIsBounded(t *testing.T) {
 		}
 	}
 }
+
+// A glyph of a mark and of a spacing character seldom in text is the spacing
+// one, so that it is kerned. None of the fonts PDFjet carries has one.
+func TestAGlyphOfAMarkAndASpacingCharacterIsTheSpacingOne(t *testing.T) {
+	m := new(glyphMap)
+	m.set(0x0301, 5)
+	m.set(0xE000, 5)
+	if chars := unicodeOfGlyphs(m); chars[5] != 0xE000 {
+		t.Errorf("the glyph is %04X", chars[5])
+	}
+}
