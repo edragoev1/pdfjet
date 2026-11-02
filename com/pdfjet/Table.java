@@ -1070,7 +1070,7 @@ public class Table implements Drawable {
         try {
             // A table with no rows left to draw needs no page, and ends where it starts.
             float[] xy = new float[] {x1, y1};
-            int pageNumber = 1;
+            int pageNumber = startsOnNextPage(first, pageSize) ? 2 : 1;
             while (hasMoreData()) {
                 Page page = first;
                 if (pageNumber > 1 || first == null) {
@@ -1105,6 +1105,21 @@ public class Table implements Drawable {
             return true;
         }
         return headerHeight() <= (page.height - bottomMargin - y1) / 2f;
+    }
+
+    // Returns true when the header and the footer rows do not fit on the first
+    // page, under its top margin, and do on the next: the table starts there, as
+    // a first row that does not fit does.
+    private boolean startsOnNextPage(Page first, PageSize pageSize) {
+        if (firstPageTopMargin <= 0f) {
+            return false;
+        }
+        float height = (first != null) ? first.height : pageSize.getHeight();
+        float rows = headerHeight();
+        for (int r = footerStart(); r < heights.length; r++) {
+            rows += heights[r];
+        }
+        return firstPageTopMargin + rows > height && y1 + rows <= height;
     }
 
     private float[] drawHeaderRows(Page page, int pageNumber) throws Exception {

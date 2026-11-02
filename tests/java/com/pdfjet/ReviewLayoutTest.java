@@ -266,6 +266,22 @@ class ReviewLayoutTest {
     }
 
     @Test
+    void headerRowsThatDoNotFitUnderTheFirstPageTopMarginStartOnTheNextPage() throws Exception {
+        // The document failed, where 9.1.5 went on on the next page.
+        PDF pdf = TestSupport.newPDF();
+        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 5, 1), 1);
+        table.setColumnWidth(0, 60f);
+        table.setLocation(20f, 20f);
+        table.setBottomMargin(20f);
+        table.setFirstPageTopMargin(790f);
+        List<Page> pages = new ArrayList<Page>();
+        pages.add(first);
+        table.drawOn(pdf, first, pages, Letter.PORTRAIT);
+        assertEquals(2, pages.size());
+    }
+
+    @Test
     void aRowThatDoesNotFitUnderAHeadingGoesToTheNextPage() throws Exception {
         // The first row of the first page was drawn where it was, past the
         // bottom of the page, when it did not fit under what was above the table.

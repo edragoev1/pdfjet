@@ -11,6 +11,16 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 
+Behavior changes since 9.1.5, from the reviews before this release:
+
+- An SVG with `<text>` is now drawn with its text, in a font PDFjet carries.
+  With no such font and no `SetFont`, as with the small jar or DLL away from
+  `resources/fonts`, it is an error, where the text was left out.
+- The CJK font constants of IBM Plex Sans JP, KR, SC and TC point to `.otf`
+  files.
+- A negative value of `SetReferenceLine` in `SimpleBarChart` draws no line,
+  and takes no room in the chart or its description.
+
 ### Added
 - Go: `XMLNode.Content()` in the package xmlparser returns the text and the
   child elements of a node in the order of the document, a string for each

@@ -1149,7 +1149,7 @@ public class Table : Drawable {
         defer { columnSums = nil }
         // A table with no rows left to draw needs no page, and ends where it starts.
         var xy: [Float] = [x1, y1]
-        var pageNumber: Int = 1
+        var pageNumber: Int = startsOnNextPage(first, pageSize) ? 2 : 1
         while (hasMoreData()) {
             var page = first
             if pageNumber > 1 || first == nil {
@@ -1160,6 +1160,23 @@ public class Table : Drawable {
             pageNumber += 1
         }
         return [x1 + getWidth(), xy[1]]
+    }
+
+    // Returns true when the header and the footer rows do not fit on the first
+    // page, under its top margin, and do on the next: the table starts there, as
+    // a first row that does not fit does.
+    private func startsOnNextPage(_ first: Page?, _ pageSize: PageSize) -> Bool {
+        if firstPageTopMargin <= 0.0 {
+            return false
+        }
+        let height = first?.height ?? pageSize.getHeight()
+        var rows = headerHeight()
+        var r = footerStart()
+        while r < heights.count {
+            rows += heights[r]
+            r += 1
+        }
+        return firstPageTopMargin + rows > height && y1 + rows <= height
     }
 
     // Returns the height of the header rows.

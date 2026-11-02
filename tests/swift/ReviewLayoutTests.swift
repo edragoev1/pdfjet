@@ -223,6 +223,20 @@ import Testing
         }
     }
 
+    @Test func headerRowsThatDoNotFitUnderTheFirstPageTopMarginStartOnTheNextPage() {
+        // The document failed, where 9.1.5 went on on the next page.
+        let pdf = TestSupport.newPDF()
+        let first = Page(pdf, Letter.PORTRAIT, false)
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 5, 1), 1)
+        table.setColumnWidth(0, 60)
+        table.setLocation(20, 20)
+        table.setBottomMargin(20)
+        table.setFirstPageTopMargin(790)
+        var pages = [first]
+        table.drawOn(pdf, first, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 2)
+    }
+
     @Test func aRowSpanTallerThanAPageIsCutBetweenItsRows() {
         // A cell that spans rows taller than a page drew them all on one page,
         // past its bottom.

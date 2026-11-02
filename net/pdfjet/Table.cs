@@ -1026,7 +1026,7 @@ public class Table : IDrawable {
         try {
             // A table with no rows left to draw needs no page, and ends where it starts.
             float[] xy = new float[] {x1, y1};
-            int pageNumber = 1;
+            int pageNumber = StartsOnNextPage(first, pageSize) ? 2 : 1;
             while (HasMoreData()) {
                 Page page = first;
                 if (pageNumber > 1 || first == null) {
@@ -1061,6 +1061,21 @@ public class Table : IDrawable {
             return true;
         }
         return HeaderHeight() <= (page.height - bottomMargin - y1) / 2f;
+    }
+
+    // Returns true when the header and the footer rows do not fit on the first
+    // page, under its top margin, and do on the next: the table starts there, as
+    // a first row that does not fit does.
+    private bool StartsOnNextPage(Page first, PageSize pageSize) {
+        if (firstPageTopMargin <= 0f) {
+            return false;
+        }
+        float height = (first != null) ? first.height : pageSize.GetHeight();
+        float rows = HeaderHeight();
+        for (int r = FooterStart(); r < heights.Length; r++) {
+            rows += heights[r];
+        }
+        return firstPageTopMargin + rows > height && y1 + rows <= height;
     }
 
     private float[] DrawHeaderRows(Page page, int pageNumber) {

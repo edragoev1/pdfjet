@@ -205,6 +205,21 @@ public sealed class ReviewLayoutTest : IDisposable {
     }
 
     [Fact]
+    public void HeaderRowsThatDoNotFitUnderTheFirstPageTopMarginStartOnTheNextPage() {
+        // The document failed, where 9.1.5 went on on the next page.
+        PDF pdf = TestSupport.NewPDF();
+        Page first = new Page(pdf, Letter.PORTRAIT, false);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 5, 1), 1);
+        table.SetColumnWidth(0, 60f);
+        table.SetLocation(20f, 20f);
+        table.SetBottomMargin(20f);
+        table.SetFirstPageTopMargin(790f);
+        List<Page> pages = new List<Page> {first};
+        table.DrawOn(pdf, first, pages, Letter.PORTRAIT);
+        Assert.Equal(2, pages.Count);
+    }
+
+    [Fact]
     public void ARowThatDoesNotFitUnderAHeadingGoesToTheNextPage() {
         // The first row of the first page was drawn where it was, past the
         // bottom of the page, when it did not fit under what was above the table.
