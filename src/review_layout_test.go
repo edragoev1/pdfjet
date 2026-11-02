@@ -517,3 +517,39 @@ func TestReviewLayoutMarkdownReadsTheSourceOfAnImageTheSameWayInEveryPort(t *tes
 		t.Error("the image is not read from the working directory")
 	}
 }
+
+func TestReviewLayoutHeaderRowsThatDoNotFitUnderTheFirstPageTopMarginStartOnTheNextPage(t *testing.T) {
+	// The document failed, where 9.1.5 went on on the next page.
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	first := NewPageDetached(pdf, letter.Portrait())
+	table := NewTable().SetTableData(testRows(font, 5, 1), 1)
+	table.SetColumnWidth(0, 60)
+	table.SetLocation(20, 20)
+	table.SetBottomMargin(20)
+	table.SetFirstPageTopMargin(790)
+	pages := []*Page{first}
+	table.DrawOnPagesFrom(pdf, first, &pages, letter.Portrait())
+	if pdf.err != nil {
+		t.Fatal(pdf.err)
+	}
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	if testContent(first) != "" && strings.Contains(testContent(first), " Tj") {
+		t.Error("text is drawn on the first page")
+	}
+	// Taller than any page stays an error.
+	pdf = testNewPDF()
+	page := NewPageDetached(pdf, letter.Portrait())
+	rows := testRows(testHelvetica(pdf), 200, 1)
+	table = NewTable().SetTableData(rows, 150)
+	table.SetColumnWidth(0, 60)
+	table.SetLocation(20, 20)
+	table.SetFirstPageTopMargin(790)
+	pages = []*Page{page}
+	table.DrawOnPagesFrom(pdf, page, &pages, letter.Portrait())
+	if pdf.err == nil {
+		t.Error("header rows taller than a page drew")
+	}
+}

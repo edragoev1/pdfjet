@@ -1065,6 +1065,9 @@ func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize 
 	// A table with no rows left to draw needs no page, and ends where it starts.
 	xy := [2]float32{table.x1, table.y1}
 	pageNumber := 1
+	if table.startsOnNextPage(first, pageSize) {
+		pageNumber = 2
+	}
 	for table.hasMoreData() {
 		page := first
 		if pageNumber > 1 || first == nil {
@@ -1075,6 +1078,24 @@ func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize 
 		pageNumber++
 	}
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
+}
+
+// startsOnNextPage returns true when the header and the footer rows do not fit
+// on the first page, under its top margin, and do on the next: the table
+// starts there, as a first row that does not fit does.
+func (table *Table) startsOnNextPage(first *Page, pageSize pagesize.PageSize) bool {
+	if table.firstPageTopMargin <= 0 {
+		return false
+	}
+	height := pageSize.GetHeight()
+	if first != nil {
+		height = first.height
+	}
+	rows := table.headerHeight()
+	for r := table.footerStart(); r < len(table.heights); r++ {
+		rows += table.heights[r]
+	}
+	return table.firstPageTopMargin+rows > height && table.y1+rows <= height
 }
 
 // headerHeight returns the height of the header rows.
