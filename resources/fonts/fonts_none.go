@@ -12,3 +12,6 @@ import "embed"
 // FS is empty with the build tag pdfjet_nofonts: the program draws with fonts
 // of its own, and the 11 MB of the fonts PDFjet carries are left out of it.
 var FS embed.FS
+
+// Embedded tells whether FS has the fonts: false with the tag pdfjet_nofonts.
+const Embedded = false

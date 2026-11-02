@@ -154,6 +154,10 @@ const (
 
 var bundledFamilies = []string{"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"}
 
+// bundledFontsLeftOut tells whether the program is built with the tag
+// pdfjet_nofonts, without the fonts PDFjet carries.
+func bundledFontsLeftOut() bool { return !fonts.Embedded }
+
 // bundledFamilyCarried tells if the path names a font of a family the
 // library carries, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.
 func bundledFamilyCarried(fontPath string) bool {
@@ -248,12 +252,13 @@ func bundledFont(pdf *PDF, family, weight int, italic bool) *Font {
 		return font
 	}
 	buf := bundledFontData(name)
-	if buf == nil && withoutBundledFonts {
-		panic("Reading the font " + name + ": the program is built with the tag pdfjet_nofonts, " +
-			"without the fonts PDFjet carries; set the font of the text of the SVG image with SetFont")
-	}
 	if buf == nil {
-		panic("Reading the font " + name + ": not in resources/fonts nor in the library")
+		where := "not in resources/fonts nor in the library"
+		if !fonts.Embedded {
+			where = "the program is built with the tag pdfjet_nofonts, without the fonts PDFjet carries; " +
+				"set the font of the text of the SVG image with SetFont"
+		}
+		panic("Reading the font " + name + ": " + where)
 	}
 	font := new(Font)
 	font.pdf = pdf

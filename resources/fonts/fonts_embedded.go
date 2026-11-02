@@ -17,3 +17,6 @@ import "embed"
 //go:embed IBMPlexSans/*.ttf IBMPlexSans/license.txt
 //go:embed IBMPlexSerif/*.ttf IBMPlexSerif/license.txt
 var FS embed.FS
+
+// Embedded tells whether FS has the fonts: false with the tag pdfjet_nofonts.
+const Embedded = true
