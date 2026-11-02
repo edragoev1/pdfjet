@@ -956,3 +956,43 @@ func TestParagraphAnEmptyParagraphStartsWithNothing(t *testing.T) {
 		t.Error("an empty paragraph starts with a token")
 	}
 }
+
+// A larger word lowers its row: when that takes the row past the height of
+// the frame, the word stays for the next frame, and the row is drawn without it.
+func TestTextFrameALargerWordThatLowersARowOutOfTheFrameStaysForTheNextFrame(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	font.SetSize(10)
+	big := testHelvetica(pdf)
+	big.SetSize(40)
+	page := NewPage(pdf, testLetterPortrait())
+	paragraphs := func(words ...*TextLine) []*Paragraph {
+		second := NewParagraph()
+		for _, word := range words {
+			second.Add(word)
+		}
+		return []*Paragraph{NewParagraph().Add(NewTextLine(font, "one")), second}
+	}
+	sized := paragraphs(NewTextLine(font, "two"))
+	measured := NewTextFrameFromParagraphs(sized).SetWidth(300)
+	measured.SetLocation(10, 10)
+	measured.DrawOn(page)
+	height := sized[1].GetY2() - 10 + 1
+
+	frame := NewTextFrameFromParagraphs(paragraphs(NewTextLine(font, "two"), NewTextLine(big, "BIG"))).SetWidth(300)
+	frame.SetLocation(10, 10)
+	frame.SetHeight(height)
+	frame.DrawOn(page)
+	if frame.GetTextBottom() > 10+height {
+		t.Errorf("the text ends at %v, below the frame, which ends at %v", frame.GetTextBottom(), 10+height)
+	}
+	if !frame.HasMoreText() {
+		t.Error("the frame took the larger word")
+	}
+	frame.SetLocation(10, 100)
+	frame.SetHeight(100)
+	frame.DrawOn(page)
+	if frame.HasMoreText() {
+		t.Error("the next frame did not take the larger word")
+	}
+}

@@ -15,6 +15,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/xmlparser"
 )
 
 func testNewSVG(t *testing.T, svg string) *SVGImage {
@@ -1805,5 +1806,29 @@ func TestSVGImageATspanHonorsTheSystemLanguage(t *testing.T) {
 	// A clipPath reads its shapes and texts with no language.
 	if content := testDrawSVGInLanguage(t, text(`<clipPath id="c"><text y="20"><tspan `+de+`>Hallo</tspan></text></clipPath><rect width="50" height="50" clip-path="url(#c)"/>`), "en"); content == "" {
 		t.Errorf("content %q", content)
+	}
+}
+
+// A <style> in an element that is drawn again is added once.
+func TestASVGStyleElementThatIsReusedIsAddedOnce(t *testing.T) {
+	var svg strings.Builder
+	svg.WriteString(`<svg viewBox="0 0 10 10"><defs><g id="a"><style>.c{fill:red}</style></g></defs>`)
+	for i := 0; i < 1000; i++ {
+		svg.WriteString(`<use href="#a"/>`)
+	}
+	svg.WriteString("</svg>")
+	document, err := xmlparser.Parse([]byte(svg.String()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sheet := newSVGStyleSheet()
+	style := document.Children()[0].Children()[0].Children()[0]
+	sheet.addElement(style)
+	sheet.addElement(style)
+	if len(sheet.rules) != 1 {
+		t.Errorf("the sheet has %d rules", len(sheet.rules))
+	}
+	if _, err := NewSVGImage(strings.NewReader(svg.String())); err != nil {
+		t.Error(err)
 	}
 }

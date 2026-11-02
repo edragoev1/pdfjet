@@ -22,6 +22,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
+	"github.com/edragoev1/pdfjet/v9/src/xmlparser"
 )
 
 // svgState is what an element of an SVG file draws with: the properties it
@@ -115,10 +116,22 @@ type svgStyleSheet struct {
 	// The declarations its rules have applied to elements, maxSVGApplied at
 	// most
 	applied int
+	// The <style> elements added, each once, as an element that is drawn again
+	// by a use element or a marker adds nothing new.
+	added map[*xmlparser.XMLNode]bool
 }
 
 func newSVGStyleSheet() *svgStyleSheet {
-	return &svgStyleSheet{byClass: make(map[string][]int)}
+	return &svgStyleSheet{byClass: make(map[string][]int), added: make(map[*xmlparser.XMLNode]bool)}
+}
+
+// addElement adds the rules of the <style> element after those before it,
+// unless it was added.
+func (sheet *svgStyleSheet) addElement(node *xmlparser.XMLNode) {
+	if !sheet.added[node] {
+		sheet.added[node] = true
+		sheet.add(parseSVGStyleSheet(node.Text()))
+	}
 }
 
 // add adds the rules of a <style> element after those before it.

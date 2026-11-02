@@ -274,9 +274,10 @@ func (chart *SimpleBarChart) label(value float32) string {
 	return groupDigits(format(value, chart.minFractionDigits, chart.maxFractionDigits))
 }
 
-// The font of the name and the value of the bar of the index.
-func (chart *SimpleBarChart) fontOf(index int) *Font {
-	if index == chart.highlighted() {
+// The font of the name and the value of the bar of the index, with the index
+// of the highlighted bar, which is found once for a chart.
+func (chart *SimpleBarChart) fontOf(index, highlight int) *Font {
+	if index == highlight {
 		return chart.f1
 	}
 	return chart.f2
@@ -347,8 +348,9 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	nameWidth := float32(0)
 	valueWidth := float32(0)
 	largest := float32(0)
+	highlight := chart.highlighted()
 	for i := range chart.names {
-		valueWidth = max(valueWidth, chart.fontOf(i).StringWidth(size, chart.label(chart.values[i])))
+		valueWidth = max(valueWidth, chart.fontOf(i, highlight).StringWidth(size, chart.label(chart.values[i])))
 		if isValue(chart.values[i]) {
 			largest = max(largest, chart.values[i])
 		}
@@ -361,7 +363,7 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	nameRoom := max(min(float32(0.4*(chart.w-float32(2.0*pad))),
 		chart.w-float32(3.0*pad)-valueWidth-float32(size/2.0)), 0.0)
 	for i, name := range chart.names {
-		font := chart.fontOf(i)
+		font := chart.fontOf(i, highlight)
 		// No name where not even an ellipsis fits; the description has it
 		if nameRoom < font.StringWidth(size, "…") {
 			shown = append(shown, "")
@@ -396,9 +398,8 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	rowTop := chart.y + chart.top()
 	barHeight := float32(1.6 * size)
 	ascent := f2.GetAscent(size)
-	highlight := chart.highlighted()
 	for i, name := range shown {
-		font := chart.fontOf(i)
+		font := chart.fontOf(i, highlight)
 		top := rowTop + float32(float32(i)*chart.rowHeight())
 		textBaseline := top + float32((barHeight+ascent-f2.GetDescent(size))/2.0)
 		nameColor := simpleBarInk
@@ -446,7 +447,7 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 				length = float32(barRoom * (value / largest))
 			}
 			labelX := barX + length + float32(size/2.0)
-			labelW := chart.fontOf(i).StringWidth(size, chart.label(value))
+			labelW := chart.fontOf(i, highlight).StringWidth(size, chart.label(value))
 			if labelW > 0 && lineX > labelX-float32(size/2.0) && lineX < labelX+labelW+float32(size/2.0) {
 				top := rowTop + float32(float32(i)*chart.rowHeight())
 				if top > from {

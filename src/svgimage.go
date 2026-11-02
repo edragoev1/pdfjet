@@ -490,7 +490,7 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 		}
 	}
 	if name == "style" {
-		r.rules.add(parseSVGStyleSheet(node.Text()))
+		r.rules.addElement(node)
 	}
 	return nil
 }

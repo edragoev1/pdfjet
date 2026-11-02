@@ -71,9 +71,11 @@ type TextFrame struct {
 	// The row of text being drawn: where the text goes next, whether the row
 	// can take more text, whether the frame has a row yet, and where the next
 	// row goes.
-	xText, yText    float32
-	rowOpen         bool
-	rowPlaced       bool
+	xText, yText float32
+	rowOpen      bool
+	rowPlaced    bool
+	// firstRow is true while the open row is the first of the frame.
+	firstRow        bool
 	rowLine         *TextLine // The text line the row was placed for
 	nextBaseline    float32
 	startsParagraph bool    // The next row starts a paragraph
@@ -321,6 +323,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.xText = tf.x
 	tf.rowOpen = false
 	tf.rowPlaced = false
+	tf.firstRow = false
 	tf.startsParagraph = false
 	tf.joinReserved = false
 	tf.leadingSpace = false
@@ -411,6 +414,7 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 	tf.yText = baseline
 	tf.rowLine = textLine
 	tf.rowOpen = true
+	tf.firstRow = !tf.rowPlaced
 	tf.rowPlaced = true
 	tf.startsParagraph = false
 	return true
@@ -423,6 +427,9 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 	font := textLine.font
 	fallbackFont := textLine.fallbackFont
 	fontSize := textLine.fontSize
+	if tf.risesOutOfFrame(textLine) {
+		return false
+	}
 	var buf strings.Builder
 	var runLength float32
 	// Found once: each looks through the text of the text lines, and a word
@@ -606,6 +613,19 @@ func nextCharacterBreakIn(text string, i int) int {
 		i += size
 	}
 	return i
+}
+
+// risesOutOfFrame returns true when the text line, which goes on the open row,
+// is larger than the row was placed for, and lowerRow would then move the row
+// past the height of the frame, where nothing would hold it back. The text
+// line stays for the next frame. The first row of a frame always fits, as
+// openRow says.
+func (tf *TextFrame) risesOutOfFrame(textLine *TextLine) bool {
+	if tf.h <= 0 || tf.firstRow || !tf.rowOpen || textLine.fontSize <= tf.rowLine.fontSize {
+		return false
+	}
+	rise := textLine.font.GetAscent(textLine.fontSize) - tf.rowLine.font.GetAscent(tf.rowLine.fontSize)
+	return tf.yText+rise+textLine.font.GetDescent(textLine.fontSize) > tf.y+tf.h
 }
 
 // addToRow adds the string to the row, at the current text position.
