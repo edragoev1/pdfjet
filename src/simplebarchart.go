@@ -13,6 +13,7 @@ package pdfjet
 
 import (
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
@@ -165,7 +166,13 @@ func (chart *SimpleBarChart) highlighted() int {
 
 // True when a reference line is drawn.
 func (chart *SimpleBarChart) hasReference() bool {
-	return isValue(chart.reference) && chart.reference >= 0
+	if !isValue(chart.reference) || chart.reference < 0 {
+		return false
+	}
+	// At 0 the line needs a bar to be scaled by.
+	return chart.reference > 0 || slices.ContainsFunc(chart.values, func(value float32) bool {
+		return isValue(value) && value > 0
+	})
 }
 
 // The text under the reference line: its label and its value, "Target 50", or

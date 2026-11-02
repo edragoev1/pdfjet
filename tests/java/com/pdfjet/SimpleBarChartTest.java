@@ -286,4 +286,14 @@ class SimpleBarChartTest {
         assertEquals(plain.getHeight(), chart.getHeight(), TestSupport.DELTA);
         assertEquals(plain.altDescription(), chart.altDescription());
     }
+
+    // A reference line at 0 draws no line when no bar is above 0.
+    @Test
+    void aReferenceAtZeroWithNoBarsIsNoLine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        SimpleBarChart plain = new SimpleBarChart(font, font).add("a", 0f);
+        SimpleBarChart chart = new SimpleBarChart(font, font).add("a", 0f).setReferenceLine(0f, "Target");
+        assertEquals(plain.getHeight(), chart.getHeight(), 0f);
+    }
 }

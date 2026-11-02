@@ -206,7 +206,19 @@ public class SimpleBarChart implements Drawable {
 
     // True when a reference line is drawn.
     private boolean hasReference() {
-        return ChartScale.isValue(reference) && reference >= 0f;
+        if (!ChartScale.isValue(reference) || reference < 0f) {
+            return false;
+        }
+        if (reference > 0f) {
+            return true;
+        }
+        // At 0 the line needs a bar to be scaled by.
+        for (float value : values) {
+            if (ChartScale.isValue(value) && value > 0f) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The text under the reference line: its label and its value, "Target 50",

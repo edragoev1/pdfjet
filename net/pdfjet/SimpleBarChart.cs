@@ -192,7 +192,19 @@ public class SimpleBarChart : IDrawable {
 
     // True when a reference line is drawn.
     private bool HasReference() {
-        return ChartScale.IsValue(reference) && reference >= 0f;
+        if (!ChartScale.IsValue(reference) || reference < 0f) {
+            return false;
+        }
+        if (reference > 0f) {
+            return true;
+        }
+        // At 0 the line needs a bar to be scaled by.
+        foreach (float value in values) {
+            if (ChartScale.IsValue(value) && value > 0f) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The text under the reference line: its label and its value, "Target 50",

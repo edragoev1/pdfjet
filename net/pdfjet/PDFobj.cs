@@ -424,7 +424,7 @@ public class PDFobj {
         if (i == 0) {
             return false;
         }
-        return (i + 2 < dict.Count && dict[i + 2].Equals("R")) || GetValues("/DecodeParms").Contains("R");
+        return PDF.IsReference(dict, i) || GetValues("/DecodeParms").Contains("R");
     }
 
     // Returns the elements of the array that is the value of the key, or the

@@ -277,5 +277,15 @@ public class SimpleBarChartTest {
         Assert.Equal(plain.GetHeight(), chart.GetHeight());
         Assert.Equal(plain.AltDescription(), chart.AltDescription());
     }
+
+    // A reference line at 0 draws no line when no bar is above 0.
+    [Fact]
+    public void AReferenceAtZeroWithNoBarsIsNoLine() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        SimpleBarChart plain = new SimpleBarChart(font, font).Add("a", 0f);
+        SimpleBarChart chart = new SimpleBarChart(font, font).Add("a", 0f).SetReferenceLine(0f, "Target");
+        Assert.Equal(plain.GetHeight(), chart.GetHeight());
+    }
 }
 }   // End of namespace PDFjet.NET

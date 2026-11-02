@@ -65,17 +65,6 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   version, was released on 28 October 2026. Before the tag: the checks
   above, then PDFjet Pro 9.1.7 the same day; the Forms launch comes after it.
 
-- **Replace Example_13** (the owner, 28 October 2026: "looks like very weak
-  example - mark for replacement"). Its title is "Switzerland, in English and
-  Chinese", but the Chinese is a company's legal disclaimer about an
-  attachment selector, unrelated to the English and naming the company. A
-  replacement shows one subject in English and Simplified Chinese, each
-  tagged with its language, in the four ports; the reference PDFs and the
-  booklet follow. After the 9.1.5 tag unless the owner moves it in.
-  ✅ Done for 9.1.5 (the owner, 28 October 2026: "do Example_13 in
-  9.1.5"): the Chinese is the English paragraph about Switzerland,
-  translated, still tagged zh-Hans; the layout is unchanged.
-
 - ✅ Done for 9.1.5, 26 October 2026 (the owner: "let's start implementing
   these"): setVerticalPadding, setHeaderColor, setFooterFontSize and
   setFooterOffset in the

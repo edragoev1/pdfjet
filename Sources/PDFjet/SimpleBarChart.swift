@@ -209,7 +209,11 @@ public class SimpleBarChart : Drawable {
 
     // True when a reference line is drawn.
     private func hasReference() -> Bool {
-        return ChartScale.isValue(reference) && reference >= 0.0
+        if !ChartScale.isValue(reference) || reference < 0.0 {
+            return false
+        }
+        // At 0 the line needs a bar to be scaled by.
+        return reference > 0.0 || values.contains { ChartScale.isValue($0) && $0 > 0.0 }
     }
 
     // The text under the reference line: its label and its value, "Target 50",

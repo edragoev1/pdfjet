@@ -344,3 +344,14 @@ func TestSimpleBarChartANegativeReferenceIsNoLine(t *testing.T) {
 		t.Errorf("the description is %q", chart.getAltDescription())
 	}
 }
+
+// A reference line at 0 draws no line when no bar is above 0.
+func TestSimpleBarChartAReferenceAtZeroWithNoBarsIsNoLine(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	plain := NewSimpleBarChart(font, font).Add("a", 0)
+	chart := NewSimpleBarChart(font, font).Add("a", 0).SetReferenceLine(0, "Target")
+	if chart.GetHeight() != plain.GetHeight() {
+		t.Errorf("the height is %v, not %v", chart.GetHeight(), plain.GetHeight())
+	}
+}

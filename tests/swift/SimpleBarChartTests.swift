@@ -250,4 +250,13 @@ import Testing
         #expect(negative.getHeight() == plain.getHeight())
         #expect(negative.getAltDescription() == plain.getAltDescription())
     }
+
+    // A reference line at 0 draws no line when no bar is above 0.
+    @Test func aReferenceAtZeroWithNoBarsIsNoLine() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let plain = SimpleBarChart(font, font).add("a", 0)
+        let chart = SimpleBarChart(font, font).add("a", 0).setReferenceLine(0, "Target")
+        #expect(plain.getHeight() == chart.getHeight())
+    }
 }
