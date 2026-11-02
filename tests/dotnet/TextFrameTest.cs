@@ -814,5 +814,52 @@ public class TextFrameTest {
         Assert.False(new Paragraph().StartsWith("a"));
         Assert.False(new Paragraph().StartsWith(""));
     }
+
+    // A larger word lowers its row: when that takes the row past the height of
+    // the frame, the word stays for the next frame, and the row is drawn without it.
+    [Fact]
+    public void ALargerWordThatLowersARowOutOfTheFrameStaysForTheNextFrame() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        font.SetSize(10f);
+        Font big = TestSupport.Helvetica(pdf);
+        big.SetSize(40f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<Paragraph> Paragraphs(params TextLine[] words) {
+            Paragraph second = new Paragraph();
+            foreach (TextLine word in words) {
+                second.Add(word);
+            }
+            return new List<Paragraph> {new Paragraph().Add(new TextLine(font, "one")), second};
+        }
+        List<Paragraph> sized = Paragraphs(new TextLine(font, "two"));
+        TextFrame measured = new TextFrame(sized);
+        measured.SetWidth(300f);
+        measured.SetLocation(10f, 10f);
+        measured.DrawOn(page);
+        float height = sized[1].GetY2() - 10f + 1f;
+
+        TextFrame frame = new TextFrame(Paragraphs(new TextLine(font, "two"), new TextLine(big, "BIG")));
+        frame.SetWidth(300f);
+        frame.SetLocation(10f, 10f);
+        frame.SetHeight(height);
+        frame.DrawOn(page);
+        Assert.True(frame.GetTextBottom() <= 10f + height, "the text ends at " + frame.GetTextBottom());
+        Assert.True(frame.HasMoreText());
+        frame.SetLocation(10f, 100f);
+        frame.SetHeight(100f);
+        frame.DrawOn(page);
+        Assert.False(frame.HasMoreText());
+    }
+
+    // The matrix of SVG text keeps a small scale: hundredths made 0.075 come out
+    // as 0.08, and 0.004 as nothing.
+    [Fact]
+    public void SVGTextKeepsTheScaleOfItsMatrix() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.DrawSVGText(TestSupport.Helvetica(pdf), 10f, "a", new float[] {0.075f, 0f, 0f, 0.004f, 1.5f, 2f}, 0);
+        Assert.Contains("0.075 0 0 0.004 1.5 2 Tm", System.Text.Encoding.Latin1.GetString(page.GetContent()));
+    }
 }
 }

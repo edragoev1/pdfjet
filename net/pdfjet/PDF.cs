@@ -2726,8 +2726,8 @@ public sealed class PDF {
     /// <param name="language">The language of this document.</param>
     /// <returns>this PDF object.</returns>
     public PDF SetLanguage(String language) {
-        this.language = language;
-        this.languageSet = true;
+        this.language = language ?? "en-US";
+        this.languageSet = language != null;
         return this;
     }
 

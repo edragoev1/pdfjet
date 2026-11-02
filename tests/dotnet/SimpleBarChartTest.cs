@@ -267,5 +267,15 @@ public class SimpleBarChartTest {
         Assert.Single(RectWidths(content));     // the panel alone a rectangle
         Assert.Contains(" c\n", content);       // the bars' corners are curves
     }
+
+    // A negative reference value draws no line, so it takes no room and is not described.
+    [Fact]
+    public void ANegativeReferenceIsNoLine() {
+        PDF pdf = TestSupport.NewPDF();
+        SimpleBarChart plain = NewChart(pdf);
+        SimpleBarChart chart = NewChart(pdf).SetReferenceLine(-5f, "Target");
+        Assert.Equal(plain.GetHeight(), chart.GetHeight());
+        Assert.Equal(plain.AltDescription(), chart.AltDescription());
+    }
 }
 }   // End of namespace PDFjet.NET

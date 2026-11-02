@@ -17,6 +17,8 @@ class Decompressor {
     /// </summary>
     internal const int MAX_DECODED_LENGTH = 256 * 1024 * 1024;
 
+    private const String TOO_LONG = "Flate data decodes to more than ";
+
     // Throws when the data decoded so far is longer than the limit.
     private static void CheckLength(long length, int maxLength, String filter) {
         if (length > maxLength) {
@@ -457,7 +459,8 @@ class Decompressor {
     internal static byte[] InflateStream(byte[] data, int maxLength) {
         try {
             return Inflate(data, maxLength);
-        } catch (InvalidDataException) {
+        } catch (InvalidDataException e) when (!e.Message.StartsWith(TOO_LONG, StringComparison.Ordinal)) {
+            // Data that is too long stays too long, and is not decoded twice.
             byte[] inflated = InflateWithCutChecksum(data, maxLength);
             if (inflated == null) {
                 throw;

@@ -1011,10 +1011,21 @@ internal class SVGState {
 internal class SVGStyleSheet {
     private readonly List<SVGRule> rules = new List<SVGRule>();
     private readonly Dictionary<String, List<int>> byClass = new Dictionary<String, List<int>>();
+    // The <style> elements added, each once, as an element that is drawn again
+    // by a use element or a marker adds nothing new.
+    private readonly HashSet<XMLNode> added = new HashSet<XMLNode>();
+
+    // Adds the rules of the <style> element after those before it, unless it
+    // was added.
+    internal void AddElement(XMLNode node) {
+        if (added.Add(node)) {
+            Add(SVGRule.ParseStyleSheet(node.GetText()));
+        }
+    }
 
     // Adds the rules of a <style> element after those before it.
-    internal void Add(List<SVGRule> added) {
-        foreach (SVGRule rule in added) {
+    internal void Add(List<SVGRule> newRules) {
+        foreach (SVGRule rule in newRules) {
             List<int> indexes;
             if (!byClass.TryGetValue(rule.name, out indexes)) {
                 indexes = new List<int>();
@@ -1024,6 +1035,9 @@ internal class SVGStyleSheet {
             rules.Add(rule);
         }
     }
+
+    // The number of rules.
+    internal int Count => rules.Count;
 
     // Returns the rules for any of the classes, in the order of the style
     // sheet, each rule once.

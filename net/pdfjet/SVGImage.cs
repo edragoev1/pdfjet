@@ -426,7 +426,7 @@ public class SVGImage : IDrawable {
             }
         }
         if (name.Equals("style")) {
-            rules.Add(SVGRule.ParseStyleSheet(node.GetText()));
+            rules.AddElement(node);
         }
         stack.RemoveAt(stack.Count - 1);
     }

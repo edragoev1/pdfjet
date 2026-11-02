@@ -632,6 +632,8 @@ public class ReviewReaderTest {
     [InlineData("/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]", true)]
     [InlineData("/Filter /Crypt /DecodeParms << /Name /StdCF >>", false)]
     [InlineData("/Filter /FlateDecode", false)]
+    [InlineData("/Filter /Crypt /DecodeParms 5 0 R", false)]
+    [InlineData("/Filter [/Crypt /FlateDecode] /DecodeParms [5 0 R null]", false)]
     public void AnIdentityCryptFilterSaysTheStreamIsNotEncrypted(string entries, bool wanted) {
         List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
                 "<< /Type /Catalog /Pages 2 0 R >>",

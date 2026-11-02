@@ -17,7 +17,7 @@ fi
 mkdir -p "$1"
 OUT=$(cd "$1" && pwd)
 cd "$(dirname "$0")"
-./build.sh > /dev/null
+./build.sh -p:PDFjetFonts=true > /dev/null
 DOTNET=${DOTNET:-$HOME/.dotnet10/dotnet}
 "$DOTNET" build run-examples/RunExamples.csproj -c release -p:TreatWarningsAsErrors=true > /dev/null
 cd ..

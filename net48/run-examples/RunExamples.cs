@@ -14,7 +14,7 @@ using System.Text;
 /// <summary>
 /// Runs Example_01 to Example_06, compiled as they are, on .NET Framework 4.8
 /// against the net48 PDFjet.dll, in the folder it is started in, which has
-/// the folders the examples read, fonts, resources/data, resources/images,
+/// the folders the examples read, resources/data, resources/images,
 /// tests/data/PngSuite and examples: each example's Main, its time, whether
 /// its PDF was made whole, and what it threw. The PDFs are made in that
 /// folder, as build-dotnet.sh makes them; the results also go to
@@ -25,8 +25,8 @@ using System.Text;
 /// </summary>
 public static class RunExamples {
     public static int Main(string[] args) {
-        if (!Directory.Exists("fonts") || !Directory.Exists("resources/images")) {
-            Console.Error.WriteLine("Start it in the folder that has fonts, resources, tests/data/PngSuite and examples.");
+        if (!Directory.Exists("resources/images")) {
+            Console.Error.WriteLine("Start it in the folder that has resources, tests/data/PngSuite and examples.");
             return 2;
         }
         var report = new StringBuilder();

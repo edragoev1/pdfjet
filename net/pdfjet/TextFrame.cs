@@ -50,6 +50,8 @@ public class TextFrame : IDrawable {
     private float yText;
     private bool rowOpen;
     private bool rowPlaced;
+    // True while the open row is the first of the frame.
+    private bool firstRow;
     private TextLine rowLine;       // The text line the row was placed for
     private float nextBaseline;
     private bool startsParagraph;   // The next row starts a paragraph
@@ -328,6 +330,7 @@ public class TextFrame : IDrawable {
         xText = x;
         rowOpen = false;
         rowPlaced = false;
+        firstRow = false;
         startsParagraph = false;
         joinReserved = false;
         leadingSpace = false;
@@ -415,6 +418,7 @@ public class TextFrame : IDrawable {
         yText = baseline;
         rowOpen = true;
         rowLine = textLine;
+        firstRow = !rowPlaced;
         rowPlaced = true;
         startsParagraph = false;
         return true;
@@ -425,6 +429,9 @@ public class TextFrame : IDrawable {
     // frame; the tokens that are left stay for the next frame.
     private bool DrawTokens(Page page, Paragraph paragraph, TextLine textLine) {
         Font font = textLine.font;
+        if (RisesOutOfFrame(textLine)) {
+            return false;
+        }
         Font fallbackFont = textLine.fallbackFont;
         float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
@@ -698,6 +705,19 @@ public class TextFrame : IDrawable {
             page.EndStructElement();    // The L
             inList = false;
         }
+    }
+
+    // Returns true when the text line, which goes on the open row, is larger
+    // than the row was placed for, and LowerRow would then move the row past
+    // the height of the frame, where nothing would hold it back. The text line
+    // stays for the next frame. The first row of a frame always fits, as
+    // OpenRow says.
+    private bool RisesOutOfFrame(TextLine textLine) {
+        if (h <= 0f || firstRow || !rowOpen || textLine.fontSize <= rowLine.fontSize) {
+            return false;
+        }
+        float rise = textLine.font.GetAscent(textLine.fontSize) - rowLine.font.GetAscent(rowLine.fontSize);
+        return yText + rise + textLine.font.GetDescent(textLine.fontSize) > y + h;
     }
 
     // Moves the row down so that its tallest text is below the row before it,

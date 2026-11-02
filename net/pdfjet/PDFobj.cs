@@ -400,17 +400,31 @@ public class PDFobj {
     }
 
     // Returns true for a stream with a /Crypt filter that is the Identity one,
-    // whose name is the default: the stream is not encrypted.
+    // whose name is the default: the stream is not encrypted. With parameters in
+    // an object of their own, which are not read, the name is not known, and the
+    // stream is taken to be encrypted, as most are.
     internal bool HasIdentityCrypt() {
         List<String> filters = GetFilters();
         for (int i = 0; i < filters.Count; i++) {
             if (filters[i].Equals("/Crypt")) {
                 List<String> parms = GetDecodeParms(i);
+                if (parms.Count == 0 && DecodeParmsHaveReference()) {
+                    return false;
+                }
                 int j = parms.IndexOf("/Name");
                 return j == -1 || TokenAt(parms, j + 1).Equals("/Identity");
             }
         }
         return false;
+    }
+
+    // Returns true when /DecodeParms is a reference or an array with one.
+    private bool DecodeParmsHaveReference() {
+        int i = dict.IndexOf("/DecodeParms") + 1;
+        if (i == 0) {
+            return false;
+        }
+        return (i + 2 < dict.Count && dict[i + 2].Equals("R")) || GetValues("/DecodeParms").Contains("R");
     }
 
     // Returns the elements of the array that is the value of the key, or the

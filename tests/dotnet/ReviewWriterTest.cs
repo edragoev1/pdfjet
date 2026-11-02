@@ -650,5 +650,15 @@ public class ReviewWriterTest {
         string header = "<?xpacket begin=\"\u00EF\u00BB\u00BF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>";
         Assert.True(raw.Contains(header) && !raw.Contains("<?xpacket id="), "the packet has no begin attribute");
     }
+
+    // A null language is no language set: it threw when the PDF was completed.
+    [Fact]
+    public void ANullLanguageIsTheDefault() {
+        PDF pdf = new PDF(new MemoryStream());
+        pdf.SetLanguage(null);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();     // It closes the stream
+        Assert.Equal("en-US", pdf.language);
+    }
 }
 }

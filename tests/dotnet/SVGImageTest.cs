@@ -1675,5 +1675,23 @@ public class SVGImageTest {
         // A clipPath reads its shapes and texts with no language.
         Assert.True(DrawInLanguage("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><text y=\"20\"><tspan systemLanguage=\"de\">Hallo</tspan></text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>", "en").Length > 0);
     }
+
+    // A <style> in an element that is drawn again is added once.
+    [Fact]
+    public void AStyleElementThatIsReusedIsAddedOnce() {
+        var svg = new System.Text.StringBuilder(
+                "<svg viewBox=\"0 0 10 10\"><defs><g id=\"a\"><style>.c{fill:red}</style></g></defs>");
+        for (int i = 0; i < 1000; i++) {
+            svg.Append("<use href=\"#a\"/>");
+        }
+        svg.Append("</svg>");
+        XMLNode style = XMLParser.Parse(System.Text.Encoding.UTF8.GetBytes(svg.ToString()))
+                .GetChildren()[0].GetChildren()[0].GetChildren()[0];
+        SVGStyleSheet sheet = new SVGStyleSheet();
+        sheet.AddElement(style);
+        sheet.AddElement(style);
+        Assert.Equal(1, sheet.Count);
+        Assert.NotNull(new SVGImage(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(svg.ToString()))));
+    }
 }
 }
