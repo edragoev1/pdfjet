@@ -162,7 +162,7 @@ public class SimpleBarChart implements Drawable {
      * Draws a thin dashed line across the bars at a value, a target or an
      * average, with its label and value under the bars: "Target 50". The bars
      * are scaled so that the line fits, should it be past the largest value.
-     * A value that is NaN or infinite draws no line.
+     * A value that is negative, NaN or infinite draws no line.
      *
      * @param value the value of the line.
      * @param label the label written before the value, or "".
@@ -206,7 +206,7 @@ public class SimpleBarChart implements Drawable {
 
     // True when a reference line is drawn.
     private boolean hasReference() {
-        return ChartScale.isValue(reference);
+        return ChartScale.isValue(reference) && reference >= 0f;
     }
 
     // The text under the reference line: its label and its value, "Target 50",
@@ -346,9 +346,10 @@ public class SimpleBarChart implements Drawable {
         return ChartScale.groupDigits(ChartScale.format(value, minFractionDigits, maxFractionDigits));
     }
 
-    // The font of the name and the value of the bar of the index.
-    private Font fontOf(int index) {
-        return index == highlighted() ? f1 : f2;
+    // The font of the name and the value of the bar of the index, with the
+    // index of the highlighted bar, which is found once for a chart.
+    private Font fontOf(int index, int highlight) {
+        return index == highlight ? f1 : f2;
     }
 
     // The alternate description: the one set, or the title, the subtitle and
@@ -413,8 +414,9 @@ public class SimpleBarChart implements Drawable {
         float nameWidth = 0f;
         float valueWidth = 0f;
         float largest = 0f;
+        int highlight = highlighted();
         for (int i = 0; i < names.size(); i++) {
-            valueWidth = Math.max(valueWidth, fontOf(i).stringWidth(size, label(values.get(i))));
+            valueWidth = Math.max(valueWidth, fontOf(i, highlight).stringWidth(size, label(values.get(i))));
             if (ChartScale.isValue(values.get(i))) {
                 largest = Math.max(largest, values.get(i));
             }
@@ -426,7 +428,7 @@ public class SimpleBarChart implements Drawable {
         // most: in a chart narrower than its values they were written past it
         float nameRoom = Math.max(Math.min(0.4f * (w - 2f * pad), w - 3f * pad - valueWidth - size / 2f), 0f);
         for (int i = 0; i < names.size(); i++) {
-            Font font = fontOf(i);
+            Font font = fontOf(i, highlight);
             // No name where not even an ellipsis fits; the description has it
             shown.add(nameRoom < font.stringWidth(size, "\u2026")
                     ? "" : ChartScale.shorten(font, size, names.get(i), nameRoom));
@@ -457,9 +459,8 @@ public class SimpleBarChart implements Drawable {
         float rowTop = y + top();
         float barHeight = 1.6f * size;
         float ascent = f2.getAscent(size);
-        int highlight = highlighted();
         for (int i = 0; i < names.size(); i++) {
-            Font font = fontOf(i);
+            Font font = fontOf(i, highlight);
             float value = values.get(i);
             float top = rowTop + i * rowHeight();
             float textBaseline = top + (barHeight + ascent - f2.getDescent(size)) / 2f;
@@ -499,7 +500,7 @@ public class SimpleBarChart implements Drawable {
                 float value = values.get(i);
                 float length = (ChartScale.isValue(value) && value > 0f) ? barRoom * (value / largest) : 0f;
                 float labelX = barX + length + size / 2f;
-                float labelW = fontOf(i).stringWidth(size, label(value));
+                float labelW = fontOf(i, highlight).stringWidth(size, label(value));
                 if (labelW > 0f && lineX > labelX - size / 2f && lineX < labelX + labelW + size / 2f) {
                     float top = rowTop + i * rowHeight();
                     if (top > from) {

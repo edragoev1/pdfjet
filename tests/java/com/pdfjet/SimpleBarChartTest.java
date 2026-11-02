@@ -276,4 +276,14 @@ class SimpleBarChartTest {
         assertEquals(1, rectWidths(content).size(), "the panel alone a rectangle: " + content);
         assertTrue(content.contains(" c\n"), "the bars' corners are curves");
     }
+
+    // A negative reference value draws no line, so it takes no room and is not described.
+    @Test
+    void aNegativeReferenceIsNoLine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        SimpleBarChart plain = chart(pdf);
+        SimpleBarChart chart = chart(pdf).setReferenceLine(-5f, "Target");
+        assertEquals(plain.getHeight(), chart.getHeight(), TestSupport.DELTA);
+        assertEquals(plain.altDescription(), chart.altDescription());
+    }
 }

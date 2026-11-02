@@ -823,8 +823,13 @@ final public class Page {
 
     // Shows the string of an SVG image with the text matrix.
     private void showSVGText(Font font, String str, float[] tm) {
+        // The scale and the rotation need more than hundredths, as in appendPrecise.
         for (int i = 0; i < 6; i++) {
-            append(tm[i]);
+            if (i < 4) {
+                appendPrecise(tm[i]);
+            } else {
+                append(tm[i]);
+            }
             append(' ');
         }
         append("Tm\n");

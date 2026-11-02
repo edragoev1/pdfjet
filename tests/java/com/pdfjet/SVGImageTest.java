@@ -1690,4 +1690,22 @@ class SVGImageTest {
         // A clipPath reads its shapes and texts with no language.
         assertFalse(drawInLanguage("<svg width=\"200\" height=\"100\"><clipPath id=\"c\"><text y=\"20\"><tspan systemLanguage=\"de\">Hallo</tspan></text></clipPath><rect width=\"50\" height=\"50\" clip-path=\"url(#c)\"/></svg>", "en").isEmpty());
     }
+
+    // A style element in an element that is drawn again is added once.
+    @Test
+    void aStyleElementThatIsReusedIsAddedOnce() throws Exception {
+        StringBuilder svg = new StringBuilder("<svg viewBox=\"0 0 10 10\"><defs><g id=\"a\"><style>.c{fill:red}</style></g></defs>");
+        for (int i = 0; i < 1000; i++) {
+            svg.append("<use href=\"#a\"/>");
+        }
+        svg.append("</svg>");
+        byte[] bytes = svg.toString().getBytes(StandardCharsets.UTF_8);
+        XMLNode style = XMLParser.parse(bytes).getChildren().get(0).getChildren().get(0).getChildren().get(0);
+        assertEquals("style", style.getLocalName());
+        SVGState.StyleSheet sheet = new SVGState.StyleSheet();
+        sheet.addElement(style);
+        sheet.addElement(style);
+        assertEquals(1, sheet.forClasses(java.util.Arrays.asList("c")).size());
+        new SVGImage(new ByteArrayInputStream(bytes));
+    }
 }

@@ -427,7 +427,7 @@ public class SVGImage implements Drawable {
             }
         }
         if (name.equals("style")) {
-            rules.add(SVGState.parseStyleSheet(node.getText()));
+            rules.addElement(node);
         }
         stack.remove(stack.size() - 1);
     }

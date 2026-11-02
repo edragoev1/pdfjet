@@ -849,4 +849,42 @@ class TextFrameTest {
         assertFalse(new Paragraph().startsWith("a"));
         assertFalse(new Paragraph().startsWith(""));
     }
+
+    // A larger word lowers its row: when that takes the row past the height of
+    // the frame, the word stays for the next frame, and the row is drawn without it.
+    @Test
+    void aLargerWordThatLowersARowOutOfTheFrameStaysForTheNextFrame() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        font.setSize(10f);
+        Font big = TestSupport.helvetica(pdf);
+        big.setSize(40f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Paragraph one = new Paragraph().add(new TextLine(font, "one"));
+        Paragraph two = new Paragraph().add(new TextLine(font, "two"));
+        new TextFrame(Arrays.asList(one, two)).setLocation(10f, 10f).setWidth(300f).drawOn(page);
+        float height = two.getY2() - 10f + 1f;
+
+        Paragraph first = new Paragraph().add(new TextLine(font, "one"));
+        Paragraph second = new Paragraph().add(new TextLine(font, "two")).add(new TextLine(big, "BIG"));
+        TextFrame frame = new TextFrame(Arrays.asList(first, second)).setLocation(10f, 10f).setWidth(300f)
+                .setHeight(height);
+        frame.drawOn(page);
+        assertTrue(frame.getTextBottom() <= 10f + height, "the text ends at " + frame.getTextBottom());
+        assertTrue(frame.hasMoreText(), "the frame took the larger word");
+        frame.setLocation(10f, 100f).setHeight(100f);
+        frame.drawOn(page);
+        assertFalse(frame.hasMoreText(), "the next frame did not take the larger word");
+    }
+
+    // The matrix of SVG text keeps a small scale: hundredths made 0.075 come out
+    // as 0.08, and 0.004 as nothing.
+    @Test
+    void svgTextKeepsTheScaleOfItsMatrix() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.drawSVGText(TestSupport.helvetica(pdf), 10f, "a", new float[] {0.075f, 0f, 0f, 0.004f, 1.5f, 2f}, 0);
+        String content = page.buf.toString("ISO-8859-1");
+        assertTrue(content.contains("0.075 0 0 0.004 1.5 2 Tm"), content);
+    }
 }

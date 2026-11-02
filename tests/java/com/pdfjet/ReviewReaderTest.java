@@ -657,8 +657,10 @@ class ReviewReaderTest {
             "/Filter /Crypt",
             "/Filter [/Crypt /FlateDecode] /DecodeParms [<< /Name /Identity >> null]",
             "/Filter /Crypt /DecodeParms << /Name /StdCF >>",
-            "/Filter /FlateDecode"};
-        boolean[] wanted = {true, true, false, false};
+            "/Filter /FlateDecode",
+            "/Filter /Crypt /DecodeParms 5 0 R",
+            "/Filter [/Crypt /FlateDecode] /DecodeParms [5 0 R null]"};
+        boolean[] wanted = {true, true, false, false, false, false};
         for (int i = 0; i < entries.length; i++) {
             List<PDFobj> objects = TestSupport.read(pdfWithObjects(
                     "<< /Type /Catalog /Pages 2 0 R >>",

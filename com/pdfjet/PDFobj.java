@@ -444,17 +444,31 @@ public class PDFobj {
     }
 
     // Returns true for a stream with a /Crypt filter that is the Identity one,
-    // whose name is the default: the stream is not encrypted.
+    // whose name is the default: the stream is not encrypted. With parameters in
+    // an object of their own, which are not read, the name is not known, and the
+    // stream is taken to be encrypted, as most are.
     boolean hasIdentityCrypt() {
         List<String> filters = getFilters();
         for (int i = 0; i < filters.size(); i++) {
             if (filters.get(i).equals("/Crypt")) {
                 List<String> parms = getDecodeParms(i);
+                if (parms.isEmpty() && decodeParmsHaveReference()) {
+                    return false;
+                }
                 int j = parms.indexOf("/Name");
                 return j == -1 || tokenAt(parms, j + 1).equals("/Identity");
             }
         }
         return false;
+    }
+
+    // Returns true when /DecodeParms is a reference or an array with one.
+    private boolean decodeParmsHaveReference() {
+        int i = dict.indexOf("/DecodeParms") + 1;
+        if (i == 0) {
+            return false;
+        }
+        return PDF.isReference(dict, i) || getValues("/DecodeParms").contains("R");
     }
 
     // Returns the elements of the array that is the value of the key, or the

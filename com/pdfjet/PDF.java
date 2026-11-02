@@ -2772,8 +2772,10 @@ final public class PDF {
      *  @return this PDF object.
      */
     public PDF setLanguage(String language) {
-        this.language = language;
-        this.languageSet = true;
+        if (language != null) {
+            this.language = language;
+            this.languageSet = true;
+        }
         return this;
     }
 

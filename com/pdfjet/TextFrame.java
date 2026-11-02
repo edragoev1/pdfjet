@@ -49,6 +49,8 @@ public class TextFrame implements Drawable {
     private float yText;
     private boolean rowOpen;
     private boolean rowPlaced;
+    // True while the open row is the first of the frame.
+    private boolean firstRow;
     private TextLine rowLine;       // The text line the row was placed for
     private float nextBaseline;
     private boolean startsParagraph;    // The next row starts a paragraph
@@ -396,6 +398,7 @@ public class TextFrame implements Drawable {
         xText = x;
         rowOpen = false;
         rowPlaced = false;
+        firstRow = false;
         startsParagraph = false;
         joinReserved = false;
         leadingSpace = false;
@@ -483,6 +486,7 @@ public class TextFrame implements Drawable {
         yText = baseline;
         rowOpen = true;
         rowLine = textLine;
+        firstRow = !rowPlaced;
         rowPlaced = true;
         startsParagraph = false;
         return true;
@@ -492,6 +496,9 @@ public class TextFrame implements Drawable {
     // of the frame. Returns false when a row does not fit in the height of the
     // frame; the tokens that are left stay for the next frame.
     private boolean drawTokens(Page page, Paragraph paragraph, TextLine textLine) throws Exception {
+        if (risesOutOfFrame(textLine)) {
+            return false;
+        }
         Font font = textLine.font;
         Font fallbackFont = textLine.fallbackFont;
         float fontSize = textLine.fontSize;
@@ -681,6 +688,18 @@ public class TextFrame implements Drawable {
             end = next;
         }
         return token.substring(0, end);
+    }
+
+    // Returns true when the text line, which goes on the open row, is larger
+    // than the row was placed for, and lowerRow would then move the row past the
+    // height of the frame, where nothing would hold it back. The text line stays
+    // for the next frame. The first row of a frame always fits, as openRow says.
+    private boolean risesOutOfFrame(TextLine textLine) {
+        if (h <= 0f || firstRow || !rowOpen || textLine.fontSize <= rowLine.fontSize) {
+            return false;
+        }
+        float rise = textLine.font.getAscent(textLine.fontSize) - rowLine.font.getAscent(rowLine.fontSize);
+        return yText + rise + textLine.font.getDescent(textLine.fontSize) > y + h;
     }
 
     // Adds the string to the row, at the current text position.

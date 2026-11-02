@@ -700,4 +700,15 @@ class ReviewWriterTest {
         String header = "<?xpacket begin=\"\u00EF\u00BB\u00BF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>";
         assertTrue(raw.contains(header) && !raw.contains("<?xpacket id="), "the packet has no begin attribute");
     }
+
+    // setLanguage(null) threw a NullPointerException in complete().
+    @Test
+    void aNullLanguageIsNotSet() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.setLanguage(null);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        assertFalse(TestSupport.latin1(bos.toByteArray()).contains("/Lang <"));
+    }
 }

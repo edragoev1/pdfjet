@@ -10,8 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -143,6 +145,16 @@ class SVGState {
         // declarations, 20 s for 416 KB (review of 17 October 2026)
         static final int MAX_APPLIED = 1000000;
         private long applied = 0;
+        // The style elements added, each once, as an element that is drawn again
+        // by a use element or a marker adds nothing new.
+        private final Set<XMLNode> added = new HashSet<XMLNode>();
+
+        // Adds the rules of the style element after those before it, unless it was added.
+        void addElement(XMLNode node) {
+            if (added.add(node)) {
+                add(parseStyleSheet(node.getText()));
+            }
+        }
 
         // Adds the rules of a style element after those before it.
         void add(List<Rule> newRules) {

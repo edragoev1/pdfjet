@@ -269,4 +269,16 @@ class DecompressorTest {
     void inflateAcceptsAnEmptyStream() throws Exception {
         assertEquals(0, Decompressor.inflate(Compressor.deflate(new byte[0])).length);
     }
+
+    // A stream past the limit stays that error: decoding it again cannot help.
+    @Test
+    void inflateStreamReportsAStreamPastTheLimit() throws Exception {
+        byte[] data = new byte[1000];
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.DeflaterOutputStream deflater = new java.util.zip.DeflaterOutputStream(out)) {
+            deflater.write(data);
+        }
+        Exception e = assertThrows(Exception.class, () -> Decompressor.inflateStream(out.toByteArray(), 10));
+        assertEquals("Flate data decodes to more than 10 bytes", e.getMessage());
+    }
 }

@@ -22,8 +22,17 @@ class Decompressor {
     private static void checkLength(int length, int maxLength, String filter)
             throws DataFormatException {
         if (length > maxLength) {
-            throw new DataFormatException(
+            throw new TooLongException(
                     filter + " data decodes to more than " + maxLength + " bytes");
+        }
+    }
+
+    // Data that decodes to more than the limit, which decoding it again cannot help.
+    private static final class TooLongException extends DataFormatException {
+        private static final long serialVersionUID = 1L;
+
+        TooLongException(String message) {
+            super(message);
         }
     }
 
@@ -384,6 +393,8 @@ class Decompressor {
     static byte[] inflateStream(byte[] data, int maxLength) throws Exception {
         try {
             return inflate(data, maxLength);
+        } catch (TooLongException e) {
+            throw e;
         } catch (DataFormatException e) {
             byte[] inflated = inflateWithCutChecksum(data, maxLength);
             if (inflated == null) {
@@ -417,13 +428,14 @@ class Decompressor {
             if (left < 0 || left >= 4) {
                 return null;
             }
-            int checksum = adler32(bos.toByteArray());
+            byte[] inflated = bos.toByteArray();
+            int checksum = adler32(inflated);
             for (int i = 0; i < left; i++) {
                 if (data[data.length - left + i] != (byte) (checksum >>> (24 - 8 * i))) {
                     return null;
                 }
             }
-            return bos.toByteArray();
+            return inflated;
         } catch (DataFormatException e) {
             return null;
         } finally {
