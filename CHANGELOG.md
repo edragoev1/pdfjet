@@ -23,6 +23,8 @@ Behavior changes since 9.1.5, from the reviews before this release:
 - A word in Latin letters in a line of Chinese or Japanese is no longer cut at
   the end of the line: it moves whole to the next one. Text with no such word
   is drawn as it was.
+- Java: `Barcode.getLocation`, added so that a barcode in a table cell goes back
+  exactly where it was: 7.13 came back as 7.130005.
 - A negative value of `SetReferenceLine` in `SimpleBarChart` draws no line,
   and takes no room in the chart or its description.
 
