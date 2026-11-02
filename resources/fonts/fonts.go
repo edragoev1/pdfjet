@@ -25,22 +25,23 @@
 // such file, else from here, and the text of an SVG image is drawn in them
 // unless a font is set. Go embeds the files of the folder of a package
 // alone, so this package is in resources/fonts itself.
+//
+// A program that draws with fonts of its own, and sets the font of the text
+// of its SVG images, can leave the 11 MB out with the build tag
+// pdfjet_nofonts:
+//
+//	go build -tags pdfjet_nofonts
+//
+// FS is then empty, and a font PDFjet carries is read from the folder
+// resources/fonts of the working directory, or is an error, as a font file
+// that is not there is.
 package fonts
 
 import (
-	"embed"
 	"io/fs"
 	"strings"
 	"sync"
 )
-
-// FS has the font files built into every program, by Family/File, such as
-// IBMPlexSans/IBMPlexSans-Regular.ttf, and the licenses of the families.
-//
-//go:embed CascadiaMono/*.ttf CascadiaMono/LICENSE
-//go:embed IBMPlexSans/*.ttf IBMPlexSans/license.txt
-//go:embed IBMPlexSerif/*.ttf IBMPlexSerif/license.txt
-var FS embed.FS
 
 var (
 	mutex    sync.RWMutex

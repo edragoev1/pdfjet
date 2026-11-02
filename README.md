@@ -301,6 +301,18 @@ makes it about 70 MB. Without it, `IBMPlexSansJP.Regular`,
 `IBMPlexSansArabic.Regular` and the others are read from the folder
 `resources/fonts/world` of the working directory when it has them, and are
 an error that names this line when it does not.
+
+A program that draws only with font files of its own, such as one built to
+WebAssembly for a browser, can leave the 11 MB out with the build tag
+`pdfjet_nofonts`:
+
+```sh
+go build -tags pdfjet_nofonts
+```
+
+The constants of the fonts PDFjet carries are then read from the folder
+`resources/fonts` of the working directory, or are an error that names the
+tag, and an SVG image with text needs `SetFont`.
 </details>
 
 <details>

@@ -140,7 +140,11 @@ Behavior changes since 9.1.5, from the reviews before this release:
   - Go: a program built with PDFjet carries the European fonts, 11 MB, a
     small program about 15 MB in all; `import _
     "github.com/edragoev1/pdfjet/v9/resources/fonts/world"` adds the
-    others, 52 MB more.
+    others, 52 MB more. The build tag `pdfjet_nofonts` leaves the 11 MB
+    out, for a program that draws with font files of its own, as one
+    built to WebAssembly: a font PDFjet carries is then read from
+    `resources/fonts` or is an error that names the tag, and the text of an
+    SVG image needs `SetFont`.
   - Swift: the product `PDFjet` carries the European fonts, about 11 MB,
     in the bundle of its target `PDFjetFonts`; the product
     `PDFjetFontsWorld` adds the others, about 52 MB. `PDFjetFonts` is

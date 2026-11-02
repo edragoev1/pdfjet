@@ -236,6 +236,10 @@ func bundledFont(pdf *PDF, family, weight int, italic bool) *Font {
 		return font
 	}
 	buf := bundledFontData(name)
+	if buf == nil && withoutBundledFonts {
+		panic("Reading the font " + name + ": the program is built with the tag pdfjet_nofonts, " +
+			"without the fonts PDFjet carries; set the font of the text of the SVG image with SetFont")
+	}
 	if buf == nil {
 		panic("Reading the font " + name + ": not in resources/fonts nor in the library")
 	}

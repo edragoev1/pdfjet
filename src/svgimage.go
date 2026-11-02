@@ -1836,7 +1836,8 @@ func (image *SVGImage) SetBoldFont(font *Font) *SVGImage {
 
 // fontOf returns the font of a run: the one set, the bold one for a weight of
 // 600 or more when it is set, or else the face of the fonts PDFjet carries of
-// its family, weight and style, which the Go port always has, embedded in it.
+// its family, weight and style, which the Go port has embedded in it, but in a
+// program built with the tag pdfjet_nofonts.
 func (image *SVGImage) fontOf(run *svgTextRun, pdf *PDF) *Font {
 	if image.font != nil {
 		if run.weight >= 600 && image.boldFont != nil {
