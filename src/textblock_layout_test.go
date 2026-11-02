@@ -73,7 +73,12 @@ func TestTextBlockLayoutReference(t *testing.T) {
 	fonts := map[string]*Font{}
 	// A font is named as its file is, IBMPlexSans-Regular, and is read from
 	// the .ttf, or else the .otf, of its family in the fonts directory, or
-	// from the fonts PDFjet carries.
+	// from the fonts PDFjet carries. The directory is PDFJET_LAYOUT_FONTS,
+	// the fonts of PDFjet Forms, which PDFjet has not carried since 9.1.7.
+	fontsDir := os.Getenv("PDFJET_LAYOUT_FONTS")
+	if fontsDir == "" {
+		fontsDir = filepath.Join("..", "fonts")
+	}
 	fontNamed := func(name string) *Font {
 		if font, ok := fonts[name]; ok {
 			return font
@@ -81,14 +86,14 @@ func TestTextBlockLayoutReference(t *testing.T) {
 		family := strings.SplitN(name, "-", 2)[0]
 		var matches []string
 		for _, ext := range []string{".ttf", ".otf"} {
-			path := filepath.Join("..", "fonts", family, name+ext)
+			path := filepath.Join(fontsDir, family, name+ext)
 			if _, err := os.Stat(path); err == nil || bundledFontHas(path) {
 				matches = append(matches, path)
 				break
 			}
 		}
 		if len(matches) != 1 {
-			t.Fatalf("there is no font %s in ../fonts/%s, nor one PDFjet carries", name, family)
+			t.Fatalf("there is no font %s in %s, nor one PDFjet carries", name, filepath.Join(fontsDir, family))
 		}
 		// Kerned when the check asks for it, as PDFjet Forms kerns its text,
 		// but IBM Plex Sans KR and TC, the fallback fonts of its Korean and
