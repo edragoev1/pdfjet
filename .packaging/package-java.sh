@@ -150,12 +150,17 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
 # The entries of the jar have the time of the release too, the manifest that
 # jar writes as well, with --date, which JDK 17 and later have.
 stamp out/library
+# The name of its module, for a program on the module path, which Java 9 and
+# later read and Java 8 leaves alone (the clean-room check of 2 November 2026)
+printf 'Automatic-Module-Name: com.pdfjet\nImplementation-Title: PDFjet\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
+    "${VERSION#v}" > core-manifest.txt
 if jar --help 2>&1 | grep -q -- '--date'; then
     jar --date="${RELEASE_DAY:0:4}-${RELEASE_DAY:4:2}-${RELEASE_DAY:6:2}T17:00:00Z" \
-        --create --file PDFjet.jar -C out/library .
+        --create --file PDFjet.jar --manifest core-manifest.txt -C out/library .
 else
-    jar cf PDFjet.jar -C out/library .
+    jar cfm PDFjet.jar core-manifest.txt -C out/library .
 fi
+rm core-manifest.txt
 
 # The same javadoc command as generate-documentation.sh, with no time in the
 # pages, so that two builds of a release give the same reference (review of
@@ -242,7 +247,7 @@ mkdir -p out/library/com/pdfjet/hyphenation/patterns
 cp pro-src/src/hyphenation/patterns/*.txt out/library/com/pdfjet/hyphenation/patterns/
 cp pro-src/src/hyphenation/patterns/LICENSES.txt HYPHENATION-PATTERNS-LICENSES.txt
 stamp out/library
-printf 'Implementation-Title: PDFjet Pro\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
+printf 'Automatic-Module-Name: com.pdfjet\nImplementation-Title: PDFjet Pro\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
     "${VERSION#v}" > pro-manifest.txt
 rm PDFjet.jar
 if jar --help 2>&1 | grep -q -- '--date'; then

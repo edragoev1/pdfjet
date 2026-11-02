@@ -31,7 +31,9 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     -d out/production
-jar cf PDFjet.jar -C out/production .
+# The name of its module, as the release's jar has it (.packaging/package-java.sh)
+printf 'Automatic-Module-Name: com.pdfjet\n' > out/manifest.txt
+jar cfm PDFjet.jar out/manifest.txt -C out/production .
 
 pids=()
 for i in $(seq 1 50);

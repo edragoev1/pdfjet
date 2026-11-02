@@ -186,6 +186,12 @@ Behavior changes since 9.1.5, from the reviews before this release:
   where they named the .ttf; the same font, with smaller subsets.
 
 ### Changed
+- Java: PDFjet.jar names its module in its manifest, `Automatic-Module-Name:
+  com.pdfjet`, the jar of the Core zip, of Maven and of PDFjet Pro alike, so
+  that a program on the module path `requires com.pdfjet;` by a name that
+  stays, not one Java makes of the jar's file name. Java 8 leaves it alone;
+  the jar of the fonts of the other scripts was `com.pdfjet.fonts.world`
+  already.
 - PDFjet no longer carries Source Serif 4: IBM Plex Serif, which it carried
   already, is its serif font, so that the fonts it carries are the IBM Plex
   families and Cascadia Mono, 72 faces (71 without IBM Plex Math, below).
