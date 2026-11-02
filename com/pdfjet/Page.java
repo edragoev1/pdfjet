@@ -67,6 +67,8 @@ final public class Page {
     private boolean penWidthWritten = false;
     private Font writtenFont = null;        // The font of the last Tf, or null
     private float writtenFontSize = 0f;
+    // The size was written as it is, for SVG text, not rounded to two places
+    private boolean writtenFontPrecise = false;
 
     private float[] tmx = new float[] {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
@@ -2511,11 +2513,15 @@ final public class Page {
             pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
         }
         this.textFontSize = fontSize;
-        if (writtenFont == font && writtenFontSize == fontSize) {
+        // The size as it was written counts too: 0.125 written as 0.13 for text
+        // drawn before is not the 0.125 of SVG text in the same font.
+        if (writtenFont == font && writtenFontSize == fontSize
+                && writtenFontPrecise == precise) {
             return;         // The text is drawn in this font already
         }
         writtenFont = font;
         writtenFontSize = fontSize;
+        writtenFontPrecise = precise;
         if (font.fontID != null) {
             append('/');
             append(font.fontID);
@@ -2628,7 +2634,7 @@ final public class Page {
     public void saveGraphicsState() {
         savedStates.add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
                 penWidth, penWidthWritten, writtenFont, writtenFontSize,
-                lineCapStyle, lineJoinStyle, strokeDashPattern, height));
+                writtenFontPrecise, lineCapStyle, lineJoinStyle, strokeDashPattern, height));
         append("q\n");
     }
 
@@ -2683,6 +2689,7 @@ final public class Page {
             penWidthWritten = state.getPenWidthWritten();
             writtenFont = state.getWrittenFont();
             writtenFontSize = state.getWrittenFontSize();
+            writtenFontPrecise = state.getWrittenFontPrecise();
             lineCapStyle = state.getLineCapStyle();
             lineJoinStyle = state.getLineJoinStyle();
             strokeDashPattern = state.getStrokeDashPattern();

@@ -199,12 +199,13 @@ class SVGText {
 
     // Moves the runs of a chunk by its width as the text-anchor of its first
     // run asks.
-    private func anchor(_ from: Int, _ to: Int) {
+    func anchor(_ from: Int, _ to: Int) {
         if from >= to {
             return
         }
         // Of its first run with text: the spaces before a tspan collapse to nothing.
-        let anchor = runs[from..<to].first { $0.width > 0.0 }?.anchor ?? runs[from].anchor
+        // Of a width or not, as of a font-size of 0
+        let anchor = runs[from..<to].first { !$0.text.isEmpty }?.anchor ?? runs[from].anchor
         if anchor == 0 {
             return
         }

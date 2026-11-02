@@ -277,7 +277,7 @@ final public class Image implements Drawable {
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
         List<String> colorSpace = obj.valueTokens("/ColorSpace");
-        List<String> decodeParms = obj.valueTokens("/DecodeParms");
+        List<String> decodeParms = obj.copiedDecodeParms();
         List<String> decode = obj.valueTokens("/Decode");
         List<String> matte = obj.valueTokens("/Matte");
         for (List<String> tokens : Arrays.asList(colorSpace, decodeParms, decode, matte, maskArray)) {
@@ -285,6 +285,17 @@ final public class Image implements Drawable {
                 throw new IllegalArgumentException(
                         "The image refers to another object of the PDF it was read from, "
                         + "which is not copied with it: " + String.join(" ", tokens));
+            }
+        }
+        // A /Filter in an object that cannot be read was written as no filter,
+        // and the compressed samples taken for the image's own
+        int i = obj.dict.indexOf("/Filter") + 1;
+        if (i > 0 && PDF.isReference(obj.dict, i)) {
+            int number = Integer.parseInt(obj.dict.get(i));
+            if (obj.readObjects == null || obj.readObjects.get(number) == null) {
+                throw new IllegalArgumentException(
+                        "The image refers to another object of the PDF it was read from, "
+                        + "which is not copied with it: " + String.join(" ", obj.dict.subList(i, i + 3)));
             }
         }
         // An image object with no stream is refused before anything of it is

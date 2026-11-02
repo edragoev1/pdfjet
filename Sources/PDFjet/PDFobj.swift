@@ -424,12 +424,12 @@ public final class PDFobj {
 
     // Returns true for a stream with a /Crypt filter that is the Identity one,
     // whose name is the default: the stream is not encrypted. With parameters
-    // in an object of their own, which are not read, the name is not known, and
-    // the stream is taken to be encrypted, as most are.
+    // in an object of their own that cannot be read, the name is not known,
+    // and the stream is taken to be encrypted, as most are.
     final func hasIdentityCrypt() -> Bool {
         for (i, filter) in getFilters().enumerated() where filter == "/Crypt" {
             let parms = getDecodeParms(i)
-            if parms.isEmpty && decodeParmsHaveReference() {
+            if parms.isEmpty && decodeParmsHaveUnreadReference() {
                 return false
             }
             guard let j = parms.firstIndex(of: "/Name") else {
@@ -440,12 +440,24 @@ public final class PDFobj {
         return false
     }
 
-    // Returns true when /DecodeParms is a reference or an array with one.
-    private final func decodeParmsHaveReference() -> Bool {
-        guard let k = dict.firstIndex(of: "/DecodeParms") else {
-            return false
+    // Returns true when /DecodeParms is a reference, or an array with one, to an
+    // object that cannot be read. A null for a /Crypt in an array that is read
+    // is the Identity filter, not a name not known.
+    private final func decodeParmsHaveUnreadReference() -> Bool {
+        var tokens = valueTokens("/DecodeParms")
+        if PDF.isReference(tokens, 0) {
+            let value = referencedDecodeParms(tokens[0])
+            if value.isEmpty {
+                return true
+            }
+            tokens = value
         }
-        return PDF.isReference(dict, k + 1) || getValues("/DecodeParms").contains("R")
+        for j in tokens.indices where PDF.isReference(tokens, j) {
+            if referencedDecodeParms(tokens[j]).isEmpty {
+                return true
+            }
+        }
+        return false
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -482,11 +494,28 @@ public final class PDFobj {
     // Returns the tokens of the parameters dictionary of the filter at the
     // index. /DecodeParms is a dictionary for a single filter, or an array with
     // a dictionary or null for each filter.
-    private final func getDecodeParms(_ index: Int) -> [String] {
+    final func getDecodeParms(_ index: Int) -> [String] {
         guard let k = dict.firstIndex(of: "/DecodeParms"), k + 1 < dict.count else {
             return []
         }
-        var i = k + 1
+        if PDF.isReference(dict, k + 1) {
+            // An object of its own, a dictionary for a single filter or an
+            // array of them: the array was taken for the dictionary of the
+            // first filter, and its second filter's predictor applied to the
+            // first's output.
+            let value = referencedDecodeParms(dict[k + 1])
+            if value.first != "[" {
+                return index == 0 ? value : []
+            }
+            return decodeParmsElement(value, 0, index)
+        }
+        return decodeParmsElement(dict, k + 1, index)
+    }
+
+    // Returns the parameters of the filter at the index of the value of
+    // /DecodeParms that starts at i of the tokens.
+    private final func decodeParmsElement(_ dict: [String], _ from: Int, _ index: Int) -> [String] {
+        var i = from
         let array = dict[i] == "["
         if array {
             i += 1
@@ -515,8 +544,8 @@ public final class PDFobj {
                     return Array(dict[start..<i])
                 }
                 // In an object of its own
-                if PDF.isReference(dict, start), let referenced = readObjects?.object(Int(dict[start])!) {
-                    return PDF.valueOf(referenced)
+                if PDF.isReference(dict, start) {
+                    return referencedDecodeParms(dict[start])
                 }
                 return []
             }
@@ -528,10 +557,52 @@ public final class PDFobj {
         return []
     }
 
+    // Returns the tokens of the parameters dictionary that is an object of its
+    // own, or nothing when the object cannot be read.
+    private final func referencedDecodeParms(_ number: String) -> [String] {
+        guard let n = Int(number), let parms = readObjects?.object(n) else {
+            return []
+        }
+        return PDF.valueOf(parms)
+    }
+
+    // Returns the value of /DecodeParms for a copy of the object, with the
+    // parameters that are objects of their own, the value or an element of
+    // its array, written in their place. One that cannot be read is left a
+    // reference, which the copy refuses.
+    final func copiedDecodeParms() -> [String] {
+        var tokens = valueTokens("/DecodeParms")
+        if PDF.isReference(tokens, 0) {
+            let value = referencedDecodeParms(tokens[0])
+            if !value.isEmpty {
+                tokens = value
+            }
+        }
+        if tokens.first != "[" {
+            return tokens
+        }
+        var copied = [String]()
+        copied.reserveCapacity(tokens.count)
+        var i = 0
+        while i < tokens.count {
+            if PDF.isReference(tokens, i) {
+                let value = referencedDecodeParms(tokens[i])
+                if !value.isEmpty {
+                    copied.append(contentsOf: value)
+                    i += 3
+                    continue
+                }
+            }
+            copied.append(tokens[i])
+            i += 1
+        }
+        return copied
+    }
+
     // Returns the integer value of the key in the parameters dictionary. A
     // value that is not a 32-bit integer gets the default, as in the Java and
     // C# ports.
-    private final func getDecodeParm(_ parms: [String], _ key: String, _ defaultValue: Int) -> Int {
+    final func getDecodeParm(_ parms: [String], _ key: String, _ defaultValue: Int) -> Int {
         if let i = parms.firstIndex(of: key), i + 1 < parms.count, let value = Int32(parms[i + 1]) {
             return Int(value)
         }

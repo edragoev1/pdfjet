@@ -15,6 +15,7 @@ class State {
     private var penWidthWritten: Bool
     private var writtenFont: Font?
     private var writtenFontSize: Float
+    private var writtenFontPrecise: Bool
     private var lineCapStyle: CapStyle
     private var lineJoinStyle: JoinStyle
     private var linePattern: String
@@ -32,6 +33,7 @@ class State {
             _ penWidthWritten: Bool,
             _ writtenFont: Font?,
             _ writtenFontSize: Float,
+            _ writtenFontPrecise: Bool,
             _ lineCapStyle: CapStyle,
             _ lineJoinStyle: JoinStyle,
             _ linePattern: String,
@@ -44,6 +46,7 @@ class State {
         self.penWidthWritten = penWidthWritten
         self.writtenFont = writtenFont
         self.writtenFontSize = writtenFontSize
+        self.writtenFontPrecise = writtenFontPrecise
         self.lineCapStyle = lineCapStyle
         self.lineJoinStyle = lineJoinStyle
         self.linePattern = linePattern
@@ -84,6 +87,10 @@ class State {
 
     public func getWrittenFontSize() -> Float {
         return self.writtenFontSize
+    }
+
+    public func getWrittenFontPrecise() -> Bool {
+        return self.writtenFontPrecise
     }
 
     public func getPenWidth() -> Float {

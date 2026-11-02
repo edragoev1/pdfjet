@@ -235,7 +235,8 @@ class SVGText {
         // Of its first run with text: the spaces before a tspan collapse to nothing.
         int anchor = runs.get(from).anchor;
         for (int i = from; i < to; i++) {
-            if (runs.get(i).width > 0f) {
+            String text = runs.get(i).text;
+            if (text != null && !text.isEmpty()) {    // Of a width or not, as of a font-size of 0
                 anchor = runs.get(i).anchor;
                 break;
             }

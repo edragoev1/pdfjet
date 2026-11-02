@@ -12,17 +12,18 @@ import (
 
 // savedState describes the collection of drawing parameters.
 type savedState struct {
-	pen               [3]float32
-	penWritten        bool
-	brush             [3]float32
-	brushWritten      bool
-	penWidth          float32
-	penWidthWritten   bool
-	writtenFont       *Font
-	writtenFontSize   float32
-	lineCapStyle      capstyle.CapStyle
-	lineJoinStyle     joinstyle.JoinStyle
-	strokeDashPattern string
+	pen                [3]float32
+	penWritten         bool
+	brush              [3]float32
+	brushWritten       bool
+	penWidth           float32
+	penWidthWritten    bool
+	writtenFont        *Font
+	writtenFontSize    float32
+	writtenFontPrecise bool
+	lineCapStyle       capstyle.CapStyle
+	lineJoinStyle      joinstyle.JoinStyle
+	strokeDashPattern  string
 	// The height of the page, which Transform divides by the vertical scale
 	// and which every y coordinate is measured from.
 	height float32
@@ -38,6 +39,7 @@ func newSavedState(
 	penWidthWritten bool,
 	writtenFont *Font,
 	writtenFontSize float32,
+	writtenFontPrecise bool,
 	lineCapStyle capstyle.CapStyle,
 	lineJoinStyle joinstyle.JoinStyle,
 	strokeDashPattern string,
@@ -51,6 +53,7 @@ func newSavedState(
 	state.penWidthWritten = penWidthWritten
 	state.writtenFont = writtenFont
 	state.writtenFontSize = writtenFontSize
+	state.writtenFontPrecise = writtenFontPrecise
 	state.lineCapStyle = lineCapStyle
 	state.lineJoinStyle = lineJoinStyle
 	state.strokeDashPattern = strokeDashPattern

@@ -29,11 +29,15 @@ Behavior changes since 9.1.5, from the reviews before this release:
   otherwise, whatever the dash, cap and join of the page, which are back after
   it. A relative `font-size`, or `bolder` and `lighter`, is of the parent, also
   when an element gives it twice: 2em in an attribute and a style was 64 of 16.
-  The size of SVG text keeps a small value, and the `text-anchor` of a `tspan`
+  `inherit` for `font-size` and `font-weight` is the parent's value, not one
+  the element gave before it. The size of SVG text keeps a small value, also in
+  a font and a size of text drawn before it, and the `text-anchor` of a `tspan`
   after spaces counts.
-- PDFs read: `/DecodeParms` in an object of its own is read, where a predictor
-  was dropped, and a copied image with a `/Filter` in an object of its own keeps
-  its filter. A new entry of the resources of a page read goes in the page's own
+- PDFs read: `/DecodeParms` in an object of its own, a dictionary or an array
+  of them, is read, where a predictor was dropped. A copied image with a
+  `/Filter` or `/DecodeParms` in an object of its own keeps them, where a
+  `/DecodeParms` was refused; one in an object that cannot be read is refused,
+  where the image was written with no filter. A new entry of the resources of a page read goes in the page's own
   dictionary, not in one of a pattern among them.
 - A negative value of `SetReferenceLine` in `SimpleBarChart` draws no line,
   and takes no room in the chart or its description.

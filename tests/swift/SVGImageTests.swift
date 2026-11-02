@@ -1663,5 +1663,53 @@ import Testing
     // The spaces before a tspan, which collapse to nothing, do not choose the anchor.
     @Test func theAnchorOfAChunkIsThatOfItsFirstText() throws {
         #expect(try matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\" text-anchor=\"end\">Right</text></svg>")) == matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\">\n  <tspan text-anchor=\"end\">Right</tspan>\n</text></svg>")))
+        // The first run, spaces that collapsed to nothing, does not choose the
+        // anchor: the tspan after it does.
+        var text = SVGText()
+        text.runs = [SVGText.Run(), SVGText.Run()]
+        text.runs[1].text = "y"
+        text.runs[1].anchor = 2
+        text.runs[1].width = 10.0
+        text.runs[1].px = 100.0
+        text.anchor(0, 2)
+        #expect(text.runs[1].px == 90.0)
+        // A run with text but no width, of a font-size of 0, is the first text
+        text = SVGText()
+        text.runs = [SVGText.Run(), SVGText.Run()]
+        text.runs[0].text = "x"
+        text.runs[1].text = "y"
+        text.runs[1].anchor = 1
+        text.runs[1].width = 10.0
+        text.runs[1].px = 100.0
+        text.anchor(0, 2)
+        #expect(text.runs[1].px == 100.0)
+    }
+
+    // inherit is the parent's size and weight, not what the element gave before
+    // it: 40, a weight of 700. The order of elementState: the presentation
+    // attributes, then the style attribute.
+    @Test func inheritIsOfTheParent() throws {
+        var state = SVGState()
+        state.parentFontSize = 16.0
+        state.parentFontWeight = 400
+        try state.setProperty("font-size", "40")
+        try state.setProperty("font-weight", "bold")
+        try state.setProperty("font-size", "inherit")
+        try state.setProperty("font-weight", "inherit")
+        #expect(state.fontSize == 16.0 && state.fontWeight == 400, "\(state.fontSize) \(state.fontWeight)")
+        #expect(try content("<svg viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"><g font-size=\"16\"><text font-size=\"40\" style=\"font-size:inherit\" x=\"1\" y=\"50\">a</text></g></svg>").contains(" 16 Tf"))
+    }
+
+    // SVG text in a font and a size of text drawn before, rounded, writes its
+    // size whole: the Tf of 0.13 was kept for it.
+    @Test func svgTextInTheFontOfTextBeforeHasItsOwnSize() throws {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let font = try Font(pdf, CoreFont.HELVETICA)
+        page.setTextFont(font, 0.125)
+        page.writeTextFont(font, 0.125, true)
+        page.writeTextFont(font, 0.125, true)
+        let buf = TestSupport.latin1(page.buf)
+        #expect(buf.components(separatedBy: " Tf\n").count - 1 == 2 && buf.contains(" 0.125 Tf\n"), "\(buf)")
     }
 }

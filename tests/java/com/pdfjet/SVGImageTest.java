@@ -1751,4 +1751,43 @@ class SVGImageTest {
     void theAnchorOfAChunkIsThatOfItsFirstText() throws Exception {
         assertEquals(matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\" text-anchor=\"end\">Right</text></svg>")), matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\">\n  <tspan text-anchor=\"end\">Right</tspan>\n</text></svg>")));
     }
+
+    // A run with text but no width, of a font-size of 0, is the first text of
+    // its chunk, and chooses the anchor: through the content, as anchor is private.
+    @Test
+    void theAnchorOfAChunkIsThatOfItsFirstTextOfNoWidth() throws Exception {
+        assertEquals(matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\">Right</text></svg>")), matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\"><tspan font-size=\"0\">x</tspan><tspan text-anchor=\"end\">Right</tspan></text></svg>")));
+    }
+
+    // inherit is the parent's size and weight, not what the element gave before
+    // it: 40, a weight of 700.
+    @Test
+    void inheritIsOfTheParent() throws Exception {
+        String content = content("<svg viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"><g font-size=\"16\"><text font-size=\"40\" style=\"font-size:inherit\" x=\"1\" y=\"50\">a</text></g></svg>");
+        assertTrue(content.contains(" 16 Tf"), content);
+        SVGState state = new SVGState();
+        state.parentFontSize = 16f;
+        state.setProperty(null, "font-size", "40");
+        state.setProperty(null, "font-weight", "bold");
+        state.setProperty(null, "font-size", "inherit");
+        state.setProperty(null, "font-weight", "inherit");
+        assertEquals(16f, state.fontSize, 0f);
+        assertEquals(400, state.fontWeight);
+    }
+
+    // SVG text in a font and a size of text drawn before, rounded, writes its
+    // size whole: the Tf of 0.13 was kept for it.
+    @Test
+    void svgTextInTheFontOfTextBeforeHasItsOwnSize() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font font = TestSupport.helvetica(pdf);
+        float[] tm = new float[] {1f, 0f, 0f, 1f, 0f, 0f};
+        page.setTextFont(font, 0.125f);
+        page.drawSVGText(font, 0.125f, "a", tm, 0);
+        page.drawSVGText(font, 0.125f, "a", tm, 0);
+        String content = page.buf.toString("ISO-8859-1");
+        assertEquals(2, content.split(" Tf\n", -1).length - 1, content);
+        assertTrue(content.contains(" 0.125 Tf\n"), content);
+    }
 }

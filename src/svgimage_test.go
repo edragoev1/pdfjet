@@ -15,6 +15,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/xmlparser"
@@ -1875,9 +1876,45 @@ func TestSVGImageDrawsWithTheStrokeOfSVGNotThatOfThePage(t *testing.T) {
 // The first run of a chunk, spaces that collapsed to nothing, does not choose
 // the anchor: the tspan after it does.
 func TestSVGTheAnchorOfAChunkIsThatOfItsFirstText(t *testing.T) {
-	text := &svgText{runs: []*svgTextRun{{anchor: 0}, {anchor: 2, width: 10, px: 100}}}
+	text := &svgText{runs: []*svgTextRun{{anchor: 0}, {text: "y", anchor: 2, width: 10, px: 100}}}
 	text.anchor(0, 2)
 	if text.runs[1].px != 90 {
 		t.Errorf("the run is at %v", text.runs[1].px)
+	}
+	// A run with text but no width, of a font-size of 0, is the first text
+	text = &svgText{runs: []*svgTextRun{{text: "x", anchor: 0}, {text: "y", anchor: 1, width: 10, px: 100}}}
+	text.anchor(0, 2)
+	if text.runs[1].px != 100 {
+		t.Errorf("the run is at %v", text.runs[1].px)
+	}
+}
+
+// inherit is the parent's size and weight, not what the element gave before it:
+// 40, a weight of 700.
+func TestSVGInheritIsOfTheParent(t *testing.T) {
+	parent := newSVGState()
+	parent.fontSize = 16
+	state, err := elementState(parent, nil, newSVGStyleSheet(),
+		map[string]string{"font-size": "40", "font-weight": "bold", "style": "font-size:inherit;font-weight:inherit"},
+		[]string{"font-size", "font-weight"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.fontSize != 16 || state.fontWeight != 400 {
+		t.Errorf("the size is %v and the weight %d", state.fontSize, state.fontWeight)
+	}
+}
+
+// SVG text in a font and a size of text drawn before, rounded, writes its size
+// whole: the Tf of 0.13 was kept for it.
+func TestSVGTextInTheFontOfTextBeforeHasItsOwnSize(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	font := NewCoreFont(pdf, corefont.Helvetica())
+	page.setTextFont(font, 0.125)
+	page.setPreciseTextFont(font, 0.125)
+	page.setPreciseTextFont(font, 0.125)
+	if got := strings.Count(string(page.buf), " Tf\n"); got != 2 || !strings.Contains(string(page.buf), " 0.125 Tf\n") {
+		t.Errorf("the page has %q", page.buf)
 	}
 }

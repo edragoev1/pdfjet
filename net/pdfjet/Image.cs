@@ -290,13 +290,23 @@ public class Image : IDrawable {
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
         List<String> colorSpace = obj.ValueTokens("/ColorSpace");
-        List<String> decodeParms = obj.ValueTokens("/DecodeParms");
+        List<String> decodeParms = obj.CopiedDecodeParms();
         List<String> decode = obj.ValueTokens("/Decode");
         List<String> matte = obj.ValueTokens("/Matte");
         foreach (List<String> tokens in new List<String>[] {colorSpace, decodeParms, decode, matte, maskArray}) {
             if (tokens.Contains("R")) {
                 throw new NotSupportedException("The image refers to another object of the PDF it was read from, "
                         + "which is not copied with it: " + String.Join(" ", tokens));
+            }
+        }
+        // A /Filter in an object that cannot be read was written as no filter,
+        // and the compressed samples taken for the image's own
+        int filter = obj.dict.IndexOf("/Filter") + 1;
+        if (filter > 0 && PDF.IsReference(obj.dict, filter)) {
+            int number = Int32.Parse(obj.dict[filter], CultureInfo.InvariantCulture);
+            if (obj.readObjects == null || !obj.readObjects.TryGetValue(number, out PDFobj filters) || filters == null) {
+                throw new NotSupportedException("The image refers to another object of the PDF it was read from, "
+                        + "which is not copied with it: " + String.Join(" ", obj.dict.GetRange(filter, 3)));
             }
         }
         // An image object with no stream is refused before anything of it is

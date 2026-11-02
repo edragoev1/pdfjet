@@ -401,14 +401,14 @@ public class PDFobj {
 
     // Returns true for a stream with a /Crypt filter that is the Identity one,
     // whose name is the default: the stream is not encrypted. With parameters in
-    // an object of their own, which are not read, the name is not known, and the
+    // an object of their own that cannot be read, the name is not known, and the
     // stream is taken to be encrypted, as most are.
     internal bool HasIdentityCrypt() {
         List<String> filters = GetFilters();
         for (int i = 0; i < filters.Count; i++) {
             if (filters[i].Equals("/Crypt")) {
                 List<String> parms = GetDecodeParms(i);
-                if (parms.Count == 0 && DecodeParmsHaveReference()) {
+                if (parms.Count == 0 && DecodeParmsHaveUnreadReference()) {
                     return false;
                 }
                 int j = parms.IndexOf("/Name");
@@ -418,13 +418,30 @@ public class PDFobj {
         return false;
     }
 
-    // Returns true when /DecodeParms is a reference or an array with one.
-    private bool DecodeParmsHaveReference() {
-        int i = dict.IndexOf("/DecodeParms") + 1;
-        if (i == 0) {
+    // Returns true when /DecodeParms is a reference, or an array with one, to an
+    // object that cannot be read. A null for a /Crypt in an array that is read
+    // is the Identity filter, not a name not known.
+    private bool DecodeParmsHaveUnreadReference() {
+        List<String> tokens = ValueTokens("/DecodeParms");
+        if (tokens == null) {
             return false;
         }
-        return PDF.IsReference(dict, i) || GetValues("/DecodeParms").Contains("R");
+        if (PDF.IsReference(tokens, 0)) {
+            List<String> value = ReferencedDecodeParms(tokens[0]);
+            if (value == null || value.Count == 0) {
+                return true;
+            }
+            tokens = value;
+        }
+        for (int j = 0; j < tokens.Count; j++) {
+            if (PDF.IsReference(tokens, j)) {
+                List<String> value = ReferencedDecodeParms(tokens[j]);
+                if (value == null || value.Count == 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -462,11 +479,33 @@ public class PDFobj {
     // index. /DecodeParms is a dictionary for a single filter, or an array
     // with a dictionary or null for each filter.
     private List<String> GetDecodeParms(int index) {
-        List<String> parms = new List<String>();
+        List<String> dict = this.dict;
         int i = dict.IndexOf("/DecodeParms") + 1;
         if (i == 0 || i >= dict.Count) {
-            return parms;
+            return new List<String>();
         }
+        if (PDF.IsReference(dict, i)) {
+            // An object of its own, a dictionary for a single filter or an
+            // array of them: the array was taken for the dictionary of the
+            // first filter, and its second filter's predictor applied to the
+            // first's output.
+            List<String> value = ReferencedDecodeParms(dict[i]);
+            if (value == null || value.Count == 0 || !value[0].Equals("[")) {
+                if (index == 0 && value != null) {
+                    return value;
+                }
+                return new List<String>();
+            }
+            dict = value;
+            i = 0;
+        }
+        return DecodeParmsElement(dict, i, index);
+    }
+
+    // Returns the parameters of the filter at the index of the value of
+    // /DecodeParms that starts at i of the tokens.
+    private List<String> DecodeParmsElement(List<String> dict, int i, int index) {
+        List<String> parms = new List<String>();
         bool array = dict[i].Equals("[");
         if (array) {
             i += 1;
@@ -489,12 +528,13 @@ public class PDFobj {
                 i += 1;     // null
             }
             if (element == index) {
-                PDFobj referenced;
                 if (dict[start].Equals("<<")) {
                     parms.AddRange(dict.GetRange(start, i - start));
-                } else if (PDF.IsReference(dict, start) && readObjects != null
-                        && readObjects.TryGetValue(Int32.Parse(dict[start], CultureInfo.InvariantCulture), out referenced)) {
-                    parms.AddRange(PDF.ValueOf(referenced));    // In an object of its own
+                } else if (PDF.IsReference(dict, start)) {
+                    List<String> referenced = ReferencedDecodeParms(dict[start]);
+                    if (referenced != null) {
+                        parms.AddRange(referenced);     // In an object of its own
+                    }
                 }
                 break;
             }
@@ -503,6 +543,48 @@ public class PDFobj {
             }
         }
         return parms;
+    }
+
+    // Returns the tokens of the parameters dictionary that is an object of its
+    // own, or null when the object cannot be read.
+    private List<String> ReferencedDecodeParms(String number) {
+        PDFobj parms;
+        if (readObjects == null
+                || !Int32.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out int n)
+                || !readObjects.TryGetValue(n, out parms) || parms == null) {
+            return null;
+        }
+        return PDF.ValueOf(parms);
+    }
+
+    // Returns the value of /DecodeParms for a copy of the object, with the
+    // parameters that are objects of their own, the value or an element of its
+    // array, written in their place. One that cannot be read is left a
+    // reference, which the copy refuses.
+    internal List<String> CopiedDecodeParms() {
+        List<String> tokens = ValueTokens("/DecodeParms");
+        if (PDF.IsReference(tokens, 0)) {
+            List<String> value = ReferencedDecodeParms(tokens[0]);
+            if (value != null) {
+                tokens = value;
+            }
+        }
+        if (tokens.Count == 0 || !tokens[0].Equals("[")) {
+            return tokens;
+        }
+        List<String> copied = new List<String>(tokens.Count);
+        for (int i = 0; i < tokens.Count; i++) {
+            if (PDF.IsReference(tokens, i)) {
+                List<String> value = ReferencedDecodeParms(tokens[i]);
+                if (value != null) {
+                    copied.AddRange(value);
+                    i += 2;
+                    continue;
+                }
+            }
+            copied.Add(tokens[i]);
+        }
+        return copied;
     }
 
     // Returns the integer value of the key in the parameters dictionary.

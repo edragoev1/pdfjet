@@ -689,3 +689,75 @@ func TestReviewReaderTheFiltersOfACopiedImageAreNames(t *testing.T) {
 		t.Errorf("the filter is %s", got)
 	}
 }
+
+func TestReviewReaderDecodeParmsThatAreAnArrayOfTheirOwnAreRead(t *testing.T) {
+	// The array was taken for the parameters of the first filter, and those
+	// of the second were not read.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		"<< /Length 1 /Filter [/ASCII85Decode /FlateDecode] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+		"[null << /Predictor 12 /Columns 5 >>]"))
+	if got := getDecodeParm(objects[3].getDecodeParms(0), "/Predictor", 1); got != 1 {
+		t.Errorf("the predictor of the first filter is %d", got)
+	}
+	if got := getDecodeParm(objects[3].getDecodeParms(1), "/Predictor", 1); got != 12 {
+		t.Errorf("the predictor of the second filter is %d", got)
+	}
+	if got := strings.Join(objects[3].copiedDecodeParms(), " "); got != "[ null << /Predictor 12 /Columns 5 >> ]" {
+		t.Errorf("the copy has %s", got)
+	}
+}
+
+func TestReviewReaderACopiedImageHasItsDecodeParmsWritten(t *testing.T) {
+	// A copy refused /DecodeParms in an object of its own, which a read
+	// PDF has with /Filter in one too.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		"<< /Length 1 /Filter [/FlateDecode /DCTDecode] /DecodeParms [6 0 R null] >>\nstream\nx\nendstream",
+		"<< /Type /XObject >>",
+		"<< /Predictor 12 /Columns 5 >>"))
+	if got := strings.Join(objects[3].copiedDecodeParms(), " "); got != "[ << /Predictor 12 /Columns 5 >> null ]" {
+		t.Errorf("the copy has %s", got)
+	}
+}
+
+func TestReviewReaderACopiedImageWithAFilterNotReadIsRefused(t *testing.T) {
+	// It was written with no /Filter, its compressed samples taken for its own.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		"<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /BitsPerComponent 8 "+
+			"/ColorSpace /DeviceGray /Length 1 /Filter 9 0 R >>\nstream\nx\nendstream"))
+	defer func() {
+		if r := recover(); r == nil || !strings.Contains(fmt.Sprint(r), "9 0 R") {
+			t.Errorf("recovered %v", r)
+		}
+	}()
+	appendImageObject(testNewPDF(), objects[3], 0, 0, nil)
+}
+
+func TestReviewReaderANullCryptInAnArrayThatIsReadIsIdentity(t *testing.T) {
+	// It was taken for a name not known, and the stream decrypted.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		"<< /Length 1 /Filter [/FlateDecode /Crypt] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+		"[<< >> null]"))
+	if !objects[3].hasIdentityCrypt() {
+		t.Error("a null is not the Identity filter")
+	}
+	objects = testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		"<< /Length 1 /Filter /Crypt /DecodeParms 9 0 R >>\nstream\nx\nendstream"))
+	if objects[3].hasIdentityCrypt() {
+		t.Error("parameters that cannot be read are taken for the Identity filter")
+	}
+}

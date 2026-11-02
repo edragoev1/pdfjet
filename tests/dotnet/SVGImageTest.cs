@@ -1734,5 +1734,42 @@ public class SVGImageTest {
     public void TheAnchorOfAChunkIsThatOfItsFirstText() {
         Assert.Equal(MatrixOf(Content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\" text-anchor=\"end\">Right</text></svg>")), MatrixOf(Content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\">\n  <tspan text-anchor=\"end\">Right</tspan>\n</text></svg>")));
     }
+
+    // A run with text but no width, of a font-size of 0, is the first text.
+    [Fact]
+    public void TheAnchorOfAChunkIsThatOfItsFirstTextOfNoWidth() {
+        Assert.Equal(Content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\"><tspan font-size=\"0\">x</tspan><tspan>Right</tspan></text></svg>"), Content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\"><tspan font-size=\"0\">x</tspan><tspan text-anchor=\"middle\">Right</tspan></text></svg>"));
+    }
+
+    // inherit is the parent's size and weight, not what the element gave
+    // before it: 40, a weight of 700.
+    [Fact]
+    public void InheritIsOfTheParent() {
+        SVGState state = new SVGState();
+        state.parentFontSize = 16f;
+        state.SetProperty("font-size", "40");
+        state.SetProperty("font-weight", "bold");
+        state.SetProperty("font-size", "inherit");
+        state.SetProperty("font-weight", "inherit");
+        Assert.Equal(16f, state.fontSize);
+        Assert.Equal(400, state.fontWeight);
+        Assert.Contains(" 16 Tf", Content("<svg viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"><g font-size=\"16\"><text font-size=\"40\" style=\"font-size:inherit\" x=\"1\" y=\"50\">a</text></g></svg>"));
+    }
+
+    // SVG text in a font and a size of text drawn before, rounded, writes its
+    // size whole: the Tf of 0.13 was kept for it.
+    [Fact]
+    public void SVGTextInTheFontOfTextBeforeHasItsOwnSize() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font font = TestSupport.Helvetica(pdf);
+        page.SetTextFont(font, 0.125f);
+        float[] tm = {1f, 0f, 0f, 1f, 0f, 0f};
+        page.DrawSVGText(font, 0.125f, "a", tm, 0);
+        page.DrawSVGText(font, 0.125f, "a", tm, 0);
+        String content = Encoding.Latin1.GetString(page.GetContent());
+        Assert.Equal(2, content.Split(" Tf\n").Length - 1);
+        Assert.Contains(" 0.125 Tf\n", content);
+    }
 }
 }

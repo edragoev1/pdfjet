@@ -155,6 +155,8 @@ public class Page {
     private var penWidthWritten = false
     private var writtenFont: Font?          // The font of the last Tf, or nil
     private var writtenFontSize: Float = 0.0
+    // The size was written as it is, for SVG text, not rounded to two places
+    private var writtenFontPrecise = false
 
     private var penWidth: Float = 1.0   // The PDF default, as no w is written first
 
@@ -1412,7 +1414,7 @@ public class Page {
     public func saveGraphicsState() {
         savedStates.append(State(brushColor, brushColorWritten, penColor, penColorWritten,
                 penWidth, penWidthWritten, writtenFont, writtenFontSize,
-                lineCapStyle, lineJoinStyle, strokeDashPattern, height))
+                writtenFontPrecise, lineCapStyle, lineJoinStyle, strokeDashPattern, height))
         append("q\n")
     }
 
@@ -1462,6 +1464,7 @@ public class Page {
         penWidthWritten = state.getPenWidthWritten()
         writtenFont = state.getWrittenFont()
         writtenFontSize = state.getWrittenFontSize()
+        writtenFontPrecise = state.getWrittenFontPrecise()
         lineCapStyle = state.getLineCapStyle()
         lineJoinStyle = state.getLineJoinStyle()
         strokeDashPattern = state.getLinePattern()
@@ -2419,16 +2422,19 @@ public class Page {
     // Sets the text font; precise is for SVG text, whose size is in the units of
     // the image: with a scale in the text matrix, 0.125 written as 0.13 is 4% too
     // large, and 0.004 written as 0 draws nothing.
-    private func writeTextFont(_ font: Font, _ fontSize: Float, _ precise: Bool) {
+    func writeTextFont(_ font: Font, _ fontSize: Float, _ precise: Bool) {
         if let identity = font.pdfIdentity, identity != pdf.identity {
             pdf.fail("The font belongs to another PDF.")
         }
         self.textFontSize = fontSize
-        if writtenFont === font && writtenFontSize == fontSize {
+        // The size as it was written counts too: 0.125 written as 0.13 for text
+        // drawn before is not the 0.125 of SVG text in the same font.
+        if writtenFont === font && writtenFontSize == fontSize && writtenFontPrecise == precise {
             return          // The text is drawn in this font already
         }
         writtenFont = font
         writtenFontSize = fontSize
+        writtenFontPrecise = precise
         if font.fontID != nil {
             append("/")
             append(font.fontID!)

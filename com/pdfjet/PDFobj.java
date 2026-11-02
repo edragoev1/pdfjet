@@ -445,14 +445,14 @@ public class PDFobj {
 
     // Returns true for a stream with a /Crypt filter that is the Identity one,
     // whose name is the default: the stream is not encrypted. With parameters in
-    // an object of their own, which are not read, the name is not known, and the
+    // an object of their own that cannot be read, the name is not known, and the
     // stream is taken to be encrypted, as most are.
     boolean hasIdentityCrypt() {
         List<String> filters = getFilters();
         for (int i = 0; i < filters.size(); i++) {
             if (filters.get(i).equals("/Crypt")) {
                 List<String> parms = getDecodeParms(i);
-                if (parms.isEmpty() && decodeParmsHaveReference()) {
+                if (parms.isEmpty() && decodeParmsHaveUnreadReference()) {
                     return false;
                 }
                 int j = parms.indexOf("/Name");
@@ -462,13 +462,30 @@ public class PDFobj {
         return false;
     }
 
-    // Returns true when /DecodeParms is a reference or an array with one.
-    private boolean decodeParmsHaveReference() {
-        int i = dict.indexOf("/DecodeParms") + 1;
-        if (i == 0) {
+    // Returns true when /DecodeParms is a reference, or an array with one, to an
+    // object that cannot be read. A null for a /Crypt in an array that is read
+    // is the Identity filter, not a name not known.
+    private boolean decodeParmsHaveUnreadReference() {
+        List<String> tokens = valueTokens("/DecodeParms");
+        if (tokens == null) {
             return false;
         }
-        return PDF.isReference(dict, i) || getValues("/DecodeParms").contains("R");
+        if (PDF.isReference(tokens, 0)) {
+            List<String> value = referencedDecodeParms(tokens.get(0));
+            if (value == null || value.isEmpty()) {
+                return true;
+            }
+            tokens = value;
+        }
+        for (int j = 0; j < tokens.size(); j++) {
+            if (PDF.isReference(tokens, j)) {
+                List<String> value = referencedDecodeParms(tokens.get(j));
+                if (value == null || value.isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Returns the elements of the array that is the value of the key, or the
@@ -506,11 +523,33 @@ public class PDFobj {
     // index. /DecodeParms is a dictionary for a single filter, or an array
     // with a dictionary or null for each filter.
     private List<String> getDecodeParms(int index) {
-        List<String> parms = new ArrayList<String>();
+        List<String> dict = this.dict;
         int i = dict.indexOf("/DecodeParms") + 1;
         if (i == 0 || i >= dict.size()) {
-            return parms;
+            return new ArrayList<String>();
         }
+        if (PDF.isReference(dict, i)) {
+            // An object of its own, a dictionary for a single filter or an
+            // array of them: the array was taken for the dictionary of the
+            // first filter, and its second filter's predictor applied to the
+            // first's output.
+            List<String> value = referencedDecodeParms(dict.get(i));
+            if (value == null || value.isEmpty() || !value.get(0).equals("[")) {
+                if (index == 0 && value != null) {
+                    return value;
+                }
+                return new ArrayList<String>();
+            }
+            dict = value;
+            i = 0;
+        }
+        return decodeParmsElement(dict, i, index);
+    }
+
+    // Returns the parameters of the filter at the index of the value of
+    // /DecodeParms that starts at i of the tokens.
+    private List<String> decodeParmsElement(List<String> dict, int i, int index) {
+        List<String> parms = new ArrayList<String>();
         boolean array = dict.get(i).equals("[");
         if (array) {
             i += 1;
@@ -535,11 +574,11 @@ public class PDFobj {
             if (element == index) {
                 if (dict.get(start).equals("<<")) {
                     parms.addAll(dict.subList(start, i));
-                } else if (PDF.isReference(dict, start) && readObjects != null) {
+                } else if (i - start == 3) {
                     // In an object of its own
-                    PDFobj referenced = readObjects.get(Integer.parseInt(dict.get(start)));
+                    List<String> referenced = referencedDecodeParms(dict.get(start));
                     if (referenced != null) {
-                        parms.addAll(PDF.valueOf(referenced));
+                        parms.addAll(referenced);
                     }
                 }
                 break;
@@ -549,6 +588,55 @@ public class PDFobj {
             }
         }
         return parms;
+    }
+
+    // Returns the tokens of the parameters dictionary that is an object of its
+    // own, or null when the object cannot be read.
+    private List<String> referencedDecodeParms(String number) {
+        if (readObjects == null) {
+            return null;
+        }
+        int n;
+        try {
+            n = Integer.parseInt(number);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        PDFobj parms = readObjects.get(n);
+        if (parms == null) {
+            return null;
+        }
+        return PDF.valueOf(parms);
+    }
+
+    // Returns the value of /DecodeParms for a copy of the object, with the
+    // parameters that are objects of their own, the value or an element of its
+    // array, written in their place. One that cannot be read is left a
+    // reference, which the copy refuses.
+    List<String> copiedDecodeParms() {
+        List<String> tokens = valueTokens("/DecodeParms");
+        if (PDF.isReference(tokens, 0)) {
+            List<String> value = referencedDecodeParms(tokens.get(0));
+            if (value != null) {
+                tokens = value;
+            }
+        }
+        if (tokens.isEmpty() || !tokens.get(0).equals("[")) {
+            return tokens;
+        }
+        List<String> copied = new ArrayList<String>(tokens.size());
+        for (int i = 0; i < tokens.size(); i++) {
+            if (PDF.isReference(tokens, i)) {
+                List<String> value = referencedDecodeParms(tokens.get(i));
+                if (value != null) {
+                    copied.addAll(value);
+                    i += 2;
+                    continue;
+                }
+            }
+            copied.add(tokens.get(i));
+        }
+        return copied;
     }
 
     // Returns the integer value of the key in the parameters dictionary.

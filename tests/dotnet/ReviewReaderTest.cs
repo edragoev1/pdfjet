@@ -694,5 +694,79 @@ public class ReviewReaderTest {
                 "/DCTDecode"));
         Assert.Equal("/DCTDecode", Image.FilterValue(objects[3].GetFilters()));
     }
+
+    private static List<String> DecodeParmsOf(PDFobj obj, int index) {
+        return (List<String>) typeof(PDFobj).GetMethod("GetDecodeParms",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .Invoke(obj, new object[] {index});
+    }
+
+    private static int DecodeParmOf(List<String> parms, String key, int defaultValue) {
+        return (int) typeof(PDFobj).GetMethod("GetDecodeParm",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                .Invoke(null, new object[] {parms, key, defaultValue});
+    }
+
+    // The array was taken for the parameters of the first filter, and those
+    // of the second were not read.
+    [Fact]
+    public void DecodeParmsThatAreAnArrayOfTheirOwnAreRead() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/ASCII85Decode /FlateDecode] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                "[null << /Predictor 12 /Columns 5 >>]"));
+        Assert.Equal(1, DecodeParmOf(DecodeParmsOf(objects[3], 0), "/Predictor", 1));
+        Assert.Equal(12, DecodeParmOf(DecodeParmsOf(objects[3], 1), "/Predictor", 1));
+        Assert.Equal("[ null << /Predictor 12 /Columns 5 >> ]", String.Join(" ", objects[3].CopiedDecodeParms()));
+    }
+
+    // A copy refused /DecodeParms in an object of its own, which a read PDF
+    // has with /Filter in one too.
+    [Fact]
+    public void ACopiedImageHasItsDecodeParmsWritten() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/FlateDecode /DCTDecode] /DecodeParms [6 0 R null] >>\nstream\nx\nendstream",
+                "<< /Type /XObject >>",
+                "<< /Predictor 12 /Columns 5 >>"));
+        Assert.Equal("[ << /Predictor 12 /Columns 5 >> null ]", String.Join(" ", objects[3].CopiedDecodeParms()));
+    }
+
+    // It was written with no /Filter, its compressed samples taken for its own.
+    [Fact]
+    public void ACopiedImageWithAFilterNotReadIsRefused() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /BitsPerComponent 8 "
+                        + "/ColorSpace /DeviceGray /Length 1 /Filter 9 0 R >>\nstream\nx\nendstream"));
+        NotSupportedException e = Assert.Throws<NotSupportedException>(
+                () => new Image(TestSupport.NewPDF(), objects[3]));
+        Assert.Contains("9 0 R", e.Message);
+    }
+
+    // A null for /Crypt in an array that is read is the Identity filter: it was
+    // taken for a name not known, and the stream decrypted.
+    [Fact]
+    public void ANullCryptInAnArrayThatIsReadIsIdentity() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/FlateDecode /Crypt] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                "[<< >> null]"));
+        Assert.True(objects[3].HasIdentityCrypt());
+        objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter /Crypt /DecodeParms 9 0 R >>\nstream\nx\nendstream"));
+        Assert.False(objects[3].HasIdentityCrypt());
+    }
 }
 }   // End of namespace PDFjet.NET

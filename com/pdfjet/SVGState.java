@@ -288,6 +288,14 @@ class SVGState {
             return;
         }
         if (value.equals("inherit")) {
+            // The parent's value, not one the element gave before: <text
+            // font-size="40" style="font-size:inherit"> in a group of 16 drew
+            // at 40. The other properties keep what they are.
+            if (name.equals("font-size")) {
+                this.fontSize = this.parentFontSize;
+            } else if (name.equals("font-weight")) {
+                this.fontWeight = this.parentFontWeight;
+            }
             return;
         }
         if (name.equals("fill") || name.equals("stroke")) {

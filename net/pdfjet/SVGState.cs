@@ -98,6 +98,14 @@ internal class SVGState {
             return;
         }
         if (value.Equals("inherit")) {
+            // The parent's value, not one the element gave before: <text
+            // font-size="40" style="font-size:inherit"> in a group of 16 drew
+            // at 40. The other properties keep what they are.
+            if (name.Equals("font-size")) {
+                fontSize = parentFontSize;
+            } else if (name.Equals("font-weight")) {
+                fontWeight = parentFontWeight;
+            }
             return;
         }
         switch (name) {

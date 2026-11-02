@@ -233,7 +233,7 @@ func (text *svgText) anchor(from, to int) {
 	}
 	anchor := text.runs[from].anchor
 	for i := from; i < to; i++ {
-		if text.runs[i].width > 0 {
+		if text.runs[i].text != "" { // Of a width or not, as of a font-size of 0
 			anchor = text.runs[i].anchor
 			break
 		}

@@ -254,12 +254,19 @@ public class Image : Drawable {
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
         let colorSpace = obj.valueTokens("/ColorSpace")
-        let decodeParms = obj.valueTokens("/DecodeParms")
+        let decodeParms = obj.copiedDecodeParms()
         let decode = obj.valueTokens("/Decode")
         let matte = obj.valueTokens("/Matte")
         for tokens in [colorSpace, decodeParms, decode, matte, maskArray] where tokens.contains("R") {
             throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
                     + "which is not copied with it: " + tokens.joined(separator: " "))
+        }
+        // A /Filter in an object that cannot be read was written as no filter,
+        // and the compressed samples taken for the image's own
+        if let k = obj.dict.firstIndex(of: "/Filter"), PDF.isReference(obj.dict, k + 1),
+                obj.readObjects?.object(Int(obj.dict[k + 1]) ?? 0) == nil {
+            throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
+                    + "which is not copied with it: " + obj.dict[(k + 1)..<(k + 4)].joined(separator: " "))
         }
         // An image object with no stream is refused before anything of it is
         // written: it was half written, and complete() then wrote a corrupt

@@ -434,13 +434,13 @@ func (obj *PDFobj) getFilters() []string {
 
 // hasIdentityCrypt returns true for a stream with a /Crypt filter that is the
 // Identity one, whose name is the default: the stream is not encrypted. With
-// parameters in an object of their own, which are not read, the name is not
+// parameters in an object of their own that cannot be read, the name is not
 // known, and the stream is taken to be encrypted, as most are.
 func (obj *PDFobj) hasIdentityCrypt() bool {
 	for i, filter := range obj.getFilters() {
 		if filter == "/Crypt" {
 			parms := obj.getDecodeParms(i)
-			if len(parms) == 0 && obj.decodeParmsHaveReference() {
+			if len(parms) == 0 && obj.decodeParmsHaveUnreadReference() {
 				return false
 			}
 			j := slices.Index(parms, "/Name")
@@ -450,14 +450,24 @@ func (obj *PDFobj) hasIdentityCrypt() bool {
 	return false
 }
 
-// decodeParmsHaveReference returns true when /DecodeParms is a reference or an
-// array with one.
-func (obj *PDFobj) decodeParmsHaveReference() bool {
-	i := slices.Index(obj.dict, "/DecodeParms") + 1
-	if i == 0 {
-		return false
+// decodeParmsHaveUnreadReference returns true when /DecodeParms is a reference,
+// or an array with one, to an object that cannot be read. A null for a /Crypt
+// in an array that is read is the Identity filter, not a name not known.
+func (obj *PDFobj) decodeParmsHaveUnreadReference() bool {
+	tokens := obj.valueTokens("/DecodeParms")
+	if isObjectReference(tokens, 0) {
+		value := obj.referencedDecodeParms(tokens[0])
+		if len(value) == 0 {
+			return true
+		}
+		tokens = value
 	}
-	return isObjectReference(obj.dict, i) || slices.Contains(obj.getValues("/DecodeParms"), "R")
+	for j := range tokens {
+		if isObjectReference(tokens, j) && len(obj.referencedDecodeParms(tokens[j])) == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // getValues returns the elements of the array that is the value of the key,
@@ -499,6 +509,27 @@ func (obj *PDFobj) getDecodeParms(index int) []string {
 	if i == 0 || i >= len(dict) {
 		return nil
 	}
+	if isObjectReference(dict, i) {
+		// An object of its own, a dictionary for a single filter or an
+		// array of them: the array was taken for the dictionary of the
+		// first filter, and its second filter's predictor applied to the
+		// first's output.
+		value := obj.referencedDecodeParms(dict[i])
+		if len(value) == 0 || value[0] != "[" {
+			if index == 0 {
+				return value
+			}
+			return nil
+		}
+		dict = value
+		i = 0
+	}
+	return obj.decodeParmsElement(dict, i, index)
+}
+
+// decodeParmsElement returns the parameters of the filter at the index of the
+// value of /DecodeParms that starts at i of the tokens.
+func (obj *PDFobj) decodeParmsElement(dict []string, i, index int) []string {
 	array := dict[i] == "["
 	if array {
 		i++
@@ -552,6 +583,34 @@ func (obj *PDFobj) referencedDecodeParms(number string) []string {
 		return nil
 	}
 	return objectValueTokens(parms)
+}
+
+// copiedDecodeParms returns the value of /DecodeParms for a copy of the
+// object, with the parameters that are objects of their own, the value or an
+// element of its array, written in their place. One that cannot be read is
+// left a reference, which the copy refuses.
+func (obj *PDFobj) copiedDecodeParms() []string {
+	tokens := obj.valueTokens("/DecodeParms")
+	if isObjectReference(tokens, 0) {
+		if value := obj.referencedDecodeParms(tokens[0]); value != nil {
+			tokens = value
+		}
+	}
+	if len(tokens) == 0 || tokens[0] != "[" {
+		return tokens
+	}
+	copied := make([]string, 0, len(tokens))
+	for i := 0; i < len(tokens); i++ {
+		if isObjectReference(tokens, i) {
+			if value := obj.referencedDecodeParms(tokens[i]); value != nil {
+				copied = append(copied, value...)
+				i += 2
+				continue
+			}
+		}
+		copied = append(copied, tokens[i])
+	}
+	return copied
 }
 
 // getDecodeParm returns the integer value of the key in the parameters

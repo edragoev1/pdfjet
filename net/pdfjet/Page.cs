@@ -74,6 +74,8 @@ public class Page {
     private bool penWidthWritten = false;
     private Font writtenFont = null;        // The font of the last Tf, or null
     private float writtenFontSize = 0f;
+    // The size was written as it is, for SVG text, not rounded to two places
+    private bool writtenFontPrecise = false;
 
     private float[] tmx = {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
@@ -2505,11 +2507,15 @@ public class Page {
             pdf.Fail(new ArgumentException("The font belongs to another PDF."));
         }
         this.textFontSize = fontSize;
-        if (writtenFont == font && writtenFontSize == fontSize) {
+        // The size as it was written counts too: 0.125 written as 0.13 for text
+        // drawn before is not the 0.125 of SVG text in the same font.
+        if (writtenFont == font && writtenFontSize == fontSize
+                && writtenFontPrecise == precise) {
             return this;    // The text is drawn in this font already
         }
         writtenFont = font;
         writtenFontSize = fontSize;
+        writtenFontPrecise = precise;
         if (font.fontID != null) {
             Append('/');
             Append(font.fontID);
@@ -2613,7 +2619,7 @@ public class Page {
     public void SaveGraphicsState() {
         savedStates.Add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
                 penWidth, penWidthWritten, writtenFont, writtenFontSize,
-                lineCapStyle, lineJoinStyle, strokeDashPattern, height));
+                writtenFontPrecise, lineCapStyle, lineJoinStyle, strokeDashPattern, height));
         Append("q\n");
     }
 
@@ -2668,6 +2674,7 @@ public class Page {
             penWidthWritten = state.GetPenWidthWritten();
             writtenFont = state.GetWrittenFont();
             writtenFontSize = state.GetWrittenFontSize();
+            writtenFontPrecise = state.GetWrittenFontPrecise();
             lineCapStyle = state.GetLineCapStyle();
             lineJoinStyle = state.GetLineJoinStyle();
             strokeDashPattern = state.GetStrokeDashPattern();

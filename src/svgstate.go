@@ -256,6 +256,14 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 		return nil
 	}
 	if value == "inherit" {
+		// The parent's value, not one the element gave before: <text
+		// font-size="40" style="font-size:inherit"> in a group of 16 drew
+		// at 40. The other properties keep what they are.
+		if name == "font-size" {
+			state.fontSize = state.parentFontSize
+		} else if name == "font-weight" {
+			state.fontWeight = state.parentFontWeight
+		}
 		return nil
 	}
 	switch name {

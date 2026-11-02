@@ -78,6 +78,8 @@ type Page struct {
 	penWidthWritten   bool
 	writtenFont       *Font // The font of the last Tf, or nil
 	writtenFontSize   float32
+	// The size was written as it is, for SVG text, not rounded to two places
+	writtenFontPrecise bool
 
 	tmx [4]float32
 	// The bytes of the text matrix, written for every string while the page
@@ -1402,7 +1404,7 @@ func (page *Page) SaveGraphicsState() {
 	page.savedStates = append(page.savedStates, newSavedState(
 		page.brushColor, page.brushColorWritten, page.penColor, page.penColorWritten,
 		page.penWidth, page.penWidthWritten, page.writtenFont, page.writtenFontSize,
-		page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern, page.height))
+		page.writtenFontPrecise, page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern, page.height))
 	page.appendString("q\n")
 }
 
@@ -1451,6 +1453,7 @@ func (page *Page) RestoreGraphicsState() {
 		page.penWidthWritten = state.penWidthWritten
 		page.writtenFont = state.writtenFont
 		page.writtenFontSize = state.writtenFontSize
+		page.writtenFontPrecise = state.writtenFontPrecise
 		page.lineCapStyle = state.lineCapStyle
 		page.lineJoinStyle = state.lineJoinStyle
 		page.strokeDashPattern = state.strokeDashPattern
@@ -2298,11 +2301,15 @@ func (page *Page) writeTextFont(font *Font, fontSize float32, precise bool) *Pag
 		page.pdf.fail("The font belongs to another PDF.")
 	}
 	page.textFontSize = fontSize
-	if page.writtenFont == font && page.writtenFontSize == fontSize {
+	// The size as it was written counts too: 0.125 written as 0.13 for text
+	// drawn before is not the 0.125 of SVG text in the same font.
+	if page.writtenFont == font && page.writtenFontSize == fontSize &&
+		page.writtenFontPrecise == precise {
 		return page // The text is drawn in this font already
 	}
 	page.writtenFont = font
 	page.writtenFontSize = fontSize
+	page.writtenFontPrecise = precise
 	if font.fontID != "" {
 		page.appendByte('/')
 		page.appendString(font.fontID)

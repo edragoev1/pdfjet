@@ -294,13 +294,21 @@ func appendImageObject(pdf *PDF, obj *PDFobj, softMask, mask int, maskArray []st
 	// the document is, as the palette of an /Indexed color space; and the
 	// stream, encrypted too (review of 11 October 2026, #11)
 	colorSpace := obj.valueTokens("/ColorSpace")
-	decodeParms := obj.valueTokens("/DecodeParms")
+	decodeParms := obj.copiedDecodeParms()
 	decode := obj.valueTokens("/Decode")
 	matte := obj.valueTokens("/Matte")
 	for _, tokens := range [][]string{colorSpace, decodeParms, decode, matte, maskArray} {
 		if slices.Contains(tokens, "R") {
 			panic("The image refers to another object of the PDF it was read from, " +
 				"which is not copied with it: " + strings.Join(tokens, " "))
+		}
+	}
+	// A /Filter in an object that cannot be read was written as no filter,
+	// and the compressed samples taken for the image's own
+	if i := slices.Index(obj.dict, "/Filter") + 1; i > 0 && isObjectReference(obj.dict, i) {
+		if number, _ := strconv.Atoi(obj.dict[i]); obj.readObjects[number] == nil {
+			panic("The image refers to another object of the PDF it was read from, " +
+				"which is not copied with it: " + strings.Join(obj.dict[i:i+3], " "))
 		}
 	}
 
@@ -975,7 +983,6 @@ func imageTypeOf(buf []byte) imagetype.ImageType {
 	panic("The image is not a PNG, JPEG or BMP file.")
 }
 
-// appendIfAny writes the key and its value, when it has one.
 // filterValue returns the filters as the value of /Filter: a name, or an array
 // of names for more than one. A /Filter that is an object of its own was
 // written as its number, and the image could not be decoded.
@@ -986,6 +993,7 @@ func filterValue(filters []string) string {
 	return "[" + strings.Join(filters, " ") + "]"
 }
 
+// appendIfAny writes the key and its value, when it has one.
 func appendIfAny(pdf *PDF, key, value string) {
 	if value != "" {
 		pdf.appendString(key + " " + value + "\n")

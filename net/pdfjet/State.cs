@@ -16,6 +16,7 @@ class State {
     private bool penWidthWritten;
     private Font writtenFont;
     private float writtenFontSize;
+    private bool writtenFontPrecise;
     private CapStyle lineCapStyle;
     private JoinStyle lineJoinStyle;
     private String strokeDashPattern;
@@ -32,6 +33,7 @@ class State {
             bool penWidthWritten,
             Font writtenFont,
             float writtenFontSize,
+            bool writtenFontPrecise,
             CapStyle lineCapStyle,
             JoinStyle lineJoinStyle,
             String strokeDashPattern,
@@ -46,6 +48,7 @@ class State {
         this.penWidthWritten = penWidthWritten;
         this.writtenFont = writtenFont;
         this.writtenFontSize = writtenFontSize;
+        this.writtenFontPrecise = writtenFontPrecise;
         this.lineCapStyle = lineCapStyle;
         this.lineJoinStyle = lineJoinStyle;
         this.strokeDashPattern = strokeDashPattern;
@@ -82,6 +85,10 @@ class State {
 
     public float GetWrittenFontSize() {
         return writtenFontSize;
+    }
+
+    public bool GetWrittenFontPrecise() {
+        return writtenFontPrecise;
     }
 
     public float GetPenWidth() {

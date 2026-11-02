@@ -723,4 +723,83 @@ class ReviewReaderTest {
                 "/DCTDecode"));
         assertEquals("/DCTDecode", Image.filterValue(objects.get(3).getFilters()));
     }
+
+    // The array was taken for the parameters of the first filter, and those of
+    // the second were not read: through hasIdentityCrypt, as getDecodeParms is
+    // private.
+    @Test
+    void decodeParmsThatAreAnArrayOfTheirOwnAreRead() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/FlateDecode /Crypt] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                "[null << /Name /Identity >>]"));
+        assertTrue(objects.get(3).hasIdentityCrypt());
+        objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/Crypt /FlateDecode] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                "[<< >> << /Name /StdCF >>]"));
+        assertTrue(objects.get(3).hasIdentityCrypt());
+        objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/ASCII85Decode /FlateDecode] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                "[null << /Predictor 12 /Columns 5 >>]"));
+        assertEquals("[ null << /Predictor 12 /Columns 5 >> ]",
+                String.join(" ", objects.get(3).copiedDecodeParms()));
+    }
+
+    // A copy refused /DecodeParms in an object of its own, which a read PDF
+    // has with /Filter in one too.
+    @Test
+    void aCopiedImageHasItsDecodeParmsWritten() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/FlateDecode /DCTDecode] /DecodeParms [6 0 R null] >>\nstream\nx\nendstream",
+                "<< /Type /XObject >>",
+                "<< /Predictor 12 /Columns 5 >>"));
+        assertEquals("[ << /Predictor 12 /Columns 5 >> null ]",
+                String.join(" ", objects.get(3).copiedDecodeParms()));
+    }
+
+    // It was written with no /Filter, its compressed samples taken for its own.
+    @Test
+    void aCopiedImageWithAFilterNotReadIsRefused() throws Exception {
+        final List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /BitsPerComponent 8 "
+                        + "/ColorSpace /DeviceGray /Length 1 /Filter 9 0 R >>\nstream\nx\nendstream"));
+        final PDF pdf = TestSupport.newPDF();
+        String message = assertThrows(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable { new Image(pdf, objects.get(3)); }
+        }).getMessage();
+        assertTrue(message.contains("9 0 R"), message);
+    }
+
+    // A null for /Crypt in an array that is read is the Identity filter: it was
+    // taken for a name not known, and the stream decrypted.
+    @Test
+    void aNullCryptInAnArrayThatIsReadIsIdentity() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter [/FlateDecode /Crypt] /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                "[<< >> null]"));
+        assertTrue(objects.get(3).hasIdentityCrypt());
+        objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter /Crypt /DecodeParms 9 0 R >>\nstream\nx\nendstream"));
+        assertFalse(objects.get(3).hasIdentityCrypt());
+    }
 }
