@@ -392,7 +392,10 @@ func isCJK(s string) bool {
 	count := 0
 	for _, ch := range s {
 		count++
-		if (ch >= 0x4E00 && ch <= 0x9FD5) ||
+		if (ch >= 0x4E00 && ch <= 0x9FFF) ||
+			(ch >= 0x3400 && ch <= 0x4DBF) ||
+			(ch >= 0xF900 && ch <= 0xFAFF) ||
+			(ch >= 0x20000 && ch <= 0x3FFFF) ||
 			(ch >= 0x3040 && ch <= 0x309F) ||
 			(ch >= 0x30A0 && ch <= 0x30FF) ||
 			(ch >= 0x1100 && ch <= 0x11FF) {
@@ -421,8 +424,8 @@ func cannotStartLine(ch rune) bool {
 // the next character does not fit on it, by the line breaking rules of these
 // languages (kinsoku shori): when the next character does not start a line, the
 // one before it moves to the next line with it, and so do opening brackets at
-// the end of the line. A line that has no other place to break ends where it is
-// full.
+// the end of the line. A word in Latin letters is not cut. A line that has no
+// other place to break ends where it is full.
 func cjkLineEnd(line []rune, next rune) int {
 	end := len(line)
 	if cannotStartLine(next) {
@@ -436,10 +439,29 @@ func cjkLineEnd(line []rune, next rune) int {
 	for end > 0 && strings.ContainsRune(notAtLineEnd, line[end-1]) {
 		end--
 	}
+	// A word in Latin letters or digits moves whole to the next line, unless
+	// it fills the line.
+	if end > 0 && isLatinWordCharacter(line[end-1]) && (end == len(line) && isLatinWordCharacter(next) ||
+		end < len(line) && isLatinWordCharacter(line[end])) {
+		start := end
+		for start > 0 && isLatinWordCharacter(line[start-1]) {
+			start--
+		}
+		if start > 0 {
+			end = start
+		}
+	}
 	if end == 0 {
 		return len(line)
 	}
 	return end
+}
+
+// isLatinWordCharacter returns true for a letter or a digit of a word in Latin
+// letters, up to the end of Latin Extended-B.
+func isLatinWordCharacter(ch rune) bool {
+	return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+		(ch >= 0x00C0 && ch <= 0x024F && ch != 0x00D7 && ch != 0x00F7)
 }
 
 // lowerAsJava returns the text in lower case as Java's toLowerCase of

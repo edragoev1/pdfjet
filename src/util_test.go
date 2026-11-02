@@ -244,3 +244,29 @@ func TestUtilOfTextFileReplacesWhatIsNotUtf8(t *testing.T) {
 		}
 	}
 }
+
+// A word in Latin letters in a line of Chinese text moves whole to the next
+// line: "電郵或 W" and "hatsApp 交回" (a registration form, 27 October 2026).
+func TestUtilALatinWordInALineOfChineseIsNotCut(t *testing.T) {
+	for _, c := range []struct {
+		line string
+		next rune
+		want int
+	}{
+		{"電郵或 W", 'h', 4},
+		{"電郵或 What", 's', 4},
+		{"電郵或 What", '交', 8},
+		{"WhatsApp", 'x', 8}, // It fills the line.
+		{"電郵或 What ", 's', 9},
+		{"電郵或 12", '3', 4},
+	} {
+		if got := cjkLineEnd([]rune(c.line), c.next); got != c.want {
+			t.Errorf("cjkLineEnd(%q, %q) = %d, want %d", c.line, c.next, got, c.want)
+		}
+	}
+	for _, text := range []string{"\u9FFF\u9FFE", "\u3400\u3401", "\U000282E2\U000282E3", "\uF900\uF901"} {
+		if !isCJK(text) {
+			t.Errorf("%q is not CJK", text)
+		}
+	}
+}
