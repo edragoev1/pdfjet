@@ -1606,9 +1606,17 @@ public class SVGImage : Drawable {
     // nor in the bundle of PDFjetFonts, which PDFjet depends on, is refused:
     // nil, and the document records why, as no core font is drawn in its
     // place.
-    private func fontOf(_ run: SVGText.Run, _ pdf: PDF) -> Font? {
+    private func fontOf(_ run: SVGText.Run, _ page: Page) -> Font? {
         if let font = font {
             return (run.weight >= 600 && boldFont != nil) ? boldFont! : font
+        }
+        let pdf = page.pdf
+        // A font PDFjet carries would not reach the resources of a page that was
+        // read: the text was lost, or the PDF did not open.
+        if page.pageObj != nil {
+            pdf.fail("The text of an SVG on a page read from a PDF needs a font: "
+                    + "set one with setFont, and add it to the page with addResource.")
+            return nil
         }
         if let bundled = BundledFonts.get(pdf, run.family, run.weight, run.italic) {
             return bundled
@@ -1991,7 +1999,7 @@ public class SVGImage : Drawable {
             if let text = path.text {
                 text.choose()
                 for run in text.runs {
-                    guard let font = fontOf(run, page.pdf) else {
+                    guard let font = fontOf(run, page) else {
                         page.addEMC()
                         page.endLink(link)
                         return [self.x + self.w, self.y + self.h]

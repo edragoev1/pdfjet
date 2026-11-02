@@ -583,7 +583,7 @@ public class SVGImage : IDrawable {
             if (path.text != null) {
                 path.text.Choose();
                 foreach (SVGText.Run run in path.text.runs) {
-                    run.font = FontOf(run, page.pdf);
+                    run.font = FontOf(run, page);
                 }
                 path.text.Place();
             }
@@ -1743,9 +1743,16 @@ public class SVGImage : IDrawable {
     // its family, weight and style, from resources/fonts or the library. With
     // neither, as the small DLL run away from resources/fonts, it throws: the
     // text is never drawn in a core font.
-    private Font FontOf(SVGText.Run run, PDF pdf) {
+    private Font FontOf(SVGText.Run run, Page page) {
         if (font != null) {
             return (run.weight >= 600 && boldFont != null) ? boldFont : font;
+        }
+        PDF pdf = page.pdf;
+        // A font PDFjet carries would not reach the resources of a page that was
+        // read: the text was lost, or the PDF did not open.
+        if (page.pageObj != null) {
+            pdf.Fail(new InvalidOperationException("The text of an SVG on a page read from a PDF needs a font: "
+                    + "set one with SetFont, and add it to the page with AddResource."));
         }
         Font bundled = BundledFonts.Get(pdf, run.family, run.weight, run.italic);
         if (bundled == null) {

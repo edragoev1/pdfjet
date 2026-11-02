@@ -16,6 +16,8 @@ Behavior changes since 9.1.5, from the reviews before this release:
 - An SVG with `<text>` is now drawn with its text, in a font PDFjet carries.
   With no such font and no `SetFont`, as with the small jar or DLL away from
   `resources/fonts`, it is an error, where the text was left out.
+- On a page read from a PDF, an SVG with `<text>` needs `SetFont` and the font
+  added to the page. Without them it is an error, where the text was left out.
 - The CJK font constants of IBM Plex Sans JP, KR, SC and TC point to `.otf`
   files.
 - A negative value of `SetReferenceLine` in `SimpleBarChart` draws no line,

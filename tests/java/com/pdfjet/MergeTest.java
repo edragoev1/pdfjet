@@ -699,4 +699,15 @@ class MergeTest {
         assertFalse(pages.get(1).inheritedResources.contains("/HELVETICA"),
                 "the font added to one page is in the resources of the other");
     }
+
+    @Test
+    void svgTextOnAPageThatWasReadNeedsAFont() throws Exception {
+        List<PDFobj> objects = TestSupport.read(document("A1"));
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        SVGImage image = new SVGImage(new java.io.ByteArrayInputStream(
+                "<svg viewBox=\"0 0 10 10\"><text x=\"1\" y=\"5\">Hi</text></svg>".getBytes(StandardCharsets.UTF_8)));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> image.drawOn(page));
+        assertTrue(e.getMessage().contains("read from a PDF needs a font"), e.getMessage());
+    }
 }

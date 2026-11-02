@@ -777,3 +777,17 @@ func TestMergeASmallInheritedResourcesIsCopiedAndASharedOneIsCopiedWhenChanged(t
 		t.Error("the font added to one page is in the resources of the other")
 	}
 }
+
+func TestSVGTextOnAPageThatWasReadNeedsAFont(t *testing.T) {
+	objects := testRead(t, testMergeDocument("Existing"))
+	doc := testNewDoc()
+	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+	image, err := NewSVGImage(strings.NewReader(`<svg viewBox="0 0 10 10"><text x="1" y="5">Hi</text></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	image.DrawOn(page)
+	if doc.pdf.err == nil || !strings.Contains(doc.pdf.err.Error(), "read from a PDF needs a font") {
+		t.Errorf("the error is %v", doc.pdf.err)
+	}
+}

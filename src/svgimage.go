@@ -2226,6 +2226,15 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	for _, drawn := range [][]*svgPath{paths, image.clipShapes} {
 		for _, path := range drawn {
 			if path.text != nil {
+				// A font PDFjet carries would not reach the resources of a page
+				// that was read: the text was lost, or the PDF did not open.
+				if image.font == nil && page.pageObj != nil {
+					page.pdf.fail("The text of an SVG on a page read from a PDF needs a font: " +
+						"set one with SetFont, and add it to the page with AddFontResource.")
+					page.AddEMC()
+					page.endLink(link)
+					return [2]float32{image.x + image.w, image.y + image.h}
+				}
 				path.text.choose()
 				for _, run := range path.text.runs {
 					run.font = image.fontOf(run, page.pdf)

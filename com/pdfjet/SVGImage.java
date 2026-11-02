@@ -585,7 +585,7 @@ public class SVGImage implements Drawable {
             if (path.text != null) {
                 path.text.choose();
                 for (SVGText.Run run : path.text.runs) {
-                    run.font = fontOf(run, page.pdf);
+                    run.font = fontOf(run, page);
                 }
                 path.text.place();
             }
@@ -1773,9 +1773,16 @@ public class SVGImage implements Drawable {
     // or more when it is set, or else the face of the fonts PDFjet carries of
     // its family, weight and style, from resources/fonts or the jar; when it
     // is in neither, it throws: the text is never drawn in a core font.
-    private Font fontOf(SVGText.Run run, PDF pdf) {
+    private Font fontOf(SVGText.Run run, Page page) {
         if (font != null) {
             return (run.weight >= 600 && boldFont != null) ? boldFont : font;
+        }
+        PDF pdf = page.pdf;
+        // A font PDFjet carries would not reach the resources of a page that was
+        // read: the text was lost, or the PDF did not open.
+        if (page.pageObj != null) {
+            pdf.fail(new IllegalStateException("The text of an SVG on a page read from a PDF needs a font: "
+                    + "set one with setFont, and add it to the page with addResource."));
         }
         Font bundled = BundledFonts.get(pdf, run.family, run.weight, run.italic);
         if (bundled == null) {

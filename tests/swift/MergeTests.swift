@@ -614,4 +614,13 @@ import Testing
                 "the font added to one page is in the resources of the other")
         #expect(pages[0].getDict().contains("/HELVETICA"), "the font is not in the page's resources")
     }
+
+    @Test func svgTextOnAPageThatWasReadNeedsAFont() throws {
+        let objects = try TestSupport.read(document("A1"))
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+        let image = try SVGImage(stream: InputStream(data: Data("<svg viewBox=\"0 0 10 10\"><text x=\"1\" y=\"5\">Hi</text></svg>".utf8)))
+        image.drawOn(page)
+        #expect(throws: (any Error).self) { try memory.pdf.complete() }
+    }
 }

@@ -660,5 +660,15 @@ public class MergeTest {
         Assert.NotNull(pages[1].inheritedResources);
         Assert.DoesNotContain("/HELVETICA", pages[1].inheritedResources);
     }
+
+    [Fact]
+    public void SVGTextOnAPageThatWasReadNeedsAFont() {
+        List<PDFobj> objects = TestSupport.Read(Document("A1"));
+        PDF pdf = new PDF(new MemoryStream());
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        SVGImage image = new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes("<svg viewBox=\"0 0 10 10\"><text x=\"1\" y=\"5\">Hi</text></svg>")));
+        var e = Assert.Throws<InvalidOperationException>(() => image.DrawOn(page));
+        Assert.Contains("read from a PDF needs a font", e.Message);
+    }
 }
 }   // End of namespace PDFjet.NET
