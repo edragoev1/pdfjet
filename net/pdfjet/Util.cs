@@ -413,7 +413,7 @@ internal class Util {
 
     /// <summary>
     /// Returns true if more than half of the code points of the string are CJK:
-    /// CJK Unified Ideographs (4E00-9FD5), Hiragana (3040-309F), Katakana
+    /// CJK Unified Ideographs (3400-4DBF, 4E00-9FFF, F900-FAFF, 20000-3FFFF), Hiragana (3040-309F), Katakana
     /// (30A0-30FF) or Hangul Jamo (1100-11FF).
     /// </summary>
     internal static bool IsCJK(String str) {
@@ -422,7 +422,10 @@ internal class Util {
         for (int i = 0; i < str.Length; i += CharCount(str, i)) {
             int ch = CodePointAt(str, i);
             numOfCodePoints++;
-            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
+            if ((ch >= 0x4E00 && ch <= 0x9FFF) ||
+                    (ch >= 0x3400 && ch <= 0x4DBF) ||
+                    (ch >= 0xF900 && ch <= 0xFAFF) ||
+                    (ch >= 0x20000 && ch <= 0x3FFFF) ||
                     (ch >= 0x3040 && ch <= 0x309F) ||
                     (ch >= 0x30A0 && ch <= 0x30FF) ||
                     (ch >= 0x1100 && ch <= 0x11FF)) {
@@ -483,7 +486,26 @@ internal class Util {
         while (end > 0 && NOT_AT_LINE_END.Contains(LastCharacter(line, end))) {
             end -= LastCharacter(line, end).Length;
         }
+        // A word in Latin letters or digits moves whole to the next line, unless
+        // it fills the line.
+        if (end > 0 && IsLatinWordCharacter(CodePointAt(LastCharacter(line, end), 0))
+                && IsLatinWordCharacter(end < line.Length ? CodePointAt(line, end) : CodePointAt(next, 0))) {
+            int start = end;
+            while (start > 0 && IsLatinWordCharacter(CodePointAt(LastCharacter(line, start), 0))) {
+                start -= LastCharacter(line, start).Length;
+            }
+            if (start > 0) {
+                end = start;
+            }
+        }
         return (end > 0) ? end : line.Length;
+    }
+
+    // Returns true for a letter or a digit of a word in Latin letters, up to the
+    // end of Latin Extended-B.
+    private static bool IsLatinWordCharacter(int ch) {
+        return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')
+                || (ch >= 0x00C0 && ch <= 0x024F && ch != 0x00D7 && ch != 0x00F7);
     }
 
     // Returns true for a character that does not start a line of Chinese or

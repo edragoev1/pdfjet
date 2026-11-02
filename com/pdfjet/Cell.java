@@ -1026,7 +1026,7 @@ public class Cell {
         page.addAnnotation(annotation);
     }
 
-    // Returns where the drawable is now. An image has its location; another
+    // Returns where the drawable is now. An image or a barcode has its location; another
     // drawable has none to read, so it is its corner, measured where it is,
     // less its size, measured at 0, 0, where it is put back, in float
     // arithmetic: 7.13 can come back as 7.130005. The image or barcode of a
@@ -1036,6 +1036,9 @@ public class Cell {
         if (drawable instanceof Image) {
             Image image = (Image) drawable;
             return new float[] {image.x, image.y};
+        }
+        if (drawable instanceof Barcode) {
+            return ((Barcode) drawable).getLocation();
         }
         try {
             float[] corner = drawable.drawOn(null);

@@ -81,7 +81,10 @@ extension String {
         for scalar in self.unicodeScalars {
             count += 1
             let ch = scalar.value
-            if (ch >= 0x4E00 && ch <= 0x9FD5) ||
+            if (ch >= 0x4E00 && ch <= 0x9FFF) ||
+                    (ch >= 0x3400 && ch <= 0x4DBF) ||
+                    (ch >= 0xF900 && ch <= 0xFAFF) ||
+                    (ch >= 0x20000 && ch <= 0x3FFFF) ||
                     (ch >= 0x3040 && ch <= 0x309F) ||
                     (ch >= 0x30A0 && ch <= 0x30FF) ||
                     (ch >= 0x1100 && ch <= 0x11FF) {
@@ -123,5 +126,24 @@ func cjkLineEnd(_ line: [Unicode.Scalar], _ next: Unicode.Scalar) -> Int {
     while end > 0 && notAtLineEnd.contains(line[end - 1]) {
         end -= 1
     }
+    // A word in Latin letters or digits moves whole to the next line, unless it
+    // fills the line.
+    if end > 0 && isLatinWordCharacter(line[end - 1]) && isLatinWordCharacter(end < line.count ? line[end] : next) {
+        var start = end
+        while start > 0 && isLatinWordCharacter(line[start - 1]) {
+            start -= 1
+        }
+        if start > 0 {
+            end = start
+        }
+    }
     return (end > 0) ? end : line.count
+}
+
+// Returns true for a letter or a digit of a word in Latin letters, up to the end
+// of Latin Extended-B.
+private func isLatinWordCharacter(_ scalar: Unicode.Scalar) -> Bool {
+    let ch = scalar.value
+    return (ch >= 0x30 && ch <= 0x39) || (ch >= 0x41 && ch <= 0x5A) || (ch >= 0x61 && ch <= 0x7A)
+        || (ch >= 0x00C0 && ch <= 0x024F && ch != 0x00D7 && ch != 0x00F7)
 }

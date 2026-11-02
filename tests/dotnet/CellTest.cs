@@ -278,6 +278,22 @@ public class CellTest {
     // An image is put back exactly, not as its corner less its size in float
     // arithmetic, which brought 7.13 back as 7.130005.
     [Fact]
+    public void ABarcodeOfACellIsPutBackExactly() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Barcode barcode = new Barcode(Barcode.CODE_128, "x");
+        barcode.SetLocation(7.13f, 8.29f);
+        Cell cell = new Cell(font).SetBarcode(barcode);
+        cell.SetTextAlignment(Alignment.RIGHT);
+        Table table = new Table();
+        table.SetTableData(new List<List<Cell>> {new List<Cell> {cell}}, 0);
+        table.SetLocation(200f, 300f);
+        table.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        Assert.Equal(7.13f, barcode.x1);
+        Assert.Equal(8.29f, barcode.y1);
+    }
+
+    [Fact]
     public void AnImageOfACellIsPutBackExactly() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);

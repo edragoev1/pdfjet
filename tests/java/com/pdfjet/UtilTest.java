@@ -150,6 +150,19 @@ class UtilTest {
     }
 
     @Test
+    void aLatinWordInALineOfChineseIsNotCut() {
+        assertEquals(4, Util.cjkLineEnd("電郵或 W", "h".codePointAt(0)));
+        assertEquals(4, Util.cjkLineEnd("電郵或 What", "s".codePointAt(0)));
+        assertEquals(8, Util.cjkLineEnd("電郵或 What", "交".codePointAt(0)));
+        assertEquals(8, Util.cjkLineEnd("WhatsApp", "x".codePointAt(0)));
+        assertEquals(9, Util.cjkLineEnd("電郵或 What ", "s".codePointAt(0)));
+        assertEquals(4, Util.cjkLineEnd("電郵或 12", "3".codePointAt(0)));
+        for (String text : new String[] {"\u9FFF\u9FFE", "\u3400\u3401", "\uD860\uDEE2\uD860\uDEE3", "\uF900\uF901"}) {
+            org.junit.jupiter.api.Assertions.assertTrue(Util.isCJK(text), text);
+        }
+    }
+
+    @Test
     void noLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpeningOne() {
         assertEquals(3, Util.cjkLineEnd("あいう", "え".codePointAt(0)));
         assertEquals(2, Util.cjkLineEnd("あいう", "。".codePointAt(0)));    // う moves down with 。

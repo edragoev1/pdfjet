@@ -162,6 +162,18 @@ import Testing
         #expect(Util.lineBreaksToSpaces("no breaks") == "no breaks")
     }
 
+    @Test func aLatinWordInALineOfChineseIsNotCut() {
+        #expect(cjkLineEnd(Array("電郵或 W".unicodeScalars), "h") == 4)
+        #expect(cjkLineEnd(Array("電郵或 What".unicodeScalars), "s") == 4)
+        #expect(cjkLineEnd(Array("電郵或 What".unicodeScalars), "交") == 8)
+        #expect(cjkLineEnd(Array("WhatsApp".unicodeScalars), "x") == 8)
+        #expect(cjkLineEnd(Array("電郵或 What ".unicodeScalars), "s") == 9)
+        #expect(cjkLineEnd(Array("電郵或 12".unicodeScalars), "3") == 4)
+        for text in ["\u{9FFF}\u{9FFE}", "\u{3400}\u{3401}", "\u{282E2}\u{282E3}", "\u{F900}\u{F901}"] {
+            #expect(text.isCJK(), "\(text)")
+        }
+    }
+
     @Test func noLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpeningOne() {
         func end(_ line: String, _ next: Unicode.Scalar) -> Int {
             cjkLineEnd(Array(line.unicodeScalars), next)

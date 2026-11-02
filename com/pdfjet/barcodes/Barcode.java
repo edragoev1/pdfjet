@@ -169,6 +169,15 @@ public class Barcode implements Drawable {
     }
 
     /**
+     * Returns the location of the top left corner of this barcode.
+     *
+     * @return the x and the y coordinates.
+     */
+    public float[] getLocation() {
+        return new float[] {x1, y1};
+    }
+
+    /**
      * Sets the module length of this barcode.
      * The default value is 0.75
      *

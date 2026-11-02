@@ -452,7 +452,10 @@ class Util {
         int i = 0;
         while (i < str.length()) {
             int ch = str.codePointAt(i);
-            if ((ch >= 0x4E00 && ch <= 0x9FD5) ||
+            if ((ch >= 0x4E00 && ch <= 0x9FFF) ||
+                    (ch >= 0x3400 && ch <= 0x4DBF) ||
+                    (ch >= 0xF900 && ch <= 0xFAFF) ||
+                    (ch >= 0x20000 && ch <= 0x3FFFF) ||
                     (ch >= 0x3040 && ch <= 0x309F) ||
                     (ch >= 0x30A0 && ch <= 0x30FF) ||
                     (ch >= 0x1100 && ch <= 0x11FF)) {
@@ -496,7 +499,26 @@ class Util {
         while (end > 0 && NOT_AT_LINE_END.indexOf(line.codePointBefore(end)) >= 0) {
             end -= Character.charCount(line.codePointBefore(end));
         }
+        // A word in Latin letters or digits moves whole to the next line, unless
+        // it fills the line.
+        if (end > 0 && isLatinWordCharacter(line.codePointBefore(end))
+                && isLatinWordCharacter(end < line.length() ? line.codePointAt(end) : next)) {
+            int start = end;
+            while (start > 0 && isLatinWordCharacter(line.codePointBefore(start))) {
+                start -= Character.charCount(line.codePointBefore(start));
+            }
+            if (start > 0) {
+                end = start;
+            }
+        }
         return (end > 0) ? end : line.length();
+    }
+
+    // Returns true for a letter or a digit of a word in Latin letters, up to the
+    // end of Latin Extended-B.
+    private static boolean isLatinWordCharacter(int ch) {
+        return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')
+                || (ch >= 0x00C0 && ch <= 0x024F && ch != 0x00D7 && ch != 0x00F7);
     }
 
     // Returns true for a character that does not start a line of Chinese or

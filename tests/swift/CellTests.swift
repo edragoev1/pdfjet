@@ -257,6 +257,21 @@ private final class Box: Drawable {
 
     // An image is put back exactly, not as its corner less its size in float
     // arithmetic, which brought 7.13 back as 7.130005.
+    @Test func aBarcodeOfACellIsPutBackExactly() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let barcode = try Barcode(Barcode.CODE_128, "x")
+        _ = barcode.setLocation(7.13, 8.29)
+        let cell = Cell(font).setBarcode(barcode)
+        _ = cell.setTextAlignment(Alignment.RIGHT)
+        let table = Table()
+        _ = table.setTableData([[cell]], 0)
+        _ = table.setLocation(200, 300)
+        _ = table.drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(barcode.x1 == 7.13)
+        #expect(barcode.y1 == 8.29)
+    }
+
     @Test func anImageOfACellIsPutBackExactly() throws {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)

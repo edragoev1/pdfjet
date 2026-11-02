@@ -662,13 +662,6 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   work again before they fail. The net48 build takes the categories of
   the characters from a table of .NET 8's, Unicode 15.0, which a test holds
   to .NET 8's own (K3).
-- **A barcode in a cell put back exactly** (the final review of 12 October
-  2026): an image is, for 9.1.7, its location read directly. A barcode, or
-  any other drawable, still has its location found as its corner less its
-  size, in float arithmetic, so 7.13, 8.29 comes back as 7.130005, 8.290001,
-  and the measuring costs two more drawOn(null) calls a draw. Java's Barcode
-  is in another package, so reading its location needs a public getter,
-  which waits on the owner's word as 9.1.7 is frozen.
 - **Dropped: Swift's Flate to compress as zlib does** (the owner, 25
   October 2026: the 9% larger size is OK, not worth complicating things).
   Swift's PDFs stay about 9% larger than Go's, from its own Deflate encoder.
@@ -1002,11 +995,6 @@ The release (scripts and the checklist):
   fonts; Poppler extracts them whole.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
-- A font draws only the characters up to U+FFFF that are inside the range
-  its OS/2 table gives. Any other character counts as missing, like one the
-  font lacks. This costs the glyphs above U+FFFF that 144 of the shipped fonts
-  have, such as IBM Plex Math's bold italic letters and the CJK Extension B
-  ideographs; no shipped font has an OS/2 range narrower than its glyphs.
 - Full CommonMark is not planned: PDFjet's Markdown is the practical subset
   that documents use, as its Bidi covers what text needs without the whole of
   UAX #9.

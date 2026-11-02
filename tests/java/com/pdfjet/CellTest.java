@@ -284,6 +284,22 @@ class CellTest {
     // An image is put back exactly, not as its corner less its size in float
     // arithmetic, which brought 7.13 back as 7.130005.
     @Test
+    void aBarcodeOfACellIsPutBackExactly() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Barcode barcode = new Barcode(Barcode.CODE_128, "x");
+        barcode.setLocation(7.13f, 8.29f);
+        Cell cell = new Cell(font).setBarcode(barcode);
+        cell.setTextAlignment(Alignment.RIGHT);
+        Table table = new Table();
+        table.setTableData(Arrays.asList(Arrays.asList(cell)), 0);
+        table.setLocation(200f, 300f);
+        table.drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertEquals(7.13f, barcode.getLocation()[0]);
+        assertEquals(8.29f, barcode.getLocation()[1]);
+    }
+
+    @Test
     void anImageOfACellIsPutBackExactly() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);

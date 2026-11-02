@@ -1084,6 +1084,9 @@ public class Cell {
         if let image = drawable as? Image {
             return [image.x, image.y]
         }
+        if let barcode = drawable as? Barcode {
+            return [barcode.x1, barcode.y1]
+        }
         let corner = drawable.drawOn(nil)
         drawable.setLocation(0, 0)
         let size = drawable.drawOn(nil)

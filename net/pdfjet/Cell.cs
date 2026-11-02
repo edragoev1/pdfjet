@@ -846,6 +846,9 @@ public class Cell {
         if (drawable is Image image) {
             return new float[] {image.x, image.y};
         }
+        if (drawable is Barcode barcode) {
+            return new float[] {barcode.x1, barcode.y1};
+        }
         float[] corner = drawable.DrawOn(null);
         drawable.SetLocation(0f, 0f);
         float[] size = drawable.DrawOn(null);

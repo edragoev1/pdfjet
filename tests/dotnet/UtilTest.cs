@@ -137,6 +137,19 @@ public sealed class UtilTest : IDisposable {
     }
 
     [Fact]
+    public void ALatinWordInALineOfChineseIsNotCut() {
+        Assert.Equal(4, Util.CjkLineEnd("電郵或 W", "h"));
+        Assert.Equal(4, Util.CjkLineEnd("電郵或 What", "s"));
+        Assert.Equal(8, Util.CjkLineEnd("電郵或 What", "交"));
+        Assert.Equal(8, Util.CjkLineEnd("WhatsApp", "x"));
+        Assert.Equal(9, Util.CjkLineEnd("電郵或 What ", "s"));
+        Assert.Equal(4, Util.CjkLineEnd("電郵或 12", "3"));
+        foreach (String text in new String[] {"\u9FFF\u9FFE", "\u3400\u3401", "\uD860\uDEE2\uD860\uDEE3", "\uF900\uF901"}) {
+            Assert.True(Util.IsCJK(text), text);
+        }
+    }
+
+    [Fact]
     public void NoLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpeningOne() {
         Assert.Equal(3, Util.CjkLineEnd("あいう", "え"));
         Assert.Equal(2, Util.CjkLineEnd("あいう", "。"));  // う moves down with 。

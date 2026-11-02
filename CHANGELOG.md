@@ -20,6 +20,9 @@ Behavior changes since 9.1.5, from the reviews before this release:
   added to the page. Without them it is an error, where the text was left out.
 - The CJK font constants of IBM Plex Sans JP, KR, SC and TC point to `.otf`
   files.
+- A word in Latin letters in a line of Chinese or Japanese is no longer cut at
+  the end of the line: it moves whole to the next one. Text with no such word
+  is drawn as it was.
 - A negative value of `SetReferenceLine` in `SimpleBarChart` draws no line,
   and takes no room in the chart or its description.
 

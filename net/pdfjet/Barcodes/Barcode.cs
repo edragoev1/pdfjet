@@ -54,8 +54,8 @@ public class Barcode : IDrawable {
 
     private int barcodeType = 0;
     private String text = null;
-    private float x1 = 0.0f;
-    private float y1 = 0.0f;
+    internal float x1 = 0.0f;
+    internal float y1 = 0.0f;
     private float m1 = 0.75f;   // Module length
     private float barHeightFactor = 50.0f;
     private Direction direction = Direction.LEFT_TO_RIGHT;

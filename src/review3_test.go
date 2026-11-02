@@ -882,6 +882,21 @@ func TestReview3ADrawableOfACellStaysWhereTheCallerPutIt(t *testing.T) {
 
 // An image is put back exactly, not as its corner less its size in float
 // arithmetic, which brought 7.13 back as 7.130005.
+func TestReview3ABarcodeOfACellIsPutBackExactly(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	code := NewBarcode(CODE_128, "x")
+	code.SetLocation(7.13, 8.29)
+	cell := NewEmptyCell(font).SetBarcode(code).SetTextAlignment(alignment.Right)
+	table := NewTable()
+	table.SetTableData([][]*Cell{{cell}}, 0)
+	table.SetLocation(200, 300)
+	table.DrawOn(NewPage(pdf, testLetterPortrait()))
+	if code.x1 != 7.13 || code.y1 != 8.29 {
+		t.Errorf("the barcode is at %v, %v", code.x1, code.y1)
+	}
+}
+
 func TestReview3AnImageOfACellIsPutBackExactly(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)

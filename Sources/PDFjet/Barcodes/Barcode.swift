@@ -36,8 +36,8 @@ public class Barcode : Drawable {
 
     private var barcodeType = 0
     private var text: String
-    private var x1: Float = 0.0
-    private var y1: Float = 0.0
+    fileprivate(set) var x1: Float = 0.0
+    fileprivate(set) var y1: Float = 0.0
     private var m1: Float = 0.75    // Module length
     private var barHeightFactor: Float = 50.0
     private var direction = Direction.LEFT_TO_RIGHT
