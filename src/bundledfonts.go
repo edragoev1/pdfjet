@@ -154,6 +154,18 @@ const (
 
 var bundledFamilies = []string{"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"}
 
+// bundledFamilyCarried tells if the path names a font of a family the
+// library carries, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.
+func bundledFamilyCarried(fontPath string) bool {
+	family, _, _ := strings.Cut(bundledFontName(fontPath), "/")
+	for _, carried := range bundledFamilies {
+		if family == carried {
+			return true
+		}
+	}
+	return false
+}
+
 // bundledWeights are the CSS weights the faces of each family stand for, and
 // bundledStyles their styles. Cascadia Mono's strokes are heavier than IBM
 // Plex Sans's at the same weight: its SemiLight is as thick as Plex Sans

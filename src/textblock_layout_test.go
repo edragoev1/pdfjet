@@ -72,13 +72,12 @@ func TestTextBlockLayoutReference(t *testing.T) {
 	pdf := NewPDF(bufio.NewWriter(new(bytes.Buffer)))
 	fonts := map[string]*Font{}
 	// A font is named as its file is, IBMPlexSans-Regular, and is read from
-	// the .ttf, or else the .otf, of its family in the fonts directory, or
-	// from the fonts PDFjet carries. The directory is PDFJET_LAYOUT_FONTS,
-	// the fonts of PDFjet Forms, which PDFjet has not carried since 9.1.7.
+	// the .ttf, or else the .otf, of its family in PDFJET_LAYOUT_FONTS, the
+	// fonts of PDFjet Forms, which PDFjet has not carried since 9.1.7, and
+	// from there alone, so that the layout is never of another release of
+	// the font; without it, from the fonts PDFjet carries (the review of 2
+	// November 2026).
 	fontsDir := os.Getenv("PDFJET_LAYOUT_FONTS")
-	if fontsDir == "" {
-		fontsDir = filepath.Join("..", "fonts")
-	}
 	fontNamed := func(name string) *Font {
 		if font, ok := fonts[name]; ok {
 			return font
@@ -87,13 +86,21 @@ func TestTextBlockLayoutReference(t *testing.T) {
 		var matches []string
 		for _, ext := range []string{".ttf", ".otf"} {
 			path := filepath.Join(fontsDir, family, name+ext)
-			if _, err := os.Stat(path); err == nil || bundledFontHas(path) {
+			if fontsDir != "" {
+				if _, err := os.Stat(path); err == nil {
+					matches = append(matches, path)
+					break
+				}
+			} else if bundledFontHas(path) {
 				matches = append(matches, path)
 				break
 			}
 		}
 		if len(matches) != 1 {
-			t.Fatalf("there is no font %s in %s, nor one PDFjet carries", name, filepath.Join(fontsDir, family))
+			if fontsDir != "" {
+				t.Fatalf("there is no font %s in %s (PDFJET_LAYOUT_FONTS)", name, filepath.Join(fontsDir, family))
+			}
+			t.Fatalf("there is no font %s among the fonts PDFjet carries: set PDFJET_LAYOUT_FONTS to the fonts of PDFjet Forms", name)
 		}
 		// Kerned when the check asks for it, as PDFjet Forms kerns its text,
 		// but IBM Plex Sans KR and TC, the fallback fonts of its Korean and

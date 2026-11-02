@@ -30,6 +30,12 @@ func TestNoFontsTheFontsAreLeftOutAndSaySo(t *testing.T) {
 	if !errors.As(err, &notFound) || !strings.Contains(err.Error(), "pdfjet_nofonts") {
 		t.Errorf("the error is %v", err)
 	}
+	// A font file of the program's own that is missing: the file is what is
+	// missing, and the tag is not named (the review of 2 November 2026)
+	_, err = readFontFile("fonts/MyFamily/MyFamily-Regular.ttf")
+	if !errors.As(err, &notFound) || strings.Contains(err.Error(), "pdfjet_nofonts") {
+		t.Errorf("of a font of the program's own, the error is %v", err)
+	}
 	svg, err := NewSVGImage(strings.NewReader(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><text x="0" y="15">PDFjet</text></svg>`))
 	if err != nil {
 		t.Fatal(err)

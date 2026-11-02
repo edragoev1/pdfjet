@@ -11,6 +11,6 @@
 cd "$(dirname "$0")/src" || exit 1
 
 go vet ./... ../resources/fonts/... || exit 1
-go vet -tags pdfjet_nofonts ./... ../resources/fonts/... || exit 1
+go vet -tags pdfjet_nofonts . ../resources/fonts || exit 1
 go test -tags pdfjet_nofonts -run '^TestNoFonts' . || exit 1
 go test ./... ../resources/fonts/...

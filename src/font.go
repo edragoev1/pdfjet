@@ -391,7 +391,10 @@ func readFontFile(fontPath string) ([]byte, error) {
 		path := strings.ReplaceAll(fontPath, "\\", "/")
 		if strings.HasPrefix(path, "fonts/") || strings.Contains(path, "/fonts/") {
 			where := "in resources/fonts or in the library"
-			if withoutBundledFonts {
+			// The tag named only of a font of a family PDFjet carries: of a
+			// file of the program's own, the file is what is missing (the
+			// review of 2 November 2026)
+			if withoutBundledFonts && bundledFamilyCarried(fontPath) {
 				where = "in resources/fonts, and the program is built with the tag pdfjet_nofonts, without them"
 			}
 			return nil, &fontNotFoundError{fontPath + " is not a file, nor one of the fonts PDFjet carries, " +
