@@ -527,6 +527,8 @@ public class SVGImage : Drawable {
     private func elementState(_ parent: SVGState,
             _ attributes: [String: String], _ order: [String]) throws -> SVGState {
         var state = parent
+        state.parentFontSize = parent.fontSize
+        state.parentFontWeight = parent.fontWeight
         state.ownOpacity = 1.0
         state.clipPath = nil
         state.overflow = nil
@@ -2009,6 +2011,16 @@ public class SVGImage : Drawable {
                 text.place()
             }
         }
+        // A path that sets no dash, cap or join has the ones of SVG, not the
+        // caller's, which dashed its lines. Written only when the page has others.
+        let reset = page.strokeDashPattern != "[] 0" || page.lineCapStyle != CapStyle.BUTT
+                || page.lineJoinStyle != JoinStyle.MITER
+        if reset {
+            page.saveGraphicsState()
+            page.setDefaultStrokeDashPattern()
+            page.setLineCapStyle(CapStyle.BUTT)
+            page.setLineJoinStyle(JoinStyle.MITER)
+        }
         // The miter limit, set once: a stroked map has as many paths as a
         // PDF would hold, and the few with another limit set their own.
         let miter = strokesMiters(paths)
@@ -2033,6 +2045,9 @@ public class SVGImage : Drawable {
             page.restoreGraphicsState()
         }
         if miter {
+            page.restoreGraphicsState()
+        }
+        if reset {
             page.restoreGraphicsState()
         }
         page.setFigureBoundingBox(x, y, w, h)

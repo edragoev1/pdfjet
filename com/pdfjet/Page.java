@@ -91,9 +91,9 @@ final public class Page {
 
     private float penWidth = 1f;    // The PDF default, as no w is written first
 
-    private CapStyle lineCapStyle = CapStyle.BUTT;
-    private JoinStyle lineJoinStyle = JoinStyle.MITER;
-    private String strokeDashPattern = "[] 0";
+    CapStyle lineCapStyle = CapStyle.BUTT;
+    JoinStyle lineJoinStyle = JoinStyle.MITER;
+    String strokeDashPattern = "[] 0";
     // The states that saveGraphicsState saved and restoreGraphicsState restores.
     private final List<State> savedStates = new ArrayList<State>();
     // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
@@ -811,7 +811,7 @@ final public class Page {
     // color, or stroked in the pen color and width for the rendering mode 1.
     void drawSVGText(Font font, float fontSize, String str, float[] tm, int mode) {
         append("BT\n");
-        setTextFont(font, fontSize);
+        writeTextFont(font, fontSize, true);
         if (mode != 0 || renderingModeSet) {
             renderingModeSet = true;
             append(mode);
@@ -857,7 +857,7 @@ final public class Page {
     // Adds the string of an SVG image to the text object begun by
     // beginSVGClipText.
     void addSVGClipText(Font font, float fontSize, String str, float[] tm) {
-        setTextFont(font, fontSize);
+        writeTextFont(font, fontSize, true);
         showSVGText(font, str, tm);
     }
 
@@ -2500,6 +2500,13 @@ final public class Page {
      * @param fontSize the font size.
      */
     protected void setTextFont(Font font, float fontSize) {
+        writeTextFont(font, fontSize, false);
+    }
+
+    // Sets the text font; precise is for SVG text, whose size is in the units of
+    // the image: with a scale in the text matrix, 0.125 written as 0.13 is 4% too
+    // large, and 0.004 written as 0 draws nothing.
+    private void writeTextFont(Font font, float fontSize, boolean precise) {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
         }
@@ -2517,7 +2524,11 @@ final public class Page {
             append(font.objNumber);
         }
         append(Token.SPACE);
-        append(fontSize);
+        if (precise) {
+            appendPrecise(fontSize);
+        } else {
+            append(fontSize);
+        }
         append(" Tf\n");
     }
 

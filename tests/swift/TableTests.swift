@@ -1424,4 +1424,16 @@ import Testing
         #expect(abs(table.getColumnWidth(0) - 100) < 1e-3)
         #expect(abs(table.getColumnWidth(1) - 300) < 1e-3)
     }
+
+    // An index that was wrong before setTableData does not fail the data that
+    // came after it.
+    @Test func aWrongIndexDoesNotOutliveTheDataItWasWrongFor() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let table = Table()
+        _ = table.getRow(3)
+        _ = table.setTableData([[Cell(font, "x")]], 0)
+        _ = table.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+    }
 }

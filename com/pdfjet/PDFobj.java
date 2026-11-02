@@ -426,7 +426,7 @@ public class PDFobj {
 
     // Returns the filters of the stream, whose /Filter can be an object of its
     // own, a name or an array: the data was the bytes as they are.
-    private List<String> getFilters() {
+    List<String> getFilters() {
         int i = dict.indexOf("/Filter") + 1;
         if (i == 0 || !PDF.isReference(dict, i)) {
             return getValues("/Filter");
@@ -528,13 +528,19 @@ public class PDFobj {
                     }
                 } while (level > 0 && i < dict.size());
             } else if (i + 2 < dict.size() && dict.get(i + 2).equals("R")) {
-                i += 3;     // A reference to a dictionary, which is not supported.
+                i += 3;
             } else {
                 i += 1;     // null
             }
             if (element == index) {
                 if (dict.get(start).equals("<<")) {
                     parms.addAll(dict.subList(start, i));
+                } else if (PDF.isReference(dict, start) && readObjects != null) {
+                    // In an object of its own
+                    PDFobj referenced = readObjects.get(Integer.parseInt(dict.get(start)));
+                    if (referenced != null) {
+                        parms.addAll(PDF.valueOf(referenced));
+                    }
                 }
                 break;
             }
@@ -1528,11 +1534,12 @@ public class PDFobj {
         if (obj == null || index == -1) {
             return null;
         }
+        // The entries of the resources themselves: a pattern among them has its own.
         int i = index;
-        while (i < obj.dict.size() && !obj.dict.get(i).equals(category)) {
-            i++;
+        while (i < obj.dict.size() && !obj.dict.get(i).equals(">>") && !obj.dict.get(i).equals(category)) {
+            i = PDF.valueEnd(obj.dict, i + 1);
         }
-        if (i == obj.dict.size()) {
+        if (i >= obj.dict.size() || !obj.dict.get(i).equals(category)) {
             obj.dict.addAll(index, Arrays.asList(category, "<<", ">>"));
             return new Object[] {obj, index + 2};
         }

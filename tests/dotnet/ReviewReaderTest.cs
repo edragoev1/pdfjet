@@ -656,5 +656,43 @@ public class ReviewReaderTest {
             Assert.Equal("0 0 m", TestSupport.Latin1(objects[3].GetData()));
         }
     }
+
+    [Theory]
+    [InlineData("<< /Name /Identity >>", true)]
+    [InlineData("<< /Name /StdCF >>", false)]
+    public void DecodeParmsInAnObjectOfTheirOwnAreRead(string parms, bool wanted) {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter /Crypt /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                parms));
+        Assert.Equal(wanted, objects[3].HasIdentityCrypt());
+    }
+
+    [Fact]
+    public void AResourceInAnInlineResourceIsNotTakenForThePages() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Pattern << /P0 << /ExtGState << /G0 << /CA 1 >> >> >> >> >> >>"));
+        PDFobj page = objects[2];
+        page.SetGraphicsState(new GraphicsState().SetAlphaStroking(0.5f), objects);
+        Assert.True(page.dict.IndexOf("/ExtGState") < page.dict.IndexOf("/Pattern"));
+    }
+
+    [Fact]
+    public void TheFiltersOfACopiedImageAreNames() {
+        Assert.Equal("/FlateDecode", Image.FilterValue(new List<String> {"/FlateDecode"}));
+        Assert.Equal("[/ASCII85Decode /FlateDecode]", Image.FilterValue(new List<String> {"/ASCII85Decode", "/FlateDecode"}));
+        Assert.Equal("", Image.FilterValue(new List<String>()));
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter 5 0 R >>\nstream\nx\nendstream",
+                "/DCTDecode"));
+        Assert.Equal("/DCTDecode", Image.FilterValue(objects[3].GetFilters()));
+    }
 }
 }   // End of namespace PDFjet.NET

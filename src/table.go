@@ -224,6 +224,7 @@ func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Tabl
 	table.numOfHeaderRows = numOfHeaderRows
 	table.rendered = numOfHeaderRows
 	table.headerDrawn = false
+	table.misuse = "" // An index that was wrong for the data before
 	table.addCellsToCompleteTheGrid()
 	if table.tableWidth > 0 {
 		// The width and the percentages given before the data: they were lost

@@ -50,6 +50,10 @@ class SVGState {
     boolean strokeFirst = false;        // paint-order: the stroke drawn before the fill
     float fontSize = 16f;               // In the user space; medium, as a browser has it
     int fontWeight = 400;               // normal 400, bold 700
+    // The size and the weight of the parent, which em, %, bolder and lighter are
+    // relative to, whatever the element gave before them.
+    float parentFontSize = 16f;
+    int parentFontWeight = 400;
     boolean italic = false;             // A font-style of italic or oblique
     int fontFamily = BundledFonts.SANS; // The family of the bundled fonts its names stand for
     int textAnchor = 0;                 // 0 start, 1 middle, 2 end
@@ -374,12 +378,12 @@ class SVGState {
             int fill = order.indexOf("fill");
             this.strokeFirst = stroke >= 0 && (fill < 0 || stroke < fill);
         } else if (name.equals("font-size")) {
-            Float size = parseFontSize(value, this.fontSize);
+            Float size = parseFontSize(value, this.parentFontSize);
             if (size != null) {
                 this.fontSize = size;
             }
         } else if (name.equals("font-weight")) {
-            Integer weight = parseFontWeight(value, this.fontWeight);
+            Integer weight = parseFontWeight(value, this.parentFontWeight);
             if (weight != null) {
                 this.fontWeight = weight;
             }
@@ -549,7 +553,7 @@ class SVGState {
             String size = (slash < 0) ? field : field.substring(0, slash);
             // A size has a unit or is a keyword; a number alone is a weight.
             if (!size.isEmpty() && UnicodeCategories.of(size.charAt(size.length() - 1)) != Character.DECIMAL_DIGIT_NUMBER) {
-                Float fontSize = parseFontSize(size, this.fontSize);
+                Float fontSize = parseFontSize(size, this.parentFontSize);
                 if (fontSize != null) {
                     this.fontSize = fontSize;
                     this.fontWeight = weight;
@@ -572,7 +576,7 @@ class SVGState {
                 italic = true;
                 continue;
             }
-            Integer w = parseFontWeight(field, this.fontWeight);
+            Integer w = parseFontWeight(field, this.parentFontWeight);
             if (w != null) {
                 weight = w;
             }

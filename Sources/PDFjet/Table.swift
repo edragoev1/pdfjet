@@ -196,6 +196,7 @@ public class Table : Drawable {
         self.numOfHeaderRows = numOfHeaderRows
         self.rendered = numOfHeaderRows
         self.headerDrawn = false
+        self.misuse = nil   // An index that was wrong for the data before
         addCellsToCompleteTheGrid()
         if tableWidth > 0.0 {
             // The width and the percentages given before the data: they were

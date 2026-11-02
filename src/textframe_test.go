@@ -1007,3 +1007,14 @@ func TestSVGTextKeepsTheScaleOfItsMatrix(t *testing.T) {
 		t.Errorf("the page has %q", page.buf)
 	}
 }
+
+// The size of SVG text keeps a small value: hundredths made 0.125 come out as
+// 0.13, and 0.004 as nothing.
+func TestSVGTextKeepsItsFontSize(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	page.drawSVGText(testHelvetica(pdf), 0.125, "a", [6]float32{1, 0, 0, 1, 0, 0}, 0)
+	if !strings.Contains(string(page.buf), " 0.125 Tf") {
+		t.Errorf("the page has %q", page.buf)
+	}
+}

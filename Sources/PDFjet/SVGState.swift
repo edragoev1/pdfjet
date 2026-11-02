@@ -40,6 +40,10 @@ struct SVGState {
     var strokeFirst = false                 // paint-order: the stroke drawn before the fill
     var fontSize: Float = 16.0              // In the user space; medium, as a browser has it
     var fontWeight = 400                    // normal 400, bold 700
+    // The size and the weight of the parent, which em, %, bolder and lighter are
+    // relative to, whatever the element gave before them.
+    var parentFontSize: Float = 16.0
+    var parentFontWeight = 400
     var italic = false                      // A font-style of italic or oblique
     var fontFamily = BundledFonts.SANS      // The family of the bundled fonts its names stand for
     var textAnchor = 0                      // 0 start, 1 middle, 2 end
@@ -188,11 +192,11 @@ struct SVGState {
                 strokeFirst = false
             }
         case "font-size":
-            if let size = SVGState.parseFontSize(value, fontSize) {
+            if let size = SVGState.parseFontSize(value, parentFontSize) {
                 fontSize = size
             }
         case "font-weight":
-            if let weight = SVGState.parseFontWeight(value, fontWeight) {
+            if let weight = SVGState.parseFontWeight(value, parentFontWeight) {
                 fontWeight = weight
             }
         case "font-style":
@@ -357,7 +361,7 @@ struct SVGState {
             // Character.isDigit reads a char.
             if let last = size.unicodeScalars.last,
                     !(last.value <= 0xFFFF && last.properties.generalCategory == .decimalNumber),
-                    let fontSize = SVGState.parseFontSize(size, self.fontSize) {
+                    let fontSize = SVGState.parseFontSize(size, self.parentFontSize) {
                 self.fontSize = fontSize
                 self.fontWeight = weight
                 self.italic = italic
@@ -375,7 +379,7 @@ struct SVGState {
                 italic = true
                 continue
             }
-            if let w = SVGState.parseFontWeight(field, self.fontWeight) {
+            if let w = SVGState.parseFontWeight(field, self.parentFontWeight) {
                 weight = w
             }
         }

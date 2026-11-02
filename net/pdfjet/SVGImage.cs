@@ -616,6 +616,8 @@ public class SVGImage : IDrawable {
     private static SVGState ElementState(SVGState parent, SVGStyleSheet rules,
             Dictionary<String, String> attributes, List<String> order) {
         SVGState state = parent.Copy();
+        state.parentFontSize = parent.fontSize;
+        state.parentFontWeight = parent.fontWeight;
         state.ownOpacity = 1f;
         state.clipPath = null;
         state.overflow = null;
@@ -2157,6 +2159,16 @@ public class SVGImage : IDrawable {
         List<SVGPath> paths = ChosenPaths(page.pdf.language);
         PlaceTexts(paths, page);
         PlaceTexts(clipShapes, page);
+        // A path that sets no dash, cap or join has the ones of SVG, not the
+        // caller's, which dashed its lines. Written only when the page has others.
+        bool reset = page.strokeDashPattern != "[] 0" || page.lineCapStyle != CapStyle.BUTT
+                || page.lineJoinStyle != JoinStyle.MITER;
+        if (reset) {
+            page.SaveGraphicsState();
+            page.SetDefaultStrokeDashPattern();
+            page.SetLineCapStyle(CapStyle.BUTT);
+            page.SetLineJoinStyle(JoinStyle.MITER);
+        }
         // The miter limit, set once: a stroked map has as many paths as a PDF
         // would hold, and the few with another limit set their own.
         bool miter = StrokesMiters(paths);
@@ -2181,6 +2193,9 @@ public class SVGImage : IDrawable {
             page.RestoreGraphicsState();
         }
         if (miter) {
+            page.RestoreGraphicsState();
+        }
+        if (reset) {
             page.RestoreGraphicsState();
         }
         page.SetFigureBoundingBox(x, y, w, h);

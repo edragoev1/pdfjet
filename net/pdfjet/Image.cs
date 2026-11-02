@@ -192,6 +192,16 @@ public class Image : IDrawable {
 
     // Creates new image from an existing PDF object
     /// <summary>Creates an image from an image object read from an existing PDF.</summary>
+    // Returns the filters as the value of /Filter: a name, or an array of names
+    // for more than one. A /Filter that is an object of its own was written as
+    // its number, and the image could not be decoded.
+    internal static String FilterValue(List<String> filters) {
+        if (filters.Count < 2) {
+            return String.Join("", filters);
+        }
+        return "[" + String.Join(" ", filters) + "]";
+    }
+
     // Writes the key and its value, when it has one
     private static void AppendIfAny(PDF pdf, String key, String value) {
         if (value.Length > 0) {
@@ -301,7 +311,7 @@ public class Image : IDrawable {
         pdf.Append("<<\n");
         pdf.Append("/Type /XObject\n");
         pdf.Append("/Subtype /Image\n");
-        AppendIfAny(pdf, "/Filter", obj.GetValue("/Filter"));
+        AppendIfAny(pdf, "/Filter", FilterValue(obj.GetFilters()));
         pdf.Append("/Width ");
         pdf.Append(PixelsOf(SizeOf(obj, "/Width")));
         pdf.Append('\n');

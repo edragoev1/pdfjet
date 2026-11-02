@@ -600,4 +600,39 @@ import Testing
             #expect(TestSupport.latin1(objects[3].getData()) == "0 0 m", "\(length)")
         }
     }
+
+    @Test func decodeParmsInAnObjectOfTheirOwnAreRead() throws {
+        for (parms, wanted) in [("<< /Name /Identity >>", true), ("<< /Name /StdCF >>", false)] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter /Crypt /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                parms]))
+            #expect(objects[3].hasIdentityCrypt() == wanted)
+        }
+    }
+
+    @Test func aResourceInAnInlineResourceIsNotTakenForThePages() throws {
+        var objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Pattern << /P0 << /ExtGState << /G0 << /CA 1 >> >> >> >> >> >>"]))
+        let page = objects[2]
+        page.setGraphicsState(GraphicsState().setAlphaStroking(0.5), &objects)
+        #expect(page.dict.firstIndex(of: "/ExtGState")! < page.dict.firstIndex(of: "/Pattern")!)
+    }
+
+    @Test func theFiltersOfACopiedImageAreNames() throws {
+        #expect(Image.filterValue(["/FlateDecode"]) == "/FlateDecode")
+        #expect(Image.filterValue(["/ASCII85Decode", "/FlateDecode"]) == "[/ASCII85Decode /FlateDecode]")
+        #expect(Image.filterValue([]) == "")
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+            "<< /Length 1 /Filter 5 0 R >>\nstream\nx\nendstream",
+            "/DCTDecode"]))
+        #expect(Image.filterValue(objects[3].getFilters()) == "/DCTDecode")
+    }
 }

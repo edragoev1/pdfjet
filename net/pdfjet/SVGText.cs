@@ -231,7 +231,14 @@ internal class SVGText {
         if (from >= to) {
             return;
         }
+        // Of its first run with text: the spaces before a tspan collapse to nothing.
         int anchor = runs[from].anchor;
+        for (int i = from; i < to; i++) {
+            if (runs[i].width > 0f) {
+                anchor = runs[i].anchor;
+                break;
+            }
+        }
         if (anchor == 0) {
             return;
         }

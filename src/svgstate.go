@@ -57,18 +57,22 @@ type svgState struct {
 	strokeFirst   bool    // paint-order: the stroke drawn before the fill
 	fontSize      float32 // In the user space; medium, as a browser has it
 	fontWeight    int     // normal 400, bold 700
-	italic        bool    // A font-style of italic or oblique
-	fontFamily    int     // The family of the bundled fonts its names stand for
-	textAnchor    int     // 0 start, 1 middle, 2 end
-	baseline      int     // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
-	markerStart   string  // The ids of the markers, inherited; "" for none
-	markerMid     string
-	markerEnd     string
-	clipPath      string           // The id of the clip path of the element itself, not inherited
-	overflow      string           // The overflow of the element, not inherited unless it says inherit; "" unless given
-	clips         []*svgPath       // The clip paths of the element and of its ancestors; never changed in place
-	choices       []svgChoice      // The children of the switches it is in, and its tests of systemLanguage; never changed in place
-	paints        map[string]int32 // The colors of the gradients, by id, shared by every state
+	// The size and the weight of the parent, which em, %, bolder and lighter are
+	// relative to, whatever the element gave before them.
+	parentFontSize   float32
+	parentFontWeight int
+	italic           bool   // A font-style of italic or oblique
+	fontFamily       int    // The family of the bundled fonts its names stand for
+	textAnchor       int    // 0 start, 1 middle, 2 end
+	baseline         int    // dominant-baseline: 0 the alphabetic, 1 the middle, 2 the hanging
+	markerStart      string // The ids of the markers, inherited; "" for none
+	markerMid        string
+	markerEnd        string
+	clipPath         string           // The id of the clip path of the element itself, not inherited
+	overflow         string           // The overflow of the element, not inherited unless it says inherit; "" unless given
+	clips            []*svgPath       // The clip paths of the element and of its ancestors; never changed in place
+	choices          []svgChoice      // The children of the switches it is in, and its tests of systemLanguage; never changed in place
+	paints           map[string]int32 // The colors of the gradients, by id, shared by every state
 }
 
 // svgMiterLimit is the stroke-miterlimit of SVG unless given; that of a PDF
@@ -363,11 +367,11 @@ func (state *svgState) setProperty(colorMap map[string]int32, name, value string
 		fill := slices.Index(order, "fill")
 		state.strokeFirst = stroke >= 0 && (fill < 0 || stroke < fill)
 	case "font-size":
-		if size, ok := parseSVGFontSize(value, state.fontSize); ok {
+		if size, ok := parseSVGFontSize(value, state.parentFontSize); ok {
 			state.fontSize = size
 		}
 	case "font-weight":
-		if weight, ok := parseSVGFontWeight(value, state.fontWeight); ok {
+		if weight, ok := parseSVGFontWeight(value, state.parentFontWeight); ok {
 			state.fontWeight = weight
 		}
 	case "font-style":
@@ -592,7 +596,7 @@ func (state *svgState) setFont(value string) {
 		}
 		// A size has a unit or is a keyword; a number alone is a weight.
 		if size != "" && (size[len(size)-1] < '0' || size[len(size)-1] > '9') {
-			if fontSize, ok := parseSVGFontSize(size, state.fontSize); ok {
+			if fontSize, ok := parseSVGFontSize(size, state.parentFontSize); ok {
 				state.fontSize = fontSize
 				state.fontWeight = weight
 				state.italic = italic
@@ -618,7 +622,7 @@ func (state *svgState) setFont(value string) {
 			italic = true
 			continue
 		}
-		if w, ok := parseSVGFontWeight(field, state.fontWeight); ok {
+		if w, ok := parseSVGFontWeight(field, state.parentFontWeight); ok {
 			weight = w
 		}
 	}

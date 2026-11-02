@@ -203,7 +203,8 @@ class SVGText {
         if from >= to {
             return
         }
-        let anchor = runs[from].anchor
+        // Of its first run with text: the spaces before a tspan collapse to nothing.
+        let anchor = runs[from..<to].first { $0.width > 0.0 }?.anchor ?? runs[from].anchor
         if anchor == 0 {
             return
         }

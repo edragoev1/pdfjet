@@ -381,7 +381,7 @@ public class PDFobj {
 
     // Returns the filters of the stream, whose /Filter can be an object of its
     // own, a name or an array: the data was the bytes as they are.
-    private List<String> GetFilters() {
+    internal List<String> GetFilters() {
         int i = dict.IndexOf("/Filter") + 1;
         if (i == 0 || !PDF.IsReference(dict, i)) {
             return GetValues("/Filter");
@@ -484,13 +484,17 @@ public class PDFobj {
                     }
                 } while (level > 0 && i < dict.Count);
             } else if (i + 2 < dict.Count && dict[i + 2].Equals("R")) {
-                i += 3;     // A reference to a dictionary, which is not supported.
+                i += 3;
             } else {
                 i += 1;     // null
             }
             if (element == index) {
+                PDFobj referenced;
                 if (dict[start].Equals("<<")) {
                     parms.AddRange(dict.GetRange(start, i - start));
+                } else if (PDF.IsReference(dict, start) && readObjects != null
+                        && readObjects.TryGetValue(Int32.Parse(dict[start], CultureInfo.InvariantCulture), out referenced)) {
+                    parms.AddRange(PDF.ValueOf(referenced));    // In an object of its own
                 }
                 break;
             }
@@ -1398,11 +1402,12 @@ public class PDFobj {
         if (obj == null || index == -1) {
             return -1;
         }
+        // The entries of the resources themselves: a pattern among them has its own.
         int k = index;
-        while (k < obj.dict.Count && !obj.dict[k].Equals(category)) {
-            k++;
+        while (k < obj.dict.Count && !obj.dict[k].Equals(">>") && !obj.dict[k].Equals(category)) {
+            k = PDF.ValueEnd(obj.dict, k + 1);
         }
-        if (k == obj.dict.Count) {
+        if (k >= obj.dict.Count || !obj.dict[k].Equals(category)) {
             obj.dict.InsertRange(index, new String[] {category, "<<", ">>"});
             holder = obj;
             return index + 2;

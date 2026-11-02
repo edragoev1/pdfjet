@@ -684,4 +684,43 @@ class ReviewReaderTest {
             assertEquals("0 0 m", TestSupport.latin1(objects.get(3).getData()), length);
         }
     }
+
+    @Test
+    void decodeParmsInAnObjectOfTheirOwnAreRead() throws Exception {
+        for (boolean identity : new boolean[] {true, false}) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                    "<< /Length 1 /Filter /Crypt /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+                    identity ? "<< /Name /Identity >>" : "<< /Name /StdCF >>"));
+            assertEquals(identity, objects.get(3).hasIdentityCrypt());
+        }
+    }
+
+    @Test
+    void aResourceInAnInlineResourceIsNotTakenForThePages() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Pattern << /P0 << /ExtGState << /G0 << /CA 1 >> >> >> >> >> >>"));
+        PDFobj page = objects.get(2);
+        page.setGraphicsState(new GraphicsState().setAlphaStroking(0.5f), objects);
+        assertTrue(page.dict.indexOf("/ExtGState") < page.dict.indexOf("/Pattern"), page.dict.toString());
+    }
+
+    @Test
+    void theFiltersOfACopiedImageAreNames() throws Exception {
+        assertEquals("/FlateDecode", Image.filterValue(java.util.Arrays.asList("/FlateDecode")));
+        assertEquals("[/ASCII85Decode /FlateDecode]",
+                Image.filterValue(java.util.Arrays.asList("/ASCII85Decode", "/FlateDecode")));
+        assertEquals("", Image.filterValue(new java.util.ArrayList<String>()));
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+                "<< /Length 1 /Filter 5 0 R >>\nstream\nx\nendstream",
+                "/DCTDecode"));
+        assertEquals("/DCTDecode", Image.filterValue(objects.get(3).getFilters()));
+    }
 }

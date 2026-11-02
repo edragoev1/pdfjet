@@ -861,5 +861,14 @@ public class TextFrameTest {
         page.DrawSVGText(TestSupport.Helvetica(pdf), 10f, "a", new float[] {0.075f, 0f, 0f, 0.004f, 1.5f, 2f}, 0);
         Assert.Contains("0.075 0 0 0.004 1.5 2 Tm", System.Text.Encoding.Latin1.GetString(page.GetContent()));
     }
+
+    // The size of SVG text keeps a small value: 0.125 came out as 0.13, and 0.004 as nothing.
+    [Fact]
+    public void SVGTextKeepsItsFontSize() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.DrawSVGText(TestSupport.Helvetica(pdf), 0.125f, "a", new float[] {1f, 0f, 0f, 1f, 0f, 0f}, 0);
+        Assert.Contains(" 0.125 Tf", System.Text.Encoding.Latin1.GetString(page.GetContent()));
+    }
 }
 }

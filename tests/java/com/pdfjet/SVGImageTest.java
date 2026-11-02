@@ -1708,4 +1708,47 @@ class SVGImageTest {
         assertEquals(1, sheet.forClasses(java.util.Arrays.asList("c")).size());
         new SVGImage(new ByteArrayInputStream(bytes));
     }
+
+    private static String content(String svg) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        image(svg).drawOn(page);
+        return page.buf.toString("ISO-8859-1");
+    }
+
+    private static String matrixOf(String content) {
+        int end = content.indexOf(" Tm\n");
+        return content.substring(content.lastIndexOf('\n', end) + 1, end);
+    }
+
+    // A relative size is of the parent, whichever declarations came first.
+    @Test
+    void aFontSizeRepeatedOnAnElementIsNotCompounded() throws Exception {
+        String content = content("<svg viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"><text font-size=\"2em\" style=\"font-size:2em\" x=\"1\" y=\"50\">a</text></svg>");
+        assertTrue(content.contains(" 32 Tf"), content);
+    }
+
+    // The dash, cap and join of the page are not those of an SVG, and are back after it.
+    @Test
+    void drawsWithTheStrokeOfSVGNotThatOfThePage() throws Exception {
+        String svg = "<svg viewBox=\"0 0 10 10\" width=\"10\" height=\"10\"><path stroke=\"red\" d=\"M0 0L5 5\"/></svg>";
+        assertFalse(content(svg).contains("[] 0 d"));
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.setStrokeDashPattern("[3 3] 0");
+        page.setLineCapStyle(CapStyle.ROUND);
+        page.setLineJoinStyle(JoinStyle.ROUND);
+        image(svg).drawOn(page);
+        String content = page.buf.toString("ISO-8859-1");
+        assertTrue(content.contains("q\n[] 0 d\n0 J\n0 j\n"), content);
+        assertEquals("[3 3] 0", page.strokeDashPattern);
+        assertEquals(CapStyle.ROUND, page.lineCapStyle);
+        assertEquals(JoinStyle.ROUND, page.lineJoinStyle);
+    }
+
+    // The spaces before a tspan, which collapse to nothing, do not choose the anchor.
+    @Test
+    void theAnchorOfAChunkIsThatOfItsFirstText() throws Exception {
+        assertEquals(matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\" text-anchor=\"end\">Right</text></svg>")), matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\">\n  <tspan text-anchor=\"end\">Right</tspan>\n</text></svg>")));
+    }
 }

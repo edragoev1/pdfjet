@@ -887,4 +887,14 @@ class TextFrameTest {
         String content = page.buf.toString("ISO-8859-1");
         assertTrue(content.contains("0.075 0 0 0.004 1.5 2 Tm"), content);
     }
+
+    // The size of SVG text keeps a small value: 0.125 came out as 0.13, and 0.004 as nothing.
+    @Test
+    void svgTextKeepsItsFontSize() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.drawSVGText(TestSupport.helvetica(pdf), 0.125f, "a", new float[] {1f, 0f, 0f, 1f, 0f, 0f}, 0);
+        String content = page.buf.toString("ISO-8859-1");
+        assertTrue(content.contains(" 0.125 Tf"), content);
+    }
 }

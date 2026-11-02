@@ -750,7 +750,7 @@ public class Page {
     // color, or stroked in the pen color and width for the rendering mode 1.
     internal void DrawSVGText(Font font, float fontSize, String str, float[] tm, int mode) {
         Append("BT\n");
-        SetTextFont(font, fontSize);
+        WriteTextFont(font, fontSize, true);
         if (mode != 0 || renderingModeSet) {
             renderingModeSet = true;
             Append(mode);
@@ -796,7 +796,7 @@ public class Page {
     // Adds the string of an SVG image to the text object begun by
     // BeginSVGClipText.
     internal void AddSVGClipText(Font font, float fontSize, String str, float[] tm) {
-        SetTextFont(font, fontSize);
+        WriteTextFont(font, fontSize, true);
         ShowSVGText(font, str, tm);
     }
 
@@ -2494,6 +2494,13 @@ public class Page {
 
     /// <summary>Sets the font and font size used to draw text.</summary>
     internal Page SetTextFont(Font font, float fontSize) {
+        return WriteTextFont(font, fontSize, false);
+    }
+
+    // Sets the text font; precise is for SVG text, whose size is in the units of
+    // the image: with a scale in the text matrix, 0.125 written as 0.13 is 4% too
+    // large, and 0.004 written as 0 draws nothing.
+    private Page WriteTextFont(Font font, float fontSize, bool precise) {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.Fail(new ArgumentException("The font belongs to another PDF."));
         }
@@ -2511,7 +2518,11 @@ public class Page {
             Append(font.objNumber);
         }
         Append(Token.Space);
-        Append(fontSize);
+        if (precise) {
+            AppendPrecise(fontSize);
+        } else {
+            Append(fontSize);
+        }
         Append(" Tf\n");
         return this;
     }

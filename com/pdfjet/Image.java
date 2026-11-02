@@ -299,7 +299,7 @@ final public class Image implements Drawable {
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Image\n");
-        appendIfAny(pdf, "/Filter", obj.getValue("/Filter"));
+        appendIfAny(pdf, "/Filter", filterValue(obj.getFilters()));
         pdf.append("/Width ");
         pdf.append((int) sizeOf(obj, "/Width"));
         pdf.append('\n');
@@ -340,6 +340,16 @@ final public class Image implements Drawable {
         pdf.append(stream, 0, stream.length);
         pdf.append("\nendstream\n");
         pdf.endObj();
+    }
+
+    // Returns the filters as the value of /Filter: a name, or an array of names
+    // for more than one. A /Filter that is an object of its own was written as
+    // its number, and the image could not be decoded.
+    static String filterValue(List<String> filters) {
+        if (filters.size() < 2) {
+            return String.join("", filters);
+        }
+        return "[" + String.join(" ", filters) + "]";
     }
 
     // Writes the key and its value, when it has one

@@ -653,6 +653,8 @@ func (image *SVGImage) chosenPaths(language string) []*svgPath {
 func elementState(parent svgState, colorMap map[string]int32, rules *svgStyleSheet,
 	attributes map[string]string, order []string) (svgState, error) {
 	state := parent
+	state.parentFontSize = parent.fontSize
+	state.parentFontWeight = parent.fontWeight
 	state.ownOpacity = 1.0
 	state.clipPath = ""
 	state.overflow = ""
@@ -2243,6 +2245,16 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 			}
 		}
 	}
+	// A path that sets no dash, cap or join has the ones of SVG, not the caller's,
+	// which dashed its lines. Written only when the page has others.
+	reset := page.strokeDashPattern != "[] 0" || page.lineCapStyle != capstyle.Butt ||
+		page.lineJoinStyle != joinstyle.Miter
+	if reset {
+		page.SaveGraphicsState()
+		page.SetDefaultStrokeDashPattern()
+		page.SetLineCapStyle(capstyle.Butt)
+		page.SetLineJoinStyle(joinstyle.Miter)
+	}
 	// The miter limit, set once: a stroked map has as many paths as a PDF
 	// would hold, and the few with another limit set their own.
 	miter := image.strokesMiters(paths)
@@ -2267,6 +2279,9 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 		page.RestoreGraphicsState()
 	}
 	if miter {
+		page.RestoreGraphicsState()
+	}
+	if reset {
 		page.RestoreGraphicsState()
 	}
 	page.SetFigureBoundingBox(image.x, image.y, image.w, image.h)

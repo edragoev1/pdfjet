@@ -618,6 +618,8 @@ public class SVGImage implements Drawable {
     private static SVGState elementState(SVGState parent, ColorMap colorMap, SVGState.StyleSheet rules,
             Map<String, String> attributes, List<String> order) {
         SVGState state = new SVGState(parent);
+        state.parentFontSize = parent.fontSize;
+        state.parentFontWeight = parent.fontWeight;
         state.ownOpacity = 1f;
         state.clipPath = null;
         state.overflow = null;
@@ -2200,6 +2202,16 @@ public class SVGImage implements Drawable {
         List<SVGPath> paths = chosenPaths(page.pdf.language);
         placeTexts(paths, page);
         placeTexts(clipShapes, page);
+        // A path that sets no dash, cap or join has the ones of SVG, not the
+        // caller's, which dashed its lines. Written only when the page has others.
+        boolean reset = !page.strokeDashPattern.equals("[] 0") || page.lineCapStyle != CapStyle.BUTT
+                || page.lineJoinStyle != JoinStyle.MITER;
+        if (reset) {
+            page.saveGraphicsState();
+            page.setDefaultStrokeDashPattern();
+            page.setLineCapStyle(CapStyle.BUTT);
+            page.setLineJoinStyle(JoinStyle.MITER);
+        }
         // The miter limit, set once: a stroked map has as many paths as a PDF
         // would hold, and the few with another limit set their own.
         boolean miter = strokesMiters(paths);
@@ -2224,6 +2236,9 @@ public class SVGImage implements Drawable {
             page.restoreGraphicsState();
         }
         if (miter) {
+            page.restoreGraphicsState();
+        }
+        if (reset) {
             page.restoreGraphicsState();
         }
         page.setFigureBoundingBox(x, y, w, h);

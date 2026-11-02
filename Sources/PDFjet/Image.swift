@@ -168,6 +168,16 @@ public class Image : Drawable {
         }
     }
 
+    // Returns the filters as the value of /Filter: a name, or an array of names
+    // for more than one. A /Filter that is an object of its own was written as
+    // its number, and the image could not be decoded.
+    static func filterValue(_ filters: [String]) -> String {
+        if filters.count < 2 {
+            return filters.joined()
+        }
+        return "[" + filters.joined(separator: " ") + "]"
+    }
+
     // Writes the key and its value, when it has one
     private static func appendIfAny(_ pdf: PDF, _ key: String, _ value: String) {
         if !value.isEmpty {
@@ -263,7 +273,7 @@ public class Image : Drawable {
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
-        appendIfAny(pdf, "/Filter", obj.getValue("/Filter"))
+        appendIfAny(pdf, "/Filter", filterValue(obj.getFilters()))
         pdf.append("/Width ")
         pdf.append(pixels(try sizeOf(obj, "/Width")))
         pdf.append("\n")

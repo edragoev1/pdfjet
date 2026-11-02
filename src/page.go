@@ -579,7 +579,7 @@ func (page *Page) drawString(
 // brush color, or stroked in the pen color and width for the rendering mode 1.
 func (page *Page) drawSVGText(font *Font, fontSize float32, str string, tm [6]float32, mode int) {
 	page.appendString("BT\n")
-	page.setTextFont(font, fontSize)
+	page.setPreciseTextFont(font, fontSize)
 	if mode != 0 || page.renderingModeSet {
 		page.renderingModeSet = true
 		page.appendInteger(mode)
@@ -625,7 +625,7 @@ func (page *Page) beginSVGClipText() {
 // addSVGClipText adds the string of an SVG image to the text object begun by
 // beginSVGClipText.
 func (page *Page) addSVGClipText(font *Font, fontSize float32, str string, tm [6]float32) {
-	page.setTextFont(font, fontSize)
+	page.setPreciseTextFont(font, fontSize)
 	page.showSVGText(font, str, tm)
 }
 
@@ -2283,6 +2283,17 @@ func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 
 // setTextFont sets the text font.
 func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
+	return page.writeTextFont(font, fontSize, false)
+}
+
+// setPreciseTextFont sets the text font of SVG text, whose size is in the units
+// of the image: with a scale in the text matrix, 0.125 written as 0.13 is 4% too
+// large, and 0.004 written as 0 draws nothing.
+func (page *Page) setPreciseTextFont(font *Font, fontSize float32) *Page {
+	return page.writeTextFont(font, fontSize, true)
+}
+
+func (page *Page) writeTextFont(font *Font, fontSize float32, precise bool) *Page {
 	if font.pdf != nil && font.pdf != page.pdf {
 		page.pdf.fail("The font belongs to another PDF.")
 	}
@@ -2300,7 +2311,11 @@ func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
 		page.appendInteger(font.objNumber)
 	}
 	page.appendByte(token.Space)
-	page.appendFloat32(fontSize)
+	if precise {
+		page.appendPrecise(fontSize)
+	} else {
+		page.appendFloat32(fontSize)
+	}
 	page.appendString(" Tf\n")
 	return page
 }

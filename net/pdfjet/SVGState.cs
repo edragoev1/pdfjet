@@ -46,6 +46,10 @@ internal class SVGState {
     internal bool strokeFirst = false;          // paint-order: the stroke drawn before the fill
     internal float fontSize = 16f;              // In the user space; medium, as a browser has it
     internal int fontWeight = 400;              // normal 400, bold 700
+    // The size and the weight of the parent, which em, %, bolder and lighter are
+    // relative to, whatever the element gave before them.
+    internal float parentFontSize = 16f;
+    internal int parentFontWeight = 400;
     internal bool italic = false;               // A font-style of italic or oblique
     internal int fontFamily = BundledFonts.SANS;    // The family of the bundled fonts its names stand for
     internal int textAnchor = 0;                // 0 start, 1 middle, 2 end
@@ -217,13 +221,13 @@ internal class SVGState {
                 break;
             case "font-size":
                 float size;
-                if (ParseFontSize(value, fontSize, out size)) {
+                if (ParseFontSize(value, parentFontSize, out size)) {
                     fontSize = size;
                 }
                 break;
             case "font-weight":
                 int weight;
-                if (ParseFontWeight(value, fontWeight, out weight)) {
+                if (ParseFontWeight(value, parentFontWeight, out weight)) {
                     fontWeight = weight;
                 }
                 break;
@@ -410,7 +414,7 @@ internal class SVGState {
             // A size has a unit or is a keyword; a number alone is a weight.
             if (size.Length > 0 && CharUnicodeInfo.GetUnicodeCategory(size[size.Length - 1]) != UnicodeCategory.DecimalDigitNumber) {
                 float newSize;
-                if (ParseFontSize(size, fontSize, out newSize)) {
+                if (ParseFontSize(size, parentFontSize, out newSize)) {
                     fontSize = newSize;
                     fontWeight = weight;
                     italic = isItalic;
@@ -433,7 +437,7 @@ internal class SVGState {
                 continue;
             }
             int w;
-            if (ParseFontWeight(field, fontWeight, out w)) {
+            if (ParseFontWeight(field, parentFontWeight, out w)) {
                 weight = w;
             }
         }

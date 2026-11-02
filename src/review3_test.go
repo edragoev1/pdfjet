@@ -986,3 +986,17 @@ func TestReview3ATextColumnBreaksAWordThatStartsANewLine(t *testing.T) {
 		t.Errorf("the word is not broken at its soft hyphens: %q", content)
 	}
 }
+
+// An index that was wrong before SetTableData does not fail the data that came
+// after it.
+func TestReview3AWrongIndexDoesNotOutliveTheDataItWasWrongFor(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	table := NewTable()
+	table.GetRow(3)
+	table.SetTableData([][]*Cell{{NewCell(font, "x")}}, 0)
+	table.DrawOn(NewPage(pdf, testLetterPortrait()))
+	if pdf.err != nil {
+		t.Error(pdf.err)
+	}
+}

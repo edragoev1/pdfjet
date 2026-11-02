@@ -13,7 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/xmlparser"
 )
@@ -1830,5 +1832,52 @@ func TestASVGStyleElementThatIsReusedIsAddedOnce(t *testing.T) {
 	}
 	if _, err := NewSVGImage(strings.NewReader(svg.String())); err != nil {
 		t.Error(err)
+	}
+}
+
+// A relative size is of the parent, whichever declarations came first: they
+// compounded, to 128 for 2em three times.
+func TestSVGAFontSizeRepeatedOnAnElementIsNotCompounded(t *testing.T) {
+	sheet := newSVGStyleSheet()
+	state, err := elementState(newSVGState(), nil, sheet,
+		map[string]string{"font-size": "2em", "style": "font-size:2em;font-weight:bolder", "font-weight": "bolder"},
+		[]string{"font-size", "font-weight"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.fontSize != 32 || state.fontWeight != 700 {
+		t.Errorf("the size is %v and the weight %d", state.fontSize, state.fontWeight)
+	}
+}
+
+// The dash, cap and join of the page are not those of an SVG, and are back after it.
+func TestSVGImageDrawsWithTheStrokeOfSVGNotThatOfThePage(t *testing.T) {
+	svg := `<svg viewBox="0 0 10 10" width="10" height="10"><path stroke="red" d="M0 0L5 5"/></svg>`
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testNewSVG(t, svg).DrawOn(page)
+	if strings.Contains(string(page.buf), "[] 0 d") {
+		t.Error("a page with the defaults has them written again")
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	page.SetStrokeDashPattern("[3 3] 0")
+	page.SetLineCapStyle(capstyle.Round)
+	page.SetLineJoinStyle(joinstyle.Round)
+	testNewSVG(t, svg).DrawOn(page)
+	if !strings.Contains(string(page.buf), "q\n[] 0 d\n0 J\n0 j\n") {
+		t.Errorf("the page has %q", page.buf)
+	}
+	if page.strokeDashPattern != "[3 3] 0" || page.lineCapStyle != capstyle.Round || page.lineJoinStyle != joinstyle.Round {
+		t.Error("the state of the page is not back")
+	}
+}
+
+// The first run of a chunk, spaces that collapsed to nothing, does not choose
+// the anchor: the tspan after it does.
+func TestSVGTheAnchorOfAChunkIsThatOfItsFirstText(t *testing.T) {
+	text := &svgText{runs: []*svgTextRun{{anchor: 0}, {anchor: 2, width: 10, px: 100}}}
+	text.anchor(0, 2)
+	if text.runs[1].px != 90 {
+		t.Errorf("the run is at %v", text.runs[1].px)
 	}
 }

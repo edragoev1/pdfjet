@@ -1626,4 +1626,42 @@ import Testing
         #expect(try sheet.forClasses(["c"]).count == 1)
         _ = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
     }
+
+    private func content(_ svg: String) throws -> String {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        _ = try image(svg).drawOn(page)
+        return TestSupport.latin1(page.buf)
+    }
+
+    private func matrixOf(_ content: String) -> String {
+        let lines = content.split(separator: "\n")
+        return String(lines.first { $0.hasSuffix(" Tm") } ?? "")
+    }
+
+    // A relative size is of the parent, whichever declarations came first.
+    @Test func aFontSizeRepeatedOnAnElementIsNotCompounded() throws {
+        #expect(try content("<svg viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"><text font-size=\"2em\" style=\"font-size:2em\" x=\"1\" y=\"50\">a</text></svg>").contains(" 32 Tf"))
+    }
+
+    // The dash, cap and join of the page are not those of an SVG, and are back after it.
+    @Test func drawsWithTheStrokeOfSVGNotThatOfThePage() throws {
+        let svg = "<svg viewBox=\"0 0 10 10\" width=\"10\" height=\"10\"><path stroke=\"red\" d=\"M0 0L5 5\"/></svg>"
+        #expect(try !content(svg).contains("[] 0 d"))
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        page.setStrokeDashPattern("[3 3] 0")
+        page.setLineCapStyle(CapStyle.ROUND)
+        page.setLineJoinStyle(JoinStyle.ROUND)
+        _ = try image(svg).drawOn(page)
+        #expect(TestSupport.latin1(page.buf).contains("q\n[] 0 d\n0 J\n0 j\n"))
+        #expect(page.strokeDashPattern == "[3 3] 0")
+        #expect(page.lineCapStyle == CapStyle.ROUND)
+        #expect(page.lineJoinStyle == JoinStyle.ROUND)
+    }
+
+    // The spaces before a tspan, which collapse to nothing, do not choose the anchor.
+    @Test func theAnchorOfAChunkIsThatOfItsFirstText() throws {
+        #expect(try matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\" text-anchor=\"end\">Right</text></svg>")) == matrixOf(content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\">\n  <tspan text-anchor=\"end\">Right</tspan>\n</text></svg>")))
+    }
 }

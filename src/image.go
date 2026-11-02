@@ -316,7 +316,7 @@ func appendImageObject(pdf *PDF, obj *PDFobj, softMask, mask int, maskArray []st
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /XObject\n")
 	pdf.appendString("/Subtype /Image\n")
-	appendIfAny(pdf, "/Filter", obj.GetValue("/Filter"))
+	appendIfAny(pdf, "/Filter", filterValue(obj.getFilters()))
 	pdf.appendString("/Width ")
 	pdf.appendInteger(pixelsOf(imageSizeOf(obj, "/Width")))
 	pdf.appendString("\n")
@@ -976,6 +976,16 @@ func imageTypeOf(buf []byte) imagetype.ImageType {
 }
 
 // appendIfAny writes the key and its value, when it has one.
+// filterValue returns the filters as the value of /Filter: a name, or an array
+// of names for more than one. A /Filter that is an object of its own was
+// written as its number, and the image could not be decoded.
+func filterValue(filters []string) string {
+	if len(filters) < 2 {
+		return strings.Join(filters, "")
+	}
+	return "[" + strings.Join(filters, " ") + "]"
+}
+
 func appendIfAny(pdf *PDF, key, value string) {
 	if value != "" {
 		pdf.appendString(key + " " + value + "\n")

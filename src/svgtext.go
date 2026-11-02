@@ -226,12 +226,18 @@ func (text *svgText) place() {
 }
 
 // anchor moves the runs of a chunk by its width as the text-anchor of its
-// first run asks.
+// first run with text asks: the spaces before a tspan collapse to nothing.
 func (text *svgText) anchor(from, to int) {
 	if from >= to {
 		return
 	}
 	anchor := text.runs[from].anchor
+	for i := from; i < to; i++ {
+		if text.runs[i].width > 0 {
+			anchor = text.runs[i].anchor
+			break
+		}
+	}
 	if anchor == 0 {
 		return
 	}

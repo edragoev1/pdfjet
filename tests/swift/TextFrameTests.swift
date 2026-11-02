@@ -807,4 +807,12 @@ import Testing
         page.showSVGText(TestSupport.helvetica(pdf), "a", [0.075, 0, 0, 0.004, 1.5, 2])
         #expect(TestSupport.latin1(page.buf).contains("0.075 0 0 0.004 1.5 2 Tm"))
     }
+
+    // The size of SVG text keeps a small value: 0.125 came out as 0.13, and 0.004 as nothing.
+    @Test func svgTextKeepsItsFontSize() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        page.drawSVGText(TestSupport.helvetica(pdf), 0.125, "a", [1, 0, 0, 1, 0, 0], 0)
+        #expect(TestSupport.latin1(page.buf).contains(" 0.125 Tf"))
+    }
 }

@@ -617,3 +617,75 @@ func TestReviewReaderALengthThatIsARealOrNullIsRead(t *testing.T) {
 		}
 	}
 }
+
+func TestReviewReaderDecodeParmsInAnObjectOfTheirOwnAreRead(t *testing.T) {
+	// The predictor was dropped, and the bytes came back still predicted.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		"<< /Length 1 /Filter /FlateDecode /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+		"<< /Predictor 12 /Columns 4 >>"))
+	if got := getDecodeParm(objects[3].getDecodeParms(0), "/Predictor", 1); got != 12 {
+		t.Errorf("the predictor is %d", got)
+	}
+	for parms, want := range map[string]bool{"<< /Name /Identity >>": true, "<< /Name /StdCF >>": false} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+			"<< /Length 1 /Filter /Crypt /DecodeParms 5 0 R >>\nstream\nx\nendstream",
+			parms))
+		if got := objects[3].hasIdentityCrypt(); got != want {
+			t.Errorf("%s: %v", parms, got)
+		}
+	}
+}
+
+func TestReviewReaderAResourceInAnInlineResourceIsNotTakenForThePages(t *testing.T) {
+	// The new entry went into the /ExtGState of the pattern, and the page's gs
+	// named nothing.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "+
+			"/Resources << /Pattern << /P0 << /ExtGState << /G0 << /CA 1 >> >> >> >> >> >>"))
+	page := objects[2]
+	holder, index := page.resourceEntries("/ExtGState", &objects)
+	if holder == nil || holder != page {
+		t.Fatal("no entries")
+	}
+	depth := 0
+	for _, token := range page.dict[:index] {
+		if token == "<<" {
+			depth++
+		} else if token == ">>" {
+			depth--
+		}
+	}
+	if depth != 3 { // The page, /Resources and its new /ExtGState
+		t.Errorf("the entries are at the depth %d: %v", depth, page.dict)
+	}
+}
+
+func TestReviewReaderTheFiltersOfACopiedImageAreNames(t *testing.T) {
+	// /Filter 7 0 R was written as /Filter 7.
+	if got := filterValue([]string{"/FlateDecode"}); got != "/FlateDecode" {
+		t.Error(got)
+	}
+	if got := filterValue([]string{"/ASCII85Decode", "/FlateDecode"}); got != "[/ASCII85Decode /FlateDecode]" {
+		t.Error(got)
+	}
+	if got := filterValue(nil); got != "" {
+		t.Error(got)
+	}
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+		"<< /Length 1 /Filter 5 0 R >>\nstream\nx\nendstream",
+		"/DCTDecode"))
+	if got := filterValue(objects[3].getFilters()); got != "/DCTDecode" {
+		t.Errorf("the filter is %s", got)
+	}
+}

@@ -158,9 +158,9 @@ public class Page {
 
     private var penWidth: Float = 1.0   // The PDF default, as no w is written first
 
-    private var lineCapStyle = CapStyle.BUTT
-    private var lineJoinStyle = JoinStyle.MITER
-    private var strokeDashPattern: String = "[] 0"
+    var lineCapStyle = CapStyle.BUTT
+    var lineJoinStyle = JoinStyle.MITER
+    var strokeDashPattern: String = "[] 0"
     // The states that saveGraphicsState saved and restoreGraphicsState restores.
     private var savedStates = [State]()
     // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
@@ -627,7 +627,7 @@ public class Page {
     // color, or stroked in the pen color and width for the rendering mode 1.
     final func drawSVGText(_ font: Font, _ fontSize: Float, _ text: String, _ tm: [Float], _ mode: Int) {
         append(Token.beginText)
-        setTextFont(font, fontSize)
+        writeTextFont(font, fontSize, true)
         if mode != 0 || self.renderingModeSet {
             self.renderingModeSet = true
             append(mode)
@@ -673,7 +673,7 @@ public class Page {
     // Adds the string of an SVG image to the text object begun by
     // beginSVGClipText.
     final func addSVGClipText(_ font: Font, _ fontSize: Float, _ text: String, _ tm: [Float]) {
-        setTextFont(font, fontSize)
+        writeTextFont(font, fontSize, true)
         showSVGText(font, text, tm)
     }
 
@@ -2413,6 +2413,13 @@ public class Page {
     }
 
     internal func setTextFont(_ font: Font, _ fontSize: Float) {
+        writeTextFont(font, fontSize, false)
+    }
+
+    // Sets the text font; precise is for SVG text, whose size is in the units of
+    // the image: with a scale in the text matrix, 0.125 written as 0.13 is 4% too
+    // large, and 0.004 written as 0 draws nothing.
+    private func writeTextFont(_ font: Font, _ fontSize: Float, _ precise: Bool) {
         if let identity = font.pdfIdentity, identity != pdf.identity {
             pdf.fail("The font belongs to another PDF.")
         }
@@ -2430,7 +2437,11 @@ public class Page {
             append(font.objNumber)
         }
         append(Token.space)
-        append(fontSize)
+        if precise {
+            appendPrecise(fontSize)
+        } else {
+            append(fontSize)
+        }
         append(" Tf\n")
     }
 

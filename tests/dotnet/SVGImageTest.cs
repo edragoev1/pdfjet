@@ -1693,5 +1693,46 @@ public class SVGImageTest {
         Assert.Equal(1, sheet.Count);
         Assert.NotNull(new SVGImage(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(svg.ToString()))));
     }
+
+    private static String Content(String svg) {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Parse(svg).DrawOn(page);
+        return Encoding.Latin1.GetString(page.GetContent());
+    }
+
+    private static String MatrixOf(String content) {
+        int end = content.IndexOf(" Tm\n", StringComparison.Ordinal);
+        return content.Substring(content.LastIndexOf('\n', end) + 1, end - content.LastIndexOf('\n', end) - 1);
+    }
+
+    // A relative size is of the parent, whichever declarations came first.
+    [Fact]
+    public void AFontSizeRepeatedOnAnElementIsNotCompounded() {
+        Assert.Contains(" 32 Tf", Content("<svg viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"><text font-size=\"2em\" style=\"font-size:2em\" x=\"1\" y=\"50\">a</text></svg>"));
+    }
+
+    // The dash, cap and join of the page are not those of an SVG, and are back after it.
+    [Fact]
+    public void DrawsWithTheStrokeOfSVGNotThatOfThePage() {
+        String svg = "<svg viewBox=\"0 0 10 10\" width=\"10\" height=\"10\"><path stroke=\"red\" d=\"M0 0L5 5\"/></svg>";
+        Assert.DoesNotContain("[] 0 d", Content(svg));
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetStrokeDashPattern("[3 3] 0");
+        page.SetLineCapStyle(CapStyle.ROUND);
+        page.SetLineJoinStyle(JoinStyle.ROUND);
+        Parse(svg).DrawOn(page);
+        Assert.Contains("q\n[] 0 d\n0 J\n0 j\n", Encoding.Latin1.GetString(page.GetContent()));
+        Assert.Equal("[3 3] 0", page.strokeDashPattern);
+        Assert.Equal(CapStyle.ROUND, page.lineCapStyle);
+        Assert.Equal(JoinStyle.ROUND, page.lineJoinStyle);
+    }
+
+    // The spaces before a tspan, which collapse to nothing, do not choose the anchor.
+    [Fact]
+    public void TheAnchorOfAChunkIsThatOfItsFirstText() {
+        Assert.Equal(MatrixOf(Content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\" text-anchor=\"end\">Right</text></svg>")), MatrixOf(Content("<svg viewBox=\"0 0 200 100\" width=\"200\" height=\"100\"><text x=\"100\" y=\"50\">\n  <tspan text-anchor=\"end\">Right</tspan>\n</text></svg>")));
+    }
 }
 }

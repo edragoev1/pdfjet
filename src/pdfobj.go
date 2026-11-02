@@ -520,13 +520,16 @@ func (obj *PDFobj) getDecodeParms(index int) []string {
 				}
 			}
 		} else if i+2 < len(dict) && dict[i+2] == "R" {
-			i += 3 // A reference to a dictionary, which is not supported.
+			i += 3
 		} else {
 			i++ // null
 		}
 		if element == index {
 			if dict[start] == "<<" {
 				return dict[start:i]
+			}
+			if i-start == 3 {
+				return obj.referencedDecodeParms(dict[start])
 			}
 			return nil
 		}
@@ -535,6 +538,20 @@ func (obj *PDFobj) getDecodeParms(index int) []string {
 		}
 	}
 	return nil
+}
+
+// referencedDecodeParms returns the tokens of the parameters dictionary that is
+// an object of its own, or nil when the object cannot be read.
+func (obj *PDFobj) referencedDecodeParms(number string) []string {
+	n, err := strconv.Atoi(number)
+	if err != nil {
+		return nil
+	}
+	parms := obj.readObjects[n]
+	if parms == nil {
+		return nil
+	}
+	return objectValueTokens(parms)
 }
 
 // getDecodeParm returns the integer value of the key in the parameters
@@ -1433,11 +1450,12 @@ func (obj *PDFobj) resourceEntries(category string, objects *[]*PDFobj) (*PDFobj
 	if resources == nil || index == -1 {
 		return nil, -1
 	}
+	// The entries of the resources themselves: a pattern among them has its own.
 	i := index
-	for i < len(resources.dict) && resources.dict[i] != category {
-		i++
+	for i < len(resources.dict) && resources.dict[i] != ">>" && resources.dict[i] != category {
+		i = dictValueEnd(resources.dict, i+1)
 	}
-	if i == len(resources.dict) {
+	if i >= len(resources.dict) || resources.dict[i] != category {
 		resources.dict = insertArrayAt(resources.dict, []string{category, "<<", ">>"}, index)
 		return resources, index + 2
 	}

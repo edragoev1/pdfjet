@@ -412,7 +412,7 @@ public final class PDFobj {
 
     // Returns the filters of the stream, whose /Filter can be an object of its
     // own, a name or an array: the data was the bytes as they are.
-    private final func getFilters() -> [String] {
+    final func getFilters() -> [String] {
         guard let k = dict.firstIndex(of: "/Filter"), PDF.isReference(dict, k + 1) else {
             return getValues("/Filter")
         }
@@ -506,12 +506,19 @@ public final class PDFobj {
                     }
                 } while level > 0 && i < dict.count
             } else if i + 2 < dict.count && dict[i + 2] == "R" {
-                i += 3      // A reference to a dictionary, which is not supported.
+                i += 3
             } else {
                 i += 1      // null
             }
             if element == index {
-                return (dict[start] == "<<") ? Array(dict[start..<i]) : []
+                if dict[start] == "<<" {
+                    return Array(dict[start..<i])
+                }
+                // In an object of its own
+                if PDF.isReference(dict, start), let referenced = readObjects?.object(Int(dict[start])!) {
+                    return PDF.valueOf(referenced)
+                }
+                return []
             }
             if !array {
                 break
@@ -1443,11 +1450,12 @@ public final class PDFobj {
         guard let resources = obj, index != -1 else {
             return nil
         }
+        // The entries of the resources themselves: a pattern among them has its own.
         var k = index
-        while k < resources.dict.count && resources.dict[k] != category {
-            k += 1
+        while k < resources.dict.count && resources.dict[k] != ">>" && resources.dict[k] != category {
+            k = PDF.valueEnd(resources.dict, k + 1)
         }
-        if k == resources.dict.count {
+        if k >= resources.dict.count || resources.dict[k] != category {
             resources.dict.insert(contentsOf: [category, "<<", ">>"], at: index)
             return (resources, index + 2)
         }
