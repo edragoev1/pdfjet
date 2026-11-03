@@ -120,7 +120,7 @@ public class Example_20 {
         TextLine(f1, "One car of the data").setStructureType(StructElem.H2)
                 .setFontSize(14.0).setLocation(50.0, y).drawOn(page)
         let image = try Image(pdf, "resources/images/car.png")
-        image.setAltDescription("A drawing of a blue car, seen from the side.")
+        image.setAltDescription("A drawing of a navy hatchback, seen from the side.")
         image.scaleBy(1.0 / 3.0)    // The image is 120 DPI, so 0.6 of its pixels
         let vin = try Barcode(Barcode.CODE_128, modelX![0])
         vin.setModuleLength(0.75)

@@ -1,2 +1,3 @@
-Drawn by a small program for PDFjet: a car that is no make or model.
-No photograph or outside material is in it. It is under the license of PDFjet.
+Drawn for PDFjet: a navy hatchback that is no make or model (util/car.svg,
+made into this PNG by util/make-car-png.mjs). No photograph or outside
+material is in it. It is under the license of PDFjet.

@@ -128,7 +128,7 @@ public class Example_20 {
         new TextLine(f1, "One car of the data").SetStructureType(StructElem.H2)
                 .SetFontSize(14f).SetLocation(50f, y).DrawOn(page);
         Image image = new Image(pdf, "resources/images/car.png");
-        image.SetAltDescription("A drawing of a blue car, seen from the side.");
+        image.SetAltDescription("A drawing of a navy hatchback, seen from the side.");
         image.ScaleBy(1f / 3f);     // The image is 120 DPI, so 0.6 of its pixels
         Barcode vin = new Barcode(Barcode.CODE_128, modelX[0]);
         vin.SetModuleLength(0.75f);

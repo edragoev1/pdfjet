@@ -427,7 +427,8 @@ Behavior changes since 9.1.5, from the reviews before this release:
   `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
   `check-api.sh` and `test-go.sh` cover the font packages; actions are pinned
   by commit. Two photos of cars in `resources/images` were replaced with
-  images of our own drawing, `car.png` and `dusk.png`, and 69 files nothing
+  images of our own drawing, `car.png` (a navy hatchback, drawn from
+  `util/car.svg` by `util/make-car-png.mjs`) and `dusk.png`, and 69 files nothing
   used left `resources/images`.
 - Behavior change: a Table sum reads each cell once, and a number has to be
   the whole cell. Example: 1,234,567.89 wrapped in a narrow column counts
