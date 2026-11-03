@@ -49,7 +49,7 @@ import Testing
             weak.annotation = page.annots.last
 
             let image = try Image(pdf, TestSupport.open("resources/images/circles.png"))
-            _ = image.setAltDescription("A penguin").setURIAction("https://pdfjet.com").setLocation(50, 100).drawOn(page)
+            _ = image.setAltDescription("Circles").setURIAction("https://pdfjet.com").setLocation(50, 100).drawOn(page)
 
             var rows = [[Cell]]()
             for r in 0..<3 {

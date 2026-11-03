@@ -47,7 +47,7 @@ var sections = []section{
 			"and switching each off and on hides and shows it on the map of Europe.",
 		"Kerning: in each pair of lines the kerned one is a little shorter, AV, To and Wa closer, " +
 			"and the text copies out as it reads.",
-		"Copied_Image: both penguins stand on the orange box, the copied one on the right too, " +
+		"Copied_Image: both pictures of circles sit on the orange box, the copied one on the right too, " +
 			"with no white box behind it.",
 	}},
 	{"NVDA with Acrobat Reader", "", []string{

@@ -99,7 +99,7 @@ func copiedImage(path string) {
 	label.SetSize(11.0)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	text(page, label, 72.0, 72.0, "Left: the PNG drawn. Right: the same image, copied from a PDF that was read.")
-	text(page, label, 72.0, 88.0, "Both must show the orange box around the penguin, with no white box behind it.")
+	text(page, label, 72.0, 88.0, "Both must show the orange box around the circles, with no white box behind it.")
 	for i, image := range []*pdfjet.Image{
 		pdfjet.NewImage(pdf, bytes.NewReader(png)),
 		pdfjet.NewImageFromPDFobj(pdf, read),
