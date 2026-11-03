@@ -131,14 +131,14 @@ PDFjet is on Maven Central, as `com.pdfjet:pdfjet`. With Maven:
 <dependency>
   <groupId>com.pdfjet</groupId>
   <artifactId>pdfjet</artifactId>
-  <version>9.1.5</version>
+  <version>9.1.7</version>
 </dependency>
 ```
 
 With Gradle:
 
 ```groovy
-implementation("com.pdfjet:pdfjet:9.1.5")
+implementation("com.pdfjet:pdfjet:9.1.7")
 ```
 
 PDFjet includes every European language (Latin, Greek, Cyrillic). **For
@@ -193,13 +193,13 @@ PDFjet is on NuGet, as `PDFjet`, for .NET 8 or later and .NET Framework 4.8,
 strong-named. With the .NET CLI:
 
 ```bash
-dotnet add package PDFjet --version 9.1.5
+dotnet add package PDFjet --version 9.1.7
 ```
 
 Or in the project file:
 
 ```xml
-<PackageReference Include="PDFjet" Version="9.1.5" />
+<PackageReference Include="PDFjet" Version="9.1.7" />
 ```
 
 PDFjet includes every European language (Latin, Greek, Cyrillic). **For

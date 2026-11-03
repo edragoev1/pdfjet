@@ -423,7 +423,9 @@ Behavior changes since 9.1.5, from the reviews before this release:
 - Markdown: code in a table cell is on the baseline of its row, where the
   smaller font sat higher.
 - Build: the package scripts take the POM, nuspec and README from the tagged
-  commit and run `util/check-version.sh`; the POM and the nuspec say
+  commit and run `util/check-version.sh`, which also checks that every
+  install line of README.md (Maven, Gradle, NuGet, SwiftPM) names the
+  version being released; the POM and the nuspec say
   `MIT AND OFL-1.1`; the CI checks fail when nothing was checked;
   `check-api.sh` and `test-go.sh` cover the font packages; actions are pinned
   by commit. Two photos of cars in `resources/images` were replaced with

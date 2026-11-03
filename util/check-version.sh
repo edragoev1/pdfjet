@@ -63,6 +63,24 @@ if [ -z "$DRAFT" ]; then
         echo "CHANGELOG.md has no \"## $VERSION — YYYY-MM-DD\": give the release its date" >&2
         failed=1
     fi
+    # The install lines of README.md, Maven, Gradle, NuGet and SwiftPM, name
+    # the version being released, the main package and the fonts alike: on
+    # 3 November 2026 the main package's said 9.1.5 and the fonts' 9.1.7.
+    readme=$(content README.md | grep -nE '<version>[0-9.]+</version>|com\.pdfjet:[a-z-]+:[0-9.]+|--version [0-9.]+|Version="[0-9.]+"|from: "[0-9.]+"')
+    if [ -z "$readme" ]; then
+        echo "README.md has no install lines with a version: the check found nothing to check" >&2
+        failed=1
+    fi
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        found=$(grep -oE '<version>[0-9.]+<|:[0-9.]+"|--version [0-9.]+|Version="[0-9.]+"|from: "[0-9.]+"' <<< "${line#*:}" | grep -oE '[0-9]+(\.[0-9]+)+')
+        for v in $found; do
+            if [ "$v" != "$NUMBER" ]; then
+                echo "README.md line ${line%%:*} names $v, not $NUMBER" >&2
+                failed=1
+            fi
+        done
+    done <<< "$readme"
 fi
 
 if [ $failed -ne 0 ]; then
