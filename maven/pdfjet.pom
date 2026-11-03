@@ -13,7 +13,7 @@
   <version>$version$</version>
   <packaging>jar</packaging>
   <name>PDFjet</name>
-  <description>Fast, dependency-free PDF generation: text in many scripts with TrueType and OpenType fonts embedded as subsets, tables, charts, barcodes, SVG and Markdown, PDF/UA and PDF/A, merging and AES-256. Java 8 or later. The same API in .NET, Go and Swift. It includes every European language (Latin, Greek, Cyrillic); for other scripts (Chinese, Japanese, Korean, Arabic, Hebrew, Thai), also add com.pdfjet:pdfjet-fonts-world, the same version.</description>
+  <description>Fast, dependency-free PDF generation: text in many scripts with TrueType and OpenType fonts embedded as subsets, tables, charts, barcodes, SVG and Markdown, PDF/UA and PDF/A, merging and AES-256. Java 8 or later. The same API in .NET, Go and Swift. Fonts included, so the output is the same on servers and in Docker, with no system fonts needed: every European language (Latin, Greek, Cyrillic) in this jar; for other scripts (Chinese, Japanese, Korean, Arabic, Hebrew, Thai), also add com.pdfjet:pdfjet-fonts-world, the same version.</description>
   <url>https://github.com/edragoev1/pdfjet</url>
   <licenses>
     <license>

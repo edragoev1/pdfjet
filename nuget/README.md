@@ -29,6 +29,10 @@ For .NET 8 and later, and .NET Framework 4.8.
 > Chinese, Japanese, Korean, Arabic, Hebrew and Thai. Without it,
 > `IBMPlexSansJP`, `IBMPlexSansArabic` and the other constants of those
 > fonts throw an error that names that package.
+>
+> **No system fonts are needed,** so the output is the same on a laptop, a
+> server and in a Docker container, even a slim image with no fonts
+> installed.
 
 ## Hello, World
 

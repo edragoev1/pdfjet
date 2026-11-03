@@ -51,6 +51,10 @@ same output come in four languages, and none of them needs a third-party library
 > `IBMPlexSansJP.Regular` or `IBMPlexSansArabic.Regular` throws an error
 > that names the line to add.
 >
+> **No system fonts are needed,** so the output is the same on a laptop, a
+> server and in a Docker container, even a slim image with no fonts
+> installed.
+>
 > **Want a much smaller jar? Take PDFjet.jar from the
 > [releases on GitHub](https://github.com/edragoev1/pdfjet/releases): it is
 > 0.7 MB.** Its package has all the fonts as files, in `resources/fonts`,
