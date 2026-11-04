@@ -40,6 +40,8 @@ let package = Package(
             path: "resources/fonts",
             exclude: [
                 "fonts.go",
+                "fonts_embedded.go",
+                "fonts_none.go",
                 "world",
                 "IBMPlexSerif/license.txt",
             ],
