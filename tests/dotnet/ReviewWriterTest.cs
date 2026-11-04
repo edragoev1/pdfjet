@@ -456,7 +456,7 @@ public class ReviewWriterTest {
         PDF pdf = new PDF(stream);
         new Page(pdf, Letter.PORTRAIT);
         pdf.Complete();
-        Assert.Contains("/Producer " + TextString("PDFjet v9.1.5"), TestSupport.Latin1(stream.ToArray()));
+        Assert.Contains("/Producer " + TextString("PDFjet v9.1.7"), TestSupport.Latin1(stream.ToArray()));
     }
 
     [Fact]

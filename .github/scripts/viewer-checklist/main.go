@@ -166,14 +166,14 @@ func main() {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("PDFjet 9.1.5: the manual viewer pass")
+	pdf.SetTitle("PDFjet 9.1.7: the manual viewer pass")
 	pdf.SetLanguage("en-US")
 
 	regular = pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	semiBold = pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	newPage()
 
-	title := pdfjet.NewTextLine(semiBold, "PDFjet 9.1.5: the manual viewer pass")
+	title := pdfjet.NewTextLine(semiBold, "PDFjet 9.1.7: the manual viewer pass")
 	title.SetStructureType(structelem.H1)
 	title.SetFontSize(18)
 	title.SetTextColor(ink)
