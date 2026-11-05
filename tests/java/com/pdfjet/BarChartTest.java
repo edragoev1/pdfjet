@@ -187,9 +187,9 @@ class BarChartTest {
     }
 
     // A category name wider than two fifths of a horizontal chart is
-    // shortened with an ellipsis, and a chart too small for its plot draws
-    // nothing: its axis ran backwards, the bars over the names (review of 26
-    // October 2026).
+    // shortened with an ellipsis, and a chart too small for its plot is an
+    // error, nothing drawn: its axis ran backwards, the bars over the names
+    // (review of 26 October 2026; an error since 4 November 2026).
     @Test
     void aLongNameIsShortenedAndAChartWithNoRoomDrawsNothing() throws Exception {
         PDF pdf = TestSupport.newPDF();
@@ -204,9 +204,13 @@ class BarChartTest {
         // The ellipsis is 85 in WinAnsi, the encoding of a core font
         String start = shortened.substring(0, shortened.length() - 1);
         assertTrue(shortened.endsWith("\u2026") && content.contains(TestSupport.hex(start) + "85>"), content);
-        page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).setSize(20f, 20f).setCategories("a").addSeries("s", new float[] {5f}).drawOn(page);
-        assertEquals("", TestSupport.content(page));
+        // Too small for its plot: an error, since 4 November 2026, nothing drawn
+        final Page small = new Page(pdf, Letter.PORTRAIT);
+        String message = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> chart(pdf).setSize(20f, 20f).setCategories("a").addSeries("s", new float[] {5f})
+                        .drawOn(small)).getMessage();
+        assertTrue(message.contains("has no room for its plot"), message);
+        assertEquals("", TestSupport.content(small));
     }
 
     // A chart without a title has no room for one: its plot starts higher,
@@ -365,6 +369,19 @@ class BarChartTest {
     }
 
     // The content of the chart, on a page of its own.
+    // Whether the chart draws its plot: one too small for it is an error, the
+    // no-room exception, since 4 November 2026
+    private static boolean drawsAt(PDF pdf, BarChart chart) throws Exception {
+        try {
+            return noteContent(pdf, chart).contains(" Td\n");
+        } catch (IllegalArgumentException e) {
+            if (!e.getMessage().contains("has no room for its plot")) {
+                throw e;
+            }
+            return false;
+        }
+    }
+
     private static String noteContent(PDF pdf, BarChart chart) throws Exception {
         Page page = new Page(pdf, Letter.PORTRAIT);
         chart.drawOn(page);
@@ -489,7 +506,7 @@ class BarChartTest {
         PDF pdf = TestSupport.newPDF();
         // The least height that draws, found from below
         float height = 1f;
-        while (!noteContent(pdf, plotChart(pdf, height, 2f)).contains(" Td\n")) {
+        while (!drawsAt(pdf, plotChart(pdf, height, 2f))) {
             height += 0.25f;
         }
         for (float h : new float[] {height, height + 1f, height + 5f}) {

@@ -718,7 +718,10 @@ public class SimpleScatterChart implements Drawable {
                 note = "";
             }
         }
-        if (right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis)) {
+        if (right <= left || bottom <= top) {
+            page.pdf.fail(new IllegalArgumentException(ChartScale.noRoom("A SimpleScatterChart", w, h)));
+        }
+        if (!ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis)) {
             return new float[] {x + w, y + h};
         }
         final float plotLeft = left;

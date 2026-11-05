@@ -142,9 +142,10 @@ import Testing
         #expect(ChartScale.format(9.9949999e15, 0, 2) == "9.99e15")
     }
 
-    // Values are grouped in thousands, as in the other charts; and in a chart
-    // narrower than its names and values the names give the values room,
-    // which were written past the chart (the third review of 26 October 2026).
+    // Values are grouped in thousands, as in the other charts (the third review
+    // of 26 October 2026); and a chart with no room for its bars is an error,
+    // the document not completed, where it was drawn with no bars (the owner,
+    // 4 November 2026).
     @Test func theThirdReviewOfTheCharts() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
@@ -155,8 +156,8 @@ import Testing
         let narrow = SimpleBarChart(font, font).setWidth(90).add("A long name", 1234567)
         narrow.setLocation(0, 0)
         narrow.drawOn(page)
-        let at = TestSupport.positionOf(TestSupport.content(page), "1,234,567")
-        #expect(at[0] + font.stringWidth("1,234,567") <= 90 + 0.01, "\(at[0]) in 90")
+        #expect((pdf.error ?? "").contains("has no room for its plot"), "\(pdf.error ?? "")")
+        #expect(!TestSupport.content(page).contains(TestSupport.hex("1,234,567")))
     }
 
     // A title that ends a sentence is not followed by a colon, where it was

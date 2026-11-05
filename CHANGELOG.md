@@ -447,6 +447,17 @@ Behavior changes since 9.1.5, from the reviews before this release:
 - Behavior change: a destination name used twice goes to the first, where it
   went to the last. A 48 pt word after 12 pt text lowers its row in a
   TextFrame, where it rose above the frame.
+- Behavior change: the charts, the four ports: a SimpleLineChart,
+  SimpleScatterChart or BarChart too small for its plot, and a SimpleBarChart
+  with no room for its bars or for a name, are an error, where they drew
+  nothing and said nothing: Java and C# throw `IllegalArgumentException` and
+  `ArgumentException` from `drawOn`, and in Go and Swift the document is not
+  completed, `Complete()` and `complete()` failing with the message. The
+  message names the chart and its size, "A SimpleLineChart of 40 by 30
+  points has no room for its plot: make it larger, or its title, names or
+  numbers shorter." A chart with room draws as before. Example: a
+  SimpleBarChart 90 points wide with "A long name" and 1,234,567 is an
+  error, where it drew the value with no bar.
 - Behavior change: TextFrame, the four ports: a row is spaced from the row
   before it by that row's tallest text, so that rows of text with smaller
   inline code in it are evenly apart wherever the code falls. A row that

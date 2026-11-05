@@ -279,6 +279,10 @@ func TestBarChartALongNameIsShortenedAndAChartWithNoRoomDrawsNothing(t *testing.
 	if content := testContent(page); content != "" {
 		t.Errorf("%q", content)
 	}
+	// Too small for its plot: an error, since 4 November 2026
+	if pdf.err == nil || !strings.Contains(pdf.err.Error(), "has no room for its plot") {
+		t.Errorf("no error: %v", pdf.err)
+	}
 }
 
 // A chart without a title has no room for one: its plot starts higher, its

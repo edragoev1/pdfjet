@@ -696,7 +696,11 @@ public class SimpleScatterChart : Drawable {
                 note = ""
             }
         }
-        if right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis) {
+        if right <= left || bottom <= top {
+            page.pdf.fail(ChartScale.noRoom("A SimpleScatterChart", w, h))
+            return [x + w, y + h]
+        }
+        if !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis) {
             return [x + w, y + h]
         }
         let plotLeft = left

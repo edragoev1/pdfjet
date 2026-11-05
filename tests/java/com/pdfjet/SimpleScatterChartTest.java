@@ -440,6 +440,19 @@ class SimpleScatterChartTest {
     }
 
     // The content of the chart, on a page of its own.
+    // Whether the chart draws its plot: one too small for it is an error, the
+    // no-room exception, since 4 November 2026
+    private static boolean drawsAt(PDF pdf, SimpleScatterChart chart) throws Exception {
+        try {
+            return noteContent(pdf, chart).contains(" Td\n");
+        } catch (IllegalArgumentException e) {
+            if (!e.getMessage().contains("has no room for its plot")) {
+                throw e;
+            }
+            return false;
+        }
+    }
+
     private static String noteContent(PDF pdf, SimpleScatterChart chart) throws Exception {
         Page page = new Page(pdf, Letter.PORTRAIT);
         chart.setLocation(50f, 50f).drawOn(page);
@@ -570,7 +583,7 @@ class SimpleScatterChartTest {
         Font font = TestSupport.helvetica(pdf);
         // The least height that draws, found from below
         float height = 1f;
-        while (!noteContent(pdf, plotChart(font, height, 3f)).contains(" Td\n")) {
+        while (!drawsAt(pdf, plotChart(font, height, 3f))) {
             height += 0.25f;
         }
         for (float h : new float[] {height, height + 1f, height + 5f}) {

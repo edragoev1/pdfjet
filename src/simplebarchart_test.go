@@ -203,9 +203,10 @@ func TestSimpleBarChartTheSecondReviewOfTheCharts(t *testing.T) {
 	}
 }
 
-// Values are grouped in thousands, as in the other charts; and in a chart
-// narrower than its names and values the names give the values room, which
-// were written past the chart (the third review of 26 October 2026).
+// Values are grouped in thousands, as in the other charts (the third review
+// of 26 October 2026); and a chart with no room for its bars is an error, the
+// document not completed, where it was drawn with no bars (the owner, 4
+// November 2026).
 func TestSimpleBarChartTheThirdReviewOfTheCharts(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
@@ -218,9 +219,11 @@ func TestSimpleBarChartTheThirdReviewOfTheCharts(t *testing.T) {
 	narrow := NewSimpleBarChart(font, font).SetWidth(90).Add("A long name", 1234567)
 	narrow.SetLocation(0, 0)
 	narrow.DrawOn(page)
-	at := testPositionOf(t, testContent(page), "1,234,567")
-	if at[0]+font.StringWidth(font.GetSize(), "1,234,567") > 90+0.01 {
-		t.Errorf("the value at %v runs past the chart of 90", at[0])
+	if pdf.err == nil || !strings.Contains(pdf.err.Error(), "has no room for its plot") {
+		t.Errorf("a chart of 90 with no room for its bars: %v", pdf.err)
+	}
+	if content := testContent(page); strings.Contains(content, testHex("1,234,567")) {
+		t.Errorf("drawn: %q", content)
 	}
 }
 

@@ -572,7 +572,11 @@ public class SimpleLineChart : Drawable {
                 note = ""
             }
         }
-        if right <= left || bottom <= top || !ChartScale.drawable(axis) {
+        if right <= left || bottom <= top {
+            page.pdf.fail(ChartScale.noRoom("A SimpleLineChart", w, h))
+            return [x + w, y + h]
+        }
+        if !ChartScale.drawable(axis) {
             return [x + w, y + h]
         }
         let plotLeft = left

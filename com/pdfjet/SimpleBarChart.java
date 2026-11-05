@@ -448,6 +448,15 @@ public class SimpleBarChart implements Drawable {
         }
         float barX = x + pad + nameWidth + pad;
         float barRoom = Math.max(x + w - pad - (valueWidth + size / 2f) - barX, 0f);
+        // No room for the bars, or for a name, not even an ellipsis: drawn,
+        // the bars went to nothing and names were left out
+        boolean noName = false;
+        for (int i = 0; i < names.size() && i < shown.size(); i++) {
+            noName |= !names.get(i).isEmpty() && shown.get(i).isEmpty();
+        }
+        if (barRoom <= 0f || noName) {
+            page.pdf.fail(new IllegalArgumentException(ChartScale.noRoom("A SimpleBarChart", w, h)));
+        }
 
         page.addBDC(StructElem.FIGURE, null, altDescription());
         page.saveGraphicsState();

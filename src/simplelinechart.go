@@ -465,7 +465,11 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 			note = ""
 		}
 	}
-	if right <= left || bottom <= top || !drawable(axis) {
+	if right <= left || bottom <= top {
+		page.pdf.fail(noRoomMessage("A SimpleLineChart", chart.w, chart.h))
+		return [2]float32{chart.x + chart.w, chart.y + chart.h}
+	}
+	if !drawable(axis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
 	}
 	xAt := func(i int) float32 {

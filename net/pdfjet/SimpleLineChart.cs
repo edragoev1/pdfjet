@@ -558,7 +558,10 @@ public class SimpleLineChart : IDrawable {
                 note = "";
             }
         }
-        if (right <= left || bottom <= top || !ChartScale.Drawable(axis)) {
+        if (right <= left || bottom <= top) {
+            page.pdf.Fail(new ArgumentException(ChartScale.NoRoom("A SimpleLineChart", w, h)));
+        }
+        if (!ChartScale.Drawable(axis)) {
             return new float[] {x + w, y + h};
         }
 

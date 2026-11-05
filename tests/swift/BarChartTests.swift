@@ -196,6 +196,8 @@ import Testing
         page = Page(pdf, Letter.PORTRAIT)
         self.chart(pdf).setSize(20, 20).setCategories("a").addSeries("s", [5]).drawOn(page)
         #expect(TestSupport.content(page) == "")
+        // Too small for its plot: an error, since 4 November 2026
+        #expect((pdf.error ?? "").contains("has no room for its plot"), "\(pdf.error ?? "")")
     }
 
     // A chart without a title has no room for one: its plot starts higher,

@@ -700,7 +700,10 @@ public class SimpleScatterChart : IDrawable {
                 note = "";
             }
         }
-        if (right <= left || bottom <= top || !ChartScale.Drawable(xAxis) || !ChartScale.Drawable(yAxis)) {
+        if (right <= left || bottom <= top) {
+            page.pdf.Fail(new ArgumentException(ChartScale.NoRoom("A SimpleScatterChart", w, h)));
+        }
+        if (!ChartScale.Drawable(xAxis) || !ChartScale.Drawable(yAxis)) {
             return new float[] {x + w, y + h};
         }
         float plotLeft = left;

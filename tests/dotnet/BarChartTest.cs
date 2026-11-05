@@ -187,9 +187,9 @@ public class BarChartTest {
     }
 
     // A category name wider than two fifths of a horizontal chart is
-    // shortened with an ellipsis, and a chart too small for its plot draws
-    // nothing: its axis ran backwards, the bars over the names (review of 26
-    // October 2026).
+    // shortened with an ellipsis, and a chart too small for its plot is an
+    // error, nothing drawn: its axis ran backwards, the bars over the names
+    // (review of 26 October 2026; an error since 4 November 2026).
     [Fact]
     public void ALongNameIsShortenedAndAChartWithNoRoomDrawsNothing() {
         PDF pdf = TestSupport.NewPDF();
@@ -205,9 +205,12 @@ public class BarChartTest {
         string start = shortened.Substring(0, shortened.Length - 1);
         Assert.EndsWith("\u2026", shortened);
         Assert.Contains(TestSupport.Hex(start) + "85>", content);
-        page = new Page(pdf, Letter.PORTRAIT);
-        NewChart(pdf).SetSize(20f, 20f).SetCategories("a").AddSeries("s", new float[] {5f}).DrawOn(page);
-        Assert.Equal("", TestSupport.Content(page));
+        // Too small for its plot: an error, since 4 November 2026, nothing drawn
+        Page small = new Page(pdf, Letter.PORTRAIT);
+        string message = Assert.Throws<ArgumentException>(() => NewChart(pdf).SetSize(20f, 20f)
+                .SetCategories("a").AddSeries("s", new float[] {5f}).DrawOn(small)).Message;
+        Assert.Contains("has no room for its plot", message);
+        Assert.Equal("", TestSupport.Content(small));
     }
 
     // A chart without a title has no room for one: its plot starts higher,
@@ -402,6 +405,16 @@ public class BarChartTest {
     }
 
     // The content of the chart, on a page of its own.
+    // Whether the chart draws its plot: one too small for it is an error, the
+    // no-room exception, since 4 November 2026
+    private static bool DrawsAt(PDF pdf, BarChart chart) {
+        try {
+            return NoteContent(pdf, chart).Contains(" Td\n");
+        } catch (ArgumentException e) when (e.Message.Contains("has no room for its plot")) {
+            return false;
+        }
+    }
+
     private static String NoteContent(PDF pdf, BarChart chart) {
         Page page = new Page(pdf, Letter.PORTRAIT);
         chart.DrawOn(page);
@@ -525,7 +538,7 @@ public class BarChartTest {
         PDF pdf = TestSupport.NewPDF();
         // The least height that draws, found from below
         float height = 1f;
-        while (!NoteContent(pdf, PlotChart(pdf, height, 2f)).Contains(" Td\n")) {
+        while (!DrawsAt(pdf, PlotChart(pdf, height, 2f))) {
             height += 0.25f;
         }
         foreach (float h in new float[] {height, height + 1f, height + 5f}) {

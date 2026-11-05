@@ -644,6 +644,10 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
        the values are written past the panel.
      - SimpleLineChart and SimpleScatterChart without room for the plot
        draw nothing, not even a figure, and say nothing (BarChart now too).
+       Since 4 November 2026 (the owner: "we can create more space if the
+       user tries to jam too much info") a chart without room is an error,
+       SimpleBarChart's with no room for its bars or a name too
+       (CHANGELOG.md, v9.1.7).
      - SimpleLineChart's end labels, moved apart, are pushed down without
        limit, below the plot and the panel.
      - SimpleScatterChart: a named point's label has no halo over the gray

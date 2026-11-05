@@ -583,7 +583,10 @@ public class SimpleLineChart implements Drawable {
                 note = "";
             }
         }
-        if (right <= left || bottom <= top || !ChartScale.drawable(axis)) {
+        if (right <= left || bottom <= top) {
+            page.pdf.fail(new IllegalArgumentException(ChartScale.noRoom("A SimpleLineChart", w, h)));
+        }
+        if (!ChartScale.drawable(axis)) {
             return new float[] {x + w, y + h};
         }
 

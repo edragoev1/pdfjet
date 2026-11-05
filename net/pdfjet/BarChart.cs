@@ -626,7 +626,10 @@ public class BarChart : IDrawable {
         }
         // No room for the plot, or an axis whose span is past the largest
         // float, as a set range of -3e38 to 3e38, whose steps are infinite
-        if (x6 <= x5 || y8 <= y5 || !ChartScale.IsValue(step)) {
+        if (x6 <= x5 || y8 <= y5) {
+            page.pdf.Fail(new ArgumentException(ChartScale.NoRoom("A BarChart", w, h)));
+        }
+        if (!ChartScale.IsValue(step)) {
             return new float[] {x1 + w, y1 + h};
         }
 

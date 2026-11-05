@@ -381,6 +381,16 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	}
 	barX := chart.x + pad + nameWidth + pad
 	barRoom := max(chart.x+chart.w-pad-float32(valueWidth+float32(size/2.0))-barX, 0)
+	// No room for the bars, or for a name, not even an ellipsis: drawn,
+	// the bars went to nothing and names were left out
+	noName := false
+	for i, name := range chart.names {
+		noName = noName || (name != "" && i < len(shown) && shown[i] == "")
+	}
+	if barRoom <= 0 || noName {
+		page.pdf.fail(noRoomMessage("A SimpleBarChart", chart.w, h))
+		return [2]float32{chart.x + chart.w, chart.y + h}
+	}
 
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 	page.SaveGraphicsState()

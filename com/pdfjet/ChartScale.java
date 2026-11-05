@@ -21,6 +21,15 @@ final class ChartScale {
     static final int MAX_DIGITS = 100;
     static final String TOO_MANY_DIGITS = "The fraction digits of a chart are at most 100.";
 
+    // The error of a chart too small for what it has to show, which drew
+    // nothing: the caller makes it larger, or what it shows shorter
+    // (the owner, 4 November 2026: "we can create more space if the user tries
+    // to jam too much info")
+    static String noRoom(String chart, float w, float h) {
+        return chart + " of " + Math.round(w) + " by " + Math.round(h)
+                + " points has no room for its plot: make it larger, or its title, names or numbers shorter.";
+    }
+
     private ChartScale() {
     }
 

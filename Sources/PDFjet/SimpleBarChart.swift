@@ -441,6 +441,16 @@ public class SimpleBarChart : Drawable {
         }
         let barX = x + pad + nameWidth + pad
         let barRoom = Swift.max(x + w - pad - (valueWidth + size / 2.0) - barX, 0.0)
+        // No room for the bars, or for a name, not even an ellipsis: drawn,
+        // the bars went to nothing and names were left out
+        var noName = false
+        for i in 0..<Swift.min(names.count, shown.count) where !names[i].isEmpty && shown[i].isEmpty {
+            noName = true
+        }
+        if barRoom <= 0.0 || noName {
+            page.pdf.fail(ChartScale.noRoom("A SimpleBarChart", w, h))
+            return [x + w, y + h]
+        }
 
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
         page.saveGraphicsState()

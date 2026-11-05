@@ -22,6 +22,16 @@ internal static class ChartScale {
     internal const int MAX_DIGITS = 100;
     internal const string TOO_MANY_DIGITS = "The fraction digits of a chart are at most 100.";
 
+    // The error of a chart too small for what it has to show, which drew
+    // nothing: the caller makes it larger, or what it shows shorter
+    // (the owner, 4 November 2026: "we can create more space if the user tries
+    // to jam too much info")
+    internal static string NoRoom(string chart, float w, float h) {
+        return chart + " of " + Math.Round(w).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + " by " + Math.Round(h).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + " points has no room for its plot: make it larger, or its title, names or numbers shorter.";
+    }
+
     /// <summary>
     /// Formats a label with minDigits to maxDigits decimal places, rounding the
     /// exact value half to even. The label has a "." decimal separator and no

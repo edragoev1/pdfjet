@@ -601,7 +601,11 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 	// No room for the plot, or an axis whose span is past the largest
 	// float, as a set range of -3e38 to 3e38, whose steps are infinite
-	if x6 <= x5 || y8 <= y5 || !isValue(step) {
+	if x6 <= x5 || y8 <= y5 {
+		page.pdf.fail(noRoomMessage("A BarChart", chart.w, chart.h))
+		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+	}
+	if !isValue(step) {
 		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 

@@ -622,7 +622,11 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 			note = ""
 		}
 	}
-	if right <= left || bottom <= top || !drawable(xAxis) || !drawable(yAxis) {
+	if right <= left || bottom <= top {
+		page.pdf.fail(noRoomMessage("A SimpleScatterChart", chart.w, chart.h))
+		return [2]float32{chart.x + chart.w, chart.y + chart.h}
+	}
+	if !drawable(xAxis) || !drawable(yAxis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
 	}
 	xAt := func(v float32) float32 {

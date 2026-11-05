@@ -668,7 +668,10 @@ public class BarChart implements Drawable {
         }
         // No room for the plot, or an axis whose span is past the largest
         // float, as a set range of -3e38 to 3e38, whose steps are infinite
-        if (x6 <= x5 || y8 <= y5 || !ChartScale.isValue(step)) {
+        if (x6 <= x5 || y8 <= y5) {
+            page.pdf.fail(new IllegalArgumentException(ChartScale.noRoom("A BarChart", w, h)));
+        }
+        if (!ChartScale.isValue(step)) {
             return new float[] {x1 + w, y1 + h};
         }
 

@@ -17,6 +17,7 @@ package pdfjet
 // the shortening of a long name, and the test of a value to draw.
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -331,6 +332,15 @@ const maxChartDigits = 100
 // fractionDigitsMessage is the message of more digits than that, the same in
 // the four ports.
 const fractionDigitsMessage = "The fraction digits of a chart are at most 100."
+
+// noRoomMessage is the error of a chart too small for what it has to show,
+// which drew nothing: the caller makes it larger, or what it shows shorter
+// (the owner, 4 November 2026: "we can create more space if the user tries
+// to jam too much info").
+func noRoomMessage(chart string, w, h float32) string {
+	return fmt.Sprintf("%s of %.0f by %.0f points has no room for its plot: make it larger, "+
+		"or its title, names or numbers shorter.", chart, w, h)
+}
 
 // isValue tells if the value is a number to draw: a value that is NaN or
 // infinite has no bar, like a value missing at the end of a series.

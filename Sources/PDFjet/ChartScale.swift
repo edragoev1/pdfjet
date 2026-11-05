@@ -19,6 +19,15 @@ enum ChartScale {
     static let maxDigits = 100
     static let tooManyDigits = "The fraction digits of a chart are at most 100."
 
+    // The error of a chart too small for what it has to show, which drew
+    // nothing: the caller makes it larger, or what it shows shorter
+    // (the owner, 4 November 2026: "we can create more space if the user tries
+    // to jam too much info")
+    static func noRoom(_ chart: String, _ w: Float, _ h: Float) -> String {
+        return chart + " of \(Int(w.rounded())) by \(Int(h.rounded()))"
+                + " points has no room for its plot: make it larger, or its title, names or numbers shorter."
+    }
+
     // Formats a label with minDigits to maxDigits decimal places, rounding
     // the exact value half to even. The label has a "." decimal separator and
     // no grouping whatever the locale, and a value that rounds to zero has no

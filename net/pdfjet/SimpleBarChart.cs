@@ -425,6 +425,15 @@ public class SimpleBarChart : IDrawable {
         }
         float barX = x + pad + nameWidth + pad;
         float barRoom = Math.Max(x + w - pad - (valueWidth + size / 2f) - barX, 0f);
+        // No room for the bars, or for a name, not even an ellipsis: drawn,
+        // the bars went to nothing and names were left out
+        bool noName = false;
+        for (int i = 0; i < names.Count && i < shown.Count; i++) {
+            noName |= names[i].Length > 0 && shown[i].Length == 0;
+        }
+        if (barRoom <= 0f || noName) {
+            page.pdf.Fail(new ArgumentException(ChartScale.NoRoom("A SimpleBarChart", w, h)));
+        }
 
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         page.SaveGraphicsState();

@@ -441,6 +441,16 @@ public class SimpleScatterChartTest {
     }
 
     // The content of the chart, on a page of its own.
+    // Whether the chart draws its plot: one too small for it is an error, the
+    // no-room exception, since 4 November 2026
+    private static bool DrawsAt(PDF pdf, SimpleScatterChart chart) {
+        try {
+            return NoteContent(pdf, chart).Contains(" Td\n");
+        } catch (ArgumentException e) when (e.Message.Contains("has no room for its plot")) {
+            return false;
+        }
+    }
+
     private static String NoteContent(PDF pdf, SimpleScatterChart chart) {
         Page page = new Page(pdf, Letter.PORTRAIT);
         chart.SetLocation(50f, 50f).DrawOn(page);
@@ -571,7 +581,7 @@ public class SimpleScatterChartTest {
         Font font = TestSupport.Helvetica(pdf);
         // The least height that draws, found from below
         float height = 1f;
-        while (!NoteContent(pdf, PlotChart(font, height, 3f)).Contains(" Td\n")) {
+        while (!DrawsAt(pdf, PlotChart(font, height, 3f))) {
             height += 0.25f;
         }
         foreach (float h in new float[] {height, height + 1f, height + 5f}) {
