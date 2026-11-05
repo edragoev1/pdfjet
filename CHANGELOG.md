@@ -7,7 +7,7 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.1.7 — not released yet
+## v9.1.7 — 2026-11-05
 
 The next release, with PDFjet Pro's 9.1.7 (TODO.md).
 
