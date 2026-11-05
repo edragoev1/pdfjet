@@ -729,6 +729,41 @@ import Testing
         #expect(even.getTextY() == 100 + font.getAscent(font.getSize()))
     }
 
+    // Rows of text with smaller code in it are evenly apart wherever the code
+    // falls: a row that started with code was lowered for the text after it,
+    // and one after a row that ended in code was closer, spaced by the code's
+    // height (the CHANGELOG through md2pdf, 4 November 2026). A row is spaced
+    // by the tallest text of the row before it.
+    @Test func rowsWithSmallerCodeAreEvenlyApart() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let code = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph()
+        for _ in 0..<8 {
+            paragraph.add(TextLine(font, "words of text here").setFontSize(12))
+            paragraph.add(TextLine(code, "code").setFontSize(10.8))
+        }
+        let td = try NSRegularExpression(pattern: "[-0-9.]+ ([-0-9.]+) Td\\n")
+        for width: Float in [60, 75, 90, 120] {
+            let page = Page(pdf, Letter.PORTRAIT)
+            TextFrame([paragraph]).setLocation(10, 100).setWidth(width).drawOn(page)
+            let content = TestSupport.content(page)
+            var rows = [Double]()
+            for m in td.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+                let y = Double(content[Range(m.range(at: 1), in: content)!])!
+                if rows.last != y {
+                    rows.append(y)
+                }
+            }
+            #expect(rows.count >= 4, "width \(width): \(rows.count) rows")
+            let want = Double(font.getBodyHeight(12) + font.getLineGap(12))
+            for i in 1..<max(1, rows.count) {
+                let gap = rows[i - 1] - rows[i]
+                #expect(abs(gap - want) <= 0.02, "width \(width): rows \(i - 1) and \(i) \(gap) apart, want \(want)")
+            }
+        }
+    }
+
     // The alternate description of a text line in a paragraph, of a tagged
     // document, is of one Span among the words, however many rows it wraps into.
     @Test func aTextLineInATaggedParagraphKeepsItsDescription() throws {

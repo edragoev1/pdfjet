@@ -51,7 +51,16 @@ public class TextFrame implements Drawable {
     private boolean rowPlaced;
     // True while the open row is the first of the frame.
     private boolean firstRow;
-    private TextLine rowLine;       // The text line the row was placed for
+    // The text line the row has room for: the row's first text line in the
+    // first row of a frame or of a paragraph, whose ascent placed it; in the
+    // rows after, the tallest text line of the row before, whose height set
+    // the row's baseline. lowerRow and risesOutOfFrame measure a larger text
+    // against it, so that rows of text with smaller inline code in it, at 0.9
+    // of the size, are evenly apart wherever the code falls, and a larger word
+    // still has its room.
+    private TextLine rowLine;
+    private TextLine spacingLine;   // The text line that set nextBaseline, for rowLine
+    private TextLine rowTallest;    // The tallest text line of the row drawn last
     private float nextBaseline;
     private boolean startsParagraph;    // The next row starts a paragraph
     private float rowBottom;            // The bottom of the last row drawn
@@ -442,7 +451,7 @@ public class TextFrame implements Drawable {
                     drawRow(page, true);
                     xText = x;
                     rowOpen = false;
-                    nextBaseline = yText + textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize);
+                    spaceAfterRow(textLine);
                     if (textLine.lineBreaks > 1) {
                         float row = textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize);
                         nextBaseline += (textLine.lineBreaks - 1) * row;
@@ -486,6 +495,9 @@ public class TextFrame implements Drawable {
         yText = baseline;
         rowOpen = true;
         rowLine = textLine;
+        if (rowPlaced && !startsParagraph && spacingLine != null) {
+            rowLine = spacingLine;
+        }
         firstRow = !rowPlaced;
         rowPlaced = true;
         startsParagraph = false;
@@ -602,7 +614,7 @@ public class TextFrame implements Drawable {
             runLength = 0f;
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + textLine.getHeight() + font.getLineGap(fontSize);
+            spaceAfterRow(textLine);
         }
         addToRow(paragraph, textLine, buf.toString(), true);
         xText += font.stringWidth(fallbackFont, fontSize, buf.toString());
@@ -791,6 +803,21 @@ public class TextFrame implements Drawable {
         }
     }
 
+    // Sets the baseline of the next row in the paragraph: below the row drawn
+    // last by its tallest text, as a row is as tall as its tallest text, or by
+    // the text line when the row had no text.
+    private void spaceAfterRow(TextLine textLine) {
+        TextLine tallest = (rowTallest != null) ? rowTallest : textLine;
+        nextBaseline = yText + lineAdvance(tallest);
+        spacingLine = tallest;
+    }
+
+    // How far the baseline of the next row is below the text line's: its height
+    // and its font's line gap.
+    private static float lineAdvance(TextLine textLine) {
+        return textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize);
+    }
+
     // Moves the row down so that its tallest text is below the row before it,
     // or the top of the frame: the row was placed for its first text line, and
     // a larger word after that one rose out of it. Fonts of one size stay on
@@ -827,6 +854,13 @@ public class TextFrame implements Drawable {
             return;
         }
         lowerRow();
+        rowTallest = null;
+        for (RowPart part : row) {
+            if (!part.text.isEmpty() && (rowTallest == null
+                    || lineAdvance(part.textLine) > lineAdvance(rowTallest))) {
+                rowTallest = part.textLine;
+            }
+        }
         for (RowPart part : row) {
             if (!part.text.isEmpty()) {
                 rowBottom = Math.max(rowBottom, yText + part.textLine.font.getDescent(part.textLine.fontSize));

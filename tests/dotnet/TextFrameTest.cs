@@ -774,6 +774,42 @@ public class TextFrameTest {
         Assert.Equal(100f + font.GetAscent(font.GetSize()), even.GetTextY());
     }
 
+    // Rows of text with smaller code in it are evenly apart wherever the code
+    // falls: a row that started with code was lowered for the text after it,
+    // and one after a row that ended in code was closer, spaced by the code's
+    // height (the CHANGELOG through md2pdf, 4 November 2026). A row is spaced
+    // by the tallest text of the row before it.
+    [Fact]
+    public void RowsWithSmallerCodeAreEvenlyApart() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Font code = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph();
+        for (int i = 0; i < 8; i++) {
+            paragraph.Add(new TextLine(font, "words of text here").SetFontSize(12f));
+            paragraph.Add(new TextLine(code, "code").SetFontSize(10.8f));
+        }
+        Regex td = new Regex("[-0-9.]+ ([-0-9.]+) Td\n");
+        foreach (float width in new float[] {60f, 75f, 90f, 120f}) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 100f).SetWidth(width).DrawOn(page);
+            List<double> rows = new List<double>();
+            foreach (Match m in td.Matches(TestSupport.Content(page))) {
+                double y = double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+                if (rows.Count == 0 || rows[rows.Count - 1] != y) {
+                    rows.Add(y);
+                }
+            }
+            Assert.True(rows.Count >= 4, "width " + width + ": " + rows.Count + " rows");
+            double want = font.GetBodyHeight(12f) + font.GetLineGap(12f);
+            for (int i = 1; i < rows.Count; i++) {
+                double gap = rows[i - 1] - rows[i];
+                Assert.True(Math.Abs(gap - want) <= 0.02,
+                        "width " + width + ": rows " + (i - 1) + " and " + i + " " + gap + " apart, want " + want);
+            }
+        }
+    }
+
     // The alternate description of a text line in a paragraph, of a tagged
     // document, is of one Span among the words, however many rows it wraps into.
     [Fact]

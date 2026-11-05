@@ -75,8 +75,17 @@ type TextFrame struct {
 	rowOpen      bool
 	rowPlaced    bool
 	// firstRow is true while the open row is the first of the frame.
-	firstRow        bool
-	rowLine         *TextLine // The text line the row was placed for
+	firstRow bool
+	// The text line the row has room for: the row's first text line in the
+	// first row of a frame or of a paragraph, whose ascent placed it; in the
+	// rows after, the tallest text line of the row before, whose height set
+	// the row's baseline. lowerRow and risesOutOfFrame measure a larger text
+	// against it, so that rows of text with smaller inline code in it, at 0.9
+	// of the size, are evenly apart wherever the code falls, and a larger word
+	// still has its room.
+	rowLine         *TextLine
+	spacingLine     *TextLine // The text line that set nextBaseline, for rowLine
+	rowTallest      *TextLine // The tallest text line of the row drawn last
 	nextBaseline    float32
 	startsParagraph bool    // The next row starts a paragraph
 	rowBottom       float32 // The bottom of the last row drawn
@@ -367,7 +376,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 				tf.drawRow(page, true)
 				tf.xText = tf.x
 				tf.rowOpen = false
-				tf.nextBaseline = tf.yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
+				tf.spaceAfterRow(textLine)
 				if textLine.lineBreaks > 1 {
 					row := textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
 					tf.nextBaseline += float32(float32(textLine.lineBreaks-1) * row)
@@ -413,6 +422,9 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 	tf.xText = tf.x
 	tf.yText = baseline
 	tf.rowLine = textLine
+	if tf.rowPlaced && !tf.startsParagraph && tf.spacingLine != nil {
+		tf.rowLine = tf.spacingLine
+	}
 	tf.rowOpen = true
 	tf.firstRow = !tf.rowPlaced
 	tf.rowPlaced = true
@@ -525,7 +537,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		runLength = 0
 		tf.xText = tf.x
 		tf.rowOpen = false
-		tf.nextBaseline = tf.yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
+		tf.spaceAfterRow(textLine)
 	}
 	tf.addToRow(paragraph, textLine, buf.String(), true)
 	tf.xText += font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())
@@ -648,6 +660,13 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		return
 	}
 	tf.lowerRow()
+	tf.rowTallest = nil
+	for _, part := range tf.row {
+		if part.text != "" && (tf.rowTallest == nil ||
+			lineAdvance(part.textLine) > lineAdvance(tf.rowTallest)) {
+			tf.rowTallest = part.textLine
+		}
+	}
 	for _, part := range tf.row {
 		if part.text != "" {
 			tf.rowBottom = max(tf.rowBottom, tf.yText+part.textLine.font.GetDescent(part.textLine.fontSize))
@@ -698,6 +717,24 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		}
 	}
 	tf.row = tf.row[:0]
+}
+
+// spaceAfterRow sets the baseline of the next row in the paragraph: below the
+// row drawn last by its tallest text, as a row is as tall as its tallest
+// text, or by the text line when the row had no text.
+func (tf *TextFrame) spaceAfterRow(textLine *TextLine) {
+	tallest := textLine
+	if tf.rowTallest != nil {
+		tallest = tf.rowTallest
+	}
+	tf.nextBaseline = tf.yText + lineAdvance(tallest)
+	tf.spacingLine = tallest
+}
+
+// lineAdvance is how far the baseline of the next row is below the text
+// line's: its height and its font's line gap.
+func lineAdvance(textLine *TextLine) float32 {
+	return textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
 }
 
 // lowerRow moves the row down so that its tallest text is below the row before

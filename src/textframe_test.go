@@ -904,6 +904,44 @@ func TestTextFrameALargerWordLowersItsRow(t *testing.T) {
 	}
 }
 
+// Rows of text with smaller code in it are evenly apart wherever the code
+// falls: a row that started with code was lowered for the text after it, and
+// one after a row that ended in code was closer, spaced by the code's height
+// (the CHANGELOG through md2pdf, 4 November 2026). A row is spaced by the
+// tallest text of the row before it.
+func TestTextFrameRowsWithSmallerCodeAreEvenlyApart(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	code := testHelvetica(doc.pdf)
+	paragraph := NewParagraph()
+	for i := 0; i < 8; i++ {
+		paragraph.Add(NewTextLine(font, "words of text here").SetFontSize(12))
+		paragraph.Add(NewTextLine(code, "code").SetFontSize(10.8))
+	}
+	for _, width := range []float32{60, 75, 90, 120} {
+		frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(width)
+		frame.SetLocation(10, 100)
+		page := NewPage(doc.pdf, letter.Portrait())
+		frame.DrawOn(page)
+		var rows []float64
+		for _, m := range regexp.MustCompile(`([\d.]+) ([\d.]+) Td`).FindAllStringSubmatch(testContent(page), -1) {
+			y, _ := strconv.ParseFloat(m[2], 64)
+			if len(rows) == 0 || rows[len(rows)-1] != y {
+				rows = append(rows, y)
+			}
+		}
+		if len(rows) < 4 {
+			t.Fatalf("width %v: %d rows", width, len(rows))
+		}
+		want := float64(font.GetBodyHeight(12) + font.GetLineGap(12))
+		for i := 1; i < len(rows); i++ {
+			if gap := rows[i-1] - rows[i]; math.Abs(gap-want) > 0.02 {
+				t.Errorf("width %v: rows %d and %d %v apart, want %v", width, i-1, i, gap, want)
+			}
+		}
+	}
+}
+
 // The alternate description of a text line in a paragraph, of a tagged
 // document, is of one Span among the words, however many rows it wraps into.
 func TestTextFrameATextLineInATaggedParagraphKeepsItsDescription(t *testing.T) {

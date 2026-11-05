@@ -52,7 +52,16 @@ public class TextFrame : IDrawable {
     private bool rowPlaced;
     // True while the open row is the first of the frame.
     private bool firstRow;
-    private TextLine rowLine;       // The text line the row was placed for
+    // The text line the row has room for: the row's first text line in the
+    // first row of a frame or of a paragraph, whose ascent placed it; in the
+    // rows after, the tallest text line of the row before, whose height set
+    // the row's baseline. LowerRow and RisesOutOfFrame measure a larger text
+    // against it, so that rows of text with smaller inline code in it, at 0.9
+    // of the size, are evenly apart wherever the code falls, and a larger word
+    // still has its room.
+    private TextLine rowLine;
+    private TextLine spacingLine;   // The text line that set nextBaseline, for rowLine
+    private TextLine rowTallest;    // The tallest text line of the row drawn last
     private float nextBaseline;
     private bool startsParagraph;   // The next row starts a paragraph
     private float rowBottom;        // The bottom of the last row drawn
@@ -374,7 +383,7 @@ public class TextFrame : IDrawable {
                     DrawRow(page, true);
                     xText = x;
                     rowOpen = false;
-                    nextBaseline = yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
+                    SpaceAfterRow(textLine);
                     if (textLine.lineBreaks > 1) {
                         float row = textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
                         nextBaseline += (textLine.lineBreaks - 1) * row;
@@ -418,6 +427,9 @@ public class TextFrame : IDrawable {
         yText = baseline;
         rowOpen = true;
         rowLine = textLine;
+        if (rowPlaced && !startsParagraph && spacingLine != null) {
+            rowLine = spacingLine;
+        }
         firstRow = !rowPlaced;
         rowPlaced = true;
         startsParagraph = false;
@@ -533,7 +545,7 @@ public class TextFrame : IDrawable {
             runLength = 0f;
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
+            SpaceAfterRow(textLine);
         }
         AddToRow(paragraph, textLine, buf.ToString(), true);
         xText += font.StringWidth(fallbackFont, fontSize, buf.ToString());
@@ -720,6 +732,21 @@ public class TextFrame : IDrawable {
         return yText + rise + textLine.font.GetDescent(textLine.fontSize) > y + h;
     }
 
+    // Sets the baseline of the next row in the paragraph: below the row drawn
+    // last by its tallest text, as a row is as tall as its tallest text, or by
+    // the text line when the row had no text.
+    private void SpaceAfterRow(TextLine textLine) {
+        TextLine tallest = rowTallest ?? textLine;
+        nextBaseline = yText + LineAdvance(tallest);
+        spacingLine = tallest;
+    }
+
+    // How far the baseline of the next row is below the text line's: its height
+    // and its font's line gap.
+    private static float LineAdvance(TextLine textLine) {
+        return textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
+    }
+
     // Moves the row down so that its tallest text is below the row before it,
     // or the top of the frame: the row was placed for its first text line, and
     // a larger word after that one rose out of it. Fonts of one size stay on
@@ -756,6 +783,13 @@ public class TextFrame : IDrawable {
             return;
         }
         LowerRow();
+        rowTallest = null;
+        foreach (RowPart part in row) {
+            if (part.text.Length > 0 && (rowTallest == null
+                    || LineAdvance(part.textLine) > LineAdvance(rowTallest))) {
+                rowTallest = part.textLine;
+            }
+        }
         foreach (RowPart part in row) {
             if (part.text.Length > 0) {
                 rowBottom = Math.Max(rowBottom, yText + part.textLine.font.GetDescent(part.textLine.fontSize));

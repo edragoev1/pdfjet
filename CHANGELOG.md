@@ -447,6 +447,14 @@ Behavior changes since 9.1.5, from the reviews before this release:
 - Behavior change: a destination name used twice goes to the first, where it
   went to the last. A 48 pt word after 12 pt text lowers its row in a
   TextFrame, where it rose above the frame.
+- Behavior change: TextFrame, the four ports: a row is spaced from the row
+  before it by that row's tallest text, so that rows of text with smaller
+  inline code in it are evenly apart wherever the code falls. A row that
+  started with code was lowered for the text after it, and a row after one
+  that ended in code was closer, spaced by the code's height. Example: in
+  12 pt text with 10.8 pt code, every row is 13.87 pt below the one before,
+  where some were 13.6 pt; the CHANGELOG through md2pdf is 108 pages of even
+  rows, where 9.1.5's 106 had rows closer after code.
 - Behavior change: SVG nested past 48 levels, or over 4,000,000 reused path
   operations, is an error. Example: 47 nested `g` elements are refused. A
   negative viewBox and a color like `#abcz` are errors.

@@ -48,7 +48,16 @@ public class TextFrame : Drawable {
     private var rowOpen = false
     private var rowPlaced = false
     private var firstRow = false        // The open row is the first of the frame
-    private var rowLine: TextLine?      // The text line the row was placed for
+    // The text line the row has room for: the row's first text line in the
+    // first row of a frame or of a paragraph, whose ascent placed it; in the
+    // rows after, the tallest text line of the row before, whose height set
+    // the row's baseline. lowerRow and risesOutOfFrame measure a larger text
+    // against it, so that rows of text with smaller inline code in it, at 0.9
+    // of the size, are evenly apart wherever the code falls, and a larger word
+    // still has its room.
+    private var rowLine: TextLine?
+    private var spacingLine: TextLine?  // The text line that set nextBaseline, for rowLine
+    private var rowTallest: TextLine?   // The tallest text line of the row drawn last
     private var nextBaseline: Float = 0.0
     private var startsParagraph = false     // The next row starts a paragraph
     private var rowBottom: Float = 0.0      // The bottom of the last row drawn
@@ -366,7 +375,7 @@ public class TextFrame : Drawable {
                     drawRow(page, true)
                     xText = x
                     rowOpen = false
-                    nextBaseline = yText + textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
+                    spaceAfterRow(textLine)
                     if textLine.lineBreaks > 1 {
                         let row = textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
                         nextBaseline += Float(textLine.lineBreaks - 1) * row
@@ -409,6 +418,9 @@ public class TextFrame : Drawable {
         yText = baseline
         rowOpen = true
         rowLine = textLine
+        if rowPlaced, !startsParagraph, let spacing = spacingLine {
+            rowLine = spacing
+        }
         firstRow = !rowPlaced
         rowPlaced = true
         startsParagraph = false
@@ -529,7 +541,7 @@ public class TextFrame : Drawable {
             runLength = 0.0
             xText = x
             rowOpen = false
-            nextBaseline = yText + textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
+            spaceAfterRow(textLine)
         }
         addToRow(paragraph, textLine, buf, true)
         xText += font.stringWidth(fallbackFont, fontSize, buf)
@@ -746,6 +758,21 @@ public class TextFrame : Drawable {
         }
     }
 
+    // Sets the baseline of the next row in the paragraph: below the row drawn
+    // last by its tallest text, as a row is as tall as its tallest text, or by
+    // the text line when the row had no text.
+    private func spaceAfterRow(_ textLine: TextLine) {
+        let tallest = rowTallest ?? textLine
+        nextBaseline = yText + TextFrame.lineAdvance(tallest)
+        spacingLine = tallest
+    }
+
+    // How far the baseline of the next row is below the text line's: its height
+    // and its font's line gap.
+    private static func lineAdvance(_ textLine: TextLine) -> Float {
+        return textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
+    }
+
     // Moves the row down so that its tallest text is below the row before it,
     // or the top of the frame: the row was placed for its first text line, and
     // a larger word after that one rose out of it. Fonts of one size stay on
@@ -783,6 +810,13 @@ public class TextFrame : Drawable {
             return
         }
         lowerRow()
+        rowTallest = nil
+        for part in row where !part.text.isEmpty {
+            if let tallest = rowTallest, TextFrame.lineAdvance(part.textLine) <= TextFrame.lineAdvance(tallest) {
+                continue
+            }
+            rowTallest = part.textLine
+        }
         for part in row where !part.text.isEmpty {
             rowBottom = max(rowBottom, yText + part.textLine.font!.getDescent(part.textLine.fontSize))
         }

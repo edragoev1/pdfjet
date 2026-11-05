@@ -809,6 +809,42 @@ class TextFrameTest {
         assertEquals(100f + font.getAscent(font.getSize()), even.getTextY(), 0f);
     }
 
+    // Rows of text with smaller code in it are evenly apart wherever the code
+    // falls: a row that started with code was lowered for the text after it,
+    // and one after a row that ended in code was closer, spaced by the code's
+    // height (the CHANGELOG through md2pdf, 4 November 2026). A row is spaced
+    // by the tallest text of the row before it.
+    @Test
+    void rowsWithSmallerCodeAreEvenlyApart() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Font code = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph();
+        for (int i = 0; i < 8; i++) {
+            paragraph.add(new TextLine(font, "words of text here").setFontSize(12f));
+            paragraph.add(new TextLine(code, "code").setFontSize(10.8f));
+        }
+        java.util.regex.Pattern td = java.util.regex.Pattern.compile("[-0-9.]+ ([-0-9.]+) Td\n");
+        for (float width : new float[] {60f, 75f, 90f, 120f}) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 100f).setWidth(width).drawOn(page);
+            java.util.List<Double> rows = new java.util.ArrayList<>();
+            java.util.regex.Matcher m = td.matcher(TestSupport.content(page));
+            while (m.find()) {
+                double y = Double.parseDouble(m.group(1));
+                if (rows.isEmpty() || rows.get(rows.size() - 1) != y) {
+                    rows.add(y);
+                }
+            }
+            assertTrue(rows.size() >= 4, "width " + width + ": " + rows.size() + " rows");
+            double want = font.getBodyHeight(12f) + font.getLineGap(12f);
+            for (int i = 1; i < rows.size(); i++) {
+                assertEquals(want, rows.get(i - 1) - rows.get(i), 0.02,
+                        "width " + width + ": rows " + (i - 1) + " and " + i);
+            }
+        }
+    }
+
     // The alternate description of a text line in a paragraph, of a tagged
     // document, is of one Span among the words, however many rows it wraps into.
     @Test
