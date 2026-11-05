@@ -1,0 +1,33 @@
+== environment
+openjdk version "25.0.4.1" 2026-08-18 LTS
+.NET SDK 8.0.424
+go version go1.27.2 linux/amd64
+Swift version 6.4.1 (swift-6.4.1-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-11-05T17:29:40-05:00
+c652db890 images/readme out: the logo copies for 9.1.5's README, which the Swift Package Index showed until it moved to 9.1.7 (5 November 2026)
+== ports: Latin, Greek and Cyrillic, 60 lines per page, IBM Plex Sans
+java 100 pages: median 15 ms (min 15, max 17, 7 runs), 110096 bytes
+dotnet 100 pages: median 43 ms (min 39, max 57, 7 runs), 109218 bytes
+go 100 pages: median 12 ms (min 11, max 12, 7 runs), 104906 bytes
+swift 100 pages: median 20 ms (min 20, max 21, 7 runs), 122380 bytes
+java 500 pages: median 61 ms (min 56, max 64, 7 runs), 496887 bytes
+dotnet 500 pages: median 60 ms (min 58, max 61, 7 runs), 491305 bytes
+go 500 pages: median 59 ms (min 55, max 61, 7 runs), 470042 bytes
+swift 500 pages: median 97 ms (min 96, max 97, 7 runs), 554880 bytes
+== ports: first document in a new process, 500 pages
+java cold 500 pages: 135 ms, 496887 bytes
+dotnet cold 500 pages: 256 ms, 491305 bytes
+go cold 500 pages: 60 ms, 470042 bytes
+swift cold 500 pages: 103 ms, 554880 bytes
+== ports: peak memory, one 500-page document, runtime defaults, median of 3
+java peak 85932 KB
+dotnet peak 50308 KB
+go peak 10884 KB
+swift peak 25176 KB
+== ports: 3-page samples
+java: 17633 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+dotnet: 17567 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+go: 17810 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+swift: 18885 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+2026-11-05T17:29:46-05:00
