@@ -123,7 +123,8 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   answers at once for U+0350 to U+061B and U+3165 to U+FDFF, in the four
   ports, and GlyphSet adds the glyphs of a run together, in Swift; 92 ms.
   The other 6 ms are those fixes' work for each character: no major change
-  (the owner, 27 October 2026). The README claims under 120 ms. Example_17,
+  (the owner, 27 October 2026). The README claimed under 120 ms; at 9.1.7
+  (5 November 2026) Swift takes 97 ms and every port under 100. Example_17,
   the 745-page novel, on 20 October: Go 398 ms, Java 972, C# 1,246, Swift
   1,505 (each a new process), for v9.2.1's restructuring.
 
@@ -684,7 +685,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   2026). The CSV reader, 10%, split in place: 121 to 110 ms for the 30 MB
   file, 1% of Example_24, not kept (more code for too little).
   Example_24's 500 pages take 113 ms in Swift, against 56 to 64 in Go, C#
-  and Java (9.1.1). Where the rest goes is not measured: Swift's own
+  and Java (9.1.1); 97 ms at 9.1.7, against 59 to 61 (5 November 2026). Where the rest goes is not measured: Swift's own
   Deflate, CRC32 and AES (Go's are its standard library's, tuned for years,
   with assembly for AES and CRC32), the counting of references of many small
   objects, String work done where bytes would do, or arrays copied on
