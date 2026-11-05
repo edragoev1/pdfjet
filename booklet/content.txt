@@ -57,7 +57,7 @@ Add the module to your program with the go command. The module path carries the 
 
     go get github.com/edragoev1/pdfjet/v9@latest
 
-The Go module has the source of the library and the examples, and the fonts PDFjet carries, which the library embeds; the data files of the examples are left out. The module of 9.1.5 has no fonts: clone the repository pdfjet-fonts as fonts next to your program, or copy the fonts you use from it; the core fonts need no files.
+The Go module has the source of the library and the examples, and the fonts PDFjet carries, which the library embeds; the data files of the examples are left out. The European fonts are built into every program; for Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add one line: import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world".
 @end
 @lang swift
 PDFjet for Swift runs on Linux as well as on macOS, so it serves a Swift server too: it uses only the parts of Foundation that Linux has, and none of Apple's frameworks, its compression, encryption, fonts and images being its own.
