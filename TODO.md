@@ -59,6 +59,16 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **Next release: one URI action for repeated links** (7 November 2026).
+  Each link annotation writes its URI inline, hex-encoded, so a document
+  with many links to one long address carries it many times: twenty
+  boxes linking to a 20,000-character address add about 800 KB. Write one
+  action object per distinct URI (`<< /S /URI /URI <...> >>`) and have
+  every link annotation with that address refer to it (`/A n 0 R`), in all
+  four ports, with the cross-port check comparing the output. PDF/UA keeps
+  each annotation's own /Contents. Not before the next release: 9.1.7 is
+  frozen.
+
 - **Release v9.1.7 next, by the end of November 2026** (the owner, 30
   October 2026): frozen, no new features or chart types; every bug found in
   existing code is fixed before the tag. v9.1.5, the long-term support
