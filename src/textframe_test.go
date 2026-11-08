@@ -1056,3 +1056,81 @@ func TestSVGTextKeepsItsFontSize(t *testing.T) {
 		t.Errorf("the page has %q", page.buf)
 	}
 }
+
+// testBaselines returns the baselines of the rows a frame draws, as its
+// listener is told them; a negative spacing leaves the default.
+func testBaselines(lineSpacing float32) []float32 {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	text := NewParagraph().Add(NewTextLine(font, "one two three four five six seven eight nine ten"))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{text}).SetWidth(60)
+	frame.SetLocation(10, 10)
+	if lineSpacing >= 0 || lineSpacing != lineSpacing {
+		frame.SetLineSpacing(lineSpacing)
+	}
+	var ys []float32
+	frame.SetListener(func(line *TextLine, x, y float32, source *TextLine) {
+		if len(ys) == 0 || ys[len(ys)-1] != y {
+			ys = append(ys, y)
+		}
+	})
+	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	return ys
+}
+
+func TestTextFrameLineSpacingOfOneIsTheLayoutAsItWas(t *testing.T) {
+	before := testBaselines(-1)
+	if len(before) < 3 {
+		t.Fatalf("rows: %v", before)
+	}
+	for _, spacing := range []float32{1, float32(math.NaN())} {
+		after := testBaselines(spacing)
+		if fmt.Sprint(after) != fmt.Sprint(before) {
+			t.Errorf("spacing %v: %v, not %v", spacing, after, before)
+		}
+	}
+}
+
+func TestTextFrameLineSpacingSpacesTheRowsOfAParagraphAndNotTheParagraphs(t *testing.T) {
+	one := testBaselines(-1)
+	two := testBaselines(2)
+	testNear(t, "double", 2*(one[1]-one[0]), two[1]-two[0], testDelta)
+	most := testBaselines(10)
+	testNear(t, "at most 3", 3*(one[1]-one[0]), most[1]-most[0], testDelta)
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	first := NewParagraph().Add(NewTextLine(font, "one"))
+	second := NewParagraph().Add(NewTextLine(font, "two"))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{first, second}).SetWidth(300).SetLineSpacing(2)
+	frame.SetLocation(10, 10)
+	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	testNear(t, "the paragraphs' gap", testParagraphDistance(), second.GetY1()-first.GetY1(), testDelta)
+}
+
+func TestTextFrameTheListenerIsToldOfEachPieceDrawnWithItsSourceAndNotOfMeasuring(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	plain := NewTextLine(font, "Some words, ")
+	bold := NewTextLine(font, "then more words")
+	text := NewParagraph().Add(plain).Add(bold)
+	frame := NewTextFrameFromParagraphs([]*Paragraph{text}).SetWidth(70)
+	frame.SetLocation(10, 10)
+	drawn := map[*TextLine]string{}
+	var xs []float32
+	frame.SetListener(func(line *TextLine, x, y float32, source *TextLine) {
+		drawn[source] += line.GetText()
+		xs = append(xs, x)
+	})
+	frame.DrawOn(nil)
+	if len(drawn) != 0 {
+		t.Fatalf("told of measuring: %v", drawn)
+	}
+	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	if got := strings.ReplaceAll(drawn[plain], " ", ""); got != "Somewords," {
+		t.Errorf("the first source's pieces: %q", got)
+	}
+	if got := strings.ReplaceAll(drawn[bold], " ", ""); got != "thenmorewords" {
+		t.Errorf("the second source's pieces: %q", got)
+	}
+	testNear(t, "the first piece's x", 10, xs[0], testDelta)
+}

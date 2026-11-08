@@ -7,6 +7,28 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## Next release (not released yet)
+
+Added, in the four ports, from PDFjet Write, which lays out its pages with
+TextFrame:
+
+- `TextFrame.setLineSpacing(float)` (Go `SetLineSpacing`, C#
+  `SetLineSpacing`, Swift `setLineSpacing`): the space between the lines of a
+  paragraph, as a factor of the font's own, from 0.8 to 3 (NaN taken as 1).
+  The gap between paragraphs is `setParagraphGap`'s and stays as it is. The
+  default, 1, lays out every frame exactly as before: the same baselines, to
+  the bit.
+- `TextFrame.setListener(TextFrame.Listener)` (Go `SetListener` with
+  `TextFrameListener`, C# the delegate `TextFrame.Listener`, Swift the
+  closure `TextFrame.Listener`): told of each line of text as it is drawn, at
+  its x and baseline, with the text line of the paragraph it is a piece of
+  (none for a list's label), so that a program can draw a preview of exactly
+  the lines of the PDF, or tell which text a point on the page is. Not told
+  of the lines `drawOn(null)` only measures. With no listener, nothing
+  changes.
+
+No behavior change: neither does anything until it is called.
+
 ## v9.1.7 — 2026-11-05
 
 The next release, with PDFjet Pro's 9.1.7 (TODO.md).

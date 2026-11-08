@@ -906,5 +906,71 @@ public class TextFrameTest {
         page.DrawSVGText(TestSupport.Helvetica(pdf), 0.125f, "a", new float[] {1f, 0f, 0f, 1f, 0f, 0f}, 0);
         Assert.Contains(" 0.125 Tf", System.Text.Encoding.Latin1.GetString(page.GetContent()));
     }
+
+    // The baselines of the rows a frame draws, as its listener is told them
+    private static List<float> Baselines(float? lineSpacing) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph text = new Paragraph(new TextLine(font, "one two three four five six seven eight nine ten"));
+        TextFrame frame = new TextFrame(new List<Paragraph> {text}).SetLocation(10f, 10f).SetWidth(60f);
+        if (lineSpacing != null) {
+            frame.SetLineSpacing(lineSpacing.Value);
+        }
+        List<float> ys = new List<float>();
+        frame.SetListener((line, x, y, source) => {
+            if (ys.Count == 0 || ys[ys.Count - 1] != y) {
+                ys.Add(y);
+            }
+        });
+        frame.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        return ys;
+    }
+
+    [Fact]
+    public void LineSpacingOfOneIsTheLayoutAsItWas() {
+        List<float> before = Baselines(null);
+        Assert.True(before.Count >= 3, "rows: " + before.Count);
+        Assert.Equal(before, Baselines(1f));
+        Assert.Equal(before, Baselines(float.NaN));
+    }
+
+    [Fact]
+    public void LineSpacingSpacesTheRowsOfAParagraphAndNotTheParagraphs() {
+        List<float> one = Baselines(null);
+        List<float> two = Baselines(2f);
+        TestSupport.AssertNear(2f * (one[1] - one[0]), two[1] - two[0], TestSupport.DELTA);
+        List<float> most = Baselines(10f);
+        TestSupport.AssertNear(3f * (one[1] - one[0]), most[1] - most[0], TestSupport.DELTA);  // at most 3
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph first = new Paragraph(new TextLine(font, "one"));
+        Paragraph second = new Paragraph(new TextLine(font, "two"));
+        new TextFrame(new List<Paragraph> {first, second}).SetLocation(10f, 10f).SetWidth(300f).SetLineSpacing(2f)
+                .DrawOn(new Page(pdf, Letter.PORTRAIT));
+        TestSupport.AssertNear(ParagraphDistance(null), second.GetY1() - first.GetY1(), TestSupport.DELTA);
+    }
+
+    [Fact]
+    public void TheListenerIsToldOfEachPieceDrawnWithItsSourceAndNotOfMeasuring() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        TextLine plain = new TextLine(font, "Some words, ");
+        TextLine bold = new TextLine(font, "then more words");
+        Paragraph text = new Paragraph(plain);
+        text.Add(bold);
+        TextFrame frame = new TextFrame(new List<Paragraph> {text}).SetLocation(10f, 10f).SetWidth(70f);
+        Dictionary<TextLine, string> drawn = new Dictionary<TextLine, string>();
+        List<float> xs = new List<float>();
+        frame.SetListener((line, x, y, source) => {
+            drawn[source] = (drawn.ContainsKey(source) ? drawn[source] : "") + line.GetText();
+            xs.Add(x);
+        });
+        frame.DrawOn(null);
+        Assert.Empty(drawn);
+        frame.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        Assert.Equal("Somewords,", drawn[plain].Replace(" ", ""));
+        Assert.Equal("thenmorewords", drawn[bold].Replace(" ", ""));
+        TestSupport.AssertNear(10f, xs[0], TestSupport.DELTA);
+    }
 }
 }

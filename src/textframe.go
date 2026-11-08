@@ -35,8 +35,19 @@ import (
 // draw paragraphs in one place, with justified text or a rotation, and a
 // TextBlock for one run of text in one font. Please see Example_14 and
 // Example_15.
+// TextFrameListener is told of each line of text as a TextFrame draws it: the
+// line as drawn, its text, font, size and color, at x, the left of its first
+// letter, and y, its baseline; and the text line of the paragraph it is a
+// piece of, or nil for a list's label, so that a program can tell which of
+// its text a point on the page is (hit testing). The pieces of a source are
+// drawn in the order of its text, whole words, or a word cut at a soft hyphen
+// (ending with a hyphen) or where it does not fit.
+type TextFrameListener func(line *TextLine, x, y float32, source *TextLine)
+
 type TextFrame struct {
 	paragraphs      []*Paragraph
+	listener        TextFrameListener
+	lineSpacing     float32
 	x, y, w, h      float32
 	textBottom      float32 // The bottom of the text drawn by the last DrawOn
 	paragraphGap    float32
@@ -130,6 +141,7 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 func NewTextFrameFromParagraphs(paragraphs []*Paragraph) *TextFrame {
 	return &TextFrame{
 		paragraphs:    paragraphs,
+		lineSpacing:   1,
 		borderColor:   [3]float32{0.0, 0.0, 0.0},
 		borderWidth:   0.5,
 		borderPattern: "[] 0",
@@ -164,6 +176,34 @@ func (tf *TextFrame) GetWidth() float32 {
 // GetHeight returns the height of this text frame.
 func (tf *TextFrame) GetHeight() float32 {
 	return tf.h
+}
+
+// SetListener sets the listener told of each line of text as it is drawn,
+// or nil for none: not of the lines DrawOn(nil) only measures.
+func (tf *TextFrame) SetListener(listener TextFrameListener) *TextFrame {
+	tf.listener = listener
+	return tf
+}
+
+// SetLineSpacing sets the space between the lines of a paragraph, as a
+// factor of the font's own: 1 as the font has it, 1.5 half again as much,
+// from 0.8 to 3; NaN is taken as 1. The gap between paragraphs is
+// SetParagraphGap's, and stays as it is.
+func (tf *TextFrame) SetLineSpacing(lineSpacing float32) *TextFrame {
+	if lineSpacing != lineSpacing {
+		lineSpacing = 1
+	}
+	tf.lineSpacing = max(0.8, min(3, lineSpacing))
+	return tf
+}
+
+// draw draws a line of text, a piece of the source, and tells the listener;
+// not when the frame only measures (no page), as nothing is drawn then.
+func (tf *TextFrame) draw(line *TextLine, source *TextLine, page *Page) {
+	if tf.listener != nil && page != nil {
+		tf.listener(line, line.x+line.xOffset, line.y, source)
+	}
+	line.DrawOn(page)
 }
 
 // SetParagraphGap sets the space between paragraphs, in points, 0 or more:
@@ -663,7 +703,7 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 	tf.rowTallest = nil
 	for _, part := range tf.row {
 		if part.text != "" && (tf.rowTallest == nil ||
-			lineAdvance(part.textLine) > lineAdvance(tf.rowTallest)) {
+			tf.lineAdvance(part.textLine) > tf.lineAdvance(tf.rowTallest)) {
 			tf.rowTallest = part.textLine
 		}
 	}
@@ -706,7 +746,7 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 			}
 			line.SetLocation(part.x+shift, tf.yText)
 			restore := tf.beginParagraphElement(page, part.paragraph, part.x+shift, tf.yText)
-			line.DrawOn(page)
+			tf.draw(line, part.textLine, page)
 			restore()
 			if part.startsParagraph {
 				part.paragraph.xText += shift
@@ -727,14 +767,16 @@ func (tf *TextFrame) spaceAfterRow(textLine *TextLine) {
 	if tf.rowTallest != nil {
 		tallest = tf.rowTallest
 	}
-	tf.nextBaseline = tf.yText + lineAdvance(tallest)
+	tf.nextBaseline = tf.yText + tf.lineAdvance(tallest)
 	tf.spacingLine = tallest
 }
 
 // lineAdvance is how far the baseline of the next row is below the text
-// line's: its height and its font's line gap.
-func lineAdvance(textLine *TextLine) float32 {
-	return textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
+// line's: its height and its font's line gap, times the line spacing. The
+// product rounded on its own, so that a sum it goes into is not fused with
+// it on arm64 ("Floating point on ARM" in README.md).
+func (tf *TextFrame) lineAdvance(textLine *TextLine) float32 {
+	return float32((textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)) * tf.lineSpacing)
 }
 
 // lowerRow moves the row down so that its tallest text is below the row before
@@ -790,7 +832,7 @@ func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph, x, 
 				label := paragraph.listLabel
 				label.SetStructureType(structelem.Lbl)
 				label.SetLocation(x-paragraph.listLabelIndent, y)
-				label.DrawOn(page)
+				tf.draw(label, nil, page)
 			}
 			page.BeginStructElement(structelem.LBody)
 			tf.inItem = true
@@ -897,7 +939,7 @@ func (tf *TextFrame) placeWords(page *Page, dx float32, endSpace, draw bool) flo
 				}
 				line.SetLocation(xWord, tf.yText)
 				restore := tf.beginParagraphElement(page, part.paragraph, xWord, tf.yText)
-				line.DrawOn(page)
+				tf.draw(line, part.textLine, page)
 				restore()
 				xWord += textWidth(part.textLine, word)
 				wordEnd = xWord

@@ -22,6 +22,65 @@ import java.util.*;
  * Example_15.
  */
 public class TextFrame implements Drawable {
+    /** Told of each line of text as the frame draws it, at its place on the page. */
+    public interface Listener {
+        /**
+         * A line drawn: its text, font, size and color, at x, the left of
+         * its first letter, and y, its baseline; and the text line of the
+         * paragraph it is a piece of, so that a program can tell which of its
+         * text a point on the page is (hit testing). The pieces of a source
+         * are drawn in the order of its text, whole words, or a word cut at
+         * a soft hyphen (ending with a hyphen) or where it does not fit.
+         *
+         * @param line the text line, as drawn.
+         * @param x the left of its first letter.
+         * @param y its baseline.
+         * @param source the text line of the paragraph the line is a piece
+         *     of, or null for a list's label.
+         */
+        void drawn(TextLine line, float x, float y, TextLine source);
+    }
+
+    private Listener listener;
+    private float lineSpacing = 1f;
+
+    /**
+     * Sets the listener told of each line of text as it is drawn: not of
+     * the lines drawOn(null) only measures.
+     *
+     * @param listener the listener, or null for none.
+     * @return this TextFrame.
+     */
+    public TextFrame setListener(Listener listener) {
+        this.listener = listener;
+        return this;
+    }
+
+    /**
+     * Sets the space between the lines of a paragraph, as a factor of the
+     * font's own: 1 as the font has it, 1.5 half again as much. The gap
+     * between paragraphs is setParagraphGap's, and stays as it is.
+     *
+     * @param lineSpacing the factor, from 0.8 to 3; NaN is taken as 1.
+     * @return this TextFrame.
+     */
+    public TextFrame setLineSpacing(float lineSpacing) {
+        if (Float.isNaN(lineSpacing)) {
+            lineSpacing = 1f;
+        }
+        this.lineSpacing = Math.max(0.8f, Math.min(3f, lineSpacing));
+        return this;
+    }
+
+    // Draws a line of text, a piece of the source, and tells the listener;
+    // not when the frame only measures (no page), as nothing is drawn then
+    private void draw(TextLine line, TextLine source, Page page) throws Exception {
+        if (listener != null && page != null) {
+            listener.drawn(line, line.x + line.xOffset, line.y, source);
+        }
+        line.drawOn(page);
+    }
+
     private final List<Paragraph> paragraphs;
     private float x;
     private float y;
@@ -753,7 +812,7 @@ public class TextFrame implements Drawable {
                 if (!continued) {
                     paragraph.listLabel.setStructureType(StructElem.LBL);
                     paragraph.listLabel.setLocation(x - paragraph.listLabelIndent, y);
-                    paragraph.listLabel.drawOn(page);
+                    draw(paragraph.listLabel, null, page);
                 }
                 page.beginStructElement(StructElem.LBODY);
                 inItem = true;
@@ -814,8 +873,8 @@ public class TextFrame implements Drawable {
 
     // How far the baseline of the next row is below the text line's: its height
     // and its font's line gap.
-    private static float lineAdvance(TextLine textLine) {
-        return textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize);
+    private float lineAdvance(TextLine textLine) {
+        return (textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize)) * lineSpacing;
     }
 
     // Moves the row down so that its tallest text is below the row before it,
@@ -888,7 +947,7 @@ public class TextFrame implements Drawable {
                     // the row, and left out of its underline
                     TextLine withSpace = part.textLine.copyWithText(part.text + Single.space);
                     withSpace.isLastToken = true;
-                    withSpace.setLocation(part.x + shift, yText).drawOn(page);
+                    draw(withSpace.setLocation(part.x + shift, yText), part.textLine, page);
                 } else if (lastRowOfParagraph && part == lastWithText && part.text.endsWith(Single.space)) {
                     // The last word of the paragraph, with the space that every
                     // word has after it, left out of its underline too: a link
@@ -896,9 +955,9 @@ public class TextFrame implements Drawable {
                     // (14 October 2026)
                     TextLine withSpace = part.textLine.copyWithText(part.text);
                     withSpace.isLastToken = true;
-                    withSpace.setLocation(part.x + shift, yText).drawOn(page);
+                    draw(withSpace.setLocation(part.x + shift, yText), part.textLine, page);
                 } else {
-                    part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page);
+                    draw(part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText), part.textLine, page);
                 }
                 endParagraphElement(page);
                 if (part.startsParagraph) {
@@ -967,9 +1026,9 @@ public class TextFrame implements Drawable {
                         // last token of a line in a TextColumn does.
                         TextLine withSpace = part.textLine.copyWithText(word + Single.space);
                         withSpace.isLastToken = true;
-                        withSpace.setLocation(xWord, yText).drawOn(page);
+                        draw(withSpace.setLocation(xWord, yText), part.textLine, page);
                     } else {
-                        part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page);
+                        draw(part.textLine.copyWithText(word).setLocation(xWord, yText), part.textLine, page);
                     }
                     endParagraphElement(page);
                     xWord += width(part.textLine, word);

@@ -20,6 +20,17 @@ import Foundation
 /// Example_15.
 ///
 public class TextFrame : Drawable {
+    /// Told of each line of text as the frame draws it: the line as drawn, its
+    /// text, font, size and color, at x, the left of its first letter, and y,
+    /// its baseline; and the text line of the paragraph it is a piece of, or
+    /// nil for a list's label, so that a program can tell which of its text a
+    /// point on the page is (hit testing). The pieces of a source are drawn in
+    /// the order of its text, whole words, or a word cut at a soft hyphen
+    /// (ending with a hyphen) or where it does not fit.
+    public typealias Listener = (_ line: TextLine, _ x: Float, _ y: Float, _ source: TextLine?) -> Void
+
+    private var listener: Listener?
+    private var lineSpacing: Float = 1.0
     private var paragraphs: [Paragraph]
     private var x: Float = 0.0
     private var y: Float = 0.0
@@ -143,6 +154,34 @@ public class TextFrame : Drawable {
     /// Returns the height of this text frame.
     public func getHeight() -> Float {
         return self.h
+    }
+
+    /// Sets the listener told of each line of text as it is drawn, or nil for
+    /// none: not of the lines drawOn(nil) only measures.
+    @discardableResult
+    public func setListener(_ listener: Listener?) -> TextFrame {
+        self.listener = listener
+        return self
+    }
+
+    /// Sets the space between the lines of a paragraph, as a factor of the
+    /// font's own: 1 as the font has it, 1.5 half again as much, from 0.8 to 3;
+    /// NaN is taken as 1. The gap between paragraphs is setParagraphGap's, and
+    /// stays as it is.
+    @discardableResult
+    public func setLineSpacing(_ lineSpacing: Float) -> TextFrame {
+        let spacing = lineSpacing.isNaN ? 1.0 : lineSpacing
+        self.lineSpacing = max(0.8, min(3.0, spacing))
+        return self
+    }
+
+    // Draws a line of text, a piece of the source, and tells the listener; not
+    // when the frame only measures (no page), as nothing is drawn then
+    private func drawLine(_ line: TextLine, _ source: TextLine?, _ page: Page?) {
+        if let listener = listener, page != nil {
+            listener(line, line.x + line.xOffset, line.y, source)
+        }
+        line.drawOn(page)
     }
 
     /// Sets the space between paragraphs, in points, 0 or more: from the bottom of
@@ -708,7 +747,7 @@ public class TextFrame : Drawable {
                 if !continued {
                     label.setStructureType(StructElem.LBL)
                     label.setLocation(x - paragraph.listLabelIndent, y)
-                    label.drawOn(page)
+                    drawLine(label, nil, page)
                 }
                 page.beginStructElement(StructElem.LBODY)
                 inItem = true
@@ -763,14 +802,14 @@ public class TextFrame : Drawable {
     // the text line when the row had no text.
     private func spaceAfterRow(_ textLine: TextLine) {
         let tallest = rowTallest ?? textLine
-        nextBaseline = yText + TextFrame.lineAdvance(tallest)
+        nextBaseline = yText + lineAdvance(tallest)
         spacingLine = tallest
     }
 
     // How far the baseline of the next row is below the text line's: its height
-    // and its font's line gap.
-    private static func lineAdvance(_ textLine: TextLine) -> Float {
-        return textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
+    // and its font's line gap, times the line spacing.
+    private func lineAdvance(_ textLine: TextLine) -> Float {
+        return (textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)) * lineSpacing
     }
 
     // Moves the row down so that its tallest text is below the row before it,
@@ -812,7 +851,7 @@ public class TextFrame : Drawable {
         lowerRow()
         rowTallest = nil
         for part in row where !part.text.isEmpty {
-            if let tallest = rowTallest, TextFrame.lineAdvance(part.textLine) <= TextFrame.lineAdvance(tallest) {
+            if let tallest = rowTallest, lineAdvance(part.textLine) <= lineAdvance(tallest) {
                 continue
             }
             rowTallest = part.textLine
@@ -842,7 +881,7 @@ public class TextFrame : Drawable {
                     // the row, and left out of its underline
                     let withSpace = part.textLine.copyWithText(part.text + Single.space)
                     withSpace.isLastToken = true
-                    withSpace.setLocation(part.x + shift, yText).drawOn(page)
+                    drawLine(withSpace.setLocation(part.x + shift, yText), part.textLine, page)
                 } else {
                     let line = part.textLine.copyWithText(part.text)
                     if lastRowOfParagraph && i == lastWithText && part.text.unicodeScalars.last == " " {
@@ -852,7 +891,7 @@ public class TextFrame : Drawable {
                         // space too far (14 October 2026)
                         line.isLastToken = true
                     }
-                    line.setLocation(part.x + shift, yText).drawOn(page)
+                    drawLine(line.setLocation(part.x + shift, yText), part.textLine, page)
                 }
                 endParagraphElement(page)
                 if part.startsParagraph {
@@ -927,9 +966,9 @@ public class TextFrame : Drawable {
                         // last token of a line in a TextColumn does.
                         let withSpace = part.textLine.copyWithText(word + Single.space)
                         withSpace.isLastToken = true
-                        withSpace.setLocation(xWord, yText).drawOn(page)
+                        drawLine(withSpace.setLocation(xWord, yText), part.textLine, page)
                     } else {
-                        part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page)
+                        drawLine(part.textLine.copyWithText(word).setLocation(xWord, yText), part.textLine, page)
                     }
                     endParagraphElement(page)
                     xWord += TextFrame.width(part.textLine, word)

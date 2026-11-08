@@ -23,6 +23,19 @@ namespace PDFjet.NET {
 /// Example_15.
 /// </summary>
 public class TextFrame : IDrawable {
+    /// <summary>
+    /// Told of each line of text as the frame draws it: the line as drawn, its
+    /// text, font, size and color, at x, the left of its first letter, and y,
+    /// its baseline; and the text line of the paragraph it is a piece of, or
+    /// null for a list's label, so that a program can tell which of its text a
+    /// point on the page is (hit testing). The pieces of a source are drawn in
+    /// the order of its text, whole words, or a word cut at a soft hyphen
+    /// (ending with a hyphen) or where it does not fit.
+    /// </summary>
+    public delegate void Listener(TextLine line, float x, float y, TextLine source);
+
+    private Listener listener;
+    private float lineSpacing = 1f;
     private List<Paragraph> paragraphs;
     private float x;
     private float y;
@@ -164,6 +177,38 @@ public class TextFrame : IDrawable {
     /// <summary>Returns the height of this text frame.</summary>
     public float GetHeight() {
         return this.h;
+    }
+
+    /// <summary>
+    /// Sets the listener told of each line of text as it is drawn, or null for
+    /// none: not of the lines DrawOn(null) only measures.
+    /// </summary>
+    public TextFrame SetListener(Listener listener) {
+        this.listener = listener;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the space between the lines of a paragraph, as a factor of the
+    /// font's own: 1 as the font has it, 1.5 half again as much, from 0.8 to 3;
+    /// NaN is taken as 1. The gap between paragraphs is SetParagraphGap's, and
+    /// stays as it is.
+    /// </summary>
+    public TextFrame SetLineSpacing(float lineSpacing) {
+        if (float.IsNaN(lineSpacing)) {
+            lineSpacing = 1f;
+        }
+        this.lineSpacing = Math.Max(0.8f, Math.Min(3f, lineSpacing));
+        return this;
+    }
+
+    // Draws a line of text, a piece of the source, and tells the listener; not
+    // when the frame only measures (no page), as nothing is drawn then
+    private void Draw(TextLine line, TextLine source, Page page) {
+        if (listener != null && page != null) {
+            listener(line, line.x + line.xOffset, line.y, source);
+        }
+        line.DrawOn(page);
     }
 
     /// <summary>
@@ -669,7 +714,7 @@ public class TextFrame : IDrawable {
                 if (!continued) {
                     paragraph.listLabel.SetStructureType(StructElem.LBL);
                     paragraph.listLabel.SetLocation(x - paragraph.listLabelIndent, y);
-                    paragraph.listLabel.DrawOn(page);
+                    Draw(paragraph.listLabel, null, page);
                 }
                 page.BeginStructElement(StructElem.LBODY);
                 inItem = true;
@@ -742,9 +787,9 @@ public class TextFrame : IDrawable {
     }
 
     // How far the baseline of the next row is below the text line's: its height
-    // and its font's line gap.
-    private static float LineAdvance(TextLine textLine) {
-        return textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
+    // and its font's line gap, times the line spacing.
+    private float LineAdvance(TextLine textLine) {
+        return (textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)) * lineSpacing;
     }
 
     // Moves the row down so that its tallest text is below the row before it,
@@ -825,7 +870,7 @@ public class TextFrame : IDrawable {
                     // (14 October 2026)
                     line.isLastToken = true;
                 }
-                line.SetLocation(part.x + shift, yText).DrawOn(page);
+                Draw(line.SetLocation(part.x + shift, yText), part.textLine, page);
                 EndParagraphElement(page);
                 if (part.startsParagraph) {
                     part.paragraph.xText += shift;
@@ -893,9 +938,9 @@ public class TextFrame : IDrawable {
                         // last token of a line in a TextColumn does.
                         TextLine withSpace = part.textLine.CopyWithText(word + Single.space);
                         withSpace.isLastToken = true;
-                        withSpace.SetLocation(xWord, yText).DrawOn(page);
+                        Draw(withSpace.SetLocation(xWord, yText), part.textLine, page);
                     } else {
-                        part.textLine.CopyWithText(word).SetLocation(xWord, yText).DrawOn(page);
+                        Draw(part.textLine.CopyWithText(word).SetLocation(xWord, yText), part.textLine, page);
                     }
                     EndParagraphElement(page);
                     xWord += Width(part.textLine, word);

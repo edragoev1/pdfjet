@@ -850,4 +850,69 @@ import Testing
         page.drawSVGText(TestSupport.helvetica(pdf), 0.125, "a", [1, 0, 0, 1, 0, 0], 0)
         #expect(TestSupport.latin1(page.buf).contains(" 0.125 Tf"))
     }
+
+    // The baselines of the rows a frame draws, as its listener is told them
+    private func baselines(_ lineSpacing: Float?) -> [Float] {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let text = Paragraph(TextLine(font, "one two three four five six seven eight nine ten"))
+        let frame = TextFrame([text]).setLocation(10, 10).setWidth(60)
+        if let lineSpacing {
+            frame.setLineSpacing(lineSpacing)
+        }
+        var ys = [Float]()
+        frame.setListener { _, _, y, _ in
+            if ys.isEmpty || ys[ys.count - 1] != y {
+                ys.append(y)
+            }
+        }
+        frame.drawOn(Page(pdf, Letter.PORTRAIT))
+        return ys
+    }
+
+    @Test func lineSpacingOfOneIsTheLayoutAsItWas() {
+        let before = baselines(nil)
+        #expect(before.count >= 3)
+        #expect(baselines(1) == before)
+        #expect(baselines(Float.nan) == before)
+    }
+
+    @Test func lineSpacingSpacesTheRowsOfAParagraphAndNotTheParagraphs() {
+        let one = baselines(nil)
+        let two = baselines(2)
+        TestSupport.expectNear(2 * (one[1] - one[0]), two[1] - two[0])
+        let most = baselines(10)
+        TestSupport.expectNear(3 * (one[1] - one[0]), most[1] - most[0])   // at most 3
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let first = Paragraph(TextLine(font, "one"))
+        let second = Paragraph(TextLine(font, "two"))
+        TextFrame([first, second]).setLocation(10, 10).setWidth(300).setLineSpacing(2)
+            .drawOn(Page(pdf, Letter.PORTRAIT))
+        TestSupport.expectNear(paragraphDistance(nil), second.getY1() - first.getY1())
+    }
+
+    @Test func theListenerIsToldOfEachPieceDrawnWithItsSourceAndNotOfMeasuring() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let plain = TextLine(font, "Some words, ")
+        let bold = TextLine(font, "then more words")
+        let text = Paragraph(plain)
+        text.add(bold)
+        let frame = TextFrame([text]).setLocation(10, 10).setWidth(70)
+        var drawn = [ObjectIdentifier: String]()
+        var xs = [Float]()
+        frame.setListener { line, x, _, source in
+            if let source {
+                drawn[ObjectIdentifier(source), default: ""] += line.getText() ?? ""
+            }
+            xs.append(x)
+        }
+        frame.drawOn(nil)
+        #expect(drawn.isEmpty)
+        frame.drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(drawn[ObjectIdentifier(plain)]?.replacingOccurrences(of: " ", with: "") == "Somewords,")
+        #expect(drawn[ObjectIdentifier(bold)]?.replacingOccurrences(of: " ", with: "") == "thenmorewords")
+        TestSupport.expectNear(10, xs[0])
+    }
 }

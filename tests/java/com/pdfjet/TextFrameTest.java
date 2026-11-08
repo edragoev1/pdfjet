@@ -933,4 +933,71 @@ class TextFrameTest {
         String content = page.buf.toString("ISO-8859-1");
         assertTrue(content.contains(" 0.125 Tf"), content);
     }
+
+    // The baselines of the rows a frame draws, as its listener is told them
+    private static List<Float> baselines(Float lineSpacing) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph text = new Paragraph(new TextLine(font, "one two three four five six seven eight nine ten"));
+        TextFrame frame = new TextFrame(Arrays.asList(text)).setLocation(10f, 10f).setWidth(60f);
+        if (lineSpacing != null) {
+            frame.setLineSpacing(lineSpacing);
+        }
+        List<Float> ys = new ArrayList<>();
+        frame.setListener((line, x, y, source) -> {
+            if (ys.isEmpty() || ys.get(ys.size() - 1) != y) {
+                ys.add(y);
+            }
+        });
+        frame.drawOn(new Page(pdf, Letter.PORTRAIT));
+        return ys;
+    }
+
+    @Test
+    void lineSpacingOfOneIsTheLayoutAsItWas() throws Exception {
+        List<Float> before = baselines(null);
+        assertTrue(before.size() >= 3, "rows: " + before);
+        assertEquals(before, baselines(1f));
+        assertEquals(before, baselines(Float.NaN));
+    }
+
+    @Test
+    void lineSpacingSpacesTheRowsOfAParagraphAndNotTheParagraphs() throws Exception {
+        List<Float> one = baselines(null);
+        List<Float> two = baselines(2f);
+        assertEquals(2f * (one.get(1) - one.get(0)), two.get(1) - two.get(0), TestSupport.DELTA);
+        assertEquals(3f * (one.get(1) - one.get(0)), baselines(10f).get(1) - baselines(10f).get(0),
+                TestSupport.DELTA);     // at most 3
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph first = new Paragraph(new TextLine(font, "one"));
+        Paragraph second = new Paragraph(new TextLine(font, "two"));
+        new TextFrame(Arrays.asList(first, second)).setLocation(10f, 10f).setWidth(300f).setLineSpacing(2f)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertEquals(paragraphDistance(null), second.getY1() - first.getY1(), TestSupport.DELTA);
+    }
+
+    @Test
+    void theListenerIsToldOfEachPieceDrawnWithItsSourceAndNotOfMeasuring() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        TextLine plain = new TextLine(font, "Some words, ");
+        TextLine bold = new TextLine(font, "then more words");
+        Paragraph text = new Paragraph(plain);
+        text.add(bold);
+        TextFrame frame = new TextFrame(Arrays.asList(text)).setLocation(10f, 10f).setWidth(70f);
+        Map<TextLine, StringBuilder> drawn = new HashMap<>();
+        List<Float> xs = new ArrayList<>();
+        frame.setListener((line, x, y, source) -> {
+            drawn.computeIfAbsent(source, k -> new StringBuilder()).append(line.getText());
+            xs.add(x);
+        });
+        frame.drawOn(null);
+        assertTrue(drawn.isEmpty(), "told of measuring: " + drawn);
+        frame.drawOn(new Page(pdf, Letter.PORTRAIT));
+        // Each source's pieces, in order, are its words
+        assertEquals("Somewords,", drawn.get(plain).toString().replace(" ", ""));
+        assertEquals("thenmorewords", drawn.get(bold).toString().replace(" ", ""));
+        assertEquals(10f, xs.get(0), TestSupport.DELTA);
+    }
 }
