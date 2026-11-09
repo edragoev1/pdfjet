@@ -59,6 +59,19 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **Next release: a check that a text fits in a QR code** (8 November
+  2026). Whether a text fits is known only by making the QRCode and
+  catching its IllegalArgumentException ("The data is too long for a QR
+  code at level M"), as PDFjet Write does before it puts a QR code on a
+  page. The limit is in UTF-8 bytes, not characters: 900 euro signs are
+  2,700 bytes, past level M's 2,330. Add a static check, as
+  `QRCode.fits(String text, ErrorCorrectionLevel level)` (Go `QRCodeFits`,
+  C# `QRCode.Fits`, Swift `QRCode.fits`), true when the text and its ECI fit
+  version 40 at the level, by the count the constructor already makes
+  (getTypeNumber), in all four ports, with a test at the edge (the longest
+  text that fits, and one byte more). A program can then refuse a text
+  before drawing, and tell its user why.
+
 - **Next release: one URI action for repeated links** (7 November 2026).
   Each link annotation writes its URI inline, hex-encoded, so a document
   with many links to one long address carries it many times: twenty
