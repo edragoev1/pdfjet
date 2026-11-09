@@ -31,6 +31,12 @@ public class TextFrame implements Drawable {
          * text a point on the page is (hit testing). The pieces of a source
          * are drawn in the order of its text, whole words, or a word cut at
          * a soft hyphen (ending with a hyphen) or where it does not fit.
+         * <p>
+         * Two things to know when matching the pieces with their sources: a
+         * space at the start of a text line (before a bold word, say) is
+         * drawn at the end of the piece before it, so it comes with the
+         * source before; and a word's soft hyphens (U+00AD) where it is not
+         * broken stay in the text of its piece, drawn as nothing.
          *
          * @param line the text line, as drawn.
          * @param x the left of its first letter.
