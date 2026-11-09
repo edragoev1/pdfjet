@@ -67,11 +67,11 @@ import Testing
     }
 
     // Draws one paragraph with the alignment in a frame 200 wide at x 10, and returns it.
-    private func drawAligned(_ alignment: Alignment, _ text: String) -> Paragraph {
+    private func drawAligned(_ alignment: Alignment, _ text: String, _ width: Float = 200) -> Paragraph {
         let pdf = TestSupport.newPDF()
         let paragraph = Paragraph(TextLine(TestSupport.helvetica(pdf), text))
         paragraph.setTextAlignment(alignment)
-        TextFrame([paragraph]).setLocation(10, 10).setWidth(200).drawOn(Page(pdf, Letter.PORTRAIT))
+        TextFrame([paragraph]).setLocation(10, 10).setWidth(width).drawOn(Page(pdf, Letter.PORTRAIT))
         return paragraph
     }
 
@@ -105,6 +105,15 @@ import Testing
         let font = TestSupport.helvetica(TestSupport.newPDF())
         let paragraph = drawAligned(Alignment.CENTER, "Hello")
         TestSupport.expectNear(10 + (200 - font.stringWidth("Hello")) / 2, paragraph.getTextX())
+    }
+
+    @Test func aLetterWiderThanTheFrameStartsAtItsLeftWhateverItsAlignment() {
+        // Centered or right-aligned, it ran out to the left of the frame
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        // WW, a W a row in a frame 10 wide: each W wider than the frame
+        #expect(font.stringWidth("W") > 10, "the letter is wider than the frame")
+        TestSupport.expectNear(10, drawAligned(Alignment.CENTER, "WW", 10).getTextX())
+        TestSupport.expectNear(10, drawAligned(Alignment.RIGHT, "WW", 10).getTextX())
     }
 
     @Test func aJustifiedParagraphLeavesItsLastRowAsItIs() {

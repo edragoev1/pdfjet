@@ -735,6 +735,13 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		} else if textAlignment == alignment.Center {
 			shift = float32((tf.w - rowWidth) / 2)
 		}
+		// A row wider than the frame, as one character wider than a narrow
+		// column, starts at the frame's left and runs past its right, as a word
+		// processor has it: centered or right-aligned it ran out to the left, past
+		// the frame's edge (PDFjet Write's fuzz, 9 November 2026)
+		if shift < 0 {
+			shift = 0
+		}
 		lastWithText := tf.lastWithText()
 		for i, part := range tf.row {
 			line := part.textLine.copyWithText(part.text)

@@ -879,6 +879,11 @@ public class TextFrame : Drawable {
             } else if alignment == Alignment.CENTER {
                 shift = (w - rowWidth) / 2.0
             }
+            // A row wider than the frame, as one character wider than a narrow
+            // column, starts at the frame's left and runs past its right, as a word
+            // processor has it: centered or right-aligned it ran out to the left, past
+            // the frame's edge (PDFjet Write's fuzz, 9 November 2026)
+            shift = max(0.0, shift)
             let lastWithText = row.lastIndex(where: { !$0.text.isEmpty })
             for (i, part) in row.enumerated() {
                 beginParagraphElement(page, part.paragraph, part.x + shift, yText)

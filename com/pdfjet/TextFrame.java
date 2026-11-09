@@ -945,6 +945,11 @@ public class TextFrame implements Drawable {
             } else if (alignment == Alignment.CENTER) {
                 shift = (w - rowWidth) / 2f;
             }
+            // A row wider than the frame, as one character wider than a narrow
+            // column, starts at the frame's left and runs past its right, as a word
+            // processor has it: centered or right-aligned it ran out to the left, past
+            // the frame's edge (PDFjet Write's fuzz, 9 November 2026)
+            shift = Math.max(0f, shift);
             RowPart lastWithText = lastWithText();
             for (RowPart part : row) {
                 beginParagraphElement(page, part.paragraph, part.x + shift, yText);

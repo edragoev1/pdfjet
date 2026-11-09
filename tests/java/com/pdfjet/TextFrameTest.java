@@ -92,10 +92,15 @@ class TextFrameTest {
 
     // Draws one paragraph with the alignment in a frame 200 wide at x 10, and returns it.
     private static Paragraph drawAligned(Alignment alignment, String text) throws Exception {
+        return drawAligned(alignment, text, 200f);
+    }
+
+    // The same in a frame of the width
+    private static Paragraph drawAligned(Alignment alignment, String text, float width) throws Exception {
         PDF pdf = TestSupport.newPDF();
         Paragraph paragraph = new Paragraph(new TextLine(TestSupport.helvetica(pdf), text));
         paragraph.setTextAlignment(alignment);
-        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(200f)
+        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(width)
                 .drawOn(new Page(pdf, Letter.PORTRAIT));
         return paragraph;
     }
@@ -134,6 +139,16 @@ class TextFrameTest {
         Font font = TestSupport.helvetica(TestSupport.newPDF());
         Paragraph paragraph = drawAligned(Alignment.CENTER, "Hello");
         assertEquals(10f + (200f - font.stringWidth("Hello")) / 2f, paragraph.getTextX(), TestSupport.DELTA);
+    }
+
+    @Test
+    void aLetterWiderThanTheFrameStartsAtItsLeftWhateverItsAlignment() throws Exception {
+        // Centered or right-aligned, it ran out to the left of the frame
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        // WW, a W a row in a frame 10 wide: each W wider than the frame
+        assertTrue(font.stringWidth("W") > 10f, "the letter is wider than the frame");
+        assertEquals(10f, drawAligned(Alignment.CENTER, "WW", 10f).getTextX(), TestSupport.DELTA);
+        assertEquals(10f, drawAligned(Alignment.RIGHT, "WW", 10f).getTextX(), TestSupport.DELTA);
     }
 
     @Test

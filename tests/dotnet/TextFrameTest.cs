@@ -77,11 +77,11 @@ public class TextFrameTest {
     }
 
     // Draws one paragraph with the alignment in a frame 200 wide at x 10, and returns it.
-    private static Paragraph DrawAligned(Alignment alignment, string text) {
+    private static Paragraph DrawAligned(Alignment alignment, string text, float width = 200f) {
         PDF pdf = TestSupport.NewPDF();
         Paragraph paragraph = new Paragraph(new TextLine(TestSupport.Helvetica(pdf), text));
         paragraph.SetTextAlignment(alignment);
-        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(200f)
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(width)
                 .DrawOn(new Page(pdf, Letter.PORTRAIT));
         return paragraph;
     }
@@ -120,6 +120,16 @@ public class TextFrameTest {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         Paragraph paragraph = DrawAligned(Alignment.CENTER, "Hello");
         TestSupport.AssertNear(10f + (200f - font.StringWidth("Hello")) / 2f, paragraph.GetTextX(), TestSupport.DELTA);
+    }
+
+    [Fact]
+    public void ALetterWiderThanTheFrameStartsAtItsLeftWhateverItsAlignment() {
+        // Centered or right-aligned, it ran out to the left of the frame
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        // WW, a W a row in a frame 10 wide: each W wider than the frame
+        Assert.True(font.StringWidth("W") > 10f, "the letter is wider than the frame");
+        TestSupport.AssertNear(10f, DrawAligned(Alignment.CENTER, "WW", 10f).GetTextX(), TestSupport.DELTA);
+        TestSupport.AssertNear(10f, DrawAligned(Alignment.RIGHT, "WW", 10f).GetTextX(), TestSupport.DELTA);
     }
 
     [Fact]

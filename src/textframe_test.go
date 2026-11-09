@@ -92,10 +92,15 @@ func TestTextFrameTheDefaultGapIsAnEmptyLineOfTheNextParagraph(t *testing.T) {
 // testDrawAligned draws one paragraph with the alignment in a frame 200 wide
 // at x 10, and returns it.
 func testDrawAligned(textAlignment alignment.Alignment, text string) *Paragraph {
+	return testDrawAlignedIn(textAlignment, text, 200)
+}
+
+// testDrawAlignedIn draws it in a frame of the width.
+func testDrawAlignedIn(textAlignment alignment.Alignment, text string, width float32) *Paragraph {
 	pdf := testNewPDF()
 	paragraph := NewParagraph().Add(NewTextLine(testHelvetica(pdf), text))
 	paragraph.SetTextAlignment(textAlignment)
-	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(200)
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(width)
 	frame.SetLocation(10, 10)
 	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
 	return paragraph
@@ -136,6 +141,17 @@ func TestTextFrameACenteredParagraphHasTheSameSpaceOnBothSides(t *testing.T) {
 	font := testHelvetica(testNewPDF())
 	paragraph := testDrawAligned(alignment.Center, "Hello")
 	testNear(t, "text x", 10+(200-font.StringWidth(font.GetSize(), "Hello"))/2, paragraph.GetTextX(), testDelta)
+}
+
+// Centered or right-aligned, it ran out to the left of the frame
+func TestTextFrameALetterWiderThanTheFrameStartsAtItsLeftWhateverItsAlignment(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	// WW, a W a row in a frame 10 wide: each W wider than the frame
+	if font.StringWidth(font.GetSize(), "W") <= 10 {
+		t.Fatal("the letter is not wider than the frame")
+	}
+	testNear(t, "centered", 10, testDrawAlignedIn(alignment.Center, "WW", 10).GetTextX(), testDelta)
+	testNear(t, "right", 10, testDrawAlignedIn(alignment.Right, "WW", 10).GetTextX(), testDelta)
 }
 
 func TestTextFrameAJustifiedParagraphLeavesItsLastRowAsItIs(t *testing.T) {
