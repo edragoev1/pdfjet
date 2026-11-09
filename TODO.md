@@ -59,6 +59,16 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **Next release: TextFrame, a centered or right-aligned row wider than the
+  frame** (9 November 2026, found by PDFjet Write's fuzz). In drawRow the
+  shift is `w - rowWidth`, or half of it, which is negative when the row is
+  wider than the frame, as one character wider than a narrow column: the
+  row is drawn out to the left, past the frame's edge and over a column
+  beside it. Fixed in Write's copy of TextFrame (pdfjet-write,
+  src/com/pdfjet/TextFrame.java) with `shift = Math.max(0f, shift)`: such a
+  row starts at the frame's left and runs past its right, as a word
+  processor has it. The same in all four ports, with a test.
+
 - **Next release: a check that a text fits in a QR code** (8 November
   2026). Whether a text fits is known only by making the QRCode and
   catching its IllegalArgumentException ("The data is too long for a QR
