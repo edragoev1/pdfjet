@@ -81,6 +81,15 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     page on Cloudflare's cache, the CGI not.
   - A process a request, as CGI starts one, a few milliseconds for a Go
     program: fine for the traffic it may have.
+  - To be found: the address pdfjet.com/markdown-to-pdf and the title
+    "Markdown to PDF", the words people type; under the box, a short
+    sample `.md` and its PDF, so that the page has something to read for
+    a search engine; md2pdf in pdfjet-utils' README, in GitHub's
+    "awesome" lists of Markdown, and an answer where someone asks how to
+    make a PDF of Markdown (Reddit, Stack Overflow). None of it costs
+    money.
+  - When: easy work, for between bigger jobs, on a tired day (the owner,
+    10 November 2026); not before the Forms launch.
 
 - **After the Forms launch: post-quantum sealed attachments** (the owner,
   10 November 2026). A file attached to a PDF, sealed to a recipient's
