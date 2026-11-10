@@ -90,6 +90,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     money.
   - When: easy work, for between bigger jobs, on a tired day (the owner,
     10 November 2026); not before the Forms launch.
+  - Its sibling, the same way, if this one does well: CSV to PDF with
+    BigTable, at pdfjet.com/csv-to-pdf (the owner, 10 November 2026, "and
+    I should stop right here!").
 
 - **After the Forms launch: post-quantum sealed attachments** (the owner,
   10 November 2026). A file attached to a PDF, sealed to a recipient's
