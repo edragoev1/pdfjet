@@ -76,6 +76,24 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   quantum computer later. Careful words where it is announced: X-Wing is
   still an IETF draft, not an RFC, and the claim must be exactly what the
   code does.
+  The form it takes first, a whole PDF sealed in another (the owner, 10
+  November 2026): PDF 2.0's unencrypted wrapper document (ISO 32000-2,
+  "Unencrypted wrapper document"), the standard's own way, not a format
+  of ours. The wrapper opens in any reader and shows a cover page, "This
+  document is sealed; open it with ...", PDF/UA and PDF/A-3 as PDFjet
+  writes them (PDF/A-3 takes an attachment of any kind); the sealed PDF
+  is attached with /AFRelationship /EncryptedPayload and an
+  /EncryptedPayload dictionary naming how it is sealed. The child keeps
+  all it has, fonts, tags, fields, signatures. To read in the standard
+  before a line is written: whether the payload must be a PDF encrypted
+  by a named security handler, as it seems, and so a handler of PDFjet's
+  own, rather than any sealed bytes; that part is to be exactly right. A
+  sealed attachment in a PDF that is not sealed is the same, minus the
+  wrapper. Nothing to leak by the wrapper: the attachment's name
+  (sealed.pdf), its description, the wrapper's title and metadata are
+  neutral, and the size padded if asked. Said plainly in the
+  documentation: once opened, the child is a PDF as any other, which its
+  reader may keep and pass on.
   Not now, and why: the PDF standard's own public-key encryption (to a
   certificate, CMS) can take ML-KEM, and signatures (PDFjet Pro) ML-DSA,
   but no reader opens or checks such a PDF yet, Acrobat included, and an
