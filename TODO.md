@@ -71,12 +71,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   with PDFjet, the library for Java, C#, Go and Swift, and md2pdf to
   download for the command line. A hook for Hacker News too, something to
   try in ten seconds, which HN takes better than a library's release.
-  - The text is sent to the host, so the page says so: read, made into a
-    PDF, sent back, kept nowhere, no log of it. (A page that made the PDF
-    in the browser, PDFjet's Markdown, markdown.go and
-    markdownparser.go, about 1,900 lines, on the TypeScript engine of
-    Forms, could say "never leaves your computer"; later, if the page does
-    well.)
+  - No more than a line on privacy (the owner: not to make much of it);
+    whoever would rather not send a file gets md2pdf for the command line,
+    from pdfjet-utils' releases, pointed to on the same page.
   - Limits, as the host is shared: the size of a file (some hundreds of
     KB), one file, no images (md2pdf reads images from the file's folder,
     which a pasted file has not; an image in it is left out, said), a
