@@ -59,6 +59,30 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **After the Forms launch: post-quantum sealed attachments** (the owner,
+  10 November 2026). A file attached to a PDF, sealed to a recipient's
+  public key: the PDF opens in any reader as it is, and the attachment
+  only with the private key. Bank details sealed in an invoice, the raw
+  data in a medical report, a private annex in a contract. It is what
+  PDFjet Forms already does with a form's answers (pdfjet-server's
+  encrypt.go): HPKE (RFC 9180) with the KEM X-Wing, ML-KEM-768 and X25519
+  together, so that the attachment stays sealed while either holds, then
+  HKDF-SHA256 and AES-256-GCM. Go's crypto/hpke has it all; whether Java,
+  .NET and Swift have ML-KEM and HPKE in their own libraries, and from
+  which versions, is to check before it is promised in the four ports.
+  PDFjet reads PDFs, so it opens what it seals: seal and open, with a
+  test of each port opening what the others sealed. The point is "harvest
+  now, decrypt later": what is recorded today cannot be opened by a
+  quantum computer later. Careful words where it is announced: X-Wing is
+  still an IETF draft, not an RFC, and the claim must be exactly what the
+  code does.
+  Not now, and why: the PDF standard's own public-key encryption (to a
+  certificate, CMS) can take ML-KEM, and signatures (PDFjet Pro) ML-DSA,
+  but no reader opens or checks such a PDF yet, Acrobat included, and an
+  unknown signature shows as a problem; watch ETSI and the readers. The
+  password encryption needs nothing: AES-256 is already safe from a
+  quantum computer, which is worth saying as it is.
+
 - **TextFrame, a centered or right-aligned row wider than the frame: FIXED
   in main, 9 November 2026, in all four ports with a test** (found by
   PDFjet Write's fuzz). In drawRow the
