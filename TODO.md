@@ -59,6 +59,32 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **After the Forms launch: md2pdf on pdfjet.com, to bring people to it**
+  (the owner, 10 November 2026). A page of pdfjet.com where a `.md` file
+  is pasted or dropped and its PDF comes back: md2pdf of pdfjet-utils as
+  md2pdf.cgi on the host, as forms.cgi is, so nothing is ported, the same
+  program, its fonts in it (IBM Plex, Cascadia Mono), the same PDF as on
+  the command line. "markdown to pdf" is searched every day, by
+  developers, students and writers; what to put in the page's title, as
+  few free converters have them: **accessible** (PDF/UA, checked with
+  veraPDF) and **looks like Markdown on GitHub**. Under it, plainly: made
+  with PDFjet, the library for Java, C#, Go and Swift, and md2pdf to
+  download for the command line. A hook for Hacker News too, something to
+  try in ten seconds, which HN takes better than a library's release.
+  - The text is sent to the host, so the page says so: read, made into a
+    PDF, sent back, kept nowhere, no log of it. (A page that made the PDF
+    in the browser, PDFjet's Markdown, markdown.go and
+    markdownparser.go, about 1,900 lines, on the TypeScript engine of
+    Forms, could say "never leaves your computer"; later, if the page does
+    well.)
+  - Limits, as the host is shared: the size of a file (some hundreds of
+    KB), one file, no images (md2pdf reads images from the file's folder,
+    which a pasted file has not; an image in it is left out, said), a
+    time to make it in, and requests from one address in a minute; the
+    page on Cloudflare's cache, the CGI not.
+  - A process a request, as CGI starts one, a few milliseconds for a Go
+    program: fine for the traffic it may have.
+
 - **After the Forms launch: post-quantum sealed attachments** (the owner,
   10 November 2026). A file attached to a PDF, sealed to a recipient's
   public key: the PDF opens in any reader as it is, and the attachment
