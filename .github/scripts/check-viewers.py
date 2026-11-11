@@ -66,7 +66,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 ENGINES = {'pdfium': 'PDFium', 'pdfjs': 'pdf.js', 'pdfkit': 'PDFKit', 'poppler': 'Poppler'}
-EXAMPLES = range(1, 51)
+EXAMPLES = range(1, 52)
 MAX_PAGES = 10
 RESOLUTION = 72
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))

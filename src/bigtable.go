@@ -18,6 +18,7 @@ import (
 	"iter"
 	"math"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -28,10 +29,11 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// BigTable is a table of plain one-line rows of any length, a statement, a list
-// or an export: every row has one height and one style, and a field too wide for
-// its column is cut short. For text that wraps, drawables in cells, spanned cells
-// or page totals, use Table. The rows are read row by row from a delimited text
+// BigTable is a table of plain rows of any length, a statement, a list or an
+// export: every row has one style, and a field too wide for its column is cut
+// short, or, with SetWrapText, wraps onto more lines, the row as tall as its
+// tallest field. For drawables in cells, spanned cells or page totals, use
+// Table. The rows are read row by row from a delimited text
 // file or from an iterator. Each page is written as soon as it
 // is full, so the memory stays flat however many rows there are. A PDF/UA
 // document holds no more than that either: the table is tagged as a table,
@@ -90,6 +92,14 @@ type BigTable struct {
 	// In a PDF/UA document the table is a Table element that the rows of
 	// every page go on adding to; see drawFieldsAndLine.
 	structElement *structElement
+	// With SetWrapText: the fields wrap within their columns, textWidths the
+	// width of the text of each column, headerLines the header's lines, and
+	// firstRowOnPage whether no row is drawn yet on the page.
+	wrap           bool
+	textWidths     []float32
+	headerLines    [][]string
+	headerCount    int // The most lines of a header field
+	firstRowOnPage bool
 }
 
 // NewBigTable creates a new BigTable instance
@@ -196,6 +206,25 @@ func (bt *BigTable) SetTextAlignment(column int, alignment alignment.Alignment) 
 		return bt
 	}
 	bt.alignment[column] = alignment
+	return bt
+}
+
+// SetWrapText sets whether a field too wide for its column wraps onto more
+// lines, at its spaces, a word longer than its column broken between its
+// characters, rather than being cut short; a row is then as tall as its
+// tallest field. The columns keep the widths of SetColumnWidthsInPercent, or,
+// without them, their widths, as wide as their widest fields, when the table
+// fits its page; when it does not, the narrow columns keep theirs and the
+// others share what is left equally. A row that does not fit what is left of
+// a page starts the next; one taller than a whole page is cut at the lines
+// that fit, ending in " ...", its cell keeping the whole of its text. The rows
+// are read once more to count the pages, three times in all, and the memory
+// stays flat. It is off unless set, and the table is drawn as before.
+func (bt *BigTable) SetWrapText(wrap bool) *BigTable {
+	bt.wrap = wrap
+	if bt.vertLines != nil {
+		bt.setVertLines()
+	}
 	return bt
 }
 
@@ -368,16 +397,40 @@ func (bt *BigTable) newPage() {
 			bt.page.structParent, structelem.Table, "", true)
 		header = structelem.TH
 	}
-	bt.drawFieldsAndLine(bt.headerFields, bt.f1, header, true)
+	if bt.wrap {
+		bt.drawWrappedFields(bt.headerLines, bt.headerCount, nil, bt.f1, header, true)
+	} else {
+		bt.drawFieldsAndLine(bt.headerFields, bt.f1, header, true)
+	}
+	if extra := bt.headerExtra(); extra > 0 {
+		bt.yText += extra
+	}
 	bt.yText += bt.f1.descent + float32(2*bt.verticalPadding) + bt.f2.ascent
 	bt.startNewPage = false
+	bt.firstRowOnPage = true
+}
+
+// headerExtra returns how much taller than one line the header is: 0 unless
+// its fields wrap onto more lines.
+func (bt *BigTable) headerExtra() float32 {
+	if !bt.wrap || bt.headerCount <= 1 {
+		return 0
+	}
+	return float32(float32(bt.headerCount-1) * (bt.f1.ascent + bt.f1.descent))
 }
 
 // startsOnFirstPage returns true when the table starts on the page SetFirstPage
 // set: when the header and the first row fit on it above its bottom margin.
 func (bt *BigTable) startsOnFirstPage() bool {
-	return bt.firstPage != nil && bt.firstPageY+bt.f1.ascent+bt.f1.descent+bt.f2.ascent+bt.f2.descent+
-		float32(4*bt.verticalPadding) <= bt.firstPage.height-bt.bottomMargin
+	if bt.firstPage == nil {
+		return false
+	}
+	need := bt.firstPageY + bt.f1.ascent + bt.f1.descent + bt.f2.ascent + bt.f2.descent +
+		float32(4*bt.verticalPadding)
+	if extra := bt.headerExtra(); extra > 0 {
+		need += extra
+	}
+	return need <= bt.firstPage.height-bt.bottomMargin
 }
 
 // drawFooter draws the footer of the page that was just finished, once. The
@@ -410,6 +463,9 @@ func (bt *BigTable) drawFooter() {
 // created. The location and the bottom margin are set after SetTableData, so the
 // pages are counted when the table is drawn.
 func (bt *BigTable) countPages() int {
+	if bt.wrap {
+		return bt.countWrappedPages()
+	}
 	pageHeight := bt.pageSize.GetHeight()
 	yTop := bt.firstRowY(bt.y)
 	yPos := yTop
@@ -440,11 +496,18 @@ func (bt *BigTable) countPages() int {
 // round to another float32, and the count was a page off the drawing.
 func (bt *BigTable) firstRowY(top float32) float32 {
 	y := top + bt.verticalPadding + bt.f1.ascent
+	if extra := bt.headerExtra(); extra > 0 {
+		y += extra
+	}
 	y += bt.f1.descent + float32(2*bt.verticalPadding) + bt.f2.ascent
 	return y
 }
 
 func (bt *BigTable) drawTextAndLine(fields []string) {
+	if bt.wrap {
+		bt.drawWrappedRow(fields)
+		return
+	}
 	if bt.startNewPage { // New page
 		bt.newPage()
 	}
@@ -763,6 +826,10 @@ func (bt *BigTable) setVertLines() {
 			strconv.Itoa(len(bt.percents)) + " percentages: give one for each column.")
 		bt.percents = nil
 	}
+	if bt.wrap {
+		bt.setWrapWidths()
+		return
+	}
 	if bt.percents != nil {
 		bt.setVertLinesInPercent()
 		return
@@ -853,6 +920,13 @@ func bigTableFit(text string, font *Font, width float32) string {
 	if font.StringWidth(font.size, text) <= width {
 		return text
 	}
+	return bigTableCut(text, font, width)
+}
+
+// bigTableCut returns as much of the text as fits the width with the mark
+// that says it was cut, the mark in place of the last four characters of what
+// fits; or "" when the width is too narrow for the mark.
+func bigTableCut(text string, font *Font, width float32) string {
 	runes := []rune(text)
 	end := 0 // The most runes that fit.
 	high := len(runes)
@@ -903,4 +977,345 @@ func (bt *BigTable) Complete() error {
 	bt.drawTheVerticalLines()
 	bt.drawFooter()
 	return nil
+}
+
+// The wrapping of the fields, with SetWrapText
+
+// setWrapWidths gives each column the width of its text, and puts each
+// vertical line where the columns before it end: the widths of
+// SetColumnWidthsInPercent, or each column as wide as its widest field when
+// they fit the page; when they do not, the columns narrower than an equal
+// share of what is left keep their widths, from the narrowest, and the others
+// share the rest equally. No field is cut: each wraps within its column.
+func (bt *BigTable) setWrapWidths() {
+	n := len(bt.widths)
+	bt.clipped = nil
+	bt.textWidths = make([]float32, n)
+	vertLineX := bt.x
+	bt.vertLines[0] = vertLineX
+	if bt.percents != nil {
+		tableWidth := bt.pageSize.GetWidth() - float32(2*bt.x)
+		if !(tableWidth > 0) {
+			bt.pdf.fail("The margin of the table, its x, is half the width of the page or more: " +
+				"the columns have no room.")
+			tableWidth = 0
+		}
+		var total float64
+		for _, percent := range bt.percents {
+			total += float64(percent)
+		}
+		for i, percent := range bt.percents {
+			width := tableWidth / float32(len(bt.percents))
+			if total > 0 {
+				width = float32(float64(tableWidth) * float64(percent) / total)
+			}
+			bt.textWidths[i] = max(0, width-float32(2*bt.padding))
+			vertLineX += width
+			bt.vertLines[i+1] = vertLineX
+		}
+	} else {
+		copy(bt.textWidths, bt.widths)
+		room := bt.pageSize.GetWidth() - float32(2*bt.x) - float32(float32(float32(n)*2)*bt.padding)
+		var total float32 = 0.0
+		for _, width := range bt.widths {
+			total += width
+		}
+		if total > room {
+			// From the narrowest column, in the order of the columns among
+			// those as wide
+			order := make([]int, n)
+			for i := range order {
+				order[i] = i
+			}
+			sort.SliceStable(order, func(a, b int) bool { return bt.widths[order[a]] < bt.widths[order[b]] })
+			remaining := room
+			left := n
+			share := float32(-1)
+			for _, i := range order {
+				if share < 0 {
+					fair := max(0, remaining/float32(left))
+					if bt.widths[i] <= fair {
+						remaining -= bt.widths[i]
+						left--
+						continue
+					}
+					share = fair
+				}
+				bt.textWidths[i] = share
+			}
+		}
+		for i := 0; i < n; i++ {
+			vertLineX += bt.textWidths[i] + float32(2*bt.padding)
+			bt.vertLines[i+1] = vertLineX
+		}
+	}
+	bt.headerLines, bt.headerCount = bt.wrapFields(bt.headerFields, bt.f1)
+}
+
+// wrapFields returns the lines of each field of the row drawn, wrapped to the
+// width of its column in the font, and the most lines of any of them.
+func (bt *BigTable) wrapFields(fields []string, font *Font) ([][]string, int) {
+	lines := make([][]string, bt.numberOfColumns)
+	count := 1
+	for i := 0; i < bt.numberOfColumns; i++ {
+		text := fields[bt.columns[i]]
+		if bt.checkLineBreaks && hasLineBreak(text) {
+			text = lineBreaksToSpaces(text)
+		}
+		lines[i] = bigTableWrap(text, font, bt.textWidths[i])
+		count = max(count, len(lines[i]))
+	}
+	return lines, count
+}
+
+// bigTableWrap returns the lines of the text within the width: its words, the
+// parts between its spaces, as many on a line as fit, a word wider than the
+// width broken between its characters, at least one on a line. An empty text,
+// or one of spaces, is one empty line.
+func bigTableWrap(text string, font *Font, width float32) []string {
+	lines := make([]string, 0, 1)
+	line := ""
+	for _, word := range strings.Split(text, " ") {
+		if word == "" {
+			continue
+		}
+		if line != "" {
+			if candidate := line + " " + word; font.StringWidth(font.size, candidate) <= width {
+				line = candidate
+				continue
+			}
+			lines = append(lines, line)
+			line = ""
+		}
+		if font.StringWidth(font.size, word) <= width {
+			line = word
+			continue
+		}
+		runes := []rune(word)
+		for len(runes) > 0 {
+			end := bigTableRunesThatFit(runes, font, width)
+			if end == len(runes) {
+				line = string(runes)
+				break
+			}
+			lines = append(lines, string(runes[:end]))
+			runes = runes[end:]
+		}
+	}
+	return append(lines, line)
+}
+
+// bigTableRunesThatFit returns how many of the runes, from the first, fit the
+// width: at least one, so that a column too narrow for a character still
+// draws the text, a character on each line.
+func bigTableRunesThatFit(runes []rune, font *Font, width float32) int {
+	end := 1
+	high := len(runes)
+	for end < high {
+		middle := end + (high-end+1)/2
+		if font.StringWidth(font.size, string(runes[:middle])) <= width {
+			end = middle
+		} else {
+			high = middle - 1
+		}
+	}
+	return end
+}
+
+// bigTableMostLines returns the most lines of a row whose first line is at y
+// that the page holds above the limit: at least one.
+func bigTableMostLines(y, limit, lineHeight float32) int {
+	most := 1
+	for y+float32(float32(most)*lineHeight) <= limit {
+		most++
+	}
+	return most
+}
+
+// drawWrappedRow draws a row of fields that wrap: on the next page when it
+// does not fit what is left of this one, cut at the lines a whole page holds
+// when it does not fit that either.
+func (bt *BigTable) drawWrappedRow(fields []string) {
+	if bt.startNewPage {
+		bt.newPage()
+	}
+	font := bt.f2
+	lineHeight := font.ascent + font.descent
+	lines, count := bt.wrapFields(fields, font)
+	limit := bt.page.height - bt.bottomMargin
+	if count > 1 && bt.yText+float32(float32(count-1)*lineHeight) > limit && !bt.firstRowOnPage {
+		bt.drawTheVerticalLines()
+		bt.drawFooter()
+		bt.newPage()
+		limit = bt.page.height - bt.bottomMargin
+	}
+	var whole []string
+	if count > 1 && bt.yText+float32(float32(count-1)*lineHeight) > limit {
+		most := bigTableMostLines(bt.yText, limit, lineHeight)
+		if most < count {
+			whole = make([]string, bt.numberOfColumns)
+			for i := range lines {
+				if len(lines[i]) > most {
+					text := fields[bt.columns[i]]
+					if bt.checkLineBreaks && hasLineBreak(text) {
+						text = lineBreaksToSpaces(text)
+					}
+					whole[i] = text
+					lines[i] = lines[i][:most]
+					lines[i][most-1] = bigTableMark(lines[i][most-1], font, bt.textWidths[i])
+				}
+			}
+			count = most
+		}
+	}
+	bt.drawWrappedFields(lines, count, whole, font, structelem.TD, false)
+	bt.firstRowOnPage = false
+	if count > 1 {
+		bt.yText += float32(float32(count-1) * lineHeight)
+	}
+	bt.yText += font.descent + float32(2*bt.verticalPadding) + font.ascent
+	if bt.yText > limit {
+		bt.drawTheVerticalLines()
+		bt.drawFooter()
+		bt.startNewPage = true
+	}
+}
+
+// bigTableMark returns the line with the mark that says the text goes on,
+// cut to make room for it within the width.
+func bigTableMark(line string, font *Font, width float32) string {
+	if marked := line + bigTableEllipsis; font.StringWidth(font.size, marked) <= width {
+		return marked
+	}
+	return bigTableCut(line, font, width)
+}
+
+// drawWrappedFields draws a row of the lines of its fields, count lines tall,
+// as drawFieldsAndLine draws a row of one line: the cell of a field holds all
+// of its lines, and the whole of the text of a field that was cut, whole[i]
+// when there is one.
+func (bt *BigTable) drawWrappedFields(
+	lines [][]string, count int, whole []string, font *Font, cellStructure structelem.StructElem, header bool) {
+	lineHeight := font.ascent + font.descent
+	var extra float32 = 0.0
+	if count > 1 {
+		extra = float32(float32(count-1) * lineHeight)
+	}
+	bt.page.AddArtifactBMC()
+	if header && bt.hasHeaderColor {
+		bt.highlightRows(bt.page, font, bt.headerColor, extra)
+		bt.highlight = false
+	} else if bt.highlight {
+		if bt.hasShading {
+			bt.highlightRows(bt.page, font, bt.shadingColor, extra)
+		}
+		bt.highlight = false
+	} else {
+		bt.highlight = true
+	}
+	if bt.hasBorder {
+		original := bt.page.GetPenColor()
+		bt.page.SetPenColorRGB(bt.borderColor)
+		bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent-bt.verticalPadding)
+		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent-bt.verticalPadding)
+		bt.page.StrokePath()
+		bt.page.SetPenColorRGB(original)
+	}
+	bt.page.AddEMC()
+	bt.page.SetBrushColor(color.Black)
+
+	tagged := bt.structElement != nil && cellStructure != ""
+	parent := bt.page.structParent
+	var rowElement *structElement
+	if tagged {
+		rowElement = bt.page.addStructElement(bt.structElement, structelem.TR, "")
+	}
+	for i := 0; i < bt.numberOfColumns; i++ {
+		if tagged {
+			bt.page.structParent = rowElement
+			description := ""
+			if whole != nil {
+				description = whole[i]
+			}
+			bt.page.addBDC(cellStructure, "", "", description, bigTableCellAttributes(cellStructure))
+		} else {
+			bt.page.AddArtifactBMC()
+		}
+		for k, line := range lines[i] {
+			xText := bt.vertLines[i] + bt.padding
+			if bt.alignment[i] == alignment.Right {
+				xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, line)
+			}
+			yText := bt.yText
+			if k > 0 {
+				yText += float32(float32(k) * lineHeight)
+			}
+			bt.page.drawTextLine(font, line, xText, yText)
+		}
+		bt.page.AddEMC()
+	}
+	bt.page.structParent = parent
+}
+
+// highlightRows fills the background of a row, extra taller than one line.
+func (bt *BigTable) highlightRows(page *Page, font *Font, rgb [3]float32, extra float32) {
+	original := page.GetBrushColor()
+	page.SetBrushColorRGB(rgb)
+	bottom := bt.yText + font.descent + bt.verticalPadding
+	if extra > 0 {
+		bottom = bt.yText + extra + font.descent + bt.verticalPadding
+	}
+	page.fillRectBetween(bt.vertLines[0], bt.yText-font.ascent-bt.verticalPadding,
+		bt.vertLines[bt.numberOfColumns], bottom)
+	page.SetBrushColorRGB(original)
+}
+
+// countWrappedPages counts the pages the rows take as drawWrappedRow breaks
+// them, reading the rows once more, so that the footer of each page says how
+// many there are. The arithmetic is that of the drawing, in its order.
+func (bt *BigTable) countWrappedPages() int {
+	font := bt.f2
+	lineHeight := font.ascent + font.descent
+	pageHeight := bt.pageSize.GetHeight()
+	yTop := bt.firstRowY(bt.y)
+	yPos := yTop
+	if bt.startsOnFirstPage() {
+		pageHeight = bt.firstPage.height
+		yPos = bt.firstRowY(bt.firstPageY)
+	}
+	count := 1
+	newPage := false
+	first := true
+	for fields := range bt.rows {
+		if len(fields) < bt.fieldsNeeded {
+			continue
+		}
+		if newPage {
+			count++
+			pageHeight = bt.pageSize.GetHeight()
+			yPos = yTop
+			newPage = false
+			first = true
+		}
+		_, lines := bt.wrapFields(fields, font)
+		limit := pageHeight - bt.bottomMargin
+		if lines > 1 && yPos+float32(float32(lines-1)*lineHeight) > limit && !first {
+			count++
+			pageHeight = bt.pageSize.GetHeight()
+			yPos = yTop
+			limit = pageHeight - bt.bottomMargin
+		}
+		if lines > 1 && yPos+float32(float32(lines-1)*lineHeight) > limit {
+			lines = min(lines, bigTableMostLines(yPos, limit, lineHeight))
+		}
+		if lines > 1 {
+			yPos += float32(float32(lines-1) * lineHeight)
+		}
+		yPos += font.descent + float32(2*bt.verticalPadding) + font.ascent
+		first = false
+		if yPos > limit {
+			newPage = true
+		}
+	}
+	return count
 }

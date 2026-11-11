@@ -36,7 +36,7 @@ printf 'Automatic-Module-Name: com.pdfjet\n' > out/manifest.txt
 jar cfm PDFjet.jar out/manifest.txt -C out/production .
 
 pids=()
-for i in $(seq 1 50);
+for i in $(seq 1 51);
 do
     if [ $i -lt 10 ]; then
         javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -cp PDFjet.jar examples/Example_0$i.java -d out/production &
@@ -52,7 +52,7 @@ for pid in "${pids[@]}"; do
     wait "$pid"
 done
 
-for i in $(seq 1 50);
+for i in $(seq 1 51);
 do
     if [ $i -lt 10 ]; then
         java -cp .:PDFjet.jar:out/production examples.Example_0$i
