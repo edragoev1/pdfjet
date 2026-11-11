@@ -130,6 +130,21 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   a line of the release
   notes, "BigTable wraps text in its cells, its memory still flat".
 
+- **9.1.9 too, a question: Cell's border width of 0 by default** (11
+  November 2026). A Cell draws its borders with a pen width of 0 unless
+  SetBorderWidth is called, in all four ports (cell.go, Cell.java, Cell.cs,
+  Cell.swift; BigTable to be checked too). In PDF a width of 0 is the
+  thinnest line the device makes: a whole pixel on the screen at any zoom,
+  heavier than a line of 0.5 points, and the thinnest dot of a printer on
+  paper, 1/600 or 1/1200 of an inch, faint or gone. PDFjet Forms found it:
+  its tables looked heavier than its fields, and since 11 November 2026 sets
+  0.5 points in #4d4d4d on every cell (pdfjet-forms-server document.go,
+  padCell). To decide: a default of 0.5 (or 0.3) points in the four ports,
+  the same in each, the colour still black; it changes how every existing
+  table looks and prints, a little, so it goes in the release notes' first
+  lines with SetBorderWidth(0) for the old look, and the examples' PDFs and
+  any fingerprints of tables written again. Not to do without the owner's
+  yes.
 - **If one of the Free Tools becomes popular: the plan, in three steps**
   (the owner, 10 November 2026). Today the pages are served and cached by
   Cloudflare, which any traffic leaves alone; each PDF is made by a .cgi
