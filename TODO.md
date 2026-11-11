@@ -213,7 +213,14 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   (make-cgi.sh). With it, the page's delimiter menu: "Bar" called "Pipe
   ( | )", the word people use, and pipe-delimited files named in the page's
   description, as they are found already (the delimiter guessed among
-  comma, semicolon, tab and pipe). After the Forms launch; Collect's archive on BigTable later, with the
+  comma, semicolon, tab and pipe). And maybe, after it goes well, a chart
+  above the table: a numeric column chosen, its bar chart (SimpleBarChart,
+  "the chart to put above a table of the same numbers") over the table, one
+  PDF, vector, read by screen readers from its data. Not a chart tool of
+  its own: chart sites are many (Canva, Datawrapper, Flourish, Infogram,
+  Google Sheets, RapidTables, Meta-Chart) and make images; an accessible
+  chart in a PDF/UA document is rare (11 November 2026). After the Forms
+  launch; Collect's archive on BigTable later, with the
   TypeScript engine (Forms TODO.md, "Collect's archive with BigTable"); and
   a line of the release
   notes, "BigTable wraps text in its cells, its memory still flat".
