@@ -66,8 +66,8 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   the same evening: pdfjet.com/csv-to-pdf, csv2pdf of pdfjet-utils with
   BigTable, both under Free Tools in the menu; and the third, Images to PDF,
   pdfjet.com/images-to-pdf, img2pdf (JPEG, PNG, BMP and SVG, a page each,
-  PDF/A-3a and PDF/UA). md2pdf and csv2pdf released as v1.1.0; img2pdf in
-  the next release. Still to do of them: the listings below ("To be
+  PDF/A-3a and PDF/UA). md2pdf, csv2pdf and img2pdf released together as
+  v1.1.0 (re-made with img2pdf the same evening). Still to do of them: the listings below ("To be
   found"). Later, two more tools, maybe (the owner, 10 November 2026): CSV
   to labels or QR codes, a sheet of labels from the rows, which only a PDF
   library does well; and one to choose then. What was planned:
