@@ -19,11 +19,11 @@ public sealed class BigTableTest : IDisposable {
         tempDir.Dispose();
     }
 
-    private static readonly string[] Header = {"Name", "City", "Total"};
+    internal static readonly string[] Header = {"Name", "City", "Total"};
 
     // A hundred rows, with a delimiter inside a quoted field, and a short row
     // in the middle, which is skipped.
-    private static List<string[]> Rows() {
+    internal static List<string[]> Rows() {
         List<string[]> rows = new List<string[]>();
         for (int i = 0; i < 100; i++) {
             if (i == 90) {
@@ -472,7 +472,7 @@ public sealed class BigTableTest : IDisposable {
     }
 
     // The strings the page draws, in the order they are drawn.
-    private static List<string> DrawnText(Page page) {
+    internal static List<string> DrawnText(Page page) {
         List<string> list = new List<string>();
         foreach (System.Text.RegularExpressions.Match m in
                 System.Text.RegularExpressions.Regex.Matches(

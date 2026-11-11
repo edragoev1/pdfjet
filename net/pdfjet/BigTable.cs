@@ -12,10 +12,11 @@ using System.Text;
 
 namespace PDFjet.NET {
     /// <summary>
-    /// A table of plain one-line rows of any length, a statement, a list or an export:
-    /// every row has one height and one style, and a field too wide for its column is
-    /// cut short. For text that wraps, drawables in cells, spanned cells or page totals,
-    /// use Table. The rows are read row by row from a delimited text file or from an
+    /// A table of plain rows of any length, a statement, a list or an export: every
+    /// row has one style, and a field too wide for its column is cut short, or, with
+    /// SetWrapText, wraps onto more lines, the row as tall as its tallest field. For
+    /// drawables in cells, spanned cells or page totals, use Table. The rows are read
+    /// row by row from a delimited text file or from an
     /// IEnumerable. Each page is written as soon as it is full, so the memory
     /// stays flat however many rows there are. A PDF/UA document holds no more than
     /// that either: the table is tagged as a table, and the structure elements of a
@@ -35,10 +36,10 @@ namespace PDFjet.NET {
         private float firstPageY;   // The top of the table on firstPage
         private List<Page> pages;
         private Page page;
-        private float[] widths;
+        internal float[] widths;
         private string[] headerFields;
         private Alignment[] alignment;
-        private float[] vertLines;
+        internal float[] vertLines;
         // The width the text of each column has when the table is too wide
         // for the page and the last of its columns are cut back to fit it, or
         // null when the table fits: a column that is as wide as its widest
@@ -71,6 +72,14 @@ namespace PDFjet.NET {
         private int pageCount;          // The pages they take, counted by Complete
         private int pageNumber;         // The page being drawn
         private bool footerDrawn;
+        // With SetWrapText: the fields wrap within their columns, textWidths the
+        // width of the text of each column, headerLines the header's lines, and
+        // firstRowOnPage whether no row is drawn yet on the page.
+        private bool wrap;
+        internal float[] textWidths;
+        internal string[][] headerLines;
+        internal int headerCount;       // The most lines of a header field
+        private bool firstRowOnPage;
 
         /// <summary>
         /// Creates a table with the specified fonts and page size.
@@ -175,6 +184,29 @@ namespace PDFjet.NET {
                         + ": set the alignment of a column after SetTableData."));
             }
             this.alignment[column] = alignment;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets whether a field too wide for its column wraps onto more lines, at its
+        /// spaces, a word longer than its column broken between its characters, rather
+        /// than being cut short; a row is then as tall as its tallest field. The columns
+        /// keep the widths of SetColumnWidthsInPercent, or, without them, their widths,
+        /// as wide as their widest fields, when the table fits its page; when it does
+        /// not, the narrow columns keep theirs and the others share what is left equally.
+        /// A row that does not fit what is left of a page starts the next; one taller
+        /// than a whole page is cut at the lines that fit, ending in " ...", its cell
+        /// keeping the whole of its text. The rows are read once more to count the
+        /// pages, three times in all, and the memory stays flat. It is off unless set,
+        /// and the table is drawn as before.
+        /// </summary>
+        /// <param name="wrap">true for the fields to wrap.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetWrapText(bool wrap) {
+            this.wrap = wrap;
+            if (this.vertLines != null) {
+                SetVertLines();
+            }
             return this;
         }
 
@@ -384,16 +416,42 @@ namespace PDFjet.NET {
                         page.structParent, StructElem.TABLE, null, true);
                 header = StructElem.TH;
             }
-            DrawFieldsAndLine(headerFields, f1, header, true);
+            if (wrap) {
+                DrawWrappedFields(headerLines, headerCount, null, f1, header, true);
+            } else {
+                DrawFieldsAndLine(headerFields, f1, header, true);
+            }
+            float extra = HeaderExtra();
+            if (extra > 0f) {
+                this.yText += extra;
+            }
             this.yText += f1.descent + 2 * verticalPadding + f2.ascent;
             startNewPage = false;
+            firstRowOnPage = true;
+        }
+
+        // Returns how much taller than one line the header is: 0 unless its
+        // fields wrap onto more lines.
+        private float HeaderExtra() {
+            if (!wrap || headerCount <= 1) {
+                return 0f;
+            }
+            return (float) ((float) (headerCount - 1) * (f1.ascent + f1.descent));
         }
 
         // Returns true when the table starts on the page SetFirstPage set: when the
         // header and the first row fit on it above its bottom margin.
         private bool StartsOnFirstPage() {
-            return firstPage != null && firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
-                    + 4 * verticalPadding <= firstPage.GetHeight() - bottomMargin;
+            if (firstPage == null) {
+                return false;
+            }
+            float need = firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
+                    + 4 * verticalPadding;
+            float extra = HeaderExtra();
+            if (extra > 0f) {
+                need += extra;
+            }
+            return need <= firstPage.GetHeight() - bottomMargin;
         }
 
         // Draws the footer of the page that was just finished, once. The page is
@@ -419,6 +477,10 @@ namespace PDFjet.NET {
         }
 
         private void DrawTextAndLine(string[] fields) {
+            if (wrap) {
+                DrawWrappedRow(fields);
+                return;
+            }
             if (startNewPage) {
                 NewPage();
             }
@@ -437,6 +499,10 @@ namespace PDFjet.NET {
         // round to another float, and the count was a page off the drawing.
         private float FirstRowY(float top) {
             float y = top + verticalPadding + f1.ascent;
+            float extra = HeaderExtra();
+            if (extra > 0f) {
+                y += extra;
+            }
             y += f1.descent + 2 * verticalPadding + f2.ascent;
             return y;
         }
@@ -446,6 +512,9 @@ namespace PDFjet.NET {
         // created. The location and the bottom margin are set after SetTableData,
         // so the pages are counted when the table is drawn.
         private int CountPages() {
+            if (wrap) {
+                return CountWrappedPages();
+            }
             float pageHeight = pageSize.GetHeight();
             float yTop = FirstRowY(this.y);
             float yPos = yTop;
@@ -694,6 +763,10 @@ namespace PDFjet.NET {
                         + " columns, and " + count.ToString(CultureInfo.InvariantCulture)
                         + " percentages: give one for each column."));
             }
+            if (wrap) {
+                SetWrapWidths();
+                return;
+            }
             if (percents != null) {
                 SetVertLinesInPercent();
                 return;
@@ -776,6 +849,13 @@ namespace PDFjet.NET {
             if (font.StringWidth(text) <= width) {
                 return text;
             }
+            return Cut(text, font, width);
+        }
+
+        // As much of the text as fits the width with the mark that says it was
+        // cut, the mark in place of the last four characters of what fits; or
+        // "" when the width is too narrow for the mark.
+        internal static string Cut(string text, Font font, float width) {
             // Where each code point starts, and where the text ends.
             List<int> starts = new List<int>(text.Length + 1);
             for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
@@ -848,6 +928,357 @@ namespace PDFjet.NET {
             }
             DrawTheVerticalLines();
             DrawFooter();
+        }
+
+        // The wrapping of the fields, with SetWrapText
+
+        // Gives each column the width of its text, and puts each vertical line
+        // where the columns before it end: the widths of SetColumnWidthsInPercent,
+        // or each column as wide as its widest field when they fit the page; when
+        // they do not, the columns narrower than an equal share of what is left
+        // keep their widths, from the narrowest, and the others share the rest
+        // equally. No field is cut: each wraps within its column.
+        private void SetWrapWidths() {
+            int n = this.widths.Length;
+            this.clipped = null;
+            this.textWidths = new float[n];
+            float vertLineX = this.x;
+            this.vertLines[0] = vertLineX;
+            if (percents != null) {
+                float tableWidth = pageSize.GetWidth() - 2 * this.x;
+                if (!(tableWidth > 0f)) {
+                    pdf.Fail(new ArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
+                    tableWidth = 0f;
+                }
+                double total = 0.0;
+                foreach (float percent in percents) {
+                    total += percent;
+                }
+                for (int i = 0; i < percents.Length; i++) {
+                    float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.Length;
+                    this.textWidths[i] = Math.Max(0f, width - 2 * this.padding);
+                    vertLineX += width;
+                    this.vertLines[i + 1] = vertLineX;
+                }
+            } else {
+                Array.Copy(this.widths, this.textWidths, n);
+                float room = pageSize.GetWidth() - 2 * this.x - (float) ((float) (n * 2) * this.padding);
+                float total = 0f;
+                foreach (float width in this.widths) {
+                    total += width;
+                }
+                if (total > room) {
+                    // From the narrowest column, in the order of the columns among
+                    // those as wide: a stable sort, as Go's sort.SliceStable, which
+                    // Array.Sort is not
+                    int[] order = new int[n];
+                    for (int i = 0; i < n; i++) {
+                        order[i] = i;
+                        for (int j = i; j > 0 && this.widths[order[j]] < this.widths[order[j - 1]]; j--) {
+                            int swap = order[j];
+                            order[j] = order[j - 1];
+                            order[j - 1] = swap;
+                        }
+                    }
+                    float remaining = room;
+                    int left = n;
+                    float share = -1f;
+                    foreach (int i in order) {
+                        if (share < 0f) {
+                            float fair = Math.Max(0f, remaining / (float) left);
+                            if (this.widths[i] <= fair) {
+                                remaining -= this.widths[i];
+                                left--;
+                                continue;
+                            }
+                            share = fair;
+                        }
+                        this.textWidths[i] = share;
+                    }
+                }
+                for (int i = 0; i < n; i++) {
+                    vertLineX += this.textWidths[i] + 2 * this.padding;
+                    this.vertLines[i + 1] = vertLineX;
+                }
+            }
+            this.headerLines = WrapFields(headerFields, f1, out this.headerCount);
+        }
+
+        // Returns the lines of each field of the row drawn, wrapped to the width
+        // of its column in the font, and the most lines of any of them.
+        private string[][] WrapFields(string[] fields, Font font, out int count) {
+            string[][] lines = new string[this.numberOfColumns][];
+            count = 1;
+            for (int i = 0; i < this.numberOfColumns; i++) {
+                string text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
+                lines[i] = Wrap(text, font, textWidths[i]);
+                count = Math.Max(count, lines[i].Length);
+            }
+            return lines;
+        }
+
+        // Where each code point of the text starts, and where the text ends.
+        private static List<int> CodePointStarts(string text) {
+            List<int> starts = new List<int>(text.Length + 1);
+            for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
+                starts.Add(i);
+            }
+            starts.Add(text.Length);
+            return starts;
+        }
+
+        // Returns the lines of the text within the width: its words, the parts
+        // between its spaces, as many on a line as fit, a word wider than the
+        // width broken between its characters, its code points, at least one on
+        // a line. An empty text, or one of spaces, is one empty line.
+        internal static string[] Wrap(string text, Font font, float width) {
+            List<string> lines = new List<string>(1);
+            string line = "";
+            foreach (string word in text.Split(' ')) {
+                if (word.Length == 0) {
+                    continue;
+                }
+                if (line.Length != 0) {
+                    string candidate = line + " " + word;
+                    if (font.StringWidth(candidate) <= width) {
+                        line = candidate;
+                        continue;
+                    }
+                    lines.Add(line);
+                    line = "";
+                }
+                if (font.StringWidth(word) <= width) {
+                    line = word;
+                    continue;
+                }
+                List<int> starts = CodePointStarts(word);
+                int first = 0;                  // The first code point left
+                int last = starts.Count - 1;    // The code points of the word
+                while (first < last) {
+                    int end = CodePointsThatFit(word, starts, first, font, width);
+                    if (first + end == last) {
+                        line = word.Substring(starts[first]);
+                        break;
+                    }
+                    lines.Add(word.Substring(starts[first], starts[first + end] - starts[first]));
+                    first += end;
+                }
+            }
+            lines.Add(line);
+            return lines.ToArray();
+        }
+
+        // Returns how many of the code points of the word from the first fit the
+        // width: at least one, so that a column too narrow for a character still
+        // draws the text, a character on each line.
+        private static int CodePointsThatFit(string word, List<int> starts, int first, Font font, float width) {
+            int end = 1;
+            int high = starts.Count - 1 - first;
+            while (end < high) {
+                int middle = end + (high - end + 1) / 2;
+                if (font.StringWidth(word.Substring(starts[first], starts[first + middle] - starts[first])) <= width) {
+                    end = middle;
+                } else {
+                    high = middle - 1;
+                }
+            }
+            return end;
+        }
+
+        // Returns the most lines of a row whose first line is at y that the page
+        // holds above the limit: at least one.
+        internal static int MostLines(float y, float limit, float lineHeight) {
+            int most = 1;
+            while (y + (float) ((float) most * lineHeight) <= limit) {
+                most++;
+            }
+            return most;
+        }
+
+        // Draws a row of fields that wrap: on the next page when it does not fit
+        // what is left of this one, cut at the lines a whole page holds when it
+        // does not fit that either.
+        private void DrawWrappedRow(string[] fields) {
+            if (startNewPage) {
+                NewPage();
+            }
+            Font font = f2;
+            float lineHeight = font.ascent + font.descent;
+            string[][] lines = WrapFields(fields, font, out int count);
+            float limit = page.GetHeight() - bottomMargin;
+            if (count > 1 && this.yText + (float) ((float) (count - 1) * lineHeight) > limit && !firstRowOnPage) {
+                DrawTheVerticalLines();
+                DrawFooter();
+                NewPage();
+                limit = page.GetHeight() - bottomMargin;
+            }
+            string[] whole = null;
+            if (count > 1 && this.yText + (float) ((float) (count - 1) * lineHeight) > limit) {
+                int most = MostLines(this.yText, limit, lineHeight);
+                if (most < count) {
+                    whole = new string[this.numberOfColumns];
+                    for (int i = 0; i < lines.Length; i++) {
+                        if (lines[i].Length > most) {
+                            whole[i] = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
+                            string[] cut = new string[most];
+                            Array.Copy(lines[i], cut, most);
+                            cut[most - 1] = Mark(cut[most - 1], font, textWidths[i]);
+                            lines[i] = cut;
+                        }
+                    }
+                    count = most;
+                }
+            }
+            DrawWrappedFields(lines, count, whole, font, StructElem.TD, false);
+            firstRowOnPage = false;
+            if (count > 1) {
+                this.yText += (float) ((float) (count - 1) * lineHeight);
+            }
+            this.yText += font.descent + 2 * verticalPadding + font.ascent;
+            if (this.yText > limit) {
+                DrawTheVerticalLines();
+                DrawFooter();
+                startNewPage = true;
+            }
+        }
+
+        // Returns the line with the mark that says the text goes on, cut to make
+        // room for it within the width.
+        private static string Mark(string line, Font font, float width) {
+            string marked = line + ELLIPSIS;
+            if (font.StringWidth(marked) <= width) {
+                return marked;
+            }
+            return Cut(line, font, width);
+        }
+
+        // Draws a row of the lines of its fields, count lines tall, as
+        // DrawFieldsAndLine draws a row of one line: the cell of a field holds all
+        // of its lines, and the whole of the text of a field that was cut,
+        // whole[i] when there is one.
+        private void DrawWrappedFields(
+                string[][] lines, int count, string[] whole, Font font, StructElem? cellStructure, bool header) {
+            float lineHeight = font.ascent + font.descent;
+            float extra = 0f;
+            if (count > 1) {
+                extra = (float) ((float) (count - 1) * lineHeight);
+            }
+            page.AddArtifactBMC();
+            if (header && headerColor != null) {
+                HighlightRows(page, font, headerColor, extra);
+                this.highlightRow = false;
+            } else if (this.highlightRow) {
+                if (shadingColor != null) {
+                    HighlightRows(page, font, shadingColor, extra);
+                }
+                this.highlightRow = false;
+            } else {
+                this.highlightRow = true;
+            }
+            if (borderColor != null) {
+                float[] original = page.GetPenColor();
+                page.SetPenColor(borderColor);
+                page.MoveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
+                page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
+                page.StrokePath();
+                page.SetPenColor(original);
+            }
+            page.AddEMC();
+            page.SetBrushColor(Color.black);
+
+            bool tagged = structElement != null && cellStructure != null;
+            StructElement parent = page.structParent;
+            StructElement rowElement = null;
+            if (tagged) {
+                rowElement = page.AddStructElement(structElement, StructElem.TR, null);
+            }
+            for (int i = 0; i < this.numberOfColumns; i++) {
+                if (tagged) {
+                    page.structParent = rowElement;
+                    string description = (whole != null) ? whole[i] : null;
+                    page.AddBDC(cellStructure.Value, null, null, description,
+                            CellAttributes(cellStructure.Value));
+                } else {
+                    page.AddArtifactBMC();
+                }
+                for (int k = 0; k < lines[i].Length; k++) {
+                    string line = lines[i][k];
+                    float xText = vertLines[i] + this.padding;
+                    if (alignment[i] == Alignment.RIGHT) {
+                        xText = (vertLines[i + 1] - this.padding) - font.StringWidth(line);
+                    }
+                    float yText = this.yText;
+                    if (k > 0) {
+                        yText += (float) ((float) k * lineHeight);
+                    }
+                    page.DrawTextLine(font, line, xText, yText);
+                }
+                page.AddEMC();
+            }
+            page.structParent = parent;
+        }
+
+        // Fills the background of a row, extra taller than one line.
+        private void HighlightRows(Page page, Font font, float[] color, float extra) {
+            float[] original = page.GetBrushColor();
+            page.SetBrushColor(color);
+            float bottom = this.yText + font.descent + verticalPadding;
+            if (extra > 0f) {
+                bottom = this.yText + extra + font.descent + verticalPadding;
+            }
+            page.FillRectBetween(vertLines[0], this.yText - font.ascent - verticalPadding,
+                    vertLines[this.numberOfColumns], bottom);
+            page.SetBrushColor(original);
+        }
+
+        // Counts the pages the rows take as DrawWrappedRow breaks them, reading the
+        // rows once more, so that the footer of each page says how many there are.
+        // The arithmetic is that of the drawing, in its order.
+        private int CountWrappedPages() {
+            Font font = f2;
+            float lineHeight = font.ascent + font.descent;
+            float pageHeight = pageSize.GetHeight();
+            float yTop = FirstRowY(this.y);
+            float yPos = yTop;
+            if (StartsOnFirstPage()) {
+                pageHeight = firstPage.GetHeight();
+                yPos = FirstRowY(firstPageY);
+            }
+            int count = 1;
+            bool newPage = false;
+            bool first = true;
+            foreach (string[] fields in rows) {
+                if (fields.Length < this.fieldsNeeded) {
+                    continue;
+                }
+                if (newPage) {
+                    count++;
+                    pageHeight = pageSize.GetHeight();
+                    yPos = yTop;
+                    newPage = false;
+                    first = true;
+                }
+                WrapFields(fields, font, out int lines);
+                float limit = pageHeight - this.bottomMargin;
+                if (lines > 1 && yPos + (float) ((float) (lines - 1) * lineHeight) > limit && !first) {
+                    count++;
+                    pageHeight = pageSize.GetHeight();
+                    yPos = yTop;
+                    limit = pageHeight - this.bottomMargin;
+                }
+                if (lines > 1 && yPos + (float) ((float) (lines - 1) * lineHeight) > limit) {
+                    lines = Math.Min(lines, MostLines(yPos, limit, lineHeight));
+                }
+                if (lines > 1) {
+                    yPos += (float) ((float) (lines - 1) * lineHeight);
+                }
+                yPos += font.descent + 2 * verticalPadding + font.ascent;
+                first = false;
+                if (yPos > limit) {
+                    newPage = true;
+                }
+            }
+            return count;
         }
     }
 }
