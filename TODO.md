@@ -93,7 +93,13 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
        XML attached; not possible. PDFjet Pro.
     5. Digital signatures (PAdES, long-term) and password encryption.
     6. Print production: CMYK, spot colors, PDF/X, bleed and crop marks;
-       Chrome is screen RGB.
+       Chrome is screen RGB. **PDFjet only in part** (checked 11 November
+       2026): CMYK colors (SetPenColorCMYK, SetBrushColorCMYK, DeviceCMYK,
+       refused in PDF/A, whose intent is sRGB), CMYK JPEGs embedded as they
+       are, and the Crop, Bleed, Trim and Art boxes. No spot colors
+       (Separation, DeviceN), no PDF/X (no CMYK output intent, FOGRA or
+       GRACoL), no overprint, no crop or registration marks drawn. So the
+       page claims basic CMYK and bleed only, not prepress.
     7. Exact pages: no CSS paged media (running headers and footers in the
        margins, footnotes, "page 3 of 12" anywhere, controlled breaks), why
        PrinceXML and WeasyPrint exist.
