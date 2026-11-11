@@ -139,6 +139,7 @@ jobs:
             - name: The examples on .NET 10 make the same PDFs
               if: matrix.port == 'dotnet'
               run: |
+                  bash .github/scripts/apt-mirror.sh
                   sudo apt-get update -q
                   sudo apt-get install -y -q qpdf
                   mkdir "$RUNNER_TEMP/net8" "$RUNNER_TEMP/decoded"
@@ -383,6 +384,7 @@ jobs:
               run: |
                   # The package list of the runner's image can be older than the
                   # mirror, whose files it names are then gone (404, 8 October 2026).
+                  bash .github/scripts/apt-mirror.sh
                   sudo apt-get update -q
                   sudo apt-get install -y -q poppler-utils
                   "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-example-text.py \
@@ -481,6 +483,7 @@ jobs:
               run: |
                   # The package list of the runner's image can be older than the
                   # mirror, whose files it names are then gone (404, 8 October 2026).
+                  bash .github/scripts/apt-mirror.sh
                   sudo apt-get update -q
                   sudo apt-get install -y -q poppler-utils
                   pdftoppm -v

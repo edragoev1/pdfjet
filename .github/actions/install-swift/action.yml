@@ -35,6 +35,10 @@ runs:
           env:
               SWIFT_URL: ${{ inputs.swift-url }}
           run: |
+              # The runner's Azure mirror of Ubuntu, when its name does not
+              # resolve, replaced by Ubuntu's own archive: from 14:59 on 11
+              # November 2026 every job that installs Swift failed on it
+              bash "$GITHUB_WORKSPACE/.github/scripts/apt-mirror.sh"
               sudo apt-get -q -o Acquire::Retries=3 update
               sudo apt-get -q -o Acquire::Retries=3 install -y binutils git unzip \
                   gnupg2 libc6-dev libcurl4-openssl-dev libedit2 libgcc-13-dev \
