@@ -99,8 +99,26 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     already, to measure and to draw, so the measuring finds each row's
     height and the pages' breaks, "Page i of N" right, the memory still
     flat, a row at a time.
-  - To decide: a row taller than a page, a field of a long text, cut at a
-    number of lines with "..." or carried over to the next page.
+  - Decided while the owner was out, 11 November 2026, for the owner to
+    confirm: a row that does not fit what is left of a page starts the
+    next page whole; a row taller than a whole page is cut at the lines
+    that fit, its last line ending in " ...", the cell of a PDF/UA document
+    keeping the whole text (as a cut field does today). Rare with real
+    data; carrying a row over would make the page count depend on a row's
+    parts.
+  - Built in Go on 11 November 2026 (970693c0c): SetWrapText, ten tests,
+    Example_51 (eight columns of the Electric Vehicle data on Letter
+    portrait, wrapped, PDF/UA, 30 pages in 16 ms), the example lists of the
+    scripts to 51. The widths when wrapping: as wide as their widest fields
+    when they fit the page (then nothing wraps and the PDF is the same as
+    off, byte for byte); else the narrow columns keep theirs, from the
+    narrowest, and the others share the rest equally; or the percentages.
+    Java, C# and Swift ported the same day (4db2ea1df, e0726cee3,
+    115fd687d), each Example_51 the same as Go's page by page; the four
+    ports' check passed: the 51 examples compared, veraPDF, the tags, the
+    three viewers (the ink of check-viewers below 248: Poppler drew the
+    shading 240, MuPDF 239), the snippets, and qpdf on 446 PDFs. Not
+    pushed until the owner says.
   - PDF/UA as it is: the Table and its TH and TD, more lines in a cell.
   - The four ports alone (the owner, 10 November 2026: the TypeScript
     engine not now), with tests that the mode off changes nothing; about a

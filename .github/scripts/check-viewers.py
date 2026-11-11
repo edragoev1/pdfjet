@@ -257,7 +257,11 @@ def grey(pix):
 
 
 # Maps a grey value to 1 when it is not white, to count the ink with bytes.count.
-INK = bytes(1 if v < 240 else 0 for v in range(256))
+# Below 248: a light shading counts, whatever grey each engine rounds it to.
+# Below 240, the shading of BigTable's rows, 0xF0F0F0, was ink in MuPDF, which
+# draws it 239, and paper in Poppler, which draws it 240, and the tall shaded
+# rows of Example_51 made a whole page look blank (11 November 2026).
+INK = bytes(1 if v < 248 else 0 for v in range(256))
 
 
 def ink(pix):
