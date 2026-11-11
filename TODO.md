@@ -167,6 +167,14 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     page on Cloudflare's cache, the CGI not.
   - A process a request, as CGI starts one, a few milliseconds for a Go
     program: fine for the traffic it may have.
+  - DONE 10 November 2026: Google Search Console, the Domain property
+    pdfjet.com (verified by a TXT record in Cloudflare's DNS, to be kept),
+    the sitemap submitted (123 pages) and indexing asked for the five tools'
+    pages. To come: Bing Webmaster Tools, which takes Google's settings;
+    Search Console's Pages in some days, and its Performance in some weeks,
+    which searches bring people to each tool. Not Reddit nor Stack Overflow
+    (the owner, 10 November 2026); the awesome lists, and Hacker News now and
+    then.
   - To be found: the address pdfjet.com/markdown-to-pdf and the title
     "Markdown to PDF", the words people type; under the box, a short
     sample `.md` and its PDF, so that the page has something to read for
