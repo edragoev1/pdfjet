@@ -203,6 +203,24 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   a line of the release
   notes, "BigTable wraps text in its cells, its memory still flat".
 
+- **The Template class and the niche it serves** (the owner, 11 November
+  2026: "When Forms comes out with Template option - this will be a very
+  good feature"). Parked the same day until after the Forms launch; after
+  the Windows Store app, it may deserve to come first. The niche, where
+  regulation makes people produce PDFs that HTML to PDF through Chrome
+  cannot: accessible documents (the EU's Accessibility Act since June 2025,
+  AODA in Ontario, the ADA's rule for US state and local governments in
+  2026 and 2027), electronic invoices (Germany receiving since 2025 and
+  sending from 2027 to 2028, France and Belgium around 2026 and 2027;
+  ZUGFeRD, Factur-X, XRechnung in PDF/A-3), and archival records (PDF/A).
+  Dates from general knowledge, to check before a page says them. The
+  offer: a statement, notice or invoice designed once in Forms, by someone
+  who does not code; filled from a program by its labels (t.set,
+  t.setRows), no layout code; every PDF PDF/UA and PDF/A because the design
+  came from Forms; the design changed in Forms, the program the same.
+  "Your documents designed once, generated compliant every time." The line
+  to lead with: accessible and compliant documents, generated in code.
+
 - **9.1.9 release notes, a draft** (started 11 November 2026; lines added as
   the work is done, the most important first):
   - **BigTable:** `SetWrapText` wraps long fields within their columns, each
