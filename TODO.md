@@ -267,6 +267,29 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   zlib's 32 KB window, and the alpha is deflated as its rows come: a few
   hundred KB for an image of any size. The same bytes in the PDF. Only worth
   it where memory is short, a Worker, or many large images at once.
+- **Maybe, a sixth free tool: printable puzzles or sheets** (the owner, 11
+  November 2026: "some really simple tool like the 5 we already did but very
+  useful ... entertainment - Sudoku generator - Print and play"). Kept to
+  print, like the five: playing on a phone is another product, an app.
+  The choices, each with its reason to exist:
+  - **Sudoku**, a crowded search, so with an angle: large print (big digits,
+    thick lines, a puzzle a page, for older people and weak eyesight, the
+    accessibility story again), or a booklet of 10 to 100 at a difficulty,
+    the answers at the back; each puzzle with one solution, which a real
+    generator checks and many sites do not.
+  - **Bingo cards** from one's own words or numbers: teachers, parties,
+    seniors' centres, events; searched very much, and each one personal,
+    which a generator does and a download cannot.
+  - **Word search** from a teacher's list of words: made weekly, searched
+    much.
+  - **Mazes** for children, by size and difficulty.
+  - **Graph, dot-grid and lined paper:** dull, searched always, perfect with
+    PDFjet.
+  Leaning, as advised: bingo cards or word search, wanted new each time; or
+  Sudoku in large print with its answers. A new tool may be made in the
+  browser from the start, on Forms' TypeScript engine (step 2 below), no
+  .cgi, "your file never leaves your computer". The owner to choose.
+
 - **If one of the Free Tools becomes popular: the plan, in three steps**
   (the owner, 10 November 2026). Today the pages are served and cached by
   Cloudflare, which any traffic leaves alone; each PDF is made by a .cgi
