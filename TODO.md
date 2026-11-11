@@ -59,6 +59,39 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **If one of the Free Tools becomes popular: the plan, in three steps**
+  (the owner, 10 November 2026). Today the pages are served and cached by
+  Cloudflare, which any traffic leaves alone; each PDF is made by a .cgi
+  program on IONOS, 10 to 50 ms of CPU, fine to some tens of thousands a
+  day. A burst, hundreds at once after a post is shared, meets the shared
+  host's limits of processes and CPU (IONOS's own, not known here): the
+  conversions slow down or fail.
+  1. **Now, cheap, before any trouble:** a rate-limiting rule of
+     Cloudflare's on `*.cgi`, as 20 conversions a minute for one visitor, so
+     that one script cannot use up the account (the free plan has one such
+     rule, as far as known; set in Cloudflare's dashboard, by the owner);
+     and an eye on Cloudflare's analytics of the tools' pages and their
+     .cgi, to see growth coming, which takes days or weeks.
+  2. **If a tool takes off: its PDF made in the browser**, as Forms makes
+     its own: on the visitor's device, so that a million cost what ten do,
+     and its words true, "your file never leaves your computer". The
+     TypeScript engine of Forms (pdfjet-client's src/pdf) draws text,
+     tables, QR codes, images and SVG already: the QR Code Generator and the
+     Printable Calendar move first and most easily, Images to PDF nearly so;
+     CSV to PDF needs a table as Table draws it, and Markdown to PDF
+     PDFjet's Markdown ported, about 1,900 lines. The tool moved checked
+     against its Go program as the engine was against Go's, PDF for PDF.
+  3. **Cloudflare Workers, for what a browser cannot do:** the same
+     TypeScript engine runs on a Worker unchanged, near every visitor, on
+     the $5 plan (about 10 million requests a month in it, then a little
+     a million more), within its 128 MB and its CPU time of a request. For
+     these tools the browser is better, as it costs nothing; a Worker is
+     for secrets, mail and stored data (see the Forms DESIGN.md, "Cloudflare
+     Workers: the right nails"). The Go programs as WebAssembly on a Worker
+     would work too, but larger, and less of a fit.
+  The order: step 1 now; steps 2 and 3 only when the analytics show a tool
+  growing, that tool alone first.
+
 - **DONE 10 November 2026, live: md2pdf on pdfjet.com,
   pdfjet.com/markdown-to-pdf** (md2pdf.cgi, pdfjet-utils' md2pdf run as CGI;
   pdfjet-website's make-md2pdf-cgi.sh builds it; SVG pasted into the text is
