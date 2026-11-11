@@ -68,7 +68,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   pdfjet.com/images-to-pdf, img2pdf (JPEG, PNG, BMP and SVG, a page each,
   PDF/A-3a and PDF/UA). md2pdf, csv2pdf and img2pdf released together as
   v1.1.0 (re-made with img2pdf the same evening). Still to do of them: the listings below ("To be
-  found"). Next tools, in this order (the owner, 10 November 2026):
+  found"). DONE the same evening, both live, in v1.2.0 and v1.3.0: the
+  Printable Calendar (cal2pdf) and the QR Code Generator (qr2pdf). As
+  they were planned (the owner, 10 November 2026):
   1. **Printable calendar**, pdfjet.com/printable-calendar: a year, a
      month a page or the year on one, Letter or A4, the week from Sunday or
      Monday, in the language chosen (its months' and days' names, as Forms
