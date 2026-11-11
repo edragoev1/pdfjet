@@ -1,9 +1,9 @@
 #!/bin/bash
 # Writes the TypeScript metrics files of the fonts of a folder, for
-# pdfjet-client, to the output folder, or to the current one without it. The
+# pdfjet-forms, to the output folder, or to the current one without it. The
 # output folder is taken from where the script is run.
 #
-#   util/generate-font-metrics-files.sh fonts/IBMPlexSans ../pdfjet-client/src/fonts/IBMPlexSans
+#   util/generate-font-metrics-files.sh fonts/IBMPlexSans ../pdfjet-forms/src/fonts/IBMPlexSans
 #
 # The generator reads the fonts with OTF, which is not public, so it is built
 # with the library, in its package.

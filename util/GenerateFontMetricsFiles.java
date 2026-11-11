@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * This program generates font metrics .ts file from .otf and .ttf fonts.
- * These font metrics files are used by the TypeScript pdfjet-client, which
+ * These font metrics files are used by the TypeScript pdfjet-forms, which
  * measures text as Font.stringWidth does, so they hold what that needs: the
  * advance width of each character, the line gap, and the width of .notdef.
  * It is in the package of OTF, which is not public.
@@ -40,7 +40,7 @@ public class GenerateFontMetricsFiles {
         sb1.append(" extends BaseFont {\n");
         sb1.append("    constructor() {\n");
         sb1.append("        super();\n");
-        // The name of the file, which the @font-face rules of pdfjet-client
+        // The name of the file, which the @font-face rules of pdfjet-forms
         // give the font as its family, and SVG text uses.
         sb1.append("        this.fontName = \"" + fileName.substring(0, fileName.lastIndexOf(".")) + "\";\n");
         sb1.append("        this.unitsPerEm = " + otf.unitsPerEm + ";\n");
@@ -107,7 +107,7 @@ public class GenerateFontMetricsFiles {
             System.err.println("    util/generate-font-metrics-files.sh <directory> [<output directory>]");
             System.err.println("Examples:");
             System.err.println("    util/generate-font-metrics-files.sh fonts/IBMPlexSans");
-            System.err.println("    util/generate-font-metrics-files.sh fonts/IBMPlexSans ../pdfjet-client/src/fonts/IBMPlexSans");
+            System.err.println("    util/generate-font-metrics-files.sh fonts/IBMPlexSans ../pdfjet-forms/src/fonts/IBMPlexSans");
             System.exit(1);
         }
         File file = new File(args[0]);
@@ -127,7 +127,7 @@ public class GenerateFontMetricsFiles {
             System.err.println("    util/generate-font-metrics-files.sh <directory> [<output directory>]");
             System.err.println("Examples:");
             System.err.println("    util/generate-font-metrics-files.sh fonts/IBMPlexSans");
-            System.err.println("    util/generate-font-metrics-files.sh fonts/IBMPlexSans ../pdfjet-client/src/fonts/IBMPlexSans");
+            System.err.println("    util/generate-font-metrics-files.sh fonts/IBMPlexSans ../pdfjet-forms/src/fonts/IBMPlexSans");
             System.exit(1);
         }
     }

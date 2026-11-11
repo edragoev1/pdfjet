@@ -18,7 +18,7 @@ import (
 )
 
 // The layout of TextBlock is the reference for the TypeScript preview of
-// pdfjet-client, which lays text out as this port does: Go leads and the
+// pdfjet-forms, which lays text out as this port does: Go leads and the
 // TypeScript follows. Its check, check-textblock.sh, has this test write the
 // layout of its cases, and compares its own with it:
 //

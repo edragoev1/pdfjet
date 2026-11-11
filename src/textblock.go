@@ -918,7 +918,7 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 
 // layout returns the lines of this text block as DrawOn draws them, aligned
 // and decorated, the top of the first line, the leading and the height of the
-// block. The layout of the TypeScript preview in pdfjet-client follows it, and
+// block. The layout of the TypeScript preview in pdfjet-forms follows it, and
 // is checked against it: textblock_layout_test.go writes it for that check.
 func (textBlock *TextBlock) layout() (textLines []*TextLine, yText, leading, blockHeight float32) {
 	ascent := textBlock.font.GetAscent(textBlock.fontSize)
