@@ -210,7 +210,10 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   go.mod on PDFjet's main (now v9.1.7) until 9.1.9, as Forms' server is,
   and the foot's "Page i of N" from BigTable's page count, to check. About
   an hour with its tests, then csv2pdf.cgi built again for pdfjet.com
-  (make-cgi.sh). After the Forms launch; Collect's archive on BigTable later, with the
+  (make-cgi.sh). With it, the page's delimiter menu: "Bar" called "Pipe
+  ( | )", the word people use, and pipe-delimited files named in the page's
+  description, as they are found already (the delimiter guessed among
+  comma, semicolon, tab and pipe). After the Forms launch; Collect's archive on BigTable later, with the
   TypeScript engine (Forms TODO.md, "Collect's archive with BigTable"); and
   a line of the release
   notes, "BigTable wraps text in its cells, its memory still flat".
