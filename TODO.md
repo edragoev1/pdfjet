@@ -85,8 +85,23 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
      tables, QR codes, images and SVG already: the QR Code Generator and the
      Printable Calendar move first and most easily, Images to PDF nearly so;
      CSV to PDF needs a table as Table draws it, and Markdown to PDF
-     PDFjet's Markdown ported, about 1,900 lines. The tool moved checked
-     against its Go program as the engine was against Go's, PDF for PDF.
+     PDFjet's Markdown ported. The tool moved checked against its Go
+     program as the engine was against Go's, PDF for PDF.
+     **Each tool a module of its own, over the engine's core** (the owner,
+     10 November 2026: "this way the Forms engine will not be bloated with
+     stuff it does not use"): the core is what is shared, the PDF, the
+     fonts, text, tables, images, SVG, QR codes and the tags of PDF/UA; a
+     tool adds its own module on top, and a page imports only what it uses,
+     so the build leaves the rest out (Forms' engine stays 191 KB). A fix
+     of the core helps every tool at once. Markdown's module, ported from
+     Go: markdownparser.go (765 lines), markdown.go (1,157), and what it
+     draws with that the core has not, markup.go (911, bold, italic, code
+     and links in a line) and textframe.go and paragraph.go (1,349, the
+     text flowed across lines and pages): about 4,200 lines of Go, some
+     3,500 to 4,000 of TypeScript, about a day, file for file and function
+     for function as the engine was, so that one who reads the Go follows
+     it. TextFrame, Paragraph and Markup in the core would let Forms have
+     rich text in its paragraphs one day.
   3. **Cloudflare Workers, for what a browser cannot do:** the same
      TypeScript engine runs on a Worker unchanged, near every visitor, on
      the $5 plan (about 10 million requests a month in it, then a little
