@@ -65,7 +65,22 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   it before). In the release notes' first lines. With it, for developers too: the code
   of a design of PDFjet Forms in Java, C#, Go or Swift, on /code.html for
   the library's license holders, its generator done and tested, its page
-  and key to do (Forms TODO.md, "For 9.1.9: the code of a design"). And in PDFjet Pro, released with
+  and key to do (Forms TODO.md, "For 9.1.9: the code of a design").
+  **The story of 9.1.9 for developers, in the owner's words (10 November
+  2026):** a PDFjet developer goes to PDFjet Forms, makes a new design or
+  changes one, and at once either (1) generates the code in Java, C#, Go or
+  Swift that draws exactly the same document, theirs to change, its fields
+  and tables already parameters, `drawInvoice(page, customer, date, rows)`;
+  or (2) keeps the design as a template and fills it from their program by
+  labels, `t.set("Customer", "Acme")`, `t.setRows("Items", rows)`, with no
+  layout code at all, the design changed in Forms and converted again while
+  the program stays the same (Pro's Template class). Either way a new PDF
+  each time, PDF/A and PDF/UA, with ordinary PDFjet calls, and no
+  coordinate typed. The line: "Full control when you want it. A layout when
+  you don't." No other PDF library has a visual designer that writes its
+  code. Where each stands: the generator works, tested in the four
+  languages, its page and key to do; the Template class designed, its
+  library part shipped in 9.1.5, to build. And in PDFjet Pro, released with
   it under the same number, the earliest it can be: the Template class, a
   design of Forms filled from a program by its labels, `t.set("Customer",
   ...)`, each save a new PDF, PDF/A and PDF/UA, the template never changed
