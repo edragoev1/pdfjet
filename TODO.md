@@ -90,6 +90,17 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     faster on any large table, about even on a small one. For the release
     notes, with numbers: BigTable wrapping 100,000 rows, its time and its
     flat memory, beside Table's.
+  Why it matters beyond 9.1.9 (the owner, 10 November 2026, thinking of
+  Cloudflare Workers, "you don't want to have big table eat up all the
+  memory"): a Worker has 128 MB and no more, past which the request fails.
+  Table's memory grows with its data, every cell and page held; BigTable's
+  stays the same at 100 rows or a million. With its output streamed too,
+  each page sent as soon as it is written, the Worker's response a stream,
+  and its input read a row at a time from the request, a table of any size
+  is made in a few MB, constant: the limit left is the CPU time of a
+  request (up to 5 minutes on the paid plan), far more than BigTable needs.
+  So BigTable, wrapping, is the one table both whole, no column lost, and
+  safe where memory is tight: a Worker, or a cheap phone's browser.
   Then: CSV to PDF with every column, its long fields wrapped, not cut (its
   Go program, csv2pdf); Collect's archive on BigTable later, with the
   TypeScript engine (Forms TODO.md, "Collect's archive with BigTable"); and
