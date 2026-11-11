@@ -62,9 +62,10 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 - **9.1.9, the next release, after the Forms launch: BigTable that wraps its
   text, if asked** (the owner, 10 November 2026: "cutting the last few
   columns is not great"; "it is very important", the owner had thought of
-  it before). In the release notes' first lines. With it, perhaps, for developers too:
-  "Get the code" in PDFjet Forms, a design's PDFjet program in Java, C#,
-  Go or Swift (Forms TODO.md, "Get the code"). And in PDFjet Pro, released with
+  it before). In the release notes' first lines. With it, for developers too: the code
+  of a design of PDFjet Forms in Java, C#, Go or Swift, on /code.html for
+  the library's license holders, its generator done and tested, its page
+  and key to do (Forms TODO.md, "For 9.1.9: the code of a design"). And in PDFjet Pro, released with
   it under the same number, the earliest it can be: the Template class, a
   design of Forms filled from a program by its labels, `t.set("Customer",
   ...)`, each save a new PDF, PDF/A and PDF/UA, the template never changed
