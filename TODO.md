@@ -64,7 +64,12 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   columns is not great"; "it is very important", the owner had thought of
   it before). In the release notes' first lines. With it, perhaps, for developers too:
   "Get the code" in PDFjet Forms, a design's PDFjet program in Java, C#,
-  Go or Swift (Forms TODO.md, "Get the code"). BigTable's rule is one height for every row, which lets it count
+  Go or Swift (Forms TODO.md, "Get the code"). And in PDFjet Pro, released with
+  it under the same number, the earliest it can be: the Template class, a
+  design of Forms filled from a program by its labels, `t.set("Customer",
+  ...)`, each save a new PDF, PDF/A and PDF/UA, the template never changed
+  (private plans/pdfjet-pro-templates.md); the library's part, images copied
+  with their transparency, shipped in 9.1.5. BigTable's rule is one height for every row, which lets it count
   its pages ("Page i of N") and keep its memory flat; a field too wide is
   cut, and a table too wide loses its last columns to "...". A new mode,
   off unless asked, so that every program of BigTable today writes the same
