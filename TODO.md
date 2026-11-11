@@ -68,9 +68,27 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   pdfjet.com/images-to-pdf, img2pdf (JPEG, PNG, BMP and SVG, a page each,
   PDF/A-3a and PDF/UA). md2pdf, csv2pdf and img2pdf released together as
   v1.1.0 (re-made with img2pdf the same evening). Still to do of them: the listings below ("To be
-  found"). Later, two more tools, maybe (the owner, 10 November 2026): CSV
-  to labels or QR codes, a sheet of labels from the rows, which only a PDF
-  library does well; and one to choose then. What was planned:
+  found"). Next tools, in this order (the owner, 10 November 2026):
+  1. **Printable calendar**, pdfjet.com/printable-calendar: a year, a
+     month a page or the year on one, Letter or A4, the week from Sunday or
+     Monday, in the language chosen (its months' and days' names, as Forms
+     has them). Soon: "printable calendar 2027" is searched most from
+     November to January, and a page out now is found in time. About 1.5
+     hours; clean tables, accessible.
+  2. **QR code generator**, pdfjet.com/qr-code: a link, a text, a Wi-Fi
+     network or a contact card to a QR code in a PDF, vector and ready to
+     print, or a sheet of them. Its point, said plainly: plain codes that
+     never stop working and are not tracked, where many QR sites make
+     "dynamic" codes that stop unless paid for and count every scan. About
+     an hour.
+  3. Then, maybe: CSV to labels (Avery 5160, 5163, 5164, 5167, 22805, L7160,
+     L7163; the columns as lines, a column as a QR code, start at label N,
+     copies, outlines for a test print, "print at actual size"), useful to
+     those with a spreadsheet and many sheet labels, less to shops with a
+     label printer; a page of each sheet ("Avery 5160 labels from CSV") for
+     searches. And: a certificate from each name of a list, an invoice
+     (pointing to Forms), graph or lined paper, barcodes.
+  What was planned:
   **md2pdf on pdfjet.com, to bring people to it**
   (the owner, 10 November 2026). A page of pdfjet.com where a `.md` file
   is pasted or dropped and its PDF comes back: md2pdf of pdfjet-utils as
