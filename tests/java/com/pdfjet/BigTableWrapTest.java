@@ -148,18 +148,18 @@ class BigTableWrapTest {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         String word = repeat("abcdefghij", 12);
-        String[] lines = BigTable.wrap(word, font, 60f);
+        String[] lines = BigTable.wrap(word, new BigTable.Measure(font, null), 60f);
         assertTrue(lines.length >= 2 && String.join("", lines).equals(word), Arrays.toString(lines));
         for (String line : lines) {
             assertTrue(font.stringWidth(line) <= 60f, "a piece is wider than the column: " + line);
         }
         // A column too narrow for one character still draws one on each line
-        assertArrayEquals(new String[] {"a", "b", "c"}, BigTable.wrap("abc", font, 0.5f));
+        assertArrayEquals(new String[] {"a", "b", "c"}, BigTable.wrap("abc", new BigTable.Measure(font, null), 0.5f));
         // Spaces are where lines break, not text: an empty field is one line
-        assertArrayEquals(new String[] {""}, BigTable.wrap("  ", font, 60f));
+        assertArrayEquals(new String[] {""}, BigTable.wrap("  ", new BigTable.Measure(font, null), 60f));
         // A character is a code point: one outside the BMP is never split
         String astral = repeat("😀", 3);
-        String[] pieces = BigTable.wrap(astral, font, 0.5f);
+        String[] pieces = BigTable.wrap(astral, new BigTable.Measure(font, null), 0.5f);
         assertEquals(3, pieces.length, Arrays.toString(pieces));
         assertEquals(astral, String.join("", pieces));
     }
@@ -316,5 +316,41 @@ class BigTableWrapTest {
         String again = TestSupport.content(wrapTable(pdf2, TestSupport.helvetica(pdf2), false,
                 new String[] {"No", "Notes"}, rows, table -> table.setWrapText(true).setWrapText(false)).get(0));
         assertEquals(never, again);
+    }
+
+    // Draws a Korean answer in a table of IBM Plex Sans, with the fallback
+    // fonts of IBM Plex Sans KR or without them.
+    private static BigTable fallbackTable(boolean fallback) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font f1 = new Font(pdf, com.pdfjet.fonts.IBMPlexSans.SemiBold);
+        Font f2 = new Font(pdf, com.pdfjet.fonts.IBMPlexSans.Regular);
+        BigTable table = new BigTable(pdf, f1, f2, Letter.PORTRAIT).setNumberOfColumns(2);
+        if (fallback) {
+            table.setFallbackFonts(new Font(pdf, com.pdfjet.fonts.IBMPlexSansKR.SemiBold),
+                    new Font(pdf, com.pdfjet.fonts.IBMPlexSansKR.Regular));
+        }
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {"1", "안녕하세요 반갑습니다"});
+        table.setTableData(new String[] {"No", "Answer"}, rows);
+        table.setLocation(20f, 20f);
+        table.complete();
+        return table;
+    }
+
+    // The fallback fonts measure and draw the characters the fonts of the
+    // table do not have: a Korean answer in a table of a Latin font is in the
+    // Korean font, its column as wide as it is drawn; without them, nothing
+    // changes.
+    @Test
+    void theFallbackFontsDrawWhatTheFontsDoNotHave() throws Exception {
+        BigTable with = fallbackTable(true);
+        BigTable without = fallbackTable(false);
+        float withWidth = ((float[]) field(with, "widths"))[1];
+        float withoutWidth = ((float[]) field(without, "widths"))[1];
+        assertTrue(withWidth > withoutWidth,
+                "the answer is not measured in the Korean font: " + withWidth + ", without it " + withoutWidth);
+        String content = TestSupport.content(with.getPages().get(0));
+        assertTrue(content.contains("Tf") && content.split(" Tf", -1).length - 1 >= 3,
+                "the Korean font is not drawn with: " + content);
     }
 }

@@ -84,19 +84,19 @@ public sealed class BigTableWrapTest {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         string word = Repeat("abcdefghij", 12);
-        string[] lines = BigTable.Wrap(word, font, 60f);
+        string[] lines = BigTable.Wrap(word, new BigTable.TextMeasure(font, null), 60f);
         Assert.True(lines.Length >= 2, string.Join("|", lines));
         Assert.Equal(word, string.Join("", lines));
         foreach (string line in lines) {
             Assert.True(font.StringWidth(line) <= 60f, "a piece is wider than the column: " + line);
         }
         // A column too narrow for one character still draws one on each line
-        Assert.Equal(new string[] {"a", "b", "c"}, BigTable.Wrap("abc", font, 0.5f));
+        Assert.Equal(new string[] {"a", "b", "c"}, BigTable.Wrap("abc", new BigTable.TextMeasure(font, null), 0.5f));
         // Spaces are where lines break, not text: an empty field is one line
-        Assert.Equal(new string[] {""}, BigTable.Wrap("  ", font, 60f));
+        Assert.Equal(new string[] {""}, BigTable.Wrap("  ", new BigTable.TextMeasure(font, null), 60f));
         // A character is a code point: a surrogate pair is never broken in half
         string astral = Repeat("\U0001F600", 6);
-        foreach (string line in BigTable.Wrap(astral, font, 0.5f)) {
+        foreach (string line in BigTable.Wrap(astral, new BigTable.TextMeasure(font, null), 0.5f)) {
             Assert.Equal("\U0001F600", line);
         }
     }
@@ -223,6 +223,35 @@ public sealed class BigTableWrapTest {
             return TestSupport.Content(pages[0]);
         }
         Assert.Equal(Draw(null), Draw(table => table.SetWrapText(true).SetWrapText(false)));
+    }
+
+    // The fallback fonts measure and draw the characters the fonts of the
+    // table do not have: a Korean answer in a table of a Latin font is in the
+    // Korean font, its column as wide as it is drawn; without them, nothing
+    // changes.
+    [Fact]
+    public void TheFallbackFontsDrawWhatTheFontsDoNotHave() {
+        string text = "안녕하세요 반갑습니다";
+        BigTable Table(bool fallback) {
+            PDF pdf = TestSupport.NewPDF();
+            Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
+            Font f2 = new Font(pdf, IBMPlexSans.Regular);
+            BigTable table = new BigTable(pdf, f1, f2, Letter.PORTRAIT).SetNumberOfColumns(2);
+            if (fallback) {
+                table.SetFallbackFonts(new Font(pdf, IBMPlexSansKR.SemiBold), new Font(pdf, IBMPlexSansKR.Regular));
+            }
+            table.SetTableData(new string[] {"No", "Answer"}, new List<string[]> { new string[] {"1", text} });
+            table.SetLocation(20f, 20f);
+            table.Complete();
+            return table;
+        }
+        BigTable with = Table(true);
+        BigTable without = Table(false);
+        Assert.True(with.widths[1] > without.widths[1],
+                "the answer is not measured in the Korean font: " + with.widths[1] + ", without it " + without.widths[1]);
+        string content = TestSupport.Content(with.GetPages()[0]);
+        int fonts = content.Split(new string[] {" Tf"}, StringSplitOptions.None).Length - 1;
+        Assert.True(content.Contains("Tf") && fonts >= 3, "the Korean font is not drawn with: " + content);
     }
 }
 }

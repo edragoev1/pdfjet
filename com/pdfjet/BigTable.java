@@ -82,6 +82,10 @@ public class BigTable {
     private String[][] headerLines;
     private int headerCount;        // The most lines of a header field
     private boolean firstRowOnPage;
+    // With setFallbackFonts: the fonts of the characters the header's font
+    // and the rows' font do not have, or null
+    private Font fallback1;
+    private Font fallback2;
 
     /**
      * Creates a table and sets the fonts and page size.
@@ -226,6 +230,23 @@ public class BigTable {
         if (this.vertLines != null) {
             setVertLines();
         }
+        return this;
+    }
+
+    /**
+     * Sets the fonts that draw the characters the header's font and the rows'
+     * font do not have, such as Korean or Chinese in a table of a Latin font:
+     * each character in the font of its row if it has it, else in the fallback
+     * font, and measured so. A null font is none, as unless set. Call it
+     * before setTableData or setTableRows, which measure the columns.
+     *
+     * @param header the fallback font of the header's font, or null.
+     * @param rows the fallback font of the rows' font, or null.
+     * @return this BigTable object.
+     */
+    public BigTable setFallbackFonts(Font header, Font rows) {
+        this.fallback1 = header;
+        this.fallback2 = rows;
         return this;
     }
 
@@ -629,10 +650,10 @@ public class BigTable {
             // column that was not cut is as wide as its widest field, so
             // every field of it is drawn whole and none is measured here.
             String drawn = (clipped != null && clipped[i] < widths[i])
-                    ? fit(text, font, clipped[i]) : text;
+                    ? fit(text, measureOf(font), clipped[i]) : text;
             float xText = vertLines[i] + this.padding;
             if (alignment[i] == Alignment.RIGHT) {
-                xText = (vertLines[i + 1] - this.padding) - font.stringWidth(drawn);
+                xText = (vertLines[i + 1] - this.padding) - measureOf(font).width(drawn);
             }
             if (tagged) {
                 // A cell holds its text and nothing else, so the cell element
@@ -647,7 +668,7 @@ public class BigTable {
             } else {
                 page.addArtifactBMC();
             }
-            page.drawTextLine(font, drawn, xText, this.yText);
+            drawText(font, drawn, xText, this.yText);
             page.addEMC();
         }
         page.structParent = parent;
@@ -803,7 +824,7 @@ public class BigTable {
     private void measure(String[] fields, Font font) {
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-            float width = font.stringWidth(text);
+            float width = measureOf(font).width(text);
             if (width > widths[i]) {
                 this.widths[i] = width;
             }
@@ -992,17 +1013,17 @@ public class BigTable {
     // fits, rather than being added to them, so the text stays inside the
     // column. The text is cut between code points, never inside one, and
     // counted in them, as every port counts it.
-    private static String fit(String text, Font font, float width) {
-        if (font.stringWidth(text) <= width) {
+    private static String fit(String text, Measure m, float width) {
+        if (m.width(text) <= width) {
             return text;
         }
-        return cut(text, font, width);
+        return cut(text, m, width);
     }
 
     // As much of the text as fits the width with the mark that says it was
     // cut, the mark in place of the last four characters of what fits; or ""
     // when the width is too narrow for the mark.
-    private static String cut(String text, Font font, float width) {
+    private static String cut(String text, Measure m, float width) {
         // The index of each code point, and of the end of the text.
         int count = text.codePointCount(0, text.length());
         int[] offsets = new int[count + 1];
@@ -1015,17 +1036,17 @@ public class BigTable {
         int high = count;
         while (end < high) {
             int middle = end + (high - end + 1)/2;
-            if (font.stringWidth(text.substring(0, offsets[middle])) <= width) {
+            if (m.width(text.substring(0, offsets[middle])) <= width) {
                 end = middle;
             } else {
                 high = middle - 1;
             }
         }
         end = Math.max(0, end - ELLIPSIS.length());
-        while (end > 0 && font.stringWidth(text.substring(0, offsets[end]) + ELLIPSIS) > width) {
+        while (end > 0 && m.width(text.substring(0, offsets[end]) + ELLIPSIS) > width) {
             end--;
         }
-        if (font.stringWidth(ELLIPSIS) > width) {
+        if (m.font.stringWidth(ELLIPSIS) > width) {
             // A column too narrow for the mark draws nothing: the mark was drawn
         // over the next column (review of 12 October 2026, T5)
             return "";
@@ -1148,7 +1169,7 @@ public class BigTable {
         String[][] lines = new String[this.numberOfColumns][];
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-            lines[i] = wrap(text, font, textWidths[i]);
+            lines[i] = wrap(text, measureOf(font), textWidths[i]);
         }
         return lines;
     }
@@ -1166,7 +1187,7 @@ public class BigTable {
     // its spaces, as many on a line as fit, a word wider than the width broken
     // between its characters, code points, at least one on a line. An empty
     // text, or one of spaces, is one empty line.
-    static String[] wrap(String text, Font font, float width) {
+    static String[] wrap(String text, Measure m, float width) {
         List<String> lines = new ArrayList<String>(1);
         String line = "";
         int start = 0;
@@ -1182,21 +1203,21 @@ public class BigTable {
             }
             if (!line.isEmpty()) {
                 String candidate = line + " " + word;
-                if (font.stringWidth(candidate) <= width) {
+                if (m.width(candidate) <= width) {
                     line = candidate;
                     continue;
                 }
                 lines.add(line);
                 line = "";
             }
-            if (font.stringWidth(word) <= width) {
+            if (m.width(word) <= width) {
                 line = word;
                 continue;
             }
             int[] runes = word.codePoints().toArray();
             int from = 0;
             while (from < runes.length) {
-                int end = runesThatFit(runes, from, font, width);
+                int end = runesThatFit(runes, from, m, width);
                 if (from + end == runes.length) {
                     line = new String(runes, from, end);
                     break;
@@ -1212,12 +1233,12 @@ public class BigTable {
     // How many of the code points, from the one at from, fit the width: at
     // least one, so that a column too narrow for a character still draws the
     // text, a character on each line.
-    private static int runesThatFit(int[] runes, int from, Font font, float width) {
+    private static int runesThatFit(int[] runes, int from, Measure m, float width) {
         int end = 1;
         int high = runes.length - from;
         while (end < high) {
             int middle = end + (high - end + 1)/2;
-            if (font.stringWidth(new String(runes, from, middle)) <= width) {
+            if (m.width(new String(runes, from, middle)) <= width) {
                 end = middle;
             } else {
                 high = middle - 1;
@@ -1264,7 +1285,7 @@ public class BigTable {
                         whole[i] = checkLineBreaks
                                 ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
                         lines[i] = Arrays.copyOf(lines[i], most);
-                        lines[i][most - 1] = mark(lines[i][most - 1], font, textWidths[i]);
+                        lines[i][most - 1] = mark(lines[i][most - 1], measureOf(font), textWidths[i]);
                     }
                 }
                 count = most;
@@ -1285,12 +1306,12 @@ public class BigTable {
 
     // The line with the mark that says the text goes on, cut to make room for
     // it within the width.
-    private static String mark(String line, Font font, float width) {
+    private static String mark(String line, Measure m, float width) {
         String marked = line + ELLIPSIS;
-        if (font.stringWidth(marked) <= width) {
+        if (m.width(marked) <= width) {
             return marked;
         }
-        return cut(line, font, width);
+        return cut(line, m, width);
     }
 
     // Draws a row of the lines of its fields, count lines tall, as
@@ -1345,13 +1366,13 @@ public class BigTable {
                 String line = lines[i][k];
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
-                    xText = (vertLines[i + 1] - this.padding) - font.stringWidth(line);
+                    xText = (vertLines[i + 1] - this.padding) - measureOf(font).width(line);
                 }
                 float yText = this.yText;
                 if (k > 0) {
                     yText += (float) k * lineHeight;
                 }
-                page.drawTextLine(font, line, xText, yText);
+                drawText(font, line, xText, yText);
             }
             page.addEMC();
         }
@@ -1425,5 +1446,44 @@ public class BigTable {
             close(iterator);
         }
         return count;
+    }
+
+    // Measures text in a font, and in its fallback font, if it has one, the
+    // characters the font does not have.
+    static final class Measure {
+        final Font font;
+        final Font fallback;
+
+        Measure(Font font, Font fallback) {
+            this.font = font;
+            this.fallback = fallback;
+        }
+
+        float width(String text) {
+            if (fallback == null) {
+                return font.stringWidth(font.size, text);
+            }
+            return font.stringWidth(fallback, font.size, text);
+        }
+    }
+
+    // The measure of the font: the rows' with their fallback font, the
+    // header's with its own.
+    private Measure measureOf(Font font) {
+        if (font == f2) {
+            return new Measure(font, fallback2);
+        }
+        return new Measure(font, fallback1);
+    }
+
+    // Draws the text at its baseline, in the font and its fallback font, if
+    // it has one.
+    private void drawText(Font font, String text, float x, float y) {
+        Font fallback = measureOf(font).fallback;
+        if (fallback == null) {
+            page.drawTextLine(font, text, x, y);
+            return;
+        }
+        page.drawString(font, fallback, font.size, text, x, y);
     }
 }

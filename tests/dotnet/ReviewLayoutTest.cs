@@ -498,7 +498,7 @@ public sealed class ReviewLayoutTest : IDisposable {
         // From 14, the width of " ...": a column too narrow for it draws
         // nothing (review of 12 October 2026, T5)
         for (float width = 14f; width < 200f; width += 3f) {
-            string fit = BigTable.Fit(text, font, width);
+            string fit = BigTable.Fit(text, new BigTable.TextMeasure(font, null), width);
             Assert.EndsWith(" ...", fit);
             string kept = fit.Substring(0, fit.Length - 4);
             Assert.StartsWith(kept, text);

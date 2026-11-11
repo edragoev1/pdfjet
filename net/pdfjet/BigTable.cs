@@ -80,6 +80,10 @@ namespace PDFjet.NET {
         internal string[][] headerLines;
         internal int headerCount;       // The most lines of a header field
         private bool firstRowOnPage;
+        // With SetFallbackFonts: the fonts of the characters the header's font
+        // and the rows' font do not have, or null
+        private Font fallback1;
+        private Font fallback2;
 
         /// <summary>
         /// Creates a table with the specified fonts and page size.
@@ -207,6 +211,22 @@ namespace PDFjet.NET {
             if (this.vertLines != null) {
                 SetVertLines();
             }
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the fonts that draw the characters the header's font and the rows' font
+        /// do not have, such as Korean or Chinese in a table of a Latin font: each
+        /// character in the font of its row if it has it, else in the fallback font, and
+        /// measured so. A null font is none, as unless set. Call it before SetTableData,
+        /// which measures the columns.
+        /// </summary>
+        /// <param name="header">the fallback font of the header's font, or null.</param>
+        /// <param name="rows">the fallback font of the rows' font, or null.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetFallbackFonts(Font header, Font rows) {
+            this.fallback1 = header;
+            this.fallback2 = rows;
             return this;
         }
 
@@ -587,10 +607,10 @@ namespace PDFjet.NET {
                 // field, so every field of it is drawn whole and none is
                 // measured here.
                 String drawn = (clipped != null && clipped[i] < widths[i])
-                        ? Fit(text, font, clipped[i]) : text;
+                        ? Fit(text, MeasureOf(font), clipped[i]) : text;
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
-                    xText = (vertLines[i + 1] - this.padding) - font.StringWidth(drawn);
+                    xText = (vertLines[i + 1] - this.padding) - MeasureOf(font).Width(drawn);
                 }
                 if (tagged) {
                     // A cell holds its text and nothing else, so the cell
@@ -607,7 +627,7 @@ namespace PDFjet.NET {
                 } else {
                     page.AddArtifactBMC();
                 }
-                page.DrawTextLine(font, drawn, xText, this.yText);
+                DrawText(font, drawn, xText, this.yText);
                 page.AddEMC();
             }
             page.structParent = parent;
@@ -736,7 +756,7 @@ namespace PDFjet.NET {
         private void Measure(string[] fields, Font font) {
             for (int i = 0; i < this.numberOfColumns; i++) {
                 String text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-                float width = font.StringWidth(text);
+                float width = MeasureOf(font).Width(text);
                 if (width > widths[i]) {
                     this.widths[i] = width;
                 }
@@ -845,17 +865,17 @@ namespace PDFjet.NET {
         // characters of what fits, rather than being added to them, so the
         // text stays inside the column. The text is cut between code points,
         // as in the other ports, and a surrogate pair is never cut in half.
-        internal static string Fit(string text, Font font, float width) {
-            if (font.StringWidth(text) <= width) {
+        internal static string Fit(string text, TextMeasure m, float width) {
+            if (m.Width(text) <= width) {
                 return text;
             }
-            return Cut(text, font, width);
+            return Cut(text, m, width);
         }
 
         // As much of the text as fits the width with the mark that says it was
         // cut, the mark in place of the last four characters of what fits; or
         // "" when the width is too narrow for the mark.
-        internal static string Cut(string text, Font font, float width) {
+        internal static string Cut(string text, TextMeasure m, float width) {
             // Where each code point starts, and where the text ends.
             List<int> starts = new List<int>(text.Length + 1);
             for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
@@ -866,17 +886,17 @@ namespace PDFjet.NET {
             int high = starts.Count - 1;
             while (end < high) {
                 int middle = end + (high - end + 1) / 2;
-                if (font.StringWidth(text.Substring(0, starts[middle])) <= width) {
+                if (m.Width(text.Substring(0, starts[middle])) <= width) {
                     end = middle;
                 } else {
                     high = middle - 1;
                 }
             }
             end = Math.Max(0, end - ELLIPSIS.Length);
-            while (end > 0 && font.StringWidth(text.Substring(0, starts[end]) + ELLIPSIS) > width) {
+            while (end > 0 && m.Width(text.Substring(0, starts[end]) + ELLIPSIS) > width) {
                 end--;
             }
-            if (font.StringWidth(ELLIPSIS) > width) {
+            if (m.font.StringWidth(ELLIPSIS) > width) {
                 // A column too narrow for the mark draws nothing: the mark was drawn
                 // over the next column (review of 12 October 2026, T5)
                 return "";
@@ -1011,7 +1031,7 @@ namespace PDFjet.NET {
             count = 1;
             for (int i = 0; i < this.numberOfColumns; i++) {
                 string text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-                lines[i] = Wrap(text, font, textWidths[i]);
+                lines[i] = Wrap(text, MeasureOf(font), textWidths[i]);
                 count = Math.Max(count, lines[i].Length);
             }
             return lines;
@@ -1031,7 +1051,7 @@ namespace PDFjet.NET {
         // between its spaces, as many on a line as fit, a word wider than the
         // width broken between its characters, its code points, at least one on
         // a line. An empty text, or one of spaces, is one empty line.
-        internal static string[] Wrap(string text, Font font, float width) {
+        internal static string[] Wrap(string text, TextMeasure m, float width) {
             List<string> lines = new List<string>(1);
             string line = "";
             foreach (string word in text.Split(' ')) {
@@ -1040,14 +1060,14 @@ namespace PDFjet.NET {
                 }
                 if (line.Length != 0) {
                     string candidate = line + " " + word;
-                    if (font.StringWidth(candidate) <= width) {
+                    if (m.Width(candidate) <= width) {
                         line = candidate;
                         continue;
                     }
                     lines.Add(line);
                     line = "";
                 }
-                if (font.StringWidth(word) <= width) {
+                if (m.Width(word) <= width) {
                     line = word;
                     continue;
                 }
@@ -1055,7 +1075,7 @@ namespace PDFjet.NET {
                 int first = 0;                  // The first code point left
                 int last = starts.Count - 1;    // The code points of the word
                 while (first < last) {
-                    int end = CodePointsThatFit(word, starts, first, font, width);
+                    int end = CodePointsThatFit(word, starts, first, m, width);
                     if (first + end == last) {
                         line = word.Substring(starts[first]);
                         break;
@@ -1071,12 +1091,12 @@ namespace PDFjet.NET {
         // Returns how many of the code points of the word from the first fit the
         // width: at least one, so that a column too narrow for a character still
         // draws the text, a character on each line.
-        private static int CodePointsThatFit(string word, List<int> starts, int first, Font font, float width) {
+        private static int CodePointsThatFit(string word, List<int> starts, int first, TextMeasure m, float width) {
             int end = 1;
             int high = starts.Count - 1 - first;
             while (end < high) {
                 int middle = end + (high - end + 1) / 2;
-                if (font.StringWidth(word.Substring(starts[first], starts[first + middle] - starts[first])) <= width) {
+                if (m.Width(word.Substring(starts[first], starts[first + middle] - starts[first])) <= width) {
                     end = middle;
                 } else {
                     high = middle - 1;
@@ -1122,7 +1142,7 @@ namespace PDFjet.NET {
                             whole[i] = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
                             string[] cut = new string[most];
                             Array.Copy(lines[i], cut, most);
-                            cut[most - 1] = Mark(cut[most - 1], font, textWidths[i]);
+                            cut[most - 1] = Mark(cut[most - 1], MeasureOf(font), textWidths[i]);
                             lines[i] = cut;
                         }
                     }
@@ -1144,12 +1164,12 @@ namespace PDFjet.NET {
 
         // Returns the line with the mark that says the text goes on, cut to make
         // room for it within the width.
-        private static string Mark(string line, Font font, float width) {
+        private static string Mark(string line, TextMeasure m, float width) {
             string marked = line + ELLIPSIS;
-            if (font.StringWidth(marked) <= width) {
+            if (m.Width(marked) <= width) {
                 return marked;
             }
-            return Cut(line, font, width);
+            return Cut(line, m, width);
         }
 
         // Draws a row of the lines of its fields, count lines tall, as
@@ -1205,13 +1225,13 @@ namespace PDFjet.NET {
                     string line = lines[i][k];
                     float xText = vertLines[i] + this.padding;
                     if (alignment[i] == Alignment.RIGHT) {
-                        xText = (vertLines[i + 1] - this.padding) - font.StringWidth(line);
+                        xText = (vertLines[i + 1] - this.padding) - MeasureOf(font).Width(line);
                     }
                     float yText = this.yText;
                     if (k > 0) {
                         yText += (float) ((float) k * lineHeight);
                     }
-                    page.DrawTextLine(font, line, xText, yText);
+                    DrawText(font, line, xText, yText);
                 }
                 page.AddEMC();
             }
@@ -1279,6 +1299,45 @@ namespace PDFjet.NET {
                 }
             }
             return count;
+        }
+
+        // Measures text in a font, and in its fallback font, if it has one, the
+        // characters the font does not have.
+        internal sealed class TextMeasure {
+            internal readonly Font font;
+            internal readonly Font fallback;
+
+            internal TextMeasure(Font font, Font fallback) {
+                this.font = font;
+                this.fallback = fallback;
+            }
+
+            internal float Width(string text) {
+                if (fallback == null) {
+                    return font.StringWidth(font.size, text);
+                }
+                return font.StringWidth(fallback, font.size, text);
+            }
+        }
+
+        // Returns the measure of the font: the rows' with their fallback font,
+        // the header's with its own.
+        private TextMeasure MeasureOf(Font font) {
+            if (font == f2) {
+                return new TextMeasure(font, fallback2);
+            }
+            return new TextMeasure(font, fallback1);
+        }
+
+        // Draws the text at its baseline, in the font and its fallback font, if
+        // it has one.
+        private void DrawText(Font font, string text, float x, float y) {
+            Font fallback = MeasureOf(font).fallback;
+            if (fallback == null) {
+                page.DrawTextLine(font, text, x, y);
+                return;
+            }
+            page.DrawString(font, fallback, font.size, text, x, y);
         }
     }
 }

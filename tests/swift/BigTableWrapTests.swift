@@ -118,19 +118,19 @@ import Testing
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let word = String(repeating: "abcdefghij", count: 12)
-        let lines = BigTable.wrapText(word, font, 60)
+        let lines = BigTable.wrapText(word, BigTable.TextMeasure(font: font, fallback: nil), 60)
         #expect(lines.count >= 2 && lines.joined() == word, "the word broke as \(lines)")
         for line in lines {
             #expect(font.stringWidth(line) <= 60, "a piece is wider than the column: \(line)")
         }
         // A column too narrow for one character still draws one on each line
-        #expect(BigTable.wrapText("abc", font, 0.5) == ["a", "b", "c"])
+        #expect(BigTable.wrapText("abc", BigTable.TextMeasure(font: font, fallback: nil), 0.5) == ["a", "b", "c"])
         // Spaces are where lines break, not text: an empty field is one line
-        #expect(BigTable.wrapText("  ", font, 60) == [""])
+        #expect(BigTable.wrapText("  ", BigTable.TextMeasure(font: font, fallback: nil), 60) == [""])
         // A character is a code point, as in the other ports: an "e" and its
         // combining accent can go on two lines.
         let accents = String(repeating: "e\u{0301}", count: 3)
-        #expect(BigTable.wrapText(accents, font, 0.5).count == 6)
+        #expect(BigTable.wrapText(accents, BigTable.TextMeasure(font: font, fallback: nil), 0.5).count == 6)
     }
 
     // The narrow columns keep their widths, and the wide ones share the rest of
@@ -258,5 +258,33 @@ import Testing
         let never = try draw(nil)
         let again = try draw { $0.setWrapText(true).setWrapText(false) }
         #expect(never == again, "turned on and off, the table is not drawn as before")
+    }
+
+    // The fallback fonts measure and draw the characters the fonts of the
+    // table do not have: a Korean answer in a table of a Latin font is in the
+    // Korean font, its column as wide as it is drawn; without them, nothing
+    // changes.
+    @Test func theFallbackFontsDrawWhatTheFontsDoNotHave() throws {
+        let text = "안녕하세요 반갑습니다"
+        func table(_ fallback: Bool) throws -> BigTable {
+            let pdf = TestSupport.newPDF()
+            let f1 = try Font(pdf, IBMPlexSans.SemiBold)
+            let f2 = try Font(pdf, IBMPlexSans.Regular)
+            let table = BigTable(pdf, f1, f2, Letter.PORTRAIT).setNumberOfColumns(2)
+            if fallback {
+                table.setFallbackFonts(try Font(pdf, IBMPlexSansKR.SemiBold), try Font(pdf, IBMPlexSansKR.Regular))
+            }
+            table.setTableData(["No", "Answer"], [["1", text]])
+            table.setLocation(20, 20)
+            try table.complete()
+            return table
+        }
+        let with = try table(true)
+        let without = try table(false)
+        #expect(with.widths[1] > without.widths[1],
+                "the answer is not measured in the Korean font: \(with.widths[1]), without it \(without.widths[1])")
+        let content = TestSupport.content(with.getPages()[0])
+        #expect(content.contains("Tf") && content.components(separatedBy: " Tf").count - 1 >= 3,
+                "the Korean font is not drawn with: \(content)")
     }
 }

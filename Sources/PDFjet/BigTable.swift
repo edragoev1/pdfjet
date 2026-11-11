@@ -71,6 +71,10 @@ public class BigTable {
     private(set) var headerLines: [[String]] = []
     private(set) var headerCount: Int = 0        // The most lines of a header field
     private var firstRowOnPage = false
+    // With setFallbackFonts: the fonts of the characters the header's font
+    // and the rows' font do not have, or nil
+    private var fallback1: Font?
+    private var fallback2: Font?
 
     ///
     /// Creates a table with the specified fonts and page size.
@@ -191,6 +195,24 @@ public class BigTable {
         if !vertLines.isEmpty {
             setVertLines()
         }
+        return self
+    }
+
+    ///
+    /// Sets the fonts that draw the characters the header's font and the rows' font do
+    /// not have, such as Korean or Chinese in a table of a Latin font: each character in
+    /// the font of its row if it has it, else in the fallback font, and measured so. A
+    /// nil font is none, as unless set. Call it before setTableData, which measures the
+    /// columns.
+    ///
+    /// - Parameter header: the fallback font of the header's font, or nil.
+    /// - Parameter rows: the fallback font of the rows' font, or nil.
+    /// - Returns: this BigTable object.
+    ///
+    @discardableResult
+    public func setFallbackFonts(_ header: Font?, _ rows: Font?) -> BigTable {
+        self.fallback1 = header
+        self.fallback2 = rows
         return self
     }
 
@@ -548,11 +570,11 @@ public class BigTable {
             // field of it is drawn whole and none is measured here.
             var drawn = text
             if let clipped = self.clipped, clipped[i] < widths[i] {
-                drawn = BigTable.fit(text, font, clipped[i])
+                drawn = BigTable.fit(text, measureOf(font), clipped[i])
             }
             var xText = vertLines[i] + self.padding
             if alignment[i] == Alignment.RIGHT {
-                xText = (vertLines[i + 1] - self.padding) - font.stringWidth(drawn)
+                xText = (vertLines[i + 1] - self.padding) - measureOf(font).width(drawn)
             }
             if tagged {
                 // A cell holds its text and nothing else, so the cell element
@@ -568,7 +590,7 @@ public class BigTable {
             } else {
                 page!.addArtifactBMC()
             }
-            page!.drawTextLine(font, drawn, xText, self.yText)
+            drawText(font, drawn, xText, self.yText)
             page!.addEMC()
         }
         page!.structParent = parent
@@ -733,7 +755,7 @@ public class BigTable {
     private func measure(_ fields: [String], _ font: Font) {
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
-            let width = font.stringWidth(text)
+            let width = measureOf(font).width(text)
             if width > widths[i] {
                 widths[i] = width
             }
@@ -843,33 +865,33 @@ public class BigTable {
     // what fits, rather than being added to them, so the text stays inside
     // the column. The text is cut between code points, as in the other ports,
     // never inside one.
-    private static func fit(_ text: String, _ font: Font, _ width: Float) -> String {
-        if font.stringWidth(text) <= width {
+    private static func fit(_ text: String, _ m: TextMeasure, _ width: Float) -> String {
+        if m.width(text) <= width {
             return text
         }
-        return cut(text, font, width)
+        return cut(text, m, width)
     }
 
     // As much of the text as fits the width with the mark that says it was
     // cut, the mark in place of the last four characters of what fits; or ""
     // when the width is too narrow for the mark.
-    private static func cut(_ text: String, _ font: Font, _ width: Float) -> String {
+    private static func cut(_ text: String, _ m: TextMeasure, _ width: Float) -> String {
         let characters = Array(text.unicodeScalars)
         var end = 0             // The most characters that fit.
         var high = characters.count
         while end < high {
             let middle = end + (high - end + 1) / 2
-            if font.stringWidth(BigTable.string(characters[0..<middle])) <= width {
+            if m.width(BigTable.string(characters[0..<middle])) <= width {
                 end = middle
             } else {
                 high = middle - 1
             }
         }
         end = max(0, end - ELLIPSIS.unicodeScalars.count)
-        while end > 0 && font.stringWidth(BigTable.string(characters[0..<end]) + ELLIPSIS) > width {
+        while end > 0 && m.width(BigTable.string(characters[0..<end]) + ELLIPSIS) > width {
             end -= 1
         }
-        if font.stringWidth(ELLIPSIS) > width {
+        if m.font.stringWidth(ELLIPSIS) > width {
             // A column too narrow for the mark draws nothing: the mark was drawn
         // over the next column (review of 12 October 2026, T5)
             return ""
@@ -983,7 +1005,7 @@ public class BigTable {
         var count = 1
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
-            let field = BigTable.wrapText(text, font, textWidths[i])
+            let field = BigTable.wrapText(text, measureOf(font), textWidths[i])
             lines.append(field)
             count = max(count, field.count)
         }
@@ -995,7 +1017,7 @@ public class BigTable {
     // between its characters, at least one on a line. An empty text, or one of
     // spaces, is one empty line. The text is split at the space character and
     // broken between code points, as in the other ports.
-    static func wrapText(_ text: String, _ font: Font, _ width: Float) -> [String] {
+    static func wrapText(_ text: String, _ m: TextMeasure, _ width: Float) -> [String] {
         var lines = [String]()
         var line = ""
         for piece in text.unicodeScalars.split(separator: " ", omittingEmptySubsequences: true) {
@@ -1003,20 +1025,20 @@ public class BigTable {
             let word = BigTable.string(characters[...])
             if !line.isEmpty {
                 let candidate = line + " " + word
-                if font.stringWidth(candidate) <= width {
+                if m.width(candidate) <= width {
                     line = candidate
                     continue
                 }
                 lines.append(line)
                 line = ""
             }
-            if font.stringWidth(word) <= width {
+            if m.width(word) <= width {
                 line = word
                 continue
             }
             var rest = characters[...]
             while !rest.isEmpty {
-                let end = BigTable.charactersThatFit(rest, font, width)
+                let end = BigTable.charactersThatFit(rest, m, width)
                 if end == rest.count {
                     line = BigTable.string(rest)
                     break
@@ -1033,12 +1055,12 @@ public class BigTable {
     // one, so that a column too narrow for a character still draws the text,
     // a character on each line.
     private static func charactersThatFit(
-            _ characters: ArraySlice<Unicode.Scalar>, _ font: Font, _ width: Float) -> Int {
+            _ characters: ArraySlice<Unicode.Scalar>, _ m: TextMeasure, _ width: Float) -> Int {
         var end = 1
         var high = characters.count
         while end < high {
             let middle = end + (high - end + 1) / 2
-            if font.stringWidth(BigTable.string(characters.prefix(middle))) <= width {
+            if m.width(BigTable.string(characters.prefix(middle))) <= width {
                 end = middle
             } else {
                 high = middle - 1
@@ -1082,7 +1104,7 @@ public class BigTable {
                 for i in 0..<lines.count where lines[i].count > most {
                     texts[i] = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
                     lines[i] = Array(lines[i][0..<most])
-                    lines[i][most - 1] = BigTable.mark(lines[i][most - 1], font, textWidths[i])
+                    lines[i][most - 1] = BigTable.mark(lines[i][most - 1], measureOf(font), textWidths[i])
                 }
                 whole = texts
                 count = most
@@ -1103,12 +1125,12 @@ public class BigTable {
 
     // The line with the mark that says the text goes on, cut to make room for
     // it within the width.
-    private static func mark(_ line: String, _ font: Font, _ width: Float) -> String {
+    private static func mark(_ line: String, _ m: TextMeasure, _ width: Float) -> String {
         let marked = line + ELLIPSIS
-        if font.stringWidth(marked) <= width {
+        if m.width(marked) <= width {
             return marked
         }
-        return cut(line, font, width)
+        return cut(line, m, width)
     }
 
     // Draws a row of the lines of its fields, count lines tall, as
@@ -1167,13 +1189,13 @@ public class BigTable {
             for (k, line) in lines[i].enumerated() {
                 var xText = vertLines[i] + self.padding
                 if alignment[i] == Alignment.RIGHT {
-                    xText = (vertLines[i + 1] - self.padding) - font.stringWidth(line)
+                    xText = (vertLines[i + 1] - self.padding) - measureOf(font).width(line)
                 }
                 var yText = self.yText
                 if k > 0 {
                     yText += Float(k) * lineHeight
                 }
-                page!.drawTextLine(font, line, xText, yText)
+                drawText(font, line, xText, yText)
             }
             page!.addEMC()
         }
@@ -1244,6 +1266,39 @@ public class BigTable {
             }
         }
         return count
+    }
+
+    // Measures text in a font, and in its fallback font, if it has one, the
+    // characters the font does not have.
+    struct TextMeasure {
+        let font: Font
+        let fallback: Font?
+
+        func width(_ text: String) -> Float {
+            guard let fallback = fallback else {
+                return font.stringWidth(font.size, text)
+            }
+            return font.stringWidth(fallback, font.size, text)
+        }
+    }
+
+    // The measure of the font: the rows' with their fallback font, the
+    // header's with its own.
+    private func measureOf(_ font: Font) -> TextMeasure {
+        if font === f2 {
+            return TextMeasure(font: font, fallback: fallback2)
+        }
+        return TextMeasure(font: font, fallback: fallback1)
+    }
+
+    // Draws the text at its baseline, in the font and its fallback font, if
+    // it has one.
+    private func drawText(_ font: Font, _ text: String, _ x: Float, _ y: Float) {
+        guard let fallback = measureOf(font).fallback else {
+            page!.drawTextLine(font, text, x, y)
+            return
+        }
+        page!.drawString(font, fallback, font.size, text, x, y)
     }
 }
 
