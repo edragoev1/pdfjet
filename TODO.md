@@ -59,6 +59,55 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **A comparison page on pdfjet.com, with numbers** (11 November 2026). Why:
+  "top Java PDF libraries" articles are content marketing with no
+  measurements (the one found, pdfnoodle.com's of January 2025, by pdf
+  noodle's founder, lists Playwright, Flying Saucer, OpenPDF and iText and
+  recommends his own API; PDFjet absent), and AI assistants and search
+  answers draw on such pages. A page with real numbers is citable and hard
+  to argue with. Something like "Java PDF libraries compared: speed,
+  memory, PDF/UA". What goes on it:
+  - **pdf-libs-benchmarks' results:** speed and memory against the others;
+    BigTable's 200,000 cells in Go, Table 201 MB, BigTable 15 MB.
+  - **Licences:** PDFjet Core MIT; iText AGPL (a service on it publishes its
+    source or buys a licence); OpenPDF LGPL/MPL.
+  - **One Markdown file through the free online converters,** measured
+    (tried 11 November 2026, the same small file with a table):
+    | | Templated.io | Iron Software | pdfjet.com |
+    |---|---|---|---|
+    | Engine | jsPDF 2.3.1 + html2canvas | IronPDF (Chromium) | PDFjet 9.1.7 |
+    | Content | one JPEG of the page | text | text |
+    | Searchable, readable aloud | no, no text at all | yes | yes |
+    | Markdown table | (a picture) | not converted, the pipes as text | converted |
+    | Tagged | no | no | yes, PDF/UA |
+    | PDF version | 1.3 | 1.4 | 1.7 |
+    ScreenshotOne gave no free PDF (its paid API); WPS no download in 45 s.
+  - **What headless Chrome cannot make, or not well** (most HTML-to-PDF
+    services are Chromium, Puppeteer or Playwright):
+    1. Fillable forms: inputs come out flat, no AcroForm fields.
+    2. PDF/A: no output intent or PDF/A metadata; fixed afterwards with
+       Ghostscript, often imperfectly.
+    3. PDF/UA: recent Chrome can tag, but tagging is not conformance
+       (language, alt text, table headers, metadata); rarely passes veraPDF.
+    4. Electronic invoices (ZUGFeRD, Factur-X, XRechnung): PDF/A-3 with the
+       XML attached; not possible. PDFjet Pro.
+    5. Digital signatures (PAdES, long-term) and password encryption.
+    6. Print production: CMYK, spot colors, PDF/X, bleed and crop marks;
+       Chrome is screen RGB.
+    7. Exact pages: no CSS paged media (running headers and footers in the
+       margins, footnotes, "page 3 of 12" anywhere, controlled breaks), why
+       PrinceXML and WeasyPrint exist.
+    8. Very large documents: the whole HTML in memory first; thousands of
+       pages slow or crash. BigTable's flat memory.
+    9. Existing PDFs: merging, appending, filling in, editing.
+    The line: Chrome when the document is a web page; a PDF library for a
+    document (forms, archival, accessible, invoices, signatures, print,
+    large reports).
+  Also, by the same thinking: the awesome-java and awesome-pdf lists. A
+  note to pdf noodle's founder is drafted in
+  ~/Projects/private/pdfnoodle-marcelo-email-2026-11-11.txt, not sent (the
+  owner: the article "does not have anything useful").
+
 - **9.1.9, the next release, after the Forms launch: BigTable that wraps its
   text, if asked** (the owner, 10 November 2026: "cutting the last few
   columns is not great"; "it is very important", the owner had thought of
