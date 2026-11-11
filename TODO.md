@@ -285,8 +285,22 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   - **Mazes** for children, by size and difficulty.
   - **Graph, dot-grid and lined paper:** dull, searched always, perfect with
     PDFjet.
-  Leaning, as advised: bingo cards or word search, wanted new each time; or
-  Sudoku in large print with its answers. A new tool may be made in the
+  - **A hyperlinked digital planner** (11 November 2026, the owner asked for
+    a PDF using PDF's interactive features; the one advised first): a
+    calendar whose months, weeks and days are tabs that jump to their page,
+    notes pages behind them, for the iPad's GoodNotes and Notability; sold
+    by the thousand on Etsy, often $5 to $15. Only internal links and
+    bookmarks (destination.go, bookmark.go), which every viewer and iPad
+    app follows, unlike JavaScript or fields. The Printable Calendar's
+    sibling, "Digital planner 2027": the year, the week's first day, the
+    language, A4 or Letter.
+  - Also weighed: Sudoku's answers on a layer to show or hide
+    (optionalcontentgroup.go), a nice extra but layers are toggled only in
+    Acrobat and Firefox, hardly in Chrome or on phones; stories of linked
+    pages, written not generated; fillable checklists, Forms' already;
+    self-marking quizzes, JavaScript, Acrobat alone, avoided.
+  Leaning, as advised: the digital planner first; then bingo cards or word
+  search, wanted new each time; or Sudoku in large print with its answers. A new tool may be made in the
   browser from the start, on Forms' TypeScript engine (step 2 below), no
   .cgi, "your file never leaves your computer". The owner to choose.
 
