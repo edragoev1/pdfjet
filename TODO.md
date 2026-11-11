@@ -148,6 +148,13 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   a line of the release
   notes, "BigTable wraps text in its cells, its memory still flat".
 
+- **9.1.9 release notes, a draft** (started 11 November 2026; lines added as
+  the work is done, the most important first):
+  - **BigTable:** `SetWrapText` wraps long fields within their columns, each
+    row as tall as its tallest field and the memory still flat;
+    `SetFallbackFonts` draws the characters the table's fonts don't have,
+    such as Korean or Chinese in a Latin font. In the four ports, off unless
+    set, so existing programs write the same PDFs. Example_51.
 - **9.1.9 too, a question: Cell's border width of 0 by default** (11
   November 2026). A Cell draws its borders with a pen width of 0 unless
   SetBorderWidth is called, in all four ports (cell.go, Cell.java, Cell.cs,
