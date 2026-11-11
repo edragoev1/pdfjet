@@ -59,6 +59,33 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **A release after the Forms launch: BigTable that wraps its text, if
+  asked** (the owner, 10 November 2026: "cutting the last few columns is not
+  great"). BigTable's rule is one height for every row, which lets it count
+  its pages ("Page i of N") and keep its memory flat; a field too wide is
+  cut, and a table too wide loses its last columns to "...". A new mode,
+  off unless asked, so that every program of BigTable today writes the same
+  PDF, byte for byte, which the four ports' comparisons prove:
+  - `SetWrapText(true)` (Go `SetWrapText`, C# `SetWrapText`, Swift
+    `setWrapText`): the columns share the page's width,
+    SetColumnWidthsInPercent's or of themselves in proportion to their
+    fields, to a cap; a field wraps at its spaces, a word longer than its
+    column broken.
+  - A row as tall as its tallest cell: BigTable reads its rows twice
+    already, to measure and to draw, so the measuring finds each row's
+    height and the pages' breaks, "Page i of N" right, the memory still
+    flat, a row at a time.
+  - To decide: a row taller than a page, a field of a long text, cut at a
+    number of lines with "..." or carried over to the next page.
+  - PDF/UA as it is: the Table and its TH and TD, more lines in a cell.
+  - The four ports and the TypeScript engine, with tests that the mode off
+    changes nothing; about a day or two, the measuring and the breaks most
+    of it.
+  Then: CSV to PDF with every column, its long fields wrapped, not cut;
+  Collect's archive on BigTable, its memory flat, no column lost (Forms
+  TODO.md, "Collect's archive with BigTable"); and a line of the release
+  notes, "BigTable wraps text in its cells, its memory still flat".
+
 - **If one of the Free Tools becomes popular: the plan, in three steps**
   (the owner, 10 November 2026). Today the pages are served and cached by
   Cloudflare, which any traffic leaves alone; each PDF is made by a .cgi
