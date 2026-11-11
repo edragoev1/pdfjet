@@ -62,7 +62,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 - **9.1.9, the next release, after the Forms launch: BigTable that wraps its
   text, if asked** (the owner, 10 November 2026: "cutting the last few
   columns is not great"; "it is very important", the owner had thought of
-  it before). In the release notes' first lines. BigTable's rule is one height for every row, which lets it count
+  it before). In the release notes' first lines. With it, perhaps, for developers too:
+  "Get the code" in PDFjet Forms, a design's PDFjet program in Java, C#,
+  Go or Swift (Forms TODO.md, "Get the code"). BigTable's rule is one height for every row, which lets it count
   its pages ("Page i of N") and keep its memory flat; a field too wide is
   cut, and a table too wide loses its last columns to "...". A new mode,
   off unless asked, so that every program of BigTable today writes the same
