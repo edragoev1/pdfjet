@@ -264,7 +264,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   public key: the PDF opens in any reader as it is, and the attachment
   only with the private key. Bank details sealed in an invoice, the raw
   data in a medical report, a private annex in a contract. It is what
-  PDFjet Forms already does with a form's answers (pdfjet-server's
+  PDFjet Forms already does with a form's answers (pdfjet-forms-server's
   encrypt.go): HPKE (RFC 9180) with the KEM X-Wing, ML-KEM-768 and X25519
   together, so that the attachment stays sealed while either holds, then
   HKDF-SHA256 and AES-256-GCM. Go's crypto/hpke has it all; whether Java,
