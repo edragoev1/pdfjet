@@ -500,7 +500,10 @@ func TestTableACellThatSpansRowsIsDrawnOnceOverAllOfThem(t *testing.T) {
 	doc := testNewDoc()
 	font := testHelvetica(doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	NewTable().SetTableData(testSpanningRows(font, 3, 2, 2), 0).SetLocation(50, 50).DrawOn(page)
+	// At a border width of 0, so that a border is the edge of its cell
+	// exactly; a wider one runs half its width past each end, to close the
+	// corners
+	NewTable().SetTableData(testSpanningRows(font, 3, 2, 2), 0).SetCellBorderWidth(0).SetLocation(50, 50).DrawOn(page)
 	content := testContent(page)
 	// The spanning cell is drawn once, and the cell it covers not at all.
 	if strings.Count(content, testHex("spans")) != 1 {
@@ -643,6 +646,7 @@ func TestTableTheRowsACellWrapsIntoAreOneCellOfEveryBorderButTheirOwn(t *testing
 	page := NewPage(doc.pdf, letter.Portrait())
 	table := NewTable()
 	table.SetTableData(testWrapping(font), 0)
+	table.SetCellBorderWidth(0) // The borders the cells' edges exactly, as above
 	table.SetLocation(50, 50)
 	xy := table.DrawOn(page)
 	// A vertical rule of each row of the wrap, down each of the three edges
@@ -699,6 +703,7 @@ func TestTableACellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan(t *testi
 	page := NewPage(doc.pdf, letter.Portrait())
 	table := NewTable()
 	table.SetTableData(data, 0)
+	table.SetCellBorderWidth(0) // The borders the cells' edges exactly, as above
 	table.SetLocation(50, 50)
 	xy := table.DrawOn(page)
 	if table.GetRow(0)[0].GetText() == testLongText {

@@ -201,9 +201,9 @@ func TestPageAColorOrPenWidthThatIsSetAlreadyIsNotWrittenAgain(t *testing.T) {
 	page.SetBrushColor(color.Black)
 	page.SetPenColor(color.Red)
 	page.SetPenColorRGB([3]float32{1, 0, 0})
-	page.SetPenWidth(0)
-	page.SetDefaultPenWidth()
-	if got := testContent(page); got != "0 0 0 rg\n1 0 0 RG\n0 w\n" {
+	page.SetPenWidth(0.5)
+	page.SetDefaultPenWidth() // 0.5, set already
+	if got := testContent(page); got != "0 0 0 rg\n1 0 0 RG\n0.5 w\n" {
 		t.Errorf("content %q", got)
 	}
 }

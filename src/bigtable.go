@@ -71,8 +71,9 @@ type BigTable struct {
 	headerColor     [3]float32
 	hasHeaderColor  bool // false for the shading of every other row
 	borderColor     [3]float32
-	noVerticalLines bool // true for the rows' lines alone
-	hasBorder       bool // false for no lines
+	borderWidth     float32 // The width of the lines, 0.5 points unless set
+	noVerticalLines bool    // true for the rows' lines alone
+	hasBorder       bool    // false for no lines
 	footerText      string
 	footerFont      *Font   // nil for the header font
 	footerFontSize  float32 // 0 for the size of the footer's font
@@ -120,6 +121,7 @@ func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize pagesize.PageSize) *BigT
 		shadingColor: colorToRGB(0xF0F0F0),
 		hasShading:   true,
 		borderColor:  colorToRGB(0xB0B0B0),
+		borderWidth:  0.5,
 		hasBorder:    true,
 		footerText:   "Page {page} of {pages}",
 		footerOffset: -1,
@@ -276,6 +278,20 @@ func (bt *BigTable) SetBorderColor(c int32) *BigTable {
 	return bt
 }
 
+// SetBorderWidth sets the width of the lines between the rows and the columns
+// and around the table, 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is
+// the thinnest line of the device, a pixel on a screen, faint or gone in print. A negative
+// width, or one that is not a number, is recorded on the PDF as misuse, and
+// the width is left as it was.
+func (bt *BigTable) SetBorderWidth(width float32) *BigTable {
+	if !(width >= 0) || math.IsInf(float64(width), 0) {
+		bt.pdf.fail("The width of the lines must be a number, 0 or more.")
+		return bt
+	}
+	bt.borderWidth = width
+	return bt
+}
+
 // SetBorderColorRGB sets the color of the lines between the rows and the
 // columns and around the table from its red, green and blue values from 0 to 1.
 func (bt *BigTable) SetBorderColorRGB(rgb [3]float32) *BigTable {
@@ -401,7 +417,7 @@ func (bt *BigTable) newPage() {
 	bt.pages = append(bt.pages, bt.page)
 	bt.pageNumber++
 	bt.footerDrawn = false
-	bt.page.SetPenWidth(0.0)
+	bt.page.SetPenWidth(bt.borderWidth)
 	bt.yText = bt.top + bt.verticalPadding + bt.f1.ascent
 	bt.highlight = true
 	// The header fields are the TH cells of the table the first time they are

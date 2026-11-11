@@ -47,7 +47,7 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 	line.x2 = x2
 	line.y2 = y2
 	line.color = colorToRGB(color.Black)
-	line.width = 0.0
+	line.width = 0.5
 	line.pattern = "[] 0"
 	return line
 }
@@ -127,7 +127,8 @@ func (line *Line) GetEndPoint() *Point {
 	return NewPoint(line.x2, line.y2)
 }
 
-// SetStrokeWidth sets the stroke width of this line.
+// SetStrokeWidth sets the stroke width of this line, 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is
+// the thinnest line of the device, a pixel on a screen, faint or gone in print.
 //   - width: the width.
 //
 // Returns this Line object.

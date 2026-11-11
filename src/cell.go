@@ -187,6 +187,7 @@ func NewCell(font *Font, text string) *Cell {
 	cell.rowspan = 1
 	cell.rowsSpanned = 1
 	cell.SetPadding(2.0)
+	cell.borderWidth = 0.5
 	cell.backgroundColor = color.Transparent
 	cell.borderColor = color.Transparent
 	cell.textColor = color.Black
@@ -508,7 +509,8 @@ func (cell *Cell) GetBorderColor() *[3]float32 {
 	return &borderColor
 }
 
-// SetBorderWidth sets the width of the cell borders.
+// SetBorderWidth sets the width of the cell borders, 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is
+// the thinnest line of the device, a pixel on a screen, faint or gone in print.
 //   - borderWidth: the width of the cell borders.
 //
 // Returns this Cell object.

@@ -49,6 +49,7 @@ func NewRect(x, y, w, h float32) *Rect {
 	rect.height = h
 
 	rect.borderPattern = "[] 0"
+	rect.borderWidth = 0.5
 	return rect
 }
 
@@ -111,7 +112,8 @@ func (rect *Rect) SetFillColorRGB(fillColor [3]float32) *Rect {
 	return rect
 }
 
-// SetBorderWidth sets the border width.
+// SetBorderWidth sets the border width, 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is
+// the thinnest line of the device, a pixel on a screen, faint or gone in print.
 func (rect *Rect) SetBorderWidth(borderWidth float32) *Rect {
 	rect.borderWidth = borderWidth
 	return rect

@@ -155,6 +155,18 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     `SetFallbackFonts` draws the characters the table's fonts don't have,
     such as Korean or Chinese in a Latin font. In the four ports, off unless
     set, so existing programs write the same PDFs. Example_51.
+  - **Every line 0.5 points unless set:** Cell, Table, BigTable, Rect, Line,
+    Path and the page's default pen, as Word's table borders and TextBlock
+    and TextFrame already were. 0, the thinnest line of the device, is a
+    pixel on a screen and faint or gone in print, and the PDF standard
+    advises against it (ISO 32000, 8.4.3.2). A program that wants the old
+    hairline sets 0: SetBorderWidth(0), SetStrokeWidth(0), SetPenWidth(0).
+- [x] **Decided 11 November 2026 (the owner): 0.5 points, the default of every
+  line PDFjet draws, throughout the product** ("if people notice it, it would
+  be that their reports look better"). Cell, Rect, Line, Path, BigTable (and
+  its new SetBorderWidth) and Page.SetDefaultPenWidth, as TextBlock and
+  TextFrame were already; 0 still there when set. Go done the same day; the
+  other three ports to follow. The question as it was asked:
 - **9.1.9 too, a question: Cell's border width of 0 by default** (11
   November 2026). A Cell draws its borders with a pen width of 0 unless
   SetBorderWidth is called, in all four ports (cell.go, Cell.java, Cell.cs,

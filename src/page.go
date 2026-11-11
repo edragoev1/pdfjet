@@ -1697,10 +1697,11 @@ func cmykToRGB(c, m, y, k float32) [3]float32 {
 		1.0 - min(1.0, y+k)}
 }
 
-// SetDefaultPenWidth sets the line width to the default.
-// The default is the finest line width.
+// SetDefaultPenWidth sets the line width to the default, 0.5 points, as
+// every line PDFjet draws by default (9.1.9). SetPenWidth(0) is the thinnest
+// line of the device, a pixel on a screen, faint or gone in print.
 func (page *Page) SetDefaultPenWidth() *Page {
-	return page.SetPenWidth(0.0)
+	return page.SetPenWidth(0.5)
 }
 
 // SetStrokeDashPattern the stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.

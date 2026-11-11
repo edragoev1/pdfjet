@@ -39,7 +39,7 @@ func NewPath() *Path {
 	path := new(Path)
 	path.points = []*Point{}
 	path.color = colorToRGB(color.Black)
-	path.width = 0.0
+	path.width = 0.5
 	path.pattern = "[] 0"
 	return path
 }
@@ -82,7 +82,9 @@ func (path *Path) SetStrokeDashPattern(pattern string) *Path {
 	return path
 }
 
-// SetStrokeWidth sets the stroke width that will be used to draw the lines and splines that are part of this path.
+// SetStrokeWidth sets the stroke width that will be used to draw the lines and splines that are part of this path,
+// 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is
+// the thinnest line of the device, a pixel on a screen, faint or gone in print.
 //   - width: the stroke width.
 //
 // Returns this Path object.
