@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -100,7 +102,7 @@ func TestBigTableWrapAWordLongerThanItsColumnIsBroken(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	word := strings.Repeat("abcdefghij", 12)
-	lines := bigTableWrap(word, font, 60)
+	lines := bigTableWrap(word, bigTableMeasure{font: font}, 60)
 	if len(lines) < 2 || strings.Join(lines, "") != word {
 		t.Fatalf("the word broke as %q", lines)
 	}
@@ -110,11 +112,11 @@ func TestBigTableWrapAWordLongerThanItsColumnIsBroken(t *testing.T) {
 		}
 	}
 	// A column too narrow for one character still draws one on each line
-	if narrow := bigTableWrap("abc", font, 0.5); !slices.Equal(narrow, []string{"a", "b", "c"}) {
+	if narrow := bigTableWrap("abc", bigTableMeasure{font: font}, 0.5); !slices.Equal(narrow, []string{"a", "b", "c"}) {
 		t.Errorf("a column too narrow drew %q", narrow)
 	}
 	// Spaces are where lines break, not text: an empty field is one line
-	if empty := bigTableWrap("  ", font, 60); !slices.Equal(empty, []string{""}) {
+	if empty := bigTableWrap("  ", bigTableMeasure{font: font}, 60); !slices.Equal(empty, []string{""}) {
 		t.Errorf("a field of spaces drew %q", empty)
 	}
 }
@@ -270,5 +272,35 @@ func TestBigTableWrapTurnedOffAgainIsAsNeverOn(t *testing.T) {
 	again := draw(func(table *BigTable) { table.SetWrapText(true).SetWrapText(false) })
 	if never != again {
 		t.Error("turned on and off, the table is not drawn as before")
+	}
+}
+
+// The fallback fonts measure and draw the characters the fonts of the table
+// do not have: a Korean answer in a table of a Latin font is in the Korean
+// font, its column as wide as it is drawn; without them, nothing changes.
+func TestBigTableTheFallbackFontsDrawWhatTheFontsDoNotHave(t *testing.T) {
+	text := "안녕하세요 반갑습니다"
+	table := func(fallback bool) (*BigTable, *PDF) {
+		pdf := testNewPDF()
+		f1 := NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+		f2 := NewFontFromFile(pdf, IBMPlexSans.Regular)
+		bt := NewBigTable(pdf, f1, f2, letter.Portrait()).SetNumberOfColumns(2)
+		if fallback {
+			bt.SetFallbackFonts(NewFontFromFile(pdf, IBMPlexSansKR.SemiBold), NewFontFromFile(pdf, IBMPlexSansKR.Regular))
+		}
+		bt.SetTableRows([]string{"No", "Answer"}, slices.Values([][]string{{"1", text}}))
+		bt.SetLocation(20, 20)
+		if err := bt.Complete(); err != nil {
+			t.Fatal(err)
+		}
+		return bt, pdf
+	}
+	with, _ := table(true)
+	without, _ := table(false)
+	if !(with.widths[1] > without.widths[1]) {
+		t.Errorf("the answer is not measured in the Korean font: %v, without it %v", with.widths[1], without.widths[1])
+	}
+	if content := testContent(with.GetPages()[0]); !strings.Contains(content, "Tf") || strings.Count(content, " Tf") < 3 {
+		t.Errorf("the Korean font is not drawn with: %q", content)
 	}
 }

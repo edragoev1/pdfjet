@@ -100,6 +100,10 @@ type BigTable struct {
 	headerLines    [][]string
 	headerCount    int // The most lines of a header field
 	firstRowOnPage bool
+	// With SetFallbackFonts: the fonts of the characters the header's font
+	// and the rows' font do not have, or nil
+	fallback1 *Font
+	fallback2 *Font
 }
 
 // NewBigTable creates a new BigTable instance
@@ -225,6 +229,17 @@ func (bt *BigTable) SetWrapText(wrap bool) *BigTable {
 	if bt.vertLines != nil {
 		bt.setVertLines()
 	}
+	return bt
+}
+
+// SetFallbackFonts sets the fonts that draw the characters the header's font
+// and the rows' font do not have, such as Korean or Chinese in a table of a
+// Latin font: each character in the font of its row if it has it, else in the
+// fallback font, and measured so. A nil font is none, as unless set. Call it
+// before SetTableData or SetTableRows, which measure the columns.
+func (bt *BigTable) SetFallbackFonts(header, rows *Font) *BigTable {
+	bt.fallback1 = header
+	bt.fallback2 = rows
 	return bt
 }
 
@@ -572,11 +587,11 @@ func (bt *BigTable) drawFieldsAndLine(
 		// drawn whole and none is measured here.
 		drawn := text
 		if bt.clipped != nil && bt.clipped[i] < bt.widths[i] {
-			drawn = bigTableFit(text, font, bt.clipped[i])
+			drawn = bigTableFit(text, bt.measureOf(font), bt.clipped[i])
 		}
 		xText := bt.vertLines[i] + bt.padding
 		if bt.alignment[i] == alignment.Right {
-			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, drawn)
+			xText = (bt.vertLines[i+1] - bt.padding) - bt.measureOf(font).width(drawn)
 		}
 		if tagged {
 			// A cell holds its text and nothing else, so the cell element
@@ -594,7 +609,7 @@ func (bt *BigTable) drawFieldsAndLine(
 		} else {
 			bt.page.AddArtifactBMC()
 		}
-		bt.page.drawTextLine(font, drawn, xText, bt.yText)
+		bt.drawText(font, drawn, xText, bt.yText)
 		bt.page.AddEMC()
 	}
 	bt.page.structParent = parent
@@ -800,7 +815,7 @@ func (bt *BigTable) measure(fields []string, font *Font) {
 		if bt.checkLineBreaks && hasLineBreak(text) {
 			text = lineBreaksToSpaces(text)
 		}
-		width := font.StringWidth(font.size, text)
+		width := bt.measureOf(font).width(text)
 		if width > bt.widths[i] {
 			bt.widths[i] = width
 		}
@@ -916,23 +931,23 @@ func (bt *BigTable) setVertLinesInPercent() {
 // mark that says it was cut. The mark takes the place of the last four
 // characters of what fits, rather than being added to them, so the text stays
 // inside the column. The text is cut between runes, never inside one.
-func bigTableFit(text string, font *Font, width float32) string {
-	if font.StringWidth(font.size, text) <= width {
+func bigTableFit(text string, m bigTableMeasure, width float32) string {
+	if m.width(text) <= width {
 		return text
 	}
-	return bigTableCut(text, font, width)
+	return bigTableCut(text, m, width)
 }
 
 // bigTableCut returns as much of the text as fits the width with the mark
 // that says it was cut, the mark in place of the last four characters of what
 // fits; or "" when the width is too narrow for the mark.
-func bigTableCut(text string, font *Font, width float32) string {
+func bigTableCut(text string, m bigTableMeasure, width float32) string {
 	runes := []rune(text)
 	end := 0 // The most runes that fit.
 	high := len(runes)
 	for end < high {
 		middle := end + (high-end+1)/2
-		if font.StringWidth(font.size, string(runes[:middle])) <= width {
+		if m.width(string(runes[:middle])) <= width {
 			end = middle
 		} else {
 			high = middle - 1
@@ -942,10 +957,10 @@ func bigTableCut(text string, font *Font, width float32) string {
 	if end < 0 {
 		end = 0
 	}
-	for end > 0 && font.StringWidth(font.size, string(runes[:end])+bigTableEllipsis) > width {
+	for end > 0 && m.width(string(runes[:end])+bigTableEllipsis) > width {
 		end--
 	}
-	if font.StringWidth(font.size, bigTableEllipsis) > width {
+	if m.font.StringWidth(m.font.size, bigTableEllipsis) > width {
 		// A column too narrow for the mark draws nothing: the mark was drawn
 		// over the next column (review of 12 October 2026, T5)
 		return ""
@@ -1062,7 +1077,7 @@ func (bt *BigTable) wrapFields(fields []string, font *Font) ([][]string, int) {
 		if bt.checkLineBreaks && hasLineBreak(text) {
 			text = lineBreaksToSpaces(text)
 		}
-		lines[i] = bigTableWrap(text, font, bt.textWidths[i])
+		lines[i] = bigTableWrap(text, bt.measureOf(font), bt.textWidths[i])
 		count = max(count, len(lines[i]))
 	}
 	return lines, count
@@ -1072,7 +1087,7 @@ func (bt *BigTable) wrapFields(fields []string, font *Font) ([][]string, int) {
 // parts between its spaces, as many on a line as fit, a word wider than the
 // width broken between its characters, at least one on a line. An empty text,
 // or one of spaces, is one empty line.
-func bigTableWrap(text string, font *Font, width float32) []string {
+func bigTableWrap(text string, m bigTableMeasure, width float32) []string {
 	lines := make([]string, 0, 1)
 	line := ""
 	for _, word := range strings.Split(text, " ") {
@@ -1080,20 +1095,20 @@ func bigTableWrap(text string, font *Font, width float32) []string {
 			continue
 		}
 		if line != "" {
-			if candidate := line + " " + word; font.StringWidth(font.size, candidate) <= width {
+			if candidate := line + " " + word; m.width(candidate) <= width {
 				line = candidate
 				continue
 			}
 			lines = append(lines, line)
 			line = ""
 		}
-		if font.StringWidth(font.size, word) <= width {
+		if m.width(word) <= width {
 			line = word
 			continue
 		}
 		runes := []rune(word)
 		for len(runes) > 0 {
-			end := bigTableRunesThatFit(runes, font, width)
+			end := bigTableRunesThatFit(runes, m, width)
 			if end == len(runes) {
 				line = string(runes)
 				break
@@ -1108,12 +1123,12 @@ func bigTableWrap(text string, font *Font, width float32) []string {
 // bigTableRunesThatFit returns how many of the runes, from the first, fit the
 // width: at least one, so that a column too narrow for a character still
 // draws the text, a character on each line.
-func bigTableRunesThatFit(runes []rune, font *Font, width float32) int {
+func bigTableRunesThatFit(runes []rune, m bigTableMeasure, width float32) int {
 	end := 1
 	high := len(runes)
 	for end < high {
 		middle := end + (high-end+1)/2
-		if font.StringWidth(font.size, string(runes[:middle])) <= width {
+		if m.width(string(runes[:middle])) <= width {
 			end = middle
 		} else {
 			high = middle - 1
@@ -1162,7 +1177,7 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 					}
 					whole[i] = text
 					lines[i] = lines[i][:most]
-					lines[i][most-1] = bigTableMark(lines[i][most-1], font, bt.textWidths[i])
+					lines[i][most-1] = bigTableMark(lines[i][most-1], bt.measureOf(font), bt.textWidths[i])
 				}
 			}
 			count = most
@@ -1183,11 +1198,11 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 
 // bigTableMark returns the line with the mark that says the text goes on,
 // cut to make room for it within the width.
-func bigTableMark(line string, font *Font, width float32) string {
-	if marked := line + bigTableEllipsis; font.StringWidth(font.size, marked) <= width {
+func bigTableMark(line string, m bigTableMeasure, width float32) string {
+	if marked := line + bigTableEllipsis; m.width(marked) <= width {
 		return marked
 	}
-	return bigTableCut(line, font, width)
+	return bigTableCut(line, m, width)
 }
 
 // drawWrappedFields draws a row of the lines of its fields, count lines tall,
@@ -1244,13 +1259,13 @@ func (bt *BigTable) drawWrappedFields(
 		for k, line := range lines[i] {
 			xText := bt.vertLines[i] + bt.padding
 			if bt.alignment[i] == alignment.Right {
-				xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, line)
+				xText = (bt.vertLines[i+1] - bt.padding) - bt.measureOf(font).width(line)
 			}
 			yText := bt.yText
 			if k > 0 {
 				yText += float32(float32(k) * lineHeight)
 			}
-			bt.page.drawTextLine(font, line, xText, yText)
+			bt.drawText(font, line, xText, yText)
 		}
 		bt.page.AddEMC()
 	}
@@ -1318,4 +1333,38 @@ func (bt *BigTable) countWrappedPages() int {
 		}
 	}
 	return count
+}
+
+// bigTableMeasure measures text in a font, and in its fallback font, if it
+// has one, the characters the font does not have.
+type bigTableMeasure struct {
+	font     *Font
+	fallback *Font
+}
+
+func (m bigTableMeasure) width(text string) float32 {
+	if m.fallback == nil {
+		return m.font.StringWidth(m.font.size, text)
+	}
+	return m.font.StringWidthUsingFallbackFont(m.fallback, m.font.size, text)
+}
+
+// measureOf returns the measure of the font: the rows' with their fallback
+// font, the header's with its own.
+func (bt *BigTable) measureOf(font *Font) bigTableMeasure {
+	if font == bt.f2 {
+		return bigTableMeasure{font, bt.fallback2}
+	}
+	return bigTableMeasure{font, bt.fallback1}
+}
+
+// drawText draws the text at its baseline, in the font and its fallback
+// font, if it has one.
+func (bt *BigTable) drawText(font *Font, text string, x, y float32) {
+	fallback := bt.measureOf(font).fallback
+	if fallback == nil {
+		bt.page.drawTextLine(font, text, x, y)
+		return
+	}
+	bt.page.DrawString(font, fallback, font.size, text, x, y)
 }
