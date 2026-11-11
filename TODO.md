@@ -198,7 +198,19 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   So BigTable, wrapping, is the one table both whole, no column lost, and
   safe where memory is tight: a Worker, or a cheap phone's browser.
   Then: CSV to PDF with every column, its long fields wrapped, not cut (its
-  Go program, csv2pdf); Collect's archive on BigTable later, with the
+  Go program, csv2pdf; checked 11 November 2026, the owner: "our
+  csv-to-pdf would be even more useful now with the wrap around in
+  BigTable!"). csv2pdf (pdfjet-utils/csv2pdf/main.go) draws with Table
+  today, not BigTable: every page kept to the end for its "1 of N" foot,
+  each field cut to its column with an ellipsis (fitted), the size shrunk
+  to fit (fitSize, columnWidths). On BigTable with SetWrapText: fields
+  wrapped, no column lost; the memory flat for a large file on the shared
+  host; SetFallbackFonts for Chinese, Japanese, Korean or Arabic in a cell;
+  and fitSize, columnWidths and fitted mostly gone. It needs pdfjet-utils'
+  go.mod on PDFjet's main (now v9.1.7) until 9.1.9, as Forms' server is,
+  and the foot's "Page i of N" from BigTable's page count, to check. About
+  an hour with its tests, then csv2pdf.cgi built again for pdfjet.com
+  (make-cgi.sh). After the Forms launch; Collect's archive on BigTable later, with the
   TypeScript engine (Forms TODO.md, "Collect's archive with BigTable"); and
   a line of the release
   notes, "BigTable wraps text in its cells, its memory still flat".
@@ -362,8 +374,8 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   pdfjet.com/markdown-to-pdf** (md2pdf.cgi, pdfjet-utils' md2pdf run as CGI;
   pdfjet-website's make-md2pdf-cgi.sh builds it; SVG pasted into the text is
   drawn, other images not on the web). Its sibling, CSV to PDF, done and live
-  the same evening: pdfjet.com/csv-to-pdf, csv2pdf of pdfjet-utils with
-  BigTable, both under Free Tools in the menu; and the third, Images to PDF,
+  the same evening: pdfjet.com/csv-to-pdf, csv2pdf of pdfjet-utils (with Table, not
+  BigTable as said here first; corrected 11 November 2026), both under Free Tools in the menu; and the third, Images to PDF,
   pdfjet.com/images-to-pdf, img2pdf (JPEG, PNG, BMP and SVG, a page each,
   PDF/A-3a and PDF/UA). md2pdf, csv2pdf and img2pdf released together as
   v1.1.0 (re-made with img2pdf the same evening). Still to do of them: the listings below ("To be
