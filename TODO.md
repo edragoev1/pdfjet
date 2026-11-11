@@ -69,7 +69,13 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   1. **Now, cheap, before any trouble:** a rate-limiting rule of
      Cloudflare's on `*.cgi`, as 20 conversions a minute for one visitor, so
      that one script cannot use up the account (the free plan has one such
-     rule, as far as known; set in Cloudflare's dashboard, by the owner);
+     rule, as far as known; set in Cloudflare's dashboard, by the owner),
+     scoped to pdfjet.com alone, `(http.host eq "pdfjet.com" and
+     ends_with(http.request.uri.path, ".cgi"))`: forms.pdfjet.com is in the
+     same zone, and its /api/paddle must never be limited, as Paddle's
+     webhooks come in bursts from a few addresses and a key waits on them
+     (forms.cgi is never in an address Cloudflare sees, as /api/... is
+     rewritten to it on IONOS, but the host makes it certain);
      and an eye on Cloudflare's analytics of the tools' pages and their
      .cgi, to see growth coming, which takes days or weeks.
   2. **If a tool takes off: its PDF made in the browser**, as Forms makes
