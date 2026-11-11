@@ -14,10 +14,11 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 /**
- * Use this class for a table of plain one-line rows of any length, a
- * statement, a list or an export: every row has one height and one style,
- * and a field too wide for its column is cut short. For text that wraps,
- * drawables in cells, spanned cells or page totals, use Table. The rows are read from a
+ * Use this class for a table of plain rows of any length, a statement, a list
+ * or an export: every row has one style, and a field too wide for its column
+ * is cut short, or, with setWrapText, wraps onto more lines, the row as tall
+ * as its tallest field. For drawables in cells, spanned cells or page totals,
+ * use Table. The rows are read from a
  * delimited text file, or from an Iterable, one at a time, and each page is
  * written as soon as it is full, so the memory stays flat however many rows
  * there are. A PDF/UA document holds no more than that either: the table is
@@ -73,6 +74,14 @@ public class BigTable {
     private int pageCount;          // The pages they take, counted by complete()
     private int pageNumber;         // The page being drawn
     private boolean footerDrawn;
+    // With setWrapText: the fields wrap within their columns, textWidths the
+    // width of the text of each column, headerLines the header's lines, and
+    // firstRowOnPage whether no row is drawn yet on the page.
+    private boolean wrap;
+    private float[] textWidths;
+    private String[][] headerLines;
+    private int headerCount;        // The most lines of a header field
+    private boolean firstRowOnPage;
 
     /**
      * Creates a table and sets the fonts and page size.
@@ -192,6 +201,31 @@ public class BigTable {
                     + ": set the alignment of a column after setTableData."));
         }
         this.alignment[column] = alignment;
+        return this;
+    }
+
+    /**
+     * Sets whether a field too wide for its column wraps onto more lines, at
+     * its spaces, a word longer than its column broken between its
+     * characters, rather than being cut short; a row is then as tall as its
+     * tallest field. The columns keep the widths of setColumnWidthsInPercent,
+     * or, without them, their widths, as wide as their widest fields, when the
+     * table fits its page; when it does not, the narrow columns keep theirs
+     * and the others share what is left equally. A row that does not fit what
+     * is left of a page starts the next; one taller than a whole page is cut
+     * at the lines that fit, ending in " ...", its cell keeping the whole of
+     * its text. The rows are read once more to count the pages, three times
+     * in all, and the memory stays flat. It is off unless set, and the table
+     * is drawn as before.
+     *
+     * @param wrap true for the fields to wrap.
+     * @return this BigTable object.
+     */
+    public BigTable setWrapText(boolean wrap) {
+        this.wrap = wrap;
+        if (this.vertLines != null) {
+            setVertLines();
+        }
         return this;
     }
 
@@ -425,16 +459,42 @@ public class BigTable {
                     page.structParent, StructElem.TABLE, null, true);
             header = StructElem.TH;
         }
-        drawFieldsAndLine(headerFields, f1, header, true);
+        if (wrap) {
+            drawWrappedFields(headerLines, headerCount, null, f1, header, true);
+        } else {
+            drawFieldsAndLine(headerFields, f1, header, true);
+        }
+        float extra = headerExtra();
+        if (extra > 0f) {
+            this.yText += extra;
+        }
         this.yText += f1.descent + 2*verticalPadding + f2.ascent;
         startNewPage = false;
+        firstRowOnPage = true;
+    }
+
+    // Returns how much taller than one line the header is: 0 unless its
+    // fields wrap onto more lines.
+    private float headerExtra() {
+        if (!wrap || headerCount <= 1) {
+            return 0f;
+        }
+        return (float) (headerCount - 1) * (f1.ascent + f1.descent);
     }
 
     // True when the table starts on the page setFirstPage set: when the header
     // and the first row fit on it above its bottom margin.
     private boolean startsOnFirstPage() {
-        return firstPage != null && firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
-                + 4*verticalPadding <= firstPage.height - bottomMargin;
+        if (firstPage == null) {
+            return false;
+        }
+        float need = firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
+                + 4*verticalPadding;
+        float extra = headerExtra();
+        if (extra > 0f) {
+            need += extra;
+        }
+        return need <= firstPage.height - bottomMargin;
     }
 
     // Draws the footer of the page that was just finished, once. The page is
@@ -460,6 +520,10 @@ public class BigTable {
     }
 
     private void drawTextAndLine(String[] fields) throws Exception {
+        if (wrap) {
+            drawWrappedRow(fields);
+            return;
+        }
         if (startNewPage) {     // Create new page
             newPage();
         }
@@ -478,6 +542,9 @@ public class BigTable {
     // created. The location and the bottom margin are set after setTableData,
     // so the pages are counted when the table is drawn.
     private int countPages() {
+        if (wrap) {
+            return countWrappedPages();
+        }
         float pageHeight = pageSize.getHeight();
         float yTop = firstRowY(this.y);
         float yPos = yTop;
@@ -508,6 +575,10 @@ public class BigTable {
     // to another float, and the count was a page off the drawing.
     private float firstRowY(float top) {
         float y = top + verticalPadding + f1.ascent;
+        float extra = headerExtra();
+        if (extra > 0f) {
+            y += extra;
+        }
         y += f1.descent + 2*verticalPadding + f2.ascent;
         return y;
     }
@@ -839,6 +910,10 @@ public class BigTable {
             pdf.fail(new IllegalArgumentException("The table has " + this.widths.length + " columns, and "
                     + count + " percentages: give one for each column."));
         }
+        if (wrap) {
+            setWrapWidths();
+            return;
+        }
         if (percents != null) {
             setVertLinesInPercent();
             return;
@@ -921,6 +996,13 @@ public class BigTable {
         if (font.stringWidth(text) <= width) {
             return text;
         }
+        return cut(text, font, width);
+    }
+
+    // As much of the text as fits the width with the mark that says it was
+    // cut, the mark in place of the last four characters of what fits; or ""
+    // when the width is too narrow for the mark.
+    private static String cut(String text, Font font, float width) {
         // The index of each code point, and of the end of the text.
         int count = text.codePointCount(0, text.length());
         int[] offsets = new int[count + 1];
@@ -963,7 +1045,11 @@ public class BigTable {
         if (rows == null) {
             return;     // A table without data draws nothing.
         }
-        this.pageCount = countPages();
+        try {
+            this.pageCount = countPages();      // Reads the rows with setWrapText
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
         newPage();
         Iterator<String[]> iterator = rows.iterator();
         try {
@@ -981,5 +1067,363 @@ public class BigTable {
         }
         drawTheVerticalLines();
         drawFooter();
+    }
+
+    // The wrapping of the fields, with setWrapText
+
+    // Gives each column the width of its text, and puts each vertical line
+    // where the columns before it end: the widths of setColumnWidthsInPercent,
+    // or each column as wide as its widest field when they fit the page; when
+    // they do not, the columns narrower than an equal share of what is left
+    // keep their widths, from the narrowest, and the others share the rest
+    // equally. No field is cut: each wraps within its column.
+    private void setWrapWidths() {
+        int n = this.widths.length;
+        this.clipped = null;
+        this.textWidths = new float[n];
+        float vertLineX = this.x;
+        this.vertLines[0] = vertLineX;
+        if (percents != null) {
+            float tableWidth = pageSize.getWidth() - 2*this.x;
+            if (!(tableWidth > 0f)) {
+                pdf.fail(new IllegalArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
+            }
+            double total = 0.0;
+            for (float percent : percents) {
+                total += percent;
+            }
+            for (int i = 0; i < percents.length; i++) {
+                float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.length;
+                this.textWidths[i] = Math.max(0f, width - 2*this.padding);
+                vertLineX += width;
+                this.vertLines[i + 1] = vertLineX;
+            }
+        } else {
+            System.arraycopy(this.widths, 0, this.textWidths, 0, n);
+            float room = pageSize.getWidth() - 2*this.x - n*2*this.padding;
+            float total = 0f;
+            for (float width : this.widths) {
+                total += width;
+            }
+            if (total > room) {
+                // From the narrowest column, in the order of the columns among
+                // those as wide: a stable sort, an insertion sort of a few.
+                int[] order = new int[n];
+                for (int i = 0; i < n; i++) {
+                    int j = i;
+                    while (j > 0 && this.widths[i] < this.widths[order[j - 1]]) {
+                        order[j] = order[j - 1];
+                        j--;
+                    }
+                    order[j] = i;
+                }
+                float remaining = room;
+                int left = n;
+                float share = -1f;
+                for (int i : order) {
+                    if (share < 0f) {
+                        float fair = Math.max(0f, remaining / left);
+                        if (this.widths[i] <= fair) {
+                            remaining -= this.widths[i];
+                            left--;
+                            continue;
+                        }
+                        share = fair;
+                    }
+                    this.textWidths[i] = share;
+                }
+            }
+            for (int i = 0; i < n; i++) {
+                vertLineX += this.textWidths[i] + 2*this.padding;
+                this.vertLines[i + 1] = vertLineX;
+            }
+        }
+        this.headerLines = wrapFields(headerFields, f1);
+        this.headerCount = mostLines(headerLines);
+    }
+
+    // The lines of each field of the row drawn, wrapped to the width of its
+    // column in the font.
+    private String[][] wrapFields(String[] fields, Font font) {
+        String[][] lines = new String[this.numberOfColumns][];
+        for (int i = 0; i < this.numberOfColumns; i++) {
+            String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
+            lines[i] = wrap(text, font, textWidths[i]);
+        }
+        return lines;
+    }
+
+    // The most lines of any field of the row: at least one.
+    private static int mostLines(String[][] lines) {
+        int count = 1;
+        for (String[] field : lines) {
+            count = Math.max(count, field.length);
+        }
+        return count;
+    }
+
+    // The lines of the text within the width: its words, the parts between
+    // its spaces, as many on a line as fit, a word wider than the width broken
+    // between its characters, code points, at least one on a line. An empty
+    // text, or one of spaces, is one empty line.
+    static String[] wrap(String text, Font font, float width) {
+        List<String> lines = new ArrayList<String>(1);
+        String line = "";
+        int start = 0;
+        while (start <= text.length()) {
+            int space = text.indexOf(' ', start);
+            if (space == -1) {
+                space = text.length();
+            }
+            String word = text.substring(start, space);
+            start = space + 1;
+            if (word.isEmpty()) {
+                continue;
+            }
+            if (!line.isEmpty()) {
+                String candidate = line + " " + word;
+                if (font.stringWidth(candidate) <= width) {
+                    line = candidate;
+                    continue;
+                }
+                lines.add(line);
+                line = "";
+            }
+            if (font.stringWidth(word) <= width) {
+                line = word;
+                continue;
+            }
+            int[] runes = word.codePoints().toArray();
+            int from = 0;
+            while (from < runes.length) {
+                int end = runesThatFit(runes, from, font, width);
+                if (from + end == runes.length) {
+                    line = new String(runes, from, end);
+                    break;
+                }
+                lines.add(new String(runes, from, end));
+                from += end;
+            }
+        }
+        lines.add(line);
+        return lines.toArray(new String[0]);
+    }
+
+    // How many of the code points, from the one at from, fit the width: at
+    // least one, so that a column too narrow for a character still draws the
+    // text, a character on each line.
+    private static int runesThatFit(int[] runes, int from, Font font, float width) {
+        int end = 1;
+        int high = runes.length - from;
+        while (end < high) {
+            int middle = end + (high - end + 1)/2;
+            if (font.stringWidth(new String(runes, from, middle)) <= width) {
+                end = middle;
+            } else {
+                high = middle - 1;
+            }
+        }
+        return end;
+    }
+
+    // The most lines of a row whose first line is at y that the page holds
+    // above the limit: at least one.
+    private static int mostLines(float y, float limit, float lineHeight) {
+        int most = 1;
+        while (y + (float) most * lineHeight <= limit) {
+            most++;
+        }
+        return most;
+    }
+
+    // Draws a row of fields that wrap: on the next page when it does not fit
+    // what is left of this one, cut at the lines a whole page holds when it
+    // does not fit that either.
+    private void drawWrappedRow(String[] fields) throws Exception {
+        if (startNewPage) {
+            newPage();
+        }
+        Font font = f2;
+        float lineHeight = font.ascent + font.descent;
+        String[][] lines = wrapFields(fields, font);
+        int count = mostLines(lines);
+        float limit = page.height - bottomMargin;
+        if (count > 1 && this.yText + (float) (count - 1) * lineHeight > limit && !firstRowOnPage) {
+            drawTheVerticalLines();
+            drawFooter();
+            newPage();
+            limit = page.height - bottomMargin;
+        }
+        String[] whole = null;
+        if (count > 1 && this.yText + (float) (count - 1) * lineHeight > limit) {
+            int most = mostLines(this.yText, limit, lineHeight);
+            if (most < count) {
+                whole = new String[this.numberOfColumns];
+                for (int i = 0; i < lines.length; i++) {
+                    if (lines[i].length > most) {
+                        whole[i] = checkLineBreaks
+                                ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
+                        lines[i] = Arrays.copyOf(lines[i], most);
+                        lines[i][most - 1] = mark(lines[i][most - 1], font, textWidths[i]);
+                    }
+                }
+                count = most;
+            }
+        }
+        drawWrappedFields(lines, count, whole, font, StructElem.TD, false);
+        firstRowOnPage = false;
+        if (count > 1) {
+            this.yText += (float) (count - 1) * lineHeight;
+        }
+        this.yText += font.descent + 2*verticalPadding + font.ascent;
+        if (this.yText > limit) {
+            drawTheVerticalLines();
+            drawFooter();
+            startNewPage = true;
+        }
+    }
+
+    // The line with the mark that says the text goes on, cut to make room for
+    // it within the width.
+    private static String mark(String line, Font font, float width) {
+        String marked = line + ELLIPSIS;
+        if (font.stringWidth(marked) <= width) {
+            return marked;
+        }
+        return cut(line, font, width);
+    }
+
+    // Draws a row of the lines of its fields, count lines tall, as
+    // drawFieldsAndLine draws a row of one line: the cell of a field holds all
+    // of its lines, and the whole of the text of a field that was cut,
+    // whole[i] when there is one.
+    private void drawWrappedFields(
+            String[][] lines, int count, String[] whole, Font font, StructElem cellStructure, boolean header) {
+        float lineHeight = font.ascent + font.descent;
+        float extra = 0f;
+        if (count > 1) {
+            extra = (float) (count - 1) * lineHeight;
+        }
+        page.addArtifactBMC();
+        if (header && headerColor != null) {
+            highlightRows(page, font, headerColor, extra);
+            this.highlightRow = false;
+        } else if (this.highlightRow) {
+            if (shadingColor != null) {
+                highlightRows(page, font, shadingColor, extra);
+            }
+            this.highlightRow = false;
+        } else {
+            this.highlightRow = true;
+        }
+        if (borderColor != null) {
+            float[] original = page.getPenColor();
+            page.setPenColor(borderColor);
+            page.moveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
+            page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
+            page.strokePath();
+            page.setPenColor(original);
+        }
+        page.addEMC();
+        page.setBrushColor(Color.black);
+
+        boolean tagged = structElement != null && cellStructure != null;
+        StructElement parent = page.structParent;
+        StructElement rowElement = null;
+        if (tagged) {
+            rowElement = page.addStructElement(structElement, StructElem.TR, null);
+        }
+        for (int i = 0; i < this.numberOfColumns; i++) {
+            if (tagged) {
+                page.structParent = rowElement;
+                String description = (whole != null) ? whole[i] : null;
+                page.addBDC(cellStructure, null, null, description, cellAttributes(cellStructure));
+            } else {
+                page.addArtifactBMC();
+            }
+            for (int k = 0; k < lines[i].length; k++) {
+                String line = lines[i][k];
+                float xText = vertLines[i] + this.padding;
+                if (alignment[i] == Alignment.RIGHT) {
+                    xText = (vertLines[i + 1] - this.padding) - font.stringWidth(line);
+                }
+                float yText = this.yText;
+                if (k > 0) {
+                    yText += (float) k * lineHeight;
+                }
+                page.drawTextLine(font, line, xText, yText);
+            }
+            page.addEMC();
+        }
+        page.structParent = parent;
+    }
+
+    // Fills the background of a row, extra taller than one line.
+    private void highlightRows(Page page, Font font, float[] color, float extra) {
+        float[] original = page.getBrushColor();
+        page.setBrushColor(color);
+        float bottom = this.yText + font.descent + verticalPadding;
+        if (extra > 0f) {
+            bottom = this.yText + extra + font.descent + verticalPadding;
+        }
+        page.fillRectBetween(vertLines[0], this.yText - font.ascent - verticalPadding,
+                vertLines[this.numberOfColumns], bottom);
+        page.setBrushColor(original);
+    }
+
+    // Counts the pages the rows take as drawWrappedRow breaks them, reading
+    // the rows once more, so that the footer of each page says how many there
+    // are. The arithmetic is that of the drawing, in its order.
+    private int countWrappedPages() {
+        Font font = f2;
+        float lineHeight = font.ascent + font.descent;
+        float pageHeight = pageSize.getHeight();
+        float yTop = firstRowY(this.y);
+        float yPos = yTop;
+        if (startsOnFirstPage()) {
+            pageHeight = firstPage.height;
+            yPos = firstRowY(firstPageY);
+        }
+        int count = 1;
+        boolean newPage = false;
+        boolean first = true;
+        Iterator<String[]> iterator = rows.iterator();
+        try {
+            while (iterator.hasNext()) {
+                String[] fields = iterator.next();
+                if (fields.length < this.fieldsNeeded) {
+                    continue;
+                }
+                if (newPage) {
+                    count++;
+                    pageHeight = pageSize.getHeight();
+                    yPos = yTop;
+                    newPage = false;
+                    first = true;
+                }
+                int lines = mostLines(wrapFields(fields, font));
+                float limit = pageHeight - this.bottomMargin;
+                if (lines > 1 && yPos + (float) (lines - 1) * lineHeight > limit && !first) {
+                    count++;
+                    pageHeight = pageSize.getHeight();
+                    yPos = yTop;
+                    limit = pageHeight - this.bottomMargin;
+                }
+                if (lines > 1 && yPos + (float) (lines - 1) * lineHeight > limit) {
+                    lines = Math.min(lines, mostLines(yPos, limit, lineHeight));
+                }
+                if (lines > 1) {
+                    yPos += (float) (lines - 1) * lineHeight;
+                }
+                yPos += font.descent + 2*verticalPadding + font.ascent;
+                first = false;
+                if (yPos > limit) {
+                    newPage = true;
+                }
+            }
+        } finally {
+            close(iterator);
+        }
+        return count;
     }
 }
