@@ -48,8 +48,14 @@ runs:
               if [ -n "$missing" ]; then
                   echo "Installing:$missing"
                   bash "$GITHUB_WORKSPACE/.github/scripts/apt-mirror.sh"
-                  sudo apt-get -q -o Acquire::Retries=3 update
-                  sudo apt-get -q -o Acquire::Retries=3 install -y $missing
+                  # Warned of, not failed on: the toolchain runs without a
+                  # missing -dev package, as with libcurl4-openssl-dev when
+                  # Ubuntu's servers did not resolve (11 November 2026); a
+                  # build that needs one fails where it is used
+                  if ! { sudo apt-get -q -o Acquire::Retries=3 update &&
+                         sudo apt-get -q -o Acquire::Retries=3 install -y $missing; }; then
+                      echo "::warning::Not installed, Ubuntu's servers not reached:$missing"
+                  fi
               fi
               mkdir -p ~/swift-download
               cd ~/swift-download
