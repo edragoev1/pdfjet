@@ -6,10 +6,10 @@
  */
 import Foundation
 
-/// A table of plain one-line rows of any length, a statement, a list or an export:
-/// every row has one height and one style, and a field too wide for its column is cut
-/// short. For text that wraps, drawables in cells, spanned cells or page totals, use
-/// Table. The rows are read row by row from a delimited text file or from a sequence. Each page is written as soon as it is full, so the memory stays
+/// A table of plain rows of any length, a statement, a list or an export: every row
+/// has one style, and a field too wide for its column is cut short, or, with
+/// setWrapText, wraps onto more lines, the row as tall as its tallest field. For
+/// drawables in cells, spanned cells or page totals, use Table. The rows are read row by row from a delimited text file or from a sequence. Each page is written as soon as it is full, so the memory stays
 /// flat however many rows there are. A PDF/UA document holds no more than that
 /// either: the table is tagged as a table, and the structure elements of a page are
 /// written with it. What is left is one cross-reference entry for each of them,
@@ -27,10 +27,10 @@ public class BigTable {
     private var firstPageY: Float = 0.0     // The top of the table on firstPage
     private var pages: [Page] = []
     private var page: Page?
-    private var widths: [Float] = []
+    private(set) var widths: [Float] = []
     private var headerFields: [String] = []
     private var alignment: [Alignment] = []
-    private var vertLines: [Float] = []
+    private(set) var vertLines: [Float] = []
     // The width the text of each column has when the table is too wide for
     // the page and the last of its columns are cut back to fit it, or nil
     // when the table fits: a column that is as wide as its widest field holds
@@ -63,6 +63,14 @@ public class BigTable {
     private var pageCount: Int = 0      // The pages they take, counted by complete
     private var pageNumber: Int = 0     // The page being drawn
     private var footerDrawn: Bool = false
+    // With setWrapText: the fields wrap within their columns, textWidths the
+    // width of the text of each column, headerLines the header's lines, and
+    // firstRowOnPage whether no row is drawn yet on the page.
+    private var wrap = false
+    private(set) var textWidths: [Float] = []
+    private(set) var headerLines: [[String]] = []
+    private(set) var headerCount: Int = 0        // The most lines of a header field
+    private var firstRowOnPage = false
 
     ///
     /// Creates a table with the specified fonts and page size.
@@ -164,6 +172,25 @@ public class BigTable {
             return self
         }
         self.alignment[column] = alignment
+        return self
+    }
+
+    /// Sets whether a field too wide for its column wraps onto more lines, at its spaces, a
+    /// word longer than its column broken between its characters, rather than being cut
+    /// short; a row is then as tall as its tallest field. The columns keep the widths of
+    /// setColumnWidthsInPercent, or, without them, their widths, as wide as their widest
+    /// fields, when the table fits its page; when it does not, the narrow columns keep theirs
+    /// and the others share what is left equally. A row that does not fit what is left of a
+    /// page starts the next; one taller than a whole page is cut at the lines that fit,
+    /// ending in " ...", its cell keeping the whole of its text. The rows are read once more
+    /// to count the pages, three times in all, and the memory stays flat. It is off unless
+    /// set, and the table is drawn as before.
+    @discardableResult
+    public func setWrapText(_ wrap: Bool) -> BigTable {
+        self.wrap = wrap
+        if !vertLines.isEmpty {
+            setVertLines()
+        }
         return self
     }
 
@@ -349,9 +376,27 @@ public class BigTable {
                     page!.structParent, StructElem.TABLE, nil, true)
             header = StructElem.TH
         }
-        drawFieldsAndLine(fields: headerFields, font: f1, cellStructure: header, header: true)
+        if wrap {
+            drawWrappedFields(headerLines, headerCount, nil, f1, header, true)
+        } else {
+            drawFieldsAndLine(fields: headerFields, font: f1, cellStructure: header, header: true)
+        }
+        let extra = headerExtra()
+        if extra > 0 {
+            self.yText += extra
+        }
         self.yText += f1.descent + 2 * verticalPadding + f2.ascent
         startNewPage = false
+        firstRowOnPage = true
+    }
+
+    // How much taller than one line the header is: 0 unless its fields wrap
+    // onto more lines.
+    private func headerExtra() -> Float {
+        if !wrap || headerCount <= 1 {
+            return 0
+        }
+        return Float(headerCount - 1) * (f1.ascent + f1.descent)
     }
 
     // True when the table starts on the page setFirstPage set: when the header
@@ -361,7 +406,12 @@ public class BigTable {
             return false
         }
         let height: Float = firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
-        return height + 4 * verticalPadding <= firstPage.height - bottomMargin
+        var need = height + 4 * verticalPadding
+        let extra = headerExtra()
+        if extra > 0 {
+            need += extra
+        }
+        return need <= firstPage.height - bottomMargin
     }
 
     // Draws the footer of the page that was just finished, once. The page is
@@ -391,6 +441,10 @@ public class BigTable {
     // to another Float, and the count was a page off the drawing.
     private func firstRowY(_ top: Float) -> Float {
         var y = top + verticalPadding + f1.ascent
+        let extra = headerExtra()
+        if extra > 0 {
+            y += extra
+        }
         y += f1.descent + 2 * verticalPadding + f2.ascent
         return y
     }
@@ -400,6 +454,9 @@ public class BigTable {
     // created. The location and the bottom margin are set after setTableData,
     // so the pages are counted when the table is drawn.
     private func countPages() -> Int {
+        if wrap {
+            return countWrappedPages()
+        }
         var pageHeight = pageSize.getHeight()
         let yTop = firstRowY(self.y)
         var yPos = yTop
@@ -426,6 +483,10 @@ public class BigTable {
     }
 
     private func drawTextAndLine(fields: [String]) {
+        if wrap {
+            drawWrappedRow(fields)
+            return
+        }
         if startNewPage {
             newPage()
         }
@@ -700,6 +761,10 @@ public class BigTable {
             percents = nil
             pdf.fail("The table has \(self.widths.count) columns, and \(count) percentages: give one for each column.")
         }
+        if wrap {
+            setWrapWidths()
+            return
+        }
         if percents != nil {
             setVertLinesInPercent()
             return
@@ -782,6 +847,13 @@ public class BigTable {
         if font.stringWidth(text) <= width {
             return text
         }
+        return cut(text, font, width)
+    }
+
+    // As much of the text as fits the width with the mark that says it was
+    // cut, the mark in place of the last four characters of what fits; or ""
+    // when the width is too narrow for the mark.
+    private static func cut(_ text: String, _ font: Font, _ width: Float) -> String {
         let characters = Array(text.unicodeScalars)
         var end = 0             // The most characters that fit.
         var high = characters.count
@@ -832,6 +904,346 @@ public class BigTable {
         }
         drawTheVerticalLines()
         drawFooter()
+    }
+
+    // The wrapping of the fields, with setWrapText
+
+    // Gives each column the width of its text, and puts each vertical line
+    // where the columns before it end: the widths of setColumnWidthsInPercent,
+    // or each column as wide as its widest field when they fit the page; when
+    // they do not, the columns narrower than an equal share of what is left
+    // keep their widths, from the narrowest, and the others share the rest
+    // equally. No field is cut: each wraps within its column.
+    private func setWrapWidths() {
+        let n = self.widths.count
+        self.clipped = nil
+        self.textWidths = [Float](repeating: 0.0, count: n)
+        var vertLineX = self.x
+        vertLines[0] = vertLineX
+        if let percents = self.percents {
+            var tableWidth = pageSize.getWidth() - 2 * self.x
+            if !(tableWidth > 0) {
+                pdf.fail("The margin of the table, its x, is half the width of the page or more: the columns have no room.")
+                tableWidth = 0
+            }
+            var total = 0.0
+            for percent in percents {
+                total += Double(percent)
+            }
+            for i in 0..<percents.count {
+                let width = (total > 0) ? Float(Double(tableWidth) * Double(percents[i]) / total) : tableWidth / Float(percents.count)
+                textWidths[i] = max(0, width - 2 * padding)
+                vertLineX += width
+                vertLines[i + 1] = vertLineX
+            }
+        } else {
+            let widths = self.widths
+            textWidths = widths
+            let room = pageSize.getWidth() - 2 * self.x - Float(n) * 2 * self.padding
+            var total: Float = 0.0
+            for width in widths {
+                total += width
+            }
+            if total > room {
+                // From the narrowest column, in the order of the columns among
+                // those as wide: a stable sort, which Swift's sort is not
+                // said to be, so the index decides between equal widths.
+                let order = (0..<n).sorted {
+                    widths[$0] < widths[$1] || (widths[$0] == widths[$1] && $0 < $1)
+                }
+                var remaining = room
+                var left = n
+                var share: Float = -1
+                for i in order {
+                    if share < 0 {
+                        let fair = max(0, remaining / Float(left))
+                        if widths[i] <= fair {
+                            remaining -= widths[i]
+                            left -= 1
+                            continue
+                        }
+                        share = fair
+                    }
+                    textWidths[i] = share
+                }
+            }
+            for i in 0..<n {
+                vertLineX += textWidths[i] + 2 * padding
+                vertLines[i + 1] = vertLineX
+            }
+        }
+        (headerLines, headerCount) = wrapFields(headerFields, f1)
+    }
+
+    // The lines of each field of the row drawn, wrapped to the width of its
+    // column in the font, and the most lines of any of them.
+    private func wrapFields(_ fields: [String], _ font: Font) -> ([[String]], Int) {
+        var lines = [[String]]()
+        lines.reserveCapacity(numberOfColumns)
+        var count = 1
+        for i in 0..<numberOfColumns {
+            let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
+            let field = BigTable.wrapText(text, font, textWidths[i])
+            lines.append(field)
+            count = max(count, field.count)
+        }
+        return (lines, count)
+    }
+
+    // The lines of the text within the width: its words, the parts between
+    // its spaces, as many on a line as fit, a word wider than the width broken
+    // between its characters, at least one on a line. An empty text, or one of
+    // spaces, is one empty line. The text is split at the space character and
+    // broken between code points, as in the other ports.
+    static func wrapText(_ text: String, _ font: Font, _ width: Float) -> [String] {
+        var lines = [String]()
+        var line = ""
+        for piece in text.unicodeScalars.split(separator: " ", omittingEmptySubsequences: true) {
+            let characters = Array(piece)
+            let word = BigTable.string(characters[...])
+            if !line.isEmpty {
+                let candidate = line + " " + word
+                if font.stringWidth(candidate) <= width {
+                    line = candidate
+                    continue
+                }
+                lines.append(line)
+                line = ""
+            }
+            if font.stringWidth(word) <= width {
+                line = word
+                continue
+            }
+            var rest = characters[...]
+            while !rest.isEmpty {
+                let end = BigTable.charactersThatFit(rest, font, width)
+                if end == rest.count {
+                    line = BigTable.string(rest)
+                    break
+                }
+                lines.append(BigTable.string(rest.prefix(end)))
+                rest = rest.dropFirst(end)
+            }
+        }
+        lines.append(line)
+        return lines
+    }
+
+    // How many of the characters, from the first, fit the width: at least
+    // one, so that a column too narrow for a character still draws the text,
+    // a character on each line.
+    private static func charactersThatFit(
+            _ characters: ArraySlice<Unicode.Scalar>, _ font: Font, _ width: Float) -> Int {
+        var end = 1
+        var high = characters.count
+        while end < high {
+            let middle = end + (high - end + 1) / 2
+            if font.stringWidth(BigTable.string(characters.prefix(middle))) <= width {
+                end = middle
+            } else {
+                high = middle - 1
+            }
+        }
+        return end
+    }
+
+    // The most lines of a row whose first line is at y that the page holds
+    // above the limit: at least one.
+    private static func mostLines(_ y: Float, _ limit: Float, _ lineHeight: Float) -> Int {
+        var most = 1
+        while y + Float(most) * lineHeight <= limit {
+            most += 1
+        }
+        return most
+    }
+
+    // Draws a row of fields that wrap: on the next page when it does not fit
+    // what is left of this one, cut at the lines a whole page holds when it
+    // does not fit that either.
+    private func drawWrappedRow(_ fields: [String]) {
+        if startNewPage {
+            newPage()
+        }
+        let font = f2
+        let lineHeight = font.ascent + font.descent
+        var (lines, count) = wrapFields(fields, font)
+        var limit = page!.height - bottomMargin
+        if count > 1 && self.yText + Float(count - 1) * lineHeight > limit && !firstRowOnPage {
+            drawTheVerticalLines()
+            drawFooter()
+            newPage()
+            limit = page!.height - bottomMargin
+        }
+        var whole: [String]?
+        if count > 1 && self.yText + Float(count - 1) * lineHeight > limit {
+            let most = BigTable.mostLines(self.yText, limit, lineHeight)
+            if most < count {
+                var texts = [String](repeating: "", count: numberOfColumns)
+                for i in 0..<lines.count where lines[i].count > most {
+                    texts[i] = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
+                    lines[i] = Array(lines[i][0..<most])
+                    lines[i][most - 1] = BigTable.mark(lines[i][most - 1], font, textWidths[i])
+                }
+                whole = texts
+                count = most
+            }
+        }
+        drawWrappedFields(lines, count, whole, font, StructElem.TD, false)
+        firstRowOnPage = false
+        if count > 1 {
+            self.yText += Float(count - 1) * lineHeight
+        }
+        self.yText += font.descent + 2 * verticalPadding + font.ascent
+        if self.yText > limit {
+            drawTheVerticalLines()
+            drawFooter()
+            startNewPage = true
+        }
+    }
+
+    // The line with the mark that says the text goes on, cut to make room for
+    // it within the width.
+    private static func mark(_ line: String, _ font: Font, _ width: Float) -> String {
+        let marked = line + ELLIPSIS
+        if font.stringWidth(marked) <= width {
+            return marked
+        }
+        return cut(line, font, width)
+    }
+
+    // Draws a row of the lines of its fields, count lines tall, as
+    // drawFieldsAndLine draws a row of one line: the cell of a field holds all
+    // of its lines, and the whole of the text of a field that was cut,
+    // whole[i] when there is one.
+    private func drawWrappedFields(
+            _ lines: [[String]], _ count: Int, _ whole: [String]?, _ font: Font,
+            _ cellStructure: StructElem?, _ header: Bool) {
+        let lineHeight = font.ascent + font.descent
+        var extra: Float = 0.0
+        if count > 1 {
+            extra = Float(count - 1) * lineHeight
+        }
+        page!.addArtifactBMC()
+        if header, let headerColor = headerColor {
+            highlightRows(page: page!, font: font, color: headerColor, extra: extra)
+            self.highlightRow = false
+        } else if self.highlightRow {
+            if let shadingColor = shadingColor {
+                highlightRows(page: page!, font: font, color: shadingColor, extra: extra)
+            }
+            self.highlightRow = false
+        } else {
+            self.highlightRow = true
+        }
+        if let borderColor = borderColor {
+            let original = page!.getPenColor()
+            page!.setPenColor(borderColor)
+            page!.moveTo(vertLines[0], self.yText - font.ascent - verticalPadding)
+            page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent - verticalPadding)
+            page!.strokePath()
+            page!.setPenColor(original)
+        }
+        page!.addEMC()
+        page!.setBrushColor(Color.black)
+
+        let tagged = structElement != nil && cellStructure != nil
+        let parent = page!.structParent
+        var rowElement: StructElement?
+        if tagged {
+            rowElement = page!.addStructElement(structElement, StructElem.TR, nil)
+        }
+        for i in 0..<numberOfColumns {
+            if tagged {
+                page!.structParent = rowElement
+                var description: String?
+                if let whole = whole, !whole[i].isEmpty {
+                    description = whole[i]
+                }
+                page!.addBDC(cellStructure!, nil, nil, description,
+                        BigTable.cellAttributes(cellStructure!))
+            } else {
+                page!.addArtifactBMC()
+            }
+            for (k, line) in lines[i].enumerated() {
+                var xText = vertLines[i] + self.padding
+                if alignment[i] == Alignment.RIGHT {
+                    xText = (vertLines[i + 1] - self.padding) - font.stringWidth(line)
+                }
+                var yText = self.yText
+                if k > 0 {
+                    yText += Float(k) * lineHeight
+                }
+                page!.drawTextLine(font, line, xText, yText)
+            }
+            page!.addEMC()
+        }
+        page!.structParent = parent
+    }
+
+    // Fills the background of a row, extra taller than one line.
+    private func highlightRows(page: Page, font: Font, color: [Float], extra: Float) {
+        let original = page.getBrushColor()
+        page.setBrushColor(color)
+        var bottom = self.yText + font.descent + verticalPadding
+        if extra > 0 {
+            bottom = self.yText + extra + font.descent + verticalPadding
+        }
+        page.fillRectBetween(vertLines[0], self.yText - font.ascent - verticalPadding,
+                vertLines[numberOfColumns], bottom)
+        page.setBrushColor(original)
+    }
+
+    // Counts the pages the rows take as drawWrappedRow breaks them, reading
+    // the rows once more, so that the footer of each page says how many there
+    // are. The arithmetic is that of the drawing, in its order.
+    private func countWrappedPages() -> Int {
+        let font = f2
+        let lineHeight = font.ascent + font.descent
+        var pageHeight = pageSize.getHeight()
+        let yTop = firstRowY(self.y)
+        var yPos = yTop
+        if startsOnFirstPage() {
+            pageHeight = firstPage!.height
+            yPos = firstRowY(firstPageY)
+        }
+        var count = 1
+        var isNewPage = false
+        var first = true
+        guard let rows = self.rows else {
+            return count
+        }
+        for fields in IteratorSequence(rows()) {
+            if fields.count < fieldsNeeded {
+                continue
+            }
+            if isNewPage {
+                count += 1
+                pageHeight = pageSize.getHeight()
+                yPos = yTop
+                isNewPage = false
+                first = true
+            }
+            var (_, lines) = wrapFields(fields, font)
+            var limit = pageHeight - self.bottomMargin
+            if lines > 1 && yPos + Float(lines - 1) * lineHeight > limit && !first {
+                count += 1
+                pageHeight = pageSize.getHeight()
+                yPos = yTop
+                limit = pageHeight - self.bottomMargin
+            }
+            if lines > 1 && yPos + Float(lines - 1) * lineHeight > limit {
+                lines = min(lines, BigTable.mostLines(yPos, limit, lineHeight))
+            }
+            if lines > 1 {
+                yPos += Float(lines - 1) * lineHeight
+            }
+            yPos += font.descent + 2 * verticalPadding + font.ascent
+            first = false
+            if yPos > limit {
+                isNewPage = true
+            }
+        }
+        return count
     }
 }
 
