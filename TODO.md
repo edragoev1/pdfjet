@@ -78,12 +78,21 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   - To decide: a row taller than a page, a field of a long text, cut at a
     number of lines with "..." or carried over to the next page.
   - PDF/UA as it is: the Table and its TH and TD, more lines in a cell.
-  - The four ports and the TypeScript engine, with tests that the mode off
-    changes nothing; about a day or two, the measuring and the breaks most
-    of it.
-  Then: CSV to PDF with every column, its long fields wrapped, not cut;
-  Collect's archive on BigTable, its memory flat, no column lost (Forms
-  TODO.md, "Collect's archive with BigTable"); and a line of the release
+  - The four ports alone (the owner, 10 November 2026: the TypeScript
+    engine not now), with tests that the mode off changes nothing; about a
+    day or two, the measuring and the breaks most of it.
+  - Speed: the mode a code path of its own, chosen once when the table
+    starts, so that off costs nothing, not a test a row; the benchmarks of
+    pdf-libs-benchmarks before and after to show it. On, the cost is the
+    breaking of the lines, in the measuring BigTable does already; still
+    no object a cell and no page kept, so less memory than Table always and
+    faster on any large table, about even on a small one. For the release
+    notes, with numbers: BigTable wrapping 100,000 rows, its time and its
+    flat memory, beside Table's.
+  Then: CSV to PDF with every column, its long fields wrapped, not cut (its
+  Go program, csv2pdf); Collect's archive on BigTable later, with the
+  TypeScript engine (Forms TODO.md, "Collect's archive with BigTable"); and
+  a line of the release
   notes, "BigTable wraps text in its cells, its memory still flat".
 
 - **If one of the Free Tools becomes popular: the plan, in three steps**
