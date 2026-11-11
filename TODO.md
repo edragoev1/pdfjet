@@ -182,6 +182,18 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   lines with SetBorderWidth(0) for the old look, and the examples' PDFs and
   any fingerprints of tables written again. Not to do without the owner's
   yes.
+- **Maybe: a PNG checked and decoded a row at a time** (the owner, 11
+  November 2026, thinking of a 128 MB Cloudflare Worker). The IDAT data of an
+  opaque PNG is embedded as it is already, in the four ports and Forms'
+  TypeScript engine (embedIDAT of pngimage.go, Image.ts): no decoding, no
+  compressing again. But before that the whole IDAT is inflated once
+  (InflateExact) to check each row's filter type and that the data is the
+  image and nothing more: some 36 MB at once for a 12-megapixel photo, let go
+  at once. A PNG with alpha is decoded whole for its soft mask the same way.
+  Inflated as a stream instead, a row at a time, the check holds a row and
+  zlib's 32 KB window, and the alpha is deflated as its rows come: a few
+  hundred KB for an image of any size. The same bytes in the PDF. Only worth
+  it where memory is short, a Worker, or many large images at once.
 - **If one of the Free Tools becomes popular: the plan, in three steps**
   (the owner, 10 November 2026). Today the pages are served and cached by
   Cloudflare, which any traffic leaves alone; each PDF is made by a .cgi
