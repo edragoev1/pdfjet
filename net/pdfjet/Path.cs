@@ -16,7 +16,7 @@ namespace PDFjet.NET {
 /// </summary>
 public class Path : IDrawable {
     private float[] color = new float[] {0f, 0f, 0f};
-    private float width = 0f;
+    private float width = 0.5f;
     private String pattern = "[] 0";
     private bool fillShape = false;
     private bool closed = false;
@@ -74,7 +74,9 @@ public class Path : IDrawable {
     }
 
     /// <summary>
-    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path.
+    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path,
+    /// 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is the thinnest
+    /// line of the device, a pixel on a screen, faint or gone in print.
     /// </summary>
     /// <param name="width">the stroke width.</param>
     /// <returns>this Path object.</returns>

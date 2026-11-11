@@ -46,6 +46,7 @@ public class BigTable {
     private var shadingColor: [Float]? = BigTable.rgb(0xF0F0F0)   // nil for no shading
     private var headerColor: [Float]?                           // nil for the shading of every other row
     private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
+    private var borderWidth: Float = 0.5                           // The width of the lines, 0.5 points unless set
     private var verticalLines = true                              // false for the rows' lines alone
     private var footerText: String? = "Page {page} of {pages}"
     private var footerFont: Font?                               // nil for the header font
@@ -257,6 +258,20 @@ public class BigTable {
         return self
     }
 
+    /// Sets the width of the lines between the rows and the columns and around the table, 0.5
+    /// points unless set, as every line PDFjet draws by default (9.1.9); 0 is the thinnest line
+    /// of the device, a pixel on a screen, faint or gone in print. A negative width, or one that
+    /// is not a number, is recorded on the PDF as misuse, and the width is left as it was.
+    @discardableResult
+    public func setBorderWidth(_ width: Float) -> BigTable {
+        if !(width >= 0.0) || width.isInfinite {
+            pdf.fail("The width of the lines must be a number, 0 or more.")
+            return self
+        }
+        self.borderWidth = width
+        return self
+    }
+
     /// Sets the space between the text of a column and the lines on its left and right. It is
     /// 2 points by default. A negative padding is recorded on the PDF as misuse, and the
     /// padding is left as it was.
@@ -387,7 +402,7 @@ public class BigTable {
         pages.append(page!)
         pageNumber += 1
         footerDrawn = false
-        page!.setPenWidth(0.0)
+        page!.setPenWidth(borderWidth)
         self.yText = top + verticalPadding + f1.ascent
         self.highlightRow = true
         // The header fields are the TH cells of the table the first time they

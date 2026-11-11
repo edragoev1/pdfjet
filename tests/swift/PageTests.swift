@@ -42,9 +42,9 @@ import Testing
         page.setBrushColor(Color.black)
         page.setPenColor(Color.red)
         page.setPenColor([Float(1), 0, 0])
-        page.setPenWidth(0)
-        page.setDefaultPenWidth()
-        #expect(TestSupport.content(page) == "0 0 0 rg\n1 0 0 RG\n0 w\n")
+        page.setPenWidth(0.5)
+        page.setDefaultPenWidth()           // 0.5, set already
+        #expect(TestSupport.content(page) == "0 0 0 rg\n1 0 0 RG\n0.5 w\n")
     }
 
     @Test func qAndQKeepWhatTheContentHasWritten() {

@@ -16,7 +16,7 @@ public class Rect : Drawable {
 
     private var fillColor: [Float]?
     private var borderColor: [Float]?
-    private var borderWidth: Float = 0.0
+    private var borderWidth: Float = 0.5
     private var borderPattern: String = "[] 0"
 
     private var uri: String?
@@ -118,7 +118,8 @@ public class Rect : Drawable {
         return self
     }
 
-    /// Sets the border width.
+    /// Sets the border width, 0.5 points unless set, as every line PDFjet draws by default
+    /// (9.1.9); 0 is the thinnest line of the device, a pixel on a screen, faint or gone in print.
     @discardableResult
     public func setBorderWidth(_ borderWidth: Float) -> Rect {
         self.borderWidth = borderWidth

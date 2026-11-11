@@ -18,7 +18,7 @@ public class Line : Drawable {
     private var y2: Float = 0.0
 
     private var color: [Float] = [0.0, 0.0, 0.0]
-    private var width: Float = 0.0
+    private var width: Float = 0.5
     private var pattern: String = "[] 0"
     private var capStyle = CapStyle.BUTT
 
@@ -140,7 +140,9 @@ public class Line : Drawable {
     }
 
     ///
-    /// Sets the stroke width of this line.
+    /// Sets the stroke width of this line, 0.5 points unless set, as every line PDFjet draws by
+    /// default (9.1.9); 0 is the thinnest line of the device, a pixel on a screen, faint or gone
+    /// in print.
     ///
     /// - Parameter width: the width.
     /// - Returns: this Line object.

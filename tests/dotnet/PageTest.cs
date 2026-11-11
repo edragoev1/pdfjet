@@ -48,9 +48,9 @@ public class PageTest {
         page.SetBrushColor(Color.black);
         page.SetPenColor(Color.red);
         page.SetPenColor(new float[] {1f, 0f, 0f});
-        page.SetPenWidth(0f);
-        page.SetDefaultPenWidth();
-        Assert.Equal("0 0 0 rg\n1 0 0 RG\n0 w\n", TestSupport.Content(page));
+        page.SetPenWidth(0.5f);
+        page.SetDefaultPenWidth();          // 0.5, set already
+        Assert.Equal("0 0 0 rg\n1 0 0 RG\n0.5 w\n", TestSupport.Content(page));
     }
 
     [Fact]

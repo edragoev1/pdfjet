@@ -458,7 +458,10 @@ public sealed class TableTest : IDisposable {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new Table().SetTableData(Spanning(font, 3, 2, 2)).SetLocation(50f, 50f).DrawOn(page);
+        // At a border width of 0, so that a border is the edge of its cell
+        // exactly; a wider one runs half its width past each end, to close the
+        // corners
+        new Table().SetTableData(Spanning(font, 3, 2, 2)).SetCellBorderWidth(0f).SetLocation(50f, 50f).DrawOn(page);
         string content = TestSupport.Content(page);
         // The spanning cell is drawn once, and the cell it covers not at all.
         Assert.Equal(1, Count(content, TestSupport.Hex("spans")));
@@ -581,7 +584,8 @@ public sealed class TableTest : IDisposable {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Table table = new Table().SetTableData(Wrapping(font)).SetLocation(50f, 50f);
+        // The borders the cells' edges exactly, as above
+        Table table = new Table().SetTableData(Wrapping(font)).SetCellBorderWidth(0f).SetLocation(50f, 50f);
         float[] xy = table.DrawOn(page);
         // A vertical rule of each row of the wrap, down each of the three
         // edges the two cells have between and beside them.
@@ -630,7 +634,8 @@ public sealed class TableTest : IDisposable {
         List<List<Cell>> data = Spanning(font, 3, 2, 2);
         data[0][0].SetText(LONG_TEXT);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Table table = new Table().SetTableData(data).SetLocation(50f, 50f);
+        // The borders the cells' edges exactly, as above
+        Table table = new Table().SetTableData(data).SetCellBorderWidth(0f).SetLocation(50f, 50f);
         float[] xy = table.DrawOn(page);
         Assert.NotEqual(LONG_TEXT, table.GetRow(0)[0].GetText());
         // The rule over the span, the one under it, the one over the row below

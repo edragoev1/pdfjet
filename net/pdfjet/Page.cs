@@ -1747,12 +1747,13 @@ public class Page {
     }
 
     /// <summary>
-    /// Sets the line width to the default.
-    /// The default is the finest line width.
+    /// Sets the line width to the default, 0.5 points, as every line PDFjet draws by default
+    /// (9.1.9). SetPenWidth(0) is the thinnest line of the device, a pixel on a screen, faint or
+    /// gone in print.
     /// </summary>
     /// <returns>this Page object.</returns>
     public Page SetDefaultPenWidth() {
-        return SetPenWidth(0f);
+        return SetPenWidth(0.5f);
     }
 
     /// <summary>

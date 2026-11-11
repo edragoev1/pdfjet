@@ -21,7 +21,7 @@ public class Rect implements Drawable {
     private float r;
 
     private float[] fillColor;
-    private float borderWidth;
+    private float borderWidth = 0.5f;
     private float[] borderColor;
     private String borderPattern = "[] 0";
 
@@ -108,7 +108,9 @@ public class Rect implements Drawable {
     }
 
     /**
-     * Sets the border width of this rectangle.
+     * Sets the border width of this rectangle, 0.5 points unless set, as every
+     * line PDFjet draws by default (9.1.9); 0 is the thinnest line of the
+     * device, a pixel on a screen, faint or gone in print.
      *
      * @param borderWidth the border width.
      * @return this Rect object.

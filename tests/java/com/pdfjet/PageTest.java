@@ -62,9 +62,9 @@ class PageTest {
         page.setBrushColor(Color.black);
         page.setPenColor(Color.red);
         page.setPenColor(new float[] {1f, 0f, 0f});
-        page.setPenWidth(0f);
-        page.setDefaultPenWidth();
-        assertEquals("0 0 0 rg\n1 0 0 RG\n0 w\n", TestSupport.content(page));
+        page.setPenWidth(0.5f);
+        page.setDefaultPenWidth();          // 0.5, set already
+        assertEquals("0 0 0 rg\n1 0 0 RG\n0.5 w\n", TestSupport.content(page));
     }
 
     @Test

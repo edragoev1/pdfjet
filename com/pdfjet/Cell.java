@@ -61,7 +61,7 @@ public class Cell {
     /** The text color as a 0xRRGGBB value; it is black until it is set. */
     protected int textColor = 0x000000;
     /** The width of the cell borders. */
-    protected float borderWidth;
+    protected float borderWidth = 0.5f;
     /** The border color as a 0xRRGGBB value, or -1 when it is not set. */
     protected int borderColor = NO_COLOR;
 
@@ -587,7 +587,9 @@ public class Cell {
     }
 
     /**
-     * Sets the width of the cell borders.
+     * Sets the width of the cell borders, 0.5 points unless set, as every line
+     * PDFjet draws by default (9.1.9); 0 is the thinnest line of the device, a
+     * pixel on a screen, faint or gone in print.
      *
      * @param borderWidth the width of the cell borders.
      * @return this Cell object.

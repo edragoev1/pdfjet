@@ -51,7 +51,7 @@ public class Cell {
     internal const int NO_COLOR = -1;
     internal int backgroundColor = NO_COLOR;
     internal int textColor = 0x000000; // Black until it is set
-    internal float borderWidth;
+    internal float borderWidth = 0.5f;
     internal int borderColor = NO_COLOR;
 
     private int colspan = 1;
@@ -480,7 +480,9 @@ public class Cell {
         return Util.ToRGB(textColor);
     }
 
-    /// <summary>Sets the width of the cell borders.</summary>
+    /// <summary>Sets the width of the cell borders, 0.5 points unless set, as every line PDFjet
+    /// draws by default (9.1.9); 0 is the thinnest line of the device, a pixel on a screen,
+    /// faint or gone in print.</summary>
     /// <param name="borderWidth">the width of the cell borders.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetBorderWidth(float borderWidth) {

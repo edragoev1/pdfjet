@@ -18,7 +18,7 @@ public class Rect  : IDrawable {
 
     private float[] fillColor;
     private float[] borderColor;
-    private float borderWidth;
+    private float borderWidth = 0.5f;
     private string borderPattern = "[] 0";
 
     private string uri;
@@ -77,7 +77,9 @@ public class Rect  : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the border width.</summary>
+    /// <summary>Sets the border width, 0.5 points unless set, as every line PDFjet draws by
+    /// default (9.1.9); 0 is the thinnest line of the device, a pixel on a screen, faint or gone
+    /// in print.</summary>
     public Rect SetBorderWidth(float width) {
         this.borderWidth = width;
         return this;

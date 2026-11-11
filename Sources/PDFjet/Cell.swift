@@ -49,7 +49,7 @@ public class Cell {
     static let NO_COLOR: Int32 = -1
     var backgroundColor: Int32 = Cell.NO_COLOR
     var textColor: Int32 = 0x000000 // Black until it is set
-    var borderWidth: Float = 0.0
+    var borderWidth: Float = 0.5
     var borderColor: Int32 = Cell.NO_COLOR
 
     private var colspan: Int = 1
@@ -588,7 +588,9 @@ public class Cell {
         return (borderColor == Cell.NO_COLOR) ? nil : Util.toRGB(borderColor)
     }
 
-    /// Sets the width of the cell borders.
+    /// Sets the width of the cell borders, 0.5 points unless set, as every line PDFjet draws by
+    /// default (9.1.9); 0 is the thinnest line of the device, a pixel on a screen, faint or gone
+    /// in print.
     @discardableResult
     public func setBorderWidth(_ borderWidth: Float) -> Cell {
         self.borderWidth = borderWidth

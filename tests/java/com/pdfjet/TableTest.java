@@ -497,7 +497,10 @@ class TableTest {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new Table().setTableData(spanning(font, 3, 2, 2)).setLocation(50f, 50f).drawOn(page);
+        // At a border width of 0, so that a border is the edge of its cell
+        // exactly; a wider one runs half its width past each end, to close the
+        // corners
+        new Table().setTableData(spanning(font, 3, 2, 2)).setCellBorderWidth(0f).setLocation(50f, 50f).drawOn(page);
         String content = TestSupport.content(page);
         // The spanning cell is drawn once, and the cell it covers not at all.
         assertEquals(1, count(content, TestSupport.hex("spans")), content);
@@ -619,7 +622,8 @@ class TableTest {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Table table = new Table().setTableData(wrapping(font)).setLocation(50f, 50f);
+        // The borders the cells' edges exactly, as above
+        Table table = new Table().setTableData(wrapping(font)).setCellBorderWidth(0f).setLocation(50f, 50f);
         float[] xy = table.drawOn(page);
         String content = TestSupport.content(page);
         // A vertical rule of each row of the wrap, down each of the three
@@ -669,7 +673,8 @@ class TableTest {
         List<List<Cell>> data = spanning(font, 3, 2, 2);
         data.get(0).get(0).setText(LONG_TEXT);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Table table = new Table().setTableData(data).setLocation(50f, 50f);
+        // The borders the cells' edges exactly, as above
+        Table table = new Table().setTableData(data).setCellBorderWidth(0f).setLocation(50f, 50f);
         float[] xy = table.drawOn(page);
         assertNotEquals(LONG_TEXT, table.getRow(0).get(0).getText(), "the text did not wrap");
         // The rule over the span, the one under it, the one over the row below

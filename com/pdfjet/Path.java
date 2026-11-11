@@ -16,7 +16,7 @@ import java.util.*;
  */
 public class Path implements Drawable {
     private float[] color = {0f, 0f, 0f};
-    private float width = 0f;
+    private float width = 0.5f;
     private String pattern = "[] 0";
     private boolean fillShape = false;
     private boolean closed = false;
@@ -76,7 +76,9 @@ public class Path implements Drawable {
     }
 
     /**
-     * Sets the stroke width that will be used to draw the lines and splines that are part of this path.
+     * Sets the stroke width that will be used to draw the lines and splines that are part of this path,
+     * 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is
+     * the thinnest line of the device, a pixel on a screen, faint or gone in print.
      *
      * @param width the stroke width.
      * @return this Path object.

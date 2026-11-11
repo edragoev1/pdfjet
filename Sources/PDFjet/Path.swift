@@ -14,7 +14,7 @@ import Foundation
 ///
 public class Path : Drawable {
     private var color: [Float] = [0.0, 0.0, 0.0]
-    private var width: Float = 0.0
+    private var width: Float = 0.5
     private var pattern: String = "[] 0"
     private var fillShape = false
     private var closed = false
@@ -78,7 +78,9 @@ public class Path : Drawable {
     }
 
     ///
-    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path.
+    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path,
+    /// 0.5 points unless set, as every line PDFjet draws by default (9.1.9); 0 is the thinnest
+    /// line of the device, a pixel on a screen, faint or gone in print.
     ///
     /// - Parameter width: the stroke width.
     /// - Returns: this Path object.

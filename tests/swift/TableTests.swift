@@ -424,7 +424,10 @@ import Testing
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let page = Page(pdf, Letter.PORTRAIT)
-        _ = Table().setTableData(spanning(font, 3, 2, 2)).setLocation(50, 50).drawOn(page)
+        // At a border width of 0, so that a border is the edge of its cell
+        // exactly; a wider one runs half its width past each end, to close the
+        // corners
+        _ = Table().setTableData(spanning(font, 3, 2, 2)).setCellBorderWidth(0).setLocation(50, 50).drawOn(page)
         let content = TestSupport.content(page)
         // The spanning cell is drawn once, and the cell it covers not at all.
         #expect(count(content, TestSupport.hex("spans")) == 1)
@@ -540,7 +543,8 @@ import Testing
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let page = Page(pdf, Letter.PORTRAIT)
-        let table = Table().setTableData(wrapping(font)).setLocation(50, 50)
+        // The borders the cells' edges exactly, as above
+        let table = Table().setTableData(wrapping(font)).setCellBorderWidth(0).setLocation(50, 50)
         let xy = table.drawOn(page)
         // A vertical rule of each row of the wrap, down each of the three
         // edges the two cells have between and beside them.
@@ -590,7 +594,8 @@ import Testing
         let data = spanning(font, 3, 2, 2)
         data[0][0].setText(longText)
         let page = Page(pdf, Letter.PORTRAIT)
-        let table = Table().setTableData(data).setLocation(50, 50)
+        // The borders the cells' edges exactly, as above
+        let table = Table().setTableData(data).setCellBorderWidth(0).setLocation(50, 50)
         let xy = table.drawOn(page)
         #expect(table.getRow(0)[0].getText() != longText, "the text did not wrap")
         // The rule over the span, the one under it, the one over the row below

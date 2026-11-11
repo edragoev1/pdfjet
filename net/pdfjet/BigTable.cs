@@ -56,6 +56,7 @@ namespace PDFjet.NET {
         private float[] shadingColor = Rgb(0xF0F0F0);   // null for no shading
         private float[] headerColor = null;             // null for the shading of every other row
         private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
+        private float borderWidth = 0.5f;               // The width of the lines, 0.5 points unless set
         private bool verticalLines = true;              // false for the rows' lines alone
         private string footerText = "Page {page} of {pages}";
         private Font footerFont;                        // null for the header font
@@ -287,6 +288,24 @@ namespace PDFjet.NET {
         }
 
         /// <summary>
+        /// Sets the width of the lines between the rows and the columns and around the table, 0.5
+        /// points unless set, as every line PDFjet draws by default (9.1.9); 0 is the thinnest
+        /// line of the device, a pixel on a screen, faint or gone in print. A negative width, or
+        /// one that is not a number, is recorded on the PDF as misuse, and the width is left as
+        /// it was.
+        /// </summary>
+        /// <param name="width">the width, 0 or more.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetBorderWidth(float width) {
+            if (!(width >= 0f) || float.IsInfinity(width)) {
+                pdf.Fail(new ArgumentException("The width of the lines must be a number, 0 or more."));
+                return this;
+            }
+            this.borderWidth = width;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the space between the text of a column and the lines on its left and right. It is
         /// 2 points by default.
         /// </summary>
@@ -425,7 +444,7 @@ namespace PDFjet.NET {
             pages.Add(page);
             pageNumber++;
             footerDrawn = false;
-            page.SetPenWidth(0f);
+            page.SetPenWidth(borderWidth);
             this.yText = top + verticalPadding + f1.ascent;
             this.highlightRow = true;
             // The header fields are the TH cells of the table the first time
