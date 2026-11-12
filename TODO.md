@@ -68,7 +68,17 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   table with its th, an img's alt its description. PDF/UA and PDF/A from
   ordinary HTML, which HTML-to-PDF services (Chrome's print to PDF) cannot
   make; the regulated niche (accessible statements, notices, invoices)
-  would want it. Chrome solves the layout, PDFjet the document. Weeks, the
+  would want it. Chrome solves the layout, PDFjet the document. **It fixes
+  pagination too** (the owner, the same day: "you can't get better than
+  reading HTML than Chrome"): Chrome reads HTML best of all and paginates
+  badly (no running headers or footers, breaks hard to control); laid out by
+  Chrome as one long column the page's width, its boxes are cut into pages
+  by PDFjet, between paragraphs and table rows, never through a line, a
+  heading kept with what follows, a table's header repeated, "Page 3 of
+  12", headers and footers in the margins: the flow of Forms' generated
+  program (codegen_flow.go, 11 November 2026) over Chrome's boxes. Its
+  limit: Chrome's lines are fixed, so a page breaks between lines and
+  blocks, never reflows a text; floats and columns need care. Weeks, the
   fonts, CSS effects and page breaks the work; first a prototype of a simple
   invoice, to see how far it goes. Also weighed the same day, smaller:
   Chrome's PDF finished by Pro (signed, an e-invoice's XML attached,
