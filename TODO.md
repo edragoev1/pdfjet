@@ -79,7 +79,14 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   program (codegen_flow.go, 11 November 2026) over Chrome's boxes. Its
   limit: Chrome's lines are fixed, so a page breaks between lines and
   blocks, never reflows a text; floats and columns need care. Weeks, the
-  fonts, CSS effects and page breaks the work; first a prototype of a simple
+  fonts, CSS effects and page breaks the work. **Before any prototype, an
+  hour with real numbers** (the owner, 11 November 2026): "HTML to PDF is
+  far the most common" was said from what is offered and asked, not from
+  search data. Google Trends, "html to pdf" against "markdown to pdf" and
+  "accessible pdf"; Google's Keyword Planner (free with an Ads account) for
+  the searches a month; and the niche's own searches, "accessible pdf
+  generation", "pdf/ua html", to see whether anyone looks for this. Then,
+  if the numbers hold, first a prototype of a simple
   invoice, to see how far it goes. Also weighed the same day, smaller:
   Chrome's PDF finished by Pro (signed, an e-invoice's XML attached,
   encrypted, merged; PDF/A-3 needs Chrome's output fixed up first); a block
