@@ -273,6 +273,19 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   came from Forms; the design changed in Forms, the program the same.
   "Your documents designed once, generated compliant every time." The line
   to lead with: accessible and compliant documents, generated in code.
+  **Redesigned the same day:** the Template class reads the PDF Forms saves
+  directly, no upload, no conversion; Forms' layout in each language, its
+  Java shared with the desktop Forms app (private
+  plans/pdfjet-pro-templates.md). **A beta of 9.1.9 first** (the owner, 11
+  November 2026: "I think I will start with the Templates - may give the
+  beta version of 9.1.9 to try"): Java's Template class, emailed after the
+  Forms launch to the customers who asked for an upgrade link, to try:
+  said to be a beta, not for production, may change, feedback by reply;
+  templates saved in it keep working, Forms' format being stable from the
+  launch. To decide then: Pro's customers alone, or all who asked, as a
+  preview of what Pro adds. With it or after it, /code.html for the
+  generated code. CASL: bought in the last two years, or asked in the last
+  six months; who it is from, and how to stop them.
 
 - **9.1.9 release notes, a draft** (started 11 November 2026; lines added as
   the work is done, the most important first):
