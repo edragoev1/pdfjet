@@ -59,6 +59,22 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **Maybe: HTML to accessible PDF, Chrome's layout drawn by PDFjet** (the
+  owner, 11 November 2026, "somehow use headless chrome with pdfjet").
+  HTML loaded in headless Chrome, which lays it out, the hard part (HTML and
+  CSS); the place of every line of text, box and image read from it (a
+  Range's getClientRects, getBoundingClientRect); then PDFjet draws exactly
+  that, the HTML's meaning made its tags: h1 a heading, a table a tagged
+  table with its th, an img's alt its description. PDF/UA and PDF/A from
+  ordinary HTML, which HTML-to-PDF services (Chrome's print to PDF) cannot
+  make; the regulated niche (accessible statements, notices, invoices)
+  would want it. Chrome solves the layout, PDFjet the document. Weeks, the
+  fonts, CSS effects and page breaks the work; first a prototype of a simple
+  invoice, to see how far it goes. Also weighed the same day, smaller:
+  Chrome's PDF finished by Pro (signed, an e-invoice's XML attached,
+  encrypted, merged; PDF/A-3 needs Chrome's output fixed up first); a block
+  rendered by Chrome placed in a PDFjet page as an object (untagged inside).
+
 - **A comparison page on pdfjet.com, with numbers** (11 November 2026). Why:
   "top Java PDF libraries" articles are content marketing with no
   measurements (the one found, pdfnoodle.com's of January 2025, by pdf
