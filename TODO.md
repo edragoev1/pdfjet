@@ -109,10 +109,8 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
     The line: Chrome when the document is a web page; a PDF library for a
     document (forms, archival, accessible, invoices, signatures, print,
     large reports).
-  Also, by the same thinking: the awesome-java and awesome-pdf lists. A
-  note to pdf noodle's founder is drafted in
-  ~/Projects/private/pdfnoodle-marcelo-email-2026-11-11.txt, not sent (the
-  owner: the article "does not have anything useful").
+  Also, by the same thinking: the awesome-java and awesome-pdf lists. No
+  note to pdf noodle's founder (the owner, 11 November 2026: "forget it").
 
 - **9.1.9, the next release, after the Forms launch: BigTable that wraps its
   text, if asked** (the owner, 10 November 2026: "cutting the last few
