@@ -331,7 +331,8 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // opens the .ttf or else the .otf file of the same name beside it. It panics
 // if the font cannot be read: for a font PDFjet does not carry, or a font of
 // the package world it has not built in, with an error that is
-// fs.ErrNotExist and says what to do.
+// fs.ErrNotExist and says what to do. ReadFontFromFile returns the error
+// instead.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	buf, err := readFontFile(fontFileOf(filePath))
 	if err != nil {
@@ -342,6 +343,31 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	registerOpenTypeFont(pdf, font, buf)
 	font.SetSize(defaultFontSize)
 	return font
+}
+
+// ReadFontFromFile creates a font from the .otf or .ttf file at the path, as
+// NewFontFromFile does, and returns the error, rather than panic, of a font
+// that cannot be read, as the constructors of Java, C# and Swift throw it:
+// for a path that is not a file, nor one of the fonts PDFjet carries, an
+// error that is fs.ErrNotExist and says what to do. NewFontFromFile, which
+// returns no error, panics with it. Nothing is added to the PDF for a font
+// refused.
+func ReadFontFromFile(pdf *PDF, filePath string) (font *Font, err error) {
+	buf, err := readFontFile(fontFileOf(filePath))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			font, err = nil, panicError(r)
+		}
+	}()
+	font = new(Font)
+	font.pdf = pdf
+	// It reads the font before it adds anything to the PDF
+	registerOpenTypeFont(pdf, font, buf)
+	font.SetSize(defaultFontSize)
+	return font, nil
 }
 
 // NewFontFromFileForObjects creates a font from the .otf or .ttf file at the

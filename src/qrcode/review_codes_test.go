@@ -8,6 +8,7 @@ package qrcode
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -135,5 +136,38 @@ func TestQRCodeTheDarkModulesOfARowAreOneRectangle(t *testing.T) {
 	page.SetBrushColor(color.Red)
 	if !strings.HasSuffix(string(page.GetContent()), "EMC\n1 0 0 rg\n") {
 		t.Errorf("the brush was not set after the QR code: %q", string(page.GetContent())[len(content)-20:])
+	}
+}
+
+// EncodeQRCode returns, as an error, what NewQRCode panics with, and the same
+// code for a string that fits.
+func TestReviewCodesEncodeQRCodeReturnsTheErrorNewQRCodePanicsWith(t *testing.T) {
+	for _, c := range []struct {
+		text  string
+		level errorcorrectionlevel.ErrorCorrectionLevel
+		want  string
+	}{
+		{strings.Repeat("a", 2332), errorcorrectionlevel.M, "The data is too long for a QR code at level M: 2332 bytes, at most 2331."},
+		{strings.Repeat("é", 1200), errorcorrectionlevel.H, "The data is too long for a QR code at level H: 2400 bytes, at most 1272."},
+		{"a", 7, "The error correction level 7 is not one: use errorcorrectionlevel.L, M, Q or H."},
+	} {
+		qr, err := EncodeQRCode(c.text, c.level)
+		if qr != nil || err == nil || err.Error() != c.want {
+			t.Errorf("%v, %v, not %q", qr, err, c.want)
+		}
+		func() {
+			defer func() {
+				if r := recover(); r != c.want {
+					t.Errorf("NewQRCode panicked with %v, not %q", r, c.want)
+				}
+			}()
+			NewQRCode(c.text, c.level)
+		}()
+	}
+	for _, text := range []string{strings.Repeat("a", 2331), "é"} {
+		qr, err := EncodeQRCode(text, errorcorrectionlevel.M)
+		if err != nil || fmt.Sprint(qr.modules) != fmt.Sprint(NewQRCode(text, errorcorrectionlevel.M).modules) {
+			t.Errorf("%q: %v", text, err)
+		}
 	}
 }

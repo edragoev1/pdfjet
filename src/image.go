@@ -16,9 +16,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"os"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -82,8 +84,39 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 // NewImage the main constructor for the Image class.
 //   - pdf: the PDF to which we add this image.
 //   - inputStream: the input stream to read the image from.
+//
+// It panics if the file is not a PNG, JPEG or BMP file or cannot be read;
+// ReadImage returns the error instead.
 func NewImage(pdf *PDF, reader io.Reader) *Image {
 	return NewImageFromBytes(pdf, content.GetFromStream(reader))
+}
+
+// ReadImage creates an image from the PNG, JPEG or BMP file the reader reads,
+// as NewImage does, and returns the error, rather than panic, of a file that
+// is not one of them or cannot be read, such as one cut short, as the
+// constructors of Java, C# and Swift throw it. NewImage, which returns no
+// error, panics with it. Nothing is added to the PDF for an image refused.
+func ReadImage(pdf *PDF, reader io.Reader) (image *Image, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			image, err = nil, panicError(r)
+		}
+	}()
+	return NewImage(pdf, reader), nil
+}
+
+// panicError returns the error a panic of PDFjet was made with, of a file or a
+// text it cannot read, as the error a function that returns one gives. A
+// runtime error, a mistake of PDFjet's own, panics again: it is not the
+// input's.
+func panicError(r any) error {
+	if e, ok := r.(runtime.Error); ok {
+		panic(e)
+	}
+	if e, ok := r.(error); ok {
+		return e
+	}
+	return fmt.Errorf("%v", r)
 }
 
 // NewImageFromBytes creates an image from the bytes of a PNG, JPEG or BMP file

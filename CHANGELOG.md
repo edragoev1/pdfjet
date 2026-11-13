@@ -29,6 +29,17 @@ TextFrame:
 
 No behavior change: neither does anything until it is called.
 
+Added, in Go only, the constructors that return their error, as
+`ReadTableFromFile` does, for a file or a text PDFjet cannot read, which the
+constructors of Java, C# and Swift throw: `ReadImage(pdf, reader)` (of
+`NewImage`: a file that is not a PNG, JPEG or BMP, or one cut short),
+`ReadFontFromFile(pdf, path)` (of `NewFontFromFile`: a path that is not a
+file, nor a font PDFjet carries, or a font that cannot be read) and
+`qrcode.EncodeQRCode(text, level)` (of `NewQRCode`: a text too long for a
+QR code at the level). Each returns the error in the words the constructor
+panics with, and adds nothing to the PDF for what it refuses. The
+constructors, which return no error, panic as they did.
+
 ## v9.1.7 — 2026-11-05
 
 The next release, with PDFjet Pro's 9.1.7 (TODO.md).

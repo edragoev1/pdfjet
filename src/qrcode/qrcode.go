@@ -23,6 +23,7 @@ package qrcode
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"errors"
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -60,18 +61,12 @@ const eciBits = 12
 // 2,953 bytes at level L, 2,331 at M, 1,663 at Q and 1,273 at H, a byte fewer
 // when the string is not all ASCII: it then starts with the ECI that tells
 // the reader the bytes are UTF-8. It panics if the string does not fit in a
-// version 40 symbol.
+// version 40 symbol; EncodeQRCode returns the error instead.
 // @param str the string to encode.
 // @param errorCorrectionLevel the desired error correction level.
 func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) *QRCode {
-	// A level that is not one, as an ErrorCorrectionLevel is an int: a
-	// negative one looped for ever in getBCHDigit, and 4 to 7 gave format
-	// bits that are not the blocks' (review of 17 October 2026)
-	switch errorCorrectionLevel {
-	case errorcorrectionlevel.L, errorcorrectionlevel.M, errorcorrectionlevel.Q, errorcorrectionlevel.H:
-	default:
-		panic("The error correction level " + strconv.Itoa(int(errorCorrectionLevel)) +
-			" is not one: use errorcorrectionlevel.L, M, Q or H.")
+	if message := levelError(errorCorrectionLevel); message != "" {
+		panic(message)
 	}
 	qrcode := new(QRCode)
 	qrcode.pad0 = 0xEC
@@ -90,18 +85,70 @@ func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrec
 	return qrcode
 }
 
+// EncodeQRCode creates the QR code of the string as NewQRCode does, and
+// returns the error, rather than panic, of a string that does not fit in a
+// version 40 symbol at the level, or of a level that is not one, as the
+// constructors of Java, C# and Swift throw it. NewQRCode, which returns no
+// error, panics with it.
+func EncodeQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) (*QRCode, error) {
+	if message := levelError(errorCorrectionLevel); message != "" {
+		return nil, errors.New(message)
+	}
+	data := []byte(str)
+	if _, message := typeNumberOf(len(data), !isASCII(data), errorCorrectionLevel); message != "" {
+		return nil, errors.New(message)
+	}
+	return NewQRCode(str, errorCorrectionLevel), nil
+}
+
+// levelError returns the error of a level that is not one, or "". A level
+// that is not one, as an ErrorCorrectionLevel is an int: a negative one
+// looped for ever in getBCHDigit, and 4 to 7 gave format bits that are not
+// the blocks' (review of 17 October 2026)
+func levelError(errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) string {
+	switch errorCorrectionLevel {
+	case errorcorrectionlevel.L, errorcorrectionlevel.M, errorcorrectionlevel.Q, errorcorrectionlevel.H:
+		return ""
+	}
+	return "The error correction level " + strconv.Itoa(int(errorCorrectionLevel)) +
+		" is not one: use errorcorrectionlevel.L, M, Q or H."
+}
+
+// isASCII tells whether every byte of the data is ASCII: the data of a string
+// that is not starts with the ECI of UTF-8.
+func isASCII(data []byte) bool {
+	for _, b := range data {
+		if b > 127 {
+			return false
+		}
+	}
+	return true
+}
+
 // getTypeNumber returns the smallest version, from 4, whose data codewords
-// hold the data, and the ECI before it when there is one.
+// hold the data, and the ECI before it when there is one. It panics if the
+// data does not fit in version 40.
 func getTypeNumber(dataLength int, eci bool, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) int {
+	typeNumber, message := typeNumberOf(dataLength, eci, errorCorrectionLevel)
+	if message != "" {
+		panic(message)
+	}
+	return typeNumber
+}
+
+// typeNumberOf returns the smallest version, from 4, whose data codewords
+// hold the data, and the ECI before it when there is one, or the error of
+// data that does not fit in version 40.
+func typeNumberOf(dataLength int, eci bool, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) (int, string) {
 	for typeNumber := 4; typeNumber <= 40; typeNumber++ {
 		if getLengthInBits(dataLength, eci, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel)*8 {
-			return typeNumber
+			return typeNumber, ""
 		}
 	}
 	maxLength := (getDataCount(40, errorCorrectionLevel)*8 - getLengthInBits(0, eci, 40)) / 8
-	panic("The data is too long for a QR code at level " +
+	return 0, "The data is too long for a QR code at level " +
 		levelName(errorCorrectionLevel) + ": " + strconv.Itoa(dataLength) +
-		" bytes, at most " + strconv.Itoa(maxLength) + ".")
+		" bytes, at most " + strconv.Itoa(maxLength) + "."
 }
 
 // getLengthInBits returns the bits of the ECI, if any, and of the mode
