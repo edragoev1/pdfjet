@@ -567,6 +567,14 @@ public class TextBlock implements Drawable {
                     }
                 } else {
                     StringBuilder sb = new StringBuilder();
+                    // The line is measured as it grows, a word at a time, by
+                    // the runs of the font, when it is drawn in the font
+                    // alone: the same width as the whole line measured again
+                    // for each word, which took most of the time of a text
+                    // block (13 November 2026).
+                    boolean byRuns = measuresByRuns(line);
+                    Font.Run sbRun = byRuns ? font.run("") : null;
+                    Font.Run space = byRuns ? font.run(" ") : null;
                     String[] tokens = Util.splitOnWhitespace(line);
                     for (String token : tokens) {
                         // The words between the zero width spaces of a token
@@ -576,9 +584,23 @@ public class TextBlock implements Drawable {
                             String word = words[i];
                             String separator = (i == words.length - 1) ? " " : "";
                             for (;;) {
-                                if (stringWidth(sb.toString() + word) <= textAreaWidth) {
+                                Font.Run joined = null;
+                                float width = -1f;
+                                if (byRuns) {
+                                    joined = font.joinRuns(sbRun, font.run(word));
+                                    width = font.runWidth(joined, fontSize);
+                                }
+                                if (width < 0f) {
+                                    width = stringWidth(sb.toString() + word);
+                                    joined = null;
+                                }
+                                if (width <= textAreaWidth) {
                                     sb.append(word);
                                     sb.append(separator);
+                                    if (byRuns) {
+                                        sbRun = (joined == null) ? font.run(sb.toString())
+                                                : separator.isEmpty() ? joined : font.joinRuns(joined, space);
+                                    }
                                     break;
                                 }
                                 // The word is broken at a soft hyphen, the line
@@ -589,6 +611,7 @@ public class TextBlock implements Drawable {
                                 if (parts != null) {
                                     textLines.add(new TextLine(font, lineSoFar + parts[0]));
                                     sb.setLength(0);
+                                    sbRun = byRuns ? font.run("") : null;
                                     word = parts[1];
                                     continue;
                                 }
@@ -600,12 +623,16 @@ public class TextBlock implements Drawable {
                                     textLine.trailingSpace = lineSoFar.endsWith(" ");
                                     textLines.add(textLine);
                                     sb.setLength(0);
+                                    sbRun = byRuns ? font.run("") : null;
                                     continue;
                                 }
                                 // A word too wide for a line by itself is broken.
                                 int rest = addBrokenWordLines(textLines, word, textAreaWidth);
                                 if (rest < word.length()) {
                                     sb.append(word.substring(rest) + separator);
+                                    if (byRuns) {
+                                        sbRun = font.run(sb.toString());
+                                    }
                                 }
                                 break;
                             }
@@ -794,6 +821,35 @@ public class TextBlock implements Drawable {
     // font has no glyph for in the fallback font.
     private float stringWidth(String text) {
         return font.stringWidth(fallbackFont, fontSize, getFallbackFontSize(), text);
+    }
+
+    // Returns true if the line is measured by the runs of the font: a font of
+    // whole font units, and every character of the line, and the space, drawn
+    // in the font, as stringWidth measures it then, in the font alone.
+    private boolean measuresByRuns(String line) {
+        if (!font.measuresByRuns()) {
+            return false;
+        }
+        if (fallbackFont == null || fallbackFont.isCJK || fallbackFont == font) {
+            return true;
+        }
+        if (!inFont(' ')) {
+            return false;
+        }
+        for (int i = 0; i < line.length(); ) {
+            int cp = line.codePointAt(i);
+            i += Character.charCount(cp);
+            if (!inFont(cp)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Returns true if fontOf gives the font, not the fallback font, for the
+    // character, wherever it is.
+    private boolean inFont(int cp) {
+        return font.hasGlyph(cp) || !fallbackFont.hasGlyph(cp);
     }
 
     /**

@@ -612,6 +612,87 @@ final public class Font {
         return Page.glyphOf(this, c);
     }
 
+    // What stringWidth sums of a text, kept so that TextBlock can measure a
+    // line as it grows, a word at a time, rather than the whole line again for
+    // each word: its advances and its kerning in font units, and the first and
+    // last glyph drawn, between which the kerning of two texts joined is.
+    static final class Run {
+        final int advance;
+        final int kerning;
+        final int first;
+        final int last;
+
+        Run(int advance, int kerning, int first, int last) {
+            this.advance = advance;
+            this.kerning = kerning;
+            this.first = first;
+            this.last = last;
+        }
+    }
+
+    // Returns true if stringWidth of this font sums whole font units, so that
+    // a width can be made of runs: a font read from a .ttf or an .otf.
+    boolean measuresByRuns() {
+        return !isCoreFont && !isCJK;
+    }
+
+    // Returns the run of the text, what stringWidth sums of it.
+    Run run(String text) {
+        int advance = 0;
+        for (int i = 0; i < text.length(); ) {
+            int cp = text.codePointAt(i);
+            i += Character.charCount(cp);
+            advance += (cp >= 0x20 && cp < 0x7F && asciiGID[cp - 0x20] != 0)
+                    ? asciiAdvance[cp - 0x20] : advanceWidthOf(cp);
+        }
+        int kerning = 0;
+        int first = -1;
+        int last = -1;
+        boolean kerns = kerns();
+        for (int i = 0; i < text.length(); ) {
+            int c = text.codePointAt(i);
+            i += Character.charCount(c);
+            int gid = drawnGlyph(c);
+            if (gid < 0) {
+                continue;
+            }
+            if (first < 0) {
+                first = gid;
+            } else if (kerns) {
+                kerning += glyphKerning(last, gid);
+            }
+            last = gid;
+        }
+        return new Run(advance, kerning, first, last);
+    }
+
+    // Returns the run of two texts, one after the other.
+    Run joinRuns(Run a, Run b) {
+        int kerning = a.kerning + b.kerning;
+        if (kerns() && a.last >= 0 && b.first >= 0) {
+            kerning += glyphKerning(a.last, b.first);
+        }
+        return new Run(a.advance + b.advance, kerning,
+                a.first >= 0 ? a.first : b.first, b.last >= 0 ? b.last : a.last);
+    }
+
+    // Returns the width of the run at the font size, the width stringWidth
+    // gives of its text to the bit, or -1 when its units are too many to be
+    // summed exactly in a float: below 2^24, the float sums of whole numbers
+    // that stringWidth makes are exact, whatever their order.
+    float runWidth(Run r, float fontSize) {
+        long units = (long) r.advance + r.kerning;
+        if (r.advance >= (1 << 24) || Math.abs((long) r.kerning) >= (1 << 24)
+                || Math.abs(units) >= (1 << 24)) {
+            return -1f;
+        }
+        float width = (float) r.advance;
+        if (kerns()) {
+            width += (float) r.kerning;
+        }
+        return width * fontSize / unitsPerEm;
+    }
+
     // Returns the kerning of the text, in font units: the sum of the pairs of
     // the glyphs drawn one after the other.
     int textKerning(String text) {

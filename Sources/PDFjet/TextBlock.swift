@@ -399,6 +399,14 @@ public class TextBlock : Drawable {
                     }
                 } else {
                     var sb = ""
+                    // The line is measured as it grows, a word at a time, by
+                    // the runs of the font, when it is drawn in the font
+                    // alone: the same width as the whole line measured again
+                    // for each word, which took most of the time of a text
+                    // block (13 November 2026).
+                    let byRuns = measuresByRuns(line)
+                    var sbRun = byRuns ? font.run("") : Font.Run()
+                    let space = byRuns ? font.run(" ") : Font.Run()
                     for token in line.splitOnWhitespace() {
                         // The words between the zero width spaces of a token
                         // are joined with no space.
@@ -407,9 +415,23 @@ public class TextBlock : Drawable {
                             let separator = (i == words.count - 1) ? " " : ""
                             var word = word
                             while true {
-                                if stringWidth(sb + word) <= textAreaWidth {
+                                var joined = Font.Run()
+                                var width: Float = -1.0
+                                if byRuns {
+                                    joined = font.joinRuns(sbRun, font.run(word))
+                                    width = font.runWidth(joined, fontSize)
+                                }
+                                let measured = width >= 0.0
+                                if !measured {
+                                    width = stringWidth(sb + word)
+                                }
+                                if width <= textAreaWidth {
                                     sb.append(word)
                                     sb.append(separator)
+                                    if byRuns {
+                                        sbRun = !measured ? font.run(sb)
+                                            : separator.isEmpty ? joined : font.joinRuns(joined, space)
+                                    }
                                     break
                                 }
                                 // The word is broken at a soft hyphen, the line
@@ -420,6 +442,9 @@ public class TextBlock : Drawable {
                                 }) {
                                     textLines.append(TextLine(font, line + head))
                                     sb = ""
+                                    if byRuns {
+                                        sbRun = font.run("")
+                                    }
                                     word = rest
                                     continue
                                 }
@@ -434,12 +459,18 @@ public class TextBlock : Drawable {
                                     textLine.trailingSpace = line.unicodeScalars.last == " "
                                     textLines.append(textLine)
                                     sb = ""
+                                    if byRuns {
+                                        sbRun = font.run("")
+                                    }
                                     continue
                                 }
                                 // A word too wide for a line by itself is broken.
                                 let rest = addBrokenWordLines(&textLines, word, textAreaWidth)
                                 if rest < word.unicodeScalars.count {
                                     sb = TextBlock.string(Array(word.unicodeScalars)[rest...]) + separator
+                                    if byRuns {
+                                        sbRun = font.run(sb)
+                                    }
                                 }
                                 break
                             }
@@ -634,6 +665,28 @@ public class TextBlock : Drawable {
     // font has no glyph for in the fallback font.
     private func stringWidth(_ text: String?) -> Float {
         return font.stringWidth(fallbackFont, fontSize, getFallbackFontSize(), text)
+    }
+
+    // Returns true if the line is measured by the runs of the font: a font of
+    // whole font units, and every character of the line, and the space, drawn
+    // in the font, as stringWidth measures it then, in the font alone.
+    private func measuresByRuns(_ line: String) -> Bool {
+        if !font.measuresByRuns() {
+            return false
+        }
+        guard let fallback = fallbackFont, !fallback.isCJK, fallback !== font else {
+            return true
+        }
+        // fontOf gives the font, not the fallback font, for the character,
+        // wherever it is
+        let inFont = { (c: Int) -> Bool in self.font.hasGlyph(c) || !fallback.hasGlyph(c) }
+        if !inFont(0x20) {
+            return false
+        }
+        for scalar in line.unicodeScalars where !inFont(Int(scalar.value)) {
+            return false
+        }
+        return true
     }
 
     // Returns the start of the word up to its last soft hyphen whose start,

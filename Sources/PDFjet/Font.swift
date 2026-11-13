@@ -520,6 +520,72 @@ public class Font {
         return Page.glyphOf(self, codePoint)
     }
 
+    // What stringWidth sums of a text, kept so that TextBlock can measure a
+    // line as it grows, a word at a time, rather than the whole line again for
+    // each word: its advances and its kerning in font units, and the first and
+    // last glyph drawn, between which the kerning of two texts joined is.
+    struct Run {
+        var advance = 0
+        var kerning = 0
+        var first = -1
+        var last = -1
+    }
+
+    // Returns true if stringWidth of this font sums whole font units, so that
+    // a width can be made of runs: a font read from a .ttf or an .otf.
+    func measuresByRuns() -> Bool {
+        return !isCoreFont && !isCJK
+    }
+
+    // Returns the run of the text, what stringWidth sums of it.
+    func run(_ text: String) -> Run {
+        var r = Run()
+        for scalar in text.unicodeScalars {
+            let codePoint = Int(scalar.value)
+            if codePoint >= 0x20 && codePoint < 0x7F && asciiGID[codePoint - 0x20] != 0 {
+                r.advance += Int(asciiAdvance[codePoint - 0x20])
+            } else {
+                r.advance += advanceWidthOf(codePoint)
+            }
+        }
+        let kerned = kerns()
+        for scalar in text.unicodeScalars {
+            let gid = drawnGlyph(Int(scalar.value))
+            if gid < 0 {
+                continue
+            }
+            if r.first < 0 {
+                r.first = gid
+            } else if kerned {
+                r.kerning += glyphKerning(r.last, gid)
+            }
+            r.last = gid
+        }
+        return r
+    }
+
+    // Returns the run of two texts, one after the other.
+    func joinRuns(_ a: Run, _ b: Run) -> Run {
+        var r = Run(advance: a.advance + b.advance, kerning: a.kerning + b.kerning,
+                first: a.first >= 0 ? a.first : b.first, last: b.last >= 0 ? b.last : a.last)
+        if kerns() && a.last >= 0 && b.first >= 0 {
+            r.kerning += glyphKerning(a.last, b.first)
+        }
+        return r
+    }
+
+    // Returns the width of the run at the font size, the width stringWidth
+    // gives of its text to the bit, or -1 when its units are too many to be
+    // made a Float exactly: stringWidth sums them as an Int and makes the sum
+    // a Float, exact below 2^24.
+    func runWidth(_ r: Run, _ fontSize: Float) -> Float {
+        let units = r.advance + (kerns() ? r.kerning : 0)
+        if abs(units) >= (1 << 24) {
+            return -1.0
+        }
+        return Float(units) * fontSize / Float(self.unitsPerEm)
+    }
+
     // Returns the kerning of the text, in font units: the sum of the pairs of
     // the glyphs drawn one after the other.
     func textKerning(_ text: String) -> Int {

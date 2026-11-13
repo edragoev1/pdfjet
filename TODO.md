@@ -59,7 +59,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
-- **TextBlock: measure a line as it grows, not whole for each word, in all
+- ✅ **DONE 13 November 2026. TextBlock: measure a line as it grows, not whole for each word, in all
   four ports** (the owner, 13 November 2026, after the TypeScript engine of
   Forms did it). Wrapping a paragraph, TextBlock measures the line so far
   with the next word, from its first character, for every word

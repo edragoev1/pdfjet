@@ -434,6 +434,18 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 				}
 			} else {
 				var sb strings.Builder
+				// The line is measured as it grows, a word at a time, by the
+				// runs of the font, when it is drawn in the font alone: the
+				// same width as the whole line measured again for each word,
+				// which took most of the time of a text block (13 November
+				// 2026).
+				byRuns := textBlock.measuresByRuns(line)
+				font := textBlock.font
+				var sbRun, space textRun
+				if byRuns {
+					sbRun = font.run("")
+					space = font.run(" ")
+				}
 				for _, token := range splitOnWhitespace(line) {
 					// The words between the zero width spaces of a token are
 					// joined with no space.
@@ -444,8 +456,28 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 							separator = ""
 						}
 						for {
-							if textBlock.stringWidth(sb.String()+word) <= textAreaWidth {
+							var joined textRun
+							width := float32(-1)
+							if byRuns {
+								joined = font.joinRuns(sbRun, font.run(word))
+								width = font.runWidth(joined, textBlock.fontSize)
+							}
+							measured := width >= 0
+							if !measured {
+								width = textBlock.stringWidth(sb.String() + word)
+							}
+							if width <= textAreaWidth {
 								sb.WriteString(word + separator)
+								if byRuns {
+									switch {
+									case !measured:
+										sbRun = font.run(sb.String())
+									case separator != "":
+										sbRun = font.joinRuns(joined, space)
+									default:
+										sbRun = joined
+									}
+								}
 								break
 							}
 							// The word is broken at a soft hyphen, the line
@@ -456,6 +488,9 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 							}); ok {
 								textLines = append(textLines, NewTextLine(textBlock.font, line+head))
 								sb.Reset()
+								if byRuns {
+									sbRun = font.run("")
+								}
 								word = rest
 								continue
 							}
@@ -467,6 +502,9 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 								textLine.trailingSpace = strings.HasSuffix(line, " ")
 								textLines = append(textLines, textLine)
 								sb.Reset()
+								if byRuns {
+									sbRun = font.run("")
+								}
 								continue
 							}
 							// A word too wide for a line by itself is broken.
@@ -474,6 +512,9 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 							textLines, rest = textBlock.appendBrokenWordLines(textLines, word, textAreaWidth)
 							if rest < len(word) {
 								sb.WriteString(word[rest:] + separator)
+								if byRuns {
+									sbRun = font.run(sb.String())
+								}
 							}
 							break
 						}
@@ -678,6 +719,32 @@ func (textBlock *TextBlock) getFallbackFontSize() float32 {
 func (textBlock *TextBlock) stringWidth(text string) float32 {
 	return textBlock.font.stringWidthFBSizes(
 		textBlock.fallbackFont, textBlock.fontSize, textBlock.getFallbackFontSize(), text)
+}
+
+// measuresByRuns returns true if the line is measured by the runs of the
+// font: a font of whole font units, and every character of the line, and the
+// space, drawn in the font, as stringWidth measures it then, in the font
+// alone.
+func (textBlock *TextBlock) measuresByRuns(line string) bool {
+	font, fallback := textBlock.font, textBlock.fallbackFont
+	if !font.measuresByRuns() {
+		return false
+	}
+	if fallback == nil || fallback.isCJK || fallback == font {
+		return true
+	}
+	// fontOf gives the font, not the fallback font, for the character,
+	// wherever it is
+	inFont := func(c rune) bool { return font.hasGlyph(c) || !fallback.hasGlyph(c) }
+	if !inFont(' ') {
+		return false
+	}
+	for _, c := range line {
+		if !inFont(c) {
+			return false
+		}
+	}
+	return true
 }
 
 // newTextLine returns a line of text, reordered if the text is right to left.

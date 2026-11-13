@@ -509,6 +509,84 @@ public class Font {
         return true;
     }
 
+    // What StringWidth sums of a text, kept so that TextBlock can measure a
+    // line as it grows, a word at a time, rather than the whole line again for
+    // each word: its advances and its kerning in font units, and the first and
+    // last glyph drawn, between which the kerning of two texts joined is.
+    internal struct Run {
+        internal int advance;
+        internal int kerning;
+        internal int first;
+        internal int last;
+    }
+
+    // Returns true if StringWidth of this font sums whole font units, so that
+    // a width can be made of runs: a font read from a .ttf or an .otf.
+    internal bool MeasuresByRuns() {
+        return !isCoreFont && !isCJK;
+    }
+
+    // Returns the run of the text, what StringWidth sums of it.
+    internal Run TextRun(String str) {
+        Run r = new Run { first = -1, last = -1 };
+        for (int i = 0; i < str.Length; ) {
+            int codePoint = Util.CodePointAt(str, i);
+            i += (codePoint > 0xFFFF) ? 2 : 1;
+            if (codePoint >= 0x20 && codePoint < 0x7F && asciiGID[codePoint - 0x20] != 0) {
+                r.advance += asciiAdvance[codePoint - 0x20];
+            } else {
+                r.advance += AdvanceWidthOf(codePoint);
+            }
+        }
+        bool kerns = Kerns();
+        for (int i = 0; i < str.Length; ) {
+            int c = Util.CodePointAt(str, i);
+            i += (c > 0xFFFF) ? 2 : 1;
+            int gid;
+            if (!DrawnGlyph(c, out gid)) {
+                continue;
+            }
+            if (r.first < 0) {
+                r.first = gid;
+            } else if (kerns) {
+                r.kerning += GlyphKerning(r.last, gid);
+            }
+            r.last = gid;
+        }
+        return r;
+    }
+
+    // Returns the run of two texts, one after the other.
+    internal Run JoinRuns(Run a, Run b) {
+        Run r = new Run {
+            advance = a.advance + b.advance,
+            kerning = a.kerning + b.kerning,
+            first = (a.first >= 0) ? a.first : b.first,
+            last = (b.last >= 0) ? b.last : a.last
+        };
+        if (Kerns() && a.last >= 0 && b.first >= 0) {
+            r.kerning += GlyphKerning(a.last, b.first);
+        }
+        return r;
+    }
+
+    // Returns the width of the run at the font size, the width StringWidth
+    // gives of its text to the bit, or -1 when its units are too many to be
+    // summed exactly in a float: below 2^24, the float sums of whole numbers
+    // that StringWidth makes are exact, whatever their order.
+    internal float RunWidth(Run r, float fontSize) {
+        long units = (long) r.advance + r.kerning;
+        if (r.advance >= (1 << 24) || Math.Abs((long) r.kerning) >= (1 << 24) ||
+                Math.Abs(units) >= (1 << 24)) {
+            return -1f;
+        }
+        float width = r.advance;
+        if (Kerns()) {
+            width += r.kerning;
+        }
+        return width * fontSize / unitsPerEm;
+    }
+
     // Returns the kerning of the text, in font units: the sum of the pairs of
     // the glyphs drawn one after the other.
     internal int TextKerning(String str) {

@@ -29,6 +29,15 @@ TextFrame:
 
 No behavior change: neither does anything until it is called.
 
+Faster, in the four ports: `TextBlock` wraps a paragraph about 13% to 24%
+faster (100 pages of paragraphs: Java 21 to 17 ms, C# 27.0 to 20.5 ms, Go
+18.5 to 14.9 ms, Swift 41.0 to 35.6 ms). The line is measured as it grows,
+a word at a time, rather than whole again for each word, in whole font units
+summed exactly, so the lines break where they did. Only a paragraph drawn in
+one font of a .ttf or an .otf; the rest is measured as before. No behavior
+change: the 57 examples and 2,000 random text blocks write the same PDFs as
+before, to the byte, but for their dates and IDs.
+
 Added, in Go only, the constructors that return their error, as
 `ReadTableFromFile` does, for a file or a text PDFjet cannot read, which the
 constructors of Java, C# and Swift throw: `ReadImage(pdf, reader)` (of

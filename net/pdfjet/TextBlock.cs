@@ -393,6 +393,14 @@ public class TextBlock : IDrawable {
                     }
                 } else {
                     StringBuilder sb = new StringBuilder();
+                    // The line is measured as it grows, a word at a time, by
+                    // the runs of the font, when it is drawn in the font
+                    // alone: the same width as the whole line measured again
+                    // for each word, which took most of the time of a text
+                    // block (13 November 2026).
+                    bool byRuns = MeasuresByRuns(line);
+                    Font.Run sbRun = byRuns ? font.TextRun("") : default(Font.Run);
+                    Font.Run space = byRuns ? font.TextRun(" ") : default(Font.Run);
                     string[] tokens = Util.SplitOnWhitespace(line);
                     foreach (string token in tokens) {
                         // The words between the zero width spaces of a token
@@ -402,8 +410,22 @@ public class TextBlock : IDrawable {
                             String word = words[i];
                             String separator = (i == words.Length - 1) ? " " : "";
                             while (true) {
-                                if (this.StringWidth(sb.ToString() + word) <= textAreaWidth) {
+                                Font.Run joined = default(Font.Run);
+                                float width = -1f;
+                                if (byRuns) {
+                                    joined = font.JoinRuns(sbRun, font.TextRun(word));
+                                    width = font.RunWidth(joined, fontSize);
+                                }
+                                bool measured = width >= 0f;
+                                if (!measured) {
+                                    width = this.StringWidth(sb.ToString() + word);
+                                }
+                                if (width <= textAreaWidth) {
                                     sb.Append(word).Append(separator);
+                                    if (byRuns) {
+                                        sbRun = !measured ? font.TextRun(sb.ToString())
+                                                : separator.Length > 0 ? font.JoinRuns(joined, space) : joined;
+                                    }
                                     break;
                                 }
                                 // The word is broken at a soft hyphen, the line
@@ -414,6 +436,9 @@ public class TextBlock : IDrawable {
                                         out String head, out String rest)) {
                                     textLines.Add(new TextLine(font, pending + head));
                                     sb.Clear();
+                                    if (byRuns) {
+                                        sbRun = font.TextRun("");
+                                    }
                                     word = rest;
                                     continue;
                                 }
@@ -425,12 +450,18 @@ public class TextBlock : IDrawable {
                                     textLine.trailingSpace = pending[pending.Length - 1] == ' ';
                                     textLines.Add(textLine);
                                     sb.Clear();
+                                    if (byRuns) {
+                                        sbRun = font.TextRun("");
+                                    }
                                     continue;
                                 }
                                 // A word too wide for a line by itself is broken.
                                 int restIndex = AddBrokenWordLines(textLines, word, textAreaWidth);
                                 if (restIndex < word.Length) {
                                     sb.Append(word.Substring(restIndex)).Append(separator);
+                                    if (byRuns) {
+                                        sbRun = font.TextRun(sb.ToString());
+                                    }
                                 }
                                 break;
                             }
@@ -616,6 +647,35 @@ public class TextBlock : IDrawable {
     // font has no glyph for in the fallback font.
     private float StringWidth(String text) {
         return font.StringWidth(fallbackFont, fontSize, GetFallbackFontSize(), text);
+    }
+
+    // Returns true if the line is measured by the runs of the font: a font of
+    // whole font units, and every character of the line, and the space, drawn
+    // in the font, as StringWidth measures it then, in the font alone.
+    private bool MeasuresByRuns(String line) {
+        if (!font.MeasuresByRuns()) {
+            return false;
+        }
+        if (fallbackFont == null || fallbackFont.isCJK || fallbackFont == font) {
+            return true;
+        }
+        if (!InFont(' ')) {
+            return false;
+        }
+        for (int i = 0; i < line.Length; ) {
+            int codePoint = Util.CodePointAt(line, i);
+            i += (codePoint > 0xFFFF) ? 2 : 1;
+            if (!InFont(codePoint)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Returns true if FontOf gives the font, not the fallback font, for the
+    // character, wherever it is.
+    private bool InFont(int codePoint) {
+        return font.HasGlyph(codePoint) || !fallbackFont.HasGlyph(codePoint);
     }
 
     // Returns the start of the word up to its last soft hyphen whose start,

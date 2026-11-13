@@ -571,6 +571,79 @@ func (font *Font) drawnGlyph(c rune) (int, bool) {
 	return glyphOf(font, c), true
 }
 
+// textRun is what StringWidth sums of a text, kept so that TextBlock can
+// measure a line as it grows, a word at a time, rather than the whole line
+// again for each word: its advances and its kerning in font units, and the
+// first and last glyph drawn, between which the kerning of two texts joined
+// is.
+type textRun struct {
+	advance, kerning, first, last int
+}
+
+// measuresByRuns returns true if StringWidth of the font sums whole font
+// units, so that a width can be made of runs: a font read from a .ttf or an
+// .otf.
+func (font *Font) measuresByRuns() bool {
+	return !font.isCoreFont && !font.isCJK
+}
+
+// run returns the run of the text, what StringWidth sums of it.
+func (font *Font) run(text string) textRun {
+	r := textRun{first: -1, last: -1}
+	for _, c := range text {
+		if c >= 0x20 && c < 0x7F && font.asciiGID[c-0x20] != 0 {
+			r.advance += int(font.asciiAdvance[c-0x20])
+		} else {
+			r.advance += font.advanceWidthOf(c)
+		}
+	}
+	kerns := font.kerns()
+	for _, c := range text {
+		gid, drawn := font.drawnGlyph(c)
+		if !drawn {
+			continue
+		}
+		if r.first < 0 {
+			r.first = gid
+		} else if kerns {
+			r.kerning += font.glyphKerning(r.last, gid)
+		}
+		r.last = gid
+	}
+	return r
+}
+
+// joinRuns returns the run of two texts, one after the other.
+func (font *Font) joinRuns(a, b textRun) textRun {
+	r := textRun{advance: a.advance + b.advance, kerning: a.kerning + b.kerning, first: a.first, last: b.last}
+	if font.kerns() && a.last >= 0 && b.first >= 0 {
+		r.kerning += font.glyphKerning(a.last, b.first)
+	}
+	if r.first < 0 {
+		r.first = b.first
+	}
+	if r.last < 0 {
+		r.last = a.last
+	}
+	return r
+}
+
+// runWidth returns the width of the run at the font size, the width
+// StringWidth gives of its text to the bit, or -1 when its units are too many
+// to be summed exactly in a float32: below 2^24, the float32 sums of whole
+// numbers that StringWidth makes are exact, whatever their order.
+func (font *Font) runWidth(r textRun, fontSize float32) float32 {
+	units := r.advance + r.kerning
+	if r.advance >= 1<<24 || r.kerning >= 1<<24 || r.kerning <= -(1<<24) || units >= 1<<24 || units <= -(1<<24) {
+		return -1
+	}
+	width := float32(r.advance)
+	if font.kerns() {
+		width += float32(r.kerning)
+	}
+	return float32(width*fontSize) / float32(font.unitsPerEm)
+}
+
 // textKerning returns the kerning of the text, in font units: the sum of the
 // pairs of the glyphs drawn one after the other.
 func (font *Font) textKerning(text string) int {
