@@ -718,9 +718,9 @@ Poppler and MuPDF reverse that text as well.
 
 ## Text without spaces between words
 
-`TextBlock` wraps text at its spaces. Thai, Lao, Khmer and Burmese text has no
-spaces between its words, so put a zero width space (U+200B) between the words
-where a line may break. It is not drawn. A word too wide for a line by itself
+`TextBlock` wraps text at its spaces. Thai text has no spaces between its
+words, so put a zero width space (U+200B) between the words where a line may
+break. It is not drawn. A word too wide for a line by itself
 is broken between its characters, so text without zero width spaces still fits
 in the text block, but its lines can break inside words. A right to left word is
 shaped as a whole before it is broken, so its letters keep their joined forms on
