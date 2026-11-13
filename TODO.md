@@ -1512,11 +1512,11 @@ The release (scripts and the checklist):
   Nastaliq Urdu: they need GSUB and a shaping engine's reordering, which PDFjet
   does not have (checked 19 October 2026: हिन्दी drawn with its vowel after its
   consonant and its conjunct unjoined). Said in the README, under Marks, and on
-  pdfjet.com's FAQs. A route weighed on 12 November 2026, not planned: headless
+  pdfjet.com's FAQs. Planned on 12 November 2026, for January 2027: headless
   Chrome prints each snippet of such text to a small PDF, and PDFjet draws
   that page in its own, as Example_34 draws its logo from a PDF, inside a Span
   with /Lang and /ActualText: real, tagged text in every complex script, for
-  those who can run Chrome. Never text drawn as an image.
+  those who can run Chrome, in PDFjet Pro. Never text drawn as an image.
 - No explicit bidi embedding, override or isolate controls.
 - Poppler separates an Arabic comma from its word; MuPDF moves numbers next to
   words and can move a bracket at a line end.
