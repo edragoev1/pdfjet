@@ -750,6 +750,7 @@ Myanmar, Sinhala and the Nastaliq style of Urdu, are not supported: they need
 the substitution table (GSUB) and the reordering of a shaping engine, which
 PDFjet does not have. Their letters are drawn one after another, so a vowel
 written before its consonant comes after it, and conjuncts are not joined.
+Lao is not supported either.
 
 ## Encryption
 
