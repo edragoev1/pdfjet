@@ -59,6 +59,28 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **TextBlock: measure a line as it grows, not whole for each word, in all
+  four ports** (the owner, 13 November 2026, after the TypeScript engine of
+  Forms did it). Wrapping a paragraph, TextBlock measures the line so far
+  with the next word, from its first character, for every word
+  (`stringWidth(sb.toString() + word)` in TextBlock.java, the same in Go,
+  C# and Swift): a line of 15 words is measured 15 times, longer each time,
+  its kerning walked again each time. Keep instead what the line sums to in
+  font units: its advances, its kerning, and its first and last glyph
+  drawn; the next word's run is joined to it, the kerning between the two
+  glyphs added, and the width at the size worked out once. Advances and
+  kerning are whole font units, and stringWidth's float32 sums of them are
+  exact below 2^24, so the width is stringWidth's to the bit, and the lines
+  break where they break today: the same PDFs, byte for byte. Only a
+  paragraph drawn wholly in its font (every character, and the space, in
+  the font, or not in the fallback font); one that uses the fallback font,
+  Korean in a Latin block, is measured as today, as are a word broken at a
+  soft hyphen or between its characters. Found by profiling the TypeScript
+  engine: line breaking was 42% of the time of 100 pages of paragraphs, and
+  the change took them from 150 ms to 91 ms; Java took 21 ms before it,
+  its JIT hiding the waste. Check with Example_24 and the cross-port tests:
+  every PDF the same as before.
+
 - **Maybe: HTML to accessible PDF, Chrome's layout drawn by PDFjet** (the
   owner, 11 November 2026, "somehow use headless chrome with pdfjet").
   HTML loaded in headless Chrome, which lays it out, the hard part (HTML and
