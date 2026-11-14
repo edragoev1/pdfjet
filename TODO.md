@@ -59,7 +59,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
-- [ ] **drawGlyphs: the span of actual text per cluster in C# and Go**
+- ✅ **DONE 14 November 2026. drawGlyphs: the span of actual text per cluster in C# and Go**
   (14 November 2026). Java and Swift draw each cluster as its own span of
   actual text, its glyphs in one TJ array, a glyph off the baseline by the
   text rise, and map a glyph no character maps to to the letters of its

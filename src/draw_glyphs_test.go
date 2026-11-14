@@ -16,8 +16,9 @@ import (
 )
 
 // DrawGlyphs draws glyphs another engine shaped, by their numbers, as real
-// text: a span of actual text around them, each glyph at its place, and the
-// glyphs no character maps to mapped to their cluster's text in ToUnicode.
+// text: a span of actual text for each cluster, each glyph at its place, and
+// the glyphs no character maps to mapped to their cluster's letters in
+// ToUnicode, or to the zero width space.
 
 // testUnmappedGlyph returns the first glyph of the font no character maps
 // to, like a conjunct.
@@ -43,26 +44,45 @@ func TestDrawGlyphsTheGlyphsAreRealTextInATaggedParagraph(t *testing.T) {
 	page.DrawGlyphs(font, []int{a, x}, []float32{50, 100, 60, 100}, []int{0, 1}, "AXY", "hi")
 	page.AddEMC()
 	content := testContent(page)
-	if !strings.Contains(content, "/Span <</Lang <6869> /ActualText <"+toUTF16Hex("AXY")+">>> BDC\nBT\n") {
+	// The language around them all, then a span of actual text for each
+	// cluster, its glyphs in a TJ array
+	if !strings.Contains(content, "/Span <</Lang <6869>>> BDC\nBT\n") {
 		t.Error(content)
 	}
-	if !strings.Contains(content, fmt.Sprintf("1 0 0 1 50 692 Tm\n<%04X> Tj\n", a)) {
+	if !strings.Contains(content, "/Span <</ActualText <"+toUTF16Hex("A")+">>> BDC\n"+
+		fmt.Sprintf("1 0 0 1 50 692 Tm\n[<%04X>] TJ\nEMC\n", a)) {
 		t.Error(content)
 	}
-	if !strings.Contains(content, fmt.Sprintf("1 0 0 1 60 692 Tm\n<%04X> Tj\nET\nEMC\n", x)) {
+	if !strings.Contains(content, "/Span <</ActualText <"+toUTF16Hex("XY")+">>> BDC\n"+
+		fmt.Sprintf("1 0 0 1 60 692 Tm\n[<%04X>] TJ\nEMC\nET\nEMC\n", x)) {
 		t.Error(content)
 	}
-	if strings.Count(content, "BDC\n") != 2 { // The paragraph's, and the span's
+	if strings.Count(content, "BDC\n") != 4 { // The paragraph's, the language's, two spans
 		t.Error(content)
 	}
-	// The unmapped glyph maps to its cluster's characters, "XY"; the mapped
-	// one keeps its own
+	// The unmapped glyph maps to its cluster's letters, "XY"; the mapped one
+	// keeps its own
 	cmap := strings.ToLower(toUnicodeCMap(font, nil))
 	if !strings.Contains(cmap, fmt.Sprintf("<%04x> <00580059>", x)) || strings.Contains(cmap, fmt.Sprintf("<%04x> <0058", a)) {
 		t.Error(cmap)
 	}
 	if doc.pdf.err != nil {
 		t.Error(doc.pdf.err)
+	}
+}
+
+// As Khmer's ោ, drawn as the glyph of េ and a second part: the letters cannot
+// add up to the cluster's, and MuPDF would copy it twice
+func TestDrawGlyphsAnUnmappedGlyphBesideALetterTheClusterLacksIsTheZeroWidthSpace(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
+	font := testPlexSans(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	x := testUnmappedGlyph(t, font)
+	page.DrawGlyphs(font, []int{font.unicodeToGID.get('B'), x}, []float32{50, 100, 60, 100}, []int{0, 0}, "XY", "en")
+	cmap := strings.ToLower(toUnicodeCMap(font, nil))
+	if !strings.Contains(cmap, fmt.Sprintf("<%04x> <200b>", x)) {
+		t.Error(cmap)
 	}
 }
 
@@ -81,13 +101,14 @@ func TestDrawGlyphsOutsideAnyContentTheGlyphsAreAParagraphOfTheirOwn(t *testing.
 	}
 }
 
-func TestDrawGlyphsAnUntaggedPageHasTheSpanOfActualTextAlone(t *testing.T) {
+func TestDrawGlyphsAnUntaggedPageHasTheSpansOfActualTextAlone(t *testing.T) {
 	doc := testNewDoc()
 	font := testPlexSans(doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	page.DrawGlyphs(font, []int{font.unicodeToGID.get('A')}, []float32{50, 100}, nil, "A", "")
 	content := testContent(page)
-	if !strings.HasPrefix(content, "/Span <</ActualText <"+toUTF16Hex("A")+">>> BDC\nBT\n") || strings.Contains(content, "MCID") {
+	if !strings.HasPrefix(content, "BT\n") || !strings.Contains(content, "/Span <</ActualText <"+toUTF16Hex("A")+">>> BDC\n") ||
+		strings.Contains(content, "MCID") {
 		t.Error(content)
 	}
 }

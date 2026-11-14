@@ -2733,11 +2733,14 @@ func (page *Page) addArtifactBDC(properties string) {
 //
 // clusters says which characters of the text each glyph comes from, as the
 // engine reports them: for each glyph, the index in the text, counted in
-// runes, of the first character of its cluster. A glyph no character of the
-// font maps to, such as a conjunct, is mapped to its cluster's characters, for
-// the ToUnicode map PDF/UA asks of every glyph drawn. Without clusters (nil),
-// such a glyph maps to the replacement character, U+FFFD, and copying relies
-// on the actual text alone.
+// runes, of the first character of its cluster. Each cluster, with the glyphs
+// drawn for it, is a span of actual text, so that copying gets the text in
+// order. Without clusters (nil), all the glyphs are one span. A glyph no
+// character of the font maps to, such as a conjunct, is mapped in the
+// ToUnicode map PDF/UA asks of every glyph drawn to the characters of its
+// cluster the cluster's other glyphs do not give, so that viewers that read
+// ToUnicode alone copy the same; to the zero width space, U+200B, when they
+// give them all, and without clusters.
 func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, clusters []int, text, language string) {
 	if font == nil {
 		page.pdf.fail("DrawGlyphs needs a font, glyphs and their positions.")
@@ -2778,17 +2781,13 @@ func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, clus
 	if own {
 		page.AddBDC(structelem.P, language, "", "")
 	}
-	// The text the glyphs stand for, for copying, searching and screen
-	// readers; a span of actual text is read in untagged documents too
-	page.appendString("/Span <<")
-	if language != "" {
-		page.appendString("/Lang <")
+	// The language of the glyphs, around them all
+	languageSpan := language != ""
+	if languageSpan {
+		page.appendString("/Span <</Lang <")
 		page.appendString(hex.EncodeToString([]byte(language)))
-		page.appendString("> ")
+		page.appendString(">>> BDC\n")
 	}
-	page.appendString("/ActualText <")
-	page.appendString(toUTF16Hex(text))
-	page.appendString(">>> BDC\n")
 	page.appendString("BT\n")
 	page.setTextFont(font, font.size)
 	if page.renderingMode != 0 || page.renderingModeSet {
@@ -2803,41 +2802,195 @@ func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, clus
 		starts = slices.Clone(clusters)
 		slices.Sort(starts)
 	}
-	// Each glyph at its own place: the engine placed it, kerning, marks and
-	// reordering included
-	for i, gid := range glyphs {
-		page.appendString("1 0 0 1 ")
-		page.appendFloat32(positions[2*i])
-		page.appendString(" ")
-		page.appendFloat32(page.height - positions[2*i+1])
-		page.appendString(" Tm\n<")
-		page.appendGlyphUnkerned(font, gid)
-		page.appendString("> Tj\n")
-		font.useGlyphText(gid, clusterText(runes, clusters, starts, i))
+	// The baseline: the y most of the glyphs are drawn at
+	baseline := baselineOf(positions)
+	// A span of actual text for each group of glyphs, the text they stand
+	// for, read in untagged documents too: a cluster, or the clusters a glyph
+	// drawn before its cluster joins, as a vowel sign of Hindi drawn before
+	// its consonant. MuPDF repeats or leaves out text when the glyphs of a
+	// span do not match its actual text, as one span for a whole line did;
+	// with clusters the spans tile the text, in order. Without clusters, one
+	// span for all the glyphs.
+	// The text of each glyph no character maps to, for ToUnicode
+	glyphTexts := glyphTexts(font, glyphs, clusters, starts, runes)
+	// The smallest cluster of the glyphs from each on
+	var laterMin []int
+	if clusters != nil {
+		laterMin = make([]int, len(glyphs)+1)
+		laterMin[len(glyphs)] = math.MaxInt
+		for k := len(glyphs) - 1; k >= 0; k-- {
+			laterMin[k] = min(clusters[k], laterMin[k+1])
+		}
+	}
+	textEnd := 0 // The end of the text the spans before took
+	i := 0
+	for i < len(glyphs) {
+		j := len(glyphs) - 1
+		end := len(runes)
+		if clusters != nil {
+			// The group grows while a later glyph belongs to its text
+			j = i
+			end = clusterEnd(len(runes), starts, clusters[i])
+			for j+1 < len(glyphs) && laterMin[j+1] < end {
+				j++
+				end = max(end, clusterEnd(len(runes), starts, clusters[j]))
+			}
+			if j == len(glyphs)-1 {
+				end = len(runes)
+			}
+		}
+		page.appendString("/Span <</ActualText <")
+		page.appendString(toUTF16Hex(string(runes[min(textEnd, end):end])))
+		page.appendString(">>> BDC\n")
+		// The glyphs of the span in one array of text, as one run: MuPDF
+		// repeats a span's text for each run of glyphs it sees, and a glyph
+		// placed with its own Tm, a mark over the glyph before it, starts
+		// one. Each glyph is moved to the place the engine gave it by the
+		// adjustment of the array, against its advance in the font; a glyph
+		// off the baseline, as a subscript of Khmer, by the text rise, which
+		// ends the array and starts another.
+		size := font.size
+		var rise float32
+		open := false
+		var penX float32 // Where the next glyph would be drawn without an adjustment
+		for k := i; k <= j; k++ {
+			glyphX := positions[2*k]
+			glyphRise := baseline - positions[2*k+1]
+			if !open || glyphRise != rise {
+				if open {
+					page.appendString("] TJ\n")
+				}
+				if glyphRise != rise {
+					page.appendFloat32(glyphRise)
+					page.appendString(" Ts\n")
+					rise = glyphRise
+				}
+				page.appendString("1 0 0 1 ")
+				page.appendFloat32(glyphX)
+				page.appendString(" ")
+				page.appendFloat32(page.height - baseline)
+				page.appendString(" Tm\n[")
+				penX = glyphX
+				open = true
+			} else if glyphX != penX {
+				page.appendString(" ")
+				page.appendFloat32(-1000 * (glyphX - penX) / size)
+				page.appendString(" ")
+				penX = glyphX
+			}
+			page.appendString("<")
+			page.appendGlyphUnkerned(font, glyphs[k])
+			page.appendString(">")
+			penX += float32(advanceOf(font, glyphs[k])) * size / float32(font.unitsPerEm)
+			font.useGlyphText(glyphs[k], glyphTexts[k])
+		}
+		if open {
+			page.appendString("] TJ\n")
+		}
+		if rise != 0 {
+			page.appendString("0 Ts\n")
+		}
+		page.appendString("EMC\n")
+		textEnd = end
+		i = j + 1
 	}
 	page.appendString("ET\n")
-	page.appendString("EMC\n")
+	if languageSpan {
+		page.appendString("EMC\n")
+	}
 	if own {
 		page.AddEMC()
 	}
 }
 
-// clusterText returns the characters of the glyph's cluster: from its start
-// to the next cluster's, or to the end of the text; the replacement character
-// without clusters.
-func clusterText(runes []rune, clusters, starts []int, i int) string {
-	if clusters == nil {
-		return "\uFFFD"
+// glyphTexts returns the text ToUnicode gives each glyph no character maps
+// to: the characters of its cluster that the cluster's other glyphs do not
+// give, as the conjunct of Hindi's क्ष its three characters, so that a viewer
+// that reads ToUnicode alone, as pdf.js, copies the same letters as one that
+// reads the actual text. The zero width space for the other glyphs of the
+// cluster no character maps to, without clusters, and where a glyph of the
+// cluster is a letter the cluster does not have, as the first part of
+// Khmer's ោ, drawn as េ: there the letters of the glyphs cannot add up to the
+// cluster's, and MuPDF, which then reads both the actual text and the
+// letters, copies the cluster twice.
+func glyphTexts(font *Font, glyphs, clusters, starts []int, runes []rune) []string {
+	texts := make([]string, len(glyphs))
+	for k := range texts {
+		texts[k] = "\u200B"
 	}
-	start := clusters[i]
-	end := len(runes)
-	for _, s := range starts {
-		if s > start {
-			end = s
-			break
+	if clusters == nil {
+		return texts
+	}
+	byCluster := make(map[int][]int)
+	for k := range glyphs {
+		byCluster[clusters[k]] = append(byCluster[clusters[k]], k)
+	}
+	for start, ks := range byCluster {
+		left := slices.Clone(runes[start:clusterEnd(len(runes), starts, start)])
+		unmapped := -1
+		adds := true // Whether the letters of the glyphs can add up to the cluster's
+		for _, k := range ks {
+			gid := glyphs[k]
+			if gid < len(font.unicodeOf) && font.unicodeOf[gid] >= 0 {
+				if i := slices.Index(left, rune(font.unicodeOf[gid])); i >= 0 {
+					left = slices.Delete(left, i, i+1)
+				} else {
+					adds = false
+				}
+			} else if unmapped < 0 {
+				unmapped = k
+			}
+		}
+		if unmapped >= 0 && adds && len(left) > 0 {
+			texts[unmapped] = string(left)
 		}
 	}
-	return string(runes[start:end])
+	return texts
+}
+
+// advanceOf returns the advance of the glyph in the font's units, 0 for a
+// glyph past the font's widths.
+func advanceOf(font *Font, gid int) int {
+	if gid >= len(font.advanceWidth) {
+		return 0
+	}
+	return int(font.advanceWidth[gid])
+}
+
+// baselineOf returns the y most of the glyphs are drawn at, the first of
+// them on a tie.
+func baselineOf(positions []float32) float32 {
+	counts := make(map[float32]int)
+	for i := 1; i < len(positions); i += 2 {
+		counts[positions[i]]++
+	}
+	best := positions[1]
+	bestCount := 0
+	for i := 1; i < len(positions); i += 2 {
+		if counts[positions[i]] > bestCount {
+			best = positions[i]
+			bestCount = counts[positions[i]]
+		}
+	}
+	return best
+}
+
+// clusterEnd returns the end of the cluster that starts at start: the next
+// cluster's start, or the end of the text.
+func clusterEnd(textLength int, starts []int, start int) int {
+	low, high := 0, len(starts)
+	for low < high {
+		middle := (low + high) / 2
+		if starts[middle] > start {
+			high = middle
+		} else {
+			low = middle + 1
+		}
+	}
+	if low < len(starts) {
+		return starts[low]
+	}
+	return textLength
 }
 
 // insideTaggedContent reports whether what is drawn now is inside real
