@@ -86,7 +86,7 @@ func testPlexSans(pdf *PDF) *Font {
 	}
 	for {
 		if info, err := os.Stat(filepath.Join(dir, "tests/data/PngSuite")); err == nil && info.IsDir() {
-			return NewFontFromFile(pdf, filepath.Join(dir, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+			return NewFontFromFile(pdf, filepath.Join(dir, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {

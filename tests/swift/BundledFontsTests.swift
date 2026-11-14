@@ -87,7 +87,7 @@ import Testing
         }
         #expect(carried == named)
         // The source read is the constants the library has
-        #expect(IBMPlexSans.Regular == "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        #expect(IBMPlexSans.Regular == "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
         #expect(IBMPlexSansJP.Regular == "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
         #expect(CascadiaMono.Regular == "fonts/CascadiaMono/CascadiaMono-Regular.ttf")
     }
@@ -122,10 +122,10 @@ import Testing
         // Bundle.module does when the bundle is missing
         #expect(BundledFonts.findBundle(BundledFonts.bundleNames)?.bundleURL == bundle.bundleURL)
         #expect(BundledFonts.findBundle(["PDFjet_NoSuchFonts.bundle"]) == nil)
-        #expect(BundledFonts.url("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "no-such-folder/", nil, nil) == nil)
+        #expect(BundledFonts.url("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "no-such-folder/", nil, nil) == nil)
         // From the working directory, the repository, resources/fonts first
         let onDisk = try #require(BundledFonts.url(IBMPlexSans.Regular))
-        #expect(onDisk.path.hasSuffix("resources/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"), "\(onDisk.path)")
+        #expect(onDisk.path.hasSuffix("resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"), "\(onDisk.path)")
         #expect(!onDisk.path.contains("PDFjet_PDFjetFonts"), "\(onDisk.path)")
         // With no such folder, as in an app, the bundle
         let missing = "no-such-folder/resources/fonts/"
@@ -142,6 +142,53 @@ import Testing
         for license in ["license.txt", "LICENSE"] {
             #expect(files.contains { $0.hasSuffix(license) }, "\(license)")
         }
+    }
+
+    // PDFjet carries IBM Plex Sans and Serif as .otf from 9.1.9, and as .ttf
+    // before: a path written for the .ttf is the .otf of the same face, as is
+    // one of the .stream files of before 9.0.5, from resources/fonts or the
+    // bundle of PDFjetFonts; a .ttf of one's own at that path, or of that
+    // name in the folder, is read first.
+    @Test func aPathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries() throws {
+        let styles = ["Thin", "ThinItalic", "Light", "LightItalic", "Text", "TextItalic", "Regular", "Italic",
+                "Medium", "MediumItalic", "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"]
+        let missing = "no-such-folder/resources/fonts/"
+        for family in ["IBMPlexSans", "IBMPlexSerif"] {
+            for style in styles {
+                let otf = try TestSupport.fontBytes("resources/fonts/\(family)/\(family)-\(style).otf")
+                let path = "fonts/\(family)/\(family)-\(style).ttf"
+                for old in [path, path + ".stream"] {
+                    #expect(try Font.open(Font.fontFileOf(old)) == otf, "\(old)")
+                }
+                let inBundle = try #require(BundledFonts.url(path, missing), "\(path)")
+                #expect(try [UInt8](Data(contentsOf: inBundle)) == otf, "\(path) in the bundle")
+            }
+        }
+        #expect(try Font(TestSupport.newPDF(), IBMPlexSans.Bold.replacingOccurrences(of: ".otf", with: ".ttf"))
+                .name == "IBMPlexSans-Bold")
+        // A .ttf of one's own at that path, and of that name in the folder
+        let ttf = try TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf")
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("pdfjet-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let own = dir.appendingPathComponent("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        let inFolder = dir.appendingPathComponent("resources/fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")
+        for file in [own, inFolder] {
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(),
+                    withIntermediateDirectories: true)
+            try Data(ttf).write(to: file)
+        }
+        #expect(try Font.open(own.path) == ttf)
+        let found = try #require(BundledFonts.url("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf",
+                dir.appendingPathComponent("resources/fonts").path + "/"))
+        #expect(try [UInt8](Data(contentsOf: found)) == ttf)
+        // Only those two families, and only their .ttf: a face PDFjet does not
+        // carry is not found still, nor a .otf of Cascadia Mono
+        for path in ["fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf", "fonts/CascadiaMono/CascadiaMono-Regular.otf",
+                "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"] {
+            #expect(BundledFonts.url(path) == nil, "\(path)")
+        }
+        #expect(BundledFonts.renamed("CascadiaMono/CascadiaMono-Regular.ttf") == nil)
+        #expect(BundledFonts.renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf") == "IBMPlexSerif/IBMPlexSerif-Bold.otf")
     }
 
     @Test func aWorldFontIsReadFromResourcesFontsWorldElseFromTheBundleOfPDFjetFontsWorld() throws {
@@ -201,11 +248,11 @@ import Testing
         // Cascadia Mono SemiLight is as thick as IBM Plex Sans Regular: it
         // stands for 400, and Regular for 500
         let cases: [(Int, Int, String)] = [
-            (0, 400, "IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            (0, 200, "IBMPlexSans/IBMPlexSans-Thin.ttf"),
-            (0, 800, "IBMPlexSans/IBMPlexSans-Bold.ttf"),
-            (1, 100, "IBMPlexSerif/IBMPlexSerif-Thin.ttf"),
-            (1, 900, "IBMPlexSerif/IBMPlexSerif-Bold.ttf"),
+            (0, 400, "IBMPlexSans/IBMPlexSans-Regular.otf"),
+            (0, 200, "IBMPlexSans/IBMPlexSans-Thin.otf"),
+            (0, 800, "IBMPlexSans/IBMPlexSans-Bold.otf"),
+            (1, 100, "IBMPlexSerif/IBMPlexSerif-Thin.otf"),
+            (1, 900, "IBMPlexSerif/IBMPlexSerif-Bold.otf"),
             (2, 400, "CascadiaMono/CascadiaMono-SemiLight.ttf"),
             (2, 500, "CascadiaMono/CascadiaMono-Regular.ttf"),
             (2, 600, "CascadiaMono/CascadiaMono-SemiBold.ttf"),
@@ -216,6 +263,6 @@ import Testing
         }
         #expect(BundledFonts.fileName(2, 400, true) == "CascadiaMono/CascadiaMono-SemiLightItalic.ttf")
         #expect(BundledFonts.fileName(2, 500, true) == "CascadiaMono/CascadiaMono-Italic.ttf")
-        #expect(BundledFonts.fileName(0, 400, true) == "IBMPlexSans/IBMPlexSans-Italic.ttf")
+        #expect(BundledFonts.fileName(0, 400, true) == "IBMPlexSans/IBMPlexSans-Italic.otf")
     }
 }   // End of BundledFontsTests.swift

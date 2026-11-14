@@ -144,7 +144,7 @@ import Testing
     @Test func isTaggedAsItsStructureType() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let heading = TextBlock(font, "Invoice").setStructureType(StructElem.H1)
         _ = heading.setLocation(50, 50)
@@ -180,7 +180,7 @@ import Testing
     // (review of 11 October 2026, #9).
     @Test func anIgnorableCharacterIsNotDrawn() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let plain = "Brand™ © 2026 word"
         let marked = "Brand™\u{FE0F} ©\u{FE0F} 2026\u{200B} wo\u{2060}rd"
         #expect(font.stringWidth(12, plain) == font.stringWidth(12, marked),

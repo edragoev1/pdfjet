@@ -17,9 +17,9 @@ public class IBMPlexSans {
     }
 
     /** IBM Plex Sans BoldItalic */
-    public static final String BoldItalic       = "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.ttf";
+    public static final String BoldItalic       = "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.otf";
     /** IBM Plex Sans Bold */
-    public static final String Bold             = "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf";
+    public static final String Bold             = "fonts/IBMPlexSans/IBMPlexSans-Bold.otf";
 
     /**
      * IBM Plex Sans ExtraLightItalic, which PDFjet does not carry
@@ -39,27 +39,27 @@ public class IBMPlexSans {
     @Deprecated
     public static final String ExtraLight       = "fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf";
     /** IBM Plex Sans Italic */
-    public static final String Italic           = "fonts/IBMPlexSans/IBMPlexSans-Italic.ttf";
+    public static final String Italic           = "fonts/IBMPlexSans/IBMPlexSans-Italic.otf";
     /** IBM Plex Sans LightItalic */
-    public static final String LightItalic      = "fonts/IBMPlexSans/IBMPlexSans-LightItalic.ttf";
+    public static final String LightItalic      = "fonts/IBMPlexSans/IBMPlexSans-LightItalic.otf";
     /** IBM Plex Sans Light */
-    public static final String Light            = "fonts/IBMPlexSans/IBMPlexSans-Light.ttf";
+    public static final String Light            = "fonts/IBMPlexSans/IBMPlexSans-Light.otf";
     /** IBM Plex Sans MediumItalic */
-    public static final String MediumItalic     = "fonts/IBMPlexSans/IBMPlexSans-MediumItalic.ttf";
+    public static final String MediumItalic     = "fonts/IBMPlexSans/IBMPlexSans-MediumItalic.otf";
     /** IBM Plex Sans Medium */
-    public static final String Medium           = "fonts/IBMPlexSans/IBMPlexSans-Medium.ttf";
+    public static final String Medium           = "fonts/IBMPlexSans/IBMPlexSans-Medium.otf";
     /** IBM Plex Sans Regular */
-    public static final String Regular          = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+    public static final String Regular          = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
     /** IBM Plex Sans SemiBoldItalic */
-    public static final String SemiBoldItalic   = "fonts/IBMPlexSans/IBMPlexSans-SemiBoldItalic.ttf";
+    public static final String SemiBoldItalic   = "fonts/IBMPlexSans/IBMPlexSans-SemiBoldItalic.otf";
     /** IBM Plex Sans SemiBold */
-    public static final String SemiBold         = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf";
+    public static final String SemiBold         = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf";
     /** IBM Plex Sans TextItalic */
-    public static final String TextItalic       = "fonts/IBMPlexSans/IBMPlexSans-TextItalic.ttf";
+    public static final String TextItalic       = "fonts/IBMPlexSans/IBMPlexSans-TextItalic.otf";
     /** IBM Plex Sans Text */
-    public static final String Text             = "fonts/IBMPlexSans/IBMPlexSans-Text.ttf";
+    public static final String Text             = "fonts/IBMPlexSans/IBMPlexSans-Text.otf";
     /** IBM Plex Sans ThinItalic */
-    public static final String ThinItalic       = "fonts/IBMPlexSans/IBMPlexSans-ThinItalic.ttf";
+    public static final String ThinItalic       = "fonts/IBMPlexSans/IBMPlexSans-ThinItalic.otf";
     /** IBM Plex Sans Thin */
-    public static final String Thin             = "fonts/IBMPlexSans/IBMPlexSans-Thin.ttf";
+    public static final String Thin             = "fonts/IBMPlexSans/IBMPlexSans-Thin.otf";
 }

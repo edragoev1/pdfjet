@@ -58,8 +58,8 @@ Plex Sans Arabic, Hebrew and Thai, about 41 MB, are in the package
 it. Only the glyphs a document draws
 are embedded in it. Any other .ttf or .otf font is read by its path.
 
-The fonts make its `PDFjet.dll` larger, about 12 MB, and the package about
-10 MB, as it has one for .NET 8 and one for .NET Framework 4.8. Want a much
+The fonts make its `PDFjet.dll` larger, about 10 MB, and the package about
+9.5 MB, as it has one for .NET 8 and one for .NET Framework 4.8. Want a much
 smaller DLL? The `PDFjet.dll` of the
 [releases on GitHub](https://github.com/edragoev1/pdfjet/releases) is under
 1 MB: it reads the same fonts from the folder `resources/fonts`, which its

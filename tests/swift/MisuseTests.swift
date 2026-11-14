@@ -247,7 +247,7 @@ import Testing
         #expect(pdf.error == "A stamp draws text with an embedded font, not a core or CJK font.")
 
         let memory = MemoryPDF()
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let stamp = Stamp(memory.pdf).setSize(100, 50)
         stamp.drawText(font, 12, 5, 20, "Paid")
         try stamp.complete()
@@ -355,7 +355,7 @@ import Testing
         // An embedded font only reserves its number, written at complete():
         // the objects could take it too (the review of 9 October 2026).
         let pdf3 = TestSupport.newPDF()
-        _ = try Font(pdf3, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        _ = try Font(pdf3, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         do {
             try pdf3.addObjects(objects)
             Issue.record("addObjects after an embedded font did not throw")

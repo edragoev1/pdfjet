@@ -47,7 +47,8 @@ public class FontCoverageTest {
         foreach (String family in FAMILIES) {
             foreach (String file in Directory.GetFiles(TestSupport.RepoPath("resources/fonts/" + family))) {
                 String name = System.IO.Path.GetFileName(file);
-                if (!name.EndsWith(".ttf", StringComparison.Ordinal)) {
+                // IBM Plex Sans and Serif as .otf, Cascadia Mono as .ttf
+                if (!name.EndsWith(".ttf", StringComparison.Ordinal) && !name.EndsWith(".otf", StringComparison.Ordinal)) {
                     continue;
                 }
                 Font font;

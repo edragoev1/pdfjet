@@ -314,7 +314,7 @@ class OTFTest {
     // applies.
     @Test
     void aFontWhoseLicenseForbidsEmbeddingIsRefused() throws Exception {
-        byte[] ttf = font("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] ttf = font("tests/fonts/IBMPlexSans-Regular.ttf");
         int os2 = table(ttf, "OS/2");
         String message = error(with(ttf, os2 + 8, 0x0002));
         assertTrue(message.contains("may not be embedded") && message.contains("IBMPlexSans"), message);

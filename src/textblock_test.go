@@ -201,7 +201,7 @@ func TestTextBlockSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T)
 func TestTextBlockIsTaggedAsItsStructureType(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
 	page := NewPage(pdf, letter.Portrait())
 	heading := NewTextBlock(font, "Invoice")
 	heading.SetStructureType(structelem.H1)
@@ -351,7 +351,7 @@ func TestTextBlockARightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine(t *te
 // (review of 11 October 2026, #9).
 func TestTextBlockAnIgnorableCharacterIsNotDrawn(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
 	plain := "Brand™ © 2026 word"
 	marked := "Brand™️ ©️ 2026​ wo⁠rd"
 	if a, b := font.StringWidth(12, plain), font.StringWidth(12, marked); a != b {

@@ -173,6 +173,72 @@ class BundledFontsTest {
         assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.otf.stream"));
     }
 
+    // PDFjet carries IBM Plex Sans and Serif as .otf from 9.1.9, and as .ttf
+    // before: a path written for the .ttf is the .otf of the same face, as is
+    // one of the .stream files of before 9.0.5, from the folder resources/fonts
+    // or from the jar of Maven Central; a .ttf of one's own at that path, or of
+    // that name in the folder, is read first.
+    @Test
+    void aPathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries(@org.junit.jupiter.api.io.TempDir File folder)
+            throws Exception {
+        String[] styles = {"Thin", "ThinItalic", "Light", "LightItalic", "Text", "TextItalic", "Regular", "Italic",
+                "Medium", "MediumItalic", "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"};
+        File jar = new File(folder, "pdfjet.jar");
+        try (java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(jar))) {
+            for (String family : new String[] {"IBMPlexSans", "IBMPlexSerif"}) {
+                for (String style : styles) {
+                    String name = family + "/" + family + "-" + style + ".otf";
+                    zip.putNextEntry(new java.util.zip.ZipEntry("com/pdfjet/fonts/" + name));
+                    zip.write(java.nio.file.Files.readAllBytes(TestSupport.file("resources/fonts/" + name).toPath()));
+                    zip.closeEntry();
+                }
+            }
+        }
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(new java.net.URL[] {jar.toURI().toURL()}, null)) {
+            for (String family : new String[] {"IBMPlexSans", "IBMPlexSerif"}) {
+                for (String style : styles) {
+                    byte[] otf = java.nio.file.Files.readAllBytes(
+                            TestSupport.file("resources/fonts/" + family + "/" + family + "-" + style + ".otf").toPath());
+                    String path = "fonts/" + family + "/" + family + "-" + style + ".ttf";
+                    try (InputStream stream = Font.open(Font.fontFileOf(path))) {
+                        assertTrue(java.util.Arrays.equals(otf, TestSupport.readAll(stream)), path);
+                    }
+                    try (InputStream stream = Font.open(Font.fontFileOf(path + ".stream"))) {
+                        assertTrue(java.util.Arrays.equals(otf, TestSupport.readAll(stream)), path + ".stream");
+                    }
+                    try (InputStream stream = BundledFonts.open(path, "no-such-folder/", loader)) {
+                        assertTrue(java.util.Arrays.equals(otf, TestSupport.readAll(stream)), path + " in the jar");
+                    }
+                }
+            }
+        }
+        assertEquals("IBMPlexSans-Bold", new Font(TestSupport.newPDF(), com.pdfjet.fonts.IBMPlexSans.Bold
+                .replace(".otf", ".ttf")).getName());
+        // A .ttf of one's own at that path, and of that name in the folder
+        byte[] ttf = TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
+        File own = new File(folder, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        File inFolder = new File(folder, "resources/fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf");
+        for (File file : new File[] {own, inFolder}) {
+            assertTrue(file.getParentFile().mkdirs());
+            java.nio.file.Files.write(file.toPath(), ttf);
+        }
+        try (InputStream stream = Font.open(own.getPath())) {
+            assertTrue(java.util.Arrays.equals(ttf, TestSupport.readAll(stream)));
+        }
+        try (InputStream stream = BundledFonts.open("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf",
+                new File(folder, "resources/fonts").getPath() + "/", null)) {
+            assertTrue(java.util.Arrays.equals(ttf, TestSupport.readAll(stream)));
+        }
+        // Only those two families, and only their .ttf: a face PDFjet does not
+        // carry is not found still, nor a .otf of Cascadia Mono
+        for (String path : new String[] {"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
+                "fonts/CascadiaMono/CascadiaMono-Regular.otf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"}) {
+            assertEquals(null, BundledFonts.open(path), path);
+        }
+        assertEquals(null, BundledFonts.renamed("CascadiaMono/CascadiaMono-Regular.ttf"));
+        assertEquals("IBMPlexSerif/IBMPlexSerif-Bold.otf", BundledFonts.renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf"));
+    }
+
     // PDFjet in a server's shared lib, the world jar in the WEB-INF/lib of the
     // application: the jar is on the classpath of the context class loader alone.
     @Test
@@ -203,11 +269,11 @@ class BundledFontsTest {
         // Cascadia Mono SemiLight is as thick as IBM Plex Sans Regular: it
         // stands for 400, and Regular for 500
         String[][] cases = {
-            {"0", "400", "IBMPlexSans/IBMPlexSans-Regular.ttf"},
-            {"0", "200", "IBMPlexSans/IBMPlexSans-Thin.ttf"},
-            {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.ttf"},
-            {"1", "100", "IBMPlexSerif/IBMPlexSerif-Thin.ttf"},
-            {"1", "900", "IBMPlexSerif/IBMPlexSerif-Bold.ttf"},
+            {"0", "400", "IBMPlexSans/IBMPlexSans-Regular.otf"},
+            {"0", "200", "IBMPlexSans/IBMPlexSans-Thin.otf"},
+            {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.otf"},
+            {"1", "100", "IBMPlexSerif/IBMPlexSerif-Thin.otf"},
+            {"1", "900", "IBMPlexSerif/IBMPlexSerif-Bold.otf"},
             {"2", "400", "CascadiaMono/CascadiaMono-SemiLight.ttf"},
             {"2", "500", "CascadiaMono/CascadiaMono-Regular.ttf"},
             {"2", "600", "CascadiaMono/CascadiaMono-SemiBold.ttf"},
@@ -219,6 +285,6 @@ class BundledFontsTest {
         }
         assertEquals("CascadiaMono/CascadiaMono-SemiLightItalic.ttf", BundledFonts.fileName(2, 400, true));
         assertEquals("CascadiaMono/CascadiaMono-Italic.ttf", BundledFonts.fileName(2, 500, true));
-        assertEquals("IBMPlexSans/IBMPlexSans-Italic.ttf", BundledFonts.fileName(0, 400, true));
+        assertEquals("IBMPlexSans/IBMPlexSans-Italic.otf", BundledFonts.fileName(0, 400, true));
     }
 }   // End of BundledFontsTest.java

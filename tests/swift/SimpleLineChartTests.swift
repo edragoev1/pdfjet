@@ -378,7 +378,7 @@ import Testing
     @Test func theNoteIsInTheFigure() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         SimpleLineChart(font, font).setSize(300, 200).setYAxisRange(0, 10).addLine("a", [1, 50]).drawOn(page)
         let content = TestSupport.content(page)

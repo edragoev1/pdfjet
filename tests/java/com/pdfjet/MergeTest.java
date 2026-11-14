@@ -371,7 +371,7 @@ class MergeTest {
         // review of 9 October 2026), and its text was lost.
         List<PDFobj> objects = TestSupport.read(document("Existing"));
         Font font;
-        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
+        try (java.io.InputStream in = TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf")) {
             font = new Font(objects, in);
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -419,7 +419,7 @@ class MergeTest {
         // 2026, B1).
         List<PDFobj> objects = TestSupport.read(document("Existing"));
         Font font;
-        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
+        try (java.io.InputStream in = TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf")) {
             font = new Font(objects, in);
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -546,7 +546,7 @@ class MergeTest {
         // (review of 30 October 2026, B5).
         List<PDFobj> objects = TestSupport.read(onePagePDF(""));
         Font font;
-        try (java.io.InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")) {
+        try (java.io.InputStream in = TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf")) {
             font = new Font(objects, in);
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

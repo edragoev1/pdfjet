@@ -496,7 +496,7 @@ func TestWriterTheFontFileRefersToItsMetadataWhoseNoticeIsEscaped(t *testing.T) 
 	// designer and its description; no font PDFjet carries has one in its
 	// names, so the license of IBM Plex Sans is made to say "with & FAQ" in
 	// place of "with a FAQ", a character for a character.
-	ttf := testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	ttf := testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")
 	var withA []byte
 	for _, c := range " with a FAQ" {
 		withA = append(withA, 0, byte(c))

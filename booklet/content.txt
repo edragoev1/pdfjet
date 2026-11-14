@@ -74,7 +74,7 @@ Add PDFjet to the Package.swift of your package, and the PDFjet product to the t
     ]
 @end
 
-The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. PDFjet includes every European language (Latin, Greek, Cyrillic) in IBM Plex Sans and Serif and Cascadia Mono. For other scripts, add one package: the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai, IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai, are com.pdfjet:pdfjet-fonts-world with Maven or Gradle, PDFjet.Fonts.World with NuGet, import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world" in Go, and the product PDFjetFontsWorld in Swift. Without it, one of those fonts throws an error that names what to add. In the repository, all are in the folder resources/fonts, those of the other scripts in resources/fonts/world.
+The fonts PDFjet carries, such as IBMPlexSans.Regular, are paths like fonts/IBMPlexSans/IBMPlexSans-Regular.otf, which the library reads from itself when there is no such file, so a program that uses them needs no font files. PDFjet includes every European language (Latin, Greek, Cyrillic) in IBM Plex Sans and Serif and Cascadia Mono. For other scripts, add one package: the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai, IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai, are com.pdfjet:pdfjet-fonts-world with Maven or Gradle, PDFjet.Fonts.World with NuGet, import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world" in Go, and the product PDFjetFontsWorld in Swift. Without it, one of those fonts throws an error that names what to add. In the repository, all are in the folder resources/fonts, those of the other scripts in resources/fonts/world.
 
 ## Hello, World
 
@@ -159,7 +159,7 @@ For an accessible document, set the compliance to PDF/UA-1 and give the document
 PDFjet is fast by design, and a few habits keep it that way.
 
 - Create each font once and use it everywhere. A Font object embeds its font in the PDF once, however many pages use it, and a text line can draw in another size of the same font with setFontSize, without a second font.
-- Use TrueType fonts, such as the ones that come with PDFjet, IBMPlexSans.Regular and the rest. PDFjet embeds only the glyphs a document draws, so a page in a Chinese font is a few hundred kilobytes, not the megabytes of the whole font.
+- Use embedded fonts, such as the ones that come with PDFjet, IBMPlexSans.Regular and the rest. PDFjet embeds only the glyphs a document draws, so a page in a Chinese font is a few hundred kilobytes, not the megabytes of the whole font.
 - Add an image to the PDF once and draw it on as many pages as you like. The image data is written once.
 - Write to a buffered stream, and let PDFjet write each page out as the next one starts. A document of thousands of pages needs no more memory than one page.
 - For a long table of plain one-line rows, a statement or an export, use BigTable, which writes the rows as it reads them, rather than Table, which holds every cell until it is drawn. Example 24 writes 124,716 rows of a CSV file this way. Table is for cells that need more: text that wraps, images, spanned cells, page totals.

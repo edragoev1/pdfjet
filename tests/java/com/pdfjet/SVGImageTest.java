@@ -753,8 +753,8 @@ class SVGImageTest {
         image("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
                 + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").drawOn(page);
         assertEquals(new java.util.TreeSet<String>(java.util.Arrays.asList(
-                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf", "CascadiaMono/CascadiaMono-Bold.ttf",
-                "IBMPlexSans/IBMPlexSans-Regular.ttf", "IBMPlexSans/IBMPlexSans-Bold.ttf")),
+                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf", "CascadiaMono/CascadiaMono-Bold.ttf",
+                "IBMPlexSans/IBMPlexSans-Regular.otf", "IBMPlexSans/IBMPlexSans-Bold.otf")),
                 new java.util.TreeSet<String>(pdf.bundledFonts.keySet()));
     }
 
@@ -771,7 +771,7 @@ class SVGImageTest {
     @Test
     void aSetFontDrawsTheText() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         SVGImage image = image("<svg width=\"200\" height=\"100\"><text y=\"20\" font-weight=\"bold\">Hi</text></svg>");
         image.setFont(font);    // The bold text too, as no bold font is set

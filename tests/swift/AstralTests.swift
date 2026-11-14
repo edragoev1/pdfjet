@@ -41,7 +41,7 @@ import Testing
 
     @Test func aCharacterPastU0xFFFFIsDrawnInTheFallbackFont() throws {
         let pdf = TestSupport.newPDF()
-        let plex = try Font(pdf, TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let plex = try Font(pdf, TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         // IBM Plex Sans TC, the .otf PDFjet carries, maps 𨋢 in its format 12
         // subtable, as its .ttf, which this test read before 9.1.7, does.
         let tc = try Font(pdf, TestSupport.path("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"))

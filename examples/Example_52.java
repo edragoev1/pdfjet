@@ -40,7 +40,7 @@ public class Example_52 {
 
     private static final String DEVANAGARI = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf";
     private static final String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf";
-    private static final String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+    private static final String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
 
     public Example_52() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_52.pdf")));

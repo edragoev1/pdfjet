@@ -151,7 +151,7 @@ func fonts(pdf *pdfjet.PDF, font *pdfjet.Font) {
 // @snippet font-files
 func fontFiles(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	otf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
-	ttf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")
+	ttf := pdfjet.NewFontFromFile(pdf, "fonts/CascadiaMono/CascadiaMono-Regular.ttf")
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(otf, "An OpenType font").SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextLine(ttf, "A TrueType font").SetLocation(50, 75).DrawOn(page)

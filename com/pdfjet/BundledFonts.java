@@ -15,12 +15,12 @@ import java.util.Map;
 /**
  * The fonts PDFjet carries in itself, in resources/fonts, each family in a
  * folder of its name, with its license: IBM Plex Sans and Serif, from Thin
- * to Bold, and Cascadia Mono, from Light to Bold, upright and italic, for
- * every European language, in Latin, Greek and Cyrillic; and, in
+ * to Bold, as .otf, and Cascadia Mono, from Light to Bold, as .ttf, upright
+ * and italic, for every European language, in Latin, Greek and Cyrillic; and, in
  * resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
  * and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
  * All are under the SIL Open Font License 1.1. A path to one of them, such as
- * fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of
+ * fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of
  * com.pdfjet.fonts, is read from the folder resources/fonts when there is no
  * such file, or else from the classpath, and the text of an SVG image is
  * drawn in them unless a font is set. The jar of Maven Central,
@@ -70,7 +70,7 @@ final class BundledFonts {
     static final String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai";
 
     // Returns the name of a font under resources/fonts, Family/File, of a
-    // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
+    // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf: its
     // last two parts.
     static String nameOf(String fontPath) {
         String path = fontPath.replace('\\', '/');
@@ -121,6 +121,41 @@ final class BundledFonts {
         if (name == null || name.indexOf("..") >= 0) {
             return null;
         }
+        InputStream stream = openName(name, folder, loader);
+        String renamed = renamed(name);
+        if (stream == null && renamed != null) {
+            stream = openName(renamed, folder, loader);
+        }
+        return stream;
+    }
+
+    // The families PDFjet carries as .otf from 9.1.9 and carried as .ttf
+    // before: IBM Plex Sans and Serif, whose .otf, of the same release of
+    // IBM, have the same advance widths, kerning and line metrics as their
+    // .ttf, and embed a fifth smaller.
+    private static final String[] RENAMED = {"IBMPlexSans", "IBMPlexSerif"};
+
+    // Returns the name of the .otf PDFjet carries from 9.1.9 of a name,
+    // Family/File, of the .ttf of IBM Plex Sans or Serif, such as
+    // IBMPlexSans/IBMPlexSans-Regular.ttf, so that a path written for the
+    // .ttf is the same font, or null for any other name. A file at the path
+    // itself, or of that name in resources/fonts, is read first.
+    static String renamed(String name) {
+        int slash = name.indexOf('/');
+        if (slash < 0 || !name.endsWith(".ttf")) {
+            return null;
+        }
+        String family = name.substring(0, slash);
+        for (String renamed : RENAMED) {
+            if (renamed.equals(family)) {
+                return name.substring(0, name.length() - ".ttf".length()) + ".otf";
+            }
+        }
+        return null;
+    }
+
+    // Opens the font of the name, Family/File, as open does, or returns null.
+    private static InputStream openName(String name, String folder, ClassLoader loader) {
         String path = folderPathOf(name);
         java.io.File file = new java.io.File(folder + path);
         if (file.isFile()) {
@@ -210,7 +245,8 @@ final class BundledFonts {
         if (italic) {
             style = style.equals("Regular") ? "Italic" : style + "Italic";
         }
-        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + style + ".ttf";
+        // IBM Plex Sans and Serif are .otf, Cascadia Mono .ttf
+        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + style + ((family == MONO) ? ".ttf" : ".otf");
     }
 
     // Returns the weight CSS matches to the one asked for, of the weights a

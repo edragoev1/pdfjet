@@ -343,7 +343,7 @@ import Testing
         // was left empty when the objects were merged rather than added (the
         // review of 9 October 2026), and its text was lost.
         var objects = try TestSupport.read(document("Existing"))
-        let font = try Font(&objects, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(&objects, TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf"))
         let memory = MemoryPDF()
         let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
         page.addResource(font, &objects)
@@ -365,7 +365,7 @@ import Testing
         // the drawing and the text of the page were lost (review of 30 October
         // 2026, B1).
         var objects = try TestSupport.read(document("Existing"))
-        let font = try Font(&objects, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(&objects, TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf"))
         let memory = MemoryPDF()
         let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
         page.addResource(font, &objects)
@@ -476,7 +476,7 @@ import Testing
         // A font added to it did nothing, and the text was lost with no error
         // (review of 30 October 2026, B5).
         var objects = try TestSupport.read(onePagePDF(""))
-        let font = try Font(&objects, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(&objects, TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf"))
         let memory = MemoryPDF()
         let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
         page.addResource(font, &objects)

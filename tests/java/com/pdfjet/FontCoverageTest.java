@@ -49,7 +49,8 @@ class FontCoverageTest {
         int faces = 0;
         for (String family : FAMILIES) {
             for (File file : TestSupport.file("resources/fonts/" + family).listFiles()) {
-                if (!file.getName().endsWith(".ttf")) {
+                // IBM Plex Sans and Serif as .otf, Cascadia Mono as .ttf
+                if (!file.getName().endsWith(".ttf") && !file.getName().endsWith(".otf")) {
                     continue;
                 }
                 Font font;

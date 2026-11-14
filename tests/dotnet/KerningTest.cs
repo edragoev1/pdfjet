@@ -58,8 +58,8 @@ public class KerningTest {
     [Fact]
     public void KerningNarrowsTheKernedPairsOfAnOpenTypeFont() {
         PDF pdf = TestSupport.NewPDF();
-        Font kerned = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", true);
-        Font plain = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", false);
+        Font kerned = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true);
+        Font plain = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", false);
         foreach (string pair in new string[] {"AV", "To", "Ty", "LT"}) {
             Assert.True(kerned.StringWidth(10f, pair) < plain.StringWidth(10f, pair),
                     pair + ": kerned " + kerned.StringWidth(10f, pair) + ", not kerned " + plain.StringWidth(10f, pair));
@@ -76,9 +76,9 @@ public class KerningTest {
         // Extension lookups of its pairs, as Source Serif 4, which PDFjet
         // carried before, has.
         foreach (string path in new string[] {
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
                 "tests/fonts/IBMPlexSans-Regular.otf",
-                "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf",
+                "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf",
                 "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"}) {
             Font font = KernedFont(pdf, path, true);
             foreach (string text in new string[] {
@@ -96,7 +96,7 @@ public class KerningTest {
     [Fact]
     public void KerningOfColoredTextIsDrawnAsItIsMeasured() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", true);
+        Font font = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true);
         string text = "AVATAR To \"Wally\" LT.";
         Page page = new Page(pdf, Letter.PORTRAIT);
         int start = page.GetContent().Length;
@@ -184,7 +184,7 @@ public class KerningTest {
     [Fact]
     public void KerningIsOffUnlessAskedFor() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", false);
+        Font font = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", false);
         string content = Draw(font, "AVATAR To");
         Assert.False(content.Contains("] TJ"), "a font not kerned moved its glyphs:\n" + content);
     }
@@ -209,7 +209,7 @@ public class KerningTest {
     [Fact]
     public void KerningFitsWhatIsMeasured() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", true);
+        Font font = KernedFont(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true);
         string text = "AVATAR To Wally";
         // GetFitChars measures at the font's own size
         float width = font.StringWidth(font.GetSize(), text);
@@ -234,15 +234,15 @@ public class KerningTest {
     // The same widths in the four ports, at 10 points: what each port
     // measures, and so wraps and aligns, is the same to the hundredth of a point.
     [Theory]
-    [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "AVATAR To Wally", 75.14f, -302)]
-    [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "Тъй ТАТЯНА", 55.94f, -165)]
-    [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "ΑΥΤΟ", 24.44f, -70)]
+    [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14f, -302)]
+    [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "Тъй ТАТЯНА", 55.94f, -165)]
+    [InlineData("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "ΑΥΤΟ", 24.44f, -70)]
     [InlineData("tests/fonts/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14f, -302)]
     // IBM Plex Serif, from its hmtx and kern lookups (Noto Sans, before
     // 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)
-    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", "AVATAR To Wally", 80.59f, -315)]
-    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", "Тъй ТАТЯНА", 61.57f, -147)]
-    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", "ΑΥΤΟ", 26.40f, -48)]
+    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf", "AVATAR To Wally", 80.59f, -315)]
+    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf", "Тъй ТАТЯНА", 61.57f, -147)]
+    [InlineData("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf", "ΑΥΤΟ", 26.40f, -48)]
     public void KerningWidthsAreThoseOfTheOtherPorts(string path, string text, float kerned, int unitsOf) {
         Font font = KernedFont(TestSupport.NewPDF(), path, true);
         TestSupport.AssertNear(kerned, font.StringWidth(10f, text), 0.005f, path + ": " + text);
@@ -252,7 +252,7 @@ public class KerningTest {
     [Fact]
     public void KerningIsMeasuredFromManyThreadsAtOnce() {
         PDF pdf = TestSupport.NewPDF();
-        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
         string text = "AVATAR To Wally";
         float expected = KernedFont(pdf, path, true).StringWidth(10f, text);
         for (int round = 0; round < 20; round++) {

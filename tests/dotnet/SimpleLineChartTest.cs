@@ -461,7 +461,7 @@ public sealed class SimpleLineChartTest {
     public void TheNoteIsInTheFigure() {
         System.IO.MemoryStream bos = new System.IO.MemoryStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleLineChart(font, font).SetSize(300f, 200f).SetYAxisRange(0f, 10f)
                 .AddLine("a", new float[] {1f, 50f}).DrawOn(page);

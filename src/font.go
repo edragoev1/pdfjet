@@ -322,13 +322,16 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // NewFontFromFile creates a font from the .otf or .ttf file at the path and
 // adds it to the PDF. A path to one of the fonts PDFjet carries, such as the
 // constants of the packages IBMPlexSans and the others,
-// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is read from the folder
+// fonts/IBMPlexSans/IBMPlexSans-Regular.otf for one, is read from the folder
 // resources/fonts when there is no such file, or else from the library, which
 // has the fonts of every script but the European ones, IBMPlexSansJP,
 // IBMPlexSansArabic and the others, when the program imports the package
 // github.com/edragoev1/pdfjet/v9/resources/fonts/world. A path to a
 // .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-// opens the .ttf or else the .otf file of the same name beside it. It panics
+// opens the .ttf or else the .otf file of the same name beside it. A path to
+// the .ttf of IBM Plex Sans or Serif, which PDFjet carried before 9.1.9, such
+// as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, is read, when there is no
+// such file, as the .otf it carries of the same face. It panics
 // if the font cannot be read: for a font PDFjet does not carry, or a font of
 // the package world it has not built in, with an error that is
 // fs.ErrNotExist and says what to do. ReadFontFromFile returns the error

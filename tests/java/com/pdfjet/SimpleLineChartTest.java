@@ -459,7 +459,7 @@ class SimpleLineChartTest {
     void theNoteIsInTheFigure() throws Exception {
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleLineChart(font, font).setSize(300f, 200f).setYAxisRange(0f, 10f)
                 .addLine("a", new float[] {1f, 50f}).drawOn(page);

@@ -348,7 +348,7 @@ func TestOTFAFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs(t *tes
 // allows Preview and Print too is embedded, as the least restrictive bit
 // applies.
 func TestOTFAFontWhoseLicenseForbidsEmbeddingIsRefused(t *testing.T) {
-	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")
 	os2 := testOpenTypeTable(t, ttf, "OS/2")
 	message, panicked := testPanic(func() {
 		NewFont(testNewPDF(), bytes.NewReader(testOpenTypeWith(ttf, os2+8, 0x0002)))

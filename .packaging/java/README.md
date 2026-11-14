@@ -58,7 +58,7 @@ Hebrew, Thai, Chinese, Japanese and Korean. They are in `resources/fonts` of
 this package, with their licenses, those of the other scripts in
 `resources/fonts/world`. Their constants, such as
 `IBMPlexSans.Regular`, are paths like
-`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, which the `Font` constructor
+`fonts/IBMPlexSans/IBMPlexSans-Regular.otf`, which the `Font` constructor
 reads from the file of that path if there is one, else from the folder
 `resources/fonts` of the working directory, else from the classpath. The
 `PDFjet.jar` of this package is small and does not carry them: keep

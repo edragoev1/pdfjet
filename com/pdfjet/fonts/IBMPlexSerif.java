@@ -17,31 +17,31 @@ public class IBMPlexSerif {
     }
 
     /** IBM Plex Serif Bold */
-    public static final String Bold           = "fonts/IBMPlexSerif/IBMPlexSerif-Bold.ttf";
+    public static final String Bold           = "fonts/IBMPlexSerif/IBMPlexSerif-Bold.otf";
     /** IBM Plex Serif BoldItalic */
-    public static final String BoldItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-BoldItalic.ttf";
+    public static final String BoldItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-BoldItalic.otf";
     /** IBM Plex Serif Italic */
-    public static final String Italic         = "fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf";
+    public static final String Italic         = "fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf";
     /** IBM Plex Serif Light */
-    public static final String Light          = "fonts/IBMPlexSerif/IBMPlexSerif-Light.ttf";
+    public static final String Light          = "fonts/IBMPlexSerif/IBMPlexSerif-Light.otf";
     /** IBM Plex Serif LightItalic */
-    public static final String LightItalic    = "fonts/IBMPlexSerif/IBMPlexSerif-LightItalic.ttf";
+    public static final String LightItalic    = "fonts/IBMPlexSerif/IBMPlexSerif-LightItalic.otf";
     /** IBM Plex Serif Medium */
-    public static final String Medium         = "fonts/IBMPlexSerif/IBMPlexSerif-Medium.ttf";
+    public static final String Medium         = "fonts/IBMPlexSerif/IBMPlexSerif-Medium.otf";
     /** IBM Plex Serif MediumItalic */
-    public static final String MediumItalic   = "fonts/IBMPlexSerif/IBMPlexSerif-MediumItalic.ttf";
+    public static final String MediumItalic   = "fonts/IBMPlexSerif/IBMPlexSerif-MediumItalic.otf";
     /** IBM Plex Serif Regular */
-    public static final String Regular        = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf";
+    public static final String Regular        = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf";
     /** IBM Plex Serif SemiBold */
-    public static final String SemiBold       = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBold.ttf";
+    public static final String SemiBold       = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBold.otf";
     /** IBM Plex Serif SemiBoldItalic */
-    public static final String SemiBoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf";
+    public static final String SemiBoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf";
     /** IBM Plex Serif Text */
-    public static final String Text           = "fonts/IBMPlexSerif/IBMPlexSerif-Text.ttf";
+    public static final String Text           = "fonts/IBMPlexSerif/IBMPlexSerif-Text.otf";
     /** IBM Plex Serif TextItalic */
-    public static final String TextItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-TextItalic.ttf";
+    public static final String TextItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-TextItalic.otf";
     /** IBM Plex Serif Thin */
-    public static final String Thin           = "fonts/IBMPlexSerif/IBMPlexSerif-Thin.ttf";
+    public static final String Thin           = "fonts/IBMPlexSerif/IBMPlexSerif-Thin.otf";
     /** IBM Plex Serif ThinItalic */
-    public static final String ThinItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-ThinItalic.ttf";
+    public static final String ThinItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-ThinItalic.otf";
 }

@@ -112,7 +112,7 @@ import Testing
 
     @Test func barcodeTheFigureHasTheBoxOfTheBarsAndTheDigits() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let height = page.height
         let cases: [(Int, String, Direction)] = [

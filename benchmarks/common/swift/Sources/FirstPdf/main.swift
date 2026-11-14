@@ -26,9 +26,9 @@ if CommandLine.arguments.count > 2 {
 let t0 = now()
 let pdf = PDF(OutputStream(toMemory: ()))
 let t1 = now()
-let regular = try Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+let regular = try Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
 let t2 = now()
-let bold = try Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf")
+let bold = try Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf")
 let t3 = now()
 let page = Page(pdf, Letter.PORTRAIT)
 for i in 0..<40 {

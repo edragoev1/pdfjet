@@ -18,8 +18,8 @@ import java.util.*;
  */
 public class TextBench {
     static final String ROOT = System.getProperty("pdfjet.root", ".") + "/";
-    static final String PLEX = ROOT + "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
-    static final String SERIF = ROOT + "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf";
+    static final String PLEX = ROOT + "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
+    static final String SERIF = ROOT + "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf";
     static final int LINES = 60;
     static final String[] SAMPLES = {
         "The quick brown fox jumps over the lazy dog",

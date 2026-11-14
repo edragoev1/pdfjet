@@ -242,7 +242,7 @@ import Testing
         }
     }
 
-    private static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    private static let trueTypeFont = "tests/fonts/IBMPlexSans-Regular.ttf"
 
     // The numbers of the page objects, in page order.
     private func pageNumbers(_ pdf: [UInt8]) throws -> [String] {

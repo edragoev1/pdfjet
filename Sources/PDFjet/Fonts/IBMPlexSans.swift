@@ -14,9 +14,9 @@ import Foundation
 ///
 public struct IBMPlexSans {
     /// IBM Plex Sans BoldItalic
-    public static let BoldItalic       = "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.ttf"
+    public static let BoldItalic       = "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.otf"
     /// IBM Plex Sans Bold
-    public static let Bold             = "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf"
+    public static let Bold             = "fonts/IBMPlexSans/IBMPlexSans-Bold.otf"
 
     ///
     /// IBM Plex Sans ExtraLightItalic, which PDFjet does not carry
@@ -33,27 +33,27 @@ public struct IBMPlexSans {
     public static let ExtraLight       = "fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf"
 
     /// IBM Plex Sans Italic
-    public static let Italic           = "fonts/IBMPlexSans/IBMPlexSans-Italic.ttf"
+    public static let Italic           = "fonts/IBMPlexSans/IBMPlexSans-Italic.otf"
     /// IBM Plex Sans LightItalic
-    public static let LightItalic      = "fonts/IBMPlexSans/IBMPlexSans-LightItalic.ttf"
+    public static let LightItalic      = "fonts/IBMPlexSans/IBMPlexSans-LightItalic.otf"
     /// IBM Plex Sans Light
-    public static let Light            = "fonts/IBMPlexSans/IBMPlexSans-Light.ttf"
+    public static let Light            = "fonts/IBMPlexSans/IBMPlexSans-Light.otf"
     /// IBM Plex Sans MediumItalic
-    public static let MediumItalic     = "fonts/IBMPlexSans/IBMPlexSans-MediumItalic.ttf"
+    public static let MediumItalic     = "fonts/IBMPlexSans/IBMPlexSans-MediumItalic.otf"
     /// IBM Plex Sans Medium
-    public static let Medium           = "fonts/IBMPlexSans/IBMPlexSans-Medium.ttf"
+    public static let Medium           = "fonts/IBMPlexSans/IBMPlexSans-Medium.otf"
     /// IBM Plex Sans Regular
-    public static let Regular          = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    public static let Regular          = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
     /// IBM Plex Sans SemiBoldItalic
-    public static let SemiBoldItalic   = "fonts/IBMPlexSans/IBMPlexSans-SemiBoldItalic.ttf"
+    public static let SemiBoldItalic   = "fonts/IBMPlexSans/IBMPlexSans-SemiBoldItalic.otf"
     /// IBM Plex Sans SemiBold
-    public static let SemiBold         = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
+    public static let SemiBold         = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf"
     /// IBM Plex Sans TextItalic
-    public static let TextItalic       = "fonts/IBMPlexSans/IBMPlexSans-TextItalic.ttf"
+    public static let TextItalic       = "fonts/IBMPlexSans/IBMPlexSans-TextItalic.otf"
     /// IBM Plex Sans Text
-    public static let Text             = "fonts/IBMPlexSans/IBMPlexSans-Text.ttf"
+    public static let Text             = "fonts/IBMPlexSans/IBMPlexSans-Text.otf"
     /// IBM Plex Sans ThinItalic
-    public static let ThinItalic       = "fonts/IBMPlexSans/IBMPlexSans-ThinItalic.ttf"
+    public static let ThinItalic       = "fonts/IBMPlexSans/IBMPlexSans-ThinItalic.otf"
     /// IBM Plex Sans Thin
-    public static let Thin             = "fonts/IBMPlexSans/IBMPlexSans-Thin.ttf"
+    public static let Thin             = "fonts/IBMPlexSans/IBMPlexSans-Thin.otf"
 }

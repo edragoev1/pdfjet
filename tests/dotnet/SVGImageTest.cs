@@ -748,8 +748,8 @@ public class SVGImageTest {
         Parse("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
                 + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").DrawOn(page);
         Assert.Equal(new System.Collections.Generic.SortedSet<string>(new[] {
-                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf", "CascadiaMono/CascadiaMono-Bold.ttf",
-                "IBMPlexSans/IBMPlexSans-Regular.ttf", "IBMPlexSans/IBMPlexSans-Bold.ttf"}, StringComparer.Ordinal),
+                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf", "CascadiaMono/CascadiaMono-Bold.ttf",
+                "IBMPlexSans/IBMPlexSans-Regular.otf", "IBMPlexSans/IBMPlexSans-Bold.otf"}, StringComparer.Ordinal),
                 new System.Collections.Generic.SortedSet<string>(pdf.bundledFonts.Keys, StringComparer.Ordinal));
     }
 
@@ -779,7 +779,7 @@ public class SVGImageTest {
     [Fact]
     public void ASetFontDrawsTheText() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         SVGImage image = Parse("<svg width=\"200\" height=\"100\"><text y=\"20\" font-weight=\"bold\">Hi</text></svg>");
         image.SetFont(font);    // The bold text too, as no bold font is set

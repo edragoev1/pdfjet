@@ -529,7 +529,8 @@ import Testing
     /// 236 empty blocks of IBM Plex Sans's 256. The number is the same in the
     /// four ports.
     @Test func aFontChecksumLeavesOutEmptyBlocks() throws {
-        #expect(try TestSupport.plexSans(TestSupport.newPDF()).checksum == 0xABF1C2C88C082202)
+        let font = try Font(TestSupport.newPDF(), TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf"))
+        #expect(font.checksum == 0xABF1C2C88C082202)
     }
 
     /// A word too wide for the column whose first piece does not fit the rest

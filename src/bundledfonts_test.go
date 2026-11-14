@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -230,6 +231,61 @@ func TestBundledFontsAPathOfTheOldStreamFilesOfAWorldFontNamesThePackage(t *test
 	testWant(t, "", bundledWorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Thin.otf.stream"))
 }
 
+func TestBundledFontsAPathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries(t *testing.T) {
+	// PDFjet carries IBM Plex Sans and Serif as .otf from 9.1.9, and as .ttf
+	// before: a path written for the .ttf is the .otf of the same face, as
+	// is one of the .stream files of before 9.0.5
+	ttf, err := os.ReadFile(testRepoPath(t, "tests/fonts/IBMPlexSans-Regular.ttf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	for _, family := range []string{"IBMPlexSans", "IBMPlexSerif"} {
+		for _, style := range []string{"Thin", "ThinItalic", "Light", "LightItalic", "Text", "TextItalic",
+			"Regular", "Italic", "Medium", "MediumItalic", "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"} {
+			otf, err := fonts.ReadFile(family + "/" + family + "-" + style + ".otf")
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := "fonts/" + family + "/" + family + "-" + style + ".ttf"
+			for _, old := range []string{path, path + ".stream"} {
+				buf, err := readFontFile(fontFileOf(old))
+				if err != nil || !slices.Equal(buf, otf) {
+					t.Errorf("%s: not the .otf (%v)", old, err)
+				}
+			}
+		}
+	}
+	testWant(t, "IBMPlexSans-Bold", NewFontFromFile(testNewPDF(), "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf").GetName())
+	// A .ttf of one's own at that path is read, the file first, and so is
+	// one of that name in resources/fonts, as in a folder of an older
+	// release
+	for _, path := range []string{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
+		"resources/fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, ttf, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, path := range []string{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"} {
+		if buf, err := readFontFile(path); err != nil || !slices.Equal(buf, ttf) {
+			t.Errorf("%s: not the file (%v)", path, err)
+		}
+	}
+	// Only those two families, and only their .ttf: a face PDFjet does not
+	// carry is not a file still, nor is a .otf of Cascadia Mono
+	for _, path := range []string{"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
+		"fonts/CascadiaMono/CascadiaMono-Regular.otf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"} {
+		if _, err := readFontFile(path); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("%s: %v", path, err)
+		}
+	}
+	testWant(t, "[CascadiaMono/CascadiaMono-Regular.ttf]",
+		fmt.Sprint(bundledFontNamesOf("fonts/CascadiaMono/CascadiaMono-Regular.ttf")))
+}
+
 func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testing.T) {
 	// Cascadia Mono SemiLight is as thick as IBM Plex Sans Regular: it stands
 	// for 400, and Regular for 500
@@ -237,11 +293,11 @@ func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testi
 		family, weight int
 		want           string
 	}{
-		{bundledSans, 400, "IBMPlexSans/IBMPlexSans-Regular.ttf"},
-		{bundledSans, 200, "IBMPlexSans/IBMPlexSans-Thin.ttf"},
-		{bundledSans, 800, "IBMPlexSans/IBMPlexSans-Bold.ttf"},
-		{bundledSerif, 100, "IBMPlexSerif/IBMPlexSerif-Thin.ttf"},
-		{bundledSerif, 900, "IBMPlexSerif/IBMPlexSerif-Bold.ttf"},
+		{bundledSans, 400, "IBMPlexSans/IBMPlexSans-Regular.otf"},
+		{bundledSans, 200, "IBMPlexSans/IBMPlexSans-Thin.otf"},
+		{bundledSans, 800, "IBMPlexSans/IBMPlexSans-Bold.otf"},
+		{bundledSerif, 100, "IBMPlexSerif/IBMPlexSerif-Thin.otf"},
+		{bundledSerif, 900, "IBMPlexSerif/IBMPlexSerif-Bold.otf"},
 		{bundledMono, 400, "CascadiaMono/CascadiaMono-SemiLight.ttf"},
 		{bundledMono, 500, "CascadiaMono/CascadiaMono-Regular.ttf"},
 		{bundledMono, 600, "CascadiaMono/CascadiaMono-SemiBold.ttf"},
@@ -251,5 +307,5 @@ func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testi
 	}
 	testWant(t, "CascadiaMono/CascadiaMono-SemiLightItalic.ttf", bundledFontFile(bundledMono, 400, true))
 	testWant(t, "CascadiaMono/CascadiaMono-Italic.ttf", bundledFontFile(bundledMono, 500, true))
-	testWant(t, "IBMPlexSans/IBMPlexSans-Italic.ttf", bundledFontFile(bundledSans, 400, true))
+	testWant(t, "IBMPlexSans/IBMPlexSans-Italic.otf", bundledFontFile(bundledSans, 400, true))
 }

@@ -488,7 +488,7 @@ class BarChartTest {
     @Test
     void theNoteIsInTheFigure() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new BarChart(font, font).setSize(300f, 200f).setCategories("a", "b").setValueAxisRange(0f, 10f)
                 .addLineSeries("", new float[] {1f, 50f}).drawOn(page);

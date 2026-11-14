@@ -97,7 +97,7 @@ public class SimpleScatterChartTest {
     public void ALinkedPointIsAFigureInItsLink() {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f)
                 .Add(1f, 1f).Add("Andorra", 2f, 2f, "https://pdfjet.com/a")
@@ -178,7 +178,7 @@ public class SimpleScatterChartTest {
     public void ALinkedDotIsAFigureInItsLink(bool withSeries) {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         page.SetStrokeDashPattern("[3 3] 0");
         SimpleScatterChart chart = new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f)
@@ -237,7 +237,7 @@ public class SimpleScatterChartTest {
     public void ALinkedDotWithoutANameOrAURI() {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f).SetXAxisRange(0f, 5f)
                 .AddLinkedDot("", 1f, 1f, "https://pdfjet.com/a").AddLinkedDot("Belize", 2f, 2f, "")
@@ -560,7 +560,7 @@ public class SimpleScatterChartTest {
     public void TheNoteIsInTheFigure() {
         MemoryStream bos = new MemoryStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).SetSize(300f, 200f).Add(1f, 1f).Add(50f, 1f)
                 .SetXAxisRange(0f, 10f).DrawOn(page);

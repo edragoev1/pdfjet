@@ -16,7 +16,7 @@ import Testing
 
     // IBM Plex Sans, which has the short offsets of loca; the subsets of a
     // font with the long ones read Cascadia Mono or IBM Plex Math.
-    private let plex = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    private let plex = "tests/fonts/IBMPlexSans-Regular.ttf"
 
     private func u16(_ font: [UInt8], _ at: Int) -> Int {
         return Int(font[at]) << 8 | Int(font[at + 1])

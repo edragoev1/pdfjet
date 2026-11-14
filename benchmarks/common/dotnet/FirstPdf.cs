@@ -22,9 +22,9 @@ class FirstPdf {
         long t0 = Stopwatch.GetTimestamp();
         PDF pdf = new PDF(new BufferedStream(Stream.Null));
         long t1 = Stopwatch.GetTimestamp();
-        Font regular = new Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        Font regular = new Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-Regular.otf");
         long t2 = Stopwatch.GetTimestamp();
-        Font bold = new Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf");
+        Font bold = new Font(pdf, root + "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf");
         long t3 = Stopwatch.GetTimestamp();
         Page page = new Page(pdf, Letter.PORTRAIT);
         for (int i = 0; i < 40; i++) {

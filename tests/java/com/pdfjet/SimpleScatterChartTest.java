@@ -103,7 +103,7 @@ class SimpleScatterChartTest {
     void aLinkedPointIsAFigureInItsLink() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).setSize(300f, 200f).setLocation(50f, 50f)
                 .add(1f, 1f).add("Andorra", 2f, 2f, "https://pdfjet.com/a")
@@ -182,7 +182,7 @@ class SimpleScatterChartTest {
         for (boolean withSeries : new boolean[] {false, true}) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
-            Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+            Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
             Page page = new Page(pdf, Letter.PORTRAIT);
             page.setStrokeDashPattern("[3 3] 0");
             SimpleScatterChart chart = new SimpleScatterChart(font, font).setSize(300f, 200f).setLocation(50f, 50f)
@@ -239,7 +239,7 @@ class SimpleScatterChartTest {
     void aLinkedDotWithoutANameOrAURI() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).setSize(300f, 200f).setLocation(50f, 50f).setXAxisRange(0f, 5f)
                 .addLinkedDot("", 1f, 1f, "https://pdfjet.com/a").addLinkedDot("Belize", 2f, 2f, "")
@@ -562,7 +562,7 @@ class SimpleScatterChartTest {
     void theNoteIsInTheFigure() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new SimpleScatterChart(font, font).setSize(300f, 200f).add(1f, 1f).add(50f, 1f)
                 .setXAxisRange(0f, 10f).drawOn(page);

@@ -10,12 +10,12 @@ package fonts
 import "embed"
 
 // FS has the font files built into every program, by Family/File, such as
-// IBMPlexSans/IBMPlexSans-Regular.ttf, and the licenses of the families;
+// IBMPlexSans/IBMPlexSans-Regular.otf, and the licenses of the families;
 // a program built with the tag pdfjet_nofonts has none (fonts_none.go).
 //
 //go:embed CascadiaMono/*.ttf CascadiaMono/LICENSE
-//go:embed IBMPlexSans/*.ttf IBMPlexSans/license.txt
-//go:embed IBMPlexSerif/*.ttf IBMPlexSerif/license.txt
+//go:embed IBMPlexSans/*.otf IBMPlexSans/license.txt
+//go:embed IBMPlexSerif/*.otf IBMPlexSerif/license.txt
 var FS embed.FS
 
 // Embedded tells whether FS has the fonts: false with the tag pdfjet_nofonts.

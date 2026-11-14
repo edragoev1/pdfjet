@@ -1200,7 +1200,7 @@ class TableTest {
         // autoAdjustColumnWidths gives the column of "a", less the padding,
         // comes out a little less than the width of "a" in floating point.
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")).setSize(11f);
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf")).setSize(11f);
         List<List<Cell>> rows = new ArrayList<List<Cell>>();
         rows.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), new Cell(font, "b"))));
         rows.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "1"), new Cell(font, "2"))));
@@ -1233,7 +1233,7 @@ class TableTest {
         // A character outside the basic plane is two chars of the text, and
         // the two are not drawn on two lines.
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).setSize(11f);
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")).setSize(11f);
         Cell cell = new Cell(font, "a\uD83D\uDE00b");
         // A column narrower than any of the characters.
         cell.setWidth(6f);
@@ -1273,7 +1273,7 @@ class TableTest {
         // The second word does not fit the column, and its first character does
         // not fit after the first word, so the first line is the first word.
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).setSize(10f);
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")).setSize(10f);
         Cell cell = new Cell(font, "abcd Wxyzwxyzw");
         cell.setWidth(30f);
         List<List<Cell>> rows = new ArrayList<List<Cell>>();

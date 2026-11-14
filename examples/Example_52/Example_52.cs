@@ -28,7 +28,7 @@ using Buffer = HarfBuzzSharp.Buffer;
 public class Example_52 {
     private const String DEVANAGARI = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf";
     private const String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf";
-    private const String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+    private const String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
 
     // A font of HarfBuzz, which shapes, and the same font file loaded by
     // PDFjet, which embeds it, so that the glyph numbers match

@@ -127,7 +127,7 @@ enum TestSupport {
     /// or PDF/UA needs: a core font is refused in one (review of
     /// 11 October 2026, #6).
     static func plexSans(_ pdf: PDF) throws -> Font {
-        return try Font(pdf, open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        return try Font(pdf, open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
     }
 
     static func latin1(_ bytes: [UInt8]) -> String {

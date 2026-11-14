@@ -22,7 +22,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-const font = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+const font = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 const lines = 60
 
 var samples = [3]string{

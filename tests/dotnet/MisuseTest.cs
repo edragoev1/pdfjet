@@ -216,7 +216,7 @@ public class MisuseTest {
     public void StampTextAddsItsFont() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Font core = TestSupport.Helvetica(pdf);
         Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
         Assert.Equal("A stamp draws text with an embedded font, not a core or CJK font.",
@@ -318,7 +318,7 @@ public class MisuseTest {
         // An embedded font only reserves its number, written at Complete: the
         // objects could take it too (the review of 9 October 2026).
         PDF pdf3 = TestSupport.NewPDF();
-        new Font(pdf3, TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        new Font(pdf3, TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Assert.Equal(message,
                 Assert.Throws<InvalidOperationException>(() => pdf3.AddObjects(objects)).Message);
 

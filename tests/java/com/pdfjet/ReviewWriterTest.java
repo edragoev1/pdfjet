@@ -530,7 +530,7 @@ class ReviewWriterTest {
         // designer and its description; no font PDFjet carries has one in
         // its names, so the license of IBM Plex Sans is made to say "with &
         // FAQ" in place of "with a FAQ", a character for a character.
-        byte[] ttf = TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] ttf = TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
         byte[] withA = " with a FAQ".getBytes(StandardCharsets.UTF_16BE);
         int at = -1;
         for (int i = 0; at == -1 && i + withA.length <= ttf.length; i++) {

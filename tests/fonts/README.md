@@ -4,14 +4,21 @@ Fonts for tests, which PDFjet does not carry. For the subsets of fonts with
 CFF outlines:
 
 - IBM Plex Sans Regular and Italic (`.otf`), keyed by glyph names, as most
-  `.otf` fonts are; PDFjet carries the `.ttf` of these fonts in
-  `resources/fonts`. SIL Open Font License 1.1, in `IBMPlexSans-license.txt`.
+  `.otf` fonts are; PDFjet carries these fonts in `resources/fonts` too, from
+  9.1.9. SIL Open Font License 1.1, in `IBMPlexSans-license.txt`.
 - Source Han Sans JP Regular, Adobe's SubsetOTF/JP edition of release
   2.005R, keyed by CIDs, with what the CID-keyed fonts PDFjet carries (IBM
   Plex Sans JP, KR, SC and TC) do not have: 512 global subroutines, 18 font
   dictionaries, each with its own private dictionary and subroutines, and a
   charset whose CIDs are not the glyph numbers. SIL Open Font License 1.1,
   in `SourceHanSansJP-LICENSE.txt`.
+
+For the subsets of fonts with TrueType outlines, and the tests that read or
+patch the tables of a TrueType font:
+
+- IBM Plex Sans Regular (`.ttf`), IBM's TrueType edition of the `.otf`
+  above, which PDFjet carried in `resources/fonts` up to 9.1.7. SIL Open Font
+  License 1.1, in `IBMPlexSans-license.txt`.
 
 For the subsets of fonts with TrueType outlines and the long offsets of
 `loca`, and the cap height read from `OS/2`:

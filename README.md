@@ -133,7 +133,7 @@ same output come in four languages, and none of them needs a third-party library
 
 Each snippet writes `hello.pdf` with a line in English, Greek and Bulgarian.
 The fonts PDFjet carries, such as `IBMPlexSans.Regular`, are paths like
-`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`: PDFjet reads the file of that
+`fonts/IBMPlexSans/IBMPlexSans-Regular.otf`: PDFjet reads the file of that
 path if there is one, else the font from the folder `resources/fonts`, else
 from the library itself, as the jar of Maven Central carries it. The same
 code runs with all three.
@@ -228,7 +228,7 @@ dotnet add package PDFjet.Fonts.World
 
 From 9.1.7 the package of NuGet carries IBM Plex Sans and Serif and
 Cascadia Mono, so their constants, such as `IBMPlexSans.Regular`, work with
-nothing else to download; it is about 10 MB. `PDFjet.Fonts.World`, about 41
+nothing else to download; it is about 9.5 MB. `PDFjet.Fonts.World`, about 41
 MB, has IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew
 and Thai, which PDFjet finds on its own; without it, `IBMPlexSansJP`,
 `IBMPlexSansArabic` and the others throw an error that names it. The
@@ -309,17 +309,17 @@ import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 ```
 
 Go builds the fonts a program embeds into the program itself, uncompressed.
-So only IBM Plex Sans and Serif and Cascadia Mono are built in, 11 MB: a
-program like the one above is about 15 MB. The fonts of the other scripts,
+So only IBM Plex Sans and Serif and Cascadia Mono are built in, 9 MB: a
+program like the one above is about 14 MB. The fonts of the other scripts,
 IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai,
 are 52 MB more, built in only when the program has the line above, which
-makes it about 70 MB. Without it, `IBMPlexSansJP.Regular`,
+makes it about 68 MB. Without it, `IBMPlexSansJP.Regular`,
 `IBMPlexSansArabic.Regular` and the others are read from the folder
 `resources/fonts/world` of the working directory when it has them, and are
 an error that names this line when it does not.
 
 A program that draws only with font files of its own, such as one built to
-WebAssembly for a browser, can leave the 11 MB out with the build tag
+WebAssembly for a browser, can leave the 9 MB out with the build tag
 `pdfjet_nofonts`:
 
 ```sh
@@ -358,7 +358,7 @@ PDFjet includes every European language (Latin, Greek, Cyrillic). **For
 other scripts, add the `PDFjetFontsWorld` line above;** leave it out
 otherwise: the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and
 Thai. The product `PDFjet` carries IBM Plex Sans and Serif and Cascadia
-Mono, about 11 MB, so their constants, such as `IBMPlexSans.Regular`, work
+Mono, about 9 MB, so their constants, such as `IBMPlexSans.Regular`, work
 anywhere. A Swift program is often an iPhone or Mac app, which should not
 carry the 52 MB of the fonts of the other scripts, IBM Plex Sans JP, KR, SC
 and TC and IBM Plex Sans Arabic, Hebrew and Thai, unless it draws in them:
@@ -593,9 +593,10 @@ null text.
 
 ## Fonts, and what a PDF embeds
 
-The fonts PDFjet carries are TrueType `.ttf` files, and IBM Plex Sans JP, KR,
-SC and TC are `.otf`, fonts of CFF outlines. Any `.ttf` or `.otf`
-file on the computer is a font for PDFjet as well. Every font is embedded as a
+Of the fonts PDFjet carries, IBM Plex Sans and Serif and IBM Plex Sans JP,
+KR, SC and TC are `.otf`, fonts of CFF outlines, and Cascadia Mono and IBM
+Plex Sans Arabic, Hebrew and Thai are TrueType `.ttf` files. Any `.ttf` or
+`.otf` file on the computer is a font for PDFjet as well. Every font is embedded as a
 subset when the document is completed, the outlines of the glyphs it does not
 draw left out. What a PDF embeds:
 
@@ -669,6 +670,14 @@ fraction of the stream's size, and as fast to make. From 9.0.5 PDFjet reads
 `.otf` and `.ttf` fonts alone, and a path to a `.ttf.stream` or `.otf.stream`
 file opens the `.ttf` file of the same name beside it, so code written for
 9.0.3 runs as it is with the fonts of 9.0.5.
+
+Up to 9.1.7 IBM Plex Sans and Serif came as `.ttf` files; from 9.1.9 they are
+IBM's `.otf` files of the same release, whose subsets are about a fifth
+smaller, with the same widths, kerning and line metrics. A path to the `.ttf`
+of one of them, such as `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, is the
+`.otf` of the same face when there is no such file, so code written for 9.1.7
+runs as it is; a `.ttf` file at that path, or of that name in
+`resources/fonts`, is read first.
 
 ## Right to left text
 

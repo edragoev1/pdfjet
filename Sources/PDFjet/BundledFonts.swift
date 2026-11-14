@@ -8,12 +8,12 @@ import Foundation
 
 /// The fonts PDFjet carries, in resources/fonts, each family in a folder of
 /// its name, with its license: IBM Plex Sans and Serif, from Thin to Bold,
-/// and Cascadia Mono, from Light to Bold, upright and italic, for every
-/// European language, in Latin, Greek and Cyrillic; and, in
+/// as .otf, and Cascadia Mono, from Light to Bold, as .ttf, upright and
+/// italic, for every European language, in Latin, Greek and Cyrillic; and, in
 /// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to
 /// Bold, and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as
 /// .otf. All are under the SIL Open Font License 1.1. A path to one of them,
-/// such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the
+/// such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the
 /// font structs, is read, when there is no such file, from the folder
 /// resources/fonts of the working directory, or else from the resource
 /// bundle of the module PDFjetFonts, which PDFjet depends on, or of the
@@ -108,7 +108,7 @@ enum BundledFonts {
     static let WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai"
 
     // Returns the name of a font under resources/fonts, Family/File, of a
-    // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
+    // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf: its
     // last two parts.
     static func nameOf(_ fontPath: String) -> String? {
         let path = fontPath.replacingOccurrences(of: "\\", with: "/")
@@ -156,6 +156,36 @@ enum BundledFonts {
         guard let name = nameOf(fontPath), !name.contains(".."), !name.hasPrefix("/") else {
             return nil
         }
+        if let url = url(name: name, folder, bundle, worldBundle) {
+            return url
+        }
+        if let renamed = renamed(name) {
+            return url(name: renamed, folder, bundle, worldBundle)
+        }
+        return nil
+    }
+
+    // The families PDFjet carries as .otf from 9.1.9 and carried as .ttf
+    // before: IBM Plex Sans and Serif, whose .otf, of the same release of
+    // IBM, have the same advance widths, kerning and line metrics as their
+    // .ttf, and embed a fifth smaller.
+    private static let renamedFamilies = ["IBMPlexSans", "IBMPlexSerif"]
+
+    // Returns the name of the .otf PDFjet carries from 9.1.9 of a name,
+    // Family/File, of the .ttf of IBM Plex Sans or Serif, such as
+    // IBMPlexSans/IBMPlexSans-Regular.ttf, so that a path written for the
+    // .ttf is the same font, or nil for any other name. A file at the path
+    // itself, or of that name in resources/fonts, is read first.
+    static func renamed(_ name: String) -> String? {
+        guard let slash = name.firstIndex(of: "/"), name.hasSuffix(".ttf"),
+                renamedFamilies.contains(String(name[..<slash])) else {
+            return nil
+        }
+        return String(name.dropLast(".ttf".count)) + ".otf"
+    }
+
+    // Returns the URL of the font of the name, Family/File, as url does, or nil.
+    private static func url(name: String, _ folder: String, _ bundle: Bundle?, _ worldBundle: Bundle?) -> URL? {
         let file = folder + folderPathOf(name)
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: file, isDirectory: &isDirectory), !isDirectory.boolValue {
@@ -224,7 +254,8 @@ enum BundledFonts {
         if italic {
             style = (style == "Regular") ? "Italic" : style + "Italic"
         }
-        return families[family] + "/" + families[family] + "-" + style + ".ttf"
+        // IBM Plex Sans and Serif are .otf, Cascadia Mono .ttf
+        return families[family] + "/" + families[family] + "-" + style + ((family == MONO) ? ".ttf" : ".otf")
     }
 
     /// Returns the weight CSS matches to the one asked for, of the weights a

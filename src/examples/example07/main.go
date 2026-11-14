@@ -14,6 +14,7 @@ import (
 	// the program
 	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/CascadiaMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
@@ -61,14 +62,14 @@ func Example07() {
 	files := []string{
 		IBMPlexSansJP.Regular,
 		IBMPlexSans.Regular,
-		IBMPlexSerif.Italic,
+		CascadiaMono.Regular,
 		IBMPlexSerif.Regular,
 	}
 	kinds := []string{
+		"OpenType with CFF outlines, keyed by CIDs, from the .otf file, embedded as a subset",
 		"OpenType with CFF outlines, from the .otf file, embedded as a subset",
 		"TrueType, from the .ttf file, embedded as a subset",
-		"Another TrueType font, embedded as a subset",
-		"A TrueType font kept whole: subsetting turned off",
+		"A font kept whole: subsetting turned off",
 	}
 	sample := "The quick brown fox jumps over the lazy dog. " +
 		"Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. " +

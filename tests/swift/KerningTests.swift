@@ -9,13 +9,13 @@ import Testing
 @testable import PDFjet
 
 @Suite struct KerningTests {
-    private let plexTTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    private let plexTTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
     private let plexOTF = "tests/fonts/IBMPlexSans-Regular.otf"
     // IBM Plex Serif, whose kern lookups have LookupFlag 8, as those of Noto
     // Sans, which these tests read before 9.1.7, have; the lookups of IBM Plex
     // Sans have none. IBM Plex Sans JP, whose kern feature has Extension
     // lookups of its pairs, as Source Serif 4, which PDFjet carried before, has.
-    private let serifTTF = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"
+    private let serifTTF = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf"
     private let extensionOTF = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"
 
     // Opens a font of the repository, with its kerning on or off.

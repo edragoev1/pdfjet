@@ -20,9 +20,9 @@ func main() {
 	t0 := time.Now()
 	pdf := pdfjet.NewPDF(bufio.NewWriter(io.Discard))
 	t1 := time.Now()
-	regular := pdfjet.NewFontFromFile(pdf, root+"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	regular := pdfjet.NewFontFromFile(pdf, root+"fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
 	t2 := time.Now()
-	bold := pdfjet.NewFontFromFile(pdf, root+"fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf")
+	bold := pdfjet.NewFontFromFile(pdf, root+"fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf")
 	t3 := time.Now()
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	for i := 0; i < 40; i++ {

@@ -13,31 +13,31 @@ package IBMPlexSerif
 // The paths of the font files.
 const (
 	// Bold is IBM Plex Serif Bold.
-	Bold = "fonts/IBMPlexSerif/IBMPlexSerif-Bold.ttf"
+	Bold = "fonts/IBMPlexSerif/IBMPlexSerif-Bold.otf"
 	// BoldItalic is IBM Plex Serif BoldItalic.
-	BoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-BoldItalic.ttf"
+	BoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-BoldItalic.otf"
 	// Italic is IBM Plex Serif Italic.
-	Italic = "fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf"
+	Italic = "fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf"
 	// Light is IBM Plex Serif Light.
-	Light = "fonts/IBMPlexSerif/IBMPlexSerif-Light.ttf"
+	Light = "fonts/IBMPlexSerif/IBMPlexSerif-Light.otf"
 	// LightItalic is IBM Plex Serif LightItalic.
-	LightItalic = "fonts/IBMPlexSerif/IBMPlexSerif-LightItalic.ttf"
+	LightItalic = "fonts/IBMPlexSerif/IBMPlexSerif-LightItalic.otf"
 	// Medium is IBM Plex Serif Medium.
-	Medium = "fonts/IBMPlexSerif/IBMPlexSerif-Medium.ttf"
+	Medium = "fonts/IBMPlexSerif/IBMPlexSerif-Medium.otf"
 	// MediumItalic is IBM Plex Serif MediumItalic.
-	MediumItalic = "fonts/IBMPlexSerif/IBMPlexSerif-MediumItalic.ttf"
+	MediumItalic = "fonts/IBMPlexSerif/IBMPlexSerif-MediumItalic.otf"
 	// Regular is IBM Plex Serif Regular.
-	Regular = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"
+	Regular = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf"
 	// SemiBold is IBM Plex Serif SemiBold.
-	SemiBold = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBold.ttf"
+	SemiBold = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBold.otf"
 	// SemiBoldItalic is IBM Plex Serif SemiBoldItalic.
-	SemiBoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf"
+	SemiBoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf"
 	// Text is IBM Plex Serif Text.
-	Text = "fonts/IBMPlexSerif/IBMPlexSerif-Text.ttf"
+	Text = "fonts/IBMPlexSerif/IBMPlexSerif-Text.otf"
 	// TextItalic is IBM Plex Serif TextItalic.
-	TextItalic = "fonts/IBMPlexSerif/IBMPlexSerif-TextItalic.ttf"
+	TextItalic = "fonts/IBMPlexSerif/IBMPlexSerif-TextItalic.otf"
 	// Thin is IBM Plex Serif Thin.
-	Thin = "fonts/IBMPlexSerif/IBMPlexSerif-Thin.ttf"
+	Thin = "fonts/IBMPlexSerif/IBMPlexSerif-Thin.otf"
 	// ThinItalic is IBM Plex Serif ThinItalic.
-	ThinItalic = "fonts/IBMPlexSerif/IBMPlexSerif-ThinItalic.ttf"
+	ThinItalic = "fonts/IBMPlexSerif/IBMPlexSerif-ThinItalic.otf"
 )

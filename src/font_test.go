@@ -89,7 +89,7 @@ func TestFontACjkFontDrawsNoIgnorableCharacter(t *testing.T) {
 }
 
 func TestFontReadsATrueTypeFont(t *testing.T) {
-	font := NewFont(testNewPDF(), bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	font := NewFont(testNewPDF(), bytes.NewReader(testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")))
 	if font.GetName() != "IBMPlexSans" {
 		t.Errorf("name %q", font.GetName())
 	}
@@ -105,7 +105,7 @@ func TestFontTheLineGapOfAFontSpacesTheLinesOfATextBlock(t *testing.T) {
 	// descent 120, in its .otf, which PDFjet carries, as in its .ttf.
 	sc := open("fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf")
 	testNear(t, "the line gap of IBM Plex Sans SC", 10, sc.GetLineGap(10), 0.001)
-	testNear(t, "the line gap of IBM Plex Sans", 0, open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").GetLineGap(10), 0)
+	testNear(t, "the line gap of IBM Plex Sans", 0, open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf").GetLineGap(10), 0)
 	// The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
 	sc.SetSize(10)
 	block := NewTextBlock(sc, "日本\n日本")
@@ -122,7 +122,7 @@ func TestFontAStreamFontPathOpensTheTrueTypeFont(t *testing.T) {
 	dir := t.TempDir()
 	ttf := filepath.Join(dir, "IBMPlexSans-Regular.ttf")
 	otf := filepath.Join(dir, "IBMPlexSans-Regular.otf")
-	if err := os.WriteFile(ttf, testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"), 0o644); err != nil {
+	if err := os.WriteFile(ttf, testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(otf, testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.otf"), 0o644); err != nil {
@@ -133,8 +133,8 @@ func TestFontAStreamFontPathOpensTheTrueTypeFont(t *testing.T) {
 		{otf + ".stream", ttf},
 		{ttf + ".stream", ttf},
 		// The .otf, with no .ttf beside it
-		{testRepoPath(t, "tests/fonts/IBMPlexSans-Regular.otf.stream"),
-			testRepoPath(t, "tests/fonts/IBMPlexSans-Regular.otf")},
+		{testRepoPath(t, "tests/fonts/IBMPlexSans-Italic.otf.stream"),
+			testRepoPath(t, "tests/fonts/IBMPlexSans-Italic.otf")},
 		// The fonts PDFjet carries
 		{testRepoPath(t, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
 			testRepoPath(t, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")},
@@ -187,7 +187,7 @@ func TestFontACoreFontDrawsDeleteAsASpace(t *testing.T) {
 // characters from U+0020 to U+FFFD, and no Thai.
 func testIBMPlexSans(t *testing.T, pdf *PDF) *Font {
 	t.Helper()
-	return NewFont(pdf, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	return NewFont(pdf, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")))
 }
 
 func TestFontACharacterTheFontDoesNotHaveIsDrawnWithNotdef(t *testing.T) {
@@ -317,7 +317,7 @@ func TestFontAFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor(t *testing.
 	open := func(path string) *Font {
 		return NewFont(pdf, bytes.NewReader(testFontBytes(t, path)))
 	}
-	latin := open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	latin := open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
 	jp := open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
 	helvetica := testHelvetica(pdf)
 	// The Latin letters after the Japanese ones are in the font again.
@@ -365,7 +365,7 @@ func TestFontTwoFontsOfOneNameWithOtherGlyphsAreBothEmbedded(t *testing.T) {
 	// drawn with the second came out in the glyphs of the first: 中文字 read
 	// as Ι㈜♡. The other is IBM Plex Sans (Noto Sans before 9.1.7) with a
 	// wider .notdef.
-	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")
 	hmtx := testOpenTypeTable(t, ttf, "hmtx")
 	other := testOpenTypeWith(ttf, hmtx, int(ttf[hmtx])<<8|int(ttf[hmtx+1])+1)
 	doc := testNewDoc()
@@ -393,16 +393,18 @@ func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
 
 func TestFontTheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable(t *testing.T) {
 	// IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-	// whole degree.
+	// whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
+	// .ttf it carried before is the .otf.
 	for _, font := range [][2]string{
 		{"tests/fonts/IBMPlexSans-Italic.otf", "-11.31"},
-		{"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"},
-		{"fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"},
+		{"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"},
 		// Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
 		// 9.1.7), its italic angle -10 in its post table
 		{"fonts/CascadiaMono/CascadiaMono-Italic.ttf", "-10"},
 		{"fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf", "-10"},
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "0"},
 	} {
 		pdf := string(testDocumentWithFonts(t, font[0]))
 		if !strings.Contains(pdf, "/ItalicAngle "+font[1]+"\n") {

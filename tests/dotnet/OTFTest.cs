@@ -355,7 +355,7 @@ public class OTFTest {
     // applies.
     [Fact]
     public void AFontWhoseLicenseForbidsEmbeddingIsRefused() {
-        byte[] ttf = FontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] ttf = FontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
         int os2 = Table(ttf, "OS/2");
         string message = Error(With(ttf, os2 + 8, 0x0002));
         Assert.Contains("may not be embedded", message);

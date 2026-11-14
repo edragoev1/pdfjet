@@ -20,7 +20,7 @@ public class SubsetTest {
 
     // IBM Plex Sans, which has the short offsets of loca; the subsets of a
     // font with the long ones read Cascadia Mono or IBM Plex Math.
-    private const string PLEX = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+    private const string PLEX = "tests/fonts/IBMPlexSans-Regular.ttf";
 
     private static int U16(byte[] font, int at) {
         return font[at] << 8 | font[at + 1];

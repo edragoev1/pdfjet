@@ -70,7 +70,7 @@ import Testing
 
     @Test
     func readsATrueTypeFont() throws {
-        let stream = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        let stream = TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf")
         let font = try Font(TestSupport.newPDF(), stream)
         #expect(font.getName() == "IBMPlexSans")
         TestSupport.expectNear(28.32, font.stringWidth(12, "Hello"), 0.001)
@@ -89,7 +89,7 @@ import Testing
         let pdf = TestSupport.newPDF()
         let sc = try Font(pdf, TestSupport.open("fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf"))
         TestSupport.expectNear(10, sc.getLineGap(10), 0.001)
-        #expect(try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).getLineGap(10) == 0)
+        #expect(try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")).getLineGap(10) == 0)
         // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
         sc.setSize(10)
         TestSupport.expectXY(500, 40, TextBlock(sc, "日本\n日本").setLocation(0, 0).drawOn(nil))
@@ -106,15 +106,15 @@ import Testing
         defer { try? FileManager.default.removeItem(at: dir) }
         let ttf = dir.appendingPathComponent("IBMPlexSans-Regular.ttf").path
         let otf = dir.appendingPathComponent("IBMPlexSans-Regular.otf").path
-        try Data(TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).write(to: URL(fileURLWithPath: ttf))
+        try Data(TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf")).write(to: URL(fileURLWithPath: ttf))
         try Data(TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.otf")).write(to: URL(fileURLWithPath: otf))
         let paths = [
             // The .ttf beside the .otf
             (otf + ".stream", ttf),
             (ttf + ".stream", ttf),
             // The .otf, with no .ttf beside it
-            (TestSupport.path("tests/fonts/IBMPlexSans-Regular.otf.stream"),
-                TestSupport.path("tests/fonts/IBMPlexSans-Regular.otf")),
+            (TestSupport.path("tests/fonts/IBMPlexSans-Italic.otf.stream"),
+                TestSupport.path("tests/fonts/IBMPlexSans-Italic.otf")),
             // The fonts PDFjet carries
             (TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
                 TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")),
@@ -160,7 +160,7 @@ import Testing
     // and its .notdef 472, of 1000 units to the em; it has the characters
     // from U+0020 to U+FFFD, and no Thai.
     private func ibmPlexSans(_ pdf: PDF) throws -> Font {
-        return try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        return try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
     }
 
     @Test
@@ -275,7 +275,7 @@ import Testing
         // IBM Plex Sans JP, the .otf PDFjet carries: it has 日本東京, and no
         // Thai, as its .ttf, which this test read before 9.1.7.
         let pdf = TestSupport.newPDF()
-        let latin = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let latin = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let jp = try Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"))
         let helvetica = TestSupport.helvetica(pdf)
         // The Latin letters after the Japanese ones are in the font again.
@@ -318,7 +318,7 @@ import Testing
         // both, so the text drawn with the second came out in the glyphs of
         // the first. The other is IBM Plex Sans (Noto Sans before 9.1.7) with
         // a wider .notdef.
-        let ttf = try TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        let ttf = try TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf")
         var other = ttf
         let tables = Int(ttf[4]) << 8 | Int(ttf[5])
         for i in 0..<tables {
@@ -357,16 +357,18 @@ import Testing
             "the fonts directory is not here"))
     func theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-        // whole degree.
+        // whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
+        // .ttf it carried before is the .otf.
         let fonts = [
             ("tests/fonts/IBMPlexSans-Italic.otf", "-11.31"),
-            ("fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"),
-            ("fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"),
+            ("fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"),
+            ("fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"),
+            ("fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"),
             // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
             // 9.1.7), its italic angle -10 in its post table
             ("fonts/CascadiaMono/CascadiaMono-Italic.ttf", "-10"),
             ("fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf", "-10"),
-            ("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"),
+            ("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "0"),
         ]
         for (path, angle) in fonts {
             let pdf = String(decoding: try documentWithFonts([path]), as: UTF8.self)
@@ -504,7 +506,7 @@ import Testing
         // and its glyph 0 of 65,535 units, 255,996 of the thousandths of the
         // PDF: the widths of the /W array were made UInt16s and trapped (the
         // review of 9 October 2026).
-        var ttf = try TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        var ttf = try TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf")
         func u16(_ at: Int) -> Int { Int(ttf[at]) << 8 | Int(ttf[at + 1]) }
         func table(_ name: String) throws -> Int {
             for i in 0..<u16(4) {

@@ -202,7 +202,7 @@ class ReviewMediaTest {
     static String pdfaImageError(Compliance level, InputStream stream) throws Exception {
         PDF pdf = new PDF(new ByteArrayOutputStream(), level);
         pdf.setTitle("Title");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
         try {
@@ -259,7 +259,7 @@ class ReviewMediaTest {
         }
         PDF pdf = new PDF(new ByteArrayOutputStream(), level);
         pdf.setTitle("Title");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
         try {
@@ -304,7 +304,7 @@ class ReviewMediaTest {
     static String[] pdfaDrawError(Compliance level, Drawing drawing) throws Exception {
         PDF pdf = new PDF(new ByteArrayOutputStream(), level);
         pdf.setTitle("Title");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
         try {
@@ -672,10 +672,10 @@ class ReviewMediaTest {
         // font it is.
         java.io.File copy = java.io.File.createTempFile("pdfjet", ".font");
         try {
-            java.nio.file.Files.write(copy.toPath(), TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+            java.nio.file.Files.write(copy.toPath(), TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
             Font font = new Font(TestSupport.newPDF(), copy.getPath());
             assertEquals(new Font(TestSupport.newPDF(), TestSupport.open(
-                    "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).name, font.name);
+                    "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")).name, font.name);
         } finally {
             copy.delete();
         }

@@ -13,9 +13,9 @@ package IBMPlexSans
 // The paths of the font files.
 const (
 	// BoldItalic is IBM Plex Sans BoldItalic.
-	BoldItalic = "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.ttf"
+	BoldItalic = "fonts/IBMPlexSans/IBMPlexSans-BoldItalic.otf"
 	// Bold is IBM Plex Sans Bold.
-	Bold = "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf"
+	Bold = "fonts/IBMPlexSans/IBMPlexSans-Bold.otf"
 
 	// ExtraLightItalic is IBM Plex Sans ExtraLightItalic, which PDFjet does
 	// not carry from 9.1.7: a font file of its packages before, read when the file is
@@ -30,27 +30,27 @@ const (
 	// Deprecated: PDFjet carries the other weights of the family.
 	ExtraLight = "fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf"
 	// Italic is IBM Plex Sans Italic.
-	Italic = "fonts/IBMPlexSans/IBMPlexSans-Italic.ttf"
+	Italic = "fonts/IBMPlexSans/IBMPlexSans-Italic.otf"
 	// LightItalic is IBM Plex Sans LightItalic.
-	LightItalic = "fonts/IBMPlexSans/IBMPlexSans-LightItalic.ttf"
+	LightItalic = "fonts/IBMPlexSans/IBMPlexSans-LightItalic.otf"
 	// Light is IBM Plex Sans Light.
-	Light = "fonts/IBMPlexSans/IBMPlexSans-Light.ttf"
+	Light = "fonts/IBMPlexSans/IBMPlexSans-Light.otf"
 	// MediumItalic is IBM Plex Sans MediumItalic.
-	MediumItalic = "fonts/IBMPlexSans/IBMPlexSans-MediumItalic.ttf"
+	MediumItalic = "fonts/IBMPlexSans/IBMPlexSans-MediumItalic.otf"
 	// Medium is IBM Plex Sans Medium.
-	Medium = "fonts/IBMPlexSans/IBMPlexSans-Medium.ttf"
+	Medium = "fonts/IBMPlexSans/IBMPlexSans-Medium.otf"
 	// Regular is IBM Plex Sans Regular.
-	Regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+	Regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 	// SemiBoldItalic is IBM Plex Sans SemiBoldItalic.
-	SemiBoldItalic = "fonts/IBMPlexSans/IBMPlexSans-SemiBoldItalic.ttf"
+	SemiBoldItalic = "fonts/IBMPlexSans/IBMPlexSans-SemiBoldItalic.otf"
 	// SemiBold is IBM Plex Sans SemiBold.
-	SemiBold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
+	SemiBold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf"
 	// TextItalic is IBM Plex Sans TextItalic.
-	TextItalic = "fonts/IBMPlexSans/IBMPlexSans-TextItalic.ttf"
+	TextItalic = "fonts/IBMPlexSans/IBMPlexSans-TextItalic.otf"
 	// Text is IBM Plex Sans Text.
-	Text = "fonts/IBMPlexSans/IBMPlexSans-Text.ttf"
+	Text = "fonts/IBMPlexSans/IBMPlexSans-Text.otf"
 	// ThinItalic is IBM Plex Sans ThinItalic.
-	ThinItalic = "fonts/IBMPlexSans/IBMPlexSans-ThinItalic.ttf"
+	ThinItalic = "fonts/IBMPlexSans/IBMPlexSans-ThinItalic.otf"
 	// Thin is IBM Plex Sans Thin.
-	Thin = "fonts/IBMPlexSans/IBMPlexSans-Thin.ttf"
+	Thin = "fonts/IBMPlexSans/IBMPlexSans-Thin.otf"
 )

@@ -10,7 +10,7 @@ import PDFjet
 //
 // Run from the root of the repository, as the font path is relative to it.
 
-let fontPath = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+let fontPath = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 let lines = 60
 let samples = [
     "The quick brown fox jumps over the lazy dog",

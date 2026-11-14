@@ -39,7 +39,7 @@ import (
 const (
 	devanagari = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
 	khmer      = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf"
-	latin      = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+	latin      = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 )
 
 // A face of go-text, which shapes, and the same font file loaded by PDFjet,

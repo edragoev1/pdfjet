@@ -14,7 +14,7 @@ import Testing
     // IBM Plex Sans Thai, a TrueType font of Latin and Thai with a GPOS
     // table, as Noto Sans Thai, which these tests read before 9.1.7, is.
     private let thai = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"
-    static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    static let trueTypeFont = "tests/fonts/IBMPlexSans-Regular.ttf"
 
     private func font(_ path: String) -> [UInt8] {
         return try! TestSupport.fontBytes(path)

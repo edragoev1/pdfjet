@@ -47,14 +47,14 @@ public class Example_07 {
         let files = [
             IBMPlexSansJP.Regular,
             IBMPlexSans.Regular,
-            IBMPlexSerif.Italic,
+            CascadiaMono.Regular,
             IBMPlexSerif.Regular,
         ]
         let kinds = [
+            "OpenType with CFF outlines, keyed by CIDs, from the .otf file, embedded as a subset",
             "OpenType with CFF outlines, from the .otf file, embedded as a subset",
             "TrueType, from the .ttf file, embedded as a subset",
-            "Another TrueType font, embedded as a subset",
-            "A TrueType font kept whole: subsetting turned off",
+            "A font kept whole: subsetting turned off",
         ]
         let sample = "The quick brown fox jumps over the lazy dog. "
                 + "Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. "

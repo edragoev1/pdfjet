@@ -13,12 +13,12 @@ namespace PDFjet.NET {
 /// <summary>
 /// The fonts PDFjet carries in itself, in resources/fonts, each family in a
 /// folder of its name, with its license: IBM Plex Sans and Serif, from Thin
-/// to Bold, and Cascadia Mono, from Light to Bold, upright and italic, for
-/// every European language, in Latin, Greek and Cyrillic; and, in
+/// to Bold, as .otf, and Cascadia Mono, from Light to Bold, as .ttf, upright
+/// and italic, for every European language, in Latin, Greek and Cyrillic; and, in
 /// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
 /// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
 /// All are under the SIL Open Font License 1.1. A path to one of them, such
-/// as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the font
+/// as fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the font
 /// classes, is read from the folder resources/fonts when there is no such
 /// file, or else from the resources of the assembly, named PDFjet.Fonts/ and
 /// their path under resources/fonts, and the text of an SVG image is drawn in
@@ -72,7 +72,7 @@ internal static class BundledFonts {
     internal const String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai";
 
     // Returns the name of a font under resources/fonts, Family/File, of a
-    // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its
+    // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf: its
     // last two parts.
     internal static String NameOf(String fontPath) {
         String path = fontPath.Replace('\\', '/');
@@ -143,6 +143,41 @@ internal static class BundledFonts {
         if (name == null || name.IndexOf("..", StringComparison.Ordinal) >= 0) {
             return null;
         }
+        Stream stream = OpenName(name, folder);
+        String renamed = Renamed(name);
+        if (stream == null && renamed != null) {
+            stream = OpenName(renamed, folder);
+        }
+        return stream;
+    }
+
+    // The families PDFjet carries as .otf from 9.1.9 and carried as .ttf
+    // before: IBM Plex Sans and Serif, whose .otf, of the same release of
+    // IBM, have the same advance widths, kerning and line metrics as their
+    // .ttf, and embed a fifth smaller.
+    private static readonly String[] RENAMED = {"IBMPlexSans", "IBMPlexSerif"};
+
+    // Returns the name of the .otf PDFjet carries from 9.1.9 of a name,
+    // Family/File, of the .ttf of IBM Plex Sans or Serif, such as
+    // IBMPlexSans/IBMPlexSans-Regular.ttf, so that a path written for the
+    // .ttf is the same font, or null for any other name. A file at the path
+    // itself, or of that name in resources/fonts, is read first.
+    internal static String Renamed(String name) {
+        int slash = name.IndexOf('/');
+        if (slash < 0 || !name.EndsWith(".ttf", StringComparison.Ordinal)) {
+            return null;
+        }
+        String family = name.Substring(0, slash);
+        foreach (String renamed in RENAMED) {
+            if (renamed == family) {
+                return name.Substring(0, name.Length - ".ttf".Length) + ".otf";
+            }
+        }
+        return null;
+    }
+
+    // Opens the font of the name, Family/File, as Open does, or returns null.
+    private static Stream OpenName(String name, String folder) {
         String file = folder + FolderPathOf(name);
         if (File.Exists(file)) {
             try {
@@ -232,7 +267,8 @@ internal static class BundledFonts {
         if (italic) {
             style = style.Equals("Regular") ? "Italic" : style + "Italic";
         }
-        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + style + ".ttf";
+        // IBM Plex Sans and Serif are .otf, Cascadia Mono .ttf
+        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + style + ((family == MONO) ? ".ttf" : ".otf");
     }
 
     // Returns the weight CSS matches to the one asked for, of the weights a

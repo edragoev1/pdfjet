@@ -84,13 +84,13 @@ KR, SC and TC, for Arabic, Hebrew, Thai, Chinese, Japanese and Korean. They
 are in `resources/fonts` of this package, each family with its license,
 those of the other scripts in `resources/fonts/world`. Their
 constants, such as `IBMPlexSans.Regular`, are paths like
-`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`: the `Font` constructor reads the
+`fonts/IBMPlexSans/IBMPlexSans-Regular.otf`: the `Font` constructor reads the
 file of that path if there is one, else the font from the folder
 `resources/fonts` of the working directory, else from `PDFjet.dll` itself.
 The `PDFjet.dll` of this package is small, under 1 MB, and does not carry
 them: keep `resources/fonts` next to your program, or only the fonts you
 use. The `PDFjet.dll` of the NuGet package `PDFjet` carries the European
-fonts inside, about 12 MB, and needs no folder; the others are the NuGet
+fonts inside, about 10 MB, and needs no folder; the others are the NuGet
 package `PDFjet.Fonts.World`, which a program adds next to it. A font can
 also be read from any `.otf` or `.ttf` file by its path. The 14 core PDF fonts, such as `CoreFont.HELVETICA`, need no
 files.

@@ -152,7 +152,7 @@ public static class TestSupport {
     /// 11 October 2026, #6).
     /// </summary>
     public static Font PlexSans(PDF pdf) {
-        return new Font(pdf, RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        return new Font(pdf, RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
     }
 
     public static string Latin1(byte[] bytes) {

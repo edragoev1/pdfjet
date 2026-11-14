@@ -14,7 +14,7 @@ using PDFjet.NET;
 /// Run from the root of the repository, as the font path is relative to it.
 /// </summary>
 public class PortBench {
-    const String FONT = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+    const String FONT = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
     const int LINES = 60;
     static readonly String[] SAMPLES = {
         "The quick brown fox jumps over the lazy dog",

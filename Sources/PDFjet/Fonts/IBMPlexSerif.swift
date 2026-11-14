@@ -14,31 +14,31 @@ import Foundation
 ///
 public struct IBMPlexSerif {
     /// IBM Plex Serif Bold
-    public static let Bold           = "fonts/IBMPlexSerif/IBMPlexSerif-Bold.ttf"
+    public static let Bold           = "fonts/IBMPlexSerif/IBMPlexSerif-Bold.otf"
     /// IBM Plex Serif BoldItalic
-    public static let BoldItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-BoldItalic.ttf"
+    public static let BoldItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-BoldItalic.otf"
     /// IBM Plex Serif Italic
-    public static let Italic         = "fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf"
+    public static let Italic         = "fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf"
     /// IBM Plex Serif Light
-    public static let Light          = "fonts/IBMPlexSerif/IBMPlexSerif-Light.ttf"
+    public static let Light          = "fonts/IBMPlexSerif/IBMPlexSerif-Light.otf"
     /// IBM Plex Serif LightItalic
-    public static let LightItalic    = "fonts/IBMPlexSerif/IBMPlexSerif-LightItalic.ttf"
+    public static let LightItalic    = "fonts/IBMPlexSerif/IBMPlexSerif-LightItalic.otf"
     /// IBM Plex Serif Medium
-    public static let Medium         = "fonts/IBMPlexSerif/IBMPlexSerif-Medium.ttf"
+    public static let Medium         = "fonts/IBMPlexSerif/IBMPlexSerif-Medium.otf"
     /// IBM Plex Serif MediumItalic
-    public static let MediumItalic   = "fonts/IBMPlexSerif/IBMPlexSerif-MediumItalic.ttf"
+    public static let MediumItalic   = "fonts/IBMPlexSerif/IBMPlexSerif-MediumItalic.otf"
     /// IBM Plex Serif Regular
-    public static let Regular        = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"
+    public static let Regular        = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf"
     /// IBM Plex Serif SemiBold
-    public static let SemiBold       = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBold.ttf"
+    public static let SemiBold       = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBold.otf"
     /// IBM Plex Serif SemiBoldItalic
-    public static let SemiBoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf"
+    public static let SemiBoldItalic = "fonts/IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf"
     /// IBM Plex Serif Text
-    public static let Text           = "fonts/IBMPlexSerif/IBMPlexSerif-Text.ttf"
+    public static let Text           = "fonts/IBMPlexSerif/IBMPlexSerif-Text.otf"
     /// IBM Plex Serif TextItalic
-    public static let TextItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-TextItalic.ttf"
+    public static let TextItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-TextItalic.otf"
     /// IBM Plex Serif Thin
-    public static let Thin           = "fonts/IBMPlexSerif/IBMPlexSerif-Thin.ttf"
+    public static let Thin           = "fonts/IBMPlexSerif/IBMPlexSerif-Thin.otf"
     /// IBM Plex Serif ThinItalic
-    public static let ThinItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-ThinItalic.ttf"
+    public static let ThinItalic     = "fonts/IBMPlexSerif/IBMPlexSerif-ThinItalic.otf"
 }

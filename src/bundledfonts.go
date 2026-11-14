@@ -16,12 +16,12 @@ import (
 
 // The fonts PDFjet carries in itself, in resources/fonts, each family in a
 // folder of its name, with its license: IBM Plex Sans and Serif, from Thin to
-// Bold, and Cascadia Mono, from Light to Bold, upright and italic, for the
-// European languages; and, in resources/fonts/world, IBM Plex Sans Arabic,
+// Bold, as .otf, and Cascadia Mono, from Light to Bold, as .ttf, upright and
+// italic, for the European languages; and, in resources/fonts/world, IBM Plex Sans Arabic,
 // Hebrew and Thai, Thin to Bold, and IBM Plex Sans JP, KR, SC and TC,
 // Regular, SemiBold and Bold, as .otf. All are under the SIL Open
 // Font License 1.1. A path to one of them, such as
-// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the constants of the packages
+// fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the packages
 // IBMPlexSans and the others, is read from the folder resources/fonts of the
 // working directory when there is no such file, or else from the library,
 // and the text of an SVG image is drawn in them unless a font is set. The
@@ -67,7 +67,7 @@ func bundledFamilyName(family string) string {
 
 // bundledFontName returns the name of a font under resources/fonts,
 // Family/File, of a path to it, such as
-// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf: its last two parts, or "" for a
+// fonts/IBMPlexSans/IBMPlexSans-Regular.otf: its last two parts, or "" for a
 // path of fewer.
 func bundledFontName(fontPath string) string {
 	path := strings.ReplaceAll(fontPath, "\\", "/")
@@ -95,15 +95,13 @@ func bundledFontFolderPath(name string) string {
 // bundledFontData returns the font of the path that PDFjet carries, from the
 // folder resources/fonts or else from the library, or nil.
 func bundledFontData(fontPath string) []byte {
-	name := bundledFontName(fontPath)
-	if name == "" || strings.Contains(name, "..") {
-		return nil
-	}
-	if buf, err := os.ReadFile(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil {
-		return buf
-	}
-	if buf, err := fonts.ReadFile(name); err == nil {
-		return buf
+	for _, name := range bundledFontNamesOf(fontPath) {
+		if buf, err := os.ReadFile(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil {
+			return buf
+		}
+		if buf, err := fonts.ReadFile(name); err == nil {
+			return buf
+		}
 	}
 	return nil
 }
@@ -111,15 +109,40 @@ func bundledFontData(fontPath string) []byte {
 // bundledFontHas tells if PDFjet carries the font of the path, in the folder
 // resources/fonts or in the library.
 func bundledFontHas(fontPath string) bool {
+	for _, name := range bundledFontNamesOf(fontPath) {
+		if info, err := os.Stat(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil && info.Mode().IsRegular() {
+			return true
+		}
+		if _, err := fonts.Stat(name); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// bundledRenamed are the families PDFjet carries as .otf from 9.1.9 and
+// carried as .ttf before: IBM Plex Sans and Serif, whose .otf, of the same
+// release of IBM, have the same advance widths, kerning and line metrics as
+// their .ttf, and embed a fifth smaller.
+var bundledRenamed = []string{"IBMPlexSans", "IBMPlexSerif"}
+
+// bundledFontNamesOf returns the names, Family/File, that the font of the
+// path is looked for by among the fonts PDFjet carries: its name, and, for a
+// .ttf of IBM Plex Sans or Serif, such as
+// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet carries of it
+// from 9.1.9, so that a path written for the .ttf is the same font. None for
+// a path of fewer than two parts, or one with "..". A file at the path
+// itself, or of that name in resources/fonts, is read first.
+func bundledFontNamesOf(fontPath string) []string {
 	name := bundledFontName(fontPath)
 	if name == "" || strings.Contains(name, "..") {
-		return false
+		return nil
 	}
-	if info, err := os.Stat(filepath.Join(bundledFolder, filepath.FromSlash(bundledFontFolderPath(name)))); err == nil && info.Mode().IsRegular() {
-		return true
+	family, file, _ := strings.Cut(name, "/")
+	if base, ok := strings.CutSuffix(file, ".ttf"); ok && slices.Contains(bundledRenamed, family) {
+		return []string{name, family + "/" + base + ".otf"}
 	}
-	_, err := fonts.Stat(name)
-	return err == nil
+	return []string{name}
 }
 
 // bundledWorldMissing returns what to do when the font of the path is one of
@@ -159,7 +182,7 @@ var bundledFamilies = []string{"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"}
 func bundledFontsLeftOut() bool { return !fonts.Embedded }
 
 // bundledFamilyCarried tells if the path names a font of a family the
-// library carries, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf.
+// library carries, such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf.
 func bundledFamilyCarried(fontPath string) bool {
 	family, _, _ := strings.Cut(bundledFontName(fontPath), "/")
 	for _, carried := range bundledFamilies {
@@ -206,7 +229,11 @@ func bundledFontFile(family, weight int, italic bool) string {
 			style += "Italic"
 		}
 	}
-	return bundledFamilies[family] + "/" + bundledFamilies[family] + "-" + style + ".ttf"
+	ext := ".otf" // IBM Plex Sans and Serif
+	if family == bundledMono {
+		ext = ".ttf"
+	}
+	return bundledFamilies[family] + "/" + bundledFamilies[family] + "-" + style + ext
 }
 
 // matchWeight returns the weight CSS matches to the one asked for, of the

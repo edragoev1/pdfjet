@@ -87,7 +87,7 @@ dotnet build "$build/PDFjet.csproj" -c release -p:TreatWarningsAsErrors=true "${
 cp "$build/bin/release/net8.0/PDFjet.dll" "$stage/lib/net8.0/"
 cp "$build/net48/bin/release/net48/PDFjet.dll" "$stage/lib/net48/"
 for dll in "$stage"/lib/*/PDFjet.dll; do
-    if ! grep -q -a "PDFjet.Fonts/IBMPlexSans/IBMPlexSans-Regular.ttf" "$dll"; then
+    if ! grep -q -a "PDFjet.Fonts/IBMPlexSans/IBMPlexSans-Regular.otf" "$dll"; then
         echo "$dll does not carry the fonts" >&2
         exit 1
     fi

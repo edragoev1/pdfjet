@@ -265,7 +265,7 @@ func testPageNumbers(t *testing.T, pdf []byte) []string {
 
 func testTrueTypeFont(t *testing.T, pdf *PDF) *Font {
 	t.Helper()
-	return NewFont(pdf, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	return NewFont(pdf, bytes.NewReader(testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")))
 }
 
 func TestPDFADetachedPageThatIsNeverAddedLeavesNoTrace(t *testing.T) {

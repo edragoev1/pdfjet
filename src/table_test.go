@@ -1344,7 +1344,7 @@ func TestTableAColumnAsWideAsItsTextDoesNotWrapIt(t *testing.T) {
 	// AutoAdjustColumnWidths gives the column of "a", less the padding, comes
 	// out a little less than the width of "a" in floating point.
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Bold.otf"))
 	font.SetSize(11)
 	rows := [][]*Cell{
 		{NewCell(font, "a"), NewCell(font, "b")},
@@ -1384,7 +1384,7 @@ func TestTableAWordBrokenToFitAColumnKeepsItsCharactersWhole(t *testing.T) {
 	// A character outside the basic plane is more than one byte of the text,
 	// and the bytes are not drawn on more than one line.
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
 	font.SetSize(11)
 	cell := NewCell(font, "a\U0001F600b")
 	// A column narrower than any of the characters.
@@ -1404,7 +1404,7 @@ func TestTableALineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace(t *tes
 	// The second word does not fit the column, and its first character does
 	// not fit after the first word, so the first line is the first word.
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
 	font.SetSize(10)
 	cell := NewCell(font, "abcd Wxyzwxyzw")
 	cell.SetWidth(30)

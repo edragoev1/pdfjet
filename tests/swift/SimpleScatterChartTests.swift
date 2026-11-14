@@ -83,7 +83,7 @@ import Testing
     func aLinkedPointIsAFigureInItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50)
                 .add(1, 1).add("Andorra", 2, 2, "https://pdfjet.com/a")
@@ -151,7 +151,7 @@ import Testing
     func aLinkedDotIsAFigureInItsLink(_ withSeries: Bool) throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         page.setStrokeDashPattern("[3 3] 0")
         let chart = SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50)
@@ -201,7 +201,7 @@ import Testing
     @Test func aLinkedDotWithoutANameOrAURI() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50).setXAxisRange(0, 5)
                 .addLinkedDot("", 1, 1, "https://pdfjet.com/a").addLinkedDot("Belize", 2, 2, "")
@@ -478,7 +478,7 @@ import Testing
     @Test func theNoteIsInTheFigure() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         SimpleScatterChart(font, font).setSize(300, 200).add(1, 1).add(50, 1).setXAxisRange(0, 10).drawOn(page)
         let content = TestSupport.content(page)

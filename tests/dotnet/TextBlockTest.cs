@@ -163,7 +163,7 @@ public class TextBlockTest {
     [Fact]
     public void IsTaggedAsItsStructureType() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextBlock heading = new TextBlock(font, "Invoice").SetStructureType(StructElem.H1);
         heading.SetLocation(50f, 50f);
@@ -243,7 +243,7 @@ public class TextBlockTest {
         // word joiner, takes no width and draws nothing, where it was a box
         // with a width (review of 11 October 2026, #9).
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         string plain = "Brand™ © 2026 word";
         string marked = "Brand™\uFE0F ©\uFE0F 2026\u200B wo\u2060rd\U000E0041";
         Assert.Equal(font.StringWidth(12f, plain), font.StringWidth(12f, marked));

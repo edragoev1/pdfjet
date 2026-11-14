@@ -40,6 +40,35 @@ the subsets of 123 to 138 fonts with seven sets of glyphs each, and on
 thousands of damaged fonts, which each port refuses alike; MuPDF, PDFium,
 Poppler and pdf.js draw the glyphs as before, and veraPDF passes.
 
+Behavior change, in the four ports: **IBM Plex Sans and Serif are carried
+as .otf, not .ttf.** Their constants, `IBMPlexSans.Regular` and the other
+27, are paths to IBM's .otf files, such as
+`fonts/IBMPlexSans/IBMPlexSans-Regular.otf`, which `resources/fonts`, the jar
+of Maven Central, the NuGet package, the Go module and the Swift product
+carry in place of the .ttf; Cascadia Mono stays .ttf, and the fonts of the
+other scripts as they are. With the compact CFF subset above, a document
+embeds about a fifth less of them, and usually writes it faster: Example_01
+is 20,001 bytes in place of 24,394, Example_14 32,145 in place of 40,468,
+and the 37 examples under 200 KB that draw in them are 16% smaller in all,
+1,539,354 bytes in place of 1,825,697. The fonts
+PDFjet carries for the European languages are 9.2 MB in place of 11.1 MB: a
+Go program is 1.9 MB smaller (Example_01, 15.7 to 13.8 MB), and the
+`PDFjet.dll` of NuGet 10.2 MB in place of 12.1 MB. The .otf and .ttf of IBM's
+release have the same advance widths, the same kerning in Latin, Greek and
+Cyrillic and the same line metrics, so the text is laid out as before, to
+the point; the glyphs are the same designs, in cubic outlines, but their
+numbers are not those of the .ttf, so the content streams change, and the
+text a reader copies and the pages it draws do not. The font descriptor has
+IBM's italic angle, -11.31 for Plex Sans and -14.04 for Plex Serif, which
+the .ttf rounded to -11 and -14. A path to the .ttf, such as
+`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, of any of the 28 faces, is the
+.otf of that face when there is no such file, as a path to the `.stream`
+files of before 9.0.5 is, so code written for 9.1.7 runs as it is; a .ttf
+file at that path, or of that name in `resources/fonts`, is read first, as
+any file is. To keep the TrueType edition, use a .ttf of one's own by its
+path, such as IBM's, from github.com/IBM/plex. Example_07 shows a .ttf font
+in Cascadia Mono, as no IBM Plex Sans or Serif is one now.
+
 Added, in the four ports: **BigTable wraps long fields within their
 columns.** `BigTable.setWrapText(true)` (Go `SetWrapText`, C#
 `SetWrapText`, Swift `setWrapText`): a field too long for its column wraps

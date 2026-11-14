@@ -419,7 +419,7 @@ func TestMergeAFontAddedToTheObjectsIsWritten(t *testing.T) {
 	// was left empty when the objects were merged rather than added (the
 	// review of 9 October 2026), and its text was lost.
 	objects := testRead(t, testMergeDocument("Existing"))
-	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")))
 	doc := testNewDoc()
 	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
 	page.AddFontResource(font, &objects)
@@ -449,7 +449,7 @@ func TestMergeWhatWasDrawnOnAPageThatWasReadIsMerged(t *testing.T) {
 	// the drawing and the text of the page were lost (review of 30 October
 	// 2026, B1).
 	objects := testRead(t, testMergeDocument("Existing"))
-	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")))
 	doc := testNewDoc()
 	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
 	page.AddFontResource(font, &objects)
@@ -586,7 +586,7 @@ func TestMergeAPageWithNoResourcesGetsThem(t *testing.T) {
 	// A font added to it did nothing, and the text was lost with no error
 	// (review of 30 October 2026, B5).
 	objects := testRead(t, testOnePagePDF(""))
-	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	font := NewFontForObjects(&objects, bytes.NewReader(testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")))
 	doc := testNewDoc()
 	pageObj := doc.pdf.GetPageObjects(objects)[0]
 	page := NewPageFromObject(doc.pdf, pageObj)

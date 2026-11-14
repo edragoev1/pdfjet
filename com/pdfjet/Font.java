@@ -387,14 +387,17 @@ final public class Font {
     /**
      * Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
      * to one of the fonts PDFjet carries, such as the constants of
-     * com.pdfjet.fonts, fonts/IBMPlexSans/IBMPlexSans-Regular.ttf for one, is
+     * com.pdfjet.fonts, fonts/IBMPlexSans/IBMPlexSans-Regular.otf for one, is
      * read from the folder resources/fonts when there is no such file, or else
      * from the classpath: the jar of Maven Central, com.pdfjet:pdfjet, carries
      * the European fonts; the others, such as IBMPlexSansJP.Regular and
      * IBMPlexSansArabic.Regular, are in the jar com.pdfjet:pdfjet-fonts-world,
      * which a program adds next to it, and such a font not found says so. A path to a
      * .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-     * opens the .ttf or else the .otf file of the same name beside it.
+     * opens the .ttf or else the .otf file of the same name beside it. A path
+     * to the .ttf of IBM Plex Sans or Serif, which PDFjet carried before
+     * 9.1.9, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, is read, when
+     * there is no such file, as the .otf it carries of the same face.
      *
      * @param pdf      the pdf object.
      * @param fontPath the font path.

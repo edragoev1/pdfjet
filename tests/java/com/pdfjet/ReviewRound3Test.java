@@ -708,7 +708,7 @@ class ReviewRound3Test {
      */
     @Test
     void aFontChecksumLeavesOutEmptyBlocks() throws Exception {
-        InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        InputStream in = TestSupport.open("tests/fonts/IBMPlexSans-Regular.ttf");
         try {
             assertEquals(0xABF1C2C88C082202L, new Font(TestSupport.newPDF(), in).checksum);
         } finally {

@@ -24,13 +24,13 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class KerningTest {
-    private static final String PLEX_TTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+    private static final String PLEX_TTF = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
     private static final String PLEX_OTF = "tests/fonts/IBMPlexSans-Regular.otf";
     // IBM Plex Serif, whose kern lookups have LookupFlag 8, as those of Noto
     // Sans, which these tests read before 9.1.7, have; the lookups of IBM Plex
     // Sans have none. IBM Plex Sans JP, whose kern feature has Extension
     // lookups of its pairs, as Source Serif 4, which PDFjet carried before, has.
-    private static final String SERIF_TTF = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf";
+    private static final String SERIF_TTF = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf";
     private static final String EXTENSION_OTF = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf";
 
     private static final Pattern DRAWN_TEXT = Pattern.compile("<([0-9A-F]*)> Tj|\\[(-?[0-9.]+)\\] TJ");

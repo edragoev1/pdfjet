@@ -361,7 +361,7 @@ public class MergeTest {
         // was left empty when the objects were merged rather than added (the
         // review of 9 October 2026), and its text was lost.
         List<PDFobj> objects = TestSupport.Read(Document("Existing"));
-        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(objects, TestSupport.Open("tests/fonts/IBMPlexSans-Regular.ttf"));
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
@@ -389,7 +389,7 @@ public class MergeTest {
         // the drawing and the text of the page were lost (review of 30 October
         // 2026, B1).
         List<PDFobj> objects = TestSupport.Read(Document("Existing"));
-        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(objects, TestSupport.Open("tests/fonts/IBMPlexSans-Regular.ttf"));
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
@@ -513,7 +513,7 @@ public class MergeTest {
         // A font added to it did nothing, and the text was lost with no error
         // (review of 30 October 2026, B5).
         List<PDFobj> objects = TestSupport.Read(OnePagePDF(""));
-        Font font = new Font(objects, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(objects, TestSupport.Open("tests/fonts/IBMPlexSans-Regular.ttf"));
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);

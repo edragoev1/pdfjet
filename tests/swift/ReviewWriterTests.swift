@@ -426,7 +426,7 @@ import Testing
         // designer and its description; no font PDFjet carries has one in
         // its names, so the license of IBM Plex Sans is made to say "with &
         // FAQ" in place of "with a FAQ", a character for a character.
-        var ttf = try TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+        var ttf = try TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf")
         var withA = [UInt8]()
         for unit in " with a FAQ".utf16 {
             withA += [UInt8(unit >> 8), UInt8(unit & 0xFF)]

@@ -154,6 +154,13 @@ public class BundledFontsTest {
                 Assert.True(font.GetAscent() > 0f, path);
             }
         }
+        // A path to the .ttf of IBM Plex Sans or Serif that PDFjet carried
+        // before 9.1.9 is the .otf it carries
+        using (Stream stream = BundledFonts.Open("fonts/IBMPlexSerif/IBMPlexSerif-Bold.ttf", "no-such-folder/"))
+        using (Stream otf = BundledFonts.OpenResource("IBMPlexSerif/IBMPlexSerif-Bold.otf")) {
+            Assert.NotNull(stream);
+            Assert.Equal(otf.Length, stream.Length);
+        }
 #else
         // The small library, as built from the repository and for GitHub
         Assert.Empty(resources);
@@ -209,16 +216,68 @@ public class BundledFontsTest {
         Assert.Contains("nuget/world/buildTransitive", File.ReadAllText(TestSupport.RepoPath("package-nuget.sh")));
     }
 
+    // PDFjet carries IBM Plex Sans and Serif as .otf from 9.1.9, and as .ttf
+    // before: a path written for the .ttf is the .otf of the same face, as is
+    // one of the .stream files of before 9.0.5; a .ttf of one's own at that
+    // path, or of that name in the folder resources/fonts, is read first.
+    [Fact]
+    public void APathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries() {
+        String folder = TestSupport.RepoPath("resources/fonts") + "/";
+        foreach (String family in new String[] {"IBMPlexSans", "IBMPlexSerif"}) {
+            foreach (String style in new String[] {"Thin", "ThinItalic", "Light", "LightItalic", "Text", "TextItalic",
+                    "Regular", "Italic", "Medium", "MediumItalic", "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"}) {
+                byte[] otf = File.ReadAllBytes(folder + family + "/" + family + "-" + style + ".otf");
+                String path = "fonts/" + family + "/" + family + "-" + style + ".ttf";
+                foreach (String old in new String[] {path, path + ".stream"}) {
+                    String file = Font.FontFileOf(old);
+                    using (Stream stream = BundledFonts.Open(file, folder)) {
+                        Assert.True(stream != null, old);
+                        MemoryStream bytes = new MemoryStream();
+                        stream.CopyTo(bytes);
+                        Assert.True(bytes.ToArray().AsSpan().SequenceEqual(otf), old);
+                    }
+                }
+            }
+        }
+        Assert.Equal("IBMPlexSans-Bold", new Font(TestSupport.NewPDF(), IBMPlexSans.Bold.Replace(".otf", ".ttf")).name);
+        // A .ttf of one's own at that path, and of that name in the folder
+        byte[] ttf = TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
+        using (TestSupport.TempDir dir = new TestSupport.TempDir()) {
+            Directory.CreateDirectory(dir.Path + "/fonts/IBMPlexSans");
+            Directory.CreateDirectory(dir.Path + "/resources/fonts/IBMPlexSerif");
+            String own = dir.Write("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", ttf);
+            dir.Write("resources/fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", ttf);
+            using (Stream stream = Font.Open(own)) {
+                MemoryStream bytes = new MemoryStream();
+                stream.CopyTo(bytes);
+                Assert.True(bytes.ToArray().AsSpan().SequenceEqual(ttf));
+            }
+            using (Stream stream = BundledFonts.Open("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", dir.Path + "/resources/fonts/")) {
+                MemoryStream bytes = new MemoryStream();
+                stream.CopyTo(bytes);
+                Assert.True(bytes.ToArray().AsSpan().SequenceEqual(ttf));
+            }
+        }
+        // Only those two families, and only their .ttf: a face PDFjet does not
+        // carry is not found still, nor a .otf of Cascadia Mono
+        foreach (String path in new String[] {"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
+                "fonts/CascadiaMono/CascadiaMono-Regular.otf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"}) {
+            Assert.Null(BundledFonts.Open(path, folder));
+        }
+        Assert.Null(BundledFonts.Renamed("CascadiaMono/CascadiaMono-Regular.ttf"));
+        Assert.Equal("IBMPlexSerif/IBMPlexSerif-Bold.otf", BundledFonts.Renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf"));
+    }
+
     [Fact]
     public void CssWeightsMatchFacesThatLookAlikeAcrossTheFamilies() {
         // Cascadia Mono SemiLight is as thick as IBM Plex Sans Regular: it
         // stands for 400, and Regular for 500
         String[][] cases = {
-            new String[] {"0", "400", "IBMPlexSans/IBMPlexSans-Regular.ttf"},
-            new String[] {"0", "200", "IBMPlexSans/IBMPlexSans-Thin.ttf"},
-            new String[] {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.ttf"},
-            new String[] {"1", "100", "IBMPlexSerif/IBMPlexSerif-Thin.ttf"},
-            new String[] {"1", "900", "IBMPlexSerif/IBMPlexSerif-Bold.ttf"},
+            new String[] {"0", "400", "IBMPlexSans/IBMPlexSans-Regular.otf"},
+            new String[] {"0", "200", "IBMPlexSans/IBMPlexSans-Thin.otf"},
+            new String[] {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.otf"},
+            new String[] {"1", "100", "IBMPlexSerif/IBMPlexSerif-Thin.otf"},
+            new String[] {"1", "900", "IBMPlexSerif/IBMPlexSerif-Bold.otf"},
             new String[] {"2", "400", "CascadiaMono/CascadiaMono-SemiLight.ttf"},
             new String[] {"2", "500", "CascadiaMono/CascadiaMono-Regular.ttf"},
             new String[] {"2", "600", "CascadiaMono/CascadiaMono-SemiBold.ttf"},
@@ -229,7 +288,7 @@ public class BundledFontsTest {
         }
         Assert.Equal("CascadiaMono/CascadiaMono-SemiLightItalic.ttf", BundledFonts.FileName(2, 400, true));
         Assert.Equal("CascadiaMono/CascadiaMono-Italic.ttf", BundledFonts.FileName(2, 500, true));
-        Assert.Equal("IBMPlexSans/IBMPlexSans-Italic.ttf", BundledFonts.FileName(0, 400, true));
+        Assert.Equal("IBMPlexSans/IBMPlexSans-Italic.otf", BundledFonts.FileName(0, 400, true));
     }
 }
 }   // End of BundledFontsTest.cs

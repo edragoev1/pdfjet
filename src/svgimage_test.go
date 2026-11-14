@@ -867,8 +867,8 @@ func TestSVGImageTheFamilyTheWeightAndTheStyleChooseTheFontPDFjetCarries(t *test
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	want := []string{"CascadiaMono/CascadiaMono-Bold.ttf", "IBMPlexSans/IBMPlexSans-Bold.ttf",
-		"IBMPlexSans/IBMPlexSans-Regular.ttf", "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.ttf"}
+	want := []string{"CascadiaMono/CascadiaMono-Bold.ttf", "IBMPlexSans/IBMPlexSans-Bold.otf",
+		"IBMPlexSans/IBMPlexSans-Regular.otf", "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf"}
 	if strings.Join(names, " ") != strings.Join(want, " ") {
 		t.Errorf("the fonts %v", names)
 	}

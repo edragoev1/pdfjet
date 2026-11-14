@@ -21,7 +21,7 @@ import (
 // JP, whose kern feature has Extension lookups of its pairs, as Source Serif
 // 4, which PDFjet carried before, has.
 const (
-	testKerningSerif     = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"
+	testKerningSerif     = "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf"
 	testKerningExtension = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"
 )
 
@@ -67,8 +67,8 @@ func testDraw(font *Font, text string) string {
 
 func TestKerningNarrowsTheKernedPairsOfAnOpenTypeFont(t *testing.T) {
 	pdf := testNewPDF()
-	kerned := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", true)
-	plain := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", false)
+	kerned := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true)
+	plain := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", false)
 	for _, pair := range []string{"AV", "To", "Ty", "LT"} {
 		if !(kerned.StringWidth(10, pair) < plain.StringWidth(10, pair)) {
 			t.Errorf("%s: kerned %v, not kerned %v", pair, kerned.StringWidth(10, pair), plain.StringWidth(10, pair))
@@ -82,7 +82,7 @@ func TestKerningNarrowsTheKernedPairsOfAnOpenTypeFont(t *testing.T) {
 func TestKerningIsDrawnAsItIsMeasured(t *testing.T) {
 	pdf := testNewPDF()
 	for _, path := range []string{
-		"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
+		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
 		"tests/fonts/IBMPlexSans-Regular.otf",
 		testKerningSerif,
 		testKerningExtension,
@@ -103,7 +103,7 @@ func TestKerningIsDrawnAsItIsMeasured(t *testing.T) {
 
 func TestKerningOfColoredTextIsDrawnAsItIsMeasured(t *testing.T) {
 	pdf := testNewPDF()
-	font := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", true)
+	font := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true)
 	text := "AVATAR To \"Wally\" LT."
 	page := NewPage(pdf, letter.Portrait())
 	start := len(page.buf)
@@ -189,7 +189,7 @@ func TestKerningOfCoreFontTextNotColoredIsUnchanged(t *testing.T) {
 
 func TestKerningIsOffUnlessAskedFor(t *testing.T) {
 	pdf := testNewPDF()
-	font := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", false)
+	font := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", false)
 	if content := testDraw(font, "AVATAR To"); strings.Contains(content, "] TJ") {
 		t.Errorf("a font not kerned moved its glyphs:\n%s", content)
 	}
@@ -215,7 +215,7 @@ func TestKerningLeavesMarksAndRightToLeftTextAlone(t *testing.T) {
 
 func TestKerningFitsWhatIsMeasured(t *testing.T) {
 	pdf := testNewPDF()
-	font := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", true)
+	font := testKernedFont(t, pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true)
 	text := "AVATAR To Wally"
 	// GetFitChars measures at the font's own size
 	width := font.StringWidth(font.GetSize(), text)
@@ -253,9 +253,9 @@ func TestKerningWidthsAreThoseOfTheOtherPorts(t *testing.T) {
 		path, text      string
 		kerned, unitsOf float32
 	}{
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "AVATAR To Wally", 75.14, -302},
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "Тъй ТАТЯНА", 55.94, -165},
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "ΑΥΤΟ", 24.44, -70},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14, -302},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "Тъй ТАТЯНА", 55.94, -165},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "ΑΥΤΟ", 24.44, -70},
 		{"tests/fonts/IBMPlexSans-Regular.otf", "AVATAR To Wally", 75.14, -302},
 		// IBM Plex Serif, from its hmtx and kern lookups (Noto Sans, before
 		// 9.1.7: 75.83 and -310, 56.79 and -150, 24.62 and -80)

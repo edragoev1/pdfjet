@@ -263,7 +263,7 @@ class MisuseTest {
     void stampTextAddsItsFont() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final PDF pdf = new PDF(bos);
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         final Font core = TestSupport.helvetica(pdf);
         final Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
         assertEquals("A stamp draws text with an embedded font, not a core or CJK font.",
@@ -378,7 +378,7 @@ class MisuseTest {
         // An embedded font only reserves its number, written at complete: the
         // objects could take it too (the review of 9 October 2026).
         final PDF pdf4 = TestSupport.newPDF();
-        new Font(pdf4, TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").getPath());
+        new Font(pdf4, TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf").getPath());
         assertEquals(message, fails(IllegalStateException.class, new Executable() {
             public void execute() throws Throwable { pdf4.addObjects(objects); }
         }));

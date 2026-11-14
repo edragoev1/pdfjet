@@ -81,7 +81,7 @@ public class FontTest {
 
     [Fact]
     public void ReadsATrueTypeFont() {
-        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+        string path = "tests/fonts/IBMPlexSans-Regular.ttf";
         using (Stream stream = TestSupport.Open(path)) {
             Font font = new Font(TestSupport.NewPDF(), stream);
             Assert.Equal("IBMPlexSans", font.GetName());
@@ -108,7 +108,7 @@ public class FontTest {
         PDF pdf = TestSupport.NewPDF();
         Font sc = new Font(pdf, TestSupport.Open(path));
         TestSupport.AssertNear(10f, sc.GetLineGap(10f), 0.001f);
-        Assert.Equal(0f, new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        Assert.Equal(0f, new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
                 .GetLineGap(10f));
         // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
         sc.SetSize(10f);
@@ -123,15 +123,15 @@ public class FontTest {
         // fonts folder had Noto Sans and both files of IBM Plex Sans; the
         // folder of .ttf and .otf files is made here.
         using (TestSupport.TempDir dir = new TestSupport.TempDir()) {
-            string ttf = dir.Write("IBMPlexSans-Regular.ttf", TestSupport.FontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+            string ttf = dir.Write("IBMPlexSans-Regular.ttf", TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.ttf"));
             string otf = dir.Write("IBMPlexSans-Regular.otf", TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.otf"));
             string[][] paths = {
                 // The .ttf beside the .otf
                 new[] {otf + ".stream", ttf},
                 new[] {ttf + ".stream", ttf},
                 // The .otf, with no .ttf beside it
-                new[] {TestSupport.RepoPath("tests/fonts/IBMPlexSans-Regular.otf.stream"),
-                    TestSupport.RepoPath("tests/fonts/IBMPlexSans-Regular.otf")},
+                new[] {TestSupport.RepoPath("tests/fonts/IBMPlexSans-Italic.otf.stream"),
+                    TestSupport.RepoPath("tests/fonts/IBMPlexSans-Italic.otf")},
                 // The fonts PDFjet carries
                 new[] {TestSupport.RepoPath("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
                     TestSupport.RepoPath("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")},
@@ -177,7 +177,7 @@ public class FontTest {
     // and its .notdef 472, of 1000 units to the em; it has the characters
     // from U+0020 to U+FFFD, and no Thai.
     private static Font IBMPlexSans(PDF pdf) {
-        return new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        return new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public class FontTest {
         // IBM Plex Sans JP, the .otf PDFjet carries: it has 日本東京, and no
         // Thai, as its .ttf, which this test read before 9.1.7.
         PDF pdf = TestSupport.NewPDF();
-        Font latin = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font latin = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Font jp = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"));
         Font helvetica = TestSupport.Helvetica(pdf);
         // The Latin letters after the Japanese ones are in the font again.
@@ -335,7 +335,7 @@ public class FontTest {
         // both, so the text drawn with the second came out in the glyphs of
         // the first. The other is IBM Plex Sans (Noto Sans before 9.1.7) with
         // a wider .notdef.
-        byte[] ttf = TestSupport.FontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] ttf = TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
         byte[] other = (byte[]) ttf.Clone();
         int tables = ttf[4] << 8 | ttf[5];
         for (int i = 0; i < tables; i++) {
@@ -376,19 +376,21 @@ public class FontTest {
     [Fact]
     public void TheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-        // whole degree.
+        // whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
+        // .ttf it carried before is the .otf.
         if (!File.Exists(TestSupport.RepoPath("tests/fonts/IBMPlexSans-Italic.otf"))) {
             return;     // The fonts directory is not here.
         }
         string[][] fonts = {
             new[] {"tests/fonts/IBMPlexSans-Italic.otf", "-11.31"},
-            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"},
-            new[] {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"},
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"},
+            new[] {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"},
             // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
             // 9.1.7), its italic angle -10 in its post table
             new[] {"fonts/CascadiaMono/CascadiaMono-Italic.ttf", "-10"},
             new[] {"fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf", "-10"},
-            new[] {"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"},
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "0"},
         };
         foreach (string[] font in fonts) {
             string pdf = Encoding.Latin1.GetString(DocumentWithFonts(font[0]));

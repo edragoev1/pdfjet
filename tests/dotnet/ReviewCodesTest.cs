@@ -130,7 +130,7 @@ public class ReviewCodesTest {
     [Fact]
     public void TheBarcodeFigureHasTheBoxOfTheBarsAndTheDigits() {
         PDF pdf = TaggedPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         float height = page.height;
         object[][] cases = {

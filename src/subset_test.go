@@ -39,7 +39,7 @@ func testSubsetGlyph(t *testing.T, font []byte, gid int) []byte {
 
 // testSubsetPlex is IBM Plex Sans, which has the short offsets of loca; the
 // subsets of a font with the long ones read Cascadia Mono or IBM Plex Math.
-const testSubsetPlex = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+const testSubsetPlex = "tests/fonts/IBMPlexSans-Regular.ttf"
 
 // testSubsetUsed returns the glyphs used, as Font records them.
 func testSubsetUsed(gids ...int) []bool {

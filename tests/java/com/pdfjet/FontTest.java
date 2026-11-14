@@ -95,7 +95,7 @@ class FontTest {
 
     @Test
     void readsATrueTypeFont() throws Exception {
-        String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+        String path = "tests/fonts/IBMPlexSans-Regular.ttf";
         InputStream in = TestSupport.open(path);
         try {
             Font font = new Font(TestSupport.newPDF(), in);
@@ -121,7 +121,7 @@ class FontTest {
         PDF pdf = TestSupport.newPDF();
         Font sc = new Font(pdf, TestSupport.open(path));
         assertEquals(10f, sc.getLineGap(10f), 0.001f);
-        assertEquals(0f, new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        assertEquals(0f, new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
                 .getLineGap(10f), 0f);
         // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
         sc.setSize(10f);
@@ -139,15 +139,15 @@ class FontTest {
         java.io.File ttf = new java.io.File(dir, "IBMPlexSans-Regular.ttf");
         java.io.File otf = new java.io.File(dir, "IBMPlexSans-Regular.otf");
         try {
-            java.nio.file.Files.write(ttf.toPath(), TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+            java.nio.file.Files.write(ttf.toPath(), TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf"));
             java.nio.file.Files.write(otf.toPath(), TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.otf"));
             String[][] paths = {
                 // The .ttf beside the .otf
                 {otf.getPath() + ".stream", ttf.getPath()},
                 {ttf.getPath() + ".stream", ttf.getPath()},
                 // The .otf, with no .ttf beside it
-                {TestSupport.file("tests/fonts/IBMPlexSans-Regular.otf.stream").getPath(),
-                    TestSupport.file("tests/fonts/IBMPlexSans-Regular.otf").getPath()},
+                {TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf.stream").getPath(),
+                    TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf").getPath()},
                 // The fonts PDFjet carries
                 {TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream").getPath(),
                     TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf").getPath()},
@@ -198,7 +198,7 @@ class FontTest {
     // and its .notdef 472, of 1000 units to the em; it has the characters
     // from U+0020 to U+FFFD, and no Thai.
     private static Font ibmPlexSans(PDF pdf) throws Exception {
-        return new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        return new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
     }
 
     @Test
@@ -320,7 +320,7 @@ class FontTest {
         // IBM Plex Sans JP, the .otf PDFjet carries: it has 日本東京, and no
         // Thai, as its .ttf, which this test read before 9.1.7.
         PDF pdf = TestSupport.newPDF();
-        Font latin = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font latin = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Font jp = new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf"));
         Font helvetica = TestSupport.helvetica(pdf);
         // The Latin letters after the Japanese ones are in the font again.
@@ -364,7 +364,7 @@ class FontTest {
         // both, so the text drawn with the second came out in the glyphs of
         // the first: 中文字 read as Ι㈜♡. The other is IBM Plex Sans (Noto
         // Sans before 9.1.7) with a wider .notdef.
-        byte[] ttf = TestSupport.fontBytes("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        byte[] ttf = TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
         byte[] other = ttf.clone();
         int tables = (ttf[4] & 0xFF) << 8 | (ttf[5] & 0xFF);
         for (int i = 0; i < tables; i++) {
@@ -405,18 +405,20 @@ class FontTest {
     @Test
     void theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws Exception {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-        // whole degree.
+        // whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
+        // .ttf it carried before is the .otf.
         assumeTrue(TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf").exists(),
                 "the fonts directory is not here");
         String[][] fonts = {
             {"tests/fonts/IBMPlexSans-Italic.otf", "-11.31"},
-            {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"},
-            {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"},
+            {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
+            {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"},
+            {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"},
             // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
             // 9.1.7), its italic angle -10 in its post table
             {"fonts/CascadiaMono/CascadiaMono-Italic.ttf", "-10"},
             {"fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf", "-10"},
-            {"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"},
+            {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "0"},
         };
         for (String[] font : fonts) {
             String pdf = TestSupport.latin1(documentWithFonts(font[0]));
@@ -568,7 +570,7 @@ class FontTest {
     // and 40,000 an OutOfMemoryError (review of 17 October 2026)
     @Test
     void aFontsInformationHasALimit() throws Exception {
-        byte[] font = TestSupport.readAll(TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        byte[] font = TestSupport.readAll(TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         int count = 1000;
         int length = 65000;
         java.io.ByteArrayOutputStream table = new java.io.ByteArrayOutputStream();

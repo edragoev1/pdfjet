@@ -1161,7 +1161,7 @@ public sealed class TableTest : IDisposable {
         // AutoAdjustColumnWidths gives the column of "a", less the padding,
         // comes out a little less than the width of "a" in floating point.
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")).SetSize(11f);
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf")).SetSize(11f);
         List<List<Cell>> rows = new List<List<Cell>>();
         rows.Add(new List<Cell> { new Cell(font, "a"), new Cell(font, "b") });
         rows.Add(new List<Cell> { new Cell(font, "1"), new Cell(font, "2") });
@@ -1194,7 +1194,7 @@ public sealed class TableTest : IDisposable {
         // A character outside the basic plane is two chars of the text, and
         // the two are not drawn on two lines.
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).SetSize(11f);
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")).SetSize(11f);
         Cell cell = new Cell(font, "a😀b");
         // A column narrower than any of the characters.
         cell.SetWidth(6f);
@@ -1234,7 +1234,7 @@ public sealed class TableTest : IDisposable {
         // The second word does not fit the column, and its first character does
         // not fit after the first word, so the first line is the first word.
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).SetSize(10f);
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")).SetSize(10f);
         Cell cell = new Cell(font, "abcd Wxyzwxyzw");
         cell.SetWidth(30f);
         List<List<Cell>> rows = new List<List<Cell>>();

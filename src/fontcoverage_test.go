@@ -52,7 +52,8 @@ func TestFontCoverageEveryFaceForLatinTextHasGreekAndCyrillic(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, file := range files {
-			if !strings.HasSuffix(file.Name(), ".ttf") {
+			// IBM Plex Sans and Serif as .otf, Cascadia Mono as .ttf
+			if !strings.HasSuffix(file.Name(), ".ttf") && !strings.HasSuffix(file.Name(), ".otf") {
 				continue
 			}
 			buf, err := os.ReadFile(testRepoPath(t, "resources/fonts/"+family+"/"+file.Name()))

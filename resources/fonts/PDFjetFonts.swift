@@ -12,7 +12,7 @@ import Foundation
 /// the resources of this module, which SwiftPM copies as they are, so that
 /// the one copy of them in the repository serves Java, C#, Go and Swift
 /// alike. The product PDFjet depends on this module, so that these fonts,
-/// about 11 MB, work with no step of one's own; the fonts of the other
+/// about 9 MB, work with no step of one's own; the fonts of the other
 /// scripts, about 52 MB, are in the module PDFjetFontsWorld, of
 /// resources/fonts/world, the product an app adds when it draws in them. The
 /// bundle has the files of the family folders side by side, as .process puts
@@ -22,7 +22,7 @@ public enum PDFjetFonts {
     public static let bundle: Bundle = Bundle.module
 
     /// Returns the URL of a font PDFjet carries, by its name under
-    /// resources/fonts, Family/File, such as IBMPlexSans/IBMPlexSans-Regular.ttf,
+    /// resources/fonts, Family/File, such as IBMPlexSans/IBMPlexSans-Regular.otf,
     /// or nil when there is no such font.
     public static func url(_ name: String) -> URL? {
         let parts = name.split(separator: "/", omittingEmptySubsequences: false)

@@ -3,8 +3,8 @@
 `Table` at the scale the release plan asks about: the 9 columns of
 `resources/data/Electric_Vehicle_Population_10_Pages.csv` built as `Cell` objects and
 drawn on as many Letter portrait pages as they need, in IBM Plex Sans
-(`IBMPlexSans-SemiBold.ttf` for the header row, `-Regular` for the
-rest) at 8 points. The rows of the file repeat until the table has the number
+(`IBMPlexSans-SemiBold.otf` for the header row, `-Regular` for the
+rest; their `.ttf` up to 9.1.7) at 8 points. The rows of the file repeat until the table has the number
 of rows asked for, and the widths are narrow enough that some columns wrap, so
 the benchmark measures the wrapping as well as the drawing.
 

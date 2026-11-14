@@ -82,7 +82,7 @@ import Testing
         #expect(try value("B2a", "/Count") == "")
     }
 
-    private static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    private static let trueTypeFont = "tests/fonts/IBMPlexSans-Regular.ttf"
 
     // A document with the headings, as text lines of their structure types,
     // H1 on the first page and the others on the second.

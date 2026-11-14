@@ -41,7 +41,7 @@ public class AstralTest {
     [Fact]
     public void ACharacterPastU0xFFFFIsDrawnInTheFallbackFont() {
         PDF pdf = TestSupport.NewPDF();
-        Font plex = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font plex = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         // IBM Plex Sans TC, the .otf PDFjet carries, maps 𨋢 in its format 12
         // subtable, as its .ttf, which this test read before 9.1.7, does.
         Font tc = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"));

@@ -639,7 +639,7 @@ public class ReviewRound3Test {
     // four ports.
     [Fact]
     public void AFontChecksumLeavesOutEmptyBlocks() {
-        Font font = new Font(TestSupport.NewPDF(), TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(TestSupport.NewPDF(), TestSupport.Open("tests/fonts/IBMPlexSans-Regular.ttf"));
         Assert.Equal(0xABF1C2C88C082202UL, font.checksum);
     }
 

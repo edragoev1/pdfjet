@@ -939,7 +939,7 @@ func TestReview3ATextColumnBreaksAWordAtASoftHyphen(t *testing.T) {
 // leaves out the rest: it folded all 65,536 characters, 236 empty blocks of
 // IBM Plex Sans's 256. The number is the same in the four ports.
 func TestReview3AFontChecksumLeavesOutEmptyBlocks(t *testing.T) {
-	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "tests/fonts/IBMPlexSans-Regular.ttf"))
 	if font.checksum != 0xABF1C2C88C082202 {
 		t.Errorf("checksum %X", font.checksum)
 	}
@@ -950,7 +950,7 @@ func TestReview3AFontChecksumLeavesOutEmptyBlocks(t *testing.T) {
 // copied a font of 200 KB several times, about half of what a document of
 // three embedded fonts allocated.
 func TestReview3AFontIsReadIntoABufferOfItsSize(t *testing.T) {
-	data := testFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	data := testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf")
 	var before, after runtime.MemStats
 	runtime.GC()
 	runtime.ReadMemStats(&before)

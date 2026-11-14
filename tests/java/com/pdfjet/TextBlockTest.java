@@ -179,7 +179,7 @@ class TextBlockTest {
     @Test
     void isTaggedAsItsStructureType() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextBlock heading = new TextBlock(font, "Invoice").setStructureType(StructElem.H1);
         heading.setLocation(50f, 50f);
@@ -262,7 +262,7 @@ class TextBlockTest {
     @Test
     void anIgnorableCharacterIsNotDrawn() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         String plain = "Brand\u2122 \u00A9 2026 word";
         String marked = "Brand\u2122\uFE0F \u00A9\uFE0F 2026\u200B wo\u2060rd";
         assertEquals(font.stringWidth(12f, plain), font.stringWidth(12f, marked), 0f,

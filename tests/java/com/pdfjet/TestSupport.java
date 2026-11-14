@@ -111,7 +111,7 @@ public final class TestSupport {
      * 2026, #6).
      */
     public static Font plexSans(PDF pdf) throws Exception {
-        return new Font(pdf, open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        return new Font(pdf, open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
     }
 
     /**
