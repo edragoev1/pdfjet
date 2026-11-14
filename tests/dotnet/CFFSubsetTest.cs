@@ -33,7 +33,7 @@ public class CFFSubsetTest {
         CFFSubset.Index globals = CFFSubset.readIndex(cff, strings.end);
         List<CFFSubset.Entry> top = CFFSubset.readDict(cff, tops.objects[0], tops.objects[1]);
         CFFSubset.Index charStrings = CFFSubset.readIndex(cff, CFFSubset.entryOf(top, CFFSubset.CHAR_STRINGS)[0]);
-        return (CFFSubset.emptied(cff, charStrings, null, 0), CFFSubset.emptied(cff, globals, null, 0), top);
+        return (CFFSubset.emptied(cff, charStrings, null), CFFSubset.emptied(cff, globals, null), top);
     }
 
     private static bool[] Used(OTF otf, string text) {
@@ -44,8 +44,37 @@ public class CFFSubsetTest {
         return used;
     }
 
+    // The CIDs the charset of the subset gives its glyphs after .notdef, of
+    // formats 0, 1 and 2.
+    private static List<int> Charset(byte[] cff, List<CFFSubset.Entry> top, int glyphs) {
+        int at = CFFSubset.entryOf(top, CFFSubset.CHARSET)[0];
+        int format = cff[at];
+        at++;
+        List<int> cids = new List<int>();
+        while (cids.Count < glyphs - 1) {
+            if (format == 0) {
+                cids.Add(cff[at] << 8 | cff[at + 1]);
+                at += 2;
+            } else if (format == 1 || format == 2) {
+                int first = cff[at] << 8 | cff[at + 1];
+                int left = cff[at + 2];
+                at += 3;
+                if (format == 2) {
+                    left = left << 8 | cff[at];
+                    at++;
+                }
+                for (int cid = first; cid <= first + left; cid++) {
+                    cids.Add(cid);
+                }
+            } else {
+                Assert.Fail("charset format " + format);
+            }
+        }
+        return cids;
+    }
+
     [Fact]
-    public void KeepsTheCharstringsUsedAndEmptiesTheRest() {
+    public void IsACIDFontOfTheGlyphsUsedAlone() {
         foreach (string path in new string[] {PLEX, HAN}) {
             OTF otf = Otf(path);
             byte[] cff = Cff(otf);
@@ -53,43 +82,64 @@ public class CFFSubsetTest {
             bool[] kept;
             byte[] subset = CFFSubset.subset(cff, used, out kept);
             var (whole, wholeGlobals, _) = Parts(cff);
-            var (glyphs, globals, _) = Parts(subset);
-            Assert.Equal(whole.Count, glyphs.Count);
-            for (int gid = 0; gid < glyphs.Count; gid++) {
+            var (glyphs, globals, top) = Parts(subset);
+            Assert.True(kept.Length == whole.Count, path + ": kept is of " + kept.Length + " glyphs");
+            // The glyphs kept, .notdef and those used, alone, in their order
+            List<int> keptGIDs = new List<int>();
+            for (int gid = 0; gid < kept.Length; gid++) {
                 Assert.True((gid == 0 || used[gid]) == kept[gid], path + " glyph " + gid);
-                Assert.Equal(kept[gid] ? whole[gid] : new byte[] {14}, glyphs[gid]);
+                if (kept[gid] && gid > 0) {
+                    keptGIDs.Add(gid);
+                }
             }
+            Assert.Equal(keptGIDs.Count + 1, glyphs.Count);
+            // A CIDFont, whose charset gives each glyph its number in the font
+            // as its CID, which the content streams draw it by
+            Assert.NotNull(CFFSubset.entryOf(top, CFFSubset.ROS));
+            Assert.NotNull(CFFSubset.entryOf(top, CFFSubset.FD_ARRAY));
+            Assert.Null(CFFSubset.entryOf(top, CFFSubset.ENCODING));
+            Assert.Equal(keptGIDs, Charset(subset, top, glyphs.Count));
+            // Each glyph as it was, .notdef first
+            Assert.Equal(whole[0], glyphs[0]);
+            for (int i = 0; i < keptGIDs.Count; i++) {
+                Assert.Equal(whole[keptGIDs[i]], glyphs[i + 1]);
+            }
+            // The global subroutines keep their numbers: those called as they
+            // were, the others emptied to no bytes
+            Assert.Equal(wholeGlobals.Count, globals.Count);
             int emptied = 0;
             for (int i = 0; i < globals.Count; i++) {
-                if (globals[i].Length == 1 && globals[i][0] == 11 && !(wholeGlobals[i].Length == 1 && wholeGlobals[i][0] == 11)) {
+                if (globals[i].Length == 0 && wholeGlobals[i].Length > 0) {
                     emptied++;
                 } else {
                     Assert.Equal(wholeGlobals[i], globals[i]);
                 }
             }
             Assert.True(emptied > 0, path);
-            Assert.True(subset.Length <= cff.Length / 3, path + ": " + subset.Length + " bytes");
+            Assert.True(subset.Length <= cff.Length / 10, path + ": " + subset.Length + " bytes");
         }
     }
 
     [Fact]
-    public void ACIDKeyedFontHasTheIdentityCharset() {
+    public void OfEveryGlyphHasTheIdentityCharset() {
         // Source Han Sans JP gives its glyphs CIDs of Adobe-Japan1, not their
-        // numbers, and a PDF looks the glyphs of a CID-keyed font up by CID.
-        byte[] cff = Cff(Otf(HAN));
-        foreach (bool[] used in new bool[][] {null, new bool[0x10000]}) {
+        // numbers, and a PDF looks the glyphs of a CID-keyed font up by CID:
+        // written whole, each glyph's CID is its number.
+        foreach (string path in new string[] {PLEX, HAN}) {
+            byte[] cff = Cff(Otf(path));
+            var (whole, _, _) = Parts(cff);
             bool[] kept;
-            byte[] subset = CFFSubset.subset(cff, used, out kept);
+            byte[] subset = CFFSubset.subset(cff, null, out kept);
             var (glyphs, _, top) = Parts(subset);
-            int at = CFFSubset.entryOf(top, CFFSubset.CHARSET)[0];
-            int n = glyphs.Count - 2;
-            Assert.Equal(new byte[] {2, 0, 1, (byte) (n >> 8), (byte) n}, subset[at..(at + 5)]);
-        }
-        var (whole, _, _) = Parts(cff);
-        bool[] all;
-        var (same, _, _) = Parts(CFFSubset.subset(cff, null, out all));
-        for (int gid = 0; gid < same.Count; gid++) {
-            Assert.Equal(whole[gid], same[gid]);
+            Assert.Equal(whole.Count, glyphs.Count);
+            Assert.Equal(whole.Count, kept.Length);
+            List<int> cids = Charset(subset, top, glyphs.Count);
+            for (int i = 0; i < cids.Count; i++) {
+                Assert.True(cids[i] == i + 1, path + ": glyph " + (i + 1) + " has the CID " + cids[i]);
+            }
+            for (int gid = 0; gid < glyphs.Count; gid++) {
+                Assert.Equal(whole[gid], glyphs[gid]);
+            }
         }
     }
 

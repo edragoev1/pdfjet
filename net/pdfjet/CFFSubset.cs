@@ -9,17 +9,17 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
-/// The subset of a font with CFF outlines, a .otf: the CFF table with the
-/// charstrings of the glyphs the document does not draw emptied, and the
-/// subroutines, global and local, that the glyphs kept do not call. Every glyph
-/// and every subroutine keeps its number, so the glyphs kept are drawn by the
-/// same bytes as in the whole font. The CFF is written again in a fixed order,
-/// with every offset of its Top DICT, of the Font DICTs of a CID-keyed font and
-/// of its Private DICTs in the five-byte form, so that an offset of any value
-/// has the same size: the header, the Name, Top DICT, String and Global Subr
-/// INDEXes, the charset, the Encoding and the FDSelect, the new CharStrings
-/// INDEX, the FDArray, and each Private DICT with its local subroutines after
-/// it.
+/// The subset of a font with CFF outlines, a .otf: a CIDFont of the glyphs the
+/// document draws alone, its charset giving each glyph its number in the whole
+/// font as its CID, by which the PDF draws it, and the subroutines, global and
+/// local, that the glyphs kept do not call emptied to no bytes, keeping their
+/// numbers, so the glyphs kept are drawn by the same bytes as in the whole
+/// font. A name-keyed font becomes a CIDFont of Adobe-Identity-0. The CFF is
+/// written again in a fixed order, with every offset of its Top DICT and of
+/// its Font DICTs in the five-byte form, so that an offset of any value has
+/// the same size: the header, the Name, Top DICT, String and Global Subr
+/// INDEXes, the charset, the FDSelect, the new CharStrings INDEX, the FDArray,
+/// and each Private DICT with its local subroutines.
 /// </summary>
 class CFFSubset {
     // The operators whose operands are offsets in the CFF table.
@@ -32,6 +32,7 @@ class CFFSubset {
     internal const int FD_SELECT = 12 << 8 | 37;
     internal const int ROS = 12 << 8 | 30;
     internal const int CID_COUNT = 12 << 8 | 34;
+    internal const int FONT_MATRIX = 12 << 8 | 7;
 
     // The most bytes of charstrings the subroutines are looked for in, which a
     // font of nested calls that come back to the same subroutines could
@@ -263,56 +264,6 @@ class CFFSubset {
         return output.ToBytes();
     }
 
-    internal static int charsetLength(byte[] cff, int at, int numGlyphs) {
-        if (at < 0 || at >= cff.Length) {
-            throw new Subset.NotSubset();
-        }
-        int format = cff[at] & 0xFF;
-        if (format == 0) {
-            return 1 + 2 * (numGlyphs - 1);
-        }
-        if (format == 1 || format == 2) {
-            int size = format;  // The size of nLeft: 1 byte in format 1, 2 in format 2
-            int covered = 1;    // .notdef is not in it
-            int i = at + 1;
-            while (covered < numGlyphs) {
-                if (i > cff.Length - 2 - size) {
-                    throw new Subset.NotSubset();
-                }
-                int nLeft = cff[i + 2] & 0xFF;
-                if (size == 2) {
-                    nLeft = nLeft << 8 | (cff[i + 3] & 0xFF);
-                }
-                covered += nLeft + 1;
-                i += 2 + size;
-            }
-            return i - at;
-        }
-        throw new Subset.NotSubset();
-    }
-
-    internal static int encodingLength(byte[] cff, int at) {
-        if (at < 0 || at > cff.Length - 2) {
-            throw new Subset.NotSubset();
-        }
-        int length;
-        int format = cff[at] & 0x7F;
-        if (format == 0) {
-            length = 2 + (cff[at + 1] & 0xFF);
-        } else if (format == 1) {
-            length = 2 + 2 * (cff[at + 1] & 0xFF);
-        } else {
-            throw new Subset.NotSubset();
-        }
-        if ((cff[at] & 0x80) != 0) {    // Supplements
-            if (at >= cff.Length - length) {
-                throw new Subset.NotSubset();
-            }
-            length += 1 + 3 * (cff[at + length] & 0xFF);
-        }
-        return length;
-    }
-
     internal static int fdSelectLength(byte[] cff, int at, int numGlyphs) {
         if (at < 0 || at >= cff.Length) {
             throw new Subset.NotSubset();
@@ -486,15 +437,16 @@ class CFFSubset {
         }
     }
 
-    // Returns the objects of the INDEX, those not used emptied to the
-    // charstring of the byte given.
-    internal static List<byte[]> emptied(byte[] cff, Index index, bool[] used, int empty) {
+    // Returns the objects of the INDEX, those not used emptied to no bytes,
+    // which keeps their numbers and makes their offsets the same as the next
+    // one's, or every one for used null.
+    internal static List<byte[]> emptied(byte[] cff, Index index, bool[] used) {
         List<byte[]> objects = new List<byte[]>(index.count());
         for (int i = 0; i < index.count(); i++) {
             if (used == null || used[i]) {
                 objects.Add(Slice(cff, index.objects[i], index.objects[i + 1]));
             } else {
-                objects.Add(new byte[] {(byte) empty});
+                objects.Add(new byte[0]);
             }
         }
         return objects;
@@ -535,11 +487,22 @@ class CFFSubset {
     }
 
     /// <summary>
-    /// Returns the CFF table with the charstrings of the glyphs not used
-    /// emptied, and the subroutines they do not call, and gives in kept the
-    /// glyphs kept: those used and glyph 0, or every glyph for used null, which
-    /// writes the table again with nothing left out, for the identity charset
-    /// of a CID-keyed font. A table that cannot be read throws NotSubset.
+    /// Returns the CFF table of the glyphs used and glyph 0, or of every glyph
+    /// for used null, and gives in kept the glyphs kept, by their numbers in
+    /// the font. The subset is a CIDFont of the glyphs kept alone, in the order
+    /// of their numbers, its charset giving each its number in the font as its
+    /// CID: the PDF draws a glyph of a CIDFontType0C program by its CID, which
+    /// the charset maps to the glyph (ISO 32000-2, 9.7.4.2; Technical Note
+    /// #5176, section 18, "Subset CIDFonts will generally need to use a more
+    /// complex charset table representing a non-identity mapping"), so the
+    /// content streams, the widths and the ToUnicode map stay those of the
+    /// whole font. A name-keyed font is written as a CIDFont of the ordering
+    /// Adobe-Identity-0 with one Font DICT, its Private DICT. The subroutines
+    /// the glyphs kept do not call are emptied to no bytes, keeping their
+    /// numbers, and the Font DICTs no glyph kept uses are left out. Every INDEX
+    /// has the least offSize its offsets need; the offsets of the Top DICT and
+    /// of the Font DICTs are in the five-byte form. A table that cannot be
+    /// read, or a name-keyed font of a FontMatrix of its own, throws NotSubset.
     /// </summary>
     internal static byte[] subset(byte[] cff, bool[] used, out bool[] kept) {
         if (cff.Length < 4 || cff[0] != 1) {
@@ -564,89 +527,77 @@ class CFFSubset {
             throw new Subset.NotSubset();
         }
 
-        // The blocks copied as they are, but the charset of a CID-keyed font,
-        // which maps each glyph to its CID: it is made the identity, so that
-        // the glyph numbers PDFjet writes are the CIDs of the glyphs, as they
-        // are in a name-keyed font.
-        byte[] charset = null;
-        byte[] encoding = null;
+        bool cidKeyed = entryOf(top, ROS) != null;
         byte[] fdSelect = null;
-        if (entryOf(top, ROS) != null) {
+        if (cidKeyed) {
             int[] count = entryOf(top, CID_COUNT);
-            if ((count != null && (count.Length != 1 || count[0] < numGlyphs)) ||
-                    (count == null && numGlyphs > 8720)) {  // The default CIDCount
+            if (count != null && (count.Length != 1 || count[0] < numGlyphs)) {
                 throw new Subset.NotSubset();
             }
-            charset = new byte[] {0};   // Format 0, for .notdef alone
-            if (numGlyphs > 1) {
-                // Format 2, one range: CIDs 1 to numGlyphs-1.
-                charset = new byte[] {2, 0, 1, (byte) ((numGlyphs - 2) >> 8), (byte) (numGlyphs - 2)};
+            if (count == null && numGlyphs > 8720) {
+                throw new Subset.NotSubset();   // The default CIDCount
             }
-        } else {
-            int[] charsetOffset = entryOf(top, CHARSET);
-            if (charsetOffset != null && charsetOffset.Length == 1 && charsetOffset[0] > 2) {
-                charset = block(cff, charsetOffset[0], charsetLength(cff, charsetOffset[0], numGlyphs));
-            }
-        }
-        int[] encodingAt = entryOf(top, ENCODING);
-        if (encodingAt != null && encodingAt.Length == 1 && encodingAt[0] > 1) {
-            encoding = block(cff, encodingAt[0], encodingLength(cff, encodingAt[0]));
-        }
-        int[] fdSelectAt = entryOf(top, FD_SELECT);
-        if (fdSelectAt != null) {
-            if (fdSelectAt.Length != 1) {
+            int[] fdSelectAt = entryOf(top, FD_SELECT);
+            if (fdSelectAt == null || fdSelectAt.Length != 1) {
                 throw new Subset.NotSubset();
             }
             fdSelect = block(cff, fdSelectAt[0], fdSelectLength(cff, fdSelectAt[0], numGlyphs));
+        } else if (hasEntry(top, FONT_MATRIX)) {
+            // Its matrix would have to go into the Font DICT, against the one
+            // a CIDFont's Top DICT has by default.
+            throw new Subset.NotSubset();
         }
 
-        // The Private DICT of a name-keyed font, or the Font DICTs of a
-        // CID-keyed one, each with its Private DICT.
+        // The Font DICTs of a CID-keyed font, each with its Private DICT, or
+        // the Private DICT of a name-keyed one, which becomes its one Font
+        // DICT's.
         List<PrivateDict> privates = new List<PrivateDict>();
-        List<List<Entry>> fontDicts = null;
-        int[] fdArrayAt = entryOf(top, FD_ARRAY);
-        if (fdArrayAt != null) {
-            if (fdArrayAt.Length != 1 || fdSelect == null) {
+        List<List<Entry>> fontDicts = new List<List<Entry>>();
+        if (cidKeyed) {
+            int[] fdArrayAt = entryOf(top, FD_ARRAY);
+            if (fdArrayAt == null || fdArrayAt.Length != 1) {
                 throw new Subset.NotSubset();
             }
             Index fdIndex = readIndex(cff, fdArrayAt[0]);
-            fontDicts = new List<List<Entry>>();
             for (int i = 0; i < fdIndex.count(); i++) {
                 List<Entry> entries = readDict(cff, fdIndex.objects[i], fdIndex.objects[i + 1]);
                 int[] p = entryOf(entries, PRIVATE);
                 if (p == null || p.Length != 2) {
                     throw new Subset.NotSubset();
                 }
+                PrivateDict privateDict = readPrivate(cff, p[0], p[1]);
                 fontDicts.Add(entries);
-                privates.Add(readPrivate(cff, p[0], p[1]));
+                privates.Add(privateDict);
             }
         } else {
             int[] p = entryOf(top, PRIVATE);
-            if (p != null) {
-                if (p.Length != 2) {
-                    throw new Subset.NotSubset();
-                }
-                privates.Add(readPrivate(cff, p[0], p[1]));
+            if (p == null || p.Length != 2) {
+                throw new Subset.NotSubset();
             }
+            PrivateDict privateDict = readPrivate(cff, p[0], p[1]);
+            List<Entry> fontDict = new List<Entry>();
+            fontDict.Add(new Entry(PRIVATE, null, null));
+            fontDicts.Add(fontDict);
+            privates.Add(privateDict);
         }
 
-        // The charstrings, of the glyphs kept as they were, of the others
-        // endchar.
+        // The glyphs kept, by their numbers in the font, which are their CIDs.
         bool[] keep = new bool[numGlyphs];
-        List<byte[]> glyphs = new List<byte[]>(numGlyphs);
+        List<int> keptGIDs = new List<int>();
         for (int gid = 0; gid < numGlyphs; gid++) {
             if (used == null || gid == 0 || (gid < used.Length && used[gid])) {
                 keep[gid] = true;
-                glyphs.Add(Slice(cff, charStrings.objects[gid], charStrings.objects[gid + 1]));
-            } else {
-                glyphs.Add(new byte[] {14});
+                keptGIDs.Add(gid);
             }
         }
-        byte[] newCharStrings = index(glyphs);
+        List<byte[]> glyphs = new List<byte[]>(keptGIDs.Count);
+        foreach (int gid in keptGIDs) {
+            glyphs.Add(Slice(cff, charStrings.objects[gid], charStrings.objects[gid + 1]));
+        }
 
-        // The subroutines the glyphs kept call, the others emptied to return.
-        // A font whose charstrings cannot be followed keeps them all.
-        int[] fdOfGlyph = fdOf(fdSelect, numGlyphs, privates.Count);
+        // The subroutines the glyphs kept call, the others emptied. A font
+        // whose charstrings cannot be followed keeps them all.
+        int[] fdOfGID = fdOf(fdSelect, numGlyphs, privates.Count);
         bool[] usedG = new bool[globalSubrs.count()];
         bool[][] usedL = new bool[privates.Count][];
         for (int i = 0; i < privates.Count; i++) {
@@ -658,11 +609,9 @@ class CFFSubset {
         if (used == null) {
             usage.failed = true;    // Every glyph and subroutine kept
         }
-        for (int gid = 0; gid < numGlyphs && !usage.failed; gid++) {
-            if (!keep[gid]) {
-                continue;
-            }
-            int fd = (fdOfGlyph != null) ? fdOfGlyph[gid] : 0;
+        for (int i = 0; i < keptGIDs.Count && !usage.failed; i++) {
+            int gid = keptGIDs[i];
+            int fd = (fdOfGID != null) ? fdOfGID[gid] : 0;
             usage.local = null;
             usage.usedL = null;
             if (fd < privates.Count && privates[fd].subrs != null) {
@@ -683,14 +632,103 @@ class CFFSubset {
                 usedL[i] = null;
             }
         }
-        byte[] newGlobalSubrs = index(emptied(cff, globalSubrs, usedG, 11));
 
-        // Each Private DICT is written again with its local subroutines right
-        // after it, at its size, whatever they were before.
-        byte[][] blocks = new byte[privates.Count][];
-        int[] dictSizes = new int[privates.Count];
-        for (int i = 0; i < privates.Count; i++) {
-            PrivateDict p = privates[i];
+        // The Font DICTs the glyphs kept use, in their order in the font, and
+        // the new number of each.
+        bool[] usedFD = new bool[privates.Count];
+        foreach (int gid in keptGIDs) {
+            usedFD[(fdOfGID != null) ? fdOfGID[gid] : 0] = true;
+        }
+        int[] newFD = new int[privates.Count];
+        List<int> fds = new List<int>();
+        for (int fd = 0; fd < usedFD.Length; fd++) {
+            if (usedFD[fd]) {
+                newFD[fd] = fds.Count;
+                fds.Add(fd);
+            }
+        }
+        int[] fdOfGlyph = new int[keptGIDs.Count];
+        for (int i = 0; i < keptGIDs.Count; i++) {
+            if (fdOfGID != null) {
+                fdOfGlyph[i] = newFD[fdOfGID[keptGIDs[i]]];
+            }
+        }
+
+        // The blocks: the Name INDEX again; the String INDEX of the strings
+        // the Top DICT and the Font DICTs kept name, in the order they name
+        // them, a name-keyed font's with those of its ROS, Adobe and Identity,
+        // after them, and not the names of its glyphs, which a CIDFont has
+        // not; the charset of the CIDs; the FDSelect; the CharStrings of the
+        // glyphs kept.
+        byte[] nameIndex = index(emptied(cff, names, null));
+        Strings sids = new Strings(emptied(cff, strings, null));
+        List<Entry> topEntries = new List<Entry>();
+        foreach (Entry entry in top) {
+            if (entry.op == CHARSET || entry.op == ENCODING || entry.op == CHAR_STRINGS ||
+                    entry.op == PRIVATE || entry.op == FD_ARRAY || entry.op == FD_SELECT) {
+                continue;
+            }
+            topEntries.Add(sids.renumber(entry));
+        }
+        List<List<Entry>> keptFontDicts = new List<List<Entry>>();
+        foreach (int fd in fds) {
+            List<Entry> entries = new List<Entry>();
+            foreach (Entry entry in fontDicts[fd]) {
+                entries.Add(sids.renumber(entry));
+            }
+            keptFontDicts.Add(entries);
+        }
+        if (!cidKeyed) {
+            int sid = 391 + sids.kept.Count;
+            sids.kept.Add(Latin1("Adobe"));
+            sids.kept.Add(Latin1("Identity"));
+            ByteBuffer ros = new ByteBuffer();
+            appendInteger(ros, sid);
+            appendInteger(ros, sid + 1);
+            appendInteger(ros, 0);
+            ros.Add(12);
+            ros.Add(30);
+            topEntries.Insert(0, new Entry(ROS, ros.ToBytes(), null));
+            ByteBuffer count = new ByteBuffer();
+            appendInteger(count, numGlyphs);
+            count.Add(12);
+            count.Add(34);
+            topEntries.Add(new Entry(CID_COUNT, count.ToBytes(), null));
+        }
+        byte[] stringIndex = index(sids.kept);
+        topEntries.Add(new Entry(CHARSET, null, null));
+        topEntries.Add(new Entry(FD_SELECT, null, null));
+        topEntries.Add(new Entry(CHAR_STRINGS, null, null));
+        topEntries.Add(new Entry(FD_ARRAY, null, null));
+        byte[] charset = charsetOf(keptGIDs.GetRange(1, keptGIDs.Count - 1));
+        byte[] newFDSelect = fdSelectOf(fdOfGlyph);
+        byte[] newCharStrings = index(glyphs);
+        // An INDEX of subroutines none of which is called is left out, global
+        // ones as an empty INDEX, local ones with their Subrs operator: one of
+        // objects of no bytes alone is not read by FreeType
+        List<byte[]> globals = emptied(cff, globalSubrs, usedG);
+        if (usedG != null && !anyUsed(usedG)) {
+            globals = new List<byte[]>();
+        }
+        byte[] newGlobalSubrs = index(globals);
+
+        // Each Private DICT of a Font DICT kept is written again with its
+        // local subroutines right after it, at its size, whatever they were
+        // before.
+        byte[][] blocks = new byte[fds.Count][];
+        int[] dictSizes = new int[fds.Count];
+        for (int i = 0; i < fds.Count; i++) {
+            int fd = fds[i];
+            PrivateDict p = privates[fd];
+            if (p.subrs != null && usedL[fd] != null && !anyUsed(usedL[fd])) {
+                List<Entry> entries = new List<Entry>();
+                foreach (Entry entry in p.entries) {
+                    if (entry.op != SUBRS) {
+                        entries.Add(entry);
+                    }
+                }
+                p = new PrivateDict(entries, null);
+            }
             Dictionary<int, int> subrs = new Dictionary<int, int>();
             if (p.subrs != null) {
                 subrs[SUBRS] = 0;
@@ -702,7 +740,7 @@ class CFFSubset {
             ByteBuffer b = new ByteBuffer();
             b.Add(writeDict(p.entries, subrs, 0));
             if (p.subrs != null) {
-                appendIndex(b, emptied(cff, p.subrs, usedL[i], 11));
+                appendIndex(b, emptied(cff, p.subrs, usedL[fd]));
             }
             blocks[i] = b.ToBytes();
         }
@@ -710,64 +748,46 @@ class CFFSubset {
         // The layout. The Top DICT and the Font DICTs have the same size
         // whatever their offsets, so they are written once with none to know
         // where the blocks after them go, and once more with their offsets.
-        bool namePrivate = (fontDicts == null && privates.Count == 1);
-        Dictionary<int, int> offsets = topOffsets(charset, encoding, fdSelect, namePrivate, 0, 0, 0, 0, 0, 0);
-        int topSize = writeDict(top, offsets, 0).Length;
+        int topSize = writeDict(topEntries, topOffsets(0, 0, 0, 0), 0).Length;
         List<byte[]> sizedTop = new List<byte[]>();
         sizedTop.Add(new byte[topSize]);
-        int at = headerSize + (names.end - names.start) + index(sizedTop).Length +
-                (strings.end - strings.start) + newGlobalSubrs.Length;
+        int at = headerSize + nameIndex.Length + index(sizedTop).Length +
+                stringIndex.Length + newGlobalSubrs.Length;
         int charsetAt = at;
-        at += (charset != null) ? charset.Length : 0;
-        int newEncodingAt = at;
-        at += (encoding != null) ? encoding.Length : 0;
+        at += charset.Length;
         int newFDSelectAt = at;
-        at += (fdSelect != null) ? fdSelect.Length : 0;
+        at += newFDSelect.Length;
         int newCharStringsAt = at;
         at += newCharStrings.Length;
         int newFDArrayAt = at;
-        if (fontDicts != null) {
-            List<byte[]> sized = new List<byte[]>();
-            for (int i = 0; i < fontDicts.Count; i++) {
-                sized.Add(writeDict(fontDicts[i], privateOffset(0), dictSizes[i]));
-            }
-            at += index(sized).Length;
+        List<byte[]> sized = new List<byte[]>();
+        for (int i = 0; i < fds.Count; i++) {
+            sized.Add(writeDict(keptFontDicts[i], privateOffset(0), dictSizes[i]));
         }
-        int[] privateAts = new int[blocks.Length];
+        at += index(sized).Length;
+        int[] privateAts = new int[fds.Count];
         for (int i = 0; i < blocks.Length; i++) {
             privateAts[i] = at;
             at += blocks[i].Length;
         }
-        byte[] fdArray = new byte[0];
-        if (fontDicts != null) {
-            List<byte[]> dicts = new List<byte[]>();
-            for (int i = 0; i < fontDicts.Count; i++) {
-                dicts.Add(writeDict(fontDicts[i], privateOffset(privateAts[i]), dictSizes[i]));
-            }
-            fdArray = index(dicts);
+        List<byte[]> dicts = new List<byte[]>();
+        for (int i = 0; i < fds.Count; i++) {
+            dicts.Add(writeDict(keptFontDicts[i], privateOffset(privateAts[i]), dictSizes[i]));
         }
-        int privateAt = namePrivate ? privateAts[0] : 0;
-        byte[] newTop = writeDict(top, topOffsets(charset, encoding, fdSelect, namePrivate,
-                charsetAt, newEncodingAt, newFDSelectAt, newCharStringsAt, newFDArrayAt, privateAt),
-                namePrivate ? dictSizes[0] : 0);
+        byte[] fdArray = index(dicts);
+        byte[] newTop = writeDict(topEntries,
+                topOffsets(charsetAt, newFDSelectAt, newCharStringsAt, newFDArrayAt), 0);
 
         ByteBuffer output = new ByteBuffer();
         output.Add(Slice(cff, 0, headerSize));
-        output.Add(Slice(cff, names.start, names.end));
+        output.Add(nameIndex);
         List<byte[]> tops = new List<byte[]>();
         tops.Add(newTop);
         appendIndex(output, tops);
-        output.Add(Slice(cff, strings.start, strings.end));
+        output.Add(stringIndex);
         output.Add(newGlobalSubrs);
-        if (charset != null) {
-            output.Add(charset);
-        }
-        if (encoding != null) {
-            output.Add(encoding);
-        }
-        if (fdSelect != null) {
-            output.Add(fdSelect);
-        }
+        output.Add(charset);
+        output.Add(newFDSelect);
         output.Add(newCharStrings);
         output.Add(fdArray);
         foreach (byte[] b in blocks) {
@@ -787,24 +807,199 @@ class CFFSubset {
         return offsets;
     }
 
-    private static Dictionary<int, int> topOffsets(byte[] charset, byte[] encoding, byte[] fdSelect,
-            bool namePrivate, int charsetAt, int encodingAt, int fdSelectAt, int charStringsAt,
-            int fdArrayAt, int privateAt) {
+    private static Dictionary<int, int> topOffsets(int charsetAt, int fdSelectAt, int charStringsAt,
+            int fdArrayAt) {
         Dictionary<int, int> offsets = new Dictionary<int, int>();
+        offsets[CHARSET] = charsetAt;
+        offsets[FD_SELECT] = fdSelectAt;
         offsets[CHAR_STRINGS] = charStringsAt;
-        if (charset != null) {
-            offsets[CHARSET] = charsetAt;
-        }
-        if (encoding != null) {
-            offsets[ENCODING] = encodingAt;
-        }
-        if (fdSelect != null) {
-            offsets[FD_SELECT] = fdSelectAt;
-            offsets[FD_ARRAY] = fdArrayAt;
-        } else if (namePrivate) {
-            offsets[PRIVATE] = privateAt;
-        }
+        offsets[FD_ARRAY] = fdArrayAt;
         return offsets;
+    }
+
+    // The operators of the Top DICT and of the Font DICTs whose first operands
+    // are SIDs, and how many: version, Notice, FullName, FamilyName, Weight,
+    // Copyright, PostScript, BaseFontName, ROS and FontName.
+    private static readonly Dictionary<int, int> SID_OPERANDS = new Dictionary<int, int> {
+        {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 1}, {12 << 8, 1}, {12 << 8 | 21, 1}, {12 << 8 | 22, 1},
+        {ROS, 2}, {12 << 8 | 38, 1}
+    };
+
+    /// <summary>
+    /// Gives the strings of the font that the entries name new SIDs, in the
+    /// order they are first named, after the standard strings.
+    /// </summary>
+    internal sealed class Strings {
+        private readonly List<byte[]> old;      // The String INDEX of the font
+        // The strings named, in the order of their new SIDs
+        internal readonly List<byte[]> kept = new List<byte[]>();
+        // The new SID of each SID of the font named
+        private readonly Dictionary<int, int> sids = new Dictionary<int, int>();
+
+        internal Strings(List<byte[]> old) {
+            this.old = old;
+        }
+
+        // Returns the entry with its SIDs of the font's strings renumbered,
+        // its operands written again in their shortest form, or as it was
+        // when it names none.
+        internal Entry renumber(Entry entry) {
+            int n;
+            if (!SID_OPERANDS.TryGetValue(entry.op, out n)) {
+                return entry;
+            }
+            if (entry.integers == null || entry.integers.Length < n) {
+                throw new Subset.NotSubset();
+            }
+            ByteBuffer raw = new ByteBuffer();
+            int[] integers = new int[entry.integers.Length];
+            for (int i = 0; i < entry.integers.Length; i++) {
+                int v = entry.integers[i];
+                if (i < n && v >= 391) {
+                    if (v - 391 >= old.Count) {
+                        throw new Subset.NotSubset();
+                    }
+                    int sid;
+                    if (!sids.TryGetValue(v, out sid)) {
+                        sid = 391 + kept.Count;
+                        sids[v] = sid;
+                        kept.Add(old[v - 391]);
+                    }
+                    v = sid;
+                }
+                integers[i] = v;
+                appendInteger(raw, v);
+            }
+            if (entry.op > 0xFF) {
+                raw.Add(12);
+                raw.Add(entry.op & 0xFF);
+            } else {
+                raw.Add(entry.op);
+            }
+            return new Entry(entry.op, raw.ToBytes(), integers);
+        }
+    }
+
+    // Whether any of the subroutines is used.
+    internal static bool anyUsed(bool[] used) {
+        foreach (bool u in used) {
+            if (u) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Whether the DICT has an entry of the operator, of any operands.
+    internal static bool hasEntry(List<Entry> entries, int op) {
+        foreach (Entry entry in entries) {
+            if (entry.op == op) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Appends the integer of a DICT in its shortest form.
+    internal static void appendInteger(ByteBuffer output, int v) {
+        if (v >= -107 && v <= 107) {
+            output.Add(v + 139);
+        } else if (v >= 108 && v <= 1131) {
+            v -= 108;
+            output.Add((v >> 8) + 247);
+            output.Add(v);
+        } else if (v >= -1131 && v <= -108) {
+            v = -v - 108;
+            output.Add((v >> 8) + 251);
+            output.Add(v);
+        } else if (v >= -32768 && v <= 32767) {
+            output.Add(28);
+            output.Add(v >> 8);
+            output.Add(v);
+        } else {
+            appendOffset(output, v);
+        }
+    }
+
+    // Returns the runs of consecutive CIDs, each its first and the number
+    // after it, nLeft, of at most max.
+    internal static List<int[]> ranges(List<int> cids, int max) {
+        List<int[]> runs = new List<int[]>();
+        int i = 0;
+        while (i < cids.Count) {
+            int j = i;
+            while (j + 1 < cids.Count && cids[j + 1] == cids[j] + 1 && j + 1 - i <= max) {
+                j++;
+            }
+            runs.Add(new int[] {cids[i], j - i});
+            i = j + 1;
+        }
+        return runs;
+    }
+
+    // Returns the charset of the CIDs of the glyphs after .notdef, in the
+    // format of the three that is the shortest, the first of those as short.
+    internal static byte[] charsetOf(List<int> cids) {
+        List<int[]> ranges1 = ranges(cids, 0xFF);
+        List<int[]> ranges2 = ranges(cids, 0xFFFF);
+        int size0 = 1 + 2 * cids.Count;
+        int size1 = 1 + 3 * ranges1.Count;
+        int size2 = 1 + 4 * ranges2.Count;
+        ByteBuffer output = new ByteBuffer();
+        if (size0 <= size1 && size0 <= size2) {
+            output.Add(0);
+            foreach (int cid in cids) {
+                output.Add2(cid);
+            }
+        } else if (size1 <= size2) {
+            output.Add(1);
+            foreach (int[] r in ranges1) {
+                output.Add2(r[0]);
+                output.Add(r[1]);
+            }
+        } else {
+            output.Add(2);
+            foreach (int[] r in ranges2) {
+                output.Add2(r[0]);
+                output.Add2(r[1]);
+            }
+        }
+        return output.ToBytes();
+    }
+
+    // Returns the FDSelect of the Font DICT of each glyph, in format 3,
+    // ranges, when that is shorter than format 0, a byte for each.
+    internal static byte[] fdSelectOf(int[] fdOf) {
+        List<int> firsts = new List<int>();
+        for (int gid = 0; gid < fdOf.Length; gid++) {
+            if (gid == 0 || fdOf[gid] != fdOf[gid - 1]) {
+                firsts.Add(gid);
+            }
+        }
+        ByteBuffer output = new ByteBuffer();
+        if (5 + 3 * firsts.Count >= 1 + fdOf.Length) {
+            output.Add(0);
+            foreach (int fd in fdOf) {
+                output.Add(fd);
+            }
+            return output.ToBytes();
+        }
+        output.Add(3);
+        output.Add2(firsts.Count);
+        foreach (int first in firsts) {
+            output.Add2(first);
+            output.Add(fdOf[first]);
+        }
+        output.Add2(fdOf.Length);
+        return output.ToBytes();
+    }
+
+    private static byte[] Latin1(string s) {
+        byte[] bytes = new byte[s.Length];
+        for (int i = 0; i < s.Length; i++) {
+            bytes[i] = (byte) s[i];
+        }
+        return bytes;
     }
 
     private static byte[] Slice(byte[] buf, int from, int to) {
