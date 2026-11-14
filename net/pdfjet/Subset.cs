@@ -34,6 +34,27 @@ class Subset {
         // of boxed numbers made each character drawn allocate (12 October 2026).
         private readonly int[][] chars = new int[256][];
         internal bool whole;        // Set by SetSubset(false): the font is embedded whole
+        // The text of the glyphs no character maps to, as another engine
+        // shaped them (DrawGlyphs): a conjunct of Hindi stands for "क्ष", for
+        // the ToUnicode map, which PDF/UA asks of every glyph drawn. The first
+        // text drawn with a glyph is kept; null until one is.
+        internal System.Collections.Generic.Dictionary<int, String> texts;
+
+        // Returns the text recorded for the glyph, or null.
+        internal String TextOf(int gid) {
+            String text;
+            return (texts != null && texts.TryGetValue(gid, out text)) ? text : null;
+        }
+
+        // Records the text as the glyph's, unless one was.
+        internal void UseText(int gid, String text) {
+            if (texts == null) {
+                texts = new System.Collections.Generic.Dictionary<int, String>();
+            }
+            if (!texts.ContainsKey(gid)) {
+                texts[gid] = text;
+            }
+        }
 
         // Returns the character first drawn with the glyph, or -1.
         internal int FirstChar(int gid) {

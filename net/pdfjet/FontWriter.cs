@@ -229,6 +229,36 @@ class FontWriter {
                 WriteListToBuffer(sb, list);
             }
         }
+        // The glyphs no character maps to, which another engine shaped and
+        // DrawGlyphs drew, each with the text it stands for
+        if (font.program != null && font.program.texts != null) {
+            int[] unicodeOf = font.unicodeOf;
+            int glyphs = (kept != null) ? kept.Length : unicodeOf.Length;
+            for (int gid = 1; gid < glyphs; gid++) {
+                if (kept != null && !kept[gid]) {
+                    continue;
+                }
+                if (gid < unicodeOf.Length && unicodeOf[gid] >= 0) {
+                    continue;
+                }
+                String text = font.program.TextOf(gid);
+                if (text == null) {
+                    continue;
+                }
+                buf.Append('<');
+                buf.Append(ToHexString(gid));
+                buf.Append("> <");
+                foreach (char ch in text) {
+                    buf.Append(ToHexString(ch));
+                }
+                buf.Append(">\n");
+                list.Add(buf.ToString());
+                buf.Length = 0;
+                if (list.Count == 100) {
+                    WriteListToBuffer(sb, list);
+                }
+            }
+        }
         if (list.Count > 0) {
             WriteListToBuffer(sb, list);
         }

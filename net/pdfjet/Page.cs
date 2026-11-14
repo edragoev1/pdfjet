@@ -3127,6 +3127,142 @@ public class Page {
     // paragraph when it is given an alternate description or an actual text,
     // which a screen reader reads, and otherwise an artifact, the decoration
     // it is.
+    /// <summary>
+    /// Draws glyphs that another text engine shaped -- HarfBuzz
+    /// (HarfBuzzSharp), Java's java.awt.font, Android's TextShaper, Apple's
+    /// Core Text -- by their numbers in the font, at their places, as real
+    /// text: the text they stand for is their actual text, so that copying,
+    /// searching and screen readers get it. This is how text PDFjet does not
+    /// shape itself, such as Hindi or Khmer, is drawn as text: the engine finds
+    /// the glyphs and their places, and PDFjet draws them.
+    /// </summary>
+    /// <remarks>
+    /// The glyph numbers must be those of the font file the engine shaped
+    /// with, loaded as this font, and the font must be embedded: not a core
+    /// font or a CJK font. The glyphs are drawn in the font's size and the
+    /// page's brush color. In a tagged document the glyphs are part of the
+    /// content they are drawn in, such as a paragraph begun with AddBDC, or,
+    /// drawn outside any, a paragraph of their own in the language given.
+    /// The clusters say which characters of the text each glyph comes from, as
+    /// the engine reports them: for each glyph, the index in the text, in
+    /// UTF-16 code units, of the first character of its cluster. A glyph no
+    /// character of the font maps to, such as a conjunct, is mapped to its
+    /// cluster's characters, for the ToUnicode map PDF/UA asks of every glyph
+    /// drawn. Without clusters (null), such a glyph maps to the replacement
+    /// character, U+FFFD, and copying relies on the actual text alone.
+    /// </remarks>
+    /// <param name="font">the font, loaded from the font file the engine shaped with.</param>
+    /// <param name="glyphs">the glyph numbers, in the order they are drawn.</param>
+    /// <param name="positions">the x and the baseline y of each glyph, in points from the top left corner of the page: x0, y0, x1, y1 and so on.</param>
+    /// <param name="clusters">for each glyph, the index in the text of the first character it comes from, or null.</param>
+    /// <param name="text">the text the glyphs stand for, as it is read.</param>
+    /// <param name="language">the language of the text, such as "hi" or "km", or null.</param>
+    public void DrawGlyphs(Font font, int[] glyphs, float[] positions, int[] clusters,
+            String text, String language) {
+        if (font == null || glyphs == null || positions == null) {
+            pdf.Fail(new ArgumentException("DrawGlyphs needs a font, glyphs and their positions."));
+            return;
+        }
+        if (font.isCoreFont || font.isCJK || font.program == null) {
+            pdf.Fail(new ArgumentException(
+                    "DrawGlyphs needs an embedded font, loaded from the font file the glyphs were shaped with."));
+            return;
+        }
+        if (positions.Length != 2 * glyphs.Length) {
+            pdf.Fail(new ArgumentException("DrawGlyphs needs an x and a y for each glyph."));
+            return;
+        }
+        foreach (int gid in glyphs) {
+            if (gid < 0 || (font.advanceWidth != null && gid >= font.advanceWidth.Length)) {
+                pdf.Fail(new ArgumentException("The font has no glyph number " + gid + "."));
+                return;
+            }
+        }
+        if (text == null) {
+            text = "";
+        }
+        if (clusters != null) {
+            if (clusters.Length != glyphs.Length) {
+                pdf.Fail(new ArgumentException("DrawGlyphs needs a cluster for each glyph, or none."));
+                return;
+            }
+            foreach (int c in clusters) {
+                if (c < 0 || c >= text.Length) {
+                    pdf.Fail(new ArgumentException("A cluster of DrawGlyphs is outside the text."));
+                    return;
+                }
+            }
+        }
+        if (glyphs.Length == 0) {
+            return;
+        }
+        // A paragraph of their own, in a tagged document, drawn outside any
+        bool own = pdf.IsTagged() && !InsideTaggedContent();
+        if (own) {
+            AddBDC(StructElem.P, language, null, null);
+        }
+        // The text the glyphs stand for, for copying, searching and screen
+        // readers; a span of actual text is read in untagged documents too
+        Append("/Span <<");
+        if (!String.IsNullOrEmpty(language)) {
+            Append("/Lang <");
+            Append(Util.ToHexString(System.Text.Encoding.UTF8.GetBytes(language)));
+            Append("> ");
+        }
+        Append("/ActualText <");
+        Append(ToUTF16Hex(text));
+        Append(">>> BDC\n");
+        Append("BT\n");
+        SetTextFont(font, font.size);
+        if (renderingMode != 0 || renderingModeSet) {
+            renderingModeSet = renderingModeSet || renderingMode != 0;
+            Append(renderingMode);
+            Append(" Tr\n");
+        }
+        // The clusters in order, so that a cluster's characters run to the
+        // next cluster
+        int[] starts = null;
+        if (clusters != null) {
+            starts = (int[]) clusters.Clone();
+            Array.Sort(starts);
+        }
+        // Each glyph at its own place: the engine placed it, kerning, marks and
+        // reordering included
+        for (int i = 0; i < glyphs.Length; i++) {
+            Append("1 0 0 1 ");
+            Append(positions[2 * i]);
+            Append(' ');
+            Append(height - positions[2 * i + 1]);
+            Append(" Tm\n<");
+            AppendGlyphUnkerned(font, glyphs[i]);
+            Append("> Tj\n");
+            font.UseGlyphText(glyphs[i], ClusterText(text, clusters, starts, i));
+        }
+        Append("ET\n");
+        Append("EMC\n");
+        if (own) {
+            AddEMC();
+        }
+    }
+
+    // The characters of the glyph's cluster: from its start to the next
+    // cluster's, or to the end of the text; the replacement character without
+    // clusters.
+    private static String ClusterText(String text, int[] clusters, int[] starts, int i) {
+        if (clusters == null) {
+            return "\uFFFD";
+        }
+        int start = clusters[i];
+        int end = text.Length;
+        foreach (int s in starts) {
+            if (s > start) {
+                end = s;
+                break;
+            }
+        }
+        return text.Substring(start, end - start);
+    }
+
     // Whether what is drawn now is inside real content of a tagged document:
     // marked content an AddBDC began and AddEMC has not ended, with no
     // artifact around it, like a paragraph whose letters are drawn as stamps.

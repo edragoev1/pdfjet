@@ -34,6 +34,26 @@ class Subset {
         // made each character drawn allocate (12 October 2026).
         private final int[][] chars = new int[256][];
         boolean whole;      // Set by setSubset(false): the font is embedded whole
+        // The text of the glyphs no character maps to, as another engine
+        // shaped them (drawGlyphs): a conjunct of Hindi stands for "क्ष", for
+        // the ToUnicode map, which PDF/UA asks of every glyph drawn. The first
+        // text drawn with a glyph is kept; null until one is.
+        private java.util.Map<Integer, String> texts;
+
+        // Returns the text recorded for the glyph, or null.
+        String textOf(int gid) {
+            return texts == null ? null : texts.get(gid);
+        }
+
+        // Records the text as the glyph's, unless one was.
+        void textOf(int gid, String text) {
+            if (texts == null) {
+                texts = new java.util.HashMap<Integer, String>();
+            }
+            if (!texts.containsKey(gid)) {
+                texts.put(gid, text);
+            }
+        }
 
         // Returns the character first drawn with the glyph, or -1.
         int firstChar(int gid) {

@@ -230,6 +230,35 @@ class FontWriter {
                 writeListToBuffer(sb, list);
             }
         }
+        // The glyphs no character maps to, which another engine shaped and
+        // drawGlyphs drew, each with the text it stands for
+        if (font.program != null) {
+            int glyphs = (kept != null) ? kept.length : unicodeOf.length;
+            for (int gid = 1; gid < glyphs; gid++) {
+                if (kept != null && !kept[gid]) {
+                    continue;
+                }
+                if (gid < unicodeOf.length && unicodeOf[gid] >= 0) {
+                    continue;
+                }
+                String text = font.program.textOf(gid);
+                if (text == null) {
+                    continue;
+                }
+                buf.append('<');
+                buf.append(toHexString(gid));
+                buf.append("> <");
+                for (int j = 0; j < text.length(); j++) {
+                    buf.append(toHexString(text.charAt(j)));
+                }
+                buf.append(">\n");
+                list.add(buf.toString());
+                buf.setLength(0);
+                if (list.size() == 100) {
+                    writeListToBuffer(sb, list);
+                }
+            }
+        }
         if (list.size() > 0) {
             writeListToBuffer(sb, list);
         }

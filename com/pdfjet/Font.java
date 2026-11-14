@@ -739,6 +739,19 @@ final public class Font {
         }
     }
 
+    // Records the text a glyph that no character maps to stands for, drawn by
+    // drawGlyphs, for the ToUnicode map: a glyph with a character of its own
+    // keeps it.
+    void useGlyphText(int gid, String text) {
+        if (program == null || gid <= 0 || text == null || text.isEmpty()) {
+            return;
+        }
+        if (unicodeOf != null && gid < unicodeOf.length && unicodeOf[gid] >= 0) {
+            return;
+        }
+        program.textOf(gid, text);
+    }
+
     // Records that the glyph is drawn for the character, so that the ToUnicode
     // map gives the glyph the character the document drew, where the font
     // draws several characters with one glyph: it gave the glyph the lowest of

@@ -27,6 +27,20 @@ TextFrame:
   of the lines `drawOn(null)` only measures. With no listener, nothing
   changes.
 
+- `Page.drawGlyphs(Font, int[] glyphs, float[] positions, int[] clusters,
+  String text, String language)` (Go `DrawGlyphs` with clusters counted in
+  runes, C# `DrawGlyphs`, Swift `drawGlyphs`): draws glyphs that another text
+  engine shaped -- Java's java.awt.font, Android's TextShaper, Apple's Core
+  Text, HarfBuzz -- by their numbers in the font, at their places, as real
+  text. The glyphs are wrapped in a span whose actual text is the text they
+  stand for, and the glyphs no character of the font maps to (conjuncts,
+  reordered vowel signs) are mapped in the ToUnicode map to their cluster's
+  characters, so that copying, searching and screen readers get the text,
+  and PDF/UA passes. This is how Hindi, Khmer and the other scripts PDFjet
+  does not shape itself are drawn as real text, with no shaping engine in
+  PDFjet: a page of Hindi and Khmer shaped by java.awt.font copies out
+  exactly as it went in, and passes veraPDF.
+
 No behavior change: neither does anything until it is called.
 
 Faster, in the four ports: `TextBlock` wraps a paragraph about 13% to 24%

@@ -639,6 +639,19 @@ public class Font {
     // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
     // 2026, #8). The first character drawn with the glyph is kept; the others
     // drawn with it are given their own as actual text, see DrawnAsAnother.
+    // Records the text a glyph that no character maps to stands for, drawn by
+    // DrawGlyphs, for the ToUnicode map: a glyph with a character of its own
+    // keeps it.
+    internal void UseGlyphText(int gid, String text) {
+        if (program == null || gid <= 0 || String.IsNullOrEmpty(text)) {
+            return;
+        }
+        if (unicodeOf != null && gid < unicodeOf.Length && unicodeOf[gid] >= 0) {
+            return;
+        }
+        program.UseText(gid, text);
+    }
+
     internal void UseChar(int c, int gid) {
         if (program == null || gid <= 0 || unicodeToGID.Get(c) != gid) {
             return;

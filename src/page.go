@@ -2714,6 +2714,132 @@ func (page *Page) addArtifactBDC(properties string) {
 // addShapeBDC begins the marked content of a shape, like a line or an arc: a
 // paragraph when it is given an alternate description or an actual text, which
 // a screen reader reads, and otherwise an artifact, the decoration it is.
+// DrawGlyphs draws glyphs that another text engine shaped -- HarfBuzz
+// (go-text/typesetting), Java's java.awt.font, Android's TextShaper, Apple's
+// Core Text -- by their numbers in the font, at their places, as real text:
+// the text they stand for is their actual text, so that copying, searching
+// and screen readers get it. This is how text PDFjet does not shape itself,
+// such as Hindi or Khmer, is drawn as text: the engine finds the glyphs and
+// their places, and PDFjet draws them.
+//
+// The glyph numbers must be those of the font file the engine shaped with,
+// loaded as this font, and the font must be embedded: not a core font or a
+// CJK font. The glyphs are drawn in the font's size and the page's brush
+// color. positions holds the x and the baseline y of each glyph, in points
+// from the top left corner of the page: x0, y0, x1, y1 and so on. In a tagged
+// document the glyphs are part of the content they are drawn in, such as a
+// paragraph begun with AddBDC, or, drawn outside any, a paragraph of their own
+// in the language given ("" for none).
+//
+// clusters says which characters of the text each glyph comes from, as the
+// engine reports them: for each glyph, the index in the text, counted in
+// runes, of the first character of its cluster. A glyph no character of the
+// font maps to, such as a conjunct, is mapped to its cluster's characters, for
+// the ToUnicode map PDF/UA asks of every glyph drawn. Without clusters (nil),
+// such a glyph maps to the replacement character, U+FFFD, and copying relies
+// on the actual text alone.
+func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, clusters []int, text, language string) {
+	if font == nil {
+		page.pdf.fail("DrawGlyphs needs a font, glyphs and their positions.")
+		return
+	}
+	if font.isCoreFont || font.isCJK || font.program == nil {
+		page.pdf.fail("DrawGlyphs needs an embedded font, loaded from the font file the glyphs were shaped with.")
+		return
+	}
+	if len(positions) != 2*len(glyphs) {
+		page.pdf.fail("DrawGlyphs needs an x and a y for each glyph.")
+		return
+	}
+	for _, gid := range glyphs {
+		if gid < 0 || (font.advanceWidth != nil && gid >= len(font.advanceWidth)) {
+			page.pdf.fail(fmt.Sprintf("The font has no glyph number %d.", gid))
+			return
+		}
+	}
+	runes := []rune(text)
+	if clusters != nil {
+		if len(clusters) != len(glyphs) {
+			page.pdf.fail("DrawGlyphs needs a cluster for each glyph, or none.")
+			return
+		}
+		for _, c := range clusters {
+			if c < 0 || c >= len(runes) {
+				page.pdf.fail("A cluster of DrawGlyphs is outside the text.")
+				return
+			}
+		}
+	}
+	if len(glyphs) == 0 {
+		return
+	}
+	// A paragraph of their own, in a tagged document, drawn outside any
+	own := page.pdf.isTagged() && !page.insideTaggedContent()
+	if own {
+		page.AddBDC(structelem.P, language, "", "")
+	}
+	// The text the glyphs stand for, for copying, searching and screen
+	// readers; a span of actual text is read in untagged documents too
+	page.appendString("/Span <<")
+	if language != "" {
+		page.appendString("/Lang <")
+		page.appendString(hex.EncodeToString([]byte(language)))
+		page.appendString("> ")
+	}
+	page.appendString("/ActualText <")
+	page.appendString(toUTF16Hex(text))
+	page.appendString(">>> BDC\n")
+	page.appendString("BT\n")
+	page.setTextFont(font, font.size)
+	if page.renderingMode != 0 || page.renderingModeSet {
+		page.renderingModeSet = page.renderingModeSet || page.renderingMode != 0
+		page.appendInteger(page.renderingMode)
+		page.appendString(" Tr\n")
+	}
+	// The clusters in order, so that a cluster's characters run to the next
+	// cluster
+	var starts []int
+	if clusters != nil {
+		starts = slices.Clone(clusters)
+		slices.Sort(starts)
+	}
+	// Each glyph at its own place: the engine placed it, kerning, marks and
+	// reordering included
+	for i, gid := range glyphs {
+		page.appendString("1 0 0 1 ")
+		page.appendFloat32(positions[2*i])
+		page.appendString(" ")
+		page.appendFloat32(page.height - positions[2*i+1])
+		page.appendString(" Tm\n<")
+		page.appendGlyphUnkerned(font, gid)
+		page.appendString("> Tj\n")
+		font.useGlyphText(gid, clusterText(runes, clusters, starts, i))
+	}
+	page.appendString("ET\n")
+	page.appendString("EMC\n")
+	if own {
+		page.AddEMC()
+	}
+}
+
+// clusterText returns the characters of the glyph's cluster: from its start
+// to the next cluster's, or to the end of the text; the replacement character
+// without clusters.
+func clusterText(runes []rune, clusters, starts []int, i int) string {
+	if clusters == nil {
+		return "\uFFFD"
+	}
+	start := clusters[i]
+	end := len(runes)
+	for _, s := range starts {
+		if s > start {
+			end = s
+			break
+		}
+	}
+	return string(runes[start:end])
+}
+
 // insideTaggedContent reports whether what is drawn now is inside real
 // content of a tagged document: marked content an AddBDC began and AddEMC has
 // not ended, with no artifact around it, like a paragraph whose letters are

@@ -637,6 +637,19 @@ public class Font {
     // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
     // 2026, #8). The first character drawn with the glyph is kept; the others
     // drawn with it are given their own as actual text, see drawnAsAnother.
+    // Records the text a glyph that no character maps to stands for, drawn by
+    // drawGlyphs, for the ToUnicode map: a glyph with a character of its own
+    // keeps it.
+    func useGlyphText(_ gid: Int, _ text: String) {
+        guard let program = program, gid > 0, !text.isEmpty else {
+            return
+        }
+        if gid < unicodeOf.count && unicodeOf[gid] >= 0 {
+            return
+        }
+        program.useText(gid, text)
+    }
+
     func useChar(_ c: Int, _ gid: Int) {
         if let program = program, gid > 0, unicodeToGID[c] == gid {
             program.chars.use(gid, c)

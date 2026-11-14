@@ -146,6 +146,34 @@ class FontWriter {
                 writeListToBuffer(&list, &sb)
             }
         }
+        // The glyphs no character maps to, which another engine shaped and
+        // drawGlyphs drew, each with the text it stands for
+        if let program = font.program, !program.texts.isEmpty {
+            let glyphs = kept?.count ?? font.unicodeOf.count
+            for gid in stride(from: 1, to: glyphs, by: 1) {
+                if let kept = kept, !kept[gid] {
+                    continue
+                }
+                if gid < font.unicodeOf.count && font.unicodeOf[gid] >= 0 {
+                    continue
+                }
+                guard let text = program.texts[gid] else {
+                    continue
+                }
+                buf.append("<")
+                buf.append(toHexString(Int32(gid)))
+                buf.append("> <")
+                for scalar in text.unicodeScalars {
+                    buf.append(unicodeHex(Int(scalar.value)))
+                }
+                buf.append(">\n")
+                list.append(buf)
+                buf = ""
+                if list.count == 100 {
+                    writeListToBuffer(&list, &sb)
+                }
+            }
+        }
         if list.count > 0 {
             writeListToBuffer(&list, &sb)
         }

@@ -252,6 +252,39 @@ func toUnicodeCMap(font *Font, kept []bool) string {
 			list = nil
 		}
 	}
+	// The glyphs no character maps to, which another engine shaped and
+	// DrawGlyphs drew, each with the text it stands for
+	if font.program != nil && font.program.texts != nil {
+		glyphs := len(font.unicodeOf)
+		if kept != nil {
+			glyphs = len(kept)
+		}
+		for gid := 1; gid < glyphs; gid++ {
+			if kept != nil && !kept[gid] {
+				continue
+			}
+			if gid < len(font.unicodeOf) && font.unicodeOf[gid] >= 0 {
+				continue
+			}
+			text := font.program.textOf(gid)
+			if text == "" {
+				continue
+			}
+			buf.WriteString("<")
+			buf.WriteString(toHexString(gid))
+			buf.WriteString("> <")
+			for _, c := range text {
+				buf.WriteString(unicodeHex(c))
+			}
+			buf.WriteString(">\n")
+			list = append(list, buf.String())
+			buf.Reset()
+			if len(list) == 100 {
+				writeListTo(&sb, list)
+				list = nil
+			}
+		}
+	}
 	if len(list) > 0 {
 		writeListTo(&sb, list)
 		list = nil

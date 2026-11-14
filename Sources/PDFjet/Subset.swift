@@ -62,6 +62,18 @@ class Subset {
         // ToUnicode map of a glyph of several characters, as U+3000 and U+2003
         var chars = GlyphChars()
         var whole = false           // Set by setSubset(false): the font is embedded whole
+        // The text of the glyphs no character maps to, as another engine
+        // shaped them (drawGlyphs): a conjunct of Hindi stands for "क्ष", for
+        // the ToUnicode map, which PDF/UA asks of every glyph drawn. The first
+        // text drawn with a glyph is kept.
+        var texts = [Int: String]()
+
+        // Records the text as the glyph's, unless one was.
+        func useText(_ gid: Int, _ text: String) {
+            if texts[gid] == nil {
+                texts[gid] = text
+            }
+        }
 
         // The program of a font of the number of glyphs given, the count of
         // its maxp table, or 0 when it has none.
