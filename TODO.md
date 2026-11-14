@@ -201,6 +201,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   (3) QRCode.fits (below); (4) TextFrame: the empty row after a lone
   character wider than the frame (below); (5) one URI action for repeated
   links (below).
+  With it, PDFjet Pro's Template class, by the end of 2026 (the owner, 14
+  November 2026); the library needs nothing more for it. Codegen stays in
+  the Forms server as it is, no code in four languages from Forms this year.
 
 - **9.1.9, the next release, after the Forms launch: BigTable that wraps its
   text, if asked** (the owner, 10 November 2026: "cutting the last few
