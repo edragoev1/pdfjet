@@ -9,12 +9,16 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -40,7 +44,7 @@ class CFFSubsetTest {
         CFFSubset.Index globals = CFFSubset.readIndex(cff, strings.end);
         List<CFFSubset.Entry> top = CFFSubset.readDict(cff, tops.objects[0], tops.objects[1]);
         CFFSubset.Index charStrings = CFFSubset.readIndex(cff, CFFSubset.entryOf(top, CFFSubset.CHAR_STRINGS)[0]);
-        return new Object[] {CFFSubset.emptied(cff, charStrings, null, 0), CFFSubset.emptied(cff, globals, null, 0), top};
+        return new Object[] {CFFSubset.emptied(cff, charStrings, null), CFFSubset.emptied(cff, globals, null), top};
     }
 
     private static boolean[] used(OTF otf, String text) {
@@ -51,9 +55,38 @@ class CFFSubsetTest {
         return used;
     }
 
+    // The CIDs the charset of the subset gives its glyphs after .notdef, of
+    // formats 0, 1 and 2.
+    private static List<Integer> charset(byte[] cff, List<CFFSubset.Entry> top, int glyphs) {
+        int at = CFFSubset.entryOf(top, CFFSubset.CHARSET)[0];
+        int format = cff[at] & 0xFF;
+        at++;
+        List<Integer> cids = new ArrayList<Integer>();
+        while (cids.size() < glyphs - 1) {
+            if (format == 0) {
+                cids.add((cff[at] & 0xFF) << 8 | (cff[at + 1] & 0xFF));
+                at += 2;
+            } else if (format == 1 || format == 2) {
+                int first = (cff[at] & 0xFF) << 8 | (cff[at + 1] & 0xFF);
+                int left = cff[at + 2] & 0xFF;
+                at += 3;
+                if (format == 2) {
+                    left = left << 8 | (cff[at] & 0xFF);
+                    at++;
+                }
+                for (int cid = first; cid <= first + left; cid++) {
+                    cids.add(cid);
+                }
+            } else {
+                fail("charset format " + format);
+            }
+        }
+        return cids;
+    }
+
     @Test
     @SuppressWarnings("unchecked")
-    void keepsTheCharstringsUsedAndEmptiesTheRest() throws Exception {
+    void isACIDFontOfTheGlyphsUsedAlone() throws Exception {
         for (String path : new String[] {PLEX, HAN}) {
             OTF otf = otf(path);
             byte[] cff = cff(otf);
@@ -62,43 +95,70 @@ class CFFSubsetTest {
             byte[] subset = CFFSubset.subset(cff, used, kept);
             List<byte[]> whole = (List<byte[]>) parts(cff)[0];
             List<byte[]> wholeGlobals = (List<byte[]>) parts(cff)[1];
-            List<byte[]> glyphs = (List<byte[]>) parts(subset)[0];
-            List<byte[]> globals = (List<byte[]>) parts(subset)[1];
-            assertEquals(whole.size(), glyphs.size(), path);
-            for (int gid = 0; gid < glyphs.size(); gid++) {
-                assertEquals(gid == 0 || used[gid], kept[0][gid], path + " glyph " + gid);
-                assertArrayEquals(kept[0][gid] ? whole.get(gid) : new byte[] {14}, glyphs.get(gid), path + " glyph " + gid);
+            Object[] parts = parts(subset);
+            List<byte[]> glyphs = (List<byte[]>) parts[0];
+            List<byte[]> globals = (List<byte[]>) parts[1];
+            List<CFFSubset.Entry> top = (List<CFFSubset.Entry>) parts[2];
+            assertEquals(whole.size(), kept[0].length, path + ": kept");
+            // The glyphs kept, .notdef and those used, alone, in their order
+            List<Integer> keptGIDs = new ArrayList<Integer>();
+            for (int gid = 0; gid < kept[0].length; gid++) {
+                assertEquals(gid == 0 || used[gid], kept[0][gid], path + " glyph " + gid + " kept");
+                if (kept[0][gid] && gid > 0) {
+                    keptGIDs.add(gid);
+                }
             }
+            assertEquals(keptGIDs.size() + 1, glyphs.size(), path + ": glyphs");
+            // A CIDFont, whose charset gives each glyph its number in the font
+            // as its CID, which the content streams draw it by
+            assertNotNull(CFFSubset.entryOf(top, CFFSubset.ROS), path + ": the subset is not a CIDFont");
+            assertNotNull(CFFSubset.entryOf(top, CFFSubset.FD_ARRAY), path + ": the subset is not a CIDFont");
+            assertNull(CFFSubset.entryOf(top, CFFSubset.ENCODING), path + ": the subset has an Encoding");
+            assertEquals(keptGIDs, charset(subset, top, glyphs.size()), path + ": the CIDs");
+            // Each glyph as it was, .notdef first
+            assertArrayEquals(whole.get(0), glyphs.get(0), path + ": .notdef");
+            for (int i = 0; i < keptGIDs.size(); i++) {
+                assertArrayEquals(whole.get(keptGIDs.get(i)), glyphs.get(i + 1), path + " glyph " + keptGIDs.get(i));
+            }
+            // The global subroutines keep their numbers: those called as they
+            // were, the others emptied to no bytes
+            assertEquals(wholeGlobals.size(), globals.size(), path + ": global subroutines");
             int emptied = 0;
             for (int i = 0; i < globals.size(); i++) {
-                if (Arrays.equals(globals.get(i), new byte[] {11}) && !Arrays.equals(wholeGlobals.get(i), new byte[] {11})) {
+                if (globals.get(i).length == 0 && wholeGlobals.get(i).length > 0) {
                     emptied++;
                 } else {
                     assertArrayEquals(wholeGlobals.get(i), globals.get(i), path + " global subroutine " + i);
                 }
             }
-            assertTrue(emptied > 0, path);
-            assertTrue(subset.length <= cff.length / 3, path + ": " + subset.length + " bytes");
+            assertTrue(emptied > 0, path + ": no global subroutine emptied");
+            assertTrue(subset.length <= cff.length / 10, path + ": " + subset.length + " bytes of " + cff.length);
         }
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void aCIDKeyedFontHasTheIdentityCharset() throws Exception {
+    void ofEveryGlyphHasTheIdentityCharset() throws Exception {
         // Source Han Sans JP gives its glyphs CIDs of Adobe-Japan1, not their
-        // numbers, and a PDF looks the glyphs of a CID-keyed font up by CID.
-        byte[] cff = cff(otf(HAN));
-        for (boolean[] used : new boolean[][] {null, new boolean[0x10000]}) {
-            byte[] subset = CFFSubset.subset(cff, used, new boolean[1][]);
-            List<byte[]> glyphs = (List<byte[]>) parts(subset)[0];
-            int at = CFFSubset.entryOf((List<CFFSubset.Entry>) parts(subset)[2], CFFSubset.CHARSET)[0];
-            int n = glyphs.size() - 2;
-            assertArrayEquals(new byte[] {2, 0, 1, (byte) (n >> 8), (byte) n}, Arrays.copyOfRange(subset, at, at + 5));
-        }
-        List<byte[]> whole = (List<byte[]>) parts(cff)[0];
-        List<byte[]> glyphs = (List<byte[]>) parts(CFFSubset.subset(cff, null, new boolean[1][]))[0];
-        for (int gid = 0; gid < glyphs.size(); gid++) {
-            assertArrayEquals(whole.get(gid), glyphs.get(gid), "glyph " + gid);
+        // numbers, and a PDF looks the glyphs of a CID-keyed font up by CID:
+        // written whole, each glyph's CID is its number.
+        for (String path : new String[] {PLEX, HAN}) {
+            byte[] cff = cff(otf(path));
+            List<byte[]> whole = (List<byte[]>) parts(cff)[0];
+            boolean[][] kept = new boolean[1][];
+            byte[] subset = CFFSubset.subset(cff, null, kept);
+            Object[] parts = parts(subset);
+            List<byte[]> glyphs = (List<byte[]>) parts[0];
+            List<CFFSubset.Entry> top = (List<CFFSubset.Entry>) parts[2];
+            assertEquals(whole.size(), glyphs.size(), path + ": glyphs");
+            assertEquals(whole.size(), kept[0].length, path + ": kept");
+            List<Integer> cids = charset(subset, top, glyphs.size());
+            for (int i = 0; i < cids.size(); i++) {
+                assertEquals(i + 1, (int) cids.get(i), path + ": the CID of glyph " + (i + 1));
+            }
+            for (int gid = 0; gid < glyphs.size(); gid++) {
+                assertArrayEquals(whole.get(gid), glyphs.get(gid), path + " glyph " + gid);
+            }
         }
     }
 

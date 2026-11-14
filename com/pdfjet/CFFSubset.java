@@ -9,17 +9,17 @@ package com.pdfjet;
 import java.util.*;
 
 /**
- * The subset of a font with CFF outlines, a .otf: the CFF table with the
- * charstrings of the glyphs the document does not draw emptied, and the
- * subroutines, global and local, that the glyphs kept do not call. Every glyph
- * and every subroutine keeps its number, so the glyphs kept are drawn by the
- * same bytes as in the whole font. The CFF is written again in a fixed order,
- * with every offset of its Top DICT, of the Font DICTs of a CID-keyed font and
- * of its Private DICTs in the five-byte form, so that an offset of any value
- * has the same size: the header, the Name, Top DICT, String and Global Subr
- * INDEXes, the charset, the Encoding and the FDSelect, the new CharStrings
- * INDEX, the FDArray, and each Private DICT with its local subroutines after
- * it.
+ * The subset of a font with CFF outlines, a .otf: a CIDFont of the glyphs the
+ * document draws alone, its charset giving each glyph its number in the whole
+ * font as its CID, by which the PDF draws it, and the subroutines, global and
+ * local, that the glyphs kept do not call emptied to no bytes, keeping their
+ * numbers, so the glyphs kept are drawn by the same bytes as in the whole
+ * font. A name-keyed font becomes a CIDFont of Adobe-Identity-0. The CFF is
+ * written again in a fixed order, with every offset of its Top DICT and of its
+ * Font DICTs in the five-byte form, so that an offset of any value has the
+ * same size: the header, the Name, Top DICT, String and Global Subr INDEXes,
+ * the charset, the FDSelect, the new CharStrings INDEX, the FDArray, and each
+ * Private DICT with its local subroutines.
  */
 class CFFSubset {
     // The operators whose operands are offsets in the CFF table.
@@ -32,6 +32,7 @@ class CFFSubset {
     static final int FD_SELECT = 12 << 8 | 37;
     static final int ROS = 12 << 8 | 30;
     static final int CID_COUNT = 12 << 8 | 34;
+    static final int FONT_MATRIX = 12 << 8 | 7;
 
     // The most bytes of charstrings the subroutines are looked for in, which a
     // font of nested calls that come back to the same subroutines could
@@ -263,56 +264,6 @@ class CFFSubset {
         return out.toBytes();
     }
 
-    static int charsetLength(byte[] cff, int at, int numGlyphs) throws Subset.NotSubset {
-        if (at < 0 || at >= cff.length) {
-            throw new Subset.NotSubset();
-        }
-        int format = cff[at] & 0xFF;
-        if (format == 0) {
-            return 1 + 2 * (numGlyphs - 1);
-        }
-        if (format == 1 || format == 2) {
-            int size = format;  // The size of nLeft: 1 byte in format 1, 2 in format 2
-            int covered = 1;    // .notdef is not in it
-            int i = at + 1;
-            while (covered < numGlyphs) {
-                if (i > cff.length - 2 - size) {
-                    throw new Subset.NotSubset();
-                }
-                int nLeft = cff[i + 2] & 0xFF;
-                if (size == 2) {
-                    nLeft = nLeft << 8 | (cff[i + 3] & 0xFF);
-                }
-                covered += nLeft + 1;
-                i += 2 + size;
-            }
-            return i - at;
-        }
-        throw new Subset.NotSubset();
-    }
-
-    static int encodingLength(byte[] cff, int at) throws Subset.NotSubset {
-        if (at < 0 || at > cff.length - 2) {
-            throw new Subset.NotSubset();
-        }
-        int length;
-        int format = cff[at] & 0x7F;
-        if (format == 0) {
-            length = 2 + (cff[at + 1] & 0xFF);
-        } else if (format == 1) {
-            length = 2 + 2 * (cff[at + 1] & 0xFF);
-        } else {
-            throw new Subset.NotSubset();
-        }
-        if ((cff[at] & 0x80) != 0) {    // Supplements
-            if (length >= cff.length - at) {
-                throw new Subset.NotSubset();
-            }
-            length += 1 + 3 * (cff[at + length] & 0xFF);
-        }
-        return length;
-    }
-
     static int fdSelectLength(byte[] cff, int at, int numGlyphs) throws Subset.NotSubset {
         if (at < 0 || at >= cff.length) {
             throw new Subset.NotSubset();
@@ -488,15 +439,16 @@ class CFFSubset {
         }
     }
 
-    // Returns the objects of the INDEX, those not used emptied to the
-    // charstring of the byte given.
-    static List<byte[]> emptied(byte[] cff, Index index, boolean[] used, int empty) {
+    // Returns the objects of the INDEX, those not used emptied to no bytes,
+    // which keeps their numbers and makes their offsets the same as the next
+    // one's, or every one for used null.
+    static List<byte[]> emptied(byte[] cff, Index index, boolean[] used) {
         List<byte[]> objects = new ArrayList<byte[]>(index.count());
         for (int i = 0; i < index.count(); i++) {
             if (used == null || used[i]) {
                 objects.add(Arrays.copyOfRange(cff, index.objects[i], index.objects[i + 1]));
             } else {
-                objects.add(new byte[] {(byte) empty});
+                objects.add(new byte[0]);
             }
         }
         return objects;
@@ -537,11 +489,22 @@ class CFFSubset {
     }
 
     /**
-     * Returns the CFF table with the charstrings of the glyphs not used
-     * emptied, and the subroutines they do not call, and gives in kept[0] the
-     * glyphs kept: those used and glyph 0, or every glyph for used null, which
-     * writes the table again with nothing left out, for the identity charset
-     * of a CID-keyed font. A table that cannot be read throws NotSubset.
+     * Returns the CFF table of the glyphs used and glyph 0, or of every glyph
+     * for used null, and gives in kept[0] the glyphs kept, by their numbers in
+     * the font. The subset is a CIDFont of the glyphs kept alone, in the order
+     * of their numbers, its charset giving each its number in the font as its
+     * CID: the PDF draws a glyph of a CIDFontType0C program by its CID, which
+     * the charset maps to the glyph (ISO 32000-2, 9.7.4.2; Technical Note
+     * #5176, section 18, "Subset CIDFonts will generally need to use a more
+     * complex charset table representing a non-identity mapping"), so the
+     * content streams, the widths and the ToUnicode map stay those of the
+     * whole font. A name-keyed font is written as a CIDFont of the ordering
+     * Adobe-Identity-0 with one Font DICT, its Private DICT. The subroutines
+     * the glyphs kept do not call are emptied to no bytes, keeping their
+     * numbers, and the Font DICTs no glyph kept uses are left out. Every INDEX
+     * has the least offSize its offsets need; the offsets of the Top DICT and
+     * of the Font DICTs are in the five-byte form. A table that cannot be
+     * read, or a name-keyed font of a FontMatrix of its own, throws NotSubset.
      */
     static byte[] subset(byte[] cff, boolean[] used, boolean[][] kept) throws Subset.NotSubset {
         if (cff.length < 4 || cff[0] != 1) {
@@ -555,7 +518,7 @@ class CFFSubset {
         }
         Index strings = readIndex(cff, topDicts.end);
         Index globalSubrs = readIndex(cff, strings.end);
-        final List<Entry> top = readDict(cff, topDicts.objects[0], topDicts.objects[1]);
+        List<Entry> top = readDict(cff, topDicts.objects[0], topDicts.objects[1]);
         int[] charStringsAt = entryOf(top, CHAR_STRINGS);
         if (charStringsAt == null || charStringsAt.length != 1) {
             throw new Subset.NotSubset();
@@ -566,88 +529,76 @@ class CFFSubset {
             throw new Subset.NotSubset();
         }
 
-        // The blocks copied as they are, but the charset of a CID-keyed font,
-        // which maps each glyph to its CID: it is made the identity, so that
-        // the glyph numbers PDFjet writes are the CIDs of the glyphs, as they
-        // are in a name-keyed font.
-        byte[] charset = null;
-        byte[] encoding = null;
+        boolean cidKeyed = entryOf(top, ROS) != null;
         byte[] fdSelect = null;
-        if (entryOf(top, ROS) != null) {
+        if (cidKeyed) {
             int[] count = entryOf(top, CID_COUNT);
-            if ((count != null && (count.length != 1 || count[0] < numGlyphs)) ||
-                    (count == null && numGlyphs > 8720)) {  // The default CIDCount
+            if (count != null && (count.length != 1 || count[0] < numGlyphs)) {
                 throw new Subset.NotSubset();
             }
-            charset = new byte[] {0};   // Format 0, for .notdef alone
-            if (numGlyphs > 1) {
-                // Format 2, one range: CIDs 1 to numGlyphs-1.
-                charset = new byte[] {2, 0, 1, (byte) ((numGlyphs - 2) >> 8), (byte) (numGlyphs - 2)};
+            if (count == null && numGlyphs > 8720) {
+                throw new Subset.NotSubset();   // The default CIDCount
             }
-        } else {
-            int[] at = entryOf(top, CHARSET);
-            if (at != null && at.length == 1 && at[0] > 2) {
-                charset = block(cff, at[0], charsetLength(cff, at[0], numGlyphs));
-            }
-        }
-        int[] encodingAt = entryOf(top, ENCODING);
-        if (encodingAt != null && encodingAt.length == 1 && encodingAt[0] > 1) {
-            encoding = block(cff, encodingAt[0], encodingLength(cff, encodingAt[0]));
-        }
-        int[] fdSelectAt = entryOf(top, FD_SELECT);
-        if (fdSelectAt != null) {
-            if (fdSelectAt.length != 1) {
+            int[] at = entryOf(top, FD_SELECT);
+            if (at == null || at.length != 1) {
                 throw new Subset.NotSubset();
             }
-            fdSelect = block(cff, fdSelectAt[0], fdSelectLength(cff, fdSelectAt[0], numGlyphs));
+            fdSelect = block(cff, at[0], fdSelectLength(cff, at[0], numGlyphs));
+        } else if (hasEntry(top, FONT_MATRIX)) {
+            // Its matrix would have to go into the Font DICT, against the
+            // one a CIDFont's Top DICT has by default.
+            throw new Subset.NotSubset();
         }
 
-        // The Private DICT of a name-keyed font, or the Font DICTs of a
-        // CID-keyed one, each with its Private DICT.
+        // The Font DICTs of a CID-keyed font, each with its Private DICT, or
+        // the Private DICT of a name-keyed one, which becomes its one Font
+        // DICT's.
         List<PrivateDict> privates = new ArrayList<PrivateDict>();
-        List<List<Entry>> fontDicts = null;
-        int[] fdArrayAt = entryOf(top, FD_ARRAY);
-        if (fdArrayAt != null) {
-            if (fdArrayAt.length != 1 || fdSelect == null) {
+        List<List<Entry>> fontDicts = new ArrayList<List<Entry>>();
+        if (cidKeyed) {
+            int[] at = entryOf(top, FD_ARRAY);
+            if (at == null || at.length != 1) {
                 throw new Subset.NotSubset();
             }
-            Index fdArray = readIndex(cff, fdArrayAt[0]);
-            fontDicts = new ArrayList<List<Entry>>();
+            Index fdArray = readIndex(cff, at[0]);
             for (int i = 0; i < fdArray.count(); i++) {
                 List<Entry> entries = readDict(cff, fdArray.objects[i], fdArray.objects[i + 1]);
                 int[] p = entryOf(entries, PRIVATE);
                 if (p == null || p.length != 2) {
                     throw new Subset.NotSubset();
                 }
+                PrivateDict block = readPrivate(cff, p[0], p[1]);
                 fontDicts.add(entries);
-                privates.add(readPrivate(cff, p[0], p[1]));
+                privates.add(block);
             }
         } else {
             int[] p = entryOf(top, PRIVATE);
-            if (p != null) {
-                if (p.length != 2) {
-                    throw new Subset.NotSubset();
-                }
-                privates.add(readPrivate(cff, p[0], p[1]));
+            if (p == null || p.length != 2) {
+                throw new Subset.NotSubset();
             }
+            PrivateDict block = readPrivate(cff, p[0], p[1]);
+            List<Entry> fontDict = new ArrayList<Entry>();
+            fontDict.add(new Entry(PRIVATE, new byte[0], null));
+            fontDicts.add(fontDict);
+            privates.add(block);
         }
 
-        // The charstrings, of the glyphs kept as they were, of the others
-        // endchar.
+        // The glyphs kept, by their numbers in the font, which are their CIDs.
         boolean[] keep = new boolean[numGlyphs];
-        List<byte[]> glyphs = new ArrayList<byte[]>(numGlyphs);
+        List<Integer> keptGIDs = new ArrayList<Integer>();
         for (int gid = 0; gid < numGlyphs; gid++) {
             if (used == null || gid == 0 || (gid < used.length && used[gid])) {
                 keep[gid] = true;
-                glyphs.add(Arrays.copyOfRange(cff, charStrings.objects[gid], charStrings.objects[gid + 1]));
-            } else {
-                glyphs.add(new byte[] {14});
+                keptGIDs.add(gid);
             }
         }
-        byte[] newCharStrings = index(glyphs);
+        List<byte[]> glyphs = new ArrayList<byte[]>(keptGIDs.size());
+        for (int gid : keptGIDs) {
+            glyphs.add(Arrays.copyOfRange(cff, charStrings.objects[gid], charStrings.objects[gid + 1]));
+        }
 
-        // The subroutines the glyphs kept call, the others emptied to return.
-        // A font whose charstrings cannot be followed keeps them all.
+        // The subroutines the glyphs kept call, the others emptied. A font
+        // whose charstrings cannot be followed keeps them all.
         int[] fdOf = fdOf(fdSelect, numGlyphs, privates.size());
         boolean[] usedG = new boolean[globalSubrs.count()];
         boolean[][] usedL = new boolean[privates.size()][];
@@ -660,10 +611,8 @@ class CFFSubset {
         if (used == null) {
             usage.failed = true;    // Every glyph and subroutine kept
         }
-        for (int gid = 0; gid < numGlyphs && !usage.failed; gid++) {
-            if (!keep[gid]) {
-                continue;
-            }
+        for (int i = 0; i < keptGIDs.size() && !usage.failed; i++) {
+            int gid = keptGIDs.get(i);
             int fd = (fdOf != null) ? fdOf[gid] : 0;
             usage.local = null;
             usage.usedL = null;
@@ -685,14 +634,107 @@ class CFFSubset {
                 usedL[i] = null;
             }
         }
-        byte[] newGlobalSubrs = index(emptied(cff, globalSubrs, usedG, 11));
 
-        // Each Private DICT is written again with its local subroutines right
-        // after it, at its size, whatever they were before.
-        byte[][] blocks = new byte[privates.size()][];
-        final int[] dictSizes = new int[privates.size()];
-        for (int i = 0; i < privates.size(); i++) {
-            PrivateDict p = privates.get(i);
+        // The Font DICTs the glyphs kept use, in their order in the font, and
+        // the new number of each.
+        boolean[] usedFD = new boolean[privates.size()];
+        for (int gid : keptGIDs) {
+            usedFD[(fdOf != null) ? fdOf[gid] : 0] = true;
+        }
+        int[] newFD = new int[privates.size()];
+        List<Integer> fds = new ArrayList<Integer>();
+        for (int fd = 0; fd < usedFD.length; fd++) {
+            if (usedFD[fd]) {
+                newFD[fd] = fds.size();
+                fds.add(fd);
+            }
+        }
+        int[] fdOfGlyph = new int[keptGIDs.size()];
+        for (int i = 0; i < keptGIDs.size(); i++) {
+            if (fdOf != null) {
+                fdOfGlyph[i] = newFD[fdOf[keptGIDs.get(i)]];
+            }
+        }
+
+        // The blocks: the Name INDEX again; the String INDEX of the strings
+        // the Top DICT and the Font DICTs kept name, in the order they name
+        // them, a name-keyed font's with those of its ROS, Adobe and Identity,
+        // after them, and not the names of its glyphs, which a CIDFont has
+        // not; the charset of the CIDs; the FDSelect; the CharStrings of the
+        // glyphs kept.
+        byte[] nameIndex = index(emptied(cff, names, null));
+        Strings sids = new Strings(emptied(cff, strings, null));
+        List<Entry> entries = new ArrayList<Entry>();
+        for (Entry entry : top) {
+            if (entry.op == CHARSET || entry.op == ENCODING || entry.op == CHAR_STRINGS ||
+                    entry.op == PRIVATE || entry.op == FD_ARRAY || entry.op == FD_SELECT) {
+                continue;
+            }
+            entries.add(sids.renumber(entry));
+        }
+        List<List<Entry>> keptFontDicts = new ArrayList<List<Entry>>();
+        for (int fd : fds) {
+            List<Entry> fontDict = new ArrayList<Entry>();
+            for (Entry entry : fontDicts.get(fd)) {
+                fontDict.add(sids.renumber(entry));
+            }
+            keptFontDicts.add(fontDict);
+        }
+        if (!cidKeyed) {
+            int sid = 391 + sids.kept.size();
+            sids.kept.add(new byte[] {'A', 'd', 'o', 'b', 'e'});
+            sids.kept.add(new byte[] {'I', 'd', 'e', 'n', 't', 'i', 't', 'y'});
+            ByteBuffer ros = new ByteBuffer();
+            appendInteger(ros, sid);
+            appendInteger(ros, sid + 1);
+            appendInteger(ros, 0);
+            ros.add(12);
+            ros.add(30);
+            entries.add(0, new Entry(ROS, ros.toBytes(), null));
+            ByteBuffer count = new ByteBuffer();
+            appendInteger(count, numGlyphs);
+            count.add(12);
+            count.add(34);
+            entries.add(new Entry(CID_COUNT, count.toBytes(), null));
+        }
+        byte[] stringIndex = index(sids.kept);
+        entries.add(new Entry(CHARSET, new byte[0], null));
+        entries.add(new Entry(FD_SELECT, new byte[0], null));
+        entries.add(new Entry(CHAR_STRINGS, new byte[0], null));
+        entries.add(new Entry(FD_ARRAY, new byte[0], null));
+        int[] cids = new int[keptGIDs.size() - 1];
+        for (int i = 0; i < cids.length; i++) {
+            cids[i] = keptGIDs.get(i + 1);
+        }
+        byte[] charset = charsetOf(cids);
+        byte[] newFDSelect = fdSelectOf(fdOfGlyph);
+        byte[] newCharStrings = index(glyphs);
+        // An INDEX of subroutines none of which is called is left out, global
+        // ones as an empty INDEX, local ones with their Subrs operator: one of
+        // objects of no bytes alone is not read by FreeType
+        List<byte[]> globals = emptied(cff, globalSubrs, usedG);
+        if (usedG != null && !anyUsed(usedG)) {
+            globals = new ArrayList<byte[]>();
+        }
+        byte[] newGlobalSubrs = index(globals);
+
+        // Each Private DICT of a Font DICT kept is written again with its
+        // local subroutines right after it, at its size, whatever they were
+        // before.
+        byte[][] blocks = new byte[fds.size()][];
+        int[] dictSizes = new int[fds.size()];
+        for (int i = 0; i < fds.size(); i++) {
+            int fd = fds.get(i);
+            PrivateDict p = privates.get(fd);
+            if (p.subrs != null && usedL[fd] != null && !anyUsed(usedL[fd])) {
+                List<Entry> rest = new ArrayList<Entry>();
+                for (Entry entry : p.entries) {
+                    if (entry.op != SUBRS) {
+                        rest.add(entry);
+                    }
+                }
+                p = new PrivateDict(rest, null);
+            }
             Map<Integer, Integer> subrs = new HashMap<Integer, Integer>();
             if (p.subrs != null) {
                 subrs.put(SUBRS, 0);
@@ -704,7 +746,7 @@ class CFFSubset {
             ByteBuffer b = new ByteBuffer();
             b.add(writeDict(p.entries, subrs, 0));
             if (p.subrs != null) {
-                appendIndex(b, emptied(cff, p.subrs, usedL[i], 11));
+                appendIndex(b, emptied(cff, p.subrs, usedL[fd]));
             }
             blocks[i] = b.toBytes();
         }
@@ -712,64 +754,45 @@ class CFFSubset {
         // The layout. The Top DICT and the Font DICTs have the same size
         // whatever their offsets, so they are written once with none to know
         // where the blocks after them go, and once more with their offsets.
-        boolean namePrivate = (fontDicts == null && privates.size() == 1);
-        Map<Integer, Integer> offsets = topOffsets(charset, encoding, fdSelect, namePrivate, 0, 0, 0, 0, 0, 0);
-        int topSize = writeDict(top, offsets, 0).length;
+        int topSize = writeDict(entries, topOffsets(0, 0, 0, 0), 0).length;
         List<byte[]> sizedTop = new ArrayList<byte[]>();
         sizedTop.add(new byte[topSize]);
-        int at = headerSize + (names.end - names.start) + index(sizedTop).length +
-                (strings.end - strings.start) + newGlobalSubrs.length;
+        int at = headerSize + nameIndex.length + index(sizedTop).length +
+                stringIndex.length + newGlobalSubrs.length;
         int charsetAt = at;
-        at += (charset != null) ? charset.length : 0;
-        int newEncodingAt = at;
-        at += (encoding != null) ? encoding.length : 0;
-        int newFDSelectAt = at;
-        at += (fdSelect != null) ? fdSelect.length : 0;
+        at += charset.length;
+        int fdSelectAt = at;
+        at += newFDSelect.length;
         int newCharStringsAt = at;
         at += newCharStrings.length;
-        int newFDArrayAt = at;
-        if (fontDicts != null) {
-            List<byte[]> sized = new ArrayList<byte[]>();
-            for (int i = 0; i < fontDicts.size(); i++) {
-                sized.add(writeDict(fontDicts.get(i), privateOffset(0), dictSizes[i]));
-            }
-            at += index(sized).length;
+        int fdArrayAt = at;
+        List<byte[]> sized = new ArrayList<byte[]>();
+        for (int i = 0; i < fds.size(); i++) {
+            sized.add(writeDict(keptFontDicts.get(i), privateOffset(0), dictSizes[i]));
         }
-        int[] privateAts = new int[blocks.length];
+        at += index(sized).length;
+        int[] privateAts = new int[fds.size()];
         for (int i = 0; i < blocks.length; i++) {
             privateAts[i] = at;
             at += blocks[i].length;
         }
-        byte[] fdArray = new byte[0];
-        if (fontDicts != null) {
-            List<byte[]> dicts = new ArrayList<byte[]>();
-            for (int i = 0; i < fontDicts.size(); i++) {
-                dicts.add(writeDict(fontDicts.get(i), privateOffset(privateAts[i]), dictSizes[i]));
-            }
-            fdArray = index(dicts);
+        List<byte[]> dicts = new ArrayList<byte[]>();
+        for (int i = 0; i < fds.size(); i++) {
+            dicts.add(writeDict(keptFontDicts.get(i), privateOffset(privateAts[i]), dictSizes[i]));
         }
-        int privateAt = namePrivate ? privateAts[0] : 0;
-        byte[] newTop = writeDict(top, topOffsets(charset, encoding, fdSelect, namePrivate,
-                charsetAt, newEncodingAt, newFDSelectAt, newCharStringsAt, newFDArrayAt, privateAt),
-                namePrivate ? dictSizes[0] : 0);
+        byte[] fdArray = index(dicts);
+        byte[] newTop = writeDict(entries, topOffsets(charsetAt, fdSelectAt, newCharStringsAt, fdArrayAt), 0);
 
         ByteBuffer out = new ByteBuffer();
         out.add(Arrays.copyOfRange(cff, 0, headerSize));
-        out.add(Arrays.copyOfRange(cff, names.start, names.end));
+        out.add(nameIndex);
         List<byte[]> tops = new ArrayList<byte[]>();
         tops.add(newTop);
         appendIndex(out, tops);
-        out.add(Arrays.copyOfRange(cff, strings.start, strings.end));
+        out.add(stringIndex);
         out.add(newGlobalSubrs);
-        if (charset != null) {
-            out.add(charset);
-        }
-        if (encoding != null) {
-            out.add(encoding);
-        }
-        if (fdSelect != null) {
-            out.add(fdSelect);
-        }
+        out.add(charset);
+        out.add(newFDSelect);
         out.add(newCharStrings);
         out.add(fdArray);
         for (byte[] b : blocks) {
@@ -789,24 +812,192 @@ class CFFSubset {
         return offsets;
     }
 
-    private static Map<Integer, Integer> topOffsets(byte[] charset, byte[] encoding, byte[] fdSelect,
-            boolean namePrivate, int charsetAt, int encodingAt, int fdSelectAt, int charStringsAt,
-            int fdArrayAt, int privateAt) {
+    private static Map<Integer, Integer> topOffsets(int charsetAt, int fdSelectAt, int charStringsAt,
+            int fdArrayAt) {
         Map<Integer, Integer> offsets = new HashMap<Integer, Integer>();
+        offsets.put(CHARSET, charsetAt);
+        offsets.put(FD_SELECT, fdSelectAt);
         offsets.put(CHAR_STRINGS, charStringsAt);
-        if (charset != null) {
-            offsets.put(CHARSET, charsetAt);
-        }
-        if (encoding != null) {
-            offsets.put(ENCODING, encodingAt);
-        }
-        if (fdSelect != null) {
-            offsets.put(FD_SELECT, fdSelectAt);
-            offsets.put(FD_ARRAY, fdArrayAt);
-        } else if (namePrivate) {
-            offsets.put(PRIVATE, privateAt);
-        }
+        offsets.put(FD_ARRAY, fdArrayAt);
         return offsets;
+    }
+
+    // The operators of the Top DICT and of the Font DICTs whose first
+    // operands are SIDs, and how many: version, Notice, FullName, FamilyName,
+    // Weight, Copyright, PostScript, BaseFontName, ROS and FontName.
+    private static final Map<Integer, Integer> SID_OPERANDS = new HashMap<Integer, Integer>();
+    static {
+        for (int op : new int[] {0, 1, 2, 3, 4, 12 << 8, 12 << 8 | 21, 12 << 8 | 22, 12 << 8 | 38}) {
+            SID_OPERANDS.put(op, 1);
+        }
+        SID_OPERANDS.put(ROS, 2);
+    }
+
+    /**
+     * Gives the strings of the font that the entries name new SIDs, in the
+     * order they are first named, after the standard strings.
+     */
+    static final class Strings {
+        final List<byte[]> old;     // The String INDEX of the font
+        final List<byte[]> kept = new ArrayList<byte[]>();  // The strings named, in the order of their new SIDs
+        final Map<Integer, Integer> sids = new HashMap<Integer, Integer>();  // The new SID of each SID of the font named
+
+        Strings(List<byte[]> old) {
+            this.old = old;
+        }
+
+        // Returns the entry with its SIDs of the font's strings renumbered,
+        // its operands written again in their shortest form, or as it was
+        // when it names none.
+        Entry renumber(Entry entry) throws Subset.NotSubset {
+            Integer n = SID_OPERANDS.get(entry.op);
+            if (n == null) {
+                return entry;
+            }
+            if (entry.integers == null || entry.integers.length < n) {
+                throw new Subset.NotSubset();
+            }
+            ByteBuffer raw = new ByteBuffer();
+            int[] integers = new int[entry.integers.length];
+            for (int i = 0; i < entry.integers.length; i++) {
+                int v = entry.integers[i];
+                if (i < n && v >= 391) {
+                    if (v - 391 >= old.size()) {
+                        throw new Subset.NotSubset();
+                    }
+                    Integer sid = sids.get(v);
+                    if (sid == null) {
+                        sid = 391 + kept.size();
+                        sids.put(v, sid);
+                        kept.add(old.get(v - 391));
+                    }
+                    v = sid;
+                }
+                integers[i] = v;
+                appendInteger(raw, v);
+            }
+            if (entry.op > 0xFF) {
+                raw.add(12);
+                raw.add(entry.op & 0xFF);
+            } else {
+                raw.add(entry.op);
+            }
+            return new Entry(entry.op, raw.toBytes(), integers);
+        }
+    }
+
+    // Tells whether any of the subroutines is used.
+    static boolean anyUsed(boolean[] used) {
+        for (boolean u : used) {
+            if (u) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Tells whether the DICT has an entry of the operator, of any operands.
+    static boolean hasEntry(List<Entry> entries, int op) {
+        for (Entry entry : entries) {
+            if (entry.op == op) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Appends the integer of a DICT in its shortest form.
+    static void appendInteger(ByteBuffer out, int v) {
+        if (v >= -107 && v <= 107) {
+            out.add(v + 139);
+        } else if (v >= 108 && v <= 1131) {
+            v -= 108;
+            out.add((v >> 8) + 247);
+            out.add(v);
+        } else if (v >= -1131 && v <= -108) {
+            v = -v - 108;
+            out.add((v >> 8) + 251);
+            out.add(v);
+        } else if (v >= -32768 && v <= 32767) {
+            out.add(28);
+            out.add(v >> 8);
+            out.add(v);
+        } else {
+            appendOffset(out, v);
+        }
+    }
+
+    // Returns the runs of consecutive CIDs, each its first and the number
+    // after it, nLeft, of at most max.
+    static List<int[]> ranges(int[] cids, int max) {
+        List<int[]> ranges = new ArrayList<int[]>();
+        int i = 0;
+        while (i < cids.length) {
+            int j = i;
+            while (j + 1 < cids.length && cids[j + 1] == cids[j] + 1 && j + 1 - i <= max) {
+                j++;
+            }
+            ranges.add(new int[] {cids[i], j - i});
+            i = j + 1;
+        }
+        return ranges;
+    }
+
+    // Returns the charset of the CIDs of the glyphs after .notdef, in the
+    // format of the three that is the shortest, the first of those as short.
+    static byte[] charsetOf(int[] cids) {
+        List<int[]> ranges1 = ranges(cids, 0xFF);
+        List<int[]> ranges2 = ranges(cids, 0xFFFF);
+        int size0 = 1 + 2 * cids.length;
+        int size1 = 1 + 3 * ranges1.size();
+        int size2 = 1 + 4 * ranges2.size();
+        ByteBuffer out = new ByteBuffer();
+        if (size0 <= size1 && size0 <= size2) {
+            out.add(0);
+            for (int cid : cids) {
+                out.add2(cid);
+            }
+        } else if (size1 <= size2) {
+            out.add(1);
+            for (int[] r : ranges1) {
+                out.add2(r[0]);
+                out.add(r[1]);
+            }
+        } else {
+            out.add(2);
+            for (int[] r : ranges2) {
+                out.add2(r[0]);
+                out.add2(r[1]);
+            }
+        }
+        return out.toBytes();
+    }
+
+    // Returns the FDSelect of the Font DICT of each glyph, in format 3,
+    // ranges, when that is shorter than format 0, a byte for each.
+    static byte[] fdSelectOf(int[] fdOf) {
+        List<Integer> firsts = new ArrayList<Integer>();
+        for (int gid = 0; gid < fdOf.length; gid++) {
+            if (gid == 0 || fdOf[gid] != fdOf[gid - 1]) {
+                firsts.add(gid);
+            }
+        }
+        ByteBuffer out = new ByteBuffer();
+        if (5 + 3 * firsts.size() >= 1 + fdOf.length) {
+            out.add(0);
+            for (int fd : fdOf) {
+                out.add(fd);
+            }
+            return out.toBytes();
+        }
+        out.add(3);
+        out.add2(firsts.size());
+        for (int first : firsts) {
+            out.add2(first);
+            out.add(fdOf[first]);
+        }
+        out.add2(fdOf.length);
+        return out.toBytes();
     }
 
     /** A growing array of bytes. */
