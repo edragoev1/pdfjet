@@ -29,7 +29,7 @@ import Testing
         let globals = try CFFSubset.readIndex(cff, strings.end)
         let top = try CFFSubset.readDict(cff, tops.objects[0], tops.objects[1])
         let charStrings = try CFFSubset.readIndex(cff, CFFSubset.entryOf(top, CFFSubset.charStrings)![0])
-        return (CFFSubset.emptied(cff, charStrings, nil, 0), CFFSubset.emptied(cff, globals, nil, 0), top)
+        return (CFFSubset.emptied(cff, charStrings, nil), CFFSubset.emptied(cff, globals, nil), top)
     }
 
     private func used(_ otf: OTF, _ text: String) -> [Bool] {
@@ -40,46 +40,93 @@ import Testing
         return used
     }
 
-    @Test func keepsTheCharstringsUsedAndEmptiesTheRest() throws {
+    // The CIDs the charset of the subset gives its glyphs after .notdef, of
+    // formats 0, 1 and 2.
+    private func charsetCIDs(_ cff: [UInt8], _ top: [CFFSubset.Entry], _ glyphs: Int) -> [Int] {
+        var at = CFFSubset.entryOf(top, CFFSubset.charset)![0]
+        let format = cff[at]
+        at += 1
+        var cids = [Int]()
+        while cids.count < glyphs - 1 {
+            switch format {
+            case 0:
+                cids.append(Int(cff[at]) << 8 | Int(cff[at + 1]))
+                at += 2
+            case 1, 2:
+                let first = Int(cff[at]) << 8 | Int(cff[at + 1])
+                var left = Int(cff[at + 2])
+                at += 3
+                if format == 2 {
+                    left = left << 8 | Int(cff[at])
+                    at += 1
+                }
+                cids.append(contentsOf: first...(first + left))
+            default:
+                Issue.record("charset format \(format)")
+                return cids
+            }
+        }
+        return cids
+    }
+
+    @Test func isACIDFontOfTheGlyphsUsedAlone() throws {
         for path in [CFFSubsetTests.plex, CFFSubsetTests.han] {
             let font = try otf(path)
             let table = cff(font)
             let used = used(font, "Hello 日本語")
             let (subset, kept) = try CFFSubset.subset(table, used)
             let (whole, wholeGlobals, _) = try parts(table)
-            let (glyphs, globals, _) = try parts(subset)
-            #expect(glyphs.count == whole.count, "\(path)")
-            for gid in 0..<glyphs.count {
+            let (glyphs, globals, top) = try parts(subset)
+            try #require(kept.count == whole.count, "\(path): kept is of \(kept.count) glyphs")
+            // The glyphs kept, .notdef and those used, alone, in their order
+            var keptGIDs = [Int]()
+            for gid in 0..<kept.count {
                 #expect(kept[gid] == (gid == 0 || used[gid]), "\(path) glyph \(gid)")
-                #expect(glyphs[gid] == (kept[gid] ? whole[gid] : [14]), "\(path) glyph \(gid)")
+                if kept[gid] && gid > 0 {
+                    keptGIDs.append(gid)
+                }
             }
+            try #require(glyphs.count == keptGIDs.count + 1, "\(path): \(glyphs.count) glyphs")
+            // A CIDFont, whose charset gives each glyph its number in the font
+            // as its CID, which the content streams draw it by
+            #expect(CFFSubset.entryOf(top, CFFSubset.ros) != nil && CFFSubset.entryOf(top, CFFSubset.fdArray) != nil,
+                    "\(path): the subset is not a CIDFont")
+            #expect(CFFSubset.entryOf(top, CFFSubset.encoding) == nil, "\(path): the subset has an Encoding")
+            #expect(charsetCIDs(subset, top, glyphs.count) == keptGIDs, "\(path): the CIDs")
+            // Each glyph as it was, .notdef first
+            #expect(glyphs[0] == whole[0], "\(path): .notdef is not as it was")
+            for (i, gid) in keptGIDs.enumerated() {
+                #expect(glyphs[i + 1] == whole[gid], "\(path) glyph \(gid)")
+            }
+            // The global subroutines keep their numbers: those called as they
+            // were, the others emptied to no bytes
+            try #require(globals.count == wholeGlobals.count, "\(path): \(globals.count) global subroutines")
             var emptied = 0
             for i in 0..<globals.count {
-                if globals[i] == [11] && wholeGlobals[i] != [11] {
+                if globals[i].isEmpty && !wholeGlobals[i].isEmpty {
                     emptied += 1
                 } else {
                     #expect(globals[i] == wholeGlobals[i], "\(path) global subroutine \(i)")
                 }
             }
             #expect(emptied > 0, "\(path)")
-            #expect(subset.count <= table.count / 3, "\(path): \(subset.count) bytes")
+            #expect(subset.count <= table.count / 10, "\(path): \(subset.count) bytes of \(table.count)")
         }
     }
 
-    @Test func aCIDKeyedFontHasTheIdentityCharset() throws {
+    @Test func ofEveryGlyphHasTheIdentityCharset() throws {
         // Source Han Sans JP gives its glyphs CIDs of Adobe-Japan1, not their
-        // numbers, and a PDF looks the glyphs of a CID-keyed font up by CID.
-        let table = cff(try otf(CFFSubsetTests.han))
-        for used in [nil, [Bool](repeating: false, count: 0x10000)] {
-            let (subset, _) = try CFFSubset.subset(table, used)
+        // numbers, and a PDF looks the glyphs of a CID-keyed font up by CID:
+        // written whole, each glyph's CID is its number.
+        for path in [CFFSubsetTests.plex, CFFSubsetTests.han] {
+            let table = cff(try otf(path))
+            let (whole, _, _) = try parts(table)
+            let (subset, kept) = try CFFSubset.subset(table, nil)
             let (glyphs, _, top) = try parts(subset)
-            let at = CFFSubset.entryOf(top, CFFSubset.charset)![0]
-            let n = glyphs.count - 2
-            #expect(Array(subset[at..<(at + 5)]) == [2, 0, 1, UInt8(n >> 8), UInt8(n & 0xFF)])
+            try #require(glyphs.count == whole.count && kept.count == whole.count, "\(path): \(glyphs.count) glyphs")
+            #expect(charsetCIDs(subset, top, glyphs.count) == Array(1..<glyphs.count), "\(path): the CIDs")
+            #expect(glyphs == whole, "\(path)")
         }
-        let (whole, _, _) = try parts(table)
-        let (same, _, _) = try parts(try CFFSubset.subset(table, nil).0)
-        #expect(same == whole)
     }
 
     private func document(_ compliance: Compliance, _ path: String, _ subset: Bool, _ text: String) throws -> String {
