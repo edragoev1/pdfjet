@@ -18,10 +18,13 @@ do
         go build -o ../Example_$i.exe examples/example$i/main.go
     fi
 done
+# Example_52 is a module of its own: it shapes with go-text/typesetting, its
+# dependency alone, never PDFjet's.
+(cd examples/example52 && go vet . && go build -o ../../../Example_52.exe .)
 
 cd ..
 
-for i in $(seq 1 51);
+for i in $(seq 1 52);
 do
     if [ $i -lt 10 ]; then
         ./Example_0$i.exe

@@ -106,10 +106,10 @@ for port in java dotnet go swift; do
     fi
     mkdir -p "$WORK/pdfs/$port"
     missing=0
-    # Java has Example_52 too, which the other ports do not
-    last=51
-    if [ $port = java ]; then
-        last=52
+    # Swift's Example_52 needs Core Text, which Linux does not have
+    last=52
+    if [ $port = swift ]; then
+        last=51
     fi
     for i in $(seq -w 1 $last); do
         if [ -s Example_$i.pdf ]; then

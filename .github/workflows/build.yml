@@ -91,10 +91,10 @@ jobs:
             - name: Check that every example created its PDF file
               run: |
                   missing=0
-                  # Java has Example_52 too, which the other ports do not
-                  last=51
-                  if [ "${{ matrix.port }}" = java ]; then
-                      last=52
+                  # Swift's Example_52 needs Core Text, which Linux does not have
+                  last=52
+                  if [ "${{ matrix.port }}" = swift ]; then
+                      last=51
                   fi
                   for i in $(seq -w 1 $last); do
                       # One that ends with %%EOF, not one cut short
@@ -153,7 +153,7 @@ jobs:
                   fi
                   mkdir "$RUNNER_TEMP/net8" "$RUNNER_TEMP/decoded"
                   mv Example_*.pdf "$RUNNER_TEMP/net8"
-                  for i in $(seq -w 1 51); do
+                  for i in $(seq -w 1 52); do
                       DOTNET_ROLL_FORWARD=LatestMajor dotnet examples/Example_$i/bin/release/net8.0/Example_$i.dll
                   done
                   # qpdf exits with 3 for a warning. Example_47's owner password is world.

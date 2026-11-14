@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>               <!-- Specifies that it's a console app -->
+    <TargetFramework>net8.0</TargetFramework>  <!-- Targets .NET 8 -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <StartupObject>Example_52</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PDFjet">
+      <HintPath>../../bin/release/net8.0/PDFjet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <!-- HarfBuzz shapes the Hindi and the Khmer: a dependency of this example
+       alone, never of PDFjet. The Linux library is a package of its own. -->
+  <ItemGroup>
+    <PackageReference Include="HarfBuzzSharp" Version="8.3.1.1" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
+  </ItemGroup>
+</Project>

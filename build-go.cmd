@@ -22,12 +22,22 @@ for /L %%i in (1,1,51) do (
         go build -o ..\Example_%%i.exe examples\example%%i\main.go
     )
 )
+:: Example_52 is a module of its own: it shapes with go-text/typesetting, its
+:: dependency alone, never PDFjet's.
+cd examples\example52
+go vet .
+if errorlevel 1 (
+    cd ..\..\..
+    exit /b 1
+)
+go build -o ..\..\..\Example_52.exe .
+cd ..\..
 
 :: Navigate back to the parent directory
 cd ..
 
 :: Run the .exe files
-for /L %%i in (1,1,51) do (
+for /L %%i in (1,1,52) do (
     :: Check if %%i is less than 10
     if %%i lss 10 (
         Example_0%%i.exe

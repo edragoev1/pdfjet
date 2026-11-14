@@ -18,7 +18,7 @@ dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true
 
 # Build Example_01 to Example_06
 pids=()
-for i in {1..51}
+for i in {1..52}
 do
     if [ $i -lt 10 ]; then
         dotnet build examples/Example_0$i/Example_0$i.csproj -c release -p:TreatWarningsAsErrors=true &
@@ -35,7 +35,7 @@ for pid in "${pids[@]}"; do
 done
 
 # Run Example_01 to Example_06
-for i in {1..51}
+for i in {1..52}
 do
     if [ $i -lt 10 ]; then
         dotnet examples/Example_0$i/bin/release/net8.0/Example_0$i.dll

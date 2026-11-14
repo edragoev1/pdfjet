@@ -45,15 +45,20 @@ MAX_PAGES = 10
 RESOLUTION = 50
 EXAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'examples')
 
-# Examples a port does not have, as (port, number) pairs. Example_52 shapes
-# Hindi and Khmer with java.awt.font, which only Java has; the other ports
-# feed drawGlyphs from their own engines (Core Text, HarfBuzz), which draw
-# their own PDFs, not Java's.
-MISSING = {('dotnet', 52), ('go', 52), ('swift', 52)}
+# Examples a port does not have, as (port, number) pairs. Swift's Example_52
+# shapes with Core Text, Apple's, and runs on a Mac only.
+MISSING = {('swift', 52)}
 
 # Examples whose pages a port is allowed to draw differently from Java, with
-# the reason, for example: ('go', 4): 'why the Go example draws differently'.
-RENDER_EXCEPTIONS = {}
+# the reason. veraPDF still checks them.
+RENDER_EXCEPTIONS = {
+    ('dotnet', 52): 'shaped by HarfBuzz (HarfBuzzSharp), Java by java.awt.font: the glyphs are placed by '
+                    'another engine, a fraction of a point apart, and the lines wrapped at spaces by '
+                    'the example, not by LineBreakMeasurer',
+    ('go', 52): 'shaped by go-text/typesetting (HarfBuzz in Go), Java by java.awt.font: the glyphs are '
+                'placed by another engine, a fraction of a point apart, and the lines wrapped at spaces '
+                'by the example, not by LineBreakMeasurer',
+}
 
 
 def java_source(n):

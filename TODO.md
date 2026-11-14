@@ -190,6 +190,18 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   Also, by the same thinking: the awesome-java and awesome-pdf lists. No
   note to pdf noodle's founder (the owner, 11 November 2026: "forget it").
 
+- **9.1.9 in 2026: the small items, worked on during the Forms breaks**
+  (the owner, 14 November 2026: "we will work on all of these during my
+  Forms breaks and release 9.1.9 this year"). Each in the four ports with
+  tests: (1) the CHANGELOG brought up to date with what main has:
+  BigTable's setWrapText, the 0.5-point default of every line (a behavior
+  change, in the first lines), the TextFrame centered-row fix, drawGlyphs as
+  it now writes (a span per cluster) and Example_52 in Java, C#, Go and
+  Swift; (2) Markdown: a heading stays with the block after it (below);
+  (3) QRCode.fits (below); (4) TextFrame: the empty row after a lone
+  character wider than the frame (below); (5) one URI action for repeated
+  links (below).
+
 - **9.1.9, the next release, after the Forms launch: BigTable that wraps its
   text, if asked** (the owner, 10 November 2026: "cutting the last few
   columns is not great"; "it is very important", the owner had thought of

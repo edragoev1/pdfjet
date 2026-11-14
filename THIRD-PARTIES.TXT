@@ -189,6 +189,12 @@ Sans Khmer, version 2.001, each with its license beside it.
     This Font Software is licensed under the SIL Open Font License, Version 1.1.
     This license is available with a FAQ at: https://openfontlicense.org
 
+The .NET and Go versions of Example_52 shape with a package of their own,
+which their package managers fetch and no package of PDFjet includes or
+needs: HarfBuzzSharp (MIT License), in examples/Example_52/Example_52.csproj,
+and go-text/typesetting (the Unlicense or BSD-3-Clause), in the module of
+src/examples/example52.
+
 
 This software includes data of the Washington State Department of Licensing,
 Electric Vehicle Population Data (https://data.wa.gov/d/f6w7-q2d2), in
