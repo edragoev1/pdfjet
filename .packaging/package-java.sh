@@ -220,7 +220,7 @@ mkdir pro-src
 git -C "$REPO" archive -o "$PRO_TAR" HEAD com
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD com/pdfjet/sign com/pdfjet/invoice \
-    com/pdfjet/hyphenation src/hyphenation/patterns com/pdfjet/template src/template/fonts \
+    com/pdfjet/hyphenation src/hyphenation/patterns com/pdfjet/template \
     examples/package/java tests/data/rsa-signer.p12 \
     tests/ltv-server.py tests/data/ltv-signer.p12 tests/data/ltv-root.pem tests/data/ltv-root.key \
     tests/data/ltv-root-index.txt tests/data/ltv-ca.pem tests/data/ltv-ca.key tests/data/ltv-ca-index.txt \
@@ -247,13 +247,6 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
 mkdir -p out/library/com/pdfjet/hyphenation/patterns
 cp pro-src/src/hyphenation/patterns/*.txt out/library/com/pdfjet/hyphenation/patterns/
 cp pro-src/src/hyphenation/patterns/LICENSES.txt HYPHENATION-PATTERNS-LICENSES.txt
-# PDFjet Forms' own IBM Plex Sans KR and TC, which the Template class draws
-# Korean and Chinese with, as Forms does, and SC and JP beside them, the
-# full set of IBM Plex's fonts of CJK (SC and JP as .otf), in resources/fonts/forms, where it
-# reads them, each family with its license: outside the jar, as PDFjet's
-# fonts are, so that PDFjet.jar stays small
-mkdir -p resources/fonts/forms
-cp -r pro-src/src/template/fonts/* resources/fonts/forms/
 stamp out/library
 printf 'Automatic-Module-Name: com.pdfjet\nImplementation-Title: PDFjet Pro\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
     "${VERSION#v}" > pro-manifest.txt

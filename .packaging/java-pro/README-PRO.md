@@ -36,10 +36,8 @@ and templates of PDFjet Forms filled in from a program. The API reference, `docs
   PDF Forms saves, filled in from a program by its labels, `set("Customer",
   "Acme")`, and words in braces, `{invoiceNumber}`, its tables given their
   rows; each `save` a new PDF, PDF/A-3 and PDF/UA, laid out as Forms lays
-  the design out. Korean and Chinese are drawn with Forms' own fonts, in
-  `resources/fonts/forms` with IBM Plex Sans SC and JP, the full set of
-  IBM Plex for Chinese, Japanese and Korean, which a program reads from its working folder or
-  from its classpath, as `com/pdfjet/template/fonts`.
+  the design out, with the fonts PDFjet carries, which are Forms' own: IBM
+  Plex Sans, Serif, KR and TC as `.otf`, and Cascadia Mono.
 
 The manifest of this `PDFjet.jar` names it PDFjet Pro, as the jar of PDFjet
 Core, of the same name, is not.
