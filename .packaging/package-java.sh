@@ -220,7 +220,7 @@ mkdir pro-src
 git -C "$REPO" archive -o "$PRO_TAR" HEAD com
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD com/pdfjet/sign com/pdfjet/invoice \
-    com/pdfjet/hyphenation src/hyphenation/patterns \
+    com/pdfjet/hyphenation src/hyphenation/patterns com/pdfjet/template src/template/fonts \
     examples/package/java tests/data/rsa-signer.p12 \
     tests/ltv-server.py tests/data/ltv-signer.p12 tests/data/ltv-root.pem tests/data/ltv-root.key \
     tests/data/ltv-root-index.txt tests/data/ltv-ca.pem tests/data/ltv-ca.key tests/data/ltv-ca-index.txt \
@@ -239,6 +239,7 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
     pro-src/com/pdfjet/sign/*.java \
     pro-src/com/pdfjet/invoice/*.java \
     pro-src/com/pdfjet/hyphenation/*.java \
+    pro-src/com/pdfjet/template/*.java \
     -d out/library
 # The hyphenation patterns, resources of com.pdfjet.hyphenation, with their
 # licenses; and those beside the jar too, as their MIT licenses ask that the
@@ -246,6 +247,12 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
 mkdir -p out/library/com/pdfjet/hyphenation/patterns
 cp pro-src/src/hyphenation/patterns/*.txt out/library/com/pdfjet/hyphenation/patterns/
 cp pro-src/src/hyphenation/patterns/LICENSES.txt HYPHENATION-PATTERNS-LICENSES.txt
+# PDFjet Forms' own IBM Plex Sans KR and TC, which the Template class draws
+# Korean and Chinese with, as Forms does, in resources/fonts/forms, where it
+# reads them, each family with its license: outside the jar, as PDFjet's
+# fonts are, so that PDFjet.jar stays small
+mkdir -p resources/fonts/forms
+cp -r pro-src/src/template/fonts/* resources/fonts/forms/
 stamp out/library
 printf 'Automatic-Module-Name: com.pdfjet\nImplementation-Title: PDFjet Pro\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
     "${VERSION#v}" > pro-manifest.txt
@@ -270,9 +277,12 @@ javadoc -quiet -notimestamp -public -doctitle "PDFjet Pro for Java" -windowtitle
     pro-src/com/pdfjet/sign/*.java \
     pro-src/com/pdfjet/invoice/*.java \
     pro-src/com/pdfjet/hyphenation/*.java \
+    pro-src/com/pdfjet/template/*.java \
     -d docs/java
 mkdir -p examples/pro
 cp pro-src/examples/package/java/*.java examples/pro/
+# The design of PDFjet Forms that FillTemplate fills in
+cp pro-src/examples/package/java/invoice-template.pdf examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
 # The test PKI of the long-term signature example, SignLongTerm, which no one
 # trusts, and ltv-server.py, its OCSP responder, CRLs, CA certificates and time
@@ -298,7 +308,7 @@ rm -rf ../java-pro
 # Creates the PDFs of PDFjet Pro with the package's own script.
 ./build-pro.sh
 rm -rf out-pro
-for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText \
+for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText Pro_FillTemplate \
         Pro_SignLongTerm_B-LT Pro_SignLongTerm_B-LTA Pro_SignLongTerm_B-LTA-renewed; do
     if ! tail -c 32 "$pdf.pdf" 2>/dev/null | grep -q '%%EOF'; then
         echo "$pdf.pdf was not created or is incomplete"

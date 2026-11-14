@@ -2,8 +2,8 @@
 ## PDFjet Pro
 
 This package is PDFjet Pro: its `PDFjet.jar` has, besides the library, digital
-signatures, and electronic invoices with the Swiss QR-bill and the EPC QR
-code. The API reference, `docs/java/index.html`, covers them.
+signatures, electronic invoices with the Swiss QR-bill and the EPC QR code,
+and templates of PDFjet Forms filled in from a program. The API reference, `docs/java/index.html`, covers them.
 
 | Path | What it is |
 |---|---|
@@ -12,6 +12,8 @@ code. The API reference, `docs/java/index.html`, covers them.
 | `examples/pro/DrawSwissQRBill.java` | Draws the Swiss QR-bill of an invoice. |
 | `examples/pro/DrawEPCQRCode.java` | Draws the EPC QR code of a SEPA credit transfer. |
 | `examples/pro/HyphenateText.java` | Hyphenates a paragraph, in English and German, beside the same without. |
+| `examples/pro/FillTemplate.java` | Fills in an invoice designed in PDFjet Forms: its words in braces by name, its table by rows. |
+| `examples/pro/invoice-template.pdf` | The invoice, as PDFjet Forms saved it, which FillTemplate fills in. |
 | `examples/pro/SignLongTerm.java` | Signs a document with long-term signatures, B-LT and B-LTA, and renews the archive time stamp. |
 | `examples/pro/demo-signer.p12` | A certificate for the signing example alone, which no one trusts. |
 | `examples/pro/ltv/` | The test PKI of SignLongTerm, which no one trusts, and `ltv-server.py`, its OCSP responder, CRLs and time stamp authority on 127.0.0.1:19180, which needs Python 3 and openssl; `build-pro.sh` starts it. |
@@ -30,6 +32,13 @@ code. The API reference, `docs/java/index.html`, covers them.
   of a text may break, for American and British English, French, Spanish and
   German, which TextBlock, TextFrame and the table cells break at. The
   licenses of its patterns are in `HYPHENATION-PATTERNS-LICENSES.txt`.
+- **Templates** (`com.pdfjet.template`), a beta: a design of PDFjet Forms, the
+  PDF Forms saves, filled in from a program by its labels, `set("Customer",
+  "Acme")`, and words in braces, `{invoiceNumber}`, its tables given their
+  rows; each `save` a new PDF, PDF/A-3 and PDF/UA, laid out as Forms lays
+  the design out. Korean and Chinese are drawn with Forms' own fonts, in
+  `resources/fonts/forms`, which a program reads from its working folder or
+  from its classpath, as `com/pdfjet/template/fonts`.
 
 The manifest of this `PDFjet.jar` names it PDFjet Pro, as the jar of PDFjet
 Core, of the same name, is not.
