@@ -178,6 +178,18 @@ Sans as .otf, and Source Han Sans JP.
     This license is available with a FAQ at: https://openfontlicense.org
 
 
+The examples include, unmodified, two fonts that only Example_52 uses and no
+package of PDFjet carries, in examples/fonts: Noto Sans Devanagari and Noto
+Sans Khmer, version 2.001, each with its license beside it.
+
+    ============================================================================
+    Noto Sans Devanagari: Copyright 2015 Google Inc. All Rights Reserved.
+    Noto Sans Khmer: Copyright 2016 Google Inc. All Rights Reserved.
+
+    This Font Software is licensed under the SIL Open Font License, Version 1.1.
+    This license is available with a FAQ at: https://openfontlicense.org
+
+
 This software includes data of the Washington State Department of Licensing,
 Electric Vehicle Population Data (https://data.wa.gov/d/f6w7-q2d2), in
 resources/data: Electric_Vehicle_Population_10_Pages.csv, a part of it, and

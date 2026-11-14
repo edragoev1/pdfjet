@@ -127,6 +127,9 @@ let package = Package(
         .executableTarget(name: "Example_49", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_50", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_51", dependencies: ["PDFjet"]),
+        // Core Text shapes Hindi and Khmer for drawGlyphs: Apple only; on
+        // Linux it says so (the Java Example_52 uses java.awt.font).
+        .executableTarget(name: "Example_52", dependencies: ["PDFjet"]),
         .executableTarget(name: "BookletSnippets", dependencies: ["PDFjet"], path: "booklet/snippets/swift"),
         // The harness of tests/corpus/check-corpus.py --port swift.
         .executableTarget(name: "CorpusSwift", dependencies: ["PDFjet"], path: "tests/corpus/swift"),

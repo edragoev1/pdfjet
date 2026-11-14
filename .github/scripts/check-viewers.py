@@ -66,7 +66,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 ENGINES = {'pdfium': 'PDFium', 'pdfjs': 'pdf.js', 'pdfkit': 'PDFKit', 'poppler': 'Poppler'}
-EXAMPLES = range(1, 52)
+EXAMPLES = range(1, 53)
 MAX_PAGES = 10
 RESOLUTION = 72
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -99,6 +99,16 @@ RENDER_EXCEPTIONS = {
                           'them with the fonts of the machine it runs on, if it finds any: PDFium drew '
                           'no Korean, and pdf.js, which uses no fonts of the machine in Node, drew empty '
                           'boxes',
+}
+
+# The characters an engine may lack from the text MuPDF extracts, as (engine,
+# name) pairs, with the first and the last of the characters and the reason.
+TEXT_EXCEPTIONS = {
+    ('pdfjs', 'Example_52'): (
+        '\u1780', '\u17ff',
+        'pdf.js reads no actual text, only the letters ToUnicode gives each glyph, and a Khmer vowel '
+        'drawn in two parts, as ោ, whose first part is the glyph of េ, cannot be spelled that way; '
+        'the Hindi is exact'),
 }
 
 # The passwords an engine is given in place of the ones in PASSWORDS, with
@@ -362,6 +372,9 @@ def check(engine, out, file):
                     problems.append(f'{ENGINES[engine]} {name}: page {i + 1} looks different from MuPDF, '
                                     f'{difference:.1%} of its inked blocks differ')
             missing = characters(page.get_text()) - characters(result['text'][i])
+            if (engine, name) in TEXT_EXCEPTIONS:
+                first, last = TEXT_EXCEPTIONS[engine, name][:2]
+                missing = Counter({c: n for c, n in missing.items() if not first <= c <= last})
             if missing:
                 problems.append(f'{ENGINES[engine]} {name}: page {i + 1} lacks {missing.total()} characters '
                                 f'MuPDF extracts: ' + ''.join(sorted(missing.elements()))[:40])

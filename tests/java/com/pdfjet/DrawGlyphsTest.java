@@ -16,8 +16,9 @@ import java.io.ByteArrayOutputStream;
 import org.junit.jupiter.api.Test;
 
 // drawGlyphs draws glyphs another engine shaped, by their numbers, as real
-// text: a span of actual text around them, each glyph at its place, and the
-// glyphs no character maps to mapped to their cluster's text in ToUnicode.
+// text: a span of actual text for each cluster, each glyph at its place, and
+// the glyphs no character maps to mapped to their cluster's letters in
+// ToUnicode, or to the zero width space.
 class DrawGlyphsTest {
 
     // The first glyph of the font no character maps to, like a conjunct
@@ -52,17 +53,36 @@ class DrawGlyphsTest {
                 new int[] {0, 1}, "AXY", "hi");
         page.addEMC();
         String content = TestSupport.content(page);
-        assertTrue(content.contains("/Span <</Lang <" + TestSupport.hex("hi") + "> /ActualText <"
-                + Page.toUTF16Hex("AXY") + ">>> BDC\nBT\n"), content);
-        assertTrue(content.contains("1 0 0 1 50 692 Tm\n<" + String.format("%04X", a) + "> Tj\n"), content);
-        assertTrue(content.contains("1 0 0 1 60 692 Tm\n<" + String.format("%04X", x) + "> Tj\nET\nEMC\n"), content);
-        assertEquals(2, count(content, "BDC\n"), content);   // The paragraph's, and the span's
-        // The unmapped glyph maps to its cluster's characters, "XY"; the
-        // mapped one keeps its own
+        // The language around them all, then a span of actual text for each
+        // cluster, its glyphs in a TJ array
+        assertTrue(content.contains("/Span <</Lang <" + TestSupport.hex("hi") + ">>> BDC\nBT\n"), content);
+        assertTrue(content.contains("/Span <</ActualText <" + Page.toUTF16Hex("A") + ">>> BDC\n"
+                + "1 0 0 1 50 692 Tm\n[<" + String.format("%04X", a) + ">] TJ\nEMC\n"), content);
+        assertTrue(content.contains("/Span <</ActualText <" + Page.toUTF16Hex("XY") + ">>> BDC\n"
+                + "1 0 0 1 60 692 Tm\n[<" + String.format("%04X", x) + ">] TJ\nEMC\nET\nEMC\n"), content);
+        assertEquals(4, count(content, "BDC\n"), content);   // The paragraph's, the language's, two spans
+        // The unmapped glyph maps to its cluster's letters, "XY"; the mapped
+        // one keeps its own
         String map = FontWriter.toUnicodeCMap(font, null).toLowerCase();
         assertTrue(map.contains("<" + String.format("%04x", x) + "> <00580059>"), map);
         assertFalse(map.contains("<" + String.format("%04x", a) + "> <0058"), map);
         pdf.complete();
+    }
+
+    @Test
+    void anUnmappedGlyphBesideALetterTheClusterLacksIsTheZeroWidthSpace() throws Exception {
+        // As Khmer's ោ, drawn as the glyph of េ and a second part: the letters
+        // cannot add up to the cluster's, and MuPDF would copy it twice
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Title");
+        Font font = TestSupport.plexSans(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        int b = font.unicodeToGID.get('B');
+        int x = unmappedGlyph(font);
+        page.drawGlyphs(font, new int[] {b, x}, new float[] {50f, 100f, 60f, 100f},
+                new int[] {0, 0}, "XY", "en");
+        String map = FontWriter.toUnicodeCMap(font, null).toLowerCase();
+        assertTrue(map.contains("<" + String.format("%04x", x) + "> <200b>"), map);
     }
 
     @Test
@@ -79,14 +99,15 @@ class DrawGlyphsTest {
     }
 
     @Test
-    void anUntaggedPageHasTheSpanOfActualTextAlone() throws Exception {
+    void anUntaggedPageHasTheSpansOfActualTextAlone() throws Exception {
         PDF pdf = new PDF(new ByteArrayOutputStream());
         Font font = TestSupport.plexSans(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
         int a = font.unicodeToGID.get('A');
         page.drawGlyphs(font, new int[] {a}, new float[] {50f, 100f}, null, "A", null);
         String content = TestSupport.content(page);
-        assertTrue(content.startsWith("/Span <</ActualText <" + Page.toUTF16Hex("A") + ">>> BDC\nBT\n"), content);
+        assertTrue(content.startsWith("BT\n"), content);
+        assertTrue(content.contains("/Span <</ActualText <" + Page.toUTF16Hex("A") + ">>> BDC\n"), content);
         assertFalse(content.contains("MCID"), content);
     }
 

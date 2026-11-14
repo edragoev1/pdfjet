@@ -106,7 +106,12 @@ for port in java dotnet go swift; do
     fi
     mkdir -p "$WORK/pdfs/$port"
     missing=0
-    for i in $(seq -w 1 51); do
+    # Java has Example_52 too, which the other ports do not
+    last=51
+    if [ $port = java ]; then
+        last=52
+    fi
+    for i in $(seq -w 1 $last); do
         if [ -s Example_$i.pdf ]; then
             mv Example_$i.pdf "$WORK/pdfs/$port/"
         else

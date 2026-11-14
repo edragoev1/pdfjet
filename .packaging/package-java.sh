@@ -119,8 +119,8 @@ tar -x -C "$STAGE" -f "$TAR"
 rm "$TAR"
 
 # The C# example projects and the Go and Swift files of resources and images
-# are not needed.
-find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
+# are not needed; examples/fonts, the fonts Example_52 shapes with, are.
+find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d ! -name fonts -exec rm -rf {} +
 rm -f "$STAGE/resources/images/go.mod" "$STAGE/resources/data/go.mod"
 # Every .go and .swift file of resources/fonts: fonts.go and the packages
 # world and cjk, which embed the fonts for Go, and the sources of the Swift

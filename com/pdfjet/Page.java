@@ -3229,11 +3229,14 @@ final public class Page {
      * The clusters say which characters of the text each glyph comes from, as
      * the engine reports them (java.awt.font's getGlyphCharIndex, HarfBuzz's
      * cluster, Core Text's string indices): the index in the text of the first
-     * character of the glyph's cluster. A glyph no character of the font maps
-     * to, such as a conjunct, is mapped to its cluster's characters, for the
-     * ToUnicode map PDF/UA asks of every glyph drawn. Without clusters (null),
-     * such a glyph maps to the replacement character, U+FFFD, and copying
-     * relies on the actual text alone.
+     * character of the glyph's cluster. Each cluster, with the glyphs drawn
+     * for it, is a span of actual text, so that copying gets the text in
+     * order. Without clusters (null), all the glyphs are one span. A glyph no
+     * character of the font maps to, such as a conjunct, is mapped in the
+     * ToUnicode map PDF/UA asks of every glyph drawn to the characters of its
+     * cluster the cluster's other glyphs do not give, so that viewers that
+     * read ToUnicode alone copy the same; to the zero width space, U+200B,
+     * when they give them all, and without clusters.
      *
      * @param font the font, loaded from the font file the engine shaped with.
      * @param glyphs the glyph numbers, in the order they are drawn.
@@ -3288,17 +3291,13 @@ final public class Page {
         if (own) {
             addBDC(StructElem.P, language, null, null);
         }
-        // The text the glyphs stand for, for copying, searching and screen
-        // readers; a span of actual text is read in untagged documents too
-        append("/Span <<");
-        if (language != null && !language.isEmpty()) {
-            append("/Lang <");
+        // The language of the glyphs, around them all
+        boolean languageSpan = language != null && !language.isEmpty();
+        if (languageSpan) {
+            append("/Span <</Lang <");
             append(Util.toHexString(Util.utf8(language)));
-            append("> ");
+            append(">>> BDC\n");
         }
-        append("/ActualText <");
-        append(toUTF16Hex(text));
-        append(">>> BDC\n");
         append("BT\n");
         setTextFont(font, font.size);
         if (renderingMode != 0 || renderingModeSet) {
@@ -3306,8 +3305,6 @@ final public class Page {
             append(renderingMode);
             append(" Tr\n");
         }
-        // Each glyph at its own place: the engine placed it, kerning, marks and
-        // reordering included
         // The clusters in order, so that a cluster's characters run to the
         // next cluster
         int[] starts = null;
@@ -3315,39 +3312,203 @@ final public class Page {
             starts = clusters.clone();
             java.util.Arrays.sort(starts);
         }
-        for (int i = 0; i < glyphs.length; i++) {
-            append("1 0 0 1 ");
-            append(positions[2 * i]);
-            append(' ');
-            append(height - positions[2 * i + 1]);
-            append(" Tm\n<");
-            appendGlyphUnkerned(font, glyphs[i]);
-            append("> Tj\n");
-            font.useGlyphText(glyphs[i], clusterText(text, clusters, starts, i));
+        // The baseline: the y most of the glyphs are drawn at
+        float baseline = baselineOf(positions);
+        // A span of actual text for each group of glyphs, the text they stand
+        // for, read in untagged documents too: a cluster, or the clusters a
+        // glyph drawn before its cluster joins, as a vowel sign of Hindi drawn
+        // before its consonant. MuPDF repeats or leaves out text when the
+        // glyphs of a span do not match its actual text, as one span for a
+        // whole line did; with clusters the spans tile the text, in order.
+        // Without clusters, one span for all the glyphs.
+        // The text of each glyph no character maps to, for ToUnicode
+        String[] glyphTexts = glyphTexts(font, glyphs, clusters, starts, text);
+        // The smallest cluster of the glyphs from each on
+        int[] laterMin = null;
+        if (clusters != null) {
+            laterMin = new int[glyphs.length + 1];
+            laterMin[glyphs.length] = Integer.MAX_VALUE;
+            for (int k = glyphs.length - 1; k >= 0; k--) {
+                laterMin[k] = Math.min(clusters[k], laterMin[k + 1]);
+            }
+        }
+        int textEnd = 0;  // The end of the text the spans before took
+        int i = 0;
+        while (i < glyphs.length) {
+            int j = glyphs.length - 1;
+            int end = text.length();
+            if (clusters != null) {
+                // The group grows while a later glyph belongs to its text
+                j = i;
+                end = clusterEnd(text, starts, clusters[i]);
+                while (j + 1 < glyphs.length && laterMin[j + 1] < end) {
+                    j++;
+                    end = Math.max(end, clusterEnd(text, starts, clusters[j]));
+                }
+                if (j == glyphs.length - 1) {
+                    end = text.length();
+                }
+            }
+            append("/Span <</ActualText <");
+            append(toUTF16Hex(text.substring(Math.min(textEnd, end), end)));
+            append(">>> BDC\n");
+            // The glyphs of the span in one array of text, as one run: MuPDF
+            // repeats a span's text for each run of glyphs it sees, and a
+            // glyph placed with its own Tm, a mark over the glyph before it,
+            // starts one. Each glyph is moved to the place the engine gave
+            // it by the adjustment of the array, against its advance in the
+            // font; a glyph off the baseline, as a subscript of Khmer, by
+            // the text rise, which ends the array and starts another.
+            float size = font.size;
+            float rise = 0f;
+            boolean open = false;
+            float penX = 0f;  // Where the next glyph would be drawn without an adjustment
+            for (int k = i; k <= j; k++) {
+                float glyphX = positions[2 * k];
+                float glyphRise = baseline - positions[2 * k + 1];
+                if (!open || glyphRise != rise) {
+                    if (open) {
+                        append("] TJ\n");
+                    }
+                    if (glyphRise != rise) {
+                        append(glyphRise);
+                        append(" Ts\n");
+                        rise = glyphRise;
+                    }
+                    append("1 0 0 1 ");
+                    append(glyphX);
+                    append(' ');
+                    append(height - baseline);
+                    append(" Tm\n[");
+                    penX = glyphX;
+                    open = true;
+                } else if (glyphX != penX) {
+                    append(' ');
+                    append(-1000f * (glyphX - penX) / size);
+                    append(' ');
+                    penX = glyphX;
+                }
+                append('<');
+                appendGlyphUnkerned(font, glyphs[k]);
+                append('>');
+                penX += advanceOf(font, glyphs[k]) * size / font.unitsPerEm;
+                font.useGlyphText(glyphs[k], glyphTexts[k]);
+            }
+            if (open) {
+                append("] TJ\n");
+            }
+            if (rise != 0f) {
+                append("0 Ts\n");
+            }
+            append("EMC\n");
+            textEnd = end;
+            i = j + 1;
         }
         append("ET\n");
-        append("EMC\n");
+        if (languageSpan) {
+            append("EMC\n");
+        }
         if (own) {
             addEMC();
         }
     }
 
-    // The characters of the glyph's cluster: from its start to the next
-    // cluster's, or to the end of the text; the replacement character without
-    // clusters.
-    private static String clusterText(String text, int[] clusters, int[] starts, int i) {
+    // The text ToUnicode gives each glyph no character maps to: the
+    // characters of its cluster that the cluster's other glyphs do not give,
+    // as the conjunct of Hindi's क्ष its three characters, so that a viewer
+    // that reads ToUnicode alone, as pdf.js, copies the same letters as one
+    // that reads the actual text. The zero width space for the other glyphs
+    // of the cluster no character maps to, without clusters, and where a
+    // glyph of the cluster is a letter the cluster does not have, as the
+    // first part of Khmer's ោ, drawn as េ: there the letters of the glyphs
+    // cannot add up to the cluster's, and MuPDF, which then reads both the
+    // actual text and the letters, copies the cluster twice.
+    private static String[] glyphTexts(Font font, int[] glyphs, int[] clusters, int[] starts, String text) {
+        String[] texts = new String[glyphs.length];
+        java.util.Arrays.fill(texts, "\u200B");
         if (clusters == null) {
-            return "\uFFFD";
+            return texts;
         }
-        int start = clusters[i];
-        int end = text.length();
-        for (int s : starts) {
-            if (s > start) {
-                end = s;
-                break;
+        java.util.Map<Integer, java.util.List<Integer>> byCluster =
+                new java.util.HashMap<Integer, java.util.List<Integer>>();
+        for (int k = 0; k < glyphs.length; k++) {
+            java.util.List<Integer> list = byCluster.get(clusters[k]);
+            if (list == null) {
+                list = new java.util.ArrayList<Integer>();
+                byCluster.put(clusters[k], list);
+            }
+            list.add(k);
+        }
+        for (java.util.Map.Entry<Integer, java.util.List<Integer>> entry : byCluster.entrySet()) {
+            int start = entry.getKey();
+            String characters = text.substring(start, clusterEnd(text, starts, start));
+            java.util.List<Integer> left = new java.util.ArrayList<Integer>();
+            for (int i = 0; i < characters.length(); i = characters.offsetByCodePoints(i, 1)) {
+                left.add(characters.codePointAt(i));
+            }
+            int unmapped = -1;
+            boolean adds = true;  // Whether the letters of the glyphs can add up to the cluster's
+            for (int k : entry.getValue()) {
+                int gid = glyphs[k];
+                if (font.unicodeOf != null && gid < font.unicodeOf.length && font.unicodeOf[gid] >= 0) {
+                    adds &= left.remove(Integer.valueOf(font.unicodeOf[gid]));
+                } else if (unmapped < 0) {
+                    unmapped = k;
+                }
+            }
+            if (unmapped >= 0 && adds && !left.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (int c : left) {
+                    sb.appendCodePoint(c);
+                }
+                texts[unmapped] = sb.toString();
             }
         }
-        return text.substring(start, end);
+        return texts;
+    }
+
+    // The advance of the glyph in the font's units, 0 for a glyph past the
+    // font's widths.
+    private static int advanceOf(Font font, int gid) {
+        if (font.advanceWidth == null || gid >= font.advanceWidth.length) {
+            return 0;
+        }
+        return font.advanceWidth[gid];
+    }
+
+    // The y most of the glyphs are drawn at, the first of them on a tie.
+    private static float baselineOf(float[] positions) {
+        java.util.Map<Float, Integer> counts = new java.util.HashMap<Float, Integer>();
+        for (int i = 1; i < positions.length; i += 2) {
+            Integer count = counts.get(positions[i]);
+            counts.put(positions[i], count == null ? 1 : count + 1);
+        }
+        float best = positions[1];
+        int bestCount = 0;
+        for (int i = 1; i < positions.length; i += 2) {
+            int count = counts.get(positions[i]);
+            if (count > bestCount) {
+                best = positions[i];
+                bestCount = count;
+            }
+        }
+        return best;
+    }
+
+    // The end of the cluster that starts at start: the next cluster's start,
+    // or the end of the text.
+    private static int clusterEnd(String text, int[] starts, int start) {
+        int low = 0;
+        int high = starts.length;
+        while (low < high) {
+            int middle = (low + high) >>> 1;
+            if (starts[middle] > start) {
+                high = middle;
+            } else {
+                low = middle + 1;
+            }
+        }
+        return low < starts.length ? starts[low] : text.length();
     }
 
     // Whether what is drawn now is inside real content of a tagged document:

@@ -59,6 +59,17 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- [ ] **drawGlyphs: the span of actual text per cluster in C# and Go**
+  (14 November 2026). Java and Swift draw each cluster as its own span of
+  actual text, its glyphs in one TJ array, a glyph off the baseline by the
+  text rise, and map a glyph no character maps to to the letters of its
+  cluster the other glyphs do not give (the zero width space where they
+  cannot add up, as Khmer's ោ). C# and Go still draw one span for all the
+  glyphs, each glyph with its own Tm, mapped to its whole cluster's text,
+  which MuPDF copies twice. Port Page.drawGlyphs, glyphTexts, baselineOf,
+  clusterEnd and advanceOf, and the DrawGlyphs tests, before the release;
+  Example_52 then in C# and Go too, if wanted.
+
 - [ ] **Markdown: a heading stays with the block after it, in all four
   ports** (found 14 November 2026, making a landscape document with md2pdf).
   A heading near the bottom of a page is drawn there, and a table that does

@@ -40,13 +40,16 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 PORTS = ['java', 'dotnet', 'go', 'swift']
-EXAMPLES = range(1, 52)
+EXAMPLES = range(1, 53)
 MAX_PAGES = 10
 RESOLUTION = 50
 EXAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'examples')
 
-# Examples a port does not have, as (port, number) pairs.
-MISSING = set()
+# Examples a port does not have, as (port, number) pairs. Example_52 shapes
+# Hindi and Khmer with java.awt.font, which only Java has; the other ports
+# feed drawGlyphs from their own engines (Core Text, HarfBuzz), which draw
+# their own PDFs, not Java's.
+MISSING = {('dotnet', 52), ('go', 52), ('swift', 52)}
 
 # Examples whose pages a port is allowed to draw differently from Java, with
 # the reason, for example: ('go', 4): 'why the Go example draws differently'.
