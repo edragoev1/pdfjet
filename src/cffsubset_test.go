@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -53,7 +54,7 @@ func testCFFParts(t *testing.T, cff []byte) (charStrings, globalSubrs [][]byte, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	return emptiedCFFIndex(cff, index, nil, 0), emptiedCFFIndex(cff, globals, nil, 0), top
+	return emptiedCFFIndex(cff, index, nil), emptiedCFFIndex(cff, globals, nil), top
 }
 
 // testCFFUsed returns the glyphs of the text in the font.
@@ -65,7 +66,38 @@ func testCFFUsed(otf *openTypeFont, text string) []bool {
 	return used
 }
 
-func TestCFFSubsetKeepsTheCharstringsUsedAndEmptiesTheRest(t *testing.T) {
+// testCFFCharset returns the CIDs the charset of the subset gives its glyphs
+// after .notdef, of formats 0, 1 and 2.
+func testCFFCharset(t *testing.T, cff []byte, top []cffEntry, glyphs int) []int {
+	t.Helper()
+	at := cffEntryOf(top, cffCharset)[0]
+	format := cff[at]
+	at++
+	var cids []int
+	for len(cids) < glyphs-1 {
+		switch format {
+		case 0:
+			cids = append(cids, int(cff[at])<<8|int(cff[at+1]))
+			at += 2
+		case 1, 2:
+			first := int(cff[at])<<8 | int(cff[at+1])
+			left := int(cff[at+2])
+			at += 3
+			if format == 2 {
+				left = left<<8 | int(cff[at])
+				at++
+			}
+			for cid := first; cid <= first+left; cid++ {
+				cids = append(cids, cid)
+			}
+		default:
+			t.Fatalf("charset format %d", format)
+		}
+	}
+	return cids
+}
+
+func TestCFFSubsetIsACIDFontOfTheGlyphsUsedAlone(t *testing.T) {
 	for _, path := range []string{testPlexOTF, testHanOTF} {
 		otf, cff := testCFF(t, path)
 		used := testCFFUsed(otf, "Hello 日本語")
@@ -74,25 +106,52 @@ func TestCFFSubsetKeepsTheCharstringsUsedAndEmptiesTheRest(t *testing.T) {
 			t.Fatal(path, err)
 		}
 		whole, wholeGlobals, _ := testCFFParts(t, cff)
-		glyphs, globals, _ := testCFFParts(t, subset)
-		if len(glyphs) != len(whole) || len(kept) != len(whole) {
-			t.Fatalf("%s: %d glyphs, not %d", path, len(glyphs), len(whole))
+		glyphs, globals, top := testCFFParts(t, subset)
+		if len(kept) != len(whole) {
+			t.Fatalf("%s: kept is of %d glyphs, not %d", path, len(kept), len(whole))
 		}
-		for gid := range glyphs {
+		// The glyphs kept, .notdef and those used, alone, in their order
+		var keptGIDs []int
+		for gid := range kept {
 			if want := gid == 0 || used[gid]; kept[gid] != want {
 				t.Errorf("%s: glyph %d kept: %v", path, gid, kept[gid])
 			}
-			if kept[gid] && !bytes.Equal(glyphs[gid], whole[gid]) {
-				t.Errorf("%s: glyph %d is not as it was", path, gid)
-			}
-			if !kept[gid] && !bytes.Equal(glyphs[gid], []byte{14}) {
-				t.Errorf("%s: glyph %d is not endchar", path, gid)
+			if kept[gid] && gid > 0 {
+				keptGIDs = append(keptGIDs, gid)
 			}
 		}
-		// The global subroutines are kept as they were, or emptied to return.
+		if len(glyphs) != len(keptGIDs)+1 {
+			t.Fatalf("%s: %d glyphs, not %d", path, len(glyphs), len(keptGIDs)+1)
+		}
+		// A CIDFont, whose charset gives each glyph its number in the font
+		// as its CID, which the content streams draw it by
+		if cffEntryOf(top, cffROS) == nil || cffEntryOf(top, cffFDArray) == nil {
+			t.Errorf("%s: the subset is not a CIDFont", path)
+		}
+		if cffEntryOf(top, cffEncoding) != nil {
+			t.Errorf("%s: the subset has an Encoding", path)
+		}
+		cids := testCFFCharset(t, subset, top, len(glyphs))
+		if fmt.Sprint(cids) != fmt.Sprint(keptGIDs) {
+			t.Errorf("%s: the CIDs %v, not %v", path, cids, keptGIDs)
+		}
+		// Each glyph as it was, .notdef first
+		if !bytes.Equal(glyphs[0], whole[0]) {
+			t.Errorf("%s: .notdef is not as it was", path)
+		}
+		for i, gid := range keptGIDs {
+			if !bytes.Equal(glyphs[i+1], whole[gid]) {
+				t.Errorf("%s: glyph %d is not as it was", path, gid)
+			}
+		}
+		// The global subroutines keep their numbers: those called as they
+		// were, the others emptied to no bytes
+		if len(globals) != len(wholeGlobals) {
+			t.Fatalf("%s: %d global subroutines, not %d", path, len(globals), len(wholeGlobals))
+		}
 		emptied := 0
 		for i := range globals {
-			if bytes.Equal(globals[i], []byte{11}) && !bytes.Equal(wholeGlobals[i], []byte{11}) {
+			if len(globals[i]) == 0 && len(wholeGlobals[i]) > 0 {
 				emptied++
 			} else if !bytes.Equal(globals[i], wholeGlobals[i]) {
 				t.Errorf("%s: global subroutine %d changed", path, i)
@@ -101,35 +160,36 @@ func TestCFFSubsetKeepsTheCharstringsUsedAndEmptiesTheRest(t *testing.T) {
 		if emptied == 0 {
 			t.Errorf("%s: no global subroutine emptied", path)
 		}
-		if len(subset) > len(cff)/3 {
+		if len(subset) > len(cff)/10 {
 			t.Errorf("%s: %d bytes of %d", path, len(subset), len(cff))
 		}
 	}
 }
 
-func TestCFFSubsetOfACIDKeyedFontHasTheIdentityCharset(t *testing.T) {
+func TestCFFSubsetOfEveryGlyphHasTheIdentityCharset(t *testing.T) {
 	// Source Han Sans JP gives its glyphs CIDs of Adobe-Japan1, not their
-	// numbers, and a PDF looks the glyphs of a CID-keyed font up by CID.
-	_, cff := testCFF(t, testHanOTF)
-	for _, used := range [][]bool{nil, make([]bool, 0x10000)} {
-		subset, _, err := subsetCFF(cff, used)
+	// numbers, and a PDF looks the glyphs of a CID-keyed font up by CID:
+	// written whole, each glyph's CID is its number.
+	for _, path := range []string{testPlexOTF, testHanOTF} {
+		_, cff := testCFF(t, path)
+		whole, _, _ := testCFFParts(t, cff)
+		subset, kept, err := subsetCFF(cff, nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal(path, err)
 		}
 		glyphs, _, top := testCFFParts(t, subset)
-		at := cffEntryOf(top, cffCharset)[0]
-		n := len(glyphs) - 2
-		if want := []byte{2, 0, 1, byte(n >> 8), byte(n)}; !bytes.Equal(subset[at:at+5], want) {
-			t.Errorf("used %v: the charset % x", used != nil, subset[at:at+5])
+		if len(glyphs) != len(whole) || len(kept) != len(whole) {
+			t.Fatalf("%s: %d glyphs, not %d", path, len(glyphs), len(whole))
 		}
-	}
-	// Kept whole, every charstring is as it was.
-	whole, _, _ := testCFFParts(t, cff)
-	subset, _, _ := subsetCFF(cff, nil)
-	glyphs, _, _ := testCFFParts(t, subset)
-	for gid := range glyphs {
-		if !bytes.Equal(glyphs[gid], whole[gid]) {
-			t.Fatalf("glyph %d is not as it was", gid)
+		for i, cid := range testCFFCharset(t, subset, top, len(glyphs)) {
+			if cid != i+1 {
+				t.Fatalf("%s: glyph %d has the CID %d", path, i+1, cid)
+			}
+		}
+		for gid := range glyphs {
+			if !bytes.Equal(glyphs[gid], whole[gid]) {
+				t.Fatalf("%s: glyph %d is not as it was", path, gid)
+			}
 		}
 	}
 }

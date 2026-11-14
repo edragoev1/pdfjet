@@ -5,17 +5,17 @@
 
 package pdfjet
 
-// The subset of a font with CFF outlines, a .otf: the CFF table with the
-// charstrings of the glyphs the document does not draw emptied, and the
-// subroutines, global and local, that the glyphs kept do not call. Every
-// glyph and every subroutine keeps its number, so the glyphs kept are drawn
-// by the same bytes as in the whole font. The CFF is
-// written again in a fixed order, with every offset of its Top DICT, and of the
-// Font DICTs of a CID-keyed font, in the five-byte form, so that an offset of
-// any value has the same size: the header, the Name, Top DICT, String and
-// Global Subr INDEXes, the charset, the Encoding and the FDSelect, the new
-// CharStrings INDEX, the FDArray, and each Private DICT with its local
-// subroutines.
+// The subset of a font with CFF outlines, a .otf: a CIDFont of the glyphs the
+// document draws alone, its charset giving each glyph its number in the
+// whole font as its CID, by which the PDF draws it, and the subroutines,
+// global and local, that the glyphs kept do not call emptied to no bytes,
+// keeping their numbers, so the glyphs kept are drawn by the same bytes as in
+// the whole font. A name-keyed font becomes a CIDFont of Adobe-Identity-0.
+// The CFF is written again in a fixed order, with every offset of its Top
+// DICT and of its Font DICTs in the five-byte form, so that an offset of any
+// value has the same size: the header, the Name, Top DICT, String and Global
+// Subr INDEXes, the charset, the FDSelect, the new CharStrings INDEX, the
+// FDArray, and each Private DICT with its local subroutines.
 
 // cffIndex is an INDEX of a CFF table: where it starts and ends, and the
 // offsets of its objects in the table.
@@ -105,6 +105,7 @@ const (
 	cffFDSelect    = 12<<8 | 37
 	cffROS         = 12<<8 | 30
 	cffCIDCount    = 12<<8 | 34
+	cffFontMatrix  = 12<<8 | 7
 )
 
 // readCFFDict reads the entries of a DICT.
@@ -224,58 +225,6 @@ func writeCFFDict(entries []cffEntry, offsets map[int]int, privateSize int) []by
 		}
 	}
 	return out
-}
-
-// cffCharsetLength returns the length of the charset at the offset, for the
-// glyphs of the font.
-func cffCharsetLength(cff []byte, at, numGlyphs int) (int, error) {
-	if at < 0 || at >= len(cff) {
-		return 0, errNotSubset
-	}
-	switch cff[at] {
-	case 0:
-		return 1 + 2*(numGlyphs-1), nil
-	case 1, 2:
-		size := int(cff[at]) // The size of nLeft: 1 byte in format 1, 2 in format 2
-		covered := 1         // .notdef is not in it
-		i := at + 1
-		for covered < numGlyphs {
-			if i+2+size > len(cff) {
-				return 0, errNotSubset
-			}
-			nLeft := int(cff[i+2])
-			if size == 2 {
-				nLeft = nLeft<<8 | int(cff[i+3])
-			}
-			covered += nLeft + 1
-			i += 2 + size
-		}
-		return i - at, nil
-	}
-	return 0, errNotSubset
-}
-
-// cffEncodingLength returns the length of the Encoding at the offset.
-func cffEncodingLength(cff []byte, at int) (int, error) {
-	if at < 0 || at+2 > len(cff) {
-		return 0, errNotSubset
-	}
-	length := 0
-	switch cff[at] & 0x7F {
-	case 0:
-		length = 2 + int(cff[at+1])
-	case 1:
-		length = 2 + 2*int(cff[at+1])
-	default:
-		return 0, errNotSubset
-	}
-	if cff[at]&0x80 != 0 { // Supplements
-		if at+length >= len(cff) {
-			return 0, errNotSubset
-		}
-		length += 1 + 3*int(cff[at+length])
-	}
-	return length, nil
 }
 
 // cffFDSelectLength returns the length of the FDSelect at the offset.
@@ -470,15 +419,16 @@ func (u *cffUsage) run(cs []byte, depth int) {
 	}
 }
 
-// emptied returns the objects of the INDEX, those not used emptied to the
-// charstring of the byte given.
-func emptiedCFFIndex(cff []byte, index cffIndex, used []bool, empty byte) [][]byte {
+// emptiedCFFIndex returns the objects of the INDEX, those not used emptied to
+// no bytes, which keeps their numbers and makes their offsets the same as the
+// next one's, or every one for used nil.
+func emptiedCFFIndex(cff []byte, index cffIndex, used []bool) [][]byte {
 	objects := make([][]byte, len(index.objects)-1)
 	for i := range objects {
 		if used == nil || used[i] {
 			objects[i] = cff[index.objects[i]:index.objects[i+1]]
 		} else {
-			objects[i] = []byte{empty}
+			objects[i] = []byte{}
 		}
 	}
 	return objects
@@ -518,11 +468,22 @@ func cffFDOf(fdSelect []byte, numGlyphs, fds int) ([]int, error) {
 	return fdOf, nil
 }
 
-// subsetCFF returns the CFF table with the charstrings of the glyphs not used
-// emptied, and the subroutines they do not call, and the glyphs kept: those
-// used and glyph 0, or every glyph for used nil, which writes the table again
-// with nothing left out, for the identity charset of a CID-keyed font. A
-// table that cannot be read gives an error.
+// subsetCFF returns the CFF table of the glyphs used and glyph 0, or of every
+// glyph for used nil, and the glyphs kept, by their numbers in the font. The
+// subset is a CIDFont of the glyphs kept alone, in the order of their
+// numbers, its charset giving each its number in the font as its CID: the
+// PDF draws a glyph of a CIDFontType0C program by its CID, which the charset
+// maps to the glyph (ISO 32000-2, 9.7.4.2; Technical Note #5176, section 18,
+// "Subset CIDFonts will generally need to use a more complex charset table
+// representing a non-identity mapping"), so the content streams, the widths
+// and the ToUnicode map stay those of the whole font. A name-keyed font is
+// written as a CIDFont of the ordering Adobe-Identity-0 with one Font DICT,
+// its Private DICT. The subroutines the glyphs kept do not call are emptied
+// to no bytes, keeping their numbers, and the Font DICTs no glyph kept uses
+// are left out. Every INDEX has the least offSize its offsets need; the
+// offsets of the Top DICT and of the Font DICTs are in the five-byte form. A
+// table that cannot be read, or a name-keyed font of a FontMatrix of its own,
+// gives an error.
 func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 	if len(cff) < 4 || cff[0] != 1 {
 		return nil, nil, errNotSubset // Not CFF version 1
@@ -561,12 +522,8 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		return nil, nil, errNotSubset
 	}
 
-	// The blocks copied as they are, but the charset of a CID-keyed font,
-	// which maps each glyph to its CID: it is made the identity, so that the
-	// glyph numbers PDFjet writes are the CIDs of the glyphs, as they are in a
-	// name-keyed font.
-	var charset, encoding, fdSelect []byte
 	cidKeyed := cffEntryOf(top, cffROS) != nil
+	var fdSelect []byte
 	if cidKeyed {
 		if count := cffEntryOf(top, cffCIDCount); count != nil && (len(count) != 1 || count[0] < numGlyphs) {
 			return nil, nil, errNotSubset
@@ -574,30 +531,7 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		if count := cffEntryOf(top, cffCIDCount); count == nil && numGlyphs > 8720 {
 			return nil, nil, errNotSubset // The default CIDCount
 		}
-		charset = []byte{0} // Format 0, for .notdef alone
-		if numGlyphs > 1 {
-			// Format 2, one range: CIDs 1 to numGlyphs-1.
-			charset = []byte{2, 0, 1, byte((numGlyphs - 2) >> 8), byte(numGlyphs - 2)}
-		}
-	} else if at := cffEntryOf(top, cffCharset); len(at) == 1 && at[0] > 2 {
-		length, err := cffCharsetLength(cff, at[0], numGlyphs)
-		if err == nil {
-			charset, err = cffBlock(cff, at[0], length)
-		}
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	if at := cffEntryOf(top, cffEncoding); len(at) == 1 && at[0] > 1 {
-		length, err := cffEncodingLength(cff, at[0])
-		if err == nil {
-			encoding, err = cffBlock(cff, at[0], length)
-		}
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	if at := cffEntryOf(top, cffFDSelect); at != nil {
+		at := cffEntryOf(top, cffFDSelect)
 		if len(at) != 1 {
 			return nil, nil, errNotSubset
 		}
@@ -608,14 +542,19 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		if err != nil {
 			return nil, nil, err
 		}
+	} else if cffHasEntry(top, cffFontMatrix) {
+		// Its matrix would have to go into the Font DICT, against the
+		// one a CIDFont's Top DICT has by default.
+		return nil, nil, errNotSubset
 	}
 
-	// The Private DICT of a name-keyed font, or the Font DICTs of a CID-keyed
-	// one, each with its Private DICT.
+	// The Font DICTs of a CID-keyed font, each with its Private DICT, or the
+	// Private DICT of a name-keyed one, which becomes its one Font DICT's.
 	var privates []cffPrivateDict
 	var fontDicts [][]cffEntry
-	if at := cffEntryOf(top, cffFDArray); at != nil {
-		if len(at) != 1 || fdSelect == nil {
+	if cidKeyed {
+		at := cffEntryOf(top, cffFDArray)
+		if len(at) != 1 {
 			return nil, nil, errNotSubset
 		}
 		fdArray, err := readCFFIndex(cff, at[0])
@@ -638,7 +577,8 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 			fontDicts = append(fontDicts, entries)
 			privates = append(privates, block)
 		}
-	} else if private := cffEntryOf(top, cffPrivate); private != nil {
+	} else {
+		private := cffEntryOf(top, cffPrivate)
 		if len(private) != 2 {
 			return nil, nil, errNotSubset
 		}
@@ -646,25 +586,26 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		if err != nil {
 			return nil, nil, err
 		}
+		fontDicts = [][]cffEntry{{{op: cffPrivate}}}
 		privates = append(privates, block)
 	}
 
-	// The charstrings, of the glyphs kept as they were, of the others endchar.
+	// The glyphs kept, by their numbers in the font, which are their CIDs.
 	kept := make([]bool, numGlyphs)
-	glyphs := make([][]byte, numGlyphs)
-	endchar := []byte{14}
+	var keptGIDs []int
 	for gid := 0; gid < numGlyphs; gid++ {
 		if used == nil || gid == 0 || (gid < len(used) && used[gid]) {
 			kept[gid] = true
-			glyphs[gid] = cff[charStrings.objects[gid]:charStrings.objects[gid+1]]
-		} else {
-			glyphs[gid] = endchar
+			keptGIDs = append(keptGIDs, gid)
 		}
 	}
-	newCharStrings := appendCFFIndex(nil, glyphs)
+	glyphs := make([][]byte, len(keptGIDs))
+	for i, gid := range keptGIDs {
+		glyphs[i] = cff[charStrings.objects[gid]:charStrings.objects[gid+1]]
+	}
 
-	// The subroutines the glyphs kept call, the others emptied to return. A
-	// font whose charstrings cannot be followed keeps them all.
+	// The subroutines the glyphs kept call, the others emptied. A font whose
+	// charstrings cannot be followed keeps them all.
 	fdOf, err := cffFDOf(fdSelect, numGlyphs, len(privates))
 	if err != nil {
 		return nil, nil, err
@@ -680,20 +621,17 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 	if used == nil {
 		usage.err = errNotSubset // Every glyph and subroutine kept
 	}
-	for gid := 0; gid < numGlyphs && usage.err == nil; gid++ {
-		if !kept[gid] {
-			continue
-		}
+	for i := 0; i < len(keptGIDs) && usage.err == nil; i++ {
 		fd := 0
 		if fdOf != nil {
-			fd = fdOf[gid]
+			fd = fdOf[keptGIDs[i]]
 		}
 		usage.local, usage.usedL = nil, nil
 		if fd < len(privates) && privates[fd].subrs != nil {
 			usage.local, usage.usedL = privates[fd].subrs, usedL[fd]
 		}
 		usage.stack, usage.stems, usage.stopped = 0, 0, false
-		usage.run(glyphs[gid], 0)
+		usage.run(glyphs[i], 0)
 	}
 	if usage.err != nil {
 		if usage.work > cffMaxWork || usage.seac {
@@ -704,12 +642,99 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 			usedL[i] = nil
 		}
 	}
-	newGlobalSubrs := appendCFFIndex(nil, emptiedCFFIndex(cff, globalSubrs, usedG, 11))
-	// Each Private DICT is written again with its local subroutines right
-	// after it, at its size, whatever they were before.
-	blocks := make([][]byte, len(privates))
-	dictSizes := make([]int, len(privates))
-	for i, private := range privates {
+
+	// The Font DICTs the glyphs kept use, in their order in the font, and the
+	// new number of each.
+	usedFD := make([]bool, len(privates))
+	for _, gid := range keptGIDs {
+		if fdOf != nil {
+			usedFD[fdOf[gid]] = true
+		} else {
+			usedFD[0] = true
+		}
+	}
+	newFD := make([]int, len(privates))
+	var fds []int
+	for fd, isUsed := range usedFD {
+		if isUsed {
+			newFD[fd] = len(fds)
+			fds = append(fds, fd)
+		}
+	}
+	fdOfGlyph := make([]int, len(keptGIDs))
+	for i, gid := range keptGIDs {
+		if fdOf != nil {
+			fdOfGlyph[i] = newFD[fdOf[gid]]
+		}
+	}
+
+	// The blocks: the Name INDEX again; the String INDEX of the strings the
+	// Top DICT and the Font DICTs kept name, in the order they name them, a
+	// name-keyed font's with those of its ROS, Adobe and Identity, after
+	// them, and not the names of its glyphs, which a CIDFont has not; the
+	// charset of the CIDs; the FDSelect; the CharStrings of the glyphs kept.
+	nameIndex := appendCFFIndex(nil, emptiedCFFIndex(cff, names, nil))
+	sids := cffStrings{old: emptiedCFFIndex(cff, strings, nil), sids: map[int]int{}}
+	var entries []cffEntry
+	for _, entry := range top {
+		switch entry.op {
+		case cffCharset, cffEncoding, cffCharStrings, cffPrivate, cffFDArray, cffFDSelect:
+			continue
+		}
+		if entry, err = sids.renumber(entry); err != nil {
+			return nil, nil, err
+		}
+		entries = append(entries, entry)
+	}
+	keptFontDicts := make([][]cffEntry, len(fds))
+	for i, fd := range fds {
+		for _, entry := range fontDicts[fd] {
+			if entry, err = sids.renumber(entry); err != nil {
+				return nil, nil, err
+			}
+			keptFontDicts[i] = append(keptFontDicts[i], entry)
+		}
+	}
+	if !cidKeyed {
+		sid := 391 + len(sids.kept)
+		sids.kept = append(sids.kept, []byte("Adobe"), []byte("Identity"))
+		ros := appendCFFInteger(nil, sid)
+		ros = appendCFFInteger(ros, sid+1)
+		ros = appendCFFInteger(ros, 0)
+		entries = append([]cffEntry{{op: cffROS, raw: append(ros, 12, 30)}}, entries...)
+		count := appendCFFInteger(nil, numGlyphs)
+		entries = append(entries, cffEntry{op: cffCIDCount, raw: append(count, 12, 34)})
+	}
+	stringIndex := appendCFFIndex(nil, sids.kept)
+	entries = append(entries, cffEntry{op: cffCharset}, cffEntry{op: cffFDSelect},
+		cffEntry{op: cffCharStrings}, cffEntry{op: cffFDArray})
+	charset := cffCharsetOf(keptGIDs[1:])
+	newFDSelect := cffFDSelectOf(fdOfGlyph)
+	newCharStrings := appendCFFIndex(nil, glyphs)
+	// An INDEX of subroutines none of which is called is left out, global
+	// ones as an empty INDEX, local ones with their Subrs operator: one of
+	// objects of no bytes alone is not read by FreeType
+	globals := emptiedCFFIndex(cff, globalSubrs, usedG)
+	if usedG != nil && !cffAnyUsed(usedG) {
+		globals = nil
+	}
+	newGlobalSubrs := appendCFFIndex(nil, globals)
+
+	// Each Private DICT of a Font DICT kept is written again with its local
+	// subroutines right after it, at its size, whatever they were before.
+	blocks := make([][]byte, len(fds))
+	dictSizes := make([]int, len(fds))
+	for i, fd := range fds {
+		private := privates[fd]
+		if private.subrs != nil && usedL[fd] != nil && !cffAnyUsed(usedL[fd]) {
+			var entries []cffEntry
+			for _, entry := range private.entries {
+				if entry.op != cffSubrs {
+					entries = append(entries, entry)
+				}
+			}
+			private = cffPrivateDict{entries: entries}
+		}
 		subrs := map[int]int{}
 		if private.subrs != nil {
 			subrs[cffSubrs] = 0
@@ -720,90 +745,55 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		}
 		blocks[i] = writeCFFDict(private.entries, subrs, 0)
 		if private.subrs != nil {
-			blocks[i] = appendCFFIndex(blocks[i], emptiedCFFIndex(cff, *private.subrs, usedL[i], 11))
+			blocks[i] = appendCFFIndex(blocks[i], emptiedCFFIndex(cff, *private.subrs, usedL[fd]))
 		}
 	}
 
 	// The layout. The Top DICT and the Font DICTs have the same size whatever
 	// their offsets, so they are written once with none to know where the
 	// blocks after them go, and once more with their offsets.
-	topOffsets := func(charsetAt, encodingAt, fdSelectAt, charStringsAt, fdArrayAt, privateAt int) map[int]int {
-		offsets := map[int]int{cffCharStrings: charStringsAt}
-		if charset != nil {
-			offsets[cffCharset] = charsetAt
-		}
-		if encoding != nil {
-			offsets[cffEncoding] = encodingAt
-		}
-		if fdSelect != nil {
-			offsets[cffFDSelect] = fdSelectAt
-			offsets[cffFDArray] = fdArrayAt
-		} else if len(privates) == 1 {
-			offsets[cffPrivate] = privateAt
-		}
-		return offsets
+	topOffsets := func(charsetAt, fdSelectAt, charStringsAt, fdArrayAt int) map[int]int {
+		return map[int]int{cffCharset: charsetAt, cffFDSelect: fdSelectAt,
+			cffCharStrings: charStringsAt, cffFDArray: fdArrayAt}
 	}
-	privateDictSize := func(i int) int {
-		// The size of the Private DICT itself, which the block starts with.
-		return dictSizes[i]
-	}
-	topSize := len(writeCFFDict(top, topOffsets(0, 0, 0, 0, 0, 0), 0))
 	fontDictOf := func(i, privateAt int) []byte {
-		return writeCFFDict(fontDicts[i], map[int]int{cffPrivate: privateAt}, privateDictSize(i))
+		return writeCFFDict(keptFontDicts[i], map[int]int{cffPrivate: privateAt}, dictSizes[i])
 	}
-
-	head := headerSize + (names.end - names.start)
+	topSize := len(writeCFFDict(entries, topOffsets(0, 0, 0, 0), 0))
 	topIndexSize := len(appendCFFIndex(nil, [][]byte{make([]byte, topSize)}))
-	at := head + topIndexSize + (strings.end - strings.start) + len(newGlobalSubrs)
+	at := headerSize + len(nameIndex) + topIndexSize + len(stringIndex) + len(newGlobalSubrs)
 	charsetAt := at
 	at += len(charset)
-	encodingAt := at
-	at += len(encoding)
 	fdSelectAt := at
-	at += len(fdSelect)
+	at += len(newFDSelect)
 	newCharStringsAt := at
 	at += len(newCharStrings)
 	fdArrayAt := at
-	var fdArray []byte
-	privateAts := make([]int, len(privates))
-	if fontDicts != nil {
-		sized := make([][]byte, len(fontDicts))
-		for i := range fontDicts {
-			sized[i] = fontDictOf(i, 0)
-		}
-		at += len(appendCFFIndex(nil, sized))
+	sized := make([][]byte, len(fds))
+	for i := range fds {
+		sized[i] = fontDictOf(i, 0)
 	}
+	at += len(appendCFFIndex(nil, sized))
+	privateAts := make([]int, len(fds))
 	for i := range blocks {
 		privateAts[i] = at
 		at += len(blocks[i])
 	}
-	if fontDicts != nil {
-		dicts := make([][]byte, len(fontDicts))
-		for i := range fontDicts {
-			dicts[i] = fontDictOf(i, privateAts[i])
-		}
-		fdArray = appendCFFIndex(nil, dicts)
+	dicts := make([][]byte, len(fds))
+	for i := range fds {
+		dicts[i] = fontDictOf(i, privateAts[i])
 	}
-	privateAt := 0
-	if fontDicts == nil && len(privates) == 1 {
-		privateAt = privateAts[0]
-	}
-	topPrivateSize := 0
-	if fontDicts == nil && len(privates) == 1 {
-		topPrivateSize = privateDictSize(0)
-	}
-	newTop := writeCFFDict(top, topOffsets(charsetAt, encodingAt, fdSelectAt, newCharStringsAt, fdArrayAt, privateAt),
-		topPrivateSize)
+	fdArray := appendCFFIndex(nil, dicts)
+	newTop := writeCFFDict(entries, topOffsets(charsetAt, fdSelectAt, newCharStringsAt, fdArrayAt), 0)
 
 	out := make([]byte, 0, at)
 	out = append(out, cff[:headerSize]...)
-	out = append(out, cff[names.start:names.end]...)
+	out = append(out, nameIndex...)
 	out = appendCFFIndex(out, [][]byte{newTop})
-	out = append(out, cff[strings.start:strings.end]...)
+	out = append(out, stringIndex...)
 	out = append(out, newGlobalSubrs...)
 	out = append(out, charset...)
-	out = append(out, encoding...)
-	out = append(out, fdSelect...)
+	out = append(out, newFDSelect...)
 	out = append(out, newCharStrings...)
 	out = append(out, fdArray...)
 	for _, block := range blocks {
@@ -813,4 +803,159 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		return nil, nil, errNotSubset
 	}
 	return out, kept, nil
+}
+
+// cffSIDOperands are the operators of the Top DICT and of the Font DICTs
+// whose first operands are SIDs, and how many: version, Notice, FullName,
+// FamilyName, Weight, Copyright, PostScript, BaseFontName, ROS and FontName.
+var cffSIDOperands = map[int]int{0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 12 << 8: 1, 12<<8 | 21: 1, 12<<8 | 22: 1,
+	cffROS: 2, 12<<8 | 38: 1}
+
+// cffStrings gives the strings of the font that the entries name new SIDs,
+// in the order they are first named, after the standard strings.
+type cffStrings struct {
+	old  [][]byte    // The String INDEX of the font
+	kept [][]byte    // The strings named, in the order of their new SIDs
+	sids map[int]int // The new SID of each SID of the font named
+}
+
+// renumber returns the entry with its SIDs of the font's strings renumbered,
+// its operands written again in their shortest form, or as it was when it
+// names none.
+func (s *cffStrings) renumber(entry cffEntry) (cffEntry, error) {
+	n, ok := cffSIDOperands[entry.op]
+	if !ok {
+		return entry, nil
+	}
+	if len(entry.integers) < n {
+		return entry, errNotSubset
+	}
+	var raw []byte
+	integers := make([]int, len(entry.integers))
+	for i, v := range entry.integers {
+		if i < n && v >= 391 {
+			if v-391 >= len(s.old) {
+				return entry, errNotSubset
+			}
+			sid, ok := s.sids[v]
+			if !ok {
+				sid = 391 + len(s.kept)
+				s.sids[v] = sid
+				s.kept = append(s.kept, s.old[v-391])
+			}
+			v = sid
+		}
+		integers[i] = v
+		raw = appendCFFInteger(raw, v)
+	}
+	if entry.op > 0xFF {
+		raw = append(raw, 12, byte(entry.op))
+	} else {
+		raw = append(raw, byte(entry.op))
+	}
+	return cffEntry{op: entry.op, raw: raw, integers: integers}, nil
+}
+
+// cffAnyUsed tells whether any of the subroutines is used.
+func cffAnyUsed(used []bool) bool {
+	for _, u := range used {
+		if u {
+			return true
+		}
+	}
+	return false
+}
+
+// cffHasEntry tells whether the DICT has an entry of the operator, of any
+// operands.
+func cffHasEntry(entries []cffEntry, op int) bool {
+	for _, entry := range entries {
+		if entry.op == op {
+			return true
+		}
+	}
+	return false
+}
+
+// appendCFFInteger appends the integer of a DICT in its shortest form.
+func appendCFFInteger(out []byte, v int) []byte {
+	switch {
+	case v >= -107 && v <= 107:
+		return append(out, byte(v+139))
+	case v >= 108 && v <= 1131:
+		v -= 108
+		return append(out, byte((v>>8)+247), byte(v))
+	case v >= -1131 && v <= -108:
+		v = -v - 108
+		return append(out, byte((v>>8)+251), byte(v))
+	case v >= -32768 && v <= 32767:
+		return append(out, 28, byte(v>>8), byte(v))
+	}
+	return appendCFFOffset(out, v)
+}
+
+// cffRanges returns the runs of consecutive CIDs, each its first and the
+// number after it, nLeft, of at most max.
+func cffRanges(cids []int, max int) [][2]int {
+	var ranges [][2]int
+	for i := 0; i < len(cids); {
+		j := i
+		for j+1 < len(cids) && cids[j+1] == cids[j]+1 && j+1-i <= max {
+			j++
+		}
+		ranges = append(ranges, [2]int{cids[i], j - i})
+		i = j + 1
+	}
+	return ranges
+}
+
+// cffCharsetOf returns the charset of the CIDs of the glyphs after .notdef,
+// in the format of the three that is the shortest, the first of those as
+// short.
+func cffCharsetOf(cids []int) []byte {
+	ranges1 := cffRanges(cids, 0xFF)
+	ranges2 := cffRanges(cids, 0xFFFF)
+	size0, size1, size2 := 1+2*len(cids), 1+3*len(ranges1), 1+4*len(ranges2)
+	var out []byte
+	switch {
+	case size0 <= size1 && size0 <= size2:
+		out = append(out, 0)
+		for _, cid := range cids {
+			out = append(out, byte(cid>>8), byte(cid))
+		}
+	case size1 <= size2:
+		out = append(out, 1)
+		for _, r := range ranges1 {
+			out = append(out, byte(r[0]>>8), byte(r[0]), byte(r[1]))
+		}
+	default:
+		out = append(out, 2)
+		for _, r := range ranges2 {
+			out = append(out, byte(r[0]>>8), byte(r[0]), byte(r[1]>>8), byte(r[1]))
+		}
+	}
+	return out
+}
+
+// cffFDSelectOf returns the FDSelect of the Font DICT of each glyph, in
+// format 3, ranges, when that is shorter than format 0, a byte for each.
+func cffFDSelectOf(fdOf []int) []byte {
+	var firsts []int
+	for gid, fd := range fdOf {
+		if gid == 0 || fd != fdOf[gid-1] {
+			firsts = append(firsts, gid)
+		}
+	}
+	if 5+3*len(firsts) >= 1+len(fdOf) {
+		out := []byte{0}
+		for _, fd := range fdOf {
+			out = append(out, byte(fd))
+		}
+		return out
+	}
+	out := []byte{3, byte(len(firsts) >> 8), byte(len(firsts))}
+	for _, first := range firsts {
+		out = append(out, byte(first>>8), byte(first), byte(fdOf[first]))
+	}
+	return append(out, byte(len(fdOf)>>8), byte(len(fdOf)))
 }
