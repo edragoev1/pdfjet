@@ -385,7 +385,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   lines with SetBorderWidth(0) for the old look, and the examples' PDFs and
   any fingerprints of tables written again. Not to do without the owner's
   yes.
-- **Maybe: a PNG checked and decoded a row at a time** (the owner, 11
+- **Maybe, sometime in 2027 (decided 14 November 2026): a PNG checked and decoded a row at a time** (the owner, 11
   November 2026, thinking of a 128 MB Cloudflare Worker). The IDAT data of an
   opaque PNG is embedded as it is already, in the four ports and Forms'
   TypeScript engine (embedIDAT of pngimage.go, Image.ts): no decoding, no
