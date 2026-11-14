@@ -22,6 +22,24 @@ little lighter and more even. A program that wants the old hairline sets 0:
 example, a `Cell` drawn with no width set wrote `0 w` before its borders; it
 now writes `0.5 w`.
 
+Changed, in the four ports: **a font of CFF outlines (.otf) is embedded as
+a much smaller subset.** The subset was the whole font with an `endchar` in
+place of every glyph not drawn and a `return` in place of every subroutine
+not called, whose INDEX offsets, one for each glyph of the font, deflate
+hardly shrinks: 48.6 KB for a line of Korean in IBM Plex Sans KR, more than
+its TrueType edition. It is now a CIDFont of the glyphs drawn alone, its
+charset giving each its number in the font as its CID (ISO 32000-2,
+9.7.4.2), so the content streams, the widths and the ToUnicode map are as
+before; a name-keyed font is written as a CIDFont of Adobe-Identity-0; the
+subroutines not called are empty, the Font DICTs and the strings not used
+left out, and every INDEX has its least offset size. A line of Korean
+embeds 2.9 KB (its .ttf 7.4 KB); a page of IBM Plex Sans
+in Latin, Cyrillic or Greek is about a fifth smaller from its .otf than from
+its .ttf, and written faster. The four ports write the same bytes, checked on
+the subsets of 123 to 138 fonts with seven sets of glyphs each, and on
+thousands of damaged fonts, which each port refuses alike; MuPDF, PDFium,
+Poppler and pdf.js draw the glyphs as before, and veraPDF passes.
+
 Added, in the four ports: **BigTable wraps long fields within their
 columns.** `BigTable.setWrapText(true)` (Go `SetWrapText`, C#
 `SetWrapText`, Swift `setWrapText`): a field too long for its column wraps
