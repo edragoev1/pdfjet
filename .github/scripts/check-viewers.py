@@ -109,6 +109,10 @@ TEXT_EXCEPTIONS = {
         'pdf.js reads no actual text, only the letters ToUnicode gives each glyph, and a Khmer vowel '
         'drawn in two parts, as ោ, whose first part is the glyph of េ, cannot be spelled that way; '
         'the Hindi is exact'),
+    ('pdfkit', 'Example_52'): (
+        '\u1780', '\u17ff',
+        'PDFKit, as pdf.js, reads no actual text, only the letters ToUnicode gives each glyph: the '
+        'Khmer vowels drawn in two parts cannot be spelled that way; the Hindi is exact'),
 }
 
 # The passwords an engine is given in place of the ones in PASSWORDS, with
