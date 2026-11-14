@@ -135,20 +135,24 @@ final class BundledFonts {
     // .ttf, and embed a fifth smaller.
     private static final String[] RENAMED = {"IBMPlexSans", "IBMPlexSerif"};
 
-    // Returns the name of the .otf PDFjet carries from 9.1.9 of a name,
-    // Family/File, of the .ttf of IBM Plex Sans or Serif, such as
-    // IBMPlexSans/IBMPlexSans-Regular.ttf, so that a path written for the
-    // .ttf is the same font, or null for any other name. A file at the path
-    // itself, or of that name in resources/fonts, is read first.
+    // Returns the other name of a font of IBM Plex Sans or Serif, Family/File:
+    // of a .ttf, such as IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet
+    // carries from 9.1.9, so that a path written for the .ttf is the same
+    // font; of an .otf, the .ttf PDFjet carried before, so that a program
+    // that took the library of 9.1.9 alone, beside the resources/fonts folder
+    // of an older one, still finds its font; null for any other name. The
+    // name itself, a file at the path or of that name in resources/fonts, is
+    // read first.
     static String renamed(String name) {
         int slash = name.indexOf('/');
-        if (slash < 0 || !name.endsWith(".ttf")) {
+        if (slash < 0 || !(name.endsWith(".ttf") || name.endsWith(".otf"))) {
             return null;
         }
         String family = name.substring(0, slash);
         for (String renamed : RENAMED) {
             if (renamed.equals(family)) {
-                return name.substring(0, name.length() - ".ttf".length()) + ".otf";
+                String base = name.substring(0, name.length() - ".ttf".length());
+                return base + (name.endsWith(".ttf") ? ".otf" : ".ttf");
             }
         }
         return null;

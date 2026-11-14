@@ -157,20 +157,24 @@ internal static class BundledFonts {
     // .ttf, and embed a fifth smaller.
     private static readonly String[] RENAMED = {"IBMPlexSans", "IBMPlexSerif"};
 
-    // Returns the name of the .otf PDFjet carries from 9.1.9 of a name,
-    // Family/File, of the .ttf of IBM Plex Sans or Serif, such as
-    // IBMPlexSans/IBMPlexSans-Regular.ttf, so that a path written for the
-    // .ttf is the same font, or null for any other name. A file at the path
-    // itself, or of that name in resources/fonts, is read first.
+    // Returns the other name of a font of IBM Plex Sans or Serif, Family/File:
+    // of a .ttf, such as IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet
+    // carries from 9.1.9, so that a path written for the .ttf is the same
+    // font; of an .otf, the .ttf PDFjet carried before, so that a program
+    // that took the library of 9.1.9 alone, beside the resources/fonts folder
+    // of an older one, still finds its font; null for any other name. The
+    // name itself, a file at the path or of that name in resources/fonts, is
+    // read first.
     internal static String Renamed(String name) {
         int slash = name.IndexOf('/');
-        if (slash < 0 || !name.EndsWith(".ttf", StringComparison.Ordinal)) {
+        bool ttf = name.EndsWith(".ttf", StringComparison.Ordinal);
+        if (slash < 0 || !(ttf || name.EndsWith(".otf", StringComparison.Ordinal))) {
             return null;
         }
         String family = name.Substring(0, slash);
         foreach (String renamed in RENAMED) {
             if (renamed == family) {
-                return name.Substring(0, name.Length - ".ttf".Length) + ".otf";
+                return name.Substring(0, name.Length - ".ttf".Length) + (ttf ? ".otf" : ".ttf");
             }
         }
         return null;

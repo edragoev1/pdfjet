@@ -130,7 +130,10 @@ var bundledRenamed = []string{"IBMPlexSans", "IBMPlexSerif"}
 // path is looked for by among the fonts PDFjet carries: its name, and, for a
 // .ttf of IBM Plex Sans or Serif, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet carries of it
-// from 9.1.9, so that a path written for the .ttf is the same font. None for
+// from 9.1.9, so that a path written for the .ttf is the same font; for an
+// .otf of them, the .ttf PDFjet carried before, so that a program that took
+// the library of 9.1.9 alone, beside the resources/fonts folder of an older
+// one, still finds its font. None for
 // a path of fewer than two parts, or one with "..". A file at the path
 // itself, or of that name in resources/fonts, is read first.
 func bundledFontNamesOf(fontPath string) []string {
@@ -141,6 +144,9 @@ func bundledFontNamesOf(fontPath string) []string {
 	family, file, _ := strings.Cut(name, "/")
 	if base, ok := strings.CutSuffix(file, ".ttf"); ok && slices.Contains(bundledRenamed, family) {
 		return []string{name, family + "/" + base + ".otf"}
+	}
+	if base, ok := strings.CutSuffix(file, ".otf"); ok && slices.Contains(bundledRenamed, family) {
+		return []string{name, family + "/" + base + ".ttf"}
 	}
 	return []string{name}
 }

@@ -189,6 +189,9 @@ import Testing
         }
         #expect(BundledFonts.renamed("CascadiaMono/CascadiaMono-Regular.ttf") == nil)
         #expect(BundledFonts.renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf") == "IBMPlexSerif/IBMPlexSerif-Bold.otf")
+        // And back: the .otf of 9.1.9 is the .ttf of a resources/fonts folder of before
+        #expect(BundledFonts.renamed("IBMPlexSans/IBMPlexSans-Regular.otf") == "IBMPlexSans/IBMPlexSans-Regular.ttf")
+        #expect(BundledFonts.renamed("CascadiaMono/CascadiaMono-Regular.otf") == nil)
     }
 
     @Test func aWorldFontIsReadFromResourcesFontsWorldElseFromTheBundleOfPDFjetFontsWorld() throws {

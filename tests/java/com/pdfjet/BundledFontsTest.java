@@ -237,6 +237,9 @@ class BundledFontsTest {
         }
         assertEquals(null, BundledFonts.renamed("CascadiaMono/CascadiaMono-Regular.ttf"));
         assertEquals("IBMPlexSerif/IBMPlexSerif-Bold.otf", BundledFonts.renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf"));
+        // And back: the .otf of 9.1.9 is the .ttf of a resources/fonts folder of before
+        assertEquals("IBMPlexSans/IBMPlexSans-Regular.ttf", BundledFonts.renamed("IBMPlexSans/IBMPlexSans-Regular.otf"));
+        assertEquals(null, BundledFonts.renamed("CascadiaMono/CascadiaMono-Regular.otf"));
     }
 
     // PDFjet in a server's shared lib, the world jar in the WEB-INF/lib of the

@@ -284,6 +284,11 @@ func TestBundledFontsAPathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries(t *t
 	}
 	testWant(t, "[CascadiaMono/CascadiaMono-Regular.ttf]",
 		fmt.Sprint(bundledFontNamesOf("fonts/CascadiaMono/CascadiaMono-Regular.ttf")))
+	// And back: the .otf of 9.1.9 is the .ttf of a resources/fonts folder of before
+	testWant(t, "[IBMPlexSans/IBMPlexSans-Regular.otf IBMPlexSans/IBMPlexSans-Regular.ttf]",
+		fmt.Sprint(bundledFontNamesOf("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")))
+	testWant(t, "[CascadiaMono/CascadiaMono-Regular.otf]",
+		fmt.Sprint(bundledFontNamesOf("fonts/CascadiaMono/CascadiaMono-Regular.otf")))
 }
 
 func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testing.T) {

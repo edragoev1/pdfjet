@@ -266,6 +266,9 @@ public class BundledFontsTest {
         }
         Assert.Null(BundledFonts.Renamed("CascadiaMono/CascadiaMono-Regular.ttf"));
         Assert.Equal("IBMPlexSerif/IBMPlexSerif-Bold.otf", BundledFonts.Renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf"));
+        // And back: the .otf of 9.1.9 is the .ttf of a resources/fonts folder of before
+        Assert.Equal("IBMPlexSans/IBMPlexSans-Regular.ttf", BundledFonts.Renamed("IBMPlexSans/IBMPlexSans-Regular.otf"));
+        Assert.Null(BundledFonts.Renamed("CascadiaMono/CascadiaMono-Regular.otf"));
     }
 
     [Fact]

@@ -171,17 +171,20 @@ enum BundledFonts {
     // .ttf, and embed a fifth smaller.
     private static let renamedFamilies = ["IBMPlexSans", "IBMPlexSerif"]
 
-    // Returns the name of the .otf PDFjet carries from 9.1.9 of a name,
-    // Family/File, of the .ttf of IBM Plex Sans or Serif, such as
-    // IBMPlexSans/IBMPlexSans-Regular.ttf, so that a path written for the
-    // .ttf is the same font, or nil for any other name. A file at the path
-    // itself, or of that name in resources/fonts, is read first.
+    // Returns the other name of a font of IBM Plex Sans or Serif, Family/File:
+    // of a .ttf, such as IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet
+    // carries from 9.1.9, so that a path written for the .ttf is the same
+    // font; of an .otf, the .ttf PDFjet carried before, so that a program
+    // that took the library of 9.1.9 alone, beside the resources/fonts folder
+    // of an older one, still finds its font; nil for any other name. The
+    // name itself, a file at the path or of that name in resources/fonts, is
+    // read first.
     static func renamed(_ name: String) -> String? {
-        guard let slash = name.firstIndex(of: "/"), name.hasSuffix(".ttf"),
+        guard let slash = name.firstIndex(of: "/"), name.hasSuffix(".ttf") || name.hasSuffix(".otf"),
                 renamedFamilies.contains(String(name[..<slash])) else {
             return nil
         }
-        return String(name.dropLast(".ttf".count)) + ".otf"
+        return String(name.dropLast(".ttf".count)) + (name.hasSuffix(".ttf") ? ".otf" : ".ttf")
     }
 
     // Returns the URL of the font of the name, Family/File, as url does, or nil.
