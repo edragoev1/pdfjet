@@ -59,6 +59,18 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- [ ] **Markdown: a heading stays with the block after it, in all four
+  ports** (found 14 November 2026, making a landscape document with md2pdf).
+  A heading near the bottom of a page is drawn there, and a table that does
+  not fit under it moves whole to the next page, leaving the heading (and
+  any short paragraph after it) alone at the bottom. Typesetting keeps a
+  heading with what follows: before drawing a heading, ensure room for it
+  and the start of the next block (for a table, the table's height if it
+  is drawn whole, else its header row and first row; for a paragraph, two
+  lines). Markdown.java's ensure() is the place. Test: a heading, a short
+  paragraph and a table taller than the room left: the three on the next
+  page. Workaround meanwhile: reorder the sections.
+
 - ✅ **DONE 13 November 2026. TextBlock: measure a line as it grows, not whole for each word, in all
   four ports** (the owner, 13 November 2026, after the TypeScript engine of
   Forms did it). Wrapping a paragraph, TextBlock measures the line so far
