@@ -45,7 +45,11 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   9.0.3: Example_42's shapes have their opacity in an ExtGState and in the
   annotation's `/CA`, and ISO 32000 applies `/CA` to the appearance, so a
   strict viewer could draw them at 25% where MuPDF, PDFium, Poppler and pdf.js
-  draw them at 50%.
+  draw them at 50%. Tested 14 November 2026 with a square annotation: all
+  four ignore `/CA` when the annotation has an appearance, and draw an opaque
+  appearance with `/CA 0.5` opaque, so the opacity must stay in the
+  appearance's ExtGState; only Acrobat is left to see. If Acrobat draws 25%,
+  the fix is to drop `/CA`, not the ExtGState.
 - **PAC.** The PDF/UA files in `pdf-files-to-test`, checked with PAC in
   Wine on Ubuntu; see the README there for which files go in.
 - **Windows and macOS.** The Windows and macOS workflows, started by hand
