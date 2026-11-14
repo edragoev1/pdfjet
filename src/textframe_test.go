@@ -152,6 +152,10 @@ func TestTextFrameALetterWiderThanTheFrameStartsAtItsLeftWhateverItsAlignment(t 
 	}
 	testNear(t, "centered", 10, testDrawAlignedIn(alignment.Center, "WW", 10).GetTextX(), testDelta)
 	testNear(t, "right", 10, testDrawAlignedIn(alignment.Right, "WW", 10).GetTextX(), testDelta)
+	// A lone W in a frame 5 wide: its row ended at once, and the end of its
+	// text line went in an empty row after it, centered at 12.5
+	testNear(t, "lone centered", 10, testDrawAlignedIn(alignment.Center, "W", 5).GetTextX(), testDelta)
+	testNear(t, "lone right", 10, testDrawAlignedIn(alignment.Right, "W", 5).GetTextX(), testDelta)
 }
 
 func TestTextFrameAJustifiedParagraphLeavesItsLastRowAsItIs(t *testing.T) {

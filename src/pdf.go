@@ -45,6 +45,7 @@ type PDF struct {
 	images                []*Image
 	pages                 []*Page
 	destinations          map[string]*Destination
+	uriActions            map[string]int // The object of the action of each URI a link goes to
 	groups                []*OptionalContentGroup
 	states                map[string]int
 	stamps                []*Stamp
@@ -1465,6 +1466,32 @@ func (pdf *PDF) addPageStructElements(page *Page) {
 	}
 }
 
+// addURIAction returns the action of a link to the URI, one object for every
+// link to it, written before the first: each link carried the address itself,
+// and twenty links to an address of 20,000 characters added about 800 KB.
+func (pdf *PDF) addURIAction(uri string) int {
+	if number, ok := pdf.uriActions[uri]; ok {
+		return number
+	}
+	if pdf.uriActions == nil {
+		pdf.uriActions = make(map[string]int)
+	}
+	bytes := []byte(uri)
+	if pdf.encryption != nil {
+		bytes = pdf.encryption.encrypt(bytes)
+	}
+	pdf.newObj()
+	pdf.appendString("<<\n")
+	pdf.appendString("/S /URI\n")
+	pdf.appendString("/URI <")
+	pdf.appendString(hex.EncodeToString(bytes))
+	pdf.appendString(">\n")
+	pdf.appendString(">>\n")
+	pdf.endObj()
+	pdf.uriActions[uri] = pdf.getObjNumber()
+	return pdf.getObjNumber()
+}
+
 func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 	// The rectangle of an annotation of vertices, a polygon, is the box of its
 	// vertices, which are relative to its location; its second corner is not
@@ -1491,6 +1518,10 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 	appearance := 0
 	if annot.annotationType != annotationLink {
 		appearance = pdf.addAppearanceObject(annot, x1, y1, x2, y2)
+	}
+	uriAction := 0
+	if annot.annotationType == annotationLink && annot.uri != "" {
+		uriAction = pdf.addURIAction(annot.uri)
 	}
 
 	pdf.newObj()
@@ -1555,17 +1586,10 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 			pdf.appendTextString(description)
 			pdf.appendString("\n")
 		}
-		if annot.uri != "" {
-			pdf.appendString("/A <<\n")
-			pdf.appendString("/S /URI\n")
-			uri := []byte(annot.uri)
-			if pdf.encryption != nil {
-				uri = pdf.encryption.encrypt(uri)
-			}
-			pdf.appendString("/URI <")
-			pdf.appendString(hex.EncodeToString(uri))
-			pdf.appendString(">\n")
-			pdf.appendString(">>\n")
+		if uriAction > 0 {
+			pdf.appendString("/A ")
+			pdf.appendInteger(uriAction)
+			pdf.appendString(" 0 R\n")
 		} else if annot.key != "" {
 			destination := pdf.destinations[annot.key]
 			if destination == nil {

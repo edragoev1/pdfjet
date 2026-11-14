@@ -566,14 +566,23 @@ public class TextFrame : Drawable {
             } else if buf.isEmpty && xText == x {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 let end = headThatFits(textLine, token)
-                buf.append(String(token.unicodeScalars[..<end]))
                 if end == token.unicodeScalars.endIndex {
+                    // The whole token, as one letter wider than the frame:
+                    // the row takes it as it takes a token that fits, and
+                    // stays open, so that the end of the text line is in
+                    // it, not in an empty row after it
+                    let text = withSpace ? token + Single.space : token
+                    buf.append(text)
+                    runLength += TextFrame.width(textLine, text)
                     tokenIndex += 1
                     start = nil
-                } else {
-                    let consumed = token.unicodeScalars.distance(from: token.unicodeScalars.startIndex, to: end)
-                    start = whole.unicodeScalars.index(from, offsetBy: consumed)
+                    joinReserved = joinsNext
+                    leadingSpace = spaceToNext
+                    continue
                 }
+                buf.append(String(token.unicodeScalars[..<end]))
+                let consumed = token.unicodeScalars.distance(from: token.unicodeScalars.startIndex, to: end)
+                start = whole.unicodeScalars.index(from, offsetBy: consumed)
             }
             if leading && buf.isEmpty {
                 // The word starts the next row without the space before it,

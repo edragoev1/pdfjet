@@ -40,6 +40,41 @@ the fonts that draw the characters the table's fonts do not have, such as
 Korean or Chinese in a table set in a Latin font, and `setBorderWidth(float)`
 (0.5 unless set, as above).
 
+Added, in the four ports: `QRCode.fits(String text, ErrorCorrectionLevel
+level)` (Go `qrcode.Fits`, C# `QRCode.Fits`, Swift `QRCode.fits`), whether a
+text fits in a QR code at the level, so that a program can refuse it before
+it draws and say why, where the constructor would throw. The limit is in
+UTF-8 bytes, not characters: at level M, 2,331 bytes of ASCII, or 2,330 with
+the ECI of a text that is not all ASCII, so 776 euro signs fit and 777 do
+not.
+
+Fixed, in the four ports: in `Markdown`, a heading stays with the table
+under it. Over a short paragraph that does not end in a colon (three lines
+at most), the heading kept only the paragraph's first line, and a table that
+did not fit under them started the next page, leaving the heading and the
+paragraph alone at the bottom of this one; now the three go together. And a
+heading right over a table was left apart from it at the one place on a page
+where the two fit by less than the space after the heading, which the
+measure left out. Behavior change: such a heading starts the next page with
+its paragraph and table.
+
+Fixed, in the four ports: a word wider than its `TextFrame`, as one letter
+in a narrow column, took a row of its own and the end of its text line went
+in an empty row after it: a listener was told of an empty piece, and a
+centered paragraph of one such letter reported its text 2.5 points right of
+the frame's left. The row now takes the word as it takes a word that fits.
+Behavior change: no empty piece after such a word (`"W"` centered in a frame
+5 points wide at x 10: `getTextX()` is 10, not 12.5); the rows are where they
+were.
+
+Changed, in the four ports: the links to one address share one action. Each
+link annotation carried its URI itself, so twenty links to an address of
+20,000 characters added about 800 KB; now the first link to an address
+writes `<< /S /URI /URI <...> >>` as an object of its own and every link to
+it refers to it, `/A 12 0 R`. Each link keeps its own description
+(`/Contents`), as PDF/UA asks. Behavior change: a link writes `/A n 0 R`
+where it wrote `/A << /S /URI /URI <...> >>`.
+
 Fixed, in the four ports: a centered or right-aligned row of `TextFrame`
 wider than the frame, as one character wider than a narrow column, was
 shifted out to the left of the frame, over a column beside it. It now

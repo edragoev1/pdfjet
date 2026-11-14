@@ -72,6 +72,29 @@ final public class QRCode implements Drawable {
         this.make(createData(errorCorrectionLevel));
     }
 
+    /**
+     * Tells whether the string fits in a QR code at the error correction
+     * level, so that a program can refuse a text before it draws, and say
+     * why, where the constructor would throw. The limit is in UTF-8 bytes,
+     * not characters: at level M, 2,331 bytes of ASCII, or 2,330 with the ECI
+     * of a string that is not all ASCII, so 776 euro signs, 3 bytes each,
+     * fit, and 777 do not.
+     *
+     * @param str the string to encode.
+     * @param errorCorrectionLevel the error correction level.
+     * @return true if the constructor would make a QR code of the string.
+     */
+    public static boolean fits(String str, ErrorCorrectionLevel errorCorrectionLevel) {
+        byte[] data = utf8(str);
+        boolean eci = false;
+        for (byte b : data) {
+            if (b < 0) {
+                eci = true;
+            }
+        }
+        return getLengthInBits(data.length, eci, 40) <= getDataCount(40, errorCorrectionLevel) * 8;
+    }
+
     // Returns the smallest version, from 4, whose data codewords hold the
     // data, and the ECI before it when there is one.
     private static int getTypeNumber(int dataLength, boolean eci, ErrorCorrectionLevel errorCorrectionLevel) {

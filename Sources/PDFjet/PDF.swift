@@ -14,6 +14,8 @@ public final class PDF {
     var images = [Image]()
     var pages = [Page]()
     var destinations = [String : Destination]()
+    // The object of the action of each URI a link goes to
+    private var uriActions = [String: Int]()
     var groups = [OptionalContentGroup]()
     var states = [String : Int]()
     var stamps = [Stamp]()
@@ -1561,6 +1563,25 @@ public final class PDF {
         return getObjNumber()
     }
 
+    // Returns the action of a link to the URI, one object for every link to
+    // it, written before the first: each link carried the address itself,
+    // and twenty links to an address of 20,000 characters added about 800 KB.
+    private func addURIAction(_ uri: String) -> Int {
+        if let number = uriActions[uri] {
+            return number
+        }
+        newObj()
+        append(Token.beginDictionary)
+        append("/S /URI\n")
+        append("/URI <")
+        append(toHexString(uri))
+        append(">\n")
+        append(Token.endDictionary)
+        endObj()
+        uriActions[uri] = getObjNumber()
+        return getObjNumber()
+    }
+
     @discardableResult
     func addAnnotationObject(_ annot: Annotation, _ index: Int) -> Int {
         var index = index
@@ -1601,6 +1622,10 @@ public final class PDF {
         var appearance = 0
         if annot.annotationType != Annotation.Link {
             appearance = addAppearanceObject(annot, x1, y1, x2, y2)
+        }
+        var uriAction = 0
+        if annot.annotationType == Annotation.Link, let uri = annot.uri, !uri.isEmpty {
+            uriAction = addURIAction(uri)
         }
 
         newObj()
@@ -1669,13 +1694,10 @@ public final class PDF {
                 append(textString(description))
                 append(">\n")
             }
-            if let uri = annot.uri, !uri.isEmpty {
-                append("/A <<\n")
-                append("/S /URI\n")
-                append("/URI <")
-                append(toHexString(uri))
-                append(">\n")
-                append(">>\n")
+            if uriAction > 0 {
+                append("/A ")
+                append(uriAction)
+                append(" 0 R\n")
             } else if let key = annot.key, !key.isEmpty {
                 if let destination = destinations[key] {
                     append("/Dest [")

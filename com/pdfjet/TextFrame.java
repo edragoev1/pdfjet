@@ -660,13 +660,22 @@ public class TextFrame implements Drawable {
             } else if (buf.length() == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = headThatFits(textLine, token);
-                buf.append(head);
                 if (head.length() == token.length()) {
+                    // The whole token, as one letter wider than the frame:
+                    // the row takes it as it takes a token that fits, and
+                    // stays open, so that the end of the text line is in
+                    // it, not in an empty row after it
+                    String text = withSpace ? token + Single.space : token;
+                    buf.append(text);
+                    runLength += width(textLine, text);
                     tokenIndex++;
                     start = 0;
-                } else {
-                    start += head.length();
+                    joinReserved = joinsNext;
+                    leadingSpace = spaceToNext;
+                    continue;
                 }
+                buf.append(head);
+                start += head.length();
             }
             if (leading && buf.length() == 0) {
                 // The word starts the next row without the space before it,

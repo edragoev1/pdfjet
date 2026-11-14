@@ -164,3 +164,31 @@ func TestALevelThatIsNotOneIsRefused(t *testing.T) {
 		}()
 	}
 }
+
+// Fits says what NewQRCode would do, at the edge: the longest text that fits,
+// and one byte more, with and without the ECI.
+func TestFitsTellsAtTheEdge(t *testing.T) {
+	m := errorcorrectionlevel.M
+	if !Fits(strings.Repeat("a", 2331), m) || Fits(strings.Repeat("a", 2332), m) {
+		t.Error("2,331 bytes of ASCII at level M")
+	}
+	if !Fits(strings.Repeat("\u20AC", 776), m) || Fits(strings.Repeat("\u20AC", 777), m) {
+		t.Error("776 euro signs and the ECI at level M")
+	}
+	if !Fits(strings.Repeat("a", 2953), errorcorrectionlevel.L) || Fits(strings.Repeat("a", 1274), errorcorrectionlevel.H) {
+		t.Error("levels L and H")
+	}
+	if !Fits("", errorcorrectionlevel.H) || Fits("x", 7) {
+		t.Error("the empty text, a level that is not one")
+	}
+	for _, level := range []errorcorrectionlevel.ErrorCorrectionLevel{
+		errorcorrectionlevel.L, errorcorrectionlevel.M, errorcorrectionlevel.Q, errorcorrectionlevel.H} {
+		for _, n := range []int{1270, 1273, 1274, 1663, 1664, 2330, 2331, 2332, 2953, 2954} {
+			text := strings.Repeat("a", n)
+			_, err := EncodeQRCode(text, level)
+			if (err == nil) != Fits(text, level) {
+				t.Errorf("level %d, %d bytes", level, n)
+			}
+		}
+	}
+}

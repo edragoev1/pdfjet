@@ -114,6 +114,10 @@ import Testing
         #expect(font.stringWidth("W") > 10, "the letter is wider than the frame")
         TestSupport.expectNear(10, drawAligned(Alignment.CENTER, "WW", 10).getTextX())
         TestSupport.expectNear(10, drawAligned(Alignment.RIGHT, "WW", 10).getTextX())
+        // A lone W in a frame 5 wide: its row ended at once, and the end of
+        // its text line went in an empty row after it, centered at 12.5
+        TestSupport.expectNear(10, drawAligned(Alignment.CENTER, "W", 5).getTextX())
+        TestSupport.expectNear(10, drawAligned(Alignment.RIGHT, "W", 5).getTextX())
     }
 
     @Test func aJustifiedParagraphLeavesItsLastRowAsItIs() {

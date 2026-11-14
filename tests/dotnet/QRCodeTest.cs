@@ -85,5 +85,32 @@ public class QRCodeTest {
         Assert.StartsWith("/Artifact BMC\n", TestSupport.Content(plain));
     }
 
+    // Fits says what the constructor would do, at the edge: the longest text
+    // that fits, and one byte more, with and without the ECI
+    [Fact]
+    public void FitsTellsAtTheEdge() {
+        Assert.True(QRCode.Fits(new string('a', 2331), ErrorCorrectionLevel.M));
+        Assert.False(QRCode.Fits(new string('a', 2332), ErrorCorrectionLevel.M));
+        Assert.True(QRCode.Fits(new string('\u20AC', 776), ErrorCorrectionLevel.M));    // 2,328 bytes and the ECI
+        Assert.False(QRCode.Fits(new string('\u20AC', 777), ErrorCorrectionLevel.M));   // 2,331 bytes and the ECI
+        Assert.True(QRCode.Fits(new string('a', 2953), ErrorCorrectionLevel.L));
+        Assert.False(QRCode.Fits(new string('a', 1274), ErrorCorrectionLevel.H));
+        Assert.True(QRCode.Fits("", ErrorCorrectionLevel.H));
+        Assert.Throws<ArgumentException>(() => QRCode.Fits("x", (ErrorCorrectionLevel) 7));
+        foreach (ErrorCorrectionLevel level in new[] {ErrorCorrectionLevel.L, ErrorCorrectionLevel.M,
+                ErrorCorrectionLevel.Q, ErrorCorrectionLevel.H}) {
+            foreach (int n in new[] {1270, 1273, 1274, 1663, 1664, 2330, 2331, 2332, 2953, 2954}) {
+                string text = new string('a', n);
+                bool made = true;
+                try {
+                    new QRCode(text, level);
+                } catch (ArgumentException) {
+                    made = false;
+                }
+                Assert.True(made == QRCode.Fits(text, level), level + " " + n);
+            }
+        }
+    }
+
 }
 }

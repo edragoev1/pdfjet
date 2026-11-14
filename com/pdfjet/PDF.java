@@ -110,6 +110,8 @@ final public class PDF {
     private int outputIntentObjNumber = 0;
     private final List<Page> pages = new ArrayList<Page>();
     private final Map<String, Destination> destinations = new HashMap<String, Destination>();
+    // The object of the action of each URI a link goes to
+    private final Map<String, Integer> uriActions = new HashMap<String, Integer>();
     private OutputStream os = null;
     private final List<Long> objOffset = new ArrayList<Long>();
     private static final String producer = "PDFjet v9.1.7";
@@ -1667,6 +1669,30 @@ final public class PDF {
         buf.write(bytes, 0, bytes.length);
     }
 
+    // Returns the action of a link to the URI, one object for every link to it,
+    // written before the first: each link carried the address itself, and
+    // twenty links to an address of 20,000 characters added about 800 KB.
+    private int addURIAction(String uri) throws IOException {
+        Integer number = uriActions.get(uri);
+        if (number != null) {
+            return number;
+        }
+        byte[] bytes = Util.utf8(uri);
+        if (encryption != null) {
+            bytes = AES256.encrypt(bytes, encryption.getKey());
+        }
+        newObj();
+        append(Token.BEGIN_DICTIONARY);
+        append("/S /URI\n");
+        append("/URI <");
+        append(Util.toHexString(bytes));
+        append(">\n");
+        append(Token.END_DICTIONARY);
+        endObj();
+        uriActions.put(uri, getObjNumber());
+        return getObjNumber();
+    }
+
     private int addAnnotationObject(Annotation annot, int index) throws IOException {
         // The rectangle of an annotation of vertices, a polygon, is the box of its
         // vertices, which are relative to its location; its second corner is not
@@ -1708,6 +1734,10 @@ final public class PDF {
         int appearance = 0;
         if (!annot.annotationType.equals(Annotation.Link)) {
             appearance = addAppearanceObject(annot, x1, y1, x2, y2);
+        }
+        int uriAction = 0;
+        if (annot.annotationType.equals(Annotation.Link) && !Util.isEmpty(annot.uri)) {
+            uriAction = addURIAction(annot.uri);
         }
 
         newObj();
@@ -1772,17 +1802,10 @@ final public class PDF {
                 appendTextString(description);
                 append("\n");
             }
-            if (!Util.isEmpty(annot.uri)) {
-                append("/A <<\n");
-                append("/S /URI\n");
-                byte[] uri = Util.utf8(annot.uri);
-                if (encryption != null) {
-                    uri = AES256.encrypt(uri, encryption.getKey());
-                }
-                append("/URI <");
-                append(Util.toHexString(uri));
-                append(">\n");
-                append(">>\n");
+            if (uriAction > 0) {
+                append("/A ");
+                append(uriAction);
+                append(" 0 R\n");
             } else if (!Util.isEmpty(annot.key)) {
                 Destination destination = destinations.get(annot.key);
                 if (destination == null) {

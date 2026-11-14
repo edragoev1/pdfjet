@@ -149,6 +149,10 @@ class TextFrameTest {
         assertTrue(font.stringWidth("W") > 10f, "the letter is wider than the frame");
         assertEquals(10f, drawAligned(Alignment.CENTER, "WW", 10f).getTextX(), TestSupport.DELTA);
         assertEquals(10f, drawAligned(Alignment.RIGHT, "WW", 10f).getTextX(), TestSupport.DELTA);
+        // A lone W in a frame 5 wide: its row ended at once, and the end of
+        // its text line went in an empty row after it, centered at 12.5
+        assertEquals(10f, drawAligned(Alignment.CENTER, "W", 5f).getTextX(), TestSupport.DELTA);
+        assertEquals(10f, drawAligned(Alignment.RIGHT, "W", 5f).getTextX(), TestSupport.DELTA);
     }
 
     @Test

@@ -76,6 +76,34 @@ public class QRCode : IDrawable {
         this.Make(CreateData(errorCorrectionLevel));
     }
 
+    /// <summary>
+    /// Tells whether the string fits in a QR code at the error correction
+    /// level, so that a program can refuse a text before it draws, and say
+    /// why, where the constructor would throw. The limit is in UTF-8 bytes,
+    /// not characters: at level M, 2,331 bytes of ASCII, or 2,330 with the
+    /// ECI of a string that is not all ASCII, so 776 euro signs, 3 bytes
+    /// each, fit, and 777 do not.
+    /// </summary>
+    /// <param name="str">the string to encode.</param>
+    /// <param name="errorCorrectionLevel">the error correction level.</param>
+    /// <returns>true if the constructor would make a QR code of the string.</returns>
+    /// <exception cref="ArgumentException">If the level is not one of L, M, Q or H, as the constructor.</exception>
+    public static bool Fits(String str, ErrorCorrectionLevel errorCorrectionLevel) {
+        if (errorCorrectionLevel != ErrorCorrectionLevel.L && errorCorrectionLevel != ErrorCorrectionLevel.M
+                && errorCorrectionLevel != ErrorCorrectionLevel.Q && errorCorrectionLevel != ErrorCorrectionLevel.H) {
+            throw new ArgumentException("The error correction level " + (int) errorCorrectionLevel
+                    + " is not one: use ErrorCorrectionLevel.L, M, Q or H.");
+        }
+        byte[] data = Encoding.GetEncoding("utf-8").GetBytes(str);
+        bool eci = false;
+        foreach (byte b in data) {
+            if (b > 127) {
+                eci = true;
+            }
+        }
+        return GetLengthInBits(data.Length, eci, 40) <= GetDataCount(40, errorCorrectionLevel) * 8;
+    }
+
     // Returns the smallest version, from 4, whose data codewords hold the data,
     // and the ECI before it when there is one.
     private static int GetTypeNumber(int dataLength, bool eci, ErrorCorrectionLevel errorCorrectionLevel) {

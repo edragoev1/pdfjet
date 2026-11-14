@@ -130,6 +130,10 @@ public class TextFrameTest {
         Assert.True(font.StringWidth("W") > 10f, "the letter is wider than the frame");
         TestSupport.AssertNear(10f, DrawAligned(Alignment.CENTER, "WW", 10f).GetTextX(), TestSupport.DELTA);
         TestSupport.AssertNear(10f, DrawAligned(Alignment.RIGHT, "WW", 10f).GetTextX(), TestSupport.DELTA);
+        // A lone W in a frame 5 wide: its row ended at once, and the end of
+        // its text line went in an empty row after it, centered at 12.5
+        TestSupport.AssertNear(10f, DrawAligned(Alignment.CENTER, "W", 5f).GetTextX(), TestSupport.DELTA);
+        TestSupport.AssertNear(10f, DrawAligned(Alignment.RIGHT, "W", 5f).GetTextX(), TestSupport.DELTA);
     }
 
     [Fact]

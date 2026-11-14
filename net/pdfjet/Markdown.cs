@@ -410,7 +410,7 @@ public class Markdown {
             allowSplit = true;
             return heading + Size() * 0.75f + 4f * line;
         }
-        if (i + 2 < blocks.Count && LeadsIntoTable(blocks[i + 1], blocks[i + 2])) {
+        if (i + 2 < blocks.Count && KeptWithTable(blocks[i + 1], blocks[i + 2], width)) {
             allowSplit = true;
             return heading + ParagraphGap(tight) + ParagraphHeight(blocks[i + 1].text, width)
                     + Size() * 0.75f + 4f * line;
@@ -467,7 +467,7 @@ public class Markdown {
                 return keep;
             }
             case MarkdownParser.Kind.PARAGRAPH:
-                if (i + 1 < blocks.Count && LeadsIntoTable(block, blocks[i + 1])) {
+                if (i + 1 < blocks.Count && KeptWithTable(block, blocks[i + 1], width)) {
                     float keep = ParagraphHeight(block.text, width) + Size() * 0.75f
                             + TableOf(blocks[i + 1], width).GetTotalHeight();
                     if (keep <= room) {
@@ -502,13 +502,28 @@ public class Markdown {
         return tight ? Size() * 0.25f : Size() * 0.75f;
     }
 
-    // The height of a heading's text at the width, of all its lines: a
-    // heading of two lines was kept on its page by its first.
+    // The height of a heading's text at the width, of all its lines, and the
+    // space DrawHeading leaves after it: a heading of two lines was kept on
+    // its page by its first, and without the space a heading and a table
+    // that fit by less than it were measured together and drawn apart.
     private float HeadingHeight(MarkdownParser.Block block, float width) {
         TextFrame frame = new TextFrame(new List<Paragraph> {HeadingParagraph(block)}).SetParagraphGap(0f);
         frame.SetLocation(0f, 0f).SetWidth(width).SetHeight(bottom - marginTop);
         frame.DrawOn(null);
-        return frame.GetTextBottom();
+        return frame.GetTextBottom() + Size() * 0.25f;
+    }
+
+    // Whether a paragraph after a heading goes with the table after it: one
+    // that leads into it, ending in a colon, or a short one, of three lines
+    // at most. A heading kept the paragraph's first line alone, and a table
+    // that did not fit under them started the next page, leaving the
+    // heading and the paragraph at the bottom of this one.
+    private bool KeptWithTable(MarkdownParser.Block paragraph, MarkdownParser.Block next, float width) {
+        if (next.kind != MarkdownParser.Kind.TABLE) {
+            return false;
+        }
+        return LeadsIntoTable(paragraph, next)
+                || ParagraphHeight(paragraph.text, width) <= 3.5f * regular.GetBodyHeight(Size());
     }
 
     // The height of a paragraph's text at the width.

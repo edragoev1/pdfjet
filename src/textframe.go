@@ -565,12 +565,21 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		} else if buf.Len() == 0 && tf.xText == tf.x {
 			// The token does not fit in an empty row, so the row takes as much of it as fits.
 			head := tf.headThatFits(textLine, token)
-			buf.WriteString(head)
 			if len(head) == len(token) {
+				// The whole token, as one letter wider than the frame: the
+				// row takes it as it takes a token that fits, and stays
+				// open, so that the end of the text line is in it, not in an
+				// empty row after it
+				text := text()
+				buf.WriteString(text)
+				runLength += textWidth(textLine, text)
 				tf.tokenIndex++
-			} else {
-				tf.tokens[tf.tokenIndex] = token[len(head):]
+				tf.joinReserved = joinsNext
+				tf.leadingSpace = spaceToNext
+				continue
 			}
+			buf.WriteString(head)
+			tf.tokens[tf.tokenIndex] = token[len(head):]
 		}
 		if leading && buf.Len() == 0 {
 			// The word starts the next row without the space before it,

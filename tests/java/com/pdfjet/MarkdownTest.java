@@ -339,6 +339,24 @@ class MarkdownTest {
         assertTrue(moved, "the heading never moved with its table");
     }
 
+    // A heading goes with its table at every place on the page: right over
+    // it, it was apart from it where they fit by less than the space after
+    // the heading; over a short paragraph that does not end in a colon, it
+    // was left with the paragraph at the bottom of the page whenever the
+    // table moved to the next (14 November 2026).
+    @Test
+    void aHeadingStaysWithItsTableWithAShortParagraphOrNone() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        for (String leadIn : new String[] {"## H7", "## H7\n\n555", "## H7\n\n555:"}) {
+            for (int k = 0; k <= 60; k++) {
+                Drawn drawn = draw(fillerAndTable(k, leadIn, 8), null);
+                List<Integer> heading = pagesOf(drawn, "H7");
+                assertEquals(heading, pagesOf(drawn, "r1"), leadIn + ", " + k + " paragraphs: apart from its table");
+                assertEquals(heading, pagesOf(drawn, "r8"), leadIn + ", " + k + " paragraphs: the table is split");
+            }
+        }
+    }
+
     @Test
     void aTableLongerThanAPageStillStartsWhereItIs() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font

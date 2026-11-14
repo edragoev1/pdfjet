@@ -7,6 +7,7 @@
 package com.pdfjet.qrcode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -93,6 +94,31 @@ class QRCodeTest {
         Page plain = new Page(pdf, Letter.PORTRAIT);
         new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M).drawOn(plain);
         assertTrue(TestSupport.content(plain).startsWith("/Artifact BMC\n"));
+    }
+
+    // fits says what the constructor would do, at the edge: the longest text
+    // that fits, and one byte more, with and without the ECI
+    @Test
+    void fitsTellsAtTheEdge() throws Exception {
+        assertTrue(QRCode.fits(repeat('a', 2331), ErrorCorrectionLevel.M));
+        assertFalse(QRCode.fits(repeat('a', 2332), ErrorCorrectionLevel.M));
+        assertTrue(QRCode.fits(repeat('\u20AC', 776), ErrorCorrectionLevel.M));    // 2,328 bytes and the ECI
+        assertFalse(QRCode.fits(repeat('\u20AC', 777), ErrorCorrectionLevel.M));   // 2,331 bytes and the ECI
+        assertTrue(QRCode.fits(repeat('a', 2953), ErrorCorrectionLevel.L));
+        assertFalse(QRCode.fits(repeat('a', 1274), ErrorCorrectionLevel.H));
+        assertTrue(QRCode.fits("", ErrorCorrectionLevel.H));
+        for (ErrorCorrectionLevel level : ErrorCorrectionLevel.values()) {
+            for (int n : new int[] {1270, 1273, 1274, 1663, 1664, 2330, 2331, 2332, 2953, 2954}) {
+                String text = repeat('a', n);
+                boolean made = true;
+                try {
+                    new QRCode(text, level);
+                } catch (IllegalArgumentException e) {
+                    made = false;
+                }
+                assertEquals(made, QRCode.fits(text, level), level + " " + n);
+            }
+        }
     }
 
 }

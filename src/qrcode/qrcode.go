@@ -101,6 +101,20 @@ func EncodeQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCor
 	return NewQRCode(str, errorCorrectionLevel), nil
 }
 
+// Fits tells whether the string fits in a QR code at the error correction
+// level, so that a program can refuse a text before it draws, and say why,
+// where NewQRCode would panic and EncodeQRCode return an error. The limit is
+// in UTF-8 bytes, not characters: at level M, 2,331 bytes of ASCII, or 2,330
+// with the ECI of a string that is not all ASCII, so 776 euro signs, 3 bytes
+// each, fit, and 777 do not. A level that is not one fits nothing.
+func Fits(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) bool {
+	if levelError(errorCorrectionLevel) != "" {
+		return false
+	}
+	data := []byte(str)
+	return getLengthInBits(len(data), !isASCII(data), 40) <= getDataCount(40, errorCorrectionLevel)*8
+}
+
 // levelError returns the error of a level that is not one, or "". A level
 // that is not one, as an ErrorCorrectionLevel is an int: a negative one
 // looped for ever in getBCHDigit, and 4 to 7 gave format bits that are not

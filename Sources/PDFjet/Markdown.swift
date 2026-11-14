@@ -410,7 +410,7 @@ public class Markdown {
             allowSplit = true
             return heading + size() * 0.75 + 4.0 * line
         }
-        if i + 2 < blocks.count && Markdown.leadsIntoTable(blocks[i + 1], blocks[i + 2]) {
+        if i + 2 < blocks.count && keptWithTable(blocks[i + 1], blocks[i + 2], width) {
             allowSplit = true
             return heading + paragraphGap(tight) + paragraphHeight(blocks[i + 1].text!, width)
                     + size() * 0.75 + 4.0 * line
@@ -468,7 +468,7 @@ public class Markdown {
             }
             return keep
         case .PARAGRAPH:
-            if i + 1 < blocks.count && Markdown.leadsIntoTable(block, blocks[i + 1]) {
+            if i + 1 < blocks.count && keptWithTable(block, blocks[i + 1], width) {
                 let keep = paragraphHeight(block.text!, width) + size() * 0.75
                         + tableOf(blocks[i + 1], width).getTotalHeight()
                 if keep <= room {
@@ -502,13 +502,29 @@ public class Markdown {
         return tight ? size() * 0.25 : size() * 0.75
     }
 
-    // The height of a heading's text at the width, of all its lines: a
-    // heading of two lines was kept on its page by its first.
+    // The height of a heading's text at the width, of all its lines, and the
+    // space drawHeading leaves after it: a heading of two lines was kept on
+    // its page by its first, and without the space a heading and a table
+    // that fit by less than it were measured together and drawn apart.
     private func headingHeight(_ block: MarkdownParser.Block, _ width: Float) -> Float {
         let frame = TextFrame([headingParagraph(block)]).setParagraphGap(0.0)
         frame.setLocation(0.0, 0.0).setWidth(width).setHeight(bottom - marginTop)
         frame.drawOn(nil)
-        return frame.getTextBottom()
+        return frame.getTextBottom() + size() * 0.25
+    }
+
+    // Whether a paragraph after a heading goes with the table after it: one
+    // that leads into it, ending in a colon, or a short one, of three lines
+    // at most. A heading kept the paragraph's first line alone, and a table
+    // that did not fit under them started the next page, leaving the
+    // heading and the paragraph at the bottom of this one.
+    private func keptWithTable(_ paragraph: MarkdownParser.Block, _ next: MarkdownParser.Block,
+            _ width: Float) -> Bool {
+        if next.kind != .TABLE {
+            return false
+        }
+        return Markdown.leadsIntoTable(paragraph, next)
+                || paragraphHeight(paragraph.text ?? "", width) <= 3.5 * regular.getBodyHeight(size())
     }
 
     // The height of a paragraph's text at the width.

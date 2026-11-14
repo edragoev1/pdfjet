@@ -312,6 +312,27 @@ func TestMarkdownAParagraphThatEndsInAColonStaysWithItsTable(t *testing.T) {
 // A heading over the lead-in goes with it and its table: the two went to the
 // next page and left the heading at the bottom of this one (the report of the
 // fair test, 26 October 2026).
+// A heading goes with its table at every place on the page: right over it,
+// it was apart from it where they fit by less than the space after the
+// heading; over a short paragraph that does not end in a colon, it was left
+// with the paragraph at the bottom of the page whenever the table moved to
+// the next (14 November 2026).
+func TestMarkdownAHeadingStaysWithItsTableWithAShortParagraphOrNone(t *testing.T) {
+	testAllowCoreFonts(t)
+	for _, leadIn := range []string{"## H7", "## H7\n\n555", "## H7\n\n555:"} {
+		for k := 0; k <= 60; k++ {
+			drawn := testDrawMarkdown(testFillerAndTable(k, leadIn, 8), "")
+			heading := testMarkdownPagesOf(drawn, "H7")
+			if !slices.Equal(heading, testMarkdownPagesOf(drawn, "r1")) {
+				t.Fatalf("%q, %d paragraphs: apart from its table", leadIn, k)
+			}
+			if !slices.Equal(heading, testMarkdownPagesOf(drawn, "r8")) {
+				t.Fatalf("%q, %d paragraphs: the table is split", leadIn, k)
+			}
+		}
+	}
+}
+
 func TestMarkdownAHeadingStaysWithALeadInAndItsTable(t *testing.T) {
 	testAllowCoreFonts(t)
 	moved := false

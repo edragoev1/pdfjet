@@ -238,6 +238,22 @@ import Testing
         #expect(moved, "the heading never moved with its table")
     }
 
+    // A heading goes with its table at every place on the page: right over
+    // it, it was apart from it where they fit by less than the space after
+    // the heading; over a short paragraph that does not end in a colon, it
+    // was left with the paragraph at the bottom of the page whenever the
+    // table moved to the next (14 November 2026).
+    @Test func aHeadingStaysWithItsTableWithAShortParagraphOrNone() throws {
+        for leadIn in ["## H7", "## H7\n\n555", "## H7\n\n555:"] {
+            for k in 0...60 {
+                let drawn = try MarkdownTests.draw(fillerAndTable(k, leadIn, 8), nil)
+                let heading = pagesOf(drawn, "H7")
+                #expect(heading == pagesOf(drawn, "r1"), "\(leadIn), \(k) paragraphs: apart from its table")
+                #expect(heading == pagesOf(drawn, "r8"), "\(leadIn), \(k) paragraphs: the table is split")
+            }
+        }
+    }
+
     @Test func aTableLongerThanAPageStillStartsWhereItIs() throws {
         let drawn = try MarkdownTests.draw(fillerAndTable(3, nil, 120), nil)
         #expect(pagesOf(drawn, "p2") == [0])

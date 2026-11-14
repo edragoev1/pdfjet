@@ -109,6 +109,8 @@ public sealed class PDF {
     private int outputIntentObjNumber = 0;
     private List<Page> pages = new List<Page>();
     private Dictionary<String, Destination> destinations = new Dictionary<String, Destination>();
+    // The object of the action of each URI a link goes to
+    private Dictionary<String, int> uriActions = new Dictionary<String, int>();
     // The document ID for the trailer and the XMP metadata: 16 random bytes as
     // 32 hexadecimal digits, so documents made at the same time get different IDs.
     // The ID is to tell documents apart, not a secret, so a Guid makes it:
@@ -1612,6 +1614,29 @@ public sealed class PDF {
         buf.Write(bytes, 0, bytes.Length);
     }
 
+    // Returns the action of a link to the URI, one object for every link to it,
+    // written before the first: each link carried the address itself, and
+    // twenty links to an address of 20,000 characters added about 800 KB.
+    private int AddURIAction(String uri) {
+        if (uriActions.TryGetValue(uri, out int number)) {
+            return number;
+        }
+        byte[] bytes = Encoding.UTF8.GetBytes(uri);
+        if (encryption != null) {
+            bytes = AES256.Encrypt(bytes, encryption.GetKey());
+        }
+        NewObj();
+        Append(Token.BeginDictionary);
+        Append("/S /URI\n");
+        Append("/URI <");
+        Append(Util.ToHexString(bytes));
+        Append(">\n");
+        Append(Token.EndDictionary);
+        EndObj();
+        uriActions[uri] = GetObjNumber();
+        return GetObjNumber();
+    }
+
     private int AddAnnotationObject(Annotation annot, int index) {
         // The rectangle of an annotation of vertices, a polygon, is the box of its
         // vertices, which are relative to its location; its second corner is not
@@ -1647,6 +1672,10 @@ public sealed class PDF {
         int appearance = 0;
         if (!annot.annotationType.Equals(Annotation.Link)) {
             appearance = AddAppearanceObject(annot, x1, y1, x2, y2);
+        }
+        int uriAction = 0;
+        if (annot.annotationType.Equals(Annotation.Link) && !String.IsNullOrEmpty(annot.uri)) {
+            uriAction = AddURIAction(annot.uri);
         }
 
         NewObj();
@@ -1711,17 +1740,10 @@ public sealed class PDF {
                 AppendTextString(description);
                 Append("\n");
             }
-            if (!String.IsNullOrEmpty(annot.uri)) {
-                Append("/A <<\n");
-                Append("/S /URI\n");
-                byte[] uri = Encoding.UTF8.GetBytes(annot.uri);
-                if (encryption != null) {
-                    uri = AES256.Encrypt(uri, encryption.GetKey());
-                }
-                Append("/URI <");
-                Append(Util.ToHexString(uri));
-                Append(">\n");
-                Append(">>\n");
+            if (uriAction > 0) {
+                Append("/A ");
+                Append(uriAction);
+                Append(" 0 R\n");
             } else if (!String.IsNullOrEmpty(annot.key)) {
                 Destination destination;
                 if (!destinations.TryGetValue(annot.key, out destination)) {

@@ -77,4 +77,23 @@ import Testing
         #expect(TestSupport.content(plain).hasPrefix("/Artifact BMC\n"))
     }
 
+    // fits says what the initializer would do, at the edge: the longest text
+    // that fits, and one byte more, with and without the ECI
+    @Test func fitsTellsAtTheEdge() throws {
+        #expect(QRCode.fits(String(repeating: "a", count: 2331), ErrorCorrectionLevel.M))
+        #expect(!QRCode.fits(String(repeating: "a", count: 2332), ErrorCorrectionLevel.M))
+        #expect(QRCode.fits(String(repeating: "\u{20AC}", count: 776), ErrorCorrectionLevel.M))   // 2,328 bytes and the ECI
+        #expect(!QRCode.fits(String(repeating: "\u{20AC}", count: 777), ErrorCorrectionLevel.M))  // 2,331 bytes and the ECI
+        #expect(QRCode.fits(String(repeating: "a", count: 2953), ErrorCorrectionLevel.L))
+        #expect(!QRCode.fits(String(repeating: "a", count: 1274), ErrorCorrectionLevel.H))
+        #expect(QRCode.fits("", ErrorCorrectionLevel.H))
+        for level in [ErrorCorrectionLevel.L, ErrorCorrectionLevel.M, ErrorCorrectionLevel.Q, ErrorCorrectionLevel.H] {
+            for n in [1270, 1273, 1274, 1663, 1664, 2330, 2331, 2332, 2953, 2954] {
+                let text = String(repeating: "a", count: n)
+                let made = (try? QRCode(text, level)) != nil
+                #expect(made == QRCode.fits(text, level), "\(level) \(n)")
+            }
+        }
+    }
+
 }

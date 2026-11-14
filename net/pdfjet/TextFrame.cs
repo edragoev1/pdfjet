@@ -577,13 +577,22 @@ public class TextFrame : IDrawable {
             } else if (buf.Length == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = HeadThatFits(textLine, token);
-                buf.Append(head);
                 if (head.Length == token.Length) {
+                    // The whole token, as one letter wider than the frame:
+                    // the row takes it as it takes a token that fits, and
+                    // stays open, so that the end of the text line is in
+                    // it, not in an empty row after it
+                    String text = withSpace ? token + Single.space : token;
+                    buf.Append(text);
+                    runLength += Width(textLine, text);
                     tokenIndex++;
                     start = 0;
-                } else {
-                    start += head.Length;
+                    joinReserved = joinsNext;
+                    leadingSpace = spaceToNext;
+                    continue;
                 }
+                buf.Append(head);
+                start += head.Length;
             }
             if (leading && buf.Length == 0) {
                 // The word starts the next row without the space before it,

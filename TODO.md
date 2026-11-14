@@ -70,7 +70,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   clusterEnd and advanceOf, and the DrawGlyphs tests, before the release;
   Example_52 then in C# and Go too, if wanted.
 
-- [ ] **Markdown: a heading stays with the block after it, in all four
+- ✅ **DONE 14 November 2026. Markdown: a heading stays with the block after it, in all four
   ports** (found 14 November 2026, making a landscape document with md2pdf).
   A heading near the bottom of a page is drawn there, and a table that does
   not fit under it moves whole to the next page, leaving the heading (and
@@ -190,7 +190,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   Also, by the same thinking: the awesome-java and awesome-pdf lists. No
   note to pdf noodle's founder (the owner, 11 November 2026: "forget it").
 
-- **9.1.9 in 2026: the small items, worked on during the Forms breaks**
+- ✅ **DONE 14 November 2026 (all five, the four ports, with tests). 9.1.9 in 2026: the small items, worked on during the Forms breaks**
   (the owner, 14 November 2026: "we will work on all of these during my
   Forms breaks and release 9.1.9 this year"). Each in the four ports with
   tests: (1) the CHANGELOG brought up to date with what main has:
@@ -611,7 +611,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   src/com/pdfjet/TextFrame.java) with `shift = Math.max(0f, shift)`: such a
   row starts at the frame's left and runs past its right, as a word
   processor has it. The same in all four ports, with a test.
-- **Next release: TextFrame, the empty row after a lone character wider than
+- ✅ **DONE 14 November 2026. Next release: TextFrame, the empty row after a lone character wider than
   the frame** (9 November 2026). A paragraph of one character wider than
   the frame, "W" in a frame 5 wide, is drawn in a row of its own, then an
   empty row that starts the paragraph again (startsParagraph true): centered,
@@ -620,7 +620,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   height. "WW" in a frame 10 wide has no such row. Write's copy shows the
   same empty row, which Write leaves out of its lines.
 
-- **Next release: a check that a text fits in a QR code** (8 November
+- ✅ **DONE 14 November 2026. Next release: a check that a text fits in a QR code** (8 November
   2026). Whether a text fits is known only by making the QRCode and
   catching its IllegalArgumentException ("The data is too long for a QR
   code at level M"), as PDFjet Write does before it puts a QR code on a
@@ -633,7 +633,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   text that fits, and one byte more). A program can then refuse a text
   before drawing, and tell its user why.
 
-- **Next release: one URI action for repeated links** (7 November 2026).
+- ✅ **DONE 14 November 2026. Next release: one URI action for repeated links** (7 November 2026).
   Each link annotation writes its URI inline, hex-encoded, so a document
   with many links to one long address carries it many times: twenty
   boxes linking to a 20,000-character address add about 800 KB. Write one
