@@ -9,6 +9,44 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## Next release (not released yet)
 
+Behavior change, in the four ports: **every line PDFjet draws is 0.5 points
+wide unless set.** `Cell`, `Table`, `BigTable`, `Rect`, `Line`, `Path` and
+the page's default pen (`Page.setDefaultPenWidth`) drew a width of 0, as
+`TextBlock` and `TextFrame` already did not. In PDF a width of 0 is the
+thinnest line the device makes: a whole pixel on a screen at any zoom,
+heavier than 0.5 points when zoomed out, and faint or gone in print, and
+ISO 32000 (8.4.3.2) advises against it. Tables and boxes look and print a
+little lighter and more even. A program that wants the old hairline sets 0:
+`cell.setBorderWidth(0f)`, `line.setStrokeWidth(0f)`,
+`page.setDefaultPenWidth(0f)` (Go `SetBorderWidth(0)`, and so on). For
+example, a `Cell` drawn with no width set wrote `0 w` before its borders; it
+now writes `0.5 w`.
+
+Added, in the four ports: **BigTable wraps long fields within their
+columns.** `BigTable.setWrapText(true)` (Go `SetWrapText`, C#
+`SetWrapText`, Swift `setWrapText`): a field too long for its column wraps
+at its spaces, a word longer than its column broken, and each row is as tall
+as its tallest field, so that no column is cut short and none is lost off
+the page. The columns keep their widths when they fit the page; otherwise
+the narrow ones keep theirs and the others share the rest equally, or the
+widths of `setColumnWidthsInPercent`. A row that does not fit what is left
+of a page starts the next one; a row taller than a whole page is cut at the
+lines that fit, ending in " ...", its cell in a PDF/UA document keeping the
+whole text. "Page i of N" stays right, and the memory stays flat, a row at a
+time. Off unless set: a table drawn before is drawn the same, byte for byte.
+Example_51: eight columns of the Electric Vehicle data on portrait pages,
+wrapped. Also new on `BigTable`: `setFallbackFonts(Font header, Font rows)`,
+the fonts that draw the characters the table's fonts do not have, such as
+Korean or Chinese in a table set in a Latin font, and `setBorderWidth(float)`
+(0.5 unless set, as above).
+
+Fixed, in the four ports: a centered or right-aligned row of `TextFrame`
+wider than the frame, as one character wider than a narrow column, was
+shifted out to the left of the frame, over a column beside it. It now
+starts at the frame's left edge and runs past its right, as a word
+processor has it. Behavior change: such a row is drawn from the frame's
+left edge (for "WW" centered in a frame 10 points wide, at 10, not 9.34).
+
 Added, in the four ports, from PDFjet Write, which lays out its pages with
 TextFrame:
 
@@ -32,14 +70,25 @@ TextFrame:
   runes, C# `DrawGlyphs`, Swift `drawGlyphs`): draws glyphs that another text
   engine shaped -- Java's java.awt.font, Android's TextShaper, Apple's Core
   Text, HarfBuzz -- by their numbers in the font, at their places, as real
-  text. The glyphs are wrapped in a span whose actual text is the text they
-  stand for, and the glyphs no character of the font maps to (conjuncts,
-  reordered vowel signs) are mapped in the ToUnicode map to their cluster's
-  characters, so that copying, searching and screen readers get the text,
-  and PDF/UA passes. This is how Hindi, Khmer and the other scripts PDFjet
-  does not shape itself are drawn as real text, with no shaping engine in
-  PDFjet: a page of Hindi and Khmer shaped by java.awt.font copies out
-  exactly as it went in, and passes veraPDF.
+  text. Each cluster, with the glyphs drawn for it, is a span whose actual
+  text is the characters it stands for, its glyphs in one array of text;
+  a glyph no character of the font maps to (a conjunct, a reordered vowel
+  sign) is mapped in the ToUnicode map to the characters of its cluster the
+  other glyphs do not give, or to the zero width space where they cannot add
+  up, so that copying, searching and screen readers get the text, and PDF/UA
+  passes. This is how Hindi, Khmer and the other scripts PDFjet does not
+  shape itself are drawn as real text, with no shaping engine in PDFjet and
+  no dependency added. Example_52 draws Article 1 of the Universal
+  Declaration of Human Rights in Hindi and Khmer, shaped by java.awt.font
+  (Java), HarfBuzz through HarfBuzzSharp (C#), go-text/typesetting (Go) and
+  Core Text (Swift, on a Mac); each shaping package is the example's alone.
+  Copying gives the text back exactly in Chrome, MuPDF and Poppler. Known
+  limits: Firefox (pdf.js) and Apple's Preview and Safari (PDFKit) read only
+  the ToUnicode map, so they copy the Hindi exactly but lose the Khmer
+  vowels drawn in two parts (ោ, ៅ, ើ); screen readers read the actual text
+  of a tagged PDF. The examples break lines at spaces only: Khmer, Thai,
+  Lao and Burmese, written without spaces between words, need a line
+  breaker such as ICU's, in the program.
 
 No behavior change: neither does anything until it is called.
 
