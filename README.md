@@ -98,6 +98,18 @@ same output come in four languages, and none of them needs a third-party library
   each language's quotation marks: a one-page PDF in it is about 28 KB. A
   page of Chinese in IBM Plex Sans SC is about 180 KB, where the whole font
   is 7 MB.
+- **Hindi, Khmer and other complex scripts, as real text.** PDFjet does not
+  shape these scripts itself; the platform's text engine does, and
+  `Page.drawGlyphs` draws the glyphs it found as real text: selectable,
+  searchable, read by screen readers, PDF/UA. Java's java.awt.font, Android's
+  TextShaper and Apple's Core Text are built in; in .NET and Go, a shaping
+  package (HarfBuzzSharp, go-text) in your program, never in PDFjet. Example_52
+  shows each. Known limits: copying gives the text back exactly in Chrome,
+  MuPDF and Poppler; Firefox and
+  Apple's Preview and Safari read only the glyphs' own letters, so they copy
+  Hindi exactly but lose Khmer vowels drawn in two parts (ោ, ៅ, ើ). The
+  examples break lines at spaces: for Khmer, Thai, Lao and Burmese, written
+  without spaces between words, use a line breaker such as ICU's.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics. For
   logos, icons and drawings, use SVG: it stays sharp at any size and in
   print, and it is far smaller and faster than a PNG with transparency,
