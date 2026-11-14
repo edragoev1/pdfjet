@@ -38,6 +38,24 @@ one font of a .ttf or an .otf; the rest is measured as before. No behavior
 change: the 57 examples and 2,000 random text blocks write the same PDFs as
 before, to the byte, but for their dates and IDs.
 
+Fixed, in the four ports: a `Stamp` with no alternate description and no
+actual text, drawn inside the real content of a tagged document (between
+`addBDC` and `addEMC`, as a paragraph whose letters are stamps is), is now
+part of that content. It was marked as an artifact there, and an artifact
+inside tagged content breaks PDF/UA (ISO 14289-1, 7.1-1 and 7.1-2): every
+such placement failed veraPDF. Drawn anywhere else, a stamp is marked as
+before, and a described stamp is still an element of its own. This lets a
+program draw text PDFjet cannot shape (Hindi, Khmer) as outlines, each
+letter drawn once as a stamp and placed wherever it appears, in an
+accessible PDF: a page of Khmer prose, 726 KB with every letter drawn in
+full, is 180 KB, and passes veraPDF.
+
+Behavior change: in a PDF/UA document, `page.addBDC(StructElem.P, "km",
+text, text); stamp.drawOn(page); page.addEMC();` wrote `/Artifact BMC` and
+`EMC` around the stamp's `Do`; it now writes the `Do` alone, inside the
+paragraph. Untagged documents, and stamps drawn outside marked content or
+given a description, write exactly what they did.
+
 Added, in Go only, the constructors that return their error, as
 `ReadTableFromFile` does, for a file or a text PDFjet cannot read, which the
 constructors of Java, C# and Swift throw: `ReadImage(pdf, reader)` (of

@@ -21,7 +21,10 @@ import Foundation
 /// 104,530 byte file, and over 500 pages 66,052 of 275,553. The whole stamp is
 /// one structure element in a PDF/UA document, with the alternate description,
 /// the language and the actual text it is given, which is what a logo or a
-/// watermark wants.
+/// watermark wants. A stamp given neither is an artifact, decoration; but
+/// drawn between the addBDC and the addEMC of real content, such as a
+/// paragraph whose letters are stamps, each drawn once and placed wherever it
+/// appears, it is part of that content, read as its actual text.
 ///
 /// What it costs: a stamp draws with the methods of this class -- moveTo,
 /// lineTo, curveTo, drawRect, fillRect and drawText -- and holds no
@@ -570,8 +573,15 @@ public class Stamp : Drawable {
             return [self.x + width, self.y + height]    // Nothing to paint.
         }
 
-        // Described, the stamp is read; otherwise it is decoration.
-        page.addShapeBDC(language, actualText, altDescription)
+        // Described, the stamp is read; otherwise it is decoration. Undescribed
+        // inside the real content of a tagged page, such as a paragraph whose
+        // letters are stamps, it is part of that content: marked as an artifact
+        // there it would break PDF/UA (ISO 14289-1, 7.1).
+        let partOfContent = (altDescription ?? "").isEmpty && (actualText ?? "").isEmpty
+                && page.insideTaggedContent()
+        if !partOfContent {
+            page.addShapeBDC(language, actualText, altDescription)
+        }
         page.saveGraphicsState()
 
         let drawX = self.x
@@ -614,7 +624,9 @@ public class Stamp : Drawable {
         page.append(page.resourceName("/XObject", "/Fm", objNumber ?? 0, [], objNumber ?? 0) + " Do\n")
 
         page.restoreGraphicsState()
-        page.addEMC()
+        if !partOfContent {
+            page.addEMC()
+        }
 
         return [self.x + width, self.y + height]
     }

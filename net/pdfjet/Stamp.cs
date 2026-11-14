@@ -24,7 +24,10 @@ namespace PDFjet.NET {
 /// 104,530 byte file, and over 500 pages 66,052 of 275,553. The whole stamp is
 /// one structure element in a PDF/UA document, with the alternate description,
 /// the language and the actual text it is given, which is what a logo or a
-/// watermark wants.
+/// watermark wants. A stamp given neither is an artifact, decoration; but
+/// drawn between the AddBDC and the AddEMC of real content, such as a
+/// paragraph whose letters are stamps, each drawn once and placed wherever it
+/// appears, it is part of that content, read as its actual text.
 ///
 /// What it costs: a stamp draws with the methods of this class -- MoveTo,
 /// LineTo, CurveTo, DrawRect, FillRect and DrawText -- and holds no
@@ -553,8 +556,15 @@ public class Stamp : IDrawable {
         if (width == 0f || height == 0f || scaleX == 0f || scaleY == 0f) {
             return new float[] { this.x + width, this.y + height };  // Nothing to paint.
         }
-        // Described, the stamp is read; otherwise it is decoration.
-        page.AddShapeBDC(language, actualText, altDescription);
+        // Described, the stamp is read; otherwise it is decoration. Undescribed
+        // inside the real content of a tagged page, such as a paragraph whose
+        // letters are stamps, it is part of that content: marked as an artifact
+        // there it would break PDF/UA (ISO 14289-1, 7.1).
+        bool partOfContent = String.IsNullOrEmpty(altDescription) && String.IsNullOrEmpty(actualText)
+                && page.InsideTaggedContent();
+        if (!partOfContent) {
+            page.AddShapeBDC(language, actualText, altDescription);
+        }
         page.SaveGraphicsState();
 
         float drawX = this.x;
@@ -598,7 +608,9 @@ public class Stamp : IDrawable {
         page.Append(" Do\n");
 
         page.RestoreGraphicsState();
-        page.AddEMC();
+        if (!partOfContent) {
+            page.AddEMC();
+        }
 
         return new float[] { this.x + width, this.y + height };
     }

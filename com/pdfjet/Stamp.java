@@ -23,7 +23,10 @@ import java.nio.charset.StandardCharsets;
  * 104,530 byte file, and over 500 pages 66,052 of 275,553. The whole stamp is
  * one structure element in a PDF/UA document, with the alternate description,
  * the language and the actual text it is given, which is what a logo or a
- * watermark wants.
+ * watermark wants. A stamp given neither is an artifact, decoration; but
+ * drawn between the addBDC and the addEMC of real content, such as a
+ * paragraph whose letters are stamps, each drawn once and placed wherever it
+ * appears, it is part of that content, read as its actual text.
  * <p>
  * What it costs: a stamp draws with the methods of this class -- moveTo,
  * lineTo, curveTo, drawRect, fillRect and drawText -- and holds no drawable
@@ -708,8 +711,15 @@ public class Stamp implements Drawable {
         if (width == 0f || height == 0f || scaleX == 0f || scaleY == 0f) {
             return new float[] { this.x + width, this.y + height };  // Nothing to paint.
         }
-        // Described, the stamp is read; otherwise it is decoration.
-        page.addShapeBDC(language, actualText, altDescription);
+        // Described, the stamp is read; otherwise it is decoration. Undescribed
+        // inside the real content of a tagged page, such as a paragraph whose
+        // letters are stamps, it is part of that content: marked as an artifact
+        // there it would break PDF/UA (ISO 14289-1, 7.1).
+        boolean partOfContent = Util.isEmpty(altDescription) && Util.isEmpty(actualText)
+                && page.insideTaggedContent();
+        if (!partOfContent) {
+            page.addShapeBDC(language, actualText, altDescription);
+        }
         page.saveGraphicsState();
 
         float drawX = this.x;
@@ -753,7 +763,9 @@ public class Stamp implements Drawable {
         page.append(" Do\n");
 
         page.restoreGraphicsState();
-        page.addEMC();
+        if (!partOfContent) {
+            page.addEMC();
+        }
 
         return new float[] { this.x + width, this.y + height };
     }

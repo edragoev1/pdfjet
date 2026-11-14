@@ -35,7 +35,10 @@ import (
 // 104,530 byte file, and over 500 pages 66,052 of 275,553. The whole stamp is
 // one structure element in a PDF/UA document, with the alternate description,
 // the language and the actual text it is given, which is what a logo or a
-// watermark wants.
+// watermark wants. A stamp given neither is an artifact, decoration; but
+// drawn between the AddBDC and the AddEMC of real content, such as a
+// paragraph whose letters are stamps, each drawn once and placed wherever it
+// appears, it is part of that content, read as its actual text.
 //
 // What it costs: a stamp draws with the methods of this type -- MoveTo,
 // LineTo, CurveTo, DrawRect, FillRect and DrawText -- and holds no
@@ -574,8 +577,14 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	if traceStamp != nil {
 		traceStamp(s, page)
 	}
-	// Described, the stamp is read; otherwise it is decoration.
-	page.addShapeBDC(s.language, s.actualText, s.altDescription)
+	// Described, the stamp is read; otherwise it is decoration. Undescribed
+	// inside the real content of a tagged page, such as a paragraph whose
+	// letters are stamps, it is part of that content: marked as an artifact
+	// there it would break PDF/UA (ISO 14289-1, 7.1).
+	partOfContent := s.altDescription == "" && s.actualText == "" && page.insideTaggedContent()
+	if !partOfContent {
+		page.addShapeBDC(s.language, s.actualText, s.altDescription)
+	}
 	page.SaveGraphicsState()
 
 	drawX := s.x
@@ -619,7 +628,9 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	page.appendString(" Do\n")
 
 	page.RestoreGraphicsState()
-	page.AddEMC()
+	if !partOfContent {
+		page.AddEMC()
+	}
 
 	return [2]float32{s.x + s.width, s.y + s.height}
 }

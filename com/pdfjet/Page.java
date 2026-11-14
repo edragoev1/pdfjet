@@ -3209,6 +3209,13 @@ final public class Page {
     // paragraph when it is given an alternate description or an actual text,
     // which a screen reader reads, and otherwise an artifact, the decoration
     // it is.
+    // Whether what is drawn now is inside real content of a tagged document:
+    // marked content an addBDC began and addEMC has not ended, with no
+    // artifact around it, like a paragraph whose letters are drawn as stamps.
+    boolean insideTaggedContent() {
+        return pdf.isTagged() && markedContentDepth > 0 && artifactDepth == 0;
+    }
+
     void addShapeBDC(String language, String actualText, String altDescription) {
         if (Util.isEmpty(altDescription) && Util.isEmpty(actualText)) {
             addArtifactBMC();

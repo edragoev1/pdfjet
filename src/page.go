@@ -2714,6 +2714,14 @@ func (page *Page) addArtifactBDC(properties string) {
 // addShapeBDC begins the marked content of a shape, like a line or an arc: a
 // paragraph when it is given an alternate description or an actual text, which
 // a screen reader reads, and otherwise an artifact, the decoration it is.
+// insideTaggedContent reports whether what is drawn now is inside real
+// content of a tagged document: marked content an AddBDC began and AddEMC has
+// not ended, with no artifact around it, like a paragraph whose letters are
+// drawn as stamps.
+func (page *Page) insideTaggedContent() bool {
+	return page.pdf.isTagged() && page.markedContentDepth > 0 && page.artifactDepth == 0
+}
+
 func (page *Page) addShapeBDC(language, actualText, altDescription string) {
 	if altDescription == "" && actualText == "" {
 		page.AddArtifactBMC()

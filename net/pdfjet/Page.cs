@@ -3127,6 +3127,13 @@ public class Page {
     // paragraph when it is given an alternate description or an actual text,
     // which a screen reader reads, and otherwise an artifact, the decoration
     // it is.
+    // Whether what is drawn now is inside real content of a tagged document:
+    // marked content an AddBDC began and AddEMC has not ended, with no
+    // artifact around it, like a paragraph whose letters are drawn as stamps.
+    internal bool InsideTaggedContent() {
+        return pdf.IsTagged() && markedContentDepth > 0 && artifactDepth == 0;
+    }
+
     internal void AddShapeBDC(String language, String actualText, String altDescription) {
         if (String.IsNullOrEmpty(altDescription) && String.IsNullOrEmpty(actualText)) {
             AddArtifactBMC();
