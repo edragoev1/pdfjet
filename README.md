@@ -605,13 +605,14 @@ draw left out. What a PDF embeds:
   `glyf`, `cvt `, `fpgm`, `prep`, `gasp`, `cmap`, `OS/2`, `name` and `post`
   (without the names of the glyphs).
 - A font of CFF outlines, `/FontFile3` with `/Subtype /CIDFontType0C`, the way
-  PDF carries such a font since PDF 1.3, embeds its CFF table alone: the
-  charstrings of the glyphs drawn, and the subroutines they call, the others
-  emptied, every glyph and subroutine keeping its number. A CID-keyed font, as
-  Source Han Sans and Noto Sans CJK are, gets the identity charset, CID = glyph
-  number, which is how PDFjet writes its text. A page of Japanese in Source Han
-  Sans JP embeds about 115 KB of its 4.2 MB.
-- Every glyph keeps its number, so the pages, the widths and the text a reader copies are those of
+  PDF carries such a font since PDF 1.3, embeds a CFF table of the glyphs
+  drawn alone, .notdef first, as a CIDFont: its charset gives each glyph its
+  number in the whole font as its CID, by which the page draws it (ISO
+  32000-2, 9.7.4.2). A name-keyed font, as IBM Plex Sans is, is written as a
+  CIDFont of Adobe-Identity-0. The subroutines the glyphs call are kept, the
+  others emptied to no bytes, and the strings and Font DICTs not used left out.
+  A line of Korean in IBM Plex Sans KR embeds about 3 KB of its 1 MB.
+- Every glyph keeps its number, or its CID, so the pages, the widths and the text a reader copies are those of
   the whole font; the font's name has the six capitals and a plus of a
   subset, its widths and its ToUnicode map list the glyphs kept, and a
   PDF/A-1 document has the CIDSet PDF/A-1 asks of a subset. The four ports
