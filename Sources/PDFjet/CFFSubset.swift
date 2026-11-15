@@ -8,15 +8,17 @@ import Foundation
 
 /// The subset of a font with CFF outlines, a .otf: a CIDFont of the glyphs the
 /// document draws alone, its charset giving each glyph its number in the
-/// whole font as its CID, by which the PDF draws it, and the subroutines,
-/// global and local, that the glyphs kept do not call emptied to no bytes,
-/// keeping their numbers, so the glyphs kept are drawn by the same bytes as in
-/// the whole font. A name-keyed font becomes a CIDFont of Adobe-Identity-0.
+/// whole font as its CID, by which the PDF draws it, each glyph written with
+/// the subroutines it calls, global and local, in place of its calls, and no
+/// subroutines. A glyph that computes a number keeps the subroutines it calls
+/// instead, the others emptied to no bytes, keeping their numbers. A
+/// name-keyed font becomes a CIDFont of Adobe-Identity-0, with the identity
+/// matrix in its one Font DICT and its own, or the default, in its Top DICT.
 /// The CFF is written again in a fixed order, with every offset of its Top
 /// DICT and of its Font DICTs in the five-byte form, so that an offset of any
 /// value has the same size: the header, the Name, Top DICT, String and Global
 /// Subr INDEXes, the charset, the FDSelect, the new CharStrings INDEX, the
-/// FDArray, and each Private DICT with its local subroutines.
+/// FDArray, and each Private DICT with its local subroutines, if any.
 class CFFSubset {
     // The operators whose operands are offsets in the CFF table.
     static let charset = 15
@@ -402,6 +404,181 @@ class CFFSubset {
         }
     }
 
+    /// Writes charstrings again with each subroutine they call, local or
+    /// global, in place of its call (Technical Note #5177): the number of the
+    /// subroutine taken off the end, the bytes of the subroutine, its own
+    /// calls in place too, without its return. The charstring written draws
+    /// the glyph as the operators of the one it was written from do, run with
+    /// its subroutines, one after another. A charstring that computes a
+    /// number, by an arithmetic or storage operator, cannot be written so: it
+    /// fails.
+    final class Inliner {
+        let cff: [UInt8]
+        let global: Index
+        var local: Index?
+        var out = [UInt8]()     // The charstrings written, one after another
+        var numbers = [Int](repeating: 0, count: 48)    // Where each operand on the stack starts in out
+        var stack = 0           // The operands on the stack, of the 48 of Type 2 at most
+        var stems = 0
+        var work = 0
+        var ended = false       // By endchar
+        var failed = false
+        var seac = false
+
+        init(_ cff: [UInt8], _ global: Index, _ capacity: Int) {
+            self.cff = cff
+            self.global = global
+            out.reserveCapacity(capacity)
+        }
+
+        /// Returns the charstring, from and to in the CFF table, written
+        /// again with its subroutines in place, after the charstrings written
+        /// before it in out, which holds them all.
+        func glyph(_ from: Int, _ to: Int) -> [UInt8] {
+            let start = out.count
+            stack = 0
+            stems = 0
+            ended = false
+            run(from, to, 0)
+            return Array(out[start...])
+        }
+
+        /// Writes the charstring, from and to in the CFF table, and the
+        /// subroutines it calls in place. Its bytes are written in runs, from
+        /// one call of a subroutine to the next.
+        func run(_ start: Int, _ end: Int, _ depth: Int) {
+            if depth > 10 {     // Type 2 nests subroutines 10 deep at most.
+                failed = true
+                return
+            }
+            var from = start    // The bytes of the charstring from here on are not written yet.
+            var i = start
+            while i < end {
+                let b0 = Int(cff[i])
+                if b0 >= 28 && b0 != 29 && b0 != 30 && b0 != 31 {  // A number
+                    var n = 1
+                    if b0 == 28 {
+                        n = 3
+                    } else if b0 == 255 {
+                        n = 5
+                    } else if b0 >= 247 {
+                        n = 2
+                    }
+                    if i + n > end || stack == numbers.count {
+                        failed = true
+                        return
+                    }
+                    numbers[stack] = out.count + i - from
+                    stack += 1
+                    i += n
+                    continue
+                }
+                var n = 1   // The bytes of the operator
+                switch b0 {
+                case 1, 3, 18, 23:  // The stem hints
+                    stems += stack / 2
+                case 19, 20:        // hintmask and cntrmask, and their mask
+                    stems += stack / 2
+                    n += (stems + 7) / 8
+                case 10, 29:        // callsubr and callgsubr
+                    if stack == 0 {
+                        failed = true
+                        return
+                    }
+                    out.append(contentsOf: cff[from..<i])
+                    stack -= 1
+                    let at = numbers[stack]
+                    let last = CFFSubset.number(out, at)
+                    out.removeSubrange(at...)
+                    guard let subrs = (b0 == 29) ? global : local else {
+                        failed = true
+                        return
+                    }
+                    let number = last + CFFSubset.bias(subrs.count)
+                    if number < 0 || number >= subrs.count {
+                        failed = true
+                        return
+                    }
+                    let subrFrom = subrs.objects[number]
+                    let subrTo = subrs.objects[number + 1]
+                    work += subrTo - subrFrom
+                    if work > CFFSubset.maxWork {
+                        failed = true
+                        return
+                    }
+                    run(subrFrom, subrTo, depth + 1)
+                    if failed || ended {
+                        return
+                    }
+                    i += 1
+                    from = i
+                    continue
+                case 11:            // return
+                    out.append(contentsOf: cff[from..<i])
+                    return
+                case 14:            // endchar
+                    if stack >= 4 {
+                        // seac, an accented letter drawn from two others: the
+                        // font is embedded whole
+                        seac = true
+                        failed = true
+                        return
+                    }
+                    out.append(contentsOf: cff[from..<(i + 1)])
+                    ended = true
+                    return
+                case 12:
+                    n = 2
+                    if i + 1 < end {
+                        switch cff[i + 1] {
+                        case 3, 4, 5, 9, 10, 11, 12, 14, 15, 18, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30:
+                            // The arithmetic and storage operators, which
+                            // leave numbers on the stack
+                            failed = true
+                            return
+                        default:
+                            break
+                        }
+                    }
+                default:
+                    break
+                }
+                if i + n > end {
+                    failed = true
+                    return
+                }
+                // An operator, which takes its operands off the stack
+                stack = 0
+                i += n
+            }
+            out.append(contentsOf: cff[from..<i])
+        }
+    }
+
+    /// Returns the integer part of the number of a charstring at the offset
+    /// of the bytes.
+    static func number(_ b: [UInt8], _ at: Int) -> Int {
+        let b0 = Int(b[at])
+        if b0 == 28 {
+            return Int(Int16(bitPattern: UInt16(b[at + 1]) << 8 | UInt16(b[at + 2])))
+        } else if b0 >= 32 && b0 <= 246 {
+            return b0 - 139
+        } else if b0 >= 247 && b0 <= 250 {
+            return (b0 - 247) * 256 + Int(b[at + 1]) + 108
+        } else if b0 >= 251 && b0 <= 254 {
+            return -(b0 - 251) * 256 - Int(b[at + 1]) - 108
+        }
+        return Int(Int32(bitPattern: UInt32(b[at + 1]) << 24 | UInt32(b[at + 2]) << 16 |
+                UInt32(b[at + 3]) << 8 | UInt32(b[at + 4]))) >> 16
+    }
+
+    /// The FontMatrix entry [1 0 0 1 0 0].
+    static let identityMatrix: [UInt8] = [140, 139, 139, 140, 139, 139, 12, 7]
+
+    /// The FontMatrix entry [0.001 0 0 0.001 0 0], the default of a Top DICT,
+    /// its reals written as 1E-3.
+    static let thousandthMatrix: [UInt8] = [30, 0x1c, 0x3f, 139, 139, 30, 0x1c, 0x3f, 139, 139, 12, 7]
+
     // Returns the objects of the INDEX, those not used emptied to no bytes,
     // which keeps their numbers and makes their offsets the same as the next
     // one's, or every one for used nil.
@@ -459,14 +636,30 @@ class CFFSubset {
     /// section 18, "Subset CIDFonts will generally need to use a more complex
     /// charset table representing a non-identity mapping"), so the content
     /// streams, the widths and the ToUnicode map stay those of the whole font.
+    /// Each glyph kept is written with the subroutines it calls in place of
+    /// its calls, and the subset has no subroutines; a glyph that computes a
+    /// number, which cannot be written so, keeps the subroutines called, the
+    /// others emptied to no bytes, keeping their numbers. The whole font
+    /// keeps its subroutines. The Font DICTs no glyph kept uses are left out.
+    /// Every INDEX has the least offSize its offsets need; the offsets of the
+    /// Top DICT and of the Font DICTs are in the five-byte form.
+    ///
     /// A name-keyed font is written as a CIDFont of the ordering
-    /// Adobe-Identity-0 with one Font DICT, its Private DICT. The subroutines
-    /// the glyphs kept do not call are emptied to no bytes, keeping their
-    /// numbers, and the Font DICTs no glyph kept uses are left out. Every
-    /// INDEX has the least offSize its offsets need; the offsets of the Top
-    /// DICT and of the Font DICTs are in the five-byte form. A table that
-    /// cannot be read, or a name-keyed font of a FontMatrix of its own, throws
-    /// NotSubset.
+    /// Adobe-Identity-0 whose one Font DICT has its Private DICT and the
+    /// FontMatrix [1 0 0 1 0 0], and its Top DICT the font's FontMatrix, its
+    /// own, as Cascadia Mono's of 2048 units to the em, or the default,
+    /// [0.001 0 0 0.001 0 0], written: the glyph space of a CIDFont is that of
+    /// the FontMatrix of the glyph's Font DICT concatenated with the Top
+    /// DICT's (PostScript Language Reference, third edition, 5.11.3, Table
+    /// 5.14), the Top DICT's interpreting the coordinates of the CIDFont as a
+    /// whole, as its FontBBox. Both are written, as each has a default that a
+    /// reader may take otherwise: a Font DICT of no FontMatrix is taken as the
+    /// identity, though Technical Note #5176 gives a FontMatrix no default but
+    /// [0.001 0 0 0.001 0 0] (Table 9), and a CIDFont whose Top DICT has none
+    /// has its Font DICTs' matrices taken as the whole ones (the PostScript
+    /// Language Reference, and MuPDF, Poppler, PDFium and pdf.js). A
+    /// CID-keyed font's matrices are kept as they are. A table that cannot be
+    /// read throws NotSubset.
     static func subset(_ cff: [UInt8], _ used: [Bool]?) throws -> ([UInt8], [Bool]) {
         if cff.count < 4 || cff[0] != 1 {
             throw Subset.NotSubset()    // Not CFF version 1
@@ -503,10 +696,6 @@ class CFFSubset {
                 throw Subset.NotSubset()
             }
             fdSelectBlock = try block(cff, at[0], try fdSelectLength(cff, at[0], numGlyphs))
-        } else if hasEntry(top, fontMatrix) {
-            // Its matrix would have to go into the Font DICT, against the
-            // one a CIDFont's Top DICT has by default.
-            throw Subset.NotSubset()
         }
 
         // The Font DICTs of a CID-keyed font, each with its Private DICT, or
@@ -533,7 +722,10 @@ class CFFSubset {
                 throw Subset.NotSubset()
             }
             let dict = try readPrivate(cff, p[0], p[1])
-            fontDicts = [[Entry(op: privateOp, raw: [], integers: nil)]]
+            // Its one Font DICT has the identity matrix, written, and its Top
+            // DICT its FontMatrix, its own or the default, written.
+            fontDicts = [[Entry(op: fontMatrix, raw: identityMatrix, integers: nil),
+                    Entry(op: privateOp, raw: [], integers: nil)]]
             privates.append(dict)
         }
 
@@ -560,8 +752,36 @@ class CFFSubset {
         if used == nil {
             usage.failed = true     // Every glyph and subroutine kept
         }
+        // The glyphs of a subset written with the subroutines they call in
+        // place of their calls, and no subroutines then, or, when that cannot
+        // be done, with the subroutines they call.
+        var glyphsInlined = false
+        if used != nil {
+            var size = 0
+            for glyph in glyphs {
+                size += glyph.count
+            }
+            let inliner = Inliner(cff, globalSubrs, 3 * size)
+            var desub = [[UInt8]]()
+            desub.reserveCapacity(keptGIDs.count)
+            var i = 0
+            while i < keptGIDs.count && !inliner.failed {
+                let gid = keptGIDs[i]
+                inliner.local = privates[fdOfGID?[gid] ?? 0].subrs
+                desub.append(inliner.glyph(glyphIndex.objects[gid], glyphIndex.objects[gid + 1]))
+                i += 1
+            }
+            if inliner.seac {
+                throw Subset.NotSubset()
+            }
+            if !inliner.failed {
+                // No subroutine used, global or local, as the usage has them.
+                glyphs = desub
+                glyphsInlined = true
+            }
+        }
         var i = 0
-        while i < keptGIDs.count && !usage.failed {
+        while i < keptGIDs.count && !usage.failed && !glyphsInlined {
             let gid = keptGIDs[i]
             let fd = fdOfGID?[gid] ?? 0
             usage.local = nil
@@ -630,6 +850,9 @@ class CFFSubset {
             appendInteger(&rosRaw, 0)
             rosRaw.append(contentsOf: [12, 30])
             entries.insert(Entry(op: ros, raw: rosRaw, integers: nil), at: 0)
+            if !hasEntry(top, fontMatrix) {
+                entries.append(Entry(op: fontMatrix, raw: thousandthMatrix, integers: nil))
+            }
             var countRaw = [UInt8]()
             appendInteger(&countRaw, numGlyphs)
             countRaw.append(contentsOf: [12, 34])
