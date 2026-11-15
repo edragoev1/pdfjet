@@ -46,7 +46,7 @@ public class Example_59 {
 
     static final String[] PARAGRAPHS = {
         "Thank you for choosing us for this year's annual report. The printed copies are on "
-        + "their way, and the accessible PDF edition is attached to this letter's email.",
+        + "their way, and the accessible PDF edition is on the USB drive enclosed.",
 
         "The PDF meets the PDF/UA standard, so screen readers read it in the right order, "
         + "with every picture described. If any of your readers has trouble with it, tell us "
@@ -57,7 +57,7 @@ public class Example_59 {
 
     static final String CLOSING = "Sincerely,";
     static final String SIGNER = "Dana Whitfield\nDesign Lead, Northwind Studio";
-    static final String ENCLOSURE = "Enclosure: Invoice 2026-042";
+    static final String ENCLOSURE = "Enclosures: Invoice 2026-042, USB drive";
 
     static final int RULE = 0xdde1e8;
 
