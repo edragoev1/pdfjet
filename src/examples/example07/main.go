@@ -14,7 +14,6 @@ import (
 	// the program
 	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/CascadiaMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSerif"
@@ -52,7 +51,9 @@ func Example07() {
 			"The font constants, such as IBMPlexSans and IBMPlexSansJP, "+
 			"are the paths of the fonts that come with PDFjet. A font is embedded with only the "+
 			"glyphs the document draws, which keeps the file small, whatever its "+
-			"outlines. The paragraph below is drawn four times.")
+			"outlines. The paragraph below is drawn four times, the second and the third "+
+			"in the same design, IBM Plex Sans: from the .otf PDFjet carries, and from "+
+			"IBM's .ttf, which the examples have in examples/fonts.")
 	textBlock.SetFontSize(12.0)
 	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 95.0)
@@ -62,13 +63,13 @@ func Example07() {
 	files := []string{
 		IBMPlexSansJP.Regular,
 		IBMPlexSans.Regular,
-		CascadiaMono.Regular,
+		"examples/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
 		IBMPlexSerif.Regular,
 	}
 	kinds := []string{
 		"OpenType with CFF outlines, keyed by CIDs, from the .otf file, embedded as a subset",
 		"OpenType with CFF outlines, from the .otf file, embedded as a subset",
-		"TrueType, from the .ttf file, embedded as a subset",
+		"TrueType, IBM Plex Sans again, from IBM's .ttf file, embedded as a subset",
 		"A font kept whole: subsetting turned off",
 	}
 	sample := "The quick brown fox jumps over the lazy dog. " +
