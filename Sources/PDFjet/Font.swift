@@ -340,7 +340,7 @@ public class Font {
     /// an app that draws in them adds, and such a font not found says so. A path to a
     /// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
     /// opens the .ttf or else the .otf file of the same name beside it. A path
-    /// to the .ttf of IBM Plex Sans or Serif, which PDFjet carried before
+    /// to the .ttf of IBM Plex Sans or Serif or Cascadia Mono, which PDFjet carried before
     /// 9.1.9, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, is read, when
     /// there is no such file, as the .otf it carries of the same face.
     ///

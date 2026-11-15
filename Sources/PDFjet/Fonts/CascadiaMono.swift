@@ -16,23 +16,23 @@ import Foundation
 ///
 public struct CascadiaMono {
     /// Cascadia Mono Bold
-    public static let Bold            = "fonts/CascadiaMono/CascadiaMono-Bold.ttf"
+    public static let Bold            = "fonts/CascadiaMono/CascadiaMono-Bold.otf"
     /// Cascadia Mono BoldItalic
-    public static let BoldItalic      = "fonts/CascadiaMono/CascadiaMono-BoldItalic.ttf"
+    public static let BoldItalic      = "fonts/CascadiaMono/CascadiaMono-BoldItalic.otf"
     /// Cascadia Mono Italic
-    public static let Italic          = "fonts/CascadiaMono/CascadiaMono-Italic.ttf"
+    public static let Italic          = "fonts/CascadiaMono/CascadiaMono-Italic.otf"
     /// Cascadia Mono Light
-    public static let Light           = "fonts/CascadiaMono/CascadiaMono-Light.ttf"
+    public static let Light           = "fonts/CascadiaMono/CascadiaMono-Light.otf"
     /// Cascadia Mono LightItalic
-    public static let LightItalic     = "fonts/CascadiaMono/CascadiaMono-LightItalic.ttf"
+    public static let LightItalic     = "fonts/CascadiaMono/CascadiaMono-LightItalic.otf"
     /// Cascadia Mono Regular
-    public static let Regular         = "fonts/CascadiaMono/CascadiaMono-Regular.ttf"
+    public static let Regular         = "fonts/CascadiaMono/CascadiaMono-Regular.otf"
     /// Cascadia Mono SemiBold
-    public static let SemiBold        = "fonts/CascadiaMono/CascadiaMono-SemiBold.ttf"
+    public static let SemiBold        = "fonts/CascadiaMono/CascadiaMono-SemiBold.otf"
     /// Cascadia Mono SemiBoldItalic
-    public static let SemiBoldItalic  = "fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf"
+    public static let SemiBoldItalic  = "fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.otf"
     /// Cascadia Mono SemiLight
-    public static let SemiLight       = "fonts/CascadiaMono/CascadiaMono-SemiLight.ttf"
+    public static let SemiLight       = "fonts/CascadiaMono/CascadiaMono-SemiLight.otf"
     /// Cascadia Mono SemiLightItalic
-    public static let SemiLightItalic = "fonts/CascadiaMono/CascadiaMono-SemiLightItalic.ttf"
+    public static let SemiLightItalic = "fonts/CascadiaMono/CascadiaMono-SemiLightItalic.otf"
 }

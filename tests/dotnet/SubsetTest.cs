@@ -19,7 +19,7 @@ public class SubsetTest {
     }
 
     // IBM Plex Sans, which has the short offsets of loca; the subsets of a
-    // font with the long ones read Cascadia Mono or IBM Plex Math.
+    // font with the long ones read Cascadia Mono's .ttf or IBM Plex Math.
     private const string PLEX = "tests/fonts/IBMPlexSans-Regular.ttf";
 
     private static int U16(byte[] font, int at) {
@@ -79,12 +79,12 @@ public class SubsetTest {
 
     [Fact]
     public void KeepsTheGlyphsUsedAndThePartsOfTheComposites() {
-        // In Cascadia Mono, whose loca has the long offsets, as that of Noto
+        // In Cascadia Mono's .ttf, whose loca has the long offsets, as that of Noto
         // Sans, which this test read before 9.1.7, had: Ä (16) is made of A
         // (1) and the dieresis of capitals (3051), and ặ (229) of a (225),
         // the dot below (3029) and the breve (3020); 4,319 glyphs. Noto Sans
         // had Ä (134) of A (36) and the dieresis (106), and ǅ (913) of three.
-        byte[] ttf = FontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf");
+        byte[] ttf = FontBytes("tests/fonts/CascadiaMono-Regular.ttf");
         Assert.Equal(1, U16(ttf, Table(ttf, "head") + 50));
         bool[] kept;
         byte[] subset = Subset.SubsetTrueType(ttf, Used(16, 229), out kept);
@@ -379,16 +379,16 @@ public class SubsetTest {
         // A loca entry past 2^31 - 1 refused every subset of the font, read
         // for each glyph up front (the review of 9 October 2026); as in the
         // other ports, only a glyph kept that cannot be read refuses it.
-        // Cascadia Mono has the long offsets of loca, as Noto Sans, which
+        // Cascadia Mono's .ttf has the long offsets of loca, as Noto Sans, which
         // this test read before 9.1.7, had.
-        byte[] ttf = FontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf");
+        byte[] ttf = FontBytes("tests/fonts/CascadiaMono-Regular.ttf");
         Assert.Equal(1, U16(ttf, Table(ttf, "head") + 50));
         int loca = Table(ttf, "loca");
         PutU32(ttf, loca + 4 * 1000, 0x80000000L);
         bool[] kept;
         byte[] subset = Subset.SubsetTrueType(ttf, Used(36), out kept);
         Assert.True(kept[36] && !kept[999] && !kept[1000]);
-        byte[] whole = Glyph(FontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf"), 36);
+        byte[] whole = Glyph(FontBytes("tests/fonts/CascadiaMono-Regular.ttf"), 36);
         Assert.Equal(whole, Slice(Glyph(subset, 36), 0, whole.Length));
         // Drawn, glyph 1000 cannot be read, and the font is embedded whole.
         AssertRefused(ttf, Used(36, 1000));

@@ -5,12 +5,12 @@
 
 // Package fonts holds the fonts PDFjet carries in itself, each family in a
 // folder of its name with its license: IBM Plex Sans and Serif, from Thin to
-// Bold, as .otf, and Cascadia Mono, from Light to Bold, as .ttf, upright and
+// Bold, and Cascadia Mono, from Light to Bold, as .otf, upright and
 // italic, for every European language, in Latin, Greek and Cyrillic. All are under the SIL
 // Open Font License 1.1.
 //
 // Go builds the files a package embeds into every program that imports it,
-// uncompressed, so this package embeds the European fonts alone, about 9 MB.
+// uncompressed, so this package embeds the European fonts alone, about 7 MB.
 // The fonts of every other script, IBM Plex Sans JP, KR, SC and TC, IBM Plex
 // Sans Arabic, Hebrew and Thai, about 52 MB, are in the
 // folder world, the package that embeds them, and a program builds them in
@@ -27,7 +27,7 @@
 // alone, so this package is in resources/fonts itself.
 //
 // A program that draws with fonts of its own, and sets the font of the text
-// of its SVG images, can leave the 9 MB out with the build tag
+// of its SVG images, can leave the 7 MB out with the build tag
 // pdfjet_nofonts:
 //
 //	go build -tags pdfjet_nofonts

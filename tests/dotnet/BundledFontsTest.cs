@@ -258,17 +258,47 @@ public class BundledFontsTest {
                 Assert.True(bytes.ToArray().AsSpan().SequenceEqual(ttf));
             }
         }
-        // Only those two families, and only their .ttf: a face PDFjet does not
-        // carry is not found still, nor a .otf of Cascadia Mono
+        // Only the families PDFjet carried as .ttf, and only their .ttf and
+        // .otf: a face PDFjet does not carry is not found still
         foreach (String path in new String[] {"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
-                "fonts/CascadiaMono/CascadiaMono-Regular.otf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"}) {
+                "fonts/CascadiaMono/CascadiaMono-ExtraLight.ttf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"}) {
             Assert.Null(BundledFonts.Open(path, folder));
         }
-        Assert.Null(BundledFonts.Renamed("CascadiaMono/CascadiaMono-Regular.ttf"));
+        Assert.Null(BundledFonts.Renamed("IBMPlexMono/IBMPlexMono-Regular.ttf"));
+        Assert.Null(BundledFonts.Renamed("IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        Assert.Null(BundledFonts.Renamed("IBMPlexSans/IBMPlexSans-Regular.woff2"));
         Assert.Equal("IBMPlexSerif/IBMPlexSerif-Bold.otf", BundledFonts.Renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf"));
         // And back: the .otf of 9.1.9 is the .ttf of a resources/fonts folder of before
         Assert.Equal("IBMPlexSans/IBMPlexSans-Regular.ttf", BundledFonts.Renamed("IBMPlexSans/IBMPlexSans-Regular.otf"));
-        Assert.Null(BundledFonts.Renamed("CascadiaMono/CascadiaMono-Regular.otf"));
+    }
+
+    // PDFjet carries Cascadia Mono as .otf from 9.1.9, and as .ttf before:
+    // a path written for the .ttf, such as the constants of 9.1.7, is the .otf
+    // of the same face, as is one of the .stream files of before 9.0.5; and
+    // the .otf is the .ttf of a resources/fonts folder of before.
+    [Fact]
+    public void APathToTheTTFOfCascadiaMonoIsTheOTFPDFjetCarries() {
+        String folder = TestSupport.RepoPath("resources/fonts") + "/";
+        foreach (String style in new String[] {"Light", "LightItalic", "SemiLight", "SemiLightItalic", "Regular", "Italic",
+                "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"}) {
+            byte[] otf = File.ReadAllBytes(folder + "CascadiaMono/CascadiaMono-" + style + ".otf");
+            String path = "fonts/CascadiaMono/CascadiaMono-" + style + ".ttf";
+            foreach (String old in new String[] {path, path + ".stream"}) {
+                String file = Font.FontFileOf(old);
+                using (Stream stream = BundledFonts.Open(file, folder)) {
+                    Assert.True(stream != null, old);
+                    MemoryStream bytes = new MemoryStream();
+                    stream.CopyTo(bytes);
+                    Assert.True(bytes.ToArray().AsSpan().SequenceEqual(otf), old);
+                }
+            }
+        }
+        Font font = new Font(TestSupport.NewPDF(), CascadiaMono.Regular.Replace(".otf", ".ttf"));
+        Assert.Equal("CascadiaMono-Regular", font.name);
+        Assert.True(font.cff);
+        Assert.Equal("fonts/CascadiaMono/CascadiaMono-Regular.otf", CascadiaMono.Regular);
+        Assert.Equal("CascadiaMono/CascadiaMono-Bold.otf", BundledFonts.Renamed("CascadiaMono/CascadiaMono-Bold.ttf"));
+        Assert.Equal("CascadiaMono/CascadiaMono-Regular.ttf", BundledFonts.Renamed("CascadiaMono/CascadiaMono-Regular.otf"));
     }
 
     [Fact]
@@ -281,16 +311,16 @@ public class BundledFontsTest {
             new String[] {"0", "800", "IBMPlexSans/IBMPlexSans-Bold.otf"},
             new String[] {"1", "100", "IBMPlexSerif/IBMPlexSerif-Thin.otf"},
             new String[] {"1", "900", "IBMPlexSerif/IBMPlexSerif-Bold.otf"},
-            new String[] {"2", "400", "CascadiaMono/CascadiaMono-SemiLight.ttf"},
-            new String[] {"2", "500", "CascadiaMono/CascadiaMono-Regular.ttf"},
-            new String[] {"2", "600", "CascadiaMono/CascadiaMono-SemiBold.ttf"},
-            new String[] {"2", "700", "CascadiaMono/CascadiaMono-Bold.ttf"},
+            new String[] {"2", "400", "CascadiaMono/CascadiaMono-SemiLight.otf"},
+            new String[] {"2", "500", "CascadiaMono/CascadiaMono-Regular.otf"},
+            new String[] {"2", "600", "CascadiaMono/CascadiaMono-SemiBold.otf"},
+            new String[] {"2", "700", "CascadiaMono/CascadiaMono-Bold.otf"},
         };
         foreach (String[] c in cases) {
             Assert.Equal(c[2], BundledFonts.FileName(Int32.Parse(c[0]), Int32.Parse(c[1]), false));
         }
-        Assert.Equal("CascadiaMono/CascadiaMono-SemiLightItalic.ttf", BundledFonts.FileName(2, 400, true));
-        Assert.Equal("CascadiaMono/CascadiaMono-Italic.ttf", BundledFonts.FileName(2, 500, true));
+        Assert.Equal("CascadiaMono/CascadiaMono-SemiLightItalic.otf", BundledFonts.FileName(2, 400, true));
+        Assert.Equal("CascadiaMono/CascadiaMono-Italic.otf", BundledFonts.FileName(2, 500, true));
         Assert.Equal("IBMPlexSans/IBMPlexSans-Italic.otf", BundledFonts.FileName(0, 400, true));
     }
 }

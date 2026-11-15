@@ -708,7 +708,7 @@ import Testing
         try image("<svg width=\"200\" height=\"100\"><text y=\"10\" font-family=\"Georgia\" "
                 + "font-weight=\"600\" font-style=\"oblique\">e</text></svg>").drawOn(page)
         #expect(Set(page.pdf.bundledFonts.keys) == [
-                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf", "CascadiaMono/CascadiaMono-Bold.ttf",
+                "IBMPlexSerif/IBMPlexSerif-SemiBoldItalic.otf", "CascadiaMono/CascadiaMono-Bold.otf",
                 "IBMPlexSans/IBMPlexSans-Regular.otf", "IBMPlexSans/IBMPlexSans-Bold.otf"])
     }
 

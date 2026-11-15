@@ -18,7 +18,7 @@ namespace PDFjet.NET {
 // is; in a tagged document marked content with the text as its actual text.
 public class DrawGlyphsTest {
     private const string DEVANAGARI = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf";
-    private const string CASCADIA = "fonts/CascadiaMono/CascadiaMono-Regular.ttf";
+    private const string CASCADIA = "tests/fonts/CascadiaMono-Regular.ttf";
 
     private static int Count(string text, string part) {
         int n = 0;
@@ -196,6 +196,29 @@ public class DrawGlyphsTest {
         Assert.Equal(2, Count(o.operators, " m\n"));
         Assert.True(o.yMin < 0 && o.yMax > 600, o.yMin + " " + o.yMax);
         Assert.Equal("", outline.Outline(plex.unicodeToGID.Get(' ')).operators);
+    }
+
+    [Fact]
+    public void CffOutlinesOfAFontMatrixOfTheirOwnAreThoseOfTheTrueTypeEdition() {
+        // Cascadia Mono's .otf has 2,048 units to the em, in its FontMatrix,
+        // 0.00048828: its glyphs, of the numbers of those of its .ttf, are of
+        // their size and in their place
+        Font otf = new Font(TestSupport.NewPDF(), "fonts/CascadiaMono/CascadiaMono-Regular.otf");
+        // In a PDF of its own: a font of the name and the glyphs of one read
+        // before is that one
+        Font ttf = new Font(TestSupport.NewPDF(), TestSupport.RepoPath(CASCADIA));
+        GlyphOutline cff = new GlyphOutline(otf.program.font, true);
+        GlyphOutline glyf = new GlyphOutline(ttf.program.font, false);
+        Assert.True(otf.program.cff && !ttf.program.cff);
+        Assert.True(Math.Abs(cff.MatrixOf(1)[0] - 1.0 / 2048) < 1e-8, cff.MatrixOf(1)[0].ToString());
+        foreach (char c in "OAgé") {
+            int gid = otf.unicodeToGID.Get(c);
+            Assert.True(gid != 0 && gid == ttf.unicodeToGID.Get(c), c + ": glyph " + gid);
+            GlyphOutline.Path a = cff.Outline(gid);
+            GlyphOutline.Path b = glyf.Outline(gid);
+            Assert.Equal(b.xMin + " " + b.yMin + " " + b.xMax + " " + b.yMax,
+                    a.xMin + " " + a.yMin + " " + a.xMax + " " + a.yMax);
+        }
     }
 
     [Fact]

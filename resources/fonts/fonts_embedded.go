@@ -13,7 +13,7 @@ import "embed"
 // IBMPlexSans/IBMPlexSans-Regular.otf, and the licenses of the families;
 // a program built with the tag pdfjet_nofonts has none (fonts_none.go).
 //
-//go:embed CascadiaMono/*.ttf CascadiaMono/LICENSE
+//go:embed CascadiaMono/*.otf CascadiaMono/LICENSE
 //go:embed IBMPlexSans/*.otf IBMPlexSans/license.txt
 //go:embed IBMPlexSerif/*.otf IBMPlexSerif/license.txt
 var FS embed.FS

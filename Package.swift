@@ -8,7 +8,7 @@ let package = Package(
     // executable targets that only this package builds.
     products: [
         // PDFjet, with the fonts PDFjet carries for every European language,
-        // in Latin, Greek and Cyrillic, about 9 MB, in the bundle of its
+        // in Latin, Greek and Cyrillic, about 7 MB, in the bundle of its
         // target PDFjetFonts.
         .library(name: "PDFjet", targets: ["PDFjet"]),
         // The fonts of every other script, IBM Plex Sans JP, KR, SC and TC,

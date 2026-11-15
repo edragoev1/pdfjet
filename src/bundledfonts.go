@@ -16,7 +16,7 @@ import (
 
 // The fonts PDFjet carries in itself, in resources/fonts, each family in a
 // folder of its name, with its license: IBM Plex Sans and Serif, from Thin to
-// Bold, as .otf, and Cascadia Mono, from Light to Bold, as .ttf, upright and
+// Bold, and Cascadia Mono, from Light to Bold, as .otf, upright and
 // italic, for the European languages; and, in resources/fonts/world, IBM Plex Sans Arabic,
 // Hebrew and Thai, Thin to Bold, and IBM Plex Sans JP, KR, SC and TC,
 // Regular, SemiBold and Bold, as .otf. All are under the SIL Open
@@ -123,12 +123,14 @@ func bundledFontHas(fontPath string) bool {
 // bundledRenamed are the families PDFjet carries as .otf from 9.1.9 and
 // carried as .ttf before: IBM Plex Sans and Serif, whose .otf, of the same
 // release of IBM, have the same advance widths, kerning and line metrics as
-// their .ttf, and embed a fifth smaller.
-var bundledRenamed = []string{"IBMPlexSans", "IBMPlexSerif"}
+// their .ttf, and embed a fifth smaller; and Cascadia Mono, whose .otf, of
+// the same release of Microsoft, have the same advance widths and line
+// metrics as its .ttf, and no kerning either.
+var bundledRenamed = []string{"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"}
 
 // bundledFontNamesOf returns the names, Family/File, that the font of the
 // path is looked for by among the fonts PDFjet carries: its name, and, for a
-// .ttf of IBM Plex Sans or Serif, such as
+// .ttf of IBM Plex Sans or Serif or Cascadia Mono, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet carries of it
 // from 9.1.9, so that a path written for the .ttf is the same font; for an
 // .otf of them, the .ttf PDFjet carried before, so that a program that took
@@ -235,11 +237,7 @@ func bundledFontFile(family, weight int, italic bool) string {
 			style += "Italic"
 		}
 	}
-	ext := ".otf" // IBM Plex Sans and Serif
-	if family == bundledMono {
-		ext = ".ttf"
-	}
-	return bundledFamilies[family] + "/" + bundledFamilies[family] + "-" + style + ext
+	return bundledFamilies[family] + "/" + bundledFamilies[family] + "-" + style + ".otf"
 }
 
 // matchWeight returns the weight CSS matches to the one asked for, of the

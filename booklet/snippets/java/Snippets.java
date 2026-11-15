@@ -120,7 +120,7 @@ public class Snippets {
     // @snippet font-files
     static void fontFiles(PDF pdf, Font font) throws Exception {
         Font otf = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
-        Font ttf = new Font(pdf, "fonts/CascadiaMono/CascadiaMono-Regular.ttf");
+        Font ttf = new Font(pdf, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(otf, "An OpenType font").setLocation(50f, 50f).drawOn(page);
         new TextLine(ttf, "A TrueType font").setLocation(50f, 75f).drawOn(page);

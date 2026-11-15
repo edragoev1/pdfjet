@@ -106,7 +106,7 @@ func fonts(_ pdf: PDF, _ font: Font) throws {
 // @snippet font-files
 func fontFiles(_ pdf: PDF, _ font: Font) throws {
     let otf = try Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
-    let ttf = try Font(pdf, "fonts/CascadiaMono/CascadiaMono-Regular.ttf")
+    let ttf = try Font(pdf, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf")
     let page = Page(pdf, Letter.PORTRAIT)
     TextLine(otf, "An OpenType font").setLocation(50, 50).drawOn(page)
     TextLine(ttf, "A TrueType font").setLocation(50, 75).drawOn(page)

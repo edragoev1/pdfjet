@@ -70,7 +70,7 @@ as .otf, not .ttf.** Their constants, `IBMPlexSans.Regular` and the other
 27, are paths to IBM's .otf files, such as
 `fonts/IBMPlexSans/IBMPlexSans-Regular.otf`, which `resources/fonts`, the jar
 of Maven Central, the NuGet package, the Go module and the Swift product
-carry in place of the .ttf; Cascadia Mono stays .ttf, and the fonts of the
+carry in place of the .ttf; Cascadia Mono too, below, and the fonts of the
 other scripts as they are. With the compact CFF subset above, a document
 embeds about a fifth less of them, and usually writes it faster: Example_01
 is 20,001 bytes in place of 24,394, Example_14 32,145 in place of 40,468,
@@ -92,7 +92,40 @@ files of before 9.0.5 is, so code written for 9.1.7 runs as it is; a .ttf
 file at that path, or of that name in `resources/fonts`, is read first, as
 any file is. To keep the TrueType edition, use a .ttf of one's own by its
 path, such as IBM's, from github.com/IBM/plex. Example_07 shows a .ttf font
-in Cascadia Mono, as no IBM Plex Sans or Serif is one now.
+in IBM Plex Sans, IBM's .ttf, which the examples have in `examples/fonts`,
+beside the .otf PDFjet carries: the same design, from both files.
+
+Behavior change, in the four ports: **Cascadia Mono is carried as .otf, not
+.ttf.** Its constants, `CascadiaMono.Regular` and the other nine, are paths
+to Microsoft's .otf files, of release 2407.24, the release of the .ttf it
+carried, such as `fonts/CascadiaMono/CascadiaMono-Regular.otf`, which
+`resources/fonts`, the jar of Maven Central, the NuGet package, the Go
+module and the Swift product carry, unmodified, in place of the .ttf. The
+ten faces are 2.9 MB in place of 5.1 MB, 43% smaller, so the fonts PDFjet
+carries for the European languages are 7.0 MB in place of 9.2 MB: a Go
+program is 2.2 MB smaller (Example_01, 13.8 to 11.6 MB), and the
+`PDFjet.dll` of NuGet 8.0 MB in place of 10.2 MB. The .otf and the .ttf have
+the same 2,048 units to the em, advance widths, line metrics, italic angle
+and characters, and the same glyph numbers, and neither kerns, so the text
+is laid out as before and the content streams are the same; the .otf has a
+FontMatrix of its own, which the CFF subset above carries. A document embeds
+less of it: a PDF/A-3a page of code in Cascadia Mono Regular is 17,531
+bytes in place of 24,484, Example_18 41,963 in place of 47,856, and
+Example_19 59,005 in place of 65,751, and the pages render the same but for
+anti-aliasing. As for IBM Plex Sans and Serif above, a path to the .ttf of a
+face is the .otf of that face when there is no such file, and the .otf is
+the .ttf of a `resources/fonts` folder of 9.1.7, so code written for 9.1.7
+runs as it is. Behavior change: such a path embeds a font of CFF outlines
+where it embedded a TrueType one; for example, `new Font(pdf,
+"fonts/CascadiaMono/CascadiaMono-Regular.ttf")` wrote a CIDFontType2 with a
+`/FontFile2`, and now writes a CIDFontType0 with a `/FontFile3` of the .otf,
+whose glyphs draw the same. The SVG text of a monospace family is drawn in
+the .otf. A .ttf file at that path, or of that name in `resources/fonts`, is
+read first, as any file is; Microsoft's .ttf is at
+github.com/microsoft/cascadia-code. The tests of TrueType outlines that read
+Cascadia Mono, a font of 2,048 units to the em and the long offsets of
+`loca`, read Microsoft's .ttf of Regular in `tests/fonts`; the booklet's
+snippet of a TrueType font draws in IBM Plex Sans Hebrew.
 
 Added, in the four ports: **BigTable wraps long fields within their
 columns.** `BigTable.setWrapText(true)` (Go `SetWrapText`, C#

@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 class DrawGlyphsTest {
 
     private static final String DEVANAGARI = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf";
-    private static final String CASCADIA = "fonts/CascadiaMono/CascadiaMono-Regular.ttf";
+    private static final String CASCADIA = "tests/fonts/CascadiaMono-Regular.ttf";
 
     private static int count(String text, String part) {
         int n = 0;
@@ -205,6 +205,29 @@ class DrawGlyphsTest {
         assertEquals(2, count(o.operators, " m\n"), o.operators);
         assertTrue(o.yMin < 0 && o.yMax > 600, o.yMin + " " + o.yMax);
         assertEquals("", outline.outline(plex.unicodeToGID.get(' ')).operators);
+    }
+
+    @Test
+    void cffOutlinesOfAFontMatrixOfTheirOwnAreThoseOfTheTrueTypeEdition() throws Exception {
+        // Cascadia Mono's .otf has 2,048 units to the em, in its FontMatrix,
+        // 0.00048828: its glyphs, of the numbers of those of its .ttf, are of
+        // their size and in their place
+        Font otf = new Font(TestSupport.newPDF(), "fonts/CascadiaMono/CascadiaMono-Regular.otf");
+        // In a PDF of its own: a font of the name and the glyphs of one read
+        // before is that one
+        Font ttf = new Font(TestSupport.newPDF(), TestSupport.open(CASCADIA));
+        GlyphOutline cff = new GlyphOutline(otf.program.font, true);
+        GlyphOutline glyf = new GlyphOutline(ttf.program.font, false);
+        assertTrue(otf.program.cff && !ttf.program.cff);
+        assertEquals(1.0 / 2048, cff.matrixOf(1)[0], 1e-8);
+        for (char c : "OAgé".toCharArray()) {
+            int gid = otf.unicodeToGID.get(c);
+            assertTrue(gid != 0 && gid == ttf.unicodeToGID.get(c), c + ": glyph " + gid);
+            GlyphOutline.Path a = cff.outline(gid);
+            GlyphOutline.Path b = glyf.outline(gid);
+            String box = a.xMin + " " + a.yMin + " " + a.xMax + " " + a.yMax;
+            assertEquals(b.xMin + " " + b.yMin + " " + b.xMax + " " + b.yMax, box, String.valueOf(c));
+        }
     }
 
     @Test

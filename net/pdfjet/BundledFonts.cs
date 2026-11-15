@@ -13,7 +13,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// The fonts PDFjet carries in itself, in resources/fonts, each family in a
 /// folder of its name, with its license: IBM Plex Sans and Serif, from Thin
-/// to Bold, as .otf, and Cascadia Mono, from Light to Bold, as .ttf, upright
+/// to Bold, and Cascadia Mono, from Light to Bold, as .otf, upright
 /// and italic, for every European language, in Latin, Greek and Cyrillic; and, in
 /// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
 /// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
@@ -154,10 +154,13 @@ internal static class BundledFonts {
     // The families PDFjet carries as .otf from 9.1.9 and carried as .ttf
     // before: IBM Plex Sans and Serif, whose .otf, of the same release of
     // IBM, have the same advance widths, kerning and line metrics as their
-    // .ttf, and embed a fifth smaller.
-    private static readonly String[] RENAMED = {"IBMPlexSans", "IBMPlexSerif"};
+    // .ttf, and embed a fifth smaller; and Cascadia Mono, whose .otf, of the
+    // same release of Microsoft, have the same advance widths and line
+    // metrics as its .ttf, and no kerning either.
+    private static readonly String[] RENAMED = {"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"};
 
-    // Returns the other name of a font of IBM Plex Sans or Serif, Family/File:
+    // Returns the other name of a font of IBM Plex Sans or Serif or Cascadia
+    // Mono, Family/File:
     // of a .ttf, such as IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet
     // carries from 9.1.9, so that a path written for the .ttf is the same
     // font; of an .otf, the .ttf PDFjet carried before, so that a program
@@ -271,8 +274,7 @@ internal static class BundledFonts {
         if (italic) {
             style = style.Equals("Regular") ? "Italic" : style + "Italic";
         }
-        // IBM Plex Sans and Serif are .otf, Cascadia Mono .ttf
-        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + style + ((family == MONO) ? ".ttf" : ".otf");
+        return FAMILIES[family] + "/" + FAMILIES[family] + "-" + style + ".otf";
     }
 
     // Returns the weight CSS matches to the one asked for, of the weights a

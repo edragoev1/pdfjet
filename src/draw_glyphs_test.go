@@ -25,7 +25,7 @@ import (
 // document marked content with the text as its actual text.
 
 const testDevanagari = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
-const testCascadia = "resources/fonts/CascadiaMono/CascadiaMono-Regular.ttf"
+const testCascadia = "tests/fonts/CascadiaMono-Regular.ttf"
 
 // testForms returns the content of each form XObject of the document, inflated.
 func testForms(t *testing.T, doc []byte) []string {
@@ -239,6 +239,45 @@ func TestDrawGlyphsCFFOutlinesHaveTheirSubroutinesAndMatrix(t *testing.T) {
 	space, _ := outline.outline(plex.unicodeToGID.get(' '))
 	if space.operators != "" {
 		t.Error("the space has an outline")
+	}
+}
+
+func TestDrawGlyphsCFFOutlinesOfAFontMatrixOfTheirOwnAreThoseOfTheTrueTypeEdition(t *testing.T) {
+	// Cascadia Mono's .otf has 2,048 units to the em, in its FontMatrix,
+	// 0.00048828: its glyphs, of the numbers of those of its .ttf, are of
+	// their size and in their place
+	otf := NewFontFromFile(testNewPDF(), "fonts/CascadiaMono/CascadiaMono-Regular.otf")
+	// In a PDF of its own: a font of the name and the glyphs of one read
+	// before is that one
+	ttf := NewFontFromFile(testNewPDF(), testRepoPath(t, testCascadia))
+	cff, err := newGlyphOutline(otf.program.font, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	glyf, err := newGlyphOutline(ttf.program.font, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !otf.program.cff || ttf.program.cff || math.Abs(cff.matrixOf(1)[0]-1.0/2048) > 1e-8 {
+		t.Error(cff.matrixOf(1))
+	}
+	for _, c := range "OAgé" {
+		gid := otf.unicodeToGID.get(c)
+		if gid == 0 || gid != ttf.unicodeToGID.get(c) {
+			t.Fatalf("%c: glyph %d, of the .ttf %d", c, gid, ttf.unicodeToGID.get(c))
+		}
+		a, err := cff.outline(gid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := glyf.outline(gid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if a.xMin != b.xMin || a.yMin != b.yMin || a.xMax != b.xMax || a.yMax != b.yMax {
+			t.Errorf("%c: %v %v %v %v, the .ttf %v %v %v %v", c, a.xMin, a.yMin, a.xMax, a.yMax,
+				b.xMin, b.yMin, b.xMax, b.yMax)
+		}
 	}
 }
 

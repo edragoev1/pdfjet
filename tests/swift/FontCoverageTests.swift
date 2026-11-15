@@ -43,7 +43,7 @@ import Testing
         for family in FontCoverageTests.families {
             let folder = "resources/fonts/" + family
             for file in try FileManager.default.contentsOfDirectory(atPath: TestSupport.path(folder))
-                    where file.hasSuffix(".ttf") || file.hasSuffix(".otf") {  // Plex .otf, Cascadia Mono .ttf
+                    where file.hasSuffix(".ttf") || file.hasSuffix(".otf") {  // all .otf
                 let font = try Font(pdf, TestSupport.open(folder + "/" + file))
                 var missing = ""
                 for letter in letters where font.unicodeToGID[Int(letter.value)] == 0 {

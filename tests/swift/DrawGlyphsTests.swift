@@ -14,7 +14,7 @@ import Testing
 /// is; in a tagged document marked content with the text as its actual text.
 @Suite struct DrawGlyphsTests {
     private static let devanagari = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
-    private static let cascadia = "fonts/CascadiaMono/CascadiaMono-Regular.ttf"
+    private static let cascadia = "tests/fonts/CascadiaMono-Regular.ttf"
 
     private func count(_ text: String, _ part: String) -> Int {
         text.components(separatedBy: part).count - 1
@@ -180,6 +180,28 @@ import Testing
         #expect(count(o.operators, " m\n") == 2, "\(o.operators)")
         #expect(o.yMin < 0 && o.yMax > 600, "\(o.yMin) \(o.yMax)")
         #expect(try outline.outline(plex.unicodeToGID[0x20]).operators == "")
+    }
+
+    @Test func cffOutlinesOfAFontMatrixOfTheirOwnAreThoseOfTheTrueTypeEdition() throws {
+        // Cascadia Mono's .otf has 2,048 units to the em, in its FontMatrix,
+        // 0.00048828: its glyphs, of the numbers of those of its .ttf, are of
+        // their size and in their place
+        let otf = try Font(TestSupport.newPDF(), "fonts/CascadiaMono/CascadiaMono-Regular.otf")
+        // In a PDF of its own: a font of the name and the glyphs of one read
+        // before is that one
+        let ttf = try Font(TestSupport.newPDF(), TestSupport.open(DrawGlyphsTests.cascadia))
+        let cff = try GlyphOutline(otf.program!.font, true)
+        let glyf = try GlyphOutline(ttf.program!.font, false)
+        #expect(otf.program!.cff && !ttf.program!.cff)
+        #expect(abs(cff.matrixOf(1)[0] - 1.0 / 2048) < 1e-8, "\(cff.matrixOf(1))")
+        for c in "OAgé".unicodeScalars {
+            let gid = otf.unicodeToGID[Int(c.value)]
+            #expect(gid != 0 && gid == ttf.unicodeToGID[Int(c.value)], "\(c): glyph \(gid)")
+            let a = try cff.outline(gid)
+            let b = try glyf.outline(gid)
+            #expect(a.xMin == b.xMin && a.yMin == b.yMin && a.xMax == b.xMax && a.yMax == b.yMax,
+                    "\(c): \(a.xMin) \(a.yMin) \(a.xMax) \(a.yMax), the .ttf \(b.xMin) \(b.yMin) \(b.xMax) \(b.yMax)")
+        }
     }
 
     @Test func numbersAreHundredthsRoundedHalfAwayFromZero() {

@@ -416,8 +416,8 @@ class FontTest {
             {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"},
             // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
             // 9.1.7), its italic angle -10 in its post table
-            {"fonts/CascadiaMono/CascadiaMono-Italic.ttf", "-10"},
-            {"fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf", "-10"},
+            {"fonts/CascadiaMono/CascadiaMono-Italic.otf", "-10"},
+            {"fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.otf", "-10"},
             {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "0"},
         };
         for (String[] font : fonts) {

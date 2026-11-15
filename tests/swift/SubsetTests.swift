@@ -15,7 +15,7 @@ import Testing
     }
 
     // IBM Plex Sans, which has the short offsets of loca; the subsets of a
-    // font with the long ones read Cascadia Mono or IBM Plex Math.
+    // font with the long ones read Cascadia Mono's .ttf or IBM Plex Math.
     private let plex = "tests/fonts/IBMPlexSans-Regular.ttf"
 
     private func u16(_ font: [UInt8], _ at: Int) -> Int {
@@ -69,12 +69,12 @@ import Testing
     }
 
     @Test func keepsTheGlyphsUsedAndThePartsOfTheComposites() throws {
-        // In Cascadia Mono, whose loca has the long offsets, as that of Noto
+        // In Cascadia Mono's .ttf, whose loca has the long offsets, as that of Noto
         // Sans, which this test read before 9.1.7, had: Ä (16) is made of A
         // (1) and the dieresis of capitals (3051), and ặ (229) of a (225),
         // the dot below (3029) and the breve (3020); 4,319 glyphs. Noto Sans
         // had Ä (134) of A (36) and the dieresis (106), and ǅ (913) of three.
-        let ttf = try fontBytes("fonts/CascadiaMono/CascadiaMono-Regular.ttf")
+        let ttf = try fontBytes("tests/fonts/CascadiaMono-Regular.ttf")
         #expect(u16(ttf, table(ttf, "head") + 50) == 1)
         let (subset, kept) = try Subset.subsetTrueType(ttf, used(16, 229))
         #expect(kept.count == 4319)

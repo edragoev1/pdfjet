@@ -37,7 +37,7 @@ and templates of PDFjet Forms filled in from a program. The API reference, `docs
   "Acme")`, and words in braces, `{invoiceNumber}`, its tables given their
   rows; each `save` a new PDF, PDF/A-3 and PDF/UA, laid out as Forms lays
   the design out, with the fonts PDFjet carries, which are Forms' own: IBM
-  Plex Sans, Serif, KR and TC as `.otf`, and Cascadia Mono.
+  Plex Sans, Serif, KR and TC and Cascadia Mono, as `.otf`.
 
 The manifest of this `PDFjet.jar` names it PDFjet Pro, as the jar of PDFjet
 Core, of the same name, is not.

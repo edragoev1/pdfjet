@@ -167,7 +167,7 @@ into Go programs by the package resources/fonts/world, and in the Swift
 product PDFjetFontsWorld. The test data in tests/fonts, which no package
 carries, has fonts under the same license, each with its license beside it:
 IBM Plex Math and Source Serif 4, which PDFjet no longer carries, IBM Plex
-Sans as .otf, and Source Han Sans JP.
+Sans as .otf and .ttf, Cascadia Mono Regular as .ttf, and Source Han Sans JP.
 
     ============================================================================
     IBM Plex: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
@@ -178,11 +178,13 @@ Sans as .otf, and Source Han Sans JP.
     This license is available with a FAQ at: https://openfontlicense.org
 
 
-The examples include, unmodified, two fonts that only Example_52 uses and no
-package of PDFjet carries, in examples/fonts: Noto Sans Devanagari and Noto
-Sans Khmer, version 2.001, each with its license beside it.
+The examples include, unmodified, fonts that no package of PDFjet carries,
+in examples/fonts, each with its license beside it: IBM Plex Sans Regular,
+version 3.005, IBM's TrueType edition, which Example_07 uses; and Noto Sans
+Devanagari and Noto Sans Khmer, version 2.001, which Example_52 uses.
 
     ============================================================================
+    IBM Plex: Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
     Noto Sans Devanagari: Copyright 2015 Google Inc. All Rights Reserved.
     Noto Sans Khmer: Copyright 2016 Google Inc. All Rights Reserved.
 

@@ -21,6 +21,14 @@ patch the tables of a TrueType font:
   License 1.1, in `IBMPlexSans-license.txt`.
 
 For the subsets of fonts with TrueType outlines and the long offsets of
+`loca`, of 2,048 units to the em, and their outlines:
+
+- Cascadia Mono Regular (`.ttf`), Microsoft's TrueType edition, of release
+  2407.24, of the `.otf` PDFjet carries in `resources/fonts` from 9.1.9; it
+  carried this `.ttf` up to 9.1.7. SIL Open Font License 1.1, with the
+  Reserved Font Name Cascadia Code, in `CascadiaMono-LICENSE.txt`.
+
+For the subsets of fonts with TrueType outlines and the long offsets of
 `loca`, and the cap height read from `OS/2`:
 
 - IBM Plex Math Regular, which PDFjet does not carry from 9.1.7. SIL Open

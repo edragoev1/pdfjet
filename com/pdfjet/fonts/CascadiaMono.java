@@ -19,23 +19,23 @@ public class CascadiaMono {
     }
 
     /** Cascadia Mono Bold */
-    public static final String Bold            = "fonts/CascadiaMono/CascadiaMono-Bold.ttf";
+    public static final String Bold            = "fonts/CascadiaMono/CascadiaMono-Bold.otf";
     /** Cascadia Mono BoldItalic */
-    public static final String BoldItalic      = "fonts/CascadiaMono/CascadiaMono-BoldItalic.ttf";
+    public static final String BoldItalic      = "fonts/CascadiaMono/CascadiaMono-BoldItalic.otf";
     /** Cascadia Mono Italic */
-    public static final String Italic          = "fonts/CascadiaMono/CascadiaMono-Italic.ttf";
+    public static final String Italic          = "fonts/CascadiaMono/CascadiaMono-Italic.otf";
     /** Cascadia Mono Light */
-    public static final String Light           = "fonts/CascadiaMono/CascadiaMono-Light.ttf";
+    public static final String Light           = "fonts/CascadiaMono/CascadiaMono-Light.otf";
     /** Cascadia Mono LightItalic */
-    public static final String LightItalic     = "fonts/CascadiaMono/CascadiaMono-LightItalic.ttf";
+    public static final String LightItalic     = "fonts/CascadiaMono/CascadiaMono-LightItalic.otf";
     /** Cascadia Mono Regular */
-    public static final String Regular         = "fonts/CascadiaMono/CascadiaMono-Regular.ttf";
+    public static final String Regular         = "fonts/CascadiaMono/CascadiaMono-Regular.otf";
     /** Cascadia Mono SemiBold */
-    public static final String SemiBold        = "fonts/CascadiaMono/CascadiaMono-SemiBold.ttf";
+    public static final String SemiBold        = "fonts/CascadiaMono/CascadiaMono-SemiBold.otf";
     /** Cascadia Mono SemiBoldItalic */
-    public static final String SemiBoldItalic  = "fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf";
+    public static final String SemiBoldItalic  = "fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.otf";
     /** Cascadia Mono SemiLight */
-    public static final String SemiLight       = "fonts/CascadiaMono/CascadiaMono-SemiLight.ttf";
+    public static final String SemiLight       = "fonts/CascadiaMono/CascadiaMono-SemiLight.otf";
     /** Cascadia Mono SemiLightItalic */
-    public static final String SemiLightItalic = "fonts/CascadiaMono/CascadiaMono-SemiLightItalic.ttf";
+    public static final String SemiLightItalic = "fonts/CascadiaMono/CascadiaMono-SemiLightItalic.otf";
 }

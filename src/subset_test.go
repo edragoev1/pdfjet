@@ -38,7 +38,8 @@ func testSubsetGlyph(t *testing.T, font []byte, gid int) []byte {
 }
 
 // testSubsetPlex is IBM Plex Sans, which has the short offsets of loca; the
-// subsets of a font with the long ones read Cascadia Mono or IBM Plex Math.
+// subsets of a font with the long ones read Cascadia Mono's .ttf or IBM
+// Plex Math.
 const testSubsetPlex = "tests/fonts/IBMPlexSans-Regular.ttf"
 
 // testSubsetUsed returns the glyphs used, as Font records them.
@@ -51,12 +52,12 @@ func testSubsetUsed(gids ...int) []bool {
 }
 
 func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
-	// In Cascadia Mono, whose loca has the long offsets, as that of Noto
+	// In Cascadia Mono's .ttf, whose loca has the long offsets, as that of Noto
 	// Sans, which this test read before 9.1.7, had: Ä (16) is made of A (1)
 	// and the dieresis of capitals (3051), and ặ (229) of a (225), the dot
 	// below (3029) and the breve (3020); 4,319 glyphs. Noto Sans had Ä (134)
 	// of A (36) and the dieresis (106), and ǅ (913) of three.
-	ttf := testOpenTypeFontBytes(t, "fonts/CascadiaMono/CascadiaMono-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, "tests/fonts/CascadiaMono-Regular.ttf")
 	if format := binary.BigEndian.Uint16(ttf[testOpenTypeTable(t, ttf, "head")+50:]); format != 1 {
 		t.Fatalf("loca format %d", format)
 	}

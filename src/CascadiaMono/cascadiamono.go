@@ -14,23 +14,23 @@ package CascadiaMono
 // The paths of the font files.
 const (
 	// Bold is Cascadia Mono Bold.
-	Bold = "fonts/CascadiaMono/CascadiaMono-Bold.ttf"
+	Bold = "fonts/CascadiaMono/CascadiaMono-Bold.otf"
 	// BoldItalic is Cascadia Mono BoldItalic.
-	BoldItalic = "fonts/CascadiaMono/CascadiaMono-BoldItalic.ttf"
+	BoldItalic = "fonts/CascadiaMono/CascadiaMono-BoldItalic.otf"
 	// Italic is Cascadia Mono Italic.
-	Italic = "fonts/CascadiaMono/CascadiaMono-Italic.ttf"
+	Italic = "fonts/CascadiaMono/CascadiaMono-Italic.otf"
 	// Light is Cascadia Mono Light.
-	Light = "fonts/CascadiaMono/CascadiaMono-Light.ttf"
+	Light = "fonts/CascadiaMono/CascadiaMono-Light.otf"
 	// LightItalic is Cascadia Mono LightItalic.
-	LightItalic = "fonts/CascadiaMono/CascadiaMono-LightItalic.ttf"
+	LightItalic = "fonts/CascadiaMono/CascadiaMono-LightItalic.otf"
 	// Regular is Cascadia Mono Regular.
-	Regular = "fonts/CascadiaMono/CascadiaMono-Regular.ttf"
+	Regular = "fonts/CascadiaMono/CascadiaMono-Regular.otf"
 	// SemiBold is Cascadia Mono SemiBold.
-	SemiBold = "fonts/CascadiaMono/CascadiaMono-SemiBold.ttf"
+	SemiBold = "fonts/CascadiaMono/CascadiaMono-SemiBold.otf"
 	// SemiBoldItalic is Cascadia Mono SemiBoldItalic.
-	SemiBoldItalic = "fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.ttf"
+	SemiBoldItalic = "fonts/CascadiaMono/CascadiaMono-SemiBoldItalic.otf"
 	// SemiLight is Cascadia Mono SemiLight.
-	SemiLight = "fonts/CascadiaMono/CascadiaMono-SemiLight.ttf"
+	SemiLight = "fonts/CascadiaMono/CascadiaMono-SemiLight.otf"
 	// SemiLightItalic is Cascadia Mono SemiLightItalic.
-	SemiLightItalic = "fonts/CascadiaMono/CascadiaMono-SemiLightItalic.ttf"
+	SemiLightItalic = "fonts/CascadiaMono/CascadiaMono-SemiLightItalic.otf"
 )
