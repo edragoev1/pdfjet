@@ -519,6 +519,19 @@ public sealed class TableTest : IDisposable {
         Assert.True(Math.Abs(50f + table.GetWidth() - float.Parse(ends[1], System.Globalization.CultureInfo.InvariantCulture)) < 0.01f, under[0]);
     }
 
+    // With SetJoinedBorders(false) each cell strokes its own borders, as
+    // before the table joined them: two lines under a row of two cells.
+    [Fact]
+    public void SeparateBordersAreEachCellsOwn() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 10, 2), 1);
+        table.SetJoinedBorders(false).SetLocation(50f, 50f);
+        table.DrawOn(page);
+        Assert.Equal(11, Rules(page).Count);
+        Assert.Equal(2, LinesAt(page, Rules(page)[10]).Count);
+    }
+
     // A table of rows by columns of cells with every border, the cell at 0,0
     // spanning the rows.
     private static List<List<Cell>> Spanning(Font font, int rows, int columns, int rowspan) {

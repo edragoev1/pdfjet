@@ -484,6 +484,20 @@ import Testing
         #expect(abs(ends[1] - (50 + table.getWidth())) < 0.01, "\(under)")
     }
 
+    // With setJoinedBorders(false) each cell strokes its own borders, as
+    // before the table joined them: two lines under a row of two cells.
+    @Test func separateBordersAreEachCellsOwn() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 10, 2), 1)
+        table.setJoinedBorders(false).setLocation(50, 50)
+        table.drawOn(page)
+        let ys = rules(page)
+        #expect(ys.count == 11)
+        guard ys.count == 11 else { return }
+        #expect(linesAt(page, ys[10]).count == 2)
+    }
+
     // A table of rows by columns of cells with every border, the cell at 0,0
     // spanning the rows.
     private func spanning(_ font: Font, _ rows: Int, _ columns: Int, _ rowspan: Int) -> [[Cell]] {

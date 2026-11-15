@@ -20,6 +20,9 @@ public class Table : Drawable {
     private var numOfFooterRows = 0
     // The index of the next row to draw, or -1 when all rows are drawn.
     private var rendered = 1
+    // True when each cell strokes its own borders, as setJoinedBorders(false)
+    // asks, rather than the table joining them into continuous lines.
+    private var separateBorders = false
     // True once the header rows are drawn: they are TH cells the first time,
     // even when no row of the body fits under them on that page.
     private var headerDrawn = false
@@ -1171,7 +1174,7 @@ public class Table : Drawable {
     // lines, unless the page strokes with a dash pattern, which would go on
     // from one cell to the next and look different.
     private func drawPage(_ page: Page?, _ pageNumber: Int) -> [Float] {
-        guard let page = page, page.strokeDashPattern == "[] 0" else {
+        guard let page = page, !separateBorders, page.strokeDashPattern == "[] 0" else {
             return drawTableRows(page, drawHeaderRows(page, pageNumber))
         }
         let outer = page.tableLines
@@ -1932,6 +1935,23 @@ public class Table : Drawable {
     ///
     public func getRowsRendered() -> Int {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows
+    }
+
+    ///
+    /// Sets whether the borders of the cells are joined into continuous lines,
+    /// which they are by default: the borders that touch, on the same row or
+    /// column and of the same color and width, are one line across or down the
+    /// table, and the PDF is smaller. With false each cell strokes its own
+    /// borders, one short line for each side. The page looks the same either
+    /// way, and each cell keeps its own borders, sides, color and width.
+    ///
+    /// - Parameter joined: true to join the borders, false to draw each cell's own.
+    /// - Returns: this table.
+    ///
+    @discardableResult
+    public func setJoinedBorders(_ joined: Bool) -> Table {
+        self.separateBorders = !joined
+        return self
     }
 
     ///

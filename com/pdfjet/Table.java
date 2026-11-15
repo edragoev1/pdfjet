@@ -29,6 +29,9 @@ public class Table implements Drawable {
     // True once the header rows are drawn: they are TH cells the first time,
     // even when no row of the body fits under them on that page.
     private boolean headerDrawn = false;
+    // True when each cell strokes its own borders, as setJoinedBorders(false)
+    // asks, rather than the table joining them into continuous lines.
+    private boolean separateBorders = false;
     private float x1;
     private float y1;
     private float firstPageTopMargin;
@@ -1094,7 +1097,7 @@ public class Table implements Drawable {
     // lines, unless the page strokes with a dash pattern, which would go on
     // from one cell to the next and look different.
     private float[] drawPage(Page page, int pageNumber) throws Exception {
-        if (page == null || !page.strokeDashPattern.equals("[] 0")) {
+        if (page == null || separateBorders || !page.strokeDashPattern.equals("[] 0")) {
             return drawTableRows(page, drawHeaderRows(page, pageNumber));
         }
         TableLines outer = page.tableLines;
@@ -1822,6 +1825,22 @@ public class Table implements Drawable {
      */
     public int getRowsRendered() {
         return rendered == -1 ? rendered : rendered - numOfHeaderRows;
+    }
+
+    /**
+     * Sets whether the borders of the cells are joined into continuous lines,
+     * which they are by default: the borders that touch, on the same row or
+     * column and of the same color and width, are one line across or down the
+     * table, and the PDF is smaller. With false each cell strokes its own
+     * borders, one short line for each side. The page looks the same either
+     * way, and each cell keeps its own borders, sides, color and width.
+     *
+     * @param joined true to join the borders, false to draw each cell's own.
+     * @return this Table object.
+     */
+    public Table setJoinedBorders(boolean joined) {
+        this.separateBorders = !joined;
+        return this;
     }
 
     /**

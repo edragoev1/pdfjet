@@ -599,6 +599,23 @@ func TestTableATableOnOnePageHasTheLinesItHad(t *testing.T) {
 	}
 }
 
+// With SetJoinedBorders(false) each cell strokes its own borders, as before
+// the table joined them: two lines under a row of two cells.
+func TestTableSeparateBordersAreEachCellsOwn(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 10, 2), 1)
+	table.SetJoinedBorders(false).SetLocation(50, 50)
+	table.DrawOn(page)
+	ys := testRules(page)
+	if len(ys) != 11 {
+		t.Fatalf("%d rules: %v", len(ys), ys)
+	}
+	if lines := testLinesAt(page, ys[10]); len(lines) != 2 {
+		t.Errorf("under the last row: %v", lines)
+	}
+}
+
 func TestTableACellThatSpansRowsIsDrawnOnceOverAllOfThem(t *testing.T) {
 	doc := testNewDoc()
 	font := testHelvetica(doc.pdf)

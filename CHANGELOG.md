@@ -39,7 +39,9 @@ anti-aliasing, draws them the same but for the dot where two lines that met
 were stroked twice and darker. A table of many rows is 4 to 5% smaller
 (Examples 21, 23 and 83), a business document about 1%. For example, the
 line under a two-column row was written `49.75 724.13 m 110 724.13 l` and
-`109.75 724.13 m 170 724.13 l`; it is now `49.75 724.13 m 170 724.13 l`.
+`109.75 724.13 m 170 724.13 l`; it is now `49.75 724.13 m 170 724.13 l`. A
+program that wants each cell's own lines, as before, byte for byte, calls
+`table.setJoinedBorders(false)` (C# and Go `SetJoinedBorders(false)`).
 
 Changed, in the four ports: **a font of CFF outlines (.otf) is embedded as
 a much smaller subset.** The subset was the whole font with an `endchar` in

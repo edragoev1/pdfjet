@@ -41,6 +41,9 @@ type Table struct {
 	numOfFooterRows int
 	// The index of the next row to draw, or -1 when all rows are drawn.
 	rendered int
+	// True when each cell strokes its own borders, as SetJoinedBorders(false)
+	// asks, rather than the table joining them into continuous lines.
+	separateBorders bool
 	// True once the header rows are drawn: they are TH cells the first time,
 	// even when no row of the body fits under them on that page.
 	headerDrawn        bool
@@ -1090,7 +1093,7 @@ func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize 
 // continuous lines, unless the page strokes with a dash pattern, which would
 // go on from one cell to the next and look different.
 func (table *Table) drawPage(page *Page, pageNumber int) [2]float32 {
-	if page == nil || page.strokeDashPattern != "[] 0" {
+	if page == nil || table.separateBorders || page.strokeDashPattern != "[] 0" {
 		return table.drawTableRows(page, table.drawHeaderRows(page, pageNumber))
 	}
 	outer := page.tableLines
@@ -1868,6 +1871,17 @@ func (table *Table) GetRowsRendered() int {
 		return table.rendered - table.numOfHeaderRows
 	}
 	return -1
+}
+
+// SetJoinedBorders sets whether the borders of the cells are joined into
+// continuous lines, which they are by default: the borders that touch, on the
+// same row or column and of the same color and width, are one line across or
+// down the table, and the PDF is smaller. With false each cell strokes its own
+// borders, one short line for each side. The page looks the same either way,
+// and each cell keeps its own borders, sides, color and width.
+func (table *Table) SetJoinedBorders(joined bool) *Table {
+	table.separateBorders = !joined
+	return table
 }
 
 // SetCellBorders sets all table cells borders to false or true.

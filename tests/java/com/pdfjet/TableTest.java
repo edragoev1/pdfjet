@@ -558,6 +558,19 @@ class TableTest {
         assertEquals(50f + table.getWidth(), Float.parseFloat(ends[1]), 0.01f, under.toString());
     }
 
+    // With setJoinedBorders(false) each cell strokes its own borders, as
+    // before the table joined them: two lines under a row of two cells.
+    @Test
+    void separateBordersAreEachCellsOwn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 10, 2), 1);
+        table.setJoinedBorders(false).setLocation(50f, 50f);
+        table.drawOn(page);
+        assertEquals(11, rules(page).size());
+        assertEquals(2, linesAt(page, rules(page).get(10)).size());
+    }
+
     // A table of rows by columns of cells with every border, the cell at 0,0
     // spanning the rows.
     private static List<List<Cell>> spanning(Font font, int rows, int columns, int rowspan) {
