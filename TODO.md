@@ -64,7 +64,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 ## Open
 
 - **After 9.1.9: the 32 business documents of PDFjet Forms as examples 53 to
-  84, in the four ports** (15 November 2026). Why: an AI assistant adapts
+  84, and labels as example 85, in the four ports** (15 November 2026). Why: an AI assistant adapts
   the example closest to what it is asked for, and developers ask for
   documents (an invoice, a quote, a receipt, a statement of account), while
   most examples show one feature each. The templates: appointment request,
@@ -81,8 +81,11 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   the same checks as every example (the four ports alike, PDF/UA, veraPDF)
   and listed by task in the llms guides. The ten most asked first: invoice,
   quote, receipt, statement of account, delivery note, purchase order,
-  business letter, certificate, timesheet, price list. Then the AI test
-  below, to see that they help.
+  business letter, certificate, timesheet, price list. Example 85, not a
+  Forms template: labels, many to a sheet (shipping labels or name badges,
+  30 to a Letter or A4 page, each with an address and a barcode or QR code,
+  from a list of data), lined up exactly with the cut sheet. Then the AI
+  test below, to see that they help.
 
 - **After the llms guides: test how well AI assistants write PDFjet code**
   (15 November 2026). Why: most code
