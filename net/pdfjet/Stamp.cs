@@ -99,6 +99,7 @@ public class Stamp : IDrawable {
     public Stamp AddFont(Font font) {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.Fail(new ArgumentException("The font belongs to another PDF."));
+            return this;
         }
         font.referenced = true;
         if (!fonts.Contains(font)) {

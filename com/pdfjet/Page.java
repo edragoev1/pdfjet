@@ -2523,7 +2523,9 @@ final public class Page {
         writtenFont = font;
         writtenFontSize = fontSize;
         writtenFontPrecise = precise;
-        font.referenced = true;
+        if (font.pdf == null || font.pdf == pdf) {
+            font.referenced = true;     // Never a write to the font of another PDF
+        }
         if (font.fontID != null) {
             append('/');
             append(font.fontID);

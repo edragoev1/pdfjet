@@ -114,6 +114,7 @@ public class Stamp implements Drawable {
     public Stamp addFont(Font font) {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
+            return this;
         }
         font.referenced = true;
         if (!fonts.contains(font)) {

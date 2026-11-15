@@ -2311,7 +2311,9 @@ func (page *Page) writeTextFont(font *Font, fontSize float32, precise bool) *Pag
 	page.writtenFont = font
 	page.writtenFontSize = fontSize
 	page.writtenFontPrecise = precise
-	font.referenced = true
+	if font.pdf == nil || font.pdf == page.pdf {
+		font.referenced = true // Never a write to the font of another PDF
+	}
 	if font.fontID != "" {
 		page.appendByte('/')
 		page.appendString(font.fontID)

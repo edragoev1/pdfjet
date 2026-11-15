@@ -2436,7 +2436,9 @@ public class Page {
         writtenFont = font
         writtenFontSize = fontSize
         writtenFontPrecise = precise
-        font.referenced = true
+        if font.pdfIdentity == nil || font.pdfIdentity == pdf.identity {
+            font.referenced = true      // Never a write to the font of another PDF
+        }
         if font.fontID != nil {
             append("/")
             append(font.fontID!)
