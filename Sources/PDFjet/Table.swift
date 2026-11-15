@@ -57,6 +57,9 @@ public class Table : Drawable {
     private var columnSums: [Int: ColumnSums]?
     // The height of the header rows, wrapped, that getTotalHeight measures.
     var wrappedHeaderHeight: Float = 0.0
+    // The row the page being drawn breaks before, when the rows on it are
+    // closed with a line under them, or -1.
+    private var closeAt = -1
     // The first wrong index given, which the methods that take one have no
     // error to return for, and which drawOn fails the document with.
     private var misuse: String?
@@ -1311,7 +1314,8 @@ public class Table : Drawable {
                 // A cell that spans rows is as tall as all the rows it covers
                 // on this page.
                 var cellHeight: Float = 0.0
-                for r in rowIndex..<min(rowIndex + cell.rowsSpanned, heights.count, max(pageEnd, rowIndex + 1)) {
+                let end = min(rowIndex + cell.rowsSpanned, heights.count, max(pageEnd, rowIndex + 1))
+                for r in rowIndex..<end {
                     cellHeight += heights[r]
                 }
                 page.setBrushColor(cell.textColor)
@@ -1325,7 +1329,14 @@ public class Table : Drawable {
                 let mcidParent = page.mcidParent
                 let grouped = tagged && cell.text != nil &&
                         cellParagraph(page, rowIndex, i - colspan, continued)
+                let close = closesPage(cell, rowIndex, i - colspan, end, pageEnd)
+                if close {
+                    cell.properties |= Border.BOTTOM
+                }
                 cell.drawOn(page, x, y, w, cellHeight)
+                if close {
+                    cell.properties &= ~Border.BOTTOM
+                }
                 if grouped {
                     page.mcidParent = mcidParent
                 }
@@ -1336,6 +1347,18 @@ public class Table : Drawable {
             x += w
         }
         page.structParent = parent
+    }
+
+    // True when the cell at the row and column, drawn down to the row before
+    // end, is drawn with a line under it, which it does not have, as the
+    // last of the rows of a page the table goes on from: when the cell has
+    // lines, as a header row's line is drawn, and is not in the wrapped text
+    // of a cell that spans rows, which draws the line under the both of them.
+    private func closesPage(_ cell: Cell, _ r: Int, _ column: Int, _ end: Int, _ pageEnd: Int) -> Bool {
+        return closeAt != -1 && pageEnd == closeAt && end == closeAt
+                && (cell.properties & Border.ALL) != 0
+                && (cell.properties & Border.BOTTOM) == 0
+                && spanAbove(r, column) == nil
     }
 
     // True when every cell of the row is one that a cell above it spans over,
@@ -1410,6 +1433,12 @@ public class Table : Drawable {
         var more = false
         if let page = page {
             (end, more) = rowsOnPage(first, footer, y, top, bottom)
+            // The rows of a page that the table goes on from are closed with
+            // a line under them, as the end of the table is, the line the
+            // first row of the next page draws over itself: the grid was open
+            // at the bottom of every page but the last. A footer row draws
+            // that line itself.
+            closeAt = (more && footer == tableData.count && endsWithLine()) ? end : -1
             drawSpansFromAbove(page, x, y, first, end)
         }
         for r in first..<max(first, end) {
@@ -1437,12 +1466,14 @@ public class Table : Drawable {
                             + "and cannot be split across pages. "
                             + "Put the text in a text cell, which is split across pages, or make the cell smaller.")
                     rendered = -1   // Nothing more is drawn, and no more pages are asked for
+                    closeAt = -1
                     return [x, y]
                 }
                 drawRow(page, tableData[r], x, y, heights, r, end, StructElem.TD)
             }
             y += heights[r]
         }
+        closeAt = -1
         if more {
             rendered = end
             setFooterSums(first, end)
@@ -1549,7 +1580,17 @@ public class Table : Drawable {
                 if cell.backgroundColor != Cell.NO_COLOR {
                     cell.drawBackground(page, x, y, w, h)
                 }
+                // A span that goes on to the next page as well is closed
+                // at the bottom of this one.
+                let end = min(s + cell.rowsSpanned, pageEnd)
+                let close = closesPage(cell, s, i, end, pageEnd)
+                if close {
+                    cell.properties |= Border.BOTTOM
+                }
                 cell.drawBorders(page, x, y, w, h)
+                if close {
+                    cell.properties &= ~Border.BOTTOM
+                }
             }
             x += w
             i += colspan
@@ -1978,18 +2019,26 @@ public class Table : Drawable {
         }
     }
 
-    // Sets the bottom border on all cells in the last row.
-    private func setBottomBorderOnLastRow() {
+    // True when the table ends with a line under its last row: when all the
+    // cells in its first row have top border.
+    private func endsWithLine() -> Bool {
         if tableData.isEmpty {
-            return
+            return false
         }
-        let firstRow = tableData[0]
-        for cell in firstRow {
+        for cell in tableData[0] {
             if cell.getBorder(Border.TOP) == false {
-                return
+                return false
             }
         }
+        return true
+    }
+
+    // Sets the bottom border on all cells in the last row.
+    private func setBottomBorderOnLastRow() {
         // Only run this code if all the cells in the first row have top border.
+        if !endsWithLine() {
+            return
+        }
         let lastRow = tableData[tableData.count - 1]
         for cell in lastRow {
             cell.setBorder(Border.BOTTOM, true)

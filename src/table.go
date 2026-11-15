@@ -77,6 +77,9 @@ type Table struct {
 	columnSums map[[2]int]*columnSums
 	// The height of the header rows, wrapped, that getTotalHeight measures.
 	wrappedHeaderHeight float32
+	// The row the page being drawn breaks before, when the rows on it are
+	// closed with a line under them, or -1.
+	closeAt int
 	// The first wrong index given, which the methods that take one have no
 	// error to return for, and which DrawOn fails the document with.
 	misuse string
@@ -100,6 +103,7 @@ func NewTable() *Table {
 	table.numOfHeaderRows = 1
 	table.rendered = 1
 	table.alternateRowColor = color.Transparent
+	table.closeAt = -1
 	return table
 }
 
@@ -1252,7 +1256,14 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 			if tagged && cell.hasText {
 				restore = table.cellParagraph(page, rowIndex, i-colspan, continued)
 			}
+			closes := table.closesPage(cell, rowIndex, i-colspan, end, pageEnd)
+			if closes {
+				cell.properties |= border.Bottom
+			}
 			cell.drawOn(page, x, y, w, cellHeight)
+			if closes {
+				cell.properties &^= border.Bottom
+			}
 			if restore != nil {
 				restore()
 			}
@@ -1263,6 +1274,18 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 		x += w
 	}
 	page.structParent = parent
+}
+
+// closesPage returns true when the cell at the row and column, drawn down to
+// the row before end, is drawn with a line under it, which it does not have,
+// as the last of the rows of a page the table goes on from: when the cell has
+// lines, as a header row's line is drawn, and is not in the wrapped text of a
+// cell that spans rows, which draws the line under the both of them.
+func (table *Table) closesPage(cell *Cell, r, column, end, pageEnd int) bool {
+	return table.closeAt != -1 && pageEnd == table.closeAt && end == table.closeAt &&
+		cell.properties&border.All != 0 &&
+		cell.properties&border.Bottom == 0 &&
+		table.spanAbove(r, column) == -1
 }
 
 // cellParagraph makes the lines of the text of a cell that wraps one
@@ -1378,6 +1401,15 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	more := false
 	if page != nil {
 		end, more = table.rowsOnPage(first, footer, y, top, bottom)
+		// The rows of a page that the table goes on from are closed with a
+		// line under them, as the end of the table is, the line the first
+		// row of the next page draws over itself: the grid was open at the
+		// bottom of every page but the last. A footer row draws that line
+		// itself.
+		table.closeAt = -1
+		if more && footer == len(table.tableData) && table.endsWithLine() {
+			table.closeAt = end
+		}
 		table.drawSpansFromAbove(page, x, y, first, end)
 	}
 	for r := first; r < end; r++ {
@@ -1403,12 +1435,14 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 					"Put the text in a text cell, which is split across pages, or make the cell smaller.",
 					r, heights[r], page.height-table.bottomMargin-top))
 				table.rendered = -1 // Nothing more is drawn, and no more pages are asked for
+				table.closeAt = -1
 				return [2]float32{x, y}
 			}
 			table.drawRow(page, table.tableData[r], x, y, heights, r, end, structelem.TD)
 		}
 		y += heights[r]
 	}
+	table.closeAt = -1
 	if more {
 		table.rendered = end
 		table.setFooterSums(first, end)
@@ -1512,7 +1546,17 @@ func (table *Table) drawSpansFromAbove(page *Page, x, y float32, first, pageEnd 
 				if cell.backgroundColor != color.Transparent {
 					cell.drawBackground(page, x, y, w, h)
 				}
+				// A span that goes on to the next page as well is closed at
+				// the bottom of this one.
+				end := min(s+cell.rowsSpanned, pageEnd)
+				closes := table.closesPage(cell, s, i, end, pageEnd)
+				if closes {
+					cell.properties |= border.Bottom
+				}
 				cell.drawBorders(page, x, y, w, h)
+				if closes {
+					cell.properties &^= border.Bottom
+				}
 			}
 		}
 		x += w
@@ -1900,18 +1944,26 @@ func (table *Table) setRightBorderOnLastColumn() {
 	}
 }
 
-// Sets the bottom border on all cells in the last row.
-func (table *Table) setBottomBorderOnLastRow() {
+// endsWithLine returns true when the table ends with a line under its last
+// row: when all the cells in its first row have top border.
+func (table *Table) endsWithLine() bool {
 	if len(table.tableData) == 0 {
-		return
+		return false
 	}
-	firstRow := table.tableData[0]
-	for _, cell := range firstRow {
+	for _, cell := range table.tableData[0] {
 		if cell.properties&border.Top == 0 {
-			return
+			return false
 		}
 	}
+	return true
+}
+
+// Sets the bottom border on all cells in the last row.
+func (table *Table) setBottomBorderOnLastRow() {
 	// Only run this code if all the cells in the first row have top border.
+	if !table.endsWithLine() {
+		return
+	}
 	lastRow := table.tableData[len(table.tableData)-1]
 	for _, cell := range lastRow {
 		cell.properties |= border.Bottom

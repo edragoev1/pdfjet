@@ -496,6 +496,101 @@ func testRules(page *Page) []float64 {
 	return ys
 }
 
+// testLinesAt returns the lines of the page at the rule at y, each as "x1 x2".
+func testLinesAt(page *Page, y float64) []string {
+	re := regexp.MustCompile(`([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l`)
+	lines := make([]string, 0)
+	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
+		y1, _ := strconv.ParseFloat(m[2], 64)
+		y2, _ := strconv.ParseFloat(m[4], 64)
+		if y1 == y && y2 == y {
+			lines = append(lines, m[1]+" "+m[3])
+		}
+	}
+	return lines
+}
+
+// A table that goes on to the next page left the rows of each page but the
+// last open at the bottom, as the line under a row is the top border of the
+// row under it, which is on the next page: each page is closed with that line
+// now, as the end of the table is.
+func TestTableEachPageOfATableThatGoesOnIsClosedWithALine(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	table := NewTable().SetTableData(testRows(font, 200, 2), 1)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(50)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	if len(pages) <= 2 {
+		t.Fatalf("pages %d", len(pages))
+	}
+	for i, page := range pages {
+		content := testContent(page)
+		rowsOnPage := 0
+		for r := 0; r < 200; r++ {
+			if strings.Contains(content, testHex(fmt.Sprintf("r%dc0", r))) {
+				rowsOnPage++
+			}
+		}
+		// A rule over each row, and one under the last.
+		ys := testRules(page)
+		if len(ys) != rowsOnPage+1 {
+			t.Fatalf("page %d: %d rules for %d rows: %v", i+1, len(ys), rowsOnPage, ys)
+		}
+		// The line under the last row is the line the top of a row draws.
+		bottom := ys[len(ys)-1]
+		above := ys[len(ys)-2]
+		if !reflect.DeepEqual(testLinesAt(page, above), testLinesAt(page, bottom)) {
+			t.Errorf("page %d: %v under the last row, %v over it",
+				i+1, testLinesAt(page, bottom), testLinesAt(page, above))
+		}
+	}
+	// The cells keep their borders: the line was drawn for the page alone.
+	// The header row has a line under it, and the last row of the table.
+	for r := 1; r < 199; r++ {
+		if table.GetCellAt(r, 0).GetBorder(border.Bottom) {
+			t.Errorf("row %d has a bottom border", r)
+		}
+	}
+}
+
+// A table without lines is not closed with one.
+func TestTableATableWithoutLinesIsNotClosedWithALine(t *testing.T) {
+	pdf := testNewPDF()
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 200, 2), 1)
+	table.SetCellBorders(false)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(50)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	if len(pages) <= 2 {
+		t.Fatalf("pages %d", len(pages))
+	}
+	for i, page := range pages {
+		if ys := testRules(page); len(ys) != 0 {
+			t.Errorf("page %d: rules %v", i+1, ys)
+		}
+	}
+}
+
+// A table that fits on its page has the lines it had: a rule over each row,
+// and the one under the last.
+func TestTableATableOnOnePageHasTheLinesItHad(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 10, 2), 1)
+	table.SetLocation(50, 50)
+	table.DrawOn(page)
+	ys := testRules(page)
+	if len(ys) != 11 {
+		t.Fatalf("%d rules: %v", len(ys), ys)
+	}
+	if lines := testLinesAt(page, ys[10]); len(lines) != 2 {
+		t.Errorf("under the last row: %v", lines)
+	}
+}
+
 func TestTableACellThatSpansRowsIsDrawnOnceOverAllOfThem(t *testing.T) {
 	doc := testNewDoc()
 	font := testHelvetica(doc.pdf)

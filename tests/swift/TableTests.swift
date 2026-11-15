@@ -398,6 +398,86 @@ import Testing
         return ys.sorted(by: >)
     }
 
+    // The lines of the page at the rule at y, each as "x1 x2".
+    private func linesAt(_ page: Page, _ y: Float) -> [String] {
+        let content = TestSupport.content(page)
+        let regex = try! NSRegularExpression(pattern: "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")
+        var lines = [String]()
+        for m in regex.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+            let y1 = Float((content as NSString).substring(with: m.range(at: 2)))!
+            let y2 = Float((content as NSString).substring(with: m.range(at: 4)))!
+            if y1 == y && y2 == y {
+                lines.append((content as NSString).substring(with: m.range(at: 1)) + " "
+                        + (content as NSString).substring(with: m.range(at: 3)))
+            }
+        }
+        return lines
+    }
+
+    // A table that goes on to the next page left the rows of each page but
+    // the last open at the bottom, as the line under a row is the top border
+    // of the row under it, which is on the next page: each page is closed
+    // with that line now, as the end of the table is.
+    @Test func eachPageOfATableThatGoesOnIsClosedWithALine() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let table = Table().setTableData(rows(font, 200, 2), 1)
+        table.setLocation(50, 50)
+        table.setBottomMargin(50)
+        var pages = [Page]()
+        table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count > 2)
+        for (i, page) in pages.enumerated() {
+            let content = TestSupport.content(page)
+            var rowsOnPage = 0
+            for r in 0..<200 where content.contains(TestSupport.hex("r\(r)c0")) {
+                rowsOnPage += 1
+            }
+            // A rule over each row, and one under the last.
+            let ys = rules(page)
+            #expect(ys.count == rowsOnPage + 1, "page \(i + 1)")
+            guard ys.count >= 2 else { continue }
+            // The line under the last row is the line the top of a row draws.
+            let bottom = ys[ys.count - 1]
+            let above = ys[ys.count - 2]
+            #expect(linesAt(page, above) == linesAt(page, bottom), "page \(i + 1)")
+        }
+        // The cells keep their borders: the line was drawn for the page alone.
+        // The header row has a line under it, and the last row of the table.
+        for r in 1..<199 {
+            #expect(!table.getCellAt(r, 0).getBorder(Border.BOTTOM), "row \(r)")
+        }
+    }
+
+    // A table without lines is not closed with one.
+    @Test func aTableWithoutLinesIsNotClosedWithALine() {
+        let pdf = TestSupport.newPDF()
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 200, 2), 1)
+        table.setCellBorders(false)
+        table.setLocation(50, 50)
+        table.setBottomMargin(50)
+        var pages = [Page]()
+        table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count > 2)
+        for page in pages {
+            #expect(rules(page).isEmpty)
+        }
+    }
+
+    // A table that fits on its page has the lines it had: a rule over each
+    // row, and the one under the last.
+    @Test func aTableOnOnePageHasTheLinesItHad() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 10, 2), 1)
+        table.setLocation(50, 50)
+        table.drawOn(page)
+        let ys = rules(page)
+        #expect(ys.count == 11)
+        guard ys.count == 11 else { return }
+        #expect(linesAt(page, ys[10]).count == 2)
+    }
+
     // A table of rows by columns of cells with every border, the cell at 0,0
     // spanning the rows.
     private func spanning(_ font: Font, _ rows: Int, _ columns: Int, _ rowspan: Int) -> [[Cell]] {

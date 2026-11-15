@@ -63,6 +63,9 @@ public class Table implements Drawable {
     private Map<Integer, ColumnSums> columnSums;
     // The height of the header rows, wrapped, that getTotalHeight measures.
     float wrappedHeaderHeight;
+    // The row the page being drawn breaks before, when the rows on it are
+    // closed with a line under them, or -1.
+    private int closeAt = -1;
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -1244,7 +1247,14 @@ public class Table implements Drawable {
                 StructElement mcidParent = page.mcidParent;
                 boolean grouped = tagged && cell.text != null &&
                         cellParagraph(page, rowIndex, i - colspan, continued);
+                boolean close = closesPage(cell, rowIndex, i - colspan, end, pageEnd);
+                if (close) {
+                    cell.properties |= Border.BOTTOM;
+                }
                 cell.drawOn(page, x, y, w, cellHeight);
+                if (close) {
+                    cell.properties &= ~Border.BOTTOM;
+                }
                 if (grouped) {
                     page.mcidParent = mcidParent;
                 }
@@ -1255,6 +1265,18 @@ public class Table implements Drawable {
             x += w;
         }
         page.structParent = parent;
+    }
+
+    // True when the cell at the row and column, drawn down to the row before
+    // end, is drawn with a line under it, which it does not have, as the
+    // last of the rows of a page the table goes on from: when the cell has
+    // lines, as a header row's line is drawn, and is not in the wrapped text
+    // of a cell that spans rows, which draws the line under the both of them.
+    private boolean closesPage(Cell cell, int r, int column, int end, int pageEnd) {
+        return closeAt != -1 && pageEnd == closeAt && end == closeAt
+                && (cell.properties & Border.ALL) != 0
+                && (cell.properties & Border.BOTTOM) == 0
+                && spanAbove(r, column) == -1;
     }
 
     // Makes the lines of the text of a cell that wraps one paragraph, as a
@@ -1361,6 +1383,12 @@ public class Table implements Drawable {
             int[] rows = rowsOnPage(first, footer, y, top, bottom);
             end = rows[0];
             more = (rows[1] != 0);
+            // The rows of a page that the table goes on from are closed with
+            // a line under them, as the end of the table is, the line the
+            // first row of the next page draws over itself: the grid was open
+            // at the bottom of every page but the last. A footer row draws
+            // that line itself.
+            closeAt = (more && footer == tableData.size() && endsWithLine()) ? end : -1;
             drawSpansFromAbove(page, x, y, first, end);
         }
         for (int r = first; r < end; r++) {
@@ -1388,12 +1416,14 @@ public class Table implements Drawable {
                             + "an image or another drawable is drawn whole and cannot be split across pages. "
                             + "Put the text in a text cell, which is split across pages, or make the cell smaller.",
                             r, heights[r], page.height - bottomMargin - top)));
+                    closeAt = -1;
                     return new float[] {x, y};
                 }
                 drawRow(page, tableData.get(r), x, y, heights, r, end, StructElem.TD);
             }
             y += heights[r];
         }
+        closeAt = -1;
         if (more) {
             rendered = end;
             setFooterSums(first, end);
@@ -1499,7 +1529,17 @@ public class Table implements Drawable {
                     if (cell.backgroundColor != Cell.NO_COLOR) {
                         cell.drawBackground(page, x, y, w, h);
                     }
+                    // A span that goes on to the next page as well is closed
+                    // at the bottom of this one.
+                    int end = Math.min(s + cell.rowsSpanned, pageEnd);
+                    boolean close = closesPage(cell, s, i, end, pageEnd);
+                    if (close) {
+                        cell.properties |= Border.BOTTOM;
+                    }
                     cell.drawBorders(page, x, y, w, h);
+                    if (close) {
+                        cell.properties &= ~Border.BOTTOM;
+                    }
                 }
             }
             x += w;
@@ -1873,18 +1913,26 @@ public class Table implements Drawable {
         }
     }
 
-    // Sets the bottom border on all cells in the last row.
-    private void setBottomBorderOnLastRow() {
+    // True when the table ends with a line under its last row: when all the
+    // cells in its first row have top border.
+    private boolean endsWithLine() {
         if (tableData.isEmpty()) {
-            return;
+            return false;
         }
-        List<Cell> firstRow = tableData.get(0);
-        for (Cell cell : firstRow) {
+        for (Cell cell : tableData.get(0)) {
             if (cell.getBorder(Border.TOP) == false) {
-                return;
+                return false;
             }
         }
+        return true;
+    }
+
+    // Sets the bottom border on all cells in the last row.
+    private void setBottomBorderOnLastRow() {
         // Only run this code if all the cells in the first row have top border.
+        if (!endsWithLine()) {
+            return;
+        }
         List<Cell> lastRow = tableData.get(tableData.size() - 1);
         for (Cell cell : lastRow) {
             cell.setBorder(Border.BOTTOM, true);

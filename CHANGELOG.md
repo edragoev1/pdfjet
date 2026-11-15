@@ -301,6 +301,27 @@ text, text); stamp.drawOn(page); page.addEMC();` wrote `/Artifact BMC` and
 paragraph. Untagged documents, and stamps drawn outside marked content or
 given a description, write exactly what they did.
 
+Fixed, in the four ports: a `Table` that goes on to the next page left the
+grid open at the bottom of every page but the last. A cell draws its top
+border, and the line under a row is the top border of the row under it,
+which is on the next page; only the last row of the table had a line under
+it. Now the last row drawn on each page is closed with that line, for the
+cells that have lines, as the line under the header is: the same width,
+color and place, drawn for that page alone, so the cells keep their borders.
+A cell that spans rows past the page break is closed at the bottom of the
+page too. A table whose end has no line (one with no lines, or whose first
+row has a cell without a top border) gets none, and a table with footer
+rows already had one, the top of the footer.
+
+Behavior change: a table drawn over several pages, by `drawOn(pdf, pages,
+pageSize)`, `drawOn(pdf, first, pages, pageSize)` or by drawing it again on
+a new page while it has rows left, draws a line under its last row on each
+page. For example, 200 rows of default cells in two columns at 50, 50 with
+`setBottomMargin(50f)` on Letter pages drew 38 horizontal rules on page 1,
+over its 38 rows, and now draws 39. A table that fits on one page writes
+what it did, to the byte; of the examples, Example_23 changes, on its five
+pages that the table goes on from.
+
 Added, in Go only, the constructors that return their error, as
 `ReadTableFromFile` does, for a file or a text PDFjet cannot read, which the
 constructors of Java, C# and Swift throw: `ReadImage(pdf, reader)` (of

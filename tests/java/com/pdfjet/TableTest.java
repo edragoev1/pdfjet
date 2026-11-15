@@ -471,6 +471,87 @@ class TableTest {
         return list;
     }
 
+    // The lines of the page at its lowest rule, the bottom of the table on it,
+    // and at the rule above that, each as "x1 x2".
+    private static List<String> linesAt(Page page, float y) {
+        List<String> lines = new ArrayList<String>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "([-0-9.]+) ([-0-9.]+) m\\n([-0-9.]+) ([-0-9.]+) l").matcher(TestSupport.content(page));
+        while (m.find()) {
+            if (Float.parseFloat(m.group(2)) == y && Float.parseFloat(m.group(4)) == y) {
+                lines.add(m.group(1) + " " + m.group(3));
+            }
+        }
+        return lines;
+    }
+
+    // A table that goes on to the next page left the rows of each page but
+    // the last open at the bottom, as the line under a row is the top border
+    // of the row under it, which is on the next page: each page is closed
+    // with that line now, as the end of the table is.
+    @Test
+    void eachPageOfATableThatGoesOnIsClosedWithALine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Table table = new Table().setTableData(rows(font, 200, 2), 1);
+        table.setLocation(50f, 50f);
+        table.setBottomMargin(50f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertTrue(pages.size() > 2, "pages " + pages.size());
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = pages.get(i);
+            String content = TestSupport.content(page);
+            int rowsOnPage = 0;
+            for (int r = 0; r < 200; r++) {
+                if (content.contains(TestSupport.hex("r" + r + "c0"))) {
+                    rowsOnPage++;
+                }
+            }
+            // A rule over each row, and one under the last.
+            List<Float> ys = rules(page);
+            assertEquals(rowsOnPage + 1, ys.size(), "page " + (i + 1) + ": " + ys);
+            // The line under the last row is the line the top of a row draws.
+            float bottom = ys.get(ys.size() - 1);
+            float above = ys.get(ys.size() - 2);
+            assertEquals(linesAt(page, above), linesAt(page, bottom), "page " + (i + 1));
+        }
+        // The cells keep their borders: the line was drawn for the page alone.
+        // The header row has a line under it, and the last row of the table.
+        for (int r = 1; r < 199; r++) {
+            assertFalse(table.getCellAt(r, 0).getBorder(Border.BOTTOM), "row " + r);
+        }
+    }
+
+    // A table without lines is not closed with one.
+    @Test
+    void aTableWithoutLinesIsNotClosedWithALine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 200, 2), 1);
+        table.setCellBorders(false);
+        table.setLocation(50f, 50f);
+        table.setBottomMargin(50f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertTrue(pages.size() > 2, "pages " + pages.size());
+        for (Page page : pages) {
+            assertEquals(0, rules(page).size());
+        }
+    }
+
+    // A table that fits on its page has the lines it had: a rule over each
+    // row, and the one under the last.
+    @Test
+    void aTableOnOnePageHasTheLinesItHad() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 10, 2), 1);
+        table.setLocation(50f, 50f);
+        table.drawOn(page);
+        assertEquals(11, rules(page).size());
+        assertEquals(2, linesAt(page, rules(page).get(10)).size());
+    }
+
     // A table of rows by columns of cells with every border, the cell at 0,0
     // spanning the rows.
     private static List<List<Cell>> spanning(Font font, int rows, int columns, int rowspan) {

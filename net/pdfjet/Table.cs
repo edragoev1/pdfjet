@@ -63,6 +63,9 @@ public class Table : IDrawable {
     private Dictionary<long, ColumnSums> columnSums;
     // The height of the header rows, wrapped, that GetTotalHeight measures.
     internal float wrappedHeaderHeight;
+    // The row the page being drawn breaks before, when the rows on it are
+    // closed with a line under them, or -1.
+    private int closeAt = -1;
 
     // The number of each row of a column, in units of the decimals, and their
     // sums from the first row to each row.
@@ -1200,7 +1203,14 @@ public class Table : IDrawable {
                 StructElement mcidParent = page.mcidParent;
                 bool grouped = tagged && cell.text != null &&
                         CellParagraph(page, rowIndex, i - colspan, continued);
+                bool close = ClosesPage(cell, rowIndex, i - colspan, end, pageEnd);
+                if (close) {
+                    cell.properties |= Border.BOTTOM;
+                }
                 cell.DrawOn(page, x, y, w, cellHeight);
+                if (close) {
+                    cell.properties &= ~Border.BOTTOM;
+                }
                 if (grouped) {
                     page.mcidParent = mcidParent;
                 }
@@ -1213,8 +1223,18 @@ public class Table : IDrawable {
         page.structParent = parent;
     }
 
-    // True when every cell of the row is one that a cell above it spans over,
-    // so the row holds no cell of its own and is not a row of the table.
+    // True when the cell at the row and column, drawn down to the row before
+    // end, is drawn with a line under it, which it does not have, as the
+    // last of the rows of a page the table goes on from: when the cell has
+    // lines, as a header row's line is drawn, and is not in the wrapped text
+    // of a cell that spans rows, which draws the line under the both of them.
+    private bool ClosesPage(Cell cell, int r, int column, int end, int pageEnd) {
+        return closeAt != -1 && pageEnd == closeAt && end == closeAt
+                && (cell.properties & Border.ALL) != 0
+                && (cell.properties & Border.BOTTOM) == 0
+                && SpanAbove(r, column) == -1;
+    }
+
     // Makes the lines of the text of a cell that wraps one paragraph, as a
     // screen reader reads it: the P the first of them on a page begins gets
     // the marked content of the lines after it on that page, which were each a
@@ -1246,6 +1266,8 @@ public class Table : IDrawable {
         return true;
     }
 
+    // True when every cell of the row is one that a cell above it spans over,
+    // so the row holds no cell of its own and is not a row of the table.
     private static bool AllCovered(List<Cell> row) {
         foreach (Cell cell in row) {
             if ((cell.properties & Cell.COVERED) == 0) {
@@ -1315,6 +1337,12 @@ public class Table : IDrawable {
         bool more = false;
         if (page != null) {
             end = RowsOnPage(first, footer, y, top, bottom, out more);
+            // The rows of a page that the table goes on from are closed with
+            // a line under them, as the end of the table is, the line the
+            // first row of the next page draws over itself: the grid was open
+            // at the bottom of every page but the last. A footer row draws
+            // that line itself.
+            closeAt = (more && footer == tableData.Count && EndsWithLine()) ? end : -1;
             DrawSpansFromAbove(page, x, y, first, end);
         }
         for (int r = first; r < end; r++) {
@@ -1342,12 +1370,14 @@ public class Table : IDrawable {
                             + "an image or another drawable is drawn whole and cannot be split across pages. "
                             + "Put the text in a text cell, which is split across pages, or make the cell smaller.",
                             r, heights[r], page.height - bottomMargin - top)));
+                    closeAt = -1;
                     return new float[] {x, y};
                 }
                 DrawRow(page, tableData[r], x, y, heights, r, end, StructElem.TD);
             }
             y += heights[r];
         }
+        closeAt = -1;
         if (more) {
             rendered = end;
             SetFooterSums(first, end);
@@ -1455,7 +1485,17 @@ public class Table : IDrawable {
                     if (cell.backgroundColor != Cell.NO_COLOR) {
                         cell.DrawBackground(page, x, y, w, h);
                     }
+                    // A span that goes on to the next page as well is closed
+                    // at the bottom of this one.
+                    int end = Math.Min(s + cell.rowsSpanned, pageEnd);
+                    bool close = ClosesPage(cell, s, i, end, pageEnd);
+                    if (close) {
+                        cell.properties |= Border.BOTTOM;
+                    }
                     cell.DrawBorders(page, x, y, w, h);
+                    if (close) {
+                        cell.properties &= ~Border.BOTTOM;
+                    }
                 }
             }
             x += w;
@@ -1846,18 +1886,26 @@ public class Table : IDrawable {
         }
     }
 
-    // Sets the bottom border on all cells in the last row.
-    private void SetBottomBorderOnLastRow() {
+    // True when the table ends with a line under its last row: when all the
+    // cells in its first row have top border.
+    private bool EndsWithLine() {
         if (tableData.Count == 0) {
-            return;
+            return false;
         }
-        List<Cell> firstRow = tableData[0];
-        foreach (Cell cell in firstRow) {
+        foreach (Cell cell in tableData[0]) {
             if (cell.GetBorder(Border.TOP) == false) {
-                return;
+                return false;
             }
         }
+        return true;
+    }
+
+    // Sets the bottom border on all cells in the last row.
+    private void SetBottomBorderOnLastRow() {
         // Only run this code if all the cells in the first row have top border.
+        if (!EndsWithLine()) {
+            return;
+        }
         List<Cell> lastRow = tableData[tableData.Count - 1];
         foreach (Cell cell in lastRow) {
             cell.SetBorder(Border.BOTTOM, true);

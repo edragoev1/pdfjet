@@ -432,6 +432,88 @@ public sealed class TableTest : IDisposable {
         return list;
     }
 
+    // The lines of the page at the rule at y, each as "x1 x2".
+    private static List<string> LinesAt(Page page, float y) {
+        List<string> lines = new List<string>();
+        foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(TestSupport.Content(page),
+                        "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")) {
+            float y1 = float.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
+            float y2 = float.Parse(m.Groups[4].Value, System.Globalization.CultureInfo.InvariantCulture);
+            if (y1 == y && y2 == y) {
+                lines.Add(m.Groups[1].Value + " " + m.Groups[3].Value);
+            }
+        }
+        return lines;
+    }
+
+    // A table that goes on to the next page left the rows of each page but
+    // the last open at the bottom, as the line under a row is the top border
+    // of the row under it, which is on the next page: each page is closed
+    // with that line now, as the end of the table is.
+    [Fact]
+    public void EachPageOfATableThatGoesOnIsClosedWithALine() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Table table = new Table().SetTableData(Rows(font, 200, 2), 1);
+        table.SetLocation(50f, 50f);
+        table.SetBottomMargin(50f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.True(pages.Count > 2, "pages " + pages.Count);
+        for (int i = 0; i < pages.Count; i++) {
+            Page page = pages[i];
+            string content = TestSupport.Content(page);
+            int rowsOnPage = 0;
+            for (int r = 0; r < 200; r++) {
+                if (content.Contains(TestSupport.Hex("r" + r + "c0"))) {
+                    rowsOnPage++;
+                }
+            }
+            // A rule over each row, and one under the last.
+            List<float> ys = Rules(page);
+            Assert.True(rowsOnPage + 1 == ys.Count, "page " + (i + 1) + ": " + ys.Count + " rules");
+            // The line under the last row is the line the top of a row draws.
+            float bottom = ys[ys.Count - 1];
+            float above = ys[ys.Count - 2];
+            Assert.Equal(LinesAt(page, above), LinesAt(page, bottom));
+        }
+        // The cells keep their borders: the line was drawn for the page alone.
+        // The header row has a line under it, and the last row of the table.
+        for (int r = 1; r < 199; r++) {
+            Assert.False(table.GetCellAt(r, 0).GetBorder(Border.BOTTOM), "row " + r);
+        }
+    }
+
+    // A table without lines is not closed with one.
+    [Fact]
+    public void ATableWithoutLinesIsNotClosedWithALine() {
+        PDF pdf = TestSupport.NewPDF();
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 200, 2), 1);
+        table.SetCellBorders(false);
+        table.SetLocation(50f, 50f);
+        table.SetBottomMargin(50f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.True(pages.Count > 2, "pages " + pages.Count);
+        foreach (Page page in pages) {
+            Assert.Empty(Rules(page));
+        }
+    }
+
+    // A table that fits on its page has the lines it had: a rule over each
+    // row, and the one under the last.
+    [Fact]
+    public void ATableOnOnePageHasTheLinesItHad() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 10, 2), 1);
+        table.SetLocation(50f, 50f);
+        table.DrawOn(page);
+        Assert.Equal(11, Rules(page).Count);
+        Assert.Equal(2, LinesAt(page, Rules(page)[10]).Count);
+    }
+
     // A table of rows by columns of cells with every border, the cell at 0,0
     // spanning the rows.
     private static List<List<Cell>> Spanning(Font font, int rows, int columns, int rowspan) {
