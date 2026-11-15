@@ -18,5 +18,9 @@ for /L %%i in (1,1,51) do (
         "%BIN%\Example_%%i.exe"
     )
 )
+REM Example_52 shapes with Core Text, Apple's, which Windows does not have.
+for /L %%i in (53,1,85) do (
+    "%BIN%\Example_%%i.exe"
+)
 
 pause

@@ -12,7 +12,9 @@ rm -rf .build
 swift build --configuration release -Xswiftc -warnings-as-errors
 bin=$(swift build --configuration release --show-bin-path)
 
-for i in $(seq 1 51);
+# Example_52 shapes with Core Text, Apple's, which Linux and Windows do not
+# have, so it is not run here.
+for i in $(seq 1 51) $(seq 53 85);
 do
     if [ $i -lt 10 ]; then
         "$bin/Example_0$i"
