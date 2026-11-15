@@ -197,7 +197,7 @@ A Font is created once for a PDF and used by any number of text lines, blocks an
 The classes of the com.pdfjet.fonts package, such as IBMPlexSans, IBMPlexSerif and CascadiaMono, name the font files that come with PDFjet: IBM Plex in its Sans and Serif families and, in the package of the other scripts, in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; and Cascadia Mono. PDFjet embeds only the glyphs a document uses.
 
 @snippet font-files Fonts from files
-Any OpenType or TrueType font file is a font for PDFjet: pass its path, or an input stream of it, to the Font constructor.
+Any OpenType (.otf) or TrueType (.ttf) font file is a font for PDFjet: pass its path, or an input stream of it, to the Font constructor. The fonts that come with PDFjet are .otf files; Example_07 draws in a .ttf.
 
 A PDF that embeds a font carries a copy of it, so the font's license has to allow that. Use the fonts that come with PDFjet first, all under the SIL Open Font License; then the fonts of fonts.google.com, all under licenses that allow embedding; and any other font only when its license says so, the SIL Open Font License being the one to look for. The fonts of Windows and macOS, such as Georgia or Tahoma, are licensed for that computer, not for copying to a server to make PDFs there.
 

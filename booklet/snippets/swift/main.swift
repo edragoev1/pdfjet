@@ -105,11 +105,10 @@ func fonts(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet font-files
 func fontFiles(_ pdf: PDF, _ font: Font) throws {
-    let otf = try Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
-    let ttf = try Font(pdf, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf")
+    // The path of any .otf or .ttf file: here a font PDFjet carries
+    let file = try Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
     let page = Page(pdf, Letter.PORTRAIT)
-    TextLine(otf, "An OpenType font").setLocation(50, 50).drawOn(page)
-    TextLine(ttf, "A TrueType font").setLocation(50, 75).drawOn(page)
+    TextLine(file, "A font from its file").setLocation(50, 50).drawOn(page)
 }
 
 // @snippet core-fonts

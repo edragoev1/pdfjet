@@ -150,11 +150,10 @@ func fonts(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet font-files
 func fontFiles(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	otf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
-	ttf := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf")
+	// The path of any .otf or .ttf file: here a font PDFjet carries
+	file := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
 	page := pdfjet.NewPage(pdf, letter.Portrait())
-	pdfjet.NewTextLine(otf, "An OpenType font").SetLocation(50, 50).DrawOn(page)
-	pdfjet.NewTextLine(ttf, "A TrueType font").SetLocation(50, 75).DrawOn(page)
+	pdfjet.NewTextLine(file, "A font from its file").SetLocation(50, 50).DrawOn(page)
 }
 
 // @snippet core-fonts

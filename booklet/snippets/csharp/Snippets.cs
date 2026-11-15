@@ -111,11 +111,10 @@ public class Snippets {
 
     // @snippet font-files
     static void FontFiles(PDF pdf, Font font) {
-        Font otf = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
-        Font ttf = new Font(pdf, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf");
+        // The path of any .otf or .ttf file: here a font PDFjet carries
+        Font file = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(otf, "An OpenType font").SetLocation(50f, 50f).DrawOn(page);
-        new TextLine(ttf, "A TrueType font").SetLocation(50f, 75f).DrawOn(page);
+        new TextLine(file, "A font from its file").SetLocation(50f, 50f).DrawOn(page);
     }
 
     // @snippet core-fonts

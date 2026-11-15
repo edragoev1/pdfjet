@@ -119,11 +119,10 @@ public class Snippets {
 
     // @snippet font-files
     static void fontFiles(PDF pdf, Font font) throws Exception {
-        Font otf = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
-        Font ttf = new Font(pdf, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf");
+        // The path of any .otf or .ttf file: here a font PDFjet carries
+        Font file = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(otf, "An OpenType font").setLocation(50f, 50f).drawOn(page);
-        new TextLine(ttf, "A TrueType font").setLocation(50f, 75f).drawOn(page);
+        new TextLine(file, "A font from its file").setLocation(50f, 50f).drawOn(page);
     }
 
     // @snippet core-fonts

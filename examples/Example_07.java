@@ -12,10 +12,12 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_07.java
- * This example reads fonts from OpenType and TrueType files. Any .otf or
- * .ttf file on the computer is a font for PDFjet. A font is
- * embedded as a subset of the glyphs the document draws, unless it is set
- * to stay whole.
+ * This example draws in fonts read from their files. PDFjet works with any
+ * TrueType (.ttf) or OpenType (.otf) font file: pass the path of the file to
+ * the Font constructor. The fonts PDFjet carries are .otf files; the third
+ * font here is a .ttf on purpose, IBM's TrueType edition of IBM Plex Sans in
+ * examples/fonts, to show a .ttf at work. A font is embedded as a subset of
+ * the glyphs the document draws, unless it is set to stay whole.
  */
 public class Example_07 {
     public Example_07() throws Exception {
@@ -36,14 +38,13 @@ public class Example_07 {
         text.drawOn(page);
 
         TextBlock textBlock = new TextBlock(f1,
-                "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
-                + "of any .otf or .ttf file on the computer to the Font constructor. "
-                + "The font constants, such as IBMPlexSans and IBMPlexSansJP, "
-                + "are the paths of the fonts that come with PDFjet. A font is embedded with only the "
-                + "glyphs the document draws, which keeps the file small, whatever its "
-                + "outlines. The paragraph below is drawn four times, the second and the third "
-                + "in the same design, IBM Plex Sans: from the .otf PDFjet carries, and from "
-                + "IBM's .ttf, which the examples have in examples/fonts.");
+                "PDFjet works with any TrueType (.ttf) or OpenType (.otf) font file: pass "
+                + "the path of the file to the Font constructor. The fonts that come with "
+                + "PDFjet, the font constants such as IBMPlexSans and IBMPlexSansJP, are "
+                + ".otf files. The paragraph below is drawn four times; the third is from a "
+                + ".ttf file on purpose: IBM's TrueType edition of IBM Plex Sans, which the "
+                + "examples have in examples/fonts, the same design as the second. A font is "
+                + "embedded with only the glyphs the document draws, which keeps the file small.");
         textBlock.setFontSize(12f);
         textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 95f);
