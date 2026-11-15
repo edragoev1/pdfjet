@@ -109,6 +109,7 @@ public class Stamp : Drawable {
             pdf.fail("The font belongs to another PDF.")
             return self
         }
+        font.referenced = true
         if !fonts.contains(where: { $0 === font }) {
             fonts.append(font)
         }
@@ -435,6 +436,49 @@ public class Stamp : Drawable {
 
         pdf.stamps.append(self)
         objNumber = pdf.getObjNumber()
+    }
+
+    // A stamp of the outline of a glyph, which Page.drawGlyphs draws once and
+    // places wherever the glyph is drawn: the path in the units of the font,
+    // y up, filled in the color of the page it is placed on, the box of its
+    // points its bounding box, its content compressed. The placement scales
+    // the units to the size of the font.
+    static func ofGlyph(_ pdf: PDF, _ path: GlyphOutline.Path) -> Stamp {
+        let stamp = Stamp(pdf)
+        stamp.completed = true
+        stamp.width = Float(path.xMax - path.xMin)
+        stamp.height = Float(path.yMax - path.yMin)
+        var compressed = [UInt8]()
+        FlateEncode(&compressed, Array((path.operators + "f\n").utf8), pdf.flateMemory)
+        let content = pdf.encrypted(compressed)
+        pdf.newObj()
+        pdf.append("<<\n/Type /XObject\n/Subtype /Form\n/BBox [")
+        pdf.append(GlyphOutline.decimals(path.xMin.rounded(.down), 0))
+        pdf.append(" ")
+        pdf.append(GlyphOutline.decimals(path.yMin.rounded(.down), 0))
+        pdf.append(" ")
+        pdf.append(GlyphOutline.decimals(path.xMax.rounded(.up), 0))
+        pdf.append(" ")
+        pdf.append(GlyphOutline.decimals(path.yMax.rounded(.up), 0))
+        pdf.append("]\n/Resources <<>>\n/Filter /FlateDecode\n/Length ")
+        pdf.append(content.count)
+        pdf.append("\n>>\nstream\n")
+        pdf.append(content)
+        pdf.append("\nendstream\n")
+        pdf.endObj()
+        pdf.stamps.append(stamp)
+        stamp.objNumber = pdf.getObjNumber()
+        return stamp
+    }
+
+    // Places the stamp of a glyph on the page, by the matrix of the
+    // placement, its six numbers written: q, the matrix, Do and Q.
+    func placeGlyph(_ page: Page, _ matrix: String) {
+        page.append("q ")
+        page.append(matrix)
+        page.append(" cm ")
+        page.append(page.resourceName("/XObject", "/Fm", objNumber ?? 0, [], objNumber ?? 0))
+        page.append(" Do Q\n")
     }
 
     private func drawText(_ font: Font, _ str: String) {

@@ -30,6 +30,11 @@ public class Font {
     var baseFont = ""                   // The name it is embedded under, with the tag of a subset
     var program: Subset.Program?        // A TrueType font program, until complete()
     var kept: [Bool]?                   // The glyphs its subset keeps
+    // Whether drawGlyphs drew with the font, which it draws as outlines, and
+    // whether anything draws with it as a font, text or a stamp's: a font
+    // drawGlyphs alone drew with is not written into the document.
+    var drawnAsOutlines = false
+    var referenced = false
 
     // Font attributes
     var unitsPerEm = 1000
@@ -623,6 +628,12 @@ public class Font {
         return self
     }
 
+    // Whether the font is not written into the document: drawGlyphs alone
+    // drew with it, as outlines, which need no font.
+    func outlinesOnly() -> Bool {
+        return drawnAsOutlines && !referenced
+    }
+
     // Records that the glyph is drawn with the font.
     func useGlyph(_ gid: Int) {
         program?.used.add(gid)
@@ -640,19 +651,6 @@ public class Font {
     // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
     // 2026, #8). The first character drawn with the glyph is kept; the others
     // drawn with it are given their own as actual text, see drawnAsAnother.
-    // Records the text a glyph that no character maps to stands for, drawn by
-    // drawGlyphs, for the ToUnicode map: a glyph with a character of its own
-    // keeps it.
-    func useGlyphText(_ gid: Int, _ text: String) {
-        guard let program = program, gid > 0, !text.isEmpty else {
-            return
-        }
-        if gid < unicodeOf.count && unicodeOf[gid] >= 0 {
-            return
-        }
-        program.useText(gid, text)
-    }
-
     func useChar(_ c: Int, _ gid: Int) {
         if let program = program, gid > 0, unicodeToGID[c] == gid {
             program.chars.use(gid, c)

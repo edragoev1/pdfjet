@@ -8,63 +8,116 @@ import Foundation
 import Testing
 @testable import PDFjet
 
-/// drawGlyphs draws glyphs another engine shaped, by their numbers, as real
-/// text: a span of actual text for each cluster, each glyph at its place, and
-/// the glyphs no character maps to mapped to their cluster's letters in
-/// ToUnicode, or to the zero width space.
+/// drawGlyphs draws glyphs another engine shaped, by their numbers, as
+/// outlines read from the font file: paths, no text and no font in the
+/// document; a glyph drawn more than once a form XObject placed wherever it
+/// is; in a tagged document marked content with the text as its actual text.
 @Suite struct DrawGlyphsTests {
-    // The first glyph of the font no character maps to, like a conjunct
-    private func unmappedGlyph(_ font: Font) -> Int {
-        for gid in 1..<font.unicodeOf.count where font.unicodeOf[gid] < 0 {
-            return gid
-        }
-        Issue.record("the font maps every glyph")
-        return 0
-    }
+    private static let devanagari = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
+    private static let cascadia = "fonts/CascadiaMono/CascadiaMono-Regular.ttf"
 
     private func count(_ text: String, _ part: String) -> Int {
         text.components(separatedBy: part).count - 1
     }
 
-    @Test func theGlyphsAreRealTextInATaggedParagraph() throws {
-        let memory = MemoryPDF(Compliance.PDF_UA_1)
-        memory.pdf.setTitle("Title")
+    // The index of the bytes of the text in the document from the index, or nil.
+    private func find(_ doc: [UInt8], _ text: String, _ from: Int) -> Int? {
+        let part = Array(text.utf8)
+        var i = from
+        while i + part.count <= doc.count {
+            if doc[i] == part[0] && Array(doc[i..<(i + part.count)]) == part {
+                return i
+            }
+            i += 1
+        }
+        return nil
+    }
+
+    // The content of each form XObject of the document, inflated.
+    private func forms(_ doc: [UInt8]) throws -> [String] {
+        var forms = [String]()
+        var from = 0
+        while let form = find(doc, "/Subtype /Form", from) {
+            let start = find(doc, "stream\n", form)! + 7
+            let end = find(doc, "\nendstream", start)!
+            forms.append(TestSupport.latin1(try TestSupport.inflate(Array(doc[start..<end]))))
+            from = end
+        }
+        return forms
+    }
+
+    @Test func theGlyphsAreOutlinesAndNoFontIsWritten() throws {
+        let memory = MemoryPDF()
         let font = try TestSupport.plexSans(memory.pdf)
         font.setSize(12)
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let a = font.unicodeToGID[0x41]
-        let x = unmappedGlyph(font)
-        page.addBDC(StructElem.P, "en", nil, nil)
-        page.drawGlyphs(font, [a, x], [50, 100, 60, 100], [0, 1], "AXY", "hi")
-        page.addEMC()
+        let b = font.unicodeToGID[0x42]
+        page.drawGlyphs(font, [a, b], [50, 100, 60, 100], "AB", "en")
         let content = TestSupport.content(page)
-        // The language around them all, then a span of actual text for each
-        // cluster, its glyphs in a TJ array
-        #expect(content.contains("/Span <</Lang <" + memory.pdf.toHex("hi") + ">>> BDC\nBT\n"), "\(content)")
-        #expect(content.contains("/Span <</ActualText <" + Page.toUTF16Hex("A") + ">>> BDC\n"
-                + "1 0 0 1 50 692 Tm\n[<" + String(format: "%04X", a) + ">] TJ\nEMC\n"), "\(content)")
-        #expect(content.contains("/Span <</ActualText <" + Page.toUTF16Hex("XY") + ">>> BDC\n"
-                + "1 0 0 1 60 692 Tm\n[<" + String(format: "%04X", x) + ">] TJ\nEMC\nET\nEMC\n"), "\(content)")
-        #expect(count(content, "BDC\n") == 4, "\(content)")   // The paragraph's, the language's, two spans
-        // The unmapped glyph maps to its cluster's letters, "XY"; the mapped
-        // one keeps its own
-        let map = FontWriter.toUnicodeCMap(font, nil).lowercased()
-        #expect(map.contains("<" + String(format: "%04x", x) + "> <00580059>"), "\(map)")
-        #expect(!map.contains("<" + String(format: "%04x", a) + "> <0058"), "\(map)")
-        #expect(memory.pdf.error == nil)
+        // Each placed by the matrix of the em at its place
+        #expect(content.contains("q 0.012 0 0 0.012 50 692 cm /Fm"), "\(content)")
+        #expect(content.contains("q 0.012 0 0 0.012 60 692 cm /Fm"), "\(content)")
+        #expect(!content.contains("BT"), "\(content)")
+        #expect(!content.contains("Tf"), "\(content)")
+        #expect(!content.contains("BDC"), "\(content)")     // Untagged: just the shapes
+        try memory.pdf.complete()
+        let doc = TestSupport.latin1(memory.bytes)
+        #expect(!doc.contains("/FontFile"), "no font program")
+        #expect(!doc.contains("/Type /Font"), "no font")
+        #expect(!doc.contains("/ToUnicode"), "no ToUnicode map")
+        // The outlines: paths in the font's units, filled, no text
+        let forms = try forms(memory.bytes)
+        #expect(forms.count == 2)
+        for form in forms {
+            #expect(form.contains(" m\n") && form.contains(" l\n") && form.hasSuffix("f\n"), "\(form)")
+            #expect(!form.contains("BT") && !form.contains("Tj"), "\(form)")
+        }
     }
 
-    @Test func anUnmappedGlyphBesideALetterTheClusterLacksIsTheZeroWidthSpace() throws {
-        // As Khmer's ោ, drawn as the glyph of េ and a second part: the letters
-        // cannot add up to the cluster's, and MuPDF would copy it twice
+    @Test func aGlyphDrawnTwiceIsOneStampPlacedTwice() throws {
+        let memory = MemoryPDF()
+        let font = try TestSupport.plexSans(memory.pdf)
+        font.setSize(10)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let a = font.unicodeToGID[0x41]
+        let b = font.unicodeToGID[0x42]
+        let space = font.unicodeToGID[0x20]
+        page.drawGlyphs(font, [a, space, b, a], [50, 100, 60, 100, 65, 100, 70, 100], "A BA", nil)
+        var content = TestSupport.content(page)
+        let regex = try NSRegularExpression(pattern: "q 0.01 0 0 0.01 (50|70) 692 cm (/Fm\\d+) Do Q\n")
+        let matches = regex.matches(in: content, range: NSRange(content.startIndex..., in: content))
+        #expect(matches.count == 2, "\(content)")
+        let name = String(content[Range(matches[0].range(at: 2), in: content)!])
+        #expect(String(content[Range(matches[1].range(at: 2), in: content)!]) == name)
+        #expect(count(content, " Do Q\n") == 3, "\(content)")   // The space draws nothing
+        // Drawn again, in another run and at another size, A is placed again
+        font.setSize(20)
+        page.drawGlyphs(font, [a], [80, 100], "A", nil)
+        content = TestSupport.content(page)
+        #expect(content.contains("q 0.02 0 0 0.02 80 692 cm " + name + " Do Q\n"), "\(content)")
+        try memory.pdf.complete()
+        let doc = TestSupport.latin1(memory.bytes)
+        #expect(count(doc, "/Subtype /Form") == 2, "A and B, each once")
+        #expect(doc.contains(name + " "), "the stamp is a resource")
+    }
+
+    @Test func inATaggedParagraphTheGlyphsCarryTheirText() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Title")
         let font = try TestSupport.plexSans(memory.pdf)
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        let x = unmappedGlyph(font)
-        page.drawGlyphs(font, [font.unicodeToGID[0x42], x], [50, 100, 60, 100], [0, 0], "XY", "en")
-        let map = FontWriter.toUnicodeCMap(font, nil).lowercased()
-        #expect(map.contains("<" + String(format: "%04x", x) + "> <200b>"), "\(map)")
+        let a = font.unicodeToGID[0x41]
+        page.addBDC(StructElem.P, "hi", nil, nil)
+        page.drawGlyphs(font, [a], [50, 100], "\u{0915}", "hi")
+        page.addEMC()
+        let content = TestSupport.content(page)
+        #expect(content.contains("/P <</MCID 0>>\nBDC\n/Span <</Lang <" + memory.pdf.toHex("hi")
+                + "> /ActualText <" + Page.toUTF16Hex("\u{0915}") + ">>> BDC\nq "), "\(content)")
+        #expect(content.contains(" Do Q\nEMC\nEMC\n"), "\(content)")
+        #expect(count(content, "BDC\n") == 2, "\(content)")
+        try memory.pdf.complete()
+        #expect(!TestSupport.latin1(memory.bytes).contains("/FontFile"), "no font program")
     }
 
     @Test func outsideAnyContentTheGlyphsAreAParagraphOfTheirOwn() throws {
@@ -72,22 +125,94 @@ import Testing
         memory.pdf.setTitle("Title")
         let font = try TestSupport.plexSans(memory.pdf)
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        page.drawGlyphs(font, [font.unicodeToGID[0x41]], [50, 100], nil, "A", "en")
+        let a = font.unicodeToGID[0x41]
+        page.drawGlyphs(font, [a], [50, 100], "A", nil)
         let content = TestSupport.content(page)
-        #expect(content.hasPrefix("/P <</MCID 0>>\nBDC\n/Span <<"), "\(content)")
-        #expect(content.hasSuffix("ET\nEMC\nEMC\n"), "\(content)")
-        #expect(page.structures.count == 1)
+        #expect(content.contains("/P <</MCID 0>>\nBDC\n/Span <</ActualText <" + Page.toUTF16Hex("A")
+                + ">>> BDC\n"), "\(content)")
+        #expect(memory.pdf.error == nil)
+        // A tagged document asks for the text the glyphs stand for
+        let next = Page(memory.pdf, Letter.PORTRAIT)
+        next.drawGlyphs(font, [a], [50, 100], nil, nil)
+        #expect(memory.pdf.error != nil)
     }
 
-    @Test func anUntaggedPageHasTheSpansOfActualTextAlone() throws {
+    @Test func aFontUsedForTextTooIsWritten() throws {
         let memory = MemoryPDF()
         let font = try TestSupport.plexSans(memory.pdf)
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        page.drawGlyphs(font, [font.unicodeToGID[0x41]], [50, 100], nil, "A", nil)
-        let content = TestSupport.content(page)
-        #expect(content.hasPrefix("BT\n"), "\(content)")
-        #expect(content.contains("/Span <</ActualText <" + Page.toUTF16Hex("A") + ">>> BDC\n"), "\(content)")
-        #expect(!content.contains("MCID"), "\(content)")
+        let a = font.unicodeToGID[0x41]
+        page.drawGlyphs(font, [a], [50, 100], "A", nil)
+        TextLine(font, "Text").setLocation(50, 200).drawOn(page)
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains("/FontFile3"), "the font of the text line")
+    }
+
+    @Test func trueTypeOutlinesAreCubicCurvesAndCompositesHaveTheirParts() throws {
+        let pdf = TestSupport.newPDF()
+        let cascadia = try Font(pdf, TestSupport.open(DrawGlyphsTests.cascadia))
+        let outline = try GlyphOutline(cascadia.program!.font, false)
+        #expect(abs(outline.matrixOf(1)[0] - 1.0 / 2048) < 1e-12)
+        // O: two contours of quadratic curves, drawn as cubic ones
+        let o = try outline.outline(cascadia.unicodeToGID[0x4F]).operators
+        #expect(count(o, " m\n") == 2, "\(o)")
+        #expect(o.contains(" c\n"), "\(o)")
+        // Aacute, a composite glyph: the contours of A and of the acute
+        let aacute = cascadia.unicodeToGID[0x00C1]
+        let capitalA = try outline.outline(cascadia.unicodeToGID[0x41]).operators
+        let composite = try outline.outline(aacute).operators
+        #expect(count(composite, " m\n") > count(capitalA, " m\n"), "\(composite)")
+        #expect(composite.hasPrefix(capitalA) || composite.hasSuffix(capitalA), "\(composite)")
+
+        let devanagari = try Font(pdf, TestSupport.open(DrawGlyphsTests.devanagari))
+        let noto = try GlyphOutline(devanagari.program!.font, false)
+        let ii = try noto.outline(12).operators     // iideva, a composite glyph
+        #expect(ii.contains(" m\n") && ii.contains(" c\n"), "\(ii)")
+        #expect(try noto.outline(devanagari.unicodeToGID[0x20]).operators == "")
+    }
+
+    @Test func cffOutlinesHaveTheirSubroutinesAndMatrix() throws {
+        let pdf = TestSupport.newPDF()
+        let plex = try TestSupport.plexSans(pdf)
+        let outline = try GlyphOutline(plex.program!.font, true)
+        #expect(abs(outline.matrixOf(1)[0] - 0.001) < 1e-12)
+        let o = try outline.outline(plex.unicodeToGID[0x4F])
+        #expect(count(o.operators, " m\n") == 2, "\(o.operators)")
+        #expect(o.yMin < 0 && o.yMax > 600, "\(o.yMin) \(o.yMax)")
+        #expect(try outline.outline(plex.unicodeToGID[0x20]).operators == "")
+    }
+
+    @Test func numbersAreHundredthsRoundedHalfAwayFromZero() {
+        #expect(GlyphOutline.decimals(-0.004, 2) == "0")
+        #expect(GlyphOutline.decimals(1.5, 2) == "1.5")
+        #expect(GlyphOutline.decimals(-8.0 / 3, 2) == "-2.67")
+        #expect(GlyphOutline.decimals(12.0 / 2048, 7) == "0.0058594")
+        #expect(GlyphOutline.decimals(99.999, 2) == "100")
+    }
+
+    @Test func attachTextCarriesTheTextAsAnAssociatedFile() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Title")
+        let font = try TestSupport.plexSans(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextLine(font, "Text").setLocation(50, 200).drawOn(page)
+        try memory.pdf.attachText("article-1.txt", "\u{0938}\u{092d}\u{0940} text")
+        try memory.pdf.complete()
+        let doc = TestSupport.latin1(memory.bytes)
+        #expect(doc.contains("/Subtype /text#2Fplain;#20charset=utf-8"), "the media type")
+        #expect(doc.contains("/AFRelationship /Source"), "the relationship")
+        #expect(doc.contains("/AF ["), "an associated file")
+        #expect(doc.contains("/Desc "), "the description")
+    }
+
+    @Test func attachTextIsRefusedInPDFA1AndPDFA2() throws {
+        for compliance in [Compliance.PDF_A_1B, Compliance.PDF_A_2B] {
+            let memory = MemoryPDF(compliance)
+            #expect(throws: (any Error).self) {
+                try memory.pdf.attachText("a.txt", "text")
+            }
+            #expect(memory.pdf.error != nil)
+        }
     }
 
     @Test func misuseIsReported() throws {
@@ -100,10 +225,9 @@ import Testing
             draw(page, plex, core, plex.unicodeToGID[0x41])
             #expect(memory.pdf.error != nil)
         }
-        try check { page, _, core, _ in page.drawGlyphs(core, [1], [0, 0], nil, "A", nil) }
-        try check { page, plex, _, a in page.drawGlyphs(plex, [a], [0], nil, "A", nil) }
-        try check { page, plex, _, _ in page.drawGlyphs(plex, [plex.advanceWidth.count], [0, 0], nil, "A", nil) }
-        try check { page, plex, _, a in page.drawGlyphs(plex, [a], [0, 0], [1], "A", nil) }
-        try check { page, plex, _, a in page.drawGlyphs(plex, [a], [0, 0], [0, 0], "A", nil) }
+        try check { page, _, core, _ in page.drawGlyphs(core, [1], [0, 0], "A", nil) }
+        try check { page, plex, _, a in page.drawGlyphs(plex, [a], [0], "A", nil) }
+        try check { page, plex, _, _ in page.drawGlyphs(plex, [plex.advanceWidth.count], [0, 0], "A", nil) }
+        try check { page, plex, _, _ in page.drawGlyphs(plex, [-1], [0, 0], "A", nil) }
     }
 }

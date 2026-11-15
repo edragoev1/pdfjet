@@ -2436,6 +2436,7 @@ public class Page {
         writtenFont = font
         writtenFontSize = fontSize
         writtenFontPrecise = precise
+        font.referenced = true
         if font.fontID != nil {
             append("/")
             append(font.fontID!)
@@ -2991,190 +2992,117 @@ public class Page {
         }
     }
 
-    // Begins the marked content of a shape, like a line or an arc: a
-    // paragraph when it is given an alternate description or an actual text,
-    // which a screen reader reads, and otherwise an artifact, the decoration
-    // it is.
     /// Draws glyphs that another text engine shaped -- Apple's Core Text,
     /// HarfBuzz, Java's java.awt.font, Android's TextShaper -- by their
-    /// numbers in the font, at their places, as real text: the text they stand
-    /// for is their actual text, so that copying, searching and screen readers
-    /// get it. This is how text PDFjet does not shape itself, such as Hindi or
-    /// Khmer, is drawn as text: the engine finds the glyphs and their places,
-    /// and PDFjet draws them.
+    /// numbers in the font, at their places, as outlines: each glyph is drawn
+    /// as the shape the font file gives it, filled in the page's brush color.
+    /// This is how text PDFjet does not shape itself, such as Hindi or Khmer,
+    /// is drawn: the engine finds the glyphs and their places, and PDFjet
+    /// draws them.
     ///
-    /// The glyph numbers must be those of the font file the engine shaped
-    /// with, loaded as this font, and the font must be embedded: not a core
-    /// font or a CJK font. The glyphs are drawn in the font's size and the
-    /// page's brush color. In a tagged document the glyphs are part of the
-    /// content they are drawn in, such as a paragraph begun with addBDC, or,
-    /// drawn outside any, a paragraph of their own in the language given.
+    /// What the outlines give: the text looks as the engine shaped it, on any
+    /// screen and in print, with no font in the document, as the font is only
+    /// read for its outlines. In a tagged document, PDF/UA or a PDF/A of level
+    /// A, the glyphs are part of the content they are drawn in, such as a
+    /// paragraph begun with addBDC, or, drawn outside any, a paragraph of
+    /// their own; the text they stand for is their actual text, in the
+    /// language given, which screen readers read. What they do not give: the
+    /// text cannot be selected, copied or searched, as it is not text. A
+    /// document that needs its exact text along can carry it with
+    /// PDF.attachText.
     ///
-    /// The clusters say which characters of the text each glyph comes from, as
-    /// the engine reports them (Core Text's string indices): for each glyph,
-    /// the index in the text, in UTF-16 code units, of the first character of
-    /// its cluster. Each cluster, with the glyphs drawn for it, is a span of
-    /// actual text, so that copying gets the text in order. Without clusters
-    /// (nil), all the glyphs are one span. A glyph no character of the font
-    /// maps to, such as a conjunct, is mapped in the ToUnicode map PDF/UA asks
-    /// of every glyph drawn to the characters of its cluster the cluster's
-    /// other glyphs do not give, so that viewers that read ToUnicode alone copy
-    /// the same; to the zero width space, U+200B, when they give them all, and
-    /// without clusters.
+    /// Each glyph is drawn once, as a form XObject of its outline, and placed
+    /// wherever it is drawn: a page of Hindi or Khmer draws some 150 glyphs
+    /// some 2,000 times. The glyph numbers must be those of the font file the
+    /// engine shaped with, loaded as this font: a TrueType font, or an
+    /// OpenType font of CFF outlines; not a core font or a CJK font.
     ///
     /// - Parameters:
     ///   - font: the font, loaded from the font file the engine shaped with.
     ///   - glyphs: the glyph numbers, in the order they are drawn.
     ///   - positions: the x and the baseline y of each glyph, in points from
     ///     the top left corner of the page: x0, y0, x1, y1 and so on.
-    ///   - clusters: for each glyph, the index in the text of the first
-    ///     character it comes from, or nil.
     ///   - text: the text the glyphs stand for, as it is read.
     ///   - language: the language of the text, such as "hi" or "km", or nil.
-    public func drawGlyphs(_ font: Font, _ glyphs: [Int], _ positions: [Float], _ clusters: [Int]?,
-            _ text: String, _ language: String?) {
-        if font.isCoreFont || font.isCJK || font.program == nil {
-            pdf.fail("drawGlyphs needs an embedded font, loaded from the font file the glyphs were shaped with.")
+    public func drawGlyphs(_ font: Font, _ glyphs: [Int], _ positions: [Float],
+            _ text: String?, _ language: String?) {
+        if let identity = font.pdfIdentity, identity != pdf.identity {
+            pdf.fail("The font belongs to another PDF.")
+            return
+        }
+        guard !font.isCoreFont && !font.isCJK, let program = font.program else {
+            pdf.fail("drawGlyphs needs a font loaded from the font file the glyphs were shaped with.")
             return
         }
         if positions.count != 2 * glyphs.count {
             pdf.fail("drawGlyphs needs an x and a y for each glyph.")
             return
         }
+        if program.outline == nil {
+            do {
+                program.outline = try GlyphOutline(program.font, program.cff)
+            } catch {
+                pdf.fail((error as? PDFjetError)?.message ?? "\(error)")
+                return
+            }
+            program.glyphStamps = [:]
+        }
+        let outline = program.outline!
         for gid in glyphs {
-            if gid < 0 || (!font.advanceWidth.isEmpty && gid >= font.advanceWidth.count) {
+            if gid < 0 || gid >= outline.count()
+                    || (!font.advanceWidth.isEmpty && gid >= font.advanceWidth.count) {
                 pdf.fail("The font has no glyph number \(gid).")
                 return
             }
         }
-        let units = Array(text.utf16)
-        if let clusters = clusters {
-            if clusters.count != glyphs.count {
-                pdf.fail("drawGlyphs needs a cluster for each glyph, or none.")
-                return
-            }
-            for c in clusters where c < 0 || c >= units.count {
-                pdf.fail("A cluster of drawGlyphs is outside the text.")
-                return
-            }
+        let tagged = pdf.isTagged() && artifactDepth == 0
+        if tagged && !glyphs.isEmpty && (text ?? "").isEmpty {
+            pdf.fail("drawGlyphs in a tagged document needs the text the glyphs stand for, which screen readers read.")
+            return
         }
         if glyphs.isEmpty {
             return
         }
+        font.drawnAsOutlines = true
         // A paragraph of their own, in a tagged document, drawn outside any
-        let own = pdf.isTagged() && !insideTaggedContent()
+        let own = tagged && !insideTaggedContent()
         if own {
             addBDC(StructElem.P, language, nil, nil)
         }
-        // The language of the glyphs, around them all
-        let languageSpan = !(language ?? "").isEmpty
-        if languageSpan {
-            append("/Span <</Lang <")
-            append(pdf.toHex(language!))
+        // The text they stand for, and its language, as the actual text of
+        // the marked content of the outlines (ISO 32000-1, 14.9.4)
+        if tagged {
+            append("/Span <<")
+            if let language = language, !language.isEmpty {
+                append("/Lang <")
+                append(pdf.toHex(language))
+                append("> ")
+            }
+            append("/ActualText <")
+            append(Page.toUTF16Hex(text!))
             append(">>> BDC\n")
         }
-        append("BT\n")
-        setTextFont(font, font.size)
-        if renderingMode != 0 || renderingModeSet {
-            renderingModeSet = renderingModeSet || renderingMode != 0
-            append(renderingMode)
-            append(" Tr\n")
-        }
-        // The clusters in order, so that a cluster's characters run to the
-        // next cluster
-        let starts = clusters?.sorted() ?? []
-        // The baseline: the y most of the glyphs are drawn at
-        let baseline = Page.baselineOf(positions)
-        // A span of actual text for each group of glyphs, the text they stand
-        // for, read in untagged documents too: a cluster, or the clusters a
-        // glyph drawn before its cluster joins, as a vowel sign of Hindi drawn
-        // before its consonant. MuPDF repeats or leaves out text when the
-        // glyphs of a span do not match its actual text, as one span for a
-        // whole line did; with clusters the spans tile the text, in order.
-        // Without clusters, one span for all the glyphs.
-        // The text of each glyph no character maps to, for ToUnicode
-        let glyphTexts = Page.glyphTexts(font, glyphs, clusters, starts, units)
-        // The smallest cluster of the glyphs from each on
-        var laterMin = [Int](repeating: Int.max, count: glyphs.count + 1)
-        if let clusters = clusters {
-            for k in stride(from: glyphs.count - 1, through: 0, by: -1) {
-                laterMin[k] = min(clusters[k], laterMin[k + 1])
+        let size = font.size
+        for k in 0..<glyphs.count {
+            let gid = glyphs[k]
+            // The glyph's stamp, made the first time it is drawn; nil for a
+            // glyph of no outline, as the space
+            if program.glyphStamps.index(forKey: gid) == nil {
+                let path: GlyphOutline.Path
+                do {
+                    path = try outline.outline(gid)
+                } catch {
+                    pdf.fail((error as? PDFjetError)?.message ?? "\(error)")
+                    return
+                }
+                program.glyphStamps[gid] = .some(path.operators.isEmpty ? nil : Stamp.ofGlyph(pdf, path))
+            }
+            if let stamp = program.glyphStamps[gid] ?? nil {
+                stamp.placeGlyph(self, Page.glyphMatrix(outline.matrixOf(gid), size,
+                        positions[2 * k], height - positions[2 * k + 1]))
             }
         }
-        var textEnd = 0  // The end of the text the spans before took
-        var i = 0
-        while i < glyphs.count {
-            var j = glyphs.count - 1
-            var end = units.count
-            if let clusters = clusters {
-                // The group grows while a later glyph belongs to its text
-                j = i
-                end = Page.clusterEnd(units.count, starts, clusters[i])
-                while j + 1 < glyphs.count && laterMin[j + 1] < end {
-                    j += 1
-                    end = max(end, Page.clusterEnd(units.count, starts, clusters[j]))
-                }
-                if j == glyphs.count - 1 {
-                    end = units.count
-                }
-            }
-            append("/Span <</ActualText <")
-            append(Page.toUTF16Hex(String(decoding: units[min(textEnd, end)..<end], as: UTF16.self)))
-            append(">>> BDC\n")
-            // The glyphs of the span in one array of text, as one run: MuPDF
-            // repeats a span's text for each run of glyphs it sees, and a
-            // glyph placed with its own Tm, a mark over the glyph before it,
-            // starts one. Each glyph is moved to the place the engine gave
-            // it by the adjustment of the array, against its advance in the
-            // font; a glyph off the baseline, as a subscript of Khmer, by
-            // the text rise, which ends the array and starts another.
-            let size = font.size
-            var rise: Float = 0
-            var open = false
-            var penX: Float = 0  // Where the next glyph would be drawn without an adjustment
-            for k in i...j {
-                let glyphX = positions[2 * k]
-                let glyphRise = baseline - positions[2 * k + 1]
-                if !open || glyphRise != rise {
-                    if open {
-                        append("] TJ\n")
-                    }
-                    if glyphRise != rise {
-                        append(glyphRise)
-                        append(" Ts\n")
-                        rise = glyphRise
-                    }
-                    append("1 0 0 1 ")
-                    append(glyphX)
-                    append(" ")
-                    append(height - baseline)
-                    append(" Tm\n[")
-                    penX = glyphX
-                    open = true
-                } else if glyphX != penX {
-                    append(" ")
-                    append(-1000 * (glyphX - penX) / size)
-                    append(" ")
-                    penX = glyphX
-                }
-                append("<")
-                appendGlyphUnkerned(font, glyphs[k])
-                append(">")
-                penX += Float(Page.advanceOf(font, glyphs[k])) * size / Float(font.unitsPerEm)
-                font.useGlyphText(glyphs[k], glyphTexts[k])
-            }
-            if open {
-                append("] TJ\n")
-            }
-            if rise != 0 {
-                append("0 Ts\n")
-            }
-            append("EMC\n")
-            textEnd = end
-            i = j + 1
-        }
-        append("ET\n")
-        if languageSpan {
+        if tagged {
             append("EMC\n")
         }
         if own {
@@ -3182,94 +3110,16 @@ public class Page {
         }
     }
 
-    // The text ToUnicode gives each glyph no character maps to: the
-    // characters of its cluster that the cluster's other glyphs do not give,
-    // as the conjunct of Hindi's क्ष its three characters, so that a viewer
-    // that reads ToUnicode alone, as pdf.js, copies the same letters as one
-    // that reads the actual text. The zero width space for the other glyphs
-    // of the cluster no character maps to, without clusters, and where a
-    // glyph of the cluster is a letter the cluster does not have, as the
-    // first part of Khmer's ោ, drawn as េ: there the letters of the glyphs
-    // cannot add up to the cluster's, and MuPDF, which then reads both the
-    // actual text and the letters, copies the cluster twice.
-    private static func glyphTexts(_ font: Font, _ glyphs: [Int], _ clusters: [Int]?, _ starts: [Int],
-            _ units: [UInt16]) -> [String] {
-        var texts = [String](repeating: "\u{200B}", count: glyphs.count)
-        guard let clusters = clusters else {
-            return texts
-        }
-        var byCluster = [Int: [Int]]()
-        for k in 0..<glyphs.count {
-            byCluster[clusters[k], default: []].append(k)
-        }
-        for (start, ks) in byCluster {
-            let end = Page.clusterEnd(units.count, starts, start)
-            var left = String(decoding: units[start..<end], as: UTF16.self).unicodeScalars.map { Int($0.value) }
-            var unmapped = -1
-            var adds = true  // Whether the letters of the glyphs can add up to the cluster's
-            for k in ks {
-                let gid = glyphs[k]
-                if gid < font.unicodeOf.count && font.unicodeOf[gid] >= 0 {
-                    if let i = left.firstIndex(of: Int(font.unicodeOf[gid])) {
-                        left.remove(at: i)
-                    } else {
-                        adds = false
-                    }
-                } else if unmapped < 0 {
-                    unmapped = k
-                }
-            }
-            if unmapped >= 0 && adds && !left.isEmpty {
-                var text = ""
-                for c in left {
-                    if let scalar = Unicode.Scalar(UInt32(c)) {
-                        text.unicodeScalars.append(scalar)
-                    }
-                }
-                texts[unmapped] = text
-            }
-        }
-        return texts
-    }
-
-    // The advance of the glyph in the font's units, 0 for a glyph past the
-    // font's widths.
-    private static func advanceOf(_ font: Font, _ gid: Int) -> Int {
-        if gid >= font.advanceWidth.count {
-            return 0
-        }
-        return Int(font.advanceWidth[gid])
-    }
-
-    // The y most of the glyphs are drawn at, the first of them on a tie.
-    private static func baselineOf(_ positions: [Float]) -> Float {
-        var counts = [Float: Int]()
-        for i in stride(from: 1, to: positions.count, by: 2) {
-            counts[positions[i], default: 0] += 1
-        }
-        var best = positions[1]
-        var bestCount = 0
-        for i in stride(from: 1, to: positions.count, by: 2) where counts[positions[i]]! > bestCount {
-            best = positions[i]
-            bestCount = counts[positions[i]]!
-        }
-        return best
-    }
-
-    // The end of the cluster that starts at start: the next cluster's start,
-    // or the end of the text.
-    private static func clusterEnd(_ textLength: Int, _ starts: [Int], _ start: Int) -> Int {
-        var low = 0
-        var high = starts.count
-        while low < high {
-            let middle = (low + high) / 2
-            if starts[middle] > start {
-                high = middle
-            } else {
-                low = middle + 1
-            }
-        }
-        return low < starts.count ? starts[low] : textLength
+    // The matrix that draws the units of a glyph at its place: its matrix to
+    // the em, times the size, moved to x and y, in the coordinates of PDF.
+    static func glyphMatrix(_ m: [Double], _ size: Float, _ x: Float, _ y: Float) -> String {
+        let s = Double(size)
+        return GlyphOutline.decimals(m[0] * s, 7) + " "
+                + GlyphOutline.decimals(m[1] * s, 7) + " "
+                + GlyphOutline.decimals(m[2] * s, 7) + " "
+                + GlyphOutline.decimals(m[3] * s, 7) + " "
+                + GlyphOutline.decimals(m[4] * s + Double(x), 2) + " "
+                + GlyphOutline.decimals(m[5] * s + Double(y), 2)
     }
 
     // Whether what is drawn now is inside real content of a tagged document:
@@ -3279,6 +3129,10 @@ public class Page {
         return pdf.isTagged() && markedContentDepth > 0 && artifactDepth == 0
     }
 
+    // Begins the marked content of a shape, like a line or an arc: a
+    // paragraph when it is given an alternate description or an actual text,
+    // which a screen reader reads, and otherwise an artifact, the decoration
+    // it is.
     func addShapeBDC(_ language: String?, _ actualText: String?, _ altDescription: String?) {
         if (altDescription ?? "").isEmpty && (actualText ?? "").isEmpty {
             addArtifactBMC()

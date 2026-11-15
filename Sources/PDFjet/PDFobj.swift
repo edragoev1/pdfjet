@@ -1187,6 +1187,7 @@ public final class PDFobj {
             _ font: Font,
             _ objects: inout [PDFobj]) {
         ownResources()
+        font.referenced = true
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
                 let token = tokenAt(dict, i + 1)

@@ -722,7 +722,8 @@ public final class PDF {
             append("/Font\n")
             append(Token.beginDictionary)
             appendImportedEntries(importedFonts)
-            for font in fonts {
+            for font in fonts where !font.outlinesOnly() {
+                // A font drawGlyphs alone drew with, as outlines, is not written
                 append("/F")
                 append(font.objNumber)
                 append(Token.space)
@@ -2198,6 +2199,41 @@ public final class PDF {
         }
         associatedFiles.append(file)
         return self
+    }
+
+    ///
+    /// Attaches the text, in UTF-8, as a file the document carries: an
+    /// associated file of the relationship Source, of the media type
+    /// "text/plain; charset=utf-8". This is how a document whose text is drawn
+    /// as outlines, with Page.drawGlyphs, which cannot be selected or
+    /// searched, carries its exact text for anyone who needs it: a reader
+    /// shows the file beside the document. It is attached only when this is
+    /// called. A document of PDF/A-1, which carries no files, or of PDF/A-2,
+    /// which carries only documents of PDF/A, refuses it.
+    ///
+    /// - Parameters:
+    ///   - name: the name of the file, such as "article-1.txt".
+    ///   - text: the text.
+    /// - Returns: this PDF object.
+    ///
+    @discardableResult
+    public func attachText(_ name: String, _ text: String) throws -> PDF {
+        if name.isEmpty {
+            let message = "attachText needs the name of the file and the text."
+            fail(message)
+            throw PDFjetError(message: message)
+        }
+        if compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_2B {
+            let message = "A document of \(compliance) cannot carry the text " + name
+                    + ": PDF/A-1 carries no files and PDF/A-2 only documents of PDF/A;"
+                    + " PDF/A-3 and PDF/UA carry it."
+            fail(message)
+            throw PDFjetError(message: message)
+        }
+        let file = try EmbeddedFile(self, name, InputStream(data: Data(text.utf8)), true,
+                "text/plain; charset=utf-8", Relationship.SOURCE, "The text of this document.")
+        return addAssociatedFile(file)
     }
 
     ///
