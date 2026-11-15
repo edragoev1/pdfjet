@@ -593,10 +593,12 @@ null text.
 
 ## Fonts, and what a PDF embeds
 
-Of the fonts PDFjet carries, IBM Plex Sans and Serif, Cascadia Mono and IBM
-Plex Sans JP, KR, SC and TC are `.otf`, fonts of CFF outlines, and IBM Plex
-Sans Arabic, Hebrew and Thai are TrueType `.ttf` files. Any `.ttf` or
-`.otf` file on the computer is a font for PDFjet as well. Every font is embedded as a
+PDFjet works with any TrueType (`.ttf`) or OpenType (`.otf`) font file:
+pass its path to the `Font` constructor. The fonts PDFjet carries are all
+`.otf` files, fonts of CFF outlines: their constants, such as
+`IBMPlexSans.Regular`, are paths such as
+`fonts/IBMPlexSans/IBMPlexSans-Regular.otf`. Example_07 draws in a `.ttf`
+file on purpose. Every font is embedded as a
 subset when the document is completed, the outlines of the glyphs it does not
 draw left out. What a PDF embeds:
 
@@ -675,13 +677,13 @@ fraction of the stream's size, and as fast to make. From 9.0.5 PDFjet reads
 file opens the `.ttf` file of the same name beside it, so code written for
 9.0.3 runs as it is with the fonts of 9.0.5.
 
-Up to 9.1.7 IBM Plex Sans and Serif came as `.ttf` files; from 9.1.9 they are
-IBM's `.otf` files of the same release, whose subsets are about a fifth
-smaller, with the same widths, kerning and line metrics. A path to the `.ttf`
-of one of them, such as `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, is the
-`.otf` of the same face when there is no such file, so code written for 9.1.7
-runs as it is; a `.ttf` file at that path, or of that name in
-`resources/fonts`, is read first.
+Up to 9.1.7 IBM Plex Sans and Serif, Cascadia Mono and IBM Plex Sans
+Arabic, Hebrew and Thai came as `.ttf` files; from 9.1.9 they are the `.otf`
+files of the same releases, whose subsets are smaller, with the same widths,
+kerning and line metrics. A path loads the file it names: a path to the
+`.ttf` of one of them, such as `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`,
+that is not a file fails with an error that names the `.otf` path and the
+constant to write, here `IBMPlexSans.Regular`.
 
 ## Right to left text
 

@@ -70,8 +70,8 @@ as .otf, not .ttf.** Their constants, `IBMPlexSans.Regular` and the other
 27, are paths to IBM's .otf files, such as
 `fonts/IBMPlexSans/IBMPlexSans-Regular.otf`, which `resources/fonts`, the jar
 of Maven Central, the NuGet package, the Go module and the Swift product
-carry in place of the .ttf; Cascadia Mono too, below, and the fonts of the
-other scripts as they are. With the compact CFF subset above, a document
+carry in place of the .ttf; Cascadia Mono and IBM Plex Sans Arabic, Hebrew
+and Thai too, below. With the compact CFF subset above, a document
 embeds about a fifth less of them, and usually writes it faster: Example_01
 is 20,001 bytes in place of 24,394, Example_14 32,145 in place of 40,468,
 and the 37 examples under 200 KB that draw in them are 16% smaller in all,
@@ -85,15 +85,11 @@ the point; the glyphs are the same designs, in cubic outlines, but their
 numbers are not those of the .ttf, so the content streams change, and the
 text a reader copies and the pages it draws do not. The font descriptor has
 IBM's italic angle, -11.31 for Plex Sans and -14.04 for Plex Serif, which
-the .ttf rounded to -11 and -14. A path to the .ttf, such as
-`fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`, of any of the 28 faces, is the
-.otf of that face when there is no such file, as a path to the `.stream`
-files of before 9.0.5 is, so code written for 9.1.7 runs as it is; a .ttf
-file at that path, or of that name in `resources/fonts`, is read first, as
-any file is. To keep the TrueType edition, use a .ttf of one's own by its
-path, such as IBM's, from github.com/IBM/plex. Example_07 shows a .ttf font
-in IBM Plex Sans, IBM's .ttf, which the examples have in `examples/fonts`,
-beside the .otf PDFjet carries: the same design, from both files.
+the .ttf rounded to -11 and -14. To keep the TrueType edition, use a .ttf of
+one's own by its path, such as IBM's, from github.com/IBM/plex. Example_07
+shows a .ttf font in IBM Plex Sans, IBM's .ttf, which the examples have in
+`examples/fonts`, beside the .otf PDFjet carries: the same design, from both
+files.
 
 Behavior change, in the four ports: **Cascadia Mono is carried as .otf, not
 .ttf.** Its constants, `CascadiaMono.Regular` and the other nine, are paths
@@ -112,20 +108,59 @@ FontMatrix of its own, which the CFF subset above carries. A document embeds
 less of it: a PDF/A-3a page of code in Cascadia Mono Regular is 17,531
 bytes in place of 24,484, Example_18 41,963 in place of 47,856, and
 Example_19 59,005 in place of 65,751, and the pages render the same but for
-anti-aliasing. As for IBM Plex Sans and Serif above, a path to the .ttf of a
-face is the .otf of that face when there is no such file, and the .otf is
-the .ttf of a `resources/fonts` folder of 9.1.7, so code written for 9.1.7
-runs as it is. Behavior change: such a path embeds a font of CFF outlines
-where it embedded a TrueType one; for example, `new Font(pdf,
-"fonts/CascadiaMono/CascadiaMono-Regular.ttf")` wrote a CIDFontType2 with a
-`/FontFile2`, and now writes a CIDFontType0 with a `/FontFile3` of the .otf,
-whose glyphs draw the same. The SVG text of a monospace family is drawn in
-the .otf. A .ttf file at that path, or of that name in `resources/fonts`, is
-read first, as any file is; Microsoft's .ttf is at
-github.com/microsoft/cascadia-code. The tests of TrueType outlines that read
-Cascadia Mono, a font of 2,048 units to the em and the long offsets of
-`loca`, read Microsoft's .ttf of Regular in `tests/fonts`; the booklet's
-snippet of a TrueType font draws in IBM Plex Sans Hebrew.
+anti-aliasing. The SVG text of a monospace family is drawn in the .otf.
+Microsoft's .ttf is at github.com/microsoft/cascadia-code, to use by its
+path. The tests of TrueType outlines that read Cascadia Mono, a font of 2,048
+units to the em and the long offsets of `loca`, read Microsoft's .ttf of
+Regular in `tests/fonts`.
+
+Behavior change, in the four ports: **IBM Plex Sans Arabic, Hebrew and Thai
+are carried as .otf, not .ttf, so every font PDFjet carries is an .otf.**
+Their constants, `IBMPlexSansArabic.Regular` and the other 20, are paths to
+IBM's .otf files, of the release of the .ttf it carried, such as
+`fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf`, which
+`resources/fonts/world`, the jar `com.pdfjet:pdfjet-fonts-world`, the NuGet
+package `PDFjet.Fonts.World`, the Go package `world` and the Swift product
+`PDFjetFontsWorld` carry, unmodified, in place of the .ttf. The 21 faces are
+2.2 MB in place of 3.2 MB, so a Go program that imports `world` is 1.1 MB
+smaller (Example_04, 65.3 to 64.2 MB); compressed, as in the jar and the
+NuGet package, they are 0.1 MB smaller. Checked with fontTools on each of
+the 21 pairs: the same units per em, line metrics of `hhea` and `OS/2`,
+italic angle, advance widths and character map, and the same `GPOS`, `GSUB`
+and `GDEF` tables, glyph for glyph by name, so the kerning, the marks of
+Arabic and Hebrew and the tone marks of Thai go where they went; the .otf
+leave out the two glyphs of U+0000 and U+000D the .ttf have. The glyph
+numbers are not those of the .ttf, so the content streams change: in
+Example_04, and in a page of every face in Arabic with its marks, Hebrew
+with its points and Thai, the content streams are the same but for the
+glyph numbers, which are the same glyphs, the text pdftotext copies is the
+same, and MuPDF draws the pages the same but for anti-aliasing. A document
+embeds less of them: Example_04 is 37,327 bytes in place of 49,981.
+The tests of TrueType outlines that read IBM Plex Sans Thai, the short
+offsets of `loca` and a format 4 map with a glyph ID array among them, read
+IBM's .ttf of IBM Plex Sans in `tests/fonts`, which has them too.
+
+Behavior change, in the four ports: **a path to the .ttf of a font PDFjet
+carries as .otf does not load: the error names the .otf.** A path loads the
+file it names, and PDFjet never reads one font file in place of another, so
+that the font a document embeds is the one its code names. For example,
+`new Font(pdf, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")`, with no such
+file, read IBM Plex Sans's .ttf in 9.1.7; it now throws (in Go,
+`NewFontFromFile` panics and `ReadFontFromFile` returns the error, which is
+`fs.ErrNotExist`): "No bundled font
+fonts/IBMPlexSans/IBMPlexSans-Regular.ttf; PDFjet carries it as
+fonts/IBMPlexSans/IBMPlexSans-Regular.otf (or use the constant
+IBMPlexSans.Regular)." Write `IBMPlexSans.Regular` or the .otf path. The
+same for the .ttf of every face of IBM Plex Sans and Serif, Cascadia Mono
+and IBM Plex Sans Arabic, Hebrew and Thai; a Java or C# program compiled
+against 9.1.7, which has the .ttf paths of the constants in it, is compiled
+again. A .ttf file at that path, or of that name in `resources/fonts`, is
+read, as any file is: PDFjet works with any TrueType (.ttf) or OpenType
+(.otf) font file by its path, and Example_07 draws in IBM's .ttf of IBM Plex
+Sans, from `examples/fonts`, on purpose. A path to a `.ttf.stream` file of
+before 9.0.5 opens the .otf of that name, as before. The booklet's snippet
+of a font file reads an .otf PDFjet carries, and says that a .ttf is read
+the same way.
 
 Added, in the four ports: **BigTable wraps long fields within their
 columns.** `BigTable.setWrapText(true)` (Go `SetWrapText`, C#
