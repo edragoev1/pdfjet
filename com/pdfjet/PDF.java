@@ -749,6 +749,9 @@ final public class PDF {
             append(Token.BEGIN_DICTIONARY);
             appendImportedEntries(importedFonts);
             for (Font font : fonts) {
+                if (font.outlinesOnly()) {
+                    continue;   // Not written: drawGlyphs alone drew with it, as outlines
+                }
                 append("/F");
                 append(font.objNumber);
                 append(Token.SPACE);
@@ -2771,6 +2774,41 @@ final public class PDF {
         }
         associatedFiles.add(file);
         return this;
+    }
+
+    /**
+     * Attaches the text, in UTF-8, as a file the document carries: an
+     * associated file of the relationship Source, of the media type
+     * "text/plain; charset=utf-8". This is how a document whose text is drawn
+     * as outlines, with Page.drawGlyphs, which cannot be selected or
+     * searched, carries its exact text for anyone who needs it: a reader
+     * shows the file beside the document. It is attached only when this is
+     * called. A document of PDF/A-1, which carries no files, or of PDF/A-2,
+     * which carries only documents of PDF/A, refuses it.
+     *
+     * @param name the name of the file, such as "article-1.txt".
+     * @param text the text.
+     * @return this PDF object.
+     * @throws Exception if the file cannot be written.
+     */
+    @SuppressWarnings("deprecation") // PDF_A_3A, which carries files too
+    public PDF attachText(String name, String text) throws Exception {
+        if (name == null || name.isEmpty() || text == null) {
+            fail(new IllegalArgumentException("attachText needs the name of the file and the text."));
+            return this;
+        }
+        if (compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_2B) {
+            fail(new IllegalStateException("A document of " + compliance
+                    + " cannot carry the text " + name
+                    + ": PDF/A-1 carries no files and PDF/A-2 only documents of PDF/A;"
+                    + " PDF/A-3 and PDF/UA carry it."));
+            return this;
+        }
+        EmbeddedFile file = new EmbeddedFile(this, name,
+                new ByteArrayInputStream(Util.utf8(text)), true,
+                "text/plain; charset=utf-8", Relationship.SOURCE, "The text of this document.");
+        return addAssociatedFile(file);
     }
 
     /**

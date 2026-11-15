@@ -14,9 +14,12 @@ import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
@@ -24,14 +27,15 @@ import com.pdfjet.fonts.*;
 /**
  * Example_52.java
  *
- * Draws Hindi and Khmer as real text: Java's own text engine, java.awt.font,
- * shapes them -- conjuncts, vowel signs, stacked consonants, English words
- * inside -- and Page.drawGlyphs draws the glyphs it found, at their places,
- * with the text they stand for, so that copying, searching and screen readers
- * get it. PDFjet does not shape these scripts itself; any engine that finds
- * the glyphs can: java.awt.font here, Android's TextShaper, Apple's Core Text
- * or HarfBuzz elsewhere. The text is Article 1 of the Universal Declaration
- * of Human Rights.
+ * Draws Hindi and Khmer, scripts PDFjet does not shape itself: Java's own
+ * text engine, java.awt.font, shapes them -- conjuncts, vowel signs, stacked
+ * consonants -- and Page.drawGlyphs draws the glyphs it found, at their
+ * places, as outlines read from the font file: sharp on screen and in print,
+ * and read by screen readers, as each paragraph is tagged with its text and
+ * its language. Any engine that finds the glyphs can do the shaping:
+ * java.awt.font here, Android's TextShaper, Apple's Core Text or HarfBuzz
+ * elsewhere. A page of each, filled with the Universal Declaration of Human
+ * Rights from its beginning: Hindi on the first page, Khmer on the second.
  */
 public class Example_52 {
     // Fractional metrics, as a PDF has them: no rounding to whole pixels
@@ -42,53 +46,84 @@ public class Example_52 {
     private static final String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf";
     private static final String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
 
+    private static final float SIZE = 10.5f;
+    private static final float LEFT = 50f;
+    private static final float WIDTH = 512f;
+    private static final float BOTTOM = 742f;   // The page's 792 points less the margin
+
     public Example_52() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_52.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Hindi and Khmer as real text");  // Required for PDF/UA !
+        pdf.setTitle("The Universal Declaration of Human Rights in Hindi and Khmer");  // Required for PDF/UA !
         pdf.setLanguage("en");
 
         Font heading = new Font(pdf, IBMPlexSans.SemiBold);
         heading.setSize(16f);
         Font body = new Font(pdf, IBMPlexSans.Regular);
-        body.setSize(10f);
+        body.setSize(9f);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(heading, "Article 1 of the Universal Declaration of Human Rights")
-                .setStructureType(StructElem.H1)
-                .setLocation(50f, 60f)
-                .drawOn(page);
-        new TextLine(body, "Shaped by java.awt.font, drawn by PDFjet with drawGlyphs: real text, in Hindi and in Khmer.")
-                .setLocation(50f, 82f)
-                .drawOn(page);
+        String hindi = drawPage(pdf, heading, body, "Hindi", "hi", DEVANAGARI,
+                "resources/data/udhr/udhr_hin.txt");
+        String khmer = drawPage(pdf, heading, body, "Khmer", "km", KHMER,
+                "resources/data/udhr/udhr_khm.txt");
 
-        float y = 100f;
-        y = drawShaped(pdf, page,
-                "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता और समानता प्राप्त है । "
-                + "उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिए ।",
-                "hi", DEVANAGARI, 12f, 50f, y, 512f);
-        y = drawShaped(pdf, page,
-                "មនុស្សទាំងអស់ កើតមកមានសេរីភាព និងសមភាព ក្នុងផ្នែកសេចក្ដីថ្លៃថ្នូរនិងសិទ្ធិ។ "
-                + "មនុស្ស មានវិចារណញ្ញាណនិងសតិសម្បជញ្ញៈជាប់ពីកំណើត "
-                + "ហើយគប្បីប្រព្រឹត្ដចំពោះគ្នាទៅវិញទៅមកក្នុងស្មារតីភាតរភាពជាបងប្អូន។",
-                "km", KHMER, 12f, 50f, y + 14f, 512f);
+        // The pages draw the text as outlines, which cannot be selected or
+        // searched; the exact text is attached for anyone who needs it.
+        pdf.attachText("udhr-hindi.txt", hindi);
+        pdf.attachText("udhr-khmer.txt", khmer);
 
         pdf.complete();
     }
 
-    // Draws a paragraph in a script PDFjet does not shape, wrapped to the
-    // width, as real text, and returns the y below its last line. The script's
-    // font is used where it has the characters, IBM Plex Sans elsewhere; the
-    // same font files are loaded by java.awt.font, which shapes, and by PDFjet,
-    // which embeds them, so that the glyph numbers match.
-    private static float drawShaped(PDF pdf, Page page, String text, String language,
-            String scriptFile, float size, float x, float y, float width) throws Exception {
-        java.awt.Font script = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, new File(scriptFile)).deriveFont(size);
-        java.awt.Font latin = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, new File(LATIN)).deriveFont(size);
-        Map<java.awt.Font, Font> embedded = new HashMap<java.awt.Font, Font>();
-        embedded.put(script, new Font(pdf, new FileInputStream(scriptFile)).setSize(size));
-        embedded.put(latin, new Font(pdf, new FileInputStream(LATIN)).setSize(size));
+    // Draws a page of the Declaration in the language, its paragraphs from
+    // the beginning until the page is full, and returns the text drawn.
+    private static String drawPage(PDF pdf, Font heading, Font body, String name, String language,
+            String scriptFile, String textFile) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(heading, "Universal Declaration of Human Rights, in " + name)
+                .setStructureType(StructElem.H1)
+                .setLocation(LEFT, 60f)
+                .drawOn(page);
+        new TextLine(body, "Shaped by java.awt.font, drawn by PDFjet with drawGlyphs as outlines;"
+                + " the text is attached to the document.")
+                .setLocation(LEFT, 80f)
+                .drawOn(page);
 
+        // The same font files are loaded by java.awt.font, which shapes, and
+        // by PDFjet, which reads the outlines, so that the glyph numbers match.
+        java.awt.Font script = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, new File(scriptFile)).deriveFont(SIZE);
+        java.awt.Font latin = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, new File(LATIN)).deriveFont(SIZE);
+        Map<java.awt.Font, Font> fonts = new HashMap<java.awt.Font, Font>();
+        Font scriptFont = new Font(pdf, new FileInputStream(scriptFile)).setSize(SIZE);
+        fonts.put(script, scriptFont);
+        fonts.put(latin, new Font(pdf, new FileInputStream(LATIN)).setSize(SIZE));
+        float ascent = scriptFont.getAscent();
+        float descent = scriptFont.getDescent();
+
+        StringBuilder drawn = new StringBuilder();
+        float[] y = {96f};  // The top of the next line
+        for (String paragraph : paragraphs(textFile)) {
+            String text = drawParagraph(page, paragraph, language, script, latin, fonts, y, ascent, descent);
+            if (text.isEmpty()) {
+                break;      // The page is full
+            }
+            drawn.append(text).append('\n');
+            if (text.length() < paragraph.length()) {
+                break;      // The page is full
+            }
+            y[0] += 0.5f * SIZE;
+        }
+        return drawn.toString();
+    }
+
+    // Draws the paragraph, wrapped to the width, as many of its lines as fit
+    // above the bottom of the page, from the top y[0], which it moves below
+    // them, and returns the text of the lines drawn.
+    // The script's font is used where it has the characters, IBM Plex Sans
+    // elsewhere.
+    private static String drawParagraph(Page page, String text, String language,
+            java.awt.Font script, java.awt.Font latin, Map<java.awt.Font, Font> fonts,
+            float[] y, float ascent, float descent) throws Exception {
         // Each character in the script's font where it has it, else in the Latin one
         AttributedString styled = new AttributedString(text);
         for (int i = 0; i < text.length(); ) {
@@ -98,16 +133,21 @@ public class Example_52 {
             i += n;
         }
 
-        page.addBDC(StructElem.P, language, null, null);
         char[] chars = text.toCharArray();
         LineBreakMeasurer lines = new LineBreakMeasurer(styled.getIterator(), CONTEXT);
+        int drawnEnd = 0;
         while (lines.getPosition() < text.length()) {
+            if (y[0] + ascent + descent > BOTTOM) {
+                break;
+            }
+            if (drawnEnd == 0) {
+                page.addBDC(StructElem.P, language, null, null);
+            }
             int start = lines.getPosition();
-            TextLayout line = lines.nextLayout(width);
+            lines.nextLayout(WIDTH);
             int end = lines.getPosition();
-            float baseline = y + line.getAscent();
-            // The line, a run of one font at a time: its glyphs, their places
-            // and the characters each one comes from (its cluster)
+            float baseline = y[0] + ascent;
+            // The line, a run of one font at a time: its glyphs and their places
             AttributedCharacterIterator runs = styled.getIterator(null, start, end);
             float offset = 0f;
             int runStart = start;
@@ -120,23 +160,39 @@ public class Example_52 {
                 int count = shaped.getNumGlyphs();
                 int[] glyphs = new int[count];
                 float[] positions = new float[2 * count];
-                int[] clusters = new int[count];
                 for (int i = 0; i < count; i++) {
                     Point2D p = shaped.getGlyphPosition(i);
                     glyphs[i] = shaped.getGlyphCode(i);
-                    positions[2 * i] = x + offset + (float) p.getX();
+                    positions[2 * i] = LEFT + offset + (float) p.getX();
                     positions[2 * i + 1] = baseline + (float) p.getY();
-                    clusters[i] = shaped.getGlyphCharIndex(i);
                 }
-                page.drawGlyphs(embedded.get(font), glyphs, positions, clusters,
+                page.drawGlyphs(fonts.get(font), glyphs, positions,
                         text.substring(runStart, runEnd), language);
                 offset += (float) shaped.getGlyphPosition(count).getX();
                 runStart = runEnd;
             }
-            y = baseline + line.getDescent() + line.getLeading();
+            y[0] = baseline + descent + 0.25f * SIZE;
+            drawnEnd = end;
         }
-        page.addEMC();
-        return y;
+        if (drawnEnd > 0) {
+            page.addEMC();
+        }
+        return text.substring(0, drawnEnd);
+    }
+
+    // The paragraphs of the text file, one to a line.
+    private static List<String> paragraphs(String path) throws IOException {
+        List<String> paragraphs = new ArrayList<String>();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!line.trim().isEmpty()) {
+                    paragraphs.add(line.trim());
+                }
+            }
+        }
+        return paragraphs;
     }
 
     public static void main(String[] args) throws Exception {

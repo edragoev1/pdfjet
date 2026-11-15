@@ -43,6 +43,11 @@ final public class Font {
     Subset.Program program;     // A TrueType font program, until complete()
     FontObjects objects;        // Of a font added to an existing PDF, until they are added
     boolean[] kept;             // The glyphs its subset keeps
+    // Whether drawGlyphs drew with the font, which it draws as outlines, and
+    // whether anything draws with it as a font, text or a stamp's: a font
+    // drawGlyphs alone drew with is not written into the document.
+    boolean drawnAsOutlines;
+    boolean referenced;
 
     // Font attributes
     /** The number of font units per em. */
@@ -735,24 +740,17 @@ final public class Font {
         return this;
     }
 
+    // Whether the font is not written into the document: drawGlyphs alone
+    // drew with it, as outlines, which need no font.
+    boolean outlinesOnly() {
+        return drawnAsOutlines && !referenced;
+    }
+
     // Records that the glyph is drawn with the font.
     void useGlyph(int gid) {
         if (program != null) {
             program.used.add(gid);
         }
-    }
-
-    // Records the text a glyph that no character maps to stands for, drawn by
-    // drawGlyphs, for the ToUnicode map: a glyph with a character of its own
-    // keeps it.
-    void useGlyphText(int gid, String text) {
-        if (program == null || gid <= 0 || text == null || text.isEmpty()) {
-            return;
-        }
-        if (unicodeOf != null && gid < unicodeOf.length && unicodeOf[gid] >= 0) {
-            return;
-        }
-        program.textOf(gid, text);
     }
 
     // Records that the glyph is drawn for the character, so that the ToUnicode

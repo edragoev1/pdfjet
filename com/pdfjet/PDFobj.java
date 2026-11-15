@@ -1269,6 +1269,7 @@ public class PDFobj {
      */
     public void addResource(Font font, List<PDFobj> objects) {
         ownResources();
+        font.referenced = true;
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
                 String token = tokenAt(dict, i + 1);

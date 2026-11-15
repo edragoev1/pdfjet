@@ -49,5 +49,13 @@ this folder out of the Go module of PDFjet, so `go get` does not download it.
   [Open Data Commons Open Database License (ODbL)
   1.0](https://opendatacommons.org/licenses/odbl/1-0/); the two files, a
   part of it and counts made from it, are under the same license.
+- `udhr/udhr_hin.txt` and `udhr/udhr_khm.txt` are the Universal
+  Declaration of Human Rights in Hindi and in Khmer, a paragraph to a line,
+  the preamble first and then the articles, which Example_52 draws in the
+  four ports. They are the text of the UDHR in Unicode project
+  (github.com/eric-muller/udhr, `data/udhr/udhr_hin.xml` and
+  `udhr_khm.xml`), from the translations of the Office of the United Nations
+  High Commissioner for Human Rights (OHCHR), which publishes them for
+  anyone to reproduce freely.
 - The other files are sample data for the examples: the tables they draw and an
   invoice in the Factur-X format.

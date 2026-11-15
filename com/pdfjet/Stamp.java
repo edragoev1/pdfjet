@@ -115,6 +115,7 @@ public class Stamp implements Drawable {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
         }
+        font.referenced = true;
         if (!fonts.contains(font)) {
             fonts.add(font);
         }
@@ -554,6 +555,50 @@ public class Stamp implements Drawable {
         pdf.endObj();
         pdf.stamps.add(this);
         objNumber = pdf.getObjNumber();
+    }
+
+    // A stamp of the outline of a glyph, which Page.drawGlyphs draws once and
+    // places wherever the glyph is drawn: the path in the units of the font,
+    // y up, filled in the color of the page it is placed on, the box of its
+    // points its bounding box, its content compressed. The placement scales
+    // the units to the size of the font.
+    static Stamp ofGlyph(PDF pdf, GlyphOutline.Path path) throws IOException {
+        Stamp stamp = new Stamp(pdf);
+        stamp.completed = true;
+        stamp.width = (float) (path.xMax - path.xMin);
+        stamp.height = (float) (path.yMax - path.yMin);
+        byte[] content = Compressor.deflate(Util.utf8(path.operators + "f\n"));
+        if (pdf.encryption != null) {
+            content = AES256.encrypt(content, pdf.encryption.getKey());
+        }
+        pdf.newObj();
+        pdf.append("<<\n/Type /XObject\n/Subtype /Form\n/BBox [");
+        pdf.append(GlyphOutline.decimals(Math.floor(path.xMin), 0));
+        pdf.append(' ');
+        pdf.append(GlyphOutline.decimals(Math.floor(path.yMin), 0));
+        pdf.append(' ');
+        pdf.append(GlyphOutline.decimals(Math.ceil(path.xMax), 0));
+        pdf.append(' ');
+        pdf.append(GlyphOutline.decimals(Math.ceil(path.yMax), 0));
+        pdf.append("]\n/Resources <<>>\n/Filter /FlateDecode\n/Length ");
+        pdf.append(content.length);
+        pdf.append("\n>>\nstream\n");
+        pdf.append(content);
+        pdf.append("\nendstream\n");
+        pdf.endObj();
+        pdf.stamps.add(stamp);
+        stamp.objNumber = pdf.getObjNumber();
+        return stamp;
+    }
+
+    // Places the stamp of a glyph on the page, by the matrix of the
+    // placement, its six numbers written: q, the matrix, Do and Q.
+    void placeGlyph(Page page, String matrix) {
+        page.append("q ");
+        page.append(matrix);
+        page.append(" cm ");
+        page.append(page.resourceName("/XObject", "/Fm", objNumber, null, objNumber));
+        page.append(" Do Q\n");
     }
 
     /**

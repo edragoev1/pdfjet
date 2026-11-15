@@ -2523,6 +2523,7 @@ final public class Page {
         writtenFont = font;
         writtenFontSize = fontSize;
         writtenFontPrecise = precise;
+        font.referenced = true;
         if (font.fontID != null) {
             append('/');
             append(font.fontID);
@@ -3205,207 +3206,120 @@ final public class Page {
         }
     }
 
-    // Begins the marked content of a shape, like a line or an arc: a
-    // paragraph when it is given an alternate description or an actual text,
-    // which a screen reader reads, and otherwise an artifact, the decoration
-    // it is.
     /**
      * Draws glyphs that another text engine shaped -- Java's java.awt.font,
      * Android's TextShaper, Apple's Core Text, HarfBuzz -- by their numbers in
-     * the font, at their places, as real text: the text they stand for is
-     * their actual text, so that copying, searching and screen readers get
-     * it. This is how text PDFjet does not shape itself, such as Hindi or
-     * Khmer, is drawn as text: the engine finds the glyphs and their places,
-     * and PDFjet draws them.
+     * the font, at their places, as outlines: each glyph is drawn as the
+     * shape the font file gives it, filled in the page's brush color. This is
+     * how text PDFjet does not shape itself, such as Hindi or Khmer, is drawn:
+     * the engine finds the glyphs and their places, and PDFjet draws them.
      * <p>
+     * What the outlines give: the text looks as the engine shaped it, on any
+     * screen and in print, with no font in the document, as the font is only
+     * read for its outlines. In a tagged document, PDF/UA or a PDF/A of level
+     * A, the glyphs are part of the content they are drawn in, such as a
+     * paragraph begun with addBDC, or, drawn outside any, a paragraph of their
+     * own; the text they stand for is their actual text, in the language
+     * given, which screen readers read. What they do not give: the text
+     * cannot be selected, copied or searched, as it is not text. A document
+     * that needs its exact text along can carry it with PDF.attachText.
+     * <p>
+     * Each glyph is drawn once, as a form XObject of its outline, and placed
+     * wherever it is drawn: a page of Hindi or Khmer draws some 150 glyphs
+     * some 2,000 times.
      * The glyph numbers must be those of the font file the engine shaped with,
-     * loaded as this font, and the font must be embedded: not a core font or a
-     * CJK font. The glyphs are drawn in the font's size and the page's brush
-     * color. In a tagged document the glyphs are part of the content they are
-     * drawn in, such as a paragraph begun with addBDC, or, drawn outside any,
-     * a paragraph of their own in the language given.
-     *
-     * <p>
-     * The clusters say which characters of the text each glyph comes from, as
-     * the engine reports them (java.awt.font's getGlyphCharIndex, HarfBuzz's
-     * cluster, Core Text's string indices): the index in the text of the first
-     * character of the glyph's cluster. Each cluster, with the glyphs drawn
-     * for it, is a span of actual text, so that copying gets the text in
-     * order. Without clusters (null), all the glyphs are one span. A glyph no
-     * character of the font maps to, such as a conjunct, is mapped in the
-     * ToUnicode map PDF/UA asks of every glyph drawn to the characters of its
-     * cluster the cluster's other glyphs do not give, so that viewers that
-     * read ToUnicode alone copy the same; to the zero width space, U+200B,
-     * when they give them all, and without clusters.
+     * loaded as this font: a TrueType font, or an OpenType font of CFF
+     * outlines; not a core font or a CJK font.
      *
      * @param font the font, loaded from the font file the engine shaped with.
      * @param glyphs the glyph numbers, in the order they are drawn.
      * @param positions the x and the baseline y of each glyph, in points from
      *     the top left corner of the page: x0, y0, x1, y1 and so on.
-     * @param clusters for each glyph, the index in the text of the first
-     *     character it comes from, or null.
      * @param text the text the glyphs stand for, as it is read.
      * @param language the language of the text, such as "hi" or "km", or null.
+     * @throws IOException if writing the outline of a glyph fails.
      */
-    public void drawGlyphs(Font font, int[] glyphs, float[] positions, int[] clusters,
-            String text, String language) {
+    public void drawGlyphs(Font font, int[] glyphs, float[] positions, String text, String language)
+            throws IOException {
         if (font == null || glyphs == null || positions == null) {
             pdf.fail(new IllegalArgumentException("drawGlyphs needs a font, glyphs and their positions."));
             return;
         }
+        if (font.pdf != null && font.pdf != pdf) {
+            pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
+            return;
+        }
         if (font.isCoreFont || font.isCJK || font.program == null) {
             pdf.fail(new IllegalArgumentException(
-                    "drawGlyphs needs an embedded font, loaded from the font file the glyphs were shaped with."));
+                    "drawGlyphs needs a font loaded from the font file the glyphs were shaped with."));
             return;
         }
         if (positions.length != 2 * glyphs.length) {
             pdf.fail(new IllegalArgumentException("drawGlyphs needs an x and a y for each glyph."));
             return;
         }
-        if (text == null) {
-            text = "";
-        }
-        if (clusters != null) {
-            if (clusters.length != glyphs.length) {
-                pdf.fail(new IllegalArgumentException("drawGlyphs needs a cluster for each glyph, or none."));
+        Subset.Program program = font.program;
+        if (program.outline == null) {
+            try {
+                program.outline = new GlyphOutline(program.font, program.cff);
+            } catch (IllegalArgumentException e) {
+                pdf.fail(e);
                 return;
             }
-            for (int c : clusters) {
-                if (c < 0 || c >= text.length()) {
-                    pdf.fail(new IllegalArgumentException("A cluster of drawGlyphs is outside the text."));
-                    return;
-                }
-            }
+            program.glyphStamps = new HashMap<Integer, Stamp>();
         }
+        GlyphOutline outline = program.outline;
         for (int gid : glyphs) {
-            if (gid < 0 || (font.advanceWidth != null && gid >= font.advanceWidth.length)) {
+            if (gid < 0 || gid >= outline.count()
+                    || (font.advanceWidth != null && gid >= font.advanceWidth.length)) {
                 pdf.fail(new IllegalArgumentException("The font has no glyph number " + gid + "."));
                 return;
             }
         }
+        boolean tagged = pdf.isTagged() && artifactDepth == 0;
+        if (tagged && glyphs.length > 0 && (text == null || text.isEmpty())) {
+            pdf.fail(new IllegalArgumentException(
+                    "drawGlyphs in a tagged document needs the text the glyphs stand for, which screen readers read."));
+            return;
+        }
         if (glyphs.length == 0) {
             return;
         }
+        font.drawnAsOutlines = true;
         // A paragraph of their own, in a tagged document, drawn outside any
-        boolean own = pdf.isTagged() && !insideTaggedContent();
+        boolean own = tagged && !insideTaggedContent();
         if (own) {
             addBDC(StructElem.P, language, null, null);
         }
-        // The language of the glyphs, around them all
-        boolean languageSpan = language != null && !language.isEmpty();
-        if (languageSpan) {
-            append("/Span <</Lang <");
-            append(Util.toHexString(Util.utf8(language)));
+        // The text they stand for, and its language, as the actual text of
+        // the marked content of the outlines (ISO 32000-1, 14.9.4)
+        if (tagged) {
+            append("/Span <<");
+            if (language != null && !language.isEmpty()) {
+                append("/Lang <");
+                append(Util.toHexString(Util.utf8(language)));
+                append("> ");
+            }
+            append("/ActualText <");
+            append(toUTF16Hex(text));
             append(">>> BDC\n");
         }
-        append("BT\n");
-        setTextFont(font, font.size);
-        if (renderingMode != 0 || renderingModeSet) {
-            renderingModeSet = renderingModeSet || renderingMode != 0;
-            append(renderingMode);
-            append(" Tr\n");
-        }
-        // The clusters in order, so that a cluster's characters run to the
-        // next cluster
-        int[] starts = null;
-        if (clusters != null) {
-            starts = clusters.clone();
-            java.util.Arrays.sort(starts);
-        }
-        // The baseline: the y most of the glyphs are drawn at
-        float baseline = baselineOf(positions);
-        // A span of actual text for each group of glyphs, the text they stand
-        // for, read in untagged documents too: a cluster, or the clusters a
-        // glyph drawn before its cluster joins, as a vowel sign of Hindi drawn
-        // before its consonant. MuPDF repeats or leaves out text when the
-        // glyphs of a span do not match its actual text, as one span for a
-        // whole line did; with clusters the spans tile the text, in order.
-        // Without clusters, one span for all the glyphs.
-        // The text of each glyph no character maps to, for ToUnicode
-        String[] glyphTexts = glyphTexts(font, glyphs, clusters, starts, text);
-        // The smallest cluster of the glyphs from each on
-        int[] laterMin = null;
-        if (clusters != null) {
-            laterMin = new int[glyphs.length + 1];
-            laterMin[glyphs.length] = Integer.MAX_VALUE;
-            for (int k = glyphs.length - 1; k >= 0; k--) {
-                laterMin[k] = Math.min(clusters[k], laterMin[k + 1]);
+        float size = font.size;
+        for (int k = 0; k < glyphs.length; k++) {
+            int gid = glyphs[k];
+            // The glyph's stamp, made the first time it is drawn; null for
+            // a glyph of no outline, as the space
+            if (!program.glyphStamps.containsKey(gid)) {
+                GlyphOutline.Path path = outlineOf(outline, gid);
+                program.glyphStamps.put(gid, path.operators.isEmpty() ? null : Stamp.ofGlyph(pdf, path));
+            }
+            Stamp stamp = program.glyphStamps.get(gid);
+            if (stamp != null) {
+                stamp.placeGlyph(this, glyphMatrix(outline.matrixOf(gid), size,
+                        positions[2 * k], height - positions[2 * k + 1]));
             }
         }
-        int textEnd = 0;  // The end of the text the spans before took
-        int i = 0;
-        while (i < glyphs.length) {
-            int j = glyphs.length - 1;
-            int end = text.length();
-            if (clusters != null) {
-                // The group grows while a later glyph belongs to its text
-                j = i;
-                end = clusterEnd(text, starts, clusters[i]);
-                while (j + 1 < glyphs.length && laterMin[j + 1] < end) {
-                    j++;
-                    end = Math.max(end, clusterEnd(text, starts, clusters[j]));
-                }
-                if (j == glyphs.length - 1) {
-                    end = text.length();
-                }
-            }
-            append("/Span <</ActualText <");
-            append(toUTF16Hex(text.substring(Math.min(textEnd, end), end)));
-            append(">>> BDC\n");
-            // The glyphs of the span in one array of text, as one run: MuPDF
-            // repeats a span's text for each run of glyphs it sees, and a
-            // glyph placed with its own Tm, a mark over the glyph before it,
-            // starts one. Each glyph is moved to the place the engine gave
-            // it by the adjustment of the array, against its advance in the
-            // font; a glyph off the baseline, as a subscript of Khmer, by
-            // the text rise, which ends the array and starts another.
-            float size = font.size;
-            float rise = 0f;
-            boolean open = false;
-            float penX = 0f;  // Where the next glyph would be drawn without an adjustment
-            for (int k = i; k <= j; k++) {
-                float glyphX = positions[2 * k];
-                float glyphRise = baseline - positions[2 * k + 1];
-                if (!open || glyphRise != rise) {
-                    if (open) {
-                        append("] TJ\n");
-                    }
-                    if (glyphRise != rise) {
-                        append(glyphRise);
-                        append(" Ts\n");
-                        rise = glyphRise;
-                    }
-                    append("1 0 0 1 ");
-                    append(glyphX);
-                    append(' ');
-                    append(height - baseline);
-                    append(" Tm\n[");
-                    penX = glyphX;
-                    open = true;
-                } else if (glyphX != penX) {
-                    append(' ');
-                    append(-1000f * (glyphX - penX) / size);
-                    append(' ');
-                    penX = glyphX;
-                }
-                append('<');
-                appendGlyphUnkerned(font, glyphs[k]);
-                append('>');
-                penX += advanceOf(font, glyphs[k]) * size / font.unitsPerEm;
-                font.useGlyphText(glyphs[k], glyphTexts[k]);
-            }
-            if (open) {
-                append("] TJ\n");
-            }
-            if (rise != 0f) {
-                append("0 Ts\n");
-            }
-            append("EMC\n");
-            textEnd = end;
-            i = j + 1;
-        }
-        append("ET\n");
-        if (languageSpan) {
+        if (tagged) {
             append("EMC\n");
         }
         if (own) {
@@ -3413,102 +3327,25 @@ final public class Page {
         }
     }
 
-    // The text ToUnicode gives each glyph no character maps to: the
-    // characters of its cluster that the cluster's other glyphs do not give,
-    // as the conjunct of Hindi's क्ष its three characters, so that a viewer
-    // that reads ToUnicode alone, as pdf.js, copies the same letters as one
-    // that reads the actual text. The zero width space for the other glyphs
-    // of the cluster no character maps to, without clusters, and where a
-    // glyph of the cluster is a letter the cluster does not have, as the
-    // first part of Khmer's ោ, drawn as េ: there the letters of the glyphs
-    // cannot add up to the cluster's, and MuPDF, which then reads both the
-    // actual text and the letters, copies the cluster twice.
-    private static String[] glyphTexts(Font font, int[] glyphs, int[] clusters, int[] starts, String text) {
-        String[] texts = new String[glyphs.length];
-        java.util.Arrays.fill(texts, "\u200B");
-        if (clusters == null) {
-            return texts;
+    // The outline of the glyph; one that cannot be read fails the document.
+    private GlyphOutline.Path outlineOf(GlyphOutline outline, int gid) {
+        try {
+            return outline.outline(gid);
+        } catch (IllegalArgumentException e) {
+            pdf.fail(e);
+            throw e;
         }
-        java.util.Map<Integer, java.util.List<Integer>> byCluster =
-                new java.util.HashMap<Integer, java.util.List<Integer>>();
-        for (int k = 0; k < glyphs.length; k++) {
-            java.util.List<Integer> list = byCluster.get(clusters[k]);
-            if (list == null) {
-                list = new java.util.ArrayList<Integer>();
-                byCluster.put(clusters[k], list);
-            }
-            list.add(k);
-        }
-        for (java.util.Map.Entry<Integer, java.util.List<Integer>> entry : byCluster.entrySet()) {
-            int start = entry.getKey();
-            String characters = text.substring(start, clusterEnd(text, starts, start));
-            java.util.List<Integer> left = new java.util.ArrayList<Integer>();
-            for (int i = 0; i < characters.length(); i = characters.offsetByCodePoints(i, 1)) {
-                left.add(characters.codePointAt(i));
-            }
-            int unmapped = -1;
-            boolean adds = true;  // Whether the letters of the glyphs can add up to the cluster's
-            for (int k : entry.getValue()) {
-                int gid = glyphs[k];
-                if (font.unicodeOf != null && gid < font.unicodeOf.length && font.unicodeOf[gid] >= 0) {
-                    adds &= left.remove(Integer.valueOf(font.unicodeOf[gid]));
-                } else if (unmapped < 0) {
-                    unmapped = k;
-                }
-            }
-            if (unmapped >= 0 && adds && !left.isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                for (int c : left) {
-                    sb.appendCodePoint(c);
-                }
-                texts[unmapped] = sb.toString();
-            }
-        }
-        return texts;
     }
 
-    // The advance of the glyph in the font's units, 0 for a glyph past the
-    // font's widths.
-    private static int advanceOf(Font font, int gid) {
-        if (font.advanceWidth == null || gid >= font.advanceWidth.length) {
-            return 0;
-        }
-        return font.advanceWidth[gid];
-    }
-
-    // The y most of the glyphs are drawn at, the first of them on a tie.
-    private static float baselineOf(float[] positions) {
-        java.util.Map<Float, Integer> counts = new java.util.HashMap<Float, Integer>();
-        for (int i = 1; i < positions.length; i += 2) {
-            Integer count = counts.get(positions[i]);
-            counts.put(positions[i], count == null ? 1 : count + 1);
-        }
-        float best = positions[1];
-        int bestCount = 0;
-        for (int i = 1; i < positions.length; i += 2) {
-            int count = counts.get(positions[i]);
-            if (count > bestCount) {
-                best = positions[i];
-                bestCount = count;
-            }
-        }
-        return best;
-    }
-
-    // The end of the cluster that starts at start: the next cluster's start,
-    // or the end of the text.
-    private static int clusterEnd(String text, int[] starts, int start) {
-        int low = 0;
-        int high = starts.length;
-        while (low < high) {
-            int middle = (low + high) >>> 1;
-            if (starts[middle] > start) {
-                high = middle;
-            } else {
-                low = middle + 1;
-            }
-        }
-        return low < starts.length ? starts[low] : text.length();
+    // The matrix that draws the units of a glyph at its place: its matrix to
+    // the em, times the size, moved to x and y, in the coordinates of PDF.
+    static String glyphMatrix(double[] m, float size, float x, float y) {
+        return GlyphOutline.decimals(m[0] * size, 7) + " "
+                + GlyphOutline.decimals(m[1] * size, 7) + " "
+                + GlyphOutline.decimals(m[2] * size, 7) + " "
+                + GlyphOutline.decimals(m[3] * size, 7) + " "
+                + GlyphOutline.decimals(m[4] * size + x, 2) + " "
+                + GlyphOutline.decimals(m[5] * size + y, 2);
     }
 
     // Whether what is drawn now is inside real content of a tagged document:
@@ -3518,6 +3355,10 @@ final public class Page {
         return pdf.isTagged() && markedContentDepth > 0 && artifactDepth == 0;
     }
 
+    // Begins the marked content of a shape, like a line or an arc: a
+    // paragraph when it is given an alternate description or an actual text,
+    // which a screen reader reads, and otherwise an artifact, the decoration
+    // it is.
     void addShapeBDC(String language, String actualText, String altDescription) {
         if (Util.isEmpty(altDescription) && Util.isEmpty(actualText)) {
             addArtifactBMC();

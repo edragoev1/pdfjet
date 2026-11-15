@@ -196,6 +196,13 @@ and go-text/typesetting (the Unlicense or BSD-3-Clause), in the module of
 src/examples/example52.
 
 
+This software includes the Universal Declaration of Human Rights in Hindi and
+in Khmer, in resources/data/udhr, from the UDHR in Unicode project
+(github.com/eric-muller/udhr), the translations of the Office of the United
+Nations High Commissioner for Human Rights (OHCHR), which may be reproduced
+freely.
+
+
 This software includes data of the Washington State Department of Licensing,
 Electric Vehicle Population Data (https://data.wa.gov/d/f6w7-q2d2), in
 resources/data: Electric_Vehicle_Population_10_Pages.csv, a part of it, and
