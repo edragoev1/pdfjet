@@ -1,0 +1,18 @@
+# PDFjet
+
+> PDFjet creates PDF documents, with the same API in Java, C#, Go and Swift: text and tables that flow across pages, embedded fonts for the world's languages, charts, barcodes, images and SVG, Markdown, accessible PDF/UA and archival PDF/A documents, encryption, and adding to existing PDFs. No dependencies. Making PDFs since 2001.
+
+Each guide below is for AI coding assistants: how to install PDFjet in that language, the rules where code written without reading the examples goes wrong, and three samples, which check-llms.sh builds and runs against the library on every change.
+
+## Guides
+
+- [Java](https://github.com/edragoev1/pdfjet/blob/main/llms-java.txt): Maven `com.pdfjet:pdfjet`, Java 8 or later
+- [.NET](https://github.com/edragoev1/pdfjet/blob/main/llms-dotnet.txt): NuGet `PDFjet`, .NET 8 or later and .NET Framework 4.8
+- [Go](https://github.com/edragoev1/pdfjet/blob/main/llms-go.txt): `github.com/edragoev1/pdfjet/v9`
+- [Swift](https://github.com/edragoev1/pdfjet/blob/main/llms-swift.txt): Swift Package Manager, macOS, iOS and Linux
+
+## More
+
+- [README](https://github.com/edragoev1/pdfjet/blob/main/README.md): every port, its install, the fonts, and how the ports differ
+- Examples, the same in the four ports: [Java and C#](https://github.com/edragoev1/pdfjet/tree/main/examples), [Go](https://github.com/edragoev1/pdfjet/tree/main/src/examples), [Swift](https://github.com/edragoev1/pdfjet/tree/main/Sources)
+- [pdfjet.com](https://pdfjet.com): downloads, the API reference and the examples with their PDFs, for Java and .NET

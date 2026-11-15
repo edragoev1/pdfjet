@@ -75,7 +75,7 @@ rm -rf "$stage" "$worldStage" "$build" && mkdir -p "$stage/lib/net8.0" "$stage/l
 
 # The sources of the library and the fonts of the tag, built apart from this
 # working tree; through a file, not a pipe, so that a failing archive stops.
-git archive -o "$build.tar" "$commit" net net48 PDFjet.csproj resources/fonts nuget
+git archive -o "$build.tar" "$commit" net net48 PDFjet.csproj resources/fonts nuget llms-dotnet.txt
 tar -x -C "$build" -f "$build.tar"
 rm "$build.tar"
 
@@ -188,7 +188,9 @@ fi
 echo "Without PDFjet.Fonts.World: $without"
 
 # The nuspecs and the READMEs of the commit the DLLs are of
-cp "$build/nuget/README.md" "$build/nuget/icon.png" "$stage/"
+# and the guide for AI coding assistants, llms-dotnet.txt, at the root of the
+# package PDFjet
+cp "$build/nuget/README.md" "$build/nuget/icon.png" "$build/llms-dotnet.txt" "$stage/"
 sed -e "s/\$version\\$/$packageVersion/" -e "s/\$commit\\$/$commit/" "$build/nuget/PDFjet.nuspec" > "$stage/PDFjet.nuspec"
 cp "$build/nuget/world/README.md" "$build/nuget/icon.png" "$worldStage/"
 cp -r "$build/nuget/world/buildTransitive" "$worldStage/"

@@ -2,8 +2,9 @@
 # port, with the port's build-*.sh script, and then the port's unit tests with
 # its test-*.sh script. A job fails if the library or an example does not
 # compile or compiles with a warning, go vet reports a problem in the Go port,
-# an example exits with an error, an example does not create its PDF file, or a
-# unit test fails. The compare job
+# an example exits with an error, an example does not create its PDF file, a
+# sample of the port's guide for AI coding assistants (llms-*.txt) does not
+# build, run or write the pages it should, or a unit test fails. The compare job
 # then checks the PDFs: each example must render the same, with the same text
 # and drawing instructions, in every port as in Java, and the examples that
 # declare PDF/A or PDF/UA compliance must pass veraPDF, and the text MuPDF and
@@ -127,6 +128,13 @@ jobs:
                   go)
                       go vet ./booklet/snippets/go ;;
                   esac
+
+            # The samples of the port's guide for AI coding assistants,
+            # llms-*.txt, built and run against the library, and the pages of
+            # their PDFs counted. check-examples.sh runs it for the four ports
+            # and checks the PDFs with veraPDF too, which this job has not.
+            - name: Build and run the samples of the guide for AI coding assistants
+              run: bash check-llms.sh ${{ matrix.port }}
 
             # The compare job checks these PDFs.
             - name: Upload the example PDFs

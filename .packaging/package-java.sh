@@ -110,11 +110,12 @@ mkdir -p "$STAGE" .commercial-packages
 TAR=$PWD/$STAGE.tar
 # resources is as it is in the repository: the fonts PDFjet carries, each
 # family with its license, and the data files the examples read, with the
-# README that says where they come from.
+# README that says where they come from. llms-java.txt, the guide for AI
+# coding assistants, is at the top of the package, as in the repository.
 git archive -o "$TAR" HEAD \
     .packaging/java .packaging/java-pro LICENSE \
     com examples resources/images tests/data/PngSuite resources/fonts resources/data \
-    CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
+    CHANGELOG.md THIRD-PARTIES.TXT examples-java.html llms-java.txt
 tar -x -C "$STAGE" -f "$TAR"
 rm "$TAR"
 

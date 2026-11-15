@@ -12,12 +12,14 @@
 # Java PDFs in PDFium, pdf.js and Poppler with .github/scripts/check-viewers.py,
 # as its viewers job does; its PDFKit check needs macOS, so it is left to the
 # workflow. Last, it builds and runs the snippets of the booklet in the four
-# ports and compares their PDFs, with booklet/check-snippets.sh. Then qpdf
-# --check reads every PDF of the examples, the encrypted ones and the
-# snippets: the cross-reference table, the lengths of the streams and their
-# compression, the encryption, which a PDF can get wrong and still pass the
-# checks above (the owner, 20 October 2026), with .github/scripts/check-qpdf.sh,
-# as the compare job does with the examples and the encrypted ones.
+# ports and compares their PDFs, with booklet/check-snippets.sh, and the
+# samples of the guides for AI coding assistants, llms-*.txt, with
+# check-llms.sh. Then qpdf --check reads every PDF of the examples, the
+# encrypted ones, the snippets and the samples: the cross-reference table,
+# the lengths of the streams and their compression, the encryption, which a
+# PDF can get wrong and still pass the checks above (the owner, 20 October
+# 2026), with .github/scripts/check-qpdf.sh, as the compare job does with the
+# examples and the encrypted ones.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -170,8 +172,13 @@ done
 echo "Building and running the booklet snippets"
 PYTHON="$WORK/venv/bin/python" bash booklet/check-snippets.sh || exit 1
 
+# The samples of the guides for AI coding assistants, llms-*.txt, which it
+# works on in build/check-llms, their PDFs checked with veraPDF ua1.
+echo "Building and running the samples of the guides for AI coding assistants"
+bash check-llms.sh || exit 1
+
 # Each PDF read by qpdf, as the compare job of the workflow does with the
 # examples and the encrypted ones; the snippets here too.
 echo "Checking the PDFs with qpdf"
 bash .github/scripts/check-qpdf.sh "$WORK"/pdfs/*/*.pdf "$WORK"/encrypted/*.pdf \
-    build/check-snippets/*/out/*.pdf
+    build/check-snippets/*/out/*.pdf build/check-llms/*/out/*.pdf

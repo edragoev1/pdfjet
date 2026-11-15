@@ -3,7 +3,9 @@
 # PDFjet.jar and the API reference of its PDFjet-ForJava-Core zip, as
 # released, not built again, the fonts PDFjet carries for the European
 # languages, IBM Plex Sans and Serif and Cascadia Mono, and the Java sources
-# of its tag; and com.pdfjet:pdfjet-fonts-world, the fonts of the other
+# of its tag, with the guide for AI coding assistants of the tag,
+# llms-java.txt, at the root of the jar and of the sources jar; and
+# com.pdfjet:pdfjet-fonts-world, the fonts of the other
 # scripts alone, IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic,
 # Hebrew and Thai, with their licenses (the owner, 30 October 2026). Each artifact has its jar, sources jar, javadoc jar and POM,
 # each signed with the owner's GPG key and with its MD5, SHA-1, SHA-256 and
@@ -84,6 +86,12 @@ for family in "$work"/fonts/resources/fonts/*/; do
     mv "${family%/}" "$work/fonts/com/pdfjet/fonts/"
 done
 jar --update --date="$date" --file "$base.jar" -C "$work/fonts" com/pdfjet/fonts
+# The guide for AI coding assistants of the tag, llms-java.txt, at the root of
+# the jar and of the sources jar, where an assistant that opens the jar of
+# its project's dependency finds it
+mkdir -p "$work/llms"
+git archive "$ref" llms-java.txt | tar -x -C "$work/llms"
+jar --update --date="$date" --file "$base.jar" -C "$work/llms" llms-java.txt
 # Through a variable, not a pipe: grep -q stops at the first match, unzip then
 # dies of SIGPIPE, and with pipefail the pipe fails just when the fonts are there.
 jarFiles=$(unzip -Z1 "$base.jar")
@@ -128,7 +136,7 @@ jar --create --date="$date" --file "$base-javadoc.jar" -C "$work/docs/$top/docs/
 
 # The sources of the tag: the packages build-java.sh builds the jar of
 git archive "$ref" com/pdfjet | tar -x -C "$work/sources"
-jar --create --date="$date" --file "$base-sources.jar" -C "$work/sources" com
+jar --create --date="$date" --file "$base-sources.jar" -C "$work/sources" com -C "$work/llms" llms-java.txt
 
 # The POMs of the same commit as the sources
 git archive "$commit" maven | tar -x -C "$work"

@@ -1,0 +1,151 @@
+# PDFjet for Swift
+
+> PDFjet creates PDF documents from Swift 6.1 or later, on macOS, iOS and Linux. One package, no dependencies, and none of Apple's frameworks, so it runs on a Swift server too: text and tables that flow across pages, embedded fonts for the world's languages, charts, barcodes, images and SVG, Markdown, accessible PDF/UA and archival PDF/A documents, encryption, and adding to existing PDFs. It writes each page to the output stream as it goes, so long documents need little memory. This file is for AI coding assistants: the rules below are where code written without reading the examples goes wrong.
+
+## Install
+
+In the `Package.swift` of your package:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.9"),
+],
+targets: [
+    .executableTarget(name: "App", dependencies: [
+        .product(name: "PDFjet", package: "pdfjet"),
+    ]),
+]
+```
+
+In Xcode: File > Add Package Dependencies, with the URL https://github.com/edragoev1/pdfjet.git. For Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add the product `PDFjetFontsWorld` of the same package too (52 MB of fonts in the app; no code needed).
+
+```swift
+import Foundation
+import PDFjet
+```
+
+## Rules
+
+1. **End every document with `try pdf.complete()`.** It writes the end of the file and closes the stream. A PDF without it is broken.
+2. **Coordinates are points (1/72 inch) from the top-left corner of the page; y grows downward,** not upward as in Core Graphics. `Letter.PORTRAIT` is 612 x 792, `A4.PORTRAIT` 595 x 842. A margin of 50 leaves a width of 512 on Letter. Coordinates and sizes are `Float`: convert a `Double` or a `CGFloat` with `Float(x)`.
+3. **Create, set, place, draw:** make a component, set it up, then `setLocation(x, y)` and `drawOn(page)`. Arguments have no labels: `TextLine(font, "text")`. Setters return the object, so calls chain, and their results may be left unused. Most `drawOn` methods return `[Float]`, `[x, y]` where the component ended: place the next one below it, `y = block.drawOn(page)[1] + 12.0`.
+4. **Pages:** `Page(pdf, Letter.PORTRAIT)` makes a page and adds it to the document at once. For content longer than one page, let the component make the pages: `table.drawOn(pdf, &pages, Letter.PORTRAIT)` (also `try markdown.drawOn(pdf, text, &pages, Letter.PORTRAIT)`) fills a `var pages = [Page]()` you pass with `&`, with as many as it needs. **Those pages are not in the document yet: add them with `pdf.addPages(pages)`** after drawing on them, for example after adding footers such as "Page 3 of 7" with `page.addFooter(textLine)`. Give the table a bottom margin, `table.setBottomMargin(50.0)`, so that its last row on each page stays clear of the footer. Forgetting it gives "A PDF needs at least one page" or a document without them.
+5. **Fonts:** `try Font(pdf, IBMPlexSans.Regular)` loads a font PDFjet carries, in the bundle of the product `PDFjet`; the constants are `IBMPlexSans`, `IBMPlexSerif`, `CascadiaMono` (monospace), and, with the product `PDFjetFontsWorld`, `IBMPlexSansJP`, `KR`, `SC`, `TC`, `Arabic`, `Hebrew`, `Thai`. PDFjet works with any TrueType (.ttf) or OpenType (.otf) font file: `try Font(pdf, "/path/to/MyFont.otf")`, or a font in your app's bundle by its path, `Bundle.main.path(forResource:ofType:)`. Fonts are embedded as a subset of the characters drawn. Set the size on the font (`font.setSize(11.0)`) or on the component (`setFontSize`). Do not use `CoreFont` (Helvetica, Times, Courier) for real documents: they draw only Western European characters, look different in each viewer, and are not allowed in PDF/UA or PDF/A. PDFjet does not use the fonts of the system or UIFont and NSFont.
+6. **Colors are `Int32` RGB values:** `0x1F4E79`, or a constant of `Color` such as `Color.navy`.
+7. **Accessible documents:** `pdf.setCompliance(Compliance.PDF_UA_1)` and `pdf.setTitle(...)` right after `PDF(...)`; give headings `setStructureType(StructElem.H1)` (H2, …) and every image `setAltDescription("...")`. Archival: `Compliance.PDF_A_1B`, `PDF_A_2B`, `PDF_A_3B`; `Compliance.PDF_A_3A_UA_1` is archival and accessible.
+8. **The output stream:** `PDF(OutputStream(toFileAtPath: "out.pdf", append: false)!)`, or any `OutputStream`, not opened: `PDF` opens it and `complete()` closes it; `complete(closeStream: false)` flushes it and leaves it open. In memory: `let stream = OutputStream(toMemory: ())`, and after `complete()`, `stream.property(forKey: .dataWrittenToMemoryStreamKey) as? Data`. On iOS write to the app's documents or temporary folder, not to the working directory.
+9. **Errors, and `try`:** the calls that read a file or a stream, and a few that check their input, throw an error that says what is wrong, most often a `PDFjetError` with its `message`, and need `try`: `Font(...)`, `Image(...)`, `SVGImage(...)`, `Content.ofTextFile(...)`, `Barcode(...)`, `Markdown.drawOn`, `pdf.read(from:)` and `pdf.complete()`. A mistake in the calling code, a bad value or a call at the wrong time, is recorded rather than thrown, and the document goes on without what it would have broken; `complete()` then throws it and writes no broken PDF. So never `try?` the `complete()`. Read the message.
+
+## A page of text
+
+```swift
+import Foundation
+import PDFjet
+
+let pdf = PDF(OutputStream(toFileAtPath: "Hello.pdf", append: false)!)
+pdf.setCompliance(Compliance.PDF_UA_1)
+pdf.setTitle("Hello")
+
+let bold = try Font(pdf, IBMPlexSans.SemiBold)
+bold.setSize(20.0)
+let regular = try Font(pdf, IBMPlexSans.Regular)
+regular.setSize(11.0)
+
+let page = Page(pdf, Letter.PORTRAIT)
+let title = TextLine(bold, "Hello")
+title.setStructureType(StructElem.H1)
+title.setLocation(50.0, 70.0)
+title.drawOn(page)
+
+let text = TextBlock(regular,
+        "TextBlock wraps text to its width. Its drawOn returns where the text ended.")
+text.setLocation(50.0, 90.0)
+text.setWidth(512.0)
+let y = text.drawOn(page)[1]
+
+TextLine(regular, "This line is placed below the block.")
+        .setLocation(50.0, y + 20.0).drawOn(page)
+
+try pdf.complete()
+```
+
+## A table over as many pages as it needs
+
+```swift
+import Foundation
+import PDFjet
+
+let pdf = PDF(OutputStream(toFileAtPath: "Report.pdf", append: false)!)
+pdf.setCompliance(Compliance.PDF_UA_1)
+pdf.setTitle("Report")
+let bold = try Font(pdf, IBMPlexSans.SemiBold)
+let regular = try Font(pdf, IBMPlexSans.Regular)
+
+var data = [[Cell]]()
+data.append([
+    Cell(bold, "Item").setBackgroundColor(0xF1F3F6),
+    Cell(bold, "Quantity").setBackgroundColor(0xF1F3F6),
+])
+for i in 1...200 {
+    data.append([Cell(regular, "Item \(i)"), Cell(regular, String(i * 3))])
+}
+
+let table = Table()
+table.setTableData(data, 1)         // 1 header row, repeated on every page
+table.setColumnWidth(0, 362.0)
+table.setColumnWidth(1, 150.0)
+table.rightAlignNumbers()
+table.setLocation(50.0, 50.0)
+table.setBottomMargin(50.0)         // room for the footer on each page
+
+var pages = [Page]()
+table.drawOn(pdf, &pages, Letter.PORTRAIT)
+for (i, page) in pages.enumerated() {
+    page.addFooter(TextLine(regular, "Page \(i + 1) of \(pages.count)"))
+}
+pdf.addPages(pages)                 // the pages the table made, into the document
+try pdf.complete()
+```
+
+For tables of thousands of pages read from a file or a database, use `BigTable`: it writes as it goes and its memory stays flat (Example_24).
+
+## Markdown
+
+```swift
+let markdown = Markdown(regular, bold, italic, boldItalic, code)    // five Fonts
+var pages = [Page]()
+try markdown.drawOn(pdf, markdownText, &pages, Letter.PORTRAIT)
+pdf.addPages(pages)
+```
+
+Headings, lists, tables, quotes, code and links, tagged in a PDF/UA document (Example_19). `try Content.ofTextFile(path)` reads a text file into a string.
+
+## The main classes
+
+- Document: `PDF`, `Page`, `Letter` / `A4` / `Legal` page sizes, `Compliance`, `Font`
+- Text: `TextLine` (one line), `TextBlock` (wrapped to a width), `TextColumn` (justified paragraphs), `TextFrame` and `Paragraph` (text flowing across columns and pages), `CompositeTextLine` (subscripts, superscripts), `Markdown`
+- Tables: `Table`, `Cell`, `BigTable`
+- Graphics: `Line`, `Rect`, `Path`, `Point`, `Stamp` (drawn once, placed on every page), `Container`, `GraphicsState` (transparency)
+- Images: `Image` (PNG, JPEG, BMP), `SVGImage` (drawn as vectors)
+- Charts: `SimpleBarChart`, `SimpleLineChart`, `SimpleScatterChart`, `DonutChart`
+- Barcodes: `Barcode` (Code 128, Code 39, UPC-A, EAN-13; its initializer throws), `QRCode`, `DataMatrix`, `PDF417`
+- Interactive: links and destinations, `Bookmark`, file attachments, `CheckBox`, `RadioButton`, `Form` and `Field`
+- Existing PDFs: `try pdf.read(from: inputStream)` opens one; then stamp, fill, merge and split (Examples 48 to 50)
+
+## Examples
+
+Every example is complete and runnable; start from the one closest to the task. The source: https://github.com/edragoev1/pdfjet/tree/main/Sources (Example_NN/main.swift); the same examples, with the PDF each one makes, for Java at https://pdfjet.com/java/by-example.html. In a clone of the repository, `./run-swift.sh 01` builds and runs one.
+
+- Text: 01 (TextBlock), 06 (embedded fonts), 07 (fonts from .otf and .ttf files), 08 (measuring text), 10 and 11 (TextBlock), 12 (justified paragraphs), 14 and 15 (TextFrame, columns), 16 (mixed styles), 17 (a whole book), 18 and 19 (Markdown), 22 (TextFlow)
+- Languages: 02 (Chinese), 03 (Japanese, Korean), 04 (Arabic, Hebrew, Persian, Thai), 13 (Chinese paragraphs), 52 (Hindi and Khmer, shaped by Apple's Core Text: on Apple systems alone)
+- Tables: 20 (a results page), 21 (header rows, spans, colors), 23 (a table over pages, PDF/A), 24 (BigTable, 2,546 pages), 51 (wrapped cells)
+- Charts: 20, 25 (lines), 26 (scatter), 27 (bars), 28 (donut)
+- Graphics and images: 29 (shapes), 30 (transparency), 31 (Stamp, Container), 32 (JPEG, PNG, BMP), 33 (SVG), 34 (a letterhead), 35 (layers)
+- Barcodes: 36 (linear), 37 (QR, Data Matrix), 38 (PDF417)
+- Documents: 39 (pages finished last), 40 (links), 41 (bookmarks), 42 (attachments, annotations), 43 and 44 (forms), 45 (watermark), 46 (an invoice with its data, PDF/A-3), 47 (encryption)
+- Existing PDFs: 48 (write on pages), 49 (merge and split), 50 (stamp and number pages)
+
+## Links
+
+- The repository, its README and the API: https://github.com/edragoev1/pdfjet
+- PDFjet: https://pdfjet.com

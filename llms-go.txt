@@ -1,0 +1,189 @@
+# PDFjet for Go
+
+> PDFjet creates PDF documents from Go 1.26 or later. One module, no dependencies: text and tables that flow across pages, embedded fonts for the world's languages, charts, barcodes, images and SVG, Markdown, accessible PDF/UA and archival PDF/A documents, encryption, and adding to existing PDFs. It writes each page to the output as it goes, so long documents need little memory. This file is for AI coding assistants: the rules below are where code written without reading the examples goes wrong.
+
+## Install
+
+```bash
+go get github.com/edragoev1/pdfjet/v9@v9.1.9
+```
+
+The library is the package `github.com/edragoev1/pdfjet/v9/src`, named `pdfjet`; its constants are in packages of their own beside it:
+
+```go
+import (
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
+)
+```
+
+For Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add one line to the program, which builds those fonts into it (52 MB): `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"`.
+
+## Rules
+
+1. **End every document with `pdf.Complete()`, and check its error.** It writes the end of the file, flushes the writer, and closes the file that `NewPDFFile` opened. A PDF without it is broken.
+2. **Coordinates are points (1/72 inch) from the top-left corner of the page; y grows downward.** `letter.Portrait()` is 612 x 792, `a4.Portrait()` 595 x 842; page sizes are functions, not variables. A margin of 50 leaves a width of 512 on Letter. Coordinates and sizes are `float32`: convert a `float64` with `float32(x)`.
+3. **Create, set, place, draw:** make a component with its `New` function (`pdfjet.NewTextLine(font, "text")`), set it up, then `SetLocation(x, y)` and `DrawOn(page)`. Setters return the object, so calls chain, but `SetLocation` returns the `Drawable` interface: in a chain it goes last, right before `DrawOn`. Most `DrawOn` methods return `[2]float32{x, y}` where the component ended: place the next one below it, `y = block.DrawOn(page)[1] + 12`.
+4. **Pages:** `pdfjet.NewPage(pdf, letter.Portrait())` makes a page and adds it to the document at once. For content longer than one page, let the component make the pages: `table.DrawOnPages(pdf, &pages, letter.Portrait())` (also `Markdown`) fills a `[]*pdfjet.Page` you pass a pointer to, with as many as it needs. **Those pages are not in the document yet: add them with `pdf.AddPages(pages)`** after drawing on them, for example after adding footers such as "Page 3 of 7" with `page.AddFooter(textLine)`. Give the table a bottom margin, `table.SetBottomMargin(50)`, so that its last row on each page stays clear of the footer. Forgetting it gives "A PDF needs at least one page" from `Complete` or a document without them.
+5. **Fonts:** `pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)` loads a font PDFjet carries, built into the program; the constants are in the packages `IBMPlexSans`, `IBMPlexSerif`, `CascadiaMono` (monospace), and, with the world import above, `IBMPlexSansJP`, `IBMPlexSansKR`, `IBMPlexSansSC`, `IBMPlexSansTC`, `IBMPlexSansArabic`, `IBMPlexSansHebrew`, `IBMPlexSansThai`. PDFjet works with any TrueType (.ttf) or OpenType (.otf) font file: `pdfjet.NewFontFromFile(pdf, "/path/to/MyFont.otf")`, which panics when the file cannot be read; `pdfjet.ReadFontFromFile` returns the error instead. Fonts are embedded as a subset of the characters drawn. Set the size on the font (`font.SetSize(11)`) or on the component (`SetFontSize`). Do not use the core fonts (`corefont.Helvetica()` and the others) for real documents: they draw only Western European characters, look different in each viewer, and are not allowed in PDF/UA or PDF/A. The packages `NotoSans`, `JetBrainsMono`, `SourceSerif4`, `IBMPlexMono` and `IBMPlexMath` are deprecated: PDFjet does not carry those fonts. A program that draws only with font files of its own can leave the 7 MB of the fonts PDFjet carries out of its binary: `go build -tags pdfjet_nofonts`.
+6. **Colors are `int32` RGB values:** `0x1F4E79`, or a constant of the package `color` such as `color.Navy`.
+7. **Accessible documents:** `pdf.SetCompliance(compliance.PDF_UA_1)` and `pdf.SetTitle(...)` right after `NewPDF`; give headings `SetStructureType(structelem.H1)` (H2, …) and every image `SetAltDescription("...")`. Archival: `compliance.PDF_A_1B`, `PDF_A_2B`, `PDF_A_3B`; `compliance.PDF_A_3A_UA_1` is archival and accessible.
+8. **The output:** `pdfjet.NewPDFFile("out.pdf")` creates the file and returns an error when it cannot. `pdfjet.NewPDF(bufio.NewWriter(w))` writes to any `io.Writer`, such as an `http.ResponseWriter` or a `bytes.Buffer`; `Complete` flushes the `bufio.Writer` and leaves `w` open.
+9. **Errors:** a mistake in the calling code, a bad value or a call at the wrong time, is recorded with a message that says what to change, and the document goes on without what it would have broken; `Complete` then returns the first mistake as its error and writes no broken PDF. So never ignore the error of `Complete`. A function that already returns an error, such as `NewPDFFile` or `pdf.Read`, returns it at once; the constructors that read a file, `NewFontFromFile` and `NewImageFromFile`, panic when they cannot (`ReadFontFromFile` and `ReadImage` return the error). Read the message.
+
+## A page of text
+
+```go
+package main
+
+import (
+	"log"
+
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
+)
+
+func main() {
+	pdf, err := pdfjet.NewPDFFile("Hello.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Hello")
+
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	bold.SetSize(20)
+	regular := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	regular.SetSize(11)
+
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	title := pdfjet.NewTextLine(bold, "Hello")
+	title.SetStructureType(structelem.H1)
+	title.SetLocation(50, 70)
+	title.DrawOn(page)
+
+	text := pdfjet.NewTextBlock(regular,
+		"TextBlock wraps text to its width. Its DrawOn returns where the text ended.")
+	text.SetLocation(50, 90)
+	text.SetWidth(512)
+	y := text.DrawOn(page)[1]
+
+	pdfjet.NewTextLine(regular, "This line is placed below the block.").
+		SetLocation(50, y+20).DrawOn(page)
+
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
+}
+```
+
+## A table over as many pages as it needs
+
+```go
+package main
+
+import (
+	"log"
+	"strconv"
+
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
+)
+
+func main() {
+	pdf, err := pdfjet.NewPDFFile("Report.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Report")
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	regular := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+
+	data := [][]*pdfjet.Cell{{
+		pdfjet.NewCell(bold, "Item").SetBackgroundColor(0xF1F3F6),
+		pdfjet.NewCell(bold, "Quantity").SetBackgroundColor(0xF1F3F6),
+	}}
+	for i := 1; i <= 200; i++ {
+		data = append(data, []*pdfjet.Cell{
+			pdfjet.NewCell(regular, "Item "+strconv.Itoa(i)),
+			pdfjet.NewCell(regular, strconv.Itoa(i*3)),
+		})
+	}
+
+	table := pdfjet.NewTable()
+	table.SetTableData(data, 1) // 1 header row, repeated on every page
+	table.SetColumnWidth(0, 362)
+	table.SetColumnWidth(1, 150)
+	table.RightAlignNumbers()
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(50) // room for the footer on each page
+
+	pages := make([]*pdfjet.Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	for i, page := range pages {
+		page.AddFooter(pdfjet.NewTextLine(regular,
+			"Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))
+	}
+	pdf.AddPages(pages) // the pages the table made, into the document
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
+}
+```
+
+For tables of thousands of pages read from a file or a database, use `BigTable` (`pdfjet.NewBigTable`): it writes as it goes and its memory stays flat (Example_24).
+
+## Markdown
+
+```go
+markdown := pdfjet.NewMarkdown(regular, bold, italic, boldItalic, code) // five fonts
+pages := make([]*pdfjet.Page, 0)
+markdown.DrawOnPages(pdf, markdownText, &pages, letter.Portrait())
+pdf.AddPages(pages)
+```
+
+Headings, lists, tables, quotes, code and links, tagged in a PDF/UA document (Example_19). `content.OfTextFile(path)`, of the package `github.com/edragoev1/pdfjet/v9/src/content`, reads a text file into a string.
+
+## The main types
+
+Each type has a `New` function, `pdfjet.NewTable()`; where the other ports overload a constructor, Go has a suffix, such as `NewFontFromFile`, `NewImageFromFile`, `NewPageDetached`.
+
+- Document: `PDF`, `Page`, the page sizes `letter`, `a4`, `legal` (`letter.Portrait()`, `letter.Landscape()`), `compliance`, `Font`
+- Text: `TextLine` (one line), `TextBlock` (wrapped to a width), `TextColumn` (justified paragraphs), `TextFrame` and `Paragraph` (text flowing across columns and pages), `CompositeTextLine` (subscripts, superscripts), `Markdown`
+- Tables: `Table`, `Cell`, `BigTable`
+- Graphics: `Line`, `Rect`, `Path`, `Point`, `Stamp` (drawn once, placed on every page), `Container`, `GraphicsState` (transparency)
+- Images: `Image` (PNG, JPEG, BMP), `SVGImage` (drawn as vectors; `NewSVGImageFromFile` returns an error)
+- Charts: `SimpleBarChart`, `SimpleLineChart`, `SimpleScatterChart`, `DonutChart`
+- Barcodes: `pdfjet.NewBarcode` (Code 128, Code 39, UPC-A, EAN-13), and, each in a package of its own, `qrcode.NewQRCode`, `datamatrix.NewDataMatrix`, `pdf417.NewPDF417`
+- Interactive: links and destinations, `Bookmark`, file attachments, `CheckBox`, `RadioButton`, `Form` and `Field`
+- Existing PDFs: `pdf.Read(buf)` takes the whole PDF as a `[]byte` (`content.OfBinaryFile(path)`) and returns its objects and an error; then stamp, fill, merge and split (Examples 48 to 50)
+- Constants, each in a package: `color`, `compliance`, `structelem`, `alignment`, `border`, `shape`, `direction` and others
+
+## Examples
+
+Every example is complete and runnable; start from the one closest to the task. The source: https://github.com/edragoev1/pdfjet/tree/main/src/examples (exampleNN/main.go); the same examples, with the PDF each one makes, for Java at https://pdfjet.com/java/by-example.html. In a clone of the repository, `./run-go.sh 01` runs one.
+
+- Text: 01 (TextBlock), 06 (embedded fonts), 07 (fonts from .otf and .ttf files), 08 (measuring text), 10 and 11 (TextBlock), 12 (justified paragraphs), 14 and 15 (TextFrame, columns), 16 (mixed styles), 17 (a whole book), 18 and 19 (Markdown), 22 (TextFlow)
+- Languages: 02 (Chinese), 03 (Japanese, Korean), 04 (Arabic, Hebrew, Persian, Thai), 13 (Chinese paragraphs), 52 (Hindi and Khmer, shaped by go-text/typesetting, a module of the example alone)
+- Tables: 20 (a results page), 21 (header rows, spans, colors), 23 (a table over pages, PDF/A), 24 (BigTable, 2,546 pages), 51 (wrapped cells)
+- Charts: 20, 25 (lines), 26 (scatter), 27 (bars), 28 (donut)
+- Graphics and images: 29 (shapes), 30 (transparency), 31 (Stamp, Container), 32 (JPEG, PNG, BMP), 33 (SVG), 34 (a letterhead), 35 (layers)
+- Barcodes: 36 (linear), 37 (QR, Data Matrix), 38 (PDF417)
+- Documents: 39 (pages finished last), 40 (links), 41 (bookmarks), 42 (attachments, annotations), 43 and 44 (forms), 45 (watermark), 46 (an invoice with its data, PDF/A-3), 47 (encryption)
+- Existing PDFs: 48 (write on pages), 49 (merge and split), 50 (stamp and number pages)
+
+## Links
+
+- The repository, its README and the API: https://github.com/edragoev1/pdfjet
+- The package documentation: https://pkg.go.dev/github.com/edragoev1/pdfjet/v9/src
+- PDFjet: https://pdfjet.com

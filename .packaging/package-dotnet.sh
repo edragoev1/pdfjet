@@ -123,10 +123,12 @@ mkdir -p "$STAGE" .commercial-packages
 
 # Through a file, not a pipe, so that a failing git archive stops the script.
 TAR=$PWD/$STAGE.tar
+# llms-dotnet.txt, the guide for AI coding assistants, is at the top of the
+# package, as in the repository.
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/dotnet-pro LICENSE \
     net net48 PDFjet.csproj resources/fonts resources/data examples resources/images tests/data/PngSuite docfx \
-    CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
+    CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html llms-dotnet.txt
 tar -x -C "$STAGE" -f "$TAR"
 rm "$TAR"
 

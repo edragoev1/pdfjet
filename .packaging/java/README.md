@@ -17,6 +17,7 @@ This package has the library ready to use, built for Java 8 and later.
 | `run-java.sh`, `run-java.cmd` | Compile and run one example. |
 | `resources/fonts/` | The fonts `PDFjet.jar` carries, as files, each family with its license. |
 | `resources/data/`, `resources/images/`, `tests/data/PngSuite/` | The files the examples read; `resources/data/README.md` says where the data comes from. |
+| `llms-java.txt` | A guide for AI coding assistants: the rules of the API and three samples. |
 | `CHANGELOG.md` | What changed in each release. |
 | `LICENSE`, `THIRD-PARTIES.TXT` | The license of PDFjet and of the work it includes. |
 

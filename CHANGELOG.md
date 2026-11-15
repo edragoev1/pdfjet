@@ -312,6 +312,13 @@ QR code at the level). Each returns the error in the words the constructor
 panics with, and adds nothing to the PDF for what it refuses. The
 constructors, which return no error, panic as they did.
 
+Added: **guides for AI coding assistants,** `llms-java.txt`,
+`llms-dotnet.txt`, `llms-go.txt` and `llms-swift.txt`, with `llms.txt`
+linking them: the install, the rules where code goes wrong, and three
+samples, which `check-llms.sh` builds, runs and checks in every port. The
+Java guide is in the Java Core zip and the Maven jars, the .NET guide in
+the .NET Core zip and the NuGet package PDFjet.
+
 ## v9.1.7 — 2026-11-05
 
 The next release, with PDFjet Pro's 9.1.7 (TODO.md).

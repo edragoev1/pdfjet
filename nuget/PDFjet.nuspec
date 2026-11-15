@@ -31,6 +31,8 @@
     <file src="lib/net48/PDFjet.dll" target="lib/net48" />
     <file src="README.md" target="" />
     <file src="icon.png" target="" />
+    <!-- The guide for AI coding assistants, as in the repository -->
+    <file src="llms-dotnet.txt" target="" />
     <!-- The licenses of the fonts PDFjet.dll carries, one a family -->
     <file src="font-licenses/*" target="" />
   </files>
