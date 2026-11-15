@@ -750,5 +750,21 @@ jobs:
             - name: Build the library and the examples
               run: swift build -c release -Xswiftc -warnings-as-errors
 
+            # Example_52 needs Core Text, so it runs only here: Hindi and
+            # Khmer shaped by Core Text and drawn as outlines; its PDF is kept
+            # to check with veraPDF before a release.
+            - name: Run Example_52
+              run: |
+                  "$(swift build -c release --show-bin-path)/Example_52"
+                  tail -c 32 Example_52.pdf | grep -q '%%EOF'
+
+            - name: Upload Example_52.pdf
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: example-52-swift-macos
+                  path: Example_52.pdf
+                  if-no-files-found: error
+                  retention-days: 7
+
             - name: Unit tests
               run: ./test-swift.sh
