@@ -69,7 +69,7 @@ public class Example_78 {
     static final String CURRENCY = "CAD";
 
     static final String SELLER = "Northwind Studio";
-    static final String SELLER_ADDRESS = "12 Harbour Street\nPort Elgin, ON N0H 2C0\nhello@example.com";
+    static final String SELLER_ADDRESS = "12 Harbour Street\nPort Elgin, ON N0H 2C0\nhello@example.com\nHST 81234 5678 RT0001";
     static final String BILL_TO = "Fabrikam Press\n18 Rue des Lilas\n75011 Paris, France";
     static final String SHIP_TO =
             "Fabrikam Press, warehouse\n4 Avenue de l'Europe\n94200 Ivry-sur-Seine, France";

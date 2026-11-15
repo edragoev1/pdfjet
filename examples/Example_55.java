@@ -67,7 +67,7 @@ public class Example_55 {
 
     static final String SELLER = "Northwind Studio";
     static final String SELLER_ADDRESS =
-            "12 Harbour Street\nPort Elgin, ON N0H 2C0\nhello@example.com";
+            "12 Harbour Street\nPort Elgin, ON N0H 2C0\nhello@example.com\nHST 81234 5678 RT0001";
     static final String CUSTOMER =
             "Juniper & Pine Bakery\n9 Goderich Street\nPort Elgin, ON N0H 2C4";
 
