@@ -1103,7 +1103,7 @@ public class Table : Drawable {
         striped = getStripedRows()
         columnSums = [:]
         defer { columnSums = nil }
-        let xy = drawTableRows(page, drawHeaderRows(page, 0))
+        let xy = drawPage(page, 0)
         return [x1 + getWidth(), xy[1]]
     }
 
@@ -1160,10 +1160,27 @@ public class Table : Drawable {
                 page = Page(pdf, pageSize, false)
                 pages.append(page!)
             }
-            xy = drawTableRows(page, drawHeaderRows(page, pageNumber))
+            xy = drawPage(page, pageNumber)
             pageNumber += 1
         }
         return [x1 + getWidth(), xy[1]]
+    }
+
+    // Draws the header rows and the rows that fit on the page under them. The
+    // borders of the cells are written when the page is done, as continuous
+    // lines, unless the page strokes with a dash pattern, which would go on
+    // from one cell to the next and look different.
+    private func drawPage(_ page: Page?, _ pageNumber: Int) -> [Float] {
+        guard let page = page, page.strokeDashPattern == "[] 0" else {
+            return drawTableRows(page, drawHeaderRows(page, pageNumber))
+        }
+        let outer = page.tableLines
+        let lines = TableLines()
+        page.tableLines = lines
+        defer { page.tableLines = outer }
+        let xy = drawTableRows(page, drawHeaderRows(page, pageNumber))
+        lines.flush(page)
+        return xy
     }
 
     // Returns true when the header and the footer rows do not fit on the first

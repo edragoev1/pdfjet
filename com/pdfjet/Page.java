@@ -96,6 +96,12 @@ final public class Page {
     CapStyle lineCapStyle = CapStyle.BUTT;
     JoinStyle lineJoinStyle = JoinStyle.MITER;
     String strokeDashPattern = "[] 0";
+    // The borders of the cells of the table being drawn on the page, which
+    // the table writes as continuous lines, or null.
+    TableLines tableLines = null;
+    // Counts the calls that set the pen, so that the table can tell whether
+    // the pen was set after the borders of the last cell it kept.
+    int penChanges = 0;
     // The states that saveGraphicsState saved and restoreGraphicsState restores.
     private final List<State> savedStates = new ArrayList<State>();
     // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
@@ -1620,6 +1626,7 @@ final public class Page {
         if (color == Color.transparent) {
             return this;
         }
+        penChanges++;
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -1639,6 +1646,7 @@ final public class Page {
      * @return this Page object.
      */
     public Page setPenColor(float[] rgbColor) {
+        penChanges++;
         if (rgbColor == null) {
             return this; // Early exit if null
         }
@@ -1715,6 +1723,7 @@ final public class Page {
      * @return this Page object.
      */
     public Page setPenColorCMYK(float c, float m, float y, float k) {
+        penChanges++;
         checkCMYK();
         append(c);
         append(' ');
@@ -1891,6 +1900,7 @@ final public class Page {
      * @return this Page object.
      */
     public Page setPenWidth(float width) {
+        penChanges++;
         if (width < 0f) {
             pdf.fail(new IllegalArgumentException("The pen width cannot be negative."));
         }
@@ -2685,6 +2695,7 @@ final public class Page {
         }
         if (!savedStates.isEmpty()) {
             State state = savedStates.remove(savedStates.size() - 1);
+            penChanges++;
             brushColor = state.getBrushColor();
             brushColorWritten = state.getBrushColorWritten();
             penColor = state.getPenColor();

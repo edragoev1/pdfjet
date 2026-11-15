@@ -22,6 +22,25 @@ little lighter and more even. A program that wants the old hairline sets 0:
 example, a `Cell` drawn with no width set wrote `0 w` before its borders; it
 now writes `0.5 w`.
 
+Behavior change, in the four ports, in the bytes and not the look: **a
+`Table` writes the borders of its cells as continuous lines.** Each cell
+stroked its own sides, one short line for each, so a table of 10 columns
+wrote 10 lines for every rule across it. The borders that touch, on the
+same row or column and of the same color and width, are now one line, from
+the left edge of the table to the right and from its top to its bottom.
+Nothing else changes: each cell keeps its own borders, which sides, what
+color and how wide (`Cell.setBorder`, `setBorderColor`, `setBorderWidth`),
+and a cell of another pen draws its own lines with it; a background, an
+image, a text block or a point drawn over a line is drawn over it still;
+and a table on a page with a dash pattern draws each cell's borders as
+before. Poppler draws the pages of the 85 examples and of tables of random
+borders, colors, widths and backgrounds pixel for pixel as before; MuPDF,
+anti-aliasing, draws them the same but for the dot where two lines that met
+were stroked twice and darker. A table of many rows is 4 to 5% smaller
+(Examples 21, 23 and 83), a business document about 1%. For example, the
+line under a two-column row was written `49.75 724.13 m 110 724.13 l` and
+`109.75 724.13 m 170 724.13 l`; it is now `49.75 724.13 m 170 724.13 l`.
+
 Changed, in the four ports: **a font of CFF outlines (.otf) is embedded as
 a much smaller subset.** The subset was the whole font with an `endchar` in
 place of every glyph not drawn and a `return` in place of every subroutine

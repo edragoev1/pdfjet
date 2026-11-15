@@ -465,7 +465,8 @@ import Testing
     }
 
     // A table that fits on its page has the lines it had: a rule over each
-    // row, and the one under the last.
+    // row, and the one under the last, the bottoms of its two cells joined
+    // into one line across the table.
     @Test func aTableOnOnePageHasTheLinesItHad() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
@@ -475,7 +476,12 @@ import Testing
         let ys = rules(page)
         #expect(ys.count == 11)
         guard ys.count == 11 else { return }
-        #expect(linesAt(page, ys[10]).count == 2)
+        let under = linesAt(page, ys[10])
+        #expect(under.count == 1, "\(under)")
+        guard under.count == 1 else { return }
+        let ends = under[0].split(separator: " ").map { Float(String($0))! }
+        #expect(ends[0] <= 50, "\(under)")
+        #expect(abs(ends[1] - (50 + table.getWidth())) < 0.01, "\(under)")
     }
 
     // A table of rows by columns of cells with every border, the cell at 0,0
@@ -513,20 +519,15 @@ import Testing
         #expect(count(content, TestSupport.hex("spans")) == 1)
         #expect(count(content, TestSupport.hex("r1c0")) == 0)
         #expect(count(content, TestSupport.hex("r1c1")) == 1)
-        // Its left border runs from the top of its row to the bottom of the
-        // row under it, which is two rows of the three rules the table draws.
+        // It runs from the top of its row to the bottom of the row under it:
+        // of the four rules the table draws, the one between its two rows
+        // does not cross it, and the one under them does.
         let ys = rules(page)
         #expect(ys.count == 4)
         guard ys.count == 4 else { return }
-        let rowHeight = ys[0] - ys[1]
-        let regex = try! NSRegularExpression(pattern: "50 ([-0-9.]+) m\n50 ([-0-9.]+) l")
-        guard let m = regex.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)) else {
-            Issue.record("the spanning cell drew no left border")
-            return
-        }
-        let top = Float((content as NSString).substring(with: m.range(at: 1)))!
-        let bottom = Float((content as NSString).substring(with: m.range(at: 2)))!
-        #expect(abs(2 * rowHeight - (top - bottom)) < 0.01, "the spanning cell is not two rows tall")
+        let across = rulesAcrossTheFirstColumn(page)
+        #expect(!across.contains(ys[1]), "a rule through the spanning cell: \(across)")
+        #expect(across.contains(ys[0]) && across.contains(ys[2]) && across.contains(ys[3]), "\(across)")
     }
 
     @Test func aPageBreakKeepsTheRowsOfASpanTogether() {
@@ -648,20 +649,126 @@ import Testing
         #expect(abs((down["110"] ?? 0) - 2 * height) < 0.01, "the edge between the cells")
         #expect(abs((down["170"] ?? 0) - height) < 0.01, "the right edge of the row")
     }
-    // The y of every rule the page draws across the first column, in the order
-    // they are drawn and with none of them left out.
+    // The y of every rule the page draws across the first column, from x = 50
+    // to x = 110 or past it, top to bottom and with none of them left out: a
+    // line drawn twice is there twice.
     private func rulesAcrossTheFirstColumn(_ page: Page) -> [Float] {
         let content = TestSupport.content(page)
-        let regex = try! NSRegularExpression(pattern: "50 ([-0-9.]+) m\n110 ([-0-9.]+) l")
+        let regex = try! NSRegularExpression(pattern: "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")
         var ys = [Float]()
         for m in regex.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
-            let y1 = (content as NSString).substring(with: m.range(at: 1))
-            let y2 = (content as NSString).substring(with: m.range(at: 2))
-            if y1 == y2 {
-                ys.append(Float(y1)!)
+            let group = { (i: Int) in (content as NSString).substring(with: m.range(at: i)) }
+            if group(2) == group(4) && Float(group(1))! <= 50 && Float(group(3))! >= 110 {
+                ys.append(Float(group(2))!)
             }
         }
-        return ys
+        return ys.sorted(by: >)
+    }
+
+    // The lines the page strokes, each as x1, y1, x2, y2 and the pen it is
+    // stroked with, red, green, blue and width.
+    private func strokes(_ page: Page) -> [[Float]] {
+        var strokes = [[Float]]()
+        var pen: [Float] = [0, 0, 0, 1]
+        var from: [Float]? = nil
+        for line in TestSupport.content(page).split(separator: "\n") {
+            let t = line.split(separator: " ").map { String($0) }
+            if line.hasSuffix(" RG") && t.count == 4 {
+                pen = [Float(t[0])!, Float(t[1])!, Float(t[2])!, pen[3]]
+            } else if line.hasSuffix(" w") && t.count == 2 {
+                pen[3] = Float(t[0])!
+            } else if line.hasSuffix(" m") && t.count == 3 {
+                from = [Float(t[0])!, Float(t[1])!]
+            } else if line.hasSuffix(" l") && t.count == 3, let start = from {
+                strokes.append([start[0], start[1], Float(t[0])!, Float(t[1])!, pen[0], pen[1], pen[2], pen[3]])
+                from = nil
+            }
+        }
+        return strokes
+    }
+
+    // The borders of the cells next to each other are joined: a rule across
+    // the table is one line from its left edge to its right, not a line for
+    // each cell, and a line down the table one line from its top to its
+    // bottom.
+    @Test func theBordersOfTheCellsAreJoinedIntoLines() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 10, 4), 1)
+        table.setLocation(50, 50)
+        let xy = table.drawOn(page)
+        let left: Float = 50
+        let right: Float = 50 + table.getWidth()
+        let top: Float = page.height - 50
+        let bottom: Float = page.height - xy[1]
+        var across = 0
+        var down = 0
+        for s in strokes(page) {
+            if s[1] == s[3] {
+                across += 1
+                #expect(s[0] <= left && s[2] >= right - 0.01, "\(s)")
+            } else {
+                down += 1
+                #expect(max(s[1], s[3]) >= top - 0.01 && min(s[1], s[3]) <= bottom + 0.01, "\(s)")
+            }
+        }
+        let count = rules(page).count
+        #expect(across >= count && across <= 2 * count, "\(across)")
+        #expect(down >= 5 && down <= 10, "\(down)")
+    }
+
+    // Each cell keeps its own borders: a cell of another color and width
+    // draws its own four lines with its pen, which the lines of the cells
+    // beside it do not join, and a side that a cell leaves out is left out.
+    @Test func eachCellKeepsItsOwnBorders() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let data = rows(TestSupport.helvetica(pdf), 3, 3)
+        for row in data {
+            for cell in row {
+                cell.setWidth(60)
+            }
+        }
+        data[1][1].setBorders(true).setBorderColor(Color.red).setBorderWidth(2)
+        data[2][0].setBorder(Border.LEFT, false)
+        Table().setTableData(data, 0).setLocation(50, 50).drawOn(page)
+        let ys = rules(page)
+        guard ys.count == 4 else {
+            Issue.record("\(ys)")
+            return
+        }
+        let middle = (ys[2] + ys[3]) / 2
+        var red = 0
+        for s in strokes(page) {
+            if s[4] == 1 && s[5] == 0 && s[6] == 0 {
+                red += 1
+                #expect(s[7] == 2)
+                let x0 = min(s[0], s[2])
+                let x1 = max(s[0], s[2])
+                let y0 = min(s[1], s[3])
+                let y1 = max(s[1], s[3])
+                #expect(x0 >= 109 && x1 <= 171 && y0 >= ys[2] - 1 && y1 <= ys[1] + 1,
+                        "a red line outside the red cell: \(s)")
+            } else {
+                #expect(s[7] == 0.5)
+            }
+            // The middle of the left side of the last row is not drawn.
+            #expect(!(s[0] == 50 && s[2] == 50 && min(s[1], s[3]) < middle && max(s[1], s[3]) > middle),
+                    "the left border the last row leaves out: \(s)")
+        }
+        #expect(red == 4)
+    }
+
+    // Drawing the table leaves the page with the pen of the last cell's
+    // borders, as when each cell stroked its own.
+    @Test func thePageIsLeftWithThePenOfTheLastCell() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let data = rows(TestSupport.helvetica(pdf), 3, 2)
+        data[2][1].setBorderColor(Color.blue).setBorderWidth(1.5)
+        Table().setTableData(data, 0).setLocation(50, 50).drawOn(page)
+        #expect(page.getPenColor() == [0, 0, 1])
+        #expect(page.getPenWidth() == 1.5)
     }
 
     @Test func aCellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan() {

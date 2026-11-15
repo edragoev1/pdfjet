@@ -985,7 +985,7 @@ public class Table : IDrawable {
         striped = GetStripedRows();
         columnSums = new Dictionary<long, ColumnSums>();
         try {
-            float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
+            float[] xy = DrawPage(page, 0);
             return new float[] {x1 + GetWidth(), xy[1]};
         } finally {
             columnSums = null;
@@ -1036,12 +1036,32 @@ public class Table : IDrawable {
                     page = new Page(pdf, pageSize, false);
                     pages.Add(page);
                 }
-                xy = DrawTableRows(page, DrawHeaderRows(page, pageNumber));
+                xy = DrawPage(page, pageNumber);
                 pageNumber++;
             }
             return new float[] {x1 + GetWidth(), xy[1]};
         } finally {
             columnSums = null;
+        }
+    }
+
+    // Draws the header rows and the rows that fit on the page under them. The
+    // borders of the cells are written when the page is done, as continuous
+    // lines, unless the page strokes with a dash pattern, which would go on
+    // from one cell to the next and look different.
+    private float[] DrawPage(Page page, int pageNumber) {
+        if (page == null || !page.strokeDashPattern.Equals("[] 0")) {
+            return DrawTableRows(page, DrawHeaderRows(page, pageNumber));
+        }
+        TableLines outer = page.tableLines;
+        TableLines lines = new TableLines();
+        page.tableLines = lines;
+        try {
+            float[] xy = DrawTableRows(page, DrawHeaderRows(page, pageNumber));
+            lines.Flush(page);
+            return xy;
+        } finally {
+            page.tableLines = outer;
         }
     }
 

@@ -502,7 +502,8 @@ public sealed class TableTest : IDisposable {
     }
 
     // A table that fits on its page has the lines it had: a rule over each
-    // row, and the one under the last.
+    // row, and the one under the last, the bottoms of its two cells joined
+    // into one line across the table.
     [Fact]
     public void ATableOnOnePageHasTheLinesItHad() {
         PDF pdf = TestSupport.NewPDF();
@@ -511,7 +512,11 @@ public sealed class TableTest : IDisposable {
         table.SetLocation(50f, 50f);
         table.DrawOn(page);
         Assert.Equal(11, Rules(page).Count);
-        Assert.Equal(2, LinesAt(page, Rules(page)[10]).Count);
+        List<string> under = LinesAt(page, Rules(page)[10]);
+        Assert.Single(under);
+        string[] ends = under[0].Split(' ');
+        Assert.True(float.Parse(ends[0], System.Globalization.CultureInfo.InvariantCulture) <= 50f, under[0]);
+        Assert.True(Math.Abs(50f + table.GetWidth() - float.Parse(ends[1], System.Globalization.CultureInfo.InvariantCulture)) < 0.01f, under[0]);
     }
 
     // A table of rows by columns of cells with every border, the cell at 0,0
@@ -549,18 +554,16 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(1, Count(content, TestSupport.Hex("spans")));
         Assert.Equal(0, Count(content, TestSupport.Hex("r1c0")));
         Assert.Equal(1, Count(content, TestSupport.Hex("r1c1")));
-        // Its left border runs from the top of its row to the bottom of the
-        // row under it, which is two rows of the three rules the table draws.
+        // It runs from the top of its row to the bottom of the row under it:
+        // of the four rules the table draws, the one between its two rows
+        // does not cross it, and the one under them does.
         List<float> ys = Rules(page);
         Assert.Equal(4, ys.Count);
-        float rowHeight = ys[0] - ys[1];
-        System.Text.RegularExpressions.Match border =
-                System.Text.RegularExpressions.Regex.Match(content, "50 ([-0-9.]+) m\n50 ([-0-9.]+) l");
-        Assert.True(border.Success, content);
-        float top = float.Parse(border.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
-        float bottom = float.Parse(border.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
-        Assert.True(Math.Abs(2 * rowHeight - (top - bottom)) < 0.01f,
-                "the spanning cell is not two rows tall");
+        List<float> across = RulesAcrossTheFirstColumn(page);
+        Assert.DoesNotContain(ys[1], across);
+        Assert.Contains(ys[0], across);
+        Assert.Contains(ys[2], across);
+        Assert.Contains(ys[3], across);
     }
 
     [Fact]
@@ -691,18 +694,132 @@ public sealed class TableTest : IDisposable {
         Assert.True(Math.Abs(2 * height - down["110"]) < 0.01f, "the edge between the cells");
         Assert.True(Math.Abs(height - down["170"]) < 0.01f, "the right edge of the row");
     }
-    // The y of every rule the page draws across the first column, in the order
-    // they are drawn and with none of them left out.
+    // The y of every rule the page draws across the first column, from x = 50
+    // to x = 110 or past it, top to bottom and with none of them left out: a
+    // line drawn twice is there twice.
     private static List<float> RulesAcrossTheFirstColumn(Page page) {
         List<float> ys = new List<float>();
         foreach (System.Text.RegularExpressions.Match m in
                 System.Text.RegularExpressions.Regex.Matches(TestSupport.Content(page),
-                        "50 ([-0-9.]+) m\n110 ([-0-9.]+) l")) {
-            if (m.Groups[1].Value == m.Groups[2].Value) {
-                ys.Add(float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+                        "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")) {
+            if (m.Groups[2].Value == m.Groups[4].Value &&
+                    float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) <= 50f &&
+                    float.Parse(m.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture) >= 110f) {
+                ys.Add(float.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture));
             }
         }
+        ys.Sort();
+        ys.Reverse();
         return ys;
+    }
+
+    // The lines the page strokes, each as x1, y1, x2, y2 and the pen it is
+    // stroked with, red, green, blue and width.
+    private static List<float[]> Strokes(Page page) {
+        List<float[]> strokes = new List<float[]>();
+        float[] pen = {0f, 0f, 0f, 1f};
+        float[] from = null;
+        foreach (string line in TestSupport.Content(page).Split('\n')) {
+            string[] t = line.Split(' ');
+            if (line.EndsWith(" RG") && t.Length == 4) {
+                pen = new float[] {P(t[0]), P(t[1]), P(t[2]), pen[3]};
+            } else if (line.EndsWith(" w") && t.Length == 2) {
+                pen = new float[] {pen[0], pen[1], pen[2], P(t[0])};
+            } else if (line.EndsWith(" m") && t.Length == 3) {
+                from = new float[] {P(t[0]), P(t[1])};
+            } else if (line.EndsWith(" l") && t.Length == 3 && from != null) {
+                strokes.Add(new float[] {from[0], from[1], P(t[0]), P(t[1]), pen[0], pen[1], pen[2], pen[3]});
+                from = null;
+            }
+        }
+        return strokes;
+    }
+
+    private static float P(string s) {
+        return float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    // The borders of the cells next to each other are joined: a rule across
+    // the table is one line from its left edge to its right, not a line for
+    // each cell, and a line down the table one line from its top to its
+    // bottom.
+    [Fact]
+    public void TheBordersOfTheCellsAreJoinedIntoLines() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 10, 4), 1);
+        table.SetLocation(50f, 50f);
+        float[] xy = table.DrawOn(page);
+        float left = 50f;
+        float right = 50f + table.GetWidth();
+        float top = page.height - 50f;
+        float bottom = page.height - xy[1];
+        int across = 0;
+        int down = 0;
+        foreach (float[] s in Strokes(page)) {
+            if (s[1] == s[3]) {
+                across++;
+                Assert.True(s[0] <= left && s[2] >= right - 0.01f, string.Join(" ", s));
+            } else {
+                down++;
+                Assert.True(Math.Max(s[1], s[3]) >= top - 0.01f && Math.Min(s[1], s[3]) <= bottom + 0.01f,
+                        string.Join(" ", s));
+            }
+        }
+        Assert.True(across >= Rules(page).Count && across <= 2 * Rules(page).Count, "" + across);
+        Assert.True(down >= 5 && down <= 10, "" + down);
+    }
+
+    // Each cell keeps its own borders: a cell of another color and width
+    // draws its own four lines with its pen, which the lines of the cells
+    // beside it do not join, and a side that a cell leaves out is left out.
+    [Fact]
+    public void EachCellKeepsItsOwnBorders() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = Rows(TestSupport.Helvetica(pdf), 3, 3);
+        foreach (List<Cell> row in data) {
+            foreach (Cell cell in row) {
+                cell.SetWidth(60f);
+            }
+        }
+        data[1][1].SetBorders(true).SetBorderColor(Color.red).SetBorderWidth(2f);
+        data[2][0].SetBorder(Border.LEFT, false);
+        new Table().SetTableData(data, 0).SetLocation(50f, 50f).DrawOn(page);
+        List<float> ys = Rules(page);
+        float middle = (ys[2] + ys[3]) / 2;
+        int red = 0;
+        foreach (float[] s in Strokes(page)) {
+            if (s[4] == 1f && s[5] == 0f && s[6] == 0f) {
+                red++;
+                Assert.Equal(2f, s[7]);
+                float x0 = Math.Min(s[0], s[2]);
+                float x1 = Math.Max(s[0], s[2]);
+                float y0 = Math.Min(s[1], s[3]);
+                float y1 = Math.Max(s[1], s[3]);
+                Assert.True(x0 >= 109f && x1 <= 171f && y0 >= ys[2] - 1f && y1 <= ys[1] + 1f,
+                        "a red line outside the red cell: " + string.Join(" ", s));
+            } else {
+                Assert.Equal(0.5f, s[7]);
+            }
+            // The middle of the left side of the last row is not drawn.
+            Assert.False(s[0] == 50f && s[2] == 50f && Math.Min(s[1], s[3]) < middle && Math.Max(s[1], s[3]) > middle,
+                    "the left border the last row leaves out: " + string.Join(" ", s));
+        }
+        Assert.Equal(4, red);
+    }
+
+    // Drawing the table leaves the page with the pen of the last cell's
+    // borders, as when each cell stroked its own.
+    [Fact]
+    public void ThePageIsLeftWithThePenOfTheLastCell() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = Rows(TestSupport.Helvetica(pdf), 3, 2);
+        data[2][1].SetBorderColor(Color.blue).SetBorderWidth(1.5f);
+        new Table().SetTableData(data, 0).SetLocation(50f, 50f).DrawOn(page);
+        Assert.Equal(new float[] {0f, 0f, 1f}, page.GetPenColor());
+        Assert.Equal(1.5f, page.GetPenWidth());
     }
 
     [Fact]

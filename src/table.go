@@ -1029,7 +1029,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.striped = table.getStripedRows()
 	table.columnSums = make(map[[2]int]*columnSums)
 	defer func() { table.columnSums = nil }()
-	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
+	xy := table.drawPage(page, 0)
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
 }
 
@@ -1079,10 +1079,27 @@ func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize 
 			page = NewPageDetached(pdf, pageSize)
 			*pages = append(*pages, page)
 		}
-		xy = table.drawTableRows(page, table.drawHeaderRows(page, pageNumber))
+		xy = table.drawPage(page, pageNumber)
 		pageNumber++
 	}
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
+}
+
+// drawPage draws the header rows and the rows that fit on the page under
+// them. The borders of the cells are written when the page is done, as
+// continuous lines, unless the page strokes with a dash pattern, which would
+// go on from one cell to the next and look different.
+func (table *Table) drawPage(page *Page, pageNumber int) [2]float32 {
+	if page == nil || page.strokeDashPattern != "[] 0" {
+		return table.drawTableRows(page, table.drawHeaderRows(page, pageNumber))
+	}
+	outer := page.tableLines
+	lines := &tableLines{}
+	page.tableLines = lines
+	defer func() { page.tableLines = outer }()
+	xy := table.drawTableRows(page, table.drawHeaderRows(page, pageNumber))
+	lines.flush(page)
+	return xy
 }
 
 // startsOnNextPage returns true when the header and the footer rows do not fit

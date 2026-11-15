@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -540,7 +541,8 @@ class TableTest {
     }
 
     // A table that fits on its page has the lines it had: a rule over each
-    // row, and the one under the last.
+    // row, and the one under the last, the bottoms of its two cells joined
+    // into one line across the table.
     @Test
     void aTableOnOnePageHasTheLinesItHad() throws Exception {
         PDF pdf = TestSupport.newPDF();
@@ -549,7 +551,11 @@ class TableTest {
         table.setLocation(50f, 50f);
         table.drawOn(page);
         assertEquals(11, rules(page).size());
-        assertEquals(2, linesAt(page, rules(page).get(10)).size());
+        List<String> under = linesAt(page, rules(page).get(10));
+        assertEquals(1, under.size(), under.toString());
+        String[] ends = under.get(0).split(" ");
+        assertTrue(Float.parseFloat(ends[0]) <= 50f, under.toString());
+        assertEquals(50f + table.getWidth(), Float.parseFloat(ends[1]), 0.01f, under.toString());
     }
 
     // A table of rows by columns of cells with every border, the cell at 0,0
@@ -587,16 +593,15 @@ class TableTest {
         assertEquals(1, count(content, TestSupport.hex("spans")), content);
         assertEquals(0, count(content, TestSupport.hex("r1c0")), content);
         assertEquals(1, count(content, TestSupport.hex("r1c1")), content);
-        // Its left border runs from the top of its row to the bottom of the
-        // row under it, which is two rows of the three rules the table draws.
+        // It runs from the top of its row to the bottom of the row under it:
+        // of the four rules the table draws, the one between its two rows
+        // does not cross it, and the one under them does.
         List<Float> ys = rules(page);
         assertEquals(4, ys.size(), ys.toString());
-        float rowHeight = ys.get(0) - ys.get(1);
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
-                "50 ([-0-9.]+) m\\n50 ([-0-9.]+) l").matcher(content);
-        assertTrue(m.find(), content);
-        assertEquals(2 * rowHeight, Float.parseFloat(m.group(1)) - Float.parseFloat(m.group(2)),
-                0.01f, "the spanning cell is not two rows tall");
+        List<Float> across = rulesAcrossTheFirstColumn(page);
+        assertFalse(across.contains(ys.get(1)), "a rule through the spanning cell: " + across);
+        assertTrue(across.contains(ys.get(0)) && across.contains(ys.get(2)) && across.contains(ys.get(3)),
+                across.toString());
     }
 
     @Test
@@ -729,18 +734,131 @@ class TableTest {
         assertEquals(height, down.get("170"), 0.01f, "the right edge of the row");
     }
 
-    // The y of every rule the page draws across the first column, in the order
-    // they are drawn and with none of them left out.
+    // The y of every rule the page draws across the first column, from x = 50
+    // to x = 110 or past it, top to bottom and with none of them left out: a
+    // line drawn twice is there twice.
     private static List<Float> rulesAcrossTheFirstColumn(Page page) {
         List<Float> ys = new ArrayList<Float>();
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(
-                "50 ([-0-9.]+) m\\n110 ([-0-9.]+) l").matcher(TestSupport.content(page));
+                "([-0-9.]+) ([-0-9.]+) m\\n([-0-9.]+) ([-0-9.]+) l").matcher(TestSupport.content(page));
         while (m.find()) {
-            if (m.group(1).equals(m.group(2))) {
-                ys.add(Float.parseFloat(m.group(1)));
+            if (m.group(2).equals(m.group(4)) &&
+                    Float.parseFloat(m.group(1)) <= 50f && Float.parseFloat(m.group(3)) >= 110f) {
+                ys.add(Float.parseFloat(m.group(2)));
             }
         }
+        Collections.sort(ys, Collections.reverseOrder());
         return ys;
+    }
+
+    // The lines the page strokes, each as x1, y1, x2, y2 and the pen it is
+    // stroked with, red, green, blue and width.
+    private static List<float[]> strokes(Page page) {
+        List<float[]> strokes = new ArrayList<float[]>();
+        float[] pen = {0f, 0f, 0f, 1f};
+        float[] from = null;
+        for (String line : TestSupport.content(page).split("\n")) {
+            String[] t = line.split(" ");
+            if (line.endsWith(" RG") && t.length == 4) {
+                pen = new float[] {Float.parseFloat(t[0]), Float.parseFloat(t[1]), Float.parseFloat(t[2]), pen[3]};
+            } else if (line.endsWith(" w") && t.length == 2) {
+                pen = new float[] {pen[0], pen[1], pen[2], Float.parseFloat(t[0])};
+            } else if (line.endsWith(" m") && t.length == 3) {
+                from = new float[] {Float.parseFloat(t[0]), Float.parseFloat(t[1])};
+            } else if (line.endsWith(" l") && t.length == 3 && from != null) {
+                strokes.add(new float[] {from[0], from[1], Float.parseFloat(t[0]), Float.parseFloat(t[1]),
+                        pen[0], pen[1], pen[2], pen[3]});
+                from = null;
+            }
+        }
+        return strokes;
+    }
+
+    // The borders of the cells next to each other are joined: a rule across
+    // the table is one line from its left edge to its right, not a line for
+    // each cell, and a line down the table one line from its top to its
+    // bottom.
+    @Test
+    void theBordersOfTheCellsAreJoinedIntoLines() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = rows(TestSupport.helvetica(pdf), 10, 4);
+        Table table = new Table().setTableData(data, 1).setLocation(50f, 50f);
+        float[] xy = table.drawOn(page);
+        float left = 50f;
+        float right = 50f + table.getWidth();
+        float top = page.height - 50f;
+        float bottom = page.height - xy[1];
+        int across = 0;
+        int down = 0;
+        for (float[] s : strokes(page)) {
+            if (s[1] == s[3]) {
+                across++;
+                assertTrue(s[0] <= left && s[2] >= right - 0.01f, Arrays.toString(s));
+            } else {
+                down++;
+                assertTrue(Math.max(s[1], s[3]) >= top - 0.01f && Math.min(s[1], s[3]) <= bottom + 0.01f,
+                        Arrays.toString(s));
+            }
+        }
+        assertTrue(across >= rules(page).size() && across <= 2 * rules(page).size(), "" + across);
+        assertTrue(down >= 5 && down <= 2 * 5, "" + down);
+    }
+
+    // Each cell keeps its own borders: a cell of another color and width
+    // draws its own four lines with its pen, which the lines of the cells
+    // beside it do not join, and a side that a cell leaves out is left out.
+    @Test
+    void eachCellKeepsItsOwnBorders() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = rows(TestSupport.helvetica(pdf), 3, 3);
+        for (List<Cell> row : data) {
+            for (Cell cell : row) {
+                cell.setWidth(60f);
+            }
+        }
+        data.get(1).get(1).setBorders(true).setBorderColor(Color.red).setBorderWidth(2f);
+        data.get(2).get(0).setBorder(Border.LEFT, false);
+        new Table().setTableData(data, 0).setLocation(50f, 50f).drawOn(page);
+        List<Float> ys = rules(page);
+        // The middle cell: x from 110 to 170, y from the second rule to the third.
+        int red = 0;
+        for (float[] s : strokes(page)) {
+            boolean isRed = s[4] == 1f && s[5] == 0f && s[6] == 0f;
+            if (isRed) {
+                red++;
+                assertEquals(2f, s[7], "the width of the red lines");
+                float x0 = Math.min(s[0], s[2]);
+                float x1 = Math.max(s[0], s[2]);
+                float y0 = Math.min(s[1], s[3]);
+                float y1 = Math.max(s[1], s[3]);
+                assertTrue(x0 >= 109f && x1 <= 171f && y0 >= ys.get(2) - 1f && y1 <= ys.get(1) + 1f,
+                        "a red line outside the red cell: " + Arrays.toString(s));
+            } else {
+                assertEquals(0.5f, s[7], "the width of the black lines");
+            }
+            // The middle of the left side of the last row is not drawn.
+            float middle = (ys.get(2) + ys.get(3)) / 2;
+            if (s[0] == 50f && s[2] == 50f) {
+                assertFalse(Math.min(s[1], s[3]) < middle && Math.max(s[1], s[3]) > middle,
+                        "the left border the last row leaves out: " + Arrays.toString(s));
+            }
+        }
+        assertEquals(4, red, "the red cell's four borders");
+    }
+
+    // Drawing the table leaves the page with the pen of the last cell's
+    // borders, as when each cell stroked its own.
+    @Test
+    void thePageIsLeftWithThePenOfTheLastCell() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = rows(TestSupport.helvetica(pdf), 3, 2);
+        data.get(2).get(1).setBorderColor(Color.blue).setBorderWidth(1.5f);
+        new Table().setTableData(data, 0).setLocation(50f, 50f).drawOn(page);
+        assertArrayEquals(new float[] {0f, 0f, 1f}, page.getPenColor());
+        assertEquals(1.5f, page.getPenWidth());
     }
 
     @Test

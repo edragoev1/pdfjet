@@ -706,6 +706,7 @@ public class Cell {
             // A line of text is drawn instead of the cell text, on its baseline.
             DrawText(page, x, y, w, h);
         } else if (drawable is TextBlock textBlock) {
+            FlushTableLines(page);
             // The caller's text block and point keep their locations: drawing
             // the table moved them (review of 12 October 2026, R22)
             float textX = textBlock.x;
@@ -716,6 +717,7 @@ public class Cell {
             textBlock.x = textX;
             textBlock.y = textY;
         } else if (drawable != null) {
+            FlushTableLines(page);
             float[] location = LocationOf(drawable);
             if (GetTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = Measure(drawable)[0];
@@ -735,6 +737,9 @@ public class Cell {
 
         DrawBorders(page, x, y, w, h);
         if (point != null) {
+            // The lines under the point, which is drawn with the pen of the
+            // borders of the cell
+            FlushTableLines(page);
             float pointX = point.x;
             float pointY = point.y;
             if (AlignmentAt(MARKER_ALIGNMENT) == Alignment.LEFT) {
@@ -859,12 +864,24 @@ public class Cell {
         return location;
     }
 
+    // Writes the lines that the table being drawn kept, when it keeps them,
+    // before the cell draws what can draw anything anywhere, which was drawn
+    // over them.
+    private static void FlushTableLines(Page page) {
+        if (page.tableLines != null) {
+            page.tableLines.Flush(page);
+        }
+    }
+
     internal void DrawBackground(
             Page page,
             float x,
             float y,
             float cellW,
             float cellH) {
+        if (page.tableLines != null) {
+            page.tableLines.BeforeFill(page, x, y + borderWidth/2, x + cellW, y + borderWidth/2 + cellH);
+        }
         page.AddArtifactBMC();
         page.SetBrushColor(backgroundColor);
         page.FillRect(x, y + borderWidth/2, cellW, cellH);
@@ -880,10 +897,17 @@ public class Cell {
         if ((properties & Border.ALL) == 0) {
             return;     // Nothing to draw, so nothing to write.
         }
-        page.AddArtifactBMC();
         // The borders are black unless a color is set, whatever pen color the
         // page was left with.
-        page.SetPenColor(borderColor != NO_COLOR ? borderColor : Color.black);
+        int color = (borderColor != NO_COLOR) ? borderColor : Color.black;
+        if (page.tableLines != null) {
+            // The table writes them, joined to the borders of the cells next
+            // to this one, with this pen, when it is done with the page.
+            page.tableLines.AddBorders(page, properties, color, borderWidth, x, y, cellW, cellH);
+            return;
+        }
+        page.AddArtifactBMC();
+        page.SetPenColor(color);
         page.SetPenWidth(borderWidth);
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;

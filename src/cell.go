@@ -724,6 +724,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		// A line of text is drawn instead of the cell text, on its baseline.
 		cell.drawText(page, x, y, w, h)
 	} else if textBlock, ok := cell.drawable.(*TextBlock); ok {
+		flushTableLines(page)
 		// The caller's text block and point keep their locations: drawing the
 		// table moved them (review of 12 October 2026, R22)
 		defer func(x, y float32) { textBlock.x, textBlock.y = x, y }(textBlock.x, textBlock.y)
@@ -731,6 +732,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		textBlock.SetWidth(w - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
 		textBlock.DrawOn(page)
 	} else if cell.drawable != nil {
+		flushTableLines(page)
 		defer keepLocation(cell.drawable)()
 		if cell.alignmentAt(cellTextAlignment) == alignment.Right {
 			drawableWidth := measureDrawable(cell.drawable)[0]
@@ -746,6 +748,9 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 
 	cell.drawBorders(page, x, y, w, h)
 	if cell.point != nil {
+		// The lines under the point, which is drawn with the pen of the
+		// borders of the cell
+		flushTableLines(page)
 		defer func(x, y float32) { cell.point.x, cell.point.y = x, y }(cell.point.x, cell.point.y)
 		switch cell.alignmentAt(cellMarkerAlignment) {
 		case alignment.Left:
@@ -781,6 +786,15 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 	}
 }
 
+// flushTableLines writes the lines that the table being drawn kept, when it
+// keeps them, before the cell draws what can draw anything anywhere, which
+// was drawn over them.
+func flushTableLines(page *Page) {
+	if page.tableLines != nil {
+		page.tableLines.flush(page)
+	}
+}
+
 // drawLinkedPoint draws the point of the cell, which is a link, as a figure
 // in the Link that holds its annotation.
 func (cell *Cell) drawLinkedPoint(page *Page) {
@@ -808,6 +822,10 @@ func (cell *Cell) drawLinkedPoint(page *Page) {
 }
 
 func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
+	if page.tableLines != nil {
+		top := y + float32(cell.borderWidth/2)
+		page.tableLines.beforeFill(page, x, top, x+cellW, top+cellH)
+	}
 	page.AddArtifactBMC()
 	page.SetBrushColor(cell.backgroundColor)
 	page.FillRect(x, y+float32(cell.borderWidth/2), cellW, cellH)
@@ -818,14 +836,20 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	if cell.properties&border.All == 0 {
 		return // Nothing to draw, so nothing to write.
 	}
-	page.AddArtifactBMC()
 	// The borders are black unless a color is set, whatever pen color the
 	// page was left with.
-	if cell.borderColor != color.Transparent {
-		page.SetPenColor(cell.borderColor)
-	} else {
-		page.SetPenColor(color.Black)
+	penColor := cell.borderColor
+	if penColor == color.Transparent {
+		penColor = color.Black
 	}
+	if page.tableLines != nil {
+		// The table writes them, joined to the borders of the cells next to
+		// this one, with this pen, when it is done with the page.
+		page.tableLines.addBorders(page, cell.properties, penColor, cell.borderWidth, x, y, cellW, cellH)
+		return
+	}
+	page.AddArtifactBMC()
+	page.SetPenColor(penColor)
 	page.SetPenWidth(cell.borderWidth)
 	// Half the pen width, so that the corners of the borders close.
 	hWidth := float32(cell.borderWidth / 2.0)

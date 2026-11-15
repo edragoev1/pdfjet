@@ -108,6 +108,12 @@ type Page struct {
 	lineJoinStyle     joinstyle.JoinStyle
 	strokeDashPattern string
 	savedStates       []*savedState // The states that SaveGraphicsState saved
+	// The borders of the cells of the table being drawn on the page, which
+	// the table writes as continuous lines, or nil.
+	tableLines *tableLines
+	// penChanges counts the calls that set the pen, so that the table can
+	// tell whether the pen was set after the borders of the last cell it kept.
+	penChanges int
 
 	contents     []int
 	annots       []*annotationObject
@@ -1445,6 +1451,7 @@ func (page *Page) RestoreGraphicsState() {
 	if n := len(page.savedStates); n > 0 {
 		state := page.savedStates[n-1]
 		page.savedStates = page.savedStates[:n-1]
+		page.penChanges++
 		page.penColor = state.pen
 		page.penColorWritten = state.penWritten
 		page.brushColor = state.brush
@@ -1487,6 +1494,7 @@ func (page *Page) SetPenColor(c int32) *Page {
 	if c == color.Transparent {
 		return page
 	}
+	page.penChanges++
 	r := float32(float32((c>>16)&0xff) / 255.0)
 	g := float32(float32((c>>8)&0xff) / 255.0)
 	b := float32(float32((c)&0xff) / 255.0)
@@ -1511,6 +1519,7 @@ func (page *Page) SetPenColor(c int32) *Page {
 //   - The method then sets the penColor and appends the color values to the
 //     appropriate output stream (e.g., for a PDF or graphics context).
 func (page *Page) SetPenColorRGB(rgbColor [3]float32) *Page {
+	page.penChanges++
 	if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
 		rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
 		rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
@@ -1635,6 +1644,7 @@ func (page *Page) GetBrushColor() [3]float32 {
 //   - y: the yellow component is float value from 0.0 to 1.0.
 //   - k: the black component is float value from 0.0 to 1.0.
 func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
+	page.penChanges++
 	if !page.canUseCMYK() {
 		return page
 	}
@@ -1775,6 +1785,7 @@ func (page *Page) SetDefaultStrokeDashPattern() *Page {
 
 // SetPenWidth sets the pen width that will be used to draw lines and splines on this page.
 func (page *Page) SetPenWidth(width float32) *Page {
+	page.penChanges++
 	if width < 0 {
 		page.pdf.fail("The pen width cannot be negative.")
 		return page

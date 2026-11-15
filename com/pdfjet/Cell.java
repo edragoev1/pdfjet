@@ -921,6 +921,7 @@ public class Cell {
             // A line of text is drawn instead of the cell text, on its baseline.
             drawText(page, x, y, w, h);
         } else if (drawable instanceof TextBlock) {
+            flushTableLines(page);
             TextBlock textBlock = (TextBlock) drawable;
             // The caller's text block and point keep their locations: drawing
             // the table moved them (review of 12 October 2026, R22)
@@ -932,6 +933,7 @@ public class Cell {
             textBlock.x = textX;
             textBlock.y = textY;
         } else if (drawable != null) {
+            flushTableLines(page);
             float[] location = locationOf(drawable);
             if (getTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = measure(drawable)[0];
@@ -951,6 +953,9 @@ public class Cell {
 
         drawBorders(page, x, y, w, h);
         if (point != null) {
+            // The lines under the point, which is drawn with the pen of the
+            // borders of the cell
+            flushTableLines(page);
             float pointX = point.x;
             float pointY = point.y;
             if (alignmentAt(MARKER_ALIGNMENT) == Alignment.LEFT) {
@@ -992,6 +997,15 @@ public class Cell {
             page.addEMC();
             point.x = pointX;
             point.y = pointY;
+        }
+    }
+
+    // Writes the lines that the table being drawn kept, when it keeps them,
+    // before the cell draws what can draw anything anywhere, which was drawn
+    // over them.
+    private static void flushTableLines(Page page) {
+        if (page.tableLines != null) {
+            page.tableLines.flush(page);
         }
     }
 
@@ -1088,6 +1102,9 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
+        if (page.tableLines != null) {
+            page.tableLines.beforeFill(page, x, y + borderWidth/2, x + cellW, y + borderWidth/2 + cellH);
+        }
         page.addArtifactBMC();
         page.setBrushColor(backgroundColor);
         page.fillRect(x, y + borderWidth/2, cellW, cellH);
@@ -1103,10 +1120,17 @@ public class Cell {
         if ((properties & Border.ALL) == 0) {
             return;     // Nothing to draw, so nothing to write.
         }
-        page.addArtifactBMC();
         // The borders are black unless a color is set, whatever pen color the
         // page was left with.
-        page.setPenColor(borderColor != NO_COLOR ? borderColor : Color.black);
+        int color = (borderColor != NO_COLOR) ? borderColor : Color.black;
+        if (page.tableLines != null) {
+            // The table writes them, joined to the borders of the cells next
+            // to this one, with this pen, when it is done with the page.
+            page.tableLines.addBorders(page, properties, color, borderWidth, x, y, cellW, cellH);
+            return;
+        }
+        page.addArtifactBMC();
+        page.setPenColor(color);
         page.setPenWidth(borderWidth);
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;

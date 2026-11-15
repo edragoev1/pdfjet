@@ -575,7 +575,8 @@ func TestTableATableWithoutLinesIsNotClosedWithALine(t *testing.T) {
 }
 
 // A table that fits on its page has the lines it had: a rule over each row,
-// and the one under the last.
+// and the one under the last, the bottoms of its two cells joined into one
+// line across the table.
 func TestTableATableOnOnePageHasTheLinesItHad(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, letter.Portrait())
@@ -586,7 +587,14 @@ func TestTableATableOnOnePageHasTheLinesItHad(t *testing.T) {
 	if len(ys) != 11 {
 		t.Fatalf("%d rules: %v", len(ys), ys)
 	}
-	if lines := testLinesAt(page, ys[10]); len(lines) != 2 {
+	lines := testLinesAt(page, ys[10])
+	if len(lines) != 1 {
+		t.Fatalf("under the last row: %v", lines)
+	}
+	ends := strings.Fields(lines[0])
+	x1, _ := strconv.ParseFloat(ends[0], 64)
+	x2, _ := strconv.ParseFloat(ends[1], 64)
+	if x1 > 50 || math.Abs(x2-float64(50+table.GetWidth())) > 0.01 {
 		t.Errorf("under the last row: %v", lines)
 	}
 }
@@ -610,21 +618,19 @@ func TestTableACellThatSpansRowsIsDrawnOnceOverAllOfThem(t *testing.T) {
 	if !strings.Contains(content, testHex("r1c1")) {
 		t.Error("the cell beside the span was not drawn")
 	}
-	// Its left border runs from the top of its row to the bottom of the row
-	// under it, which is two of the rows the table draws.
+	// It runs from the top of its row to the bottom of the row under it: of
+	// the four rules the table draws, the one between its two rows does not
+	// cross it, and the one under them does.
 	ys := testRules(page)
 	if len(ys) != 4 {
 		t.Fatalf("%d rules: %v", len(ys), ys)
 	}
-	rowHeight := ys[0] - ys[1]
-	m := regexp.MustCompile(`50 ([-0-9.]+) m\n50 ([-0-9.]+) l`).FindStringSubmatch(content)
-	if m == nil {
-		t.Fatal("the left border of the spanning cell was not drawn")
+	across := testRulesAcrossTheFirstColumn(page)
+	if slices.Contains(across, ys[1]) {
+		t.Errorf("a rule through the spanning cell: %v", across)
 	}
-	top, _ := strconv.ParseFloat(m[1], 64)
-	bottom, _ := strconv.ParseFloat(m[2], 64)
-	if math.Abs((top-bottom)-2*rowHeight) > 0.01 {
-		t.Errorf("the spanning cell is %g tall, not %g", top-bottom, 2*rowHeight)
+	if !slices.Contains(across, ys[0]) || !slices.Contains(across, ys[2]) || !slices.Contains(across, ys[3]) {
+		t.Errorf("the rules across the first column: %v, of %v", across, ys)
 	}
 }
 
@@ -774,17 +780,139 @@ func TestTableTheRowsACellWrapsIntoAreOneCellOfEveryBorderButTheirOwn(t *testing
 }
 
 // testRulesAcrossTheFirstColumn returns the y of every rule the page draws
-// across the first column, in the order they are drawn and with none left out.
+// across the first column, from x = 50 to x = 110 or past it, top to bottom
+// and with none left out: a line drawn twice is there twice.
 func testRulesAcrossTheFirstColumn(page *Page) []float64 {
-	re := regexp.MustCompile(`50 ([-0-9.]+) m\n110 ([-0-9.]+) l`)
+	re := regexp.MustCompile(`([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l`)
 	ys := make([]float64, 0)
 	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
-		if m[1] == m[2] {
-			y, _ := strconv.ParseFloat(m[1], 64)
+		x1, _ := strconv.ParseFloat(m[1], 64)
+		x2, _ := strconv.ParseFloat(m[3], 64)
+		if m[2] == m[4] && x1 <= 50 && x2 >= 110 {
+			y, _ := strconv.ParseFloat(m[2], 64)
 			ys = append(ys, y)
 		}
 	}
+	sort.Sort(sort.Reverse(sort.Float64Slice(ys)))
 	return ys
+}
+
+// testStrokes returns the lines the page strokes, each as x1, y1, x2, y2 and
+// the pen it is stroked with, red, green, blue and width.
+func testStrokes(page *Page) [][8]float64 {
+	strokes := make([][8]float64, 0)
+	pen := [4]float64{0, 0, 0, 1}
+	var from []float64
+	for _, line := range strings.Split(testContent(page), "\n") {
+		f := strings.Fields(line)
+		num := func(i int) float64 { v, _ := strconv.ParseFloat(f[i], 64); return v }
+		switch {
+		case len(f) == 4 && f[3] == "RG":
+			pen = [4]float64{num(0), num(1), num(2), pen[3]}
+		case len(f) == 2 && f[1] == "w":
+			pen[3] = num(0)
+		case len(f) == 3 && f[2] == "m":
+			from = []float64{num(0), num(1)}
+		case len(f) == 3 && f[2] == "l" && from != nil:
+			strokes = append(strokes, [8]float64{from[0], from[1], num(0), num(1), pen[0], pen[1], pen[2], pen[3]})
+			from = nil
+		}
+	}
+	return strokes
+}
+
+// The borders of the cells next to each other are joined: a rule across the
+// table is one line from its left edge to its right, not a line for each
+// cell, and a line down the table one line from its top to its bottom.
+func TestTableTheBordersOfTheCellsAreJoinedIntoLines(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 10, 4), 1)
+	table.SetLocation(50, 50)
+	xy := table.DrawOn(page)
+	left := 50.0
+	right := float64(50 + table.GetWidth())
+	top := float64(page.height - 50)
+	bottom := float64(page.height - xy[1])
+	across, down := 0, 0
+	for _, s := range testStrokes(page) {
+		if s[1] == s[3] {
+			across++
+			if !(s[0] <= left && s[2] >= right-0.01) {
+				t.Errorf("a rule not across the table: %v", s)
+			}
+		} else {
+			down++
+			if !(math.Max(s[1], s[3]) >= top-0.01 && math.Min(s[1], s[3]) <= bottom+0.01) {
+				t.Errorf("a line not down the table: %v", s)
+			}
+		}
+	}
+	if rules := len(testRules(page)); across < rules || across > 2*rules {
+		t.Errorf("%d lines across, for %d rules", across, rules)
+	}
+	if down < 5 || down > 10 {
+		t.Errorf("%d lines down", down)
+	}
+}
+
+// Each cell keeps its own borders: a cell of another color and width draws
+// its own four lines with its pen, which the lines of the cells beside it do
+// not join, and a side that a cell leaves out is left out.
+func TestTableEachCellKeepsItsOwnBorders(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	data := testRows(testHelvetica(pdf), 3, 3)
+	for _, row := range data {
+		for _, cell := range row {
+			cell.SetWidth(60)
+		}
+	}
+	data[1][1].SetBorders(true).SetBorderColor(color.Red).SetBorderWidth(2)
+	data[2][0].SetBorder(border.Left, false)
+	table := NewTable().SetTableData(data, 0)
+	table.SetLocation(50, 50)
+	table.DrawOn(page)
+	ys := testRules(page)
+	middle := (ys[2] + ys[3]) / 2
+	red := 0
+	for _, s := range testStrokes(page) {
+		if s[4] == 1 && s[5] == 0 && s[6] == 0 {
+			red++
+			if s[7] != 2 {
+				t.Errorf("a red line %v wide", s[7])
+			}
+			x0, x1 := math.Min(s[0], s[2]), math.Max(s[0], s[2])
+			y0, y1 := math.Min(s[1], s[3]), math.Max(s[1], s[3])
+			if !(x0 >= 109 && x1 <= 171 && y0 >= ys[2]-1 && y1 <= ys[1]+1) {
+				t.Errorf("a red line outside the red cell: %v", s)
+			}
+		} else if s[7] != 0.5 {
+			t.Errorf("a black line %v wide", s[7])
+		}
+		// The middle of the left side of the last row is not drawn.
+		if s[0] == 50 && s[2] == 50 && math.Min(s[1], s[3]) < middle && math.Max(s[1], s[3]) > middle {
+			t.Errorf("the left border the last row leaves out: %v", s)
+		}
+	}
+	if red != 4 {
+		t.Errorf("%d red lines, not the red cell's four borders", red)
+	}
+}
+
+// Drawing the table leaves the page with the pen of the last cell's borders,
+// as when each cell stroked its own.
+func TestTableThePageIsLeftWithThePenOfTheLastCell(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	data := testRows(testHelvetica(pdf), 3, 2)
+	data[2][1].SetBorderColor(color.Blue).SetBorderWidth(1.5)
+	table := NewTable().SetTableData(data, 0)
+	table.SetLocation(50, 50)
+	table.DrawOn(page)
+	if page.GetPenColor() != [3]float32{0, 0, 1} || page.GetPenWidth() != 1.5 {
+		t.Errorf("the pen %v, %v", page.GetPenColor(), page.GetPenWidth())
+	}
 }
 
 func TestTableACellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan(t *testing.T) {

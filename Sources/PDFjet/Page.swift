@@ -163,6 +163,12 @@ public class Page {
     var lineCapStyle = CapStyle.BUTT
     var lineJoinStyle = JoinStyle.MITER
     var strokeDashPattern: String = "[] 0"
+    // The borders of the cells of the table being drawn on the page, which
+    // the table writes as continuous lines, or nil.
+    var tableLines: TableLines? = nil
+    // Counts the calls that set the pen, so that the table can tell whether
+    // the pen was set after the borders of the last cell it kept.
+    var penChanges = 0
     // The states that saveGraphicsState saved and restoreGraphicsState restores.
     private var savedStates = [State]()
     // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
@@ -1456,6 +1462,7 @@ public class Page {
             pdf.fail("restoreGraphicsState was called without a matching saveGraphicsState.")
             return
         }
+        penChanges += 1
         penColor = state.getPen()
         penColorWritten = state.getPenWritten()
         brushColor = state.getBrush()
@@ -1482,6 +1489,7 @@ public class Page {
         if color == Color.transparent {
             return self
         }
+        penChanges += 1
         if color == Util.shortColor {
             pdf.fail(Page.RGB_COUNT)
             return self
@@ -1504,6 +1512,7 @@ public class Page {
     ///
     @discardableResult
     public func setPenColor(_ rgbColor: [Float]?) -> Page {
+        penChanges += 1
         guard let rgbColor = rgbColor else {
             return self
         }
@@ -1609,6 +1618,7 @@ public class Page {
     ///
     @discardableResult
     public final func setPenColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) -> Page {
+        penChanges += 1
         if !canUseCMYK() {
             return self
         }
@@ -1815,6 +1825,7 @@ public class Page {
     ///
     @discardableResult
     public func setPenWidth(_ width: Float) -> Page {
+        penChanges += 1
         if width < 0.0 {
             pdf.fail("The pen width cannot be negative.")
             return self

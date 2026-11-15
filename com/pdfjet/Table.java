@@ -1025,7 +1025,7 @@ public class Table implements Drawable {
         striped = getStripedRows();
         columnSums = new HashMap<Integer, ColumnSums>();
         try {
-            float[] xy = drawTableRows(page, drawHeaderRows(page, 0));
+            float[] xy = drawPage(page, 0);
             return new float[] {x1 + getWidth(), xy[1]};
         } finally {
             columnSums = null;
@@ -1080,12 +1080,32 @@ public class Table implements Drawable {
                     page = new Page(pdf, pageSize, Page.DETACHED);
                     pages.add(page);
                 }
-                xy = drawTableRows(page, drawHeaderRows(page, pageNumber));
+                xy = drawPage(page, pageNumber);
                 pageNumber++;
             }
             return new float[] {x1 + getWidth(), xy[1]};
         } finally {
             columnSums = null;
+        }
+    }
+
+    // Draws the header rows and the rows that fit on the page under them. The
+    // borders of the cells are written when the page is done, as continuous
+    // lines, unless the page strokes with a dash pattern, which would go on
+    // from one cell to the next and look different.
+    private float[] drawPage(Page page, int pageNumber) throws Exception {
+        if (page == null || !page.strokeDashPattern.equals("[] 0")) {
+            return drawTableRows(page, drawHeaderRows(page, pageNumber));
+        }
+        TableLines outer = page.tableLines;
+        TableLines lines = new TableLines();
+        page.tableLines = lines;
+        try {
+            float[] xy = drawTableRows(page, drawHeaderRows(page, pageNumber));
+            lines.flush(page);
+            return xy;
+        } finally {
+            page.tableLines = outer;
         }
     }
 

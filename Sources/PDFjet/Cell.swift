@@ -794,6 +794,7 @@ public class Cell {
             // A line of text is drawn instead of the cell text, on its baseline.
             drawText(page, x, y, w, h)
         } else if let textBlock = drawable as? TextBlock {
+            Cell.flushTableLines(page)
             // The caller's text block and point keep their locations: drawing
             // the table moved them (review of 12 October 2026, R22)
             let (textX, textY) = (textBlock.x, textBlock.y)
@@ -802,6 +803,7 @@ public class Cell {
             textBlock.setWidth(w - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
             textBlock.drawOn(page)
         } else if let drawable = drawable {
+            Cell.flushTableLines(page)
             let location = Cell.locationOf(drawable)
             defer { drawable.setLocation(location[0], location[1]) }
             if getTextAlignment() == Alignment.RIGHT {
@@ -824,6 +826,9 @@ public class Cell {
             }
         }
         if point != nil {
+            // The lines under the point, which is drawn with the pen of the
+            // borders of the cell
+            Cell.flushTableLines(page)
             if alignmentAt(Cell.markerAlignmentShift) == Alignment.LEFT {
                 point!.x = x + 2*point!.r
             } else if alignmentAt(Cell.markerAlignmentShift) == Alignment.RIGHT {
@@ -891,12 +896,24 @@ public class Cell {
                 description).joining(link))
     }
 
+    // Writes the lines that the table being drawn kept, when it keeps them,
+    // before the cell draws what can draw anything anywhere, which was drawn
+    // over them.
+    private static func flushTableLines(_ page: Page) {
+        if let lines = page.tableLines {
+            lines.flush(page)
+        }
+    }
+
     func drawBackground(
             _ page: Page,
             _ x: Float,
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
+        if let lines = page.tableLines {
+            lines.beforeFill(page, x, y + borderWidth/2, x + cellW, y + borderWidth/2 + cellH)
+        }
         page.addArtifactBMC()
         page.setBrushColor(backgroundColor)
         page.fillRect(x, y + borderWidth/2, cellW, cellH)
@@ -912,10 +929,17 @@ public class Cell {
         if properties & Border.ALL == 0 {
             return      // Nothing to draw, so nothing to write.
         }
-        page.addArtifactBMC()
         // The borders are black unless a color is set, whatever pen color the
         // page was left with.
-        page.setPenColor(borderColor != Cell.NO_COLOR ? borderColor : Color.black)
+        let color: Int32 = (borderColor != Cell.NO_COLOR) ? borderColor : Color.black
+        if let lines = page.tableLines {
+            // The table writes them, joined to the borders of the cells next
+            // to this one, with this pen, when it is done with the page.
+            lines.addBorders(page, properties, color, borderWidth, x, y, cellW, cellH)
+            return
+        }
+        page.addArtifactBMC()
+        page.setPenColor(color)
         page.setPenWidth(borderWidth)
         // Half the pen width, so that the corners of the borders close.
         let hWidth: Float = borderWidth / 2.0

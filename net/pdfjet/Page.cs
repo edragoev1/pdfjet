@@ -103,6 +103,12 @@ public class Page {
     internal CapStyle lineCapStyle = CapStyle.BUTT;
     internal JoinStyle lineJoinStyle = JoinStyle.MITER;
     internal String strokeDashPattern = "[] 0";
+    // The borders of the cells of the table being drawn on the page, which
+    // the table writes as continuous lines, or null.
+    internal TableLines tableLines = null;
+    // Counts the calls that set the pen, so that the table can tell whether
+    // the pen was set after the borders of the last cell it kept.
+    internal int penChanges = 0;
     // The states that SaveGraphicsState saved and RestoreGraphicsState restores.
     private readonly List<State> savedStates = new List<State>();
     // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet.
@@ -1619,6 +1625,7 @@ public class Page {
         if (color == Color.transparent) {
             return this;
         }
+        penChanges++;
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -1638,6 +1645,7 @@ public class Page {
     /// Logs a warning and does not set the color if the values are out of range or the array is null.
     /// </remarks>
     public Page SetPenColor(float[] rgbColor) {
+        penChanges++;
         if (rgbColor == null) {
             return this; // Early exit if null
         }
@@ -1713,6 +1721,7 @@ public class Page {
     /// <param name="k">the black component is float value from 0.0f to 1.0f.</param>
     /// <returns>this Page object.</returns>
     public Page SetPenColorCMYK(float c, float m, float y, float k) {
+        penChanges++;
         CheckCMYK();
         Append(c);
         Append(' ');
@@ -1897,6 +1906,7 @@ public class Page {
     /// <param name="width">the pen width.</param>
     /// <returns>this Page object.</returns>
     public Page SetPenWidth(float width) {
+        penChanges++;
         if (width < 0f) {
             pdf.Fail(new ArgumentException("The pen width cannot be negative."));
         }
@@ -2670,6 +2680,7 @@ public class Page {
         if (savedStates.Count > 0) {
             State state = savedStates[savedStates.Count - 1];
             savedStates.RemoveAt(savedStates.Count - 1);
+            penChanges++;
             brushColor = state.GetBrushColor();
             brushColorWritten = state.GetBrushColorWritten();
             penColor = state.GetPenColor();
