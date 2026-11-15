@@ -63,6 +63,20 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **After the llms guides: test how well AI assistants write PDFjet code**
+  (15 November 2026). Why: most code
+  is now written with an AI assistant, often a small, fast model, so how
+  well such a model writes PDFjet code matters as much as the API itself.
+  What: about 10 everyday tasks, phrased as a developer asks them (an
+  invoice with a logo and a table, a 20-page report with page numbers, a
+  letter in Bulgarian, a CSV file as a table, a form, a chart); a small
+  model (Claude Haiku) writes the code for each, once with the language's
+  llms guide (`llms-java.txt` and the others) and once without; a script
+  compiles and runs every program and checks the PDF: it opens, the pages
+  and the text are there, PDF/UA passes. Gives the share that works on the
+  first try, and the traps the model still falls into, to add to the
+  guides; run again after a change to a guide to see that it helped.
+
 - ✅ **DONE 14 November 2026. drawGlyphs: the span of actual text per cluster in C# and Go**
   (14 November 2026). Java and Swift draw each cluster as its own span of
   actual text, its glyphs in one TJ array, a glyph off the baseline by the
