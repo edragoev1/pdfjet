@@ -32,12 +32,15 @@ if errorlevel 1 (
 )
 go build -o ..\..\..\Example_52.exe .
 cd ..\..
+for /L %%i in (53,1,85) do (
+    go build -o ..\Example_%%i.exe examples\example%%i\main.go
+)
 
 :: Navigate back to the parent directory
 cd ..
 
 :: Run the .exe files
-for /L %%i in (1,1,52) do (
+for /L %%i in (1,1,85) do (
     :: Check if %%i is less than 10
     if %%i lss 10 (
         Example_0%%i.exe
