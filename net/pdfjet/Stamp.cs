@@ -100,6 +100,7 @@ public class Stamp : IDrawable {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.Fail(new ArgumentException("The font belongs to another PDF."));
         }
+        font.referenced = true;
         if (!fonts.Contains(font)) {
             fonts.Add(font);
         }
@@ -412,6 +413,50 @@ public class Stamp : IDrawable {
         pdf.EndObj();
         pdf.stamps.Add(this);
         objNumber = pdf.GetObjNumber();
+    }
+
+    // A stamp of the outline of a glyph, which Page.DrawGlyphs draws once and
+    // places wherever the glyph is drawn: the path in the units of the font,
+    // y up, filled in the color of the page it is placed on, the box of its
+    // points its bounding box, its content compressed. The placement scales
+    // the units to the size of the font.
+    internal static Stamp OfGlyph(PDF pdf, GlyphOutline.Path path) {
+        Stamp stamp = new Stamp(pdf);
+        stamp.completed = true;
+        stamp.width = (float) (path.xMax - path.xMin);
+        stamp.height = (float) (path.yMax - path.yMin);
+        byte[] content = Compressor.Deflate(System.Text.Encoding.UTF8.GetBytes(path.operators + "f\n"));
+        if (pdf.encryption != null) {
+            content = AES256.Encrypt(content, pdf.encryption.GetKey());
+        }
+        pdf.NewObj();
+        pdf.Append("<<\n/Type /XObject\n/Subtype /Form\n/BBox [");
+        pdf.Append(GlyphOutline.Decimals(Math.Floor(path.xMin), 0));
+        pdf.Append(' ');
+        pdf.Append(GlyphOutline.Decimals(Math.Floor(path.yMin), 0));
+        pdf.Append(' ');
+        pdf.Append(GlyphOutline.Decimals(Math.Ceiling(path.xMax), 0));
+        pdf.Append(' ');
+        pdf.Append(GlyphOutline.Decimals(Math.Ceiling(path.yMax), 0));
+        pdf.Append("]\n/Resources <<>>\n/Filter /FlateDecode\n/Length ");
+        pdf.Append(content.Length);
+        pdf.Append("\n>>\nstream\n");
+        pdf.Append(content);
+        pdf.Append("\nendstream\n");
+        pdf.EndObj();
+        pdf.stamps.Add(stamp);
+        stamp.objNumber = pdf.GetObjNumber();
+        return stamp;
+    }
+
+    // Places the stamp of a glyph on the page, by the matrix of the
+    // placement, its six numbers written: q, the matrix, Do and Q.
+    internal void PlaceGlyph(Page page, String matrix) {
+        page.Append("q ");
+        page.Append(matrix);
+        page.Append(" cm ");
+        page.Append(page.ResourceName("/XObject", "/Fm", objNumber, null, objNumber));
+        page.Append(" Do Q\n");
     }
 
     private void DrawText(Font font, string str) {

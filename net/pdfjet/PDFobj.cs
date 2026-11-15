@@ -1142,6 +1142,7 @@ public class PDFobj {
     /// <summary>Adds a font to the resources of this page.</summary>
     public void AddResource(Font font, List<PDFobj> objects) {
         OwnResources();
+        font.referenced = true;
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
                 String token = TokenAt(dict, i + 1);

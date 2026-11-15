@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using System.Text;
 using HarfBuzzSharp;
 using PDFjet.NET;
 using Font = PDFjet.NET.Font;
@@ -16,12 +17,14 @@ using Buffer = HarfBuzzSharp.Buffer;
 /**
  * Example_52.cs
  *
- * Draws Hindi and Khmer as real text: HarfBuzz, through HarfBuzzSharp, shapes
- * them -- conjuncts, vowel signs, stacked consonants -- and Page.DrawGlyphs
- * draws the glyphs it found, at their places, with the text they stand for,
- * so that copying, searching and screen readers get it. PDFjet does not shape
- * these scripts itself; any engine that finds the glyphs can. The text is
- * Article 1 of the Universal Declaration of Human Rights.
+ * Draws Hindi and Khmer, scripts PDFjet does not shape itself: HarfBuzz,
+ * through HarfBuzzSharp, shapes them -- conjuncts, vowel signs, stacked
+ * consonants -- and Page.DrawGlyphs draws the glyphs it found, at their
+ * places, as outlines read from the font file: sharp on screen and in print,
+ * and read by screen readers, as each paragraph is tagged with its text and
+ * its language. Any engine that finds the glyphs can do the shaping. A page
+ * of each, filled with the Universal Declaration of Human Rights from its
+ * beginning: Hindi on the first page, Khmer on the second.
  *
  * HarfBuzzSharp is a package of this example alone, never of PDFjet.
  */
@@ -30,8 +33,13 @@ public class Example_52 {
     private const String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf";
     private const String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
 
+    private const float SIZE = 10.5f;
+    private const float LEFT = 50f;
+    private const float WIDTH = 512f;
+    private const float BOTTOM = 742f;  // The page's 792 points less the margin
+
     // A font of HarfBuzz, which shapes, and the same font file loaded by
-    // PDFjet, which embeds it, so that the glyph numbers match
+    // PDFjet, which reads the outlines, so that the glyph numbers match
     private class ShapingFont {
         internal HarfBuzzSharp.Font shaper;
         internal int upem;
@@ -52,38 +60,66 @@ public class Example_52 {
         PDF pdf = new PDF(
             new BufferedStream(new FileStream("Example_52.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Hindi and Khmer as real text");  // Required for PDF/UA !
+        pdf.SetTitle("The Universal Declaration of Human Rights in Hindi and Khmer");  // Required for PDF/UA !
         pdf.SetLanguage("en");
 
         Font heading = new Font(pdf, IBMPlexSans.SemiBold);
         heading.SetSize(16f);
         Font body = new Font(pdf, IBMPlexSans.Regular);
-        body.SetSize(10f);
+        body.SetSize(9f);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(heading, "Article 1 of the Universal Declaration of Human Rights")
-                .SetStructureType(StructElem.H1)
-                .SetLocation(50f, 60f)
-                .DrawOn(page);
-        new TextLine(body, "Shaped by HarfBuzz (HarfBuzzSharp), drawn by PDFjet with DrawGlyphs: real text, in Hindi and in Khmer.")
-                .SetLocation(50f, 82f)
-                .DrawOn(page);
+        String hindi = DrawPage(pdf, heading, body, "Hindi", "hi", DEVANAGARI,
+                "resources/data/udhr/udhr_hin.txt");
+        String khmer = DrawPage(pdf, heading, body, "Khmer", "km", KHMER,
+                "resources/data/udhr/udhr_khm.txt");
 
-        float y = 100f;
-        y = DrawShaped(pdf, page,
-                "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता और समानता प्राप्त है । "
-                + "उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिए ।",
-                "hi", DEVANAGARI, 12f, 50f, y, 512f);
-        DrawShaped(pdf, page,
-                "មនុស្សទាំងអស់ កើតមកមានសេរីភាព និងសមភាព ក្នុងផ្នែកសេចក្ដីថ្លៃថ្នូរនិងសិទ្ធិ។ "
-                + "មនុស្ស មានវិចារណញ្ញាណនិងសតិសម្បជញ្ញៈជាប់ពីកំណើត "
-                + "ហើយគប្បីប្រព្រឹត្ដចំពោះគ្នាទៅវិញទៅមកក្នុងស្មារតីភាតរភាពជាបងប្អូន។",
-                "km", KHMER, 12f, 50f, y + 14f, 512f);
+        // The pages draw the text as outlines, which cannot be selected or
+        // searched; the exact text is attached for anyone who needs it.
+        pdf.AttachText("udhr-hindi.txt", hindi);
+        pdf.AttachText("udhr-khmer.txt", khmer);
 
         pdf.Complete();
     }
 
-    private static ShapingFont LoadFont(PDF pdf, String path, float size) {
+    // Draws a page of the Declaration in the language, its paragraphs from
+    // the beginning until the page is full, and returns the text drawn.
+    private static String DrawPage(PDF pdf, Font heading, Font body, String name, String language,
+            String scriptFile, String textFile) {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(heading, "Universal Declaration of Human Rights, in " + name)
+                .SetStructureType(StructElem.H1)
+                .SetLocation(LEFT, 60f)
+                .DrawOn(page);
+        new TextLine(body, "Shaped by HarfBuzz (HarfBuzzSharp), drawn by PDFjet with DrawGlyphs as outlines;"
+                + " the text is attached to the document.")
+                .SetLocation(LEFT, 80f)
+                .DrawOn(page);
+
+        ShapingFont[] fonts = { LoadFont(pdf, scriptFile), LoadFont(pdf, LATIN) };
+        float ascent = fonts[0].font.GetAscent();
+        float descent = fonts[0].font.GetDescent();
+
+        StringBuilder drawn = new StringBuilder();
+        float[] y = {96f};  // The top of the next line
+        foreach (String line in File.ReadAllLines(textFile, Encoding.UTF8)) {
+            String paragraph = line.Trim();
+            if (paragraph.Length == 0) {
+                continue;
+            }
+            String text = DrawParagraph(page, paragraph, language, fonts, y, ascent, descent);
+            if (text.Length == 0) {
+                break;      // The page is full
+            }
+            drawn.Append(text).Append('\n');
+            if (text.Length < paragraph.Length) {
+                break;      // The page is full
+            }
+            y[0] += 0.5f * SIZE;
+        }
+        return drawn.ToString();
+    }
+
+    private static ShapingFont LoadFont(PDF pdf, String path) {
         ShapingFont font = new ShapingFont();
         Face face = new Face(Blob.FromFile(path), 0);
         font.upem = face.UnitsPerEm;
@@ -91,18 +127,16 @@ public class Example_52 {
         // One unit a font unit: the places come in the font's units
         font.shaper.SetScale(font.upem, font.upem);
         font.font = new Font(pdf, path);
-        font.font.SetSize(size);
+        font.font.SetSize(SIZE);
         return font;
     }
 
-    // Draws a paragraph in a script PDFjet does not shape, wrapped to the
-    // width at spaces, as real text, and returns the y below its last line.
-    // The script's font is used where it has the characters, IBM Plex Sans
-    // elsewhere.
-    private static float DrawShaped(PDF pdf, Page page, String text, String language,
-            String scriptFile, float size, float x, float y, float width) {
-        ShapingFont[] fonts = { LoadFont(pdf, scriptFile, size), LoadFont(pdf, LATIN, size) };
-
+    // Draws the paragraph, wrapped to the width at spaces, as many of its
+    // lines as fit above the bottom of the page, from the top y[0], which it
+    // moves below them, and returns the text of the lines drawn. The script's
+    // font is used where it has the characters, IBM Plex Sans elsewhere.
+    private static String DrawParagraph(Page page, String text, String language,
+            ShapingFont[] fonts, float[] y, float ascent, float descent) {
         // Each character in the script's font where it has it, else in the
         // Latin one; each run of one font shaped on its own
         int[] fontOf = new int[text.Length];
@@ -128,7 +162,7 @@ public class Example_52 {
                 f.shaper.Shape(buffer);
                 GlyphInfo[] infos = buffer.GlyphInfos;
                 GlyphPosition[] places = buffer.GlyphPositions;
-                float scale = size / f.upem;
+                float scale = SIZE / f.upem;
                 for (int i = 0; i < infos.Length; i++) {
                     Glyph g = new Glyph();
                     g.id = (int) infos[i].Codepoint;
@@ -144,15 +178,14 @@ public class Example_52 {
             start = end;
         }
 
-        // The line height from the script's font
-        fonts[0].shaper.TryGetHorizontalFontExtents(out FontExtents extents);
-        float em = size / fonts[0].upem;
-        float ascent = extents.Ascender * em;
-        float descent = -extents.Descender * em;
-        float gap = extents.LineGap * em;
-
-        page.AddBDC(StructElem.P, language, null, null);
+        int drawnEnd = 0;   // The end of the text of the lines drawn
         for (int first = 0; first < glyphs.Count; ) {
+            if (y[0] + ascent + descent > BOTTOM) {
+                break;
+            }
+            if (drawnEnd == 0) {
+                page.AddBDC(StructElem.P, language, null, null);
+            }
             // The glyphs of the line: all that are left if they fit, else up
             // to the last space after a word that fits
             float lineStart = glyphs[first].x;
@@ -161,14 +194,13 @@ public class Example_52 {
             for (int i = first; i < glyphs.Count; i++) {
                 if (text[glyphs[i].cluster] == ' ') {
                     lastSpace = i + 1;
-                } else if (glyphs[i].x + glyphs[i].advance - lineStart > width && lastSpace > 0) {
+                } else if (glyphs[i].x + glyphs[i].advance - lineStart > WIDTH && lastSpace > 0) {
                     last = lastSpace;
                     break;
                 }
             }
-            float baseline = y + ascent;
-            // The line, a run of one font at a time: its glyphs, their places
-            // and the characters each one comes from (its cluster)
+            float baseline = y[0] + ascent;
+            // The line, a run of one font at a time: its glyphs and their places
             for (int start = first; start < last; ) {
                 int end = start + 1;
                 while (end < last && glyphs[end].font == glyphs[start].font) {
@@ -178,22 +210,23 @@ public class Example_52 {
                 int textEnd = end < glyphs.Count ? glyphs[end].cluster : text.Length;
                 int[] ids = new int[end - start];
                 float[] positions = new float[2 * (end - start)];
-                int[] clusters = new int[end - start];
                 for (int i = start; i < end; i++) {
                     ids[i - start] = glyphs[i].id;
-                    positions[2 * (i - start)] = x + glyphs[i].x - lineStart;
+                    positions[2 * (i - start)] = LEFT + glyphs[i].x - lineStart;
                     positions[2 * (i - start) + 1] = baseline + glyphs[i].y;
-                    clusters[i - start] = glyphs[i].cluster - textStart;
                 }
-                page.DrawGlyphs(fonts[glyphs[start].font].font, ids, positions, clusters,
+                page.DrawGlyphs(fonts[glyphs[start].font].font, ids, positions,
                         text.Substring(textStart, textEnd - textStart), language);
                 start = end;
             }
-            y = baseline + descent + gap;
+            y[0] = baseline + descent + 0.25f * SIZE;
+            drawnEnd = last < glyphs.Count ? glyphs[last].cluster : text.Length;
             first = last;
         }
-        page.AddEMC();
-        return y;
+        if (drawnEnd > 0) {
+            page.AddEMC();
+        }
+        return text.Substring(0, drawnEnd);
     }
 
     public static void Main(String[] args) {

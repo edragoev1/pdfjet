@@ -5,24 +5,20 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace PDFjet.NET {
-// DrawGlyphs draws glyphs another engine shaped, by their numbers, as real
-// text: a span of actual text for each cluster, each glyph at its place, and
-// the glyphs no character maps to mapped to their cluster's letters in
-// ToUnicode, or to the zero width space.
+// DrawGlyphs draws glyphs another engine shaped, by their numbers, as
+// outlines read from the font file: paths, no text and no font in the
+// document; a glyph drawn more than once a form XObject placed wherever it
+// is; in a tagged document marked content with the text as its actual text.
 public class DrawGlyphsTest {
-    // The first glyph of the font no character maps to, like a conjunct
-    private static int UnmappedGlyph(Font font) {
-        for (int gid = 1; gid < font.unicodeOf.Length; gid++) {
-            if (font.unicodeOf[gid] < 0) {
-                return gid;
-            }
-        }
-        throw new InvalidOperationException("the font maps every glyph");
-    }
+    private const string DEVANAGARI = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf";
+    private const string CASCADIA = "fonts/CascadiaMono/CascadiaMono-Regular.ttf";
 
     private static int Count(string text, string part) {
         int n = 0;
@@ -33,47 +29,105 @@ public class DrawGlyphsTest {
         return n;
     }
 
+    // The content of each form XObject of the document, inflated.
+    private static List<string> Forms(byte[] doc) {
+        List<string> forms = new List<string>();
+        string text = TestSupport.Latin1(doc);
+        for (int i = text.IndexOf("/Subtype /Form", StringComparison.Ordinal); i >= 0;
+                i = text.IndexOf("/Subtype /Form", i + 1, StringComparison.Ordinal)) {
+            int start = text.IndexOf("stream\n", i, StringComparison.Ordinal) + 7;
+            int end = text.IndexOf("\nendstream", start, StringComparison.Ordinal);
+            using (ZLibStream inflater = new ZLibStream(
+                    new MemoryStream(doc, start, end - start), CompressionMode.Decompress)) {
+                MemoryStream output = new MemoryStream();
+                inflater.CopyTo(output);
+                forms.Add(TestSupport.Latin1(output.ToArray()));
+            }
+        }
+        return forms;
+    }
+
     [Fact]
-    public void TheGlyphsAreRealTextInATaggedParagraph() {
-        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1).SetTitle("Title");
+    public void TheGlyphsAreOutlinesAndNoFontIsWritten() {
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos);
         Font font = TestSupport.PlexSans(pdf);
         font.SetSize(12f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         int a = font.unicodeToGID.Get('A');
-        int x = UnmappedGlyph(font);
-        page.AddBDC(StructElem.P, "en", null, null);
-        page.DrawGlyphs(font, new int[] {a, x}, new float[] {50f, 100f, 60f, 100f},
-                new int[] {0, 1}, "AXY", "hi");
-        page.AddEMC();
+        int b = font.unicodeToGID.Get('B');
+        page.DrawGlyphs(font, new int[] {a, b}, new float[] {50f, 100f, 60f, 100f}, "AB", "en");
         string content = TestSupport.Content(page);
-        // The language around them all, then a span of actual text for each
-        // cluster, its glyphs in a TJ array
-        Assert.Contains("/Span <</Lang <" + Util.ToHexString(System.Text.Encoding.UTF8.GetBytes("hi"))
-                + ">>> BDC\nBT\n", content);
-        Assert.Contains("/Span <</ActualText <" + Page.ToUTF16Hex("A") + ">>> BDC\n"
-                + "1 0 0 1 50 692 Tm\n[<" + a.ToString("X4") + ">] TJ\nEMC\n", content);
-        Assert.Contains("/Span <</ActualText <" + Page.ToUTF16Hex("XY") + ">>> BDC\n"
-                + "1 0 0 1 60 692 Tm\n[<" + x.ToString("X4") + ">] TJ\nEMC\nET\nEMC\n", content);
-        Assert.Equal(4, Count(content, "BDC\n"));   // The paragraph's, the language's, two spans
-        // The unmapped glyph maps to its cluster's letters, "XY"; the mapped
-        // one keeps its own
-        string map = FontWriter.ToUnicodeCMap(font, null).ToLowerInvariant();
-        Assert.Contains("<" + x.ToString("x4") + "> <00580059>", map);
-        Assert.DoesNotContain("<" + a.ToString("x4") + "> <0058", map);
+        // Each placed by the matrix of the em at its place
+        Assert.Contains("q 0.012 0 0 0.012 50 692 cm /Fm", content);
+        Assert.Contains("q 0.012 0 0 0.012 60 692 cm /Fm", content);
+        Assert.DoesNotContain("BT", content);
+        Assert.DoesNotContain("Tf", content);
+        Assert.DoesNotContain("BDC", content);  // Untagged: just the shapes
+        pdf.Complete();
+        string doc = TestSupport.Latin1(bos.ToArray());
+        Assert.DoesNotContain("/FontFile", doc);    // No font program
+        Assert.DoesNotContain("/Type /Font", doc);  // No font
+        Assert.DoesNotContain("/ToUnicode", doc);   // No ToUnicode map
+        // The outlines: paths in the font's units, filled, no text
+        List<string> forms = Forms(bos.ToArray());
+        Assert.Equal(2, forms.Count);
+        foreach (string form in forms) {
+            Assert.Contains(" m\n", form);
+            Assert.Contains(" l\n", form);
+            Assert.EndsWith("f\n", form);
+            Assert.DoesNotContain("BT", form);
+            Assert.DoesNotContain("Tj", form);
+        }
     }
 
     [Fact]
-    public void AnUnmappedGlyphBesideALetterTheClusterLacksIsTheZeroWidthSpace() {
-        // As Khmer's ោ, drawn as the glyph of េ and a second part: the letters
-        // cannot add up to the cluster's, and MuPDF would copy it twice
-        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1).SetTitle("Title");
+    public void AGlyphDrawnTwiceIsOneStampPlacedTwice() {
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.PlexSans(pdf);
+        font.SetSize(10f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        int a = font.unicodeToGID.Get('A');
+        int b = font.unicodeToGID.Get('B');
+        int space = font.unicodeToGID.Get(' ');
+        page.DrawGlyphs(font, new int[] {a, space, b, a},
+                new float[] {50f, 100f, 60f, 100f, 65f, 100f, 70f, 100f}, "A BA", null);
+        string content = TestSupport.Content(page);
+        MatchCollection m = Regex.Matches(content, "q 0.01 0 0 0.01 (50|70) 692 cm (/Fm\\d+) Do Q\n");
+        Assert.Equal(2, m.Count);
+        string name = m[0].Groups[2].Value;
+        Assert.Equal(name, m[1].Groups[2].Value);
+        Assert.Equal(3, Count(content, " Do Q\n"));    // The space draws nothing
+        // Drawn again, in another run and at another size, A is placed again
+        font.SetSize(20f);
+        page.DrawGlyphs(font, new int[] {a}, new float[] {80f, 100f}, "A", null);
+        content = TestSupport.Content(page);
+        Assert.Contains("q 0.02 0 0 0.02 80 692 cm " + name + " Do Q\n", content);
+        pdf.Complete();
+        string doc = TestSupport.Latin1(bos.ToArray());
+        Assert.Equal(2, Count(doc, "/Subtype /Form"));  // A and B, each once
+        Assert.Contains(name + " ", doc);              // The stamp is a resource
+    }
+
+    [Fact]
+    public void InATaggedParagraphTheGlyphsCarryTheirText() {
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Title");
         Font font = TestSupport.PlexSans(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        int x = UnmappedGlyph(font);
-        page.DrawGlyphs(font, new int[] {font.unicodeToGID.Get('B'), x}, new float[] {50f, 100f, 60f, 100f},
-                new int[] {0, 0}, "XY", "en");
-        string map = FontWriter.ToUnicodeCMap(font, null).ToLowerInvariant();
-        Assert.Contains("<" + x.ToString("x4") + "> <200b>", map);
+        int a = font.unicodeToGID.Get('A');
+        page.AddBDC(StructElem.P, "hi", null, null);
+        page.DrawGlyphs(font, new int[] {a}, new float[] {50f, 100f}, "क", "hi");
+        page.AddEMC();
+        string content = TestSupport.Content(page);
+        Assert.Contains("/P <</MCID 0>>\nBDC\n/Span <</Lang <"
+                + Util.ToHexString(System.Text.Encoding.UTF8.GetBytes("hi"))
+                + "> /ActualText <" + Page.ToUTF16Hex("क") + ">>> BDC\nq ", content);
+        Assert.Contains(" Do Q\nEMC\nEMC\n", content);
+        Assert.Equal(2, Count(content, "BDC\n"));
+        pdf.Complete();
+        Assert.DoesNotContain("/FontFile", TestSupport.Latin1(bos.ToArray()));
     }
 
     [Fact]
@@ -81,38 +135,119 @@ public class DrawGlyphsTest {
         PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1).SetTitle("Title");
         Font font = TestSupport.PlexSans(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        page.DrawGlyphs(font, new int[] {font.unicodeToGID.Get('A')}, new float[] {50f, 100f}, null, "A", "en");
+        int a = font.unicodeToGID.Get('A');
+        page.DrawGlyphs(font, new int[] {a}, new float[] {50f, 100f}, "A", null);
         string content = TestSupport.Content(page);
-        Assert.StartsWith("/P <</MCID 0>>\nBDC\n/Span <<", content);
-        Assert.EndsWith("ET\nEMC\nEMC\n", content);
-        Assert.Single(page.structures);
+        Assert.Contains("/P <</MCID 0>>\nBDC\n/Span <</ActualText <" + Page.ToUTF16Hex("A")
+                + ">>> BDC\n", content);
+        // A tagged document asks for the text the glyphs stand for
+        Page next = new Page(pdf, Letter.PORTRAIT);
+        Assert.Throws<ArgumentException>(
+                () => next.DrawGlyphs(font, new int[] {a}, new float[] {50f, 100f}, null, null));
     }
 
     [Fact]
-    public void AnUntaggedPageHasTheSpansOfActualTextAlone() {
-        PDF pdf = new PDF(new MemoryStream());
+    public void AFontUsedForTextTooIsWritten() {
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos);
         Font font = TestSupport.PlexSans(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        page.DrawGlyphs(font, new int[] {font.unicodeToGID.Get('A')}, new float[] {50f, 100f}, null, "A", null);
-        string content = TestSupport.Content(page);
-        Assert.StartsWith("BT\n", content);
-        Assert.Contains("/Span <</ActualText <" + Page.ToUTF16Hex("A") + ">>> BDC\n", content);
-        Assert.DoesNotContain("MCID", content);
+        int a = font.unicodeToGID.Get('A');
+        page.DrawGlyphs(font, new int[] {a}, new float[] {50f, 100f}, "A", null);
+        new TextLine(font, "Text").SetLocation(50f, 200f).DrawOn(page);
+        pdf.Complete();
+        Assert.Contains("/FontFile3", TestSupport.Latin1(bos.ToArray()));  // The font of the text line
+    }
+
+    [Fact]
+    public void TrueTypeOutlinesAreCubicCurvesAndCompositesHaveTheirParts() {
+        PDF pdf = TestSupport.NewPDF();
+        Font cascadia = new Font(pdf, TestSupport.RepoPath(CASCADIA));
+        GlyphOutline outline = new GlyphOutline(cascadia.program.font, false);
+        Assert.Equal(1.0 / 2048, outline.MatrixOf(1)[0], 12);
+        // O: two contours of quadratic curves, drawn as cubic ones
+        string o = outline.Outline(cascadia.unicodeToGID.Get('O')).operators;
+        Assert.Equal(2, Count(o, " m\n"));
+        Assert.Contains(" c\n", o);
+        // Aacute, a composite glyph: the contours of A and of the acute
+        int aacute = cascadia.unicodeToGID.Get(0x00C1);
+        int capitalA = cascadia.unicodeToGID.Get('A');
+        string ofA = outline.Outline(capitalA).operators;
+        string composite = outline.Outline(aacute).operators;
+        Assert.True(Count(composite, " m\n") > Count(ofA, " m\n"), composite);
+        Assert.True(composite.StartsWith(ofA, StringComparison.Ordinal)
+                || composite.EndsWith(ofA, StringComparison.Ordinal), composite);
+
+        Font devanagari = new Font(pdf, TestSupport.RepoPath(DEVANAGARI));
+        GlyphOutline noto = new GlyphOutline(devanagari.program.font, false);
+        string ii = noto.Outline(12).operators;     // iideva, a composite glyph
+        Assert.Contains(" m\n", ii);
+        Assert.Contains(" c\n", ii);
+        Assert.Equal("", noto.Outline(devanagari.unicodeToGID.Get(' ')).operators);
+    }
+
+    [Fact]
+    public void CffOutlinesHaveTheirSubroutinesAndMatrix() {
+        PDF pdf = TestSupport.NewPDF();
+        Font plex = TestSupport.PlexSans(pdf);
+        GlyphOutline outline = new GlyphOutline(plex.program.font, true);
+        Assert.Equal(0.001, outline.MatrixOf(1)[0], 12);
+        GlyphOutline.Path o = outline.Outline(plex.unicodeToGID.Get('O'));
+        Assert.Equal(2, Count(o.operators, " m\n"));
+        Assert.True(o.yMin < 0 && o.yMax > 600, o.yMin + " " + o.yMax);
+        Assert.Equal("", outline.Outline(plex.unicodeToGID.Get(' ')).operators);
+    }
+
+    [Fact]
+    public void NumbersAreHundredthsRoundedHalfAwayFromZero() {
+        Assert.Equal("0", GlyphOutline.Decimals(-0.004, 2));
+        Assert.Equal("1.5", GlyphOutline.Decimals(1.5, 2));
+        Assert.Equal("-2.67", GlyphOutline.Decimals(-8.0 / 3, 2));
+        Assert.Equal("0.0058594", GlyphOutline.Decimals(12.0 / 2048, 7));
+        Assert.Equal("100", GlyphOutline.Decimals(99.999, 2));
+    }
+
+    [Fact]
+    public void AttachTextCarriesTheTextAsAnAssociatedFile() {
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Title");
+        Font font = TestSupport.PlexSans(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Text").SetLocation(50f, 200f).DrawOn(page);
+        pdf.AttachText("article-1.txt", "सभी text");
+        pdf.Complete();
+        string doc = TestSupport.Latin1(bos.ToArray());
+        Assert.Contains("/Subtype /text#2Fplain;#20charset=utf-8", doc);   // The media type
+        Assert.Contains("/AFRelationship /Source", doc);                   // The relationship
+        Assert.Contains("/AF [", doc);                                     // An associated file
+        Assert.Contains("/Desc ", doc);                                    // The description
+    }
+
+    [Fact]
+    public void AttachTextIsRefusedInPDFA1AndPDFA2() {
+        foreach (Compliance compliance in new Compliance[] {Compliance.PDF_A_1B, Compliance.PDF_A_2B}) {
+            PDF pdf = new PDF(new MemoryStream(), compliance);
+            Assert.Throws<InvalidOperationException>(() => pdf.AttachText("a.txt", "text"));
+        }
     }
 
     [Fact]
     public void MisuseIsReported() {
-        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
-        PDF pdf = new PDF(new MemoryStream());
-        Font plex = TestSupport.PlexSans(pdf);
-        Font core = TestSupport.Helvetica(pdf);
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        int a = plex.unicodeToGID.Get('A');
-        Assert.Throws<ArgumentException>(() => page.DrawGlyphs(core, new int[] {1}, new float[] {0f, 0f}, null, "A", null));
-        Assert.Throws<ArgumentException>(() => page.DrawGlyphs(plex, new int[] {a}, new float[] {0f}, null, "A", null));
-        Assert.Throws<ArgumentException>(() => page.DrawGlyphs(plex, new int[] {plex.advanceWidth.Length}, new float[] {0f, 0f}, null, "A", null));
-        Assert.Throws<ArgumentException>(() => page.DrawGlyphs(plex, new int[] {a}, new float[] {0f, 0f}, new int[] {1}, "A", null));
-        Assert.Throws<ArgumentException>(() => page.DrawGlyphs(plex, new int[] {a}, new float[] {0f, 0f}, new int[] {0, 0}, "A", null));
+        using (TestSupport.AllowCoreFonts()) {
+            PDF pdf = new PDF(new MemoryStream());
+            Font plex = TestSupport.PlexSans(pdf);
+            Font core = TestSupport.Helvetica(pdf);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            int a = plex.unicodeToGID.Get('A');
+            Assert.Throws<ArgumentException>(
+                    () => page.DrawGlyphs(core, new int[] {1}, new float[] {0f, 0f}, "A", null));
+            Assert.Throws<ArgumentException>(
+                    () => page.DrawGlyphs(plex, new int[] {a}, new float[] {0f}, "A", null));
+            Assert.Throws<ArgumentException>(
+                    () => page.DrawGlyphs(plex, new int[] {plex.advanceWidth.Length}, new float[] {0f, 0f}, "A", null));
+            Assert.Throws<ArgumentException>(
+                    () => page.DrawGlyphs(plex, new int[] {-1}, new float[] {0f, 0f}, "A", null));
+        }
     }
 }
-}
+}   // End of DrawGlyphsTest.cs

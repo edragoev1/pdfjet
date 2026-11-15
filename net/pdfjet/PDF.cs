@@ -704,6 +704,9 @@ public sealed class PDF {
             Append(Token.BeginDictionary);
             AppendImportedEntries(importedFonts);
             foreach (Font font in fonts) {
+                if (font.OutlinesOnly()) {
+                    continue;   // Not written: DrawGlyphs alone drew with it, as outlines
+                }
                 Append("/F");
                 Append(font.objNumber);
                 Append(Token.Space);
@@ -2695,6 +2698,38 @@ public sealed class PDF {
         }
         associatedFiles.Add(file);
         return this;
+    }
+
+    /// <summary>
+    /// Attaches the text, in UTF-8, as a file the document carries: an
+    /// associated file of the relationship Source, of the media type
+    /// "text/plain; charset=utf-8". This is how a document whose text is drawn
+    /// as outlines, with Page.DrawGlyphs, which cannot be selected or
+    /// searched, carries its exact text for anyone who needs it: a reader
+    /// shows the file beside the document. It is attached only when this is
+    /// called. A document of PDF/A-1, which carries no files, or of PDF/A-2,
+    /// which carries only documents of PDF/A, refuses it.
+    /// </summary>
+    /// <param name="name">the name of the file, such as "article-1.txt".</param>
+    /// <param name="text">the text.</param>
+    /// <returns>this PDF object.</returns>
+    public PDF AttachText(String name, String text) {
+        if (String.IsNullOrEmpty(name) || text == null) {
+            Fail(new ArgumentException("AttachText needs the name of the file and the text."));
+            return this;
+        }
+        if (compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_2B) {
+            Fail(new InvalidOperationException("A document of " + compliance
+                    + " cannot carry the text " + name
+                    + ": PDF/A-1 carries no files and PDF/A-2 only documents of PDF/A;"
+                    + " PDF/A-3 and PDF/UA carry it."));
+            return this;
+        }
+        EmbeddedFile file = new EmbeddedFile(this, name,
+                new MemoryStream(Encoding.UTF8.GetBytes(text)), true,
+                "text/plain; charset=utf-8", Relationship.SOURCE, "The text of this document.");
+        return AddAssociatedFile(file);
     }
 
     /// <summary>
