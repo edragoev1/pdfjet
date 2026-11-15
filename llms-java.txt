@@ -1,0 +1,157 @@
+# PDFjet for Java
+
+> PDFjet creates PDF documents from Java 8 or later. One library, no dependencies: text and tables that flow across pages, embedded fonts for the world's languages, charts, barcodes, images and SVG, Markdown, accessible PDF/UA and archival PDF/A documents, encryption, and adding to existing PDFs. It writes each page to the output stream as it goes, so long documents need little memory. This file is for AI coding assistants: the rules below are where code written without reading the examples goes wrong.
+
+## Install
+
+Maven:
+
+```xml
+<dependency>
+  <groupId>com.pdfjet</groupId>
+  <artifactId>pdfjet</artifactId>
+  <version>9.1.9</version>
+</dependency>
+```
+
+Gradle: `implementation("com.pdfjet:pdfjet:9.1.9")`. For Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add `com.pdfjet:pdfjet-fonts-world` of the same version.
+
+```java
+import java.io.*;
+import java.util.*;
+import com.pdfjet.*;
+import com.pdfjet.fonts.*;
+```
+
+## Rules
+
+1. **End every document with `pdf.complete()`.** It writes the end of the file and closes the stream. A PDF without it is broken.
+2. **Coordinates are points (1/72 inch) from the top-left corner of the page; y grows downward.** `Letter.PORTRAIT` is 612 x 792, `A4.PORTRAIT` 595 x 842. A margin of 50 leaves a width of 512 on Letter.
+3. **Create, set, place, draw:** make a component, set it up, then `setLocation(x, y)` and `drawOn(page)`. Setters return the object, so calls chain. Most `drawOn` methods return `float[] {x, y}` where the component ended: place the next one below it, `y = block.drawOn(page)[1] + 12f;`.
+4. **Pages:** `new Page(pdf, Letter.PORTRAIT)` makes a page and adds it to the document at once. For content longer than one page, let the component make the pages: `table.drawOn(pdf, pages, Letter.PORTRAIT)` (also `Markdown`) fills a `List<Page>` you pass in, as many as it needs. **Those pages are not in the document yet: add them with `pdf.addPages(pages)`** after drawing on them, for example after adding footers such as "Page 3 of 7" with `page.addFooter(textLine)`. Give the table a bottom margin, `table.setBottomMargin(50f)`, so that its last row on each page stays clear of the footer. Forgetting it gives "A PDF needs at least one page" or a document without them.
+5. **Fonts:** `new Font(pdf, IBMPlexSans.Regular)` loads a font PDFjet carries; the constants are in `com.pdfjet.fonts`: `IBMPlexSans`, `IBMPlexSerif`, `CascadiaMono` (monospace), and, with the world fonts package, `IBMPlexSansJP`, `KR`, `SC`, `TC`, `Arabic`, `Hebrew`, `Thai`. PDFjet works with any TrueType (.ttf) or OpenType (.otf) font file: `new Font(pdf, "/path/to/MyFont.otf")`. Fonts are embedded as a subset of the characters drawn. Set the size on the font (`font.setSize(11f)`) or on the component (`setFontSize`). Do not use `CoreFont` (Helvetica, Times, Courier) for real documents: they draw only Western European characters, look different in each viewer, and are not allowed in PDF/UA or PDF/A.
+6. **Colors are `int` RGB values:** `0x1F4E79`, or a constant of `Color` such as `Color.navy`.
+7. **Accessible documents:** `pdf.setCompliance(Compliance.PDF_UA_1)` and `pdf.setTitle(...)` right after `new PDF(...)`; give headings `setStructureType(StructElem.H1)` (H2, …) and every image `setAltDescription("...")`. Archival: `Compliance.PDF_A_1B`, `PDF_A_2B`, `PDF_A_3B`; `Compliance.PDF_A_3A_UA_1` is archival and accessible.
+8. **Wrap the output stream:** `new PDF(new BufferedOutputStream(new FileOutputStream("out.pdf")))`, or any `OutputStream`, such as a servlet response.
+9. **Errors:** a mistake in the calling code throws with a message that says what to change, rather than writing a broken PDF. Read the message.
+
+## A page of text
+
+```java
+public class Hello {
+    public static void main(String[] args) throws Exception {
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Hello.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Hello");
+
+        Font bold = new Font(pdf, IBMPlexSans.SemiBold);
+        bold.setSize(20f);
+        Font regular = new Font(pdf, IBMPlexSans.Regular);
+        regular.setSize(11f);
+
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine title = new TextLine(bold, "Hello");
+        title.setStructureType(StructElem.H1);
+        title.setLocation(50f, 70f);
+        title.drawOn(page);
+
+        TextBlock text = new TextBlock(regular,
+                "TextBlock wraps text to its width. Its drawOn returns where the text ended.");
+        text.setLocation(50f, 90f);
+        text.setWidth(512f);
+        float y = text.drawOn(page)[1];
+
+        new TextLine(regular, "This line is placed below the block.")
+                .setLocation(50f, y + 20f).drawOn(page);
+
+        pdf.complete();
+    }
+}
+```
+
+## A table over as many pages as it needs
+
+```java
+public class Report {
+    public static void main(String[] args) throws Exception {
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Report.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Report");
+        Font bold = new Font(pdf, IBMPlexSans.SemiBold);
+        Font regular = new Font(pdf, IBMPlexSans.Regular);
+
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        List<Cell> header = new ArrayList<Cell>();
+        header.add(new Cell(bold, "Item").setBackgroundColor(0xF1F3F6));
+        header.add(new Cell(bold, "Quantity").setBackgroundColor(0xF1F3F6));
+        data.add(header);
+        for (int i = 1; i <= 200; i++) {
+            List<Cell> row = new ArrayList<Cell>();
+            row.add(new Cell(regular, "Item " + i));
+            row.add(new Cell(regular, String.valueOf(i * 3)));
+            data.add(row);
+        }
+
+        Table table = new Table();
+        table.setTableData(data, 1);        // 1 header row, repeated on every page
+        table.setColumnWidth(0, 362f);
+        table.setColumnWidth(1, 150f);
+        table.rightAlignNumbers();
+        table.setLocation(50f, 50f);
+        table.setBottomMargin(50f);         // room for the footer on each page
+
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        for (int i = 0; i < pages.size(); i++) {
+            pages.get(i).addFooter(new TextLine(regular, "Page " + (i + 1) + " of " + pages.size()));
+        }
+        pdf.addPages(pages);                // the pages the table made, into the document
+        pdf.complete();
+    }
+}
+```
+
+For tables of thousands of pages read from a file or a database, use `BigTable`: it writes as it goes and its memory stays flat (Example_24).
+
+## Markdown
+
+```java
+Markdown markdown = new Markdown(regular, bold, italic, boldItalic, code);    // five Fonts
+List<Page> pages = new ArrayList<Page>();
+markdown.drawOn(pdf, markdownText, pages, Letter.PORTRAIT);
+pdf.addPages(pages);
+```
+
+Headings, lists, tables, quotes, code and links, tagged in a PDF/UA document (Example_19).
+
+## The main classes
+
+- Document: `PDF`, `Page`, `Letter` / `A4` / `Legal` page sizes, `Compliance`, `Font`
+- Text: `TextLine` (one line), `TextBlock` (wrapped to a width), `TextColumn` (justified paragraphs), `TextFrame` and `Paragraph` (text flowing across columns and pages), `CompositeTextLine` (subscripts, superscripts), `Markdown`
+- Tables: `Table`, `Cell`, `BigTable`
+- Graphics: `Line`, `Rect`, `Path`, `Point`, `Stamp` (drawn once, placed on every page), `Container`, `GraphicsState` (transparency)
+- Images: `Image` (PNG, JPEG, BMP), `SVGImage` (drawn as vectors)
+- Charts: `SimpleBarChart`, `SimpleLineChart`, `SimpleScatterChart`, `DonutChart`
+- Barcodes, each in a package of its own: `com.pdfjet.barcodes.Barcode` (Code 128, Code 39, UPC-A, EAN-13), `com.pdfjet.qrcode.QRCode`, `com.pdfjet.datamatrix.DataMatrix`, `com.pdfjet.pdf417.PDF417`
+- Interactive: links and destinations, `Bookmark`, file attachments, `CheckBox`, `RadioButton`, `Form` and `Field`
+- Existing PDFs: `pdf.read(inputStream)` opens one; then stamp, fill, merge and split (Examples 48 to 50)
+
+## Examples
+
+Every example is complete and runnable; start from the one closest to the task. The source: https://github.com/edragoev1/pdfjet/tree/main/examples (Example_NN.java), and https://pdfjet.com/java/by-example.html with the PDF each one makes.
+
+- Text: 01 (TextBlock), 06 (embedded fonts), 07 (fonts from .otf and .ttf files), 08 (measuring text), 10 and 11 (TextBlock), 12 (justified paragraphs), 14 and 15 (TextFrame, columns), 16 (mixed styles), 17 (a whole book), 18 and 19 (Markdown), 22 (TextFlow)
+- Languages: 02 (Chinese), 03 (Japanese, Korean), 04 (Arabic, Hebrew, Persian, Thai), 13 (Chinese paragraphs), 52 (Hindi and Khmer, shaped by Java's text engine)
+- Tables: 20 (a results page), 21 (header rows, spans, colors), 23 (a table over pages, PDF/A), 24 (BigTable, 2,546 pages), 51 (wrapped cells)
+- Charts: 20, 25 (lines), 26 (scatter), 27 (bars), 28 (donut)
+- Graphics and images: 29 (shapes), 30 (transparency), 31 (Stamp, Container), 32 (JPEG, PNG, BMP), 33 (SVG), 34 (a letterhead), 35 (layers)
+- Barcodes: 36 (linear), 37 (QR, Data Matrix), 38 (PDF417)
+- Documents: 39 (pages finished last), 40 (links), 41 (bookmarks), 42 (attachments, annotations), 43 and 44 (forms), 45 (watermark), 46 (an invoice with its data, PDF/A-3), 47 (encryption)
+- Existing PDFs: 48 (write on pages), 49 (merge and split), 50 (stamp and number pages)
+
+## Links
+
+- Download, the API reference and all examples: https://pdfjet.com/java/download.html
+- Features: https://pdfjet.com/java/index.html
+- FAQ: https://pdfjet.com/java/faq.html
+- PDFjet Pro adds digital signatures and electronic invoices: https://pdfjet.com/java/buy.html
