@@ -58,7 +58,9 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 PORTS = ['java', 'dotnet', 'go', 'swift']
-EXAMPLES = range(1, 52)
+# Example_52 is left out: the Go one is a module of its own, which
+# trace-go-examples.sh does not build, and Swift has none.
+EXAMPLES = [n for n in range(1, 86) if n != 52]
 MAX_PAGES = 10
 EXAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'examples')
 

@@ -108,12 +108,11 @@ for port in java dotnet go swift; do
     fi
     mkdir -p "$WORK/pdfs/$port"
     missing=0
-    # Swift's Example_52 needs Core Text, which Linux does not have
-    last=52
-    if [ $port = swift ]; then
-        last=51
-    fi
-    for i in $(seq -w 1 $last); do
+    for i in $(seq -w 1 85); do
+        # Swift's Example_52 needs Core Text, which Linux does not have
+        if [ $port = swift ] && [ $i = 52 ]; then
+            continue
+        fi
         if [ -s Example_$i.pdf ]; then
             mv Example_$i.pdf "$WORK/pdfs/$port/"
         else

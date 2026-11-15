@@ -66,7 +66,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 ENGINES = {'pdfium': 'PDFium', 'pdfjs': 'pdf.js', 'pdfkit': 'PDFKit', 'poppler': 'Poppler'}
-EXAMPLES = range(1, 53)
+EXAMPLES = range(1, 86)
 MAX_PAGES = 10
 RESOLUTION = 72
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -99,6 +99,10 @@ RENDER_EXCEPTIONS = {
                           'them with the fonts of the machine it runs on, if it finds any: PDFium drew '
                           'no Korean, and pdf.js, which uses no fonts of the machine in Node, drew empty '
                           'boxes',
+    ('pdfium', 'Example_85'): 'its thirty QR codes have modules of 1.5 points, a pixel and a half at the '
+                              '72 dpi of the check, and PDFium shades the edges that fall inside a pixel '
+                              'otherwise than MuPDF: 11.8% of the blocks, all in the QR codes, the text '
+                              'and the codes the same (pdf.js 0.0%, Poppler 2.4%, 15 November 2026)',
 }
 
 # The characters an engine may lack from the text MuPDF extracts, as (engine,

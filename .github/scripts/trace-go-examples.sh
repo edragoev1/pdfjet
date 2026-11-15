@@ -32,7 +32,8 @@ mkdir -p "$bin"
 (cd "$root/src" && go build -tags texttrace -o "$bin/" ./examples/...)
 
 cd "$out"
-for i in $(seq -w 1 51); do
+# Example_52 is a module of its own, not built above
+for i in $(seq -w 1 51) $(seq 53 85); do
     PDFJET_TEXT_TRACE="$out/text-trace.jsonl" "$bin/example$i"
 done
 rm -rf "$bin"
