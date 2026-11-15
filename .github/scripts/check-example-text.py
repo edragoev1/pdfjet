@@ -162,6 +162,13 @@ def pdftotext(path, password, pages):
     return result.stdout.decode('utf-8').split('\f')[:pages]
 
 
+# MuPDF keeps 31 characters of a font's name with its subset tag, ABCDEF+,
+# so IBMPlexSansArabic-Regular comes back as IBMPlexSansArabic-Regula; both
+# sides are compared at that length.
+def font_name(name):
+    return name[:24]
+
+
 def check_file(path, password, n, pages_drawn):
     """Returns the problems of one PDF file, given what was drawn on its pages."""
     problems = []
@@ -202,7 +209,7 @@ def check_file(path, password, n, pages_drawn):
             notdef = collections.Counter()
             outside = collections.Counter()
             for span in page.get_texttrace():
-                font = span['font'].split('+', 1)[-1]
+                font = font_name(span['font'].split('+', 1)[-1])
                 for char in span['chars']:
                     for c in characters(chr(char[0])) if char[0] >= 0 else []:
                         glyphs[font, c] += 1
@@ -220,7 +227,7 @@ def check_file(path, password, n, pages_drawn):
                 wanted = collections.Counter()
                 for font, text in texts:
                     for c in characters(text):
-                        wanted[font, c] += 1
+                        wanted[font_name(font), c] += 1
                 # A character missing from every font is a problem of the
                 # extraction above; here it is one found in another font.
                 surplus = glyphs - wanted
