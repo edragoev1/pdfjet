@@ -98,23 +98,18 @@ same output come in four languages, and none of them needs a third-party library
   each language's quotation marks: a one-page PDF in it is about 28 KB. A
   page of Chinese in IBM Plex Sans SC is about 180 KB, where the whole font
   is 7 MB.
-- **Hindi, Khmer and other complex scripts, as real text.** PDFjet does not
-  shape these scripts itself; the platform's text engine does, and
-  `Page.drawGlyphs` draws the glyphs it found as real text: selectable,
-  searchable, read by screen readers, PDF/UA. Java's java.awt.font, Android's
+- **Hindi, Khmer and other complex scripts.** PDFjet does not shape these
+  scripts itself; the platform's text engine does, and `Page.drawGlyphs`
+  draws the glyphs it found as outlines, read from the font file: the same
+  on every screen, sharp in print, and read by screen readers in a tagged
+  PDF, where each run carries its real text and language (PDF/UA). The text
+  cannot be selected or searched; `PDF.attachText` attaches the exact text
+  to the document for anyone who needs it. Java's java.awt.font, Android's
   TextShaper and Apple's Core Text are built in; in .NET and Go, a shaping
-  package (HarfBuzzSharp, go-text) in your program, never in PDFjet. Example_52
-  shows each. Known limits: screen readers read the real text of each
-  tagged paragraph, but copying text out of the PDF is up to each viewer.
-  Measured on a full page: Hindi copies back exactly in Chrome and
-  Poppler, with a vowel sign or two doubled in MuPDF; Khmer, whose
-  consonants stack and whose vowels split around them, comes back with
-  some letters out of place in every viewer (about 2.5% of characters in
-  MuPDF, 10% in Poppler, 14% in Chrome); Firefox, and Apple's Preview and
-  Safari, read only the glyphs' own letters (about 14% of Hindi and 23% of
-  Khmer out of place). The examples break lines at spaces: for Khmer,
-  Thai, Lao and Burmese, written without spaces between words, use a line
-  breaker such as ICU's.
+  package (HarfBuzzSharp, go-text) in your program, never in PDFjet.
+  Example_52 draws a page of Hindi and a page of Khmer with each. The
+  examples break lines at spaces: for Khmer, Thai, Lao and Burmese, written
+  without spaces between words, use a line breaker such as ICU's.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics. For
   logos, icons and drawings, use SVG: it stays sharp at any size and in
   print, and it is far smaller and faster than a PNG with transparency,

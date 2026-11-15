@@ -172,32 +172,38 @@ TextFrame:
   of the lines `drawOn(null)` only measures. With no listener, nothing
   changes.
 
-- `Page.drawGlyphs(Font, int[] glyphs, float[] positions, int[] clusters,
-  String text, String language)` (Go `DrawGlyphs` with clusters counted in
-  runes, C# `DrawGlyphs`, Swift `drawGlyphs`): draws glyphs that another text
-  engine shaped -- Java's java.awt.font, Android's TextShaper, Apple's Core
-  Text, HarfBuzz -- by their numbers in the font, at their places, as real
-  text. Each cluster, with the glyphs drawn for it, is a span whose actual
-  text is the characters it stands for, its glyphs in one array of text;
-  a glyph no character of the font maps to (a conjunct, a reordered vowel
-  sign) is mapped in the ToUnicode map to the characters of its cluster the
-  other glyphs do not give, or to the zero width space where they cannot add
-  up, so that copying, searching and screen readers get the text, and PDF/UA
-  passes. This is how Hindi, Khmer and the other scripts PDFjet does not
-  shape itself are drawn as real text, with no shaping engine in PDFjet and
-  no dependency added. Example_52 draws Article 1 of the Universal
-  Declaration of Human Rights in Hindi and Khmer, shaped by java.awt.font
-  (Java), HarfBuzz through HarfBuzzSharp (C#), go-text/typesetting (Go) and
-  Core Text (Swift, on a Mac); each shaping package is the example's alone.
-  Copying gives the text back exactly in Chrome, MuPDF and Poppler. Known
-  limits: Firefox (pdf.js) and Apple's Preview and Safari (PDFKit) read only
-  the ToUnicode map, so they copy the Hindi exactly but lose the Khmer
-  vowels drawn in two parts (ោ, ៅ, ើ); screen readers read the actual text
-  of a tagged PDF. The examples break lines at spaces only: Khmer, Thai,
-  Lao and Burmese, written without spaces between words, need a line
-  breaker such as ICU's, in the program.
+- `Page.drawGlyphs(Font font, int[] glyphs, float[] positions, String text,
+  String language)` (Go `DrawGlyphs`, C# `DrawGlyphs`, Swift `drawGlyphs`):
+  draws glyphs that another text engine shaped -- Java's java.awt.font,
+  Android's TextShaper, Apple's Core Text, HarfBuzz -- by their numbers in
+  the font, at their places (x and baseline y from the top left), as
+  outlines: PDFjet reads each glyph's outline from the font file itself, the
+  glyf table of a TrueType font (composite glyphs too) or the charstrings of
+  a CFF font, and fills it in the page's brush color. Each glyph is drawn
+  once, as a form XObject, and placed wherever it is drawn; the font is only
+  read, not embedded. In a tagged document the glyphs are part of the
+  paragraph they are drawn in, or a paragraph of their own, with the text as
+  their actual text and the language given, so screen readers read them and
+  PDF/UA passes. The text looks the same in every viewer and in print, but
+  it cannot be selected, copied or searched. This is how Hindi, Khmer and
+  the other scripts PDFjet does not shape itself are drawn, with no shaping
+  engine in PDFjet and no dependency added. Example_52 draws a Letter page
+  of the Universal Declaration of Human Rights in Hindi and one in Khmer,
+  shaped by java.awt.font (Java), HarfBuzz through HarfBuzzSharp (C#),
+  go-text/typesetting (Go) and Core Text (Swift, on a Mac); each shaping
+  package is the example's alone. The examples break lines at spaces only:
+  Khmer, Thai, Lao and Burmese, written without spaces between words, need
+  a line breaker such as ICU's, in the program.
 
-No behavior change: neither does anything until it is called.
+- `PDF.attachText(String name, String text)` (Go `AttachText`, C#
+  `AttachText`, Swift `attachText`): attaches the text, in UTF-8, as a file
+  the document carries: an associated file of the relationship Source and
+  the media type `text/plain; charset=utf-8`, described as "The text of this
+  document." A document whose text is drawn as outlines carries its exact
+  text this way; Example_52 attaches the text of each page. It is attached
+  only when called; PDF/A-1 and PDF/A-2, which carry no such file, refuse it.
+
+No behavior change: none of these does anything until it is called.
 
 Faster, in the four ports: `TextBlock` wraps a paragraph about 13% to 24%
 faster (100 pages of paragraphs: Java 21 to 17 ms, C# 27.0 to 20.5 ms, Go

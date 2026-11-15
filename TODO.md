@@ -73,6 +73,10 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   which MuPDF copies twice. Port Page.drawGlyphs, glyphTexts, baselineOf,
   clusterEnd and advanceOf, and the DrawGlyphs tests, before the release;
   Example_52 then in C# and Go too, if wanted.
+  Superseded the same day: drawGlyphs draws the glyphs as outlines in the
+  four ports, with the text as the actual text of tagged content, and
+  PDF.attachText carries the exact text; spans per cluster and ToUnicode
+  entries for unmapped glyphs are gone.
 
 - ✅ **DONE 14 November 2026. Markdown: a heading stays with the block after it, in all four
   ports** (found 14 November 2026, making a landscape document with md2pdf).
@@ -200,7 +204,7 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   tests: (1) the CHANGELOG brought up to date with what main has:
   BigTable's setWrapText, the 0.5-point default of every line (a behavior
   change, in the first lines), the TextFrame centered-row fix, drawGlyphs as
-  it now writes (a span per cluster) and Example_52 in Java, C#, Go and
+  it now draws (outlines, since 14 November 2026) and Example_52 in Java, C#, Go and
   Swift; (2) Markdown: a heading stays with the block after it (below);
   (3) QRCode.fits (below); (4) TextFrame: the empty row after a lone
   character wider than the frame (below); (5) one URI action for repeated

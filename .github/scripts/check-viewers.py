@@ -104,15 +104,9 @@ RENDER_EXCEPTIONS = {
 # The characters an engine may lack from the text MuPDF extracts, as (engine,
 # name) pairs, with the first and the last of the characters and the reason.
 TEXT_EXCEPTIONS = {
-    ('pdfjs', 'Example_52'): (
-        '\u1780', '\u17ff',
-        'pdf.js reads no actual text, only the letters ToUnicode gives each glyph, and a Khmer vowel '
-        'drawn in two parts, as ោ, whose first part is the glyph of េ, cannot be spelled that way; '
-        'the Hindi is exact'),
-    ('pdfkit', 'Example_52'): (
-        '\u1780', '\u17ff',
-        'PDFKit, as pdf.js, reads no actual text, only the letters ToUnicode gives each glyph: the '
-        'Khmer vowels drawn in two parts cannot be spelled that way; the Hindi is exact'),
+    # None now: Example_52, whose Hindi and Khmer the viewers copied in their
+    # own ways, draws them as outlines since 14 November 2026, so every
+    # engine extracts only its English lines, the same.
 }
 
 # The passwords an engine is given in place of the ones in PASSWORDS, with
