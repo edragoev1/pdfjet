@@ -86,12 +86,13 @@ public class Example_69 {
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
+    static final int BORDER = 0x4d4d4d;
     static final int INK = 0x333333;
 
     static final float LEFT = 48f;
     static final float WIDTH = 516f;            // Letter, 612 wide, less the margins
     static final float RIGHT = LEFT + WIDTH;
-    static final float BOTTOM = 80f;            // Room for the footer under the table
+    static final float FOOTER_ROOM = 80f;   // the bottom margin, clear of "Page i of N"
 
     public Example_69() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_69.pdf")));
@@ -152,7 +153,7 @@ public class Example_69 {
         table.setHeaderRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(0x4d4d4d);
+        table.setCellBorderColor(BORDER);
         table.setWidth(WIDTH);
         table.setColumnWidthsInPercent(12f, 16f, 56f, 16f);
         table.setTextAlignmentInColumn(3, Alignment.RIGHT);
@@ -160,7 +161,7 @@ public class Example_69 {
         // and clear of the footer on all of them
         table.setLocation(LEFT, 48f);
         table.setFirstPageTopMargin(172f);
-        table.setBottomMargin(BOTTOM);
+        table.setBottomMargin(FOOTER_ROOM);
         float[] end = table.drawOn(pdf, page, pages, Letter.PORTRAIT);
         page = pages.get(pages.size() - 1);
 
@@ -168,7 +169,7 @@ public class Example_69 {
         // longer fit on its page, they go on a page of their own.
         y = end[1] + 24f;
         float height = 17f * categories.size() + 190f;
-        if (y + height > page.getHeight() - BOTTOM) {
+        if (y + height > page.getHeight() - FOOTER_ROOM) {
             page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
             pages.add(page);
             y = 64f;

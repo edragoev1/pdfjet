@@ -21,13 +21,14 @@ import com.pdfjet.qrcode.*;
  * price of each, the colors the products come in, the price list, how to
  * order, and a QR code of the shop online.
  * <p>
- * The products are one list, and both the grid and the price list are made
- * from it, so a price is changed in one place; the products without a
- * picture are in the price list only. The grid places three products to a
- * row, each in a column of the same width, and starts the next row under
- * the tallest product of the row, as a longer description pushes it down.
- * The codes and the prices are in Cascadia Mono, a monospace font, so that
- * the characters of the codes line up from row to row of the price list.
+ * A catalog is a finished document that customers receive, not a form. The
+ * products are one list, and both the grid and the price list are made from
+ * it, so a price is changed in one place; the products without a picture are
+ * in the price list only. The grid places three products to a row, each in a
+ * column of the same width, and starts the next row under the tallest
+ * product of the row, as a longer description pushes it down. The codes and
+ * the prices are in Cascadia Mono, a monospace font, so that the characters
+ * of the codes line up from row to row of the price list.
  * </p>
  * <p>
  * The pictures here are small drawings, SVG files in

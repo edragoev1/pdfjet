@@ -39,7 +39,7 @@ public class Example_59 {
     static final String SENDER = "Northwind Studio";
     static final String SENDER_ADDRESS = "12 Harbour Street\nPort Elgin, ON N0H 2C0\nhello@example.com";
 
-    static final LocalDate DATE = LocalDate.of(2026, 10, 12);
+    static final LocalDate DATE = LocalDate.of(2026, 9, 25);
     static final String RECIPIENT = "Ms. Priya Raman\nContoso Books\n400 King Street West\nToronto, ON M5V 1K4";
     static final String SUBJECT = "Your annual report, accessible edition";
     static final String SALUTATION = "Dear Ms. Raman,";

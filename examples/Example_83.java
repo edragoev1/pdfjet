@@ -63,7 +63,7 @@ public class Example_83 {
     static final float LEFT = 48f;
     static final float TOP = 48f;
     static final float WIDTH = 696f;            // 792 less two margins of 48
-    static final float BOTTOM = 56f;            // room for the footer
+    static final float FOOTER_ROOM = 56f;   // the bottom margin, clear of "Page i of N"
 
     public Example_83() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_83.pdf")));
@@ -128,7 +128,7 @@ public class Example_83 {
         table.setTextColorInColumn(0, Color.dimgray);
         table.setLocation(LEFT, TOP);
         table.setFirstPageTopMargin(y + 16f);
-        table.setBottomMargin(BOTTOM);
+        table.setBottomMargin(FOOTER_ROOM);
         table.drawOn(pdf, page, pages, Letter.LANDSCAPE);
 
         // The footer, on every page, now that their number is known

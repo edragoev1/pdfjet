@@ -104,7 +104,7 @@ public class Example_82 {
         y = heading("Your request", StructElem.H2, 14f, y + 46f);
         field("Your name *", LEFT, y, HALF, 1, null);
         y = field("Department", LEFT + HALF + GAP, y, HALF, 1, null);
-        y = choice("Type of leave *", KINDS_OF_LEAVE, y);
+        y = choice("Type of leave *", LEFT, y, KINDS_OF_LEAVE);
         field("First day *", LEFT, y, QUARTER, 1, null);
         field("Last day *", LEFT + QUARTER + GAP, y, QUARTER, 1, null);
         field("Working days", LEFT + HALF + GAP, y, QUARTER, 1, null);
@@ -122,7 +122,7 @@ public class Example_82 {
         // The manager's part, below a rule, filled in after the employee's
         rule(y + 12f);
         y = heading("For your manager", StructElem.H2, 14f, y + 42f);
-        y = choice("Decision", new String[] {"Approved", "Not approved"}, y);
+        y = choice("Decision", LEFT, y, "Approved", "Not approved");
         y = field("Manager's name", LEFT, y, HALF, 1, null);
         new CheckBox(textFont, "I confirm this decision and sign below.")
                 .setBorderColor(BOX)
@@ -175,15 +175,14 @@ public class Example_82 {
         return top + height + 12f;
     }
 
-    // Draws a choice of one of the options: its label, and the radio buttons
-    // under it, where a box would be, each starting where the one before it
-    // ended. drawOn returns the end of a button with some room after its
-    // text already. Returns where the next row starts.
-    private float choice(String text, String[] options, float y) throws Exception {
-        label(text, LEFT, y);
-        float x = LEFT;
-        for (String option : options) {
-            x = new RadioButton(textFont, option).setLocation(x, y + 20f).drawOn(page)[0] + 12f;
+    // Draws a question of a few answers: its label at y and a radio button
+    // for each answer under it, where a box would be, each starting where the
+    // one before it ended. drawOn returns the end of a button with some room
+    // after its text already. Returns where the next row starts.
+    private float choice(String text, float x, float y, String... answers) throws Exception {
+        label(text, x, y);
+        for (String answer : answers) {
+            x = new RadioButton(textFont, answer).setLocation(x, y + 20f).drawOn(page)[0] + 12f;
         }
         return y + 50f;
     }

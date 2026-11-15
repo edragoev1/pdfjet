@@ -80,6 +80,10 @@ public class Example_53 {
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
+    static final int BORDER = 0x4d4d4d;
+
+    static final float MARGIN = 48f;
+    static final float FOOTER_ROOM = 80f;   // the bottom margin, clear of "Page i of N"
 
     public Example_53() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_53.pdf")));
@@ -107,8 +111,8 @@ public class Example_53 {
         List<Page> pages = new ArrayList<Page>();
         Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
         pages.add(page);
-        float left = 48f;
-        float right = page.getWidth() - 48f;
+        float left = MARGIN;
+        float right = page.getWidth() - MARGIN;
 
         // The header: the seller on the left, the title and the numbers on the right
         new TextLine(semiBold, SELLER).setFontSize(16f).setLocation(left, 64f).drawOn(page);
@@ -159,7 +163,7 @@ public class Example_53 {
         table.setHeaderRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(0x4d4d4d);
+        table.setCellBorderColor(BORDER);
         table.setWidth(right - left);
         table.setColumnWidthsInPercent(55f, 15f, 15f, 15f);
         for (int column = 1; column < 4; column++) {
@@ -167,16 +171,16 @@ public class Example_53 {
         }
         // Under the customer on the first page, at the top of the next ones,
         // and clear of the footer on all of them
-        table.setLocation(left, 48f);
+        table.setLocation(left, MARGIN);
         table.setFirstPageTopMargin(260f);
-        table.setBottomMargin(80f);
+        table.setBottomMargin(FOOTER_ROOM);
         float[] end = table.drawOn(pdf, page, pages, Letter.PORTRAIT);
         page = pages.get(pages.size() - 1);
 
         // The totals, under the last row. When they no longer fit on its page,
         // they go on a page of their own.
         float y = end[1] + 22f;
-        if (y + 90f > page.getHeight() - 80f) {
+        if (y + 90f > page.getHeight() - FOOTER_ROOM) {
             page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
             pages.add(page);
             y = 64f;

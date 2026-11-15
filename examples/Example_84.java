@@ -45,7 +45,7 @@ import com.pdfjet.qrcode.*;
  */
 public class Example_84 {
     static final String ORGANIZER = "Lantern Hill Design School";
-    static final String WORKSHOP = "Design with PDF: a hands-on workshop, Saturday, January 16, "
+    static final String WORKSHOP = "Better PDFs: a hands-on workshop, Saturday, January 16, "
             + "2027, 9 a.m. to 4 p.m. Fill in this form and send it back to reserve your place. "
             + "Lunch and coffee are included.";
     static final String PAYMENT_PAGE = "https://example.com/workshops/2027-01-16/pay";

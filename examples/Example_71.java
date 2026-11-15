@@ -81,7 +81,7 @@ public class Example_71 {
 
     // Room at the foot of each page for the footer, and the height of the
     // fields under the list
-    static final float BOTTOM = 72f;
+    static final float FOOTER_ROOM = 72f;   // the bottom margin, clear of "Page i of N"
     static final float FIELDS_HEIGHT = 170f;
 
     private Page page;
@@ -166,14 +166,14 @@ public class Example_71 {
         // and clear of the footer on all of them
         table.setLocation(LEFT, 48f);
         table.setFirstPageTopMargin(y + 6f);
-        table.setBottomMargin(BOTTOM);
+        table.setBottomMargin(FOOTER_ROOM);
         float[] end = table.drawOn(pdf, page, pages, Letter.PORTRAIT);
         page = pages.get(pages.size() - 1);
 
         // The fields under the last row. When they no longer fit on its page,
         // they go on a page of their own.
         y = end[1] + 18f;
-        if (y + FIELDS_HEIGHT > page.getHeight() - BOTTOM) {
+        if (y + FIELDS_HEIGHT > page.getHeight() - FOOTER_ROOM) {
             page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
             pages.add(page);
             y = 48f;

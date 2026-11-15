@@ -21,11 +21,12 @@ import com.pdfjet.fonts.*;
  * the address to bill and the address to ship to, a table of the goods, the
  * country of origin and the weight for customs, the total, and the terms.
  * <p>
- * A pro forma invoice is sent before the sale: the customer pays it, or
- * takes it to the bank or to customs, and the goods are shipped with the
- * real invoice once the money is in. So it says what it is not, a tax
- * invoice, and how long its prices are good for. Goods exported from Canada
- * carry no sales tax, so the total is the sum of the lines.
+ * A pro forma invoice is a finished document that the customer receives, not
+ * a form. It is sent before the sale: the customer pays it, or takes it to
+ * the bank or to customs, and the goods are shipped with the real invoice
+ * once the money is in. So it says what it is not, a tax invoice, and how
+ * long its prices are good for. Goods exported from Canada carry no sales
+ * tax, so the total is the sum of the lines.
  * </p>
  * <p>
  * The amounts are BigDecimal, never float or double, and the total is
@@ -83,6 +84,10 @@ public class Example_78 {
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
+    static final int BORDER = 0x4d4d4d;
+
+    static final float MARGIN = 48f;
+    static final float FOOTER_ROOM = 80f;   // the bottom margin, clear of "Page i of N"
 
     public Example_78() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_78.pdf")));
@@ -107,8 +112,8 @@ public class Example_78 {
         List<Page> pages = new ArrayList<Page>();
         Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
         pages.add(page);
-        float left = 48f;
-        float right = page.getWidth() - 48f;
+        float left = MARGIN;
+        float right = page.getWidth() - MARGIN;
         float half = (right - left) / 2f;
 
         // The header: the seller on the left, the title and the numbers on the right
@@ -156,7 +161,7 @@ public class Example_78 {
         table.setHeaderRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(0x4d4d4d);
+        table.setCellBorderColor(BORDER);
         table.setWidth(right - left);
         table.setColumnWidthsInPercent(55f, 15f, 15f, 15f);
         for (int column = 1; column < 4; column++) {
@@ -164,9 +169,9 @@ public class Example_78 {
         }
         // Under the addresses on the first page, at the top of the next ones,
         // and clear of the footer on all of them
-        table.setLocation(left, 48f);
+        table.setLocation(left, MARGIN);
         table.setFirstPageTopMargin(260f);
-        table.setBottomMargin(80f);
+        table.setBottomMargin(FOOTER_ROOM);
         float[] end = table.drawOn(pdf, page, pages, Letter.PORTRAIT);
         page = pages.get(pages.size() - 1);
 
@@ -174,7 +179,7 @@ public class Example_78 {
         // terms under them, all under the last row. When they no longer fit
         // on its page, they go on a page of their own.
         float y = end[1] + 22f;
-        if (y + 110f > page.getHeight() - 80f) {
+        if (y + 110f > page.getHeight() - FOOTER_ROOM) {
             page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
             pages.add(page);
             y = 64f;

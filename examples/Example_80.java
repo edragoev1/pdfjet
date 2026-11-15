@@ -21,11 +21,12 @@ import com.pdfjet.fonts.*;
  * table of the phases of the work with their weeks, a table of the price, the
  * total, and how to go ahead.
  * <p>
- * The proposal is read from top to bottom, so each part is placed under the
- * one before it, from where drawOn says the last one ended: a longer goal or
- * one more phase moves everything below it down. Each section is a heading
- * and what follows it, drawn by two small helpers. The weeks and the price
- * are computed from the tables' rows, the price in BigDecimal, so the totals
+ * A proposal is a finished document that the customer receives, not a form.
+ * It is read from top to bottom, so each part is placed under the one before
+ * it, from where drawOn says the last one ended: a longer goal or one more
+ * phase moves everything below it down. Each section is a heading and what
+ * follows it, drawn by two small helpers. The weeks and the price are
+ * computed from the tables' rows, the price in BigDecimal, so the totals
  * cannot disagree with the lines above them.
  * </p>
  * <p>
@@ -42,12 +43,12 @@ import com.pdfjet.fonts.*;
 public class Example_80 {
     static final String STUDIO = "Northwind Studio";
     static final String STUDIO_ADDRESS = "12 Harbour Street\nPort Elgin, ON N0H 2C0\nhello@example.com";
-    static final LocalDate DATE = LocalDate.of(2026, 11, 4);
+    static final LocalDate DATE = LocalDate.of(2026, 10, 19);
     static final int VALID_DAYS = 30;
 
     static final String PROJECT = "A new website for Contoso Books";
     static final String PREPARED_FOR = "Priya Raman\nContoso Books";
-    static final String PREPARED_BY = "Dana Whitfield\n" + STUDIO;
+    static final String PREPARED_BY = "Dana Whitfield\nDesign Lead, " + STUDIO;
     static final String GOAL = "A website that shows the new titles each season, lets readers order "
             + "from any phone, and that the shop's team can keep up to date without help.";
 
@@ -69,6 +70,7 @@ public class Example_80 {
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
+    static final int BORDER = 0x4d4d4d;
 
     static final float LEFT = 48f;
     static final float WIDTH = 516f;            // Letter, 612 wide, less the margins
@@ -201,7 +203,7 @@ public class Example_80 {
         table.setFooterRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(0x4d4d4d);
+        table.setCellBorderColor(BORDER);
         table.setWidth(WIDTH);
         table.setColumnWidthsInPercent(percents);
         table.setTextAlignmentInColumn(percents.length - 1, Alignment.RIGHT);

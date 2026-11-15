@@ -70,16 +70,16 @@ public class Example_56 {
     static final String CUSTOMER = "Contoso Books\n400 King Street West\nToronto, ON M5V 1K4";
 
     static final Entry[] ENTRIES = {
-        new Entry(LocalDate.of(2026, 9, 25), "Invoice 2026-042", "2495.61", "0"),
+        new Entry(LocalDate.of(2026, 9, 25), "Invoice 2026-042, annual report", "2495.61", "0"),
         new Entry(LocalDate.of(2026, 10, 5), "Credit note CN-2026-007", "0", "67.80"),
         new Entry(LocalDate.of(2026, 10, 20), "Payment, thank you", "0", "1000.00"),
-        new Entry(LocalDate.of(2026, 10, 28), "Invoice 2026-051", "452.00", "0"),
+        new Entry(LocalDate.of(2026, 10, 28), "Invoice 2026-051, display stand", "452.00", "0"),
     };
 
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
-    static final int GRAY = 0x4d4d4d;
+    static final int BORDER = 0x4d4d4d;
 
     static final float MARGIN = 48f;
     static final float FOOTER_ROOM = 80f;   // the bottom margin, clear of "Page i of N"
@@ -149,7 +149,7 @@ public class Example_56 {
         table.setHeaderRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(GRAY);
+        table.setCellBorderColor(BORDER);
         table.setWidth(right - left);
         table.setColumnWidthsInPercent(16f, 36f, 16f, 16f, 16f);
         for (int column = 2; column < 5; column++) {

@@ -54,19 +54,20 @@ public class Example_61 {
     static final BigDecimal REGULAR_HOURS = new BigDecimal("40");
 
     static final String[][] DAYS = {
-        {"8", "Kickoff with the client; the site map, first draft"},
-        {"8.5", "Interviews with the shop's team: how the orders come in today, "
-                + "which titles sell online, and what the catalog needs"},
+        {"8", "The notes of the interviews at the shop written up for the team"},
+        {"8.5", "The site map, first draft, from what the shop's team said: how the orders "
+                + "come in today, which titles sell online, and what the catalog needs"},
         {"7.5", "The site map revised; wireframes of the home and title pages"},
         {"9", "Wireframes for phones; the order pages"},
-        {"8", "Review with the client, notes for the design phase"},
-        {"2.5", "The photo shoot of the new titles at the shop"},
+        {"8", "Review with the client by video call, notes for the design phase"},
+        {"2.5", "The list of photos of the new titles, for the shoot"},
         {"", ""},
     };
 
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
+    static final int BORDER = 0x4d4d4d;
     static final int INK = 0x333333;
 
     static final float LEFT = 48f;
@@ -134,7 +135,7 @@ public class Example_61 {
         table.setFooterRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(0x4d4d4d);
+        table.setCellBorderColor(BORDER);
         table.setWidth(WIDTH);
         table.setColumnWidthsInPercent(16f, 12f, 10f, 62f);
         table.setTextAlignmentInColumn(2, Alignment.RIGHT);

@@ -44,7 +44,7 @@ import com.pdfjet.fonts.*;
 public class Example_60 {
     static final String ISSUER = "Northwind Studio";
     static final String TITLE = "Certificate of completion";
-    static final String NAME = "Dana Brook";
+    static final String NAME = "Robin Brook";
     static final String WORKSHOP = "Design with PDF";
     static final LocalDate DATE = LocalDate.of(2026, 11, 14);
     static final String INSTRUCTOR = "Alex Morgan, instructor";

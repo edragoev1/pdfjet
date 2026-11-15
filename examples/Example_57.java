@@ -29,7 +29,8 @@ import com.pdfjet.fonts.*;
  * goes on to as many pages as it needs, with its header row on each.
  * </p>
  * <p>
- * The goods are those of the invoice of Example_53. The document is
+ * The goods are the printed copies of the invoice of Example_53, and a
+ * display stand that follows them, invoiced when it ships. The document is
  * PDF/UA-1: the title is a heading, the items a table, and the rule and the
  * line to sign on are artifacts. The layout is that of the delivery note
  * template of PDFjet Forms. The companies and the numbers are made up.
@@ -71,13 +72,13 @@ public class Example_57 {
 
     static final Item[] ITEMS = {
         new Item("Annual report, printed copy, saddle stitched", 50, 50, 0.26),
-        new Item("Accessible PDF/UA edition, USB key", 2, 2, 0.02),
         new Item("Display stand for the lobby", 1, 0, 3.8),
     };
 
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
+    static final int BORDER = 0x4d4d4d;
     static final int GRAY = 0x4d4d4d;
 
     static final float MARGIN = 48f;
@@ -153,7 +154,7 @@ public class Example_57 {
         table.setHeaderRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(GRAY);
+        table.setCellBorderColor(BORDER);
         table.setWidth(right - left);
         table.setColumnWidthsInPercent(60f, 15f, 25f);
         table.setTextAlignmentInColumn(1, Alignment.RIGHT);

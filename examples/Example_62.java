@@ -73,7 +73,7 @@ public class Example_62 {
     static final int BLUE = 0x1f58b0;
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
-    static final int GRAY = 0x4d4d4d;
+    static final int BORDER = 0x4d4d4d;
 
     static final float MARGIN = 48f;
     static final float TOP = 64f;           // where the next pages start
@@ -145,7 +145,7 @@ public class Example_62 {
             table.setHeaderRowStyle(semiBold, Color.black, HEADER);
             table.setCellPadding(4f, 3f);
             table.setCellBorderWidth(0.5f);
-            table.setCellBorderColor(GRAY);
+            table.setCellBorderColor(BORDER);
             table.setWidth(right - left);
             table.setColumnWidthsInPercent(70f, 30f);
             table.setTextAlignmentInColumn(1, Alignment.RIGHT);

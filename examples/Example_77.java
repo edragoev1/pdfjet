@@ -22,6 +22,7 @@ import com.pdfjet.fonts.*;
  * paragraph, a small table of what was invoiced, credited and paid, the
  * amount still open, how to pay it, and the signature.
  * <p>
+ * A reminder is a finished document that the customer receives, not a form.
  * The letter is placed as the business letter of Example_59 is, each part
  * under the one before it, from where drawOn says the last one ended; the
  * table of the account is one more part, and the paragraphs after it move
@@ -58,7 +59,7 @@ public class Example_77 {
     static final String SENDER = "Northwind Studio";
     static final String SENDER_ADDRESS = "12 Harbour Street\nPort Elgin, ON N0H 2C0\nhello@example.com";
 
-    static final LocalDate DATE = LocalDate.of(2026, 11, 3);
+    static final LocalDate DATE = LocalDate.of(2026, 11, 9);
     static final String RECIPIENT = "Ms. Priya Raman\nContoso Books\n400 King Street West\nToronto, ON M5V 1K4";
     static final String INVOICE = "2026-042";
     static final LocalDate DUE = LocalDate.of(2026, 10, 25);
@@ -67,14 +68,15 @@ public class Example_77 {
 
     static final Entry[] ENTRIES = {
         new Entry("2026-09-25", "Invoice 2026-042, the annual report", "2495.61"),
-        new Entry("2026-10-05", "Credit note CN-2026-007, the accessible edition", "-452.00"),
-        new Entry("2026-10-20", "Your payment, thank you", "-964.41"),
+        new Entry("2026-10-05", "Credit note CN-2026-007, ten copies damaged in delivery", "-67.80"),
+        new Entry("2026-10-20", "Your payment, thank you", "-1000.00"),
     };
 
-    static final String SIGNER = "Dana Whitfield\nNorthwind Studio";
+    static final String SIGNER = "Dana Whitfield\nDesign Lead, Northwind Studio";
 
     static final int RULE = 0xdde1e8;
     static final int HEADER = 0xe3edf9;
+    static final int BORDER = 0x4d4d4d;
 
     static final float LEFT = 48f;
     static final float WIDTH = 516f;            // Letter, 612 wide, less the margins
@@ -142,13 +144,15 @@ public class Example_77 {
         table.setFooterRowStyle(semiBold, Color.black, HEADER);
         table.setCellPadding(4f, 3f);
         table.setCellBorderWidth(0.5f);
-        table.setCellBorderColor(0x4d4d4d);
+        table.setCellBorderColor(BORDER);
         table.setWidth(WIDTH);
         table.setColumnWidthsInPercent(18f, 62f, 20f);
         table.setTextAlignmentInColumn(2, Alignment.RIGHT);
         table.setLocation(LEFT, y + GAP);
         y = table.drawOn(page)[1];
 
+        y = paragraph(page, regular, "Invoice 2026-051 of October 28, also on our statement of "
+                + "October 31, is not due until November 27 and is not part of this reminder.", y + GAP);
         y = paragraph(page, regular, "If you have paid it in the last few days, thank you, and please "
                 + "disregard this letter. If anything in the invoice is unclear, just reply to this "
                 + "letter and I will be glad to help.", y + GAP);
@@ -182,8 +186,8 @@ public class Example_77 {
     }
 
     // The amount with two decimals and commas between the thousands, as
-    // 1,079.20, and a minus sign before a credit. The locale is given, or a
-    // computer set to French writes 1 079,20.
+    // 1,427.81, and a minus sign before a credit. The locale is given, or a
+    // computer set to French writes 1 427,81.
     private static String money(BigDecimal amount) {
         return String.format(Locale.US, "%,.2f", amount);
     }

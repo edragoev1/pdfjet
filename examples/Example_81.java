@@ -51,7 +51,7 @@ public class Example_81 {
     static final String PROPERTY = "Unit 4, 118 Elm Street, Guelph, ON N1H 3T2";
     static final BigDecimal RENT = new BigDecimal("1850.00");
 
-    static final int GRAY = 0x333333;           // the headings
+    static final int INK = 0x333333;           // the headings
     static final int MAROON = 0x800000;         // the answers printed on the form
     static final int RED = 0xb00020;
     static final int RULE = 0xdde1e8;
@@ -108,7 +108,7 @@ public class Example_81 {
         field("Move-in date *", LEFT, y, HALF, 1, null);
         y = field("Monthly rent", LEFT + HALF + GAP, y, HALF, 1,
                 "$" + String.format(Locale.US, "%,.2f", RENT));
-        y = choice("Length of the lease", new String[] {"12 months", "6 months", "Month to month"}, y);
+        y = choice("Length of the lease", LEFT, y, "12 months", "6 months", "Month to month");
 
         y = heading("About you", StructElem.H2, 14f, y + 18f);
         field("First name *", LEFT, y, HALF, 1, null);
@@ -116,8 +116,8 @@ public class Example_81 {
         field("Email *", LEFT, y, HALF, 1, null);
         y = field("Phone *", LEFT + HALF + GAP, y, HALF, 1, null);
         y = field("Current address *", LEFT, y, WIDTH, 2, null);
-        y = choice("How long have you lived there?",
-                new String[] {"Less than a year", "1 to 3 years", "More than 3 years"}, y);
+        y = choice("How long have you lived there?", LEFT, y,
+                "Less than a year", "1 to 3 years", "More than 3 years");
         field("Current landlord's name", LEFT, y, HALF, 1, null);
         field("Current landlord's phone", LEFT + HALF + GAP, y, HALF, 1, null);
         footer(1);
@@ -127,7 +127,7 @@ public class Example_81 {
         y = heading("Who will live there", StructElem.H2, 14f, 62f);
         field("Adults *", LEFT, y, THIRD, 1, null);
         y = field("Children", LEFT + THIRD + GAP, y, THIRD, 1, null);
-        y = choice("Pets", new String[] {"No pets", "Cat", "Dog", "Other"}, y);
+        y = choice("Pets", LEFT, y, "No pets", "Cat", "Dog", "Other");
         y = field("About your pets, if any", LEFT, y, WIDTH, 1, null);
 
         y = heading("Work and income", StructElem.H2, 14f, y + 18f);
@@ -175,7 +175,7 @@ public class Example_81 {
         TextLine heading = new TextLine(labelFont, text);
         heading.setStructureType(level);
         heading.setFontSize(size);
-        heading.setTextColor(GRAY);
+        heading.setTextColor(INK);
         heading.setLocation(LEFT, y);
         heading.drawOn(page);
         return y + 16f;
@@ -219,15 +219,14 @@ public class Example_81 {
         return top + height + 12f;
     }
 
-    // Draws a choice of one of the options: its label, and the radio buttons
-    // under it, where a box would be, each starting where the one before it
-    // ended. drawOn returns the end of a button with some room after its
-    // text already. Returns where the next row starts.
-    private float choice(String text, String[] options, float y) throws Exception {
-        label(text, LEFT, y);
-        float x = LEFT;
-        for (String option : options) {
-            x = new RadioButton(textFont, option).setLocation(x, y + 20f).drawOn(page)[0] + 12f;
+    // Draws a question of a few answers: its label at y and a radio button
+    // for each answer under it, where a box would be, each starting where the
+    // one before it ended. drawOn returns the end of a button with some room
+    // after its text already. Returns where the next row starts.
+    private float choice(String text, float x, float y, String... answers) throws Exception {
+        label(text, x, y);
+        for (String answer : answers) {
+            x = new RadioButton(textFont, answer).setLocation(x, y + 20f).drawOn(page)[0] + 12f;
         }
         return y + 50f;
     }

@@ -57,11 +57,11 @@ public class Example_73 {
     static final LocalDate DATE = LocalDate.of(2026, 11, 12);
     static final LocalTime START = LocalTime.of(10, 0);
     static final String PLACE = "Meeting room 2, or by video call";
-    static final String PEOPLE = "Attending: Dana, Sam, Priya, Lee · Notes: Sam";
+    static final String PEOPLE = "Attending: Dana, Sam, Jordan, Lee · Notes: Sam";
 
     static final Topic[] TOPICS = {
         new Topic("Welcome and the notes of the last meeting", "Dana", 5),
-        new Topic("Annual report: printing and delivery", "Priya", 20),
+        new Topic("Contoso Books website: the wireframes", "Jordan", 20),
         new Topic("New clients this month", "Lee", 20),
         new Topic("Holiday schedule", "Sam", 10),
         new Topic("Anything else, and the next meeting", "All", 5),
@@ -69,9 +69,9 @@ public class Example_73 {
 
     // The actions agreed at the last meeting: what, who, and by when
     static final String[][] OPEN_ACTIONS = {
-        {"Send the printed copies to Contoso Books", "Priya", "Nov 16"},
-        {"Call the two new clients", "Lee", "Nov 19"},
-        {"Post the holiday schedule", "Sam", "Nov 13"},
+        {"Write up the interviews at Contoso Books", "Jordan", "2026-11-09"},
+        {"Call the two new clients", "Lee", "2026-11-19"},
+        {"Post the holiday schedule", "Sam", "2026-11-13"},
     };
 
     static final int BLUE = 0x1f58b0;

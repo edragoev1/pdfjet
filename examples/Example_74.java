@@ -46,14 +46,14 @@ public class Example_74 {
     static final String TEAM = "Northwind Studio";
     static final LocalDate DATE = LocalDate.of(2026, 11, 12);
     static final String TIME_AND_PLACE = "10:00 to 11:00\nMeeting room 2, and by video call";
-    static final String PEOPLE = "Present: Dana, Sam, Priya · Absent: Lee · Notes: Sam";
+    static final String PEOPLE = "Present: Dana, Sam, Jordan · Absent: Lee · Notes: Sam";
     static final LocalDate NEXT_MEETING = LocalDate.of(2026, 11, 26);
 
     // What was said, by topic of the agenda
     static final String[][] NOTES = {
-        {"Annual report", "The printer delivers the 50 copies on November 20. Priya checks "
-                + "the proofs on the 16th; the accessible PDF edition is done and was sent "
-                + "to Contoso Books for review."},
+        {"Contoso Books website", "Jordan wrote up the interviews at the shop, and the site "
+                + "map and the wireframes for computers and phones are done. Contoso Books "
+                + "reviews them with us tomorrow; the design phase starts after that."},
         {"New clients", "Two new clients this month, both from the website. A third has "
                 + "asked for a quote for a catalog of 32 pages. Lee was away, so Dana calls "
                 + "the two new clients in his place."},
@@ -63,7 +63,7 @@ public class Example_74 {
 
     // The actions agreed: what, who, and by when
     static final String[][] ACTIONS = {
-        {"Check the printer's proofs", "Priya", "2026-11-16"},
+        {"Send the notes of the review to the team", "Jordan", "2026-11-16"},
         {"Send the quote for the catalog", "Dana", "2026-11-14"},
         {"Call the two new clients", "Dana", "2026-11-19"},
         {"Tell clients of the holiday closing", "Sam", "2026-12-01"},
@@ -78,7 +78,7 @@ public class Example_74 {
     static final float WIDTH = 516f;
     static final float TOP = 62f;
     // The text ends this far from the bottom of the page, above the footer
-    static final float BOTTOM = 80f;
+    static final float FOOTER_ROOM = 80f;   // the bottom margin, clear of "Page i of N"
 
     private final PDF pdf;
     private final List<Page> pages = new ArrayList<Page>();
@@ -136,7 +136,7 @@ public class Example_74 {
         table.setColumnWidthsInPercent(60f, 20f, 20f);
         table.setLocation(LEFT, TOP);
         table.setFirstPageTopMargin(y);
-        table.setBottomMargin(BOTTOM);
+        table.setBottomMargin(FOOTER_ROOM);
         y = table.drawOn(pdf, page, pages, Letter.PORTRAIT)[1];
         page = pages.get(pages.size() - 1);
 
@@ -166,7 +166,7 @@ public class Example_74 {
     // under it starts. A heading with no room for a line under it goes on to
     // a new page, so that it is never left alone at the bottom.
     private float heading(String text, StructElem level, float size, float y) throws Exception {
-        if (y + 40f > page.getHeight() - BOTTOM) {
+        if (y + 40f > page.getHeight() - FOOTER_ROOM) {
             newPage();
             y = TOP;
         }
@@ -186,7 +186,7 @@ public class Example_74 {
         block.setLineSpacing(1.15f);
         block.setWidth(WIDTH);
         block.setLocation(LEFT, y);
-        if (block.drawOn(null)[1] > page.getHeight() - BOTTOM) {
+        if (block.drawOn(null)[1] > page.getHeight() - FOOTER_ROOM) {
             newPage();
             block.setLocation(LEFT, TOP);
         }
