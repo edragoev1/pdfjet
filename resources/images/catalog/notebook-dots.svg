@@ -1,0 +1,6 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'>
+<rect width='300' height='200' fill='#f4eee4'/>
+<rect x='60' y='40' width='180' height='130' fill='#ffffff' stroke='#d6d0c4'/>
+<path d='M70 54H232M70 66H232M70 78H232M70 90H232M70 102H232M70 114H232M70 126H232M70 138H232M70 150H232M70 162H232' stroke='#5a6b7d' stroke-width='1.5' stroke-dasharray='1.5 7.5'/>
+<rect x='146' y='36' width='8' height='138' fill='#0c727d'/>
+</svg>

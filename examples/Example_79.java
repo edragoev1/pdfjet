@@ -8,7 +8,6 @@ package examples;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,11 +30,11 @@ import com.pdfjet.qrcode.*;
  * the characters of the codes line up from row to row of the price list.
  * </p>
  * <p>
- * The pictures here are small drawings in SVG, written in the source so that
- * the example needs no files; SVGImage draws them as vectors, sharp at any
- * size. A real catalog has photos: new Image(pdf, stream, ImageType.JPG) in
- * place of SVGImage, with the same setAltDescription. The logo is an SVG,
- * as logos usually are.
+ * The pictures here are small drawings, SVG files in
+ * resources/images/catalog that SVGImage draws as vectors, sharp at any
+ * size, scaled to the width of a column. A real catalog has photos: new
+ * Image(pdf, stream, ImageType.JPG) in place of SVGImage, with the same
+ * setAltDescription. The logo is an SVG, as logos usually are.
  * </p>
  * <p>
  * The document is PDF/UA-1: the title, the sections and the products are
@@ -78,68 +77,23 @@ public class Example_79 {
     static final String TITLE = "Catalog 2026";
     static final String ORDER_URL = "https://example.com/order";
 
-    // The pictures, drawn in a box of 300 x 200 on a sand background
-    static final String NOTEBOOK_LINED =
-            "<rect x='90' y='25' width='120' height='155' rx='8' fill='#1d3557'/>"
-            + "<rect x='90' y='25' width='14' height='155' fill='#15263f'/>"
-            + "<rect x='120' y='60' width='70' height='20' rx='3' fill='#f4eee4'/>";
-    static final String NOTEBOOK_DOTS =
-            "<rect x='60' y='40' width='180' height='130' fill='#ffffff' stroke='#d6d0c4'/>"
-            + "<path d='M70 54H232M70 66H232M70 78H232M70 90H232M70 102H232M70 114H232"
-            + "M70 126H232M70 138H232M70 150H232M70 162H232' stroke='#5a6b7d' stroke-width='1.5'"
-            + " stroke-dasharray='1.5 7.5'/>"
-            + "<rect x='146' y='36' width='8' height='138' fill='#0c727d'/>";
-    static final String MUG =
-            "<path d='M200 85a24 26 0 0 1 0 55' fill='none' stroke='#6e4a2e' stroke-width='9'/>"
-            + "<rect x='100' y='58' width='100' height='112' rx='12' fill='#6e4a2e'/>"
-            + "<ellipse cx='150' cy='60' rx='50' ry='10' fill='#8a5d3b'/>"
-            + "<ellipse cx='150' cy='60' rx='42' ry='6' fill='#3d2a1a'/>"
-            + "<rect x='110' y='160' width='80' height='14' fill='#5a3b24'/>";
-    static final String SKETCHBOOK =
-            "<rect x='72' y='35' width='160' height='140' rx='4' fill='#b08a5f'/>"
-            + "<path d='M72 44V168' stroke='#4d4d4d' stroke-width='10' stroke-dasharray='4 8'/>"
-            + "<rect x='112' y='97' width='80' height='16' fill='#f4eee4'/>";
-    static final String ESPRESSO =
-            "<ellipse cx='108' cy='165' rx='45' ry='9' fill='#d9cfbf'/>"
-            + "<ellipse cx='198' cy='165' rx='45' ry='9' fill='#d9cfbf'/>"
-            + "<path d='M134 115a12 12 0 0 1 0 24M224 115a12 12 0 0 1 0 24' fill='none'"
-            + " stroke='#0c727d' stroke-width='6'/>"
-            + "<rect x='78' y='100' width='60' height='62' rx='8' fill='#0c727d'/>"
-            + "<rect x='168' y='100' width='60' height='62' rx='8' fill='#0c727d'/>"
-            + "<ellipse cx='108' cy='101' rx='30' ry='7' fill='#16929e'/>"
-            + "<ellipse cx='198' cy='101' rx='30' ry='7' fill='#16929e'/>";
-    static final String BOWL =
-            "<path d='M55 110A95 75 0 0 0 245 110Z' fill='#e8dcc4'/>"
-            + "<rect x='125' y='178' width='50' height='8' fill='#d2c3a6'/>"
-            + "<ellipse cx='150' cy='110' rx='95' ry='18' fill='#efe6d6' stroke='#0c727d' stroke-width='5'/>";
-
-    static final String LOGO = "<svg xmlns='http://www.w3.org/2000/svg' width='120' height='48'"
-            + " viewBox='0 0 120 48'>"
-            + "<circle cx='24' cy='24' r='20' fill='#1d3557'/>"
-            + "<path d='M10 27Q17 21 24 27T38 27' fill='none' stroke='#ffffff' stroke-width='2.5'"
-            + " stroke-linecap='round'/>"
-            + "<path d='M10 33Q17 27 24 33T38 33' fill='none' stroke='#7fc6c6' stroke-width='2.5'"
-            + " stroke-linecap='round'/>"
-            + "<path d='M24 9L31 21L17 21Z' fill='#ffffff'/>"
-            + "<rect x='52' y='14' width='62' height='5' rx='2.5' fill='#1d3557'/>"
-            + "<rect x='52' y='24' width='44' height='5' rx='2.5' fill='#0c727d'/>"
-            + "<rect x='52' y='34' width='54' height='3' rx='1.5' fill='#6e4a2e'/>"
-            + "</svg>";
+    // The pictures and the logo are SVG files, drawn as vectors, sharp at any size
+    static final String IMAGES = "resources/images/catalog/";
 
     static final Product[] PRODUCTS = {
         new Product("NB-A5-L", "Lined notebook, A5", "160 pages of lined paper, 100 g/m², "
-                + "a navy linen cover.", "24.00", 4, NOTEBOOK_LINED, "A navy notebook with a cream label"),
+                + "a navy linen cover.", "24.00", 4, "notebook-lined.svg", "A navy notebook with a cream label"),
         new Product("NB-A5-D", "Dot grid notebook, A5", "160 pages with a 5 mm dot grid, "
-                + "for notes and sketches.", "24.00", 4, NOTEBOOK_DOTS, "An open notebook of dotted pages"),
+                + "for notes and sketches.", "24.00", 4, "notebook-dots.svg", "An open notebook of dotted pages"),
         new Product("MG-350-B", "Stoneware mug", "350 ml, thrown by hand; dishwasher safe.",
-                "32.00", 4, MUG, "A brown stoneware mug"),
+                "32.00", 4, "mug.svg", "A brown stoneware mug"),
         new Product("NB-A4-S", "Sketchbook, A4", "80 sheets of 160 g/m² paper for pencil, "
-                + "ink and washes.", "36.00", 2, SKETCHBOOK,
+                + "ink and washes.", "36.00", 2, "sketchbook.svg",
                 "A sketchbook with a kraft cover and a spiral binding"),
         new Product("MG-250-E", "Espresso cups, two", "90 ml each, in a teal glaze, with their "
-                + "saucers.", "38.00", 3, ESPRESSO, "Two small teal cups on saucers"),
+                + "saucers.", "38.00", 3, "espresso-cups.svg", "Two small teal cups on saucers"),
         new Product("BW-180-S", "Serving bowl, 18 cm", "Wide and shallow, for salads and fruit; "
-                + "oven safe.", "58.00", 2, BOWL, "A wide sand-colored bowl with a teal rim"),
+                + "oven safe.", "58.00", 2, "serving-bowl.svg", "A wide sand-colored bowl with a teal rim"),
         new Product("NB-A6-P", "Pocket notebook, A6, three", "", "28.00", 4, null, null),
         new Product("GC-050", "Gift card", "", "50.00", 0, null, null),
     };
@@ -190,7 +144,7 @@ public class Example_79 {
         // products with a picture, three to a row
         Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
         pages.add(page);
-        SVGImage logo = svg(LOGO);
+        SVGImage logo = new SVGImage(IMAGES + "northwind-logo.svg");
         logo.setAltDescription(STUDIO);
         logo.setLocation(LEFT, 52f);
         logo.drawOn(page);
@@ -261,9 +215,9 @@ public class Example_79 {
     // heading under the section, the description, and the code and the
     // price. Returns where it ended.
     private float drawProduct(Page page, Product product, float x, float y) throws Exception {
-        SVGImage picture = svg("<svg xmlns='http://www.w3.org/2000/svg' width='" + COLUMN
-                + "' height='" + (COLUMN * 2f / 3f) + "' viewBox='0 0 300 200'>"
-                + "<rect width='300' height='200' fill='#f4eee4'/>" + product.picture + "</svg>");
+        // The drawings are 300 wide, scaled to the width of the column
+        SVGImage picture = new SVGImage(IMAGES + product.picture);
+        picture.scaleBy(COLUMN / picture.getWidth());
         picture.setAltDescription(product.alt);
         picture.setLocation(x, y);
         y = picture.drawOn(page)[1];
@@ -271,7 +225,7 @@ public class Example_79 {
         y = paragraph(page, product.description, x, y, COLUMN);
         // The code padded to ten characters, so the prices line up from
         // product to product in the monospace font
-        String text = String.format(Locale.US, "%-10s $%.2f", product.code, product.price);
+        String text = String.format(Locale.US, "%-10s $%s", product.code, money(product.price));
         TextLine price = new TextLine(mono, text);
         price.setTextColor(INK);
         price.setLocation(x, y + 18f);
@@ -308,7 +262,7 @@ public class Example_79 {
         for (Product product : PRODUCTS) {
             rows.add(row(mono, product.code, product.name,
                     (product.colors == 0) ? "" : String.valueOf(product.colors),
-                    String.format(Locale.US, "$%.2f", product.price)));
+                    "$" + money(product.price)));
         }
         for (int i = 1; i < rows.size(); i++) {
             for (Cell cell : rows.get(i)) {
@@ -371,11 +325,6 @@ public class Example_79 {
         return block.drawOn(page)[1];
     }
 
-    // An SVG image from its text.
-    private static SVGImage svg(String text) throws Exception {
-        return new SVGImage(new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)));
-    }
-
     // A thin line across the page, decoration only, so an artifact that a
     // screen reader skips.
     private static void rule(Page page, float y) throws Exception {
@@ -393,6 +342,13 @@ public class Example_79 {
             row.add(new Cell(font, text));
         }
         return row;
+    }
+
+    // The amount with two decimals and commas between the thousands, as
+    // 1,200.00. The locale is given, or a computer set to French writes
+    // 1 200,00.
+    private static String money(BigDecimal amount) {
+        return String.format(Locale.US, "%,.2f", amount);
     }
 
     public static void main(String[] args) throws Exception {

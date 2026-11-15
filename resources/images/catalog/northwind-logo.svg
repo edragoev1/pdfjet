@@ -1,0 +1,9 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='120' height='48' viewBox='0 0 120 48'>
+<circle cx='24' cy='24' r='20' fill='#1d3557'/>
+<path d='M10 27Q17 21 24 27T38 27' fill='none' stroke='#ffffff' stroke-width='2.5' stroke-linecap='round'/>
+<path d='M10 33Q17 27 24 33T38 33' fill='none' stroke='#7fc6c6' stroke-width='2.5' stroke-linecap='round'/>
+<path d='M24 9L31 21L17 21Z' fill='#ffffff'/>
+<rect x='52' y='14' width='62' height='5' rx='2.5' fill='#1d3557'/>
+<rect x='52' y='24' width='44' height='5' rx='2.5' fill='#0c727d'/>
+<rect x='52' y='34' width='54' height='3' rx='1.5' fill='#6e4a2e'/>
+</svg>

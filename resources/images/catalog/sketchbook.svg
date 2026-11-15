@@ -1,0 +1,6 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'>
+<rect width='300' height='200' fill='#f4eee4'/>
+<rect x='72' y='35' width='160' height='140' rx='4' fill='#b08a5f'/>
+<path d='M72 44V168' stroke='#4d4d4d' stroke-width='10' stroke-dasharray='4 8'/>
+<rect x='112' y='97' width='80' height='16' fill='#f4eee4'/>
+</svg>
