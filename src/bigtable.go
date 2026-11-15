@@ -72,8 +72,12 @@ type BigTable struct {
 	hasHeaderColor  bool // false for the shading of every other row
 	borderColor     [3]float32
 	borderWidth     float32 // The width of the lines, 0.5 points unless set
-	noVerticalLines bool    // true for the rows' lines alone
-	hasBorder       bool    // false for no lines
+	// The y of the line above each row of the page being drawn, stroked with
+	// the vertical lines and the line under the last row, one path for the
+	// page when it is done, rather than a path for each row.
+	rowLines        []float32
+	noVerticalLines bool // true for the rows' lines alone
+	hasBorder       bool // false for no lines
 	footerText      string
 	footerFont      *Font   // nil for the header font
 	footerFontSize  float32 // 0 for the size of the footer's font
@@ -559,30 +563,16 @@ func (bt *BigTable) drawTextAndLine(fields []string) {
 // are.
 func (bt *BigTable) drawFieldsAndLine(
 	fields []string, font *Font, cellStructure structelem.StructElem, header bool) {
-	// The shading and the line above the text carry no meaning of their own.
-	bt.page.AddArtifactBMC()
-	if header && bt.hasHeaderColor {
-		bt.highlightRow(bt.page, font, bt.headerColor)
-		bt.highlight = false
-	} else if bt.highlight {
-		if bt.hasShading {
-			bt.highlightRow(bt.page, font, bt.shadingColor)
-		}
-		bt.highlight = false
-	} else {
-		bt.highlight = true
+	// The shading carries no meaning of its own.
+	if shading, ok := bt.shadingOf(header); ok {
+		bt.page.AddArtifactBMC()
+		bt.highlightRow(bt.page, font, shading)
+		bt.page.AddEMC()
 	}
-
-	// The line above the text
+	// The line above the text, stroked with the page's other lines
 	if bt.hasBorder {
-		original := bt.page.GetPenColor()
-		bt.page.SetPenColorRGB(bt.borderColor)
-		bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent-bt.verticalPadding)
-		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent-bt.verticalPadding)
-		bt.page.StrokePath()
-		bt.page.SetPenColorRGB(original)
+		bt.rowLines = append(bt.rowLines, bt.yText-font.ascent-bt.verticalPadding)
 	}
-	bt.page.AddEMC()
 	bt.page.SetBrushColor(color.Black)
 
 	tagged := bt.structElement != nil && cellStructure != ""
@@ -622,13 +612,44 @@ func (bt *BigTable) drawFieldsAndLine(
 				description = text
 			}
 			bt.page.addBDC(cellStructure, "", "", description, bigTableCellAttributes(cellStructure))
+		} else if drawn == "" {
+			continue // An empty field draws nothing
 		} else {
 			bt.page.AddArtifactBMC()
 		}
-		bt.drawText(font, drawn, xText, bt.yText)
+		if drawn != "" {
+			bt.drawText(font, drawn, xText, bt.yText)
+		}
 		bt.page.AddEMC()
 	}
 	bt.page.structParent = parent
+}
+
+// shadingOf returns the color of the row being drawn, and false when it is
+// not shaded: the header's color for the header, if it has one, and the
+// shading of every other row.
+func (bt *BigTable) shadingOf(header bool) ([3]float32, bool) {
+	if header && bt.hasHeaderColor {
+		bt.highlight = false
+		return bt.headerColor, true
+	}
+	if bt.highlight {
+		bt.highlight = false
+		return bt.shadingColor, bt.hasShading
+	}
+	bt.highlight = true
+	return [3]float32{}, false
+}
+
+// bigTableFieldIsEmpty returns true when the field has no text to draw, on
+// any of its lines.
+func bigTableFieldIsEmpty(lines []string) bool {
+	for _, line := range lines {
+		if line != "" {
+			return false
+		}
+	}
+	return true
 }
 
 // bigTableCellAttributes returns the attributes of a cell element: a header
@@ -648,7 +669,12 @@ func (bt *BigTable) highlightRow(page *Page, font *Font, rgb [3]float32) {
 	page.SetBrushColorRGB(original)
 }
 
+// drawTheVerticalLines draws the lines of the page when it is done, as one
+// path: the line above each row, the vertical lines and the line under the
+// last row.
 func (bt *BigTable) drawTheVerticalLines() {
+	rows := bt.rowLines
+	bt.rowLines = bt.rowLines[:0]
 	if !bt.hasBorder {
 		return
 	}
@@ -657,15 +683,19 @@ func (bt *BigTable) drawTheVerticalLines() {
 	defer bt.page.AddEMC()
 	original := bt.page.GetPenColor()
 	bt.page.SetPenColorRGB(bt.borderColor)
-	for i := 0; !bt.noVerticalLines && i <= bt.numberOfColumns; i++ {
-		bt.page.DrawLine(
-			bt.vertLines[i],
-			bt.top,
-			bt.vertLines[i],
-			bt.yText-bt.f2.ascent-bt.verticalPadding)
+	bt.page.SetPenWidth(bt.borderWidth)
+	for _, y := range rows {
+		bt.page.MoveTo(bt.vertLines[0], y)
+		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], y)
 	}
-	bt.page.MoveTo(bt.vertLines[0], bt.yText-bt.f2.ascent-bt.verticalPadding)
-	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-bt.f2.ascent-bt.verticalPadding)
+	bottom := bt.yText - bt.f2.ascent - bt.verticalPadding
+	for i := 0; !bt.noVerticalLines && i <= bt.numberOfColumns; i++ {
+		bt.page.MoveTo(bt.vertLines[i], bt.top)
+		bt.page.LineTo(bt.vertLines[i], bottom)
+	}
+	// The line under the last row
+	bt.page.MoveTo(bt.vertLines[0], bottom)
+	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bottom)
 	bt.page.StrokePath()
 	bt.page.SetPenColorRGB(original)
 }
@@ -1232,27 +1262,16 @@ func (bt *BigTable) drawWrappedFields(
 	if count > 1 {
 		extra = float32(float32(count-1) * lineHeight)
 	}
-	bt.page.AddArtifactBMC()
-	if header && bt.hasHeaderColor {
-		bt.highlightRows(bt.page, font, bt.headerColor, extra)
-		bt.highlight = false
-	} else if bt.highlight {
-		if bt.hasShading {
-			bt.highlightRows(bt.page, font, bt.shadingColor, extra)
-		}
-		bt.highlight = false
-	} else {
-		bt.highlight = true
+	// The shading carries no meaning of its own.
+	if shading, ok := bt.shadingOf(header); ok {
+		bt.page.AddArtifactBMC()
+		bt.highlightRows(bt.page, font, shading, extra)
+		bt.page.AddEMC()
 	}
+	// The line above the text, stroked with the page's other lines
 	if bt.hasBorder {
-		original := bt.page.GetPenColor()
-		bt.page.SetPenColorRGB(bt.borderColor)
-		bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent-bt.verticalPadding)
-		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent-bt.verticalPadding)
-		bt.page.StrokePath()
-		bt.page.SetPenColorRGB(original)
+		bt.rowLines = append(bt.rowLines, bt.yText-font.ascent-bt.verticalPadding)
 	}
-	bt.page.AddEMC()
 	bt.page.SetBrushColor(color.Black)
 
 	tagged := bt.structElement != nil && cellStructure != ""
@@ -1269,10 +1288,15 @@ func (bt *BigTable) drawWrappedFields(
 				description = whole[i]
 			}
 			bt.page.addBDC(cellStructure, "", "", description, bigTableCellAttributes(cellStructure))
+		} else if bigTableFieldIsEmpty(lines[i]) {
+			continue // An empty field draws nothing
 		} else {
 			bt.page.AddArtifactBMC()
 		}
 		for k, line := range lines[i] {
+			if line == "" {
+				continue
+			}
 			xText := bt.vertLines[i] + bt.padding
 			if bt.alignment[i] == alignment.Right {
 				xText = (bt.vertLines[i+1] - bt.padding) - bt.measureOf(font).width(line)

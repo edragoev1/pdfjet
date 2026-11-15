@@ -92,7 +92,8 @@ class SubsetTest {
         assertEquals(1, u16(ttf, table(ttf, "head") + 50));
         boolean[][] kept = new boolean[1][];
         byte[] subset = Subset.subsetTrueType(ttf, used(16, 229), kept);
-        assertEquals(4319, kept[0].length);
+        // The subset ends at the last glyph kept, 3051, of the 4,319.
+        assertEquals(3052, kept[0].length);
         Set<Integer> want = new HashSet<Integer>(Arrays.asList(0, 16, 1, 3051, 229, 225, 3029, 3020));
         for (int gid = 0; gid < kept[0].length; gid++) {
             assertEquals(want.contains(gid), kept[0][gid], "glyph " + gid);
@@ -113,12 +114,23 @@ class SubsetTest {
             assertEquals(-1, entry(subset, name), "the subset has the " + name + " table");
         }
         assertEquals(0x00030000, u32(subset, table(subset, "post")));
+        // The OS/2 table as it was; the hhea and maxp tables but for their
+        // counts, of the long metrics and of the glyphs, cut at the end of the
+        // subset; the hmtx table the start of the font's.
         for (String name : new String[] {"hmtx", "hhea", "OS/2", "maxp"}) {
-            int length = u32(ttf, entry(ttf, name) + 12);
-            int at = table(ttf, name);
-            int subsetAt = table(subset, name);
-            assertArrayEquals(Arrays.copyOfRange(ttf, at, at + length),
-                    Arrays.copyOfRange(subset, subsetAt, subsetAt + length), "the " + name + " table changed");
+            int length = u32(subset, entry(subset, name) + 12);
+            byte[] was = Arrays.copyOfRange(ttf, table(ttf, name), table(ttf, name) + length);
+            byte[] now = Arrays.copyOfRange(subset, table(subset, name), table(subset, name) + length);
+            if (name.equals("maxp")) {
+                assertEquals(3052, u16(now, 4));
+                now[4] = was[4];
+                now[5] = was[5];
+            } else if (name.equals("hhea")) {
+                assertEquals(Math.min(3052, u16(was, 34)), u16(now, 34));
+                now[34] = was[34];
+                now[35] = was[35];
+            }
+            assertArrayEquals(was, now, "the " + name + " table changed");
         }
         // The whole font sums to the magic number of its head table.
         assertEquals(0xB1B0AFBAL, Subset.tableChecksum(subset));
@@ -133,7 +145,28 @@ class SubsetTest {
         byte[] subset = Subset.subsetTrueType(ttf, used(5), new boolean[1][]);
         byte[] whole = glyph(ttf, 5);
         assertArrayEquals(whole, Arrays.copyOf(glyph(subset, 5), whole.length));
-        assertEquals(0, glyph(subset, 6).length);
+        assertEquals(0, glyph(subset, 4).length);
+    }
+
+    @Test
+    void endsAtTheLastGlyphKept() throws Exception {
+        // IBM Plex Sans has 1,019 glyphs and a long metric for each; a subset
+        // of glyph 33, A, has 34, and the hhea table counts 34 long metrics.
+        byte[] ttf = fontBytes(PLEX);
+        int glyphs = u16(ttf, table(ttf, "maxp") + 4);
+        int metrics = u16(ttf, table(ttf, "hhea") + 34);
+        assertEquals(1019, glyphs);
+        boolean[][] kept = new boolean[1][];
+        byte[] subset = Subset.subsetTrueType(ttf, used(33), kept);
+        assertEquals(34, kept[0].length);
+        assertEquals(34, u16(subset, table(subset, "maxp") + 4));
+        assertEquals(Math.min(34, metrics), u16(subset, table(subset, "hhea") + 34));
+        int longMetrics = Math.min(34, metrics);
+        assertEquals(4 * longMetrics + 2 * (34 - longMetrics), u32(subset, entry(subset, "hmtx") + 12));
+        assertEquals(2 * 35, u32(subset, entry(subset, "loca") + 12));
+        // The width and side bearing of A as they were
+        assertEquals(u32(ttf, table(ttf, "hmtx") + 4 * 33), u32(subset, table(subset, "hmtx") + 4 * 33));
+        assertArrayEquals(glyph(ttf, 33), Arrays.copyOf(glyph(subset, 33), glyph(ttf, 33).length));
     }
 
     @Test
@@ -245,9 +278,9 @@ class SubsetTest {
         Matcher s = Pattern.compile("/Length (\\d+)\n>>\nstream\n").matcher(raw);
         assertTrue(s.find(at));
         byte[] bits = inflate(raw, s.end(), Integer.parseInt(s.group(1)));
-        // Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A
-        // at 36 of 4,503.
-        byte[] want = new byte[(1019 + 7) / 8];
+        // Glyphs 0 and 33, A, of IBM Plex Sans, whose subset ends at 33; Noto
+        // Sans had A at 36 of 4,503.
+        byte[] want = new byte[(33 + 1 + 7) / 8];
         want[0] = (byte) 0x80;
         want[33 / 8] |= (byte) (0x80 >> (33 % 8));
         assertArrayEquals(want, bits);

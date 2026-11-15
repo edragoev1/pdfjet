@@ -88,7 +88,8 @@ public class SubsetTest {
         Assert.Equal(1, U16(ttf, Table(ttf, "head") + 50));
         bool[] kept;
         byte[] subset = Subset.SubsetTrueType(ttf, Used(16, 229), out kept);
-        Assert.Equal(4319, kept.Length);
+        // The subset ends at the last glyph kept, 3051, of the 4,319.
+        Assert.Equal(3052, kept.Length);
         HashSet<int> want = new HashSet<int> {0, 16, 1, 3051, 229, 225, 3029, 3020};
         for (int gid = 0; gid < kept.Length; gid++) {
             Assert.True(want.Contains(gid) == kept[gid], "glyph " + gid);
@@ -109,9 +110,23 @@ public class SubsetTest {
             Assert.Equal(-1, Entry(subset, name));
         }
         Assert.Equal(0x00030000, U32(subset, Table(subset, "post")));
+        // The OS/2 table as it was; the hhea and maxp tables but for their
+        // counts, of the long metrics and of the glyphs, cut at the end of the
+        // subset; the hmtx table the start of the font's.
         foreach (string name in new string[] {"hmtx", "hhea", "OS/2", "maxp"}) {
-            int length = U32(ttf, Entry(ttf, name) + 12);
-            Assert.Equal(Slice(ttf, Table(ttf, name), length), Slice(subset, Table(subset, name), length));
+            int length = U32(subset, Entry(subset, name) + 12);
+            byte[] was = Slice(ttf, Table(ttf, name), length);
+            byte[] now = Slice(subset, Table(subset, name), length);
+            if (name == "maxp") {
+                Assert.Equal(3052, U16(now, 4));
+                now[4] = was[4];
+                now[5] = was[5];
+            } else if (name == "hhea") {
+                Assert.Equal(Math.Min(3052, U16(was, 34)), U16(now, 34));
+                now[34] = was[34];
+                now[35] = was[35];
+            }
+            Assert.Equal(was, now);
         }
         // The whole font sums to the magic number of its head table.
         Assert.Equal(0xB1B0AFBAu, Subset.TableChecksum(subset));
@@ -127,7 +142,28 @@ public class SubsetTest {
         byte[] subset = Subset.SubsetTrueType(ttf, Used(5), out kept);
         byte[] whole = Glyph(ttf, 5);
         Assert.Equal(whole, Slice(Glyph(subset, 5), 0, whole.Length));
-        Assert.Empty(Glyph(subset, 6));
+        Assert.Empty(Glyph(subset, 4));
+    }
+
+    [Fact]
+    public void EndsAtTheLastGlyphKept() {
+        // IBM Plex Sans has 1,019 glyphs and a long metric for each; a subset
+        // of glyph 33, A, has 34, and the hhea table counts 34 long metrics.
+        byte[] ttf = FontBytes(PLEX);
+        Assert.Equal(1019, U16(ttf, Table(ttf, "maxp") + 4));
+        int metrics = U16(ttf, Table(ttf, "hhea") + 34);
+        bool[] kept;
+        byte[] subset = Subset.SubsetTrueType(ttf, Used(33), out kept);
+        int longMetrics = Math.Min(34, metrics);
+        Assert.Equal(34, kept.Length);
+        Assert.Equal(34, U16(subset, Table(subset, "maxp") + 4));
+        Assert.Equal(longMetrics, U16(subset, Table(subset, "hhea") + 34));
+        Assert.Equal(4 * longMetrics + 2 * (34 - longMetrics), U32(subset, Entry(subset, "hmtx") + 12));
+        Assert.Equal(2 * 35, U32(subset, Entry(subset, "loca") + 12));
+        // The width and side bearing of A as they were
+        Assert.Equal(U32(ttf, Table(ttf, "hmtx") + 4 * 33), U32(subset, Table(subset, "hmtx") + 4 * 33));
+        byte[] whole = Glyph(ttf, 33);
+        Assert.Equal(whole, Slice(Glyph(subset, 33), 0, whole.Length));
     }
 
     [Fact]
@@ -227,9 +263,9 @@ public class SubsetTest {
         Match s = new Regex("/Length (\\d+)\n>>\nstream\n").Match(raw, at);
         Assert.True(s.Success);
         byte[] bits = Inflate(raw, s.Index + s.Length, int.Parse(s.Groups[1].Value));
-        // Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A
-        // at 36 of 4,503.
-        byte[] want = new byte[(1019 + 7) / 8];
+        // Glyphs 0 and 33, A, of IBM Plex Sans, whose subset ends at 33; Noto
+        // Sans had A at 36 of 4,503.
+        byte[] want = new byte[(33 + 1 + 7) / 8];
         want[0] = 0x80;
         want[33 / 8] |= (byte) (0x80 >> (33 % 8));
         Assert.Equal(want, bits);
@@ -387,7 +423,8 @@ public class SubsetTest {
         PutU32(ttf, loca + 4 * 1000, 0x80000000L);
         bool[] kept;
         byte[] subset = Subset.SubsetTrueType(ttf, Used(36), out kept);
-        Assert.True(kept[36] && !kept[999] && !kept[1000]);
+        // The subset ends at glyph 36, the last kept, before the bad entry.
+        Assert.True(kept.Length == 37 && kept[36]);
         byte[] whole = Glyph(FontBytes("tests/fonts/CascadiaMono-Regular.ttf"), 36);
         Assert.Equal(whole, Slice(Glyph(subset, 36), 0, whole.Length));
         // Drawn, glyph 1000 cannot be read, and the font is embedded whole.

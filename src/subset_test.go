@@ -65,8 +65,9 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(kept) != 4319 {
-		t.Fatalf("%d glyphs, not 4319", len(kept))
+	// The subset ends at the last glyph kept, 3051, of the 4,319.
+	if len(kept) != 3052 {
+		t.Fatalf("%d glyphs, not 3052", len(kept))
 	}
 	want := map[int]bool{0: true, 16: true, 1: true, 3051: true, 229: true, 225: true, 3029: true, 3020: true}
 	for gid, keep := range kept {
@@ -97,12 +98,27 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 	if post := testOpenTypeTable(t, subset, "post"); binary.BigEndian.Uint32(subset[post:]) != 0x00030000 {
 		t.Error("the post table is not of version 3")
 	}
+	// The OS/2 table as it was; the hhea and maxp tables but for their
+	// counts, of the long metrics and of the glyphs, cut at the end of the
+	// subset; the hmtx table the start of the font's.
 	for _, name := range []string{"hmtx", "hhea", "OS/2", "maxp"} {
-		entry := testOpenTypeEntry(t, ttf, name)
-		length := int(binary.BigEndian.Uint32(ttf[entry+12:]))
+		length := int(binary.BigEndian.Uint32(subset[testOpenTypeEntry(t, subset, name)+12:]))
 		at := testOpenTypeTable(t, ttf, name)
-		subsetAt := testOpenTypeTable(t, subset, name)
-		if !bytes.Equal(ttf[at:at+length], subset[subsetAt:subsetAt+length]) {
+		was := ttf[at : at+length]
+		now := append([]byte(nil), subset[testOpenTypeTable(t, subset, name):][:length]...)
+		switch name {
+		case "maxp":
+			if n := binary.BigEndian.Uint16(now[4:]); n != 3052 {
+				t.Errorf("the maxp table counts %d glyphs", n)
+			}
+			copy(now[4:6], was[4:6])
+		case "hhea":
+			if n, want := binary.BigEndian.Uint16(now[34:]), min(3052, binary.BigEndian.Uint16(was[34:])); n != want {
+				t.Errorf("the hhea table counts %d long metrics, not %d", n, want)
+			}
+			copy(now[34:36], was[34:36])
+		}
+		if !bytes.Equal(was, now) {
 			t.Errorf("the %s table changed", name)
 		}
 	}
@@ -129,8 +145,43 @@ func TestSubsetOfAFontWithShortOffsets(t *testing.T) {
 	if glyph := testSubsetGlyph(t, subset, gid); !bytes.Equal(glyph[:len(whole)], whole) {
 		t.Error("the glyph is not copied as it was")
 	}
-	if len(testSubsetGlyph(t, subset, gid+1)) != 0 {
-		t.Error("the next glyph is not empty")
+	if len(testSubsetGlyph(t, subset, gid-1)) != 0 {
+		t.Error("the glyph before it is not empty")
+	}
+}
+
+// IBM Plex Sans has 1,019 glyphs and a long metric for each; a subset of
+// glyph 33, A, has 34, and the hhea table counts 34 long metrics.
+func TestSubsetEndsAtTheLastGlyphKept(t *testing.T) {
+	ttf := testOpenTypeFontBytes(t, testSubsetPlex)
+	u16 := func(font []byte, at int) int { return int(binary.BigEndian.Uint16(font[at:])) }
+	u32 := func(font []byte, at int) int { return int(binary.BigEndian.Uint32(font[at:])) }
+	if glyphs := u16(ttf, testOpenTypeTable(t, ttf, "maxp")+4); glyphs != 1019 {
+		t.Fatalf("%d glyphs", glyphs)
+	}
+	metrics := u16(ttf, testOpenTypeTable(t, ttf, "hhea")+34)
+	subset, kept, err := subsetTrueType(ttf, testSubsetUsed(33))
+	if err != nil {
+		t.Fatal(err)
+	}
+	longMetrics := min(34, metrics)
+	if len(kept) != 34 || u16(subset, testOpenTypeTable(t, subset, "maxp")+4) != 34 ||
+		u16(subset, testOpenTypeTable(t, subset, "hhea")+34) != longMetrics {
+		t.Error("the subset does not end at glyph 33")
+	}
+	if n := u32(subset, testOpenTypeEntry(t, subset, "hmtx")+12); n != 4*longMetrics+2*(34-longMetrics) {
+		t.Errorf("the hmtx table is %d bytes", n)
+	}
+	if n := u32(subset, testOpenTypeEntry(t, subset, "loca")+12); n != 2*35 {
+		t.Errorf("the loca table is %d bytes", n)
+	}
+	// The width and side bearing of A as they were
+	if u32(ttf, testOpenTypeTable(t, ttf, "hmtx")+4*33) != u32(subset, testOpenTypeTable(t, subset, "hmtx")+4*33) {
+		t.Error("the metrics of A changed")
+	}
+	whole := testSubsetGlyph(t, ttf, 33)
+	if !bytes.Equal(testSubsetGlyph(t, subset, 33)[:len(whole)], whole) {
+		t.Error("A is not copied as it was")
 	}
 }
 
@@ -242,9 +293,9 @@ func TestSubsetAPDFA1HasTheCIDSetOfTheGlyphsKept(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A at
-	// 36 of 4,503.
-	want := make([]byte, (1019+7)/8)
+	// Glyphs 0 and 33, A, of IBM Plex Sans, whose subset ends at 33; Noto
+	// Sans had A at 36 of 4,503.
+	want := make([]byte, (33+1+7)/8)
 	want[0] = 0x80
 	want[33/8] |= 0x80 >> (33 % 8)
 	if !bytes.Equal(bits, want) {

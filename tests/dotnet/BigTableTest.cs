@@ -122,12 +122,29 @@ public sealed class BigTableTest : IDisposable {
     public void TheVerticalLinesCanBeLeftOut() {
         // The lines between the columns and at the sides, one for each of the
         // three columns and one more, are left out, and the lines between the
-        // rows are drawn as before.
+        // rows are drawn as before. The lines of a page are one path.
         string all = DrawSmall(TestSupport.NewPDF(), table => {});
         string rows = DrawSmall(TestSupport.NewPDF(), table => table.SetVerticalLines(false));
-        Assert.Equal(Count(all, "\nS\n") - 4, Count(rows, "\nS\n"));
-        Assert.True(Count(rows, "\nS\n") > 0, "the lines between the rows are drawn");
+        Assert.Equal(Count(all, " m\n") - 4, Count(rows, " m\n"));
+        Assert.True(Count(rows, " m\n") > 0, "the lines between the rows are drawn");
+        Assert.Equal(1, Count(rows, "\nS\n"));
         Assert.Equal(all, DrawSmall(TestSupport.NewPDF(), table => table.SetVerticalLines(true)));
+    }
+
+    [Fact]
+    public void AnEmptyFieldDrawsNoText() {
+        // Three rows of three fields, the middle one of the second row empty:
+        // the header's three texts, eight of the rows' and the footer's, and
+        // no text object for the empty field, which drew one and showed
+        // nothing.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<string[]> rows = new List<string[]> {
+            new string[] {"a", "b", "c"}, new string[] {"d", "", "f"}, new string[] {"g", "h", "i"}};
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT)
+                .SetNumberOfColumns(3).SetTableData(new string[] {"Name", "City", "Total"}, rows);
+        string content = TestSupport.Content(Draw(table)[0]);
+        Assert.Equal(3 + 8 + 1, Count(content, "BT\n"));
     }
 
     [Fact]

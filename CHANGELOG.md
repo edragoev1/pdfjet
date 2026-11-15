@@ -43,6 +43,29 @@ line under a two-column row was written `49.75 724.13 m 110 724.13 l` and
 program that wants each cell's own lines, as before, byte for byte, calls
 `table.setJoinedBorders(false)` (C# and Go `SetJoinedBorders(false)`).
 
+Changed, in the four ports, in the bytes and not the look: **a subset of a
+TrueType font (.ttf) ends at the last glyph it keeps.** A subset kept every
+glyph number of the font, the outlines of the glyphs not drawn emptied, and
+its loca and hmtx tables an entry for each: 4,503 of them for Noto Sans,
+1,019 for IBM Plex Sans, whatever the page drew. The glyphs after the last
+one kept are now left out of the maxp, loca and hmtx tables, and of the
+hhea table's count of the metrics; the glyph numbers, the content streams,
+the widths and the ToUnicode map are as before. A 12-page statement in Noto
+Sans is 31% smaller (63.3 to 43.7 KB), in IBM Plex Sans 14% (50.6 to 43.6
+KB). The CIDSet of a PDF/A-1 document, a bit for each glyph number, ends
+there too.
+
+Changed, in the four ports, in the bytes and not the look: **a `BigTable`
+writes no text for an empty field, and strokes the lines of a page as one
+path.** An empty field wrote a text object that showed nothing, and each
+row stroked its own line, with the pen set and set back around it; the
+lines of a page, those above the rows, the vertical lines and the line
+under the last row, are now one path, stroked when the page is done. In a
+PDF/UA document an empty field is still a cell of the table, with nothing
+in it. Poppler draws the pages as before, pixel for pixel; MuPDF,
+anti-aliasing, draws the pixels where two lines cross a shade lighter,
+painted once rather than twice.
+
 Changed, in the four ports: **a font of CFF outlines (.otf) is embedded as
 a much smaller subset.** The subset was the whole font with an `endchar` in
 place of every glyph not drawn and a `return` in place of every subroutine

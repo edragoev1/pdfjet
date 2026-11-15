@@ -59,6 +59,11 @@ public class BigTable {
     private float[] headerColor = null;             // null for the shading of every other row
     private float[] borderColor = rgb(0xB0B0B0);    // null for no lines
     private float borderWidth = 0.5f;               // The width of the lines, 0.5 points unless set
+    // The y of the line above each row of the page being drawn, stroked with
+    // the vertical lines and the line under the last row, one path for the
+    // page when it is done, rather than a path for each row.
+    private float[] rowLines = new float[64];
+    private int rowLineCount = 0;
     private boolean verticalLines = true;           // false for the rows' lines alone
     private String footerText = "Page {page} of {pages}";
     private Font footerFont;                        // null for the header font
@@ -630,30 +635,26 @@ public class BigTable {
     // artifact, which is what the header rows that repeat on the next pages
     // are.
     private void drawFieldsAndLine(String[] fields, Font font, StructElem cellStructure, boolean header) {
-        // The shading and the line above the text carry no meaning of their own.
-        page.addArtifactBMC();
+        // The shading carries no meaning of its own.
+        float[] shading = null;
         if (header && headerColor != null) {
-            highlightRow(page, font, headerColor);
+            shading = headerColor;
             this.highlightRow = false;
         } else if (this.highlightRow) {
-            if (shadingColor != null) {
-                highlightRow(page, font, shadingColor);
-            }
+            shading = shadingColor;
             this.highlightRow = false;
         } else {
             this.highlightRow = true;
         }
-
-        // Draw the line above the text.
-        if (borderColor != null) {
-            float[] original = page.getPenColor();
-            page.setPenColor(borderColor);
-            page.moveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
-            page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
-            page.strokePath();
-            page.setPenColor(original);
+        if (shading != null) {
+            page.addArtifactBMC();
+            highlightRow(page, font, shading);
+            page.addEMC();
         }
-        page.addEMC();
+        // The line above the text, stroked with the page's other lines
+        if (borderColor != null) {
+            addRowLine(this.yText - font.ascent - verticalPadding);
+        }
         page.setBrushColor(Color.black);
 
         boolean tagged = structElement != null && cellStructure != null;
@@ -685,13 +686,27 @@ public class BigTable {
                 // PAC warns of on text
                 String description = drawn.equals(text) ? null : text;
                 page.addBDC(cellStructure, null, null, description, cellAttributes(cellStructure));
+            } else if (drawn.isEmpty()) {
+                continue;   // An empty field draws nothing
             } else {
                 page.addArtifactBMC();
             }
-            drawText(font, drawn, xText, this.yText);
+            if (!drawn.isEmpty()) {
+                drawText(font, drawn, xText, this.yText);
+            }
             page.addEMC();
         }
         page.structParent = parent;
+    }
+
+    // Returns true when the field has no text to draw, on any of its lines.
+    private static boolean isEmpty(String[] lines) {
+        for (String line : lines) {
+            if (!line.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // The attributes of a cell element: a header cell heads the column it is in.
@@ -707,24 +722,39 @@ public class BigTable {
         page.setBrushColor(original);
     }
 
+    // Keeps the line above a row, for drawTheVerticalLines.
+    private void addRowLine(float y) {
+        if (rowLineCount == rowLines.length) {
+            rowLines = Arrays.copyOf(rowLines, 2 * rowLines.length);
+        }
+        rowLines[rowLineCount++] = y;
+    }
+
+    // Draws the lines of the page when it is done, as one path: the line
+    // above each row, the vertical lines and the line under the last row.
     private void drawTheVerticalLines() {
         if (borderColor == null) {
+            rowLineCount = 0;
             return;
         }
         // The lines of the table carry no meaning of their own.
         page.addArtifactBMC();
         float[] original = page.getPenColor();
         page.setPenColor(borderColor);
-        for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
-            page.drawLine(
-                    vertLines[i],
-                    this.top,
-                    vertLines[i],
-                    this.yText - f2.ascent - verticalPadding);
+        page.setPenWidth(borderWidth);
+        for (int k = 0; k < rowLineCount; k++) {
+            page.moveTo(vertLines[0], rowLines[k]);
+            page.lineTo(vertLines[this.numberOfColumns], rowLines[k]);
         }
-        // Draw the last horizontal line
-        page.moveTo(vertLines[0], this.yText - f2.ascent - verticalPadding);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent - verticalPadding);
+        rowLineCount = 0;
+        float bottom = this.yText - f2.ascent - verticalPadding;
+        for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
+            page.moveTo(vertLines[i], this.top);
+            page.lineTo(vertLines[i], bottom);
+        }
+        // The line under the last row
+        page.moveTo(vertLines[0], bottom);
+        page.lineTo(vertLines[this.numberOfColumns], bottom);
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();
@@ -1345,27 +1375,26 @@ public class BigTable {
         if (count > 1) {
             extra = (float) (count - 1) * lineHeight;
         }
-        page.addArtifactBMC();
+        // The shading carries no meaning of its own.
+        float[] shading = null;
         if (header && headerColor != null) {
-            highlightRows(page, font, headerColor, extra);
+            shading = headerColor;
             this.highlightRow = false;
         } else if (this.highlightRow) {
-            if (shadingColor != null) {
-                highlightRows(page, font, shadingColor, extra);
-            }
+            shading = shadingColor;
             this.highlightRow = false;
         } else {
             this.highlightRow = true;
         }
-        if (borderColor != null) {
-            float[] original = page.getPenColor();
-            page.setPenColor(borderColor);
-            page.moveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
-            page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
-            page.strokePath();
-            page.setPenColor(original);
+        if (shading != null) {
+            page.addArtifactBMC();
+            highlightRows(page, font, shading, extra);
+            page.addEMC();
         }
-        page.addEMC();
+        // The line above the text, stroked with the page's other lines
+        if (borderColor != null) {
+            addRowLine(this.yText - font.ascent - verticalPadding);
+        }
         page.setBrushColor(Color.black);
 
         boolean tagged = structElement != null && cellStructure != null;
@@ -1379,11 +1408,16 @@ public class BigTable {
                 page.structParent = rowElement;
                 String description = (whole != null) ? whole[i] : null;
                 page.addBDC(cellStructure, null, null, description, cellAttributes(cellStructure));
+            } else if (isEmpty(lines[i])) {
+                continue;   // An empty field draws nothing
             } else {
                 page.addArtifactBMC();
             }
             for (int k = 0; k < lines[i].length; k++) {
                 String line = lines[i][k];
+                if (line.isEmpty()) {
+                    continue;
+                }
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
                     xText = (vertLines[i + 1] - this.padding) - measureOf(font).width(line);

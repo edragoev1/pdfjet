@@ -77,7 +77,8 @@ import Testing
         let ttf = try fontBytes("tests/fonts/CascadiaMono-Regular.ttf")
         #expect(u16(ttf, table(ttf, "head") + 50) == 1)
         let (subset, kept) = try Subset.subsetTrueType(ttf, used(16, 229))
-        #expect(kept.count == 4319)
+        // The subset ends at the last glyph kept, 3051, of the 4,319.
+        #expect(kept.count == 3052)
         let want: Set<Int> = [0, 16, 1, 3051, 229, 225, 3029, 3020]
         for gid in 0..<kept.count {
             #expect(want.contains(gid) == kept[gid], "glyph \(gid)")
@@ -97,12 +98,23 @@ import Testing
             #expect(entry(subset, name) == -1, "the subset has the \(name) table")
         }
         #expect(u32(subset, table(subset, "post")) == 0x00030000)
+        // The OS/2 table as it was; the hhea and maxp tables but for their
+        // counts, of the long metrics and of the glyphs, cut at the end of the
+        // subset; the hmtx table the start of the font's.
         for name in ["hmtx", "hhea", "OS/2", "maxp"] {
-            let length = u32(ttf, entry(ttf, name) + 12)
+            let length = u32(subset, entry(subset, name) + 12)
             let at = table(ttf, name)
             let subsetAt = table(subset, name)
-            #expect(Array(ttf[at..<(at + length)]) == Array(subset[subsetAt..<(subsetAt + length)]),
-                    "the \(name) table changed")
+            let was = Array(ttf[at..<(at + length)])
+            var now = Array(subset[subsetAt..<(subsetAt + length)])
+            if name == "maxp" {
+                #expect(u16(now, 4) == 3052)
+                now[4] = was[4]; now[5] = was[5]
+            } else if name == "hhea" {
+                #expect(u16(now, 34) == min(3052, u16(was, 34)))
+                now[34] = was[34]; now[35] = was[35]
+            }
+            #expect(was == now, "the \(name) table changed")
         }
         // The whole font sums to the magic number of its head table.
         #expect(Subset.tableChecksum(subset) == 0xB1B0AFBA)
@@ -116,7 +128,26 @@ import Testing
         let (subset, _) = try Subset.subsetTrueType(ttf, used(5))
         let whole = glyph(ttf, 5)
         #expect(Array(glyph(subset, 5).prefix(whole.count)) == whole)
-        #expect(glyph(subset, 6).isEmpty)
+        #expect(glyph(subset, 4).isEmpty)
+    }
+
+    @Test func endsAtTheLastGlyphKept() throws {
+        // IBM Plex Sans has 1,019 glyphs and a long metric for each; a subset
+        // of glyph 33, A, has 34, and the hhea table counts 34 long metrics.
+        let ttf = try fontBytes(plex)
+        #expect(u16(ttf, table(ttf, "maxp") + 4) == 1019)
+        let metrics = u16(ttf, table(ttf, "hhea") + 34)
+        let (subset, kept) = try Subset.subsetTrueType(ttf, used(33))
+        let longMetrics = min(34, metrics)
+        #expect(kept.count == 34)
+        #expect(u16(subset, table(subset, "maxp") + 4) == 34)
+        #expect(u16(subset, table(subset, "hhea") + 34) == longMetrics)
+        #expect(u32(subset, entry(subset, "hmtx") + 12) == 4 * longMetrics + 2 * (34 - longMetrics))
+        #expect(u32(subset, entry(subset, "loca") + 12) == 2 * 35)
+        // The width and side bearing of A as they were
+        #expect(u32(ttf, table(ttf, "hmtx") + 4 * 33) == u32(subset, table(subset, "hmtx") + 4 * 33))
+        let whole = glyph(ttf, 33)
+        #expect(Array(glyph(subset, 33).prefix(whole.count)) == whole)
     }
 
     @Test func isRefusedByAFontWhoseLicenseForbidsIt() throws {
@@ -226,9 +257,9 @@ import Testing
         #expect(at != NSNotFound)
         let (lengths, end) = try #require(try match("/Length (\\d+)\n>>\nstream\n", raw, from: at))
         let bits = try inflate(raw, end, Int(lengths[1])!)
-        // Glyphs 0 and 33, A, of the 1,019 of IBM Plex Sans; Noto Sans had A
-        // at 36 of 4,503.
-        var want = [UInt8](repeating: 0, count: (1019 + 7) / 8)
+        // Glyphs 0 and 33, A, of IBM Plex Sans, whose subset ends at 33; Noto
+        // Sans had A at 36 of 4,503.
+        var want = [UInt8](repeating: 0, count: (33 + 1 + 7) / 8)
         want[0] = 0x80
         want[33 / 8] |= UInt8(0x80 >> (33 % 8))
         #expect(bits == want)

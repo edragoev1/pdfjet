@@ -361,14 +361,19 @@ class Subset {
      * the parts of the composite glyphs kept. Every glyph keeps its number, so
      * the tables kept, SUBSET_TABLES, are copied as they are, but for the glyf
      * and loca tables made again, the head table's checksum adjustment, and
-     * the post table without the names of the glyphs. A font that forbids
+     * the post table without the names of the glyphs. The font ends at the
+     * last glyph kept: the glyphs after it are left out of the maxp, loca and
+     * hmtx tables, and of the hhea table's count of the metrics, so that a
+     * subset of a font of thousands of glyphs carries no entry for each of
+     * them (Noto Sans's 4,503 glyphs were 36 KB of loca and hmtx for a page
+     * that drew 38). A font that forbids
      * subsetting in the fsType of its OS/2 table, or whose tables cannot be
      * read, throws NotSubset, and is embedded whole.
      */
     static byte[] subsetTrueType(byte[] ttf, boolean[] used, boolean[][] kept) throws NotSubset {
         int numTables = u16(ttf, 4);
         List<Table> tables = new ArrayList<Table>(numTables);
-        Table head = null, loca = null, glyf = null, maxp = null, os2 = null;
+        Table head = null, loca = null, glyf = null, maxp = null, os2 = null, hhea = null, hmtx = null;
         Set<String> seen = new HashSet<String>();
         for (int i = 0; i < numTables; i++) {
             int entry = 12 + 16 * i;
@@ -391,6 +396,8 @@ class Subset {
                 case "glyf": glyf = table; break;
                 case "maxp": maxp = table; break;
                 case "OS/2": os2 = table; break;
+                case "hhea": hhea = table; break;
+                case "hmtx": hmtx = table; break;
                 default: break;
             }
         }
@@ -480,6 +487,23 @@ class Subset {
             }
         }
 
+        // The glyphs of the subset: up to the last one kept, unless the hhea
+        // and hmtx tables, which are cut with them, cannot be read; then all
+        // of them, as the font has them.
+        int fontGlyphs = numGlyphs;
+        int last = numGlyphs - 1;
+        while (last > 0 && !keep[last]) {
+            last--;
+        }
+        int numberOfHMetrics = 0;
+        if (hhea != null && hhea.length >= 36 && hmtx != null) {
+            numberOfHMetrics = u16(ttf, hhea.offset + 34);
+        }
+        if (numberOfHMetrics > 0 && numberOfHMetrics <= numGlyphs &&
+                hmtx.length >= 4 * numberOfHMetrics + 2 * (numGlyphs - numberOfHMetrics)) {
+            numGlyphs = last + 1;
+        }
+
         // The glyf and loca tables, the kept glyphs copied, each padded to a
         // multiple of four bytes, the others empty.
         long glyfLength = 0;
@@ -531,6 +555,20 @@ class Subset {
                 byte[] h = Arrays.copyOfRange(ttf, t.offset, t.offset + t.length);
                 h[8] = h[9] = h[10] = h[11] = 0; // checkSumAdjustment, set below
                 data.add(h);
+            } else if (t.tag.equals("maxp") && numGlyphs < fontGlyphs) {
+                byte[] m = Arrays.copyOfRange(ttf, t.offset, t.offset + t.length);
+                putShort(m, 4, numGlyphs);
+                data.add(m);
+            } else if (t.tag.equals("hhea") && numGlyphs < numberOfHMetrics) {
+                byte[] h = Arrays.copyOfRange(ttf, t.offset, t.offset + t.length);
+                putShort(h, 34, numGlyphs);
+                data.add(h);
+            } else if (t.tag.equals("hmtx") && numGlyphs < fontGlyphs) {
+                // A long metric for each glyph up to numberOfHMetrics, then a
+                // left side bearing for each glyph after
+                int metrics = Math.min(numGlyphs, numberOfHMetrics);
+                data.add(Arrays.copyOfRange(ttf, t.offset,
+                        t.offset + 4 * metrics + 2 * (numGlyphs - metrics)));
             } else if (t.tag.equals("post")) {
                 if (t.length < 32) {
                     continue;
@@ -587,7 +625,7 @@ class Subset {
             offset += (d.length + 3) & ~3;
         }
         putInt(out, headAt + 8, (int) ((0xB1B0AFBAL - tableChecksum(out)) & 0xFFFFFFFFL));
-        kept[0] = keep;
+        kept[0] = (numGlyphs < fontGlyphs) ? Arrays.copyOf(keep, numGlyphs) : keep;
         return out;
     }
 

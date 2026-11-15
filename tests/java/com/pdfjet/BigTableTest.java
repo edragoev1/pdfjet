@@ -146,12 +146,32 @@ class BigTableTest {
     void theVerticalLinesCanBeLeftOut() throws Exception {
         // The lines between the columns and at the sides, one for each of the
         // three columns and one more, are left out, and the lines between the
-        // rows are drawn as before.
+        // rows are drawn as before. The lines of a page are one path.
         String all = drawSmall(TestSupport.newPDF(), table -> {});
         String rows = drawSmall(TestSupport.newPDF(), table -> table.setVerticalLines(false));
-        assertEquals(count(all, "\nS\n") - 4, count(rows, "\nS\n"));
-        assertTrue(count(rows, "\nS\n") > 0, "the lines between the rows are drawn");
+        assertEquals(count(all, " m\n") - 4, count(rows, " m\n"));
+        assertTrue(count(rows, " m\n") > 0, "the lines between the rows are drawn");
+        assertEquals(1, count(rows, "\nS\n"), "the lines of the page are one path");
         assertEquals(all, drawSmall(TestSupport.newPDF(), table -> table.setVerticalLines(true)));
+    }
+
+    @Test
+    void anEmptyFieldDrawsNoText() throws Exception {
+        // Three rows of three fields, the middle one of the second row empty:
+        // the header's three texts, eight of the rows' and the footer's, and
+        // no text object for the empty field, which drew one and showed
+        // nothing.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {"a", "b", "c"});
+        rows.add(new String[] {"d", "", "f"});
+        rows.add(new String[] {"g", "h", "i"});
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(HEADER, rows);
+        String content = TestSupport.content(draw(table).get(0));
+        assertEquals(3 + 8 + 1, count(content, "BT\n"), content);
+        assertTrue(content.contains(TestSupport.hex("h")) && content.contains(TestSupport.hex("f")));
     }
 
     @Test

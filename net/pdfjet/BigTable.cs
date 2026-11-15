@@ -57,6 +57,10 @@ namespace PDFjet.NET {
         private float[] headerColor = null;             // null for the shading of every other row
         private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
         private float borderWidth = 0.5f;               // The width of the lines, 0.5 points unless set
+        // The y of the line above each row of the page being drawn, stroked
+        // with the vertical lines and the line under the last row, one path
+        // for the page when it is done, rather than a path for each row.
+        private readonly List<float> rowLines = new List<float>();
         private bool verticalLines = true;              // false for the rows' lines alone
         private string footerText = "Page {page} of {pages}";
         private Font footerFont;                        // null for the header font
@@ -585,30 +589,17 @@ namespace PDFjet.NET {
         // an artifact, which is what the header rows that repeat on the next
         // pages are.
         private void DrawFieldsAndLine(string[] fields, Font font, StructElem? cellStructure, bool header) {
-            // The shading and the line above the text carry no meaning of their own.
-            page.AddArtifactBMC();
-            if (header && headerColor != null) {
-                HighlightRow(page, font, headerColor);
-                this.highlightRow = false;
-            } else if (this.highlightRow) {
-                if (shadingColor != null) {
-                    HighlightRow(page, font, shadingColor);
-                }
-                this.highlightRow = false;
-            } else {
-                this.highlightRow = true;
+            // The shading carries no meaning of its own.
+            float[] shading = ShadingOf(header);
+            if (shading != null) {
+                page.AddArtifactBMC();
+                HighlightRow(page, font, shading);
+                page.AddEMC();
             }
-
-            // Draw the line above the text.
+            // The line above the text, stroked with the page's other lines
             if (borderColor != null) {
-                float[] original = page.GetPenColor();
-                page.SetPenColor(borderColor);
-                page.MoveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
-                page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
-                page.StrokePath();
-                page.SetPenColor(original);
+                rowLines.Add(this.yText - font.ascent - verticalPadding);
             }
-            page.AddEMC();
             page.SetBrushColor(Color.black);
 
             bool tagged = structElement != null && cellStructure != null;
@@ -643,13 +634,43 @@ namespace PDFjet.NET {
                     String description = (drawn != text) ? text : null;
                     page.AddBDC(cellStructure.Value, null, null, description,
                             CellAttributes(cellStructure.Value));
+                } else if (drawn.Length == 0) {
+                    continue;   // An empty field draws nothing
                 } else {
                     page.AddArtifactBMC();
                 }
-                DrawText(font, drawn, xText, this.yText);
+                if (drawn.Length > 0) {
+                    DrawText(font, drawn, xText, this.yText);
+                }
                 page.AddEMC();
             }
             page.structParent = parent;
+        }
+
+        // Returns the color of the row being drawn, or null when it is not
+        // shaded: the header's color for the header, if it has one, and the
+        // shading of every other row.
+        private float[] ShadingOf(bool header) {
+            if (header && headerColor != null) {
+                this.highlightRow = false;
+                return headerColor;
+            }
+            if (this.highlightRow) {
+                this.highlightRow = false;
+                return shadingColor;
+            }
+            this.highlightRow = true;
+            return null;
+        }
+
+        // Returns true when the field has no text to draw, on any of its lines.
+        private static bool IsEmpty(string[] lines) {
+            foreach (string line in lines) {
+                if (line.Length > 0) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // The attributes of a cell element: a header cell heads the column it is in.
@@ -665,23 +686,31 @@ namespace PDFjet.NET {
             page.SetBrushColor(original);
         }
 
+        // Draws the lines of the page when it is done, as one path: the line
+        // above each row, the vertical lines and the line under the last row.
         private void DrawTheVerticalLines() {
             if (borderColor == null) {
+                rowLines.Clear();
                 return;
             }
             // The lines of the table carry no meaning of their own.
             page.AddArtifactBMC();
             float[] original = page.GetPenColor();
             page.SetPenColor(borderColor);
-            for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
-                page.DrawLine(
-                    vertLines[i],
-                    top,
-                    vertLines[i],
-                    this.yText - f2.ascent - verticalPadding);
+            page.SetPenWidth(borderWidth);
+            foreach (float y in rowLines) {
+                page.MoveTo(vertLines[0], y);
+                page.LineTo(vertLines[this.numberOfColumns], y);
             }
-            page.MoveTo(vertLines[0], this.yText - f2.ascent - verticalPadding);
-            page.LineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent - verticalPadding);
+            rowLines.Clear();
+            float bottom = this.yText - f2.ascent - verticalPadding;
+            for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
+                page.MoveTo(vertLines[i], top);
+                page.LineTo(vertLines[i], bottom);
+            }
+            // The line under the last row
+            page.MoveTo(vertLines[0], bottom);
+            page.LineTo(vertLines[this.numberOfColumns], bottom);
             page.StrokePath();
             page.SetPenColor(original);
             page.AddEMC();
@@ -1202,27 +1231,17 @@ namespace PDFjet.NET {
             if (count > 1) {
                 extra = (float) ((float) (count - 1) * lineHeight);
             }
-            page.AddArtifactBMC();
-            if (header && headerColor != null) {
-                HighlightRows(page, font, headerColor, extra);
-                this.highlightRow = false;
-            } else if (this.highlightRow) {
-                if (shadingColor != null) {
-                    HighlightRows(page, font, shadingColor, extra);
-                }
-                this.highlightRow = false;
-            } else {
-                this.highlightRow = true;
+            // The shading carries no meaning of its own.
+            float[] shading = ShadingOf(header);
+            if (shading != null) {
+                page.AddArtifactBMC();
+                HighlightRows(page, font, shading, extra);
+                page.AddEMC();
             }
+            // The line above the text, stroked with the page's other lines
             if (borderColor != null) {
-                float[] original = page.GetPenColor();
-                page.SetPenColor(borderColor);
-                page.MoveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
-                page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
-                page.StrokePath();
-                page.SetPenColor(original);
+                rowLines.Add(this.yText - font.ascent - verticalPadding);
             }
-            page.AddEMC();
             page.SetBrushColor(Color.black);
 
             bool tagged = structElement != null && cellStructure != null;
@@ -1237,11 +1256,16 @@ namespace PDFjet.NET {
                     string description = (whole != null) ? whole[i] : null;
                     page.AddBDC(cellStructure.Value, null, null, description,
                             CellAttributes(cellStructure.Value));
+                } else if (IsEmpty(lines[i])) {
+                    continue;   // An empty field draws nothing
                 } else {
                     page.AddArtifactBMC();
                 }
                 for (int k = 0; k < lines[i].Length; k++) {
                     string line = lines[i][k];
+                    if (line.Length == 0) {
+                        continue;
+                    }
                     float xText = vertLines[i] + this.padding;
                     if (alignment[i] == Alignment.RIGHT) {
                         xText = (vertLines[i + 1] - this.padding) - MeasureOf(font).Width(line);

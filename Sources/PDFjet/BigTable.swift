@@ -47,6 +47,10 @@ public class BigTable {
     private var headerColor: [Float]?                           // nil for the shading of every other row
     private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
     private var borderWidth: Float = 0.5                           // The width of the lines, 0.5 points unless set
+    // The y of the line above each row of the page being drawn, stroked with
+    // the vertical lines and the line under the last row, one path for the
+    // page when it is done, rather than a path for each row.
+    private var rowLines = [Float]()
     private var verticalLines = true                              // false for the rows' lines alone
     private var footerText: String? = "Page {page} of {pages}"
     private var footerFont: Font?                               // nil for the header font
@@ -544,30 +548,16 @@ public class BigTable {
     // are.
     private func drawFieldsAndLine(
             fields: [String], font: Font, cellStructure: StructElem?, header: Bool) {
-        // The shading and the line above the text carry no meaning of their own.
-        page!.addArtifactBMC()
-        if header, let headerColor = headerColor {
-            highlightRow(page: page!, font: font, color: headerColor)
-            self.highlightRow = false
-        } else if self.highlightRow {
-            if let shadingColor = shadingColor {
-                highlightRow(page: page!, font: font, color: shadingColor)
-            }
-            self.highlightRow = false
-        } else {
-            self.highlightRow = true
+        // The shading carries no meaning of its own.
+        if let shading = shadingOf(header) {
+            page!.addArtifactBMC()
+            highlightRow(page: page!, font: font, color: shading)
+            page!.addEMC()
         }
-
-        // The line above the text
-        if let borderColor = borderColor {
-            let original = page!.getPenColor()
-            page!.setPenColor(borderColor)
-            page!.moveTo(vertLines[0], self.yText - font.ascent - verticalPadding)
-            page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent - verticalPadding)
-            page!.strokePath()
-            page!.setPenColor(original)
+        // The line above the text, stroked with the page's other lines
+        if borderColor != nil {
+            rowLines.append(self.yText - font.ascent - verticalPadding)
         }
-        page!.addEMC()
         page!.setBrushColor(Color.black)
 
         let tagged = structElement != nil && cellStructure != nil
@@ -602,13 +592,33 @@ public class BigTable {
                 let description: String? = (drawn != text) ? text : nil
                 page!.addBDC(cellStructure!, nil, nil, description,
                         BigTable.cellAttributes(cellStructure!))
+            } else if drawn.isEmpty {
+                continue    // An empty field draws nothing
             } else {
                 page!.addArtifactBMC()
             }
-            drawText(font, drawn, xText, self.yText)
+            if !drawn.isEmpty {
+                drawText(font, drawn, xText, self.yText)
+            }
             page!.addEMC()
         }
         page!.structParent = parent
+    }
+
+    // Returns the color of the row being drawn, or nil when it is not shaded:
+    // the header's color for the header, if it has one, and the shading of
+    // every other row.
+    private func shadingOf(_ header: Bool) -> [Float]? {
+        if header, let headerColor = headerColor {
+            self.highlightRow = false
+            return headerColor
+        }
+        if self.highlightRow {
+            self.highlightRow = false
+            return shadingColor
+        }
+        self.highlightRow = true
+        return nil
     }
 
     // The attributes of a cell element: a header cell heads the column it is in.
@@ -624,7 +634,11 @@ public class BigTable {
         page.setBrushColor(original)
     }
 
+    // Draws the lines of the page when it is done, as one path: the line
+    // above each row, the vertical lines and the line under the last row.
     private func drawTheVerticalLines() {
+        let rows = rowLines
+        rowLines.removeAll(keepingCapacity: true)
         guard let borderColor = borderColor else {
             return
         }
@@ -632,15 +646,19 @@ public class BigTable {
         page!.addArtifactBMC()
         let original = page!.getPenColor()
         page!.setPenColor(borderColor)
-        for i in 0...numberOfColumns where verticalLines {
-            page!.drawLine(
-                vertLines[i],
-                top,
-                vertLines[i],
-                self.yText - f2.ascent - verticalPadding)
+        page!.setPenWidth(borderWidth)
+        for y in rows {
+            page!.moveTo(vertLines[0], y)
+            page!.lineTo(vertLines[numberOfColumns], y)
         }
-        page!.moveTo(vertLines[0], self.yText - f2.ascent - verticalPadding)
-        page!.lineTo(vertLines[numberOfColumns], self.yText - f2.ascent - verticalPadding)
+        let bottom = self.yText - f2.ascent - verticalPadding
+        for i in 0...numberOfColumns where verticalLines {
+            page!.moveTo(vertLines[i], top)
+            page!.lineTo(vertLines[i], bottom)
+        }
+        // The line under the last row
+        page!.moveTo(vertLines[0], bottom)
+        page!.lineTo(vertLines[numberOfColumns], bottom)
         page!.strokePath()
         page!.setPenColor(original)
         page!.addEMC()
@@ -1160,27 +1178,16 @@ public class BigTable {
         if count > 1 {
             extra = Float(count - 1) * lineHeight
         }
-        page!.addArtifactBMC()
-        if header, let headerColor = headerColor {
-            highlightRows(page: page!, font: font, color: headerColor, extra: extra)
-            self.highlightRow = false
-        } else if self.highlightRow {
-            if let shadingColor = shadingColor {
-                highlightRows(page: page!, font: font, color: shadingColor, extra: extra)
-            }
-            self.highlightRow = false
-        } else {
-            self.highlightRow = true
+        // The shading carries no meaning of its own.
+        if let shading = shadingOf(header) {
+            page!.addArtifactBMC()
+            highlightRows(page: page!, font: font, color: shading, extra: extra)
+            page!.addEMC()
         }
-        if let borderColor = borderColor {
-            let original = page!.getPenColor()
-            page!.setPenColor(borderColor)
-            page!.moveTo(vertLines[0], self.yText - font.ascent - verticalPadding)
-            page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent - verticalPadding)
-            page!.strokePath()
-            page!.setPenColor(original)
+        // The line above the text, stroked with the page's other lines
+        if borderColor != nil {
+            rowLines.append(self.yText - font.ascent - verticalPadding)
         }
-        page!.addEMC()
         page!.setBrushColor(Color.black)
 
         let tagged = structElement != nil && cellStructure != nil
@@ -1198,10 +1205,12 @@ public class BigTable {
                 }
                 page!.addBDC(cellStructure!, nil, nil, description,
                         BigTable.cellAttributes(cellStructure!))
+            } else if lines[i].allSatisfy({ $0.isEmpty }) {
+                continue    // An empty field draws nothing
             } else {
                 page!.addArtifactBMC()
             }
-            for (k, line) in lines[i].enumerated() {
+            for (k, line) in lines[i].enumerated() where !line.isEmpty {
                 var xText = vertLines[i] + self.padding
                 if alignment[i] == Alignment.RIGHT {
                     xText = (vertLines[i + 1] - self.padding) - measureOf(font).width(line)

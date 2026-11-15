@@ -159,17 +159,40 @@ func testDrawSmallBigTable(t *testing.T, pdf *PDF, change func(*BigTable)) strin
 	return testContent(pages[0])
 }
 
+// Three rows of three fields, the middle one of the second row empty: the
+// header's three texts, eight of the rows' and the footer's, and no text
+// object for the empty field, which drew one and showed nothing.
+func TestBigTableAnEmptyFieldDrawsNoText(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	rows := [][]string{{"a", "b", "c"}, {"d", "", "f"}, {"g", "h", "i"}}
+	table := NewBigTable(pdf, font, font, letter.Portrait())
+	table.SetNumberOfColumns(3)
+	table.SetTableRows([]string{"Name", "City", "Total"}, slices.Values(rows))
+	table.SetLocation(10, 10)
+	if err := table.Complete(); err != nil {
+		t.Fatal(err)
+	}
+	content := testContent(table.GetPages()[0])
+	if n := strings.Count(content, "BT\n"); n != 3+8+1 {
+		t.Errorf("%d text objects, not 12", n)
+	}
+}
+
 // The lines between the columns and at the sides, one for each of the three
 // columns and one more, are left out, and the lines between the rows are drawn
-// as before.
+// as before. The lines of a page are one path.
 func TestBigTableTheVerticalLinesCanBeLeftOut(t *testing.T) {
 	all := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {})
 	rows := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetVerticalLines(false) })
-	if got, want := strings.Count(rows, "\nS\n"), strings.Count(all, "\nS\n")-4; got != want {
-		t.Errorf("%d strokes without the vertical lines, want %d", got, want)
+	if got, want := strings.Count(rows, " m\n"), strings.Count(all, " m\n")-4; got != want {
+		t.Errorf("%d lines without the vertical lines, want %d", got, want)
 	}
-	if strings.Count(rows, "\nS\n") == 0 {
+	if strings.Count(rows, " m\n") == 0 {
 		t.Error("the lines between the rows are not drawn")
+	}
+	if n := strings.Count(rows, "\nS\n"); n != 1 {
+		t.Errorf("the lines of the page are %d paths, not one", n)
 	}
 	if again := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetVerticalLines(true) }); again != all {
 		t.Error("SetVerticalLines(true) changed the table")

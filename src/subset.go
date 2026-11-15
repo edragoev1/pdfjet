@@ -426,9 +426,13 @@ var subsetTables = map[string]bool{
 // the composite glyphs kept. Every glyph keeps its number, so the tables kept,
 // subsetTables, are copied as they are, but for the glyf and loca tables made
 // again, the head table's checksum adjustment, and the post table without the
-// names of the glyphs. A font that forbids subsetting in the fsType of
-// its OS/2 table, or whose tables cannot be read, gives an error, and is
-// embedded whole.
+// names of the glyphs. The font ends at the last glyph kept: the glyphs after
+// it are left out of the maxp, loca and hmtx tables, and of the hhea table's
+// count of the metrics, so that a subset of a font of thousands of glyphs
+// carries no entry for each of them (Noto Sans's 4,503 glyphs were 36 KB of
+// loca and hmtx for a page that drew 38). A font that forbids subsetting in
+// the fsType of its OS/2 table, or whose tables cannot be read, gives an
+// error, and is embedded whole.
 func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 	u16 := func(at int) (int, bool) {
 		if at < 0 || at+2 > len(ttf) {
@@ -458,7 +462,7 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 		return nil, nil, errNotSubset
 	}
 	tables := make([]table, 0, numTables)
-	var head, loca, glyf, maxp, os2 table
+	var head, loca, glyf, maxp, os2, hhea, hmtx table
 	seen := make(map[string]bool, numTables)
 	for i := 0; i < numTables; i++ {
 		entry := 12 + 16*i
@@ -488,6 +492,10 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 			maxp = t
 		case "OS/2":
 			os2 = t
+		case "hhea":
+			hhea = t
+		case "hmtx":
+			hmtx = t
 		}
 	}
 	// A table the font lacks is of length 0.
@@ -577,6 +585,23 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 		}
 	}
 
+	// The glyphs of the subset: up to the last one kept, unless the hhea and
+	// hmtx tables, which are cut with them, cannot be read; then all of them,
+	// as the font has them.
+	fontGlyphs := numGlyphs
+	last := numGlyphs - 1
+	for last > 0 && !kept[last] {
+		last--
+	}
+	numberOfHMetrics := 0
+	if hhea.length >= 36 && hmtx.length > 0 {
+		numberOfHMetrics, _ = u16(hhea.offset + 34)
+	}
+	if numberOfHMetrics > 0 && numberOfHMetrics <= numGlyphs &&
+		hmtx.length >= 4*numberOfHMetrics+2*(numGlyphs-numberOfHMetrics) {
+		numGlyphs = last + 1
+	}
+
 	// The glyf and loca tables, the kept glyphs copied, each padded to a
 	// multiple of four bytes, the others empty.
 	var newGlyf []byte
@@ -624,6 +649,20 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 			h := append([]byte(nil), ttf[t.offset:t.offset+t.length]...)
 			h[8], h[9], h[10], h[11] = 0, 0, 0, 0 // checkSumAdjustment, set below
 			data = append(data, h)
+		case "maxp", "hhea", "hmtx":
+			d := append([]byte(nil), ttf[t.offset:t.offset+t.length]...)
+			switch {
+			case t.tag == "maxp" && numGlyphs < fontGlyphs:
+				d[4], d[5] = byte(numGlyphs>>8), byte(numGlyphs)
+			case t.tag == "hhea" && numGlyphs < numberOfHMetrics:
+				d[34], d[35] = byte(numGlyphs>>8), byte(numGlyphs)
+			case t.tag == "hmtx" && numGlyphs < fontGlyphs:
+				// A long metric for each glyph up to numberOfHMetrics, then
+				// a left side bearing for each glyph after
+				metrics := min(numGlyphs, numberOfHMetrics)
+				d = d[:4*metrics+2*(numGlyphs-metrics)]
+			}
+			data = append(data, d)
 		case "post":
 			if t.length < 32 {
 				continue
@@ -677,6 +716,9 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 	out[headAt+9] = byte(adjustment >> 16)
 	out[headAt+10] = byte(adjustment >> 8)
 	out[headAt+11] = byte(adjustment)
+	if numGlyphs < fontGlyphs {
+		kept = kept[:numGlyphs]
+	}
 	return out, kept, nil
 }
 

@@ -111,13 +111,28 @@ import Testing
 
     // The lines between the columns and at the sides, one for each of the
     // three columns and one more, are left out, and the lines between the
-    // rows are drawn as before.
+    // rows are drawn as before. The lines of a page are one path.
     @Test func theVerticalLinesCanBeLeftOut() throws {
         let all = try drawSmall(TestSupport.newPDF()) { _ in }
         let rows = try drawSmall(TestSupport.newPDF()) { $0.setVerticalLines(false) }
-        #expect(count(rows, "\nS\n") == count(all, "\nS\n") - 4)
-        #expect(count(rows, "\nS\n") > 0, "the lines between the rows are drawn")
+        #expect(count(rows, " m\n") == count(all, " m\n") - 4)
+        #expect(count(rows, " m\n") > 0, "the lines between the rows are drawn")
+        #expect(count(rows, "\nS\n") == 1, "the lines of the page are one path")
         #expect(try drawSmall(TestSupport.newPDF()) { $0.setVerticalLines(true) } == all)
+    }
+
+    // Three rows of three fields, the middle one of the second row empty: the
+    // header's three texts, eight of the rows' and the footer's, and no text
+    // object for the empty field, which drew one and showed nothing.
+    @Test func anEmptyFieldDrawsNoText() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let rows = [["a", "b", "c"], ["d", "", "f"], ["g", "h", "i"]]
+        let table = BigTable(pdf, font, font, Letter.PORTRAIT)
+        table.setNumberOfColumns(3)
+        table.setTableData(["Name", "City", "Total"], rows)
+        let content = TestSupport.content(try draw(table)[0])
+        #expect(count(content, "BT\n") == 3 + 8 + 1)
     }
 
     @Test func theShadingAndTheBorderColorsCanBeChangedOrLeftOut() throws {
