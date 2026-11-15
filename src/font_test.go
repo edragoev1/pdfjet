@@ -7,10 +7,10 @@ package pdfjet
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"regexp"
 	"strings"
 	"testing"
@@ -113,39 +113,16 @@ func TestFontTheLineGapOfAFontSpacesTheLinesOfATextBlock(t *testing.T) {
 	testAssertXY(t, 500, 40, block.DrawOn(nil))
 }
 
-func TestFontAStreamFontPathOpensTheTrueTypeFont(t *testing.T) {
-	// PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a .stream
-	// file opens the .ttf file of the same name, or else the .otf file: a
-	// file beside it, or a font PDFjet carries. Before 9.1.7 the fonts folder
-	// had Noto Sans and both files of IBM Plex Sans; the folder of .ttf and
-	// .otf files is made here.
-	dir := t.TempDir()
-	ttf := filepath.Join(dir, "IBMPlexSans-Regular.ttf")
-	otf := filepath.Join(dir, "IBMPlexSans-Regular.otf")
-	if err := os.WriteFile(ttf, testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.ttf"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(otf, testFontBytes(t, "tests/fonts/IBMPlexSans-Regular.otf"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	for _, path := range [][2]string{
-		// The .ttf beside the .otf
-		{otf + ".stream", ttf},
-		{ttf + ".stream", ttf},
-		// The .otf, with no .ttf beside it
-		{testRepoPath(t, "tests/fonts/IBMPlexSans-Italic.otf.stream"),
-			testRepoPath(t, "tests/fonts/IBMPlexSans-Italic.otf")},
-		// The fonts PDFjet carries
-		{testRepoPath(t, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
-			testRepoPath(t, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf")},
-		{testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
-			testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")},
-	} {
-		if got := fontFileOf(path[0]); got != path[1] {
-			t.Errorf("%s: %s", path[0], got)
-		}
-		if font := NewFontFromFile(testNewPDF(), path[0]); font.GetName() == "" {
-			t.Errorf("%s: no font", path[0])
+func TestFontAStreamFontPathIsAPathLikeAnyOther(t *testing.T) {
+	// The .otf.stream and .ttf.stream files of PDFjet before 9.0.5 are not
+	// read as the font of the same name: such a path, not a file, fails as
+	// any missing file does.
+	for _, path := range []string{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
+		"fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream",
+		"fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"} {
+		_, err := ReadFontFromFile(testNewPDF(), path)
+		if !errors.Is(err, fs.ErrNotExist) || !strings.Contains(err.Error(), "nor one of the fonts PDFjet carries") {
+			t.Errorf("%s: %v", path, err)
 		}
 	}
 	// Any other font is refused in PDFjet's words.

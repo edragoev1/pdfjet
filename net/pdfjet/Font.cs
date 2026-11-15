@@ -299,7 +299,7 @@ public class Font {
     /// <param name="fontPath">the font path</param>
     /// <exception cref="System.IO.FileNotFoundException">thrown if the font is not found.</exception>
     public Font(List<PDFobj> objects, String fontPath) {
-        using (Stream inputStream = Open(FontFileOf(fontPath))) {
+        using (Stream inputStream = Open(fontPath)) {
             OpenTypeFont.Register(objects, this, inputStream);
         }
         SetSize(size);
@@ -324,9 +324,7 @@ public class Font {
     /// such file: the NuGet package PDFjet carries the European fonts; the
     /// others, such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular,
     /// are in the NuGet package PDFjet.Fonts.World, which a program adds next
-    /// to PDFjet, and such a font not found says so. A path to a .ttf.stream or
-    /// .otf.stream file, the fonts PDFjet shipped before 9.0.5, opens the .ttf
-    /// or else the .otf file of the same name beside it. The fonts PDFjet
+    /// to PDFjet, and such a font not found says so. The fonts PDFjet
     /// carries are .otf files: a path to a .ttf of one of them, such as
     /// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file throws,
     /// and names the .otf path and the constant to write.
@@ -336,7 +334,6 @@ public class Font {
     /// <exception cref="System.Exception">thrown if the font file is not found.</exception>
     public Font(PDF pdf, String fontPath) {
         this.pdf = pdf;
-        fontPath = FontFileOf(fontPath);
         using (Stream inputStream = Open(fontPath)) {
             OpenTypeFont.Register(pdf, this, inputStream);
         }
@@ -366,33 +363,6 @@ public class Font {
             }
         }
         return new FileStream(fontPath, FileMode.Open, FileAccess.Read);
-    }
-
-    // Returns the path of the font file: the path given, or, for a .ttf.stream
-    // or .otf.stream file, the .ttf or else the .otf file of the same name
-    // beside it. PDFjet reads .otf and .ttf fonts alone from 9.0.5, and its
-    // fonts are subset from their .ttf files: a path written for the .stream
-    // files PDFjet shipped before is the same font.
-    internal static String FontFileOf(String fontPath) {
-        foreach (String stream in new String[] {".ttf.stream", ".otf.stream"}) {
-            if (fontPath.EndsWith(stream, StringComparison.Ordinal)) {
-                String basePath = fontPath.Substring(0, fontPath.Length - stream.Length);
-                foreach (String ext in new String[] {".ttf", ".otf"}) {
-                    if (File.Exists(basePath + ext)) {
-                        return basePath + ext;
-                    }
-                }
-                // The font PDFjet carries of that name, when there is no file
-                foreach (String ext in new String[] {".ttf", ".otf"}) {
-                    using (Stream bundled = BundledFonts.Open(basePath + ext)) {
-                        if (bundled != null) {
-                            return basePath + ext;
-                        }
-                    }
-                }
-            }
-        }
-        return fontPath;
     }
 
     /// <summary>

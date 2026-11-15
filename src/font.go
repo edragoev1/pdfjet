@@ -331,9 +331,7 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // resources/fonts when there is no such file, or else from the library, which
 // has the fonts of every script but the European ones, IBMPlexSansJP,
 // IBMPlexSansArabic and the others, when the program imports the package
-// github.com/edragoev1/pdfjet/v9/resources/fonts/world. A path to a
-// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-// opens the .ttf or else the .otf file of the same name beside it. The fonts
+// github.com/edragoev1/pdfjet/v9/resources/fonts/world. The fonts
 // PDFjet carries are .otf files: a path to a .ttf of one of them, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file is an error
 // that names the .otf path and the constant to write. It panics
@@ -342,7 +340,7 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // fs.ErrNotExist and says what to do. ReadFontFromFile returns the error
 // instead.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
-	buf, err := readFontFile(fontFileOf(filePath))
+	buf, err := readFontFile(filePath)
 	if err != nil {
 		panic(err)
 	}
@@ -361,7 +359,7 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 // returns no error, panics with it. Nothing is added to the PDF for a font
 // refused.
 func ReadFontFromFile(pdf *PDF, filePath string) (font *Font, err error) {
-	buf, err := readFontFile(fontFileOf(filePath))
+	buf, err := readFontFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +382,7 @@ func ReadFontFromFile(pdf *PDF, filePath string) (font *Font, err error) {
 // the others, is read from the folder resources/fonts when there is no such
 // file, or else from the library, as by NewFontFromFile. It panics if the font cannot be read.
 func NewFontFromFileForObjects(objects *[]*PDFobj, filePath string) *Font {
-	buf, err := readFontFile(fontFileOf(filePath))
+	buf, err := readFontFile(filePath)
 	if err != nil {
 		panic(err)
 	}
@@ -439,31 +437,6 @@ func readFontFile(fontPath string) ([]byte, error) {
 		}
 	}
 	return os.ReadFile(fontPath)
-}
-
-// fontFileOf returns the path of the font file: the path given, or, for a
-// .ttf.stream or .otf.stream file, the .ttf or else the .otf file of the same
-// name beside it, or else the one PDFjet carries. PDFjet reads .otf and .ttf
-// fonts alone from 9.0.5, and its fonts are subset from their .ttf files: a
-// path written for the .stream files PDFjet shipped before is the same font.
-func fontFileOf(filePath string) string {
-	for _, stream := range []string{".ttf.stream", ".otf.stream"} {
-		if strings.HasSuffix(filePath, stream) {
-			base := strings.TrimSuffix(filePath, stream)
-			for _, ext := range []string{".ttf", ".otf"} {
-				if _, err := os.Stat(base + ext); err == nil {
-					return base + ext
-				}
-			}
-			// The font PDFjet carries of that name, when there is no file
-			for _, ext := range []string{".ttf", ".otf"} {
-				if bundledFontHas(base + ext) {
-					return base + ext
-				}
-			}
-		}
-	}
-	return filePath
 }
 
 // checksumOf returns a number that identifies the font program: the units it

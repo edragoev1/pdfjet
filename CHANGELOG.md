@@ -157,8 +157,9 @@ against 9.1.7, which has the .ttf paths of the constants in it, is compiled
 again. A .ttf file at that path, or of that name in `resources/fonts`, is
 read, as any file is: PDFjet works with any TrueType (.ttf) or OpenType
 (.otf) font file by its path, and Example_07 draws in IBM's .ttf of IBM Plex
-Sans, from `examples/fonts`, on purpose. A path to a `.ttf.stream` file of
-before 9.0.5 opens the .otf of that name, as before. The booklet's snippet
+Sans, from `examples/fonts`, on purpose. Also: a path to a `.ttf.stream`
+or `.otf.stream` file (the fonts before 9.0.5) is no longer read as the font
+of the same name; it fails as any missing file does. The booklet's snippet
 of a font file reads an .otf PDFjet carries, and says that a .ttf is read
 the same way.
 

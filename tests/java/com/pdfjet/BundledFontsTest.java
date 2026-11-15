@@ -163,14 +163,11 @@ class BundledFontsTest {
     }
 
     @Test
-    void aPathOfTheOldStreamFilesOfAWorldFontNamesThePackage() {
-        assertTrue(BundledFonts.worldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream")
-                .contains("IBM Plex Sans KR is in"));
-        assertTrue(BundledFonts.worldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf.stream")
-                .contains("IBM Plex Sans Thai is in"));
-        assertTrue(BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream")
-                .contains("IBM Plex Sans JP is in"));
-        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.otf.stream"));
+    void aPathOfTheOldStreamFilesOfAWorldFontIsNotAWorldFont() {
+        // A .stream path is a path like any other, not the font of that name
+        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream"));
+        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf.stream"));
+        assertEquals(null, BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream"));
     }
 
     // The fonts PDFjet carries are .otf files, and a path loads the file it

@@ -230,13 +230,6 @@ internal static class BundledFonts {
         }
         String file = name.Substring(family.Length + 1);
         List<String> faces = WORLD_FACES[family];
-        // A path written for the .stream files PDFjet shipped before is the same font
-        foreach (String stream in new String[] {".ttf.stream", ".otf.stream"}) {
-            if (file.EndsWith(stream, StringComparison.Ordinal)) {
-                String first = faces[0];
-                file = file.Substring(0, file.Length - stream.Length) + first.Substring(first.LastIndexOf('.'));
-            }
-        }
         if (!faces.Contains(file)) {
             return null;
         }

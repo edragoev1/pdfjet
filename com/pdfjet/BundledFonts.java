@@ -208,13 +208,6 @@ final class BundledFonts {
         }
         String file = name.substring(family.length() + 1);
         List<String> faces = WORLD_FACES.get(family);
-        // A path written for the .stream files PDFjet shipped before is the same font
-        for (String stream : new String[] {".ttf.stream", ".otf.stream"}) {
-            if (file.endsWith(stream)) {
-                String first = faces.get(0);
-                file = file.substring(0, file.length() - stream.length()) + first.substring(first.lastIndexOf('.'));
-            }
-        }
         if (!faces.contains(file)) {
             return null;
         }

@@ -370,7 +370,7 @@ final public class Font {
      * @throws Exception is the font is not found
      */
     public Font(List<PDFobj> objects, String fontPath) throws Exception {
-        try (InputStream inputStream = open(fontFileOf(fontPath))) {
+        try (InputStream inputStream = open(fontPath)) {
             OpenTypeFont.register(objects, this, inputStream);
         }
         setSize(size);
@@ -397,9 +397,7 @@ final public class Font {
      * from the classpath: the jar of Maven Central, com.pdfjet:pdfjet, carries
      * the European fonts; the others, such as IBMPlexSansJP.Regular and
      * IBMPlexSansArabic.Regular, are in the jar com.pdfjet:pdfjet-fonts-world,
-     * which a program adds next to it, and such a font not found says so. A path to a
-     * .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-     * opens the .ttf or else the .otf file of the same name beside it. The
+     * which a program adds next to it, and such a font not found says so. The
      * fonts PDFjet carries are .otf files: a path to a .ttf of one of them,
      * such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file
      * throws, and names the .otf path and the constant to write.
@@ -410,7 +408,6 @@ final public class Font {
      */
     public Font(PDF pdf, String fontPath) throws Exception {
         this.pdf = pdf;
-        fontPath = fontFileOf(fontPath);
         try (InputStream inputStream = open(fontPath)) {
             OpenTypeFont.register(pdf, this, inputStream);
         }
@@ -441,35 +438,6 @@ final public class Font {
             }
         }
         return new BufferedInputStream(new FileInputStream(file));
-    }
-
-    // Returns the path of the font file: the path given, or, for a .ttf.stream
-    // or .otf.stream file, the .ttf or else the .otf file of the same name
-    // beside it. PDFjet reads .otf and .ttf fonts alone from 9.0.5, and its
-    // fonts are subset from their .ttf files: a path written for the .stream
-    // files PDFjet shipped before is the same font.
-    static String fontFileOf(String fontPath) {
-        for (String stream : new String[] {".ttf.stream", ".otf.stream"}) {
-            if (fontPath.endsWith(stream)) {
-                String base = fontPath.substring(0, fontPath.length() - stream.length());
-                for (String ext : new String[] {".ttf", ".otf"}) {
-                    if (new File(base + ext).exists()) {
-                        return base + ext;
-                    }
-                }
-                // The font PDFjet carries of that name, when there is no file
-                for (String ext : new String[] {".ttf", ".otf"}) {
-                    try (InputStream bundled = BundledFonts.open(base + ext)) {
-                        if (bundled != null) {
-                            return base + ext;
-                        }
-                    } catch (IOException e) {
-                        // Not carried
-                    }
-                }
-            }
-        }
-        return fontPath;
     }
 
     // Returns a number that identifies the font program: the units it is

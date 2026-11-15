@@ -214,21 +214,19 @@ func TestBundledFontsTheWorldFontsAreReadFromTheLibraryWhenTheProgramImportsTheP
 	testWant(t, "IBM Plex Sans JP", bundledFamilyName("IBMPlexSansJP"))
 }
 
-func TestBundledFontsAPathOfTheOldStreamFilesOfAWorldFontNamesThePackage(t *testing.T) {
-	// As in a program that does not import the package world
+func TestBundledFontsAPathOfTheOldStreamFilesOfAWorldFontIsNotAWorldFont(t *testing.T) {
+	// As in a program that does not import the package world: a .stream
+	// path is a path like any other, not the font of that name
 	family := "IBMPlexSansKR"
 	folder := os.DirFS(testRepoPath(t, "resources/fonts/world/"+family))
 	fonts.Register(family, fstest.MapFS{})
 	t.Cleanup(func() { fonts.Register(family, folder) })
 	t.Chdir(t.TempDir())
-	_, err := readFontFile(fontFileOf("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream"))
-	if err == nil || !strings.Contains(err.Error(), "IBM Plex Sans KR is in the package world") {
+	_, err := readFontFile("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream")
+	if !errors.Is(err, fs.ErrNotExist) || !strings.Contains(err.Error(), "nor one of the fonts PDFjet carries") {
 		t.Errorf("%v", err)
 	}
-	if message := bundledWorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Bold.ttf.stream"); !strings.Contains(message, "IBM Plex Sans KR is in") {
-		t.Error(message)
-	}
-	testWant(t, "", bundledWorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Thin.otf.stream"))
+	testWant(t, "", bundledWorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Bold.ttf.stream"))
 }
 
 func TestBundledFontsAPathToTheTTFOfAFontPDFjetCarriesAsOTFNamesTheOTF(t *testing.T) {

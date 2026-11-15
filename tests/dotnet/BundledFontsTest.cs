@@ -186,9 +186,9 @@ public class BundledFontsTest {
         Assert.Contains("IBM Plex Sans Hebrew is in", BundledFonts.WorldMissing(IBMPlexSansHebrew.Text));
         // Not for the European fonts, nor for a face PDFjet does not carry,
         // nor for IBM Plex Math, which it no longer carries
-        Assert.Contains("IBM Plex Sans KR is in", BundledFonts.WorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream"));
-        Assert.Contains("IBM Plex Sans Thai is in", BundledFonts.WorldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf.stream"));
-        Assert.Contains("IBM Plex Sans JP is in", BundledFonts.WorldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream"));
+        // nor for a path to the .stream file of one, a path like any other
+        Assert.Null(BundledFonts.WorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream"));
+        Assert.Null(BundledFonts.WorldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream"));
         Assert.Null(BundledFonts.WorldMissing(IBMPlexSans.Regular));
         Assert.Null(BundledFonts.WorldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"));
         Assert.Null(BundledFonts.WorldMissing("fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf"));

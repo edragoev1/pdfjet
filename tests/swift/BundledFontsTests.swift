@@ -253,12 +253,9 @@ import Testing
         #expect(BundledFonts.worldMissing(IBMPlexSansThai.Thin)?.contains("IBM Plex Sans Thai is in") == true)
         // Not for the European fonts, nor for a face PDFjet does not carry,
         // nor for IBM Plex Math, which it no longer carries
-        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream")?
-                .contains("IBM Plex Sans KR is in") == true)
-        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf.stream")?
-                .contains("IBM Plex Sans Thai is in") == true)
-        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream")?
-                .contains("IBM Plex Sans JP is in") == true)
+        // nor for a path to the .stream file of one, a path like any other
+        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream") == nil)
+        #expect(BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream") == nil)
         #expect(BundledFonts.worldMissing(IBMPlexSans.Regular) == nil)
         #expect(BundledFonts.worldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf") == nil)
         #expect(BundledFonts.worldMissing("fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf") == nil)

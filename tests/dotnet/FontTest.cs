@@ -116,32 +116,16 @@ public class FontTest {
     }
 
     [Fact]
-    public void AStreamFontPathOpensTheTrueTypeFont() {
-        // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
-        // .stream file opens the .ttf file of the same name, or else the .otf
-        // file: a file beside it, or a font PDFjet carries. Before 9.1.7 the
-        // fonts folder had Noto Sans and both files of IBM Plex Sans; the
-        // folder of .ttf and .otf files is made here.
-        using (TestSupport.TempDir dir = new TestSupport.TempDir()) {
-            string ttf = dir.Write("IBMPlexSans-Regular.ttf", TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.ttf"));
-            string otf = dir.Write("IBMPlexSans-Regular.otf", TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.otf"));
-            string[][] paths = {
-                // The .ttf beside the .otf
-                new[] {otf + ".stream", ttf},
-                new[] {ttf + ".stream", ttf},
-                // The .otf, with no .ttf beside it
-                new[] {TestSupport.RepoPath("tests/fonts/IBMPlexSans-Italic.otf.stream"),
-                    TestSupport.RepoPath("tests/fonts/IBMPlexSans-Italic.otf")},
-                // The fonts PDFjet carries
-                new[] {TestSupport.RepoPath("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
-                    TestSupport.RepoPath("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf")},
-                new[] {TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
-                    TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")},
-            };
-            foreach (string[] path in paths) {
-                Assert.Equal(path[1], Font.FontFileOf(path[0]));
-                Assert.NotEmpty(new Font(TestSupport.NewPDF(), path[0]).GetName());
-            }
+    public void AStreamFontPathIsAPathLikeAnyOther() {
+        // The .otf.stream and .ttf.stream files of PDFjet before 9.0.5 are
+        // not read as the font of the same name: such a path, not a file,
+        // fails as any missing file does.
+        foreach (string path in new string[] {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
+                "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream",
+                "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"}) {
+            FileNotFoundException notFound = Assert.Throws<FileNotFoundException>(
+                    () => new Font(TestSupport.NewPDF(), path));
+            Assert.Contains("nor one of the fonts PDFjet carries", notFound.Message);
         }
         // Any other font is refused in PDFjet's words.
         Exception e = Assert.ThrowsAny<Exception>(() => new Font(TestSupport.NewPDF(),

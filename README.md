@@ -669,14 +669,6 @@ allows, and PDFjet keeps a font that forbids subsetting whole; but the
 license is what the maker granted, and it is the one to read. This is not
 legal advice: when in doubt, ask the font's maker.
 
-Up to 9.0.3 the bundled fonts came as `.otf.stream` and `.ttf.stream` files,
-their metrics and their outlines compressed ahead of time, so that a document
-only copied them. Subsetting made them unneeded: a subset of the `.ttf` is a
-fraction of the stream's size, and as fast to make. From 9.0.5 PDFjet reads
-`.otf` and `.ttf` fonts alone, and a path to a `.ttf.stream` or `.otf.stream`
-file opens the `.ttf` file of the same name beside it, so code written for
-9.0.3 runs as it is with the fonts of 9.0.5.
-
 Up to 9.1.7 IBM Plex Sans and Serif, Cascadia Mono and IBM Plex Sans
 Arabic, Hebrew and Thai came as `.ttf` files; from 9.1.9 they are the `.otf`
 files of the same releases, whose subsets are smaller, with the same widths,

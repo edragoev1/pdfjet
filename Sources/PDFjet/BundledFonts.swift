@@ -223,11 +223,7 @@ enum BundledFonts {
         guard let name = nameOf(fontPath), let family = worldFamilyOf(name), let faces = worldFaces[family] else {
             return nil
         }
-        var file = String(name.dropFirst(family.count + 1))
-        // A path written for the .stream files PDFjet shipped before is the same font
-        for stream in [".ttf.stream", ".otf.stream"] where file.hasSuffix(stream) {
-            file = String(file.dropLast(stream.count)) + "." + (faces[0] as NSString).pathExtension
-        }
+        let file = String(name.dropFirst(family.count + 1))
         guard faces.contains(file) else {
             return nil
         }

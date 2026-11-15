@@ -95,35 +95,20 @@ import Testing
         TestSupport.expectXY(500, 40, TextBlock(sc, "日本\n日本").setLocation(0, 0).drawOn(nil))
     }
 
-    @Test func aStreamFontPathOpensTheTrueTypeFont() throws {
-        // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
-        // .stream file opens the .ttf file of the same name, or else the .otf
-        // file: a file beside it, or a font PDFjet carries. Before 9.1.7 the
-        // fonts folder had Noto Sans and both files of IBM Plex Sans; the
-        // folder of .ttf and .otf files is made here.
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("pdfjet-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
-        let ttf = dir.appendingPathComponent("IBMPlexSans-Regular.ttf").path
-        let otf = dir.appendingPathComponent("IBMPlexSans-Regular.otf").path
-        try Data(TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf")).write(to: URL(fileURLWithPath: ttf))
-        try Data(TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.otf")).write(to: URL(fileURLWithPath: otf))
-        let paths = [
-            // The .ttf beside the .otf
-            (otf + ".stream", ttf),
-            (ttf + ".stream", ttf),
-            // The .otf, with no .ttf beside it
-            (TestSupport.path("tests/fonts/IBMPlexSans-Italic.otf.stream"),
-                TestSupport.path("tests/fonts/IBMPlexSans-Italic.otf")),
-            // The fonts PDFjet carries
-            (TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
-                TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf")),
-            (TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
-                TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")),
-        ]
-        for (path, want) in paths {
-            #expect(Font.fontFileOf(path) == want, "\(path)")
-            #expect(!(try Font(TestSupport.newPDF(), path)).getName().isEmpty, "\(path)")
+    @Test func aStreamFontPathIsAPathLikeAnyOther() throws {
+        // The .otf.stream and .ttf.stream files of PDFjet before 9.0.5 are
+        // not read as the font of the same name: such a path, not a file,
+        // fails as any missing file does.
+        for path in ["fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
+                "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream",
+                "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"] {
+            do {
+                _ = try Font(TestSupport.newPDF(), path)
+                Issue.record("\(path) was read")
+            } catch {
+                let message = TestSupport.message(error)
+                #expect(message.contains("nor one of the fonts PDFjet carries"), "\(message)")
+            }
         }
         // Any other font is refused in PDFjet's words.
         do {

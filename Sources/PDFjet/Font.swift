@@ -323,7 +323,7 @@ public class Font {
     /// - Throws: an error if the font cannot be read.
     ///
     public init(_ objects: inout [PDFobj], _ fontPath: String) throws {
-        let bytes = try Font.open(Font.fontFileOf(fontPath))
+        let bytes = try Font.open(fontPath)
         try OpenTypeFont.register(&objects, self, bytes)
         setSize(size)
     }
@@ -337,9 +337,7 @@ public class Font {
     /// depends on; the fonts of the other scripts than the European ones, such
     /// as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular, from
     /// resources/fonts/world, or else from the product PDFjetFontsWorld, which
-    /// an app that draws in them adds, and such a font not found says so. A path to a
-    /// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-    /// opens the .ttf or else the .otf file of the same name beside it. The
+    /// an app that draws in them adds, and such a font not found says so. The
     /// fonts PDFjet carries are .otf files: a path to a .ttf of one of them,
     /// such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file
     /// throws, and names the .otf path and the constant to write.
@@ -351,7 +349,7 @@ public class Font {
     public init(_ pdf: PDF, _ fontPath: String) throws {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance
-        let bytes = try Font.open(Font.fontFileOf(fontPath))
+        let bytes = try Font.open(fontPath)
         try OpenTypeFont.register(pdf, self, bytes)
         setSize(size)
     }
@@ -389,26 +387,6 @@ public class Font {
     // resources/fonts or the bundles of the fonts PDFjet carries.
     static func notCarried(_ fontPath: String) -> String {
         return fontPath + " is not a file, nor one of the fonts PDFjet carries: use a font file of your own."
-    }
-
-    // Returns the path of the font file: the path given, or, for a .ttf.stream
-    // or .otf.stream file, the .ttf or else the .otf file of the same name
-    // beside it, or else the font PDFjet carries of that name. PDFjet reads
-    // .otf and .ttf fonts alone from 9.0.5, and its fonts are subset from
-    // their .ttf files: a path written for the .stream files PDFjet shipped
-    // before is the same font.
-    static func fontFileOf(_ fontPath: String) -> String {
-        for stream in [".ttf.stream", ".otf.stream"] where fontPath.hasSuffix(stream) {
-            let base = String(fontPath.dropLast(stream.count))
-            for ext in [".ttf", ".otf"] where FileManager.default.fileExists(atPath: base + ext) {
-                return base + ext
-            }
-            // The font PDFjet carries of that name, when there is no file
-            for ext in [".ttf", ".otf"] where BundledFonts.url(base + ext) != nil {
-                return base + ext
-            }
-        }
-        return fontPath
     }
 
     // Returns a number that identifies the font program: the units it is drawn

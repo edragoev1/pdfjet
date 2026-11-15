@@ -129,39 +129,16 @@ class FontTest {
     }
 
     @Test
-    void aStreamFontPathOpensTheTrueTypeFont() throws Exception {
-        // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
-        // .stream file opens the .ttf file of the same name, or else the .otf
-        // file: a file beside it, or a font PDFjet carries. Before 9.1.7 the
-        // fonts folder had Noto Sans and both files of IBM Plex Sans; the
-        // folder of .ttf and .otf files is made here.
-        java.io.File dir = java.nio.file.Files.createTempDirectory("pdfjet").toFile();
-        java.io.File ttf = new java.io.File(dir, "IBMPlexSans-Regular.ttf");
-        java.io.File otf = new java.io.File(dir, "IBMPlexSans-Regular.otf");
-        try {
-            java.nio.file.Files.write(ttf.toPath(), TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.ttf"));
-            java.nio.file.Files.write(otf.toPath(), TestSupport.fontBytes("tests/fonts/IBMPlexSans-Regular.otf"));
-            String[][] paths = {
-                // The .ttf beside the .otf
-                {otf.getPath() + ".stream", ttf.getPath()},
-                {ttf.getPath() + ".stream", ttf.getPath()},
-                // The .otf, with no .ttf beside it
-                {TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf.stream").getPath(),
-                    TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf").getPath()},
-                // The fonts PDFjet carries
-                {TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream").getPath(),
-                    TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf").getPath()},
-                {TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").getPath(),
-                    TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf").getPath()},
-            };
-            for (String[] path : paths) {
-                assertEquals(path[1], Font.fontFileOf(path[0]), path[0]);
-                assertFalse(new Font(TestSupport.newPDF(), path[0]).getName().isEmpty(), path[0]);
-            }
-        } finally {
-            ttf.delete();
-            otf.delete();
-            dir.delete();
+    void aStreamFontPathIsAPathLikeAnyOther() throws Exception {
+        // The .otf.stream and .ttf.stream files of PDFjet before 9.0.5 are
+        // not read as the font of the same name: such a path, not a file,
+        // fails as any missing file does.
+        for (String path : new String[] {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
+                "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream",
+                "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"}) {
+            java.io.FileNotFoundException e = assertThrows(java.io.FileNotFoundException.class,
+                    () -> new Font(TestSupport.newPDF(), path));
+            assertTrue(e.getMessage().contains("nor one of the fonts PDFjet carries"), e.getMessage());
         }
         // Any other font is refused in PDFjet's words.
         Exception e = assertThrows(Exception.class, () -> new Font(TestSupport.newPDF(),

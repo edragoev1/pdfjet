@@ -185,12 +185,6 @@ func bundledWorldMissing(fontPath string) string {
 	if !ok {
 		return ""
 	}
-	// A path written for the .stream files PDFjet shipped before is the same font
-	for _, stream := range []string{".ttf.stream", ".otf.stream"} {
-		if base, found := strings.CutSuffix(file, stream); found {
-			file = base + filepath.Ext(faces[0])
-		}
-	}
 	if !slices.Contains(faces, file) || bundledFontHas(fontPath) {
 		return ""
 	}
