@@ -6,9 +6,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -23,13 +25,14 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Example_52 draws Hindi and Khmer as real text: go-text/typesetting, HarfBuzz
-// in Go, shapes them -- conjuncts, vowel signs, stacked consonants -- and
-// Page.DrawGlyphs draws the glyphs it found, at their places, with the text
-// they stand for, so that copying, searching and screen readers get it.
-// PDFjet does not shape these scripts itself; any engine that finds the
-// glyphs can. The text is Article 1 of the Universal Declaration of Human
-// Rights.
+// Example_52 draws Hindi and Khmer, scripts PDFjet does not shape itself:
+// go-text/typesetting, HarfBuzz in Go, shapes them -- conjuncts, vowel signs,
+// stacked consonants -- and Page.DrawGlyphs draws the glyphs it found, at
+// their places, as outlines read from the font file: sharp on screen and in
+// print, and read by screen readers, as each paragraph is tagged with its
+// text and its language. Any engine that finds the glyphs can do the
+// shaping. A page of each, filled with the Universal Declaration of Human
+// Rights from its beginning: Hindi on the first page, Khmer on the second.
 //
 // The example is a module of its own: go-text is its dependency, never
 // PDFjet's. Run it from the folder of the repository:
@@ -40,17 +43,22 @@ const (
 	devanagari = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
 	khmer      = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf"
 	latin      = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
+
+	size   = float32(10.5)
+	left   = float32(50)
+	width  = float32(512)
+	bottom = float32(742) // The page's 792 points less the margin
 )
 
 // A face of go-text, which shapes, and the same font file loaded by PDFjet,
-// which embeds it, so that the glyph numbers match.
+// which reads the outlines, so that the glyph numbers match.
 type shapingFont struct {
 	face   *font.Face
 	font   *pdfjet.Font
 	script language.Script
 }
 
-func loadFont(pdf *pdfjet.PDF, path string, script language.Script, size float32) shapingFont {
+func loadFont(pdf *pdfjet.PDF, path string, script language.Script) shapingFont {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -60,9 +68,9 @@ func loadFont(pdf *pdfjet.PDF, path string, script language.Script, size float32
 	if err != nil {
 		log.Fatal(err)
 	}
-	embedded := pdfjet.NewFontFromFile(pdf, path)
-	embedded.SetSize(size)
-	return shapingFont{face, embedded, script}
+	outlines := pdfjet.NewFontFromFile(pdf, path)
+	outlines.SetSize(size)
+	return shapingFont{face, outlines, script}
 }
 
 // A glyph shaped, in points from the start of the paragraph
@@ -74,16 +82,50 @@ type glyph struct {
 	advance float32
 }
 
-// drawShaped draws a paragraph in a script PDFjet does not shape, wrapped to
-// the width at spaces, as real text, and returns the y below its last line.
-// The script's font is used where it has the characters, IBM Plex Sans
-// elsewhere.
-func drawShaped(pdf *pdfjet.PDF, page *pdfjet.Page, text, lang, scriptFile string, script language.Script,
-	size, x, y, width float32) float32 {
+// drawPage draws a page of the Declaration in the language, its paragraphs
+// from the beginning until the page is full, and returns the text drawn.
+func drawPage(pdf *pdfjet.PDF, heading, body *pdfjet.Font, name, lang, scriptFile string,
+	script language.Script, textFile string) string {
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	pdfjet.NewTextLine(heading, "Universal Declaration of Human Rights, in "+name).
+		SetStructureType(structelem.H1).
+		SetLocation(left, 60).
+		DrawOn(page)
+	pdfjet.NewTextLine(body, "Shaped by go-text/typesetting, drawn by PDFjet with DrawGlyphs as outlines;"+
+		" the text is attached to the document.").
+		SetLocation(left, 80).
+		DrawOn(page)
+
 	fonts := []shapingFont{
-		loadFont(pdf, scriptFile, script, size),
-		loadFont(pdf, latin, language.Latin, size),
+		loadFont(pdf, scriptFile, script),
+		loadFont(pdf, latin, language.Latin),
 	}
+	ascent := fonts[0].font.GetAscent(size)
+	descent := fonts[0].font.GetDescent(size)
+
+	var drawn strings.Builder
+	y := float32(96) // The top of the next line
+	for _, paragraph := range paragraphs(textFile) {
+		text := drawParagraph(page, paragraph, lang, fonts, &y, ascent, descent)
+		if text == "" {
+			break // The page is full
+		}
+		drawn.WriteString(text)
+		drawn.WriteString("\n")
+		if len(text) < len(paragraph) {
+			break // The page is full
+		}
+		y += 0.5 * size
+	}
+	return drawn.String()
+}
+
+// drawParagraph draws the paragraph, wrapped to the width at spaces, as many
+// of its lines as fit above the bottom of the page, from the top *y, which it
+// moves below them, and returns the text of the lines drawn. The script's
+// font is used where it has the characters, IBM Plex Sans elsewhere.
+func drawParagraph(page *pdfjet.Page, text, lang string, fonts []shapingFont,
+	y *float32, ascent, descent float32) string {
 	runes := []rune(text)
 
 	// Each character in the script's font where it has it, else in the Latin
@@ -122,13 +164,14 @@ func drawShaped(pdf *pdfjet.PDF, page *pdfjet.Page, text, lang, scriptFile strin
 		start = end
 	}
 
-	// The line height from the script's font
-	extents, _ := fonts[0].face.FontHExtents()
-	em := size / float32(fonts[0].face.Upem())
-	ascent, descent, gap := extents.Ascender*em, -extents.Descender*em, extents.LineGap*em
-
-	page.AddBDC(structelem.P, lang, "", "")
+	drawnEnd := 0 // The end, in runes, of the text of the lines drawn
 	for first := 0; first < len(glyphs); {
+		if *y+ascent+descent > bottom {
+			break
+		}
+		if drawnEnd == 0 {
+			page.AddBDC(structelem.P, lang, "", "")
+		}
 		// The glyphs of the line: all that are left if they fit, else up to
 		// the last space after a word that fits
 		lineStart := glyphs[first].x
@@ -142,9 +185,8 @@ func drawShaped(pdf *pdfjet.PDF, page *pdfjet.Page, text, lang, scriptFile strin
 				break
 			}
 		}
-		baseline := y + ascent
-		// The line, a run of one font at a time: its glyphs, their places and
-		// the characters each one comes from (its cluster)
+		baseline := *y + ascent
+		// The line, a run of one font at a time: its glyphs and their places
 		for start := first; start < last; {
 			end := start + 1
 			for end < last && glyphs[end].font == glyphs[start].font {
@@ -157,59 +199,74 @@ func drawShaped(pdf *pdfjet.PDF, page *pdfjet.Page, text, lang, scriptFile strin
 			}
 			ids := make([]int, end-start)
 			positions := make([]float32, 2*(end-start))
-			clusters := make([]int, end-start)
 			for i := start; i < end; i++ {
 				ids[i-start] = glyphs[i].id
-				positions[2*(i-start)] = x + glyphs[i].x - lineStart
+				positions[2*(i-start)] = left + glyphs[i].x - lineStart
 				positions[2*(i-start)+1] = baseline + glyphs[i].y
-				clusters[i-start] = glyphs[i].cluster - textStart
 			}
-			page.DrawGlyphs(fonts[glyphs[start].font].font, ids, positions, clusters,
+			page.DrawGlyphs(fonts[glyphs[start].font].font, ids, positions,
 				string(runes[textStart:textEnd]), lang)
 			start = end
 		}
-		y = baseline + descent + gap
+		*y = baseline + descent + 0.25*size
+		drawnEnd = len(runes)
+		if last < len(glyphs) {
+			drawnEnd = glyphs[last].cluster
+		}
 		first = last
 	}
-	page.AddEMC()
-	return y
+	if drawnEnd > 0 {
+		page.AddEMC()
+	}
+	return string(runes[:drawnEnd])
 }
 
-// Example52 draws Article 1 of the Universal Declaration of Human Rights in
-// Hindi and in Khmer.
+// paragraphs returns the paragraphs of the text file, one to a line.
+func paragraphs(path string) []string {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	var paragraphs []string
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 1<<20), 1<<20)
+	for scanner.Scan() {
+		if line := strings.TrimSpace(scanner.Text()); line != "" {
+			paragraphs = append(paragraphs, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return paragraphs
+}
+
+// Example52 draws a page of the Universal Declaration of Human Rights in
+// Hindi and one in Khmer.
 func Example52() {
 	pdf, err := pdfjet.NewPDFFile("Example_52.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Hindi and Khmer as real text") // Required for PDF/UA !
+	pdf.SetTitle("The Universal Declaration of Human Rights in Hindi and Khmer") // Required for PDF/UA !
 	pdf.SetLanguage("en")
 
 	heading := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	heading.SetSize(16)
 	body := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	body.SetSize(10)
+	body.SetSize(9)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait())
-	pdfjet.NewTextLine(heading, "Article 1 of the Universal Declaration of Human Rights").
-		SetStructureType(structelem.H1).
-		SetLocation(50, 60).
-		DrawOn(page)
-	pdfjet.NewTextLine(body, "Shaped by go-text/typesetting, drawn by PDFjet with DrawGlyphs: real text, in Hindi and in Khmer.").
-		SetLocation(50, 82).
-		DrawOn(page)
+	hindi := drawPage(pdf, heading, body, "Hindi", "hi", devanagari, language.Devanagari,
+		"resources/data/udhr/udhr_hin.txt")
+	khmerText := drawPage(pdf, heading, body, "Khmer", "km", khmer, language.Khmer,
+		"resources/data/udhr/udhr_khm.txt")
 
-	y := float32(100)
-	y = drawShaped(pdf, page,
-		"सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता और समानता प्राप्त है । "+
-			"उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिए ।",
-		"hi", devanagari, language.Devanagari, 12, 50, y, 512)
-	drawShaped(pdf, page,
-		"មនុស្សទាំងអស់ កើតមកមានសេរីភាព និងសមភាព ក្នុងផ្នែកសេចក្ដីថ្លៃថ្នូរនិងសិទ្ធិ។ "+
-			"មនុស្ស មានវិចារណញ្ញាណនិងសតិសម្បជញ្ញៈជាប់ពីកំណើត "+
-			"ហើយគប្បីប្រព្រឹត្ដចំពោះគ្នាទៅវិញទៅមកក្នុងស្មារតីភាតរភាពជាបងប្អូន។",
-		"km", khmer, language.Khmer, 12, 50, y+14, 512)
+	// The pages draw the text as outlines, which cannot be selected or
+	// searched; the exact text is attached for anyone who needs it.
+	pdf.AttachText("udhr-hindi.txt", hindi)
+	pdf.AttachText("udhr-khmer.txt", khmerText)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

@@ -17,6 +17,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
@@ -116,6 +117,7 @@ func (s *Stamp) AddFont(font *Font) *Stamp {
 		s.pdf.fail("The font belongs to another PDF.")
 		return s
 	}
+	font.referenced = true
 	for _, f := range s.fonts {
 		if f == font {
 			return s
@@ -434,6 +436,50 @@ func (s *Stamp) Complete() {
 	s.pdf.endObj()
 	s.pdf.stamps = append(s.pdf.stamps, s)
 	s.objNumber = s.pdf.getObjNumber()
+}
+
+// newGlyphStamp returns a stamp of the outline of a glyph, which
+// Page.DrawGlyphs draws once and places wherever the glyph is drawn: the path
+// in the units of the font, y up, filled in the color of the page it is
+// placed on, the box of its points its bounding box, its content compressed.
+// The placement scales the units to the size of the font.
+func newGlyphStamp(pdf *PDF, path glyphPath) *Stamp {
+	stamp := NewStamp(pdf)
+	stamp.completed = true
+	stamp.width = float32(path.xMax - path.xMin)
+	stamp.height = float32(path.yMax - path.yMin)
+	content := compressor.Deflate([]byte(path.operators + "f\n"))
+	if pdf.encryption != nil {
+		content = pdf.encryption.encrypt(content)
+	}
+	pdf.newObj()
+	pdf.appendString("<<\n/Type /XObject\n/Subtype /Form\n/BBox [")
+	pdf.appendString(glyphDecimals(math.Floor(path.xMin), 0))
+	pdf.appendString(" ")
+	pdf.appendString(glyphDecimals(math.Floor(path.yMin), 0))
+	pdf.appendString(" ")
+	pdf.appendString(glyphDecimals(math.Ceil(path.xMax), 0))
+	pdf.appendString(" ")
+	pdf.appendString(glyphDecimals(math.Ceil(path.yMax), 0))
+	pdf.appendString("]\n/Resources <<>>\n/Filter /FlateDecode\n/Length ")
+	pdf.appendInteger(len(content))
+	pdf.appendString("\n>>\nstream\n")
+	pdf.appendByteArray(content)
+	pdf.appendString("\nendstream\n")
+	pdf.endObj()
+	pdf.stamps = append(pdf.stamps, stamp)
+	stamp.objNumber = pdf.getObjNumber()
+	return stamp
+}
+
+// placeGlyph places the stamp of a glyph on the page, by the matrix of the
+// placement, its six numbers written: q, the matrix, Do and Q.
+func (s *Stamp) placeGlyph(page *Page, matrix string) {
+	page.appendString("q ")
+	page.appendString(matrix)
+	page.appendString(" cm ")
+	page.appendString(page.resourceName("/XObject", "/Fm", s.objNumber, nil, s.objNumber))
+	page.appendString(" Do Q\n")
 }
 
 // drawEncodedText appends the glyph IDs of the text as hexadecimal, the glyphs

@@ -43,6 +43,11 @@ type Font struct {
 	baseFont                string       // The name it is embedded under, with the tag of a subset
 	program                 *fontProgram // The font program, until Complete
 	objects                 *fontObjects // Of a font added to an existing PDF, until they are added
+	// Whether DrawGlyphs drew with the font, which it draws as outlines, and
+	// whether anything draws with it as a font, text or a stamp's: a font
+	// DrawGlyphs alone drew with is not written into the document.
+	drawnAsOutlines bool
+	referenced      bool
 
 	unitsPerEm             int
 	bBoxLLx                int16 // Font bounding box

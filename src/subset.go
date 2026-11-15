@@ -33,26 +33,12 @@ type fontProgram struct {
 	// boxed numbers made each character drawn allocate (12 October 2026).
 	chars [256]*[256]rune
 	whole bool // Set by SetSubset(false): the font is embedded whole
-	// The text of the glyphs no character maps to, as another engine shaped
-	// them (DrawGlyphs): a conjunct of Hindi stands for "क्ष", for the
-	// ToUnicode map, which PDF/UA asks of every glyph drawn. The first text
-	// drawn with a glyph is kept; nil until one is.
-	texts map[int]string
-}
-
-// textOf returns the text recorded for the glyph, or "".
-func (program *fontProgram) textOf(gid int) string {
-	return program.texts[gid]
-}
-
-// useText records the text as the glyph's, unless one was.
-func (program *fontProgram) useText(gid int, text string) {
-	if program.texts == nil {
-		program.texts = make(map[int]string)
-	}
-	if _, ok := program.texts[gid]; !ok {
-		program.texts[gid] = text
-	}
+	// The outlines of the glyphs, read when DrawGlyphs first draws one,
+	// and the stamp of each glyph it drew, a form XObject of its outline
+	// drawn once and placed wherever the glyph is; nil for a glyph of no
+	// outline, as the space.
+	outline     *glyphOutline
+	glyphStamps map[int]*Stamp
 }
 
 // firstChar returns the character first drawn with the glyph, or -1.
@@ -128,24 +114,17 @@ func (set *glyphSet) bools() []bool {
 	return used
 }
 
+// outlinesOnly tells whether the font is not written into the document:
+// DrawGlyphs alone drew with it, as outlines, which need no font.
+func (font *Font) outlinesOnly() bool {
+	return font.drawnAsOutlines && !font.referenced
+}
+
 // useGlyph records that the glyph is drawn with the font.
 func (font *Font) useGlyph(gid int) {
 	if font.program != nil {
 		font.program.used.add(gid)
 	}
-}
-
-// useGlyphText records the text a glyph that no character maps to stands
-// for, drawn by DrawGlyphs, for the ToUnicode map: a glyph with a character of
-// its own keeps it.
-func (font *Font) useGlyphText(gid int, text string) {
-	if font.program == nil || gid <= 0 || text == "" {
-		return
-	}
-	if gid < len(font.unicodeOf) && font.unicodeOf[gid] >= 0 {
-		return
-	}
-	font.program.useText(gid, text)
 }
 
 // useChar records that the glyph is drawn for the character, so that the
@@ -245,8 +224,8 @@ func shareFontProgram(pdf *PDF, font *Font, program []byte, cff, forbidden bool,
 // pages refer to.
 func (pdf *PDF) addEmbeddedFonts() {
 	for _, font := range pdf.fonts {
-		if font.program == nil {
-			continue
+		if font.program == nil || font.outlinesOnly() {
+			continue // A font DrawGlyphs alone drew with, as outlines
 		}
 		baseFont := font.name
 		var kept []bool

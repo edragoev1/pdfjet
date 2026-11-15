@@ -33,6 +33,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pagelayout"
 	"github.com/edragoev1/pdfjet/v9/src/pagemode"
+	"github.com/edragoev1/pdfjet/v9/src/relationship"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -679,6 +680,9 @@ func (pdf *PDF) addResourcesObject() int {
 		pdf.appendByteArray(token.BeginDictionary)
 		pdf.appendImportedEntries(pdf.importedFonts)
 		for _, font := range pdf.fonts {
+			if font.outlinesOnly() {
+				continue // Not written: DrawGlyphs alone drew with it, as outlines
+			}
 			pdf.appendString("/F")
 			pdf.appendInteger(font.objNumber)
 			pdf.appendString(" ")
@@ -2657,6 +2661,30 @@ func (pdf *PDF) AddAssociatedFile(file *EmbeddedFile) *PDF {
 	}
 	pdf.associatedFiles = append(pdf.associatedFiles, file)
 	return pdf
+}
+
+// AttachText attaches the text, in UTF-8, as a file the document carries: an
+// associated file of the relationship Source, of the media type
+// "text/plain; charset=utf-8". This is how a document whose text is drawn as
+// outlines, with Page.DrawGlyphs, which cannot be selected or searched,
+// carries its exact text for anyone who needs it: a reader shows the file
+// beside the document. It is attached only when this is called. A document of
+// PDF/A-1, which carries no files, or of PDF/A-2, which carries only documents
+// of PDF/A, refuses it.
+func (pdf *PDF) AttachText(name, text string) *PDF {
+	if name == "" {
+		pdf.fail("AttachText needs the name of the file and the text.")
+		return pdf
+	}
+	if pdf.compliance == compliance.PDF_A_1A || pdf.compliance == compliance.PDF_A_1B ||
+		pdf.compliance == compliance.PDF_A_2A || pdf.compliance == compliance.PDF_A_2B {
+		pdf.fail("A document of " + pdf.compliance.String() + " cannot carry the text " + name +
+			": PDF/A-1 carries no files and PDF/A-2 only documents of PDF/A; PDF/A-3 and PDF/UA carry it.")
+		return pdf
+	}
+	file := NewEmbeddedFileWithRelationship(pdf, name, strings.NewReader(text), true,
+		"text/plain; charset=utf-8", relationship.Source, "The text of this document.")
+	return pdf.AddAssociatedFile(file)
 }
 
 // AddMetadata adds a description to the metadata of the document: the

@@ -6,7 +6,11 @@
 package pdfjet
 
 import (
-	"fmt"
+	"bytes"
+	"compress/zlib"
+	"io"
+	"math"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -15,74 +19,126 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// DrawGlyphs draws glyphs another engine shaped, by their numbers, as real
-// text: a span of actual text for each cluster, each glyph at its place, and
-// the glyphs no character maps to mapped to their cluster's letters in
-// ToUnicode, or to the zero width space.
+// DrawGlyphs draws glyphs another engine shaped, by their numbers, as
+// outlines read from the font file: paths, no text and no font in the
+// document; each glyph a form XObject placed wherever it is; in a tagged
+// document marked content with the text as its actual text.
 
-// testUnmappedGlyph returns the first glyph of the font no character maps
-// to, like a conjunct.
-func testUnmappedGlyph(t *testing.T, font *Font) int {
-	for gid := 1; gid < len(font.unicodeOf); gid++ {
-		if font.unicodeOf[gid] < 0 {
-			return gid
+const testDevanagari = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
+const testCascadia = "resources/fonts/CascadiaMono/CascadiaMono-Regular.ttf"
+
+// testForms returns the content of each form XObject of the document, inflated.
+func testForms(t *testing.T, doc []byte) []string {
+	var forms []string
+	text := string(doc)
+	for i := strings.Index(text, "/Subtype /Form"); i >= 0; {
+		start := strings.Index(text[i:], "stream\n") + i + 7
+		end := strings.Index(text[start:], "\nendstream") + start
+		reader, err := zlib.NewReader(bytes.NewReader(doc[start:end]))
+		if err != nil {
+			t.Fatal(err)
 		}
+		content, err := io.ReadAll(reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		forms = append(forms, string(content))
+		next := strings.Index(text[i+1:], "/Subtype /Form")
+		if next < 0 {
+			break
+		}
+		i += 1 + next
 	}
-	t.Fatal("the font maps every glyph")
-	return 0
+	return forms
 }
 
-func TestDrawGlyphsTheGlyphsAreRealTextInATaggedParagraph(t *testing.T) {
+func TestDrawGlyphsTheGlyphsAreOutlinesAndNoFontIsWritten(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
 	font := testPlexSans(doc.pdf)
 	font.SetSize(12)
 	page := NewPage(doc.pdf, letter.Portrait())
 	a := font.unicodeToGID.get('A')
-	x := testUnmappedGlyph(t, font)
-	page.AddBDC(structelem.P, "en", "", "")
-	page.DrawGlyphs(font, []int{a, x}, []float32{50, 100, 60, 100}, []int{0, 1}, "AXY", "hi")
-	page.AddEMC()
+	b := font.unicodeToGID.get('B')
+	page.DrawGlyphs(font, []int{a, b}, []float32{50, 100, 60, 100}, "AB", "en")
 	content := testContent(page)
-	// The language around them all, then a span of actual text for each
-	// cluster, its glyphs in a TJ array
-	if !strings.Contains(content, "/Span <</Lang <6869>>> BDC\nBT\n") {
+	// Each placed by the matrix of the em at its place
+	if !strings.Contains(content, "q 0.012 0 0 0.012 50 692 cm /Fm") ||
+		!strings.Contains(content, "q 0.012 0 0 0.012 60 692 cm /Fm") {
 		t.Error(content)
 	}
-	if !strings.Contains(content, "/Span <</ActualText <"+toUTF16Hex("A")+">>> BDC\n"+
-		fmt.Sprintf("1 0 0 1 50 692 Tm\n[<%04X>] TJ\nEMC\n", a)) {
-		t.Error(content)
+	if strings.Contains(content, "BT") || strings.Contains(content, "Tf") || strings.Contains(content, "BDC") {
+		t.Error(content) // Untagged: just the shapes
 	}
-	if !strings.Contains(content, "/Span <</ActualText <"+toUTF16Hex("XY")+">>> BDC\n"+
-		fmt.Sprintf("1 0 0 1 60 692 Tm\n[<%04X>] TJ\nEMC\nET\nEMC\n", x)) {
-		t.Error(content)
+	pdf := string(doc.complete())
+	for _, part := range []string{"/FontFile", "/Type /Font", "/ToUnicode"} {
+		if strings.Contains(pdf, part) {
+			t.Errorf("%s in the document", part)
+		}
 	}
-	if strings.Count(content, "BDC\n") != 4 { // The paragraph's, the language's, two spans
-		t.Error(content)
+	// The outlines: paths in the font's units, filled, no text
+	forms := testForms(t, []byte(pdf))
+	if len(forms) != 2 {
+		t.Fatalf("%d forms", len(forms))
 	}
-	// The unmapped glyph maps to its cluster's letters, "XY"; the mapped one
-	// keeps its own
-	cmap := strings.ToLower(toUnicodeCMap(font, nil))
-	if !strings.Contains(cmap, fmt.Sprintf("<%04x> <00580059>", x)) || strings.Contains(cmap, fmt.Sprintf("<%04x> <0058", a)) {
-		t.Error(cmap)
-	}
-	if doc.pdf.err != nil {
-		t.Error(doc.pdf.err)
+	for _, form := range forms {
+		if !strings.Contains(form, " m\n") || !strings.Contains(form, " l\n") || !strings.HasSuffix(form, "f\n") ||
+			strings.Contains(form, "BT") || strings.Contains(form, "Tj") {
+			t.Error(form)
+		}
 	}
 }
 
-// As Khmer's ោ, drawn as the glyph of េ and a second part: the letters cannot
-// add up to the cluster's, and MuPDF would copy it twice
-func TestDrawGlyphsAnUnmappedGlyphBesideALetterTheClusterLacksIsTheZeroWidthSpace(t *testing.T) {
+func TestDrawGlyphsAGlyphDrawnTwiceIsOneStampPlacedTwice(t *testing.T) {
+	doc := testNewDoc()
+	font := testPlexSans(doc.pdf)
+	font.SetSize(10)
+	page := NewPage(doc.pdf, letter.Portrait())
+	a := font.unicodeToGID.get('A')
+	b := font.unicodeToGID.get('B')
+	space := font.unicodeToGID.get(' ')
+	page.DrawGlyphs(font, []int{a, space, b, a}, []float32{50, 100, 60, 100, 65, 100, 70, 100}, "A BA", "")
+	content := testContent(page)
+	m := regexp.MustCompile(`q 0.01 0 0 0.01 (50|70) 692 cm (/Fm\d+) Do Q\n`).FindAllStringSubmatch(content, -1)
+	if len(m) != 2 || m[0][2] != m[1][2] {
+		t.Fatal(content)
+	}
+	name := m[0][2]
+	if strings.Count(content, " Do Q\n") != 3 { // The space draws nothing
+		t.Error(content)
+	}
+	// Drawn again, in another run and at another size, A is placed again
+	font.SetSize(20)
+	page.DrawGlyphs(font, []int{a}, []float32{80, 100}, "A", "")
+	content = testContent(page)
+	if !strings.Contains(content, "q 0.02 0 0 0.02 80 692 cm "+name+" Do Q\n") {
+		t.Error(content)
+	}
+	pdf := string(doc.complete())
+	if strings.Count(pdf, "/Subtype /Form") != 2 {
+		t.Error("A and B, each once")
+	}
+	if !strings.Contains(pdf, name+" ") {
+		t.Error("the stamp is not a resource")
+	}
+}
+
+func TestDrawGlyphsInATaggedParagraphTheGlyphsCarryTheirText(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
 	font := testPlexSans(doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	x := testUnmappedGlyph(t, font)
-	page.DrawGlyphs(font, []int{font.unicodeToGID.get('B'), x}, []float32{50, 100, 60, 100}, []int{0, 0}, "XY", "en")
-	cmap := strings.ToLower(toUnicodeCMap(font, nil))
-	if !strings.Contains(cmap, fmt.Sprintf("<%04x> <200b>", x)) {
-		t.Error(cmap)
+	a := font.unicodeToGID.get('A')
+	page.AddBDC(structelem.P, "hi", "", "")
+	page.DrawGlyphs(font, []int{a}, []float32{50, 100}, "क", "hi")
+	page.AddEMC()
+	content := testContent(page)
+	if !strings.Contains(content, "/P <</MCID 0>>\nBDC\n/Span <</Lang <6869> /ActualText <"+
+		toUTF16Hex("क")+">>> BDC\nq ") ||
+		!strings.Contains(content, " Do Q\nEMC\nEMC\n") || strings.Count(content, "BDC\n") != 2 {
+		t.Error(content)
+	}
+	if strings.Contains(string(doc.complete()), "/FontFile") {
+		t.Error("a font program")
 	}
 }
 
@@ -91,25 +147,138 @@ func TestDrawGlyphsOutsideAnyContentTheGlyphsAreAParagraphOfTheirOwn(t *testing.
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
 	font := testPlexSans(doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	page.DrawGlyphs(font, []int{font.unicodeToGID.get('A')}, []float32{50, 100}, nil, "A", "en")
+	a := font.unicodeToGID.get('A')
+	page.DrawGlyphs(font, []int{a}, []float32{50, 100}, "A", "")
 	content := testContent(page)
-	if !strings.HasPrefix(content, "/P <</MCID 0>>\nBDC\n/Span <<") || !strings.HasSuffix(content, "ET\nEMC\nEMC\n") {
+	if !strings.Contains(content, "/P <</MCID 0>>\nBDC\n/Span <</ActualText <"+toUTF16Hex("A")+">>> BDC\n") {
 		t.Error(content)
 	}
-	if len(page.structures) != 1 {
-		t.Errorf("%d elements", len(page.structures))
+	if doc.pdf.err != nil {
+		t.Fatal(doc.pdf.err)
+	}
+	// A tagged document asks for the text the glyphs stand for
+	next := NewPage(doc.pdf, letter.Portrait())
+	next.DrawGlyphs(font, []int{a}, []float32{50, 100}, "", "")
+	if doc.pdf.err == nil {
+		t.Error("no error for no text")
 	}
 }
 
-func TestDrawGlyphsAnUntaggedPageHasTheSpansOfActualTextAlone(t *testing.T) {
+func TestDrawGlyphsAFontUsedForTextTooIsWritten(t *testing.T) {
 	doc := testNewDoc()
 	font := testPlexSans(doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
-	page.DrawGlyphs(font, []int{font.unicodeToGID.get('A')}, []float32{50, 100}, nil, "A", "")
-	content := testContent(page)
-	if !strings.HasPrefix(content, "BT\n") || !strings.Contains(content, "/Span <</ActualText <"+toUTF16Hex("A")+">>> BDC\n") ||
-		strings.Contains(content, "MCID") {
-		t.Error(content)
+	page.DrawGlyphs(font, []int{font.unicodeToGID.get('A')}, []float32{50, 100}, "A", "")
+	NewTextLine(font, "Text").SetLocation(50, 200).DrawOn(page)
+	if !strings.Contains(string(doc.complete()), "/FontFile3") {
+		t.Error("no font of the text line")
+	}
+}
+
+func TestDrawGlyphsTrueTypeOutlinesAreCubicCurvesAndCompositesHaveTheirParts(t *testing.T) {
+	pdf := testNewPDF()
+	cascadia := NewFontFromFile(pdf, testRepoPath(t, testCascadia))
+	outline, err := newGlyphOutline(cascadia.program.font, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(outline.matrixOf(1)[0]-1.0/2048) > 1e-12 {
+		t.Error(outline.matrixOf(1))
+	}
+	ops := func(o *glyphOutline, gid int) string {
+		path, err := o.outline(gid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return path.operators
+	}
+	// O: two contours of quadratic curves, drawn as cubic ones
+	o := ops(outline, cascadia.unicodeToGID.get('O'))
+	if strings.Count(o, " m\n") != 2 || !strings.Contains(o, " c\n") {
+		t.Error(o)
+	}
+	// Aacute, a composite glyph: the contours of A and of the acute
+	capitalA := ops(outline, cascadia.unicodeToGID.get('A'))
+	composite := ops(outline, cascadia.unicodeToGID.get(0x00C1))
+	if strings.Count(composite, " m\n") <= strings.Count(capitalA, " m\n") ||
+		!(strings.HasPrefix(composite, capitalA) || strings.HasSuffix(composite, capitalA)) {
+		t.Error(composite)
+	}
+
+	devanagari := NewFontFromFile(pdf, testRepoPath(t, testDevanagari))
+	noto, err := newGlyphOutline(devanagari.program.font, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ii := ops(noto, 12) // iideva, a composite glyph
+	if !strings.Contains(ii, " m\n") || !strings.Contains(ii, " c\n") {
+		t.Error(ii)
+	}
+	if ops(noto, devanagari.unicodeToGID.get(' ')) != "" {
+		t.Error("the space has an outline")
+	}
+}
+
+func TestDrawGlyphsCFFOutlinesHaveTheirSubroutinesAndMatrix(t *testing.T) {
+	pdf := testNewPDF()
+	plex := testPlexSans(pdf)
+	outline, err := newGlyphOutline(plex.program.font, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(outline.matrixOf(1)[0]-0.001) > 1e-12 {
+		t.Error(outline.matrixOf(1))
+	}
+	o, err := outline.outline(plex.unicodeToGID.get('O'))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(o.operators, " m\n") != 2 || o.yMin >= 0 || o.yMax <= 600 {
+		t.Error(o)
+	}
+	space, _ := outline.outline(plex.unicodeToGID.get(' '))
+	if space.operators != "" {
+		t.Error("the space has an outline")
+	}
+}
+
+func TestDrawGlyphsNumbersAreHundredthsRoundedHalfAwayFromZero(t *testing.T) {
+	for _, c := range []struct {
+		value    float64
+		decimals int
+		want     string
+	}{
+		{-0.004, 2, "0"}, {1.5, 2, "1.5"}, {-8.0 / 3, 2, "-2.67"}, {12.0 / 2048, 7, "0.0058594"}, {99.999, 2, "100"},
+	} {
+		if got := glyphDecimals(c.value, c.decimals); got != c.want {
+			t.Errorf("%v: %s, not %s", c.value, got, c.want)
+		}
+	}
+}
+
+func TestDrawGlyphsAttachTextCarriesTheTextAsAnAssociatedFile(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
+	font := testPlexSans(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewTextLine(font, "Text").SetLocation(50, 200).DrawOn(page)
+	doc.pdf.AttachText("article-1.txt", "सभी text")
+	pdf := string(doc.complete())
+	for _, part := range []string{"/Subtype /text#2Fplain;#20charset=utf-8", "/AFRelationship /Source", "/AF [", "/Desc "} {
+		if !strings.Contains(pdf, part) {
+			t.Errorf("no %s", part)
+		}
+	}
+}
+
+func TestDrawGlyphsAttachTextIsRefusedInPDFA1AndPDFA2(t *testing.T) {
+	for _, level := range []compliance.Compliance{compliance.PDF_A_1B, compliance.PDF_A_2B} {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(level)
+		doc.pdf.AttachText("a.txt", "text")
+		if doc.pdf.err == nil {
+			t.Errorf("%s: no error", level.String())
+		}
 	}
 }
 
@@ -125,18 +294,15 @@ func TestDrawGlyphsMisuseIsReported(t *testing.T) {
 		}
 	}
 	check("core font", func(page *Page, plex, core *Font, a int) {
-		page.DrawGlyphs(core, []int{1}, []float32{0, 0}, nil, "A", "")
+		page.DrawGlyphs(core, []int{1}, []float32{0, 0}, "A", "")
 	})
 	check("positions", func(page *Page, plex, core *Font, a int) {
-		page.DrawGlyphs(plex, []int{a}, []float32{0}, nil, "A", "")
+		page.DrawGlyphs(plex, []int{a}, []float32{0}, "A", "")
 	})
 	check("glyph number", func(page *Page, plex, core *Font, a int) {
-		page.DrawGlyphs(plex, []int{len(plex.advanceWidth)}, []float32{0, 0}, nil, "A", "")
+		page.DrawGlyphs(plex, []int{len(plex.advanceWidth)}, []float32{0, 0}, "A", "")
 	})
-	check("cluster outside", func(page *Page, plex, core *Font, a int) {
-		page.DrawGlyphs(plex, []int{a}, []float32{0, 0}, []int{1}, "A", "")
-	})
-	check("clusters count", func(page *Page, plex, core *Font, a int) {
-		page.DrawGlyphs(plex, []int{a}, []float32{0, 0}, []int{0, 0}, "A", "")
+	check("negative glyph number", func(page *Page, plex, core *Font, a int) {
+		page.DrawGlyphs(plex, []int{-1}, []float32{0, 0}, "A", "")
 	})
 }

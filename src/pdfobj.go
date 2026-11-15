@@ -1174,6 +1174,7 @@ func (obj *PDFobj) AddImageResource(image *Image, objects *[]*PDFobj) {
 // AddFontResource adds font resource.
 func (obj *PDFobj) AddFontResource(font *Font, objects *[]*PDFobj) {
 	obj.ownResources()
+	font.referenced = true
 	for i, token := range obj.dict {
 		if token == "/Resources" {
 			token = tokenAt(obj.dict, i+1)
