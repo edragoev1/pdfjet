@@ -98,8 +98,6 @@ func testCFFCharset(t *testing.T, cff []byte, top []cffEntry, glyphs int) []int 
 }
 
 func TestCFFSubsetIsACIDFontOfTheGlyphsUsedAlone(t *testing.T) {
-	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
-	cffDesubroutinize = false // The glyphs as they were, with the subroutines they call
 	for _, path := range []string{testPlexOTF, testHanOTF} {
 		otf, cff := testCFF(t, path)
 		used := testCFFUsed(otf, "Hello 日本語")
@@ -107,7 +105,7 @@ func TestCFFSubsetIsACIDFontOfTheGlyphsUsedAlone(t *testing.T) {
 		if err != nil {
 			t.Fatal(path, err)
 		}
-		whole, wholeGlobals, _ := testCFFParts(t, cff)
+		whole, _, _ := testCFFParts(t, cff)
 		glyphs, globals, top := testCFFParts(t, subset)
 		if len(kept) != len(whole) {
 			t.Fatalf("%s: kept is of %d glyphs, not %d", path, len(kept), len(whole))
@@ -137,30 +135,11 @@ func TestCFFSubsetIsACIDFontOfTheGlyphsUsedAlone(t *testing.T) {
 		if fmt.Sprint(cids) != fmt.Sprint(keptGIDs) {
 			t.Errorf("%s: the CIDs %v, not %v", path, cids, keptGIDs)
 		}
-		// Each glyph as it was, .notdef first
-		if !bytes.Equal(glyphs[0], whole[0]) {
-			t.Errorf("%s: .notdef is not as it was", path)
-		}
-		for i, gid := range keptGIDs {
-			if !bytes.Equal(glyphs[i+1], whole[gid]) {
-				t.Errorf("%s: glyph %d is not as it was", path, gid)
-			}
-		}
-		// The global subroutines keep their numbers: those called as they
-		// were, the others emptied to no bytes
-		if len(globals) != len(wholeGlobals) {
-			t.Fatalf("%s: %d global subroutines, not %d", path, len(globals), len(wholeGlobals))
-		}
-		emptied := 0
-		for i := range globals {
-			if len(globals[i]) == 0 && len(wholeGlobals[i]) > 0 {
-				emptied++
-			} else if !bytes.Equal(globals[i], wholeGlobals[i]) {
-				t.Errorf("%s: global subroutine %d changed", path, i)
-			}
-		}
-		if emptied == 0 {
-			t.Errorf("%s: no global subroutine emptied", path)
+		// No subroutines: the glyphs are written with them in place, and
+		// drawn as in the whole font (TestCFFSubsetWithItsSubroutinesInPlace
+		// DrawsTheSameOutlines)
+		if len(globals) != 0 {
+			t.Errorf("%s: %d global subroutines", path, len(globals))
 		}
 		if len(subset) > len(cff)/10 {
 			t.Errorf("%s: %d bytes of %d", path, len(subset), len(cff))
@@ -283,12 +262,8 @@ func TestCFFSubsetOfAnAccentedLetterDrawnWithSeacIsRefused(t *testing.T) {
 		t.Fatalf("the charstring of Á is %d bytes", charStrings.objects[gid+1]-at)
 	}
 	copy(cff[at:], []byte{139, 139, 204, 247, 86, 14})
-	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
-	for _, desubroutinize := range []bool{false, true} {
-		cffDesubroutinize = desubroutinize
-		if _, _, err := subsetCFF(cff, testCFFUsed(otf, "Á")); err != errNotSubset {
-			t.Errorf("error %v, not errNotSubset", err)
-		}
+	if _, _, err := subsetCFF(cff, testCFFUsed(otf, "Á")); err != errNotSubset {
+		t.Errorf("error %v, not errNotSubset", err)
 	}
 }
 
@@ -378,10 +353,15 @@ func TestCFFSubsetOfANameKeyedFontWithAFontMatrixOfItsOwn(t *testing.T) {
 	if got := fmt.Sprint(matrices(again)); got != want {
 		t.Errorf("the matrices of a CID-keyed font: %s, not %s", got, want)
 	}
-	// A name-keyed font of no FontMatrix has none in its Font DICT.
-	subset, _, _ = subsetCFF(cff, testCFFUsed(otf, "Hello"))
-	if got := matrices(subset); len(got) != 0 {
-		t.Errorf("the matrices %v", got)
+	// A name-keyed font of no FontMatrix, as IBM Plex Sans, has the
+	// identity matrix in its Font DICT too, and the default written in its
+	// Top DICT: no reader takes the default of 1000 units to the em twice,
+	// or the Font DICT's matrix as the whole one.
+	for _, used := range [][]bool{testCFFUsed(otf, "Hello"), nil} {
+		subset, _, _ = subsetCFF(cff, used)
+		if got := fmt.Sprint(matrices(subset)); got != fmt.Sprint([][]byte{cffThousandthMatrix, cffIdentityMatrix}) {
+			t.Errorf("the matrices %v", got)
+		}
 	}
 }
 
@@ -622,8 +602,6 @@ func (p *testType2) curve(dx1, dy1, dx2, dy2, dx3, dy3 float64) {
 }
 
 func TestCFFSubsetWithItsSubroutinesInPlaceDrawsTheSameOutlines(t *testing.T) {
-	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
-	cffDesubroutinize = true
 	for _, path := range []string{testPlexOTF, "tests/fonts/IBMPlexSans-Italic.otf", testHanOTF} {
 		otf, cff := testCFF(t, path)
 		used := testCFFUsed(otf, "Hello, Wörld! Ýou ﬁnd 日本語の文字 ½ € @ & ŞŢ")
@@ -675,21 +653,42 @@ func TestCFFSubsetWithItsSubroutinesInPlaceDrawsTheSameOutlines(t *testing.T) {
 
 func TestCFFSubsetOfAGlyphThatComputesANumberKeepsItsSubroutines(t *testing.T) {
 	// "0 0 add 0 endchar": a number computed, by add, which the subroutines
-	// are not written in place for. The subset keeps those called.
-	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
-	cffDesubroutinize = true
+	// are not written in place for. The subset keeps the glyphs as they were
+	// and the subroutines they call, the others emptied to no bytes, keeping
+	// their numbers.
 	otf, cff := testCFF(t, testPlexOTF)
 	charStrings, _ := testCFFIndexOf(t, cff)
 	gid := otf.unicodeToGID.get('Á')
 	copy(cff[charStrings.objects[gid]:], []byte{139, 139, 12, 10, 139, 14})
-	subset, _, err := subsetCFF(cff, testCFFUsed(otf, "AÁ"))
+	used := testCFFUsed(otf, "Hello AÁ")
+	subset, kept, err := subsetCFF(cff, used)
 	if err != nil {
 		t.Fatal(err)
 	}
 	glyphs, globals, _ := testCFFParts(t, subset)
 	whole, wholeGlobals, _ := testCFFParts(t, cff)
-	if len(globals) != len(wholeGlobals) || !bytes.Equal(glyphs[len(glyphs)-1], whole[gid]) {
-		t.Error("the subroutines not kept")
+	i := 0
+	for g, keep := range kept {
+		if keep {
+			if !bytes.Equal(glyphs[i], whole[g]) {
+				t.Errorf("glyph %d is not as it was", g)
+			}
+			i++
+		}
+	}
+	if len(globals) != len(wholeGlobals) {
+		t.Fatalf("%d global subroutines, not %d", len(globals), len(wholeGlobals))
+	}
+	emptied := 0
+	for i := range globals {
+		if len(globals[i]) == 0 && len(wholeGlobals[i]) > 0 {
+			emptied++
+		} else if !bytes.Equal(globals[i], wholeGlobals[i]) {
+			t.Errorf("global subroutine %d changed", i)
+		}
+	}
+	if emptied == 0 || emptied == len(globals) {
+		t.Errorf("%d of %d global subroutines emptied", emptied, len(globals))
 	}
 }
 

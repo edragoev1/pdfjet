@@ -7,17 +7,17 @@ package pdfjet
 
 // The subset of a font with CFF outlines, a .otf: a CIDFont of the glyphs the
 // document draws alone, its charset giving each glyph its number in the
-// whole font as its CID, by which the PDF draws it, and the subroutines,
-// global and local, that the glyphs kept do not call emptied to no bytes,
-// keeping their numbers, so the glyphs kept are drawn by the same bytes as in
-// the whole font. A name-keyed font becomes a CIDFont of Adobe-Identity-0,
-// with the identity matrix in its one Font DICT if it has a FontMatrix of its
-// own.
+// whole font as its CID, by which the PDF draws it, each glyph written with
+// the subroutines it calls, global and local, in place of its calls, and no
+// subroutines. A glyph that computes a number keeps the subroutines it calls
+// instead, the others emptied to no bytes, keeping their numbers. A
+// name-keyed font becomes a CIDFont of Adobe-Identity-0, with the identity
+// matrix in its one Font DICT and its own, or the default, in its Top DICT.
 // The CFF is written again in a fixed order, with every offset of its Top
 // DICT and of its Font DICTs in the five-byte form, so that an offset of any
 // value has the same size: the header, the Name, Top DICT, String and Global
 // Subr INDEXes, the charset, the FDSelect, the new CharStrings INDEX, the
-// FDArray, and each Private DICT with its local subroutines.
+// FDArray, and each Private DICT with its local subroutines, if any.
 
 // cffIndex is an INDEX of a CFF table: where it starts and ends, and the
 // offsets of its objects in the table.
@@ -421,15 +421,6 @@ func (u *cffUsage) run(cs []byte, depth int) {
 	}
 }
 
-// cffDesubroutinize tells whether the glyphs of a subset are written with
-// the subroutines they call in place of their calls, and the subset without
-// subroutines. Off: a PDF of such subsets is smaller, by 1 to 4% for a page
-// of Latin, Cyrillic or Greek and 17 to 56% for 100 to 2000 characters of
-// Korean or Chinese, and as fast to write, or 10 to 20% faster up to 500
-// characters, but about 6% slower for 2000, where the larger charstrings
-// take longer to compress (14 November 2026).
-var cffDesubroutinize = false
-
 // cffInliner writes charstrings again with each subroutine they call, local
 // or global, in place of its call (Technical Note #5177): the number of the
 // subroutine taken off the end, the bytes of the subroutine, its own calls
@@ -591,6 +582,10 @@ func cffNumber(b []byte) int {
 // cffIdentityMatrix is the FontMatrix entry [1 0 0 1 0 0].
 var cffIdentityMatrix = []byte{140, 139, 139, 140, 139, 139, 12, 7}
 
+// cffThousandthMatrix is the FontMatrix entry [0.001 0 0 0.001 0 0], the
+// default of a Top DICT, its reals written as 1E-3.
+var cffThousandthMatrix = []byte{30, 0x1c, 0x3f, 139, 139, 30, 0x1c, 0x3f, 139, 139, 12, 7}
+
 // emptiedCFFIndex returns the objects of the INDEX, those not used emptied to
 // no bytes, which keeps their numbers and makes their offsets the same as the
 // next one's, or every one for used nil.
@@ -648,23 +643,30 @@ func cffFDOf(fdSelect []byte, numGlyphs, fds int) ([]int, error) {
 // maps to the glyph (ISO 32000-2, 9.7.4.2; Technical Note #5176, section 18,
 // "Subset CIDFonts will generally need to use a more complex charset table
 // representing a non-identity mapping"), so the content streams, the widths
-// and the ToUnicode map stay those of the whole font. A name-keyed font is
-// written as a CIDFont of the ordering Adobe-Identity-0 with one Font DICT,
-// its Private DICT. The subroutines the glyphs kept do not call are emptied
-// to no bytes, keeping their numbers, and the Font DICTs no glyph kept uses
-// are left out. Every INDEX has the least offSize its offsets need; the
-// offsets of the Top DICT and of the Font DICTs are in the five-byte form. A
-// name-keyed font's FontMatrix of its own, as Cascadia Mono's of 2048 units
-// to the em, stays in its Top DICT, and its Font DICT has the FontMatrix [1 0
-// 0 1 0 0], written: the glyph space of a CIDFont is that of the FontMatrix
-// of the glyph's Font DICT concatenated with the Top DICT's (PostScript
-// Language Reference, third edition, 5.11.3, Table 5.14), the Top DICT's
-// interpreting the coordinates of the CIDFont as a whole, as its FontBBox.
-// Readers take a Font DICT of no FontMatrix as the identity, as they do for
-// the other name-keyed fonts, but Technical Note #5176 gives a FontMatrix no
-// default but the Top DICT's, [0.001 0 0 0.001 0 0] (Table 9), so the
-// identity is written. A CID-keyed font's matrices are kept as they are. A table that cannot be
-// read gives an error.
+// and the ToUnicode map stay those of the whole font. Each glyph kept is
+// written with the subroutines it calls in place of its calls, and the
+// subset has no subroutines; a glyph that computes a number, which cannot be
+// written so, keeps the subroutines called, the others emptied to no bytes,
+// keeping their numbers. The whole font keeps its subroutines. The Font
+// DICTs no glyph kept uses are left out. Every INDEX has the least offSize
+// its offsets need; the offsets of the Top DICT and of the Font DICTs are in
+// the five-byte form.
+//
+// A name-keyed font is written as a CIDFont of the ordering Adobe-Identity-0
+// whose one Font DICT has its Private DICT and the FontMatrix [1 0 0 1 0 0],
+// and its Top DICT the font's FontMatrix, its own, as Cascadia Mono's of
+// 2048 units to the em, or the default, [0.001 0 0 0.001 0 0], written: the
+// glyph space of a CIDFont is that of the FontMatrix of the glyph's Font
+// DICT concatenated with the Top DICT's (PostScript Language Reference,
+// third edition, 5.11.3, Table 5.14), the Top DICT's interpreting the
+// coordinates of the CIDFont as a whole, as its FontBBox. Both are written,
+// as each has a default that a reader may take otherwise: a Font DICT of no
+// FontMatrix is taken as the identity, though Technical Note #5176 gives a
+// FontMatrix no default but [0.001 0 0 0.001 0 0] (Table 9), and a CIDFont
+// whose Top DICT has none has its Font DICTs' matrices taken as the whole
+// ones (the PostScript Language Reference, and MuPDF, Poppler, PDFium and
+// pdf.js). A CID-keyed font's matrices are kept as they are. A table that
+// cannot be read gives an error.
 func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 	if len(cff) < 4 || cff[0] != 1 {
 		return nil, nil, errNotSubset // Not CFF version 1
@@ -724,10 +726,6 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 			return nil, nil, err
 		}
 	}
-	// A name-keyed font's FontMatrix of its own stays in the Top DICT, and
-	// its one Font DICT has the identity matrix, written.
-	hasMatrix := !cidKeyed && cffHasEntry(top, cffFontMatrix)
-
 	// The Font DICTs of a CID-keyed font, each with its Private DICT, or the
 	// Private DICT of a name-keyed one, which becomes its one Font DICT's.
 	var privates []cffPrivateDict
@@ -766,10 +764,9 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		fontDicts = [][]cffEntry{{{op: cffPrivate}}}
-		if hasMatrix {
-			fontDicts[0] = []cffEntry{{op: cffFontMatrix, raw: cffIdentityMatrix}, {op: cffPrivate}}
-		}
+		// Its one Font DICT has the identity matrix, written, and its Top
+		// DICT its FontMatrix, its own or the default, written.
+		fontDicts = [][]cffEntry{{{op: cffFontMatrix, raw: cffIdentityMatrix}, {op: cffPrivate}}}
 		privates = append(privates, block)
 	}
 
@@ -808,7 +805,7 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 	// place of their calls, and no subroutines then, or, when that cannot
 	// be done, with the subroutines they call.
 	glyphsInlined := false
-	if used != nil && cffDesubroutinize {
+	if used != nil {
 		size := 0
 		for _, glyph := range glyphs {
 			size += len(glyph)
@@ -916,6 +913,9 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		ros = appendCFFInteger(ros, sid+1)
 		ros = appendCFFInteger(ros, 0)
 		entries = append([]cffEntry{{op: cffROS, raw: append(ros, 12, 30)}}, entries...)
+		if !cffHasEntry(top, cffFontMatrix) {
+			entries = append(entries, cffEntry{op: cffFontMatrix, raw: cffThousandthMatrix})
+		}
 		count := appendCFFInteger(nil, numGlyphs)
 		entries = append(entries, cffEntry{op: cffCIDCount, raw: append(count, 12, 34)})
 	}
