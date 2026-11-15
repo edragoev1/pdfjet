@@ -40,6 +40,31 @@ the subsets of 123 to 138 fonts with seven sets of glyphs each, and on
 thousands of damaged fonts, which each port refuses alike; MuPDF, PDFium,
 Poppler and pdf.js draw the glyphs as before, and veraPDF passes.
 
+Changed, in the Go port so far (Java, C# and Swift to follow): **a CFF
+subset has no subroutines, and is smaller.** Each glyph kept is written with
+the subroutines it calls in place of its calls (Technical Note #5177), and
+the subset has no Global Subrs and no Subrs. A PDF/A-3a page of IBM Plex
+Sans or Serif in Latin, Cyrillic or Greek is 1 to 4% smaller; 100, 500 and
+2000 characters of Korean in IBM Plex Sans KR are 26, 37 and 17% smaller,
+of Traditional Chinese in IBM Plex Sans TC 56, 27 and 21%, and a form of
+Latin with a line of each 10%. Written as fast for a page of Latin, 10 to
+20% faster up to 500 characters of Korean or Chinese, and about 6% slower
+for 2000, where the larger charstrings take longer to compress. A glyph
+that computes a number, by an arithmetic operator, keeps the subroutines it
+calls, as before; a font kept whole keeps its own.
+
+Changed, in the Go port so far: **an .otf of a FontMatrix of its own is
+subset too, and every name-keyed font's subset writes its matrices.** A
+name-keyed font whose Top DICT has a FontMatrix, as Microsoft's Cascadia
+Mono .otf of 2,048 units to the em, was embedded whole. Every name-keyed
+font is now written as a CIDFont whose one Font DICT has `[1 0 0 1 0 0]` and
+whose Top DICT has the font's FontMatrix, its own or `[0.001 0 0 0.001 0
+0]`, written, the two concatenated the font's (PostScript Language
+Reference, 5.11.3): a reader can neither take the default twice nor the
+Font DICT's matrix for the whole one. A PDF/A-3a page of code in Cascadia
+Mono Regular is 16.9 KB in place of 208.8 KB, and 23.3 KB from its .ttf;
+MuPDF, PDFium, Poppler and pdf.js draw it as from the whole font.
+
 Behavior change, in the four ports: **IBM Plex Sans and Serif are carried
 as .otf, not .ttf.** Their constants, `IBMPlexSans.Regular` and the other
 27, are paths to IBM's .otf files, such as

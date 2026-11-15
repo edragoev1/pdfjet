@@ -11,15 +11,17 @@ namespace PDFjet.NET {
 /// <summary>
 /// The subset of a font with CFF outlines, a .otf: a CIDFont of the glyphs the
 /// document draws alone, its charset giving each glyph its number in the whole
-/// font as its CID, by which the PDF draws it, and the subroutines, global and
-/// local, that the glyphs kept do not call emptied to no bytes, keeping their
-/// numbers, so the glyphs kept are drawn by the same bytes as in the whole
-/// font. A name-keyed font becomes a CIDFont of Adobe-Identity-0. The CFF is
-/// written again in a fixed order, with every offset of its Top DICT and of
-/// its Font DICTs in the five-byte form, so that an offset of any value has
-/// the same size: the header, the Name, Top DICT, String and Global Subr
-/// INDEXes, the charset, the FDSelect, the new CharStrings INDEX, the FDArray,
-/// and each Private DICT with its local subroutines.
+/// font as its CID, by which the PDF draws it, each glyph written with the
+/// subroutines it calls, global and local, in place of its calls, and no
+/// subroutines. A glyph that computes a number keeps the subroutines it calls
+/// instead, the others emptied to no bytes, keeping their numbers. A
+/// name-keyed font becomes a CIDFont of Adobe-Identity-0, with the identity
+/// matrix in its one Font DICT and its own, or the default, in its Top DICT.
+/// The CFF is written again in a fixed order, with every offset of its Top
+/// DICT and of its Font DICTs in the five-byte form, so that an offset of any
+/// value has the same size: the header, the Name, Top DICT, String and Global
+/// Subr INDEXes, the charset, the FDSelect, the new CharStrings INDEX, the
+/// FDArray, and each Private DICT with its local subroutines, if any.
 /// </summary>
 class CFFSubset {
     // The operators whose operands are offsets in the CFF table.
@@ -437,6 +439,189 @@ class CFFSubset {
         }
     }
 
+    /// <summary>
+    /// Writes charstrings again with each subroutine they call, local or
+    /// global, in place of its call (Technical Note #5177): the number of the
+    /// subroutine taken off the end, the bytes of the subroutine, its own calls
+    /// in place too, without its return. The charstring written draws the
+    /// glyph as the operators of the one it was written from do, run with its
+    /// subroutines, one after another. A charstring that computes a number, by
+    /// an arithmetic or storage operator, cannot be written so: failed.
+    /// </summary>
+    internal sealed class Inliner {
+        internal readonly byte[] cff;
+        internal readonly Index global;
+        internal Index local;
+        internal byte[] output;     // The charstrings written, one after another
+        internal int length;        // The bytes of output written
+        internal readonly int[] numbers = new int[48];  // Where each operand on the stack starts in output
+        internal int stack;         // The operands on the stack, of the 48 of Type 2 at most
+        internal int stems;
+        internal int work;
+        internal bool ended;        // By endchar
+        internal bool failed;
+        internal bool seac;
+
+        internal Inliner(byte[] cff, Index global, int capacity) {
+            this.cff = cff;
+            this.global = global;
+            this.output = new byte[Math.Max(capacity, 16)];
+        }
+
+        // Returns the charstring written again with its subroutines in place,
+        // after the charstrings written before it in output, which holds them
+        // all.
+        internal byte[] glyph(byte[] cs) {
+            int start = length;
+            stack = 0;
+            stems = 0;
+            ended = false;
+            run(cs, 0, cs.Length, 0);
+            return Slice(output, start, length);
+        }
+
+        private void append(byte[] buf, int from, int to) {
+            int n = to - from;
+            if (length + n > output.Length) {
+                output = Resize(output, Math.Max(output.Length * 2, length + n));
+            }
+            Array.Copy(buf, from, output, length, n);
+            length += n;
+        }
+
+        // Writes the charstring, the bytes of cs from start to end, and the
+        // subroutines it calls in place. Its bytes are written in runs, from
+        // one call of a subroutine to the next.
+        internal void run(byte[] cs, int start, int end, int depth) {
+            if (depth > 10) {   // Type 2 nests subroutines 10 deep at most.
+                failed = true;
+                return;
+            }
+            int from = start;   // The bytes of the charstring from here on are not written yet.
+            int i = start;
+            while (i < end) {
+                int b0 = cs[i] & 0xFF;
+                if (b0 >= 28 && b0 != 29 && b0 != 30 && b0 != 31) {    // A number
+                    int k = 1;
+                    if (b0 == 28) {
+                        k = 3;
+                    } else if (b0 == 255) {
+                        k = 5;
+                    } else if (b0 >= 247) {
+                        k = 2;
+                    }
+                    if (i + k > end || stack == numbers.Length) {
+                        failed = true;
+                        return;
+                    }
+                    numbers[stack] = length + i - from;
+                    stack++;
+                    i += k;
+                    continue;
+                }
+                int n = 1;  // The bytes of the operator
+                if (b0 == 1 || b0 == 3 || b0 == 18 || b0 == 23) {   // The stem hints
+                    stems += stack / 2;
+                } else if (b0 == 19 || b0 == 20) {  // hintmask and cntrmask, and their mask
+                    stems += stack / 2;
+                    n += (stems + 7) / 8;
+                } else if (b0 == 10 || b0 == 29) {  // callsubr and callgsubr
+                    if (stack == 0) {
+                        failed = true;
+                        return;
+                    }
+                    append(cs, from, i);
+                    stack--;
+                    int at = numbers[stack];
+                    int last = number(output, at);
+                    length = at;
+                    Index subrs = (b0 == 29) ? global : local;
+                    if (subrs == null) {
+                        failed = true;
+                        return;
+                    }
+                    int count = subrs.count();
+                    int subr = last + bias(count);
+                    if (subr < 0 || subr >= count) {
+                        failed = true;
+                        return;
+                    }
+                    work += subrs.objects[subr + 1] - subrs.objects[subr];
+                    if (work > MAX_WORK) {
+                        failed = true;
+                        return;
+                    }
+                    run(cff, subrs.objects[subr], subrs.objects[subr + 1], depth + 1);
+                    if (failed || ended) {
+                        return;
+                    }
+                    i++;
+                    from = i;
+                    continue;
+                } else if (b0 == 11) {      // return
+                    append(cs, from, i);
+                    return;
+                } else if (b0 == 14) {      // endchar
+                    if (stack >= 4) {
+                        // seac, an accented letter drawn from two others: the
+                        // font is embedded whole
+                        seac = true;
+                        failed = true;
+                        return;
+                    }
+                    append(cs, from, i + 1);
+                    ended = true;
+                    return;
+                } else if (b0 == 12) {
+                    n = 2;
+                    if (i + 1 < end) {
+                        switch (cs[i + 1] & 0xFF) {
+                        case 3: case 4: case 5: case 9: case 10: case 11: case 12: case 14: case 15:
+                        case 18: case 20: case 21: case 22: case 23: case 24: case 26: case 27:
+                        case 28: case 29: case 30:
+                            // The arithmetic and storage operators, which leave
+                            // numbers on the stack
+                            failed = true;
+                            return;
+                        }
+                    }
+                }
+                if (i + n > end) {
+                    failed = true;
+                    return;
+                }
+                // An operator, which takes its operands off the stack
+                stack = 0;
+                i += n;
+            }
+            append(cs, from, i);
+        }
+    }
+
+    // Returns the integer part of the number of a charstring the bytes start
+    // with at.
+    internal static int number(byte[] b, int at) {
+        int b0 = b[at] & 0xFF;
+        if (b0 == 28) {
+            return (short) ((b[at + 1] & 0xFF) << 8 | (b[at + 2] & 0xFF));
+        } else if (b0 >= 32 && b0 <= 246) {
+            return b0 - 139;
+        } else if (b0 >= 247 && b0 <= 250) {
+            return (b0 - 247) * 256 + (b[at + 1] & 0xFF) + 108;
+        } else if (b0 >= 251 && b0 <= 254) {
+            return -(b0 - 251) * 256 - (b[at + 1] & 0xFF) - 108;
+        }
+        return ((b[at + 1] & 0xFF) << 24 | (b[at + 2] & 0xFF) << 16 |
+                (b[at + 3] & 0xFF) << 8 | (b[at + 4] & 0xFF)) >> 16;
+    }
+
+    // The FontMatrix entry [1 0 0 1 0 0].
+    internal static readonly byte[] IDENTITY_MATRIX = {140, 139, 139, 140, 139, 139, 12, 7};
+
+    // The FontMatrix entry [0.001 0 0 0.001 0 0], the default of a Top DICT,
+    // its reals written as 1E-3.
+    internal static readonly byte[] THOUSANDTH_MATRIX = {30, 0x1c, 0x3f, 139, 139, 30, 0x1c, 0x3f, 139, 139, 12, 7};
+
     // Returns the objects of the INDEX, those not used emptied to no bytes,
     // which keeps their numbers and makes their offsets the same as the next
     // one's, or every one for used null.
@@ -496,13 +681,30 @@ class CFFSubset {
     /// #5176, section 18, "Subset CIDFonts will generally need to use a more
     /// complex charset table representing a non-identity mapping"), so the
     /// content streams, the widths and the ToUnicode map stay those of the
-    /// whole font. A name-keyed font is written as a CIDFont of the ordering
-    /// Adobe-Identity-0 with one Font DICT, its Private DICT. The subroutines
-    /// the glyphs kept do not call are emptied to no bytes, keeping their
-    /// numbers, and the Font DICTs no glyph kept uses are left out. Every INDEX
-    /// has the least offSize its offsets need; the offsets of the Top DICT and
-    /// of the Font DICTs are in the five-byte form. A table that cannot be
-    /// read, or a name-keyed font of a FontMatrix of its own, throws NotSubset.
+    /// whole font. Each glyph kept is written with the subroutines it calls in
+    /// place of its calls, and the subset has no subroutines; a glyph that
+    /// computes a number, which cannot be written so, keeps the subroutines
+    /// called, the others emptied to no bytes, keeping their numbers. The whole
+    /// font keeps its subroutines. The Font DICTs no glyph kept uses are left
+    /// out. Every INDEX has the least offSize its offsets need; the offsets of
+    /// the Top DICT and of the Font DICTs are in the five-byte form.
+    ///
+    /// A name-keyed font is written as a CIDFont of the ordering
+    /// Adobe-Identity-0 whose one Font DICT has its Private DICT and the
+    /// FontMatrix [1 0 0 1 0 0], and its Top DICT the font's FontMatrix, its
+    /// own, as Cascadia Mono's of 2048 units to the em, or the default,
+    /// [0.001 0 0 0.001 0 0], written: the glyph space of a CIDFont is that of
+    /// the FontMatrix of the glyph's Font DICT concatenated with the Top
+    /// DICT's (PostScript Language Reference, third edition, 5.11.3, Table
+    /// 5.14), the Top DICT's interpreting the coordinates of the CIDFont as a
+    /// whole, as its FontBBox. Both are written, as each has a default that a
+    /// reader may take otherwise: a Font DICT of no FontMatrix is taken as the
+    /// identity, though Technical Note #5176 gives a FontMatrix no default but
+    /// [0.001 0 0 0.001 0 0] (Table 9), and a CIDFont whose Top DICT has none
+    /// has its Font DICTs' matrices taken as the whole ones (the PostScript
+    /// Language Reference, and MuPDF, Poppler, PDFium and pdf.js). A CID-keyed
+    /// font's matrices are kept as they are. A table that cannot be read
+    /// throws NotSubset.
     /// </summary>
     internal static byte[] subset(byte[] cff, bool[] used, out bool[] kept) {
         if (cff.Length < 4 || cff[0] != 1) {
@@ -542,10 +744,6 @@ class CFFSubset {
                 throw new Subset.NotSubset();
             }
             fdSelect = block(cff, fdSelectAt[0], fdSelectLength(cff, fdSelectAt[0], numGlyphs));
-        } else if (hasEntry(top, FONT_MATRIX)) {
-            // Its matrix would have to go into the Font DICT, against the one
-            // a CIDFont's Top DICT has by default.
-            throw new Subset.NotSubset();
         }
 
         // The Font DICTs of a CID-keyed font, each with its Private DICT, or
@@ -575,7 +773,10 @@ class CFFSubset {
                 throw new Subset.NotSubset();
             }
             PrivateDict privateDict = readPrivate(cff, p[0], p[1]);
+            // Its one Font DICT has the identity matrix, written, and its Top
+            // DICT its FontMatrix, its own or the default, written.
             List<Entry> fontDict = new List<Entry>();
+            fontDict.Add(new Entry(FONT_MATRIX, IDENTITY_MATRIX, null));
             fontDict.Add(new Entry(PRIVATE, null, null));
             fontDicts.Add(fontDict);
             privates.Add(privateDict);
@@ -609,7 +810,36 @@ class CFFSubset {
         if (used == null) {
             usage.failed = true;    // Every glyph and subroutine kept
         }
-        for (int i = 0; i < keptGIDs.Count && !usage.failed; i++) {
+        // The glyphs of a subset written with the subroutines they call in
+        // place of their calls, and no subroutines then, or, when that cannot
+        // be done, with the subroutines they call.
+        bool glyphsInlined = false;
+        if (used != null) {
+            int size = 0;
+            foreach (byte[] glyph in glyphs) {
+                size += glyph.Length;
+            }
+            Inliner inlined = new Inliner(cff, globalSubrs, 3 * size);
+            List<byte[]> desub = new List<byte[]>(keptGIDs.Count);
+            for (int i = 0; i < keptGIDs.Count && !inlined.failed; i++) {
+                int fd = (fdOfGID != null) ? fdOfGID[keptGIDs[i]] : 0;
+                inlined.local = privates[fd].subrs;
+                desub.Add(inlined.glyph(glyphs[i]));
+            }
+            if (inlined.seac) {
+                throw new Subset.NotSubset();
+            }
+            if (!inlined.failed) {
+                glyphs = desub;
+                glyphsInlined = true;
+                for (int i = 0; i < usedL.Length; i++) {
+                    if (usedL[i] != null) {
+                        usedL[i] = new bool[usedL[i].Length];
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < keptGIDs.Count && !usage.failed && !glyphsInlined; i++) {
             int gid = keptGIDs[i];
             int fd = (fdOfGID != null) ? fdOfGID[gid] : 0;
             usage.local = null;
@@ -689,6 +919,9 @@ class CFFSubset {
             ros.Add(12);
             ros.Add(30);
             topEntries.Insert(0, new Entry(ROS, ros.ToBytes(), null));
+            if (!hasEntry(top, FONT_MATRIX)) {
+                topEntries.Add(new Entry(FONT_MATRIX, THOUSANDTH_MATRIX, null));
+            }
             ByteBuffer count = new ByteBuffer();
             appendInteger(count, numGlyphs);
             count.Add(12);
