@@ -98,6 +98,8 @@ func testCFFCharset(t *testing.T, cff []byte, top []cffEntry, glyphs int) []int 
 }
 
 func TestCFFSubsetIsACIDFontOfTheGlyphsUsedAlone(t *testing.T) {
+	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
+	cffDesubroutinize = false // The glyphs as they were, with the subroutines they call
 	for _, path := range []string{testPlexOTF, testHanOTF} {
 		otf, cff := testCFF(t, path)
 		used := testCFFUsed(otf, "Hello 日本語")
@@ -281,7 +283,425 @@ func TestCFFSubsetOfAnAccentedLetterDrawnWithSeacIsRefused(t *testing.T) {
 		t.Fatalf("the charstring of Á is %d bytes", charStrings.objects[gid+1]-at)
 	}
 	copy(cff[at:], []byte{139, 139, 204, 247, 86, 14})
-	if _, _, err := subsetCFF(cff, testCFFUsed(otf, "Á")); err != errNotSubset {
-		t.Errorf("error %v, not errNotSubset", err)
+	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
+	for _, desubroutinize := range []bool{false, true} {
+		cffDesubroutinize = desubroutinize
+		if _, _, err := subsetCFF(cff, testCFFUsed(otf, "Á")); err != errNotSubset {
+			t.Errorf("error %v, not errNotSubset", err)
+		}
 	}
+}
+
+// testCFFWithTopDict returns the CFF table of a name-keyed font with its Top
+// DICT written again with the entries, before its own, and its offsets moved
+// by as many bytes.
+func testCFFWithTopDict(t *testing.T, cff []byte, entries ...cffEntry) []byte {
+	t.Helper()
+	names, _ := readCFFIndex(cff, int(cff[2]))
+	topDicts, _ := readCFFIndex(cff, names.end)
+	top, err := readCFFDict(cff[topDicts.objects[0]:topDicts.objects[1]])
+	if err != nil {
+		t.Fatal(err)
+	}
+	written := func(delta int) []byte {
+		offsets := map[int]int{}
+		privateSize := 0
+		for _, entry := range top {
+			switch entry.op {
+			case cffCharset, cffCharStrings:
+				offsets[entry.op] = entry.integers[0] + delta
+			case cffPrivate:
+				privateSize = entry.integers[0]
+				offsets[entry.op] = entry.integers[1] + delta
+			}
+		}
+		return writeCFFDict(append(append([]cffEntry{}, entries...), top...), offsets, privateSize)
+	}
+	delta := len(appendCFFIndex(nil, [][]byte{written(0)})) - (topDicts.end - topDicts.start)
+	out := append([]byte{}, cff[:topDicts.start]...)
+	out = appendCFFIndex(out, [][]byte{written(delta)})
+	return append(out, cff[topDicts.end:]...)
+}
+
+func TestCFFSubsetOfANameKeyedFontWithAFontMatrixOfItsOwn(t *testing.T) {
+	// As Cascadia Mono's .otf, of 2048 units to the em, has: the matrix
+	// stays in the Top DICT, and the Font DICT has the identity matrix, the
+	// two concatenated the font's.
+	otf, cff := testCFF(t, testPlexOTF)
+	matrix := []byte{30, 0xa0, 0x00, 0x48, 0x82, 0x8f} // .00048828
+	raw := append(append(append([]byte{}, matrix...), 139, 139), matrix...)
+	raw = append(raw, 139, 139, 12, 7)
+	font := testCFFWithTopDict(t, cff, cffEntry{op: cffFontMatrix, raw: raw})
+	whole, _, _ := testCFFParts(t, font)
+	matrices := func(cff []byte) [][]byte {
+		_, _, top := testCFFParts(t, cff)
+		var raws [][]byte
+		for _, entry := range top {
+			if entry.op == cffFontMatrix {
+				raws = append(raws, entry.raw)
+			}
+		}
+		fdArray, err := readCFFIndex(cff, cffEntryOf(top, cffFDArray)[0])
+		if err != nil || len(fdArray.objects) != 2 {
+			t.Fatal("not one Font DICT", err)
+		}
+		fd, _ := readCFFDict(cff[fdArray.objects[0]:fdArray.objects[1]])
+		for _, entry := range fd {
+			if entry.op == cffFontMatrix {
+				raws = append(raws, entry.raw)
+			}
+		}
+		return raws
+	}
+	want := fmt.Sprint([][]byte{raw, {140, 139, 139, 140, 139, 139, 12, 7}})
+	var subset []byte
+	for _, used := range [][]bool{testCFFUsed(otf, "Hello"), nil} {
+		var err error
+		subset, _, err = subsetCFF(font, used)
+		if err != nil {
+			t.Fatal(err)
+		}
+		glyphs, _, _ := testCFFParts(t, subset)
+		if used == nil && len(glyphs) != len(whole) {
+			t.Errorf("%d glyphs, not %d", len(glyphs), len(whole))
+		}
+		if got := fmt.Sprint(matrices(subset)); got != want {
+			t.Errorf("the matrices %s, not %s", got, want)
+		}
+	}
+	// A CID-keyed font's matrices are kept as they are: the subset's
+	// subset has them both again.
+	again, _, err := subsetCFF(subset, testCFFUsed(otf, "He"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fmt.Sprint(matrices(again)); got != want {
+		t.Errorf("the matrices of a CID-keyed font: %s, not %s", got, want)
+	}
+	// A name-keyed font of no FontMatrix has none in its Font DICT.
+	subset, _, _ = subsetCFF(cff, testCFFUsed(otf, "Hello"))
+	if got := matrices(subset); len(got) != 0 {
+		t.Errorf("the matrices %v", got)
+	}
+}
+
+// testCFFOutlines returns the outline of each glyph of the CFF table, the
+// points of its path operators in order, drawn by its Type 2 charstring run
+// with its subroutines.
+func testCFFOutlines(t *testing.T, cff []byte) []string {
+	t.Helper()
+	charStrings, globals, top := testCFFParts(t, cff)
+	locals := [][][]byte{nil}
+	var fdOf []int
+	if at := cffEntryOf(top, cffFDArray); at != nil {
+		fdArray, _ := readCFFIndex(cff, at[0])
+		locals = nil
+		for i := 0; i+1 < len(fdArray.objects); i++ {
+			fd, _ := readCFFDict(cff[fdArray.objects[i]:fdArray.objects[i+1]])
+			locals = append(locals, testCFFLocals(t, cff, cffEntryOf(fd, cffPrivate)))
+		}
+		at := cffEntryOf(top, cffFDSelect)[0]
+		length, _ := cffFDSelectLength(cff, at, len(charStrings))
+		fdOf, _ = cffFDOf(cff[at:at+length], len(charStrings), len(locals))
+	} else {
+		locals[0] = testCFFLocals(t, cff, cffEntryOf(top, cffPrivate))
+	}
+	outlines := make([]string, len(charStrings))
+	for gid, cs := range charStrings {
+		fd := 0
+		if fdOf != nil {
+			fd = fdOf[gid]
+		}
+		p := &testType2{globals: globals, locals: locals[fd]}
+		p.run(cs, 0)
+		outlines[gid] = p.path.String()
+	}
+	return outlines
+}
+
+// testCFFLocals returns the local subroutines of the Private DICT.
+func testCFFLocals(t *testing.T, cff []byte, private []int) [][]byte {
+	block, err := readCFFPrivate(cff, private[0], private[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if block.subrs == nil {
+		return nil
+	}
+	return emptiedCFFIndex(cff, *block.subrs, nil)
+}
+
+// testType2 draws a Type 2 charstring (Technical Note #5177) as the points
+// of its path, apart from the subsetter's code.
+type testType2 struct {
+	globals, locals [][]byte
+	stack           []float64
+	x, y            float64
+	stems           int
+	width           bool // Looked for already
+	ended           bool
+	path            strings.Builder
+}
+
+func (p *testType2) point(op string, dx, dy float64) {
+	p.x += dx
+	p.y += dy
+	fmt.Fprintf(&p.path, "%s %g %g ", op, p.x, p.y)
+}
+
+// args takes the width off the stack, the first time, when it has more
+// operands than even, for even, or than n.
+func (p *testType2) args(even bool, n int) {
+	if !p.width {
+		p.width = true
+		if (even && len(p.stack)%2 == 1) || (!even && len(p.stack) > n) {
+			p.stack = p.stack[1:]
+		}
+	}
+}
+
+func (p *testType2) run(cs []byte, depth int) {
+	for i := 0; i < len(cs) && !p.ended; {
+		b0 := int(cs[i])
+		switch {
+		case b0 == 28:
+			p.stack = append(p.stack, float64(int16(uint16(cs[i+1])<<8|uint16(cs[i+2]))))
+			i += 3
+			continue
+		case b0 >= 32 && b0 <= 246:
+			p.stack = append(p.stack, float64(b0-139))
+			i++
+			continue
+		case b0 >= 247 && b0 <= 250:
+			p.stack = append(p.stack, float64((b0-247)*256+int(cs[i+1])+108))
+			i += 2
+			continue
+		case b0 >= 251 && b0 <= 254:
+			p.stack = append(p.stack, float64(-(b0-251)*256-int(cs[i+1])-108))
+			i += 2
+			continue
+		case b0 == 255:
+			p.stack = append(p.stack, float64(int32(uint32(cs[i+1])<<24|uint32(cs[i+2])<<16|uint32(cs[i+3])<<8|uint32(cs[i+4])))/65536)
+			i += 5
+			continue
+		}
+		s := p.stack
+		i++
+		switch b0 {
+		case 1, 3, 18, 23: // hstem, vstem, hstemhm, vstemhm
+			p.args(true, 0)
+			p.stems += len(p.stack) / 2
+			fmt.Fprintf(&p.path, "stem%d %v ", b0, p.stack)
+		case 19, 20: // hintmask, cntrmask
+			p.args(true, 0)
+			p.stems += len(p.stack) / 2
+			n := (p.stems + 7) / 8
+			fmt.Fprintf(&p.path, "mask%d %v %x ", b0, p.stack, cs[i:i+n])
+			i += n
+		case 21: // rmoveto
+			p.args(false, 2)
+			p.point("M", p.stack[0], p.stack[1])
+		case 22: // hmoveto
+			p.args(false, 1)
+			p.point("M", p.stack[0], 0)
+		case 4: // vmoveto
+			p.args(false, 1)
+			p.point("M", 0, p.stack[0])
+		case 5: // rlineto
+			for j := 0; j+1 < len(s); j += 2 {
+				p.point("L", s[j], s[j+1])
+			}
+		case 6, 7: // hlineto, vlineto
+			for j, h := 0, b0 == 6; j < len(s); j, h = j+1, !h {
+				if h {
+					p.point("L", s[j], 0)
+				} else {
+					p.point("L", 0, s[j])
+				}
+			}
+		case 8: // rrcurveto
+			for j := 0; j+5 < len(s); j += 6 {
+				p.curve(s[j], s[j+1], s[j+2], s[j+3], s[j+4], s[j+5])
+			}
+		case 24: // rcurveline
+			j := 0
+			for ; j+5 < len(s)-2; j += 6 {
+				p.curve(s[j], s[j+1], s[j+2], s[j+3], s[j+4], s[j+5])
+			}
+			p.point("L", s[j], s[j+1])
+		case 25: // rlinecurve
+			j := 0
+			for ; j+1 < len(s)-6; j += 2 {
+				p.point("L", s[j], s[j+1])
+			}
+			p.curve(s[j], s[j+1], s[j+2], s[j+3], s[j+4], s[j+5])
+		case 26, 27: // vvcurveto, hhcurveto
+			j, d := 0, 0.0
+			if len(s)%4 == 1 {
+				d, j = s[0], 1
+			}
+			for ; j+3 < len(s); j += 4 {
+				if b0 == 26 {
+					p.curve(d, s[j], s[j+1], s[j+2], 0, s[j+3])
+				} else {
+					p.curve(s[j], d, s[j+1], s[j+2], s[j+3], 0)
+				}
+				d = 0
+			}
+		case 30, 31: // vhcurveto, hvcurveto
+			h := b0 == 31
+			for j := 0; j+3 < len(s); j, h = j+4, !h {
+				last := 0.0
+				if len(s)-j == 5 {
+					last = s[j+4]
+				}
+				if h {
+					p.curve(s[j], 0, s[j+1], s[j+2], last, s[j+3])
+				} else {
+					p.curve(0, s[j], s[j+1], s[j+2], s[j+3], last)
+				}
+			}
+		case 10, 29: // callsubr, callgsubr
+			subrs := p.locals
+			if b0 == 29 {
+				subrs = p.globals
+			}
+			number := int(s[len(s)-1]) + cffBias(len(subrs))
+			p.stack = s[:len(s)-1]
+			p.run(subrs[number], depth+1)
+			continue
+		case 11: // return
+			return
+		case 14: // endchar
+			p.args(false, 0)
+			p.path.WriteString("Z")
+			p.ended = true
+			return
+		case 12:
+			b1 := cs[i]
+			i++
+			switch b1 {
+			case 35: // flex
+				p.curve(s[0], s[1], s[2], s[3], s[4], s[5])
+				p.curve(s[6], s[7], s[8], s[9], s[10], s[11])
+			case 34: // hflex
+				p.curve(s[0], 0, s[1], s[2], s[3], 0)
+				p.curve(s[4], 0, s[5], -s[2], s[6], 0)
+			case 36: // hflex1
+				p.curve(s[0], s[1], s[2], s[3], s[4], 0)
+				p.curve(s[5], 0, s[6], s[7], s[8], -(s[1] + s[3] + s[7]))
+			case 37: // flex1
+				dx := s[0] + s[2] + s[4] + s[6] + s[8]
+				dy := s[1] + s[3] + s[5] + s[7] + s[9]
+				p.curve(s[0], s[1], s[2], s[3], s[4], s[5])
+				if dx < 0 {
+					dx = -dx
+				}
+				if dy < 0 {
+					dy = -dy
+				}
+				if dx > dy {
+					p.curve(s[6], s[7], s[8], s[9], s[10], -(s[1] + s[3] + s[5] + s[7] + s[9]))
+				} else {
+					p.curve(s[6], s[7], s[8], s[9], -(s[0] + s[2] + s[4] + s[6] + s[8]), s[10])
+				}
+			default:
+				fmt.Fprintf(&p.path, "op12.%d ", b1)
+			}
+		default:
+			fmt.Fprintf(&p.path, "op%d ", b0)
+		}
+		p.stack = p.stack[:0]
+	}
+}
+
+func (p *testType2) curve(dx1, dy1, dx2, dy2, dx3, dy3 float64) {
+	p.point("C", dx1, dy1)
+	p.point("", dx2, dy2)
+	p.point("", dx3, dy3)
+}
+
+func TestCFFSubsetWithItsSubroutinesInPlaceDrawsTheSameOutlines(t *testing.T) {
+	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
+	cffDesubroutinize = true
+	for _, path := range []string{testPlexOTF, "tests/fonts/IBMPlexSans-Italic.otf", testHanOTF} {
+		otf, cff := testCFF(t, path)
+		used := testCFFUsed(otf, "Hello, Wörld! Ýou ﬁnd 日本語の文字 ½ € @ & ŞŢ")
+		every := make([]bool, otf.numGlyphs)
+		for gid := 0; gid < otf.numGlyphs; gid += 3 {
+			every[gid] = true
+		}
+		want := testCFFOutlines(t, cff)
+		for _, used := range [][]bool{used, every} {
+			subset, kept, err := subsetCFF(cff, used)
+			if err != nil {
+				t.Fatal(path, err)
+			}
+			// No subroutines, global or local
+			_, globals, top := testCFFParts(t, subset)
+			if len(globals) != 0 {
+				t.Errorf("%s: %d global subroutines", path, len(globals))
+			}
+			fdArray, _ := readCFFIndex(subset, cffEntryOf(top, cffFDArray)[0])
+			for i := 0; i+1 < len(fdArray.objects); i++ {
+				fd, _ := readCFFDict(subset[fdArray.objects[i]:fdArray.objects[i+1]])
+				private := cffEntryOf(fd, cffPrivate)
+				block, err := readCFFPrivate(subset, private[0], private[1])
+				if err != nil || block.subrs != nil {
+					t.Errorf("%s: local subroutines in Font DICT %d", path, i)
+				}
+			}
+			// Each glyph drawn as in the whole font, its hints and masks too
+			got := testCFFOutlines(t, subset)
+			i := 0
+			for gid, keep := range kept {
+				if !keep {
+					continue
+				}
+				if got[i] != want[gid] {
+					t.Errorf("%s: glyph %d drawn otherwise:\n%s\n%s", path, gid, got[i], want[gid])
+				}
+				if !strings.HasSuffix(got[i], "Z") || !strings.Contains(got[i], "M ") && gid > 0 && got[i] != "Z" {
+					t.Errorf("%s: glyph %d: %s", path, gid, got[i])
+				}
+				i++
+			}
+			if i != len(got) {
+				t.Errorf("%s: %d glyphs, not %d", path, len(got), i)
+			}
+		}
+	}
+}
+
+func TestCFFSubsetOfAGlyphThatComputesANumberKeepsItsSubroutines(t *testing.T) {
+	// "0 0 add 0 endchar": a number computed, by add, which the subroutines
+	// are not written in place for. The subset keeps those called.
+	defer func(on bool) { cffDesubroutinize = on }(cffDesubroutinize)
+	cffDesubroutinize = true
+	otf, cff := testCFF(t, testPlexOTF)
+	charStrings, _ := testCFFIndexOf(t, cff)
+	gid := otf.unicodeToGID.get('Á')
+	copy(cff[charStrings.objects[gid]:], []byte{139, 139, 12, 10, 139, 14})
+	subset, _, err := subsetCFF(cff, testCFFUsed(otf, "AÁ"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	glyphs, globals, _ := testCFFParts(t, subset)
+	whole, wholeGlobals, _ := testCFFParts(t, cff)
+	if len(globals) != len(wholeGlobals) || !bytes.Equal(glyphs[len(glyphs)-1], whole[gid]) {
+		t.Error("the subroutines not kept")
+	}
+}
+
+// testCFFIndexOf returns the CharStrings INDEX of the table and its Top DICT.
+func testCFFIndexOf(t *testing.T, cff []byte) (cffIndex, []cffEntry) {
+	t.Helper()
+	names, _ := readCFFIndex(cff, int(cff[2]))
+	topDicts, _ := readCFFIndex(cff, names.end)
+	top, _ := readCFFDict(cff[topDicts.objects[0]:topDicts.objects[1]])
+	charStrings, err := readCFFIndex(cff, cffEntryOf(top, cffCharStrings)[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	return charStrings, top
 }

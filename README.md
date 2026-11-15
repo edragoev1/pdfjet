@@ -609,7 +609,9 @@ draw left out. What a PDF embeds:
   drawn alone, .notdef first, as a CIDFont: its charset gives each glyph its
   number in the whole font as its CID, by which the page draws it (ISO
   32000-2, 9.7.4.2). A name-keyed font, as IBM Plex Sans is, is written as a
-  CIDFont of Adobe-Identity-0. The subroutines the glyphs call are kept, the
+  CIDFont of Adobe-Identity-0; one with a FontMatrix of its own, as Cascadia
+  Mono's .otf of 2,048 units to the em, keeps it, and its Font DICT has the
+  identity matrix. The subroutines the glyphs call are kept, the
   others emptied to no bytes, and the strings and Font DICTs not used left out.
   A line of Korean in IBM Plex Sans KR embeds about 3 KB of its 1 MB.
 - Every glyph keeps its number, or its CID, so the pages, the widths and the text a reader copies are those of

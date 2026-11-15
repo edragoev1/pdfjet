@@ -10,7 +10,9 @@ package pdfjet
 // whole font as its CID, by which the PDF draws it, and the subroutines,
 // global and local, that the glyphs kept do not call emptied to no bytes,
 // keeping their numbers, so the glyphs kept are drawn by the same bytes as in
-// the whole font. A name-keyed font becomes a CIDFont of Adobe-Identity-0.
+// the whole font. A name-keyed font becomes a CIDFont of Adobe-Identity-0,
+// with the identity matrix in its one Font DICT if it has a FontMatrix of its
+// own.
 // The CFF is written again in a fixed order, with every offset of its Top
 // DICT and of its Font DICTs in the five-byte form, so that an offset of any
 // value has the same size: the header, the Name, Top DICT, String and Global
@@ -419,6 +421,176 @@ func (u *cffUsage) run(cs []byte, depth int) {
 	}
 }
 
+// cffDesubroutinize tells whether the glyphs of a subset are written with
+// the subroutines they call in place of their calls, and the subset without
+// subroutines. Off: a PDF of such subsets is smaller, by 1 to 4% for a page
+// of Latin, Cyrillic or Greek and 17 to 56% for 100 to 2000 characters of
+// Korean or Chinese, and as fast to write, or 10 to 20% faster up to 500
+// characters, but about 6% slower for 2000, where the larger charstrings
+// take longer to compress (14 November 2026).
+var cffDesubroutinize = false
+
+// cffInliner writes charstrings again with each subroutine they call, local
+// or global, in place of its call (Technical Note #5177): the number of the
+// subroutine taken off the end, the bytes of the subroutine, its own calls
+// in place too, without its return. The charstring written draws the glyph as
+// the operators of the one it was written from do, run with its subroutines,
+// one after another. A charstring that computes a number, by an arithmetic
+// or storage operator, cannot be written so: an error.
+type cffInliner struct {
+	cff     []byte
+	global  cffIndex
+	local   *cffIndex
+	out     []byte  // The charstrings written, one after another
+	numbers [48]int // Where each operand on the stack starts in out
+	stack   int     // The operands on the stack, of the 48 of Type 2 at most
+	stems   int
+	work    int
+	ended   bool // By endchar
+	err     error
+	seac    bool
+}
+
+// glyph returns the charstring written again with its subroutines in place,
+// after the charstrings written before it in out, which holds them all.
+func (d *cffInliner) glyph(cs []byte) []byte {
+	start := len(d.out)
+	d.stack, d.stems, d.ended = 0, 0, false
+	d.run(cs, 0)
+	return d.out[start:len(d.out):len(d.out)]
+}
+
+// run writes the charstring, and the subroutines it calls in place. Its bytes
+// are written in runs, from one call of a subroutine to the next.
+func (d *cffInliner) run(cs []byte, depth int) {
+	if depth > 10 { // Type 2 nests subroutines 10 deep at most.
+		d.err = errNotSubset
+		return
+	}
+	from := 0 // The bytes of the charstring from here on are not written yet.
+	i := 0
+	for i < len(cs) {
+		b0 := cs[i]
+		if b0 >= 28 && b0 != 29 && b0 != 30 && b0 != 31 { // A number
+			n := 1
+			switch {
+			case b0 == 28:
+				n = 3
+			case b0 == 255:
+				n = 5
+			case b0 >= 247:
+				n = 2
+			}
+			if i+n > len(cs) || d.stack == len(d.numbers) {
+				d.err = errNotSubset
+				return
+			}
+			d.numbers[d.stack] = len(d.out) + i - from
+			d.stack++
+			i += n
+			continue
+		}
+		n := 1 // The bytes of the operator
+		switch b0 {
+		case 1, 3, 18, 23: // The stem hints
+			d.stems += d.stack / 2
+		case 19, 20: // hintmask and cntrmask, and their mask
+			d.stems += d.stack / 2
+			n += (d.stems + 7) / 8
+		case 10, 29: // callsubr and callgsubr
+			if d.stack == 0 {
+				d.err = errNotSubset
+				return
+			}
+			d.out = append(d.out, cs[from:i]...)
+			d.stack--
+			at := d.numbers[d.stack]
+			last := cffNumber(d.out[at:])
+			d.out = d.out[:at]
+			subrs := d.local
+			if b0 == 29 {
+				subrs = &d.global
+			}
+			if subrs == nil {
+				d.err = errNotSubset
+				return
+			}
+			count := len(subrs.objects) - 1
+			number := last + cffBias(count)
+			if number < 0 || number >= count {
+				d.err = errNotSubset
+				return
+			}
+			subr := d.cff[subrs.objects[number]:subrs.objects[number+1]]
+			d.work += len(subr)
+			if d.work > cffMaxWork {
+				d.err = errNotSubset
+				return
+			}
+			d.run(subr, depth+1)
+			if d.err != nil || d.ended {
+				return
+			}
+			i++
+			from = i
+			continue
+		case 11: // return
+			d.out = append(d.out, cs[from:i]...)
+			return
+		case 14: // endchar
+			if d.stack >= 4 {
+				// seac, an accented letter drawn from two others: the
+				// font is embedded whole
+				d.seac = true
+				d.err = errNotSubset
+				return
+			}
+			d.out = append(d.out, cs[from:i+1]...)
+			d.ended = true
+			return
+		case 12:
+			n = 2
+			if i+1 < len(cs) {
+				switch cs[i+1] {
+				case 3, 4, 5, 9, 10, 11, 12, 14, 15, 18, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30:
+					// The arithmetic and storage operators, which leave
+					// numbers on the stack
+					d.err = errNotSubset
+					return
+				}
+			}
+		}
+		if i+n > len(cs) {
+			d.err = errNotSubset
+			return
+		}
+		// An operator, which takes its operands off the stack
+		d.stack = 0
+		i += n
+	}
+	d.out = append(d.out, cs[from:i]...)
+}
+
+// cffNumber returns the integer part of the number of a charstring the bytes
+// start with.
+func cffNumber(b []byte) int {
+	b0 := int(b[0])
+	switch {
+	case b0 == 28:
+		return int(int16(uint16(b[1])<<8 | uint16(b[2])))
+	case b0 >= 32 && b0 <= 246:
+		return b0 - 139
+	case b0 >= 247 && b0 <= 250:
+		return (b0-247)*256 + int(b[1]) + 108
+	case b0 >= 251 && b0 <= 254:
+		return -(b0-251)*256 - int(b[1]) - 108
+	}
+	return int(int32(uint32(b[1])<<24|uint32(b[2])<<16|uint32(b[3])<<8|uint32(b[4]))) >> 16
+}
+
+// cffIdentityMatrix is the FontMatrix entry [1 0 0 1 0 0].
+var cffIdentityMatrix = []byte{140, 139, 139, 140, 139, 139, 12, 7}
+
 // emptiedCFFIndex returns the objects of the INDEX, those not used emptied to
 // no bytes, which keeps their numbers and makes their offsets the same as the
 // next one's, or every one for used nil.
@@ -482,8 +654,17 @@ func cffFDOf(fdSelect []byte, numGlyphs, fds int) ([]int, error) {
 // to no bytes, keeping their numbers, and the Font DICTs no glyph kept uses
 // are left out. Every INDEX has the least offSize its offsets need; the
 // offsets of the Top DICT and of the Font DICTs are in the five-byte form. A
-// table that cannot be read, or a name-keyed font of a FontMatrix of its own,
-// gives an error.
+// name-keyed font's FontMatrix of its own, as Cascadia Mono's of 2048 units
+// to the em, stays in its Top DICT, and its Font DICT has the FontMatrix [1 0
+// 0 1 0 0], written: the glyph space of a CIDFont is that of the FontMatrix
+// of the glyph's Font DICT concatenated with the Top DICT's (PostScript
+// Language Reference, third edition, 5.11.3, Table 5.14), the Top DICT's
+// interpreting the coordinates of the CIDFont as a whole, as its FontBBox.
+// Readers take a Font DICT of no FontMatrix as the identity, as they do for
+// the other name-keyed fonts, but Technical Note #5176 gives a FontMatrix no
+// default but the Top DICT's, [0.001 0 0 0.001 0 0] (Table 9), so the
+// identity is written. A CID-keyed font's matrices are kept as they are. A table that cannot be
+// read gives an error.
 func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 	if len(cff) < 4 || cff[0] != 1 {
 		return nil, nil, errNotSubset // Not CFF version 1
@@ -542,11 +723,10 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-	} else if cffHasEntry(top, cffFontMatrix) {
-		// Its matrix would have to go into the Font DICT, against the
-		// one a CIDFont's Top DICT has by default.
-		return nil, nil, errNotSubset
 	}
+	// A name-keyed font's FontMatrix of its own stays in the Top DICT, and
+	// its one Font DICT has the identity matrix, written.
+	hasMatrix := !cidKeyed && cffHasEntry(top, cffFontMatrix)
 
 	// The Font DICTs of a CID-keyed font, each with its Private DICT, or the
 	// Private DICT of a name-keyed one, which becomes its one Font DICT's.
@@ -587,6 +767,9 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 			return nil, nil, err
 		}
 		fontDicts = [][]cffEntry{{{op: cffPrivate}}}
+		if hasMatrix {
+			fontDicts[0] = []cffEntry{{op: cffFontMatrix, raw: cffIdentityMatrix}, {op: cffPrivate}}
+		}
 		privates = append(privates, block)
 	}
 
@@ -621,7 +804,38 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 	if used == nil {
 		usage.err = errNotSubset // Every glyph and subroutine kept
 	}
-	for i := 0; i < len(keptGIDs) && usage.err == nil; i++ {
+	// The glyphs of a subset written with the subroutines they call in
+	// place of their calls, and no subroutines then, or, when that cannot
+	// be done, with the subroutines they call.
+	glyphsInlined := false
+	if used != nil && cffDesubroutinize {
+		size := 0
+		for _, glyph := range glyphs {
+			size += len(glyph)
+		}
+		inlined := cffInliner{cff: cff, global: globalSubrs, out: make([]byte, 0, 3*size)}
+		desub := make([][]byte, len(keptGIDs))
+		for i := 0; i < len(keptGIDs) && inlined.err == nil; i++ {
+			fd := 0
+			if fdOf != nil {
+				fd = fdOf[keptGIDs[i]]
+			}
+			inlined.local = privates[fd].subrs
+			desub[i] = inlined.glyph(glyphs[i])
+		}
+		if inlined.seac {
+			return nil, nil, errNotSubset
+		}
+		if inlined.err == nil {
+			glyphs, glyphsInlined = desub, true
+			for i := range usedL {
+				if usedL[i] != nil {
+					usedL[i] = make([]bool, len(usedL[i]))
+				}
+			}
+		}
+	}
+	for i := 0; i < len(keptGIDs) && usage.err == nil && !glyphsInlined; i++ {
 		fd := 0
 		if fdOf != nil {
 			fd = fdOf[keptGIDs[i]]

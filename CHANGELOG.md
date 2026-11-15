@@ -40,6 +40,15 @@ the subsets of 123 to 138 fonts with seven sets of glyphs each, and on
 thousands of damaged fonts, which each port refuses alike; MuPDF, PDFium,
 Poppler and pdf.js draw the glyphs as before, and veraPDF passes.
 
+Changed, in the Go port so far: **an .otf of a FontMatrix of its own is
+subset too.** A name-keyed font whose Top DICT has a FontMatrix, as
+Microsoft's Cascadia Mono .otf of 2,048 units to the em, was embedded whole,
+as no subset could carry its matrix: its Top DICT now keeps the matrix, and
+its one Font DICT has `[1 0 0 1 0 0]`, the two concatenated the font's
+(PostScript Language Reference, 5.11.3). A PDF/A-3a page of code in
+Cascadia Mono Regular is 17.8 KB in place of 208.8 KB, and 23.3 KB from its
+.ttf; MuPDF, PDFium, Poppler and pdf.js draw it as from the whole font.
+
 Behavior change, in the four ports: **IBM Plex Sans and Serif are carried
 as .otf, not .ttf.** Their constants, `IBMPlexSans.Regular` and the other
 27, are paths to IBM's .otf files, such as
