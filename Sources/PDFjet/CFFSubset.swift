@@ -762,13 +762,13 @@ class CFFSubset {
                 size += glyph.count
             }
             let inliner = Inliner(cff, globalSubrs, 3 * size)
-            var desub = [[UInt8]]()
-            desub.reserveCapacity(keptGIDs.count)
+            var inlinedGlyphs = [[UInt8]]()
+            inlinedGlyphs.reserveCapacity(keptGIDs.count)
             var i = 0
             while i < keptGIDs.count && !inliner.failed {
                 let gid = keptGIDs[i]
                 inliner.local = privates[fdOfGID?[gid] ?? 0].subrs
-                desub.append(inliner.glyph(glyphIndex.objects[gid], glyphIndex.objects[gid + 1]))
+                inlinedGlyphs.append(inliner.glyph(glyphIndex.objects[gid], glyphIndex.objects[gid + 1]))
                 i += 1
             }
             if inliner.seac {
@@ -776,7 +776,7 @@ class CFFSubset {
             }
             if !inliner.failed {
                 // No subroutine used, global or local, as the usage has them.
-                glyphs = desub
+                glyphs = inlinedGlyphs
                 glyphsInlined = true
             }
         }

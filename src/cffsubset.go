@@ -811,20 +811,20 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 			size += len(glyph)
 		}
 		inlined := cffInliner{cff: cff, global: globalSubrs, out: make([]byte, 0, 3*size)}
-		desub := make([][]byte, len(keptGIDs))
+		inlinedGlyphs := make([][]byte, len(keptGIDs))
 		for i := 0; i < len(keptGIDs) && inlined.err == nil; i++ {
 			fd := 0
 			if fdOf != nil {
 				fd = fdOf[keptGIDs[i]]
 			}
 			inlined.local = privates[fd].subrs
-			desub[i] = inlined.glyph(glyphs[i])
+			inlinedGlyphs[i] = inlined.glyph(glyphs[i])
 		}
 		if inlined.seac {
 			return nil, nil, errNotSubset
 		}
 		if inlined.err == nil {
-			glyphs, glyphsInlined = desub, true
+			glyphs, glyphsInlined = inlinedGlyphs, true
 			for i := range usedL {
 				if usedL[i] != nil {
 					usedL[i] = make([]bool, len(usedL[i]))

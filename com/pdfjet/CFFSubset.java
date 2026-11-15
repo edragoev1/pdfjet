@@ -815,18 +815,18 @@ class CFFSubset {
                 size += glyph.length;
             }
             Inliner inlined = new Inliner(cff, globalSubrs, 3 * size);
-            List<byte[]> desub = new ArrayList<byte[]>(keptGIDs.size());
+            List<byte[]> inlinedGlyphs = new ArrayList<byte[]>(keptGIDs.size());
             for (int i = 0; i < keptGIDs.size() && !inlined.failed; i++) {
                 int gid = keptGIDs.get(i);
                 int fd = (fdOf != null) ? fdOf[gid] : 0;
                 inlined.local = privates.get(fd).subrs;
-                desub.add(inlined.glyph(charStrings.objects[gid], charStrings.objects[gid + 1]));
+                inlinedGlyphs.add(inlined.glyph(charStrings.objects[gid], charStrings.objects[gid + 1]));
             }
             if (inlined.seac) {
                 throw new Subset.NotSubset();
             }
             if (!inlined.failed) {
-                glyphs = desub;
+                glyphs = inlinedGlyphs;
                 glyphsInlined = true;
                 for (int i = 0; i < usedL.length; i++) {
                     if (usedL[i] != null) {

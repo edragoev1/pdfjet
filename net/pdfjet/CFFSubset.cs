@@ -820,17 +820,17 @@ class CFFSubset {
                 size += glyph.Length;
             }
             Inliner inlined = new Inliner(cff, globalSubrs, 3 * size);
-            List<byte[]> desub = new List<byte[]>(keptGIDs.Count);
+            List<byte[]> inlinedGlyphs = new List<byte[]>(keptGIDs.Count);
             for (int i = 0; i < keptGIDs.Count && !inlined.failed; i++) {
                 int fd = (fdOfGID != null) ? fdOfGID[keptGIDs[i]] : 0;
                 inlined.local = privates[fd].subrs;
-                desub.Add(inlined.glyph(glyphs[i]));
+                inlinedGlyphs.Add(inlined.glyph(glyphs[i]));
             }
             if (inlined.seac) {
                 throw new Subset.NotSubset();
             }
             if (!inlined.failed) {
-                glyphs = desub;
+                glyphs = inlinedGlyphs;
                 glyphsInlined = true;
                 for (int i = 0; i < usedL.Length; i++) {
                     if (usedL[i] != null) {
