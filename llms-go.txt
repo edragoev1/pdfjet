@@ -141,7 +141,7 @@ func main() {
 }
 ```
 
-For tables of thousands of pages read from a file or a database, use `BigTable` (`pdfjet.NewBigTable`): it writes as it goes and its memory stays flat (Example_24).
+For tables of thousands of pages read from a file or a database, use `BigTable` (`pdfjet.NewBigTable`): it writes each page as it fills, so its memory stays flat, with "Page i of N" footers (Example_24). `SetWrapText(true)` wraps long fields within their columns, each row as tall as its tallest field (Example_51); `SetFallbackFonts(header, rows)` draws characters the table's fonts lack, such as Chinese in a Latin table.
 
 ## Markdown
 
@@ -175,7 +175,7 @@ Every example is complete and runnable; start from the one closest to the task. 
 
 - Text: 01 (TextBlock), 06 (embedded fonts), 07 (fonts from .otf and .ttf files), 08 (measuring text), 10 and 11 (TextBlock), 12 (justified paragraphs), 14 and 15 (TextFrame, columns), 16 (mixed styles), 17 (a whole book), 18 and 19 (Markdown), 22 (TextFlow)
 - Languages: 02 (Chinese), 03 (Japanese, Korean), 04 (Arabic, Hebrew, Persian, Thai), 13 (Chinese paragraphs), 52 (Hindi and Khmer, shaped by go-text/typesetting, a module of the example alone)
-- Tables: 20 (a results page), 21 (header rows, spans, colors), 23 (a table over pages, PDF/A), 24 (BigTable, 2,546 pages), 51 (wrapped cells)
+- Tables: 20 (a results page), 21 (header rows, spans, colors), 23 (a table over pages, PDF/A), 24 (BigTable, 2,546 pages), 51 (BigTable with wrapped fields)
 - Charts: 20, 25 (lines), 26 (scatter), 27 (bars), 28 (donut)
 - Graphics and images: 29 (shapes), 30 (transparency), 31 (Stamp, Container), 32 (JPEG, PNG, BMP), 33 (SVG), 34 (a letterhead), 35 (layers)
 - Barcodes: 36 (linear), 37 (QR, Data Matrix), 38 (PDF417)
