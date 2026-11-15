@@ -144,6 +144,10 @@ Every example is complete and runnable; start from the one closest to the task. 
 - Barcodes: 36 (linear), 37 (QR, Data Matrix), 38 (PDF417)
 - Documents: 39 (pages finished last), 40 (links), 41 (bookmarks), 42 (attachments, annotations), 43 and 44 (forms), 45 (watermark), 46 (an invoice with its data, PDF/A-3), 47 (encryption)
 - Existing PDFs: 48 (write on pages), 49 (merge and split), 50 (stamp and number pages)
+- Business documents, whole ones to start from, all PDF/UA, and those marked PDF/A-3a as well: 53 (invoice, PDF/A-3a), 54 (quote, PDF/A-3a), 55 (receipt, PDF/A-3a), 56 (statement of account, PDF/A-3a), 57 (delivery note), 58 (purchase order, PDF/A-3a), 62 (price list), 67 (credit note, PDF/A-3a), 77 (payment reminder), 78 (pro forma invoice, PDF/A-3a), 79 (product catalog), 80 (proposal)
+- Letters, reports and records: 59 (business letter), 60 (certificate), 61 (timesheet), 69 (expense report), 73 (meeting agenda), 74 (meeting minutes)
+- Printable forms to fill in by hand: 63 (appointment request), 64 (new client), 65 (photo consent), 66 (contact details update, a page per tenant), 68 (feedback card), 70 (incident report), 71 (inspection checklist), 72 (job application), 75 (membership application), 76 (order form), 81 (rental application), 82 (time off request), 83 (volunteer sign-up sheet), 84 (workshop registration)
+- Labels: 85 (shipping labels, 30 to a sheet, with QR codes)
 
 ## Links
 

@@ -399,7 +399,15 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 50 examples, the same in every port. They
+The [examples](examples) folder has 85 examples, the same in every port.
+Examples 1 to 52 show the features of the library, one or a few at a time.
+Examples 53 to 85 are whole business documents and printable forms: an
+invoice, a quote, a receipt, a statement, a delivery note, a purchase order,
+a credit note, a payment reminder and a pro forma invoice; letters, reports, a
+price list, a catalog, an agenda and minutes; forms to fill in by hand, such as
+an application form, a timesheet and a checklist; and shipping labels. Each is
+a complete program to start from, every one of them PDF/UA, and the money
+documents PDF/A-3a as well. They
 draw in the fonts PDFjet carries, which the library reads from
 `resources/fonts` or from itself, and
 read the data files of `resources/data`, so they need nothing fetched. Build

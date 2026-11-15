@@ -333,6 +333,28 @@ QR code at the level). Each returns the error in the words the constructor
 panics with, and adds nothing to the PDF for what it refuses. The
 constructors, which return no error, panic as they did.
 
+Added, in the four ports: **33 new examples, Example_53 to Example_85,
+whole business documents and printable forms.** The documents developers
+ask PDFjet for most, each a complete program to start from, written to be
+read by people and by AI coding assistants alike: an invoice, a quote, a
+receipt, a statement of account, a delivery note, a purchase order, a price
+list, a credit note, a payment reminder, a pro forma invoice, a product
+catalog and a proposal; a business letter, a certificate, a timesheet, an
+expense report, and the agenda and the minutes of a meeting; forms to print
+and fill in by hand, among them a job application, an appointment request,
+a consent form, an incident report, an inspection checklist, an order form,
+a rental application and a volunteer sign-up sheet; and a sheet of thirty
+shipping labels with QR codes. The amounts are exact, never floating point
+(Java `BigDecimal`, C# `decimal`, Swift `Decimal`, Go integer cents),
+computed from the lines, never typed in, and the tables go on to as many
+pages as they need. Every one is PDF/UA, and the invoice, the quote,
+the receipt, the statement, the purchase order, the credit note and the pro
+forma invoice are PDF/A-3a as well. The four ports write the same PDFs, and
+the scripts, the workflows and the packaging build and check 85 examples
+(Swift's Example_52, Core Text's, on a Mac only). `examples-java.html`,
+`examples-dotnet.html`, the README and the four `llms-*.txt` guides list
+them.
+
 Added: **guides for AI coding assistants,** `llms-java.txt`,
 `llms-dotnet.txt`, `llms-go.txt` and `llms-swift.txt`, with `llms.txt`
 linking them: the install, the rules where code goes wrong, and three
