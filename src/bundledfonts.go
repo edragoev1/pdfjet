@@ -45,7 +45,7 @@ var worldFaces = func() map[string][]string {
 	}
 	for _, family := range []string{"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"} {
 		for _, style := range []string{"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"} {
-			faces[family] = append(faces[family], family+"-"+style+".ttf")
+			faces[family] = append(faces[family], family+"-"+style+".otf")
 		}
 	}
 	return faces
@@ -120,37 +120,59 @@ func bundledFontHas(fontPath string) bool {
 	return false
 }
 
-// bundledRenamed are the families PDFjet carries as .otf from 9.1.9 and
-// carried as .ttf before: IBM Plex Sans and Serif, whose .otf, of the same
-// release of IBM, have the same advance widths, kerning and line metrics as
-// their .ttf, and embed a fifth smaller; and Cascadia Mono, whose .otf, of
-// the same release of Microsoft, have the same advance widths and line
-// metrics as its .ttf, and no kerning either.
-var bundledRenamed = []string{"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"}
-
 // bundledFontNamesOf returns the names, Family/File, that the font of the
-// path is looked for by among the fonts PDFjet carries: its name, and, for a
-// .ttf of IBM Plex Sans or Serif or Cascadia Mono, such as
-// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet carries of it
-// from 9.1.9, so that a path written for the .ttf is the same font; for an
-// .otf of them, the .ttf PDFjet carried before, so that a program that took
-// the library of 9.1.9 alone, beside the resources/fonts folder of an older
-// one, still finds its font. None for
-// a path of fewer than two parts, or one with "..". A file at the path
-// itself, or of that name in resources/fonts, is read first.
+// path is looked for by among the fonts PDFjet carries: its name alone, or
+// none for a path of fewer than two parts, or one with "..". PDFjet never
+// reads one file for another: the path names the file it reads.
 func bundledFontNamesOf(fontPath string) []string {
 	name := bundledFontName(fontPath)
 	if name == "" || strings.Contains(name, "..") {
 		return nil
 	}
-	family, file, _ := strings.Cut(name, "/")
-	if base, ok := strings.CutSuffix(file, ".ttf"); ok && slices.Contains(bundledRenamed, family) {
-		return []string{name, family + "/" + base + ".otf"}
-	}
-	if base, ok := strings.CutSuffix(file, ".otf"); ok && slices.Contains(bundledRenamed, family) {
-		return []string{name, family + "/" + base + ".ttf"}
-	}
 	return []string{name}
+}
+
+// bundledOtfInstead returns what to write for a .ttf of a font that PDFjet
+// carries as .otf, such as fonts/CascadiaMono/CascadiaMono-Regular.ttf,
+// which is not a file: the .otf path, or its constant; "" for any other path.
+func bundledOtfInstead(fontPath string) string {
+	name := bundledFontName(fontPath)
+	base, ok := strings.CutSuffix(name, ".ttf")
+	if !ok || !bundledIsCarried(base+".otf") {
+		return ""
+	}
+	otf := base + ".otf"
+	family, file, _ := strings.Cut(otf, "/")
+	style := strings.TrimSuffix(strings.TrimPrefix(file, family+"-"), ".otf")
+	return "No bundled font " + fontPath + "; PDFjet carries it as fonts/" + otf +
+		" (or use the constant " + family + "." + style + ")."
+}
+
+// bundledIsCarried tells if PDFjet carries the font of the name, Family/File,
+// such as IBMPlexSans/IBMPlexSans-Regular.otf, whether or not it is installed.
+func bundledIsCarried(name string) bool {
+	family, file, ok := strings.Cut(name, "/")
+	if !ok {
+		return false
+	}
+	if faces, world := worldFaces[family]; world {
+		return slices.Contains(faces, file)
+	}
+	for f, carried := range bundledFamilies {
+		if carried != family {
+			continue
+		}
+		for _, style := range bundledStyles[f] {
+			italic := style + "Italic"
+			if style == "Regular" {
+				italic = "Italic"
+			}
+			if file == family+"-"+style+".otf" || file == family+"-"+italic+".otf" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // bundledWorldMissing returns what to do when the font of the path is one of

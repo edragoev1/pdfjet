@@ -15,7 +15,7 @@ package IBMPlexSansArabic
 // The paths of the font files.
 const (
 	// Bold is IBM Plex Sans Arabic Bold.
-	Bold = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.ttf"
+	Bold = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.otf"
 
 	// ExtraLight is IBM Plex Sans Arabic ExtraLight, which PDFjet does not
 	// carry from 9.1.7: a font file of its packages before, read when the file is
@@ -24,15 +24,15 @@ const (
 	// Deprecated: PDFjet carries the other weights of the family.
 	ExtraLight = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf"
 	// Light is IBM Plex Sans Arabic Light.
-	Light = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.ttf"
+	Light = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.otf"
 	// Medium is IBM Plex Sans Arabic Medium.
-	Medium = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.ttf"
+	Medium = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.otf"
 	// Regular is IBM Plex Sans Arabic Regular.
-	Regular = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"
+	Regular = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"
 	// SemiBold is IBM Plex Sans Arabic SemiBold.
-	SemiBold = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf"
+	SemiBold = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.otf"
 	// Text is IBM Plex Sans Arabic Text.
-	Text = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.ttf"
+	Text = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.otf"
 	// Thin is IBM Plex Sans Arabic Thin.
-	Thin = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.ttf"
+	Thin = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.otf"
 )

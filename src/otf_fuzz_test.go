@@ -28,13 +28,15 @@ import (
 // from then on.
 
 // fuzzOpenTypeFontSeeds are fonts PDFjet carries and test fonts: TrueType
-// with the GPOS table of marks that go on letters and kerning (IBM Plex Sans
-// Thai, as Noto Sans Thai before 9.1.7), TrueType with the long offsets of
-// loca, marks and no kerning (Cascadia Mono's .ttf, JetBrains Mono before
-// 9.1.7), and OpenType fonts whose glyphs are in a CFF table (IBM Plex Sans,
-// and Cascadia Mono, of a FontMatrix of its own).
+// with the GPOS table of marks that go on letters and kerning (IBM's .ttf of
+// IBM Plex Sans, as IBM Plex Sans Thai's .ttf and, before 9.1.7, Noto Sans
+// Thai), TrueType with the long offsets of loca, marks and no kerning
+// (Cascadia Mono's .ttf, JetBrains Mono before 9.1.7), and OpenType fonts
+// whose glyphs are in a CFF table (IBM Plex Sans Thai, with the marks of
+// Thai, IBM Plex Sans, and Cascadia Mono, of a FontMatrix of its own).
 var fuzzOpenTypeFontSeeds = []string{
-	"../resources/fonts/world/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf",
+	"../tests/fonts/IBMPlexSans-Regular.ttf",
+	"../resources/fonts/world/IBMPlexSansThai/IBMPlexSansThai-Regular.otf",
 	"../tests/fonts/CascadiaMono-Regular.ttf",
 	"../tests/fonts/IBMPlexSans-Regular.otf",
 	"../resources/fonts/CascadiaMono/CascadiaMono-Regular.otf",

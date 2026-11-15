@@ -201,7 +201,7 @@ public class TextBlockTest {
     [Fact]
     public void ALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"));
         var word = new System.Text.StringBuilder();
         for (int i = 0; i < 25000; i++) {
             word.Append("محمد");      // 100,000 letters, which took about 20 minutes
@@ -220,7 +220,7 @@ public class TextBlockTest {
         // line, at the right as it is drawn, and its "..." at the left, where
         // the line ends in the reading (review of 11 October 2026, #7).
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"));
         string text = "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה";
         TextLine[] lines = new TextBlock(font, text).SetRightToLeft(true).SetWidth(80f).Layout().textLines;
         TextLine[] fit = new TextBlock(font, text).SetRightToLeft(true).SetSize(80f, 20f).Layout().textLines;
@@ -290,7 +290,7 @@ public class TextBlockTest {
         // has no glyph for, as Page does: Hebrew with brackets, reordered for
         // drawing, wrote two .notdef glyphs (review of 11 October 2026, #10).
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"));
         string text = Bidi.ReorderVisually("שלום (abc) עולם");
         Assert.True(text.IndexOf('\u200E') >= 0 || text.IndexOf('\u200F') >= 0,
                 "the text has no marks of direction: " + text);
@@ -364,7 +364,7 @@ public class TextBlockTest {
         // A right to left text block breaks a word at a soft hyphen, the hyphen at
         // the end of the line, on its left: it was cut between two characters, with
         // no hyphen (review of 12 October 2026, R17).
-        Font font = new Font(TestSupport.NewPDF(), TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        Font font = new Font(TestSupport.NewPDF(), TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"));
         font.SetSize(12f);
         float width = font.StringWidth(12f, "\u05E9\u05DC\u05D5\u05DD-") + 1f;
         string word = "\u05E9\u05DC\u05D5\u05DD\u00AD\u05E2\u05D5\u05DC\u05DD\u00AD\u05D0\u05D7\u05D3";

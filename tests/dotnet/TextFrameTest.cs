@@ -557,7 +557,7 @@ public class TextFrameTest {
     [Fact]
     public void CutsAWordWhereTextBlockDoes() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"));
         font.SetSize(12f);
         String word = "ภาษาไทยภาษาไทยภาษาไทย";
         TextLine textLine = new TextLine(font, word);

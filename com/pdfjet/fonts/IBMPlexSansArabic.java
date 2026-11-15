@@ -24,7 +24,7 @@ public class IBMPlexSansArabic {
     }
 
     /** IBM Plex Sans Arabic Bold */
-    public static final String Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.ttf";
+    public static final String Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.otf";
 
     /**
      * IBM Plex Sans Arabic ExtraLight, which PDFjet does not carry
@@ -35,15 +35,15 @@ public class IBMPlexSansArabic {
     @Deprecated
     public static final String ExtraLight = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf";
     /** IBM Plex Sans Arabic Light */
-    public static final String Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.ttf";
+    public static final String Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.otf";
     /** IBM Plex Sans Arabic Medium */
-    public static final String Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.ttf";
+    public static final String Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.otf";
     /** IBM Plex Sans Arabic Regular */
-    public static final String Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf";
+    public static final String Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf";
     /** IBM Plex Sans Arabic SemiBold */
-    public static final String SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf";
+    public static final String SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.otf";
     /** IBM Plex Sans Arabic Text */
-    public static final String Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.ttf";
+    public static final String Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.otf";
     /** IBM Plex Sans Arabic Thin */
-    public static final String Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.ttf";
+    public static final String Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.otf";
 }

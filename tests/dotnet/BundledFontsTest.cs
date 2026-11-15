@@ -154,13 +154,9 @@ public class BundledFontsTest {
                 Assert.True(font.GetAscent() > 0f, path);
             }
         }
-        // A path to the .ttf of IBM Plex Sans or Serif that PDFjet carried
-        // before 9.1.9 is the .otf it carries
-        using (Stream stream = BundledFonts.Open("fonts/IBMPlexSerif/IBMPlexSerif-Bold.ttf", "no-such-folder/"))
-        using (Stream otf = BundledFonts.OpenResource("IBMPlexSerif/IBMPlexSerif-Bold.otf")) {
-            Assert.NotNull(stream);
-            Assert.Equal(otf.Length, stream.Length);
-        }
+        // A path to the .ttf of a font PDFjet carries as .otf is not found
+        // among the resources either
+        Assert.Null(BundledFonts.Open("fonts/IBMPlexSerif/IBMPlexSerif-Bold.ttf", "no-such-folder/"));
 #else
         // The small library, as built from the repository and for GitHub
         Assert.Empty(resources);
@@ -176,7 +172,7 @@ public class BundledFontsTest {
 
     [Fact]
     public void AWorldFontNotFoundNamesThePackageAndTheLineToAdd() {
-        Assert.Equal("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf is not a file, nor in resources/fonts/world. "
+        Assert.Equal("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf is not a file, nor in resources/fonts/world. "
                 + "IBM Plex Sans Arabic is in the NuGet package PDFjet.Fonts.World, with PDFjet's fonts for "
                 + "Chinese, Japanese, Korean, Arabic, Hebrew and Thai: dotnet add package PDFjet.Fonts.World"
                 + " --version " + PDF.VERSION
@@ -191,7 +187,7 @@ public class BundledFontsTest {
         // Not for the European fonts, nor for a face PDFjet does not carry,
         // nor for IBM Plex Math, which it no longer carries
         Assert.Contains("IBM Plex Sans KR is in", BundledFonts.WorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf.stream"));
-        Assert.Contains("IBM Plex Sans Thai is in", BundledFonts.WorldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf.stream"));
+        Assert.Contains("IBM Plex Sans Thai is in", BundledFonts.WorldMissing("fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf.stream"));
         Assert.Contains("IBM Plex Sans JP is in", BundledFonts.WorldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf.stream"));
         Assert.Null(BundledFonts.WorldMissing(IBMPlexSans.Regular));
         Assert.Null(BundledFonts.WorldMissing("fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"));
@@ -216,89 +212,66 @@ public class BundledFontsTest {
         Assert.Contains("nuget/world/buildTransitive", File.ReadAllText(TestSupport.RepoPath("package-nuget.sh")));
     }
 
-    // PDFjet carries IBM Plex Sans and Serif as .otf from 9.1.9, and as .ttf
-    // before: a path written for the .ttf is the .otf of the same face, as is
-    // one of the .stream files of before 9.0.5; a .ttf of one's own at that
-    // path, or of that name in the folder resources/fonts, is read first.
+    // The fonts PDFjet carries are .otf files, and a path loads the file it
+    // names: a path to the .ttf of one of them, which is not a file, is not
+    // found, and the error names the .otf path and the constant to write; a
+    // .ttf of one's own at that path, or of that name in the folder
+    // resources/fonts, is read as any file is.
     [Fact]
-    public void APathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries() {
+    public void APathToTheTTFOfAFontPDFjetCarriesAsOTFNamesTheOTF() {
         String folder = TestSupport.RepoPath("resources/fonts") + "/";
-        foreach (String family in new String[] {"IBMPlexSans", "IBMPlexSerif"}) {
-            foreach (String style in new String[] {"Thin", "ThinItalic", "Light", "LightItalic", "Text", "TextItalic",
-                    "Regular", "Italic", "Medium", "MediumItalic", "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"}) {
-                byte[] otf = File.ReadAllBytes(folder + family + "/" + family + "-" + style + ".otf");
-                String path = "fonts/" + family + "/" + family + "-" + style + ".ttf";
-                foreach (String old in new String[] {path, path + ".stream"}) {
-                    String file = Font.FontFileOf(old);
-                    using (Stream stream = BundledFonts.Open(file, folder)) {
-                        Assert.True(stream != null, old);
-                        MemoryStream bytes = new MemoryStream();
-                        stream.CopyTo(bytes);
-                        Assert.True(bytes.ToArray().AsSpan().SequenceEqual(otf), old);
-                    }
-                }
-            }
+        FileNotFoundException e = Assert.Throws<FileNotFoundException>(
+                () => new Font(TestSupport.NewPDF(), "fonts/CascadiaMono/CascadiaMono-Regular.ttf"));
+        Assert.Equal("No bundled font fonts/CascadiaMono/CascadiaMono-Regular.ttf; PDFjet carries it as "
+                + "fonts/CascadiaMono/CascadiaMono-Regular.otf (or use the constant CascadiaMono.Regular).",
+                e.Message);
+        String[][] faces = {
+            new[] {IBMPlexSans.Regular, "IBMPlexSans.Regular"},
+            new[] {IBMPlexSans.Italic, "IBMPlexSans.Italic"},
+            new[] {IBMPlexSans.ThinItalic, "IBMPlexSans.ThinItalic"},
+            new[] {IBMPlexSerif.SemiBold, "IBMPlexSerif.SemiBold"},
+            new[] {CascadiaMono.SemiLightItalic, "CascadiaMono.SemiLightItalic"},
+            new[] {IBMPlexSansArabic.Regular, "IBMPlexSansArabic.Regular"},
+            new[] {IBMPlexSansHebrew.Thin, "IBMPlexSansHebrew.Thin"},
+            new[] {IBMPlexSansThai.Bold, "IBMPlexSansThai.Bold"},
+            new[] {IBMPlexSansJP.Regular, "IBMPlexSansJP.Regular"},
+        };
+        foreach (String[] face in faces) {
+            String ttf = face[0].Replace(".otf", ".ttf");
+            Assert.Null(BundledFonts.Open(ttf, folder));
+            e = Assert.Throws<FileNotFoundException>(() => Font.Open(ttf));
+            Assert.Equal("No bundled font " + ttf + "; PDFjet carries it as " + face[0]
+                    + " (or use the constant " + face[1] + ").", e.Message);
         }
-        Assert.Equal("IBMPlexSans-Bold", new Font(TestSupport.NewPDF(), IBMPlexSans.Bold.Replace(".otf", ".ttf")).name);
+        // A face PDFjet does not carry, and a font of a family it does not
+        // carry, are not found, as before, with no .otf to name
+        foreach (String path in new String[] {"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
+                "fonts/CascadiaMono/CascadiaMono-ExtraLight.ttf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf",
+                "fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf", "fonts/IBMPlexSans/IBMPlexSans-Regular.woff2"}) {
+            Assert.Null(BundledFonts.Open(path, folder));
+            Assert.Null(BundledFonts.OtfInstead(path));
+            e = Assert.Throws<FileNotFoundException>(() => Font.Open(path));
+            Assert.Contains("nor one of the fonts PDFjet carries", e.Message);
+        }
+        Assert.Null(BundledFonts.OtfInstead(IBMPlexSans.Regular));
         // A .ttf of one's own at that path, and of that name in the folder
-        byte[] ttf = TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
+        byte[] ttfBytes = TestSupport.FontBytes("tests/fonts/IBMPlexSans-Regular.ttf");
         using (TestSupport.TempDir dir = new TestSupport.TempDir()) {
             Directory.CreateDirectory(dir.Path + "/fonts/IBMPlexSans");
             Directory.CreateDirectory(dir.Path + "/resources/fonts/IBMPlexSerif");
-            String own = dir.Write("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", ttf);
-            dir.Write("resources/fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", ttf);
+            String own = dir.Write("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", ttfBytes);
+            dir.Write("resources/fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", ttfBytes);
             using (Stream stream = Font.Open(own)) {
                 MemoryStream bytes = new MemoryStream();
                 stream.CopyTo(bytes);
-                Assert.True(bytes.ToArray().AsSpan().SequenceEqual(ttf));
+                Assert.True(bytes.ToArray().AsSpan().SequenceEqual(ttfBytes));
             }
             using (Stream stream = BundledFonts.Open("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf", dir.Path + "/resources/fonts/")) {
                 MemoryStream bytes = new MemoryStream();
                 stream.CopyTo(bytes);
-                Assert.True(bytes.ToArray().AsSpan().SequenceEqual(ttf));
+                Assert.True(bytes.ToArray().AsSpan().SequenceEqual(ttfBytes));
             }
         }
-        // Only the families PDFjet carried as .ttf, and only their .ttf and
-        // .otf: a face PDFjet does not carry is not found still
-        foreach (String path in new String[] {"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
-                "fonts/CascadiaMono/CascadiaMono-ExtraLight.ttf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"}) {
-            Assert.Null(BundledFonts.Open(path, folder));
-        }
-        Assert.Null(BundledFonts.Renamed("IBMPlexMono/IBMPlexMono-Regular.ttf"));
-        Assert.Null(BundledFonts.Renamed("IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
-        Assert.Null(BundledFonts.Renamed("IBMPlexSans/IBMPlexSans-Regular.woff2"));
-        Assert.Equal("IBMPlexSerif/IBMPlexSerif-Bold.otf", BundledFonts.Renamed("IBMPlexSerif/IBMPlexSerif-Bold.ttf"));
-        // And back: the .otf of 9.1.9 is the .ttf of a resources/fonts folder of before
-        Assert.Equal("IBMPlexSans/IBMPlexSans-Regular.ttf", BundledFonts.Renamed("IBMPlexSans/IBMPlexSans-Regular.otf"));
-    }
-
-    // PDFjet carries Cascadia Mono as .otf from 9.1.9, and as .ttf before:
-    // a path written for the .ttf, such as the constants of 9.1.7, is the .otf
-    // of the same face, as is one of the .stream files of before 9.0.5; and
-    // the .otf is the .ttf of a resources/fonts folder of before.
-    [Fact]
-    public void APathToTheTTFOfCascadiaMonoIsTheOTFPDFjetCarries() {
-        String folder = TestSupport.RepoPath("resources/fonts") + "/";
-        foreach (String style in new String[] {"Light", "LightItalic", "SemiLight", "SemiLightItalic", "Regular", "Italic",
-                "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"}) {
-            byte[] otf = File.ReadAllBytes(folder + "CascadiaMono/CascadiaMono-" + style + ".otf");
-            String path = "fonts/CascadiaMono/CascadiaMono-" + style + ".ttf";
-            foreach (String old in new String[] {path, path + ".stream"}) {
-                String file = Font.FontFileOf(old);
-                using (Stream stream = BundledFonts.Open(file, folder)) {
-                    Assert.True(stream != null, old);
-                    MemoryStream bytes = new MemoryStream();
-                    stream.CopyTo(bytes);
-                    Assert.True(bytes.ToArray().AsSpan().SequenceEqual(otf), old);
-                }
-            }
-        }
-        Font font = new Font(TestSupport.NewPDF(), CascadiaMono.Regular.Replace(".otf", ".ttf"));
-        Assert.Equal("CascadiaMono-Regular", font.name);
-        Assert.True(font.cff);
-        Assert.Equal("fonts/CascadiaMono/CascadiaMono-Regular.otf", CascadiaMono.Regular);
-        Assert.Equal("CascadiaMono/CascadiaMono-Bold.otf", BundledFonts.Renamed("CascadiaMono/CascadiaMono-Bold.ttf"));
-        Assert.Equal("CascadiaMono/CascadiaMono-Regular.ttf", BundledFonts.Renamed("CascadiaMono/CascadiaMono-Regular.otf"));
     }
 
     [Fact]

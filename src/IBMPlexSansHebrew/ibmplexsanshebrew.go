@@ -15,7 +15,7 @@ package IBMPlexSansHebrew
 // The paths of the font files.
 const (
 	// Bold is IBM Plex Sans Hebrew Bold.
-	Bold = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Bold.ttf"
+	Bold = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Bold.otf"
 
 	// ExtraLight is IBM Plex Sans Hebrew ExtraLight, which PDFjet does not
 	// carry from 9.1.7: a font file of its packages before, read when the file is
@@ -24,15 +24,15 @@ const (
 	// Deprecated: PDFjet carries the other weights of the family.
 	ExtraLight = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-ExtraLight.ttf"
 	// Light is IBM Plex Sans Hebrew Light.
-	Light = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Light.ttf"
+	Light = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Light.otf"
 	// Medium is IBM Plex Sans Hebrew Medium.
-	Medium = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Medium.ttf"
+	Medium = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Medium.otf"
 	// Regular is IBM Plex Sans Hebrew Regular.
-	Regular = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"
+	Regular = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"
 	// SemiBold is IBM Plex Sans Hebrew SemiBold.
-	SemiBold = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-SemiBold.ttf"
+	SemiBold = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-SemiBold.otf"
 	// Text is IBM Plex Sans Hebrew Text.
-	Text = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Text.ttf"
+	Text = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Text.otf"
 	// Thin is IBM Plex Sans Hebrew Thin.
-	Thin = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Thin.ttf"
+	Thin = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Thin.otf"
 )

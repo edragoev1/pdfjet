@@ -137,9 +137,9 @@ func TestFontAStreamFontPathOpensTheTrueTypeFont(t *testing.T) {
 			testRepoPath(t, "tests/fonts/IBMPlexSans-Italic.otf")},
 		// The fonts PDFjet carries
 		{testRepoPath(t, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
-			testRepoPath(t, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")},
+			testRepoPath(t, "fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf")},
 		{testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
-			testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")},
+			testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")},
 	} {
 		if got := fontFileOf(path[0]); got != path[1] {
 			t.Errorf("%s: %s", path[0], got)
@@ -382,8 +382,9 @@ func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
 	// The same font added twice is one font program.
 	for _, pair := range [][]string{
 		{"tests/fonts/IBMPlexSans-Regular.otf", "tests/fonts/IBMPlexSans-Regular.otf"},
-		// IBM Plex Sans Thai (Noto Sans Thai before 9.1.7)
-		{"fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf", "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"},
+		// A TrueType font, IBM's .ttf of IBM Plex Sans (IBM Plex Sans Thai's
+		// .ttf before PDFjet carried its .otf, Noto Sans Thai before 9.1.7)
+		{"tests/fonts/IBMPlexSans-Regular.ttf", "tests/fonts/IBMPlexSans-Regular.ttf"},
 	} {
 		if n := testEmbeddedFonts(testDocumentWithFonts(t, pair...)); n != 1 {
 			t.Errorf("%s: %d font programs embedded", pair[1], n)
@@ -393,12 +394,10 @@ func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
 
 func TestFontTheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable(t *testing.T) {
 	// IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-	// whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
-	// .ttf it carried before is the .otf.
+	// whole degree; PDFjet carries the .otf.
 	for _, font := range [][2]string{
 		{"tests/fonts/IBMPlexSans-Italic.otf", "-11.31"},
 		{"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
-		{"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"},
 		{"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"},
 		// Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
 		// 9.1.7), its italic angle -10 in its post table
@@ -475,7 +474,7 @@ func TestFontAGlyphOfSeveralCharactersMapsToTheCharacterDrawn(t *testing.T) {
 	doc := testNewDoc()
 	page := NewPage(doc.pdf, letter.Portrait())
 	arabic := NewFont(doc.pdf, bytes.NewReader(testWithSharedGlyphs(t,
-		testFontBytes(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+		testFontBytes(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
 		[][2]rune{{0x0661, 0x06F1}, {0x0663, 0x06F3}, {0x0669, 0x06F9}, {0x0668, 0x06F8}})))
 	tc := NewFontFromFile(doc.pdf, testRepoPath(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"))
 	NewTextLine(arabic, "\u06F1\u06F3\u06F9\u06F8").SetLocation(50, 50).DrawOn(page)
@@ -503,7 +502,7 @@ func TestFontAGlyphOfSeveralCharactersMapsToTheCharacterDrawn(t *testing.T) {
 func TestFontTheSecondCharacterOfAGlyphHasItsActualText(t *testing.T) {
 	pdf := testNewPDF()
 	arabic := NewFont(pdf, bytes.NewReader(testWithSharedGlyphs(t,
-		testFontBytes(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+		testFontBytes(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
 		[][2]rune{{0x0661, 0x06F1}, {0x0663, 0x06F3}})))
 	if arabic.unicodeToGID.get(0x0661) != arabic.unicodeToGID.get(0x06F1) {
 		t.Fatal("the font draws ١ and ۱ with two glyphs")
@@ -539,7 +538,7 @@ func TestFontTheSecondCharacterOfAGlyphHasItsActualText(t *testing.T) {
 // (review of 12 October 2026, R34).
 func TestFontAStampKeepsAJoinerInTheActualText(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"))
 	if font.unicodeToGID.get(0x200C) != 0 {
 		t.Fatal("the font has a glyph for the ZWNJ")
 	}

@@ -12,10 +12,11 @@ import Testing
 // of the font loaders found them: each throws with a message, and none reads
 // past the font, allocates what the font does not have or traps.
 @Suite struct OTFTests {
-    // IBM Plex Sans Thai: TrueType outlines, the short offsets of loca, a
-    // format 4 character map with a glyph ID array, and GPOS lookups, as Noto
-    // Sans Thai, which these tests read before 9.1.7, has.
-    private let thai = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"
+    // IBM's .ttf of IBM Plex Sans: TrueType outlines, the short offsets of
+    // loca, a format 4 character map with a glyph ID array, and GPOS lookups,
+    // as IBM Plex Sans Thai's .ttf, which these tests read before PDFjet
+    // carried its .otf, and Noto Sans Thai, before 9.1.7, have.
+    private let ttfPath = "tests/fonts/IBMPlexSans-Regular.ttf"
     // IBM Plex Sans TC, as the .otf PDFjet carries: the same character map
     // as its .ttf, of which these tests read the format 12 subtable.
     private let tc = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"
@@ -90,7 +91,7 @@ import Testing
     }
 
     @Test func aFontThatEndsWhereATableIsReadIsRefused() throws {
-        let data = font(thai)
+        let data = font(ttfPath)
         // The directory, and then the tables it points at, are read from the
         // front of the font, so every one of these ends in the middle of a read.
         for length in [4, 5, 12, 13, 100, 1000] {
@@ -100,7 +101,7 @@ import Testing
     }
 
     @Test func aFontWithoutWhatItIsDrawnWithIsRefused() throws {
-        let ttf = font(thai)
+        let ttf = font(ttfPath)
         let otf = font(plex)
         let head = table(ttf, "head")
         let hhea = table(ttf, "hhea")
@@ -135,7 +136,7 @@ import Testing
         // The name goes into the PDF as the name of the font, where a name
         // that is not a PDF name would break the syntax, so a font with none
         // is refused.
-        #expect(error(without(font(thai), "name")) == "Invalid font file: the font name.")
+        #expect(error(without(font(ttfPath), "name")) == "Invalid font file: the font name.")
     }
 
     @Test func aFontWithoutTheTablesItNeedsNoneOfStillDraws() throws {
@@ -143,7 +144,7 @@ import Testing
         // every character of its map is read; without post it has no
         // underline; without GPOS its marks are not placed. None of the three
         // stops it from drawing.
-        let data = font(thai)
+        let data = font(ttfPath)
         for name in ["OS/2", "post", "GPOS"] {
             try draws(without(data, name))
         }
@@ -152,7 +153,7 @@ import Testing
     @Test func aNameRecordOutsideTheFontIsLeftOut() throws {
         // The offset of the first name record, past the end of the font. The
         // font keeps its other records and still draws.
-        let data = font(thai)
+        let data = font(ttfPath)
         try draws(with(data, table(data, "name") + 16, 0xFFFF))
     }
 
@@ -160,7 +161,7 @@ import Testing
         // The length of the format 4 subtable, cut to its header and the four
         // arrays of its segments, so that its glyph ID array holds nothing and
         // every segment that is read through it points outside.
-        let data = font(thai)
+        let data = font(ttfPath)
         let subtable = cmap4(data)
         try draws(with(data, subtable + 2, 16 + 4*uint16(data, subtable + 6)))
     }
@@ -170,7 +171,7 @@ import Testing
         // lookup, changed to the most a font can say it has. Read to the end
         // it says, the font takes every byte of memory there is and never
         // loads; read to the work a font needs, it loads at once.
-        let data = font(thai)
+        let data = font(ttfPath)
         let gpos = table(data, "GPOS")
         let lookupList = gpos + uint16(data, gpos + 8)
         let lookup = lookupList + uint16(data, lookupList + 2)
@@ -192,9 +193,9 @@ import Testing
         // The cap height of both fonts, sCapHeight in OS/2 and the top of the
         // H, is 698 (714 in Noto Sans Thai and Noto Sans, which this test read
         // before 9.1.7), so sCapHeight is changed to 999 to tell the two
-        // apart. IBM Plex Sans Thai has the short offsets of loca, and IBM
-        // Plex Math the long ones, as Noto Sans had.
-        for path in [thai, "tests/fonts/IBMPlexMath-Regular.ttf"] {
+        // apart. IBM Plex Sans has the short offsets of loca, and IBM Plex
+        // Math the long ones, as Noto Sans had.
+        for path in [ttfPath, "tests/fonts/IBMPlexMath-Regular.ttf"] {
             var data = font(path)
             let os2 = table(data, "OS/2")
             data = with(data, os2 + 88, 999)
@@ -207,19 +208,18 @@ import Testing
     }
 
     @Test func aFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() throws {
-        // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
-        // of the H in; its ascent is 1025. IBM Plex Sans Thai without its
-        // loca table has no offset for its H; its ascent is 1116 (Noto Sans
-        // Thai's, before 9.1.7, 1061).
+        // IBM Plex Sans's .otf has CFF outlines, and so no glyf table to find
+        // the top of the H in; its ascent is 1025. Its .ttf without its loca
+        // table has no offset for its H; its ascent is 1025 too.
         let otf = font(plex)
         #expect(try capHeight(with(otf, table(otf, "OS/2"), 1)) == 1025, "CFF outlines")
-        var ttf = font(thai)
+        var ttf = font(ttfPath)
         ttf = with(ttf, table(ttf, "OS/2"), 1)
-        #expect(try capHeight(without(ttf, "loca")) == 1116, "no loca table")
+        #expect(try capHeight(without(ttf, "loca")) == 1025, "no loca table")
         // A loca table that ends before the offsets of the H, and a glyf table
         // that ends before the header of the H.
-        #expect(try capHeight(length(ttf, "loca", 4)) == 1116, "a loca table of 4 bytes")
-        #expect(try capHeight(length(ttf, "glyf", 4)) == 1116, "a glyf table of 4 bytes")
+        #expect(try capHeight(length(ttf, "loca", 4)) == 1025, "a loca table of 4 bytes")
+        #expect(try capHeight(length(ttf, "glyf", 4)) == 1025, "a glyf table of 4 bytes")
     }
 
     // The font with the entries of two tables swapped in its directory, the
@@ -238,7 +238,7 @@ import Testing
         // font listing hmtx first had its widths left unread, every glyph 0
         // wide, as in Go (found by the fuzz replay, 8 October 2026). A font
         // without hhea has no widths, and is refused.
-        for path in [thai, plex] {
+        for path in [ttfPath, plex] {
             let font = font(path)
             let pdf = TestSupport.newPDF()
             let want = try Font(pdf, InputStream(data: Data(font))).stringWidth(12.0, "Ab1 x")

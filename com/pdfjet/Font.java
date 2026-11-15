@@ -399,10 +399,10 @@ final public class Font {
      * IBMPlexSansArabic.Regular, are in the jar com.pdfjet:pdfjet-fonts-world,
      * which a program adds next to it, and such a font not found says so. A path to a
      * .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-     * opens the .ttf or else the .otf file of the same name beside it. A path
-     * to the .ttf of IBM Plex Sans or Serif or Cascadia Mono, which PDFjet carried before
-     * 9.1.9, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, is read, when
-     * there is no such file, as the .otf it carries of the same face.
+     * opens the .ttf or else the .otf file of the same name beside it. The
+     * fonts PDFjet carries are .otf files: a path to a .ttf of one of them,
+     * such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file
+     * throws, and names the .otf path and the constant to write.
      *
      * @param pdf      the pdf object.
      * @param fontPath the font path.
@@ -425,6 +425,10 @@ final public class Font {
             InputStream bundled = BundledFonts.open(fontPath);
             if (bundled != null) {
                 return new BufferedInputStream(bundled);
+            }
+            String otf = BundledFonts.otfInstead(fontPath);
+            if (otf != null) {
+                throw new FileNotFoundException(otf);
             }
             String world = BundledFonts.worldMissing(fontPath);
             if (world != null) {

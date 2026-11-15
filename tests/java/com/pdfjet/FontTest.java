@@ -150,9 +150,9 @@ class FontTest {
                     TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf").getPath()},
                 // The fonts PDFjet carries
                 {TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream").getPath(),
-                    TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf").getPath()},
+                    TestSupport.file("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf").getPath()},
                 {TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").getPath(),
-                    TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").getPath()},
+                    TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf").getPath()},
             };
             for (String[] path : paths) {
                 assertEquals(path[1], Font.fontFileOf(path[0]), path[0]);
@@ -405,14 +405,12 @@ class FontTest {
     @Test
     void theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws Exception {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-        // whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
-        // .ttf it carried before is the .otf.
+        // whole degree; PDFjet carries the .otf.
         assumeTrue(TestSupport.file("tests/fonts/IBMPlexSans-Italic.otf").exists(),
                 "the fonts directory is not here");
         String[][] fonts = {
             {"tests/fonts/IBMPlexSans-Italic.otf", "-11.31"},
             {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
-            {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"},
             {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"},
             // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
             // 9.1.7), its italic angle -10 in its post table
@@ -491,7 +489,7 @@ class FontTest {
         PDF pdf = new PDF(bos);
         Page page = new Page(pdf, Letter.PORTRAIT);
         Font arabic = new Font(pdf, new ByteArrayInputStream(TestSupport.withSharedGlyphs(
-                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 new int[][] {{0x0661, 0x06F1}, {0x0663, 0x06F3}, {0x0669, 0x06F9}, {0x0668, 0x06F8}})));
         Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"));
         new TextLine(arabic, "\u06F1\u06F3\u06F9\u06F8").setLocation(50f, 50f).drawOn(page);
@@ -519,7 +517,7 @@ class FontTest {
     void theSecondCharacterOfAGlyphHasItsActualText() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font arabic = new Font(pdf, new ByteArrayInputStream(TestSupport.withSharedGlyphs(
-                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 new int[][] {{0x0661, 0x06F1}, {0x0663, 0x06F3}})));
         assertEquals(arabic.unicodeToGID.get(0x0661), arabic.unicodeToGID.get(0x06F1));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -547,7 +545,7 @@ class FontTest {
     @Test
     void aStampKeepsAJoinerInTheActualText() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"));
         assertEquals(0, font.unicodeToGID.get(0x200C));
         Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
         stamp.drawText(font, 12f, 0f, 12f, "a\u200C\u200Eb");

@@ -44,7 +44,7 @@ final class BundledFonts {
     // The families of the fonts of resources/fonts/world and the jar
     // com.pdfjet:pdfjet-fonts-world, apart from the European ones, as they
     // are about 52 MB, and the styles of the faces of each that PDFjet
-    // carries: IBM Plex Sans JP, KR, SC and TC as .otf, the others as .ttf.
+    // carries, all .otf.
     private static final Map<String, List<String>> WORLD_FACES = worldFaces();
 
     private static Map<String, List<String>> worldFaces() {
@@ -59,7 +59,7 @@ final class BundledFonts {
         for (String family : new String[] {"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
             List<String> files = new ArrayList<String>();
             for (String style : new String[] {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}) {
-                files.add(family + "-" + style + ".ttf");
+                files.add(family + "-" + style + ".otf");
             }
             faces.put(family, files);
         }
@@ -121,44 +121,7 @@ final class BundledFonts {
         if (name == null || name.indexOf("..") >= 0) {
             return null;
         }
-        InputStream stream = openName(name, folder, loader);
-        String renamed = renamed(name);
-        if (stream == null && renamed != null) {
-            stream = openName(renamed, folder, loader);
-        }
-        return stream;
-    }
-
-    // The families PDFjet carries as .otf from 9.1.9 and carried as .ttf
-    // before: IBM Plex Sans and Serif, whose .otf, of the same release of
-    // IBM, have the same advance widths, kerning and line metrics as their
-    // .ttf, and embed a fifth smaller; and Cascadia Mono, whose .otf, of the
-    // same release of Microsoft, have the same advance widths and line
-    // metrics as its .ttf, and no kerning either.
-    private static final String[] RENAMED = {"IBMPlexSans", "IBMPlexSerif", "CascadiaMono"};
-
-    // Returns the other name of a font of IBM Plex Sans or Serif or Cascadia
-    // Mono, Family/File:
-    // of a .ttf, such as IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet
-    // carries from 9.1.9, so that a path written for the .ttf is the same
-    // font; of an .otf, the .ttf PDFjet carried before, so that a program
-    // that took the library of 9.1.9 alone, beside the resources/fonts folder
-    // of an older one, still finds its font; null for any other name. The
-    // name itself, a file at the path or of that name in resources/fonts, is
-    // read first.
-    static String renamed(String name) {
-        int slash = name.indexOf('/');
-        if (slash < 0 || !(name.endsWith(".ttf") || name.endsWith(".otf"))) {
-            return null;
-        }
-        String family = name.substring(0, slash);
-        for (String renamed : RENAMED) {
-            if (renamed.equals(family)) {
-                String base = name.substring(0, name.length() - ".ttf".length());
-                return base + (name.endsWith(".ttf") ? ".otf" : ".ttf");
-            }
-        }
-        return null;
+        return openName(name, folder, loader);
     }
 
     // Opens the font of the name, Family/File, as open does, or returns null.
@@ -183,6 +146,51 @@ final class BundledFonts {
             stream = context.getResourceAsStream(RESOURCES + path);
         }
         return stream;
+    }
+
+    // Returns what to write for a .ttf of a font that PDFjet carries as .otf,
+    // such as fonts/CascadiaMono/CascadiaMono-Regular.ttf, which is not a
+    // file: the .otf path, or its constant; null for any other path. PDFjet
+    // never reads one file for another: the path names the file it reads.
+    static String otfInstead(String fontPath) {
+        String name = nameOf(fontPath);
+        if (name == null || !name.endsWith(".ttf")) {
+            return null;
+        }
+        String otf = name.substring(0, name.length() - ".ttf".length()) + ".otf";
+        if (!isCarried(otf)) {
+            return null;
+        }
+        String family = otf.substring(0, otf.indexOf('/'));
+        String style = otf.substring(family.length() + 1 + family.length() + 1, otf.length() - ".otf".length());
+        return "No bundled font " + fontPath + "; PDFjet carries it as fonts/" + otf
+                + " (or use the constant " + family + "." + style + ").";
+    }
+
+    // Tells if PDFjet carries the font of the name, Family/File, such as
+    // IBMPlexSans/IBMPlexSans-Regular.otf, whether or not it is installed.
+    static boolean isCarried(String name) {
+        int slash = name.indexOf('/');
+        if (slash < 0) {
+            return false;
+        }
+        String family = name.substring(0, slash);
+        String file = name.substring(slash + 1);
+        List<String> faces = WORLD_FACES.get(family);
+        if (faces != null) {
+            return faces.contains(file);
+        }
+        for (int f = 0; f < FAMILIES.length; f++) {
+            if (FAMILIES[f].equals(family)) {
+                for (String style : STYLES[f]) {
+                    String italic = style.equals("Regular") ? "Italic" : style + "Italic";
+                    if (file.equals(family + "-" + style + ".otf") || file.equals(family + "-" + italic + ".otf")) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     // Returns what to do when the font of the path is one of the fonts of

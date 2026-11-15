@@ -521,7 +521,7 @@ import Testing
     // code point and drew a row "าษาไ" (review of 11 October 2026, #14).
     @Test
     func cutsAWordWhereTextBlockDoes() throws {
-        let font = try Font(TestSupport.newPDF(), TestSupport.path("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"))
+        let font = try Font(TestSupport.newPDF(), TestSupport.path("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"))
         font.setSize(12)
         let word = "ภาษาไทยภาษาไทยภาษาไทย"
         let textLine = TextLine(font, word)

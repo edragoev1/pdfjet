@@ -113,9 +113,9 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 }
 
 func TestSubsetOfAFontWithShortOffsets(t *testing.T) {
-	// IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
-	// Thai's had.
-	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	// IBM's .ttf of IBM Plex Sans, whose loca has the short offsets, as IBM
+	// Plex Sans Thai's .ttf and Noto Sans Thai's had.
+	ttf := testOpenTypeFontBytes(t, testSubsetPlex)
 	head := testOpenTypeTable(t, ttf, "head")
 	if binary.BigEndian.Uint16(ttf[head+50:]) != 0 {
 		t.Fatal("the font has long offsets")

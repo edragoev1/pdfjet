@@ -40,8 +40,7 @@ enum BundledFonts {
 
     // The families of the fonts of resources/fonts/world and the product
     // PDFjetFontsWorld, apart from the European ones, as they are about 52
-    // MB, and the files of the faces of each that PDFjet carries: IBM Plex
-    // Sans JP, KR, SC and TC as .otf, the others as .ttf.
+    // MB, and the files of the faces of each that PDFjet carries, all .otf.
     private static let worldFaces: [String: [String]] = {
         var faces = [String: [String]]()
         for family in ["IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"] {
@@ -49,7 +48,7 @@ enum BundledFonts {
         }
         for family in ["IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"] {
             faces[family] = ["Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"].map {
-                family + "-" + $0 + ".ttf"
+                family + "-" + $0 + ".otf"
             }
         }
         return faces
@@ -156,38 +155,47 @@ enum BundledFonts {
         guard let name = nameOf(fontPath), !name.contains(".."), !name.hasPrefix("/") else {
             return nil
         }
-        if let url = url(name: name, folder, bundle, worldBundle) {
-            return url
-        }
-        if let renamed = renamed(name) {
-            return url(name: renamed, folder, bundle, worldBundle)
-        }
-        return nil
+        return url(name: name, folder, bundle, worldBundle)
     }
 
-    // The families PDFjet carries as .otf from 9.1.9 and carried as .ttf
-    // before: IBM Plex Sans and Serif, whose .otf, of the same release of
-    // IBM, have the same advance widths, kerning and line metrics as their
-    // .ttf, and embed a fifth smaller; and Cascadia Mono, whose .otf, of the
-    // same release of Microsoft, have the same advance widths and line
-    // metrics as its .ttf, and no kerning either.
-    private static let renamedFamilies = ["IBMPlexSans", "IBMPlexSerif", "CascadiaMono"]
-
-    // Returns the other name of a font of IBM Plex Sans or Serif or Cascadia
-    // Mono, Family/File:
-    // of a .ttf, such as IBMPlexSans/IBMPlexSans-Regular.ttf, the .otf PDFjet
-    // carries from 9.1.9, so that a path written for the .ttf is the same
-    // font; of an .otf, the .ttf PDFjet carried before, so that a program
-    // that took the library of 9.1.9 alone, beside the resources/fonts folder
-    // of an older one, still finds its font; nil for any other name. The
-    // name itself, a file at the path or of that name in resources/fonts, is
-    // read first.
-    static func renamed(_ name: String) -> String? {
-        guard let slash = name.firstIndex(of: "/"), name.hasSuffix(".ttf") || name.hasSuffix(".otf"),
-                renamedFamilies.contains(String(name[..<slash])) else {
+    // Returns what to write for a .ttf of a font that PDFjet carries as .otf,
+    // such as fonts/CascadiaMono/CascadiaMono-Regular.ttf, which is not a
+    // file: the .otf path, or its constant; nil for any other path. PDFjet
+    // never reads one file for another: the path names the file it reads.
+    static func otfInstead(_ fontPath: String) -> String? {
+        guard let name = nameOf(fontPath), name.hasSuffix(".ttf") else {
             return nil
         }
-        return String(name.dropLast(".ttf".count)) + (name.hasSuffix(".ttf") ? ".otf" : ".ttf")
+        let otf = String(name.dropLast(".ttf".count)) + ".otf"
+        guard isCarried(otf), let slash = otf.firstIndex(of: "/") else {
+            return nil
+        }
+        let family = String(otf[..<slash])
+        let style = String(otf.dropFirst(family.count + 1 + family.count + 1).dropLast(".otf".count))
+        return "No bundled font " + fontPath + "; PDFjet carries it as fonts/" + otf
+                + " (or use the constant " + family + "." + style + ")."
+    }
+
+    // Tells if PDFjet carries the font of the name, Family/File, such as
+    // IBMPlexSans/IBMPlexSans-Regular.otf, whether or not it is installed.
+    static func isCarried(_ name: String) -> Bool {
+        guard let slash = name.firstIndex(of: "/") else {
+            return false
+        }
+        let family = String(name[..<slash])
+        let file = String(name[name.index(after: slash)...])
+        if let faces = worldFaces[family] {
+            return faces.contains(file)
+        }
+        for (f, carried) in families.enumerated() where carried == family {
+            for style in styles[f] {
+                let italic = (style == "Regular") ? "Italic" : style + "Italic"
+                if file == family + "-" + style + ".otf" || file == family + "-" + italic + ".otf" {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     // Returns the URL of the font of the name, Family/File, as url does, or nil.

@@ -102,7 +102,7 @@ dotnet build "$build/nuget/world/PDFjet.Fonts.World.csproj" -c release -p:TreatW
     "${sign[@]}" -p:FileVersion="$version" -p:InformationalVersion="$packageVersion"
 cp "$build/nuget/world/bin/release/netstandard2.0/PDFjet.Fonts.World.dll" "$worldStage/lib/netstandard2.0/"
 for face in JP-Regular.otf KR-Regular.otf SC-Regular.otf TC-Regular.otf \
-        Arabic-Regular.ttf Hebrew-Regular.ttf Thai-Regular.ttf; do
+        Arabic-Regular.otf Hebrew-Regular.otf Thai-Regular.otf; do
     family=IBMPlexSans${face%%-*}
     if ! grep -q -a "PDFjet.Fonts/world/$family/IBMPlexSans$face" \
             "$worldStage/lib/netstandard2.0/PDFjet.Fonts.World.dll"; then

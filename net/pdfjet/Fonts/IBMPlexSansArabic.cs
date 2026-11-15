@@ -23,7 +23,7 @@ namespace PDFjet.NET {
     /// </summary>
     public static class IBMPlexSansArabic {
         /// <summary>IBM Plex Sans Arabic Bold</summary>
-        public const string Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.ttf";
+        public const string Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.otf";
 
         /// <summary>
         /// IBM Plex Sans Arabic ExtraLight, which PDFjet does not carry from
@@ -32,16 +32,16 @@ namespace PDFjet.NET {
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string ExtraLight = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf";
         /// <summary>IBM Plex Sans Arabic Light</summary>
-        public const string Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.ttf";
+        public const string Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.otf";
         /// <summary>IBM Plex Sans Arabic Medium</summary>
-        public const string Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.ttf";
+        public const string Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.otf";
         /// <summary>IBM Plex Sans Arabic Regular</summary>
-        public const string Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf";
+        public const string Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf";
         /// <summary>IBM Plex Sans Arabic SemiBold</summary>
-        public const string SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf";
+        public const string SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.otf";
         /// <summary>IBM Plex Sans Arabic Text</summary>
-        public const string Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.ttf";
+        public const string Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.otf";
         /// <summary>IBM Plex Sans Arabic Thin</summary>
-        public const string Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.ttf";
+        public const string Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.otf";
     }
 }

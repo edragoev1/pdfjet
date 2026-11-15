@@ -134,9 +134,9 @@ public class FontTest {
                     TestSupport.RepoPath("tests/fonts/IBMPlexSans-Italic.otf")},
                 // The fonts PDFjet carries
                 new[] {TestSupport.RepoPath("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
-                    TestSupport.RepoPath("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")},
+                    TestSupport.RepoPath("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf")},
                 new[] {TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
-                    TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")},
+                    TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")},
             };
             foreach (string[] path in paths) {
                 Assert.Equal(path[1], Font.FontFileOf(path[0]));
@@ -376,15 +376,13 @@ public class FontTest {
     [Fact]
     public void TheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-        // whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
-        // .ttf it carried before is the .otf.
+        // whole degree; PDFjet carries the .otf.
         if (!File.Exists(TestSupport.RepoPath("tests/fonts/IBMPlexSans-Italic.otf"))) {
             return;     // The fonts directory is not here.
         }
         string[][] fonts = {
             new[] {"tests/fonts/IBMPlexSans-Italic.otf", "-11.31"},
             new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
-            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"},
             new[] {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"},
             // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
             // 9.1.7), its italic angle -10 in its post table
@@ -462,7 +460,7 @@ public class FontTest {
         PDF pdf = new PDF(stream);
         Page page = new Page(pdf, Letter.PORTRAIT);
         Font arabic = new Font(pdf, new MemoryStream(TestSupport.WithSharedGlyphs(
-                TestSupport.FontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.FontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 new int[][] {new[] {0x0661, 0x06F1}, new[] {0x0663, 0x06F3}, new[] {0x0669, 0x06F9}, new[] {0x0668, 0x06F8}})));
         Font tc = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"));
         new TextLine(arabic, "\u06F1\u06F3\u06F9\u06F8").SetLocation(50f, 50f).DrawOn(page);
@@ -489,7 +487,7 @@ public class FontTest {
         // the glyph of ∕.
         PDF pdf = TestSupport.NewPDF();
         Font arabic = new Font(pdf, new MemoryStream(TestSupport.WithSharedGlyphs(
-                TestSupport.FontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.FontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 new int[][] {new[] {0x0661, 0x06F1}, new[] {0x0663, 0x06F3}})));
         Assert.Equal(arabic.unicodeToGID.Get(0x0661), arabic.unicodeToGID.Get(0x06F1));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -517,7 +515,7 @@ public class FontTest {
         // for to the actual text of the glyph before it, as a page does: it was left
         // out (review of 12 October 2026, R34).
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"));
         Assert.Equal(0, font.unicodeToGID.Get(0x200C));
         Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
         stamp.DrawText(font, 12f, 0f, 12f, "a\u200C\u200Eb");

@@ -11,9 +11,9 @@ import Testing
 // The fonts, images and SVG images of the review: each test is one of
 // review_media_test.go in the Go port.
 @Suite struct ReviewMediaTests {
-    // IBM Plex Sans Thai, a TrueType font of Latin and Thai with a GPOS
+    // IBM Plex Sans Thai, the .otf PDFjet carries, of Latin and Thai with a GPOS
     // table, as Noto Sans Thai, which these tests read before 9.1.7, is.
-    private let thai = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"
+    private let thai = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"
     static let trueTypeFont = "tests/fonts/IBMPlexSans-Regular.ttf"
 
     private func font(_ path: String) -> [UInt8] {
@@ -587,8 +587,9 @@ import Testing
 
     @Test func aFontIsEmbeddedOnceWhenItIsAddedTwice() throws {
         let memory = MemoryPDF()
-        let font1 = try Font(memory.pdf, TestSupport.path(thai))
-        let font2 = try Font(memory.pdf, TestSupport.path(thai))
+        // A TrueType font, whose /FontFile2 has a /Length1
+        let font1 = try Font(memory.pdf, TestSupport.path(ReviewMediaTests.trueTypeFont))
+        let font2 = try Font(memory.pdf, TestSupport.path(ReviewMediaTests.trueTypeFont))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         TextLine(font1, "A").setLocation(50, 50).drawOn(page)
         TextLine(font2, "B").setLocation(50, 80).drawOn(page)

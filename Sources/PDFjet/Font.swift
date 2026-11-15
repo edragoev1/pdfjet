@@ -339,10 +339,10 @@ public class Font {
     /// resources/fonts/world, or else from the product PDFjetFontsWorld, which
     /// an app that draws in them adds, and such a font not found says so. A path to a
     /// .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-    /// opens the .ttf or else the .otf file of the same name beside it. A path
-    /// to the .ttf of IBM Plex Sans or Serif or Cascadia Mono, which PDFjet carried before
-    /// 9.1.9, such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, is read, when
-    /// there is no such file, as the .otf it carries of the same face.
+    /// opens the .ttf or else the .otf file of the same name beside it. The
+    /// fonts PDFjet carries are .otf files: a path to a .ttf of one of them,
+    /// such as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file
+    /// throws, and names the .otf path and the constant to write.
     ///
     /// - Parameter pdf: the pdf object.
     /// - Parameter fontPath: the font path.
@@ -367,6 +367,9 @@ public class Font {
         if !FileManager.default.fileExists(atPath: fontPath) {
             if let url = BundledFonts.url(fontPath), let data = try? Data(contentsOf: url) {
                 return [UInt8](data)
+            }
+            if let message = BundledFonts.otfInstead(fontPath) {
+                throw PDFjetError(message: message)
             }
             if let message = BundledFonts.worldMissing(fontPath) {
                 throw PDFjetError(message: message)

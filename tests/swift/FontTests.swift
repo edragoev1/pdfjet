@@ -117,9 +117,9 @@ import Testing
                 TestSupport.path("tests/fonts/IBMPlexSans-Italic.otf")),
             // The fonts PDFjet carries
             (TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf.stream"),
-                TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf")),
+                TestSupport.path("fonts/IBMPlexSerif/IBMPlexSerif-Regular.otf")),
             (TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
-                TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")),
+                TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")),
         ]
         for (path, want) in paths {
             #expect(Font.fontFileOf(path) == want, "\(path)")
@@ -357,12 +357,10 @@ import Testing
             "the fonts directory is not here"))
     func theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws {
         // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
-        // whole degree; PDFjet carries the .otf from 9.1.9, and a path to the
-        // .ttf it carried before is the .otf.
+        // whole degree; PDFjet carries the .otf.
         let fonts = [
             ("tests/fonts/IBMPlexSans-Italic.otf", "-11.31"),
             ("fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"),
-            ("fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11.31"),
             ("fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf", "-14.04"),
             // Cascadia Mono (IBM Plex Mono and JetBrains Mono, -9, before
             // 9.1.7), its italic angle -10 in its post table
@@ -437,7 +435,7 @@ import Testing
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let arabic = try Font(memory.pdf, InputStream(data: Data(TestSupport.withSharedGlyphs(
-                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 [[0x0661, 0x06F1], [0x0663, 0x06F3], [0x0669, 0x06F9], [0x0668, 0x06F8]]))))
         let tc = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf"))
         TextLine(arabic, "\u{06F1}\u{06F3}\u{06F9}\u{06F8}").setLocation(50, 50).drawOn(page)
@@ -463,7 +461,7 @@ import Testing
     @Test func theSecondCharacterOfAGlyphHasItsActualText() throws {
         let pdf = TestSupport.newPDF()
         let arabic = try Font(pdf, InputStream(data: Data(TestSupport.withSharedGlyphs(
-                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 [[0x0661, 0x06F1], [0x0663, 0x06F3]]))))
         try #require(arabic.unicodeToGID[0x0661] == arabic.unicodeToGID[0x06F1])
         let page = Page(pdf, Letter.PORTRAIT)
@@ -490,7 +488,7 @@ import Testing
     // out (review of 12 October 2026, R34).
     @Test func aStampKeepsAJoinerInTheActualText() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"))
         try #require(font.unicodeToGID[0x200C] == 0)
         let stamp = Stamp(pdf).setSize(100, 50)
         stamp.drawText(font, 12, 0, 12, "a\u{200C}\u{200E}b")

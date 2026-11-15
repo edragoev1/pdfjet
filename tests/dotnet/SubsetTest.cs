@@ -119,9 +119,9 @@ public class SubsetTest {
 
     [Fact]
     public void SubsetsAFontWithShortOffsets() {
-        // IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
-        // Thai's had.
-        byte[] ttf = FontBytes("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf");
+        // IBM's .ttf of IBM Plex Sans, whose loca has the short offsets, as
+        // IBM Plex Sans Thai's .ttf and Noto Sans Thai's had.
+        byte[] ttf = FontBytes(PLEX);
         Assert.Equal(0, U16(ttf, Table(ttf, "head") + 50));
         bool[] kept;
         byte[] subset = Subset.SubsetTrueType(ttf, Used(5), out kept);

@@ -195,7 +195,7 @@ func TestReview3TheRowsPastTheTableLimitAreNotKept(t *testing.T) {
 func TestReview3ACharacterCopiedAsTheFirstHasNoActualText(t *testing.T) {
 	pdf := testNewPDF()
 	font := NewFont(pdf, bytes.NewReader(testWithSharedGlyphs(t,
-		testFontBytes(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+		testFontBytes(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
 		[][2]rune{{0x0644, 0xFEDD}, {0x0661, 0x06F1}})))
 	if font.unicodeToGID.get(0x0644) != font.unicodeToGID.get(0xFEDD) {
 		t.Fatal("the font draws ل and its isolated form with two glyphs")
@@ -216,7 +216,7 @@ func TestReview3ACharacterCopiedAsTheFirstHasNoActualText(t *testing.T) {
 // and "ةِمى" was copied as "ىمِ ة" (T1).
 func TestReview3AWordWithMarksIsCopiedWithoutASpaceInside(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"))
 	page := NewPage(pdf, testLetterPortrait())
 	NewTextLine(font, "\u0628").SetLocation(50, 50).DrawOn(page)
 	// The glyph of ة as drawn first for another character, which no two

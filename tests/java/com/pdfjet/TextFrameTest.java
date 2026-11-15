@@ -581,7 +581,7 @@ class TextFrameTest {
     @Test
     void cutsAWordWhereTextBlockDoes() throws Exception {
         Font font = new Font(TestSupport.newPDF(),
-                TestSupport.open("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"));
+                TestSupport.open("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"));
         font.setSize(12f);
         String word = "ภาษาไทยภาษาไทยภาษาไทย";
         TextLine textLine = new TextLine(font, word);

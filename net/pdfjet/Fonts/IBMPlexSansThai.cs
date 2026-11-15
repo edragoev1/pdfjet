@@ -23,7 +23,7 @@ namespace PDFjet.NET {
     /// </summary>
     public static class IBMPlexSansThai {
         /// <summary>IBM Plex Sans Thai Bold</summary>
-        public const string Bold       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf";
+        public const string Bold       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf";
 
         /// <summary>
         /// IBM Plex Sans Thai ExtraLight, which PDFjet does not carry from
@@ -32,16 +32,16 @@ namespace PDFjet.NET {
         [Obsolete("PDFjet carries the other weights of the family.")]
         public const string ExtraLight = "fonts/IBMPlexSansThai/IBMPlexSansThai-ExtraLight.ttf";
         /// <summary>IBM Plex Sans Thai Light</summary>
-        public const string Light      = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.ttf";
+        public const string Light      = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.otf";
         /// <summary>IBM Plex Sans Thai Medium</summary>
-        public const string Medium     = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.ttf";
+        public const string Medium     = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.otf";
         /// <summary>IBM Plex Sans Thai Regular</summary>
-        public const string Regular    = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
+        public const string Regular    = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf";
         /// <summary>IBM Plex Sans Thai SemiBold</summary>
-        public const string SemiBold   = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.ttf";
+        public const string SemiBold   = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.otf";
         /// <summary>IBM Plex Sans Thai Text</summary>
-        public const string Text       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.ttf";
+        public const string Text       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.otf";
         /// <summary>IBM Plex Sans Thai Thin</summary>
-        public const string Thin       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.ttf";
+        public const string Thin       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.otf";
     }
 }

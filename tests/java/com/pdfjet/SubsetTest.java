@@ -126,9 +126,9 @@ class SubsetTest {
 
     @Test
     void subsetsAFontWithShortOffsets() throws Exception {
-        // IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
-        // Thai's had.
-        byte[] ttf = fontBytes("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf");
+        // IBM's .ttf of IBM Plex Sans, whose loca has the short offsets, as
+        // IBM Plex Sans Thai's .ttf and Noto Sans Thai's had.
+        byte[] ttf = fontBytes(PLEX);
         assertEquals(0, u16(ttf, table(ttf, "head") + 50));
         byte[] subset = Subset.subsetTrueType(ttf, used(5), new boolean[1][]);
         byte[] whole = glyph(ttf, 5);

@@ -217,7 +217,7 @@ class TextBlockTest {
     @Test
     void aLongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"));
         StringBuilder word = new StringBuilder();
         for (int i = 0; i < 25000; i++) {
             word.append("محمد");     // 100,000 letters, which took about 20 minutes
@@ -236,7 +236,7 @@ class TextBlockTest {
     @Test
     void aRightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"));
         TextBlock block = new TextBlock(font, "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה").setRightToLeft(true);
         block.setSize(80f, 20f);
         java.lang.reflect.Method getTextLines = TextBlock.class.getDeclaredMethod("getTextLines");
@@ -306,7 +306,7 @@ class TextBlockTest {
     @Test
     void aStampLeavesOutTheMarksOfDirection() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"));
         String text = Bidi.reorderVisually("שלום (abc) עולם");
         assertTrue(text.indexOf('\u200E') != -1 || text.indexOf('\u200F') != -1,
                 "the text has no marks of direction: " + text);
@@ -381,7 +381,7 @@ class TextBlockTest {
     // no hyphen (review of 12 October 2026, R17).
     @Test
     void aRightToLeftWordBreaksAtASoftHyphen() throws Exception {
-        Font font = new Font(TestSupport.newPDF(), TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        Font font = new Font(TestSupport.newPDF(), TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"));
         font.setSize(12f);
         float width = font.stringWidth(12f, "\u05E9\u05DC\u05D5\u05DD-") + 1f;
         String word = "\u05E9\u05DC\u05D5\u05DD\u00AD\u05E2\u05D5\u05DC\u05DD\u00AD\u05D0\u05D7\u05D3";

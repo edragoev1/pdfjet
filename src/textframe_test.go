@@ -673,7 +673,7 @@ func testJoinedLinesTime(count int) time.Duration {
 // nor after one written before its letter. TextFrame cut after any code point
 // and drew a row "าษาไ" (review of 11 October 2026, #14).
 func TestTextFrameCutsAWordWhereTextBlockDoes(t *testing.T) {
-	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"))
+	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"))
 	font.SetSize(12)
 	word := "ภาษาไทยภาษาไทยภาษาไทย"
 	textLine := NewTextLine(font, word)

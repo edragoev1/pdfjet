@@ -326,10 +326,10 @@ public class Font {
     /// are in the NuGet package PDFjet.Fonts.World, which a program adds next
     /// to PDFjet, and such a font not found says so. A path to a .ttf.stream or
     /// .otf.stream file, the fonts PDFjet shipped before 9.0.5, opens the .ttf
-    /// or else the .otf file of the same name beside it. A path to the .ttf of
-    /// IBM Plex Sans or Serif or Cascadia Mono, which PDFjet carried before 9.1.9, such as
-    /// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, is read, when there is no
-    /// such file, as the .otf it carries of the same face.
+    /// or else the .otf file of the same name beside it. The fonts PDFjet
+    /// carries are .otf files: a path to a .ttf of one of them, such as
+    /// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file throws,
+    /// and names the .otf path and the constant to write.
     /// </summary>
     /// <param name="pdf">the pdf object.</param>
     /// <param name="fontPath">the font path.</param>
@@ -350,6 +350,10 @@ public class Font {
             Stream bundled = BundledFonts.Open(fontPath);
             if (bundled != null) {
                 return bundled;
+            }
+            String otf = BundledFonts.OtfInstead(fontPath);
+            if (otf != null) {
+                throw new FileNotFoundException(otf, fontPath);
             }
             String world = BundledFonts.WorldMissing(fontPath);
             if (world != null) {

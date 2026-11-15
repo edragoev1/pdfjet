@@ -231,35 +231,60 @@ func TestBundledFontsAPathOfTheOldStreamFilesOfAWorldFontNamesThePackage(t *test
 	testWant(t, "", bundledWorldMissing("fonts/IBMPlexSansKR/IBMPlexSansKR-Thin.otf.stream"))
 }
 
-func TestBundledFontsAPathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries(t *testing.T) {
-	// PDFjet carries IBM Plex Sans and Serif as .otf from 9.1.9, and as .ttf
-	// before: a path written for the .ttf is the .otf of the same face, as
-	// is one of the .stream files of before 9.0.5
+func TestBundledFontsAPathToTheTTFOfAFontPDFjetCarriesAsOTFNamesTheOTF(t *testing.T) {
+	// The fonts PDFjet carries are .otf files, and a path loads the file it
+	// names: a path to the .ttf of one of them, which is not a file, is not
+	// found, and the error names the .otf path and the constant to write; a
+	// .ttf of one's own at that path, or of that name in resources/fonts, is
+	// read as any file is
 	ttf, err := os.ReadFile(testRepoPath(t, "tests/fonts/IBMPlexSans-Regular.ttf"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(t.TempDir())
-	for _, family := range []string{"IBMPlexSans", "IBMPlexSerif"} {
-		for _, style := range []string{"Thin", "ThinItalic", "Light", "LightItalic", "Text", "TextItalic",
-			"Regular", "Italic", "Medium", "MediumItalic", "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"} {
-			otf, err := fonts.ReadFile(family + "/" + family + "-" + style + ".otf")
-			if err != nil {
-				t.Fatal(err)
-			}
-			path := "fonts/" + family + "/" + family + "-" + style + ".ttf"
-			for _, old := range []string{path, path + ".stream"} {
-				buf, err := readFontFile(fontFileOf(old))
-				if err != nil || !slices.Equal(buf, otf) {
-					t.Errorf("%s: not the .otf (%v)", old, err)
-				}
-			}
+	_, err = ReadFontFromFile(testNewPDF(), "fonts/CascadiaMono/CascadiaMono-Regular.ttf")
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("not fs.ErrNotExist: %v", err)
+	}
+	testWant(t, "No bundled font fonts/CascadiaMono/CascadiaMono-Regular.ttf; PDFjet carries it as "+
+		"fonts/CascadiaMono/CascadiaMono-Regular.otf (or use the constant CascadiaMono.Regular).", fmt.Sprint(err))
+	for _, face := range [][2]string{
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "IBMPlexSans.Regular"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "IBMPlexSans.Italic"},
+		{"fonts/IBMPlexSans/IBMPlexSans-ThinItalic.otf", "IBMPlexSans.ThinItalic"},
+		{"fonts/IBMPlexSerif/IBMPlexSerif-SemiBold.otf", "IBMPlexSerif.SemiBold"},
+		{"fonts/CascadiaMono/CascadiaMono-SemiLightItalic.otf", "CascadiaMono.SemiLightItalic"},
+		{"fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf", "IBMPlexSansArabic.Regular"},
+		{"fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Thin.otf", "IBMPlexSansHebrew.Thin"},
+		{"fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf", "IBMPlexSansThai.Bold"},
+		{"fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf", "IBMPlexSansJP.Regular"},
+	} {
+		path := strings.TrimSuffix(face[0], ".otf") + ".ttf"
+		if bundledFontHas(path) || bundledFontData(path) != nil {
+			t.Errorf("%s: carried", path)
+		}
+		_, err := readFontFile(path)
+		testWant(t, "No bundled font "+path+"; PDFjet carries it as "+face[0]+
+			" (or use the constant "+face[1]+").", fmt.Sprint(err))
+	}
+	// A face PDFjet does not carry, and a font of a family it does not
+	// carry, are not found, as before, with no .otf to name
+	for _, path := range []string{"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
+		"fonts/CascadiaMono/CascadiaMono-ExtraLight.ttf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf",
+		"fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf", "fonts/IBMPlexSans/IBMPlexSans-Regular.woff2"} {
+		testWant(t, "", bundledOtfInstead(path))
+		if _, err := readFontFile(path); !errors.Is(err, fs.ErrNotExist) ||
+			!strings.Contains(err.Error(), "nor one of the fonts PDFjet carries") {
+			t.Errorf("%s: %v", path, err)
 		}
 	}
-	testWant(t, "IBMPlexSans-Bold", NewFontFromFile(testNewPDF(), "fonts/IBMPlexSans/IBMPlexSans-Bold.ttf").GetName())
+	testWant(t, "", bundledOtfInstead("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))
+	testWant(t, "[IBMPlexSans/IBMPlexSans-Regular.ttf]",
+		fmt.Sprint(bundledFontNamesOf("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
+	testWant(t, "[IBMPlexSans/IBMPlexSans-Regular.otf]",
+		fmt.Sprint(bundledFontNamesOf("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")))
 	// A .ttf of one's own at that path is read, the file first, and so is
-	// one of that name in resources/fonts, as in a folder of an older
-	// release
+	// one of that name in resources/fonts
 	for _, path := range []string{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
 		"resources/fonts/IBMPlexSerif/IBMPlexSerif-Regular.ttf"} {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -274,54 +299,6 @@ func TestBundledFontsAPathToTheTTFOfIBMPlexSansOrSerifIsTheOTFPDFjetCarries(t *t
 			t.Errorf("%s: not the file (%v)", path, err)
 		}
 	}
-	// Only the families PDFjet carried as .ttf, and only their .ttf and
-	// .otf: a face PDFjet does not carry is not a file still
-	for _, path := range []string{"fonts/IBMPlexSans/IBMPlexSans-ExtraLight.ttf",
-		"fonts/CascadiaMono/CascadiaMono-ExtraLight.ttf", "fonts/IBMPlexMono/IBMPlexMono-Regular.ttf"} {
-		if _, err := readFontFile(path); !errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("%s: %v", path, err)
-		}
-	}
-	testWant(t, "[IBMPlexMono/IBMPlexMono-Regular.ttf]",
-		fmt.Sprint(bundledFontNamesOf("fonts/IBMPlexMono/IBMPlexMono-Regular.ttf")))
-	testWant(t, "[IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf]",
-		fmt.Sprint(bundledFontNamesOf("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf")))
-	testWant(t, "[IBMPlexSans/IBMPlexSans-Regular.woff2]",
-		fmt.Sprint(bundledFontNamesOf("fonts/IBMPlexSans/IBMPlexSans-Regular.woff2")))
-	// And back: the .otf of 9.1.9 is the .ttf of a resources/fonts folder of before
-	testWant(t, "[IBMPlexSans/IBMPlexSans-Regular.otf IBMPlexSans/IBMPlexSans-Regular.ttf]",
-		fmt.Sprint(bundledFontNamesOf("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")))
-}
-
-func TestBundledFontsAPathToTheTTFOfCascadiaMonoIsTheOTFPDFjetCarries(t *testing.T) {
-	// PDFjet carries Cascadia Mono as .otf from 9.1.9, and as .ttf before: a
-	// path written for the .ttf, such as the constants of 9.1.7, is the .otf
-	// of the same face, as is one of the .stream files of before 9.0.5; and
-	// the .otf is the .ttf of a resources/fonts folder of before
-	t.Chdir(t.TempDir())
-	for _, style := range []string{"Light", "LightItalic", "SemiLight", "SemiLightItalic", "Regular", "Italic",
-		"SemiBold", "SemiBoldItalic", "Bold", "BoldItalic"} {
-		otf, err := fonts.ReadFile("CascadiaMono/CascadiaMono-" + style + ".otf")
-		if err != nil {
-			t.Fatal(err)
-		}
-		path := "fonts/CascadiaMono/CascadiaMono-" + style + ".ttf"
-		for _, old := range []string{path, path + ".stream"} {
-			buf, err := readFontFile(fontFileOf(old))
-			if err != nil || !slices.Equal(buf, otf) {
-				t.Errorf("%s: not the .otf (%v)", old, err)
-			}
-		}
-	}
-	font := NewFontFromFile(testNewPDF(), "fonts/CascadiaMono/CascadiaMono-Regular.ttf")
-	testWant(t, "CascadiaMono-Regular", font.GetName())
-	if !font.cff {
-		t.Error("CascadiaMono-Regular.ttf: not the .otf")
-	}
-	testWant(t, "[CascadiaMono/CascadiaMono-Bold.ttf CascadiaMono/CascadiaMono-Bold.otf]",
-		fmt.Sprint(bundledFontNamesOf("fonts/CascadiaMono/CascadiaMono-Bold.ttf")))
-	testWant(t, "[CascadiaMono/CascadiaMono-Regular.otf CascadiaMono/CascadiaMono-Regular.ttf]",
-		fmt.Sprint(bundledFontNamesOf("fonts/CascadiaMono/CascadiaMono-Regular.otf")))
 }
 
 func TestBundledFontsCSSWeightsMatchFacesThatLookAlikeAcrossTheFamilies(t *testing.T) {

@@ -299,7 +299,7 @@ func TestTextBlockALongWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
 
 func TestTextBlockALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"))
 	// 100,000 letters took about 20 minutes
 	testLinearTime(t, 5000, func(n int) {
 		block := NewTextBlock(font, strings.Repeat("محمد", n)).SetRightToLeft(true).SetWidth(100)
@@ -328,7 +328,7 @@ func TestTextBlockALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord(t *test
 // ends in the reading (review of 11 October 2026, #7).
 func TestTextBlockARightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"))
 	block := NewTextBlock(font, "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה").SetRightToLeft(true)
 	block.SetSize(80, 20)
 	lines := block.getTextLines()
@@ -405,7 +405,7 @@ func TestTextBlockACoreFontDrawsNoIgnorableCharacter(t *testing.T) {
 // two .notdef glyphs (review of 11 October 2026, #10).
 func TestTextBlockAStampLeavesOutTheMarksOfDirection(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"))
 	text := ReorderVisually("שלום (abc) עולם")
 	if !strings.ContainsAny(text, "‎‏") {
 		t.Fatalf("the text has no marks of direction: %q", text)
@@ -496,7 +496,7 @@ func TestTextBlockAWordBrokenBetweenCharactersBreaksAtASoftHyphen(t *testing.T) 
 // no hyphen (review of 12 October 2026, R17).
 func TestTextBlockARightToLeftWordBreaksAtASoftHyphen(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"))
 	font.SetSize(12)
 	for _, text := range []string{"שלום\u00adעולם\u00adאחד", "א שלום\u00adעולם\u00adאחד"} {
 		block := NewTextBlock(font, text)

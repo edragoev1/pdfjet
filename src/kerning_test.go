@@ -200,8 +200,8 @@ func TestKerningLeavesMarksAndRightToLeftTextAlone(t *testing.T) {
 	// IBM Plex Sans Hebrew kerns שלום עולם by 20 units without its marks, as
 	// Noto Sans Hebrew, which this test read before 9.1.7, kerned it by 10.
 	for _, path := range []string{
-		"fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf",
-		"fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf",
+		"fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf",
+		"fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf",
 	} {
 		kerned := testKernedFont(t, pdf, path, true)
 		plain := testKernedFont(t, pdf, path, false)

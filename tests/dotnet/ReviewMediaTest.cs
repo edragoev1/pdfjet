@@ -15,9 +15,9 @@ using Xunit;
 
 namespace PDFjet.NET {
 public class ReviewMediaTest {
-    // IBM Plex Sans Thai, a TrueType font of Latin and Thai with a GPOS
+    // IBM Plex Sans Thai, the .otf PDFjet carries, of Latin and Thai with a GPOS
     // table, as Noto Sans Thai, which these tests read before 9.1.7, is.
-    private const string THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
+    private const string THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf";
 
     private static byte[] FontBytes(string path) {
         return TestSupport.FontBytes(path);
@@ -665,8 +665,9 @@ public class ReviewMediaTest {
     public void AFontIsEmbeddedOnceWhenItIsAddedTwice() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        Font font1 = new Font(pdf, TestSupport.RepoPath(THAI));
-        Font font2 = new Font(pdf, TestSupport.RepoPath(THAI));
+        // A TrueType font, whose /FontFile2 has a /Length1
+        Font font1 = new Font(pdf, TestSupport.RepoPath("tests/fonts/IBMPlexSans-Regular.ttf"));
+        Font font2 = new Font(pdf, TestSupport.RepoPath("tests/fonts/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font1, "A").SetLocation(50f, 50f).DrawOn(page);
         new TextLine(font2, "B").SetLocation(50f, 80f).DrawOn(page);

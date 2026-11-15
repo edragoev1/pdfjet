@@ -32,7 +32,7 @@ import Testing
 
     @Test func aLongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord() throws {
         let memory = MemoryPDF()
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"))
         // 100,000 letters took about 20 minutes
         expectLinearTime(1000) { n in
             let word = String(repeating: "محمد", count: n)

@@ -20,7 +20,7 @@ import Foundation
 ///
 public struct IBMPlexSansArabic {
     /// IBM Plex Sans Arabic Bold
-    public static let Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.ttf"
+    public static let Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.otf"
 
     ///
     /// IBM Plex Sans Arabic ExtraLight, which PDFjet does not carry
@@ -30,15 +30,15 @@ public struct IBMPlexSansArabic {
     public static let ExtraLight = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf"
 
     /// IBM Plex Sans Arabic Light
-    public static let Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.ttf"
+    public static let Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.otf"
     /// IBM Plex Sans Arabic Medium
-    public static let Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.ttf"
+    public static let Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.otf"
     /// IBM Plex Sans Arabic Regular
-    public static let Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"
+    public static let Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"
     /// IBM Plex Sans Arabic SemiBold
-    public static let SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf"
+    public static let SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.otf"
     /// IBM Plex Sans Arabic Text
-    public static let Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.ttf"
+    public static let Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.otf"
     /// IBM Plex Sans Arabic Thin
-    public static let Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.ttf"
+    public static let Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.otf"
 }

@@ -161,7 +161,7 @@ import Testing
     // ends in the reading (review of 11 October 2026, #7).
     @Test func aRightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"))
         let text = "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה"
         let lines = TextBlock(font, text).setRightToLeft(true).setWidth(80).layout().textLines
         let fit = TextBlock(font, text).setRightToLeft(true).setSize(80, 20).layout().textLines
@@ -226,7 +226,7 @@ import Testing
     // two .notdef glyphs (review of 11 October 2026, #10).
     @Test func aStampLeavesOutTheMarksOfDirection() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"))
         let text = Bidi.reorderVisually("שלום (abc) עולם")
         try #require(text.unicodeScalars.contains { $0.value == 0x200E || $0.value == 0x200F },
                 "the text has no marks of direction: \(text)")
@@ -285,7 +285,7 @@ import Testing
     // the end of the line, on its left: it was cut between two characters, with
     // no hyphen (review of 12 October 2026, R17).
     @Test func aRightToLeftWordBreaksAtASoftHyphen() throws {
-        let font = try Font(TestSupport.newPDF(), TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+        let font = try Font(TestSupport.newPDF(), TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"))
         font.setSize(12)
         let width = font.stringWidth(12, "\u{05E9}\u{05DC}\u{05D5}\u{05DD}-") + 1
         let word = "\u{05E9}\u{05DC}\u{05D5}\u{05DD}\u{00AD}\u{05E2}\u{05D5}\u{05DC}\u{05DD}\u{00AD}\u{05D0}\u{05D7}\u{05D3}"

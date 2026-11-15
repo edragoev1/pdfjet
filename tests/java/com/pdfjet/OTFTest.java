@@ -22,10 +22,11 @@ class OTFTest {
         return TestSupport.readAll(TestSupport.open(path));
     }
 
-    // IBM Plex Sans Thai: TrueType outlines, the short offsets of loca, a
-    // format 4 character map with a glyph ID array, and GPOS lookups, as Noto
-    // Sans Thai, which these tests read before 9.1.7, has.
-    private static final String THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
+    // IBM's .ttf of IBM Plex Sans: TrueType outlines, the short offsets of
+    // loca, a format 4 character map with a glyph ID array, and GPOS lookups,
+    // as IBM Plex Sans Thai's .ttf, which these tests read before PDFjet
+    // carried its .otf, and Noto Sans Thai, before 9.1.7, have.
+    private static final String TTF = "tests/fonts/IBMPlexSans-Regular.ttf";
     // IBM Plex Sans TC, as the .otf PDFjet carries: the same character map
     // as its .ttf, of which these tests read the format 12 subtable.
     private static final String TC = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf";
@@ -93,7 +94,7 @@ class OTFTest {
 
     @Test
     void aFontThatEndsWhereATableIsReadIsRefused() throws Exception {
-        byte[] font = font(THAI);
+        byte[] font = font(TTF);
         // The directory, and then the tables it points at, are read from the
         // front of the font, so every one of these ends in the middle of a read.
         for (int length : new int[] {4, 5, 12, 13, 100, 1000}) {
@@ -105,7 +106,7 @@ class OTFTest {
 
     @Test
     void aFontWithoutWhatItIsDrawnWithIsRefused() throws Exception {
-        byte[] ttf = font(THAI);
+        byte[] ttf = font(TTF);
         byte[] otf = font(PLEX);
         int head = table(ttf, "head");
         int hhea = table(ttf, "hhea");
@@ -141,7 +142,7 @@ class OTFTest {
         // The name goes into the PDF as the name of the font, where a name
         // that is not a PDF name would break the syntax, so a font with none
         // is refused.
-        assertEquals("Invalid font file: the font name.", error(without(font(THAI), "name")));
+        assertEquals("Invalid font file: the font name.", error(without(font(TTF), "name")));
     }
 
     @Test
@@ -149,7 +150,7 @@ class OTFTest {
         // Without OS/2 the font does not say which characters it holds, and
         // has every character of its character map; without post it has no underline; without GPOS its marks are
         // not placed. None of the three stops it from drawing.
-        byte[] font = font(THAI);
+        byte[] font = font(TTF);
         for (String name : new String[] {"OS/2", "post", "GPOS"}) {
             draws(without(font, name));
         }
@@ -159,7 +160,7 @@ class OTFTest {
     void aNameRecordOutsideTheFontIsLeftOut() throws Exception {
         // The offset of the first name record, past the end of the font. The
         // font keeps its other records and still draws.
-        byte[] font = font(THAI);
+        byte[] font = font(TTF);
         draws(with(font, table(font, "name") + 16, 0xFFFF));
     }
 
@@ -168,7 +169,7 @@ class OTFTest {
         // The length of the format 4 subtable, cut to its header and the four
         // arrays of its segments, so that its glyph ID array holds nothing and
         // every segment that is read through it points outside.
-        byte[] font = font(THAI);
+        byte[] font = font(TTF);
         int subtable = cmap4(font);
         draws(with(font, subtable + 2, 16 + 4*uint16(font, subtable + 6)));
     }
@@ -179,7 +180,7 @@ class OTFTest {
         // lookup, changed to the most a font can say it has. Read to the end
         // it says, the font takes every byte of memory there is and never
         // loads; read to the work a font needs, it loads at once.
-        byte[] font = font(THAI);
+        byte[] font = font(TTF);
         int gpos = table(font, "GPOS");
         int lookupList = gpos + uint16(font, gpos + 8);
         int lookup = lookupList + uint16(font, lookupList + 2);
@@ -202,9 +203,9 @@ class OTFTest {
         // The cap height of both fonts, sCapHeight in OS/2 and the top of the
         // H, is 698 (714 in Noto Sans Thai and Noto Sans, which this test read
         // before 9.1.7), so sCapHeight is changed to 999 to tell the two
-        // apart. IBM Plex Sans Thai has the short offsets of loca, and IBM
-        // Plex Math the long ones, as Noto Sans had.
-        for (String path : new String[] {THAI, "tests/fonts/IBMPlexMath-Regular.ttf"}) {
+        // apart. IBM Plex Sans has the short offsets of loca, and IBM Plex
+        // Math the long ones, as Noto Sans had.
+        for (String path : new String[] {TTF, "tests/fonts/IBMPlexMath-Regular.ttf"}) {
             byte[] font = font(path);
             int os2 = table(font, "OS/2");
             font = with(font, os2 + 88, 999);
@@ -218,19 +219,18 @@ class OTFTest {
 
     @Test
     void aFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() throws Exception {
-        // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
-        // of the H in; its ascent is 1025. IBM Plex Sans Thai without its
-        // loca table has no offset for its H; its ascent is 1116 (Noto Sans
-        // Thai's, before 9.1.7, 1061).
+        // IBM Plex Sans's .otf has CFF outlines, and so no glyf table to find
+        // the top of the H in; its ascent is 1025. Its .ttf without its loca
+        // table has no offset for its H; its ascent is 1025 too.
         byte[] otf = font(PLEX);
         assertEquals(1025, capHeight(with(otf, table(otf, "OS/2"), 1)), "CFF outlines");
-        byte[] ttf = font(THAI);
+        byte[] ttf = font(TTF);
         ttf = with(ttf, table(ttf, "OS/2"), 1);
-        assertEquals(1116, capHeight(without(ttf, "loca")), "no loca table");
+        assertEquals(1025, capHeight(without(ttf, "loca")), "no loca table");
         // A loca table that ends before the offsets of the H, and a glyf table
         // that ends before the header of the H.
-        assertEquals(1116, capHeight(length(ttf, "loca", 4)), "a loca table of 4 bytes");
-        assertEquals(1116, capHeight(length(ttf, "glyf", 4)), "a glyf table of 4 bytes");
+        assertEquals(1025, capHeight(length(ttf, "loca", 4)), "a loca table of 4 bytes");
+        assertEquals(1025, capHeight(length(ttf, "glyf", 4)), "a glyf table of 4 bytes");
     }
 
     // The font with the entries of two tables swapped in its directory, the
@@ -250,7 +250,7 @@ class OTFTest {
         // font listing hmtx first failed with a NullPointerException (found by
         // the fuzz replay, 8 October 2026). A font without hhea has no widths,
         // and is refused.
-        for (String path : new String[] {THAI, PLEX}) {
+        for (String path : new String[] {TTF, PLEX}) {
             byte[] font = font(path);
             PDF pdf = TestSupport.newPDF();
             float want = new Font(pdf, new ByteArrayInputStream(font)).stringWidth(12f, "Ab1 x");

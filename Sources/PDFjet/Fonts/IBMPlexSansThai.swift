@@ -20,7 +20,7 @@ import Foundation
 ///
 public struct IBMPlexSansThai {
     /// IBM Plex Sans Thai Bold
-    public static let Bold       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf"
+    public static let Bold       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf"
 
     ///
     /// IBM Plex Sans Thai ExtraLight, which PDFjet does not carry
@@ -30,15 +30,15 @@ public struct IBMPlexSansThai {
     public static let ExtraLight = "fonts/IBMPlexSansThai/IBMPlexSansThai-ExtraLight.ttf"
 
     /// IBM Plex Sans Thai Light
-    public static let Light      = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.ttf"
+    public static let Light      = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.otf"
     /// IBM Plex Sans Thai Medium
-    public static let Medium     = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.ttf"
+    public static let Medium     = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.otf"
     /// IBM Plex Sans Thai Regular
-    public static let Regular    = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"
+    public static let Regular    = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"
     /// IBM Plex Sans Thai SemiBold
-    public static let SemiBold   = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.ttf"
+    public static let SemiBold   = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.otf"
     /// IBM Plex Sans Thai Text
-    public static let Text       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.ttf"
+    public static let Text       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.otf"
     /// IBM Plex Sans Thai Thin
-    public static let Thin       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.ttf"
+    public static let Thin       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.otf"
 }

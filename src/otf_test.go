@@ -36,10 +36,14 @@ func testOpenTypeFontDraws(font []byte) string {
 	})
 }
 
+// testOpenTypeTTF is IBM's .ttf of IBM Plex Sans: TrueType outlines, the
+// short offsets of loca, a format 4 character map with a glyph ID array, and
+// GPOS lookups, as IBM Plex Sans Thai's .ttf, which these tests read before
+// PDFjet carried its .otf, and Noto Sans Thai, before 9.1.7, have.
+const testOpenTypeTTF = "tests/fonts/IBMPlexSans-Regular.ttf"
+
 // testOpenTypeFontBytes returns a font file of the repository, or a font
-// PDFjet carries. IBM Plex Sans Thai has TrueType outlines, the short offsets
-// of loca, a format 4 character map with a glyph ID array, and GPOS lookups,
-// as Noto Sans Thai, which these tests read before 9.1.7, has.
+// PDFjet carries.
 func testOpenTypeFontBytes(t *testing.T, path string) []byte {
 	t.Helper()
 	return testFontBytes(t, path)
@@ -88,7 +92,7 @@ func testOpenTypeWith(font []byte, offset, value int) []byte {
 }
 
 func TestOTFAFontThatEndsWhereATableIsReadIsRefused(t *testing.T) {
-	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	// The directory, and then the tables it points at, are read from the
 	// front of the font, so every one of these ends in the middle of a read.
 	for _, length := range []int{4, 5, 12, 13, 100, 1000} {
@@ -99,7 +103,7 @@ func TestOTFAFontThatEndsWhereATableIsReadIsRefused(t *testing.T) {
 }
 
 func TestOTFAFontWithoutWhatItIsDrawnWithIsRefused(t *testing.T) {
-	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	otf := testOpenTypeFontBytes(t, "tests/fonts/IBMPlexSans-Regular.otf")
 	head := testOpenTypeTable(t, ttf, "head")
 	hhea := testOpenTypeTable(t, ttf, "hhea")
@@ -142,7 +146,7 @@ func TestOTFAFontWithNoNameOfItsOwnIsRefused(t *testing.T) {
 	// The name goes into the PDF as the name of the font, where a name that
 	// is not a PDF name would break the syntax, so a font with none is
 	// refused.
-	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	testWant(t, "Invalid font file: the font name.",
 		testOpenTypeFontError(testOpenTypeWithout(t, font, "name")))
 }
@@ -152,7 +156,7 @@ func TestOTFAFontWithoutTheTablesItNeedsNoneOfStillDraws(t *testing.T) {
 	// every character of its map is read; without post it has no underline;
 	// without GPOS its marks are not placed. None of the three stops it from
 	// drawing.
-	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	for _, name := range []string{"OS/2", "post", "GPOS"} {
 		testWant(t, "(no panic)", testOpenTypeFontDraws(testOpenTypeWithout(t, font, name)))
 	}
@@ -161,7 +165,7 @@ func TestOTFAFontWithoutTheTablesItNeedsNoneOfStillDraws(t *testing.T) {
 func TestOTFANameRecordOutsideTheFontIsLeftOut(t *testing.T) {
 	// The offset of the first name record, past the end of the font. The
 	// font keeps its other records and still draws.
-	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	name := testOpenTypeTable(t, font, "name")
 	testWant(t, "(no panic)", testOpenTypeFontDraws(testOpenTypeWith(font, name+16, 0xFFFF)))
 }
@@ -170,7 +174,7 @@ func TestOTFASegmentOutsideTheGlyphIDArrayGivesNoGlyph(t *testing.T) {
 	// The length of the format 4 subtable, cut to its header and the four
 	// arrays of its segments, so that its glyph ID array holds nothing and
 	// every segment that is read through it points outside.
-	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	subtable := testOpenTypeCmap4(t, font)
 	segCount := int(binary.BigEndian.Uint16(font[subtable+6:]))
 	testWant(t, "(no panic)",
@@ -182,7 +186,7 @@ func TestOTFAGposTableIsNotReadPastTheWorkAFontNeeds(t *testing.T) {
 	// changed to the most a font can say it has. Read to the end it says,
 	// the font takes every byte of memory there is and never loads; read to
 	// the work a font needs, it loads at once.
-	font := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	font := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	gpos := testOpenTypeTable(t, font, "GPOS")
 	lookupList := gpos + int(binary.BigEndian.Uint16(font[gpos+8:]))
 	lookup := lookupList + int(binary.BigEndian.Uint16(font[lookupList+2:]))
@@ -209,9 +213,9 @@ func TestOTFTheCapHeightIsReadOnlyFromAnOS2TableThatHasIt(t *testing.T) {
 	// The cap height of both fonts, sCapHeight in OS/2 and the top of the H,
 	// is 698 (714 in Noto Sans Thai and Noto Sans, which this test read
 	// before 9.1.7), so sCapHeight is changed to 999 to tell the two apart.
-	// IBM Plex Sans Thai has the short offsets of loca, and IBM Plex Math the
-	// long ones, as Noto Sans had.
-	for _, path := range []string{"fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf",
+	// IBM Plex Sans has the short offsets of loca, and IBM Plex Math the long
+	// ones, as Noto Sans had.
+	for _, path := range []string{testOpenTypeTTF,
 		"tests/fonts/IBMPlexMath-Regular.ttf"} {
 		font := testOpenTypeFontBytes(t, path)
 		os2 := testOpenTypeTable(t, font, "OS/2")
@@ -231,25 +235,24 @@ func TestOTFTheCapHeightIsReadOnlyFromAnOS2TableThatHasIt(t *testing.T) {
 }
 
 func TestOTFAFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent(t *testing.T) {
-	// IBM Plex Sans has CFF outlines, and so no glyf table to find the top
-	// of the H in; its ascent is 1025. IBM Plex Sans Thai without its loca
-	// table has no offset for its H; its ascent is 1116 (Noto Sans Thai's,
-	// before 9.1.7, 1061).
+	// IBM Plex Sans's .otf has CFF outlines, and so no glyf table to find the
+	// top of the H in; its ascent is 1025. Its .ttf without its loca table
+	// has no offset for its H; its ascent is 1025 too.
 	otf := testOpenTypeFontBytes(t, "tests/fonts/IBMPlexSans-Regular.otf")
 	if got := testOpenTypeCapHeight(testOpenTypeWith(otf, testOpenTypeTable(t, otf, "OS/2"), 1)); got != 1025 {
 		t.Errorf("CFF outlines: %d", got)
 	}
-	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+	ttf := testOpenTypeFontBytes(t, testOpenTypeTTF)
 	ttf = testOpenTypeWith(ttf, testOpenTypeTable(t, ttf, "OS/2"), 1)
-	if got := testOpenTypeCapHeight(testOpenTypeWithout(t, ttf, "loca")); got != 1116 {
+	if got := testOpenTypeCapHeight(testOpenTypeWithout(t, ttf, "loca")); got != 1025 {
 		t.Errorf("no loca table: %d", got)
 	}
 	// A loca table that ends before the offsets of the H, and a glyf table
 	// that ends before the header of the H.
-	if got := testOpenTypeCapHeight(testOpenTypeLength(t, ttf, "loca", 4)); got != 1116 {
+	if got := testOpenTypeCapHeight(testOpenTypeLength(t, ttf, "loca", 4)); got != 1025 {
 		t.Errorf("a loca table of 4 bytes: %d", got)
 	}
-	if got := testOpenTypeCapHeight(testOpenTypeLength(t, ttf, "glyf", 4)); got != 1116 {
+	if got := testOpenTypeCapHeight(testOpenTypeLength(t, ttf, "glyf", 4)); got != 1025 {
 		t.Errorf("a glyf table of 4 bytes: %d", got)
 	}
 }
@@ -271,7 +274,7 @@ func TestOTFAnHmtxTableListedBeforeTheHheaTableIsReadTheSame(t *testing.T) {
 	// wide, in Go, and failed in Java and C# (found by the fuzz replay, 8
 	// October 2026). A font without hhea has no widths, and is refused.
 	for _, path := range []string{
-		"fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf",
+		testOpenTypeTTF,
 		"tests/fonts/IBMPlexSans-Regular.otf",
 	} {
 		font := testOpenTypeFontBytes(t, path)

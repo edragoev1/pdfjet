@@ -209,8 +209,8 @@ class KerningTest {
         // marks, as Noto Sans Hebrew, which this test read before 9.1.7,
         // kerned it by 10.
         for (String path : new String[] {
-                "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf",
-                "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"}) {
+                "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf",
+                "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"}) {
             Font kerned = kernedFont(pdf, path, true);
             Font plain = kernedFont(pdf, path, false);
             for (String text : new String[] {"שָׁלוֹם עוֹלָם", "مرحبا بالعالم"}) {

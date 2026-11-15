@@ -14,10 +14,11 @@ namespace PDFjet.NET {
 // of the font loaders found them: each fails with a message, and none reads
 // past the font or allocates what the font does not have.
 public class OTFTest {
-    // IBM Plex Sans Thai: TrueType outlines, the short offsets of loca, a
-    // format 4 character map with a glyph ID array, and GPOS lookups, as Noto
-    // Sans Thai, which these tests read before 9.1.7, has.
-    private const string THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
+    // IBM's .ttf of IBM Plex Sans: TrueType outlines, the short offsets of
+    // loca, a format 4 character map with a glyph ID array, and GPOS lookups,
+    // as IBM Plex Sans Thai's .ttf, which these tests read before PDFjet
+    // carried its .otf, and Noto Sans Thai, before 9.1.7, have.
+    private const string TTF = "tests/fonts/IBMPlexSans-Regular.ttf";
     // IBM Plex Sans TC, as the .otf PDFjet carries: the same character map
     // as its .ttf, of which these tests read the format 12 subtable.
     private const string TC = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf";
@@ -95,7 +96,7 @@ public class OTFTest {
 
     [Fact]
     public void AFontThatEndsWhereATableIsReadIsRefused() {
-        byte[] font = FontBytes(THAI);
+        byte[] font = FontBytes(TTF);
         // The directory, and then the tables it points at, are read from the
         // front of the font, so every one of these ends in the middle of a read.
         foreach (int length in new int[] {4, 5, 12, 13, 100, 1000}) {
@@ -107,7 +108,7 @@ public class OTFTest {
 
     [Fact]
     public void AFontWithoutWhatItIsDrawnWithIsRefused() {
-        byte[] ttf = FontBytes(THAI);
+        byte[] ttf = FontBytes(TTF);
         byte[] otf = FontBytes(PLEX);
         int head = Table(ttf, "head");
         int hhea = Table(ttf, "hhea");
@@ -143,7 +144,7 @@ public class OTFTest {
         // The name goes into the PDF as the name of the font, where a name
         // that is not a PDF name would break the syntax, so a font with none
         // is refused.
-        Assert.Equal("Invalid font file: the font name.", Error(Without(FontBytes(THAI), "name")));
+        Assert.Equal("Invalid font file: the font name.", Error(Without(FontBytes(TTF), "name")));
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public class OTFTest {
         // every character of its character map is read; without post it has
         // no underline; without GPOS its marks are not placed. None of the
         // three stops it from drawing.
-        byte[] font = FontBytes(THAI);
+        byte[] font = FontBytes(TTF);
         foreach (string name in new string[] {"OS/2", "post", "GPOS"}) {
             Draws(Without(font, name));
         }
@@ -162,7 +163,7 @@ public class OTFTest {
     public void ANameRecordOutsideTheFontIsLeftOut() {
         // The offset of the first name record, past the end of the font. The
         // font keeps its other records and still draws.
-        byte[] font = FontBytes(THAI);
+        byte[] font = FontBytes(TTF);
         Draws(With(font, Table(font, "name") + 16, 0xFFFF));
     }
 
@@ -171,7 +172,7 @@ public class OTFTest {
         // The length of the format 4 subtable, cut to its header and the four
         // arrays of its segments, so that its glyph ID array holds nothing and
         // every segment that is read through it points outside.
-        byte[] font = FontBytes(THAI);
+        byte[] font = FontBytes(TTF);
         int subtable = Cmap4(font);
         Draws(With(font, subtable + 2, 16 + 4*UInt16(font, subtable + 6)));
     }
@@ -182,7 +183,7 @@ public class OTFTest {
         // lookup, changed to the most a font can say it has. Read to the end
         // it says, the font takes every byte of memory there is and never
         // loads; read to the work a font needs, it loads at once.
-        byte[] font = FontBytes(THAI);
+        byte[] font = FontBytes(TTF);
         int gpos = Table(font, "GPOS");
         int lookupList = gpos + UInt16(font, gpos + 8);
         int lookup = lookupList + UInt16(font, lookupList + 2);
@@ -205,9 +206,9 @@ public class OTFTest {
         // The cap height of both fonts, sCapHeight in OS/2 and the top of the
         // H, is 698 (714 in Noto Sans Thai and Noto Sans, which this test read
         // before 9.1.7), so sCapHeight is changed to 999 to tell the two
-        // apart. IBM Plex Sans Thai has the short offsets of loca, and IBM
-        // Plex Math the long ones, as Noto Sans had.
-        foreach (string path in new string[] {THAI, "tests/fonts/IBMPlexMath-Regular.ttf"}) {
+        // apart. IBM Plex Sans has the short offsets of loca, and IBM Plex
+        // Math the long ones, as Noto Sans had.
+        foreach (string path in new string[] {TTF, "tests/fonts/IBMPlexMath-Regular.ttf"}) {
             byte[] font = FontBytes(path);
             int os2 = Table(font, "OS/2");
             font = With(font, os2 + 88, 999);
@@ -221,19 +222,18 @@ public class OTFTest {
 
     [Fact]
     public void AFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() {
-        // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
-        // of the H in; its ascent is 1025. IBM Plex Sans Thai without its
-        // loca table has no offset for its H; its ascent is 1116 (Noto Sans
-        // Thai's, before 9.1.7, 1061).
+        // IBM Plex Sans's .otf has CFF outlines, and so no glyf table to find
+        // the top of the H in; its ascent is 1025. Its .ttf without its loca
+        // table has no offset for its H; its ascent is 1025 too.
         byte[] otf = FontBytes(PLEX);
         Assert.Equal(1025, CapHeight(With(otf, Table(otf, "OS/2"), 1)));
-        byte[] ttf = FontBytes(THAI);
+        byte[] ttf = FontBytes(TTF);
         ttf = With(ttf, Table(ttf, "OS/2"), 1);
-        Assert.Equal(1116, CapHeight(Without(ttf, "loca")));
+        Assert.Equal(1025, CapHeight(Without(ttf, "loca")));
         // A loca table that ends before the offsets of the H, and a glyf table
         // that ends before the header of the H.
-        Assert.Equal(1116, CapHeight(Length(ttf, "loca", 4)));
-        Assert.Equal(1116, CapHeight(Length(ttf, "glyf", 4)));
+        Assert.Equal(1025, CapHeight(Length(ttf, "loca", 4)));
+        Assert.Equal(1025, CapHeight(Length(ttf, "glyf", 4)));
     }
 
     // The font with the entries of two tables swapped in its directory, the
@@ -253,7 +253,7 @@ public class OTFTest {
         // font listing hmtx first failed with a NullReferenceException (found
         // by the fuzz replay, 8 October 2026). A font without hhea has no
         // widths, and is refused.
-        foreach (string path in new string[] {THAI, PLEX}) {
+        foreach (string path in new string[] {TTF, PLEX}) {
             byte[] font = FontBytes(path);
             PDF pdf = TestSupport.NewPDF();
             float want = new Font(pdf, new MemoryStream(font)).StringWidth(12f, "Ab1 x");

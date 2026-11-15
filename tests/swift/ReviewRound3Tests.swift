@@ -105,7 +105,7 @@ import Testing
     @Test func aCharacterCopiedAsTheFirstHasNoActualText() throws {
         let pdf = TestSupport.newPDF()
         let font = try Font(pdf, InputStream(data: Data(TestSupport.withSharedGlyphs(
-                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 [[0x0644, 0xFEDD], [0x0661, 0x06F1]]))))
         try #require(font.unicodeToGID[0x0644] == font.unicodeToGID[0xFEDD])
         font.useChar(0xFEDD, font.unicodeToGID[0xFEDD])
@@ -120,7 +120,7 @@ import Testing
     /// stands for it, and "ةِمى" was copied as "ىمِ ة" (T1).
     @Test func aWordWithMarksIsCopiedWithoutASpaceInside() throws {
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"))
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(font, "\u{0628}").setLocation(50, 50).drawOn(page)
         // The glyph of ة as drawn first for another character, which no two

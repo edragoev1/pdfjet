@@ -20,7 +20,7 @@ import Foundation
 ///
 public struct IBMPlexSansHebrew {
     /// IBM Plex Sans Hebrew Bold
-    public static let Bold       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Bold.ttf"
+    public static let Bold       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Bold.otf"
 
     ///
     /// IBM Plex Sans Hebrew ExtraLight, which PDFjet does not carry
@@ -30,15 +30,15 @@ public struct IBMPlexSansHebrew {
     public static let ExtraLight = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-ExtraLight.ttf"
 
     /// IBM Plex Sans Hebrew Light
-    public static let Light      = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Light.ttf"
+    public static let Light      = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Light.otf"
     /// IBM Plex Sans Hebrew Medium
-    public static let Medium     = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Medium.ttf"
+    public static let Medium     = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Medium.otf"
     /// IBM Plex Sans Hebrew Regular
-    public static let Regular    = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"
+    public static let Regular    = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf"
     /// IBM Plex Sans Hebrew SemiBold
-    public static let SemiBold   = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-SemiBold.ttf"
+    public static let SemiBold   = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-SemiBold.otf"
     /// IBM Plex Sans Hebrew Text
-    public static let Text       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Text.ttf"
+    public static let Text       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Text.otf"
     /// IBM Plex Sans Hebrew Thin
-    public static let Thin       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Thin.ttf"
+    public static let Thin       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Thin.otf"
 }

@@ -333,10 +333,10 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // IBMPlexSansArabic and the others, when the program imports the package
 // github.com/edragoev1/pdfjet/v9/resources/fonts/world. A path to a
 // .ttf.stream or .otf.stream file, the fonts PDFjet shipped before 9.0.5,
-// opens the .ttf or else the .otf file of the same name beside it. A path to
-// the .ttf of IBM Plex Sans or Serif or Cascadia Mono, which PDFjet carried before 9.1.9, such
-// as fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, is read, when there is no
-// such file, as the .otf it carries of the same face. It panics
+// opens the .ttf or else the .otf file of the same name beside it. The fonts
+// PDFjet carries are .otf files: a path to a .ttf of one of them, such as
+// fonts/IBMPlexSans/IBMPlexSans-Regular.ttf, that is not a file is an error
+// that names the .otf path and the constant to write. It panics
 // if the font cannot be read: for a font PDFjet does not carry, or a font of
 // the package world it has not built in, with an error that is
 // fs.ErrNotExist and says what to do. ReadFontFromFile returns the error
@@ -418,6 +418,9 @@ func readFontFile(fontPath string) ([]byte, error) {
 	if _, err := os.Stat(fontPath); err != nil {
 		if buf := bundledFontData(fontPath); buf != nil {
 			return buf, nil
+		}
+		if message := bundledOtfInstead(fontPath); message != "" {
+			return nil, &fontNotFoundError{message}
 		}
 		if message := bundledWorldMissing(fontPath); message != "" {
 			return nil, &fontNotFoundError{message}

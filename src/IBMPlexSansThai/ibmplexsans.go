@@ -15,7 +15,7 @@ package IBMPlexSansThai
 // The paths of the font files.
 const (
 	// Bold is IBM Plex Sans Thai Bold.
-	Bold = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf"
+	Bold = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf"
 
 	// ExtraLight is IBM Plex Sans Thai ExtraLight, which PDFjet does not carry
 	// from 9.1.7: a font file of its packages before, read when the file is there.
@@ -23,15 +23,15 @@ const (
 	// Deprecated: PDFjet carries the other weights of the family.
 	ExtraLight = "fonts/IBMPlexSansThai/IBMPlexSansThai-ExtraLight.ttf"
 	// Light is IBM Plex Sans Thai Light.
-	Light = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.ttf"
+	Light = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.otf"
 	// Medium is IBM Plex Sans Thai Medium.
-	Medium = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.ttf"
+	Medium = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.otf"
 	// Regular is IBM Plex Sans Thai Regular.
-	Regular = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"
+	Regular = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"
 	// SemiBold is IBM Plex Sans Thai SemiBold.
-	SemiBold = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.ttf"
+	SemiBold = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.otf"
 	// Text is IBM Plex Sans Thai Text.
-	Text = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.ttf"
+	Text = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.otf"
 	// Thin is IBM Plex Sans Thai Thin.
-	Thin = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.ttf"
+	Thin = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.otf"
 )

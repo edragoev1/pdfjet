@@ -24,7 +24,7 @@ public class IBMPlexSansThai {
     }
 
     /** IBM Plex Sans Thai Bold */
-    public static final String Bold       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf";
+    public static final String Bold       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.otf";
 
     /**
      * IBM Plex Sans Thai ExtraLight, which PDFjet does not carry
@@ -35,15 +35,15 @@ public class IBMPlexSansThai {
     @Deprecated
     public static final String ExtraLight = "fonts/IBMPlexSansThai/IBMPlexSansThai-ExtraLight.ttf";
     /** IBM Plex Sans Thai Light */
-    public static final String Light      = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.ttf";
+    public static final String Light      = "fonts/IBMPlexSansThai/IBMPlexSansThai-Light.otf";
     /** IBM Plex Sans Thai Medium */
-    public static final String Medium     = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.ttf";
+    public static final String Medium     = "fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.otf";
     /** IBM Plex Sans Thai Regular */
-    public static final String Regular    = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
+    public static final String Regular    = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf";
     /** IBM Plex Sans Thai SemiBold */
-    public static final String SemiBold   = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.ttf";
+    public static final String SemiBold   = "fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.otf";
     /** IBM Plex Sans Thai Text */
-    public static final String Text       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.ttf";
+    public static final String Text       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Text.otf";
     /** IBM Plex Sans Thai Thin */
-    public static final String Thin       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.ttf";
+    public static final String Thin       = "fonts/IBMPlexSansThai/IBMPlexSansThai-Thin.otf";
 }

@@ -117,7 +117,7 @@ class ReviewRound3Test {
     void aCharacterCopiedAsTheFirstHasNoActualText() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = new Font(pdf, new java.io.ByteArrayInputStream(TestSupport.withSharedGlyphs(
-                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"),
+                TestSupport.fontBytes("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"),
                 new int[][] {{0x0644, 0xFEDD}, {0x0661, 0x06F1}})));
         assertEquals(font.unicodeToGID.get(0x0644), font.unicodeToGID.get(0xFEDD));
         font.useChar(0xFEDD, font.unicodeToGID.get(0xFEDD));
@@ -135,7 +135,7 @@ class ReviewRound3Test {
     @Test
     void aWordWithMarksIsCopiedWithoutASpaceInside() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "\u0628").setLocation(50f, 50f).drawOn(page);
         // The glyph of ة as drawn first for another character, which no two

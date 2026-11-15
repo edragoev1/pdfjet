@@ -24,7 +24,7 @@ public class IBMPlexSansHebrew {
     }
 
     /** IBM Plex Sans Hebrew Bold */
-    public static final String Bold       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Bold.ttf";
+    public static final String Bold       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Bold.otf";
 
     /**
      * IBM Plex Sans Hebrew ExtraLight, which PDFjet does not carry
@@ -35,15 +35,15 @@ public class IBMPlexSansHebrew {
     @Deprecated
     public static final String ExtraLight = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-ExtraLight.ttf";
     /** IBM Plex Sans Hebrew Light */
-    public static final String Light      = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Light.ttf";
+    public static final String Light      = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Light.otf";
     /** IBM Plex Sans Hebrew Medium */
-    public static final String Medium     = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Medium.ttf";
+    public static final String Medium     = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Medium.otf";
     /** IBM Plex Sans Hebrew Regular */
-    public static final String Regular    = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf";
+    public static final String Regular    = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf";
     /** IBM Plex Sans Hebrew SemiBold */
-    public static final String SemiBold   = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-SemiBold.ttf";
+    public static final String SemiBold   = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-SemiBold.otf";
     /** IBM Plex Sans Hebrew Text */
-    public static final String Text       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Text.ttf";
+    public static final String Text       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Text.otf";
     /** IBM Plex Sans Hebrew Thin */
-    public static final String Thin       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Thin.ttf";
+    public static final String Thin       = "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Thin.otf";
 }

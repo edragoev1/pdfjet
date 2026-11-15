@@ -27,9 +27,9 @@ import java.util.zip.CRC32;
 import org.junit.jupiter.api.Test;
 
 class ReviewMediaTest {
-    // IBM Plex Sans Thai, a TrueType font of Latin and Thai with a GPOS
+    // IBM Plex Sans Thai, the .otf PDFjet carries, of Latin and Thai with a GPOS
     // table, as Noto Sans Thai, which these tests read before 9.1.7, is.
-    private static final String THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf";
+    private static final String THAI = "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf";
 
     private static byte[] font(String path) throws Exception {
         return TestSupport.readAll(TestSupport.open(path));
@@ -655,7 +655,8 @@ class ReviewMediaTest {
     void aFontIsEmbeddedOnceWhenItIsAddedTwice() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        String path = TestSupport.file(THAI).getPath();
+        // A TrueType font, whose /FontFile2 has a /Length1
+        String path = TestSupport.file("tests/fonts/IBMPlexSans-Regular.ttf").getPath();
         Font font1 = new Font(pdf, path);
         Font font2 = new Font(pdf, path);
         Page page = new Page(pdf, Letter.PORTRAIT);

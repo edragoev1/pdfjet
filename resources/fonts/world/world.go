@@ -36,9 +36,9 @@ import (
 //go:embed IBMPlexSansKR/*.otf IBMPlexSansKR/license.txt
 //go:embed IBMPlexSansSC/*.otf IBMPlexSansSC/license.txt
 //go:embed IBMPlexSansTC/*.otf IBMPlexSansTC/license.txt
-//go:embed IBMPlexSansArabic/*.ttf IBMPlexSansArabic/license.txt
-//go:embed IBMPlexSansHebrew/*.ttf IBMPlexSansHebrew/license.txt
-//go:embed IBMPlexSansThai/*.ttf IBMPlexSansThai/license.txt
+//go:embed IBMPlexSansArabic/*.otf IBMPlexSansArabic/license.txt
+//go:embed IBMPlexSansHebrew/*.otf IBMPlexSansHebrew/license.txt
+//go:embed IBMPlexSansThai/*.otf IBMPlexSansThai/license.txt
 var files embed.FS
 
 func init() {

@@ -109,9 +109,9 @@ import Testing
     }
 
     @Test func subsetsAFontWithShortOffsets() throws {
-        // IBM Plex Sans Thai, whose loca has the short offsets, as Noto Sans
-        // Thai's had.
-        let ttf = try fontBytes("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf")
+        // IBM's .ttf of IBM Plex Sans, whose loca has the short offsets, as
+        // IBM Plex Sans Thai's .ttf and Noto Sans Thai's had.
+        let ttf = try fontBytes(plex)
         #expect(u16(ttf, table(ttf, "head") + 50) == 0)
         let (subset, _) = try Subset.subsetTrueType(ttf, used(5))
         let whole = glyph(ttf, 5)
