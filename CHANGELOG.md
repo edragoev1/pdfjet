@@ -52,7 +52,20 @@ there is a way.
 - Every line PDFjet draws is 0.5 points wide unless set, where it was 0, the
   thinnest line of the device. For the old hairline, set 0:
   `cell.setBorderWidth(0f)`, `line.setStrokeWidth(0f)`,
-  `page.setDefaultPenWidth(0f)`.
+  `page.setDefaultPenWidth(0f)`; `Arc` and `Ellipse` too
+  (`setStrokeWidth(0f)`).
+- A PNG whose interlace method is not 0 or 1, or that has an unknown critical
+  chunk (such as Apple's `CgBI`), is refused; it was embedded as garbage.
+- The XML reader, of SVG images and invoices, refuses a processing
+  instruction with no target (`<?>`, `<? ?>`), and `<!-->` no longer ends a
+  comment.
+- Reading a PDF refuses one that numbers an object so far above the objects
+  it has that its empty numbers would pass the reader's budget (a 2 MB file
+  numbered 2,000,000, say); such files took hundreds of bytes of memory a
+  byte.
+- Barcodes and PDF417 draw their bars with butt caps whatever the page's
+  line cap, and charts draw their text upright whatever the page's text
+  rotation; neither changes the page's settings any more.
 - The fonts PDFjet carries are .otf files, and the path to the .ttf of one
   no longer loads: the error names the .otf. Use the constants, such as
   `IBMPlexSans.Regular`, which name the .otf.
@@ -542,6 +555,57 @@ Fixed, in the four ports, from the review of 9.1.9 (16 November 2026):
 - Swift: a font whose table directory names a table with a byte past 127,
   such as `0xE8 "ead"`, was read as `head` and stopped Swift; it is a table
   of an unknown name, as in the other ports.
+
+Fixed, from the full review of 9.1.9 (16 November 2026, evening), each with
+tests in the four ports:
+
+- **Reading:** a stream whose /Length is an object inside an object stream,
+  as pdfTeX and Ghostscript write them, is read whole; it was cut at the
+  first "endstream" in its data, or lost a carriage return at its end, when
+  read, merged or copied. The empty objects of a file numbered high are
+  taken from the reader's budget (above).
+- **Fonts:** `drawGlyphs` takes every glyph of the font, also those past its
+  horizontal metrics (`hhea` numberOfHMetrics), such as Cascadia Mono's
+  U+2427; the document failed. A character the cmap maps but the OS/2
+  first or last character index leaves out is drawn with its glyph, not
+  .notdef (ﬁ and ﬂ in Liberation Sans Narrow).
+- **PNG:** an unknown interlace method or critical chunk is refused (above).
+- **SVG:** S and T with several sets of numbers reflect the control point
+  for each set, so optimized icons such as Material's circle are round; an
+  SVG that reads attributes, styles or transforms again past 20,000,000
+  characters through use elements, markers or clip paths is refused, where
+  it ran for minutes; a text of a font size a PDF cannot hold is left out,
+  where it failed the document; mid markers are not drawn inside elliptical
+  arcs, and once where a command follows Z; a duplicated id names the first
+  element in document order, as browsers do; a use inside the element it
+  refers to is a circular reference, not drawn; Go and Swift stop reading a
+  file or stream at the 20 MB limit, and Go converts path data one operation
+  at a time, half the memory.
+- **TextFrame:** a word joined to a letter wider than the frame goes on the
+  next row and is broken there, where it ran past the right edge;
+  `setLineSpacing` spaces the empty rows of `<br><br>` too; a listener is
+  told only of pieces with text; Java, C# and Swift drew a letter of more
+  than about 255 combining marks without the marks past the 256th
+  character.
+- **Tables:** `BigTable` with `setWrapText` starts the next page with the
+  first row when it fits there, where it cut it on the page `setFirstPage`
+  set; one long unbroken word (base64, say) is wrapped in time in
+  proportion to its length, 100,000 characters in 0.03 s where it took
+  9.7 s; `setTableData` with a negative number of header rows is an error,
+  where it drew nothing; Go's `Cell.SetRowSpan` past the range of an int32
+  is clamped, as `SetColSpan` is.
+- **Standards:** `attachText` writes the media type `text/plain` (the
+  description says UTF-8), so a PDF/A-3 document with its text attached is
+  PDF/A-3; a polygon annotation with an odd number of values leaves the last
+  out, where it crashed, and is refused in a PDF/A-1 document, which cannot
+  have one; a Figure drawn inside a paragraph drawn word by word
+  (CompositeTextLine, TextFrame, TextColumn) is in the structure tree, where
+  screen readers never reached it; Swift kept named destinations apart that
+  differ only in Unicode normalization.
+- **Graphics:** barcodes and charts keep to their own line caps and text
+  rotation (above); `Arc.setStartPointToEndOf` with two radii starts the arc
+  at the end of a slanted line; a Swift chart of a size past the range of
+  Int records its error, where it crashed.
 
 ## v9.1.7 — 2026-11-05
 
