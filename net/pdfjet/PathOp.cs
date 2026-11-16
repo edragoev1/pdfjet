@@ -32,6 +32,12 @@ internal class PathOp {
     public float x;     // Initial point x
     /// <summary>The y coordinate of the point.</summary>
     public float y;     // Initial point y
+    /// <summary>
+    /// Not a vertex of the path data, where a marker goes: a point inside an
+    /// elliptical arc, which is drawn in pieces, or the moveto that a command
+    /// after Z starts with, at the vertex the Z ends at.
+    /// </summary>
+    public bool inner;
     /// <summary>The arguments of the command.</summary>
     public List<String> args;
 

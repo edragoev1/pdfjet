@@ -13,6 +13,7 @@ package pdfjet
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"strconv"
 	"strings"
@@ -83,68 +84,79 @@ func isArcFlag(op *svgPathOp) bool {
 	return argument == 3 || argument == 4
 }
 
-// GetOperations parses svgParser path data into a list of path operations.
-func (svg *svgParser) getOperations(path string) []*svgPathOp {
-	operations := make([]*svgPathOp, 0)
-	var op = newSVGPathOp(' ')
-	var buf = strings.Builder{}
-	var token = false
-	for _, ch := range path {
-		if isCommand(ch) { // open path
-			if token {
-				op.args = append(op.args, buf.String())
-				buf.Reset()
+// GetOperations parses svgParser path data into path operations, one by one,
+// each when its arguments are read, so that toPDF converts each before the
+// next is read: a list of all, with a string for each number, and the list
+// toPDF made were 1 GB for a path of 19 MB (review of 16 November 2026).
+func (svg *svgParser) getOperations(path string) iter.Seq[*svgPathOp] {
+	return func(yield func(*svgPathOp) bool) {
+		var op = newSVGPathOp(' ')
+		var buf = strings.Builder{}
+		var token = false
+		started := false // The op is one of the path, after a command
+		for _, ch := range path {
+			if isCommand(ch) { // open path
+				if token {
+					op.args = append(op.args, buf.String())
+					buf.Reset()
+				}
+				token = false
+				if started && !yield(op) {
+					return
+				}
+				op = newSVGPathOp(ch)
+				started = true
+			} else if isSVGSpace(ch) || ch == ',' {
+				if token {
+					op.args = append(op.args, buf.String())
+					buf.Reset()
+				}
+				token = false
+			} else if ch == '-' || ch == '+' {
+				// The sign starts a number, unless it is the sign of an exponent:
+				// 1e-3 is one number, and 10-3 is two.
+				if token && !afterExponent(buf.String()) {
+					op.args = append(op.args, buf.String())
+					buf.Reset()
+				}
+				token = true
+				buf.WriteRune(ch)
+			} else if ch == '.' {
+				if strings.Contains(buf.String(), ".") {
+					op.args = append(op.args, buf.String())
+					buf.Reset()
+				}
+				token = true
+				buf.WriteRune(ch)
+			} else if !token && isArcFlag(op) && (ch == '0' || ch == '1') {
+				op.args = append(op.args, string(ch))
+			} else {
+				token = true
+				buf.WriteRune(ch)
 			}
-			token = false
-			op = newSVGPathOp(ch)
-			operations = append(operations, op)
-		} else if isSVGSpace(ch) || ch == ',' {
-			if token {
-				op.args = append(op.args, buf.String())
-				buf.Reset()
-			}
-			token = false
-		} else if ch == '-' || ch == '+' {
-			// The sign starts a number, unless it is the sign of an exponent:
-			// 1e-3 is one number, and 10-3 is two.
-			if token && !afterExponent(buf.String()) {
-				op.args = append(op.args, buf.String())
-				buf.Reset()
-			}
-			token = true
-			buf.WriteRune(ch)
-		} else if ch == '.' {
-			if strings.Contains(buf.String(), ".") {
-				op.args = append(op.args, buf.String())
-				buf.Reset()
-			}
-			token = true
-			buf.WriteRune(ch)
-		} else if !token && isArcFlag(op) && (ch == '0' || ch == '1') {
-			op.args = append(op.args, string(ch))
-		} else {
-			token = true
-			buf.WriteRune(ch)
+		}
+		if token { // The last number of a path that does not end with Z
+			op.args = append(op.args, buf.String())
+		}
+		if started {
+			yield(op)
 		}
 	}
-	if token { // The last number of a path that does not end with Z
-		op.args = append(op.args, buf.String())
-	}
-	return operations
 }
 
 // toPDF converts svgParser path operations to PDF path operations, and returns an
 // error if an argument of an operation is not a number.
-func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
+func toPDF(list iter.Seq[*svgPathOp]) ([]*svgPathOp, error) {
 	operations := make([]*svgPathOp, 0)
 	var lastOp = newSVGPathOp(' ')
 	var x0 float32 = 0.0 // Start of subpath
 	var y0 float32 = 0.0
-	for _, op := range list {
+	for op := range list {
 		// A command after Z other than a moveto starts the next subpath at
 		// the start of the one it closed, as SVG 1.1 section 8.3.3 says.
 		if lastOp.cmd == 'Z' && op.cmd != 'M' && op.cmd != 'm' && op.cmd != 'Z' && op.cmd != 'z' {
 			pathOp := newSVGPathOpXY('M', x0, y0)
+			pathOp.inner = true
 			operations = append(operations, pathOp)
 			lastOp = pathOp
 		}
@@ -290,6 +302,9 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 				x2c := float32(x) + float32((2.0/3.0)*(x1-float32(x)))
 				y2c := float32(y) + float32((2.0/3.0)*(y1-float32(y)))
 				pathOp.setCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
+				// Each pair of numbers is another T, whose next one reflects
+				// its control point too, as SVG 1.1 section 8.3.7 says.
+				pathOp.from = 'T'
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
@@ -373,6 +388,9 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 					x1, y1,
 					float32(x2), float32(y2),
 					float32(x), float32(y))
+				// Each set of four numbers is another S, whose next one
+				// reflects its control point too, as SVG 1.1 section 8.3.6 says.
+				pathOp.from = 'S'
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
@@ -571,6 +589,7 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 		}
 		pathOp = newSVGPathOp('C')
 		pathOp.setCubicPoints(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
+		pathOp.inner = i < segments-1
 		*operations = append(*operations, pathOp)
 	}
 	return pathOp

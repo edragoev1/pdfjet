@@ -7,6 +7,8 @@ package pdfjet
 
 import (
 	"math"
+	"os"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -1916,5 +1918,181 @@ func TestSVGTextInTheFontOfTextBeforeHasItsOwnSize(t *testing.T) {
 	page.setPreciseTextFont(font, 0.125)
 	if got := strings.Count(string(page.buf), " Tf\n"); got != 2 || !strings.Contains(string(page.buf), " 0.125 Tf\n") {
 		t.Errorf("the page has %q", page.buf)
+	}
+}
+
+// The review of 16 November 2026
+
+func TestSVGEachSetOfASmoothCurveReflectsTheControlPointOfTheOneBefore(t *testing.T) {
+	// Each set of numbers of an S or a T is another S or T (SVG 1.1 sections
+	// 8.3.6 and 8.3.7): written once or twice, they draw the same curves.
+	for _, pair := range [][2]string{
+		{"M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 30 10 30 0", "M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 S 30 10 30 0"},
+		{"M0 0 Q 5 10 10 0 T 20 0 30 0", "M0 0 Q 5 10 10 0 T 20 0 T 30 0"},
+		{"M2 12 s4.48 10 10 10 10-4.48 10-10", "M2 12 s4.48 10 10 10 s10-4.48 10-10"},
+	} {
+		once, err := toPDF(newSVGParser().getOperations(pair[0]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		twice, err := toPDF(newSVGParser().getOperations(pair[1]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(once) != len(twice) {
+			t.Fatalf("%s: %d and %d operations", pair[0], len(once), len(twice))
+		}
+		for i := range once {
+			a, b := *once[i], *twice[i]
+			if a.x1 != b.x1 || a.y1 != b.y1 || a.x2 != b.x2 || a.y2 != b.y2 || a.x != b.x || a.y != b.y {
+				t.Errorf("%s: operation %d is %v and %v", pair[0], i, a, b)
+			}
+		}
+	}
+	operations, err := toPDF(newSVGParser().getOperations("M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 30 10 30 0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := operations[len(operations)-1]
+	if last.x1 != 20 || last.y1 != 10 { // The reflection of 20,-10 through 20,0
+		t.Errorf("first control point %v,%v", last.x1, last.y1)
+	}
+	// The Material circle icon: the third curve starts out of the reflection
+	// of the second control point of the one before, 6.48,22 through 12,22.
+	operations, err = toPDF(newSVGParser().getOperations("M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if third := operations[3]; third.x1 != 17.52 || third.y1 != 22 {
+		t.Errorf("third curve %v", *third)
+	}
+}
+
+func TestSVGTheAttributesReadAgainAreLimited(t *testing.T) {
+	// 10,000 characters, read again for each of 2,500 elements
+	attributes := ""
+	for i := 0; i < 20; i++ {
+		attributes += ` a` + strconv.Itoa(i) + `="` + strings.Repeat("x", 494) + `"`
+	}
+	for name, svg := range map[string]string{
+		"uses of a group": `<svg width="10" height="10"><defs><g id="t"` + attributes + `/></defs>` +
+			strings.Repeat(`<use href="#t"/>`, 2500) + `</svg>`,
+		"uses of a text": `<svg width="10" height="10"><defs><text id="t">a<tspan` + attributes + `/></text></defs>` +
+			strings.Repeat(`<use href="#t"/>`, 2500) + `</svg>`,
+		"elements clipped": `<svg width="10" height="10"><clipPath id="c"><rect width="1" height="1"` + attributes +
+			`/></clipPath>` + strings.Repeat(`<g clip-path="url(#c)"/>`, 2500) + `</svg>`,
+		"markers": `<svg width="10" height="10"><marker id="m"` + attributes + `/>` +
+			`<path d="M0 0` + strings.Repeat(" L1 1", 2500) + `" stroke="red" marker-mid="url(#m)"/></svg>`,
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || !strings.Contains(err.Error(), "characters of attributes") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	testNewSVG(t, `<svg width="10" height="10"><defs><g id="t"`+attributes+`/></defs>`+
+		strings.Repeat(`<use href="#t"/>`, 100)+`</svg>`)
+}
+
+func TestSVGATextOfAFontSizeAPDFCannotHoldIsNotDrawn(t *testing.T) {
+	for _, svg := range []string{
+		`<svg width="200" height="200" viewBox="0 0 100 100"><text y="10" font-size="3e38">x</text>` +
+			`<rect width="5" height="5"/></svg>`,
+		`<svg width="200" height="200" viewBox="0 0 100 100"><clipPath id="c"><text y="10" font-size="3e38">x</text>` +
+			`</clipPath><text y="10" clip-path="url(#c)">x</text><rect width="5" height="5"/></svg>`,
+	} {
+		page := testNewPage()
+		image := testNewSVG(t, svg)
+		image.DrawOn(page)
+		content := testContent(page)
+		if page.pdf.err != nil {
+			t.Errorf("%v", page.pdf.err)
+		}
+		if strings.Contains(content, "Tf") || !strings.Contains(content, "\nf\n") { // The rect is drawn
+			t.Errorf("content %q", content)
+		}
+	}
+}
+
+func TestSVGMarkersAreAtTheVerticesOfThePathData(t *testing.T) {
+	vertices := func(d string) [][3]float64 {
+		operations, err := shapeOperations("path", map[string]string{"d": d})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return svgVertices(operations)
+	}
+	// An arc is one segment, however many curves draw it.
+	if v := vertices("M10 50 A40 40 0 0 1 90 50 L 90 90"); len(v) != 3 || v[1][0] != 90 || v[1][1] != 50 {
+		t.Errorf("vertices %v", v)
+	}
+	// A command after Z goes on from the vertex Z ends at, once, which is
+	// turned halfway between the Z and the command.
+	v := vertices("M0 0 L10 0 L10 10 Z L0 20")
+	if len(v) != 5 || v[3][0] != 0 || v[3][1] != 0 || math.Abs(v[3][2]-157.5) > 1e-9 {
+		t.Errorf("vertices %v", v)
+	}
+	content := testDrawSVG(t, `<svg width="100" height="100" viewBox="0 0 100 100"><marker id="m" markerWidth="2" `+
+		`markerHeight="2" refX="1" refY="1" markerUnits="userSpaceOnUse"><rect width="2" height="2" fill="red"/>`+
+		`</marker><path fill="none" stroke="black" d="M10 50 A40 40 0 0 1 90 50 L 90 90" marker-mid="url(#m)"/></svg>`)
+	if strings.Count(content, "\nf\n") != 1 || strings.Contains(content, "\n49 783 m\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGAnIdNamesTheFirstElementInTheOrderOfTheDocument(t *testing.T) {
+	content := testDrawSVG(t, `<svg width="100" height="100"><defs><g><rect id="a" width="10" height="10" fill="red"/></g>`+
+		`<rect id="a" width="10" height="10" fill="blue"/></defs><use href="#a"/></svg>`)
+	if !strings.Contains(content, "1 0 0 rg") || strings.Contains(content, "0 0 1 rg") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGAUseOfAnElementItIsInIsNotDrawn(t *testing.T) {
+	for _, svg := range []string{
+		`<svg width="100" height="100"><g id="a"><rect width="5" height="5"/><use href="#a" x="10"/></g></svg>`,
+		`<svg width="100" height="100"><g id="a"><rect width="5" height="5"/><use href="#b" x="10"/></g>` +
+			`<defs><g id="b"><use href="#a" x="10"/></g></defs></svg>`,
+	} {
+		if content := testDrawSVG(t, svg); strings.Count(content, "\nf\n") != 1 {
+			t.Errorf("content %q", content)
+		}
+	}
+}
+
+func TestSVGImageFromFileReadsNoMoreThanTheLimit(t *testing.T) {
+	path := t.TempDir() + "/big.svg"
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Truncate(300 << 20); err != nil {
+		t.Fatal(err)
+	}
+	file.Close()
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	_, err = NewSVGImageFromFile(path)
+	runtime.ReadMemStats(&after)
+	if err == nil || !strings.Contains(err.Error(), "20 MB") {
+		t.Errorf("%v", err)
+	}
+	if read := after.TotalAlloc - before.TotalAlloc; read > 100<<20 {
+		t.Errorf("%d MB allocated", read>>20)
+	}
+}
+
+func TestSVGPathDataIsReadOneOperationAtATime(t *testing.T) {
+	// toPDF converts each operation before the next is read, so that the
+	// operations read are not all kept.
+	read := 0
+	for op := range newSVGParser().getOperations("M0 0 L1 1 L2 2 L3 3") {
+		read++
+		if op.cmd != 'M' || len(op.args) != 2 {
+			t.Errorf("%c %v", op.cmd, op.args)
+		}
+		break
+	}
+	if read != 1 {
+		t.Errorf("%d read", read)
 	}
 }

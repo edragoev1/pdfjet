@@ -364,7 +364,9 @@ public sealed class XMLParser {
     }
 
     private void Comment() {
-        int end = xml.IndexOf("-->", index, StringComparison.Ordinal);
+        // The end is after the <!-- the comment starts with, which <!--> and
+        // <!---> are not the end of.
+        int end = xml.IndexOf("-->", index + 4, StringComparison.Ordinal);
         if (end == -1) {
             throw Error("The comment does not end");
         }
@@ -378,7 +380,7 @@ public sealed class XMLParser {
     }
 
     private void ProcessingInstruction() {
-        int end = xml.IndexOf("?>", index, StringComparison.Ordinal);
+        int end = xml.IndexOf("?>", index + 2, StringComparison.Ordinal);
         if (end == -1) {
             throw Error("The processing instruction does not end");
         }
@@ -392,6 +394,10 @@ public sealed class XMLParser {
         }
         if (String.Equals(xml.Substring(index + 2, target - index - 2), "xml", StringComparison.OrdinalIgnoreCase)) {
             throw Error("The XML declaration is not at the start of the document");
+        }
+        // It starts with its target, a name, which <?> and <? pi?> have not.
+        if (!IsName(xml.Substring(index + 2, target - index - 2))) {
+            throw Error("The processing instruction has no target");
         }
         Skip(end + 2 - index);
     }

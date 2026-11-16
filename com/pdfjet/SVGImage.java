@@ -55,7 +55,7 @@ import java.util.Set;
  * and a soft mask, which PDF/A-1 forbids, is not used for it. It
  * throws for a file that nests what it draws more than 48 deep, or that draws
  * more than 4,000,000 path operations again, by use elements, markers and clip
- * paths.
+ * paths, or reads more than 20,000,000 characters of attributes again for them.
  */
 public class SVGImage implements Drawable {
     float x = 0f;
@@ -83,8 +83,10 @@ public class SVGImage implements Drawable {
     private Map<String, XMLNode> ids;
     private List<SVGPath> clipShapes = new ArrayList<SVGPath>();
     private Set<XMLNode> reusing;
+    private Set<XMLNode> drawing;       // The element being drawn and those it is in
     private long reused = 0;
     private long counted = 0;
+    private long attributeText = 0;     // The characters of attributes counted by MAX_ATTRIBUTE_TEXT
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
     private double[] marker = null;     // The viewport of the marker drawn next, in its user space
     private boolean clipping = false;   // A text of a clip path is read, for each element it clips
@@ -103,6 +105,17 @@ public class SVGImage implements Drawable {
     // for 320 KB (review of 30 October 2026). The operations of a file drawn
     // once are not counted: they grow with the file.
     static final long MAX_OPERATIONS = 4000000;
+    // The characters of attributes read again, at most: those of the elements
+    // drawn again, by use elements and as markers, and of the clipPath
+    // elements, their shapes and the tspans of their texts, read for each
+    // element they clip. Each reading sets the properties, classes, styles and
+    // transforms again: a use of an element of N attributes cost N for each
+    // element counted by MAX_REUSED, and no operation, 24 s for 249 KB (review
+    // of 16 November 2026). An attribute counts as it is written, its name, its
+    // value, the = and the quotes, and a space; the limit is the most a file
+    // holds. The attributes of a file read once are not counted: they grow
+    // with the file.
+    static final long MAX_ATTRIBUTE_TEXT = 20000000;
     // How deep the elements being drawn may nest, by groups, use elements and
     // markers, a state on the stack for each: a chain of use elements is flat in
     // the file, so the limit of the XML parser does not see it, and each level
@@ -149,17 +162,25 @@ public class SVGImage implements Drawable {
         }
         ids = new HashMap<String, XMLNode>();
         reusing = new HashSet<XMLNode>();
+        drawing = new HashSet<XMLNode>();
         switchOf = new HashMap<XMLNode, Switch>();
         testOf = new HashMap<XMLNode, Switch>();
+        // The first element of an id, in the order of the document, is the
+        // one it names, as getElementById finds it: an element in a group
+        // before another of its id, not the one less deep. A stack, not
+        // recursion.
         List<XMLNode> elements = new ArrayList<XMLNode>();
         elements.add(document);
-        for (int i = 0; i < elements.size(); i++) {
-            XMLNode element = elements.get(i);
+        while (!elements.isEmpty()) {
+            XMLNode element = elements.remove(elements.size() - 1);
             String id = element.getAttribute("id");
             if (id != null && !ids.containsKey(id)) {
-                ids.put(id, element);   // The first element of an id is the one it names
+                ids.put(id, element);
             }
-            elements.addAll(element.getChildren());
+            List<XMLNode> children = element.getChildren();
+            for (int i = children.size() - 1; i >= 0; i--) {
+                elements.add(children.get(i));
+            }
         }
         SVGState svg = new SVGState();
         svg.paints = gradientColors(ColorMap.SVG_COLORS);
@@ -170,6 +191,7 @@ public class SVGImage implements Drawable {
         processPaths(paths);
         ids = null;
         reusing = null;
+        drawing = null;
     }
 
     // Returns the colors the gradients are drawn in, by their ids: the mean
@@ -290,6 +312,20 @@ public class SVGImage implements Drawable {
         }
     }
 
+    // Counts the characters of the attributes of an element read again, and
+    // throws when there are too many.
+    private void countAttributes(XMLNode node) {
+        for (Map.Entry<String, String> attribute : node.getAttributes().entrySet()) {
+            String name = attribute.getKey();
+            String value = attribute.getValue();
+            attributeText += 4 + name.codePointCount(0, name.length()) + value.codePointCount(0, value.length());
+        }
+        if (attributeText > MAX_ATTRIBUTE_TEXT) {
+            throw new IllegalArgumentException("The SVG reads more than " + MAX_ATTRIBUTE_TEXT
+                    + " characters of attributes again, with use elements, markers or clip paths.");
+        }
+    }
+
     // Returns the operations written for the clip paths of one path, and of
     // a run of a text.
     private static int clipOperations(List<SVGPath> clips) {
@@ -317,9 +353,11 @@ public class SVGImage implements Drawable {
         if (stack.size() > MAX_DEPTH) {
             throw depthError();
         }
+        drawing.add(node);
         String name = node.getLocalName();
         if (!reusing.isEmpty()) {
             countReused();
+            countAttributes(node);
         }
         Map<String, String> attributes = new HashMap<String, String>();
         List<String> order = new ArrayList<String>();
@@ -377,11 +415,15 @@ public class SVGImage implements Drawable {
                 addText(node, colorMap, rules, state, attributes, stack.size());
             }
             stack.remove(stack.size() - 1);
+            drawing.remove(node);
             return;
         }
         if (name.equals("use")) {
             XMLNode target = ids.get(href(node));
-            if (target != null && !state.hidden && !reusing.contains(target)) {
+            // A use of an element being drawn, one the use is in, is a
+            // circular reference, which SVG 1.1 section 5.6 makes an error,
+            // and is not drawn.
+            if (target != null && !state.hidden && !reusing.contains(target) && !drawing.contains(target)) {
                 // The element is drawn as a child of the use element, moved
                 // by its x and y.
                 SVGState parent = new SVGState(state);
@@ -395,6 +437,7 @@ public class SVGImage implements Drawable {
                 stack.remove(stack.size() - 1);
             }
             stack.remove(stack.size() - 1);
+            drawing.remove(node);
             return;
         }
         List<PathOp> operations = shapeOperations(name, attributes);
@@ -430,6 +473,7 @@ public class SVGImage implements Drawable {
             rules.addElement(node);
         }
         stack.remove(stack.size() - 1);
+        drawing.remove(node);
     }
 
     // Returns the value of the attribute, or an empty one for an attribute
@@ -889,6 +933,7 @@ public class SVGImage implements Drawable {
                 || SVGState.trim(attribute(clipPath, "clipPathUnits")).equals("objectBoundingBox")) {
             return;
         }
+        countAttributes(clipPath);
         SVGState base = new SVGState();
         base.matrix = state.matrix;
         List<String> order = new ArrayList<String>();
@@ -901,6 +946,7 @@ public class SVGImage implements Drawable {
         List<SVGPath> texts = new ArrayList<SVGPath>();
         int read = 0;   // What is read of the texts
         for (XMLNode child : clipPath.getChildren()) {
+            countAttributes(child);
             order = new ArrayList<String>();
             attributes = attributes(child, order);
             SVGState shape = elementState(base, colorMap, rules, attributes, order);
@@ -911,6 +957,7 @@ public class SVGImage implements Drawable {
                 if (target == null) {
                     continue;
                 }
+                countAttributes(target);
                 shape.matrix = SVGState.multiply(shape.matrix, new double[] {
                         1, 0, 0, 1, number(attributes, "x"), number(attributes, "y")});
                 order = new ArrayList<String>();
@@ -1157,7 +1204,18 @@ public class SVGImage implements Drawable {
         for (PathOp op : operations) {
             double[] in;
             double[] out;
-            if (op.cmd == 'M') {
+            if (op.cmd == 'M' && op.inner) {
+                // The moveto after Z: the next subpath starts at the vertex
+                // the Z ends at, which goes on as the command after it does.
+                if (!vertices.isEmpty()) {
+                    start = vertices.size() - 1;
+                    vertices.get(start)[4] = 0;
+                    vertices.get(start)[5] = 0;
+                }
+                x = op.x;
+                y = op.y;
+                continue;
+            } else if (op.cmd == 'M') {
                 start = vertices.size();
                 vertices.add(new double[] {op.x, op.y, 0, 0, 0, 0});
                 x = op.x;
@@ -1179,6 +1237,13 @@ public class SVGImage implements Drawable {
             if (last[4] == 0.0 && last[5] == 0.0) {
                 last[4] = out[0];
                 last[5] = out[1];
+            }
+            if (op.inner) {
+                // A point inside an elliptical arc, which is one segment of
+                // the path data, as SVG 1.1 section 11.6.2 has the vertices.
+                x = op.x;
+                y = op.y;
+                continue;
             }
             vertices.add(new double[] {op.x, op.y, in[0], in[1], 0, 0});
             if (op.cmd == 'Z') {
@@ -1433,6 +1498,9 @@ public class SVGImage implements Drawable {
                 String name = child.getLocalName();
                 if (!name.equals("tspan") && !name.equals("a")) {
                     continue;   // A title or a desc is not drawn
+                }
+                if (!reusing.isEmpty() || clipping) {
+                    countAttributes(child);
                 }
                 List<String> childOrder = new ArrayList<String>();
                 Map<String, String> childAttributes = attributes(child, childOrder);
@@ -1855,13 +1923,16 @@ public class SVGImage implements Drawable {
         return true;
     }
 
-    // Returns true when a PDF can hold the text matrices of the texts of the
-    // clip path.
+    // Returns true when a PDF can hold the text matrices and the font sizes of
+    // the texts of the clip path.
     private boolean partsAreWritable(SVGPath clip, Page page) {
         if (clip.parts != null) {
             for (SVGPath part : clip.parts) {
                 for (SVGText.Run run : part.text.runs) {
                     if (run.clips()) {
+                        if (!FastFloat.isWritable(run.fontSize)) {
+                            return false;
+                        }
                         for (float value : textMatrix(part.text, run, page)) {
                             if (!FastFloat.isWritable(value)) {
                                 return false;
@@ -2069,7 +2140,9 @@ public class SVGImage implements Drawable {
                 continue;
             }
             float[] tm = textMatrix(text, run, page);
-            boolean writable = clipsAreWritable(clips, page);
+            // The font size too, which a run that a PDF cannot hold is not
+            // drawn for, as a path is not.
+            boolean writable = clipsAreWritable(clips, page) && FastFloat.isWritable(run.fontSize);
             for (float value : tm) {
                 writable = writable && FastFloat.isWritable(value);
             }

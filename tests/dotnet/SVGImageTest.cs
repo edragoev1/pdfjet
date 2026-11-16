@@ -1772,5 +1772,96 @@ public class SVGImageTest {
         Assert.Equal(2, content.Split(" Tf\n").Length - 1);
         Assert.Contains(" 0.125 Tf\n", content);
     }
+
+    // The review of 16 November 2026
+
+    [Fact]
+    public void EachSetOfASmoothCurveReflectsTheControlPointOfTheOneBefore() {
+        // Each set of numbers of an S or a T is another S or T (SVG 1.1
+        // sections 8.3.6 and 8.3.7): written once or twice, they draw the
+        // same curves.
+        string[][] pairs = {
+                new string[] {"M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 30 10 30 0", "M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 S 30 10 30 0"},
+                new string[] {"M0 0 Q 5 10 10 0 T 20 0 30 0", "M0 0 Q 5 10 10 0 T 20 0 T 30 0"},
+                new string[] {"M2 12 s4.48 10 10 10 10-4.48 10-10", "M2 12 s4.48 10 10 10 s10-4.48 10-10"}};
+        foreach (string[] pair in pairs) {
+            Assert.Equal(Draw("<svg width=\"100\" height=\"100\"><path d=\"" + pair[1] + "\"/></svg>"),
+                    Draw("<svg width=\"100\" height=\"100\"><path d=\"" + pair[0] + "\"/></svg>"));
+        }
+        string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"" + pairs[0][0] + "\"/></svg>");
+        Assert.Contains("\n20 782 30 782 30 792 c\n", content);
+        content = Draw("<svg width=\"100\" height=\"100\"><path d=\"" + pairs[1][0] + "\"/></svg>");
+        Assert.Contains("\n23.33 785.33 26.67 785.33 30 792 c\n", content);
+    }
+
+    [Fact]
+    public void TheAttributesReadAgainAreLimited() {
+        // 10,000 characters, read again for each of 2,500 elements
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 20; i++) {
+            text.Append(" a").Append(i).Append("=\"").Append(Repeat("x", 494)).Append("\"");
+        }
+        string attributes = text.ToString();
+        foreach (string svg in new string[] {
+                "<svg width=\"10\" height=\"10\"><defs><g id=\"t\"" + attributes + "/></defs>"
+                        + Repeat("<use href=\"#t\"/>", 2500) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"t\">a<tspan" + attributes + "/></text></defs>"
+                        + Repeat("<use href=\"#t\"/>", 2500) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><rect width=\"1\" height=\"1\"" + attributes
+                        + "/></clipPath>" + Repeat("<g clip-path=\"url(#c)\"/>", 2500) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><marker id=\"m\"" + attributes + "/>"
+                        + "<path d=\"M0 0" + Repeat(" L1 1", 2500) + "\" stroke=\"red\" marker-mid=\"url(#m)\"/></svg>"}) {
+            ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(svg));
+            Assert.Contains("characters of attributes", e.Message);
+        }
+        Parse("<svg width=\"10\" height=\"10\"><defs><g id=\"t\"" + attributes + "/></defs>"
+                + Repeat("<use href=\"#t\"/>", 100) + "</svg>");
+    }
+
+    [Fact]
+    public void ATextOfAFontSizeAPDFCannotHoldIsNotDrawn() {
+        foreach (string svg in new string[] {
+                "<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><text y=\"10\" font-size=\"3e38\">x</text>"
+                        + "<rect width=\"5\" height=\"5\"/></svg>",
+                "<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><clipPath id=\"c\"><text y=\"10\" font-size=\"3e38\">x</text>"
+                        + "</clipPath><text y=\"10\" clip-path=\"url(#c)\">x</text><rect width=\"5\" height=\"5\"/></svg>"}) {
+            string content = Draw(svg);
+            Assert.DoesNotContain("Tf", content);
+            Assert.Contains("\nf\n", content);  // The rect is drawn
+        }
+    }
+
+    [Fact]
+    public void MarkersAreAtTheVerticesOfThePathData() {
+        string marker = "<marker id=\"m\" markerWidth=\"2\" markerHeight=\"2\" refX=\"1\" refY=\"1\" "
+                + "markerUnits=\"userSpaceOnUse\"><rect width=\"2\" height=\"2\" fill=\"red\"/></marker>";
+        // An arc is one segment, however many curves draw it.
+        string content = Draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\">" + marker
+                + "<path fill=\"none\" stroke=\"black\" d=\"M10 50 A40 40 0 0 1 90 50 L 90 90\" marker-mid=\"url(#m)\"/></svg>");
+        Assert.Equal(1, Count(content, "\nf\n"));
+        Assert.DoesNotContain("\n49 783 m\n", content);
+        // A command after Z goes on from the vertex Z ends at, once.
+        content = Draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\">" + marker
+                + "<path fill=\"none\" stroke=\"black\" d=\"M0 0 L10 0 L10 10 Z L0 20\" marker-mid=\"url(#m)\"/></svg>");
+        Assert.Equal(3, Count(content, "\nf\n"));
+    }
+
+    [Fact]
+    public void AnIdNamesTheFirstElementInTheOrderOfTheDocument() {
+        string content = Draw("<svg width=\"100\" height=\"100\"><defs><g><rect id=\"a\" width=\"10\" height=\"10\" fill=\"red\"/></g>"
+                + "<rect id=\"a\" width=\"10\" height=\"10\" fill=\"blue\"/></defs><use href=\"#a\"/></svg>");
+        Assert.Contains("1 0 0 rg", content);
+        Assert.DoesNotContain("0 0 1 rg", content);
+    }
+
+    [Fact]
+    public void AUseOfAnElementItIsInIsNotDrawn() {
+        foreach (string svg in new string[] {
+                "<svg width=\"100\" height=\"100\"><g id=\"a\"><rect width=\"5\" height=\"5\"/><use href=\"#a\" x=\"10\"/></g></svg>",
+                "<svg width=\"100\" height=\"100\"><g id=\"a\"><rect width=\"5\" height=\"5\"/><use href=\"#b\" x=\"10\"/></g>"
+                        + "<defs><g id=\"b\"><use href=\"#a\" x=\"10\"/></g></defs></svg>"}) {
+            Assert.Equal("0 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", Draw(svg));
+        }
+    }
 }
 }

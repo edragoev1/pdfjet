@@ -20,6 +20,10 @@ class PathOp {
     var y2: Float = 0.0     // Control point y2
     var x: Float = 0.0      // Initial point x
     var y: Float = 0.0      // Initial point y
+    // Not a vertex of the path data, where a marker goes: a point inside an
+    // elliptical arc, which is drawn in pieces, or the moveto that a command
+    // after Z starts with, at the vertex the Z ends at.
+    var inner = false
     var args: [String]
 
     init(_ cmd: Character) {
