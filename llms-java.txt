@@ -113,6 +113,8 @@ public class Report {
 
 For tables of thousands of pages read from a file or a database, use `BigTable`: it writes each page as it fills, so its memory stays flat, with "Page i of N" footers (Example_24). `setWrapText(true)` wraps long fields within their columns, each row as tall as its tallest field (Example_51); `setFallbackFonts(header, rows)` draws characters the table's fonts lack, such as Chinese in a Latin table.
 
+A `BigTable` takes the look of a `Table`, so that either can take the place of the other: `setColumnWidths(...)` with the widths of the cells in points, `setBorderColor(Color.black)`, `setShadingColor(Color.transparent)`, `setPadding(2f)` and `setVerticalPadding(2f)`, the cells' padding, and `setFooter(null, null)`. A `BigTable` right-aligns numbers, as `rightAlignNumbers()` does; `setTextAlignment(column, Alignment.LEFT)` aligns a column left, as a `Table` does by default. For rules under the rows alone, as cells with a bottom border, `setVerticalLines(false)` and `setTopLine(false)`, with `setHeaderColor(...)` for a shaded header.
+
 ## Markdown
 
 ```java

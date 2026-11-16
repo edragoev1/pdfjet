@@ -65,6 +65,7 @@ public class BigTable {
     private float[] rowLines = new float[64];
     private int rowLineCount = 0;
     private boolean verticalLines = true;           // false for the rows' lines alone
+    private boolean topLine = true;                 // false for no line above the header
     private String footerText = "Page {page} of {pages}";
     private Font footerFont;                        // null for the header font
     private float footerFontSize = 0f;              // 0 for the size of the footer's font
@@ -74,6 +75,7 @@ public class BigTable {
     private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
     private int numberOfColumns;            // The length of columns
     private float[] percents;               // The width of each column, as a percent of the table's, or null
+    private float[] points;                 // The width of each column in points, or null
     private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
     private boolean startNewPage = true;
     private int dataRows;           // The rows under the header, counted by setTableData
@@ -190,9 +192,56 @@ public class BigTable {
             }
         }
         this.percents = percents.clone();
+        this.points = null;
         if (vertLines != null) {
             setVertLines();
         }
+        return this;
+    }
+
+    /**
+     * Gives the columns, in the order setColumns draws them, their widths in
+     * points, as Table's cells have them, the padding of each side in them;
+     * the table is as wide as their sum. A field wider than its column is cut
+     * to fit it, its text ending in " ...", or wraps in it with setWrapText.
+     * It takes the place of setColumnWidthsInPercent, as that takes the place
+     * of it. Call it after setColumns or setNumberOfColumns: widths that are
+     * not one for each column, or one that is negative or not a number, are
+     * refused.
+     *
+     * @param widths the width of each column, in points.
+     * @return this BigTable object.
+     */
+    public BigTable setColumnWidths(float... widths) {
+        if (widths.length != numberOfColumns) {
+            pdf.fail(new IllegalArgumentException("The table has " + numberOfColumns + " columns, and "
+                    + widths.length + " widths: give one for each column."));
+        }
+        for (float width : widths) {
+            if (!(width >= 0f) || width == Float.POSITIVE_INFINITY) {
+                pdf.fail(new IllegalArgumentException(
+                        "The width of a column cannot be negative, or not a number."));
+            }
+        }
+        this.points = widths.clone();
+        this.percents = null;
+        if (vertLines != null) {
+            setVertLines();
+        }
+        return this;
+    }
+
+    /**
+     * Sets whether the line above the header is drawn, on every page. It is
+     * unless set; without it a table of lines under its rows alone, with
+     * setVerticalLines(false), looks as a Table of cells with a bottom border
+     * alone.
+     *
+     * @param topLine false to leave the line above the header out.
+     * @return this BigTable object.
+     */
+    public BigTable setTopLine(boolean topLine) {
+        this.topLine = topLine;
         return this;
     }
 
@@ -651,8 +700,9 @@ public class BigTable {
             highlightRow(page, font, shading);
             page.addEMC();
         }
-        // The line above the text, stroked with the page's other lines
-        if (borderColor != null) {
+        // The line above the text, stroked with the page's other lines, but
+        // above the header when setTopLine leaves it out
+        if (borderColor != null && (topLine || !header)) {
             addRowLine(this.yText - font.ascent - verticalPadding);
         }
         page.setBrushColor(Color.black);
@@ -742,18 +792,22 @@ public class BigTable {
         float[] original = page.getPenColor();
         page.setPenColor(borderColor);
         page.setPenWidth(borderWidth);
+        // The lines close the corners as a Table's do: each horizontal line
+        // starts half the width of the pen left of the table, and each
+        // vertical line runs half of it past the top and the bottom.
+        float hWidth = borderWidth / 2;
         for (int k = 0; k < rowLineCount; k++) {
-            page.moveTo(vertLines[0], rowLines[k]);
+            page.moveTo(vertLines[0] - hWidth, rowLines[k]);
             page.lineTo(vertLines[this.numberOfColumns], rowLines[k]);
         }
         rowLineCount = 0;
         float bottom = this.yText - f2.ascent - verticalPadding;
         for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
-            page.moveTo(vertLines[i], this.top);
-            page.lineTo(vertLines[i], bottom);
+            page.moveTo(vertLines[i], this.top - hWidth);
+            page.lineTo(vertLines[i], bottom + hWidth);
         }
         // The line under the last row
-        page.moveTo(vertLines[0], bottom);
+        page.moveTo(vertLines[0] - hWidth, bottom);
         page.lineTo(vertLines[this.numberOfColumns], bottom);
         page.strokePath();
         page.setPenColor(original);
@@ -985,7 +1039,13 @@ public class BigTable {
             setWrapWidths();
             return;
         }
-        if (percents != null) {
+        if (points != null && points.length != this.widths.length) {
+            int count = points.length;
+            points = null;
+            pdf.fail(new IllegalArgumentException("The table has " + this.widths.length + " columns, and "
+                    + count + " widths: give one for each column."));
+        }
+        if (percents != null || points != null) {
             setVertLinesInPercent();
             return;
         }
@@ -1019,29 +1079,16 @@ public class BigTable {
     }
 
     // Puts each vertical line where the columns before it end, each column the
-    // percentage of the table's width setColumnWidthsInPercent gives it, its
-    // padding in it, and cuts the fields of a column narrower than its widest
-    // field.
+    // width setColumnWidths gives it, or the percentage of the table's width
+    // setColumnWidthsInPercent gives it, its padding in it, and cuts the
+    // fields of a column narrower than its widest field.
     private void setVertLinesInPercent() {
-        float tableWidth = pageSize.getWidth() - 2*this.x;
-        if (!(tableWidth > 0f)) {
-            // The columns were as wide as less than nothing (review of 12 October
-        // 2026, T5)
-            pdf.fail(new IllegalArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
-        }
-        // The shares are added up and taken in double, the largest float a
-        // share as any other: tableWidth*percent was an infinity, and the
-        // document failed (review of 12 October 2026, T5)
-        double total = 0.0;
-        for (float percent : percents) {
-            total += percent;
-        }
+        float[] given = givenWidths();
         this.clipped = null;
         float vertLineX = this.x;
         this.vertLines[0] = vertLineX;
-        for (int i = 0; i < percents.length; i++) {
-            // Percentages that are all 0 share the width equally.
-            float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.length;
+        for (int i = 0; i < given.length; i++) {
+            float width = given[i];
             float text = Math.max(0f, width - 2*this.padding);
             if (this.widths[i] > text) {
                 if (this.clipped == null) {
@@ -1052,6 +1099,34 @@ public class BigTable {
             vertLineX += width;
             this.vertLines[i + 1] = vertLineX;
         }
+    }
+
+    // The width of each column, in points: those of setColumnWidths, or the
+    // percentages of setColumnWidthsInPercent of the table's width, the width
+    // of the page less the margin of setLocation on each side.
+    private float[] givenWidths() {
+        if (points != null) {
+            return points.clone();
+        }
+        float tableWidth = pageSize.getWidth() - 2*this.x;
+        if (!(tableWidth > 0f)) {
+            // The columns were as wide as less than nothing (review of 12 October
+            // 2026, T5)
+            pdf.fail(new IllegalArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
+        }
+        // The shares are added up and taken in double, the largest float a
+        // share as any other: tableWidth*percent was an infinity, and the
+        // document failed (review of 12 October 2026, T5)
+        double total = 0.0;
+        for (float percent : percents) {
+            total += percent;
+        }
+        float[] widths = new float[percents.length];
+        for (int i = 0; i < percents.length; i++) {
+            // Percentages that are all 0 share the width equally.
+            widths[i] = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.length;
+        }
+        return widths;
     }
 
     // The mark that ends a field whose text was cut to fit its column, which
@@ -1154,17 +1229,10 @@ public class BigTable {
         this.textWidths = new float[n];
         float vertLineX = this.x;
         this.vertLines[0] = vertLineX;
-        if (percents != null) {
-            float tableWidth = pageSize.getWidth() - 2*this.x;
-            if (!(tableWidth > 0f)) {
-                pdf.fail(new IllegalArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
-            }
-            double total = 0.0;
-            for (float percent : percents) {
-                total += percent;
-            }
-            for (int i = 0; i < percents.length; i++) {
-                float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.length;
+        if (percents != null || points != null) {
+            float[] given = givenWidths();
+            for (int i = 0; i < given.length; i++) {
+                float width = given[i];
                 this.textWidths[i] = Math.max(0f, width - 2*this.padding);
                 vertLineX += width;
                 this.vertLines[i + 1] = vertLineX;
@@ -1391,8 +1459,9 @@ public class BigTable {
             highlightRows(page, font, shading, extra);
             page.addEMC();
         }
-        // The line above the text, stroked with the page's other lines
-        if (borderColor != null) {
+        // The line above the text, stroked with the page's other lines, but
+        // above the header when setTopLine leaves it out
+        if (borderColor != null && (topLine || !header)) {
             addRowLine(this.yText - font.ascent - verticalPadding);
         }
         page.setBrushColor(Color.black);

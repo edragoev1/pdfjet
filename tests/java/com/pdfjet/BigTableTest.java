@@ -534,6 +534,79 @@ class BigTableTest {
         }
     }
 
+    // The columns take the widths in points that setColumnWidths gives them,
+    // as Table's cells do, and the table is as wide as their sum; a field
+    // wider than its column is cut to fit it. Widths that are not one for each
+    // column, or a negative one, are refused, and setColumnWidthsInPercent
+    // takes the place of the widths, as they take the place of it.
+    @Test
+    void theColumnsCanBeGivenWidthsInPoints() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.setNumberOfColumns(3);
+        table.setColumnWidths(60f, 80f, 100f);
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {"A field far wider than sixty points", "b", "c"});
+        table.setTableData(new String[] {"A", "B", "C"}, rows);
+        table.setLocation(36f, 20f);
+        table.setFooter(null, null);
+        table.complete();
+        Page page = table.getPages().get(0);
+        List<Float> lines = new ArrayList<Float>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("([-0-9.]+) [-0-9.]+ m")
+                .matcher(TestSupport.content(page));
+        while (m.find()) {
+            lines.add(Float.parseFloat(m.group(1)));
+        }
+        for (float x : new float[] {36f, 96f, 176f, 276f}) {
+            assertTrue(lines.contains(x), "no line at x=" + x + ": " + lines);
+        }
+        assertFalse(lines.contains(576f), "the table is as wide as the page: " + lines);
+        List<String> drawn = drawnText(page);
+        assertTrue(drawn.get(3).endsWith(" ..."), drawn.toString());
+        assertTrue(font.stringWidth(drawn.get(3)) <= 60f - 4f, "the cut field is " + font.stringWidth(drawn.get(3)));
+
+        for (float[] widths : new float[][] {{50f, 50f}, {20f, 30f, -50f}}) {
+            BigTable refused = new BigTable(TestSupport.newPDF(), font, font, Letter.PORTRAIT);
+            refused.setNumberOfColumns(3);
+            assertThrows(IllegalArgumentException.class, () -> refused.setColumnWidths(widths));
+        }
+
+        // The percentages after the widths: the table is as wide as the page.
+        PDF pdf2 = TestSupport.newPDF();
+        Font font2 = new Font(pdf2, CoreFont.HELVETICA);
+        BigTable percent = new BigTable(pdf2, font2, font2, Letter.PORTRAIT);
+        percent.setNumberOfColumns(3);
+        percent.setColumnWidths(60f, 80f, 100f).setColumnWidthsInPercent(20f, 30f, 50f);
+        percent.setTableData(new String[] {"A", "B", "C"}, rows);
+        percent.setLocation(36f, 20f);
+        percent.setFooter(null, null);
+        percent.complete();
+        assertTrue(TestSupport.content(percent.getPages().get(0)).contains("\n576 "), "the percentages were not used");
+    }
+
+    // setTopLine(false) leaves out the line above the header, and only it.
+    @Test
+    void theLineAboveTheHeaderCanBeLeftOut() throws Exception {
+        String all = drawSmall(TestSupport.newPDF(), table -> {});
+        String rows = drawSmall(TestSupport.newPDF(), table -> table.setTopLine(false));
+        assertEquals(count(all, " m\n") - 1, count(rows, " m\n"));
+        // The table starts at y = 10, the top of the page 792: its top line at 782
+        assertTrue(all.contains(" 782 m\n") && !rows.contains(" 782 m\n"), rows);
+        assertEquals(all, drawSmall(TestSupport.newPDF(), table -> table.setTopLine(true)));
+    }
+
+    // The lines close the corners as a Table's do: a horizontal line starts
+    // half the width of the pen, 0.25 points, left of the table, and a
+    // vertical line runs 0.25 points past its top.
+    @Test
+    void theCornersAreClosed() throws Exception {
+        String content = drawSmall(TestSupport.newPDF(), table -> {});
+        assertTrue(content.contains("\n9.75 782 m\n"), content);
+        assertTrue(content.contains("\n10 782.25 m\n"), content);
+    }
+
     private static BigTable tooWide(PDF pdf, Font font, String text) throws Exception {
         BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
         table.setNumberOfColumns(1);

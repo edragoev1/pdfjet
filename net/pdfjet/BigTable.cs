@@ -62,6 +62,7 @@ namespace PDFjet.NET {
         // for the page when it is done, rather than a path for each row.
         private readonly List<float> rowLines = new List<float>();
         private bool verticalLines = true;              // false for the rows' lines alone
+        private bool topLine = true;                    // false for no line above the header
         private string footerText = "Page {page} of {pages}";
         private Font footerFont;                        // null for the header font
         private float footerFontSize = 0f;              // 0 for the size of the footer's font
@@ -71,6 +72,7 @@ namespace PDFjet.NET {
         private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
         private int numberOfColumns;            // The length of columns
         private float[] percents;               // The width of each column, as a percent of the table's, or null
+        private float[] points;                 // The width of each column in points, or null
         private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
         private bool startNewPage = true;
         private int dataRows;           // The rows under the header, counted by SetTableData
@@ -176,9 +178,57 @@ namespace PDFjet.NET {
                 }
             }
             this.percents = (float[]) percents.Clone();
+            this.points = null;
             if (vertLines != null) {
                 SetVertLines();
             }
+            return this;
+        }
+
+        /// <summary>
+        /// Gives the columns, in the order SetColumns draws them, their widths
+        /// in points, as Table's cells have them, the padding of each side in
+        /// them; the table is as wide as their sum. A field wider than its
+        /// column is cut to fit it, its text ending in " ...", or wraps in it
+        /// with SetWrapText. It takes the place of SetColumnWidthsInPercent, as
+        /// that takes the place of it. Call it after SetColumns or
+        /// SetNumberOfColumns: widths that are not one for each column, or one
+        /// that is negative or not a number, are refused.
+        /// </summary>
+        /// <param name="widths">the width of each column, in points.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetColumnWidths(params float[] widths) {
+            if (widths.Length != numberOfColumns) {
+                pdf.Fail(new ArgumentException("The table has " + numberOfColumns.ToString(CultureInfo.InvariantCulture)
+                        + " columns, and " + widths.Length.ToString(CultureInfo.InvariantCulture)
+                        + " widths: give one for each column."));
+                return this;
+            }
+            foreach (float width in widths) {
+                if (!(width >= 0f) || float.IsPositiveInfinity(width)) {
+                    pdf.Fail(new ArgumentException(
+                            "The width of a column cannot be negative, or not a number."));
+                    return this;
+                }
+            }
+            this.points = (float[]) widths.Clone();
+            this.percents = null;
+            if (vertLines != null) {
+                SetVertLines();
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Sets whether the line above the header is drawn, on every page. It
+        /// is unless set; without it a table of lines under its rows alone,
+        /// with SetVerticalLines(false), looks as a Table of cells with a
+        /// bottom border alone.
+        /// </summary>
+        /// <param name="topLine">false to leave the line above the header out.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetTopLine(bool topLine) {
+            this.topLine = topLine;
             return this;
         }
 
@@ -596,8 +646,9 @@ namespace PDFjet.NET {
                 HighlightRow(page, font, shading);
                 page.AddEMC();
             }
-            // The line above the text, stroked with the page's other lines
-            if (borderColor != null) {
+            // The line above the text, stroked with the page's other lines,
+            // but above the header when SetTopLine leaves it out
+            if (borderColor != null && (topLine || !header)) {
                 rowLines.Add(this.yText - font.ascent - verticalPadding);
             }
             page.SetBrushColor(Color.black);
@@ -698,18 +749,22 @@ namespace PDFjet.NET {
             float[] original = page.GetPenColor();
             page.SetPenColor(borderColor);
             page.SetPenWidth(borderWidth);
+            // The lines close the corners as a Table's do: each horizontal
+            // line starts half the width of the pen left of the table, and
+            // each vertical line runs half of it past the top and the bottom.
+            float hWidth = borderWidth / 2;
             foreach (float y in rowLines) {
-                page.MoveTo(vertLines[0], y);
+                page.MoveTo(vertLines[0] - hWidth, y);
                 page.LineTo(vertLines[this.numberOfColumns], y);
             }
             rowLines.Clear();
             float bottom = this.yText - f2.ascent - verticalPadding;
             for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
-                page.MoveTo(vertLines[i], top);
-                page.LineTo(vertLines[i], bottom);
+                page.MoveTo(vertLines[i], top - hWidth);
+                page.LineTo(vertLines[i], bottom + hWidth);
             }
             // The line under the last row
-            page.MoveTo(vertLines[0], bottom);
+            page.MoveTo(vertLines[0] - hWidth, bottom);
             page.LineTo(vertLines[this.numberOfColumns], bottom);
             page.StrokePath();
             page.SetPenColor(original);
@@ -831,11 +886,18 @@ namespace PDFjet.NET {
                         + " columns, and " + count.ToString(CultureInfo.InvariantCulture)
                         + " percentages: give one for each column."));
             }
+            if (points != null && points.Length != this.widths.Length) {
+                int count = points.Length;
+                points = null;
+                pdf.Fail(new ArgumentException("The table has " + this.widths.Length.ToString(CultureInfo.InvariantCulture)
+                        + " columns, and " + count.ToString(CultureInfo.InvariantCulture)
+                        + " widths: give one for each column."));
+            }
             if (wrap) {
                 SetWrapWidths();
                 return;
             }
-            if (percents != null) {
+            if (percents != null || points != null) {
                 SetVertLinesInPercent();
                 return;
             }
@@ -873,25 +935,12 @@ namespace PDFjet.NET {
         // it, its padding in it, and cuts the fields of a column narrower than
         // its widest field.
         private void SetVertLinesInPercent() {
-            float tableWidth = pageSize.GetWidth() - 2 * this.x;
-            if (!(tableWidth > 0f)) {
-                // The columns were as wide as less than nothing (review of 12 October
-                // 2026, T5)
-                pdf.Fail(new ArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
-            }
-            // The shares are added up and taken in double, the largest float a
-            // share as any other: tableWidth*percent was an infinity, and the
-            // document failed (review of 12 October 2026, T5)
-            double total = 0.0;
-            foreach (float percent in percents) {
-                total += percent;
-            }
+            float[] given = GivenWidths();
             this.clipped = null;
             float vertLineX = this.x;
             this.vertLines[0] = vertLineX;
-            for (int i = 0; i < percents.Length; i++) {
-                // Percentages that are all 0 share the width equally.
-                float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.Length;
+            for (int i = 0; i < given.Length; i++) {
+                float width = given[i];
                 float text = Math.Max(0f, width - 2 * this.padding);
                 if (this.widths[i] > text) {
                     if (this.clipped == null) {
@@ -907,6 +956,35 @@ namespace PDFjet.NET {
         // The mark that ends a field whose text was cut to fit its column,
         // which takes the place of the last four characters of what fits.
         private const string ELLIPSIS = " ...";
+
+        // The width of each column, in points: those of SetColumnWidths, or
+        // the percentages of SetColumnWidthsInPercent of the table's width,
+        // the width of the page less the margin of SetLocation on each side.
+        private float[] GivenWidths() {
+            if (points != null) {
+                return (float[]) points.Clone();
+            }
+            float tableWidth = pageSize.GetWidth() - 2 * this.x;
+            if (!(tableWidth > 0f)) {
+                // The columns were as wide as less than nothing (review of 12 October
+                // 2026, T5)
+                pdf.Fail(new ArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
+                tableWidth = 0f;
+            }
+            // The shares are added up and taken in double, the largest float a
+            // share as any other: tableWidth*percent was an infinity, and the
+            // document failed (review of 12 October 2026, T5)
+            double total = 0.0;
+            foreach (float percent in percents) {
+                total += percent;
+            }
+            float[] widths = new float[percents.Length];
+            for (int i = 0; i < percents.Length; i++) {
+                // Percentages that are all 0 share the width equally.
+                widths[i] = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.Length;
+            }
+            return widths;
+        }
 
         // The text as much of it as fits the width, ending in the mark that
         // says it was cut. The mark takes the place of the last four
@@ -1012,18 +1090,10 @@ namespace PDFjet.NET {
             this.textWidths = new float[n];
             float vertLineX = this.x;
             this.vertLines[0] = vertLineX;
-            if (percents != null) {
-                float tableWidth = pageSize.GetWidth() - 2 * this.x;
-                if (!(tableWidth > 0f)) {
-                    pdf.Fail(new ArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
-                    tableWidth = 0f;
-                }
-                double total = 0.0;
-                foreach (float percent in percents) {
-                    total += percent;
-                }
-                for (int i = 0; i < percents.Length; i++) {
-                    float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.Length;
+            if (percents != null || points != null) {
+                float[] given = GivenWidths();
+                for (int i = 0; i < given.Length; i++) {
+                    float width = given[i];
                     this.textWidths[i] = Math.Max(0f, width - 2 * this.padding);
                     vertLineX += width;
                     this.vertLines[i + 1] = vertLineX;
@@ -1238,8 +1308,9 @@ namespace PDFjet.NET {
                 HighlightRows(page, font, shading, extra);
                 page.AddEMC();
             }
-            // The line above the text, stroked with the page's other lines
-            if (borderColor != null) {
+            // The line above the text, stroked with the page's other lines,
+            // but above the header when SetTopLine leaves it out
+            if (borderColor != null && (topLine || !header)) {
                 rowLines.Add(this.yText - font.ascent - verticalPadding);
             }
             page.SetBrushColor(Color.black);

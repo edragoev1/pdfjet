@@ -66,6 +66,27 @@ in it. Poppler draws the pages as before, pixel for pixel; MuPDF,
 anti-aliasing, draws the pixels where two lines cross a shade lighter,
 painted once rather than twice.
 
+Added, in the four ports: **`BigTable.setColumnWidths` and
+`BigTable.setTopLine`, so that a `BigTable` takes the look of a `Table`,
+and either can take the place of the other.** `setColumnWidths(...)` gives
+the columns their widths in points, as a `Table`'s cells have them, and the
+table is as wide as their sum; `setColumnWidthsInPercent` filled the width
+of the page, so a narrower table could not be made. `setTopLine(false)`
+leaves out the line above the header, for a table of rules under its rows
+alone. With `setBorderColor(Color.black)`, `setShadingColor(Color.transparent)`,
+`setPadding(2f)`, `setVerticalPadding(2f)` and `setFooter(null, null)`, a
+`BigTable` draws a `Table`'s defaults as Poppler shows them pixel for pixel,
+but the line under the header, which a `Table` strokes twice; the guides for
+AI coding assistants, llms-*.txt, say how. BigTable's own defaults are as
+before.
+
+Behavior change, in the four ports: **a `BigTable` closes the corners of its
+lines, as a `Table` does.** Each horizontal line starts half the width of
+the pen left of the table, and each vertical line runs half of it past the
+top and the bottom of the table, where the lines met with a notch of half
+the pen's width. For example, the top line of a table at x = 10, 0.5 points
+wide, was written from `10`; it is now written from `9.75`.
+
 Changed, in the four ports: **a font of CFF outlines (.otf) is embedded as
 a much smaller subset.** The subset was the whole font with an `endchar` in
 place of every glyph not drawn and a `return` in place of every subroutine

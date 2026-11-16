@@ -443,6 +443,74 @@ import Testing
         #expect(negative.error != nil, "a negative percentage is not refused")
     }
 
+    // The columns take the widths in points that setColumnWidths gives them,
+    // as Table's cells do, and the table is as wide as their sum; a field
+    // wider than its column is cut to fit it. Widths that are not one for each
+    // column, or a negative one, are refused, and setColumnWidthsInPercent
+    // takes the place of the widths, as they take the place of it.
+    @Test func theColumnsCanBeGivenWidthsInPoints() throws {
+        let rows = [["A field far wider than sixty points", "b", "c"]]
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, CoreFont.HELVETICA)
+        let table = BigTable(pdf, font, font, Letter.PORTRAIT)
+        table.setNumberOfColumns(3)
+        table.setColumnWidths(60, 80, 100)
+        table.setTableData(["A", "B", "C"], rows)
+        table.setLocation(36, 20)
+        table.setFooter(nil, nil)
+        try table.complete()
+        let page = table.getPages()[0]
+        let content = TestSupport.latin1(page.getContent())
+        let regex = try NSRegularExpression(pattern: "([-0-9.]+) [-0-9.]+ m")
+        let lines = regex.matches(in: content, range: NSRange(content.startIndex..., in: content)).map {
+            Float(String(content[Range($0.range(at: 1), in: content)!]))!
+        }
+        for x: Float in [36, 96, 176, 276] {
+            #expect(lines.contains(x), "no line at x=\(x): \(lines)")
+        }
+        #expect(!lines.contains(576), "the table is as wide as the page: \(lines)")
+        let drawn = drawnText(page)
+        #expect(drawn[3].hasSuffix(" ..."), "\(drawn)")
+        #expect(font.stringWidth(drawn[3]) <= 60 - 4, "the cut field is \(font.stringWidth(drawn[3]))")
+
+        let tooFew = TestSupport.newPDF()
+        BigTable(tooFew, font, font, Letter.PORTRAIT).setNumberOfColumns(3).setColumnWidths(50, 50)
+        #expect(tooFew.error != nil, "two widths for three columns are not refused")
+        let negative = TestSupport.newPDF()
+        BigTable(negative, font, font, Letter.PORTRAIT).setNumberOfColumns(3).setColumnWidths(20, 30, -50)
+        #expect(negative.error != nil, "a negative width is not refused")
+
+        // The percentages after the widths: the table is as wide as the page.
+        let pdf2 = TestSupport.newPDF()
+        let font2 = try Font(pdf2, CoreFont.HELVETICA)
+        let percent = BigTable(pdf2, font2, font2, Letter.PORTRAIT)
+        percent.setNumberOfColumns(3)
+        percent.setColumnWidths(60, 80, 100).setColumnWidthsInPercent(20, 30, 50)
+        percent.setTableData(["A", "B", "C"], rows)
+        percent.setLocation(36, 20)
+        percent.setFooter(nil, nil)
+        try percent.complete()
+        #expect(TestSupport.latin1(percent.getPages()[0].getContent()).contains("\n576 "), "the percentages were not used")
+    }
+
+    // setTopLine(false) leaves out the line above the header, and only it.
+    @Test func theLineAboveTheHeaderCanBeLeftOut() throws {
+        let all = try drawSmall(TestSupport.newPDF()) { _ in }
+        let rows = try drawSmall(TestSupport.newPDF()) { $0.setTopLine(false) }
+        #expect(count(rows, " m\n") == count(all, " m\n") - 1)
+        // The table starts at y = 10, the top of the page 792: its top line at 782
+        #expect(all.contains(" 782 m\n") && !rows.contains(" 782 m\n"))
+        #expect(try drawSmall(TestSupport.newPDF()) { $0.setTopLine(true) } == all)
+    }
+
+    // The lines close the corners as a Table's do: a horizontal line starts
+    // half the width of the pen, 0.25 points, left of the table, and a
+    // vertical line runs 0.25 points past its top.
+    @Test func theCornersAreClosed() throws {
+        let content = try drawSmall(TestSupport.newPDF()) { _ in }
+        #expect(content.contains("\n9.75 782 m\n") && content.contains("\n10 782.25 m\n"))
+    }
+
     private func tooWide(_ pdf: PDF, _ font: Font, _ text: String) throws -> BigTable {
         let table = BigTable(pdf, font, font, Letter.PORTRAIT)
         table.setNumberOfColumns(1)

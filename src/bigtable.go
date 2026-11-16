@@ -87,6 +87,8 @@ type BigTable struct {
 	readErr         error     // The error reading the data file, if any
 	columns         []int     // The fields drawn, in the order they are drawn
 	percents        []float32 // The width of each column, as a percent of the table's, or nil
+	points          []float32 // The width of each column in points, or nil
+	noTopLine       bool      // true for no line above the header
 	numberOfColumns int       // The length of columns
 	fieldsNeeded    int       // The fields a row needs: the largest index plus 1
 	startNewPage    bool
@@ -199,9 +201,47 @@ func (bt *BigTable) SetColumnWidthsInPercent(percents ...float32) *BigTable {
 		}
 	}
 	bt.percents = append([]float32(nil), percents...)
+	bt.points = nil
 	if bt.vertLines != nil {
 		bt.setVertLines()
 	}
+	return bt
+}
+
+// SetColumnWidths gives the columns, in the order SetColumns draws them, their
+// widths in points, as Table's cells have them, the padding of each side in
+// them; the table is as wide as their sum. A field wider than its column is
+// cut to fit it, its text ending in " ...", or wraps in it with SetWrapText.
+// It takes the place of SetColumnWidthsInPercent, as that takes the place of
+// it. Call it after SetColumns or SetNumberOfColumns: widths that are not one
+// for each column, or one that is negative or not a number, are recorded on
+// the PDF as misuse, and the widths are left as they were.
+func (bt *BigTable) SetColumnWidths(widths ...float32) *BigTable {
+	if len(widths) != bt.numberOfColumns {
+		bt.pdf.fail("The table has " + strconv.Itoa(bt.numberOfColumns) + " columns, and " +
+			strconv.Itoa(len(widths)) + " widths: give one for each column.")
+		return bt
+	}
+	for _, width := range widths {
+		if !(width >= 0) || math.IsInf(float64(width), 1) {
+			bt.pdf.fail("The width of a column cannot be negative, or not a number.")
+			return bt
+		}
+	}
+	bt.points = append([]float32(nil), widths...)
+	bt.percents = nil
+	if bt.vertLines != nil {
+		bt.setVertLines()
+	}
+	return bt
+}
+
+// SetTopLine sets whether the line above the header is drawn, on every page.
+// It is unless set; without it a table of lines under its rows alone, with
+// SetVerticalLines(false), looks as a Table of cells with a bottom border
+// alone.
+func (bt *BigTable) SetTopLine(topLine bool) *BigTable {
+	bt.noTopLine = !topLine
 	return bt
 }
 
@@ -569,8 +609,9 @@ func (bt *BigTable) drawFieldsAndLine(
 		bt.highlightRow(bt.page, font, shading)
 		bt.page.AddEMC()
 	}
-	// The line above the text, stroked with the page's other lines
-	if bt.hasBorder {
+	// The line above the text, stroked with the page's other lines, but
+	// above the header when SetTopLine leaves it out
+	if bt.hasBorder && (!bt.noTopLine || !header) {
 		bt.rowLines = append(bt.rowLines, bt.yText-font.ascent-bt.verticalPadding)
 	}
 	bt.page.SetBrushColor(color.Black)
@@ -684,17 +725,21 @@ func (bt *BigTable) drawTheVerticalLines() {
 	original := bt.page.GetPenColor()
 	bt.page.SetPenColorRGB(bt.borderColor)
 	bt.page.SetPenWidth(bt.borderWidth)
+	// The lines close the corners as a Table's do: each horizontal line starts
+	// half the width of the pen left of the table, and each vertical line runs
+	// half of it past the top and the bottom.
+	hWidth := float32(bt.borderWidth / 2)
 	for _, y := range rows {
-		bt.page.MoveTo(bt.vertLines[0], y)
+		bt.page.MoveTo(bt.vertLines[0]-hWidth, y)
 		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], y)
 	}
 	bottom := bt.yText - bt.f2.ascent - bt.verticalPadding
 	for i := 0; !bt.noVerticalLines && i <= bt.numberOfColumns; i++ {
-		bt.page.MoveTo(bt.vertLines[i], bt.top)
-		bt.page.LineTo(bt.vertLines[i], bottom)
+		bt.page.MoveTo(bt.vertLines[i], bt.top-hWidth)
+		bt.page.LineTo(bt.vertLines[i], bottom+hWidth)
 	}
 	// The line under the last row
-	bt.page.MoveTo(bt.vertLines[0], bottom)
+	bt.page.MoveTo(bt.vertLines[0]-hWidth, bottom)
 	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bottom)
 	bt.page.StrokePath()
 	bt.page.SetPenColorRGB(original)
@@ -887,11 +932,16 @@ func (bt *BigTable) setVertLines() {
 			strconv.Itoa(len(bt.percents)) + " percentages: give one for each column.")
 		bt.percents = nil
 	}
+	if bt.points != nil && len(bt.points) != len(bt.widths) {
+		bt.pdf.fail("The table has " + strconv.Itoa(len(bt.widths)) + " columns, and " +
+			strconv.Itoa(len(bt.points)) + " widths: give one for each column.")
+		bt.points = nil
+	}
 	if bt.wrap {
 		bt.setWrapWidths()
 		return
 	}
-	if bt.percents != nil {
+	if bt.percents != nil || bt.points != nil {
 		bt.setVertLinesInPercent()
 		return
 	}
@@ -933,10 +983,34 @@ func (bt *BigTable) setVertLines() {
 }
 
 // setVertLinesInPercent puts each vertical line where the columns before it
-// end, each column the percentage of the table's width SetColumnWidthsInPercent
-// gives it, its padding in it, and cuts the fields of a column narrower than
-// its widest field.
+// end, each column the width SetColumnWidths gives it, or the percentage of
+// the table's width SetColumnWidthsInPercent gives it, its padding in it, and
+// cuts the fields of a column narrower than its widest field.
 func (bt *BigTable) setVertLinesInPercent() {
+	bt.clipped = nil
+	vertLineX := bt.x
+	bt.vertLines[0] = vertLineX
+	for i, width := range bt.givenWidths() {
+		if text := max(0, width-float32(2*bt.padding)); bt.widths[i] > text {
+			if bt.clipped == nil {
+				bt.clipped = make([]float32, len(bt.widths))
+				copy(bt.clipped, bt.widths)
+			}
+			bt.clipped[i] = text
+		}
+		vertLineX += width
+		bt.vertLines[i+1] = vertLineX
+	}
+}
+
+// givenWidths returns the width of each column, in points: those of
+// SetColumnWidths, or the percentages of SetColumnWidthsInPercent of the
+// table's width, the width of the page less the margin of SetLocation on each
+// side.
+func (bt *BigTable) givenWidths() []float32 {
+	if bt.points != nil {
+		return append([]float32(nil), bt.points...)
+	}
 	tableWidth := bt.pageSize.GetWidth() - float32(2*bt.x)
 	if !(tableWidth > 0) {
 		// The columns were as wide as less than nothing (review of
@@ -952,25 +1026,15 @@ func (bt *BigTable) setVertLinesInPercent() {
 	for _, percent := range bt.percents {
 		total += float64(percent)
 	}
-	bt.clipped = nil
-	vertLineX := bt.x
-	bt.vertLines[0] = vertLineX
+	widths := make([]float32, len(bt.percents))
 	for i, percent := range bt.percents {
 		// Percentages that are all 0 share the width equally.
-		width := tableWidth / float32(len(bt.percents))
+		widths[i] = tableWidth / float32(len(bt.percents))
 		if total > 0 {
-			width = float32(float64(tableWidth) * float64(percent) / total)
+			widths[i] = float32(float64(tableWidth) * float64(percent) / total)
 		}
-		if text := max(0, width-float32(2*bt.padding)); bt.widths[i] > text {
-			if bt.clipped == nil {
-				bt.clipped = make([]float32, len(bt.widths))
-				copy(bt.clipped, bt.widths)
-			}
-			bt.clipped[i] = text
-		}
-		vertLineX += width
-		bt.vertLines[i+1] = vertLineX
 	}
+	return widths
 }
 
 // bigTableFit returns the text as much of it as fits the width, ending in the
@@ -1054,22 +1118,8 @@ func (bt *BigTable) setWrapWidths() {
 	bt.textWidths = make([]float32, n)
 	vertLineX := bt.x
 	bt.vertLines[0] = vertLineX
-	if bt.percents != nil {
-		tableWidth := bt.pageSize.GetWidth() - float32(2*bt.x)
-		if !(tableWidth > 0) {
-			bt.pdf.fail("The margin of the table, its x, is half the width of the page or more: " +
-				"the columns have no room.")
-			tableWidth = 0
-		}
-		var total float64
-		for _, percent := range bt.percents {
-			total += float64(percent)
-		}
-		for i, percent := range bt.percents {
-			width := tableWidth / float32(len(bt.percents))
-			if total > 0 {
-				width = float32(float64(tableWidth) * float64(percent) / total)
-			}
+	if bt.percents != nil || bt.points != nil {
+		for i, width := range bt.givenWidths() {
 			bt.textWidths[i] = max(0, width-float32(2*bt.padding))
 			vertLineX += width
 			bt.vertLines[i+1] = vertLineX
@@ -1268,8 +1318,9 @@ func (bt *BigTable) drawWrappedFields(
 		bt.highlightRows(bt.page, font, shading, extra)
 		bt.page.AddEMC()
 	}
-	// The line above the text, stroked with the page's other lines
-	if bt.hasBorder {
+	// The line above the text, stroked with the page's other lines, but
+	// above the header when SetTopLine leaves it out
+	if bt.hasBorder && (!bt.noTopLine || !header) {
 		bt.rowLines = append(bt.rowLines, bt.yText-font.ascent-bt.verticalPadding)
 	}
 	bt.page.SetBrushColor(color.Black)

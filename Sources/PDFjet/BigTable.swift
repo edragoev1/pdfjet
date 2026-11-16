@@ -52,6 +52,7 @@ public class BigTable {
     // page when it is done, rather than a path for each row.
     private var rowLines = [Float]()
     private var verticalLines = true                              // false for the rows' lines alone
+    private var topLine = true                                    // false for no line above the header
     private var footerText: String? = "Page {page} of {pages}"
     private var footerFont: Font?                               // nil for the header font
     private var footerFontSize: Float = 0.0                     // 0 for the size of the footer's font
@@ -62,6 +63,7 @@ public class BigTable {
     private var columns: [Int] = []         // The fields drawn, in the order they are drawn
     private var numberOfColumns: Int = 0    // The length of columns
     private var percents: [Float]?          // The width of each column, as a percent of the table's, or nil
+    private var points: [Float]?            // The width of each column in points, or nil
     private var fieldsNeeded: Int = 0       // The fields a row needs: the largest index plus 1
     private var startNewPage: Bool = true
     private var dataRows: Int = 0       // The rows under the header, counted by setTableData
@@ -163,9 +165,57 @@ public class BigTable {
             return self
         }
         self.percents = percents
+        self.points = nil
         if !vertLines.isEmpty {
             setVertLines()
         }
+        return self
+    }
+
+    ///
+    /// Gives the columns, in the order setColumns draws them, their widths in
+    /// points, as Table's cells have them, the padding of each side in them;
+    /// the table is as wide as their sum. A field wider than its column is cut
+    /// to fit it, its text ending in " ...", or wraps in it with setWrapText.
+    /// It takes the place of setColumnWidthsInPercent, as that takes the place
+    /// of it. Call it after setColumns or setNumberOfColumns: widths that are
+    /// not one for each column, or one that is negative or not a number, are
+    /// recorded on the PDF as misuse, and the widths are left as they were.
+    ///
+    /// - Parameter widths: the width of each column, in points.
+    /// - Returns: this BigTable object.
+    ///
+    @discardableResult
+    public func setColumnWidths(_ widths: Float...) -> BigTable {
+        if widths.count != numberOfColumns {
+            pdf.fail("The table has \(numberOfColumns) columns, and \(widths.count) widths: "
+                    + "give one for each column.")
+            return self
+        }
+        if widths.contains(where: { !($0 >= 0) || $0 == Float.infinity }) {
+            pdf.fail("The width of a column cannot be negative, or not a number.")
+            return self
+        }
+        self.points = widths
+        self.percents = nil
+        if !vertLines.isEmpty {
+            setVertLines()
+        }
+        return self
+    }
+
+    ///
+    /// Sets whether the line above the header is drawn, on every page. It is
+    /// unless set; without it a table of lines under its rows alone, with
+    /// setVerticalLines(false), looks as a Table of cells with a bottom border
+    /// alone.
+    ///
+    /// - Parameter topLine: false to leave the line above the header out.
+    /// - Returns: this BigTable object.
+    ///
+    @discardableResult
+    public func setTopLine(_ topLine: Bool) -> BigTable {
+        self.topLine = topLine
         return self
     }
 
@@ -554,8 +604,9 @@ public class BigTable {
             highlightRow(page: page!, font: font, color: shading)
             page!.addEMC()
         }
-        // The line above the text, stroked with the page's other lines
-        if borderColor != nil {
+        // The line above the text, stroked with the page's other lines, but
+        // above the header when setTopLine leaves it out
+        if borderColor != nil && (topLine || !header) {
             rowLines.append(self.yText - font.ascent - verticalPadding)
         }
         page!.setBrushColor(Color.black)
@@ -647,17 +698,21 @@ public class BigTable {
         let original = page!.getPenColor()
         page!.setPenColor(borderColor)
         page!.setPenWidth(borderWidth)
+        // The lines close the corners as a Table's do: each horizontal line
+        // starts half the width of the pen left of the table, and each
+        // vertical line runs half of it past the top and the bottom.
+        let hWidth = borderWidth / 2
         for y in rows {
-            page!.moveTo(vertLines[0], y)
+            page!.moveTo(vertLines[0] - hWidth, y)
             page!.lineTo(vertLines[numberOfColumns], y)
         }
         let bottom = self.yText - f2.ascent - verticalPadding
         for i in 0...numberOfColumns where verticalLines {
-            page!.moveTo(vertLines[i], top)
-            page!.lineTo(vertLines[i], bottom)
+            page!.moveTo(vertLines[i], top - hWidth)
+            page!.lineTo(vertLines[i], bottom + hWidth)
         }
         // The line under the last row
-        page!.moveTo(vertLines[0], bottom)
+        page!.moveTo(vertLines[0] - hWidth, bottom)
         page!.lineTo(vertLines[numberOfColumns], bottom)
         page!.strokePath()
         page!.setPenColor(original)
@@ -801,6 +856,34 @@ public class BigTable {
     // takes the place of the last four characters of what fits.
     private static let ELLIPSIS = " ..."
 
+    // The width of each column, in points: those of setColumnWidths, or the
+    // percentages of setColumnWidthsInPercent of the table's width, the width
+    // of the page less the margin of setLocation on each side.
+    private func givenWidths() -> [Float] {
+        if let points = self.points {
+            return points
+        }
+        let percents = self.percents!
+        var tableWidth = pageSize.getWidth() - 2 * self.x
+        if !(tableWidth > 0) {
+            // The columns were as wide as less than nothing (review of 12 October
+            // 2026, T5)
+            pdf.fail("The margin of the table, its x, is half the width of the page or more: the columns have no room.")
+            tableWidth = 0
+        }
+        // The shares are added up and taken in double, the largest float a
+        // share as any other: tableWidth*percent was an infinity, and the
+        // document failed (review of 12 October 2026, T5)
+        var total = 0.0
+        for percent in percents {
+            total += Double(percent)
+        }
+        // Percentages that are all 0 share the width equally.
+        return percents.map {
+            (total > 0) ? Float(Double(tableWidth) * Double($0) / total) : tableWidth / Float(percents.count)
+        }
+    }
+
     // Puts each vertical line where the columns before it end, and cuts the
     // last of the columns back when they run past the right edge of the page:
     // a column as wide as its widest field is what the table asks for, and a
@@ -816,11 +899,15 @@ public class BigTable {
             percents = nil
             pdf.fail("The table has \(self.widths.count) columns, and \(count) percentages: give one for each column.")
         }
+        if let count = points?.count, count != self.widths.count {
+            points = nil
+            pdf.fail("The table has \(self.widths.count) columns, and \(count) widths: give one for each column.")
+        }
         if wrap {
             setWrapWidths()
             return
         }
-        if percents != nil {
+        if percents != nil || points != nil {
             setVertLinesInPercent()
             return
         }
@@ -860,27 +947,12 @@ public class BigTable {
     // padding in it, and cuts the fields of a column narrower than its widest
     // field.
     private func setVertLinesInPercent() {
-        let percents = self.percents!
-        var tableWidth = pageSize.getWidth() - 2 * self.x
-        if !(tableWidth > 0) {
-            // The columns were as wide as less than nothing (review of 12 October
-        // 2026, T5)
-            pdf.fail("The margin of the table, its x, is half the width of the page or more: the columns have no room.")
-            tableWidth = 0
-        }
-        // The shares are added up and taken in double, the largest float a
-        // share as any other: tableWidth*percent was an infinity, and the
-        // document failed (review of 12 October 2026, T5)
-        var total = 0.0
-        for percent in percents {
-            total += Double(percent)
-        }
+        let given = givenWidths()
         self.clipped = nil
         var vertLineX = self.x
         vertLines[0] = vertLineX
-        for i in 0..<percents.count {
-            // Percentages that are all 0 share the width equally.
-            let width = (total > 0) ? Float(Double(tableWidth) * Double(percents[i]) / total) : tableWidth / Float(percents.count)
+        for i in 0..<given.count {
+            let width = given[i]
             let text = max(0, width - 2 * padding)
             if self.widths[i] > text {
                 if self.clipped == nil {
@@ -975,18 +1047,10 @@ public class BigTable {
         self.textWidths = [Float](repeating: 0.0, count: n)
         var vertLineX = self.x
         vertLines[0] = vertLineX
-        if let percents = self.percents {
-            var tableWidth = pageSize.getWidth() - 2 * self.x
-            if !(tableWidth > 0) {
-                pdf.fail("The margin of the table, its x, is half the width of the page or more: the columns have no room.")
-                tableWidth = 0
-            }
-            var total = 0.0
-            for percent in percents {
-                total += Double(percent)
-            }
-            for i in 0..<percents.count {
-                let width = (total > 0) ? Float(Double(tableWidth) * Double(percents[i]) / total) : tableWidth / Float(percents.count)
+        if percents != nil || points != nil {
+            let given = givenWidths()
+            for i in 0..<given.count {
+                let width = given[i]
                 textWidths[i] = max(0, width - 2 * padding)
                 vertLineX += width
                 vertLines[i + 1] = vertLineX
@@ -1184,8 +1248,9 @@ public class BigTable {
             highlightRows(page: page!, font: font, color: shading, extra: extra)
             page!.addEMC()
         }
-        // The line above the text, stroked with the page's other lines
-        if borderColor != nil {
+        // The line above the text, stroked with the page's other lines, but
+        // above the header when setTopLine leaves it out
+        if borderColor != nil && (topLine || !header) {
             rowLines.append(self.yText - font.ascent - verticalPadding)
         }
         page!.setBrushColor(Color.black)

@@ -712,6 +712,89 @@ func TestBigTableTheColumnsCanBeGivenWidthsInPercent(t *testing.T) {
 	}
 }
 
+// The columns take the widths in points that SetColumnWidths gives them, as
+// Table's cells do, and the table is as wide as their sum; a field wider than
+// its column is cut to fit it. Widths that are not one for each column, or a
+// negative one, are refused, and SetColumnWidthsInPercent takes the place of
+// the widths, as they take the place of it.
+func TestBigTableTheColumnsCanBeGivenWidthsInPoints(t *testing.T) {
+	draw := func(set func(*BigTable)) (*Font, *Page) {
+		doc := testNewDoc()
+		font := NewCoreFont(doc.pdf, corefont.Helvetica())
+		table := NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3)
+		set(table)
+		long := "A field far wider than sixty points"
+		table.SetTableRows([]string{"A", "B", "C"}, slices.Values([][]string{{long, "b", "c"}}))
+		table.SetLocation(36, 20)
+		table.SetFooter("", nil)
+		if err := table.Complete(); err != nil {
+			t.Fatal(err)
+		}
+		if doc.pdf.err != nil {
+			t.Fatal(doc.pdf.err)
+		}
+		return font, table.GetPages()[0]
+	}
+	font, page := draw(func(table *BigTable) { table.SetColumnWidths(60, 80, 100) })
+	lines := map[string]bool{}
+	for _, m := range regexp.MustCompile(`([-0-9.]+) [-0-9.]+ m`).FindAllStringSubmatch(testContent(page), -1) {
+		lines[m[1]] = true
+	}
+	for _, x := range []string{"36", "96", "176", "276"} {
+		if !lines[x] {
+			t.Errorf("no line at x=%s: %v", x, lines)
+		}
+	}
+	if lines["576"] {
+		t.Errorf("the table is as wide as the page: %v", lines)
+	}
+	drawn := testDrawnText(page)
+	if !strings.HasSuffix(drawn[3], " ...") {
+		t.Errorf("the page drew %q", drawn)
+	}
+	if width := font.StringWidth(font.size, drawn[3]); width > 60-4 {
+		t.Errorf("the cut field is %v wide", width)
+	}
+	for _, widths := range [][]float32{{50, 50}, {20, 30, -50}} {
+		doc := testNewDoc()
+		NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3).SetColumnWidths(widths...)
+		if doc.pdf.err == nil {
+			t.Errorf("%v is not refused", widths)
+		}
+	}
+	// The percentages after the widths: the table is as wide as the page.
+	_, page = draw(func(table *BigTable) { table.SetColumnWidths(60, 80, 100).SetColumnWidthsInPercent(20, 30, 50) })
+	if !strings.Contains(testContent(page), "\n576 ") {
+		t.Error("the percentages were not used")
+	}
+}
+
+// SetTopLine(false) leaves out the line above the header, and only it.
+func TestBigTableTheLineAboveTheHeaderCanBeLeftOut(t *testing.T) {
+	all := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {})
+	rows := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetTopLine(false) })
+	if got, want := strings.Count(rows, " m\n"), strings.Count(all, " m\n")-1; got != want {
+		t.Errorf("%d lines without the top line, want %d", got, want)
+	}
+	// The table starts at y = 10, the top of the page 792: its top line at 782
+	if !strings.Contains(all, " 782 m\n") || strings.Contains(rows, " 782 m\n") {
+		t.Error("the line above the header")
+	}
+	if again := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetTopLine(true) }); again != all {
+		t.Error("SetTopLine(true) changed the table")
+	}
+}
+
+// The lines close the corners as a Table's do: a horizontal line starts half
+// the width of the pen, 0.25 points, left of the table, and a vertical line
+// runs 0.25 points past its top.
+func TestBigTableTheCornersAreClosed(t *testing.T) {
+	content := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {})
+	if !strings.Contains(content, "\n9.75 782 m\n") || !strings.Contains(content, "\n10 782.25 m\n") {
+		t.Error(content)
+	}
+}
+
 // The pages are counted with the arithmetic of the drawing, rounded as it
 // rounds: at the bottom margin to the last bit, the count was a page off, and
 // the footer read "of 1" on two pages (the review of 30 October 2026, E6).

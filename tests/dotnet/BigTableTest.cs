@@ -476,6 +476,79 @@ public sealed class BigTableTest : IDisposable {
         }
     }
 
+    [Fact]
+    public void TheColumnsCanBeGivenWidthsInPoints() {
+        // The columns take the widths in points that SetColumnWidths gives
+        // them, as Table's cells do, and the table is as wide as their sum; a
+        // field wider than its column is cut to fit it. Widths that are not one
+        // for each column, or a negative one, are refused, and
+        // SetColumnWidthsInPercent takes the place of the widths, as they take
+        // the place of it.
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.SetNumberOfColumns(3);
+        table.SetColumnWidths(60f, 80f, 100f);
+        List<string[]> rows = new List<string[]>();
+        rows.Add(new string[] {"A field far wider than sixty points", "b", "c"});
+        table.SetTableData(new string[] {"A", "B", "C"}, rows);
+        table.SetLocation(36f, 20f);
+        table.SetFooter(null, null);
+        table.Complete();
+        Page page = table.GetPages()[0];
+        List<float> lines = new List<float>();
+        foreach (Match m in new Regex("([-0-9.]+) [-0-9.]+ m").Matches(TestSupport.Content(page))) {
+            lines.Add(float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture));
+        }
+        foreach (float x in new float[] {36f, 96f, 176f, 276f}) {
+            Assert.Contains(x, lines);
+        }
+        Assert.DoesNotContain(576f, lines);
+        List<string> drawn = DrawnText(page);
+        Assert.True(drawn[3].EndsWith(" ...", StringComparison.Ordinal), string.Join("|", drawn));
+        Assert.True(font.StringWidth(drawn[3]) <= 60f - 4f, "the cut field is " + font.StringWidth(drawn[3]));
+
+        foreach (float[] widths in new float[][] {new float[] {50f, 50f}, new float[] {20f, 30f, -50f}}) {
+            BigTable refused = new BigTable(TestSupport.NewPDF(), font, font, Letter.PORTRAIT);
+            refused.SetNumberOfColumns(3);
+            Assert.Throws<ArgumentException>(() => refused.SetColumnWidths(widths));
+        }
+
+        // The percentages after the widths: the table is as wide as the page.
+        PDF pdf2 = TestSupport.NewPDF();
+        Font font2 = new Font(pdf2, CoreFont.HELVETICA);
+        BigTable percent = new BigTable(pdf2, font2, font2, Letter.PORTRAIT);
+        percent.SetNumberOfColumns(3);
+        percent.SetColumnWidths(60f, 80f, 100f).SetColumnWidthsInPercent(20f, 30f, 50f);
+        percent.SetTableData(new string[] {"A", "B", "C"}, rows);
+        percent.SetLocation(36f, 20f);
+        percent.SetFooter(null, null);
+        percent.Complete();
+        Assert.Contains("\n576 ", TestSupport.Content(percent.GetPages()[0]));
+    }
+
+    [Fact]
+    public void TheLineAboveTheHeaderCanBeLeftOut() {
+        // SetTopLine(false) leaves out the line above the header, and only it.
+        string all = DrawSmall(TestSupport.NewPDF(), table => {});
+        string rows = DrawSmall(TestSupport.NewPDF(), table => table.SetTopLine(false));
+        Assert.Equal(Count(all, " m\n") - 1, Count(rows, " m\n"));
+        // The table starts at y = 10, the top of the page 792: its top line at 782
+        Assert.True(all.Contains(" 782 m\n") && !rows.Contains(" 782 m\n"), rows);
+        Assert.Equal(all, DrawSmall(TestSupport.NewPDF(), table => table.SetTopLine(true)));
+    }
+
+    [Fact]
+    public void TheCornersAreClosed() {
+        // The lines close the corners as a Table's do: a horizontal line
+        // starts half the width of the pen, 0.25 points, left of the table, and
+        // a vertical line runs 0.25 points past its top.
+        string content = DrawSmall(TestSupport.NewPDF(), table => {});
+        Assert.Contains("\n9.75 782 m\n", content);
+        Assert.Contains("\n10 782.25 m\n", content);
+    }
+
     private static BigTable TooWide(PDF pdf, Font font, string text) {
         BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
         table.SetNumberOfColumns(1);
