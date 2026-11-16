@@ -520,7 +520,9 @@ public class Markdown {
     // heading and the paragraph at the bottom of this one.
     private func keptWithTable(_ paragraph: MarkdownParser.Block, _ next: MarkdownParser.Block,
             _ width: Float) -> Bool {
-        if next.kind != .TABLE {
+        // Only a paragraph: a rule, a list or a quote between the heading and
+        // the table has no text to measure as one
+        if paragraph.kind != .PARAGRAPH || next.kind != .TABLE {
             return false
         }
         return Markdown.leadsIntoTable(paragraph, next)

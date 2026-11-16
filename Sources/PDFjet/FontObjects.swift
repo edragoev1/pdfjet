@@ -25,9 +25,16 @@ final class FontObjects {
     let descriptor = PDFobj()
     let cidFont = PDFobj()
     let toUnicode = PDFobj()
+    var cidToGID: PDFobj?   // The CIDToGIDMap of a TrueType font, nil for a CFF one
 
     private init(_ font: Font) {
         self.font = font
+        if !font.cff {
+            // A subset of a TrueType font is numbered again, and its glyphs
+            // mapped from the CIDs; it is known only when the pages are drawn
+            // whether the font is subset, so the object is numbered now.
+            cidToGID = PDFobj()
+        }
     }
 
     // Numbers the objects of the font, added to the objects of an existing
@@ -36,7 +43,12 @@ final class FontObjects {
         let objs = FontObjects(font)
         objs.metadata = addMetadataObject(&objects, font)
         let type0 = PDFobj()
-        for obj in [objs.file, objs.descriptor, objs.cidFont, objs.toUnicode, type0] {
+        var numbered = [objs.file, objs.descriptor, objs.cidFont, objs.toUnicode]
+        if let cidToGID = objs.cidToGID {
+            numbered.append(cidToGID)
+        }
+        numbered.append(type0)
+        for obj in numbered {
             obj.number = objects.count + 1
             objects.append(obj)
         }
@@ -90,7 +102,25 @@ final class FontObjects {
         obj.setStream(&compressed)
 
         FontObjects.completeFontDescriptor(descriptor, font, baseFont)
-        FontObjects.completeCIDFontDictionary(cidFont, font, baseFont, font.kept)
+        var mapObjNumber = 0
+        if let cidToGID = cidToGID {
+            obj = cidToGID
+            if let kept = font.kept {
+                var compressedMap = [UInt8]()
+                FlateEncode(&compressedMap, FontWriter.cidToGIDMap(kept))
+                obj.dict.append("<<")
+                obj.dict.append("/Filter")
+                obj.dict.append("/FlateDecode")
+                obj.dict.append("/Length")
+                obj.dict.append(String(compressedMap.count))
+                obj.dict.append(">>")
+                obj.setStream(&compressedMap)
+                mapObjNumber = obj.number
+            } else {
+                obj.dict.append("null") // The whole font: the map is /Identity
+            }
+        }
+        FontObjects.completeCIDFontDictionary(cidFont, font, baseFont, font.kept, mapObjNumber)
 
         var cmap = [UInt8]()
         FlateEncode(&cmap, Array(FontWriter.toUnicodeCMap(font, font.kept).utf8))
@@ -201,7 +231,8 @@ final class FontObjects {
     }
 
     private static func completeCIDFontDictionary(
-            _ obj: PDFobj, _ font: Font, _ baseFont: String, _ kept: [Bool]?) {
+            _ obj: PDFobj, _ font: Font, _ baseFont: String, _ kept: [Bool]?,
+            _ mapObjNumber: Int) {
         obj.dict.append("<<")
         obj.dict.append("/Type")
         obj.dict.append("/Font")
@@ -234,7 +265,13 @@ final class FontObjects {
         obj.dict.append("/W")
         obj.dict.append(FontWriter.widthsArray(font, kept))
         obj.dict.append("/CIDToGIDMap")
-        obj.dict.append("/Identity")
+        if mapObjNumber > 0 {
+            obj.dict.append(String(mapObjNumber))
+            obj.dict.append("0")
+            obj.dict.append("R")
+        } else {
+            obj.dict.append("/Identity")
+        }
         obj.dict.append(">>")
     }
 }   // End of FontObjects.swift

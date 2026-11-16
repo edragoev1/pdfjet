@@ -495,4 +495,48 @@ import Testing
         }
         expectRefused(ttf, used)
     }
+
+    // A TrueType subset is numbered again, so its CIDFont maps the CIDs to the
+    // glyphs kept with a CIDToGIDMap stream; /Identity drew glyph 40 of a
+    // subset of 6 for H (the review of 16 November 2026). The whole font keeps
+    // /Identity.
+    @Test func subsetOfATrueTypeFontAddedToAnExistingPDFMapsItsCIDs() throws {
+        let objects = try subsetInExistingPDF(plex, true)
+        let value = try #require(TestSupport.findObject(objects, "/CIDToGIDMap")).getValue("/CIDToGIDMap")
+        try #require(value != "/Identity", "/CIDToGIDMap /Identity for a subset")
+        let number = Int(value.split(separator: " ")[0]) ?? 0
+        var m = [UInt8]()
+        for obj in objects where obj.number == number {
+            m = obj.getData()
+        }
+        // .notdef, H, e, l and o: the CIDs of H, e, l and o map to 1 to 4
+        var gids = [Int]()
+        var cid = 0
+        while cid + 1 < m.count {
+            let gid = Int(m[cid]) << 8 | Int(m[cid + 1])
+            if gid != 0 {
+                gids.append(gid)
+            }
+            cid += 2
+        }
+        #expect(gids == [1, 2, 3, 4], "the glyphs mapped to: \(gids)")
+
+        let whole = try subsetInExistingPDF(plex, false)
+        #expect(TestSupport.findObject(whole, "/CIDToGIDMap")?.getValue("/CIDToGIDMap") == "/Identity")
+    }
+
+    // A tag with its high bit set is a tag of its own: 0xE8 "ead" read as
+    // "head", as a mask of the high bit made it, and the subset wrote the
+    // checksum adjustment of a head table of 4 bytes, a trap. It is an unknown
+    // table, left out, as the other ports leave it out.
+    @Test func aTagWithItsHighBitSetIsUnknown() throws {
+        var ttf = try fontBytes(plex)
+        let gasp = entry(ttf, "gasp")
+        try #require(gasp != -1)
+        ttf.replaceSubrange(gasp..<(gasp + 4), with: [0xE8] + Array("ead".utf8))
+        put32(&ttf, gasp + 12, 4)
+        let (subset, _) = try Subset.subsetTrueType(ttf, used(36))
+        #expect(entry(subset, "gasp") == -1)
+        #expect(u32(subset, entry(subset, "head") + 12) == u32(ttf, entry(ttf, "head") + 12))
+    }
 }
