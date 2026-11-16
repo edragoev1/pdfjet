@@ -197,6 +197,7 @@ class SVG {
             // the start of the one it closed, as SVG 1.1 section 8.3.3 says.
             if lastOp.cmd == "Z" && op.cmd != "M" && op.cmd != "m" && op.cmd != "Z" && op.cmd != "z" {
                 let pathOp = PathOp("M", x0, y0)
+                pathOp.inner = true
                 operations.append(pathOp)
                 lastOp = pathOp
             }
@@ -313,6 +314,10 @@ class SVG {
                     let x2c = x + (2.0/3.0)*(x1 - x)
                     let y2c = y + (2.0/3.0)*(y1 - y)
                     pathOp.setCubicPoints(x1c, y1c, x2c, y2c, x, y)
+                    // Each pair of numbers is another T, whose next one
+                    // reflects its control point too, as SVG 1.1 section
+                    // 8.3.7 says.
+                    pathOp.from = "T"
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 2
@@ -364,6 +369,10 @@ class SVG {
                         y += lastOp.y
                     }
                     pathOp.setCubicPoints(x1, y1, x2, y2, x, y)
+                    // Each set of four numbers is another S, whose next one
+                    // reflects its control point too, as SVG 1.1 section
+                    // 8.3.6 says.
+                    pathOp.from = "S"
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 4
@@ -498,6 +507,7 @@ class SVG {
                     [x, y] : onEllipse(cx, cy, Double(rx), Double(ry), cosPhi, sinPhi, p2x, p2y)
             pathOp = PathOp("C")
             pathOp.setCubicPoints(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
+            pathOp.inner = i < segments - 1
             operations.append(pathOp)
         }
         return pathOp

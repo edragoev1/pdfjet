@@ -431,7 +431,9 @@ func (p *parser) declaration() error {
 }
 
 func (p *parser) comment() error {
-	end := indexOf(p.xml, "-->", p.index)
+	// The end is after the <!-- the comment starts with, which <!--> and
+	// <!---> are not the end of.
+	end := indexOf(p.xml, "-->", p.index+4)
 	if end == -1 {
 		return p.error("The comment does not end")
 	}
@@ -445,7 +447,7 @@ func (p *parser) comment() error {
 }
 
 func (p *parser) processingInstruction() error {
-	end := indexOf(p.xml, "?>", p.index)
+	end := indexOf(p.xml, "?>", p.index+2)
 	if end == -1 {
 		return p.error("The processing instruction does not end")
 	}
@@ -459,6 +461,10 @@ func (p *parser) processingInstruction() error {
 	}
 	if strings.EqualFold(string(p.xml[p.index+2:target]), "xml") {
 		return p.error("The XML declaration is not at the start of the document")
+	}
+	// It starts with its target, a name, which <?> and <? pi?> have not.
+	if !isName(string(p.xml[p.index+2 : target])) {
+		return p.error("The processing instruction has no target")
 	}
 	p.skip(end + 2 - p.index)
 	return nil

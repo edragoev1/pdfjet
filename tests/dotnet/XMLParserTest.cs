@@ -478,5 +478,20 @@ public class XMLParserTest {
         }
         Parse("<a xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" xml:lang=\"en\"/>");
     }
+
+    [Fact]
+    public void ACommentEndsAfterItsStartAndAProcessingInstructionHasATarget() {
+        // <!--> and <!---> do not end the comment they start (the review of
+        // 16 November 2026): what follows up to --> is in it.
+        foreach (string xml in new string[] {"<a><!--><b/>--></a>", "<a><!---><b/>--></a>"}) {
+            XMLNode node = Parse(xml);
+            Assert.Empty(node.GetChildren());
+            Assert.Equal("", node.GetText());
+        }
+        foreach (string xml in new string[] {"<a><!--></a>", "<a><?><b/></a>", "<a><?><b/>?></a>", "<a><? pi?></a>"}) {
+            Message(xml);
+        }
+        Parse("<a><!----><?pi?><?pi data?></a>");
+    }
 }
 }

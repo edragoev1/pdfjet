@@ -568,3 +568,19 @@ func TestXMLParserRefusesTheReservedPrefixesDeclared(t *testing.T) {
 	}
 	testParse(t, `<a xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="en"/>`)
 }
+
+func TestXMLParserACommentEndsAfterItsStartAndAProcessingInstructionHasATarget(t *testing.T) {
+	// <!--> and <!---> do not end the comment they start (the review of 16
+	// November 2026): what follows up to --> is in it.
+	for _, xml := range []string{"<a><!--><b/>--></a>", "<a><!---><b/>--></a>"} {
+		node := testParse(t, xml)
+		testCount(t, 0, len(node.Children()), "elements")
+		testEqualText(t, "", node.Text())
+	}
+	for _, xml := range []string{"<a><!--></a>", "<a><?><b/></a>", "<a><?><b/>?></a>", "<a><? pi?></a>"} {
+		if _, err := Parse([]byte(xml)); err == nil {
+			t.Errorf("%s: no error", xml)
+		}
+	}
+	testParse(t, "<a><!----><?pi?><?pi data?></a>")
+}

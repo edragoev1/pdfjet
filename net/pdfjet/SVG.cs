@@ -194,6 +194,7 @@ namespace PDFjet.NET {
                 // says.
                 if (lastOp.cmd == 'Z' && op.cmd != 'M' && op.cmd != 'm' && op.cmd != 'Z' && op.cmd != 'z') {
                     pathOp = new PathOp('M', x0, y0);
+                    pathOp.inner = true;
                     operations.Add(pathOp);
                     lastOp = pathOp;
                 }
@@ -299,6 +300,10 @@ namespace PDFjet.NET {
                         float x2c = x + (2f / 3f) * (x1 - x);
                         float y2c = y + (2f / 3f) * (y1 - y);
                         pathOp.SetCubicPoints(x1c, y1c, x2c, y2c, x, y);
+                        // Each pair of numbers is another T, whose next one
+                        // reflects its control point too, as SVG 1.1 section
+                        // 8.3.7 says.
+                        pathOp.from = 'T';
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
@@ -346,6 +351,10 @@ namespace PDFjet.NET {
                             y += lastOp.y;
                         }
                         pathOp.SetCubicPoints(x1, y1, x2, y2, x, y);
+                        // Each set of four numbers is another S, whose next
+                        // one reflects its control point too, as SVG 1.1
+                        // section 8.3.6 says.
+                        pathOp.from = 'S';
                         operations.Add(pathOp);
                         lastOp = pathOp;
                     }
@@ -471,6 +480,7 @@ namespace PDFjet.NET {
                         new float[] {x, y} : OnEllipse(cx, cy, rx, ry, cosPhi, sinPhi, p2x, p2y);
                 pathOp = new PathOp('C');
                 pathOp.SetCubicPoints(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1]);
+                pathOp.inner = i < segments - 1;
                 operations.Add(pathOp);
             }
             return pathOp;

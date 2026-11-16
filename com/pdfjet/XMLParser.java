@@ -466,7 +466,9 @@ public final class XMLParser {
     }
 
     private void comment() throws XMLException {
-        int end = xml.indexOf("-->", index);
+        // The end is after the <!-- the comment starts with, which <!--> and
+        // <!---> are not the end of.
+        int end = xml.indexOf("-->", index + 4);
         if (end == -1) {
             throw error("The comment does not end");
         }
@@ -480,7 +482,7 @@ public final class XMLParser {
     }
 
     private void processingInstruction() throws XMLException {
-        int end = xml.indexOf("?>", index);
+        int end = xml.indexOf("?>", index + 2);
         if (end == -1) {
             throw error("The processing instruction does not end");
         }
@@ -494,6 +496,10 @@ public final class XMLParser {
         }
         if (xml.substring(index + 2, target).equalsIgnoreCase("xml")) {
             throw error("The XML declaration is not at the start of the document");
+        }
+        // It starts with its target, a name, which <?> and <? pi?> have not.
+        if (!isName(xml.substring(index + 2, target))) {
+            throw error("The processing instruction has no target");
         }
         skip(end + 2 - index);
     }

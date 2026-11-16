@@ -1712,4 +1712,114 @@ import Testing
         let buf = TestSupport.latin1(page.buf)
         #expect(buf.components(separatedBy: " Tf\n").count - 1 == 2 && buf.contains(" 0.125 Tf\n"), "\(buf)")
     }
+
+    // The review of 16 November 2026
+
+    @Test func eachSetOfASmoothCurveReflectsTheControlPointOfTheOneBefore() throws {
+        // Each set of numbers of an S or a T is another S or T (SVG 1.1
+        // sections 8.3.6 and 8.3.7): written once or twice, they draw the
+        // same curves.
+        let pairs = [
+                ["M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 30 10 30 0", "M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 S 30 10 30 0"],
+                ["M0 0 Q 5 10 10 0 T 20 0 30 0", "M0 0 Q 5 10 10 0 T 20 0 T 30 0"],
+                ["M2 12 s4.48 10 10 10 10-4.48 10-10", "M2 12 s4.48 10 10 10 s10-4.48 10-10"]]
+        for pair in pairs {
+            let once = try draw("<svg width=\"100\" height=\"100\"><path d=\"" + pair[0] + "\"/></svg>")
+            let twice = try draw("<svg width=\"100\" height=\"100\"><path d=\"" + pair[1] + "\"/></svg>")
+            #expect(once == twice, "\(pair[0])")
+        }
+        var content = try draw("<svg width=\"100\" height=\"100\"><path d=\"" + pairs[0][0] + "\"/></svg>")
+        #expect(content.contains("\n20 782 30 782 30 792 c\n"), "\(content)")
+        content = try draw("<svg width=\"100\" height=\"100\"><path d=\"" + pairs[1][0] + "\"/></svg>")
+        #expect(content.contains("\n23.33 785.33 26.67 785.33 30 792 c\n"), "\(content)")
+    }
+
+    @Test func theAttributesReadAgainAreLimited() throws {
+        // 10,000 characters, read again for each of 2,500 elements
+        var attributes = ""
+        for i in 0..<20 {
+            attributes += " a\(i)=\"" + String(repeating: "x", count: 494) + "\""
+        }
+        for svg in [
+                "<svg width=\"10\" height=\"10\"><defs><g id=\"t\"" + attributes + "/></defs>"
+                        + String(repeating: "<use href=\"#t\"/>", count: 2500) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><defs><text id=\"t\">a<tspan" + attributes + "/></text></defs>"
+                        + String(repeating: "<use href=\"#t\"/>", count: 2500) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><clipPath id=\"c\"><rect width=\"1\" height=\"1\"" + attributes
+                        + "/></clipPath>" + String(repeating: "<g clip-path=\"url(#c)\"/>", count: 2500) + "</svg>",
+                "<svg width=\"10\" height=\"10\"><marker id=\"m\"" + attributes + "/>"
+                        + "<path d=\"M0 0" + String(repeating: " L1 1", count: 2500)
+                        + "\" stroke=\"red\" marker-mid=\"url(#m)\"/></svg>"] {
+            #expect(throws: (any Error).self) {
+                do {
+                    _ = try image(svg)
+                } catch {
+                    #expect("\(error)".contains("characters of attributes"), "\(error)")
+                    throw error
+                }
+            }
+        }
+        _ = try image("<svg width=\"10\" height=\"10\"><defs><g id=\"t\"" + attributes + "/></defs>"
+                + String(repeating: "<use href=\"#t\"/>", count: 100) + "</svg>")
+    }
+
+    @Test func aTextOfAFontSizeAPDFCannotHoldIsNotDrawn() throws {
+        for svg in [
+                "<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><text y=\"10\" font-size=\"3e38\">x</text>"
+                        + "<rect width=\"5\" height=\"5\"/></svg>",
+                "<svg width=\"200\" height=\"200\" viewBox=\"0 0 100 100\"><clipPath id=\"c\"><text y=\"10\" font-size=\"3e38\">x</text>"
+                        + "</clipPath><text y=\"10\" clip-path=\"url(#c)\">x</text><rect width=\"5\" height=\"5\"/></svg>"] {
+            let page = TestSupport.newPage()
+            let svgImage = try image(svg)
+            _ = svgImage.setLocation(0, 0)
+            _ = svgImage.drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(page.pdf.error == nil, "\(String(describing: page.pdf.error))")
+            #expect(!content.contains("Tf") && content.contains("\nf\n"), "\(content)")    // The rect is drawn
+        }
+    }
+
+    @Test func markersAreAtTheVerticesOfThePathData() throws {
+        let marker = "<marker id=\"m\" markerWidth=\"2\" markerHeight=\"2\" refX=\"1\" refY=\"1\" "
+                + "markerUnits=\"userSpaceOnUse\"><rect width=\"2\" height=\"2\" fill=\"red\"/></marker>"
+        // An arc is one segment, however many curves draw it.
+        var content = try draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\">" + marker
+                + "<path fill=\"none\" stroke=\"black\" d=\"M10 50 A40 40 0 0 1 90 50 L 90 90\" marker-mid=\"url(#m)\"/></svg>")
+        #expect(content.components(separatedBy: "\nf\n").count - 1 == 1, "\(content)")
+        #expect(!content.contains("\n49 783 m\n"), "\(content)")
+        // A command after Z goes on from the vertex Z ends at, once.
+        content = try draw("<svg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\">" + marker
+                + "<path fill=\"none\" stroke=\"black\" d=\"M0 0 L10 0 L10 10 Z L0 20\" marker-mid=\"url(#m)\"/></svg>")
+        #expect(content.components(separatedBy: "\nf\n").count - 1 == 3, "\(content)")
+    }
+
+    @Test func anIdNamesTheFirstElementInTheOrderOfTheDocument() throws {
+        let content = try draw("<svg width=\"100\" height=\"100\"><defs><g><rect id=\"a\" width=\"10\" height=\"10\" fill=\"red\"/></g>"
+                + "<rect id=\"a\" width=\"10\" height=\"10\" fill=\"blue\"/></defs><use href=\"#a\"/></svg>")
+        #expect(content.contains("1 0 0 rg") && !content.contains("0 0 1 rg"), "\(content)")
+    }
+
+    @Test func aUseOfAnElementItIsInIsNotDrawn() throws {
+        for svg in [
+                "<svg width=\"100\" height=\"100\"><g id=\"a\"><rect width=\"5\" height=\"5\"/><use href=\"#a\" x=\"10\"/></g></svg>",
+                "<svg width=\"100\" height=\"100\"><g id=\"a\"><rect width=\"5\" height=\"5\"/><use href=\"#b\" x=\"10\"/></g>"
+                        + "<defs><g id=\"b\"><use href=\"#a\" x=\"10\"/></g></defs></svg>"] {
+            #expect(try draw(svg) == "0 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n")
+        }
+    }
+
+    @Test func aStreamIsReadNoFurtherThanTheLimit() throws {
+        // A stream that does not end was read to the end of the memory.
+        guard FileManager.default.fileExists(atPath: "/dev/zero") else {
+            return
+        }
+        #expect(throws: (any Error).self) {
+            do {
+                _ = try SVGImage(fileAtPath: "/dev/zero")
+            } catch {
+                #expect("\(error)".contains("20 MB"), "\(error)")
+                throw error
+            }
+        }
+    }
 }

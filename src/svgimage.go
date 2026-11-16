@@ -12,7 +12,6 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"math"
@@ -61,6 +60,17 @@ const maxSVGReused = 1000000
 // not counted: they grow with the file.
 const maxSVGOperations = 4000000
 
+// maxSVGAttributeText is the most characters of attributes read again: those
+// of the elements drawn again, by use elements and as markers, and of the
+// clipPath elements, their shapes and the tspans of their texts, read for each
+// element they clip. Each reading sets the properties, classes, styles and
+// transforms again: a use of an element of N attributes cost N for each
+// element maxSVGReused counts, and no operation, 24 s for 249 KB (review of 16
+// November 2026). An attribute counts as it is written, its name, its value,
+// the = and the quotes, and a space; the limit is the most a file holds. The
+// attributes of a file read once are not counted: they grow with the file.
+const maxSVGAttributeText = 20000000
+
 // maxSVGDepth is how deep the elements being drawn may nest, by groups, use
 // elements and markers, a state on the stack for each: a chain of use elements
 // is flat in the file, so the limit of the XML parser does not see it, and
@@ -81,9 +91,11 @@ type svgReader struct {
 	root     bool
 	ids      map[string]*xmlparser.XMLNode
 	reusing  map[*xmlparser.XMLNode]bool
+	drawing  map[*xmlparser.XMLNode]bool // The element being drawn and those it is in
 	reused   int64
 	useSize  [2]string // The width and the height of the use element of the element drawn next
 	counted  int64     // The operations maxSVGOperations limits
+	attrText int64     // The characters of attributes maxSVGAttributeText limits
 	marker   []float64 // The viewport of the marker drawn next, in its user space, or nil
 	switches map[*xmlparser.XMLNode]*svgSwitch
 	tests    map[*xmlparser.XMLNode]*svgSwitch // Those of the systemLanguage of an element
@@ -91,13 +103,16 @@ type svgReader struct {
 }
 
 // NewSVGImageFromFile reads and parses an svgParser image from a file.
-// The file is fully read before parsing, so no file handle lifecycle is involved.
+// The file is read up to the 20 MB a document may be, and closed before it
+// returns: a larger file, or one that does not end, is not read into memory
+// to the end.
 func NewSVGImageFromFile(filePath string) (*SVGImage, error) {
-	data, err := os.ReadFile(filePath)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading SVG %q: %w", filePath, err)
 	}
-	return NewSVGImage(bytes.NewReader(data))
+	defer file.Close()
+	return NewSVGImage(file)
 }
 
 // svgTemplates are the elements whose content is not drawn where it is, but
@@ -141,7 +156,8 @@ var svgTemplates = map[string]bool{
 // rule, so even-odd shapes in one union would have to be cut where they cross,
 // and a soft mask, which PDF/A-1 forbids, is not used for it. It returns an error
 // for a file that nests what it draws more than 48 deep, or that draws more
-// than 4,000,000 path operations again, by use elements, markers and clip paths.
+// than 4,000,000 path operations again, by use elements, markers and clip paths,
+// or reads more than 20,000,000 characters of attributes again for them.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
 	image.paths = make([]*svgPath, 0)
@@ -157,19 +173,26 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 		root:     true,
 		ids:      make(map[string]*xmlparser.XMLNode),
 		reusing:  make(map[*xmlparser.XMLNode]bool),
+		drawing:  make(map[*xmlparser.XMLNode]bool),
 		switches: make(map[*xmlparser.XMLNode]*svgSwitch),
 		tests:    make(map[*xmlparser.XMLNode]*svgSwitch),
 	}
-	// The first element of an id, from the top down, is the one it names.
+	// The first element of an id, in the order of the document, is the one
+	// it names, as getElementById finds it: an element in a group before
+	// another of its id, not the one less deep. A stack, not recursion.
 	elements := []*xmlparser.XMLNode{document}
-	for i := 0; i < len(elements); i++ {
-		element := elements[i]
+	for len(elements) > 0 {
+		element := elements[len(elements)-1]
+		elements = elements[:len(elements)-1]
 		if id, ok := element.Attribute("id"); ok && id != "" {
 			if _, found := r.ids[id]; !found {
 				r.ids[id] = element
 			}
 		}
-		elements = append(elements, element.Children()...)
+		children := element.Children()
+		for i := len(children) - 1; i >= 0; i-- {
+			elements = append(elements, children[i])
+		}
 	}
 	svg := newSVGState()
 	svg.paints, err = r.gradientColors()
@@ -338,6 +361,19 @@ func (r *svgReader) countOperations(count int) error {
 	return nil
 }
 
+// countAttributes counts the characters of the attributes of an element read
+// again, and fails when there are too many.
+func (r *svgReader) countAttributes(node *xmlparser.XMLNode) error {
+	for _, attr := range node.Attributes() {
+		r.attrText += int64(4 + utf8.RuneCountInString(attr.Name) + utf8.RuneCountInString(attr.Value))
+	}
+	if r.attrText > maxSVGAttributeText {
+		return fmt.Errorf("The SVG reads more than %d characters of attributes again, with use elements, "+
+			"markers or clip paths.", maxSVGAttributeText)
+	}
+	return nil
+}
+
 // svgClipOperations returns the operations written for the clip paths of one
 // path, and of a run of a text.
 func svgClipOperations(clips []*svgPath) int {
@@ -361,10 +397,15 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	if len(r.stack) > maxSVGDepth {
 		return errSVGDepth()
 	}
+	r.drawing[node] = true
+	defer delete(r.drawing, node)
 	image := r.image
 	name := node.LocalName()
 	if len(r.reusing) > 0 {
 		if err := r.countReused(); err != nil {
+			return err
+		}
+		if err := r.countAttributes(node); err != nil {
 			return err
 		}
 	}
@@ -432,7 +473,10 @@ func (r *svgReader) draw(node *xmlparser.XMLNode, used bool) error {
 	}
 	if name == "use" {
 		target := r.ids[svgHref(node)]
-		if target != nil && !state.hidden && !r.reusing[target] {
+		// A use of an element being drawn, one the use is in, is a circular
+		// reference, which SVG 1.1 section 5.6 makes an error, and is not
+		// drawn.
+		if target != nil && !state.hidden && !r.reusing[target] && !r.drawing[target] {
 			// The element is drawn as a child of the use element, moved by
 			// its x and y.
 			parent := state
@@ -919,6 +963,9 @@ func (r *svgReader) clip(state *svgState) error {
 		strings.TrimSpace(svgAttribute(clipPath, "clipPathUnits")) == "objectBoundingBox" {
 		return nil
 	}
+	if err := r.countAttributes(clipPath); err != nil {
+		return err
+	}
 	base := newSVGState()
 	base.matrix = state.matrix
 	attributes, order := svgAttributes(clipPath)
@@ -933,6 +980,9 @@ func (r *svgReader) clip(state *svgState) error {
 	texts := make([]*svgPath, 0)
 	read := 0 // What is read of the texts
 	for _, child := range clipPath.Children() {
+		if err := r.countAttributes(child); err != nil {
+			return err
+		}
 		attributes, order := svgAttributes(child)
 		shape, err := elementState(base, r.colorMap, r.rules, attributes, order)
 		if err != nil {
@@ -944,6 +994,9 @@ func (r *svgReader) clip(state *svgState) error {
 			target := r.ids[svgHref(child)]
 			if target == nil {
 				continue
+			}
+			if err := r.countAttributes(target); err != nil {
+				return err
 			}
 			shape.matrix = svgMultiply(shape.matrix, [6]float64{
 				1, 0, 0, 1, parseSVGCoordinate(attributes["x"]), parseSVGCoordinate(attributes["y"])})
@@ -1202,7 +1255,18 @@ func svgVertices(operations []*svgPathOp) [][3]float64 {
 	start := 0 // The vertex where the subpath starts
 	for _, op := range operations {
 		var in, out [2]float64
-		if op.cmd == 'M' {
+		if op.cmd == 'M' && op.inner {
+			// The moveto after Z: the next subpath starts at the vertex the
+			// Z ends at, which goes on as the command after it does.
+			if len(vertices) > 0 {
+				start = len(vertices) - 1
+				vertices[start][4] = 0
+				vertices[start][5] = 0
+			}
+			x = float64(op.x)
+			y = float64(op.y)
+			continue
+		} else if op.cmd == 'M' {
 			start = len(vertices)
 			vertices = append(vertices, [6]float64{float64(op.x), float64(op.y), 0, 0, 0, 0})
 			x = float64(op.x)
@@ -1226,6 +1290,13 @@ func svgVertices(operations []*svgPathOp) [][3]float64 {
 		if last[4] == 0.0 && last[5] == 0.0 {
 			last[4] = out[0]
 			last[5] = out[1]
+		}
+		if op.inner {
+			// A point inside an elliptical arc, which is one segment of the
+			// path data, as SVG 1.1 section 11.6.2 has the vertices.
+			x = float64(op.x)
+			y = float64(op.y)
+			continue
 		}
 		vertices = append(vertices, [6]float64{float64(op.x), float64(op.y), in[0], in[1], 0, 0})
 		if op.cmd == 'Z' {
@@ -1505,6 +1576,11 @@ func (r *svgReader) addRuns(text *svgText, node *xmlparser.XMLNode, state svgSta
 			name := item.LocalName()
 			if name != "tspan" && name != "a" {
 				continue // A title or a desc is not drawn
+			}
+			if len(r.reusing) > 0 || r.clipping {
+				if err := r.countAttributes(item); err != nil {
+					return err
+				}
 			}
 			childAttributes, childOrder := svgAttributes(item)
 			childState, err := elementState(state, r.colorMap, r.rules, childAttributes, childOrder)
@@ -2026,7 +2102,9 @@ func (image *SVGImage) drawText(text *svgText, clips []*svgPath, page *Page) {
 			continue
 		}
 		tm := image.textMatrix(text, run, page)
-		writable := image.clipsAreWritable(clips, page)
+		// The font size too, which a run that a PDF cannot hold is not
+		// drawn for, as a path is not.
+		writable := image.clipsAreWritable(clips, page) && fastfloat.IsWritable(run.fontSize)
 		for _, value := range tm {
 			writable = writable && fastfloat.IsWritable(value)
 		}
@@ -2188,6 +2266,9 @@ func (image *SVGImage) clipsAreWritable(clips []*svgPath, page *Page) bool {
 		}
 		for _, part := range clip.parts {
 			for _, run := range part.text.runs {
+				if run.clips() && !fastfloat.IsWritable(run.fontSize) {
+					return false
+				}
 				for _, value := range image.textMatrix(part.text, run, page) {
 					if run.clips() && !fastfloat.IsWritable(value) {
 						return false

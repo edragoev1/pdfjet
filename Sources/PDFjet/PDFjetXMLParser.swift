@@ -431,7 +431,9 @@ private struct Reader {
     }
 
     private mutating func comment() throws {
-        let end = indexOf(Reader.commentEnd)
+        // The end is after the <!-- the comment starts with, which <!--> and
+        // <!---> are not the end of.
+        let end = Reader.indexOf(xml, Reader.commentEnd, index + 4)
         if end == -1 {
             throw error("The comment does not end")
         }
@@ -445,7 +447,7 @@ private struct Reader {
     }
 
     private mutating func processingInstruction() throws {
-        let end = indexOf(Reader.instructionEnd)
+        let end = Reader.indexOf(xml, Reader.instructionEnd, index + 2)
         if end == -1 {
             throw error("The processing instruction does not end")
         }
@@ -459,6 +461,10 @@ private struct Reader {
         }
         if String(decoding: xml[(index + 2)..<target], as: UTF16.self).lowercased() == "xml" {
             throw error("The XML declaration is not at the start of the document")
+        }
+        // It starts with its target, a name, which <?> and <? pi?> have not.
+        if !Reader.isName(String(decoding: xml[(index + 2)..<target], as: UTF16.self)) {
+            throw error("The processing instruction has no target")
         }
         skip(end + 2 - index)
     }

@@ -480,4 +480,19 @@ class XMLParserTest {
         }
         parse("<a xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" xml:lang=\"en\"/>");
     }
+
+    @Test
+    void aCommentEndsAfterItsStartAndAProcessingInstructionHasATarget() throws Exception {
+        // <!--> and <!---> do not end the comment they start (the review of
+        // 16 November 2026): what follows up to --> is in it.
+        for (String xml : new String[] {"<a><!--><b/>--></a>", "<a><!---><b/>--></a>"}) {
+            XMLNode node = parse(xml);
+            assertEquals(0, node.getChildren().size(), xml);
+            assertEquals("", node.getText(), xml);
+        }
+        for (String xml : new String[] {"<a><!--></a>", "<a><?><b/></a>", "<a><?><b/>?></a>", "<a><? pi?></a>"}) {
+            message(xml);
+        }
+        parse("<a><!----><?pi?><?pi data?></a>");
+    }
 }

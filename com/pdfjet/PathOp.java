@@ -21,6 +21,10 @@ class PathOp {
     float y2;   // Control point y2
     float x;    // Initial point x
     float y;    // Initial point y
+    // Not a vertex of the path data, where a marker goes: a point inside an
+    // elliptical arc, which is drawn in pieces, or the moveto that a command
+    // after Z starts with, at the vertex the Z ends at.
+    boolean inner;
     List<String> args;
 
     PathOp(char cmd) {

@@ -435,4 +435,17 @@ import Testing
         }
         _ = try parse("<a xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" xml:lang=\"en\"/>")
     }
+
+    @Test func aCommentEndsAfterItsStartAndAProcessingInstructionHasATarget() throws {
+        // <!--> and <!---> do not end the comment they start (the review of
+        // 16 November 2026): what follows up to --> is in it.
+        for xml in ["<a><!--><b/>--></a>", "<a><!---><b/>--></a>"] {
+            let node = try parse(xml)
+            #expect(node.getChildren().isEmpty && node.getText() == "", "\(xml)")
+        }
+        for xml in ["<a><!--></a>", "<a><?><b/></a>", "<a><?><b/>?></a>", "<a><? pi?></a>"] {
+            _ = message(xml)
+        }
+        _ = try parse("<a><!----><?pi?><?pi data?></a>")
+    }
 }

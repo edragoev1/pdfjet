@@ -48,7 +48,7 @@ namespace PDFjet.NET {
 /// and a soft mask, which PDF/A-1 forbids, is not used for it. It
 /// throws for a file that nests what it draws more than 48 deep, or that draws
 /// more than 4,000,000 path operations again, by use elements, markers and clip
-/// paths.
+/// paths, or reads more than 20,000,000 characters of attributes again for them.
 /// </para>
 /// </summary>
 public class SVGImage : IDrawable {
@@ -77,8 +77,10 @@ public class SVGImage : IDrawable {
     private Dictionary<String, XMLNode> ids;
     private List<SVGPath> clipShapes = new List<SVGPath>();
     private HashSet<XMLNode> reusing;
+    private HashSet<XMLNode> drawing;   // The element being drawn and those it is in
     private long reused = 0;
     private long counted = 0;
+    private long attributeText = 0;     // The characters of attributes counted by MAX_ATTRIBUTE_TEXT
     private String[] useSize = null;    // The width and the height of the use element of the element drawn next
     private double[] marker = null;     // The viewport of the marker drawn next, in its user space
     private bool clipping = false;      // A text of a clip path is read, for each element it clips
@@ -97,6 +99,17 @@ public class SVGImage : IDrawable {
     // for 320 KB (review of 30 October 2026). The operations of a file drawn
     // once are not counted: they grow with the file.
     internal const long MAX_OPERATIONS = 4000000;
+    // The characters of attributes read again, at most: those of the elements
+    // drawn again, by use elements and as markers, and of the clipPath
+    // elements, their shapes and the tspans of their texts, read for each
+    // element they clip. Each reading sets the properties, classes, styles and
+    // transforms again: a use of an element of N attributes cost N for each
+    // element counted by MAX_REUSED, and no operation, 24 s for 249 KB (review
+    // of 16 November 2026). An attribute counts as it is written, its name, its
+    // value, the = and the quotes, and a space; the limit is the most a file
+    // holds. The attributes of a file read once are not counted: they grow
+    // with the file.
+    internal const long MAX_ATTRIBUTE_TEXT = 20000000;
     // How deep the elements being drawn may nest, by groups, use elements and
     // markers, a state on the stack for each: a chain of use elements is flat in
     // the file, so the limit of the XML parser does not see it, and each level
@@ -141,17 +154,26 @@ public class SVGImage : IDrawable {
         }
         ids = new Dictionary<String, XMLNode>();
         reusing = new HashSet<XMLNode>();
+        drawing = new HashSet<XMLNode>();
         switchOf = new Dictionary<XMLNode, Switch>();
         testOf = new Dictionary<XMLNode, Switch>();
+        // The first element of an id, in the order of the document, is the
+        // one it names, as getElementById finds it: an element in a group
+        // before another of its id, not the one less deep. A stack, not
+        // recursion.
         List<XMLNode> elements = new List<XMLNode>();
         elements.Add(document);
-        for (int i = 0; i < elements.Count; i++) {
-            XMLNode element = elements[i];
+        while (elements.Count > 0) {
+            XMLNode element = elements[elements.Count - 1];
+            elements.RemoveAt(elements.Count - 1);
             String id = element.GetAttribute("id");
             if (id != null && !ids.ContainsKey(id)) {
-                ids[id] = element;  // The first element of an id is the one it names
+                ids[id] = element;
             }
-            elements.AddRange(element.GetChildren());
+            List<XMLNode> children = element.GetChildren();
+            for (int i = children.Count - 1; i >= 0; i--) {
+                elements.Add(children[i]);
+            }
         }
         SVGState svg = new SVGState();
         svg.paints = GradientColors();
@@ -162,6 +184,7 @@ public class SVGImage : IDrawable {
         ProcessPaths(paths);
         ids = null;
         reusing = null;
+        drawing = null;
     }
 
     // Returns the element of the id, or null for none.
@@ -288,6 +311,29 @@ public class SVGImage : IDrawable {
         }
     }
 
+    // Counts the characters of the attributes of an element read again, and
+    // throws when there are too many.
+    private void CountAttributes(XMLNode node) {
+        foreach (KeyValuePair<String, String> attribute in node.GetAttributes()) {
+            attributeText += 4 + CodePointCount(attribute.Key) + CodePointCount(attribute.Value);
+        }
+        if (attributeText > MAX_ATTRIBUTE_TEXT) {
+            throw new ArgumentException("The SVG reads more than " + MAX_ATTRIBUTE_TEXT
+                    + " characters of attributes again, with use elements, markers or clip paths.");
+        }
+    }
+
+    // Returns the number of characters of the text, a surrogate pair one.
+    private static int CodePointCount(String str) {
+        int count = 0;
+        for (int i = 0; i < str.Length; i++) {
+            if (!(Char.IsLowSurrogate(str[i]) && i > 0 && Char.IsHighSurrogate(str[i - 1]))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     // Returns the operations written for the clip paths of one path, and of
     // a run of a text.
     private static int ClipOperations(List<SVGPath> clips) {
@@ -314,9 +360,11 @@ public class SVGImage : IDrawable {
         if (stack.Count > MAX_DEPTH) {
             throw DepthError();
         }
+        drawing.Add(node);
         String name = node.GetLocalName();
         if (reusing.Count > 0) {
             CountReused();
+            CountAttributes(node);
         }
         // The attributes of no namespace, in the order of the element:
         // xlink:href, xml:space and the namespaces' own declarations,
@@ -376,11 +424,15 @@ public class SVGImage : IDrawable {
                 AddText(node, rules, state, attributes, stack.Count);
             }
             stack.RemoveAt(stack.Count - 1);
+            drawing.Remove(node);
             return;
         }
         if (name.Equals("use")) {
             XMLNode target = ElementOf(Href(node));
-            if (target != null && !state.hidden && !reusing.Contains(target)) {
+            // A use of an element being drawn, one the use is in, is a
+            // circular reference, which SVG 1.1 section 5.6 makes an error,
+            // and is not drawn.
+            if (target != null && !state.hidden && !reusing.Contains(target) && !drawing.Contains(target)) {
                 // The element is drawn as a child of the use element, moved
                 // by its x and y.
                 SVGState parent = state.Copy();
@@ -394,6 +446,7 @@ public class SVGImage : IDrawable {
                 stack.RemoveAt(stack.Count - 1);
             }
             stack.RemoveAt(stack.Count - 1);
+            drawing.Remove(node);
             return;
         }
         List<PathOp> operations = ShapeOperations(name, attributes);
@@ -429,6 +482,7 @@ public class SVGImage : IDrawable {
             rules.AddElement(node);
         }
         stack.RemoveAt(stack.Count - 1);
+        drawing.Remove(node);
     }
 
     // Returns the value of the attribute, and "" for one the element does not have.
@@ -900,6 +954,7 @@ public class SVGImage : IDrawable {
                 || SVGState.Trim(Attribute(clipPath, "clipPathUnits")).Equals("objectBoundingBox")) {
             return;
         }
+        CountAttributes(clipPath);
         SVGState svg = new SVGState();
         svg.matrix = state.matrix;
         List<String> order = new List<String>();
@@ -912,6 +967,7 @@ public class SVGImage : IDrawable {
         List<SVGPath> texts = new List<SVGPath>();
         int read = 0;   // What is read of the texts
         foreach (XMLNode child in clipPath.GetChildren()) {
+            CountAttributes(child);
             order = new List<String>();
             attributes = Attributes(child, order);
             SVGState shape = ElementState(parent, rules, attributes, order);
@@ -922,6 +978,7 @@ public class SVGImage : IDrawable {
                 if (target == null) {
                     continue;
                 }
+                CountAttributes(target);
                 shape.matrix = SVGState.Multiply(shape.matrix, new double[] {
                     1.0, 0.0, 0.0, 1.0, Number(attributes, "x"), Number(attributes, "y")});
                 order = new List<String>();
@@ -1181,7 +1238,18 @@ public class SVGImage : IDrawable {
         foreach (PathOp op in operations) {
             double[] into;
             double[] outOf;
-            if (op.cmd == 'M') {
+            if (op.cmd == 'M' && op.inner) {
+                // The moveto after Z: the next subpath starts at the vertex
+                // the Z ends at, which goes on as the command after it does.
+                if (vertices.Count > 0) {
+                    start = vertices.Count - 1;
+                    vertices[start][4] = 0.0;
+                    vertices[start][5] = 0.0;
+                }
+                x = op.x;
+                y = op.y;
+                continue;
+            } else if (op.cmd == 'M') {
                 start = vertices.Count;
                 vertices.Add(new double[] {op.x, op.y, 0.0, 0.0, 0.0, 0.0});
                 x = op.x;
@@ -1203,6 +1271,13 @@ public class SVGImage : IDrawable {
             if (last[4] == 0.0 && last[5] == 0.0) {
                 last[4] = outOf[0];
                 last[5] = outOf[1];
+            }
+            if (op.inner) {
+                // A point inside an elliptical arc, which is one segment of
+                // the path data, as SVG 1.1 section 11.6.2 has the vertices.
+                x = op.x;
+                y = op.y;
+                continue;
             }
             vertices.Add(new double[] {op.x, op.y, into[0], into[1], 0.0, 0.0});
             if (op.cmd == 'Z') {
@@ -1450,6 +1525,9 @@ public class SVGImage : IDrawable {
                 String name = child.GetLocalName();
                 if (!name.Equals("tspan") && !name.Equals("a")) {
                     continue;   // A title or a desc is not drawn
+                }
+                if (reusing.Count > 0 || clipping) {
+                    CountAttributes(child);
                 }
                 List<String> childOrder = new List<String>();
                 Dictionary<String, String> childAttributes = Attributes(child, childOrder);
@@ -1826,13 +1904,16 @@ public class SVGImage : IDrawable {
         return true;
     }
 
-    // Returns true when a PDF can hold the text matrices of the texts of the
-    // clip path.
+    // Returns true when a PDF can hold the text matrices and the font sizes of
+    // the texts of the clip path.
     private bool PartsAreWritable(SVGPath clip, Page page) {
         if (clip.parts != null) {
             foreach (SVGPath part in clip.parts) {
                 foreach (SVGText.Run run in part.text.runs) {
                     if (run.Clips()) {
+                        if (!FastFloat.IsWritable(run.fontSize)) {
+                            return false;
+                        }
                         foreach (float value in TextMatrix(part.text, run, page)) {
                             if (!FastFloat.IsWritable(value)) {
                                 return false;
@@ -2031,7 +2112,9 @@ public class SVGImage : IDrawable {
                 continue;
             }
             float[] tm = TextMatrix(text, run, page);
-            bool writable = ClipsAreWritable(clips, page);
+            // The font size too, which a run that a PDF cannot hold is not
+            // drawn for, as a path is not.
+            bool writable = ClipsAreWritable(clips, page) && FastFloat.IsWritable(run.fontSize);
             foreach (float value in tm) {
                 writable = writable && FastFloat.IsWritable(value);
             }

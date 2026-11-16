@@ -19,7 +19,11 @@ type svgPathOp struct {
 	y2   float32 // Control point y2
 	x    float32 // Initial point x
 	y    float32 // Initial point y
-	args []string
+	// Not a vertex of the path data, where a marker goes: a point inside an
+	// elliptical arc, which is drawn in pieces, or the moveto that a command
+	// after Z starts with, at the vertex the Z ends at.
+	inner bool
+	args  []string
 }
 
 // newSVGPathOp creates a path operation with the specified command.

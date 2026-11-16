@@ -34,8 +34,10 @@ public class SVGImage : Drawable {
     private var ids = [[UInt8]: PDFjetXMLNode]()
     private var clipShapes = [SVGPath]()
     private var reusing = Set<ObjectIdentifier>()
+    private var drawing = Set<ObjectIdentifier>()   // The element being drawn and those it is in
     private var reused = 0
     private var counted = 0
+    private var attributeText = 0   // The characters of attributes counted by MAX_ATTRIBUTE_TEXT
     private var useSize: (String, String)?  // The width and the height of the use element of the element drawn next
     private var marker: [Double]?           // The viewport of the marker drawn next, in its user space
     private var clipping = false    // A text of a clip path is read, for each element it clips
@@ -57,6 +59,17 @@ public class SVGImage : Drawable {
     // for 320 KB (review of 30 October 2026). The operations of a file drawn
     // once are not counted: they grow with the file.
     static let MAX_OPERATIONS = 4000000
+    // The characters of attributes read again, at most: those of the elements
+    // drawn again, by use elements and as markers, and of the clipPath
+    // elements, their shapes and the tspans of their texts, read for each
+    // element they clip. Each reading sets the properties, classes, styles and
+    // transforms again: a use of an element of N attributes cost N for each
+    // element counted by MAX_REUSED, and no operation, 24 s for 249 KB (review
+    // of 16 November 2026). An attribute counts as it is written, its name, its
+    // value, the = and the quotes, and a space; the limit is the most a file
+    // holds. The attributes of a file read once are not counted: they grow
+    // with the file.
+    static let MAX_ATTRIBUTE_TEXT = 20000000
     // How deep the elements being drawn may nest, by groups, use elements and
     // markers, a state on the stack for each: a chain of use elements is flat in
     // the file, so the limit of the XML parser does not see it, and each level
@@ -128,7 +141,8 @@ public class SVGImage : Drawable {
      * which PDF/A-1 forbids, is not used for it. It
      * throws for a file that nests what it draws more than
      * 48 deep, or that draws more than 4,000,000 path operations again, by use
-     * elements, markers and clip paths.
+     * elements, markers and clip paths, or reads more than 20,000,000
+     * characters of attributes again for them.
      *
      * - Parameter stream: the input stream.
      */
@@ -138,7 +152,10 @@ public class SVGImage : Drawable {
         stream.open()
         var bytes = [UInt8]()
         var buffer = [UInt8](repeating: 0, count: 4096)
-        while stream.hasBytesAvailable {
+        // Up to the 20 MB a document may be and one byte more, which the
+        // parser refuses: a larger stream, or one that does not end, is not
+        // read into memory to the end.
+        while bytes.count <= PDFjetXMLParser.MAX_SIZE && stream.hasBytesAvailable {
             let read = stream.read(&buffer, maxLength: buffer.count)
             if read <= 0 {
                 break
@@ -157,15 +174,16 @@ public class SVGImage : Drawable {
         } catch let error as PDFjetXMLError {
             throw PDFjetError(message: "parsing SVG: " + error.message)
         }
+        // The first element of an id, in the order of the document, is the
+        // one it names, as getElementById finds it: an element in a group
+        // before another of its id, not the one less deep. A stack, not
+        // recursion.
         var elements = [document]
-        var i = 0
-        while i < elements.count {
-            let element = elements[i]
+        while let element = elements.popLast() {
             if let id = element.getAttribute("id"), ids[Array(id.utf8)] == nil {
-                ids[Array(id.utf8)] = element   // The first element of an id is the one it names
+                ids[Array(id.utf8)] = element
             }
-            elements.append(contentsOf: element.getChildren())
-            i += 1
+            elements.append(contentsOf: element.getChildren().reversed())
         }
         var svg = SVGState()
         svg.paints = try gradientColors()
@@ -174,6 +192,7 @@ public class SVGImage : Drawable {
         try processPaths(paths)
         ids = [:]
         reusing = []
+        drawing = []
         rules = SVGStyleSheet()
         stack = []
     }
@@ -298,6 +317,18 @@ public class SVGImage : Drawable {
         return attributes
     }
 
+    // Counts the characters of the attributes of an element read again, and
+    // throws when there are too many.
+    private func countAttributes(_ node: PDFjetXMLNode) throws {
+        for (name, value) in node.getAttributes() {
+            attributeText += 4 + name.unicodeScalars.count + value.unicodeScalars.count
+        }
+        if attributeText > SVGImage.MAX_ATTRIBUTE_TEXT {
+            throw PDFjetError(message: "The SVG reads more than \(SVGImage.MAX_ATTRIBUTE_TEXT)"
+                    + " characters of attributes again, with use elements, markers or clip paths.")
+        }
+    }
+
     // Counts operations drawn again or written again, and throws when there
     // are too many.
     private func countOperations(_ count: Int) throws {
@@ -328,9 +359,14 @@ public class SVGImage : Drawable {
         if stack.count > SVGImage.MAX_DEPTH {
             throw SVGImage.depthError()
         }
+        drawing.insert(ObjectIdentifier(node))
+        defer {
+            drawing.remove(ObjectIdentifier(node))
+        }
         let name = node.getLocalName()
         if !reusing.isEmpty {
             try countReused()
+            try countAttributes(node)
         }
         var order = [String]()
         let values = SVGImage.attributes(node, &order)
@@ -386,8 +422,11 @@ public class SVGImage : Drawable {
             return
         }
         if name == "use" {
+            // A use of an element being drawn, one the use is in, is a
+            // circular reference, which SVG 1.1 section 5.6 makes an error,
+            // and is not drawn.
             if let target = SVGImage.href(node).flatMap({ ids[Array($0.utf8)] }), !state.hidden,
-                    !reusing.contains(ObjectIdentifier(target)) {
+                    !reusing.contains(ObjectIdentifier(target)), !drawing.contains(ObjectIdentifier(target)) {
                 // The element is drawn as a child of the use element, moved
                 // by its x and y.
                 var parent = state
@@ -782,6 +821,7 @@ public class SVGImage : Drawable {
               SVGState.trimSpace(clipPath.getAttribute("clipPathUnits") ?? "") != "objectBoundingBox" else {
             return
         }
+        try countAttributes(clipPath)
         var svg = SVGState()
         svg.matrix = state.matrix
         var order = [String]()
@@ -793,6 +833,7 @@ public class SVGImage : Drawable {
         var texts = [SVGPath]()
         var read = 0    // What is read of the texts
         for child in clipPath.getChildren() {
+            try countAttributes(child)
             order = []
             attributes = SVGImage.attributes(child, &order)
             var shape = try elementState(base, attributes, order)
@@ -802,6 +843,7 @@ public class SVGImage : Drawable {
                 guard let target = SVGImage.href(child).flatMap({ ids[Array($0.utf8)] }) else {
                     continue
                 }
+                try countAttributes(target)
                 shape.matrix = SVGState.multiply(shape.matrix, [
                         1.0, 0.0, 0.0, 1.0, SVGImage.number(attributes, "x"), SVGImage.number(attributes, "y")])
                 order = []
@@ -1045,7 +1087,18 @@ public class SVGImage : Drawable {
         for op in operations {
             let inward: [Double]
             let out: [Double]
-            if op.cmd == "M" {
+            if op.cmd == "M" && op.inner {
+                // The moveto after Z: the next subpath starts at the vertex
+                // the Z ends at, which goes on as the command after it does.
+                if !vertices.isEmpty {
+                    start = vertices.count - 1
+                    vertices[start][4] = 0.0
+                    vertices[start][5] = 0.0
+                }
+                x = Double(op.x)
+                y = Double(op.y)
+                continue
+            } else if op.cmd == "M" {
                 start = vertices.count
                 vertices.append([Double(op.x), Double(op.y), 0.0, 0.0, 0.0, 0.0])
                 x = Double(op.x)
@@ -1069,6 +1122,13 @@ public class SVGImage : Drawable {
             if vertices[last][4] == 0.0 && vertices[last][5] == 0.0 {
                 vertices[last][4] = out[0]
                 vertices[last][5] = out[1]
+            }
+            if op.inner {
+                // A point inside an elliptical arc, which is one segment of
+                // the path data, as SVG 1.1 section 11.6.2 has the vertices.
+                x = Double(op.x)
+                y = Double(op.y)
+                continue
             }
             vertices.append([Double(op.x), Double(op.y), inward[0], inward[1], 0.0, 0.0])
             if op.cmd == "Z" {
@@ -1300,6 +1360,9 @@ public class SVGImage : Drawable {
                 let name = child.getLocalName()
                 if name != "tspan" && name != "a" {
                     continue    // A title or a desc is not drawn
+                }
+                if !reusing.isEmpty || clipping {
+                    try countAttributes(child)
                 }
                 var childOrder = [String]()
                 let childAttributes = SVGImage.attributes(child, &childOrder)
@@ -1777,11 +1840,14 @@ public class SVGImage : Drawable {
         return (clips ?? []).allSatisfy { areWritable($0.operations, page) && partsAreWritable($0, page) }
     }
 
-    // Returns true when a PDF can hold the text matrices of the texts of the
-    // clip path.
+    // Returns true when a PDF can hold the text matrices and the font sizes of
+    // the texts of the clip path.
     private func partsAreWritable(_ clip: SVGPath, _ page: Page) -> Bool {
         for part in clip.parts ?? [] {
             for run in part.text!.runs where run.clips() {
+                if !FastFloat.isWritable(run.fontSize) {
+                    return false
+                }
                 if !textMatrix(part.text!, run, page).allSatisfy({ FastFloat.isWritable($0) }) {
                     return false
                 }
@@ -1873,7 +1939,10 @@ public class SVGImage : Drawable {
                 continue
             }
             let tm = textMatrix(text, run, page)
-            let writable = clipsAreWritable(clips, page) && tm.allSatisfy { FastFloat.isWritable($0) }
+            // The font size too, which a run that a PDF cannot hold is not
+            // drawn for, as a path is not.
+            let writable = clipsAreWritable(clips, page) && FastFloat.isWritable(run.fontSize)
+                    && tm.allSatisfy { FastFloat.isWritable($0) }
             let strokeWidth = Float(Double(run.strokeWidth) * scale)
             let fill = run.fill != Color.transparent && run.fillAlpha > 0.0
             let stroke = run.stroke != Color.transparent && run.strokeAlpha > 0.0
