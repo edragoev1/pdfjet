@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"math"
 	"os"
@@ -264,6 +265,116 @@ func TestReviewMediaAPDFADocumentHoldsNoCopiedImageItsLevelHasNot(t *testing.T) 
 	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_3B, "tests/data/PngSuite/BASN2C16.PNG"))
 	testWant(t, "", testPDFACopyError(t, compliance.PDF_UA_1, "resources/images/cmyk.jpg"))
 	testWant(t, "", testPDFACopyError(t, compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"))
+}
+
+// testCopiedImage reads a PDF whose object 4 is the image object, with the
+// objects after it, and copies the image into a document of the level. It
+// returns the error, of the copy or of Complete, or "" and the document.
+func testCopiedImage(t *testing.T, level compliance.Compliance, image string, objects ...string) (message, written string) {
+	t.Helper()
+	read := testRead(t, testPDFWithObjects(append([]string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+		image + "\nstream\nabcd\nendstream"}, objects...)...))
+	var buf bytes.Buffer
+	pdf := NewPDF(bufio.NewWriter(&buf))
+	pdf.SetCompliance(level)
+	pdf.SetTitle("Title")
+	font := testTrueTypeFont(t, pdf)
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "Text").SetLocation(50, 50).DrawOn(page)
+	defer func() {
+		if r := recover(); r != nil {
+			message = fmt.Sprint(r)
+		}
+	}()
+	NewImageFromPDFobj(pdf, read[3]).SetAltDescription("An image").SetLocation(50, 100).DrawOn(page)
+	if err := pdf.Complete(); err != nil {
+		return err.Error(), ""
+	}
+	return "", buf.String()
+}
+
+// A PDF/A document refuses a copied image of LZWDecode, which ISO 19005
+// forbids, as it refuses a CMYK one: it was copied as it was, and the
+// document was not PDF/A.
+func TestReviewMediaAPDFADocumentRefusesACopiedImageOfLZW(t *testing.T) {
+	failed := "The PDF was not completed because of an earlier error: "
+	lzw := "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray " +
+		"/BitsPerComponent 8 /Filter /LZWDecode /Length 4 >>"
+	flate := strings.Replace(lzw, "/LZWDecode", "/FlateDecode", 1)
+	for _, level := range []compliance.Compliance{compliance.PDF_A_1B, compliance.PDF_A_2B} {
+		message, _ := testCopiedImage(t, level, lzw)
+		testWant(t, failed+"A document of "+level.String()+" cannot hold an image compressed with "+
+			"/LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.", message)
+	}
+	// Its soft mask too, and an array of filters
+	message, _ := testCopiedImage(t, compliance.PDF_A_2B, strings.Replace(flate, "/Length", "/SMask 5 0 R /Length", 1),
+		strings.Replace(lzw, "/LZWDecode", "[/ASCIIHexDecode /LZWDecode]", 1)+"\nstream\nabcd\nendstream")
+	testWant(t, failed+"A document of PDF_A_2B cannot hold an image compressed with "+
+		"/LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.", message)
+	message, _ = testCopiedImage(t, compliance.PDF_A_2B, flate)
+	testWant(t, "", message)
+	message, written := testCopiedImage(t, compliance.PDF_1_7, lzw)
+	testWant(t, "", message)
+	testWant(t, "true", fmt.Sprint(strings.Contains(written, "/Filter /LZWDecode\n")))
+}
+
+// /Width, /Height, /BitsPerComponent and /ImageMask in objects of their own,
+// which ISO 32000-1 allows, are read from them: /Width 5 0 R was taken for 5,
+// and the image written 5 pixels across.
+func TestReviewMediaACopiedImageHasItsValuesInObjectsRead(t *testing.T) {
+	message, written := testCopiedImage(t, compliance.PDF_1_7,
+		"<< /Type /XObject /Subtype /Image /Width 5 0 R /Height 6 0 R /ColorSpace /DeviceGray "+
+			"/BitsPerComponent 7 0 R /Length 4 >>", "2", "1", "8")
+	testWant(t, "", message)
+	testWant(t, "true", fmt.Sprint(strings.Contains(written, "/Width 2\n/Height 1\n/ColorSpace /DeviceGray\n/BitsPerComponent 8\n")))
+	message, written = testCopiedImage(t, compliance.PDF_1_7,
+		"<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ImageMask 5 0 R /Length 4 >>", "true")
+	testWant(t, "", message)
+	testWant(t, "true", fmt.Sprint(strings.Contains(written, "/ImageMask true\n")))
+	message, _ = testCopiedImage(t, compliance.PDF_1_7,
+		"<< /Type /XObject /Subtype /Image /Width 9 0 R /Height 2 /ImageMask true /Length 4 >>")
+	testWant(t, "The image refers to another object of the PDF it was read from, "+
+		"which is not copied with it: /Width 9 0 R", message)
+}
+
+// A value of a copied image that it cannot have is refused: it was written
+// as it was read, /Width -5, /BitsPerComponent ] and /Filter (x>>y), a string
+// not encrypted when the document is.
+func TestReviewMediaACopiedImageWithAValueItCannotHaveIsRefused(t *testing.T) {
+	image := "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray " +
+		"/BitsPerComponent 8 /Length 4 >>"
+	for entry, want := range map[string]string{
+		"/Width -5":           "The /Width of the image object is not a positive number: -5",
+		"/Height 0":           "The /Height of the image object is not a positive number: 0",
+		"/Width 0.5":          "The /Width of the image object is not a positive number: 0.5",
+		"/BitsPerComponent ]": "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: ]",
+		"/BitsPerComponent 3": "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: 3",
+		"/ImageMask 3":        "The /ImageMask of the image object is not true or false: 3",
+		"/SMaskInData /Yes":   "The /SMaskInData of the image object is not 0, 1 or 2: /Yes",
+		"/Filter (x>>y)":      "The /Filter of the image object is not a name or an array of names: (x>>y)",
+		"/Filter [/FlateDecode 5]": "The /Filter of the image object is not a name or an array of names: " +
+			"/FlateDecode 5",
+	} {
+		message, _ := testCopiedImage(t, compliance.PDF_1_7, strings.Replace(image, "<<", "<< "+entry, 1))
+		testWant(t, want, message)
+	}
+}
+
+// The /SMaskInData of a JPEG 2000 image, its alpha in its data, is copied: it
+// was left out, and the image drawn opaque. PDF/A-1 refuses it as it does a
+// soft mask.
+func TestReviewMediaACopiedJPEG2000ImageKeepsItsAlpha(t *testing.T) {
+	image := "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /Filter /JPXDecode /SMaskInData 1 /Length 4 >>"
+	message, written := testCopiedImage(t, compliance.PDF_1_7, image)
+	testWant(t, "", message)
+	testWant(t, "true", fmt.Sprint(strings.Contains(written, "/SMaskInData 1\n")))
+	message, _ = testCopiedImage(t, compliance.PDF_A_1B, image)
+	testWant(t, "The PDF was not completed because of an earlier error: "+
+		"A document of PDF_A_1B cannot hold an image with transparency: "+
+		"PDF/A-1 has no soft masks, so its images are opaque.", message)
 }
 
 // testPDFADrawError returns the error of completing a document of the

@@ -163,13 +163,111 @@ public class Image : IDrawable {
     // The number of the key, which is a number in decimal, with an exponent
     // or not, in the four ports: Java read 100f and hex, C# white space and
     // Infinity, Go inf, and Swift took any other text for 0 (review of
-    // 17 October 2026).
+    // 17 October 2026). It is a pixel or more: -5 and 0 were written as they
+    // were.
     private static double SizeOf(PDFobj obj, String key) {
-        String value = obj.GetValue(key);
+        String value = CopiedValue(obj, key);
         if (!Util.IsDecimalNumber(value)) {
             throw new InvalidDataException("The " + key + " of the image object is not a number: " + value);
         }
-        return ParseNumber(value);
+        double number = ParseNumber(value);
+        if (PixelsOf(number) < 1) {
+            throw new InvalidDataException("The " + key + " of the image object is not a positive number: " + value);
+        }
+        return number;
+    }
+
+    // The value of the key of the image object, read from the object it
+    // refers to when it is a reference, which ISO 32000-1 7.3.10 allows:
+    // /Width 4 0 R was taken for 4.
+    private static String CopiedValue(PDFobj obj, String key) {
+        List<String> tokens = obj.ValueTokens(key);
+        if (PDF.IsReference(tokens, 0)) {
+            PDFobj value = null;
+            if (obj.readObjects != null) {
+                obj.readObjects.TryGetValue(Int32.Parse(tokens[0], CultureInfo.InvariantCulture), out value);
+            }
+            if (value == null) {
+                throw new NotSupportedException("The image refers to another object of the PDF it was read from, "
+                        + "which is not copied with it: " + key + " " + String.Join(" ", tokens));
+            }
+            tokens = PDF.ValueOf(value);
+        }
+        return String.Join(" ", tokens);
+    }
+
+    // The value of the key of the image object, one of the values it can
+    // have, or "" when it has none: a value that is not one, as
+    // /BitsPerComponent ], was written as it was read.
+    private static String CopiedEntry(PDFobj obj, String key, params String[] values) {
+        String value = CopiedValue(obj, key);
+        if (value.Length > 0 && Array.IndexOf(values, value) == -1) {
+            throw new InvalidDataException("The " + key + " of the image object is not "
+                    + String.Join(", ", values, 0, values.Length - 1)
+                    + " or " + values[values.Length - 1] + ": " + value);
+        }
+        return value;
+    }
+
+    // The /BitsPerComponent of the image object, or "" when it has none.
+    private static String CopiedBitsPerComponent(PDFobj obj) {
+        return CopiedEntry(obj, "/BitsPerComponent", "1", "2", "4", "8", "16");
+    }
+
+    // The /SMaskInData of the image object, which says a JPEG 2000 image has
+    // its alpha in its data, or "" when it has none.
+    private static String CopiedSMaskInData(PDFobj obj) {
+        return CopiedEntry(obj, "/SMaskInData", "0", "1", "2");
+    }
+
+    // The filters of the image object, which are names: a string was written
+    // as it was read, not encrypted when the document is.
+    private static List<String> CopiedFilters(PDFobj obj) {
+        List<String> filters = obj.GetFilters();
+        foreach (String filter in filters) {
+            if (!filter.StartsWith("/", StringComparison.Ordinal)) {
+                throw new InvalidDataException("The /Filter of the image object is not a name or an array of names: "
+                        + String.Join(" ", filters));
+            }
+        }
+        return filters;
+    }
+
+    // The filters of ISO 32000-1 Table 6 that a PDF/A document can hold: not
+    // LZWDecode, which ISO 19005 forbids, or Crypt.
+    private static readonly String[] PDFA_FILTERS = {"/ASCIIHexDecode", "/ASCII85Decode",
+            "/FlateDecode", "/RunLengthDecode", "/CCITTFaxDecode", "/JBIG2Decode", "/DCTDecode", "/JPXDecode"};
+
+    // Whether a PDF/A document can hold the filters of the image object and
+    // of its masks; it fails the document when it cannot: an image of
+    // LZWDecode, which older scans have, was copied into it as it was. The
+    // image is not decoded and compressed again, as PDFjet does not decode
+    // LZW.
+    private static bool CopiedFiltersArePDFA(PDF pdf, PDFobj obj) {
+        Compliance level = pdf.compliance;
+        if (level == Compliance.PDF_1_7 || level == Compliance.PDF_UA_1) {
+            return true;
+        }
+        List<PDFobj> images = new List<PDFobj> {obj};
+        foreach (String key in new String[] {"/SMask", "/Mask"}) {
+            List<String> tokens = obj.ValueTokens(key);
+            if (PDF.IsReference(tokens, 0) && obj.readObjects != null &&
+                    obj.readObjects.TryGetValue(Int32.Parse(tokens[0], CultureInfo.InvariantCulture), out PDFobj mask) &&
+                    mask != null) {
+                images.Add(mask);
+            }
+        }
+        foreach (PDFobj image in images) {
+            foreach (String filter in CopiedFilters(image)) {
+                if (Array.IndexOf(PDFA_FILTERS, filter) == -1) {
+                    pdf.Fail(new InvalidOperationException("A document of " + level
+                            + " cannot hold an image compressed with " + filter
+                            + ": PDF/A forbids LZWDecode, Crypt and the filters that are not standard."));
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // Returns the number of a number in decimal, an infinity for one past a
@@ -223,16 +321,20 @@ public class Image : IDrawable {
         // an image made from a file: a soft mask went into PDF/A-1 once masks
         // were copied, and a CMYK image, or one of 16 bits, always had (the
         // review of 28 October 2026)
+        // A JPEG 2000 image with its alpha in its data has transparency too.
         List<String> softMaskTokens = obj.ValueTokens("/SMask");
-        bool hasSoftMask = softMaskTokens.Count > 0
-                && !(softMaskTokens.Count == 1 && softMaskTokens[0] == "/None");
+        String smaskInData = CopiedSMaskInData(obj);
+        bool hasSoftMask = (softMaskTokens.Count > 0
+                && !(softMaskTokens.Count == 1 && softMaskTokens[0] == "/None"))
+                || (smaskInData.Length > 0 && smaskInData != "0");
         int bits;
-        if (!Int32.TryParse(obj.GetValue("/BitsPerComponent"), NumberStyles.Integer,
+        if (!Int32.TryParse(CopiedBitsPerComponent(obj), NumberStyles.Integer,
                 CultureInfo.InvariantCulture, out bits)) {
             bits = 0;
         }
         if (!IsPDFA(pdf, hasSoftMask ? new byte[0] : null,
-                obj.ValueTokens("/ColorSpace").Contains("/DeviceCMYK") ? "DeviceCMYK" : "", bits)) {
+                obj.ValueTokens("/ColorSpace").Contains("/DeviceCMYK") ? "DeviceCMYK" : "", bits) ||
+                !CopiedFiltersArePDFA(pdf, obj)) {
             return;
         }
         int softMask = CopiedMask(pdf, obj, "/SMask");
@@ -317,28 +419,30 @@ public class Image : IDrawable {
         if (obj.stream == null) {
             throw new InvalidDataException("The image object has no stream.");
         }
+        String filterValue = FilterValue(CopiedFilters(obj));
+        int width = PixelsOf(SizeOf(obj, "/Width"));
+        int height = PixelsOf(SizeOf(obj, "/Height"));
+        String bitsPerComponent = CopiedBitsPerComponent(obj);
+        String imageMask = CopiedEntry(obj, "/ImageMask", "true", "false");
+        String smaskInData = CopiedSMaskInData(obj);    // The alpha of a JPEG 2000 image
         pdf.NewObj();
         pdf.Append("<<\n");
         pdf.Append("/Type /XObject\n");
         pdf.Append("/Subtype /Image\n");
-        AppendIfAny(pdf, "/Filter", FilterValue(obj.GetFilters()));
+        AppendIfAny(pdf, "/Filter", filterValue);
         pdf.Append("/Width ");
-        pdf.Append(PixelsOf(SizeOf(obj, "/Width")));
+        pdf.Append(width);
         pdf.Append('\n');
         pdf.Append("/Height ");
-        pdf.Append(PixelsOf(SizeOf(obj, "/Height")));
+        pdf.Append(height);
         pdf.Append('\n');
         pdf.AppendCopiedValue("/ColorSpace", colorSpace);
-        AppendIfAny(pdf, "/BitsPerComponent", obj.GetValue("/BitsPerComponent"));
+        AppendIfAny(pdf, "/BitsPerComponent", bitsPerComponent);
         pdf.AppendCopiedValue("/DecodeParms", decodeParms);
         pdf.AppendCopiedValue("/Decode", decode);
         pdf.AppendCopiedValue("/Matte", matte);
-        String imageMask = obj.GetValue("/ImageMask");
-        if (!imageMask.Equals("")) {
-            pdf.Append("/ImageMask ");
-            pdf.Append(imageMask);
-            pdf.Append("\n");
-        }
+        AppendIfAny(pdf, "/ImageMask", imageMask);
+        AppendIfAny(pdf, "/SMaskInData", smaskInData);
         if (softMask != 0) {
             pdf.Append("/SMask ");
             pdf.Append(softMask);

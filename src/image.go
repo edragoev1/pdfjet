@@ -229,9 +229,10 @@ func pixelsOf(value float64) int {
 // imageSizeOf returns the number of the key, which is a number in decimal,
 // with an exponent or not, in the four ports: Java read 100f and hex, C#
 // white space and Infinity, Go inf, and Swift took any other text for 0
-// (review of 17 October 2026). One past a float64 is its infinity.
+// (review of 17 October 2026). One past a float64 is its infinity. It is a
+// pixel or more: -5 and 0 were written as they were.
 func imageSizeOf(obj *PDFobj, key string) float64 {
-	value := obj.GetValue(key)
+	value := copiedValue(obj, key)
 	if !isDecimalNumber(value) {
 		panic("The " + key + " of the image object is not a number: " + value)
 	}
@@ -239,7 +240,88 @@ func imageSizeOf(obj *PDFobj, key string) float64 {
 	if err != nil && !errors.Is(err, strconv.ErrRange) {
 		panic(err)
 	}
+	if pixelsOf(number) < 1 {
+		panic("The " + key + " of the image object is not a positive number: " + value)
+	}
 	return number
+}
+
+// copiedValue returns the value of the key of the image object, read from
+// the object it refers to when it is a reference, which ISO 32000-1 7.3.10
+// allows: /Width 4 0 R was taken for 4.
+func copiedValue(obj *PDFobj, key string) string {
+	tokens := obj.valueTokens(key)
+	if isObjectReference(tokens, 0) {
+		number, _ := strconv.Atoi(tokens[0])
+		value := obj.readObjects[number]
+		if value == nil {
+			panic("The image refers to another object of the PDF it was read from, " +
+				"which is not copied with it: " + key + " " + strings.Join(tokens, " "))
+		}
+		tokens = objectValueTokens(value)
+	}
+	return strings.Join(tokens, " ")
+}
+
+// copiedEntry returns the value of the key of the image object, one of the
+// values it can have, or "" when it has none: a value that is not one, as
+// /BitsPerComponent ], was written as it was read.
+func copiedEntry(obj *PDFobj, key string, values ...string) string {
+	value := copiedValue(obj, key)
+	if value != "" && !slices.Contains(values, value) {
+		panic("The " + key + " of the image object is not " + strings.Join(values[:len(values)-1], ", ") +
+			" or " + values[len(values)-1] + ": " + value)
+	}
+	return value
+}
+
+// copiedFilters returns the filters of the image object, which are names: a
+// string was written as it was read, not encrypted when the document is.
+func copiedFilters(obj *PDFobj) []string {
+	filters := obj.getFilters()
+	for _, filter := range filters {
+		if !strings.HasPrefix(filter, "/") {
+			panic("The /Filter of the image object is not a name or an array of names: " +
+				strings.Join(filters, " "))
+		}
+	}
+	return filters
+}
+
+// pdfAFilters are the filters of ISO 32000-1 Table 6 that a PDF/A document
+// can hold: not LZWDecode, which ISO 19005 forbids, or Crypt.
+var pdfAFilters = []string{"/ASCIIHexDecode", "/ASCII85Decode", "/FlateDecode", "/RunLengthDecode",
+	"/CCITTFaxDecode", "/JBIG2Decode", "/DCTDecode", "/JPXDecode"}
+
+// copiedFiltersArePDFA reports whether a PDF/A document can hold the filters
+// of the image object and of its masks, and fails the document when it
+// cannot: an image of LZWDecode, which older scans have, was copied into it
+// as it was. The image is not decoded and compressed again, as PDFjet does
+// not decode LZW.
+func copiedFiltersArePDFA(pdf *PDF, obj *PDFobj) bool {
+	level := pdf.compliance
+	if level == compliance.PDF_1_7 || level == compliance.PDF_UA_1 {
+		return true
+	}
+	images := []*PDFobj{obj}
+	for _, key := range []string{"/SMask", "/Mask"} {
+		if tokens := obj.valueTokens(key); isObjectReference(tokens, 0) {
+			number, _ := strconv.Atoi(tokens[0])
+			if mask := obj.readObjects[number]; mask != nil {
+				images = append(images, mask)
+			}
+		}
+	}
+	for _, image := range images {
+		for _, filter := range copiedFilters(image) {
+			if !slices.Contains(pdfAFilters, filter) {
+				pdf.fail("A document of " + level.String() + " cannot hold an image compressed with " +
+					filter + ": PDF/A forbids LZWDecode, Crypt and the filters that are not standard.")
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // NewImageFromPDFobj constructs new image from an existing PDF object. The
@@ -256,7 +338,7 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	// copied, and a CMYK image, or one of 16 bits, always had (the review of
 	// 28 October 2026)
 	alpha, colorSpace, bitsPerComponent := copiedLook(obj)
-	if !image.isPDFA(pdf, alpha, colorSpace, bitsPerComponent) {
+	if !image.isPDFA(pdf, alpha, colorSpace, bitsPerComponent) || !copiedFiltersArePDFA(pdf, obj) {
 		return image
 	}
 	softMask := copiedMask(pdf, obj, "/SMask")
@@ -274,21 +356,36 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 }
 
 // copiedLook returns what a PDF/A document asks of an image copied from
-// another PDF: a soft mask, as alpha that is not nil; DeviceCMYK, if its
-// color space is, or is the base of an indexed one; and its bits per
-// component.
+// another PDF: a soft mask, or the alpha of a JPEG 2000 image, as alpha that
+// is not nil; DeviceCMYK, if its color space is, or is the base of an indexed
+// one; and its bits per component.
 func copiedLook(obj *PDFobj) ([]byte, string, int) {
 	var alpha []byte
 	softMask := obj.valueTokens("/SMask")
 	if len(softMask) > 0 && !(len(softMask) == 1 && softMask[0] == "/None") {
 		alpha = []byte{}
 	}
+	if smaskInData := copiedSMaskInData(obj); smaskInData != "" && smaskInData != "0" {
+		alpha = []byte{}
+	}
 	colorSpace := ""
 	if slices.Contains(obj.valueTokens("/ColorSpace"), "/"+device.CMYK) {
 		colorSpace = device.CMYK
 	}
-	bitsPerComponent, _ := strconv.Atoi(obj.GetValue("/BitsPerComponent"))
+	bitsPerComponent, _ := strconv.Atoi(copiedBitsPerComponent(obj))
 	return alpha, colorSpace, bitsPerComponent
+}
+
+// copiedBitsPerComponent returns the /BitsPerComponent of the image object,
+// or "" when it has none.
+func copiedBitsPerComponent(obj *PDFobj) string {
+	return copiedEntry(obj, "/BitsPerComponent", "1", "2", "4", "8", "16")
+}
+
+// copiedSMaskInData returns the /SMaskInData of the image object, which
+// says a JPEG 2000 image has its alpha in its data, or "" when it has none.
+func copiedSMaskInData(obj *PDFobj) string {
+	return copiedEntry(obj, "/SMaskInData", "0", "1", "2")
 }
 
 // copiedMask copies the image that the key of the image refers to, its soft
@@ -353,28 +450,30 @@ func appendImageObject(pdf *PDF, obj *PDFobj, softMask, mask int, maskArray []st
 	if obj.stream == nil {
 		panic("The image object has no stream.")
 	}
+	filters := filterValue(copiedFilters(obj))
+	width := pixelsOf(imageSizeOf(obj, "/Width"))
+	height := pixelsOf(imageSizeOf(obj, "/Height"))
+	bitsPerComponent := copiedBitsPerComponent(obj)
+	imageMask := copiedEntry(obj, "/ImageMask", "true", "false")
+	smaskInData := copiedSMaskInData(obj) // The alpha of a JPEG 2000 image
 	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /XObject\n")
 	pdf.appendString("/Subtype /Image\n")
-	appendIfAny(pdf, "/Filter", filterValue(obj.getFilters()))
+	appendIfAny(pdf, "/Filter", filters)
 	pdf.appendString("/Width ")
-	pdf.appendInteger(pixelsOf(imageSizeOf(obj, "/Width")))
+	pdf.appendInteger(width)
 	pdf.appendString("\n")
 	pdf.appendString("/Height ")
-	pdf.appendInteger(pixelsOf(imageSizeOf(obj, "/Height")))
+	pdf.appendInteger(height)
 	pdf.appendString("\n")
 	pdf.appendCopiedValue("/ColorSpace", colorSpace)
-	appendIfAny(pdf, "/BitsPerComponent", obj.GetValue("/BitsPerComponent"))
+	appendIfAny(pdf, "/BitsPerComponent", bitsPerComponent)
 	pdf.appendCopiedValue("/DecodeParms", decodeParms)
 	pdf.appendCopiedValue("/Decode", decode)
 	pdf.appendCopiedValue("/Matte", matte)
-	imageMask := obj.GetValue("/ImageMask")
-	if imageMask != "" {
-		pdf.appendString("/ImageMask ")
-		pdf.appendString(imageMask)
-		pdf.appendString("\n")
-	}
+	appendIfAny(pdf, "/ImageMask", imageMask)
+	appendIfAny(pdf, "/SMaskInData", smaskInData)
 	if softMask != 0 {
 		pdf.appendString("/SMask ")
 		pdf.appendInteger(softMask)

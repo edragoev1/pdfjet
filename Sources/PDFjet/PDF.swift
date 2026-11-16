@@ -2631,8 +2631,12 @@ public final class PDF {
                 inStreams[obj.number] = obj
             }
             numbered.merge(inStreams) { _, inStream in inStream }
+            // With the objects of the object streams, as in the other ports:
+            // the objects read so far had none, and the Identity /Crypt filter
+            // of a stream was not found in one.
+            let merged = ReadObjects(Array(numbered.values))
             for obj in deferred {
-                obj.readObjects = readSoFar     // For a /Filter that is an object of its own
+                obj.readObjects = merged        // For a /Filter that is an object of its own
                 try obj.setStreamAndData(&buffer1, try obj.getLength(numbered), decryptor, budget)
             }
         }

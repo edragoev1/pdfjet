@@ -391,12 +391,12 @@ func TestReview3TheReaderMakesNoUnchargedCopyOfAStream(t *testing.T) {
 	}
 }
 
-// An image of a PDF whose /Width is past an int32 takes the largest or the
-// smallest, as in Java and Swift: int of 1e19 was the smallest int64, and
-// 1e400 panicked (C8).
+// An image of a PDF whose /Width is past an int32 takes the largest, as in
+// Java and Swift: int of 1e19 was the smallest int64, and 1e400 panicked
+// (C8). One of less than a pixel is refused.
 func TestReview3AWidthPastAnIntTakesTheLargestInt32(t *testing.T) {
 	for width, pixels := range map[string]float32{
-		"1e19": math.MaxInt32, "1e400": math.MaxInt32, "-1e19": math.MinInt32, "12.7": 12} {
+		"1e19": math.MaxInt32, "1e400": math.MaxInt32, "12.7": 12} {
 		obj := newPDFobj()
 		obj.dict = []string{"<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"}
 		obj.stream = []byte{0} // an image object without one is refused
@@ -412,6 +412,20 @@ func TestReview3AWidthPastAnIntTakesTheLargestInt32(t *testing.T) {
 		func() {
 			defer func() {
 				if r := recover(); r != "The /Width of the image object is not a number: "+width {
+					t.Errorf("%q: %v", width, r)
+				}
+			}()
+			NewImageFromPDFobj(testNewPDF(), obj)
+		}()
+	}
+	// One of less than a pixel is refused
+	for _, width := range []string{"-1e19", "0"} {
+		obj := newPDFobj()
+		obj.dict = []string{"<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"}
+		obj.stream = []byte{0}
+		func() {
+			defer func() {
+				if r := recover(); r != "The /Width of the image object is not a positive number: "+width {
 					t.Errorf("%q: %v", width, r)
 				}
 			}()

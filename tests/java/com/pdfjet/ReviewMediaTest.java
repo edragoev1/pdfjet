@@ -295,6 +295,116 @@ class ReviewMediaTest {
         assertEquals("", pdfaCopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"));
     }
 
+    // Reads a PDF whose object 4 is the image object, with the objects after
+    // it, and copies the image into a document of the level. Returns the
+    // error, of the copy or of complete(), or "" and the document.
+    private static String[] copiedImage(Compliance level, String image, String... objects) throws Exception {
+        List<String> all = new ArrayList<String>(Arrays.asList(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+                image + "\nstream\nabcd\nendstream"));
+        all.addAll(Arrays.asList(objects));
+        List<PDFobj> read = TestSupport.read(PDFTest.pdfWithObjects(all.toArray(new String[0])));
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, level);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
+        try {
+            Image copy = new Image(pdf, read.get(3));
+            copy.setAltDescription("An image").setLocation(50f, 100f);
+            copy.drawOn(page);
+            pdf.complete();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return new String[] {e.getMessage(), ""};
+        }
+        return new String[] {"", new String(bos.toByteArray(), StandardCharsets.ISO_8859_1)};
+    }
+
+    // A PDF/A document refuses a copied image of LZWDecode, which ISO 19005
+    // forbids, as it refuses a CMYK one: it was copied as it was, and the
+    // document was not PDF/A.
+    @Test
+    void aPDFADocumentRefusesACopiedImageOfLZW() throws Exception {
+        String lzw = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 8 /Filter /LZWDecode /Length 4 >>";
+        String flate = lzw.replace("/LZWDecode", "/FlateDecode");
+        for (Compliance level : new Compliance[] {Compliance.PDF_A_1B, Compliance.PDF_A_2B}) {
+            assertEquals("A document of " + level + " cannot hold an image compressed with "
+                    + "/LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.",
+                    copiedImage(level, lzw)[0]);
+        }
+        // Its soft mask too, and an array of filters
+        assertEquals("A document of PDF_A_2B cannot hold an image compressed with "
+                + "/LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.",
+                copiedImage(Compliance.PDF_A_2B, flate.replace("/Length", "/SMask 5 0 R /Length"),
+                        lzw.replace("/LZWDecode", "[/ASCIIHexDecode /LZWDecode]") + "\nstream\nabcd\nendstream")[0]);
+        assertEquals("", copiedImage(Compliance.PDF_A_2B, flate)[0]);
+        String[] result = copiedImage(Compliance.PDF_1_7, lzw);
+        assertEquals("", result[0]);
+        assertTrue(result[1].contains("/Filter /LZWDecode\n"));
+    }
+
+    // /Width, /Height, /BitsPerComponent and /ImageMask in objects of their
+    // own, which ISO 32000-1 allows, are read from them: /Width 5 0 R was
+    // taken for 5, and the image written 5 pixels across.
+    @Test
+    void aCopiedImageHasItsValuesInObjectsRead() throws Exception {
+        String[] result = copiedImage(Compliance.PDF_1_7,
+                "<< /Type /XObject /Subtype /Image /Width 5 0 R /Height 6 0 R /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 7 0 R /Length 4 >>", "2", "1", "8");
+        assertEquals("", result[0]);
+        assertTrue(result[1].contains("/Width 2\n/Height 1\n/ColorSpace /DeviceGray\n/BitsPerComponent 8\n"));
+        result = copiedImage(Compliance.PDF_1_7,
+                "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ImageMask 5 0 R /Length 4 >>", "true");
+        assertEquals("", result[0]);
+        assertTrue(result[1].contains("/ImageMask true\n"));
+        assertEquals("The image refers to another object of the PDF it was read from, "
+                + "which is not copied with it: /Width 9 0 R",
+                copiedImage(Compliance.PDF_1_7,
+                        "<< /Type /XObject /Subtype /Image /Width 9 0 R /Height 2 /ImageMask true /Length 4 >>")[0]);
+    }
+
+    // A value of a copied image that it cannot have is refused: it was
+    // written as it was read, /Width -5, /BitsPerComponent ] and
+    // /Filter (x>>y), a string not encrypted when the document is.
+    @Test
+    void aCopiedImageWithAValueItCannotHaveIsRefused() throws Exception {
+        String image = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 8 /Length 4 >>";
+        String[][] cases = {
+            {"/Width -5", "The /Width of the image object is not a positive number: -5"},
+            {"/Height 0", "The /Height of the image object is not a positive number: 0"},
+            {"/Width 0.5", "The /Width of the image object is not a positive number: 0.5"},
+            {"/BitsPerComponent ]", "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: ]"},
+            {"/BitsPerComponent 3", "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: 3"},
+            {"/ImageMask 3", "The /ImageMask of the image object is not true or false: 3"},
+            {"/SMaskInData /Yes", "The /SMaskInData of the image object is not 0, 1 or 2: /Yes"},
+            {"/Filter (x>>y)", "The /Filter of the image object is not a name or an array of names: (x>>y)"},
+            {"/Filter [/FlateDecode 5]",
+                    "The /Filter of the image object is not a name or an array of names: /FlateDecode 5"},
+        };
+        for (String[] c : cases) {
+            assertEquals(c[1], copiedImage(Compliance.PDF_1_7, image.replace("<<", "<< " + c[0]))[0], c[0]);
+        }
+    }
+
+    // The /SMaskInData of a JPEG 2000 image, its alpha in its data, is
+    // copied: it was left out, and the image drawn opaque. PDF/A-1 refuses
+    // it as it does a soft mask.
+    @Test
+    void aCopiedJPEG2000ImageKeepsItsAlpha() throws Exception {
+        String image = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /Filter /JPXDecode /SMaskInData 1 /Length 4 >>";
+        String[] result = copiedImage(Compliance.PDF_1_7, image);
+        assertEquals("", result[0]);
+        assertTrue(result[1].contains("/SMaskInData 1\n"));
+        assertEquals("A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.",
+                copiedImage(Compliance.PDF_A_1B, image)[0]);
+    }
+
     interface Drawing {
         void draw(PDF pdf, Page page) throws Exception;
     }

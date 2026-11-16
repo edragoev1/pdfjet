@@ -181,13 +181,109 @@ final public class Image implements Drawable {
     // The number of the key, which is a number in decimal, with an exponent
     // or not, in the four ports: Java read 100f and hex, C# white space and
     // Infinity, Go inf, and Swift took any other text for 0 (review of
-    // 17 October 2026). One past a double is its infinity.
+    // 17 October 2026). One past a double is its infinity. It is a pixel or
+    // more: -5 and 0 were written as they were.
     private static double sizeOf(PDFobj obj, String key) {
-        String value = obj.getValue(key);
+        String value = copiedValue(obj, key);
         if (!Util.isDecimalNumber(value)) {
             throw new IllegalArgumentException("The " + key + " of the image object is not a number: " + value);
         }
-        return Double.parseDouble(value);
+        double number = Double.parseDouble(value);
+        if ((int) number < 1) {
+            throw new IllegalArgumentException(
+                    "The " + key + " of the image object is not a positive number: " + value);
+        }
+        return number;
+    }
+
+    // The value of the key of the image object, read from the object it
+    // refers to when it is a reference, which ISO 32000-1 7.3.10 allows:
+    // /Width 4 0 R was taken for 4.
+    private static String copiedValue(PDFobj obj, String key) {
+        List<String> tokens = obj.valueTokens(key);
+        if (PDF.isReference(tokens, 0)) {
+            PDFobj value = (obj.readObjects != null) ? obj.readObjects.get(Integer.parseInt(tokens.get(0))) : null;
+            if (value == null) {
+                throw new IllegalArgumentException(
+                        "The image refers to another object of the PDF it was read from, "
+                        + "which is not copied with it: " + key + " " + String.join(" ", tokens));
+            }
+            tokens = PDF.valueOf(value);
+        }
+        return String.join(" ", tokens);
+    }
+
+    // The value of the key of the image object, one of the values it can
+    // have, or "" when it has none: a value that is not one, as
+    // /BitsPerComponent ], was written as it was read.
+    private static String copiedEntry(PDFobj obj, String key, String... values) {
+        String value = copiedValue(obj, key);
+        if (!value.isEmpty() && !Arrays.asList(values).contains(value)) {
+            throw new IllegalArgumentException("The " + key + " of the image object is not "
+                    + String.join(", ", Arrays.asList(values).subList(0, values.length - 1))
+                    + " or " + values[values.length - 1] + ": " + value);
+        }
+        return value;
+    }
+
+    // The /BitsPerComponent of the image object, or "" when it has none.
+    private static String copiedBitsPerComponent(PDFobj obj) {
+        return copiedEntry(obj, "/BitsPerComponent", "1", "2", "4", "8", "16");
+    }
+
+    // The /SMaskInData of the image object, which says a JPEG 2000 image has
+    // its alpha in its data, or "" when it has none.
+    private static String copiedSMaskInData(PDFobj obj) {
+        return copiedEntry(obj, "/SMaskInData", "0", "1", "2");
+    }
+
+    // The filters of the image object, which are names: a string was written
+    // as it was read, not encrypted when the document is.
+    private static List<String> copiedFilters(PDFobj obj) {
+        List<String> filters = obj.getFilters();
+        for (String filter : filters) {
+            if (!filter.startsWith("/")) {
+                throw new IllegalArgumentException(
+                        "The /Filter of the image object is not a name or an array of names: "
+                        + String.join(" ", filters));
+            }
+        }
+        return filters;
+    }
+
+    // The filters of ISO 32000-1 Table 6 that a PDF/A document can hold: not
+    // LZWDecode, which ISO 19005 forbids, or Crypt.
+    private static final List<String> PDFA_FILTERS = Arrays.asList("/ASCIIHexDecode", "/ASCII85Decode",
+            "/FlateDecode", "/RunLengthDecode", "/CCITTFaxDecode", "/JBIG2Decode", "/DCTDecode", "/JPXDecode");
+
+    // Fails a PDF/A document that cannot hold the filters of the image object
+    // or of its masks: an image of LZWDecode, which older scans have, was
+    // copied into it as it was. The image is not decoded and compressed
+    // again, as PDFjet does not decode LZW.
+    private static void checkPDFAFilters(PDF pdf, PDFobj obj) {
+        Compliance level = pdf.getCompliance();
+        if (level == Compliance.PDF_1_7 || level == Compliance.PDF_UA_1) {
+            return;
+        }
+        List<PDFobj> images = new ArrayList<PDFobj>();
+        images.add(obj);
+        for (String key : new String[] {"/SMask", "/Mask"}) {
+            List<String> tokens = obj.valueTokens(key);
+            if (PDF.isReference(tokens, 0) && obj.readObjects != null) {
+                PDFobj mask = obj.readObjects.get(Integer.parseInt(tokens.get(0)));
+                if (mask != null) {
+                    images.add(mask);
+                }
+            }
+        }
+        for (PDFobj image : images) {
+            for (String filter : copiedFilters(image)) {
+                if (!PDFA_FILTERS.contains(filter)) {
+                    pdf.fail(new IllegalStateException("A document of " + level + " cannot hold an image compressed with "
+                            + filter + ": PDF/A forbids LZWDecode, Crypt and the filters that are not standard."));
+                }
+            }
+        }
     }
 
     /**
@@ -210,12 +306,16 @@ final public class Image implements Drawable {
         // an image made from a file: a soft mask went into PDF/A-1 once masks
         // were copied, and a CMYK image, or one of 16 bits, always had (the
         // review of 28 October 2026)
+        // A JPEG 2000 image with its alpha in its data has transparency too.
         List<String> softMaskTokens = obj.valueTokens("/SMask");
-        boolean hasSoftMask = !softMaskTokens.isEmpty()
-                && !(softMaskTokens.size() == 1 && softMaskTokens.get(0).equals("/None"));
+        String smaskInData = copiedSMaskInData(obj);
+        boolean hasSoftMask = (!softMaskTokens.isEmpty()
+                && !(softMaskTokens.size() == 1 && softMaskTokens.get(0).equals("/None")))
+                || (!smaskInData.isEmpty() && !smaskInData.equals("0"));
         checkPDFA(pdf, hasSoftMask ? new byte[0] : null,
                 obj.valueTokens("/ColorSpace").contains("/DeviceCMYK") ? "DeviceCMYK" : "",
                 bitsOf(obj));
+        checkPDFAFilters(pdf, obj);
         int softMask = copiedMask(pdf, obj, "/SMask");
         int mask = 0;
         List<String> maskArray = obj.valueTokens("/Mask");
@@ -231,7 +331,7 @@ final public class Image implements Drawable {
     // The bits per component of an image copied from another PDF, or 0.
     private static int bitsOf(PDFobj obj) {
         try {
-            return Integer.parseInt(obj.getValue("/BitsPerComponent"));
+            return Integer.parseInt(copiedBitsPerComponent(obj));
         } catch (NumberFormatException e) {
             return 0;
         }
@@ -306,28 +406,30 @@ final public class Image implements Drawable {
         if (obj.stream == null) {
             throw new IllegalArgumentException("The image object has no stream.");
         }
+        String filters = filterValue(copiedFilters(obj));
+        int width = (int) sizeOf(obj, "/Width");
+        int height = (int) sizeOf(obj, "/Height");
+        String bitsPerComponent = copiedBitsPerComponent(obj);
+        String imageMask = copiedEntry(obj, "/ImageMask", "true", "false");
+        String smaskInData = copiedSMaskInData(obj);    // The alpha of a JPEG 2000 image
         pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Image\n");
-        appendIfAny(pdf, "/Filter", filterValue(obj.getFilters()));
+        appendIfAny(pdf, "/Filter", filters);
         pdf.append("/Width ");
-        pdf.append((int) sizeOf(obj, "/Width"));
+        pdf.append(width);
         pdf.append('\n');
         pdf.append("/Height ");
-        pdf.append((int) sizeOf(obj, "/Height"));
+        pdf.append(height);
         pdf.append('\n');
         pdf.appendCopiedValue("/ColorSpace", colorSpace);
-        appendIfAny(pdf, "/BitsPerComponent", obj.getValue("/BitsPerComponent"));
+        appendIfAny(pdf, "/BitsPerComponent", bitsPerComponent);
         pdf.appendCopiedValue("/DecodeParms", decodeParms);
         pdf.appendCopiedValue("/Decode", decode);
         pdf.appendCopiedValue("/Matte", matte);
-        String imageMask = obj.getValue("/ImageMask");
-        if (!imageMask.equals("")) {
-            pdf.append("/ImageMask ");
-            pdf.append(imageMask);
-            pdf.append("\n");
-        }
+        appendIfAny(pdf, "/ImageMask", imageMask);
+        appendIfAny(pdf, "/SMaskInData", smaskInData);
         if (softMask != 0) {
             pdf.append("/SMask ");
             pdf.append(softMask);

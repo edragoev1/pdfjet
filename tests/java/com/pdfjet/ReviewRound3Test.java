@@ -333,21 +333,30 @@ class ReviewRound3Test {
     }
 
     /**
-     * An image of a PDF whose /Width is past an int takes the largest or the
-     * smallest, in every port: Go took the smallest int64, and C# the
-     * smallest int (C8).
+     * An image of a PDF whose /Width is past an int takes the largest, in
+     * every port: Go took the smallest int64, and C# the smallest int (C8).
+     * One of less than a pixel is refused.
      */
     @Test
     void aWidthPastAnIntTakesTheLargestInt() throws Exception {
         // NaN is no number of a PDF, and is refused (review of 17 October 2026)
-        String[] widths = {"1e19", "1e400", "-1e19", "12.7"};
-        float[] pixels = {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, 12f};
+        String[] widths = {"1e19", "1e400", "12.7"};
+        float[] pixels = {Integer.MAX_VALUE, Integer.MAX_VALUE, 12f};
         for (int i = 0; i < widths.length; i++) {
             PDFobj obj = new PDFobj();
             obj.dict = new ArrayList<String>(Arrays.asList(
                     "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", widths[i], "/Height", "1", ">>"));
             obj.stream = new byte[0];
             assertEquals(pixels[i], new Image(TestSupport.newPDF(), obj).getWidth(), widths[i]);
+        }
+        for (String width : new String[] {"-1e19", "0"}) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new ArrayList<String>(Arrays.asList(
+                    "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"));
+            obj.stream = new byte[0];
+            assertEquals("The /Width of the image object is not a positive number: " + width,
+                    assertThrows(IllegalArgumentException.class,
+                            () -> new Image(TestSupport.newPDF(), obj)).getMessage());
         }
     }
 

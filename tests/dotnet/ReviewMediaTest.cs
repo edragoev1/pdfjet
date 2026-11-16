@@ -298,6 +298,115 @@ public class ReviewMediaTest {
         Assert.Equal("", PDFACopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG"));
     }
 
+    // Reads a PDF whose object 4 is the image object, with the objects after
+    // it, and copies the image into a document of the level. Returns the
+    // error, of the copy or of Complete, or "" and the document.
+    private static string[] CopiedImage(Compliance level, string image, params string[] objects) {
+        List<string> all = new List<string> {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            image + "\nstream\nabcd\nendstream"};
+        all.AddRange(objects);
+        List<PDFobj> read = TestSupport.Read(PDFTest.PdfWithObjects(all.ToArray()));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, level);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.RepoPath(THAI));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Text").SetLocation(50f, 50f).DrawOn(page);
+        try {
+            new Image(pdf, read[3]).SetAltDescription("An image").SetLocation(50f, 100f).DrawOn(page);
+            pdf.Complete();
+        } catch (Exception e) when (e is InvalidDataException || e is NotSupportedException
+                || e is InvalidOperationException) {
+            return new string[] {e.Message, ""};
+        }
+        return new string[] {"", TestSupport.Latin1(stream.ToArray())};
+    }
+
+    // A PDF/A document refuses a copied image of LZWDecode, which ISO 19005
+    // forbids, as it refuses a CMYK one: it was copied as it was, and the
+    // document was not PDF/A.
+    [Fact]
+    public void APDFADocumentRefusesACopiedImageOfLZW() {
+        string lzw = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 8 /Filter /LZWDecode /Length 4 >>";
+        string flate = lzw.Replace("/LZWDecode", "/FlateDecode");
+        foreach (Compliance level in new Compliance[] {Compliance.PDF_A_1B, Compliance.PDF_A_2B}) {
+            Assert.Equal("A document of " + level + " cannot hold an image compressed with "
+                    + "/LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.",
+                    CopiedImage(level, lzw)[0]);
+        }
+        // Its soft mask too, and an array of filters
+        Assert.Equal("A document of PDF_A_2B cannot hold an image compressed with "
+                + "/LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.",
+                CopiedImage(Compliance.PDF_A_2B, flate.Replace("/Length", "/SMask 5 0 R /Length"),
+                        lzw.Replace("/LZWDecode", "[/ASCIIHexDecode /LZWDecode]") + "\nstream\nabcd\nendstream")[0]);
+        Assert.Equal("", CopiedImage(Compliance.PDF_A_2B, flate)[0]);
+        string[] result = CopiedImage(Compliance.PDF_1_7, lzw);
+        Assert.Equal("", result[0]);
+        Assert.Contains("/Filter /LZWDecode\n", result[1]);
+    }
+
+    // /Width, /Height, /BitsPerComponent and /ImageMask in objects of their
+    // own, which ISO 32000-1 allows, are read from them: /Width 5 0 R was
+    // taken for 5, and the image written 5 pixels across.
+    [Fact]
+    public void ACopiedImageHasItsValuesInObjectsRead() {
+        string[] result = CopiedImage(Compliance.PDF_1_7,
+                "<< /Type /XObject /Subtype /Image /Width 5 0 R /Height 6 0 R /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 7 0 R /Length 4 >>", "2", "1", "8");
+        Assert.Equal("", result[0]);
+        Assert.Contains("/Width 2\n/Height 1\n/ColorSpace /DeviceGray\n/BitsPerComponent 8\n", result[1]);
+        result = CopiedImage(Compliance.PDF_1_7,
+                "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ImageMask 5 0 R /Length 4 >>", "true");
+        Assert.Equal("", result[0]);
+        Assert.Contains("/ImageMask true\n", result[1]);
+        Assert.Equal("The image refers to another object of the PDF it was read from, "
+                + "which is not copied with it: /Width 9 0 R",
+                CopiedImage(Compliance.PDF_1_7,
+                        "<< /Type /XObject /Subtype /Image /Width 9 0 R /Height 2 /ImageMask true /Length 4 >>")[0]);
+    }
+
+    // A value of a copied image that it cannot have is refused: it was
+    // written as it was read, /Width -5, /BitsPerComponent ] and
+    // /Filter (x>>y), a string not encrypted when the document is.
+    [Fact]
+    public void ACopiedImageWithAValueItCannotHaveIsRefused() {
+        string image = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 8 /Length 4 >>";
+        string[][] cases = {
+            new[] {"/Width -5", "The /Width of the image object is not a positive number: -5"},
+            new[] {"/Height 0", "The /Height of the image object is not a positive number: 0"},
+            new[] {"/Width 0.5", "The /Width of the image object is not a positive number: 0.5"},
+            new[] {"/BitsPerComponent ]", "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: ]"},
+            new[] {"/BitsPerComponent 3", "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: 3"},
+            new[] {"/ImageMask 3", "The /ImageMask of the image object is not true or false: 3"},
+            new[] {"/SMaskInData /Yes", "The /SMaskInData of the image object is not 0, 1 or 2: /Yes"},
+            new[] {"/Filter (x>>y)", "The /Filter of the image object is not a name or an array of names: (x>>y)"},
+            new[] {"/Filter [/FlateDecode 5]",
+                    "The /Filter of the image object is not a name or an array of names: /FlateDecode 5"},
+        };
+        foreach (string[] c in cases) {
+            Assert.Equal(c[1], CopiedImage(Compliance.PDF_1_7, image.Replace("<<", "<< " + c[0]))[0]);
+        }
+    }
+
+    // The /SMaskInData of a JPEG 2000 image, its alpha in its data, is
+    // copied: it was left out, and the image drawn opaque. PDF/A-1 refuses
+    // it as it does a soft mask.
+    [Fact]
+    public void ACopiedJPEG2000ImageKeepsItsAlpha() {
+        string image = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /Filter /JPXDecode /SMaskInData 1 /Length 4 >>";
+        string[] result = CopiedImage(Compliance.PDF_1_7, image);
+        Assert.Equal("", result[0]);
+        Assert.Contains("/SMaskInData 1\n", result[1]);
+        Assert.Equal("A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.",
+                CopiedImage(Compliance.PDF_A_1B, image)[0]);
+    }
+
     // The message that a document of the compliance that draws fails with, or
     // "" when it is completed, and the content of its page.
     internal static string[] PDFADrawError(Compliance compliance, Action<PDF, Page> draw) {

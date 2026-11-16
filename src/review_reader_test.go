@@ -766,27 +766,55 @@ func TestReviewReaderANullCryptInAnArrayThatIsReadIsIdentity(t *testing.T) {
 // /Length in object 5, an object of an object stream, as pdfTeX and
 // Ghostscript write them, and a cross-reference stream.
 func testPDFWithLengthInObjectStream(content string) []byte {
+	return testPDFWithObjectStream(content, false)
+}
+
+// testEncryptedEntries is the encryption dictionary of a PDF that opens with
+// no password, AES-256.
+const testEncryptedEntries = "/Encrypt << /Filter /Standard /V 5 /R 6 /Length 256 " +
+	"/CF << /StdCF << /CFM /AESV3 /Length 32 /AuthEvent /DocOpen >> >> /StmF /StdCF /StrF /StdCF " +
+	"/U <aa295faff5c95a3f43f8a01dae63229d9cced7deec8d0bb3038589a154b2669252f5acd56ab399ff404fec4510cbe895> " +
+	"/O <20d537fd0d0757be555c12d78adf3ccfcf9959f4974ed36d474aefe901d6718289f09bc6472911bf81ef6436c9f41759> " +
+	"/UE <4205fd1547f1c377fa3f1e207be798e10ddbc7ce76891fb32384fa908c12133a> " +
+	"/OE <4080e0ded9493f23689e2c837123c9ba12fe95e88ddc9af5c4329c3989fae720> " +
+	"/P -3900 /Perms <b885019ae5ffa53c2a399d8ccc2cfc54> >> " +
+	"/ID [<c45a96583887485cf030e89bbe46f89b> <c45a96583887485cf030e89bbe46f89b>] "
+
+// testPDFWithObjectStream returns the PDF of testPDFWithLengthInObjectStream,
+// or one encrypted whose page content and object stream are not, with the
+// Identity /Crypt filter, the content's filter in object 8 of the object
+// stream.
+func testPDFWithObjectStream(content string, encrypted bool) []byte {
 	inStream := map[int]string{
 		1: "<< /Type /Catalog /Pages 2 0 R >>",
 		2: "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>",
 		3: "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
 		5: fmt.Sprint(len(content)),
+		8: "/Crypt",
+	}
+	numbers := []int{1, 2, 3, 5}
+	indexes := []int{-1, 0, 1, 2, -1, 3, -1, -1} // Of each object in the object stream, or -1
+	contentEntries, streamEntries, trailerEntries := "", "", ""
+	if encrypted {
+		numbers = append(numbers, 8)
+		indexes = append(indexes, 4)
+		contentEntries, streamEntries, trailerEntries = "/Filter 8 0 R ", "/Filter /Crypt ", testEncryptedEntries
 	}
 	var sb strings.Builder
 	sb.WriteString("%PDF-1.7\n")
 	offsets := map[int]int{4: sb.Len()}
-	fmt.Fprintf(&sb, "4 0 obj\n<< /Length 5 0 R >>\nstream\n%s\nendstream\nendobj\n", content)
+	fmt.Fprintf(&sb, "4 0 obj\n<< /Length 5 0 R %s>>\nstream\n%s\nendstream\nendobj\n", contentEntries, content)
 	var header, body strings.Builder
-	for _, number := range []int{1, 2, 3, 5} {
+	for _, number := range numbers {
 		fmt.Fprintf(&header, "%d %d ", number, body.Len())
 		body.WriteString(inStream[number] + "\n")
 	}
 	offsets[6] = sb.Len()
-	fmt.Fprintf(&sb, "6 0 obj\n<< /Type /ObjStm /N 4 /First %d /Length %d >>\nstream\n%s%s\nendstream\nendobj\n",
-		header.Len(), header.Len()+body.Len(), header.String(), body.String())
+	fmt.Fprintf(&sb, "6 0 obj\n<< /Type /ObjStm /N %d /First %d %s/Length %d >>\nstream\n%s%s\nendstream\nendobj\n",
+		len(numbers), header.Len(), streamEntries, header.Len()+body.Len(), header.String(), body.String())
 	offsets[7] = sb.Len()
 	var rows bytes.Buffer
-	for number, index := range []int{-1, 0, 1, 2, -1, 3, -1, -1} {
+	for number, index := range indexes {
 		switch {
 		case number == 0:
 			rows.Write([]byte{0, 0, 0, 0, 0, 0xff, 0xff})
@@ -797,8 +825,8 @@ func testPDFWithLengthInObjectStream(content string) []byte {
 			rows.Write([]byte{2, 0, 0, 0, 6, 0, byte(index)})
 		}
 	}
-	fmt.Fprintf(&sb, "7 0 obj\n<< /Type /XRef /Size 8 /W [1 4 2] /Root 1 0 R /Length %d >>\nstream\n%s\nendstream\nendobj\n",
-		rows.Len(), rows.String())
+	fmt.Fprintf(&sb, "7 0 obj\n<< /Type /XRef /Size %d /W [1 4 2] /Root 1 0 R %s/Length %d >>\nstream\n%s\nendstream\nendobj\n",
+		len(indexes), trailerEntries, rows.Len(), rows.String())
 	fmt.Fprintf(&sb, "startxref\n%d\n%%%%EOF\n", offsets[7])
 	return []byte(sb.String())
 }
@@ -814,6 +842,15 @@ func TestReviewReaderALengthInAnObjectStreamIsTheLengthOfTheStream(t *testing.T)
 		objects := testRead(t, testPDFWithLengthInObjectStream(content))
 		testWant(t, content, string(objects[3].GetData()))
 	}
+}
+
+func TestReviewReaderTheFilterOfAStreamWithItsLengthInAnObjectStreamIsFound(t *testing.T) {
+	// Swift looked for the /Filter in the objects read before the object
+	// streams, did not find the Identity /Crypt filter in one, and decrypted
+	// the stream, which is not encrypted.
+	content := "BT /F1 12 Tf 72 700 Td (a endstream b) Tj ET\n"
+	objects := testRead(t, testPDFWithObjectStream(content, true))
+	testWant(t, content, string(objects[3].GetData()))
 }
 
 func TestReviewReaderTheEmptyObjectsUpToAHighNumberAreTakenFromTheBudget(t *testing.T) {

@@ -697,29 +697,57 @@ import Testing
     // of an object stream, as pdfTeX and Ghostscript write them, and a
     // cross-reference stream.
     private func pdfWithLengthInObjectStream(_ content: String) -> [UInt8] {
+        return pdfWithObjectStream(content, false)
+    }
+
+    // The encryption dictionary of a PDF that opens with no password, AES-256.
+    private static let encryptedEntries = "/Encrypt << /Filter /Standard /V 5 /R 6 /Length 256 "
+            + "/CF << /StdCF << /CFM /AESV3 /Length 32 /AuthEvent /DocOpen >> >> /StmF /StdCF /StrF /StdCF "
+            + "/U <aa295faff5c95a3f43f8a01dae63229d9cced7deec8d0bb3038589a154b2669252f5acd56ab399ff404fec4510cbe895> "
+            + "/O <20d537fd0d0757be555c12d78adf3ccfcf9959f4974ed36d474aefe901d6718289f09bc6472911bf81ef6436c9f41759> "
+            + "/UE <4205fd1547f1c377fa3f1e207be798e10ddbc7ce76891fb32384fa908c12133a> "
+            + "/OE <4080e0ded9493f23689e2c837123c9ba12fe95e88ddc9af5c4329c3989fae720> "
+            + "/P -3900 /Perms <b885019ae5ffa53c2a399d8ccc2cfc54> >> "
+            + "/ID [<c45a96583887485cf030e89bbe46f89b> <c45a96583887485cf030e89bbe46f89b>] "
+
+    // Returns the PDF of pdfWithLengthInObjectStream, or one encrypted whose
+    // page content and object stream are not, with the Identity /Crypt
+    // filter, the content's filter in object 8 of the object stream.
+    private func pdfWithObjectStream(_ content: String, _ encrypted: Bool) -> [UInt8] {
         let inStream = [
-            "<< /Type /Catalog /Pages 2 0 R >>",
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>",
-            "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
-            String(content.utf8.count),
+            1: "<< /Type /Catalog /Pages 2 0 R >>",
+            2: "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>",
+            3: "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
+            5: String(content.utf8.count),
+            8: "/Crypt",
         ]
-        let numbers = [1, 2, 3, 5]
+        var numbers = [1, 2, 3, 5]
+        var index = [-1, 0, 1, 2, -1, 3, -1, -1]   // Of each object in the object stream, or -1
+        var contentEntries = ""
+        var streamEntries = ""
+        var trailerEntries = ""
+        if encrypted {
+            numbers.append(8)
+            index.append(4)
+            contentEntries = "/Filter 8 0 R "
+            streamEntries = "/Filter /Crypt "
+            trailerEntries = Self.encryptedEntries
+        }
         var out = TestSupport.bytes("%PDF-1.7\n")
         let offset4 = out.count
-        out += TestSupport.bytes("4 0 obj\n<< /Length 5 0 R >>\nstream\n\(content)\nendstream\nendobj\n")
+        out += TestSupport.bytes("4 0 obj\n<< /Length 5 0 R \(contentEntries)>>\nstream\n\(content)\nendstream\nendobj\n")
         var header = ""
         var body = ""
-        for (i, number) in numbers.enumerated() {
+        for number in numbers {
             header += "\(number) \(body.utf8.count) "
-            body += inStream[i] + "\n"
+            body += inStream[number]! + "\n"
         }
         let offset6 = out.count
-        out += TestSupport.bytes("6 0 obj\n<< /Type /ObjStm /N 4 /First \(header.utf8.count)"
-                + " /Length \(header.utf8.count + body.utf8.count) >>\nstream\n"
+        out += TestSupport.bytes("6 0 obj\n<< /Type /ObjStm /N \(numbers.count) /First \(header.utf8.count) "
+                + streamEntries + "/Length \(header.utf8.count + body.utf8.count) >>\nstream\n"
                 + header + body + "\nendstream\nendobj\n")
         let offset7 = out.count
-        let index = [-1, 0, 1, 2, -1, 3, -1, -1]
-        let offsets = [0, 0, 0, 0, offset4, 0, offset6, offset7]
+        let offsets = [0, 0, 0, 0, offset4, 0, offset6, offset7, 0]
         var rows = [UInt8]()
         for number in 0..<index.count {
             if number == 0 {
@@ -732,8 +760,8 @@ import Testing
                 rows += [2, 0, 0, 0, 6, 0, UInt8(index[number])]
             }
         }
-        out += TestSupport.bytes("7 0 obj\n<< /Type /XRef /Size 8 /W [1 4 2] /Root 1 0 R /Length "
-                + "\(rows.count) >>\nstream\n")
+        out += TestSupport.bytes("7 0 obj\n<< /Type /XRef /Size \(index.count) /W [1 4 2] /Root 1 0 R "
+                + trailerEntries + "/Length \(rows.count) >>\nstream\n")
         out += rows
         out += TestSupport.bytes("\nendstream\nendobj\nstartxref\n\(offset7)\n%%EOF\n")
         return out
@@ -750,6 +778,15 @@ import Testing
             let objects = try TestSupport.read(pdfWithLengthInObjectStream(content))
             #expect(TestSupport.latin1(objects[3].getData()) == content)
         }
+    }
+
+    @Test func theFilterOfAStreamWithItsLengthInAnObjectStreamIsFound() throws {
+        // Swift looked for the /Filter in the objects read before the object
+        // streams, did not find the Identity /Crypt filter in one, and
+        // decrypted the stream, which is not encrypted.
+        let content = "BT /F1 12 Tf 72 700 Td (a endstream b) Tj ET\n"
+        let objects = try TestSupport.read(pdfWithObjectStream(content, true))
+        #expect(TestSupport.latin1(objects[3].getData()) == content)
     }
 
     @Test func theEmptyObjectsUpToAHighNumberAreTakenFromTheBudget() throws {

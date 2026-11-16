@@ -282,13 +282,13 @@ public class ReviewRound3Test {
         Assert.Equal(new byte[] {0xF0, 0x9F, 0x98, 0x80, 0xEF, 0xBF, 0xBD}, SASLprep.Truncate("\uD83D\uDE00\uDC00"));
     }
 
-    // An image of a PDF whose /Width is past an int takes the largest or the
-    // smallest, in every port: Go took the smallest int64, and C# the
-    // smallest int (C8).
+    // An image of a PDF whose /Width is past an int takes the largest, in
+    // every port: Go took the smallest int64, and C# the smallest int (C8).
+    // One of less than a pixel is refused.
     [Fact]
     public void AWidthPastAnIntTakesTheLargestInt() {
-        string[] widths = {"1e19", "1e400", "-1e19", "12.7"};
-        float[] pixels = {int.MaxValue, int.MaxValue, int.MinValue, 12f};
+        string[] widths = {"1e19", "1e400", "12.7"};
+        float[] pixels = {int.MaxValue, int.MaxValue, 12f};
         for (int i = 0; i < widths.Length; i++) {
             PDFobj obj = new PDFobj();
             obj.dict = new List<string> {
@@ -303,6 +303,15 @@ public class ReviewRound3Test {
                 "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"};
             obj.stream = new byte[0];
             Assert.Equal("The /Width of the image object is not a number: " + width,
+                    Assert.Throws<InvalidDataException>(() => new Image(TestSupport.NewPDF(), obj)).Message);
+        }
+        // One of less than a pixel is refused
+        foreach (string width in new[] {"-1e19", "0"}) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new List<string> {
+                "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"};
+            obj.stream = new byte[0];
+            Assert.Equal("The /Width of the image object is not a positive number: " + width,
                     Assert.Throws<InvalidDataException>(() => new Image(TestSupport.NewPDF(), obj)).Message);
         }
     }

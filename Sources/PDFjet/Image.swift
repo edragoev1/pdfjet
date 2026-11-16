@@ -197,11 +197,17 @@ public class Image : Drawable {
         // an image made from a file: a soft mask went into PDF/A-1 once masks
         // were copied, and a CMYK image, or one of 16 bits, always had (the
         // review of 28 October 2026)
+        // A JPEG 2000 image with its alpha in its data has transparency too.
         let softMaskTokens = obj.valueTokens("/SMask")
-        let hasSoftMask = !softMaskTokens.isEmpty && softMaskTokens != ["/None"]
+        let smaskInData = try Image.copiedSMaskInData(obj)
+        let hasSoftMask = (!softMaskTokens.isEmpty && softMaskTokens != ["/None"])
+                || (!smaskInData.isEmpty && smaskInData != "0")
         if !isPDFA(pdf, hasSoftMask ? [0] : [],
                 obj.valueTokens("/ColorSpace").contains("/DeviceCMYK") ? "DeviceCMYK" : "",
-                Int(obj.getValue("/BitsPerComponent")) ?? 0) {
+                Int(try Image.copiedBitsPerComponent(obj)) ?? 0) {
+            return
+        }
+        if try !Image.copiedFiltersArePDFA(pdf, obj) {
             return
         }
         let softMask = try Image.copiedMask(pdf, obj, "/SMask")
@@ -276,28 +282,30 @@ public class Image : Drawable {
         guard obj.stream != nil else {
             throw PDFjetError(message: "The image object has no stream.")
         }
+        let filters = filterValue(try copiedFilters(obj))
+        let width = pixels(try sizeOf(obj, "/Width"))
+        let height = pixels(try sizeOf(obj, "/Height"))
+        let bitsPerComponent = try copiedBitsPerComponent(obj)
+        let imageMask = try copiedEntry(obj, "/ImageMask", "true", "false")
+        let smaskInData = try copiedSMaskInData(obj)   // The alpha of a JPEG 2000 image
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
-        appendIfAny(pdf, "/Filter", filterValue(obj.getFilters()))
+        appendIfAny(pdf, "/Filter", filters)
         pdf.append("/Width ")
-        pdf.append(pixels(try sizeOf(obj, "/Width")))
+        pdf.append(width)
         pdf.append("\n")
         pdf.append("/Height ")
-        pdf.append(pixels(try sizeOf(obj, "/Height")))
+        pdf.append(height)
         pdf.append("\n")
         appendCopiedValue(pdf, "/ColorSpace", colorSpace)
-        appendIfAny(pdf, "/BitsPerComponent", obj.getValue("/BitsPerComponent"))
+        appendIfAny(pdf, "/BitsPerComponent", bitsPerComponent)
         appendCopiedValue(pdf, "/DecodeParms", decodeParms)
         appendCopiedValue(pdf, "/Decode", decode)
         appendCopiedValue(pdf, "/Matte", matte)
-        let imageMask = obj.getValue("/ImageMask")
-        if imageMask != "" {
-            pdf.append("/ImageMask ")
-            pdf.append(imageMask)
-            pdf.append("\n")
-        }
+        appendIfAny(pdf, "/ImageMask", imageMask)
+        appendIfAny(pdf, "/SMaskInData", smaskInData)
         if softMask != 0 {
             pdf.append("/SMask ")
             pdf.append(softMask)
@@ -349,13 +357,99 @@ public class Image : Drawable {
     // The number of the key, which is a number in decimal, with an exponent
     // or not, in the four ports: Java read 100f and hex, C# white space and
     // Infinity, Go inf, and Swift took any other text for 0 (review of
-    // 17 October 2026). One past a double is its infinity.
+    // 17 October 2026). One past a double is its infinity. It is a pixel or
+    // more: -5 and 0 were written as they were.
     private static func sizeOf(_ obj: PDFobj, _ key: String) throws -> Double {
-        let value = obj.getValue(key)
+        let value = try copiedValue(obj, key)
         guard Util.isDecimalNumber(value), let number = Double(value) else {
             throw PDFjetError(message: "The \(key) of the image object is not a number: \(value)")
         }
+        if pixels(number) < 1 {
+            throw PDFjetError(message: "The \(key) of the image object is not a positive number: \(value)")
+        }
         return number
+    }
+
+    // The value of the key of the image object, read from the object it
+    // refers to when it is a reference, which ISO 32000-1 7.3.10 allows:
+    // /Width 4 0 R was taken for 4.
+    private static func copiedValue(_ obj: PDFobj, _ key: String) throws -> String {
+        var tokens = obj.valueTokens(key)
+        if PDF.isReference(tokens, 0) {
+            guard let value = obj.readObjects?.object(Int(tokens[0]) ?? 0) else {
+                throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
+                        + "which is not copied with it: " + key + " " + tokens.joined(separator: " "))
+            }
+            tokens = PDF.valueOf(value)
+        }
+        return tokens.joined(separator: " ")
+    }
+
+    // The value of the key of the image object, one of the values it can
+    // have, or "" when it has none: a value that is not one, as
+    // /BitsPerComponent ], was written as it was read.
+    private static func copiedEntry(_ obj: PDFobj, _ key: String, _ values: String...) throws -> String {
+        let value = try copiedValue(obj, key)
+        if !value.isEmpty && !values.contains(value) {
+            throw PDFjetError(message: "The " + key + " of the image object is not "
+                    + values.dropLast().joined(separator: ", ") + " or " + values[values.count - 1] + ": " + value)
+        }
+        return value
+    }
+
+    // The /BitsPerComponent of the image object, or "" when it has none.
+    private static func copiedBitsPerComponent(_ obj: PDFobj) throws -> String {
+        return try copiedEntry(obj, "/BitsPerComponent", "1", "2", "4", "8", "16")
+    }
+
+    // The /SMaskInData of the image object, which says a JPEG 2000 image has
+    // its alpha in its data, or "" when it has none.
+    private static func copiedSMaskInData(_ obj: PDFobj) throws -> String {
+        return try copiedEntry(obj, "/SMaskInData", "0", "1", "2")
+    }
+
+    // The filters of the image object, which are names: a string was written
+    // as it was read, not encrypted when the document is.
+    private static func copiedFilters(_ obj: PDFobj) throws -> [String] {
+        let filters = obj.getFilters()
+        for filter in filters where !filter.hasPrefix("/") {
+            throw PDFjetError(message: "The /Filter of the image object is not a name or an array of names: "
+                    + filters.joined(separator: " "))
+        }
+        return filters
+    }
+
+    // The filters of ISO 32000-1 Table 6 that a PDF/A document can hold: not
+    // LZWDecode, which ISO 19005 forbids, or Crypt.
+    private static let pdfAFilters = ["/ASCIIHexDecode", "/ASCII85Decode", "/FlateDecode", "/RunLengthDecode",
+            "/CCITTFaxDecode", "/JBIG2Decode", "/DCTDecode", "/JPXDecode"]
+
+    // Whether a PDF/A document can hold the filters of the image object and
+    // of its masks; it fails the document when it cannot: an image of
+    // LZWDecode, which older scans have, was copied into it as it was. The
+    // image is not decoded and compressed again, as PDFjet does not decode
+    // LZW.
+    private static func copiedFiltersArePDFA(_ pdf: PDF, _ obj: PDFobj) throws -> Bool {
+        let level = pdf.compliance
+        if level == Compliance.PDF_1_7 || level == Compliance.PDF_UA_1 {
+            return true
+        }
+        var images = [obj]
+        for key in ["/SMask", "/Mask"] {
+            let tokens = obj.valueTokens(key)
+            if PDF.isReference(tokens, 0), let number = Int(tokens[0]),
+                    let mask = obj.masks[number] ?? obj.readObjects?.object(number) {
+                images.append(mask)
+            }
+        }
+        for image in images {
+            for filter in try copiedFilters(image) where !pdfAFilters.contains(filter) {
+                pdf.fail("A document of \(level) cannot hold an image compressed with \(filter): "
+                        + "PDF/A forbids LZWDecode, Crypt and the filters that are not standard.")
+                return false
+            }
+        }
+        return true
     }
 
     private static func pixels(_ number: Double) -> Int {

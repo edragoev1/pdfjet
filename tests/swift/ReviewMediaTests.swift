@@ -263,6 +263,114 @@ import Testing
         #expect(try pdfACopyError(Compliance.PDF_A_1B, "tests/data/PngSuite/BASN2C08.PNG") == "")
     }
 
+    // Reads a PDF whose object 4 is the image object, with the objects after
+    // it, and copies the image into a document of the level. Returns the
+    // error, of the copy or of complete(), or "" and the document.
+    func copiedImage(_ level: Compliance, _ image: String, _ objects: String...) throws -> (String, String) {
+        let read = try TestSupport.read(TestSupport.pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            image + "\nstream\nabcd\nendstream"] + objects))
+        let memory = MemoryPDF(level)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(ReviewMediaTests.trueTypeFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "Text").setLocation(50, 50).drawOn(page)
+        do {
+            try Image(pdf, read[3]).setAltDescription("An image").setLocation(50, 100).drawOn(page)
+            try pdf.complete()
+        } catch {
+            return (TestSupport.message(error), "")
+        }
+        return ("", TestSupport.latin1(memory.bytes))
+    }
+
+    // A PDF/A document refuses a copied image of LZWDecode, which ISO 19005
+    // forbids, as it refuses a CMYK one: it was copied as it was, and the
+    // document was not PDF/A.
+    @Test
+    func aPDFADocumentRefusesACopiedImageOfLZW() throws {
+        let failed = "The PDF was not completed because of an earlier error: "
+        let lzw = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 8 /Filter /LZWDecode /Length 4 >>"
+        let flate = lzw.replacingOccurrences(of: "/LZWDecode", with: "/FlateDecode")
+        for level in [Compliance.PDF_A_1B, Compliance.PDF_A_2B] {
+            #expect(try copiedImage(level, lzw).0 == failed + "A document of \(level) cannot hold an image "
+                    + "compressed with /LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.")
+        }
+        // Its soft mask too, and an array of filters
+        #expect(try copiedImage(Compliance.PDF_A_2B,
+                flate.replacingOccurrences(of: "/Length", with: "/SMask 5 0 R /Length"),
+                lzw.replacingOccurrences(of: "/LZWDecode", with: "[/ASCIIHexDecode /LZWDecode]")
+                + "\nstream\nabcd\nendstream").0 == failed + "A document of PDF_A_2B cannot hold an image "
+                + "compressed with /LZWDecode: PDF/A forbids LZWDecode, Crypt and the filters that are not standard.")
+        #expect(try copiedImage(Compliance.PDF_A_2B, flate).0 == "")
+        let (message, written) = try copiedImage(Compliance.PDF_1_7, lzw)
+        #expect(message == "")
+        #expect(written.contains("/Filter /LZWDecode\n"))
+    }
+
+    // /Width, /Height, /BitsPerComponent and /ImageMask in objects of their
+    // own, which ISO 32000-1 allows, are read from them: /Width 5 0 R was
+    // taken for 5, and the image written 5 pixels across.
+    @Test
+    func aCopiedImageHasItsValuesInObjectsRead() throws {
+        var (message, written) = try copiedImage(Compliance.PDF_1_7,
+                "<< /Type /XObject /Subtype /Image /Width 5 0 R /Height 6 0 R /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 7 0 R /Length 4 >>", "2", "1", "8")
+        #expect(message == "")
+        #expect(written.contains("/Width 2\n/Height 1\n/ColorSpace /DeviceGray\n/BitsPerComponent 8\n"))
+        (message, written) = try copiedImage(Compliance.PDF_1_7,
+                "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ImageMask 5 0 R /Length 4 >>", "true")
+        #expect(message == "")
+        #expect(written.contains("/ImageMask true\n"))
+        #expect(try copiedImage(Compliance.PDF_1_7,
+                "<< /Type /XObject /Subtype /Image /Width 9 0 R /Height 2 /ImageMask true /Length 4 >>").0
+                == "The image refers to another object of the PDF it was read from, "
+                + "which is not copied with it: /Width 9 0 R")
+    }
+
+    // A value of a copied image that it cannot have is refused: it was
+    // written as it was read, /Width -5, /BitsPerComponent ] and
+    // /Filter (x>>y), a string not encrypted when the document is.
+    @Test
+    func aCopiedImageWithAValueItCannotHaveIsRefused() throws {
+        let image = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceGray "
+                + "/BitsPerComponent 8 /Length 4 >>"
+        let cases = [
+            ("/Width -5", "The /Width of the image object is not a positive number: -5"),
+            ("/Height 0", "The /Height of the image object is not a positive number: 0"),
+            ("/Width 0.5", "The /Width of the image object is not a positive number: 0.5"),
+            ("/BitsPerComponent ]", "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: ]"),
+            ("/BitsPerComponent 3", "The /BitsPerComponent of the image object is not 1, 2, 4, 8 or 16: 3"),
+            ("/ImageMask 3", "The /ImageMask of the image object is not true or false: 3"),
+            ("/SMaskInData /Yes", "The /SMaskInData of the image object is not 0, 1 or 2: /Yes"),
+            ("/Filter (x>>y)", "The /Filter of the image object is not a name or an array of names: (x>>y)"),
+            ("/Filter [/FlateDecode 5]",
+                    "The /Filter of the image object is not a name or an array of names: /FlateDecode 5"),
+        ]
+        for (entry, want) in cases {
+            #expect(try copiedImage(Compliance.PDF_1_7,
+                    image.replacingOccurrences(of: "<<", with: "<< " + entry)).0 == want, "\(entry)")
+        }
+    }
+
+    // The /SMaskInData of a JPEG 2000 image, its alpha in its data, is
+    // copied: it was left out, and the image drawn opaque. PDF/A-1 refuses
+    // it as it does a soft mask.
+    @Test
+    func aCopiedJPEG2000ImageKeepsItsAlpha() throws {
+        let image = "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /Filter /JPXDecode /SMaskInData 1 /Length 4 >>"
+        let (message, written) = try copiedImage(Compliance.PDF_1_7, image)
+        #expect(message == "")
+        #expect(written.contains("/SMaskInData 1\n"))
+        #expect(try copiedImage(Compliance.PDF_A_1B, image).0 == "The PDF was not completed because of an earlier error: "
+                + "A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.")
+    }
+
     // The error of completing a document of the compliance that draws, or ""
     // when it completes, and the content of its page.
     static func pdfADrawError(_ level: Compliance, _ draw: (PDF, Page) throws -> Void) throws -> (String, String) {

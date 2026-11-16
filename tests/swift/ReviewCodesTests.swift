@@ -344,8 +344,7 @@ import Testing
     // /Width is past an Int, text too long for a Data Matrix symbol, and
     // getFitChars of a CJK font for a width that is not a number.
     @Test func imageAWidthPastAnIntTakesTheLargestInt32() throws {
-        for (width, pixels) in [("1e19", Int(Int32.max)), ("1e400", Int(Int32.max)),
-                                ("-1e19", Int(Int32.min)), ("12.7", 12)] {
+        for (width, pixels) in [("1e19", Int(Int32.max)), ("1e400", Int(Int32.max)), ("12.7", 12)] {
             let obj = PDFobj()
             obj.dict = ["<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width,
                         "/Height", "1", ">>"]
@@ -364,6 +363,19 @@ import Testing
                 Issue.record("\(width) is read")
             } catch {
                 #expect(TestSupport.message(error) == "The /Width of the image object is not a number: \(width)")
+            }
+        }
+        // One of less than a pixel is refused
+        for width in ["-1e19", "0"] {
+            let obj = PDFobj()
+            obj.dict = ["<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width,
+                        "/Height", "1", ">>"]
+            obj.stream = [0]
+            do {
+                _ = try Image(TestSupport.newPDF(), obj)
+                Issue.record("\(width) is read")
+            } catch {
+                #expect(TestSupport.message(error) == "The /Width of the image object is not a positive number: \(width)")
             }
         }
     }
