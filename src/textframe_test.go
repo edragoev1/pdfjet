@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -1153,4 +1154,84 @@ func TestTextFrameTheListenerIsToldOfEachPieceDrawnWithItsSourceAndNotOfMeasurin
 		t.Errorf("the second source's pieces: %q", got)
 	}
 	testNear(t, "the first piece's x", 10, xs[0], testDelta)
+}
+
+// testPieces returns the pieces a frame of the width at x 10 tells its
+// listener of, with their baselines.
+func testPieces(pdf *PDF, paragraphs []*Paragraph, width, lineSpacing float32) ([]string, []float32) {
+	frame := NewTextFrameFromParagraphs(paragraphs).SetWidth(width).SetLineSpacing(lineSpacing)
+	frame.SetLocation(10, 10)
+	var texts []string
+	var ys []float32
+	frame.SetListener(func(line *TextLine, x, y float32, source *TextLine) {
+		texts = append(texts, line.GetText())
+		ys = append(ys, y)
+	})
+	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	return texts, ys
+}
+
+// The empty rows of <br><br> are as far apart as the rows of text, with the
+// line spacing too.
+func TestTextFrameLineSpacingSpacesTheEmptyRowsOfLineBreaks(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	markup := NewMarkup(font, font, font, font, font)
+	for _, spacing := range []float32{1, 2} {
+		texts, ys := testPieces(pdf, []*Paragraph{markup.Paragraph("one<br><br>two<br>three")}, 300, spacing)
+		if len(ys) != 3 {
+			t.Fatalf("spacing %v: %q", spacing, texts)
+		}
+		testNear(t, fmt.Sprint("one to two at spacing ", spacing), 2*(ys[2]-ys[1]), ys[1]-ys[0], testDelta)
+	}
+}
+
+// A word joined to a letter wider than the frame was drawn whole on the
+// letter's row, far past the right edge: room was kept for it, though it was
+// never measured. It goes on the next row, broken as it needs.
+func TestTextFrameAWordJoinedToALetterWiderThanTheFrameIsBrokenOnTheNextRows(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	for _, first := range []string{"W", "i"} {
+		paragraph := NewParagraph().Add(NewTextLine(font, first)).AddJoined(NewTextLine(font, "ords next"))
+		texts, _ := testPieces(pdf, []*Paragraph{paragraph}, 5, 1)
+		for _, text := range texts {
+			if utf8.RuneCountInString(strings.TrimSpace(text)) > 1 {
+				t.Errorf("%s: a piece of more than one letter in a frame 5 wide: %q", first, texts)
+				break
+			}
+		}
+	}
+}
+
+// A text line whose first word goes on the next row leaves an empty part at
+// the end of the row, which draws nothing, and the listener is not told of it.
+func TestTextFrameTheListenerIsNotToldOfAnEmptyPiece(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	paragraph := NewParagraph().
+		Add(NewTextLine(font, "Some words ")).
+		Add(NewTextLine(font, "boldly here"))
+	texts, _ := testPieces(pdf, []*Paragraph{paragraph}, font.StringWidth(font.GetSize(), "Some words")+1, 1)
+	for _, text := range texts {
+		if text == "" {
+			t.Errorf("an empty piece in %q", texts)
+			break
+		}
+	}
+	if strings.ReplaceAll(strings.Join(texts, ""), " ", "") != "Somewordsboldlyhere" {
+		t.Errorf("the pieces: %q", texts)
+	}
+}
+
+// A letter with more combining marks than a row is measured in at once, and
+// wider than the frame, is drawn whole, with every mark, on a row of its own.
+func TestTextFrameALetterWithManyMarksWiderThanTheFrameKeepsThemAll(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	letter := "W" + strings.Repeat("́", 300)
+	texts, _ := testPieces(pdf, []*Paragraph{NewParagraph().Add(NewTextLine(font, letter+" end"))}, 5, 1)
+	if len(texts) == 0 || texts[0] != letter+" " || strings.Join(texts, "") != letter+" end " {
+		t.Errorf("%d characters drawn of %d", utf8.RuneCountInString(strings.Join(texts, "")), utf8.RuneCountInString(letter+" end "))
+	}
 }
