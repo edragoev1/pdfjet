@@ -3241,8 +3241,7 @@ public class Page {
         }
         GlyphOutline outline = program.outline;
         foreach (int gid in glyphs) {
-            if (gid < 0 || gid >= outline.Count()
-                    || (font.advanceWidth != null && gid >= font.advanceWidth.Length)) {
+            if (gid < 0 || gid >= outline.Count()) {
                 pdf.Fail(new ArgumentException("The font has no glyph number " + gid + "."));
                 return;
             }

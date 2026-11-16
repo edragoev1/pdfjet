@@ -88,8 +88,8 @@ func newOpenTypeFont(buf []byte) *openTypeFont {
 	otf := new(openTypeFont)
 	otf.buf = buf
 	otf.unicodeToGID = new(glyphMap)
-	// A font without an OS/2 table does not say which characters it holds,
-	// so its character map is read for all of them.
+	// The character map is read for all characters, whatever the OS/2
+	// table says (see getOs2Table).
 	otf.firstChar = 0
 	otf.lastChar = 0x10FFFF
 
@@ -218,15 +218,11 @@ func getHheaTable(otf *openTypeFont, table *fontTable) {
 
 func getOs2Table(otf *openTypeFont, table *fontTable) {
 	otf.fsType, _ = otf.tableUint16(table, 8)
-	otf.index = table.offset + 64
-	otf.firstChar = rune(readUint16(otf))
-	otf.lastChar = rune(readUint16(otf))
-	// The last character is 16 bits: 0xFFFF says the font may have
-	// characters past it, as IBM Plex Sans TC has the Chinese characters
-	// of Hong Kong past U+FFFF.
-	if otf.lastChar == 0xFFFF {
-		otf.lastChar = 0x10FFFF
-	}
+	// usFirstCharIndex and usLastCharIndex are not read: they only describe
+	// the character map, which is what says which characters the font has,
+	// and some fonts have them wrong. Liberation Sans Narrow says U+F005 is
+	// its last character and maps U+FB01 and U+FB02, which were drawn as
+	// .notdef. The character map is read for all characters.
 	// sCapHeight is in the table from its version 2 on. Where it would be in
 	// a version 0 or 1 table are the bytes after the table, often those of
 	// the next table.

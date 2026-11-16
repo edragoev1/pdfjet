@@ -252,4 +252,22 @@ import Testing
         try check { page, plex, _, _ in page.drawGlyphs(plex, [plex.advanceWidth.count], [0, 0], "A", nil) }
         try check { page, plex, _, _ in page.drawGlyphs(plex, [-1], [0, 0], "A", nil) }
     }
+
+    @Test func aGlyphPastTheHorizontalMetricsIsDrawn() throws {
+        // Cascadia Mono has 3,183 horizontal metrics and 4,319 glyphs: the
+        // glyphs past the metrics, U+2427 among them, have the advance of the
+        // last, as OpenType has it. They were refused as glyphs the font has
+        // not, and the whole document failed.
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, TestSupport.open(DrawGlyphsTests.cascadia))
+        font.setSize(20)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let gid = font.unicodeToGID[0x2427]
+        #expect(gid >= font.advanceWidth.count, "glyph \(gid)")
+        page.drawGlyphs(font, [gid], [50, 100], "\u{2427}", nil)
+        #expect(memory.pdf.error == nil)
+        try memory.pdf.complete()
+        let forms = try forms(memory.bytes)
+        #expect(forms.count == 1 && forms[0].hasSuffix("f\n"), "\(forms)")
+    }
 }

@@ -2807,7 +2807,7 @@ func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, text
 	}
 	outline := program.outline
 	for _, gid := range glyphs {
-		if gid < 0 || gid >= outline.count() || (font.advanceWidth != nil && gid >= len(font.advanceWidth)) {
+		if gid < 0 || gid >= outline.count() {
 			pdf.fail(fmt.Sprintf("The font has no glyph number %d.", gid))
 			return
 		}

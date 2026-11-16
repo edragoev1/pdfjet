@@ -3327,8 +3327,7 @@ final public class Page {
         }
         GlyphOutline outline = program.outline;
         for (int gid : glyphs) {
-            if (gid < 0 || gid >= outline.count()
-                    || (font.advanceWidth != null && gid >= font.advanceWidth.length)) {
+            if (gid < 0 || gid >= outline.count()) {
                 pdf.fail(new IllegalArgumentException("The font has no glyph number " + gid + "."));
                 return;
             }

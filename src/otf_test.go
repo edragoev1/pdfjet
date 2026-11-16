@@ -374,3 +374,21 @@ func TestOTFAFontWhoseLicenseForbidsEmbeddingIsRefused(t *testing.T) {
 		}
 	}
 }
+
+func TestOTFTheCharacterMapIsReadPastTheCharactersTheOS2TableGives(t *testing.T) {
+	// usFirstCharIndex and usLastCharIndex of the OS/2 table only describe
+	// the character map: Liberation Sans Narrow says U+F005 is its last
+	// character and maps U+FB01. The characters past them were given no
+	// glyph, and drawn as .notdef. Here Cascadia Mono, said to hold B to Y
+	// alone, keeps A, Z and U+1FB95 of its format 12 subtable.
+	ttf := testOpenTypeFontBytes(t, testCascadia)
+	want := NewFont(testNewPDF(), bytes.NewReader(ttf))
+	os2 := testOpenTypeTable(t, ttf, "OS/2")
+	ttf = testOpenTypeWith(testOpenTypeWith(ttf, os2+64, 'B'), os2+66, 'Y')
+	got := NewFont(testNewPDF(), bytes.NewReader(ttf))
+	for _, ch := range "AZ\U0001FB95" {
+		if got.unicodeToGID.get(ch) != want.unicodeToGID.get(ch) || want.unicodeToGID.get(ch) == 0 || got.lacks(ch) {
+			t.Errorf("%U: glyph %d, not %d", ch, got.unicodeToGID.get(ch), want.unicodeToGID.get(ch))
+		}
+	}
+}

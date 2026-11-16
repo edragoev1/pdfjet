@@ -345,3 +345,25 @@ func TestDrawGlyphsMisuseIsReported(t *testing.T) {
 		page.DrawGlyphs(plex, []int{-1}, []float32{0, 0}, "A", "")
 	})
 }
+
+func TestDrawGlyphsAGlyphPastTheHorizontalMetricsIsDrawn(t *testing.T) {
+	// Cascadia Mono has 3,183 horizontal metrics and 4,319 glyphs: the
+	// glyphs past the metrics, U+2427 among them, have the advance of the
+	// last, as OpenType has it. They were refused as glyphs the font has
+	// not, and the whole document failed.
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testCascadia))
+	font.SetSize(20)
+	page := NewPage(doc.pdf, letter.Portrait())
+	gid := font.unicodeToGID.get(0x2427)
+	if gid < len(font.advanceWidth) {
+		t.Fatalf("glyph %d is not past the %d metrics", gid, len(font.advanceWidth))
+	}
+	page.DrawGlyphs(font, []int{gid}, []float32{50, 100}, "␧", "")
+	if doc.pdf.err != nil {
+		t.Fatal(doc.pdf.err)
+	}
+	if forms := testForms(t, doc.complete()); len(forms) != 1 || !strings.HasSuffix(forms[0], "f\n") {
+		t.Error(forms)
+	}
+}

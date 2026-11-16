@@ -3105,8 +3105,7 @@ public class Page {
         }
         let outline = program.outline!
         for gid in glyphs {
-            if gid < 0 || gid >= outline.count()
-                    || (!font.advanceWidth.isEmpty && gid >= font.advanceWidth.count) {
+            if gid < 0 || gid >= outline.count() {
                 pdf.fail("The font has no glyph number \(gid).")
                 return
             }

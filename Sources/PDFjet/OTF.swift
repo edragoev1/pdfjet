@@ -30,8 +30,8 @@ class OTF {
     var descent: Int16? = 0
     var lineGap: Int16 = 0
     var advanceWidth: [UInt16] = []
-    // A font without an OS/2 table does not say which characters it holds,
-    // so its character map is read for all of them.
+    // The character map is read for all characters, whatever the OS/2
+    // table says (see OS_2).
     var firstChar: Int? = 0
     var lastChar: Int? = 0x10FFFF
     var capHeight: Int16? = 0
@@ -182,15 +182,12 @@ class OTF {
     private func OS_2(_ table: FontTable) throws {
 
         fsType = tableUInt16(table, 8) ?? 0
-        index = table.offset! + 64
-        firstChar = Int(try readUInt16())
-        lastChar  = Int(try readUInt16())
-        // The last character is 16 bits: 0xFFFF says the font may have
-        // characters past it, as IBM Plex Sans TC has the Chinese characters
-        // of Hong Kong past U+FFFF.
-        if lastChar == 0xFFFF {
-            lastChar = 0x10FFFF
-        }
+        // usFirstCharIndex and usLastCharIndex are not read: they only
+        // describe the character map, which is what says which characters
+        // the font has, and some fonts have them wrong. Liberation Sans
+        // Narrow says U+F005 is its last character and maps U+FB01 and
+        // U+FB02, which were drawn as .notdef. The character map is read for
+        // all characters.
         // sCapHeight is in the table from its version 2 on. Where it would be
         // in a version 0 or 1 table are the bytes after the table, often those
         // of the next table.
