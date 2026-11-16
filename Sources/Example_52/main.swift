@@ -109,6 +109,10 @@ public class Example_52 {
             if text.isEmpty {
                 break       // The page is full
             }
+            // A blank line between paragraphs, as plain text has them
+            if !drawn.isEmpty {
+                drawn += "\n"
+            }
             drawn += text + "\n"
             if text.utf16.count < paragraph.utf16.count {
                 break       // The page is full

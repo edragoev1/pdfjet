@@ -107,6 +107,10 @@ public class Example_52 {
             if (text.isEmpty()) {
                 break;      // The page is full
             }
+            // A blank line between paragraphs, as plain text has them
+            if (drawn.length() > 0) {
+                drawn.append('\n');
+            }
             drawn.append(text).append('\n');
             if (text.length() < paragraph.length()) {
                 break;      // The page is full

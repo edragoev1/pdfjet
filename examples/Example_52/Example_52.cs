@@ -110,6 +110,10 @@ public class Example_52 {
             if (text.Length == 0) {
                 break;      // The page is full
             }
+            // A blank line between paragraphs, as plain text has them
+            if (drawn.Length > 0) {
+                drawn.Append('\n');
+            }
             drawn.Append(text).Append('\n');
             if (text.Length < paragraph.Length) {
                 break;      // The page is full

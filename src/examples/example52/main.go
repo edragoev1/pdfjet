@@ -110,6 +110,10 @@ func drawPage(pdf *pdfjet.PDF, heading, body *pdfjet.Font, name, lang, scriptFil
 		if text == "" {
 			break // The page is full
 		}
+		// A blank line between paragraphs, as plain text has them
+		if drawn.Len() > 0 {
+			drawn.WriteString("\n")
+		}
 		drawn.WriteString(text)
 		drawn.WriteString("\n")
 		if len(text) < len(paragraph) {
