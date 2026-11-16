@@ -298,23 +298,27 @@ final class Puff {
         self.incnt = 2
 
         // process blocks until last block or error; a prefix that has its
-        // bytes ignores the rest of the stream, its checksum too
+        // bytes ignores the rest of the stream, its checksum too, but checks
+        // what zlib checks after them, as far as it decodes without writing
+        // a byte: the next block header or symbol, and the length and
+        // distance codes of a pair (review of 16 November 2026)
         repeat {
-            if prefix && outCount >= maxLength {
-                return
+            do {
+                last = try bits(1)                  // one if last block
+                type = try bits(2)                  // block type 0..3
+                if type == 0 {
+                    error = try stored()
+                } else if type == 1 {
+                    error = try fixed()
+                } else if type == 2 {
+                    error = try dynamic()
+                } else {
+                    error = -1                      // type == 3, invalid
+                }
+            } catch PuffError.read(error: 1) where prefix && outCount >= maxLength {
+                return                              // out of input after the bytes
             }
-            last = try bits(1)                      // one if last block
-            type = try bits(2)                      // block type 0..3
-            if type == 0 {
-                error = try stored()
-            } else if type == 1 {
-                error = try fixed()
-            } else if type == 2 {
-                error = try dynamic()
-            } else {
-                error = -1                          // type == 3, invalid
-            }
-            if error == 1 && prefix {
+            if (error == 1 || error == 2) && prefix && outCount >= maxLength {
                 return                              // the output has its length
             }
             if error != 0 {
@@ -560,12 +564,12 @@ final class Puff {
             return -2                               // didn't match complement!
         }
 
-        // copy len bytes from in to out
-        if (self.incnt + len) > input.count {
+        // copy len bytes from in to out, as many as the output has room
+        // for: a prefix needs only those in the input
+        let count = min(len, maxLength - outCount)
+        if (self.incnt + (prefix ? count : len)) > input.count {
             return 2                                // not enough input
         }
-        // as many as the output has room for
-        let count = min(len, maxLength - outCount)
         reserve(outCount + count)
         (out! + outCount).update(from: input.baseAddress! + self.incnt, count: count)
         outCount += count
@@ -654,12 +658,6 @@ final class Puff {
 
         // decode literals and length/distance pairs
         while true {
-            // A prefix that has its bytes is done, and reads no further: the
-            // symbol after them may not be in a stream that is cut short.
-            if prefix && written >= maxLength {
-                giveBack(buffer, count, next, written)
-                return 1
-            }
             // Room for the longest copy, unless the output is as long as it
             // can be, where every byte is checked against maxLength.
             if outCapacity - written < 258 && outCapacity < maxLength {
@@ -733,6 +731,12 @@ final class Puff {
                 buffer >>= UInt64(dext[symbol.value])
                 count -= dext[symbol.value]
 
+                // A prefix that has its bytes stops before it checks the
+                // distance, as zlib does, which checks it as it copies.
+                if prefix && written >= maxLength {
+                    giveBack(buffer, count, next, written)
+                    return 1
+                }
                 if dist > written {
                     giveBack(buffer, count, next, written)
                     return -11              // distance too far back
@@ -804,6 +808,9 @@ final class Puff {
             }
             let dist = try bits(dext[symbol]) + dists[symbol]
 
+            if prefix && outCount >= maxLength {
+                return 1                    // as in codes()
+            }
             if dist > outCount {
                 return -11                  // distance too far back
             }

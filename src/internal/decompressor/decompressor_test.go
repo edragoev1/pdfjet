@@ -350,3 +350,32 @@ func TestInflatePrefixRefusesDeflateDataZlibRefusesBeforeTheBytes(t *testing.T) 
 		}
 	}
 }
+
+func TestDecompressorInflatePrefixChecksAfterTheBytesWhatZlibChecks(t *testing.T) {
+	// zlib, and so the JDK and .NET, decodes on after the bytes it was asked
+	// for as far as it can without writing another byte: it refuses an
+	// invalid block type or symbol there, and stops at a length/distance
+	// pair, whose distance it checks only as it copies (review of 16
+	// November 2026). Each stream is a block of fixed codes with "ABCD".
+	stored := append([]byte{0x78, 0x01, 0x00, 0x64, 0x00, 0x9B, 0xFF}, bytes.Repeat([]byte("A"), 50)...)
+	for _, c := range []struct {
+		name   string
+		data   []byte
+		length int
+		want   []byte
+	}{
+		{"an invalid block type after it", []byte{0x78, 0x01, 0x72, 0x74, 0x72, 0x76, 0x01, 0x1C}, 4, nil},
+		{"an invalid symbol after it", []byte{0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x19, 0x03, 0x00}, 4, nil},
+		{"a distance too far back after it", []byte{0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x01, 0xDA, 0x01, 0x00}, 4, []byte("ABCD")},
+		{"a stored block of 100 bytes cut at 50", stored, 10, bytes.Repeat([]byte("A"), 10)},
+	} {
+		prefix, err := InflatePrefix(c.data, c.length)
+		if (err == nil) != (c.want != nil) || !bytes.Equal(prefix, c.want) {
+			t.Errorf("%s: prefix %q, error %v", c.name, prefix, err)
+		}
+		prefix, exact, err := InflateExact(c.data, c.length)
+		if (err == nil) != (c.want != nil) || !bytes.Equal(prefix, c.want) || exact {
+			t.Errorf("%s: InflateExact %q, exact %v, error %v", c.name, prefix, exact, err)
+		}
+	}
+}
