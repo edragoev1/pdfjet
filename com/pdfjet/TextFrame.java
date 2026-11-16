@@ -79,9 +79,11 @@ public class TextFrame implements Drawable {
     }
 
     // Draws a line of text, a piece of the source, and tells the listener;
-    // not when the frame only measures (no page), as nothing is drawn then
+    // not when the frame only measures (no page), as nothing is drawn then,
+    // and not of an empty piece, which draws nothing: the part a text line
+    // leaves at the end of a row when its first word goes on the next
     private void draw(TextLine line, TextLine source, Page page) throws Exception {
-        if (listener != null && page != null) {
+        if (listener != null && page != null && !line.text.isEmpty()) {
             listener.drawn(line, line.x + line.xOffset, line.y, source);
         }
         line.drawOn(page);
@@ -518,8 +520,10 @@ public class TextFrame implements Drawable {
                     rowOpen = false;
                     spaceAfterRow(textLine);
                     if (textLine.lineBreaks > 1) {
-                        float row = textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize);
-                        nextBaseline += (textLine.lineBreaks - 1) * row;
+                        // Each empty row as far apart as the rows of text,
+                        // with the line spacing: without it an empty row was
+                        // a row at spacing 1, half the others' at spacing 2
+                        nextBaseline += (textLine.lineBreaks - 1) * lineAdvance(textLine);
                     }
                 }
             }
@@ -660,17 +664,22 @@ public class TextFrame implements Drawable {
             } else if (buf.length() == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = headThatFits(textLine, token);
-                if (head.length() == token.length()) {
+                if (head.length() == token.length()
+                        && start + token.length() == tokens.get(tokenIndex).length()) {
                     // The whole token, as one letter wider than the frame:
                     // the row takes it as it takes a token that fits, and
                     // stays open, so that the end of the text line is in
-                    // it, not in an empty row after it
+                    // it, not in an empty row after it. The whole of it, not
+                    // only the window: a letter with more marks than the
+                    // window lost the rest. The words joined to it were not
+                    // measured, so no room is kept for them: they go on the
+                    // next row, broken there as they need, and not past the
+                    // right edge of this one
                     String text = withSpace ? token + Single.space : token;
                     buf.append(text);
                     runLength += width(textLine, text);
                     tokenIndex++;
                     start = 0;
-                    joinReserved = joinsNext;
                     leadingSpace = spaceToNext;
                     continue;
                 }
@@ -698,15 +707,23 @@ public class TextFrame implements Drawable {
     // Returns the rest of the token from the start, or as much of its start as
     // is wider than the width available, at least 256 characters and up to twice
     // as many as a row needs: a row is drawn from the start of the rest, and a
-    // start that does not fit is broken as the whole rest would be.
+    // start that does not fit is broken as the whole rest would be. It ends
+    // between characters, as headThatFits cuts them, never inside a letter
+    // with its marks: a letter with more marks than the window was cut.
     private static String window(TextLine textLine, String token, int start, float available) {
         for (int size = 256; ; size *= 2) {
             int end = start + size;
+            if (end < token.length() && Character.isLowSurrogate(token.charAt(end))) {
+                end++;
+            }
+            while (end < token.length() && TextBlock.isLeadingVowel(token.codePointBefore(end))) {
+                end += Character.charCount(token.codePointAt(end));
+            }
+            while (end < token.length() && TextBlock.staysWithPrevious(token.codePointAt(end))) {
+                end += Character.charCount(token.codePointAt(end));
+            }
             if (end >= token.length()) {
                 return (start == 0) ? token : token.substring(start);
-            }
-            if (Character.isLowSurrogate(token.charAt(end))) {
-                end++;
             }
             String head = token.substring(start, end);
             if (width(textLine, head) > available) {

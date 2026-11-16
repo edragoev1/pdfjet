@@ -928,4 +928,74 @@ import Testing
         #expect(drawn[ObjectIdentifier(bold)]?.replacingOccurrences(of: " ", with: "") == "thenmorewords")
         TestSupport.expectNear(10, xs[0])
     }
+
+    // The pieces a frame of the width at x 10 tells its listener of, and
+    // their baselines
+    private func pieces(_ pdf: PDF, _ paragraphs: [Paragraph], _ width: Float, _ lineSpacing: Float)
+            -> (texts: [String], ys: [Float]) {
+        let frame = TextFrame(paragraphs).setLocation(10, 10).setWidth(width).setLineSpacing(lineSpacing)
+        var texts = [String]()
+        var ys = [Float]()
+        frame.setListener { line, _, y, _ in
+            texts.append(line.getText() ?? "")
+            ys.append(y)
+        }
+        frame.drawOn(Page(pdf, Letter.PORTRAIT))
+        return (texts, ys)
+    }
+
+    // The empty rows of <br><br> are as far apart as the rows of text, with
+    // the line spacing too.
+    @Test func lineSpacingSpacesTheEmptyRowsOfLineBreaks() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let markup = Markup(font, font, font, font, font)
+        for spacing: Float in [1, 2] {
+            let (texts, ys) = pieces(pdf, [markup.paragraph("one<br><br>two<br>three")], 300, spacing)
+            try #require(ys.count == 3, "\(texts)")
+            TestSupport.expectNear(2 * (ys[2] - ys[1]), ys[1] - ys[0], TestSupport.delta,
+                    "one to two at spacing \(spacing)")
+        }
+    }
+
+    // A word joined to a letter wider than the frame was drawn whole on the
+    // letter's row, far past the right edge: room was kept for it, though it
+    // was never measured. It goes on the next row, broken as it needs.
+    @Test func aWordJoinedToALetterWiderThanTheFrameIsBrokenOnTheNextRows() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        for first in ["W", "i"] {
+            let paragraph = Paragraph(TextLine(font, first)).addJoined(TextLine(font, "ords next"))
+            let (texts, _) = pieces(pdf, [paragraph], 5, 1)
+            for text in texts {
+                #expect(text.trimmingCharacters(in: .whitespaces).unicodeScalars.count <= 1,
+                        "\(first): a piece of more than one letter in a frame 5 wide: \(texts)")
+            }
+        }
+    }
+
+    // A text line whose first word goes on the next row leaves an empty part
+    // at the end of the row, which draws nothing, and the listener is not
+    // told of it.
+    @Test func theListenerIsNotToldOfAnEmptyPiece() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph(TextLine(font, "Some words "))
+        paragraph.add(TextLine(font, "boldly here"))
+        let (texts, _) = pieces(pdf, [paragraph], font.stringWidth(font.getSize(), "Some words") + 1, 1)
+        #expect(!texts.contains(""), "an empty piece in \(texts)")
+        #expect(texts.joined().replacingOccurrences(of: " ", with: "") == "Somewordsboldlyhere")
+    }
+
+    // A letter with more combining marks than a row is measured in at once,
+    // and wider than the frame, is drawn whole, with every mark, on a row of
+    // its own.
+    @Test func aLetterWithManyMarksWiderThanTheFrameKeepsThemAll() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let letter = "W" + String(repeating: "\u{0301}", count: 300)
+        let (texts, _) = pieces(pdf, [Paragraph(TextLine(font, letter + " end"))], 5, 1)
+        #expect(texts.first.map { Array($0.unicodeScalars) } == Array((letter + " ").unicodeScalars))
+        #expect(Array(texts.joined().unicodeScalars) == Array((letter + " end ").unicodeScalars))
+    }
 }

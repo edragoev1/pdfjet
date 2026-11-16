@@ -204,9 +204,11 @@ func (tf *TextFrame) SetLineSpacing(lineSpacing float32) *TextFrame {
 }
 
 // draw draws a line of text, a piece of the source, and tells the listener;
-// not when the frame only measures (no page), as nothing is drawn then.
+// not when the frame only measures (no page), as nothing is drawn then, and
+// not of an empty piece, which draws nothing: the part a text line leaves at
+// the end of a row when its first word goes on the next.
 func (tf *TextFrame) draw(line *TextLine, source *TextLine, page *Page) {
-	if tf.listener != nil && page != nil {
+	if tf.listener != nil && page != nil && line.text != "" {
 		tf.listener(line, line.x+line.xOffset, line.y, source)
 	}
 	line.DrawOn(page)
@@ -424,8 +426,10 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 				tf.rowOpen = false
 				tf.spaceAfterRow(textLine)
 				if textLine.lineBreaks > 1 {
-					row := textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
-					tf.nextBaseline += float32(float32(textLine.lineBreaks-1) * row)
+					// Each empty row as far apart as the rows of text, with
+					// the line spacing: without it an empty row was a row
+					// at spacing 1, half the others' at spacing 2
+					tf.nextBaseline += float32(float32(textLine.lineBreaks-1) * tf.lineAdvance(textLine))
 				}
 			}
 		}
@@ -569,12 +573,14 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 				// The whole token, as one letter wider than the frame: the
 				// row takes it as it takes a token that fits, and stays
 				// open, so that the end of the text line is in it, not in an
-				// empty row after it
+				// empty row after it. The words joined to it were not
+				// measured, so no room is kept for them: they go on the
+				// next row, broken there as they need, and not past the
+				// right edge of this one
 				text := text()
 				buf.WriteString(text)
 				runLength += textWidth(textLine, text)
 				tf.tokenIndex++
-				tf.joinReserved = joinsNext
 				tf.leadingSpace = spaceToNext
 				continue
 			}

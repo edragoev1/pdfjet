@@ -182,9 +182,11 @@ public class TextFrame : Drawable {
     }
 
     // Draws a line of text, a piece of the source, and tells the listener; not
-    // when the frame only measures (no page), as nothing is drawn then
+    // when the frame only measures (no page), as nothing is drawn then, and
+    // not of an empty piece, which draws nothing: the part a text line leaves
+    // at the end of a row when its first word goes on the next
     private func drawLine(_ line: TextLine, _ source: TextLine?, _ page: Page?) {
-        if let listener = listener, page != nil {
+        if let listener = listener, page != nil, !(line.text ?? "").isEmpty {
             listener(line, line.x + line.xOffset, line.y, source)
         }
         line.drawOn(page)
@@ -422,8 +424,10 @@ public class TextFrame : Drawable {
                     rowOpen = false
                     spaceAfterRow(textLine)
                     if textLine.lineBreaks > 1 {
-                        let row = textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
-                        nextBaseline += Float(textLine.lineBreaks - 1) * row
+                        // Each empty row as far apart as the rows of text,
+                        // with the line spacing: without it an empty row was
+                        // a row at spacing 1, half the others' at spacing 2
+                        nextBaseline += Float(textLine.lineBreaks - 1) * lineAdvance(textLine)
                     }
                 }
             }
@@ -566,17 +570,23 @@ public class TextFrame : Drawable {
             } else if buf.isEmpty && xText == x {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 let end = headThatFits(textLine, token)
-                if end == token.unicodeScalars.endIndex {
+                if end == token.unicodeScalars.endIndex
+                        && whole.unicodeScalars.index(from, offsetBy: token.unicodeScalars.count)
+                            == whole.unicodeScalars.endIndex {
                     // The whole token, as one letter wider than the frame:
                     // the row takes it as it takes a token that fits, and
                     // stays open, so that the end of the text line is in
-                    // it, not in an empty row after it
+                    // it, not in an empty row after it. The whole of it, not
+                    // only the window: a letter with more marks than the
+                    // window lost the rest. The words joined to it were not
+                    // measured, so no room is kept for them: they go on the
+                    // next row, broken there as they need, and not past the
+                    // right edge of this one
                     let text = withSpace ? token + Single.space : token
                     buf.append(text)
                     runLength += TextFrame.width(textLine, text)
                     tokenIndex += 1
                     start = nil
-                    joinReserved = joinsNext
                     leadingSpace = spaceToNext
                     continue
                 }
@@ -631,14 +641,24 @@ public class TextFrame : Drawable {
     // Returns the rest of the token from the start, or as much of its start as
     // is wider than the width available, at least 256 characters and up to twice
     // as many as a row needs: a row is drawn from the start of the rest, and a
-    // start that does not fit is broken as the whole rest would be.
+    // start that does not fit is broken as the whole rest would be. It ends
+    // between characters, as headThatFits cuts them, never inside a letter
+    // with its marks: a letter with more marks than the window was cut.
     private static func window(
             _ textLine: TextLine, _ token: String, _ start: String.Index, _ available: Float) -> String {
         let scalars = token.unicodeScalars
         var size = 256
         while true {
-            guard let end = scalars.index(start, offsetBy: size, limitedBy: scalars.endIndex),
-                    end < scalars.endIndex else {
+            guard var end = scalars.index(start, offsetBy: size, limitedBy: scalars.endIndex) else {
+                return start == scalars.startIndex ? token : String(scalars[start...])
+            }
+            while end < scalars.endIndex && TextBlock.isLeadingVowel(scalars[scalars.index(before: end)].value) {
+                end = scalars.index(after: end)
+            }
+            while end < scalars.endIndex && TextBlock.staysWithPrevious(scalars[end]) {
+                end = scalars.index(after: end)
+            }
+            if end == scalars.endIndex {
                 return start == scalars.startIndex ? token : String(scalars[start...])
             }
             let head = String(scalars[start..<end])

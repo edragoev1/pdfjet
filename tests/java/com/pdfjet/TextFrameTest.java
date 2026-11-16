@@ -1019,4 +1019,85 @@ class TextFrameTest {
         assertEquals("thenmorewords", drawn.get(bold).toString().replace(" ", ""));
         assertEquals(10f, xs.get(0), TestSupport.DELTA);
     }
+
+    // The pieces a frame of the width at x 10 tells its listener of, and
+    // their baselines
+    private static List<String> pieces(PDF pdf, List<Paragraph> paragraphs, float width, float lineSpacing,
+            List<Float> ys) throws Exception {
+        TextFrame frame = new TextFrame(paragraphs).setLocation(10f, 10f).setWidth(width)
+                .setLineSpacing(lineSpacing);
+        List<String> texts = new ArrayList<>();
+        frame.setListener((line, x, y, source) -> {
+            texts.add(line.getText());
+            ys.add(y);
+        });
+        frame.drawOn(new Page(pdf, Letter.PORTRAIT));
+        return texts;
+    }
+
+    // The empty rows of <br><br> are as far apart as the rows of text, with
+    // the line spacing too.
+    @Test
+    void lineSpacingSpacesTheEmptyRowsOfLineBreaks() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Markup markup = new Markup(font, font, font, font, font);
+        for (float spacing : new float[] {1f, 2f}) {
+            List<Float> ys = new ArrayList<>();
+            List<String> texts = pieces(pdf, Arrays.asList(markup.paragraph("one<br><br>two<br>three")), 300f, spacing, ys);
+            assertEquals(3, ys.size(), texts.toString());
+            assertEquals(2f * (ys.get(2) - ys.get(1)), ys.get(1) - ys.get(0), TestSupport.DELTA,
+                    "one to two at spacing " + spacing);
+        }
+    }
+
+    // A word joined to a letter wider than the frame was drawn whole on the
+    // letter's row, far past the right edge: room was kept for it, though it
+    // was never measured. It goes on the next row, broken as it needs.
+    @Test
+    void aWordJoinedToALetterWiderThanTheFrameIsBrokenOnTheNextRows() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        for (String first : new String[] {"W", "i"}) {
+            Paragraph paragraph = new Paragraph(new TextLine(font, first)).addJoined(new TextLine(font, "ords next"));
+            List<String> texts = pieces(pdf, Arrays.asList(paragraph), 5f, 1f, new ArrayList<>());
+            for (String text : texts) {
+                String trimmed = text.trim();
+                assertTrue(trimmed.codePointCount(0, trimmed.length()) <= 1,
+                        first + ": a piece of more than one letter in a frame 5 wide: " + texts);
+            }
+        }
+    }
+
+    // A text line whose first word goes on the next row leaves an empty part
+    // at the end of the row, which draws nothing, and the listener is not
+    // told of it.
+    @Test
+    void theListenerIsNotToldOfAnEmptyPiece() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph(new TextLine(font, "Some words "));
+        paragraph.add(new TextLine(font, "boldly here"));
+        List<String> texts = pieces(pdf, Arrays.asList(paragraph),
+                font.stringWidth(font.getSize(), "Some words") + 1f, 1f, new ArrayList<>());
+        assertFalse(texts.contains(""), "an empty piece in " + texts);
+        assertEquals("Somewordsboldlyhere", String.join("", texts).replace(" ", ""));
+    }
+
+    // A letter with more combining marks than a row is measured in at once,
+    // and wider than the frame, is drawn whole, with every mark, on a row of
+    // its own.
+    @Test
+    void aLetterWithManyMarksWiderThanTheFrameKeepsThemAll() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder letter = new StringBuilder("W");
+        for (int i = 0; i < 300; i++) {
+            letter.append('\u0301');
+        }
+        List<String> texts = pieces(pdf, Arrays.asList(new Paragraph(new TextLine(font, letter + " end"))),
+                5f, 1f, new ArrayList<>());
+        assertEquals(letter + " ", texts.get(0));
+        assertEquals(letter + " end ", String.join("", texts));
+    }
 }

@@ -209,9 +209,11 @@ public class TextFrame : IDrawable {
     }
 
     // Draws a line of text, a piece of the source, and tells the listener; not
-    // when the frame only measures (no page), as nothing is drawn then
+    // when the frame only measures (no page), as nothing is drawn then, and
+    // not of an empty piece, which draws nothing: the part a text line leaves
+    // at the end of a row when its first word goes on the next
     private void Draw(TextLine line, TextLine source, Page page) {
-        if (listener != null && page != null) {
+        if (listener != null && page != null && line.text.Length > 0) {
             listener(line, line.x + line.xOffset, line.y, source);
         }
         line.DrawOn(page);
@@ -436,8 +438,10 @@ public class TextFrame : IDrawable {
                     rowOpen = false;
                     SpaceAfterRow(textLine);
                     if (textLine.lineBreaks > 1) {
-                        float row = textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
-                        nextBaseline += (textLine.lineBreaks - 1) * row;
+                        // Each empty row as far apart as the rows of text,
+                        // with the line spacing: without it an empty row was
+                        // a row at spacing 1, half the others' at spacing 2
+                        nextBaseline += (textLine.lineBreaks - 1) * LineAdvance(textLine);
                     }
                 }
             }
@@ -577,17 +581,22 @@ public class TextFrame : IDrawable {
             } else if (buf.Length == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = HeadThatFits(textLine, token);
-                if (head.Length == token.Length) {
+                if (head.Length == token.Length
+                        && start + token.Length == tokens[tokenIndex].Length) {
                     // The whole token, as one letter wider than the frame:
                     // the row takes it as it takes a token that fits, and
                     // stays open, so that the end of the text line is in
-                    // it, not in an empty row after it
+                    // it, not in an empty row after it. The whole of it, not
+                    // only the window: a letter with more marks than the
+                    // window lost the rest. The words joined to it were not
+                    // measured, so no room is kept for them: they go on the
+                    // next row, broken there as they need, and not past the
+                    // right edge of this one
                     String text = withSpace ? token + Single.space : token;
                     buf.Append(text);
                     runLength += Width(textLine, text);
                     tokenIndex++;
                     start = 0;
-                    joinReserved = joinsNext;
                     leadingSpace = spaceToNext;
                     continue;
                 }
@@ -615,15 +624,23 @@ public class TextFrame : IDrawable {
     // Returns the rest of the token from the start, or as much of its start as
     // is wider than the width available, at least 256 characters and up to twice
     // as many as a row needs: a row is drawn from the start of the rest, and a
-    // start that does not fit is broken as the whole rest would be.
+    // start that does not fit is broken as the whole rest would be. It ends
+    // between characters, as HeadThatFits cuts them, never inside a letter
+    // with its marks: a letter with more marks than the window was cut.
     private static String Window(TextLine textLine, String token, int start, float available) {
         for (int size = 256; ; size *= 2) {
             int end = start + size;
+            if (end < token.Length && char.IsLowSurrogate(token[end])) {
+                end++;
+            }
+            while (end < token.Length && TextBlock.IsLeadingVowel(token[end - 1])) {
+                end += (Util.CodePointAt(token, end) > 0xFFFF) ? 2 : 1;
+            }
+            while (end < token.Length && TextBlock.StaysWithPrevious(Util.CodePointAt(token, end))) {
+                end += (Util.CodePointAt(token, end) > 0xFFFF) ? 2 : 1;
+            }
             if (end >= token.Length) {
                 return (start == 0) ? token : token.Substring(start);
-            }
-            if (char.IsLowSurrogate(token[end])) {
-                end++;
             }
             String head = token.Substring(start, end - start);
             if (Width(textLine, head) > available) {

@@ -987,5 +987,83 @@ public class TextFrameTest {
         Assert.Equal("thenmorewords", drawn[bold].Replace(" ", ""));
         TestSupport.AssertNear(10f, xs[0], TestSupport.DELTA);
     }
+
+    // The pieces a frame of the width at x 10 tells its listener of, and
+    // their baselines
+    private static List<string> Pieces(PDF pdf, List<Paragraph> paragraphs, float width, float lineSpacing,
+            List<float> ys) {
+        TextFrame frame = new TextFrame(paragraphs).SetLocation(10f, 10f).SetWidth(width)
+                .SetLineSpacing(lineSpacing);
+        List<string> texts = new List<string>();
+        frame.SetListener((line, x, y, source) => {
+            texts.Add(line.GetText());
+            ys.Add(y);
+        });
+        frame.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        return texts;
+    }
+
+    // The empty rows of <br><br> are as far apart as the rows of text, with
+    // the line spacing too.
+    [Fact]
+    public void LineSpacingSpacesTheEmptyRowsOfLineBreaks() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Markup markup = new Markup(font, font, font, font, font);
+        foreach (float spacing in new float[] {1f, 2f}) {
+            List<float> ys = new List<float>();
+            List<string> texts = Pieces(pdf, new List<Paragraph> {markup.Paragraph("one<br><br>two<br>three")},
+                    300f, spacing, ys);
+            Assert.True(ys.Count == 3, string.Join("|", texts));
+            TestSupport.AssertNear(2f * (ys[2] - ys[1]), ys[1] - ys[0], TestSupport.DELTA,
+                    "one to two at spacing " + spacing);
+        }
+    }
+
+    // A word joined to a letter wider than the frame was drawn whole on the
+    // letter's row, far past the right edge: room was kept for it, though it
+    // was never measured. It goes on the next row, broken as it needs.
+    [Fact]
+    public void AWordJoinedToALetterWiderThanTheFrameIsBrokenOnTheNextRows() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        foreach (string first in new string[] {"W", "i"}) {
+            Paragraph paragraph = new Paragraph(new TextLine(font, first)).AddJoined(new TextLine(font, "ords next"));
+            List<string> texts = Pieces(pdf, new List<Paragraph> {paragraph}, 5f, 1f, new List<float>());
+            foreach (string text in texts) {
+                Assert.True(new StringInfo(text.Trim()).LengthInTextElements <= 1,
+                        first + ": a piece of more than one letter in a frame 5 wide: " + string.Join("|", texts));
+            }
+        }
+    }
+
+    // A text line whose first word goes on the next row leaves an empty part
+    // at the end of the row, which draws nothing, and the listener is not
+    // told of it.
+    [Fact]
+    public void TheListenerIsNotToldOfAnEmptyPiece() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph(new TextLine(font, "Some words "));
+        paragraph.Add(new TextLine(font, "boldly here"));
+        List<string> texts = Pieces(pdf, new List<Paragraph> {paragraph},
+                font.StringWidth(font.GetSize(), "Some words") + 1f, 1f, new List<float>());
+        Assert.DoesNotContain("", texts);
+        Assert.Equal("Somewordsboldlyhere", string.Join("", texts).Replace(" ", ""));
+    }
+
+    // A letter with more combining marks than a row is measured in at once,
+    // and wider than the frame, is drawn whole, with every mark, on a row of
+    // its own.
+    [Fact]
+    public void ALetterWithManyMarksWiderThanTheFrameKeepsThemAll() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        string letter = "W" + new string('\u0301', 300);
+        List<string> texts = Pieces(pdf, new List<Paragraph> {new Paragraph(new TextLine(font, letter + " end"))},
+                5f, 1f, new List<float>());
+        Assert.Equal(letter + " ", texts[0]);
+        Assert.Equal(letter + " end ", string.Join("", texts));
+    }
 }
 }
