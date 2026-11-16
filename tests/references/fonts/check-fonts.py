@@ -250,11 +250,11 @@ def reference_of(path):
     order = font.getGlyphOrder()
     hmtx = font['hmtx'].metrics
     widths = [hmtx[order[i]][0] for i in range(hhea.numberOfHMetrics)]
-    first, last = os2.usFirstCharIndex, os2.usLastCharIndex
-    # 16 bits: 0xFFFF says the font may have more, and PDFjet reads it as
-    # the last character of Unicode, as readOS2 in src/otf.go does
-    if last == 0xFFFF:
-        last = 0x10FFFF
+    # PDFjet reads the character map for all of Unicode, whatever the OS/2
+    # table's first and last character say (9.1.9: a font mapped characters
+    # outside them, which were drawn as .notdef), as newOpenTypeFont in
+    # src/otf.go does
+    first, last = 0, 0x10FFFF
     ref = {
         'name': ps_name(font),
         'unitsPerEm': head.unitsPerEm,
