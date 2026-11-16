@@ -636,7 +636,7 @@ public class PDFTest {
             return PdfWithObjects(objects);
         };
         byte[] small = pdfOf(count);
-        byte[] large = pdfOf(4*count);
+        byte[] large = pdfOf(8*count);
         List<PDFobj> pages = null;
         // Timed on objects read again for each run, as GetPageObjects changes
         // the objects it reads
@@ -647,7 +647,7 @@ public class PDFTest {
             pdf.Merge(read);
             pdf.Complete();
         });
-        Assert.Equal(4*count, pages.Count);
+        Assert.Equal(8*count, pages.Count);
         Assert.Equal(842f, pages[2*count - 1].GetPageSize().GetHeight());
     }
 

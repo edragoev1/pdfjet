@@ -37,12 +37,12 @@ public class ReviewReaderTest {
         return objects;
     }
 
-    // Checks that the PDF of size 4n takes less than eight times the PDF of
+    // Checks that the PDF of size 8n takes less than 32 times the PDF of
     // size n to read (AssertLinearTime), and returns the objects of the PDF of size n, or null when it
     // cannot be read.
     private static List<PDFobj> ReadLinearly(int n, Func<int, byte[]> pdf) {
         byte[] small = pdf(n);
-        byte[] large = pdf(4*n);
+        byte[] large = pdf(8*n);
         TestSupport.AssertLinearTime(n, k => {
             try {
                 TestSupport.Read((k == n) ? small : large);

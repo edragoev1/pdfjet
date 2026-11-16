@@ -308,15 +308,18 @@ public static class TestSupport {
         return shortest;
     }
 
-    // Checks that the work of size 4n takes less than 8 times the work of
+    // Checks that the work of size 8n takes less than 32 times the work of
     // size n, each the shortest of three runs: the time of a linear algorithm
-    // grows 4 times, and that of a quadratic one, whose time dominates at n,
-    // near 16 times. A ratio holds on a busy computer, where limits in seconds
+    // grows 8 times, and that of a quadratic one, whose time dominates at n,
+    // near 64 times. A ratio holds on a busy computer, where limits in seconds
     // failed (CI, 30 October 2026); the sizes are timed in turns, and all
     // again up to three times, as load can fall on one of them only, where a
     // quadratic algorithm fails every time. It compared 2n with n under 3.8
-    // until 16 November 2026, which a GitHub runner's noise passed now and
-    // then (64 ms against 15), as a quadratic algorithm's 4 is near it.
+    // until 16 November 2026, then 4n with n under 8, which GitHub's runners
+    // failed on half the pushes of that day (1,600 entries 422 ms against
+    // 38 for 400): a larger PDF outgrows the processor's cache, and a linear
+    // reader's 4 times became 8 to 12. 32 leaves a linear algorithm four
+    // times its ratio, and a quadratic one still fails by twice the limit.
     public static void AssertLinearTime(int n, Action<int> work) {
         long small = 0L;
         long large = 0L;
@@ -328,15 +331,15 @@ public static class TestSupport {
                 work(n);
                 small = Math.Min(small, watch.ElapsedTicks);
                 watch.Restart();
-                work(4*n);
+                work(8*n);
                 large = Math.Min(large, watch.ElapsedTicks);
             }
-            if (large < 8L*small) {
+            if (large < 32L*small) {
                 return;
             }
         }
         long perMillisecond = System.Diagnostics.Stopwatch.Frequency/1000L;
-        Assert.Fail("size " + 4*n + " took " + large/perMillisecond + " ms, and size " + n + " " + small/perMillisecond + " ms");
+        Assert.Fail("size " + 8*n + " took " + large/perMillisecond + " ms, and size " + n + " " + small/perMillisecond + " ms");
     }
 }
 

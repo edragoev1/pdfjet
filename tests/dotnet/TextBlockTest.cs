@@ -208,7 +208,8 @@ public class TextBlockTest {
             word.Append("محمد");      // 100,000 letters, which took about 20 minutes
         }
         string text = word.ToString();
-        TestSupport.AssertLinearTime(5000, n => {
+        // 12,000 letters against 96,000, of the 100,000
+        TestSupport.AssertLinearTime(3000, n => {
             new TextBlock(font, text.Substring(0, 4*n)).SetRightToLeft(true).SetWidth(100f).SetLocation(0f, 0f).DrawOn(null);
         });
         float[] xy = new TextBlock(font, text).SetRightToLeft(true).SetWidth(100f).SetLocation(0f, 0f).DrawOn(null);
