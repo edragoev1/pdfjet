@@ -519,7 +519,9 @@ public class Markdown {
     // that did not fit under them started the next page, leaving the
     // heading and the paragraph at the bottom of this one.
     private bool KeptWithTable(MarkdownParser.Block paragraph, MarkdownParser.Block next, float width) {
-        if (next.kind != MarkdownParser.Kind.TABLE) {
+        // Only a paragraph: a rule, a list or a quote between the heading and
+        // the table has no text to measure as one
+        if (paragraph.kind != MarkdownParser.Kind.PARAGRAPH || next.kind != MarkdownParser.Kind.TABLE) {
             return false;
         }
         return LeadsIntoTable(paragraph, next)

@@ -64,7 +64,7 @@ internal sealed class GlyphOutline {
     private bool longOffsets;
 
     // CFF
-    private CFFSubset.Index charStrings;
+    internal CFFSubset.Index charStrings;    // Internal for the tests, which put a charstring of their own
     private CFFSubset.Index globalSubrs;
     private CFFSubset.Index[] localSubrs;   // Of each Font DICT, or of the font
     private int[] fdOf;                     // The Font DICT of each glyph, or null
@@ -201,6 +201,11 @@ internal sealed class GlyphOutline {
                 if (m.Length != 6) {
                     throw new Subset.NotSubset();
                 }
+                foreach (double v in m) {
+                    if (!(Math.Abs(v) <= 1000)) {   // NaN too
+                        throw new Subset.NotSubset();
+                    }
+                }
                 return m;
             }
         }
@@ -313,11 +318,19 @@ internal sealed class GlyphOutline {
         } catch (Exception) {
             throw new ArgumentException(UNREADABLE + "glyph number " + gid + " is damaged.");
         }
+        if (pen.outOfRange) {
+            throw new ArgumentException(UNREADABLE + "glyph number " + gid + " is damaged.");
+        }
         return pen.ToPath();
     }
 
     // ------------------------------------------------------------------
     // The path: the operators of PDF, in the units of the font
+
+    // The bound of the points of an outline, in the units of the font: a
+    // font's are within ±32,768, and a charstring's arithmetic can make larger
+    // ones, or ones not finite, which a path cannot have.
+    private const double MAX_COORDINATE = 1e6;
 
     /// <summary>Writes the path operators and finds the box of the points.</summary>
     internal sealed class Pen {
@@ -331,8 +344,14 @@ internal sealed class GlyphOutline {
         internal double x;
         internal double y;
         private bool open;      // A contour is begun and has a segment
+        internal bool outOfRange;   // A point past MAX_COORDINATE, or not finite
 
         private void Point(double px, double py) {
+            if (!(Math.Abs(px) <= MAX_COORDINATE && Math.Abs(py) <= MAX_COORDINATE)) {
+                outOfRange = true;  // NaN too
+                px = 0;
+                py = 0;
+            }
             if (px < xMin) xMin = px;
             if (py < yMin) yMin = py;
             if (px > xMax) xMax = px;
@@ -438,6 +457,7 @@ internal sealed class GlyphOutline {
         internal bool[] on = new bool[64];
         internal int count;
         internal List<int> ends = new List<int>();
+        internal int[] work = new int[1];   // The glyphs and points read for the outline, its parts' too
 
         internal void Add(double px, double py, bool onCurve) {
             if (count == x.Length) {
@@ -520,6 +540,13 @@ internal sealed class GlyphOutline {
         if (depth > 16) {
             throw new Subset.NotSubset();   // Composite glyphs nested too deep, or in a loop
         }
+        // A composite glyph of many parts, each of many parts, 16 deep, would
+        // take time and memory that grow exponentially: the work of a glyph is
+        // bounded, as that of a charstring is.
+        points.work[0]++;
+        if (points.work[0] > MAX_WORK) {
+            throw new Subset.NotSubset();
+        }
         int start;
         int end;
         if (longOffsets) {
@@ -555,6 +582,10 @@ internal sealed class GlyphOutline {
                 throw new Subset.NotSubset();
             }
             n = ends[i] + 1;
+        }
+        points.work[0] += n;
+        if (points.work[0] > MAX_WORK) {
+            throw new Subset.NotSubset();
         }
         p += 2 * contours;
         int instructions = U16(p);
@@ -654,6 +685,7 @@ internal sealed class GlyphOutline {
                 throw new Subset.NotSubset();
             }
             Points part = new Points();
+            part.work = points.work;
             TrueTypePoints(component, part, depth + 1);
             for (int i = 0; i < part.count; i++) {
                 double px = part.x[i];
@@ -727,7 +759,8 @@ internal sealed class GlyphOutline {
     // ------------------------------------------------------------------
     // CFF: the Type 2 charstrings (Adobe Technical Note #5177)
 
-    // The most bytes of charstrings a glyph runs, subroutines and all.
+    // The most bytes of charstrings a glyph runs, subroutines and all; and the
+    // most glyphs and points a TrueType glyph reads, its parts and theirs.
     private const int MAX_WORK = 1 << 20;
 
     /// <summary>The interpreter of the charstring of one glyph.</summary>
@@ -1146,22 +1179,29 @@ internal sealed class GlyphOutline {
                 Push(a);
                 break;
             case 29: {  // index
-                int index = (int) Pop();
-                if (index < 0) {
-                    index = 0;
-                }
-                if (index >= sp) {
+                double v = Pop();
+                // Compared as a number before it is made an integer, which
+                // differs from language to language and from processor to
+                // processor for one too large
+                if (Double.IsNaN(v) || v >= sp) {
                     throw new Subset.NotSubset();
+                }
+                int index = 0;
+                if (v > 0) {
+                    index = (int) v;
                 }
                 Push(stack[sp - 1 - index]);
                 break;
             }
             case 30: {  // roll
-                int j = (int) Pop();
-                int n = (int) Pop();
-                if (n <= 0 || n > sp) {
+                double jv = Pop();
+                double nv = Pop();
+                // Compared as numbers before they are made integers, as index
+                if (!(nv >= 1 && nv <= sp) || !(Math.Abs(jv) <= 1e9)) {
                     throw new Subset.NotSubset();
                 }
+                int j = (int) jv;
+                int n = (int) nv;
                 double[] part = new double[n];
                 for (int m = 0; m < n; m++) {
                     part[((m + j) % n + n) % n] = stack[sp - n + m];

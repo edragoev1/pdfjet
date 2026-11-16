@@ -3218,6 +3218,12 @@ public class Page {
             pdf.Fail(new ArgumentException("DrawGlyphs needs an x and a y for each glyph."));
             return;
         }
+        foreach (float v in positions) {
+            if (!(Math.Abs(v) <= 1e6)) {    // NaN too
+                pdf.Fail(new ArgumentException("DrawGlyphs needs positions between -1,000,000 and 1,000,000 points."));
+                return;
+            }
+        }
         Subset.Program program = font.program;
         if (program.outline == null) {
             try {

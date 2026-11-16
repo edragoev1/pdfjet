@@ -23,10 +23,16 @@ namespace PDFjet.NET {
 // the pen the cell left. Lines of different pens that overlap are written in
 // the order the cells drew them, so the one on top is on top still.
 internal sealed class TableLines {
+    // The margin around a line, in points, within which another line may
+    // paint a pixel of its own: a line covers whole pixels of a screen or a
+    // printer, the hairline of width 0 one at least, so two lines that only
+    // meet, end to end or edge to edge, may paint one pixel.
+    private const float TABLE_LINE_MARGIN = 1;
+
     // A line: horizontal at y = at, from x = from to x = to, or vertical at
     // x = at, from y = from to y = to, with the pen of the page when the cell
     // drew it, and how far its caps reach past its ends.
-    private sealed class Segment {
+    internal sealed class Segment {
         internal readonly bool vertical;
         internal readonly float at;
         internal float from;
@@ -60,13 +66,12 @@ internal sealed class TableLines {
         internal float X1() { return vertical ? at + width/2 : to + cap; }
         internal float Y1() { return vertical ? to + cap : at + width/2; }
 
-        // True when the line and the rectangle share more than an edge.
-        internal bool Overlaps(float left, float top, float right, float bottom) {
-            return X0() < right && left < X1() && Y0() < bottom && top < Y1();
-        }
-
+        // True when the lines may paint a pixel in common: they are then
+        // stroked in the order the cells drew them.
         internal bool Overlaps(Segment other) {
-            return Overlaps(other.X0(), other.Y0(), other.X1(), other.Y1());
+            const float m = 2 * TABLE_LINE_MARGIN;
+            return X0() < other.X1() + m && other.X0() < X1() + m &&
+                    Y0() < other.Y1() + m && other.Y0() < Y1() + m;
         }
     }
 

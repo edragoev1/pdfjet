@@ -488,5 +488,36 @@ public class SubsetTest {
         // Drawn, glyph 1000 cannot be read, and the font is embedded whole.
         AssertRefused(ttf, Used(36, 1000));
     }
+
+    // A TrueType subset is numbered again, so its CIDFont maps the CIDs to the
+    // glyphs kept with a CIDToGIDMap stream; /Identity drew glyph 40 of a
+    // subset of 6 for H (the review of 16 November 2026). The whole font keeps
+    // /Identity.
+    [Fact]
+    public void SubsetOfATrueTypeFontAddedToAnExistingPDFMapsItsCIDs() {
+        List<PDFobj> objects = SubsetInExistingPDF(PLEX, true);
+        string value = TestSupport.FindObject(objects, "/CIDToGIDMap").GetValue("/CIDToGIDMap");
+        Assert.NotEqual("/Identity", value);
+        int number = Int32.Parse(value.Split(' ')[0]);
+        byte[] m = null;
+        foreach (PDFobj obj in objects) {
+            if (obj.number == number) {
+                m = obj.GetData();
+            }
+        }
+        Assert.NotNull(m);
+        // .notdef, H, e, l and o: the CIDs of H, e, l and o map to 1 to 4
+        List<int> gids = new List<int>();
+        for (int cid = 0; cid + 1 < m.Length; cid += 2) {
+            int gid = m[cid] << 8 | m[cid + 1];
+            if (gid != 0) {
+                gids.Add(gid);
+            }
+        }
+        Assert.Equal(new List<int> {1, 2, 3, 4}, gids);
+
+        List<PDFobj> whole = SubsetInExistingPDF(PLEX, false);
+        Assert.Equal("/Identity", TestSupport.FindObject(whole, "/CIDToGIDMap").GetValue("/CIDToGIDMap"));
+    }
 }
 }

@@ -668,10 +668,10 @@ namespace PDFjet.NET {
                 // field, so every field of it is drawn whole and none is
                 // measured here.
                 String drawn = (clipped != null && clipped[i] < widths[i])
-                        ? Fit(text, MeasureOf(font), clipped[i]) : text;
+                        ? Fit(text, MeasureOf(header), clipped[i]) : text;
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
-                    xText = (vertLines[i + 1] - this.padding) - MeasureOf(font).Width(drawn);
+                    xText = (vertLines[i + 1] - this.padding) - MeasureOf(header).Width(drawn);
                 }
                 if (tagged) {
                     // A cell holds its text and nothing else, so the cell
@@ -691,7 +691,7 @@ namespace PDFjet.NET {
                     page.AddArtifactBMC();
                 }
                 if (drawn.Length > 0) {
-                    DrawText(font, drawn, xText, this.yText);
+                    DrawText(header, drawn, xText, this.yText);
                 }
                 page.AddEMC();
             }
@@ -831,7 +831,7 @@ namespace PDFjet.NET {
             this.widths = new float[this.numberOfColumns];
             this.alignment = new Alignment[this.numberOfColumns];
 
-            Measure(header, f1);
+            Measure(header, true);
             int rowNumber = 0;
             foreach (string[] fields in rows) {
                 if (fields.Length < this.fieldsNeeded) {
@@ -842,7 +842,7 @@ namespace PDFjet.NET {
                         alignment[i] = GetAlignment(fields[columns[i]]);
                     }
                 }
-                Measure(fields, f2);
+                Measure(fields, false);
                 rowNumber++;
             }
             this.dataRows = rowNumber;
@@ -856,10 +856,10 @@ namespace PDFjet.NET {
         // Widens the columns to fit the fields of a row, measured in the font
         // the row is drawn with: the header font for the header and the body
         // font for a row under it.
-        private void Measure(string[] fields, Font font) {
+        private void Measure(string[] fields, bool header) {
             for (int i = 0; i < this.numberOfColumns; i++) {
                 String text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-                float width = MeasureOf(font).Width(text);
+                float width = MeasureOf(header).Width(text);
                 if (width > widths[i]) {
                     this.widths[i] = width;
                 }
@@ -1139,17 +1139,17 @@ namespace PDFjet.NET {
                     this.vertLines[i + 1] = vertLineX;
                 }
             }
-            this.headerLines = WrapFields(headerFields, f1, out this.headerCount);
+            this.headerLines = WrapFields(headerFields, true, out this.headerCount);
         }
 
         // Returns the lines of each field of the row drawn, wrapped to the width
         // of its column in the font, and the most lines of any of them.
-        private string[][] WrapFields(string[] fields, Font font, out int count) {
+        private string[][] WrapFields(string[] fields, bool header, out int count) {
             string[][] lines = new string[this.numberOfColumns][];
             count = 1;
             for (int i = 0; i < this.numberOfColumns; i++) {
                 string text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-                lines[i] = Wrap(text, MeasureOf(font), textWidths[i]);
+                lines[i] = Wrap(text, MeasureOf(header), textWidths[i]);
                 count = Math.Max(count, lines[i].Length);
             }
             return lines;
@@ -1242,7 +1242,7 @@ namespace PDFjet.NET {
             }
             Font font = f2;
             float lineHeight = font.ascent + font.descent;
-            string[][] lines = WrapFields(fields, font, out int count);
+            string[][] lines = WrapFields(fields, false, out int count);
             float limit = page.GetHeight() - bottomMargin;
             if (count > 1 && this.yText + (float) ((float) (count - 1) * lineHeight) > limit && !firstRowOnPage) {
                 DrawTheVerticalLines();
@@ -1260,7 +1260,7 @@ namespace PDFjet.NET {
                             whole[i] = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
                             string[] cut = new string[most];
                             Array.Copy(lines[i], cut, most);
-                            cut[most - 1] = Mark(cut[most - 1], MeasureOf(font), textWidths[i]);
+                            cut[most - 1] = Mark(cut[most - 1], MeasureOf(false), textWidths[i]);
                             lines[i] = cut;
                         }
                     }
@@ -1339,13 +1339,13 @@ namespace PDFjet.NET {
                     }
                     float xText = vertLines[i] + this.padding;
                     if (alignment[i] == Alignment.RIGHT) {
-                        xText = (vertLines[i + 1] - this.padding) - MeasureOf(font).Width(line);
+                        xText = (vertLines[i + 1] - this.padding) - MeasureOf(header).Width(line);
                     }
                     float yText = this.yText;
                     if (k > 0) {
                         yText += (float) ((float) k * lineHeight);
                     }
-                    DrawText(font, line, xText, yText);
+                    DrawText(header, line, xText, yText);
                 }
                 page.AddEMC();
             }
@@ -1392,7 +1392,7 @@ namespace PDFjet.NET {
                     newPage = false;
                     first = true;
                 }
-                WrapFields(fields, font, out int lines);
+                WrapFields(fields, false, out int lines);
                 float limit = pageHeight - this.bottomMargin;
                 if (lines > 1 && yPos + (float) ((float) (lines - 1) * lineHeight) > limit && !first) {
                     count++;
@@ -1434,19 +1434,22 @@ namespace PDFjet.NET {
             }
         }
 
-        // Returns the measure of the font: the rows' with their fallback font,
-        // the header's with its own.
-        private TextMeasure MeasureOf(Font font) {
-            if (font == f2) {
-                return new TextMeasure(font, fallback2);
+        // Returns the measure of the header's font with its fallback font, or
+        // of the rows' with theirs: by the row, not by the font, as the header
+        // and the rows can have one font and fallback fonts of their own.
+        internal TextMeasure MeasureOf(bool header) {
+            if (header) {
+                return new TextMeasure(f1, fallback1);
             }
-            return new TextMeasure(font, fallback1);
+            return new TextMeasure(f2, fallback2);
         }
 
         // Draws the text at its baseline, in the font and its fallback font, if
         // it has one.
-        private void DrawText(Font font, string text, float x, float y) {
-            Font fallback = MeasureOf(font).fallback;
+        private void DrawText(bool header, string text, float x, float y) {
+            TextMeasure m = MeasureOf(header);
+            Font font = m.font;
+            Font fallback = m.fallback;
             if (fallback == null) {
                 page.DrawTextLine(font, text, x, y);
                 return;

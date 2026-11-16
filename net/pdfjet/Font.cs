@@ -496,8 +496,8 @@ public class Font {
     // each word: its advances and its kerning in font units, and the first and
     // last glyph drawn, between which the kerning of two texts joined is.
     internal struct Run {
-        internal int advance;
-        internal int kerning;
+        internal long advance;
+        internal long kerning;
         internal int first;
         internal int last;
     }
@@ -557,9 +557,9 @@ public class Font {
     // summed exactly in a float: below 2^24, the float sums of whole numbers
     // that StringWidth makes are exact, whatever their order.
     internal float RunWidth(Run r, float fontSize) {
-        long units = (long) r.advance + r.kerning;
-        if (r.advance >= (1 << 24) || Math.Abs((long) r.kerning) >= (1 << 24) ||
-                Math.Abs(units) >= (1 << 24)) {
+        long units = r.advance + r.kerning;
+        if (r.advance >= (1 << 24) || r.kerning >= (1 << 24) || r.kerning <= -(1 << 24) ||
+                units >= (1 << 24) || units <= -(1 << 24)) {
             return -1f;
         }
         float width = r.advance;
