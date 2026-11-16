@@ -74,8 +74,14 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   the same run with PDFjet reading the .ttf files, every library the same
   files, to set beside it (Common.fontFormat in java/src, and the font paths
   of dotnet/Program.cs, go/main.go and swift/Sources/Bench/main.swift). Both
-  on the tag of 9.1.9, after a reboot, the machine otherwise idle, then
-  decide what the report shows. Not published until then.
+  on the tag of 9.1.9, after a reboot, the machine otherwise idle. **The
+  report shows both, with a checkbox (the owner, 16 November 2026):** one
+  click switches every chart and table between the .ttf run and the .otf
+  run, with no reload and nothing moving; .ttf, which every library reads,
+  is the default. A library that cannot embed an .otf of CFF outlines shows
+  "not supported" in the .otf view, checked by a real run and its
+  documentation, never assumed. The same toggle on pdfjet.com/benchmarks,
+  its wording approved first. Not published until then.
 
 - ✅ **DONE 15 November 2026, in 9.1.9, not after it (pdfjet d3a58f4b4): the
   32 business documents of PDFjet Forms as examples 53 to 84, and labels as
