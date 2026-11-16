@@ -1573,7 +1573,7 @@ import Testing
             ("<text x=\"10\" y=\"20\"><tspan systemLanguage=\"de\" x=\"50\">Hallo</tspan>Hello</text>", "<text x=\"10\" y=\"20\">Hello</text>"),
             // A place of its own in the run after it stays.
             ("<text y=\"20\"><tspan systemLanguage=\"de\" x=\"50\">Hallo</tspan><tspan x=\"70\">Hello</tspan></text>", "<text y=\"20\" x=\"70\">Hello</text>"),
-            ("<text x=\"10\" y=\"20\" dx=\"2\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan dx=\"3\">Hello</tspan></text>", "<text x=\"10\" y=\"20\" dx=\"5\">Hello</text>"),
+            ("<text x=\"10\" y=\"20\" dx=\"2\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan dx=\"3\">Hello</tspan></text>", "<text x=\"10\" y=\"20\" dx=\"3\">Hello</text>"),
             // Spaces collapse among what is drawn.
             ("<text x=\"10\" y=\"20\"> <tspan systemLanguage=\"de\">Hallo</tspan> <tspan systemLanguage=\"en\">Hello</tspan> </text>", "<text x=\"10\" y=\"20\">Hello</text>"),
             ("<text x=\"10\" y=\"20\">Hello <tspan systemLanguage=\"de\">Welt</tspan> <tspan systemLanguage=\"de\">x</tspan></text>", "<text x=\"10\" y=\"20\">Hello</text>"),
@@ -1820,6 +1820,51 @@ import Testing
                 #expect("\(error)".contains("20 MB"), "\(error)")
                 throw error
             }
+        }
+    }
+
+    // The review of 16 November 2026, after its fixes
+
+    @Test func pathDataUsedAgainCountsAQuarterOfItsCharacters() throws {
+        // A symbol and a clip path of 1,000 curves, 62,000 characters, used 350
+        // times: 350,000 operations, which MAX_OPERATIONS holds, and 21,700,000
+        // characters, which counted whole were more than MAX_ATTRIBUTE_TEXT.
+        var d = "M0.123456 0.123456"
+        for i in 0..<1000 {
+            for j in 0..<6 {
+                d += (j == 0 ? " C" : " ") + String(10 + (i * 7 + j) % 90) + ".123456"
+            }
+        }
+        _ = try image("<svg width=\"100\" height=\"100\"><defs><path id=\"c\" d=\"" + d + "\"/></defs>"
+                + String(repeating: "<use href=\"#c\" x=\"1\" y=\"2\"/>", count: 350) + "</svg>")
+        _ = try image("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><path d=\"" + d + "\"/></clipPath>"
+                + String(repeating: "<rect width=\"10\" height=\"10\" clip-path=\"url(#c)\"/>", count: 350) + "</svg>")
+        // Path data of few operations and many characters is counted.
+        let padded = "<svg width=\"10\" height=\"10\"><defs><path id=\"p\" d=\"M0 0"
+                + String(repeating: " ", count: 1000000) + "L1 1\"/></defs>"
+                + String(repeating: "<use href=\"#p\"/>", count: 100) + "</svg>"
+        #expect(throws: (any Error).self) {
+            do {
+                _ = try image(padded)
+            } catch {
+                #expect("\(error)".contains("characters of attributes"), "\(error)")
+                throw error
+            }
+        }
+    }
+
+    @Test func eachOfXAndDxOfATextIsOfTheElementClosestToTheCharacter() throws {
+        for (svg, same) in [
+            // The x of a tspan keeps the dx of the text, as a browser draws it.
+            ("<text x=\"10\" y=\"50\" dx=\"5\"><tspan x=\"20\">A</tspan></text>", "<text x=\"25\" y=\"50\">A</text>"),
+            ("<text x=\"10\" y=\"50\" dy=\"5\"><tspan y=\"20\">A</tspan></text>", "<text x=\"10\" y=\"25\">A</text>"),
+            // The dx of a tspan replaces that of the text.
+            ("<text x=\"10\" y=\"50\" dx=\"5\"><tspan dx=\"3\">B</tspan></text>", "<text x=\"13\" y=\"50\">B</text>"),
+            ("<text x=\"10\" y=\"50\" dy=\"5\"><tspan dy=\"3\">B</tspan></text>", "<text x=\"10\" y=\"53\">B</text>"),
+            ("<text x=\"10\" y=\"50\"><tspan dx=\"5\">C</tspan></text>", "<text x=\"15\" y=\"50\">C</text>"),
+        ] {
+            let content = try draw("<svg width=\"200\" height=\"100\">" + svg + "</svg>")
+            #expect(content == (try draw("<svg width=\"200\" height=\"100\">" + same + "</svg>")) && !content.isEmpty, "\(svg) \(content)")
         }
     }
 }

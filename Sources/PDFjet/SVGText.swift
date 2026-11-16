@@ -31,21 +31,13 @@ class SVGText {
         let choices: [Choice]?
         let at: [Double]
 
-        // Adds the move to the x, y, dx and dy kept for the first character.
+        // Sets the x, y, dx and dy the move has on those kept for the first
+        // character. A character takes each of them from the element closest
+        // to it that has it (SVG 1.1 section 10.5): the move of an element
+        // inside replaces what it has, and keeps the others.
         func apply(to pending: inout [Double]) {
-            if !at[0].isNaN {
-                pending[0] = at[0]
-                pending[2] = 0.0
-            }
-            if !at[1].isNaN {
-                pending[1] = at[1]
-                pending[3] = 0.0
-            }
-            if !at[2].isNaN {
-                pending[2] += at[2]
-            }
-            if !at[3].isNaN {
-                pending[3] += at[3]
+            for i in 0..<4 where !at[i].isNaN {
+                pending[i] = at[i]
             }
         }
     }

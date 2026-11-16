@@ -69,6 +69,12 @@ const maxSVGOperations = 4000000
 // November 2026). An attribute counts as it is written, its name, its value,
 // the = and the quotes, and a space; the limit is the most a file holds. The
 // attributes of a file read once are not counted: they grow with the file.
+// Path data, the d of a path and the points of a polyline or a polygon, counts
+// a quarter of its characters, about 4 for each operation maxSVGOperations
+// counts: counted whole, a path of 1,000 operations used 1,700 times, 73 KB
+// drawn in 2 s, was refused, and a quarter still refuses path data padded with
+// spaces or long numbers, few operations and many characters, at 80,000,000
+// characters read again (review of 16 November 2026).
 const maxSVGAttributeText = 20000000
 
 // maxSVGDepth is how deep the elements being drawn may nest, by groups, use
@@ -365,6 +371,11 @@ func (r *svgReader) countOperations(count int) error {
 // again, and fails when there are too many.
 func (r *svgReader) countAttributes(node *xmlparser.XMLNode) error {
 	for _, attr := range node.Attributes() {
+		if attr.Name == "d" || attr.Name == "points" {
+			// Path data: a quarter of its characters
+			r.attrText += int64(utf8.RuneCountInString(attr.Value) / 4)
+			continue
+		}
 		r.attrText += int64(4 + utf8.RuneCountInString(attr.Name) + utf8.RuneCountInString(attr.Value))
 	}
 	if r.attrText > maxSVGAttributeText {

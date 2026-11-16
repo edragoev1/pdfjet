@@ -41,21 +41,15 @@ class SVGText {
             this.at = at;
         }
 
-        // Adds the move to the x, y, dx and dy kept for the first character.
+        // Sets the x, y, dx and dy the move has on those kept for the first
+        // character. A character takes each of them from the element closest
+        // to it that has it (SVG 1.1 section 10.5): the move of an element
+        // inside replaces what it has, and keeps the others.
         void applyTo(double[] pending) {
-            if (!Double.isNaN(at[0])) {
-                pending[0] = at[0];
-                pending[2] = 0.0;
-            }
-            if (!Double.isNaN(at[1])) {
-                pending[1] = at[1];
-                pending[3] = 0.0;
-            }
-            if (!Double.isNaN(at[2])) {
-                pending[2] += at[2];
-            }
-            if (!Double.isNaN(at[3])) {
-                pending[3] += at[3];
+            for (int i = 0; i < 4; i++) {
+                if (!Double.isNaN(at[i])) {
+                    pending[i] = at[i];
+                }
             }
         }
     }
