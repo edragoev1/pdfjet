@@ -22,10 +22,16 @@ import java.util.*;
 // the pen the cell left. Lines of different pens that overlap are written in
 // the order the cells drew them, so the one on top is on top still.
 final class TableLines {
+    // The margin around a line, in points, within which another line may
+    // paint a pixel of its own: a line covers whole pixels of a screen or a
+    // printer, the hairline of width 0 one at least, so two lines that only
+    // meet, end to end or edge to edge, may paint one pixel.
+    private static final float TABLE_LINE_MARGIN = 1;
+
     // A line: horizontal at y = at, from x = from to x = to, or vertical at
     // x = at, from y = from to y = to, with the pen of the page when the cell
     // drew it, and how far its caps reach past its ends.
-    private static final class Segment {
+    static final class Segment {
         final boolean vertical;
         final float at;
         float from;
@@ -59,13 +65,12 @@ final class TableLines {
         float x1() { return vertical ? at + width/2 : to + cap; }
         float y1() { return vertical ? to + cap : at + width/2; }
 
-        // True when the line and the rectangle share more than an edge.
-        boolean overlaps(float left, float top, float right, float bottom) {
-            return x0() < right && left < x1() && y0() < bottom && top < y1();
-        }
-
+        // True when the lines may paint a pixel in common: they are then
+        // stroked in the order the cells drew them.
         boolean overlaps(Segment other) {
-            return overlaps(other.x0(), other.y0(), other.x1(), other.y1());
+            final float m = 2 * TABLE_LINE_MARGIN;
+            return x0() < other.x1() + m && other.x0() < x1() + m
+                    && y0() < other.y1() + m && other.y0() < y1() + m;
         }
     }
 

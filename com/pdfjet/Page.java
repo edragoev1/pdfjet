@@ -3302,6 +3302,13 @@ final public class Page {
             pdf.fail(new IllegalArgumentException("drawGlyphs needs an x and a y for each glyph."));
             return;
         }
+        for (float v : positions) {
+            if (!(Math.abs(v) <= 1e6)) {    // NaN too
+                pdf.fail(new IllegalArgumentException(
+                        "drawGlyphs needs positions between -1,000,000 and 1,000,000 points."));
+                return;
+            }
+        }
         Subset.Program program = font.program;
         if (program.outline == null) {
             try {
