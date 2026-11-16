@@ -662,7 +662,10 @@ embed. In this order:
    font. Use the files of the `static` folder of the download, one for each
    weight. A variable font, such as `Roboto[wght].ttf`, is drawn in its
    default weight only, so it gives Regular even for Bold, and a CFF2
-   variable font is refused.
+   variable font is refused. A variable font with no static files can be
+   made into one for each weight with the free fontTools
+   (`pip install fonttools`):
+   `fonttools varLib.instancer Roboto[wght].ttf wght=700 -o Roboto-Bold.ttf`.
 3. **Any other font only once its license says so.** The SIL Open Font
    License is the one to look for. The fonts that come with Windows or
    macOS, such as Georgia, Tahoma, Arial, Calibri or Helvetica Neue, are
