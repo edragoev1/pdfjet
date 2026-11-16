@@ -1771,7 +1771,7 @@ func TestSVGImageATspanHonorsTheSystemLanguage(t *testing.T) {
 		{`<text x="10" y="20"><tspan ` + de + ` x="50">Hallo</tspan>Hello</text>`, `<text x="10" y="20">Hello</text>`},
 		// A place of its own in the run after it stays.
 		{`<text y="20"><tspan ` + de + ` x="50">Hallo</tspan><tspan x="70">Hello</tspan></text>`, `<text y="20" x="70">Hello</text>`},
-		{`<text x="10" y="20" dx="2"><tspan ` + de + `>Hallo</tspan><tspan dx="3">Hello</tspan></text>`, `<text x="10" y="20" dx="5">Hello</text>`},
+		{`<text x="10" y="20" dx="2"><tspan ` + de + `>Hallo</tspan><tspan dx="3">Hello</tspan></text>`, `<text x="10" y="20" dx="3">Hello</text>`},
 		// Spaces collapse among what is drawn.
 		{`<text x="10" y="20"> <tspan ` + de + `>Hallo</tspan> <tspan ` + en + `>Hello</tspan> </text>`, `<text x="10" y="20">Hello</text>`},
 		{`<text x="10" y="20">Hello <tspan ` + de + `>Welt</tspan> <tspan ` + de + `>x</tspan></text>`, `<text x="10" y="20">Hello</text>`},
@@ -2094,5 +2094,54 @@ func TestSVGPathDataIsReadOneOperationAtATime(t *testing.T) {
 	}
 	if read != 1 {
 		t.Errorf("%d read", read)
+	}
+}
+
+// The review of 16 November 2026, after its fixes
+
+func TestSVGPathDataUsedAgainCountsAQuarterOfItsCharacters(t *testing.T) {
+	// A symbol and a clip path of 1,000 curves, 62,000 characters, used 350
+	// times: 350,000 operations, which maxSVGOperations holds, and 21,700,000
+	// characters, which counted whole were more than maxSVGAttributeText.
+	var d strings.Builder
+	d.WriteString("M0.123456 0.123456")
+	for i := 0; i < 1000; i++ {
+		for j := 0; j < 6; j++ {
+			if j == 0 {
+				d.WriteString(" C")
+			} else {
+				d.WriteString(" ")
+			}
+			d.WriteString(strconv.Itoa(10+(i*7+j)%90) + ".123456")
+		}
+	}
+	testNewSVG(t, `<svg width="100" height="100"><defs><path id="c" d="`+d.String()+`"/></defs>`+
+		strings.Repeat(`<use href="#c" x="1" y="2"/>`, 350)+`</svg>`)
+	testNewSVG(t, `<svg width="100" height="100"><clipPath id="c"><path d="`+d.String()+`"/></clipPath>`+
+		strings.Repeat(`<rect width="10" height="10" clip-path="url(#c)"/>`, 350)+`</svg>`)
+	// Path data of few operations and many characters is counted.
+	_, err := NewSVGImage(strings.NewReader(`<svg width="10" height="10"><defs><path id="p" d="M0 0` +
+		strings.Repeat(" ", 1000000) + `L1 1"/></defs>` + strings.Repeat(`<use href="#p"/>`, 100) + `</svg>`))
+	if err == nil || !strings.Contains(err.Error(), "characters of attributes") {
+		t.Errorf("%v", err)
+	}
+}
+
+func TestSVGTextEachOfXAndDxIsOfTheElementClosestToTheCharacter(t *testing.T) {
+	text := func(body string) string {
+		return `<svg width="200" height="100">` + body + `</svg>`
+	}
+	for _, test := range []struct{ svg, same string }{
+		// The x of a tspan keeps the dx of the text, as a browser draws it.
+		{`<text x="10" y="50" dx="5"><tspan x="20">A</tspan></text>`, `<text x="25" y="50">A</text>`},
+		{`<text x="10" y="50" dy="5"><tspan y="20">A</tspan></text>`, `<text x="10" y="25">A</text>`},
+		// The dx of a tspan replaces that of the text.
+		{`<text x="10" y="50" dx="5"><tspan dx="3">B</tspan></text>`, `<text x="13" y="50">B</text>`},
+		{`<text x="10" y="50" dy="5"><tspan dy="3">B</tspan></text>`, `<text x="10" y="53">B</text>`},
+		{`<text x="10" y="50"><tspan dx="5">C</tspan></text>`, `<text x="15" y="50">C</text>`},
+	} {
+		if content, want := testDrawSVG(t, text(test.svg)), testDrawSVG(t, text(test.same)); content != want || content == "" {
+			t.Errorf("%s: content %q, not %q", test.svg, content, want)
+		}
 	}
 }

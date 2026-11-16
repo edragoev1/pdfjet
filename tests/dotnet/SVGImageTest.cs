@@ -1643,7 +1643,7 @@ public class SVGImageTest {
             new[] {"<text x=\"10\" y=\"20\"><tspan systemLanguage=\"de\" x=\"50\">Hallo</tspan>Hello</text>", "<text x=\"10\" y=\"20\">Hello</text>"},
             // A place of its own in the run after it stays.
             new[] {"<text y=\"20\"><tspan systemLanguage=\"de\" x=\"50\">Hallo</tspan><tspan x=\"70\">Hello</tspan></text>", "<text y=\"20\" x=\"70\">Hello</text>"},
-            new[] {"<text x=\"10\" y=\"20\" dx=\"2\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan dx=\"3\">Hello</tspan></text>", "<text x=\"10\" y=\"20\" dx=\"5\">Hello</text>"},
+            new[] {"<text x=\"10\" y=\"20\" dx=\"2\"><tspan systemLanguage=\"de\">Hallo</tspan><tspan dx=\"3\">Hello</tspan></text>", "<text x=\"10\" y=\"20\" dx=\"3\">Hello</text>"},
             // Spaces collapse among what is drawn.
             new[] {"<text x=\"10\" y=\"20\"> <tspan systemLanguage=\"de\">Hallo</tspan> <tspan systemLanguage=\"en\">Hello</tspan> </text>", "<text x=\"10\" y=\"20\">Hello</text>"},
             new[] {"<text x=\"10\" y=\"20\">Hello <tspan systemLanguage=\"de\">Welt</tspan> <tspan systemLanguage=\"de\">x</tspan></text>", "<text x=\"10\" y=\"20\">Hello</text>"},
@@ -1861,6 +1861,47 @@ public class SVGImageTest {
                 "<svg width=\"100\" height=\"100\"><g id=\"a\"><rect width=\"5\" height=\"5\"/><use href=\"#b\" x=\"10\"/></g>"
                         + "<defs><g id=\"b\"><use href=\"#a\" x=\"10\"/></g></defs></svg>"}) {
             Assert.Equal("0 0 0 rg\n0 792 m\n5 792 l\n5 787 l\n0 787 l\nf\n", Draw(svg));
+        }
+    }
+
+    // The review of 16 November 2026, after its fixes
+
+    [Fact]
+    public void PathDataUsedAgainCountsAQuarterOfItsCharacters() {
+        // A symbol and a clip path of 1,000 curves, 62,000 characters, used 350
+        // times: 350,000 operations, which MAX_OPERATIONS holds, and 21,700,000
+        // characters, which counted whole were more than MAX_ATTRIBUTE_TEXT.
+        StringBuilder d = new StringBuilder("M0.123456 0.123456");
+        for (int i = 0; i < 1000; i++) {
+            for (int j = 0; j < 6; j++) {
+                d.Append(j == 0 ? " C" : " ").Append(10 + (i * 7 + j) % 90).Append(".123456");
+            }
+        }
+        Parse("<svg width=\"100\" height=\"100\"><defs><path id=\"c\" d=\"" + d + "\"/></defs>"
+                + Repeat("<use href=\"#c\" x=\"1\" y=\"2\"/>", 350) + "</svg>");
+        Parse("<svg width=\"100\" height=\"100\"><clipPath id=\"c\"><path d=\"" + d + "\"/></clipPath>"
+                + Repeat("<rect width=\"10\" height=\"10\" clip-path=\"url(#c)\"/>", 350) + "</svg>");
+        // Path data of few operations and many characters is counted.
+        ArgumentException e = Assert.Throws<ArgumentException>(() => Parse(
+                "<svg width=\"10\" height=\"10\"><defs><path id=\"p\" d=\"M0 0" + Repeat(" ", 1000000)
+                        + "L1 1\"/></defs>" + Repeat("<use href=\"#p\"/>", 100) + "</svg>"));
+        Assert.Contains("characters of attributes", e.Message);
+    }
+
+    [Fact]
+    public void EachOfXAndDxOfATextIsOfTheElementClosestToTheCharacter() {
+        foreach (string[] test in new string[][] {
+            // The x of a tspan keeps the dx of the text, as a browser draws it.
+            new[] {"<text x=\"10\" y=\"50\" dx=\"5\"><tspan x=\"20\">A</tspan></text>", "<text x=\"25\" y=\"50\">A</text>"},
+            new[] {"<text x=\"10\" y=\"50\" dy=\"5\"><tspan y=\"20\">A</tspan></text>", "<text x=\"10\" y=\"25\">A</text>"},
+            // The dx of a tspan replaces that of the text.
+            new[] {"<text x=\"10\" y=\"50\" dx=\"5\"><tspan dx=\"3\">B</tspan></text>", "<text x=\"13\" y=\"50\">B</text>"},
+            new[] {"<text x=\"10\" y=\"50\" dy=\"5\"><tspan dy=\"3\">B</tspan></text>", "<text x=\"10\" y=\"53\">B</text>"},
+            new[] {"<text x=\"10\" y=\"50\"><tspan dx=\"5\">C</tspan></text>", "<text x=\"15\" y=\"50\">C</text>"},
+        }) {
+            string content = Draw("<svg width=\"200\" height=\"100\">" + test[0] + "</svg>");
+            Assert.True(Draw("<svg width=\"200\" height=\"100\">" + test[1] + "</svg>") == content, test[0] + " " + content);
+            Assert.True(content.Length > 0, test[0]);
         }
     }
 }

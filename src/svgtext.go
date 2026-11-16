@@ -52,21 +52,15 @@ func newSVGPending() [4]float64 {
 	return [4]float64{math.NaN(), math.NaN(), 0, 0}
 }
 
-// applyTo adds the move to the x, y, dx and dy kept for the first character.
+// applyTo sets the x, y, dx and dy the move has on those kept for the first
+// character. A character takes each of them from the element closest to it
+// that has it (SVG 1.1 section 10.5): the move of an element inside replaces
+// what it has, and keeps the others.
 func (move *svgTextMove) applyTo(pending *[4]float64) {
-	if !math.IsNaN(move.at[0]) {
-		pending[0] = move.at[0]
-		pending[2] = 0.0
-	}
-	if !math.IsNaN(move.at[1]) {
-		pending[1] = move.at[1]
-		pending[3] = 0.0
-	}
-	if !math.IsNaN(move.at[2]) {
-		pending[2] += move.at[2]
-	}
-	if !math.IsNaN(move.at[3]) {
-		pending[3] += move.at[3]
+	for i, value := range move.at {
+		if !math.IsNaN(value) {
+			pending[i] = value
+		}
 	}
 }
 

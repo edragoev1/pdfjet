@@ -69,6 +69,13 @@ public class SVGImage : Drawable {
     // value, the = and the quotes, and a space; the limit is the most a file
     // holds. The attributes of a file read once are not counted: they grow
     // with the file.
+    // Path data, the d of a path and the points of a polyline or a polygon,
+    // counts a quarter of its characters, about 4 for each operation
+    // MAX_OPERATIONS counts: counted whole, a path of 1,000 operations used
+    // 1,700 times, 73 KB drawn in 2 s, was refused, and a quarter still
+    // refuses path data padded with spaces or long numbers, few operations and
+    // many characters, at 80,000,000 characters read again (review of 16
+    // November 2026).
     static let MAX_ATTRIBUTE_TEXT = 20000000
     // How deep the elements being drawn may nest, by groups, use elements and
     // markers, a state on the stack for each: a chain of use elements is flat in
@@ -321,6 +328,11 @@ public class SVGImage : Drawable {
     // throws when there are too many.
     private func countAttributes(_ node: PDFjetXMLNode) throws {
         for (name, value) in node.getAttributes() {
+            if name == "d" || name == "points" {
+                // Path data: a quarter of its characters
+                attributeText += value.unicodeScalars.count / 4
+                continue
+            }
             attributeText += 4 + name.unicodeScalars.count + value.unicodeScalars.count
         }
         if attributeText > SVGImage.MAX_ATTRIBUTE_TEXT {
