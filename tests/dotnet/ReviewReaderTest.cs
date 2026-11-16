@@ -291,8 +291,11 @@ public class ReviewReaderTest {
     [Fact]
     public void AnObjectThatTheTableListsManyTimesIsReadWithinABudget() {
         // The object with no endobj was read to the end of the PDF for each of
-        // its 1,000 entries.
-        List<PDFobj> objects = ReadLinearly(100, entries => {
+        // its 1,000 entries. Timed from 400 entries, 400 KB: from 100 the time
+        // grew 6 to 8 times for 4 times the entries, as the PDF outgrew the
+        // processor's cache, and from 400 on 4 times, the budget's linear
+        // bound (READ_PER_BYTE).
+        List<PDFobj> objects = ReadLinearly(400, entries => {
             StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
             sb.Append(Repeat("1 ", 500*entries));
             sb.Append("] >>\n");
