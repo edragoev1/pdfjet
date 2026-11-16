@@ -1327,7 +1327,8 @@ func (cs *charString) escaped(b1 int) error {
 		if err != nil {
 			return err
 		}
-		if int(index) < 0 || int(index) >= len(cs.storage) {
+		// Compared as a number before it is made an integer, as index
+		if !(index >= 0 && index < float64(len(cs.storage))) { // NaN too
 			return errNotSubset
 		}
 		cs.storage[int(index)] = value
@@ -1336,11 +1337,10 @@ func (cs *charString) escaped(b1 int) error {
 		if err != nil {
 			return err
 		}
-		index := int(v)
-		if index < 0 || index >= len(cs.storage) {
+		if !(v >= 0 && v < float64(len(cs.storage))) { // NaN too
 			return errNotSubset
 		}
-		return cs.push(cs.storage[index])
+		return cs.push(cs.storage[int(v)])
 	case 22: // ifelse
 		v1, v2, err := pop2()
 		if err != nil {

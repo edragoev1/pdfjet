@@ -121,14 +121,17 @@ func TestACFFGlyphOfAPointFarOutIsRefused(t *testing.T) {
 	}
 }
 
-// roll and index take their operands as numbers before integers, so that a
-// count of 2^31 is refused in the four ports alike.
+// roll, index, put and get take their operands as numbers before integers,
+// so that 2^31 is refused in the four ports alike.
 func TestACFFRollOrIndexOfAnOperandTooLargeIsRefused(t *testing.T) {
 	// 2^31 as 32767 1 add 65536 mul, with 65536 as 32767 2 mul 2 add
 	big := []byte{0x1C, 0x7F, 0xFF, 0x8C, 0x0C, 0x0A, 0x1C, 0x7F, 0xFF, 0x8D, 0x0C, 0x18, 0x8D, 0x0C, 0x0A, 0x0C, 0x18}
 	for name, op := range map[string][]byte{
 		"roll":  slicesConcat([]byte{0x8C, 0x8D, 0x8E, 0x8E}, big, []byte{0x0C, 0x1E}),
 		"index": slicesConcat([]byte{0x8C}, big, []byte{0x0C, 0x1D}),
+		// 1 at 2^31 put, and get of 2^31: the storage has 32 places
+		"put": slicesConcat([]byte{0x8C}, big, []byte{0x0C, 0x14}),
+		"get": slicesConcat(big, []byte{0x0C, 0x15}),
 	} {
 		cs := slicesConcat(op, []byte{0x8B, 0x8B, 0x15, 0x0E}) // 0 0 rmoveto endchar
 		if _, err := testCFFOutlineWithCharString(t, cs).outline(1); err == nil {
