@@ -354,6 +354,43 @@ class PNGImageTest {
         new PNGImage(new ByteArrayInputStream(png(1, 1, 8, 0, 0, 0, null, idat)));
     }
 
+    // A 1 x 1 gray PNG of the interlace method, with a chunk of the type and
+    // data after its IHDR chunk when the type is not null.
+    private static byte[] pngWithChunk(int interlace, String type, byte[] data) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'}, 0, 8);
+        chunk(bos, "IHDR", new byte[] {0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, (byte) interlace});
+        if (type != null) {
+            chunk(bos, type, data);
+        }
+        chunk(bos, "IDAT", Compressor.deflate(new byte[] {0, 0}));
+        chunk(bos, "IEND", new byte[0]);
+        return bos.toByteArray();
+    }
+
+    private static String sizeError(byte[] png) {
+        return assertThrows(Exception.class, () -> ImageSize.read(new ByteArrayInputStream(png))).getMessage();
+    }
+
+    @Test
+    void rejectsAnUnknownInterlaceMethodOrCriticalChunk() throws Exception {
+        // Only the interlace methods 0 and 1 are defined, and a critical chunk
+        // that is not known cannot be passed over (ISO/IEC 15948, 11.2.2 and
+        // 5.4). The rows of the image were read as if the method were 0, and
+        // the chunk was passed over.
+        for (int interlace : new int[] {2, 255}) {
+            assertEquals("Unknown PNG interlace method.", decodeError(pngWithChunk(interlace, null, null)));
+            assertEquals("Unknown PNG interlace method.", sizeError(pngWithChunk(interlace, null, null)));
+        }
+        byte[] critical = pngWithChunk(0, "CgBI", new byte[4]);
+        assertEquals("Unknown critical PNG chunk CgBI.", decodeError(critical));
+        assertEquals("Unknown critical PNG chunk CgBI.", sizeError(critical));
+        // An unknown ancillary chunk, of a lowercase first letter, is passed over.
+        byte[] ancillary = pngWithChunk(0, "cgBI", new byte[4]);
+        new PNGImage(new ByteArrayInputStream(ancillary));
+        ImageSize.read(new ByteArrayInputStream(ancillary));
+    }
+
     @Test
     void rejectsAChunkLengthThatTheFileDoesNotHave() {
         byte[] valid = png(1, 1, 8, 2, null, Compressor.deflate(new byte[] {0, 0, 0, 0}));

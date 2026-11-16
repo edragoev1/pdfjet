@@ -314,6 +314,44 @@ import Testing
         _ = try PNGImage(InputStream(data: Data(png(1, 1, 8, 0, nil, idat))))
     }
 
+    /// A 1 x 1 gray PNG of the interlace method, with a chunk of the type and
+    /// data after its IHDR chunk when the type is not nil.
+    private func pngWithChunk(_ interlace: UInt8, _ type: String?, _ data: [UInt8]) -> [UInt8] {
+        var bytes: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        chunk(&bytes, "IHDR", [0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, interlace])
+        if let type = type {
+            chunk(&bytes, type, data)
+        }
+        chunk(&bytes, "IDAT", TestSupport.deflate([0, 0]))
+        chunk(&bytes, "IEND", [])
+        return bytes
+    }
+
+    private func sizeError(_ png: [UInt8], sourceLocation: SourceLocation = #_sourceLocation) -> String {
+        let error = #expect(throws: (any Error).self, sourceLocation: sourceLocation) {
+            _ = try ImageSize.read(InputStream(data: Data(png)))
+        }
+        return TestSupport.message(error)
+    }
+
+    @Test func rejectsAnUnknownInterlaceMethodOrCriticalChunk() throws {
+        // Only the interlace methods 0 and 1 are defined, and a critical chunk
+        // that is not known cannot be passed over (ISO/IEC 15948, 11.2.2 and
+        // 5.4). The rows of the image were read as if the method were 0, and
+        // the chunk was passed over.
+        for interlace: UInt8 in [2, 255] {
+            #expect(decodeError(pngWithChunk(interlace, nil, [])) == "Unknown PNG interlace method.")
+            #expect(sizeError(pngWithChunk(interlace, nil, [])) == "Unknown PNG interlace method.")
+        }
+        let critical = pngWithChunk(0, "CgBI", [0, 0, 0, 0])
+        #expect(decodeError(critical) == "Unknown critical PNG chunk CgBI.")
+        #expect(sizeError(critical) == "Unknown critical PNG chunk CgBI.")
+        // An unknown ancillary chunk, of a lowercase first letter, is passed over.
+        let ancillary = pngWithChunk(0, "cgBI", [0, 0, 0, 0])
+        _ = try PNGImage(InputStream(data: Data(ancillary)))
+        _ = try ImageSize.read(InputStream(data: Data(ancillary)))
+    }
+
     @Test func rejectsAChunkLengthThatTheFileDoesNotHave() {
         let valid = png(1, 1, 8, 2, nil, TestSupport.deflate([0, 0, 0, 0]))
         // The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.

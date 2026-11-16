@@ -344,6 +344,43 @@ public class PNGImageTest {
         new PNGImage(new MemoryStream(Png(1, 1, 8, 0, 0, 0, null, idat)));
     }
 
+    // A 1 x 1 gray PNG of the interlace method, with a chunk of the type and
+    // data after its IHDR chunk when the type is not null.
+    private static byte[] PngWithChunk(int interlace, string type, byte[] data) {
+        MemoryStream ms = new MemoryStream();
+        ms.Write(new byte[] {0x89, (byte) 'P', (byte) 'N', (byte) 'G', (byte) '\r', (byte) '\n', 0x1A, (byte) '\n'});
+        WriteChunk(ms, "IHDR", new byte[] {0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, (byte) interlace});
+        if (type != null) {
+            WriteChunk(ms, type, data);
+        }
+        WriteChunk(ms, "IDAT", Compressor.Deflate(new byte[] {0, 0}));
+        WriteChunk(ms, "IEND", new byte[0]);
+        return ms.ToArray();
+    }
+
+    private static string SizeError(byte[] png) {
+        return Assert.ThrowsAny<Exception>(() => ImageSize.Read(new MemoryStream(png))).Message;
+    }
+
+    [Fact]
+    public void RejectsAnUnknownInterlaceMethodOrCriticalChunk() {
+        // Only the interlace methods 0 and 1 are defined, and a critical chunk
+        // that is not known cannot be passed over (ISO/IEC 15948, 11.2.2 and
+        // 5.4). The rows of the image were read as if the method were 0, and
+        // the chunk was passed over.
+        foreach (int interlace in new int[] {2, 255}) {
+            Assert.Equal("Unknown PNG interlace method.", DecodeError(PngWithChunk(interlace, null, null)));
+            Assert.Equal("Unknown PNG interlace method.", SizeError(PngWithChunk(interlace, null, null)));
+        }
+        byte[] critical = PngWithChunk(0, "CgBI", new byte[4]);
+        Assert.Equal("Unknown critical PNG chunk CgBI.", DecodeError(critical));
+        Assert.Equal("Unknown critical PNG chunk CgBI.", SizeError(critical));
+        // An unknown ancillary chunk, of a lowercase first letter, is passed over.
+        byte[] ancillary = PngWithChunk(0, "cgBI", new byte[4]);
+        new PNGImage(new MemoryStream(ancillary));
+        ImageSize.Read(new MemoryStream(ancillary));
+    }
+
     [Fact]
     public void RejectsAChunkLengthThatTheFileDoesNotHave() {
         byte[] valid = Png(1, 1, 8, 2, null, Compressor.Deflate(new byte[] {0, 0, 0, 0}));

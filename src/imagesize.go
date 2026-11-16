@@ -176,6 +176,9 @@ func readPNGSize(r *bufio.Reader) (*ImageSize, error) {
 			if data[12] == 1 {
 				return nil, errors.New("Interlaced PNG images are not supported.")
 			}
+			if data[12] != 0 {
+				return nil, errors.New("Unknown PNG interlace method.")
+			}
 		case "IDAT":
 			// An empty one holds none of the image data (the review of
 			// 9 October 2026)
@@ -187,6 +190,11 @@ func readPNGSize(r *bufio.Reader) (*ImageSize, error) {
 			hasPLTE = true
 		case "pHYs":
 			image.readPhysicalSize(data)
+		default:
+			// An unknown critical chunk, as newPNGImage refuses it
+			if head[4]&0x20 == 0 {
+				return nil, errors.New("Unknown critical PNG chunk " + chunkType + ".")
+			}
 		}
 	}
 }
