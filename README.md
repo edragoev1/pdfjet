@@ -702,6 +702,18 @@ and load each file as any other font. A variable font loaded as it is draws
 its default weight only, Regular even where you wanted Bold; a CFF2
 variable font is refused.
 
+### Wide tables: a condensed font
+
+For a report of many columns, a condensed font, drawn narrower by its
+designer, fits more text in each column than a narrower column of the
+regular font, with fewer fields cut or wrapped. IBM Plex Sans Condensed
+matches the IBM Plex Sans PDFjet carries, with Greek and Cyrillic, under the
+same SIL Open Font License; its letters are about 10% narrower, so a column
+holds about 11% more text. It is not carried by PDFjet: download it from
+[fonts.google.com](https://fonts.google.com/specimen/IBM+Plex+Sans+Condensed)
+or [IBM's repository](https://github.com/IBM/plex), and load its files as any
+other font, for a `Table`'s cells or a `BigTable`.
+
 ## Right to left text
 
 `Bidi.reorderVisually` prepares a line of Hebrew, Arabic, Persian or Urdu text
