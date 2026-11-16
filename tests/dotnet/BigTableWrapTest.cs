@@ -257,8 +257,10 @@ public sealed class BigTableWrapTest {
     [Fact]
     public void TheFirstRowStartsTheNextPageWhenItFitsThere() {
         // The first row on the page SetFirstPage set, which has room for a
-        // line or two, starts the next page when it fits there whole: it was
-        // cut at the lines that fit, and the rest of its text was never drawn.
+        // line or two, starts the table on the next page when it fits there
+        // whole: it was cut at the lines that fit, and the rest of its text was
+        // never drawn. The header goes with it: moved alone, the row left the
+        // header and the footer on the first page, with no row under them.
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         Page first = new Page(pdf, Letter.PORTRAIT);
@@ -270,13 +272,31 @@ public sealed class BigTableWrapTest {
             table.SetColumnWidths(100f, 100f);
             table.SetFirstPage(first, 792f - 20f - 60f);
         });
-        Assert.Equal(2, pages.Count);
+        Assert.Single(pages);
+        Assert.NotSame(first, pages[0]);
+        Assert.Empty(BigTableTest.DrawnText(first));
+        string text = string.Join(" ", BigTableTest.DrawnText(pages[0]));
+        Assert.True(text.StartsWith("No Notes first alpha") && text.Contains("omega") && !text.Contains(" ..."),
+                "the header and the first row are not whole on the next page: " + text);
+        Assert.Contains(TestSupport.Hex("Page 1 of 1"), TestSupport.Content(pages[0]));
+    }
+
+    [Fact]
+    public void AFirstRowTallerThanAPageStartsOnTheFirstPage() {
+        // A first row too tall for a whole page starts the table on the page
+        // SetFirstPage set all the same: it is cut wherever it starts.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page first = new Page(pdf, Letter.PORTRAIT);
+        List<string[]> rows = new List<string[]> {
+            new string[] {"first", Repeat("word ", 400)},
+            new string[] {"second", "short"} };
+        List<Page> pages = WrapTable(pdf, font, true, new string[] {"No", "Notes"}, rows, table => {
+            table.SetColumnWidths(100f, 100f);
+            table.SetFirstPage(first, 792f - 20f - 60f);
+        });
+        Assert.True(pages.Count >= 2, pages.Count + " pages");
         Assert.Same(first, pages[0]);
-        List<string> drawn = BigTableTest.DrawnText(pages[1]);
-        Assert.Equal("first", drawn[2]);
-        string text = string.Join(" ", drawn);
-        Assert.True(text.Contains("omega") && !text.Contains(" ..."), "the first row is not whole: " + text);
-        Assert.Contains(TestSupport.Hex("Page 2 of 2"), TestSupport.Content(pages[1]));
     }
 }
 

@@ -67,6 +67,7 @@ public class BigTable {
     private var fieldsNeeded: Int = 0       // The fields a row needs: the largest index plus 1
     private var startNewPage: Bool = true
     private var dataRows: Int = 0       // The rows under the header, counted by setTableData
+    private var firstRow: [String]?     // The first of them, or nil
     private var pageCount: Int = 0      // The pages they take, counted by complete
     private var pageNumber: Int = 0     // The page being drawn
     private var footerDrawn: Bool = false
@@ -491,7 +492,11 @@ public class BigTable {
     }
 
     // True when the table starts on the page setFirstPage set: when the header
-    // and the first row fit on it above its bottom margin.
+    // and the first row fit on it above its bottom margin. A first row that
+    // wraps onto more lines than fit there, but fits a new page, starts the
+    // table on the next page, so that the header is not left alone at the
+    // bottom of this one; a first row too tall for a new page as well starts
+    // here, as it is cut wherever it starts.
     private func startsOnFirstPage() -> Bool {
         guard let firstPage = firstPage else {
             return false
@@ -502,7 +507,19 @@ public class BigTable {
         if extra > 0 {
             need += extra
         }
-        return need <= firstPage.height - bottomMargin
+        let limit = firstPage.height - bottomMargin
+        if need > limit {
+            return false
+        }
+        if wrap, let firstRow = firstRow {
+            let (_, lines) = wrapFields(firstRow, false)
+            let lineHeight = f2.ascent + f2.descent
+            if lines > 1 && firstRowY(firstPageY) + Float(lines - 1) * lineHeight > limit
+                    && fitsNewPage(lines) {
+                return false
+            }
+        }
+        return true
     }
 
     // Draws the footer of the page that was just finished, once. The page is
@@ -810,6 +827,7 @@ public class BigTable {
             return self
         }
         self.rows = rows
+        self.firstRow = nil
         self.vertLines = [Float](repeating: 0.0, count: numberOfColumns + 1)
         self.headerFields = header
         self.widths = [Float](repeating: 0.0, count: numberOfColumns)
@@ -822,6 +840,7 @@ public class BigTable {
                 continue
             }
             if rowNumber == 0 {     // Determine alignment from first data row
+                firstRow = fields
                 for i in 0..<numberOfColumns {
                     alignment[i] = getAlignment(fields[columns[i]])
                 }
@@ -1200,8 +1219,7 @@ public class BigTable {
         let lineHeight = font.ascent + font.descent
         var (lines, count) = wrapFields(fields, false)
         var limit = page!.height - bottomMargin
-        if count > 1 && self.yText + Float(count - 1) * lineHeight > limit &&
-                (!firstRowOnPage || (page === firstPage && fitsNewPage(count))) {
+        if count > 1 && self.yText + Float(count - 1) * lineHeight > limit && !firstRowOnPage {
             drawTheVerticalLines()
             drawFooter()
             newPage()
@@ -1234,10 +1252,10 @@ public class BigTable {
         }
     }
 
-    // Whether a row of the lines fits whole on a new page. The first row on
-    // the page setFirstPage set, which may have room for one line, starts the
-    // next page when it fits there: it was cut at the lines that fit, though
-    // the next page had room for all of them.
+    // Whether a row of the lines fits whole on a new page. The first row,
+    // which may have room for one line on the page setFirstPage set, starts
+    // the table on the next page when it fits there: it was cut at the lines
+    // that fit, though the next page had room for all of them.
     private func fitsNewPage(_ lines: Int) -> Bool {
         let lineHeight = f2.ascent + f2.descent
         return firstRowY(self.y) + Float(lines - 1) * lineHeight <= pageSize.getHeight() - bottomMargin
@@ -1359,8 +1377,7 @@ public class BigTable {
             }
             var (_, lines) = wrapFields(fields, false)
             var limit = pageHeight - self.bottomMargin
-            if lines > 1 && yPos + Float(lines - 1) * lineHeight > limit &&
-                    (!first || (count == 1 && startsOnFirstPage() && fitsNewPage(lines))) {
+            if lines > 1 && yPos + Float(lines - 1) * lineHeight > limit && !first {
                 count += 1
                 pageHeight = pageSize.getHeight()
                 yPos = yTop

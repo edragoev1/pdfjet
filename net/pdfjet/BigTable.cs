@@ -76,6 +76,7 @@ namespace PDFjet.NET {
         private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
         private bool startNewPage = true;
         private int dataRows;           // The rows under the header, counted by SetTableData
+        private string[] firstRow;      // The first of them, or null
         private int pageCount;          // The pages they take, counted by Complete
         private int pageNumber;         // The page being drawn
         private bool footerDrawn;
@@ -533,7 +534,11 @@ namespace PDFjet.NET {
         }
 
         // Returns true when the table starts on the page SetFirstPage set: when the
-        // header and the first row fit on it above its bottom margin.
+        // header and the first row fit on it above its bottom margin. A first row
+        // that wraps onto more lines than fit there, but fits a new page, starts
+        // the table on the next page, so that the header is not left alone at
+        // the bottom of this one; a first row too tall for a new page as well
+        // starts here, as it is cut wherever it starts.
         private bool StartsOnFirstPage() {
             if (firstPage == null) {
                 return false;
@@ -544,7 +549,19 @@ namespace PDFjet.NET {
             if (extra > 0f) {
                 need += extra;
             }
-            return need <= firstPage.GetHeight() - bottomMargin;
+            float limit = firstPage.GetHeight() - bottomMargin;
+            if (need > limit) {
+                return false;
+            }
+            if (wrap && firstRow != null) {
+                WrapFields(firstRow, false, out int lines);
+                float lineHeight = f2.ascent + f2.descent;
+                if (lines > 1 && FirstRowY(firstPageY) + (float) ((float) (lines - 1) * lineHeight) > limit
+                        && FitsNewPage(lines)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // Draws the footer of the page that was just finished, once. The page is
@@ -826,6 +843,7 @@ namespace PDFjet.NET {
                 pdf.Fail(new ArgumentException("The header does not have a field for every column."));
             }
             this.rows = rows;
+            this.firstRow = null;
             this.vertLines = new float[this.numberOfColumns + 1];
             this.headerFields = (string[]) header.Clone();
             this.widths = new float[this.numberOfColumns];
@@ -838,6 +856,7 @@ namespace PDFjet.NET {
                     continue;
                 }
                 if (rowNumber == 0) {   // Determine alignment from first data row
+                    firstRow = (string[]) fields.Clone();
                     for (int i = 0; i < this.numberOfColumns; i++) {
                         alignment[i] = GetAlignment(fields[columns[i]]);
                     }
@@ -1255,8 +1274,7 @@ namespace PDFjet.NET {
             float lineHeight = font.ascent + font.descent;
             string[][] lines = WrapFields(fields, false, out int count);
             float limit = page.GetHeight() - bottomMargin;
-            if (count > 1 && this.yText + (float) ((float) (count - 1) * lineHeight) > limit &&
-                    (!firstRowOnPage || (page == firstPage && FitsNewPage(count)))) {
+            if (count > 1 && this.yText + (float) ((float) (count - 1) * lineHeight) > limit && !firstRowOnPage) {
                 DrawTheVerticalLines();
                 DrawFooter();
                 NewPage();
@@ -1293,9 +1311,9 @@ namespace PDFjet.NET {
         }
 
         // Returns true when a row of the lines fits whole on a new page. The
-        // first row on the page SetFirstPage set, which may have room for one
-        // line, starts the next page when it fits there: it was cut at the
-        // lines that fit, though the next page had room for all of them.
+        // first row, which may have room for one line on the page SetFirstPage
+        // set, starts the table on the next page when it fits there: it was cut
+        // at the lines that fit, though the next page had room for all of them.
         private bool FitsNewPage(int lines) {
             float lineHeight = f2.ascent + f2.descent;
             return FirstRowY(this.y) + (float) ((float) (lines - 1) * lineHeight) <= pageSize.GetHeight() - bottomMargin;
@@ -1415,8 +1433,7 @@ namespace PDFjet.NET {
                 }
                 WrapFields(fields, false, out int lines);
                 float limit = pageHeight - this.bottomMargin;
-                if (lines > 1 && yPos + (float) ((float) (lines - 1) * lineHeight) > limit &&
-                        (!first || (count == 1 && StartsOnFirstPage() && FitsNewPage(lines)))) {
+                if (lines > 1 && yPos + (float) ((float) (lines - 1) * lineHeight) > limit && !first) {
                     count++;
                     pageHeight = pageSize.GetHeight();
                     yPos = yTop;

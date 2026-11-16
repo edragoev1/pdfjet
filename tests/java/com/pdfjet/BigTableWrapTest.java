@@ -355,8 +355,10 @@ class BigTableWrapTest {
     }
 
     // The first row on the page setFirstPage set, which has room for a line
-    // or two, starts the next page when it fits there whole: it was cut at the
-    // lines that fit, and the rest of its text was never drawn.
+    // or two, starts the table on the next page when it fits there whole: it
+    // was cut at the lines that fit, and the rest of its text was never drawn.
+    // The header goes with it: moved alone, the row left the header and the
+    // footer on the first page, with no row under them.
     @Test
     void theFirstRowStartsTheNextPageWhenItFitsThere() throws Exception {
         PDF pdf = TestSupport.newPDF();
@@ -371,14 +373,31 @@ class BigTableWrapTest {
             table.setColumnWidths(100f, 100f);
             table.setFirstPage(first, 792f - 20f - 60f);
         });
-        assertEquals(2, pages.size());
-        assertTrue(pages.get(0) == first);
-        List<String> drawn = drawnText(pages.get(1));
-        assertEquals("first", drawn.get(2), "the first row is not the first row of the next page: " + drawn);
-        String text = String.join(" ", drawn);
-        assertTrue(text.contains("omega") && !text.contains(" ..."), "the first row is not whole: " + text);
-        assertTrue(TestSupport.content(pages.get(1)).contains(TestSupport.hex("Page 2 of 2")),
+        assertEquals(1, pages.size());
+        assertTrue(pages.get(0) != first, "the first page is used");
+        assertTrue(drawnText(first).isEmpty(), "the first page was drawn on: " + drawnText(first));
+        String text = String.join(" ", drawnText(pages.get(0)));
+        assertTrue(text.startsWith("No Notes first alpha") && text.contains("omega") && !text.contains(" ..."),
+                "the header and the first row are not whole on the next page: " + text);
+        assertTrue(TestSupport.content(pages.get(0)).contains(TestSupport.hex("Page 1 of 1")),
                 "the pages are not counted as they are drawn");
+    }
+
+    // A first row too tall for a whole page starts the table on the page
+    // setFirstPage set all the same: it is cut wherever it starts.
+    @Test
+    void aFirstRowTallerThanAPageStartsOnTheFirstPage() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        final Page first = new Page(pdf, Letter.PORTRAIT);
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {"first", repeat("word ", 400)});
+        rows.add(new String[] {"second", "short"});
+        List<Page> pages = wrapTable(pdf, font, true, new String[] {"No", "Notes"}, rows, table -> {
+            table.setColumnWidths(100f, 100f);
+            table.setFirstPage(first, 792f - 20f - 60f);
+        });
+        assertTrue(pages.size() >= 2 && pages.get(0) == first, pages.size() + " pages");
     }
 
     // A word broken into thousands of lines takes time in proportion to its

@@ -289,8 +289,10 @@ import Testing
     }
 
     // The first row on the page setFirstPage set, which has room for a line or
-    // two, starts the next page when it fits there whole: it was cut at the
-    // lines that fit, and the rest of its text was never drawn.
+    // two, starts the table on the next page when it fits there whole: it was
+    // cut at the lines that fit, and the rest of its text was never drawn. The
+    // header goes with it: moved alone, the row left the header and the footer
+    // on the first page, with no row under them.
     @Test func theFirstRowStartsTheNextPageWhenItFitsThere() throws {
         let pdf = TestSupport.newPDF()
         let first = Page(pdf, Letter.PORTRAIT)
@@ -301,14 +303,28 @@ import Testing
             $0.setColumnWidths(100, 100)
             $0.setFirstPage(first, 792 - 20 - 60)
         }
-        try #require(pages.count == 2, "\(pages.count) pages")
-        #expect(pages[0] === first)
-        let drawn = drawnText(pages[1])
-        #expect(drawn.count > 2 && drawn[2] == "first", "the first row is not the first row of the next page: \(drawn)")
-        let text = drawn.joined(separator: " ")
-        #expect(text.contains("omega") && !text.contains(" ..."), "the first row is not whole: \(text)")
-        #expect(TestSupport.content(pages[1]).contains(TestSupport.hex("Page 2 of 2")),
+        try #require(pages.count == 1, "\(pages.count) pages")
+        #expect(pages[0] !== first, "the first page is used")
+        #expect(drawnText(first).isEmpty, "the first page was drawn on: \(drawnText(first))")
+        let text = drawnText(pages[0]).joined(separator: " ")
+        #expect(text.hasPrefix("No Notes first alpha") && text.contains("omega") && !text.contains(" ..."),
+                "the header and the first row are not whole on the next page: \(text)")
+        #expect(TestSupport.content(pages[0]).contains(TestSupport.hex("Page 1 of 1")),
                 "the pages are not counted as they are drawn")
+    }
+
+    // A first row too tall for a whole page starts the table on the page
+    // setFirstPage set all the same: it is cut wherever it starts.
+    @Test func aFirstRowTallerThanAPageStartsOnTheFirstPage() throws {
+        let pdf = TestSupport.newPDF()
+        let first = Page(pdf, Letter.PORTRAIT)
+        let pages = try table(pdf, TestSupport.helvetica(pdf), true, ["No", "Notes"],
+                [["first", String(repeating: "word ", count: 400)], ["second", "short"]]) {
+            $0.setColumnWidths(100, 100)
+            $0.setFirstPage(first, 792 - 20 - 60)
+        }
+        try #require(pages.count >= 2, "\(pages.count) pages")
+        #expect(pages[0] === first)
     }
 
     // A word broken into thousands of lines takes time in proportion to its
