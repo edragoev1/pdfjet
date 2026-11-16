@@ -198,7 +198,9 @@ internal class GPOS {
             int markClass = GetUInt16(mark1Array + 2 + 4*m1);
             int anchor1 = mark1Array + GetUInt16(mark1Array + 4 + 4*m1);
             for (int m2 = 0; m2 < mark2Glyphs.Length; m2++) {
-                int anchorOffset = GetUInt16(mark2Array + 2 + 2*(m2*classCount + markClass));
+                // In 64 bits: m2*classCount can pass the int of 32 bits
+                long record = mark2Array + 2 + 2*((long) m2*classCount + markClass);
+                int anchorOffset = (record < end) ? GetUInt16((int) record) : 0;
                 if (anchorOffset == 0) {
                     continue;
                 }

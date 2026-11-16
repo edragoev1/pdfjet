@@ -144,6 +144,36 @@ import Testing
         #expect(path.operators.isEmpty)
     }
 
+    // put, get, callsubr and callgsubr compare their operands as numbers before
+    // integers, as index and roll: -0.5 is no storage index 0, and NaN or
+    // -107.5 (the bias of the 256 local subroutines of IBM Plex Sans, less 0.5)
+    // is no subroutine, in the four ports alike and on every processor.
+    @Test func aCFFStorageOrSubroutineOperandNotAnIntegerIsRefused() throws {
+        let minusHalf: [UInt8] = [0xFF, 0xFF, 0xFF, 0x80, 0x00]  // -0.5 in 16.16
+        // NaN as 32767, dup mul seven times (inf), dup sub
+        var nan: [UInt8] = [0x1C, 0x7F, 0xFF]
+        for _ in 0..<7 {
+            nan += [0x0C, 0x1B, 0x0C, 0x18]
+        }
+        nan += [0x0C, 0x1B, 0x0C, 0x0B]
+        let moveTo: [UInt8] = [0x8B, 0x8B, 0x15]    // 0 0 rmoveto
+        let ops: [(String, [UInt8])] = [
+            ("put -0.5", [0x8C] + minusHalf + [0x0C, 0x14] + moveTo),
+            ("get -0.5", moveTo + minusHalf + [0x0C, 0x15, 0x0C, 0x12]),
+            ("callsubr NaN", nan + [0x0A] + moveTo),
+            ("callgsubr NaN", nan + [0x1D] + moveTo),
+            // 0 0 rmoveto -107.5 callsubr rlineto: local subroutine 0 gives 4 numbers
+            ("callsubr -107.5", moveTo + [0xFF, 0xFF, 0x94, 0x80, 0x00, 0x0A, 0x05]),
+        ]
+        for (name, op) in ops {
+            let cs = op + [0x0E]    // endchar
+            let outline = try cffOutlineWithCharString(cs)
+            #expect(throws: PDFjetError.self, "\(name)") {
+                _ = try outline.outline(1)
+            }
+        }
+    }
+
     // A position of a glyph not finite, or far off the page, is an error, not a
     // number of no meaning in the content.
     @Test func drawGlyphsAPositionNotFiniteIsAnError() throws {

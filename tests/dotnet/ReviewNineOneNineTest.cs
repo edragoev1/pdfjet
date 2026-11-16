@@ -184,6 +184,69 @@ public class ReviewNineOneNineTest {
         }
     }
 
+    // put, get, callsubr and callgsubr compare their operands as numbers before
+    // integers, as index and roll: -0.5 is no storage index 0, and NaN or
+    // -107.5 (the bias of the 256 local subroutines of IBM Plex Sans, less 0.5)
+    // is no subroutine, in the four ports alike and on every processor.
+    [Fact]
+    public void ACFFStorageOrSubroutineOperandNotAnIntegerIsRefused() {
+        byte[] minusHalf = {0xFF, 0xFF, 0xFF, 0x80, 0x00};  // -0.5 in 16.16
+        // NaN as 32767, dup mul seven times (inf), dup sub
+        List<byte> nanBytes = new List<byte> {0x1C, 0x7F, 0xFF};
+        for (int k = 0; k < 7; k++) {
+            nanBytes.AddRange(new byte[] {0x0C, 0x1B, 0x0C, 0x18});
+        }
+        nanBytes.AddRange(new byte[] {0x0C, 0x1B, 0x0C, 0x0B});
+        byte[] nan = nanBytes.ToArray();
+        byte[] moveTo = {0x8B, 0x8B, 0x15};    // 0 0 rmoveto
+        Dictionary<string, byte[]> ops = new Dictionary<string, byte[]> {
+            {"put -0.5", Concat(new byte[] {0x8C}, minusHalf, new byte[] {0x0C, 0x14}, moveTo)},
+            {"get -0.5", Concat(moveTo, minusHalf, new byte[] {0x0C, 0x15, 0x0C, 0x12})},
+            {"callsubr NaN", Concat(nan, new byte[] {0x0A}, moveTo)},
+            {"callgsubr NaN", Concat(nan, new byte[] {0x1D}, moveTo)},
+            // 0 0 rmoveto -107.5 callsubr rlineto: local subroutine 0 gives 4 numbers
+            {"callsubr -107.5", Concat(moveTo, new byte[] {0xFF, 0xFF, 0x94, 0x80, 0x00, 0x0A, 0x05})},
+        };
+        foreach (KeyValuePair<string, byte[]> op in ops) {
+            byte[] cs = Concat(op.Value, new byte[] {0x0E});  // endchar
+            GlyphOutline outline = CFFOutlineWithCharString(cs);
+            bool refused = false;
+            try {
+                outline.Outline(1);
+            } catch (ArgumentException) {
+                refused = true;
+            }
+            Assert.True(refused, op.Key + ": no error");
+        }
+    }
+
+    // MarkToMark computes where the anchor of a pair is in 64 bits: m2*classCount
+    // passed the int and wrapped round to an anchor inside the table, where Go
+    // and Swift read past the table and skip the pair. The table: classCount
+    // 65535, the mark glyph 40000 on the marks 0 to 32769, and at mark2Array +
+    // 65536, where m2 = 32769 wrapped round to, an anchor offset of 200.
+    [Fact]
+    public void GposMarkToMarkOfAClassCountTooLargeDoesNotWrapRound() {
+        int mark2Array = 62;
+        byte[] table = new byte[mark2Array + 65536 + 2];
+        byte[] head = {
+            0, 1, 0, 0, 0, 0, 0, 0, 0, 10,  // The header: version 1.0, lookup list at 10
+            0, 1, 0, 4,  // Lookup list: one lookup, at 14
+            0, 6, 0, 0, 0, 1, 0, 8,  // Mark to mark lookup: one subtable, at 22
+            0, 1, 0, 12, 0, 18, 0xFF, 0xFF, 0, 28, 0, 40,  // Mark to mark at 22
+            0, 1, 0, 1, 0x9C, 0x40,  // Mark1 coverage: glyph 40000
+            0, 2, 0, 1, 0, 0, 0x80, 0x01, 0, 0,  // Mark2 coverage: glyphs 0 to 32769
+            0, 1, 0, 0, 0, 6, 0, 1, 0, 0, 0, 0,  // Mark1 array: class 0, anchor 0, 0
+        };
+        Array.Copy(head, 0, table, 0, head.Length);
+        table[mark2Array + 200 + 1] = 1;    // An anchor of 100, 50
+        table[mark2Array + 200 + 3] = 100;
+        table[mark2Array + 200 + 5] = 50;
+        table[mark2Array + 65536 + 1] = 200;
+        GPOS gpos = GPOS.Of(table, 0, table.Length, 0, false).Read();
+        Assert.True(gpos.markToMarkOffsets.Count == 0, "the anchor of mark 32769 wrapped round");
+    }
+
     // A position of a glyph not finite, or far off the page, is an error, not
     // a number of no meaning in the content.
     [Fact]

@@ -1002,14 +1002,12 @@ final class GlyphOutline {
                     guard let subrs = (b0 == 29) ? outline.globalSubrs : local else {
                         throw Subset.NotSubset()
                     }
-                    let value = try pop()
-                    if !value.isFinite || abs(value) > 1e9 {
+                    // Compared as a number before it is made an integer, as put and get
+                    let n = try pop() + Double(CFFSubset.bias(subrs.count))
+                    if !(n >= 0 && n < Double(subrs.count)) {   // NaN too
                         throw Subset.NotSubset()
                     }
-                    let number = Int(value) + CFFSubset.bias(subrs.count)
-                    if number < 0 || number >= subrs.count {
-                        throw Subset.NotSubset()
-                    }
+                    let number = Int(n)
                     try run(subrs.objects[number], subrs.objects[number + 1], depth + 1)
                 case 11:            // return
                     return
@@ -1033,14 +1031,6 @@ final class GlyphOutline {
                     throw Subset.NotSubset()    // A reserved operator
                 }
             }
-        }
-
-        // An index of the stack or the storage, from a number of the stack.
-        private func index(_ value: Double) throws -> Int {
-            if !value.isFinite || abs(value) > 1e9 {
-                throw Subset.NotSubset()
-            }
-            return Int(value)
         }
 
         // The operators of two bytes: the flex curves and the arithmetic.
@@ -1112,18 +1102,19 @@ final class GlyphOutline {
             case 18:    // drop
                 _ = try pop()
             case 20:    // put
-                let i = try index(try pop())
+                // Compared as a number before it is made an integer, as index
+                let index = try pop()
                 a = try pop()
-                if i < 0 || i >= storage.count {
+                if !(index >= 0 && index < Double(storage.count)) {  // NaN too
                     throw Subset.NotSubset()
                 }
-                storage[i] = a
+                storage[Int(index)] = a
             case 21:    // get
-                let i = try index(try pop())
-                if i < 0 || i >= storage.count {
+                let index = try pop()
+                if !(index >= 0 && index < Double(storage.count)) {  // NaN too
                     throw Subset.NotSubset()
                 }
-                try push(storage[i])
+                try push(storage[Int(index)])
             case 22:    // ifelse
                 let v2 = try pop()
                 let v1 = try pop()

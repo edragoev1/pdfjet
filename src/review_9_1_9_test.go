@@ -140,6 +140,34 @@ func TestACFFRollOrIndexOfAnOperandTooLargeIsRefused(t *testing.T) {
 	}
 }
 
+// put, get, callsubr and callgsubr compare their operands as numbers before
+// integers, as index and roll: -0.5 is no storage index 0, and NaN or
+// -107.5 (the bias of the 256 local subroutines of IBM Plex Sans, less 0.5)
+// is no subroutine, in the four ports alike and on every processor.
+func TestACFFStorageOrSubroutineOperandNotAnIntegerIsRefused(t *testing.T) {
+	minusHalf := []byte{0xFF, 0xFF, 0xFF, 0x80, 0x00} // -0.5 in 16.16
+	// NaN as 32767, dup mul seven times (inf), dup sub
+	nan := []byte{0x1C, 0x7F, 0xFF}
+	for k := 0; k < 7; k++ {
+		nan = append(nan, 0x0C, 0x1B, 0x0C, 0x18)
+	}
+	nan = append(nan, 0x0C, 0x1B, 0x0C, 0x0B)
+	// 0 0 rmoveto -107.5 callsubr rlineto: local subroutine 0 gives 4 numbers
+	belowBias := []byte{0x8B, 0x8B, 0x15, 0xFF, 0xFF, 0x94, 0x80, 0x00, 0x0A, 0x05}
+	for name, op := range map[string][]byte{
+		"put -0.5":        slicesConcat([]byte{0x8C}, minusHalf, []byte{0x0C, 0x14, 0x8B, 0x8B, 0x15}),
+		"get -0.5":        slicesConcat([]byte{0x8B, 0x8B, 0x15}, minusHalf, []byte{0x0C, 0x15, 0x0C, 0x12}),
+		"callsubr NaN":    slicesConcat(nan, []byte{0x0A, 0x8B, 0x8B, 0x15}),
+		"callgsubr NaN":   slicesConcat(nan, []byte{0x1D, 0x8B, 0x8B, 0x15}),
+		"callsubr -107.5": belowBias,
+	} {
+		cs := slicesConcat(op, []byte{0x0E}) // endchar
+		if _, err := testCFFOutlineWithCharString(t, cs).outline(1); err == nil {
+			t.Errorf("%s: no error", name)
+		}
+	}
+}
+
 func slicesConcat(parts ...[]byte) []byte {
 	var all []byte
 	for _, p := range parts {

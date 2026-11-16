@@ -1012,10 +1012,12 @@ final class GlyphOutline {
                     if (subrs == null) {
                         throw new Subset.NotSubset();
                     }
-                    int number = (int) pop() + CFFSubset.bias(subrs.count());
-                    if (number < 0 || number >= subrs.count()) {
+                    // Compared as a number before it is made an integer, as put and get
+                    double n = pop() + CFFSubset.bias(subrs.count());
+                    if (!(n >= 0 && n < subrs.count())) {   // NaN too
                         throw new Subset.NotSubset();
                     }
+                    int number = (int) n;
                     run(subrs.objects[number], subrs.objects[number + 1], depth + 1);
                     break;
                 }

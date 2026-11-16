@@ -1185,10 +1185,12 @@ func (cs *charString) operator(b0 int, i *int, to, depth int, s *[48]float64) er
 			return err
 		}
 		count := len(subrs.objects) - 1
-		number := int(v) + cffBias(count)
-		if number < 0 || number >= count {
+		// Compared as a number before it is made an integer, as put and get
+		n := v + float64(cffBias(count))
+		if !(n >= 0 && n < float64(count)) { // NaN too
 			return errNotSubset
 		}
+		number := int(n)
 		return cs.run(subrs.objects[number], subrs.objects[number+1], depth+1)
 	case 11: // return
 		return errReturn
