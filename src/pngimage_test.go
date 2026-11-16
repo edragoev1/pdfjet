@@ -444,6 +444,47 @@ func TestPNGImageRejectsAnUnknownCompressionOrFilterMethod(t *testing.T) {
 	}
 }
 
+// testPNGWithChunk returns a 1 x 1 gray PNG of the interlace method, with a
+// chunk of the type and data after its IHDR chunk when the type is not "".
+func testPNGWithChunk(interlace byte, chunkType string, data []byte) []byte {
+	var buf bytes.Buffer
+	buf.Write([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'})
+	testPNGChunk(&buf, "IHDR", []byte{0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, interlace})
+	if chunkType != "" {
+		testPNGChunk(&buf, chunkType, data)
+	}
+	testPNGChunk(&buf, "IDAT", compressor.Deflate([]byte{0, 0}))
+	testPNGChunk(&buf, "IEND", []byte{})
+	return buf.Bytes()
+}
+
+func TestPNGImageRejectsAnUnknownInterlaceMethodOrCriticalChunk(t *testing.T) {
+	// Only the interlace methods 0 and 1 are defined, and a critical chunk
+	// that is not known cannot be passed over (ISO/IEC 15948, 11.2.2 and
+	// 5.4). The rows of the image were read as if the method were 0, and the
+	// chunk was passed over.
+	for _, interlace := range []byte{2, 255} {
+		png := testPNGWithChunk(interlace, "", nil)
+		testWant(t, "Unknown PNG interlace method.", testPNGError(png))
+		if _, err := ReadImageSize(bytes.NewReader(png)); err == nil || err.Error() != "Unknown PNG interlace method." {
+			t.Errorf("interlace method %d: ReadImageSize: %v", interlace, err)
+		}
+	}
+	png := testPNGWithChunk(0, "CgBI", []byte{0, 0, 0, 0})
+	testWant(t, "Unknown critical PNG chunk CgBI.", testPNGError(png))
+	if _, err := ReadImageSize(bytes.NewReader(png)); err == nil || err.Error() != "Unknown critical PNG chunk CgBI." {
+		t.Errorf("critical chunk: ReadImageSize: %v", err)
+	}
+	// An unknown ancillary chunk, of a lowercase first letter, is passed over.
+	png = testPNGWithChunk(0, "cgBI", []byte{0, 0, 0, 0})
+	if _, panicked := testPanic(func() { newPNGImage(bytes.NewReader(png)) }); panicked {
+		t.Error("an unknown ancillary chunk is refused")
+	}
+	if _, err := ReadImageSize(bytes.NewReader(png)); err != nil {
+		t.Errorf("an unknown ancillary chunk: ReadImageSize: %v", err)
+	}
+}
+
 func TestPNGImageRejectsAChunkLengthThatTheFileDoesNotHave(t *testing.T) {
 	valid := testPNG(1, 1, 8, 2, nil, compressor.Deflate([]byte{0, 0, 0, 0}))
 	// The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.

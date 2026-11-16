@@ -129,6 +129,9 @@ class PNGImage {
                 if d[12] == 1 {
                     throw PDFjetError(message: "Interlaced PNG images are not supported.")
                 }
+                if d[12] != 0 {
+                    throw PDFjetError(message: "Unknown PNG interlace method.")
+                }
             } else if chunkType == "IDAT" {
                 // An empty one holds none of the image data (the review of
                 // 9 October 2026)
@@ -140,6 +143,9 @@ class PNGImage {
                 image.pLTE = []
             } else if chunkType == "pHYs", let d = data {
                 image.readPhysicalSize(d)
+            } else if type[0] & 0x20 == 0 {
+                // An unknown critical chunk, as reading the image refuses it
+                throw PDFjetError(message: "Unknown critical PNG chunk \(chunkType).")
             }
         }
         _ = try image.getImageDataLength()
@@ -182,6 +188,11 @@ class PNGImage {
                     throw PDFjetError(message: "Interlaced PNG images are not supported.\n" +
                             "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
                 }
+                // Only the interlace methods 0 and 1 are defined (ISO/IEC 15948,
+                // 11.2.2); the rows of another one were read as if it were 0.
+                if chunk.getData()![12] != 0 {
+                    throw PDFjetError(message: "Unknown PNG interlace method.")
+                }
             } else if chunkType == "IDAT" {
                 iDAT.append(contentsOf: chunk.getData()!)
                 hasImageData = true
@@ -202,6 +213,10 @@ class PNGImage {
                 }
             } else if chunkType == "pHYs" {
                 readPhysicalSize(chunk.getData()!)
+            } else if chunk.type![0] & 0x20 == 0 {
+                // A critical chunk, of an uppercase first letter, that is not
+                // known cannot be passed over (ISO/IEC 15948, 5.4).
+                throw PDFjetError(message: "Unknown critical PNG chunk \(chunkType).")
             }
             // The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
             // ports: the samples are embedded as they are.

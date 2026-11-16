@@ -129,6 +129,9 @@ internal class PNGImage {
                 if (data[12] == 1) {
                     throw new NotSupportedException("Interlaced PNG images are not supported.");
                 }
+                if (data[12] != 0) {
+                    throw new InvalidDataException("Unknown PNG interlace method.");
+                }
             } else if (chunkType.Equals("IDAT")) {
                 // An empty one holds none of the image data (the review of
                 // 9 October 2026)
@@ -140,6 +143,9 @@ internal class PNGImage {
                 image.pLTE = new byte[0];
             } else if (chunkType.Equals("pHYs") && data != null) {
                 image.ReadPhysicalSize(data);
+            } else if ((type[0] & 0x20) == 0) {
+                // An unknown critical chunk, as reading the image refuses it
+                throw new InvalidDataException("Unknown critical PNG chunk " + chunkType + ".");
             }
         }
         image.GetImageDataLength();
@@ -187,6 +193,11 @@ internal class PNGImage {
                     throw new NotSupportedException("Interlaced PNG images are not supported.\n" +
                             "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png");
                 }
+                // Only the interlace methods 0 and 1 are defined (ISO/IEC 15948,
+                // 11.2.2); the rows of another one were read as if it were 0.
+                if (chunk.GetData()[12] != 0) {
+                    throw new InvalidDataException("Unknown PNG interlace method.");
+                }
             } else if (chunkType.Equals("IDAT")) {
                 if (idatChunks == null) {
                     idatChunks = new MemoryStream();
@@ -210,6 +221,10 @@ internal class PNGImage {
                 }
             } else if (chunkType.Equals("pHYs")) {
                 ReadPhysicalSize(chunk.GetData());
+            } else if ((chunk.type[0] & 0x20) == 0) {
+                // A critical chunk, of an uppercase first letter, that is not
+                // known cannot be passed over (ISO/IEC 15948, 5.4).
+                throw new InvalidDataException("Unknown critical PNG chunk " + chunkType + ".");
             }
             // The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
             // ports: the samples are embedded as they are.

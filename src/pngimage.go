@@ -137,6 +137,11 @@ func newPNGImage(reader io.Reader) *pngImage {
 				panic("Interlaced PNG images are not supported.\n" +
 					"Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
 			}
+			// Only the interlace methods 0 and 1 are defined (ISO/IEC 15948,
+			// 11.2.2); the rows of another one were read as if it were 0.
+			if chunk.chunkData[12] != 0 {
+				panic("Unknown PNG interlace method.")
+			}
 		case "IDAT":
 			image.iDAT = append(image.iDAT, chunk.chunkData...)
 		case "PLTE":
@@ -156,6 +161,12 @@ func newPNGImage(reader io.Reader) *pngImage {
 			}
 		case "pHYs":
 			image.readPhysicalSize(chunk.chunkData)
+		default:
+			// A critical chunk, of an uppercase first letter, that is not
+			// known cannot be passed over (ISO/IEC 15948, 5.4).
+			if chunk.chunkType[0]&0x20 == 0 {
+				panic("Unknown critical PNG chunk " + chunkType + ".")
+			}
 		}
 		// The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
 		// ports: the samples are embedded as they are.
