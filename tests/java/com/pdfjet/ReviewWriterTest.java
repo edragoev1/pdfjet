@@ -725,6 +725,20 @@ class ReviewWriterTest {
         assertTrue(raw.contains("/Vertices [ 100 692 150 692 ]"), raw);
     }
 
+    // A polygon whose vertices were never set threw a NullPointerException at
+    // complete in Java and C#; it is an empty polygon, as in Go and Swift.
+    @Test
+    void aPolygonWithNoVerticesIsEmpty() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        String raw = document(Compliance.PDF_1_7, (pdf, page) -> {
+            PolygonAnnotation polygon = new PolygonAnnotation();
+            polygon.setLocation(100f, 100f);
+            polygon.drawOn(page);
+            new PolygonAnnotation().setVertices(null).setLocation(200f, 100f).drawOn(page);
+        });
+        assertTrue(raw.contains("/Vertices [ ]"), raw);
+    }
+
     // PDF/A-1 has the annotations of PDF 1.4 alone: veraPDF refused a
     // polygon (ISO 19005-1, 6.5.2).
     @Test

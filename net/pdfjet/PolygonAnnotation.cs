@@ -11,11 +11,13 @@ public class PolygonAnnotation : BaseAnnotation {
     /// <summary>Creates a polygon annotation.</summary>
     public PolygonAnnotation() {
         base.annotationType = Annotation.Polygon;
+        // No vertices until set: an empty polygon, as in Go and Swift
+        base.vertices = new float[0];
     }
 
     /// <summary>Sets the vertices of the polygon as pairs of x and y coordinates.</summary>
     public PolygonAnnotation SetVertices(float[] vertices) {
-        base.vertices = vertices;
+        base.vertices = vertices ?? new float[0];
         return this;
     }
 }

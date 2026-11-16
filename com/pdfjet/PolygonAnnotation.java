@@ -15,6 +15,8 @@ public class PolygonAnnotation extends BaseAnnotation {
      */
     public PolygonAnnotation() {
         super.annotationType = Annotation.Polygon;
+        // No vertices until set: an empty polygon, as in Go and Swift
+        super.vertices = new float[0];
     }
 
     /**
@@ -24,7 +26,7 @@ public class PolygonAnnotation extends BaseAnnotation {
      * @return this PolygonAnnotation object.
      */
     public PolygonAnnotation setVertices(float[] vertices) {
-        super.vertices = vertices;
+        super.vertices = (vertices != null) ? vertices : new float[0];
         return this;
     }
 }

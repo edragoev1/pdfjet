@@ -379,3 +379,14 @@ func TestDecompressorInflatePrefixChecksAfterTheBytesWhatZlibChecks(t *testing.T
 		}
 	}
 }
+
+// A dynamic block whose literal/length code is incomplete may have one code
+// only if it is one bit long (puff.c, zlib); the end of block alone, two bits
+// long, was taken by puffCheck, which zlib refuses ("invalid literal/lengths
+// set"), as Swift does.
+func TestPuffCheckRefusesAnIncompleteCodeOfOneSymbolLongerThanOneBit(t *testing.T) {
+	raw := []byte{0x05, 0x80, 0x81, 0x08, 0x00, 0x00, 0x00, 0x80, 0xfc, 0xad, 0x0f}
+	if err := puffCheck(raw, 1); err != errPuffInvalid {
+		t.Errorf("%v, not errPuffInvalid", err)
+	}
+}

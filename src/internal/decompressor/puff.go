@@ -332,10 +332,12 @@ func (p *puff) dynamic() {
 	if lengths[256] == 0 {
 		panic(errPuffInvalid)
 	}
-	if left := puffConstruct(lencode, lengths[:nlen]); left < 0 || (left > 0 && nlen-int(lencode.count[0]) != 1) {
+	// An incomplete code is taken only for a single code of one bit, as
+	// puff.c and zlib take it
+	if left := puffConstruct(lencode, lengths[:nlen]); left < 0 || (left > 0 && nlen != int(lencode.count[0])+int(lencode.count[1])) {
 		panic(errPuffInvalid)
 	}
-	if left := puffConstruct(distcode, lengths[nlen:nlen+ndist]); left < 0 || (left > 0 && ndist-int(distcode.count[0]) != 1) {
+	if left := puffConstruct(distcode, lengths[nlen:nlen+ndist]); left < 0 || (left > 0 && ndist != int(distcode.count[0])+int(distcode.count[1])) {
 		panic(errPuffInvalid)
 	}
 	p.codes(lencode, distcode)

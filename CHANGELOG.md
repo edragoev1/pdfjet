@@ -642,6 +642,11 @@ the four ports:
   with the header alone.
 - **Tagged PDF:** a Figure text line that a TextFrame or TextColumn wraps is
   one Figure, its alternative description read once.
+- Java and C#: a `PolygonAnnotation` whose vertices were never set is an
+  empty polygon, as in Go and Swift, where `complete` threw.
+- Go: checking the image data of a PNG refuses a Deflate block whose
+  incomplete code has one symbol longer than a bit, as zlib, puff.c and the
+  other ports do.
 
 ## v9.1.7 — 2026-11-05
 
