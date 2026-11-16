@@ -353,4 +353,40 @@ class BigTableWrapTest {
         assertTrue(content.contains("Tf") && content.split(" Tf", -1).length - 1 >= 3,
                 "the Korean font is not drawn with: " + content);
     }
+
+    // The first row on the page setFirstPage set, which has room for a line
+    // or two, starts the next page when it fits there whole: it was cut at the
+    // lines that fit, and the rest of its text was never drawn.
+    @Test
+    void theFirstRowStartsTheNextPageWhenItFitsThere() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        final Page first = new Page(pdf, Letter.PORTRAIT);
+        String greek = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu "
+                + "nu xi omicron pi rho sigma tau upsilon phi chi psi omega";
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {"first", greek});
+        rows.add(new String[] {"second", "short"});
+        List<Page> pages = wrapTable(pdf, font, true, new String[] {"No", "Notes"}, rows, table -> {
+            table.setColumnWidths(100f, 100f);
+            table.setFirstPage(first, 792f - 20f - 60f);
+        });
+        assertEquals(2, pages.size());
+        assertTrue(pages.get(0) == first);
+        List<String> drawn = drawnText(pages.get(1));
+        assertEquals("first", drawn.get(2), "the first row is not the first row of the next page: " + drawn);
+        String text = String.join(" ", drawn);
+        assertTrue(text.contains("omega") && !text.contains(" ..."), "the first row is not whole: " + text);
+        assertTrue(TestSupport.content(pages.get(1)).contains(TestSupport.hex("Page 2 of 2")),
+                "the pages are not counted as they are drawn");
+    }
+
+    // A word broken into thousands of lines takes time in proportion to its
+    // length: each line was searched for in the whole of the rest of the word.
+    @Test
+    void aLongWordTakesLinearTime() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        final BigTable.Measure m = new BigTable.Measure(TestSupport.helvetica(pdf), null);
+        TestSupport.assertLinearTime(20000, n -> BigTable.wrap(repeat("x", n), m, 100f));
+    }
 }

@@ -232,6 +232,12 @@ func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Tabl
 	table.rendered = numOfHeaderRows
 	table.headerDrawn = false
 	table.misuse = "" // An index that was wrong for the data before
+	if numOfHeaderRows < 0 {
+		// -1 was the value of a table drawn whole, and nothing was drawn
+		table.refuse("The number of header rows cannot be negative.")
+		table.numOfHeaderRows = 0
+		table.rendered = 0
+	}
 	table.addCellsToCompleteTheGrid()
 	if table.tableWidth > 0 {
 		// The width and the percentages given before the data: they were lost
@@ -2255,7 +2261,7 @@ func wrapText(cell *Cell, text string, cellWidth float32) []string {
 			if buf.Len() > 0 {
 				joined = buf.String() + " " + token
 			}
-			if width(joined) <= cellWidth {
+			if !widerThan(joined, cellWidth, width) {
 				buf.Reset()
 				buf.WriteString(joined)
 				break
@@ -2307,6 +2313,23 @@ func wrapText(cell *Cell, text string, cellWidth float32) []string {
 		}
 	}
 	return append(lines, trimSpace(buf.String()))
+}
+
+// widerThan returns true when the text is wider than the width. A start of the
+// text wider than the width, found by doubling, is looked at first, so that a
+// token broken into thousands of lines is not measured whole for each: the
+// time grew with the square of its length.
+func widerThan(text string, width float32, measure func(string) float32) bool {
+	for n := 64; n < len(text); n *= 2 {
+		cut := n
+		for cut < len(text) && !utf8.RuneStart(text[cut]) {
+			cut++
+		}
+		if measure(text[:cut]) > width {
+			return true
+		}
+	}
+	return measure(text) > width
 }
 
 // getNumVerCells returns the number of vertically stacked cells that the

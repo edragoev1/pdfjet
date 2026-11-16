@@ -1212,6 +1212,17 @@ namespace PDFjet.NET {
         private static int CodePointsThatFit(string word, List<int> starts, int first, TextMeasure m, float width) {
             int end = 1;
             int high = starts.Count - 1 - first;
+            // The search goes no further than the first start of the code
+            // points, found by doubling, that is too wide: from the whole of
+            // them, a word broken into thousands of lines took time that grew
+            // with the square of its length.
+            for (int n = 2; n < high; n *= 2) {
+                if (m.Width(word.Substring(starts[first], starts[first + n] - starts[first])) > width) {
+                    high = n - 1;
+                    break;
+                }
+                end = n;
+            }
             while (end < high) {
                 int middle = end + (high - end + 1) / 2;
                 if (m.Width(word.Substring(starts[first], starts[first + middle] - starts[first])) <= width) {
@@ -1244,7 +1255,8 @@ namespace PDFjet.NET {
             float lineHeight = font.ascent + font.descent;
             string[][] lines = WrapFields(fields, false, out int count);
             float limit = page.GetHeight() - bottomMargin;
-            if (count > 1 && this.yText + (float) ((float) (count - 1) * lineHeight) > limit && !firstRowOnPage) {
+            if (count > 1 && this.yText + (float) ((float) (count - 1) * lineHeight) > limit &&
+                    (!firstRowOnPage || (page == firstPage && FitsNewPage(count)))) {
                 DrawTheVerticalLines();
                 DrawFooter();
                 NewPage();
@@ -1278,6 +1290,15 @@ namespace PDFjet.NET {
                 DrawFooter();
                 startNewPage = true;
             }
+        }
+
+        // Returns true when a row of the lines fits whole on a new page. The
+        // first row on the page SetFirstPage set, which may have room for one
+        // line, starts the next page when it fits there: it was cut at the
+        // lines that fit, though the next page had room for all of them.
+        private bool FitsNewPage(int lines) {
+            float lineHeight = f2.ascent + f2.descent;
+            return FirstRowY(this.y) + (float) ((float) (lines - 1) * lineHeight) <= pageSize.GetHeight() - bottomMargin;
         }
 
         // Returns the line with the mark that says the text goes on, cut to make
@@ -1394,7 +1415,8 @@ namespace PDFjet.NET {
                 }
                 WrapFields(fields, false, out int lines);
                 float limit = pageHeight - this.bottomMargin;
-                if (lines > 1 && yPos + (float) ((float) (lines - 1) * lineHeight) > limit && !first) {
+                if (lines > 1 && yPos + (float) ((float) (lines - 1) * lineHeight) > limit &&
+                        (!first || (count == 1 && StartsOnFirstPage() && FitsNewPage(lines)))) {
                     count++;
                     pageHeight = pageSize.GetHeight();
                     yPos = yTop;

@@ -1751,5 +1751,16 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(100f, table.GetColumnWidth(0), 3);
         Assert.Equal(300f, table.GetColumnWidth(1), 3);
     }
+
+    // A negative number of header rows is refused: -1 was the value of a
+    // table drawn whole, and the table drew nothing, with no error.
+    [Fact]
+    public void ANegativeNumberOfHeaderRowsIsRefused() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> { new Cell(font, "a"), new Cell(font, "b") } };
+        ArgumentException e = Assert.Throws<ArgumentException>(() => new Table().SetTableData(data, -1));
+        Assert.Equal("The number of header rows cannot be negative.", e.Message);
+    }
 }
 }

@@ -287,4 +287,38 @@ import Testing
         #expect(content.contains("Tf") && content.components(separatedBy: " Tf").count - 1 >= 3,
                 "the Korean font is not drawn with: \(content)")
     }
+
+    // The first row on the page setFirstPage set, which has room for a line or
+    // two, starts the next page when it fits there whole: it was cut at the
+    // lines that fit, and the rest of its text was never drawn.
+    @Test func theFirstRowStartsTheNextPageWhenItFitsThere() throws {
+        let pdf = TestSupport.newPDF()
+        let first = Page(pdf, Letter.PORTRAIT)
+        let greek = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu " +
+                "nu xi omicron pi rho sigma tau upsilon phi chi psi omega"
+        let pages = try table(pdf, TestSupport.helvetica(pdf), true, ["No", "Notes"],
+                [["first", greek], ["second", "short"]]) {
+            $0.setColumnWidths(100, 100)
+            $0.setFirstPage(first, 792 - 20 - 60)
+        }
+        try #require(pages.count == 2, "\(pages.count) pages")
+        #expect(pages[0] === first)
+        let drawn = drawnText(pages[1])
+        #expect(drawn.count > 2 && drawn[2] == "first", "the first row is not the first row of the next page: \(drawn)")
+        let text = drawn.joined(separator: " ")
+        #expect(text.contains("omega") && !text.contains(" ..."), "the first row is not whole: \(text)")
+        #expect(TestSupport.content(pages[1]).contains(TestSupport.hex("Page 2 of 2")),
+                "the pages are not counted as they are drawn")
+    }
+
+    // A word broken into thousands of lines takes time in proportion to its
+    // length: each line was searched for in the whole of the rest of the word.
+    @Test func aLongWordTakesLinearTime() {
+        let pdf = TestSupport.newPDF()
+        let m = BigTable.TextMeasure(font: TestSupport.helvetica(pdf), fallback: nil)
+        expectLinearTime(5000) { n in
+            _ = BigTable.wrapText(String(repeating: "x", count: n), m, 100)
+        }
+    }
 }
+

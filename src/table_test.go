@@ -2041,3 +2041,23 @@ func TestTableAWidthSetBeforeTheDataIsKept(t *testing.T) {
 	testNear(t, "first", 100, table.GetColumnWidth(0), testDelta)
 	testNear(t, "second", 300, table.GetColumnWidth(1), testDelta)
 }
+
+// A negative number of header rows is refused: -1 was the value of a table
+// drawn whole, and the table drew nothing, with no error.
+func TestTableANegativeNumberOfHeaderRowsIsRefused(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	NewTable().SetTableData(testRows(font, 5, 2), -1).DrawOn(NewPage(pdf, letter.Portrait()))
+	testRefused(t, pdf, "The number of header rows cannot be negative.")
+}
+
+// A token broken into thousands of lines takes time in proportion to its
+// length: the whole of the rest of it was measured for each line.
+func TestTableALongTokenTakesLinearTime(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	testLinearTime(t, 20000, func(n int) {
+		cell := NewCell(font, strings.Repeat("x", n))
+		wrapText(cell, cell.text, 100)
+	})
+}

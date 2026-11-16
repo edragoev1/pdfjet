@@ -1155,6 +1155,19 @@ public class BigTable {
             _ characters: ArraySlice<Unicode.Scalar>, _ m: TextMeasure, _ width: Float) -> Int {
         var end = 1
         var high = characters.count
+        // The search goes no further than the first start of the characters,
+        // found by doubling, that is too wide: from the whole of them, a word
+        // broken into thousands of lines took time that grew with the square
+        // of its length.
+        var n = 2
+        while n < high {
+            if m.width(BigTable.string(characters.prefix(n))) > width {
+                high = n - 1
+                break
+            }
+            end = n
+            n *= 2
+        }
         while end < high {
             let middle = end + (high - end + 1) / 2
             if m.width(BigTable.string(characters.prefix(middle))) <= width {
@@ -1187,7 +1200,8 @@ public class BigTable {
         let lineHeight = font.ascent + font.descent
         var (lines, count) = wrapFields(fields, false)
         var limit = page!.height - bottomMargin
-        if count > 1 && self.yText + Float(count - 1) * lineHeight > limit && !firstRowOnPage {
+        if count > 1 && self.yText + Float(count - 1) * lineHeight > limit &&
+                (!firstRowOnPage || (page === firstPage && fitsNewPage(count))) {
             drawTheVerticalLines()
             drawFooter()
             newPage()
@@ -1218,6 +1232,15 @@ public class BigTable {
             drawFooter()
             startNewPage = true
         }
+    }
+
+    // Whether a row of the lines fits whole on a new page. The first row on
+    // the page setFirstPage set, which may have room for one line, starts the
+    // next page when it fits there: it was cut at the lines that fit, though
+    // the next page had room for all of them.
+    private func fitsNewPage(_ lines: Int) -> Bool {
+        let lineHeight = f2.ascent + f2.descent
+        return firstRowY(self.y) + Float(lines - 1) * lineHeight <= pageSize.getHeight() - bottomMargin
     }
 
     // The line with the mark that says the text goes on, cut to make room for
@@ -1336,7 +1359,8 @@ public class BigTable {
             }
             var (_, lines) = wrapFields(fields, false)
             var limit = pageHeight - self.bottomMargin
-            if lines > 1 && yPos + Float(lines - 1) * lineHeight > limit && !first {
+            if lines > 1 && yPos + Float(lines - 1) * lineHeight > limit &&
+                    (!first || (count == 1 && startsOnFirstPage() && fitsNewPage(lines))) {
                 count += 1
                 pageHeight = pageSize.getHeight()
                 yPos = yTop

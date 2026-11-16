@@ -1222,6 +1222,16 @@ func bigTableWrap(text string, m bigTableMeasure, width float32) []string {
 func bigTableRunesThatFit(runes []rune, m bigTableMeasure, width float32) int {
 	end := 1
 	high := len(runes)
+	// The search goes no further than the first start of the runes, found by
+	// doubling, that is too wide: from the whole of them, a word broken into
+	// thousands of lines took time that grew with the square of its length.
+	for n := 2; n < high; n *= 2 {
+		if m.width(string(runes[:n])) > width {
+			high = n - 1
+			break
+		}
+		end = n
+	}
 	for end < high {
 		middle := end + (high-end+1)/2
 		if m.width(string(runes[:middle])) <= width {
@@ -1254,7 +1264,8 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 	lineHeight := font.ascent + font.descent
 	lines, count := bt.wrapFields(fields, false)
 	limit := bt.page.height - bt.bottomMargin
-	if count > 1 && bt.yText+float32(float32(count-1)*lineHeight) > limit && !bt.firstRowOnPage {
+	if count > 1 && bt.yText+float32(float32(count-1)*lineHeight) > limit &&
+		(!bt.firstRowOnPage || (bt.page == bt.firstPage && bt.fitsNewPage(count))) {
 		bt.drawTheVerticalLines()
 		bt.drawFooter()
 		bt.newPage()
@@ -1290,6 +1301,15 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 		bt.drawFooter()
 		bt.startNewPage = true
 	}
+}
+
+// fitsNewPage returns true when a row of the lines fits whole on a new page.
+// The first row on the page SetFirstPage set, which may have room for one
+// line, starts the next page when it fits there: it was cut at the lines that
+// fit, though the next page had room for all of them.
+func (bt *BigTable) fitsNewPage(lines int) bool {
+	lineHeight := bt.f2.ascent + bt.f2.descent
+	return bt.firstRowY(bt.y)+float32(float32(lines-1)*lineHeight) <= bt.pageSize.GetHeight()-bt.bottomMargin
 }
 
 // bigTableMark returns the line with the mark that says the text goes on,
@@ -1405,7 +1425,8 @@ func (bt *BigTable) countWrappedPages() int {
 		}
 		_, lines := bt.wrapFields(fields, false)
 		limit := pageHeight - bt.bottomMargin
-		if lines > 1 && yPos+float32(float32(lines-1)*lineHeight) > limit && !first {
+		if lines > 1 && yPos+float32(float32(lines-1)*lineHeight) > limit &&
+			(!first || (count == 1 && bt.startsOnFirstPage() && bt.fitsNewPage(lines))) {
 			count++
 			pageHeight = bt.pageSize.GetHeight()
 			yPos = yTop

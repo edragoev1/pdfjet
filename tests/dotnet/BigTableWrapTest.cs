@@ -253,5 +253,57 @@ public sealed class BigTableWrapTest {
         int fonts = content.Split(new string[] {" Tf"}, StringSplitOptions.None).Length - 1;
         Assert.True(content.Contains("Tf") && fonts >= 3, "the Korean font is not drawn with: " + content);
     }
+
+    [Fact]
+    public void TheFirstRowStartsTheNextPageWhenItFitsThere() {
+        // The first row on the page SetFirstPage set, which has room for a
+        // line or two, starts the next page when it fits there whole: it was
+        // cut at the lines that fit, and the rest of its text was never drawn.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page first = new Page(pdf, Letter.PORTRAIT);
+        string greek = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu " +
+                "nu xi omicron pi rho sigma tau upsilon phi chi psi omega";
+        List<string[]> rows = new List<string[]> {
+            new string[] {"first", greek}, new string[] {"second", "short"} };
+        List<Page> pages = WrapTable(pdf, font, true, new string[] {"No", "Notes"}, rows, table => {
+            table.SetColumnWidths(100f, 100f);
+            table.SetFirstPage(first, 792f - 20f - 60f);
+        });
+        Assert.Equal(2, pages.Count);
+        Assert.Same(first, pages[0]);
+        List<string> drawn = BigTableTest.DrawnText(pages[1]);
+        Assert.Equal("first", drawn[2]);
+        string text = string.Join(" ", drawn);
+        Assert.True(text.Contains("omega") && !text.Contains(" ..."), "the first row is not whole: " + text);
+        Assert.Contains(TestSupport.Hex("Page 2 of 2"), TestSupport.Content(pages[1]));
+    }
+}
+
+// A word broken into thousands of lines takes time in proportion to its
+// length: each line was searched for in the whole of the rest of the word.
+[Collection("Timing")]
+public sealed class BigTableWrapTimingTest {
+    [Fact]
+    public void ALongWordTakesLinearTime() {
+        PDF pdf = TestSupport.NewPDF();
+        BigTable.TextMeasure m = new BigTable.TextMeasure(TestSupport.Helvetica(pdf), null);
+        TestSupport.AssertLinearTime(20000, n => BigTable.Wrap(new string('x', n), m, 100f));
+    }
+
+    // A token broken into thousands of lines takes time in proportion to its
+    // length: the whole of the rest of it was measured for each line.
+    [Fact]
+    public void ATableTokenTakesLinearTime() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        TestSupport.AssertLinearTime(20000, n => {
+            List<List<Cell>> data = new List<List<Cell>> {
+                new List<Cell> { new Cell(font, "a"), new Cell(font, new string('x', n)) } };
+            Table table = new Table().SetTableData(data, 0);
+            table.SetColumnWidth(0, 100f).SetColumnWidth(1, 100f);
+            table.DrawOn(pdf, new List<Page>(), Letter.PORTRAIT);
+        });
+    }
 }
 }
