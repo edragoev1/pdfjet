@@ -77,8 +77,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   on the tag of 9.1.9, after a reboot, the machine otherwise idle, then
   decide what the report shows. Not published until then.
 
-- **After 9.1.9: the 32 business documents of PDFjet Forms as examples 53 to
-  84, and labels as example 85, in the four ports** (15 November 2026). Why: an AI assistant adapts
+- ✅ **DONE 15 November 2026, in 9.1.9, not after it (pdfjet d3a58f4b4): the
+  32 business documents of PDFjet Forms as examples 53 to 84, and labels as
+  example 85, in the four ports** (15 November 2026). Why: an AI assistant adapts
   the example closest to what it is asked for, and developers ask for
   documents (an invoice, a quote, a receipt, a statement of account), while
   most examples show one feature each. The templates: appointment request,
@@ -265,8 +266,11 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   November 2026); the library needs nothing more for it. Codegen stays in
   the Forms server as it is, no code in four languages from Forms this year.
 
-- **9.1.9, the next release, after the Forms launch: BigTable that wraps its
-  text, if asked** (the owner, 10 November 2026: "cutting the last few
+- ✅ **DONE 15 November 2026: BigTable wraps its text in 9.1.9
+  (`setWrapText`, Example_51), and 9.1.9 comes this week, before the Forms
+  launch, not after it (the owner, 15 November 2026). The code of a design,
+  /code.html, stays in Forms' TODO.md. As it was written: 9.1.9, the next
+  release, after the Forms launch: BigTable that wraps its text, if asked** (the owner, 10 November 2026: "cutting the last few
   columns is not great"; "it is very important", the owner had thought of
   it before). In the release notes' first lines. With it, for developers too: the code
   of a design of PDFjet Forms in Java, C#, Go or Swift, on /code.html for
@@ -407,8 +411,10 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   generated code. CASL: bought in the last two years, or asked in the last
   six months; who it is from, and how to stop them.
 
-- **9.1.9 release notes, a draft** (started 11 November 2026; lines added as
-  the work is done, the most important first):
+- ✅ **DONE 15 November 2026: the release notes of 9.1.9 are in CHANGELOG.md
+  (008cb245a), where they are kept from now on; the draft as it was:**
+  (started 11 November 2026; lines added as the work is done, the most
+  important first):
   - **BigTable:** `SetWrapText` wraps long fields within their columns, each
     row as tall as its tallest field and the memory still flat;
     `SetFallbackFonts` draws the characters the table's fonts don't have,
@@ -426,8 +432,9 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   its new SetBorderWidth) and Page.SetDefaultPenWidth, as TextBlock and
   TextFrame were already; 0 still there when set. Go done the same day; the
   other three ports to follow. The question as it was asked:
-- **9.1.9 too, a question: Cell's border width of 0 by default** (11
-  November 2026). A Cell draws its borders with a pen width of 0 unless
+- ✅ **DONE in 9.1.9: every line 0.5 points unless set, in the four ports, a
+  behavior change in CHANGELOG.md. The question as it was: 9.1.9 too, a
+  question: Cell's border width of 0 by default** (11 November 2026). A Cell draws its borders with a pen width of 0 unless
   SetBorderWidth is called, in all four ports (cell.go, Cell.java, Cell.cs,
   Cell.swift; BigTable to be checked too). In PDF a width of 0 is the
   thinnest line the device makes: a whole pixel on the screen at any zoom,
