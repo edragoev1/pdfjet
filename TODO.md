@@ -63,6 +63,20 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
 
 ## Open
 
+- **pdf-libs-benchmarks, run again: PDFjet on the .ttf files too, to
+  compare** (the owner, 15 November 2026). The run of 15 November 2026 gave
+  each library the font format it does best with: PDFjet's four ports the
+  .otf files of IBM Plex Sans 3.005 and Noto Sans 2.015, PDFBox, iText and
+  OpenPDF the .ttf files (SPEC.md). PDFjet led on time in every document,
+  in both fonts, and on size in all but the one-page letter (PDFBox 11 KB,
+  PDFjet 12). Its results and a draft report are kept, not published, in
+  pdf-libs-benchmarks' results/run-2026-11-15-pdfjet-otf (762948d). To do:
+  the same run with PDFjet reading the .ttf files, every library the same
+  files, to set beside it (Common.fontFormat in java/src, and the font paths
+  of dotnet/Program.cs, go/main.go and swift/Sources/Bench/main.swift). Both
+  on the tag of 9.1.9, after a reboot, the machine otherwise idle, then
+  decide what the report shows. Not published until then.
+
 - **After 9.1.9: the 32 business documents of PDFjet Forms as examples 53 to
   84, and labels as example 85, in the four ports** (15 November 2026). Why: an AI assistant adapts
   the example closest to what it is asked for, and developers ask for
