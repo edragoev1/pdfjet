@@ -7,7 +7,76 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## Next release (not released yet)
+## v9.1.9 — not released yet
+
+The release notes, the most important first; every change in detail follows,
+under "In detail". In the four ports, Java, C#, Go and Swift, unless said.
+
+### Highlights
+
+- **BigTable, for tables of any length:** `setWrapText(true)` wraps long
+  fields within their columns, each row as tall as its tallest field, the
+  memory still flat (Example_51); `setFallbackFonts` draws the characters
+  the table's fonts lack, such as Chinese in a Latin table;
+  `setBorderWidth`. And a `BigTable` now takes the look of a `Table`, so
+  that either can take the place of the other: `setColumnWidths` in points,
+  `setTopLine(false)`, and corners closed as a `Table` closes them.
+- **Smaller PDFs.** An .otf is embedded as a subset of the glyphs drawn
+  alone, without subroutines: a page of code in Cascadia Mono is 16.9 KB in
+  place of 208.8 KB. A .ttf subset ends at the last glyph it keeps: a
+  12-page statement in Noto Sans is 31% smaller, in IBM Plex Sans 14%. A
+  `Table` writes its borders as continuous lines, and a `BigTable` no text
+  for an empty field: a long table is 4 to 5% smaller. Links to one address
+  share one action.
+- **Every font PDFjet carries is an .otf:** IBM Plex Sans and Serif,
+  Cascadia Mono, and IBM Plex Sans Arabic, Hebrew and Thai. A document
+  embeds about a fifth less of them; a Go program is 2.2 MB smaller, and
+  the NuGet `PDFjet.dll` 8.0 MB in place of 10.2 MB.
+- **33 new examples, Example_53 to Example_85:** whole business documents
+  and printable forms, from an invoice and a statement of account to a
+  sheet of shipping labels, each PDF/UA, the amounts exact.
+- **Guides for AI coding assistants,** `llms-java.txt`, `llms-dotnet.txt`,
+  `llms-go.txt` and `llms-swift.txt`, their samples built and checked in
+  every port; the Java and .NET guides are in their packages too.
+- **New:** `Page.drawGlyphs` draws glyphs shaped by another text engine as
+  outlines, and `PDF.attachText` attaches a document's text (Example_52);
+  `TextFrame.setLineSpacing`; `QRCode.fits`; `Table.setJoinedBorders`.
+- **Faster:** `TextBlock` wraps a paragraph 13% to 24% faster.
+
+### Behavior changes since 9.1.7
+
+Each is described in detail below, with how to keep what 9.1.7 did where
+there is a way.
+
+- Every line PDFjet draws is 0.5 points wide unless set, where it was 0, the
+  thinnest line of the device. For the old hairline, set 0:
+  `cell.setBorderWidth(0f)`, `line.setStrokeWidth(0f)`,
+  `page.setDefaultPenWidth(0f)`.
+- The fonts PDFjet carries are .otf files, and the path to the .ttf of one
+  no longer loads: the error names the .otf. Use the constants, such as
+  `IBMPlexSans.Regular`, which name the .otf.
+- A `Table` that goes on to the next page draws a line under its last row on
+  each page, where the grid was left open.
+- A `Table` writes the borders of its cells as continuous lines: the same
+  look, other bytes. `setJoinedBorders(false)` writes each cell's own, as
+  9.1.7 did, byte for byte.
+- A `BigTable` closes the corners of its lines, by half the width of the
+  pen; it writes no text for an empty field, and strokes the lines of a
+  page as one path, the look otherwise the same.
+- A subset of a .ttf ends at the last glyph it keeps; the glyph numbers, the
+  content streams, the widths and the ToUnicode map are as before.
+- The links to one address share one action: `/A n 0 R` in place of the
+  action in each link.
+- In `Markdown`, a heading stays with the table under it, over a short
+  paragraph too.
+- In `TextFrame`, a word wider than the frame takes no empty piece after it,
+  and a centered or right-aligned row wider than the frame starts at its
+  left edge.
+- In a tagged document, a `Stamp` with no description drawn inside real
+  content is part of that content, not an artifact, so the document passes
+  PDF/UA.
+
+### In detail
 
 Behavior change, in the four ports: **every line PDFjet draws is 0.5 points
 wide unless set.** `Cell`, `Table`, `BigTable`, `Rect`, `Line`, `Path` and
@@ -105,7 +174,7 @@ the subsets of 123 to 138 fonts with seven sets of glyphs each, and on
 thousands of damaged fonts, which each port refuses alike; MuPDF, PDFium,
 Poppler and pdf.js draw the glyphs as before, and veraPDF passes.
 
-Changed, in the Go port so far (Java, C# and Swift to follow): **a CFF
+Changed, in the four ports: **a CFF
 subset has no subroutines, and is smaller.** Each glyph kept is written with
 the subroutines it calls in place of its calls (Technical Note #5177), and
 the subset has no Global Subrs and no Subrs. A PDF/A-3a page of IBM Plex
@@ -118,7 +187,7 @@ for 2000, where the larger charstrings take longer to compress. A glyph
 that computes a number, by an arithmetic operator, keeps the subroutines it
 calls, as before; a font kept whole keeps its own.
 
-Changed, in the Go port so far: **an .otf of a FontMatrix of its own is
+Changed, in the four ports: **an .otf of a FontMatrix of its own is
 subset too, and every name-keyed font's subset writes its matrices.** A
 name-keyed font whose Top DICT has a FontMatrix, as Microsoft's Cascadia
 Mono .otf of 2,048 units to the em, was embedded whole. Every name-keyed
