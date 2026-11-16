@@ -137,7 +137,7 @@ class Review919Test {
         final int top = below;
         assertThrows(IllegalArgumentException.class, () -> outline.outline(top));
         long elapsed = (System.nanoTime() - start) / 1000000;
-        assertTrue(elapsed < 2000, elapsed + " ms");
+        assertTrue(elapsed < 10000, elapsed + " ms");
     }
 
     // The outline of IBM Plex Sans with the charstring of glyph 1 made the

@@ -199,10 +199,14 @@ public class MarkdownParserTest {
     // as long, over the limit of 24 (15 October).
     [Fact]
     public void LongInputsAreReadQuickly() {
-        TimeSpan small = ParseTime(5000);
-        TimeSpan large = ParseTime(40000);
-        Assert.True(large.Ticks <= 32 * small.Ticks, "40000 repeats took "
-                + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
+        // 5000 against 40000 repeats under 32 times, each the shortest of
+        // three runs, and all again up to three times (AssertLinearTime): one
+        // timing of each failed on a GitHub runner (16 November 2026, 45 times)
+        var texts = new Dictionary<int, string>();
+        foreach (int n in new int[] {5000, 40000}) {
+            texts[n] = Repeated(n);
+        }
+        TestSupport.AssertLinearTime(5000, n => Assert.True(MarkdownParser.Parse(texts[n]).Count > 0));
     }
 
     // A table of more than 64 columns is marked too wide, and its rows are not
@@ -225,21 +229,12 @@ public class MarkdownParserTest {
         Assert.True(blocks.Count == 1 && blocks[0].tooWide && blocks[0].rows.Count == 1, "65 columns: " + Parse(Table(65)));
     }
 
-    private static TimeSpan ParseTime(int count) {
+    private static string Repeated(int count) {
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < count; i++) {
             text.Append("> - a | b\n>   ---|---\n>   ```\n\n    x\n- [ ]\n");
         }
-        TimeSpan shortest = TimeSpan.MaxValue;
-        for (int run = 0; run < 3; run++) {
-            Stopwatch watch = Stopwatch.StartNew();
-            List<MarkdownParser.Block> blocks = MarkdownParser.Parse(text.ToString());
-            if (watch.Elapsed < shortest) {
-                shortest = watch.Elapsed;
-            }
-            Assert.True(blocks.Count > 0);
-        }
-        return shortest;
+        return text.ToString();
     }
 }
 }

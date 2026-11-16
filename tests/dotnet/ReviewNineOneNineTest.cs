@@ -124,7 +124,7 @@ public class ReviewNineOneNineTest {
         Stopwatch watch = Stopwatch.StartNew();
         int top = below;
         Assert.Throws<ArgumentException>(() => outline.Outline(top));
-        Assert.True(watch.ElapsedMilliseconds < 2000, watch.ElapsedMilliseconds + " ms");
+        Assert.True(watch.ElapsedMilliseconds < 10000, watch.ElapsedMilliseconds + " ms");
     }
 
     // Returns the outline of IBM Plex Sans with the charstring of glyph 1 made

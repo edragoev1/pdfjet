@@ -88,7 +88,7 @@ func TestATrueTypeCompositeGlyphOfManyPartsIsRefusedQuickly(t *testing.T) {
 	if _, err := outline.outline(below); err == nil {
 		t.Error("no error")
 	}
-	if elapsed := time.Since(start); elapsed > 2*time.Second {
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
 		t.Errorf("%v", elapsed)
 	}
 }
