@@ -76,7 +76,9 @@ type puff struct {
 }
 
 // puffCheck decodes the raw Deflate data to its first length bytes, and
-// returns an error when the data is invalid before them, as zlib finds it.
+// returns an error when the data is invalid before them, as zlib finds it:
+// after them too, as far as zlib decodes without writing a byte, which is the
+// next block header or symbol, and the length and distance codes of a pair.
 func puffCheck(raw []byte, length int) (err error) {
 	p := &puff{input: raw, length: length}
 	defer func() {
@@ -233,6 +235,11 @@ func (p *puff) codes(lencode, distcode *puffHuffman) {
 				panic(errPuffInvalid)
 			}
 			dist := puffDBase[symbol] + p.bits(puffDExt[symbol])
+			// zlib stops when its output is full before it checks the
+			// distance, as it copies (review of 16 November 2026)
+			if p.total == p.length {
+				panic(errPuffEnough)
+			}
 			if dist > p.total {
 				panic(errPuffInvalid)
 			}

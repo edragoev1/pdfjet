@@ -424,6 +424,7 @@ class Decompressor {
         // input is read to its end only when the stream ends there.
         var inStream = new EndOfInputStream(data, true);
         using var outStream = new MemoryStream();
+        bool again = false;
         try {
             using var zlib = new ZLibStream(inStream, CompressionMode.Decompress);
             byte[] buffer = new byte[65536];
@@ -441,13 +442,19 @@ class Decompressor {
                     exact = zlib.Read(buffer, 0, 1) == 0 &&
                             !inStream.ReadAtEnd && inStream.Position == inStream.Length;
                 } catch (InvalidDataException) {
-                    exact = false;
+                    // An error after the bytes. Fed the last bytes of the
+                    // input one at a time, zlib may have given the bytes
+                    // before it read the data after them, which it checks,
+                    // with the whole input, as far as it decodes without
+                    // writing a byte; InflatePrefix decodes with the whole
+                    // input, as the other ports do (review of 16 November 2026).
+                    again = true;
                 }
             }
         } catch (InvalidDataException) {
             // Decoded again below, with the errors of a prefix.
         }
-        return (outStream.Length == length) ? outStream.ToArray() : InflatePrefix(data, length);
+        return (outStream.Length == length && !again) ? outStream.ToArray() : InflatePrefix(data, length);
     }
 
     /// <summary>

@@ -217,6 +217,37 @@ public class DecompressorTest {
     }
 
     [Fact]
+    public void InflatePrefixChecksAfterTheBytesWhatZlibChecks() {
+        // zlib decodes on after the bytes it was asked for as far as it can
+        // without writing another byte: it refuses an invalid block type or
+        // symbol there, and stops at a length/distance pair, whose distance it
+        // checks only as it copies; the Go and Swift ports do the same (review
+        // of 16 November 2026). Each stream is a block of fixed codes with "ABCD".
+        byte[] stored = new byte[7 + 50];
+        Bytes(0x78, 0x01, 0x00, 0x64, 0x00, 0x9B, 0xFF).CopyTo(stored, 0);
+        Array.Fill(stored, (byte) 'A', 7, 50);
+        byte[] tenA = new byte[10];
+        Array.Fill(tenA, (byte) 'A');
+        var cases = new (string Name, byte[] Data, int Length, byte[] Want)[] {
+            ("an invalid block type after it", Bytes(0x78, 0x01, 0x72, 0x74, 0x72, 0x76, 0x01, 0x1C), 4, null),
+            ("an invalid symbol after it", Bytes(0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x19, 0x03, 0x00), 4, null),
+            ("a distance too far back after it",
+                Bytes(0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x01, 0xDA, 0x01, 0x00), 4, Ascii("ABCD")),
+            ("a stored block of 100 bytes cut at 50", stored, 10, tenA),
+        };
+        foreach (var c in cases) {
+            if (c.Want != null) {
+                Assert.Equal(c.Want, Decompressor.InflatePrefix(c.Data, c.Length));
+                Assert.Equal(c.Want, Decompressor.InflateExact(c.Data, c.Length, out bool exact));
+                Assert.False(exact, c.Name);
+            } else {
+                Assert.ThrowsAny<Exception>(() => Decompressor.InflatePrefix(c.Data, c.Length));
+                Assert.ThrowsAny<Exception>(() => Decompressor.InflateExact(c.Data, c.Length, out _));
+            }
+        }
+    }
+
+    [Fact]
     public void LzwDecodeRejectsDataThatDecodesToMoreThanTheLimit() {
         byte[] encoded = Bytes(0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01);
         Assert.Equal(10, Decompressor.LZWDecode(encoded, 10).Length);

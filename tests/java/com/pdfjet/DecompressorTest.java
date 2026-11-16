@@ -243,6 +243,41 @@ class DecompressorTest {
     }
 
     @Test
+    void inflatePrefixChecksAfterTheBytesWhatZlibChecks() throws Exception {
+        // zlib decodes on after the bytes it was asked for as far as it can
+        // without writing another byte: it refuses an invalid block type or
+        // symbol there, and stops at a length/distance pair, whose distance it
+        // checks only as it copies; the Go and Swift ports do the same (review
+        // of 16 November 2026). Each stream is a block of fixed codes with "ABCD".
+        byte[] stored = Arrays.copyOf(bytes(0x78, 0x01, 0x00, 0x64, 0x00, 0x9B, 0xFF), 7 + 50);
+        Arrays.fill(stored, 7, stored.length, (byte) 'A');
+        byte[] tenA = new byte[10];
+        Arrays.fill(tenA, (byte) 'A');
+        Object[][] cases = {
+            {"an invalid block type after it", bytes(0x78, 0x01, 0x72, 0x74, 0x72, 0x76, 0x01, 0x1C), 4, null},
+            {"an invalid symbol after it", bytes(0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x19, 0x03, 0x00), 4, null},
+            {"a distance too far back after it",
+                bytes(0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x01, 0xDA, 0x01, 0x00), 4, ascii("ABCD")},
+            {"a stored block of 100 bytes cut at 50", stored, 10, tenA},
+        };
+        for (Object[] c : cases) {
+            String name = (String) c[0];
+            byte[] data = (byte[]) c[1];
+            int length = (Integer) c[2];
+            byte[] want = (byte[]) c[3];
+            if (want != null) {
+                assertArrayEquals(want, Decompressor.inflatePrefix(data, length), name);
+                Decompressor.Inflated inflated = Decompressor.inflateExact(data, length);
+                assertArrayEquals(want, inflated.data, name);
+                assertEquals(false, inflated.exact, name);
+            } else {
+                assertThrows(Exception.class, () -> Decompressor.inflatePrefix(data, length), name);
+                assertThrows(Exception.class, () -> Decompressor.inflateExact(data, length), name);
+            }
+        }
+    }
+
+    @Test
     void lzwDecodeRejectsDataThatDecodesToMoreThanTheLimit() throws Exception {
         final byte[] encoded = bytes(0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01);
         assertEquals(10, Decompressor.lzwDecode(encoded, 10).length);

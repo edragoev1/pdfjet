@@ -199,6 +199,32 @@ import Testing
         #expect(throws: (any Error).self) { _ = try inflatePrefix(Array(deflated.prefix(6)), 20) }
     }
 
+    @Test func inflatePrefixChecksAfterTheBytesWhatZlibChecks() throws {
+        // zlib, and so the JDK and .NET, decodes on after the bytes it was
+        // asked for as far as it can without writing another byte: it refuses
+        // an invalid block type or symbol there, and stops at a length/distance
+        // pair, whose distance it checks only as it copies (review of 16
+        // November 2026). Each stream is a block of fixed codes with "ABCD".
+        let stored: [UInt8] = [0x78, 0x01, 0x00, 0x64, 0x00, 0x9B, 0xFF] + [UInt8](repeating: 0x41, count: 50)
+        let cases: [(String, [UInt8], Int, [UInt8]?)] = [
+            ("an invalid block type after it", [0x78, 0x01, 0x72, 0x74, 0x72, 0x76, 0x01, 0x1C], 4, nil),
+            ("an invalid symbol after it", [0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x19, 0x03, 0x00], 4, nil),
+            ("a distance too far back after it",
+                [0x78, 0x01, 0x73, 0x74, 0x72, 0x76, 0x01, 0xDA, 0x01, 0x00], 4, ascii("ABCD")),
+            ("a stored block of 100 bytes cut at 50", stored, 10, [UInt8](repeating: 0x41, count: 10)),
+        ]
+        for (name, data, length, want) in cases {
+            if let want {
+                #expect(try inflatePrefix(data, length) == want, "\(name)")
+                let (prefix, exact) = try inflateExact(data, length)
+                #expect(prefix == want && !exact, "\(name)")
+            } else {
+                #expect(throws: (any Error).self, "\(name)") { _ = try inflatePrefix(data, length) }
+                #expect(throws: (any Error).self, "\(name)") { _ = try inflateExact(data, length) }
+            }
+        }
+    }
+
     @Test func lzwDecodeRejectsDataThatDecodesToMoreThanTheLimit() throws {
         let encoded: [UInt8] = [0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01]
         #expect(try lzwDecode(encoded, 10).count == 10)
