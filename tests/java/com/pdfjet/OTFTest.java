@@ -325,4 +325,22 @@ class OTFTest {
             assertTrue(message.contains("may not be embedded"), fsType + ": " + message);
         }
     }
+
+    @Test
+    void theCharacterMapIsReadPastTheCharactersTheOS2TableGives() throws Exception {
+        // usFirstCharIndex and usLastCharIndex of the OS/2 table only describe
+        // the character map: Liberation Sans Narrow says U+F005 is its last
+        // character and maps U+FB01. The characters past them were given no
+        // glyph, and drawn as .notdef. Here Cascadia Mono, said to hold B to Y
+        // alone, keeps A, Z and U+1FB95 of its format 12 subtable.
+        byte[] font = font("tests/fonts/CascadiaMono-Regular.ttf");
+        OTF want = new OTF(new ByteArrayInputStream(font));
+        int os2 = table(font, "OS/2");
+        OTF got = new OTF(new ByteArrayInputStream(with(with(font, os2 + 64, 'B'), os2 + 66, 'Y')));
+        for (int ch : new int[] {'A', 'Z', 0x1FB95}) {
+            assertTrue(want.unicodeToGID.get(ch) != 0, ch + " has no glyph");
+            assertEquals(want.unicodeToGID.get(ch), got.unicodeToGID.get(ch), String.valueOf(ch));
+            assertTrue(ch >= got.firstChar && ch <= got.lastChar, String.valueOf(ch));
+        }
+    }
 }

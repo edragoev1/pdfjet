@@ -366,5 +366,23 @@ public class OTFTest {
             Assert.Contains("may not be embedded", Error(With(ttf, os2 + 8, fsType)));
         }
     }
+
+    [Fact]
+    public void TheCharacterMapIsReadPastTheCharactersTheOS2TableGives() {
+        // usFirstCharIndex and usLastCharIndex of the OS/2 table only describe
+        // the character map: Liberation Sans Narrow says U+F005 is its last
+        // character and maps U+FB01. The characters past them were given no
+        // glyph, and drawn as .notdef. Here Cascadia Mono, said to hold B to Y
+        // alone, keeps A, Z and U+1FB95 of its format 12 subtable.
+        byte[] font = FontBytes("tests/fonts/CascadiaMono-Regular.ttf");
+        OTF want = new OTF(new MemoryStream(font));
+        int os2 = Table(font, "OS/2");
+        OTF got = new OTF(new MemoryStream(With(With(font, os2 + 64, 'B'), os2 + 66, 'Y')));
+        foreach (int ch in new int[] {'A', 'Z', 0x1FB95}) {
+            Assert.True(got.unicodeToGID.Get(ch) == want.unicodeToGID.Get(ch) && want.unicodeToGID.Get(ch) != 0,
+                    ch + ": glyph " + got.unicodeToGID.Get(ch) + ", not " + want.unicodeToGID.Get(ch));
+            Assert.True(ch >= got.firstChar && ch <= got.lastChar, ch.ToString());
+        }
+    }
 }
 }   // End of namespace PDFjet.NET

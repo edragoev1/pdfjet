@@ -272,5 +272,25 @@ public class DrawGlyphsTest {
                     () => page.DrawGlyphs(plex, new int[] {-1}, new float[] {0f, 0f}, "A", null));
         }
     }
+
+    [Fact]
+    public void AGlyphPastTheHorizontalMetricsIsDrawn() {
+        // Cascadia Mono has 3,183 horizontal metrics and 4,319 glyphs: the
+        // glyphs past the metrics, U+2427 among them, have the advance of the
+        // last, as OpenType has it. They were refused as glyphs the font has
+        // not, and the whole document failed.
+        MemoryStream bos = new MemoryStream();
+        PDF pdf = new PDF(bos);
+        Font font = new Font(pdf, TestSupport.RepoPath(CASCADIA));
+        font.SetSize(20f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        int gid = font.unicodeToGID.Get(0x2427);
+        Assert.True(gid >= font.advanceWidth.Length, "glyph " + gid);
+        page.DrawGlyphs(font, new int[] {gid}, new float[] {50f, 100f}, "\u2427", null);
+        pdf.Complete();
+        List<string> forms = Forms(bos.ToArray());
+        Assert.Single(forms);
+        Assert.EndsWith("f\n", forms[0]);
+    }
 }
 }   // End of DrawGlyphsTest.cs

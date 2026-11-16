@@ -317,4 +317,21 @@ import Testing
             #expect(message.contains("may not be embedded"), "\(fsType): \(message)")
         }
     }
+
+    @Test func theCharacterMapIsReadPastTheCharactersTheOS2TableGives() throws {
+        // usFirstCharIndex and usLastCharIndex of the OS/2 table only describe
+        // the character map: Liberation Sans Narrow says U+F005 is its last
+        // character and maps U+FB01. The characters past them were given no
+        // glyph, and drawn as .notdef. Here Cascadia Mono, said to hold B to Y
+        // alone, keeps A, Z and U+1FB95 of its format 12 subtable.
+        let ttf = font("tests/fonts/CascadiaMono-Regular.ttf")
+        let want = try OTF(InputStream(data: Data(ttf)))
+        let os2 = table(ttf, "OS/2")
+        let got = try OTF(InputStream(data: Data(with(with(ttf, os2 + 64, 0x42), os2 + 66, 0x59))))
+        for c in [0x41, 0x5A, 0x1FB95] {
+            #expect(got.unicodeToGID[c] == want.unicodeToGID[c] && want.unicodeToGID[c] != 0,
+                    "\(c): glyph \(got.unicodeToGID[c]), not \(want.unicodeToGID[c])")
+            #expect(c >= got.firstChar! && c <= got.lastChar!, "\(c)")
+        }
+    }
 }

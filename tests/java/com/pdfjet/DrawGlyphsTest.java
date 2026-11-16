@@ -284,4 +284,24 @@ class DrawGlyphsTest {
             TestSupport.allowCoreFonts(false);
         }
     }
+
+    @Test
+    void aGlyphPastTheHorizontalMetricsIsDrawn() throws Exception {
+        // Cascadia Mono has 3,183 horizontal metrics and 4,319 glyphs: the
+        // glyphs past the metrics, U+2427 among them, have the advance of the
+        // last, as OpenType has it. They were refused as glyphs the font has
+        // not, and the whole document failed.
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = new Font(pdf, TestSupport.open(CASCADIA));
+        font.setSize(20f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        int gid = font.unicodeToGID.get(0x2427);
+        assertTrue(gid >= font.advanceWidth.length, "glyph " + gid);
+        page.drawGlyphs(font, new int[] {gid}, new float[] {50f, 100f}, "\u2427", null);
+        pdf.complete();
+        List<String> forms = forms(bos.toByteArray());
+        assertEquals(1, forms.size());
+        assertTrue(forms.get(0).endsWith("f\n"), forms.get(0));
+    }
 }

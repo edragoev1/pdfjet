@@ -57,8 +57,8 @@ class OTF {
      */
     OTF(InputStream stream) throws Exception {
         buf = Content.getFromStream(stream);
-        // A font without an OS/2 table does not say which characters it
-        // holds, so its character map is read for all of them.
+        // The character map is read for all characters, whatever the OS/2
+        // table says (see OS_2).
         firstChar = 0;
         lastChar = 0x10FFFF;
 
@@ -175,15 +175,12 @@ class OTF {
     private void OS_2(FontTable table) throws IOException {
 
         fsType = Math.max(tableUInt16(table, 8), 0);
-        index = table.offset + 64;
-        firstChar = readUInt16();
-        lastChar  = readUInt16();
-        // The last character is 16 bits: 0xFFFF says the font may have
-        // characters past it, as IBM Plex Sans TC has the Chinese characters
-        // of Hong Kong past U+FFFF.
-        if (lastChar == 0xFFFF) {
-            lastChar = 0x10FFFF;
-        }
+        // usFirstCharIndex and usLastCharIndex are not read: they only
+        // describe the character map, which is what says which characters
+        // the font has, and some fonts have them wrong. Liberation Sans
+        // Narrow says U+F005 is its last character and maps U+FB01 and
+        // U+FB02, which were drawn as .notdef. The character map is read for
+        // all characters.
         // sCapHeight is in the table from its version 2 on. Where it would be
         // in a version 0 or 1 table are the bytes after the table, often those
         // of the next table.
