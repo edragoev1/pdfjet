@@ -96,7 +96,11 @@ public class QRCodeTest {
         Assert.True(QRCode.Fits(new string('a', 2953), ErrorCorrectionLevel.L));
         Assert.False(QRCode.Fits(new string('a', 1274), ErrorCorrectionLevel.H));
         Assert.True(QRCode.Fits("", ErrorCorrectionLevel.H));
-        Assert.Throws<ArgumentException>(() => QRCode.Fits("x", (ErrorCorrectionLevel) 7));
+        // A level that is not one fits nothing, as in Go, where the
+        // constructor throws (review of 16 November 2026)
+        Assert.False(QRCode.Fits("x", (ErrorCorrectionLevel) 7));
+        Assert.False(QRCode.Fits("x", (ErrorCorrectionLevel) 9));
+        Assert.False(QRCode.Fits("", (ErrorCorrectionLevel) (-1)));
         foreach (ErrorCorrectionLevel level in new[] {ErrorCorrectionLevel.L, ErrorCorrectionLevel.M,
                 ErrorCorrectionLevel.Q, ErrorCorrectionLevel.H}) {
             foreach (int n in new[] {1270, 1273, 1274, 1663, 1664, 2330, 2331, 2332, 2953, 2954}) {

@@ -1173,7 +1173,12 @@ public class PDFobj {
                 return false;
             }
             List<String> added = new List<String> {"/Contents", "["};
-            added.AddRange(AddStream(after, objects));
+            // The content before, which saves the graphics state that the
+            // content after restores, in the one stream
+            byte[] both = new byte[before.Length + after.Length];
+            Buffer.BlockCopy(before, 0, both, 0, before.Length);
+            Buffer.BlockCopy(after, 0, both, before.Length, after.Length);
+            added.AddRange(AddStream(both, objects));
             added.Add("]");
             dict.InsertRange(last, added);
             return true;

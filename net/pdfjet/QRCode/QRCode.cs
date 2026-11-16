@@ -82,17 +82,15 @@ public class QRCode : IDrawable {
     /// why, where the constructor would throw. The limit is in UTF-8 bytes,
     /// not characters: at level M, 2,331 bytes of ASCII, or 2,330 with the
     /// ECI of a string that is not all ASCII, so 776 euro signs, 3 bytes
-    /// each, fit, and 777 do not.
+    /// each, fit, and 777 do not. A level that is not one fits nothing.
     /// </summary>
     /// <param name="str">the string to encode.</param>
     /// <param name="errorCorrectionLevel">the error correction level.</param>
-    /// <returns>true if the constructor would make a QR code of the string.</returns>
-    /// <exception cref="ArgumentException">If the level is not one of L, M, Q or H, as the constructor.</exception>
+    /// <returns>true if the constructor would make a QR code of the string; false for a level that is not one of L, M, Q or H.</returns>
     public static bool Fits(String str, ErrorCorrectionLevel errorCorrectionLevel) {
         if (errorCorrectionLevel != ErrorCorrectionLevel.L && errorCorrectionLevel != ErrorCorrectionLevel.M
                 && errorCorrectionLevel != ErrorCorrectionLevel.Q && errorCorrectionLevel != ErrorCorrectionLevel.H) {
-            throw new ArgumentException("The error correction level " + (int) errorCorrectionLevel
-                    + " is not one: use ErrorCorrectionLevel.L, M, Q or H.");
+            return false;
         }
         byte[] data = Encoding.GetEncoding("utf-8").GetBytes(str);
         bool eci = false;
