@@ -1612,7 +1612,9 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		}
 	} else if annot.annotationType == annotationPolygon {
 		pdf.appendString("/Vertices [ ")
-		for i := 0; i < len(annot.vertices); i += 2 {
+		// Whole pairs only: an odd last value, which is no vertex, is left out,
+		// as it is with a container and in the rectangle and the appearance.
+		for i := 0; i+1 < len(annot.vertices); i += 2 {
 			pdf.appendFloat32(annot.x1 + annot.vertices[i])
 			pdf.appendString(" ")
 			pdf.appendFloat32(annot.y1 - annot.vertices[i+1])
@@ -2664,8 +2666,9 @@ func (pdf *PDF) AddAssociatedFile(file *EmbeddedFile) *PDF {
 }
 
 // AttachText attaches the text, in UTF-8, as a file the document carries: an
-// associated file of the relationship Source, of the media type
-// "text/plain; charset=utf-8". This is how a document whose text is drawn as
+// associated file of the relationship Source, of the media type "text/plain".
+// The encoding is told in the description, since PDF/A-3 takes a media type
+// with no parameters. This is how a document whose text is drawn as
 // outlines, with Page.DrawGlyphs, which cannot be selected or searched,
 // carries its exact text for anyone who needs it: a reader shows the file
 // beside the document. It is attached only when this is called. A document of
@@ -2683,7 +2686,7 @@ func (pdf *PDF) AttachText(name, text string) *PDF {
 		return pdf
 	}
 	file := NewEmbeddedFileWithRelationship(pdf, name, strings.NewReader(text), true,
-		"text/plain; charset=utf-8", relationship.Source, "The text of this document.")
+		"text/plain", relationship.Source, "The text of this document, in UTF-8.")
 	return pdf.AddAssociatedFile(file)
 }
 

@@ -601,4 +601,73 @@ import Testing
         #expect(count(raw, header) == 2, "the document's packet and the font's")
         #expect(count(raw, "<?xpacket ") == 4, "a packet without a begin attribute")
     }
+
+    /// The /Vertices of a polygon read past the end of an odd number of values
+    /// out of a container: Go panicked in complete() and Swift trapped.
+    @Test func aPolygonOfAnOddNumberOfValuesLeavesTheLastOut() throws {
+        let raw = try document(Compliance.PDF_1_7) { _, page in
+            let polygon = PolygonAnnotation().setVertices([0, 0, 50, 0, 25])
+            polygon.setLocation(100, 100)
+            _ = polygon.drawOn(page)
+        }
+        #expect(raw.contains("/Vertices [ 100 692 150 692 ]"))
+    }
+
+    /// PDF/A-1 has the annotations of PDF 1.4 alone: veraPDF refused a
+    /// polygon (ISO 19005-1, 6.5.2).
+    @Test func aPolygonIsRefusedInPDFA1() throws {
+        for compliance in [Compliance.PDF_A_1A, Compliance.PDF_A_1B, Compliance.PDF_A_2B] {
+            let memory = MemoryPDF(compliance)
+            memory.pdf.setTitle("Test")
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            TextLine(try TestSupport.plexSans(memory.pdf), "Text").setLocation(50, 50).drawOn(page)
+            let polygon = PolygonAnnotation().setVertices([0, 0, 50, 0, 25, 40])
+            polygon.setLocation(100, 100)
+            polygon.setContents("A polygon")
+            _ = polygon.drawOn(page)
+            let message = completeMessage(memory.pdf)
+            if compliance == Compliance.PDF_A_2B {
+                #expect(message == "", "\(compliance): \(message)")
+            } else {
+                #expect(message.contains("cannot have a polygon annotation"), "\(compliance): \(message)")
+            }
+        }
+    }
+
+    /// A Figure in a composite text line was a kid of its P that the P's /K,
+    /// written from its words, left out: no screen reader reached it.
+    @Test func aFigureInAParagraphDrawnWordByWordIsInItsK() throws {
+        let raw = try document(Compliance.PDF_UA_1) { pdf, page in
+            let font = TestSupport.helvetica(pdf)
+            let line = CompositeTextLine(50, 100)
+            _ = line.addComponent(TextLine(font, "Rating: "))
+            let stars = TextLine(font, "***")
+            _ = stars.setStructureType(StructElem.FIGURE)
+            _ = stars.setAltDescription("three stars")
+            _ = line.addComponent(stars)
+            _ = line.addComponent(TextLine(font, " of five"))
+            line.drawOn(page)
+        }
+        let figure = try #require(raw.firstMatch(of: /(\d+) 0 obj\n<<\n\/Type \/StructElem \/S \/Figure\n/))
+        // The heading is the marked content 0
+        let want = "/K [1 \(figure.1) 0 R 3]"
+        #expect(raw.components(separatedBy: "/S /P\n").dropFirst()
+                .contains { $0.prefix(while: { $0 != ">" }).contains(want) }, "no P of \(want)")
+    }
+
+    /// Two names of destinations that are canonically equivalent, as é and
+    /// e with its accent, are two destinations, as in the other ports: a
+    /// dictionary of Swift strings made them one, and the link to the second
+    /// went to the first.
+    @Test func destinationsOfCanonicallyEquivalentNamesAreTwo() throws {
+        let raw = try document(Compliance.PDF_1_7) { pdf, page in
+            let font = TestSupport.helvetica(pdf)
+            page.addDestination("caf\u{E9}", 100)
+            page.addDestination("cafe\u{301}", 300)
+            TextLine(font, "One").setLocation(50, 500).setGoToAction("caf\u{E9}").drawOn(page)
+            TextLine(font, "Two").setLocation(50, 600).setGoToAction("cafe\u{301}").drawOn(page)
+        }
+        let dests = raw.components(separatedBy: "/Dest [").dropFirst().map { $0.prefix(while: { $0 != "]" }) }
+        #expect(dests.count == 2 && Set(dests).count == 2, "\(dests)")
+    }
 }

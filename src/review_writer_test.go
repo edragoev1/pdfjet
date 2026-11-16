@@ -702,3 +702,70 @@ func TestWriterTheXMPPacketHasItsBeginAttribute(t *testing.T) {
 		t.Error("the packet has no begin attribute")
 	}
 }
+
+func TestWriterAPolygonOfAnOddNumberOfValuesLeavesTheLastOut(t *testing.T) {
+	// The /Vertices of a polygon read past the end of an odd number of values
+	// out of a container: Go panicked in Complete and Swift trapped.
+	raw := testWriterDoc(t, compliance.PDF_1_7, func(pdf *PDF, page *Page) {
+		polygon := NewPolygonAnnotation().SetVertices([]float32{0, 0, 50, 0, 25})
+		polygon.SetLocation(100, 100)
+		polygon.DrawOn(page)
+	})
+	if !strings.Contains(raw, "/Vertices [ 100 692 150 692 ]") {
+		t.Error(regexp.MustCompile(`/Vertices \[[^\]]*\]`).FindString(raw))
+	}
+}
+
+func TestWriterAPolygonIsRefusedInPDFA1(t *testing.T) {
+	// PDF/A-1 has the annotations of PDF 1.4 alone: veraPDF refused a
+	// polygon (ISO 19005-1, 6.5.2).
+	for _, level := range []compliance.Compliance{compliance.PDF_A_1A, compliance.PDF_A_1B, compliance.PDF_A_2B} {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(level).SetTitle("Test")
+		page := NewPage(doc.pdf, letter.Portrait())
+		NewTextLine(testPlexSans(doc.pdf), "Text").SetLocation(50, 50).DrawOn(page)
+		polygon := NewPolygonAnnotation().SetVertices([]float32{0, 0, 50, 0, 25, 40})
+		polygon.SetLocation(100, 100)
+		polygon.SetContents("A polygon")
+		polygon.DrawOn(page)
+		err := doc.pdf.Complete()
+		if level == compliance.PDF_A_2B {
+			if err != nil {
+				t.Errorf("%v: %v", level, err)
+			}
+		} else if err == nil || !strings.Contains(err.Error(), "cannot have a polygon annotation") {
+			t.Errorf("%v: %v", level, err)
+		}
+	}
+}
+
+func TestWriterAFigureInAParagraphDrawnWordByWordIsInItsK(t *testing.T) {
+	// A Figure in a composite text line was a kid of its P that the P's /K,
+	// written from its words, left out: no screen reader reached it.
+	testAllowCoreFonts(t)
+	var figure int
+	raw := testWriterDoc(t, compliance.PDF_UA_1, func(pdf *PDF, page *Page) {
+		font := testHelvetica(pdf)
+		line := NewCompositeTextLine(50, 100)
+		line.AddComponent(NewTextLine(font, "Rating: "))
+		stars := NewTextLine(font, "***")
+		stars.SetStructureType(structelem.Figure)
+		stars.SetAltDescription("three stars")
+		line.AddComponent(stars)
+		line.AddComponent(NewTextLine(font, " of five"))
+		line.DrawOn(page)
+		for _, element := range page.structures {
+			if element.structure == string(structelem.Figure) {
+				figure = element.objNumber
+			}
+		}
+	})
+	if figure == 0 {
+		t.Fatal("no Figure")
+	}
+	// The heading is the marked content 0
+	want := "/K [1 " + strconv.Itoa(figure) + " 0 R 3]"
+	if !regexp.MustCompile(`/S /P\n[^>]*` + regexp.QuoteMeta(want)).MatchString(raw) {
+		t.Errorf("no P of %s", want)
+	}
+}

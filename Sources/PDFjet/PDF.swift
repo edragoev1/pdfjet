@@ -13,7 +13,10 @@ public final class PDF {
     var fonts = [Font]()
     var images = [Image]()
     var pages = [Page]()
-    var destinations = [String : Destination]()
+    // The destinations by the bytes of their names, as uriActions below: two
+    // names that are canonically equivalent are two destinations, as they
+    // are in the other ports
+    var destinations = [[UInt8]: Destination]()
     // The object of the action of each URI a link goes to, by the bytes of
     // the URI: Swift's strings that are canonically equivalent are equal, as
     // é and e with its accent, which are two URIs
@@ -1303,24 +1306,24 @@ public final class PDF {
                 destination.pageObjNumber = page.objNumber
                 if destination.bookmark {
                     bookmarks.append(destination)
-                } else if destinations[destination.name!] == nil {
+                } else if destinations[[UInt8](destination.name!.utf8)] == nil {
                     // The first of a name: the parts of a text line wrapped
                     // by a TextFrame or a TextColumn all have its destination
-                    destinations[destination.name!] = destination
+                    destinations[[UInt8](destination.name!.utf8)] = destination
                 }
             }
         }
-        var taken = Set(bookmarks.map { $0.name! })
+        var taken = Set(bookmarks.map { [UInt8]($0.name!.utf8) })
         var next = bookmarks.count
         for destination in bookmarks {
-            while destinations[destination.name!] != nil {
+            while destinations[[UInt8](destination.name!.utf8)] != nil {
                 next += 1
                 let name = "dest#\(next)"
-                if taken.insert(name).inserted {
+                if taken.insert([UInt8](name.utf8)).inserted {
                     destination.name = name
                 }
             }
-            destinations[destination.name!] = destination
+            destinations[[UInt8](destination.name!.utf8)] = destination
         }
     }
 
@@ -1703,7 +1706,7 @@ public final class PDF {
                 append(uriAction)
                 append(" 0 R\n")
             } else if let key = annot.key, !key.isEmpty {
-                if let destination = destinations[key] {
+                if let destination = destinations[[UInt8](key.utf8)] {
                     append("/Dest [")
                     append(destination.pageObjNumber)
                     append(" 0 R /XYZ ")
@@ -1719,11 +1722,14 @@ public final class PDF {
             }
         } else if annot.annotationType == Annotation.Polygon {
             append("/Vertices [ ")
+            // Whole pairs only: an odd last value, which is no vertex, is left out,
+            // as it is with a container and in the rectangle and the appearance.
+            let vertices = annot.vertices ?? []
             var i = 0
-            while i < annot.vertices!.count {
-                append(annot.x1 + annot.vertices![i])
+            while i + 1 < vertices.count {
+                append(annot.x1 + vertices[i])
                 append(" ")
-                append(annot.y1 - annot.vertices![i + 1])
+                append(annot.y1 - vertices[i + 1])
                 append(" ")
                 i += 2
             }
@@ -2207,9 +2213,10 @@ public final class PDF {
     ///
     /// Attaches the text, in UTF-8, as a file the document carries: an
     /// associated file of the relationship Source, of the media type
-    /// "text/plain; charset=utf-8". This is how a document whose text is drawn
-    /// as outlines, with Page.drawGlyphs, which cannot be selected or
-    /// searched, carries its exact text for anyone who needs it: a reader
+    /// "text/plain". The encoding is told in the description, since PDF/A-3
+    /// takes a media type with no parameters. This is how a document whose
+    /// text is drawn as outlines, with Page.drawGlyphs, which cannot be
+    /// selected or searched, carries its exact text for anyone who needs it: a reader
     /// shows the file beside the document. It is attached only when this is
     /// called. A document of PDF/A-1, which carries no files, or of PDF/A-2,
     /// which carries only documents of PDF/A, refuses it.
@@ -2235,7 +2242,7 @@ public final class PDF {
             throw PDFjetError(message: message)
         }
         let file = try EmbeddedFile(self, name, InputStream(data: Data(text.utf8)), true,
-                "text/plain; charset=utf-8", Relationship.SOURCE, "The text of this document.")
+                "text/plain", Relationship.SOURCE, "The text of this document, in UTF-8.")
         return addAssociatedFile(file)
     }
 

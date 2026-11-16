@@ -2950,6 +2950,7 @@ public class Page {
             element.altDescription = altDescription
             element.attributes = attributes
             addStructure(element, structParent)
+            amongTheWords(element)
             append("/")
             append(structure.rawValue)
             append(" <</MCID ")
@@ -2965,6 +2966,16 @@ public class Page {
                 artifactDepth = markedContentDepth
                 figure = element
             }
+        }
+    }
+
+    // Puts the element, a kid of a paragraph drawn word by word, like the
+    // Figure of an image in a composite text line, among the words of the
+    // paragraph, whose /K lists its marked contents and its kids in the order
+    // they are drawn: it was left out, and read by no screen reader.
+    private func amongTheWords(_ element: StructElement) {
+        if let parent = mcidParent, parent === structParent {
+            parent.mcids.append(-(element.objNumber ?? 0))
         }
     }
 
@@ -3284,7 +3295,8 @@ public class Page {
     // artifact or a figure.
     func beginLink() -> StructElement? {
         let link = addStructElement(structParent, StructElem.LINK, nil)
-        if link != nil {
+        if let link = link {
+            amongTheWords(link)
             structElementStack.append(structParent)
             structParent = link
         }
@@ -3380,6 +3392,13 @@ public class Page {
         // its page, and a page that was written has no place for it.
         if pdf.isTagged() && written {
             failWritten()
+            return
+        }
+        // PDF/A-1 has the annotations of PDF 1.4 alone, and the polygon came with
+        // PDF 1.5 (ISO 19005-1, 6.5.2): veraPDF refused the document.
+        if annotation.annotationType == Annotation.Polygon && pdf.isPDFA1() {
+            pdf.fail("A document of \(pdf.compliance)"
+                    + " cannot have a polygon annotation: PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.")
             return
         }
         transformAnnotation(annotation)

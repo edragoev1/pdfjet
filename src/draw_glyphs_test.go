@@ -303,7 +303,7 @@ func TestDrawGlyphsAttachTextCarriesTheTextAsAnAssociatedFile(t *testing.T) {
 	NewTextLine(font, "Text").SetLocation(50, 200).DrawOn(page)
 	doc.pdf.AttachText("article-1.txt", "सभी text")
 	pdf := string(doc.complete())
-	for _, part := range []string{"/Subtype /text#2Fplain;#20charset=utf-8", "/AFRelationship /Source", "/AF [", "/Desc "} {
+	for _, part := range []string{"/Subtype /text#2Fplain\n", "/AFRelationship /Source", "/AF [", "/Desc "} {
 		if !strings.Contains(pdf, part) {
 			t.Errorf("no %s", part)
 		}
