@@ -192,6 +192,10 @@ public class Table : IDrawable {
     /// <param name="numOfHeaderRows">the number of header rows in this data.</param>
     /// <returns>this Table object.</returns>
     public Table SetTableData(List<List<Cell>> tableData, int numOfHeaderRows) {
+        if (numOfHeaderRows < 0) {
+            // -1 was the value of a table drawn whole, and nothing was drawn
+            throw new ArgumentException("The number of header rows cannot be negative.");
+        }
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;
@@ -2193,6 +2197,23 @@ public class Table : IDrawable {
         return WrapText(cell, cell.text, cellWidth);
     }
 
+    // Returns true when the text is wider than the width. A start of the text
+    // wider than the width, found by doubling, is looked at first, so that a
+    // token broken into thousands of lines is not measured whole for each: the
+    // time grew with the square of its length.
+    private static bool WiderThan(String text, float width, Func<String, float> measure) {
+        for (int n = 64; n < text.Length; n *= 2) {
+            int cut = n;
+            if (Char.IsLowSurrogate(text[cut])) {
+                cut++;
+            }
+            if (measure(text.Substring(0, cut)) > width) {
+                return true;
+            }
+        }
+        return measure(text) > width;
+    }
+
     // The lines of the text of the cell, wrapped at the width.
     private static List<String> WrapText(Cell cell, String text, float cellWidth) {
         List<String> lines = new List<String>();
@@ -2202,7 +2223,7 @@ public class Table : IDrawable {
             String token = word;
             while (true) {
                 String joined = (buf.Length > 0) ? buf.ToString() + " " + token : token;
-                if (width(joined) <= cellWidth) {
+                if (!WiderThan(joined, cellWidth, width)) {
                     buf.Length = 0;
                     buf.Append(joined);
                     break;
@@ -2234,20 +2255,36 @@ public class Table : IDrawable {
                 // hyphen if one fits: "1234<SHY>5678" was 123 / 4<SHY>56 / 78,
                 // where TextBlock and TextFrame draw 123 / 4- / 567 / 8
                 // (review of 12 October 2026, T4).
-                int end = 0;
-                while (end < token.Length) {
-                    int next = end + Util.CharCount(token, end);
-                    if (end > 0 && width(token.Substring(0, next)) > cellWidth) {
+                // A token with no soft hyphen is broken in place, to its end:
+                // the rest of it, copied for each line, made the time grow
+                // with the square of its length.
+                bool inPlace = token.IndexOf('\u00AD') == -1;
+                int from = 0;
+                while (true) {
+                    int end = from;
+                    while (end < token.Length) {
+                        int next = end + Util.CharCount(token, end);
+                        if (end > from && width(token.Substring(from, next - from)) > cellWidth) {
+                            break;
+                        }
+                        end = next;
+                    }
+                    if (end == token.Length) {
+                        // The rest, which fits, or a character wider than the column
+                        buf.Append(token, from, end - from);
+                        from = end;
                         break;
                     }
-                    end = next;
+                    lines.Add(Util.Trim(token.Substring(from, end - from)));
+                    from = end;
+                    if (!inPlace) {
+                        break;
+                    }
                 }
-                if (end == token.Length) {
-                    buf.Append(token);  // A character wider than the column
+                if (from == token.Length) {
                     break;
                 }
-                lines.Add(Util.Trim(token.Substring(0, end)));
-                token = token.Substring(end);
+                token = token.Substring(from);
             }
         }
         lines.Add(Util.Trim(buf.ToString()));

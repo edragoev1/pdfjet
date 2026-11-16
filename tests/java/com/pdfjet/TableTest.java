@@ -1799,5 +1799,35 @@ class TableTest {
         assertEquals(100f, table.getColumnWidth(0), 1e-3f);
         assertEquals(300f, table.getColumnWidth(1), 1e-3f);
     }
+
+    // A negative number of header rows is refused: -1 was the value of a
+    // table drawn whole, and the table drew nothing, with no error.
+    @Test
+    void aNegativeNumberOfHeaderRowsIsRefused() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        final List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), new Cell(font, "b"))));
+        Exception e = assertThrows(IllegalArgumentException.class, () -> new Table().setTableData(data, -1));
+        assertEquals("The number of header rows cannot be negative.", e.getMessage());
+    }
+
+    // A token broken into thousands of lines takes time in proportion to its
+    // length: the whole of the rest of it was measured for each line.
+    @Test
+    void aLongTokenTakesLinearTime() throws Exception {
+        final PDF pdf = TestSupport.newPDF();
+        final Font font = TestSupport.helvetica(pdf);
+        TestSupport.assertLinearTime(20000, n -> {
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < n; i++) {
+                text.append('x');
+            }
+            List<List<Cell>> data = new ArrayList<List<Cell>>();
+            data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), new Cell(font, text.toString()))));
+            Table table = new Table().setTableData(data, 0);
+            table.setColumnWidth(0, 100f).setColumnWidth(1, 100f);
+            table.drawOn(pdf, new ArrayList<Page>(), Letter.PORTRAIT);
+        });
+    }
 }
 

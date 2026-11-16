@@ -571,10 +571,9 @@ func (cell *Cell) GetColSpan() int {
 // spans nothing. Please see Example_21.
 //   - rowspan: the number of rows, from 1.
 func (cell *Cell) SetRowSpan(rowspan int) *Cell {
-	if rowspan < 1 {
-		rowspan = 1
-	}
-	cell.rowspan = int32(rowspan)
+	// Clamped to the range of an int32, as SetColSpan is: a span of 1<<31
+	// was negative and spanned nothing, and one of 1<<32+3 spanned 3
+	cell.rowspan = int32(max(1, min(rowspan, math.MaxInt32)))
 	return cell
 }
 

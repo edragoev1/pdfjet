@@ -203,6 +203,12 @@ public class Table : Drawable {
         self.rendered = numOfHeaderRows
         self.headerDrawn = false
         self.misuse = nil   // An index that was wrong for the data before
+        if numOfHeaderRows < 0 {
+            // -1 was the value of a table drawn whole, and nothing was drawn
+            refuse("The number of header rows cannot be negative.")
+            self.numOfHeaderRows = 0
+            self.rendered = 0
+        }
         addCellsToCompleteTheGrid()
         if tableWidth > 0.0 {
             // The width and the percentages given before the data: they were
@@ -2318,6 +2324,23 @@ public class Table : Drawable {
                 .map { String(String.UnicodeScalarView($0)) }
     }
 
+    // Whether the text is wider than the width. A start of the text wider than
+    // the width, found by doubling, is looked at first, so that a token broken
+    // into thousands of lines is not measured whole for each: the time grew
+    // with the square of its length.
+    private static func widerThan(_ text: String, _ width: Float, _ measure: (String) -> Float) -> Bool {
+        let scalars = text.unicodeScalars
+        var n = 64
+        while let cut = scalars.index(scalars.startIndex, offsetBy: n, limitedBy: scalars.endIndex),
+                cut < scalars.endIndex {
+            if measure(String(scalars[..<cut])) > width {
+                return true
+            }
+            n *= 2
+        }
+        return measure(text) > width
+    }
+
     // The lines of the text of the cell, wrapped at the width.
     private static func wrapText(_ cell: Cell, _ text: String, _ cellWidth: Float) -> [String] {
         var lines = [String]()
@@ -2329,7 +2352,7 @@ public class Table : Drawable {
             var token = token
             while true {
                 let joined = buf.isEmpty ? token : buf + " " + token
-                if width(joined) <= cellWidth {
+                if !Table.widerThan(joined, cellWidth, width) {
                     buf = joined
                     break
                 }
@@ -2355,20 +2378,37 @@ public class Table : Drawable {
                 // hyphen if one fits: "1234<SHY>5678" was 123 / 4<SHY>56 / 78,
                 // where TextBlock and TextFrame draw 123 / 4- / 567 / 8
                 // (review of 12 October 2026, T4).
-                let scalars = Array(token.unicodeScalars)
-                var end = 0
-                while end < scalars.count {
-                    if end > 0 && width(String(String.UnicodeScalarView(scalars[0...end]))) > cellWidth {
+                // A token with no soft hyphen is broken in place, to its end:
+                // the rest of it, an array of its characters made for each
+                // line, made the time grow with the square of its length.
+                let inPlace = !token.unicodeScalars.contains("\u{00AD}")
+                let scalars = token.unicodeScalars
+                var from = scalars.startIndex
+                while true {
+                    var end = from
+                    while end < scalars.endIndex {
+                        let next = scalars.index(after: end)
+                        if end > from && width(String(scalars[from..<next])) > cellWidth {
+                            break
+                        }
+                        end = next
+                    }
+                    if end == scalars.endIndex {
+                        // The rest, which fits, or a character wider than the column
+                        buf = String(scalars[from...])
+                        from = end
                         break
                     }
-                    end += 1
+                    lines.append(String(scalars[from..<end]).trim())
+                    from = end
+                    if !inPlace {
+                        break
+                    }
                 }
-                if end == scalars.count {
-                    buf = token     // A character wider than the column
+                if from == scalars.endIndex {
                     break
                 }
-                lines.append(String(String.UnicodeScalarView(scalars[0..<end])).trim())
-                token = String(String.UnicodeScalarView(scalars[end...]))
+                token = String(scalars[from...])
             }
         }
         lines.append(buf.trim())

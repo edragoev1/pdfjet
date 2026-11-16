@@ -304,3 +304,43 @@ func TestBigTableTheFallbackFontsDrawWhatTheFontsDoNotHave(t *testing.T) {
 		t.Errorf("the Korean font is not drawn with: %q", content)
 	}
 }
+
+// The first row on the page SetFirstPage set, which has room for a line or
+// two, starts the next page when it fits there whole: it was cut at the lines
+// that fit, and the rest of its text was never drawn.
+func TestBigTableWrapTheFirstRowStartsTheNextPageWhenItFitsThere(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	first := NewPage(pdf, letter.Portrait())
+	greek := "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu " +
+		"nu xi omicron pi rho sigma tau upsilon phi chi psi omega"
+	rows := [][]string{{"first", greek}, {"second", "short"}}
+	pages := testWrapTable(t, pdf, font, true, []string{"No", "Notes"}, rows, func(table *BigTable) {
+		table.SetColumnWidths(100, 100)
+		table.SetFirstPage(first, 792-20-60)
+	})
+	if len(pages) != 2 || pages[0] != first {
+		t.Fatalf("%d pages", len(pages))
+	}
+	if drawn := strings.Join(testDrawnText(pages[0]), " "); strings.Contains(drawn, "alpha") {
+		t.Errorf("the first row was drawn on the first page: %q", drawn)
+	}
+	drawn := strings.Join(testDrawnText(pages[1]), " ")
+	if !strings.Contains(drawn, "omega") || strings.Contains(drawn, bigTableEllipsis) {
+		t.Errorf("the first row is not whole on the next page: %q", drawn)
+	}
+	if !strings.Contains(testContent(pages[1]), testHex("Page 2 of 2")) {
+		t.Error("the pages are not counted as they are drawn")
+	}
+}
+
+// A word broken into thousands of lines takes time in proportion to its
+// length: each line was searched for in the whole of the rest of the word.
+func TestBigTableWrapALongWordTakesLinearTime(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	m := bigTableMeasure{font: font}
+	testLinearTime(t, 20000, func(n int) {
+		bigTableWrap(strings.Repeat("x", n), m, 100)
+	})
+}

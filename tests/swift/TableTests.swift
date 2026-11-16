@@ -1642,4 +1642,29 @@ import Testing
         _ = table.drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
     }
+
+    // A negative number of header rows is refused: -1 was the value of a table
+    // drawn whole, and the table drew nothing, with no error.
+    @Test func aNegativeNumberOfHeaderRowsIsRefused() {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        _ = Table().setTableData(rows(font, 5, 2), -1).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        let error = #expect(throws: PDFjetError.self) { try memory.pdf.complete() }
+        #expect(TestSupport.message(error) ==
+                "The PDF was not completed because of an earlier error: The number of header rows cannot be negative.")
+    }
+
+    // A token broken into thousands of lines takes time in proportion to its
+    // length: the whole of the rest of it was measured for each line.
+    @Test func aLongTokenTakesLinearTime() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        expectLinearTime(5000) { n in
+            let table = Table().setTableData([[Cell(font, "a"), Cell(font, String(repeating: "x", count: n))]], 0)
+            table.setColumnWidth(0, 100).setColumnWidth(1, 100)
+            var pages = [Page]()
+            _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        }
+    }
 }
+

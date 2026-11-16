@@ -202,6 +202,10 @@ public class Table implements Drawable {
      * @return this Table object.
      */
     public Table setTableData(List<List<Cell>> tableData, int numOfHeaderRows) {
+        if (numOfHeaderRows < 0) {
+            // -1 was the value of a table drawn whole, and nothing was drawn
+            throw new IllegalArgumentException("The number of header rows cannot be negative.");
+        }
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;
@@ -2243,6 +2247,23 @@ public class Table implements Drawable {
         return cell.font.stringWidth(cell.fallbackFont, cell.fontSize, text);
     }
 
+    // Whether the text of the cell is wider than the width. A start of the text
+    // wider than the width, found by doubling, is looked at first, so that a
+    // token broken into thousands of lines is not measured whole for each: the
+    // time grew with the square of its length.
+    private static boolean widerThan(Cell cell, String text, float width) {
+        for (int n = 64; n < text.length(); n *= 2) {
+            int cut = n;
+            if (Character.isLowSurrogate(text.charAt(cut))) {
+                cut++;
+            }
+            if (cellTextWidth(cell, text.substring(0, cut)) > width) {
+                return true;
+            }
+        }
+        return cellTextWidth(cell, text) > width;
+    }
+
     private List<String> wrapCellText(List<Cell> row, int index) {
         Cell cell = row.get(index);
         float cellWidth = getTotalWidth(row, index) + FIT_TOLERANCE;
@@ -2264,7 +2285,7 @@ public class Table implements Drawable {
         for (String token : Util.splitOnWhitespace(text)) {
             for (;;) {
                 String joined = (buf.length() > 0) ? buf.toString() + " " + token : token;
-                if (cellTextWidth(cell, joined) <= cellWidth) {
+                if (!widerThan(cell, joined, cellWidth)) {
                     buf.setLength(0);
                     buf.append(joined);
                     break;
@@ -2294,20 +2315,36 @@ public class Table implements Drawable {
                 // soft hyphen if one fits: "1234<SHY>5678" was 123 / 4<SHY>56
                 // / 78, where TextBlock and TextFrame draw 123 / 4- / 567 / 8
                 // (review of 12 October 2026, T4).
-                int end = 0;
-                while (end < token.length()) {
-                    int next = end + Character.charCount(token.codePointAt(end));
-                    if (end > 0 && cellTextWidth(cell, token.substring(0, next)) > cellWidth) {
+                // A token with no soft hyphen is broken in place, to its end:
+                // the rest of it, copied for each line, made the time grow
+                // with the square of its length.
+                boolean inPlace = token.indexOf('\u00AD') == -1;
+                int from = 0;
+                for (;;) {
+                    int end = from;
+                    while (end < token.length()) {
+                        int next = end + Character.charCount(token.codePointAt(end));
+                        if (end > from && cellTextWidth(cell, token.substring(from, next)) > cellWidth) {
+                            break;
+                        }
+                        end = next;
+                    }
+                    if (end == token.length()) {
+                        // The rest, which fits, or a character wider than the column
+                        buf.append(token, from, end);
+                        from = end;
                         break;
                     }
-                    end = next;
+                    lines.add(token.substring(from, end).trim());
+                    from = end;
+                    if (!inPlace) {
+                        break;
+                    }
                 }
-                if (end == token.length()) {
-                    buf.append(token);  // A character wider than the column
+                if (from == token.length()) {
                     break;
                 }
-                lines.add(token.substring(0, end).trim());
-                token = token.substring(end);
+                token = token.substring(from);
             }
         }
         lines.add(buf.toString().trim());

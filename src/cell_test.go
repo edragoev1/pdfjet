@@ -273,3 +273,14 @@ func TestCellBottomAlignedTextIsOverThePadding(t *testing.T) {
 		t.Errorf("top %q, bottom %q", top, bottom)
 	}
 }
+
+// A row span past the range of an int32 is clamped to it, as a column span
+// is: 1<<31 was negative, and spanned nothing.
+func TestCellARowSpanPastTheRangeOfAnInt32IsClamped(t *testing.T) {
+	cell := NewCell(testHelvetica(testNewPDF()), "x")
+	for _, span := range []int{1 << 31, 1<<32 + 3} {
+		if got := cell.SetRowSpan(span).GetRowSpan(); got != math.MaxInt32 {
+			t.Errorf("SetRowSpan(%d): %d", span, got)
+		}
+	}
+}

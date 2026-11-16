@@ -1354,6 +1354,17 @@ public class BigTable {
     private static int runesThatFit(int[] runes, int from, Measure m, float width) {
         int end = 1;
         int high = runes.length - from;
+        // The search goes no further than the first start of the code points,
+        // found by doubling, that is too wide: from the whole of them, a word
+        // broken into thousands of lines took time that grew with the square
+        // of its length.
+        for (int n = 2; n < high; n *= 2) {
+            if (m.width(new String(runes, from, n)) > width) {
+                high = n - 1;
+                break;
+            }
+            end = n;
+        }
         while (end < high) {
             int middle = end + (high - end + 1)/2;
             if (m.width(new String(runes, from, middle)) <= width) {
@@ -1387,7 +1398,8 @@ public class BigTable {
         String[][] lines = wrapFields(fields, false);
         int count = mostLines(lines);
         float limit = page.height - bottomMargin;
-        if (count > 1 && this.yText + (float) (count - 1) * lineHeight > limit && !firstRowOnPage) {
+        if (count > 1 && this.yText + (float) (count - 1) * lineHeight > limit &&
+                (!firstRowOnPage || (page == firstPage && fitsNewPage(count)))) {
             drawTheVerticalLines();
             drawFooter();
             newPage();
@@ -1420,6 +1432,15 @@ public class BigTable {
             drawFooter();
             startNewPage = true;
         }
+    }
+
+    // Whether a row of the lines fits whole on a new page. The first row on
+    // the page setFirstPage set, which may have room for one line, starts the
+    // next page when it fits there: it was cut at the lines that fit, though
+    // the next page had room for all of them.
+    private boolean fitsNewPage(int lines) {
+        float lineHeight = f2.ascent + f2.descent;
+        return firstRowY(this.y) + (float) (lines - 1) * lineHeight <= pageSize.getHeight() - bottomMargin;
     }
 
     // The line with the mark that says the text goes on, cut to make room for
@@ -1547,7 +1568,8 @@ public class BigTable {
                 }
                 int lines = mostLines(wrapFields(fields, false));
                 float limit = pageHeight - this.bottomMargin;
-                if (lines > 1 && yPos + (float) (lines - 1) * lineHeight > limit && !first) {
+                if (lines > 1 && yPos + (float) (lines - 1) * lineHeight > limit &&
+                        (!first || (count == 1 && startsOnFirstPage() && fitsNewPage(lines)))) {
                     count++;
                     pageHeight = pageSize.getHeight();
                     yPos = yTop;
