@@ -20,7 +20,7 @@ public class Arc implements Drawable {
 
     private float[] fillColor;
     private float[] strokeColor;
-    private float strokeWidth = 0f;
+    private float strokeWidth = 0.5f;    // As every line PDFjet draws by default (9.1.9)
     private String strokeDashPattern = "[] 0";
 
     private String language = null;
@@ -147,7 +147,8 @@ public class Arc implements Drawable {
     }
 
     /**
-     * Sets the width of this line.
+     * Sets the width of this line, 0.5 points unless set; 0 is the thinnest
+     * line the device draws.
      *
      * @param strokeWidth the width.
      * @return this Arc object.
@@ -279,9 +280,25 @@ public class Arc implements Drawable {
             float ny = dx * invLength;
             // Adjust direction based on sweep
             float sign = sweepDegrees > 0f ? 1f : -1f;
-            cx = line.x2 + nx * rx * sign;
-            cy = line.y2 + ny * ry * sign;
-            startAngle = (float) (Math.atan2((double)(line.y2 - cy), (double)(line.x2 - cx)) * (180.0 / Math.PI));
+            if (rx == ry || rx <= 0f || ry <= 0f) {
+                cx = line.x2 + nx * rx * sign;
+                cy = line.y2 + ny * ry * sign;
+                startAngle = (float) (Math.atan2((double)(line.y2 - cy), (double)(line.x2 - cx)) * (180.0 / Math.PI));
+            } else {
+                // An ellipse: the angle is the parameter t of the point
+                // (rx cos t, ry sin t) from the center, where the tangent
+                // (-rx sin t, ry cos t) runs along the line. The center was put
+                // a radius along the normal, and the arc started away from the
+                // end of the line.
+                double u = (double) dx / (double) rx;
+                double v = (double) dy / (double) ry;
+                double k = sign / Math.sqrt(u*u + v*v);
+                double cosT = v * k;
+                double sinT = -u * k;
+                cx = line.x2 - (float) (rx * cosT);
+                cy = line.y2 - (float) (ry * sinT);
+                startAngle = (float) (Math.atan2(sinT, cosT) * (180.0 / Math.PI));
+            }
         }
 
         if (page == null) {
@@ -318,8 +335,8 @@ public class Arc implements Drawable {
             page.setPenWidth(strokeWidth);
             page.setPenColor(strokeColor);
         } else {
-            // No colors: a black line of the width set, 0, the thinnest the
-            // device draws, when none was; it was 0 whatever the width
+            // No colors: a black line of the width set, 0.5 points when none
+            // was; it was 0 whatever the width
             page.setPenWidth(strokeWidth);
             page.setPenColor(Color.black);
         }

@@ -35,11 +35,13 @@ type Arc struct {
 	line              *Line
 }
 
-// NewArc creates an Arc with a solid stroke dash pattern, as the other
+// NewArc creates an Arc with a solid stroke dash pattern and a stroke width of
+// 0.5 points, as every line PDFjet draws by default (9.1.9), as the other
 // three ports do in their Arc field initializers.
 func NewArc() *Arc {
 	arc := new(Arc)
 	arc.strokeDashPattern = "[] 0"
+	arc.strokeWidth = 0.5
 	return arc
 }
 
@@ -96,7 +98,8 @@ func (arc *Arc) SetStrokeDashPattern(strokeDashPattern string) *Arc {
 	return arc
 }
 
-// SetStrokeWidth sets the width of the arc outline.
+// SetStrokeWidth sets the width of the arc outline, 0.5 points unless set; 0
+// is the thinnest line the device draws.
 func (arc *Arc) SetStrokeWidth(width float32) *Arc {
 	arc.strokeWidth = width
 	return arc
@@ -176,10 +179,26 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 		if arc.sweepDegrees > 0.0 {
 			sign = float32(1.0)
 		}
-		arc.cx = arc.line.x2 + float32(float32(nx*arc.rx)*sign)
-		arc.cy = arc.line.y2 + float32(float32(ny*arc.ry)*sign)
-		arc.startAngle = float32(float64(math.Atan2(
-			float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi)))
+		if arc.rx == arc.ry || arc.rx <= 0.0 || arc.ry <= 0.0 {
+			arc.cx = arc.line.x2 + float32(float32(nx*arc.rx)*sign)
+			arc.cy = arc.line.y2 + float32(float32(ny*arc.ry)*sign)
+			arc.startAngle = float32(float64(math.Atan2(
+				float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi)))
+		} else {
+			// An ellipse: the angle is the parameter t of the point
+			// (rx cos t, ry sin t) from the center, where the tangent
+			// (-rx sin t, ry cos t) runs along the line. The center was put
+			// a radius along the normal, and the arc started away from the
+			// end of the line.
+			u := float64(float64(dx) / float64(arc.rx))
+			v := float64(float64(dy) / float64(arc.ry))
+			k := float64(sign) / math.Sqrt(float64(u*u)+float64(v*v))
+			cosT := float64(v * k)
+			sinT := float64(-u * k)
+			arc.cx = arc.line.x2 - float32(float64(arc.rx)*cosT)
+			arc.cy = arc.line.y2 - float32(float64(arc.ry)*sinT)
+			arc.startAngle = float32(float64(math.Atan2(sinT, cosT)) * (180.0 / math.Pi))
+		}
 	}
 
 	if page == nil {
@@ -221,8 +240,8 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 		page.SetPenWidth(arc.strokeWidth)
 		page.SetPenColorRGB(arc.strokeColor)
 	} else {
-		// No colors: a black line of the width set, 0, the thinnest the
-		// device draws, when none was; it was 0 whatever the width
+		// No colors: a black line of the width set, 0.5 points when none
+		// was; it was 0 whatever the width
 		page.SetPenWidth(arc.strokeWidth)
 		page.SetPenColor(color.Black)
 	}

@@ -91,7 +91,7 @@ class ShapesTest {
 
     // An Arc, and so an Ellipse, given a stroke width and no color is drawn a
     // black line of that width: it was drawn 0 wide, a hairline, whatever the
-    // width; with no width it is 0 wide as before.
+    // width; with no width it is 0.5 points wide, as every line PDFjet draws.
     @Test
     void anArcOfAWidthAndNoColorIsDrawnThatWide() throws Exception {
         for (Arc arc : new Arc[] {new Arc(), new Ellipse()}) {
@@ -107,13 +107,46 @@ class ShapesTest {
         Page page = page();
         new Arc().setLocation(100f, 100f).setRadius(40f).setSweep(90f).drawOn(page);
         String content = TestSupport.content(page);
-        assertTrue(content.contains("\n0 w\n") && !content.contains(" d\n"),
-                "an arc of no width is not 0 wide and solid: " + content);
+        assertTrue(content.contains("\n0.5 w\n") && !content.contains(" d\n"),
+                "an arc of no width is not 0.5 wide and solid: " + content);
         // And dashed when it has a dash (review of 12 October 2026, R21)
         page = page();
         new Arc().setLocation(100f, 100f).setRadius(40f).setSweep(120f).setStrokeWidth(3f)
                 .setStrokeDashPattern("[6 3] 0").drawOn(page);
         content = TestSupport.content(page);
         assertTrue(content.contains("[6 3] 0 d\n"), "an arc of no color has no dash: " + content);
+    }
+
+    // An Arc and an Ellipse of a stroke color and no width are 0.5 points wide,
+    // as every line PDFjet draws: they were 0 wide, the hairline of the device.
+    @Test
+    void anArcAndAnEllipseAreHalfAPointWideUnlessSet() throws Exception {
+        for (Arc arc : new Arc[] {new Arc().setSweep(90f), new Ellipse()}) {
+            Page page = page();
+            arc.setLocation(100f, 100f);
+            arc.setRadius(40f);
+            arc.setStrokeColor(Color.red);
+            arc.drawOn(page);
+            String content = TestSupport.content(page);
+            assertTrue(content.contains("\n0.5 w\n"), arc.getClass().getSimpleName() + ": " + content);
+        }
+    }
+
+    // An elliptical arc started at the end of a slanted line starts there: the
+    // angle of the point from the center was taken for the parameter of the
+    // ellipse, and the arc started 13 points away.
+    @Test
+    void anEllipticalArcStartsAtTheEndOfItsLine() throws Exception {
+        for (float sweep : new float[] {90f, -90f}) {
+            Page page = page();
+            new Arc().setStartPointToEndOf(new Line(0f, 0f, 100f, 100f))
+                    .setRadiusX(50f).setRadiusY(20f).setSweep(sweep).drawOn(page);
+            String content = TestSupport.content(page);
+            int i = content.indexOf(" m\n");
+            assertTrue(i != -1, "no path: " + content);
+            String[] xy = content.substring(content.lastIndexOf('\n', i) + 1, i).split(" ");
+            assertEquals(100f, Float.parseFloat(xy[0]), 0.02f, "sweep " + sweep + ": " + content);
+            assertEquals(page.height - 100f, Float.parseFloat(xy[1]), 0.02f, "sweep " + sweep + ": " + content);
+        }
     }
 }

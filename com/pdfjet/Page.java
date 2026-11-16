@@ -2400,6 +2400,32 @@ final public class Page {
     }
 
     /**
+     * Sets the text rotation and the text rendering mode of the page to none
+     * and to fill, the ones a chart draws its text with, and returns what puts
+     * back the ones the page had. The charts drew their text in the rotation
+     * and the mode the program had left on the page, and BarChart then set the
+     * rotation to none.
+     */
+    Runnable plainText() {
+        final float[] tmx = this.tmx;
+        final byte[] tm0 = this.tm0;
+        final byte[] tm1 = this.tm1;
+        final byte[] tm2 = this.tm2;
+        final byte[] tm3 = this.tm3;
+        final int mode = this.renderingMode;
+        setTextRotation(0);
+        this.renderingMode = 0;
+        return () -> {
+            this.tmx = tmx;
+            this.tm0 = tm0;
+            this.tm1 = tm1;
+            this.tm2 = tm2;
+            this.tm3 = tm3;
+            this.renderingMode = mode;
+        };
+    }
+
+    /**
      * Draws a cubic Bézier curve starting from the current point to the end point p3
      *
      * @param x1 first control point x

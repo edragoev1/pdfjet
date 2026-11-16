@@ -97,19 +97,19 @@ public class ShapesTest {
                 .SetStartAngle(-28.21344f).SetSweep(186.41852f)
                 .SetStartPointToEndOf(new Line(2.7493358f, 91.162384f, 462.71942f, 1.1617184f))
                 .SetStrokeColor(0x000000).SetLocation(487.1806f, 508.14288f).DrawOn(page);
-        Assert.Contains("655.27 663.63 661.99 588.89 637.16 525.3 c\n", TestSupport.Content(page));
+        Assert.Contains("650.51 662.6 657.22 587.87 632.4 524.28 c\n", TestSupport.Content(page));
 
         page = new Page(pdf, Letter.PORTRAIT);
         new Arc().SetRadiusX(151.92659f).SetRadiusY(46.18809f)
                 .SetStartAngle(23.969238f).SetSweep(100.79004f)
                 .SetStartPointToEndOf(new Line(21.53635f, 363.53027f, 226.3573f, 534.09174f))
                 .SetStrokeColor(0x000000).SetLocation(7.1584225f, 76.66633f).DrawOn(page);
-        Assert.Contains("271.85 238.26 m\n", TestSupport.Content(page));
+        Assert.Contains("226.36 257.91 m\n", TestSupport.Content(page));
     }
 
     // An Arc, and so an Ellipse, given a stroke width and no color is drawn a
     // black line of that width: it was drawn 0 wide, a hairline, whatever the
-    // width; with no width it is 0 wide as before.
+    // width; with no width it is 0.5 points wide, as every line PDFjet draws.
     [Fact]
     public void AnArcOfAWidthAndNoColorIsDrawnThatWide() {
         foreach (Arc arc in new Arc[] {new Arc(), new Ellipse()}) {
@@ -121,13 +121,42 @@ public class ShapesTest {
         PDF pdf2 = TestSupport.NewPDF();
         Page page2 = new Page(pdf2, Letter.PORTRAIT);
         new Arc().SetLocation(100f, 100f).SetRadius(40f).SetSweep(90f).DrawOn(page2);
-        Assert.Contains("\n0 w\n", TestSupport.Content(page2));
+        Assert.Contains("\n0.5 w\n", TestSupport.Content(page2));
         Assert.DoesNotContain(" d\n", TestSupport.Content(page2));
         // And dashed when it has a dash (review of 12 October 2026, R21)
         Page page3 = new Page(pdf2, Letter.PORTRAIT);
         new Arc().SetLocation(100f, 100f).SetRadius(40f).SetSweep(120f).SetStrokeWidth(3f)
                 .SetStrokeDashPattern("[6 3] 0").DrawOn(page3);
         Assert.Contains("[6 3] 0 d\n", TestSupport.Content(page3));
+    }
+
+    // An Arc and an Ellipse of a stroke color and no width are 0.5 points wide,
+    // as every line PDFjet draws: they were 0 wide, the hairline of the device.
+    [Fact]
+    public void AnArcAndAnEllipseAreHalfAPointWideUnlessSet() {
+        foreach (Arc arc in new Arc[] {new Arc().SetSweep(90f), new Ellipse()}) {
+            Page page = NewPage();
+            arc.SetLocation(100f, 100f).SetRadius(40f).SetStrokeColor(Color.red).DrawOn(page);
+            Assert.Contains("\n0.5 w\n", TestSupport.Content(page));
+        }
+    }
+
+    // An elliptical arc started at the end of a slanted line starts there: the
+    // angle of the point from the center was taken for the parameter of the
+    // ellipse, and the arc started 13 points away.
+    [Fact]
+    public void AnEllipticalArcStartsAtTheEndOfItsLine() {
+        foreach (float sweep in new float[] {90f, -90f}) {
+            Page page = NewPage();
+            new Arc().SetStartPointToEndOf(new Line(0f, 0f, 100f, 100f))
+                    .SetRadiusX(50f).SetRadiusY(20f).SetSweep(sweep).DrawOn(page);
+            string content = TestSupport.Content(page);
+            int i = content.IndexOf(" m\n", System.StringComparison.Ordinal);
+            Assert.True(i != -1, content);
+            string[] xy = content.Substring(content.LastIndexOf('\n', i) + 1, i - content.LastIndexOf('\n', i) - 1).Split(' ');
+            Assert.InRange(float.Parse(xy[0], System.Globalization.CultureInfo.InvariantCulture), 99.98f, 100.02f);
+            Assert.InRange(float.Parse(xy[1], System.Globalization.CultureInfo.InvariantCulture), 691.98f, 692.02f);
+        }
     }
 }
 }

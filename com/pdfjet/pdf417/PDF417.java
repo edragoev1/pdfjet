@@ -338,6 +338,10 @@ public class PDF417 implements Drawable {
             page.saveGraphicsState();
             page.setPenColor(color);
             page.setDefaultStrokeDashPattern(); // Not the caller's, which broke the bars
+            // Butt caps: a round or projecting cap made each bar longer by half
+            // its width at both ends, into the rows above and below it (ISO
+            // 32000, 8.4.3.3)
+            page.setLineCapStyle(CapStyle.BUTT);
         }
         float[] xy = drawBars(page);
         if (page != null) {

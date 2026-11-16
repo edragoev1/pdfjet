@@ -401,4 +401,20 @@ import Testing
         try PDF417("Hello, World!").drawOn(page)
         #expect(TestSupport.content(page).contains("q\n0 0 0 RG\n[] 0 d\n"))
     }
+
+    // The bars have butt caps whatever cap the page was left with: a round or
+    // projecting cap made each bar longer by half its width at both ends, and a
+    // PDF417 bar, one row tall, into the rows above and below it (ISO 32000,
+    // 8.4.3.3).
+    @Test func theBarsHaveButtCapsOnAPageOfProjectingCaps() throws {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        page.setLineCapStyle(CapStyle.PROJECTING_SQUARE)
+        try Barcode(Barcode.CODE_128, "A1").setFont(TestSupport.helvetica(pdf)).drawOn(page)
+        #expect(TestSupport.content(page).contains("q\n0 0 0 RG\n[] 0 d\n0 J\n"))
+        page = Page(pdf, Letter.PORTRAIT)
+        page.setLineCapStyle(CapStyle.PROJECTING_SQUARE)
+        try PDF417("Hello, PDF417 with projecting caps").drawOn(page)
+        #expect(TestSupport.content(page).contains("q\n0 0 0 RG\n[] 0 d\n0 J\n"))
+    }
 }

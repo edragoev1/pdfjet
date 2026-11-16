@@ -20,7 +20,7 @@ public class Arc : Drawable {
 
     private var fillColor: [Float]?
     private var strokeColor: [Float]?
-    private var strokeWidth: Float = 0.0
+    private var strokeWidth: Float = 0.5     // As every line PDFjet draws by default (9.1.9)
     private var strokeDashPattern: String? = "[] 0"
 
     private var language: String?
@@ -117,7 +117,8 @@ public class Arc : Drawable {
     }
 
     ///
-    /// Sets the width of this line.
+    /// Sets the width of this line, 0.5 points unless set; 0 is the thinnest
+    /// line the device draws.
     ///
     /// - Parameter strokeWidth: the width.
     /// - Returns: this Arc object.
@@ -243,9 +244,25 @@ public class Arc : Drawable {
             let ny = dx * invLength
             // Adjust direction based on sweep
             let sign: Float = sweepDegrees > 0.0 ? 1.0 : -1.0
-            cx = p2.x + nx * rx * sign
-            cy = p2.y + ny * ry * sign
-            startAngle = Float(atan2(Double(p2.y - cy), Double(p2.x - cx)) * (180.0 / Double.pi))
+            if rx == ry || rx <= 0.0 || ry <= 0.0 {
+                cx = p2.x + nx * rx * sign
+                cy = p2.y + ny * ry * sign
+                startAngle = Float(atan2(Double(p2.y - cy), Double(p2.x - cx)) * (180.0 / Double.pi))
+            } else {
+                // An ellipse: the angle is the parameter t of the point
+                // (rx cos t, ry sin t) from the center, where the tangent
+                // (-rx sin t, ry cos t) runs along the line. The center was put
+                // a radius along the normal, and the arc started away from the
+                // end of the line.
+                let u = Double(dx) / Double(rx)
+                let v = Double(dy) / Double(ry)
+                let k = Double(sign) / (u*u + v*v).squareRoot()
+                let cosT = v * k
+                let sinT = -u * k
+                cx = p2.x - Float(Double(rx) * cosT)
+                cy = p2.y - Float(Double(ry) * sinT)
+                startAngle = Float(atan2(sinT, cosT) * (180.0 / Double.pi))
+            }
         }
 
         if page == nil {
@@ -282,8 +299,8 @@ public class Arc : Drawable {
             page!.setPenWidth(strokeWidth)
             page!.setPenColor(strokeColor!)
         } else {
-            // No colors: a black line of the width set, 0, the thinnest the
-            // device draws, when none was; it was 0 whatever the width
+            // No colors: a black line of the width set, 0.5 points when none
+            // was; it was 0 whatever the width
             page!.setPenWidth(strokeWidth)
             page!.setPenColor(Color.black)
         }

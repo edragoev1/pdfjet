@@ -479,4 +479,57 @@ import Testing
         // With the room, the note
         #expect(noteContent(pdf, plotChart(height + 20, 50)).contains(TestSupport.hex(" outside")))
     }
+
+    // The charts draw their text unturned and filled whatever text rotation and
+    // rendering mode the program left on the page, and leave the page with them:
+    // every label was turned with the page's rotation, drawn in its mode, and
+    // BarChart then set the rotation to none.
+    @Test func theChartsDrawTheirTextUnturnedAndKeepThePagesRotation() throws {
+        for name in ["BarChart", "SimpleBarChart", "SimpleLineChart", "SimpleScatterChart", "DonutChart"] {
+            let pdf = TestSupport.newPDF()
+            let page = Page(pdf, Letter.PORTRAIT)
+            let font = TestSupport.helvetica(pdf)
+            page.setTextRotation(90)
+            _ = try page.setTextRenderingMode(3)
+            switch name {
+            case "BarChart":
+                _ = BarChart(font, font).setTitle("Title").setCategories("a", "b")
+                        .addSeries("s", [1, 2]).setSize(300, 200).setLocation(50, 50).drawOn(page)
+            case "SimpleBarChart":
+                _ = SimpleBarChart(font, font).setTitle("Title").add("a", 1).add("b", 2)
+                        .setLocation(50, 50).drawOn(page)
+            case "SimpleLineChart":
+                _ = SimpleLineChart(font, font).setTitle("Title").setCategories("a", "b")
+                        .addLine("line", [1, 2]).setSize(300, 200).setLocation(50, 50).drawOn(page)
+            case "SimpleScatterChart":
+                _ = SimpleScatterChart(font, font).setTitle("Title").add(1, 1).add(2, 3)
+                        .setSize(300, 200).setLocation(50, 50).drawOn(page)
+            default:
+                _ = DonutChart(font, font).setTitle("Title").add("a", 1).add("b", 2)
+                        .setLocation(50, 50).drawOn(page)
+            }
+            let content = TestSupport.content(page)
+            #expect(content.contains(" Tj\n") || content.contains(" TJ\n"), "\(name): no text drawn")
+            #expect(!content.contains("0 -1 1 0 ") && !content.contains("3 Tr\n"),
+                    "\(name): the text is turned or invisible")
+            #expect(page.tmx == [0, -1, 1, 0] && page.renderingMode == 3,
+                    "\(name): the page is left with the rotation \(page.tmx) and the mode \(page.renderingMode)")
+        }
+    }
+
+    // A chart too small for its plot, of a size past the range of Int or not
+    // finite, is an error as any other: Int() of the size in the message
+    // stopped the program.
+    @Test func aChartOfAHugeOrInfiniteSizeAndNoRoomIsAnError() {
+        for w: Float in [1e20, .infinity] {
+            let pdf = TestSupport.newPDF()
+            let page = Page(pdf, Letter.PORTRAIT)
+            let font = TestSupport.helvetica(pdf)
+            _ = BarChart(font, font).setCategories("a", "b").addSeries("s", [1, 2])
+                    .setSize(w, 30).setLocation(10, 10).drawOn(page)
+            #expect((pdf.error ?? "").contains("has no room for its plot"), "\(pdf.error ?? "")")
+        }
+        #expect(ChartScale.noRoom("A BarChart", 1e20, 30.4).hasPrefix("A BarChart of 100000002004087734272 by 30 points"))
+        #expect(ChartScale.noRoom("A BarChart", .infinity, .nan).hasPrefix("A BarChart of +Inf by NaN points"))
+    }
 }

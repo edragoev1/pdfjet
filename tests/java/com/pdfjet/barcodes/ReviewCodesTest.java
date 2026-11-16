@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.pdfjet.CapStyle;
 import com.pdfjet.Letter;
 import com.pdfjet.PDF;
 import com.pdfjet.Page;
@@ -47,5 +48,20 @@ class ReviewCodesTest {
         TestSupport.allowCoreFonts(false);
         String content = TestSupport.content(page);
         assertTrue(content.contains("q\n0 0 0 RG\n[] 0 d\n"), content.substring(0, 80));
+    }
+
+    // The bars have butt caps whatever cap the page was left with: a round or
+    // projecting cap made each bar longer by half its width at both ends (ISO
+    // 32000, 8.4.3.3).
+    @Test
+    void theBarsHaveButtCapsOnAPageOfProjectingCaps() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.setLineCapStyle(CapStyle.PROJECTING_SQUARE);
+        new Barcode(Barcode.CODE_128, "A1").setFont(TestSupport.helvetica(pdf)).drawOn(page);
+        TestSupport.allowCoreFonts(false);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("q\n0 0 0 RG\n[] 0 d\n0 J\n"), content.substring(0, 80));
     }
 }

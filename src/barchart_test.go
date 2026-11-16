@@ -632,3 +632,50 @@ func TestBarChartTheNoteNeverCostsThePlot(t *testing.T) {
 		t.Error("no note in a chart with room for it")
 	}
 }
+
+// The charts draw their text unturned and filled whatever text rotation and
+// rendering mode the program left on the page, and leave the page with them:
+// every label was turned with the page's rotation, drawn in its mode, and
+// BarChart then set the rotation to none.
+func TestBarChartTheChartsDrawTheirTextUnturnedAndKeepThePagesRotation(t *testing.T) {
+	charts := map[string]func(font *Font) Drawable{
+		"BarChart": func(font *Font) Drawable {
+			return NewBarChart(font, font).SetTitle("Title").SetCategories("a", "b").
+				AddSeries("s", []float32{1, 2}).SetSize(300, 200)
+		},
+		"SimpleBarChart": func(font *Font) Drawable {
+			return NewSimpleBarChart(font, font).SetTitle("Title").Add("a", 1).Add("b", 2)
+		},
+		"SimpleLineChart": func(font *Font) Drawable {
+			return NewSimpleLineChart(font, font).SetTitle("Title").SetCategories("a", "b").
+				AddLine("line", []float32{1, 2}).SetSize(300, 200)
+		},
+		"SimpleScatterChart": func(font *Font) Drawable {
+			return NewSimpleScatterChart(font, font).SetTitle("Title").Add(1, 1).Add(2, 3).SetSize(300, 200)
+		},
+		"DonutChart": func(font *Font) Drawable {
+			return NewDonutChart(font, font).SetTitle("Title").Add("a", 1).Add("b", 2)
+		},
+	}
+	for name, chart := range charts {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		page.SetTextRotation(90)
+		if _, err := page.SetTextRenderingMode(3); err != nil {
+			t.Fatal(err)
+		}
+		drawable := chart(testHelvetica(pdf))
+		drawable.SetLocation(50, 50)
+		drawable.DrawOn(page)
+		content := testContent(page)
+		if !strings.Contains(content, " Tj\n") && !strings.Contains(content, " TJ\n") {
+			t.Errorf("%s: no text drawn: %s", name, content)
+		}
+		if strings.Contains(content, "0 -1 1 0 ") || strings.Contains(content, "3 Tr\n") {
+			t.Errorf("%s: the text is turned or invisible: %s", name, content)
+		}
+		if page.tmx != [4]float32{0, -1, 1, 0} || page.renderingMode != 3 {
+			t.Errorf("%s: the page is left with the rotation %v and the mode %d", name, page.tmx, page.renderingMode)
+		}
+	}
+}

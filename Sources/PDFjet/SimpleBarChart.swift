@@ -406,6 +406,10 @@ public class SimpleBarChart : Drawable {
         guard let page = page, !values.isEmpty else {   // Measured, or nothing to draw
             return [x + w, y + h]
         }
+        let restore = page.plainText()    // The text unturned and filled, whatever the page was left with
+        defer {
+            restore()
+        }
         if maxFractionDigits > ChartScale.maxDigits {
             page.pdf.fail(ChartScale.tooManyDigits)
             return [x + w, y + h]

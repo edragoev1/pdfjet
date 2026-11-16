@@ -410,6 +410,19 @@ public class SimpleBarChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return drawChart(null);
+        }
+        // The text unturned and filled, whatever the page was left with
+        Runnable restore = page.plainText();
+        try {
+            return drawChart(page);
+        } finally {
+            restore.run();
+        }
+    }
+
+    private float[] drawChart(Page page) throws Exception {
         float h = getHeight();
         if (page == null || values.isEmpty() || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};

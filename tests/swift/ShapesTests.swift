@@ -86,19 +86,19 @@ import Testing
                 .setStartAngle(-44.814667).setSweep(352.7614)
                 .setStartPointToEndOf(Line(457.52744, 348.75574, 36.200237, 153.82916))
                 .setStrokeColor(0x000000).setLocation(358.057, 83.32647).drawOn(page)
-        #expect(TestSupport.content(page).contains("200.81 765.98 221.56 716.04 191.69 675.62 c\n"))
+        #expect(TestSupport.content(page).contains("215.85 760.07 236.6 710.13 206.72 669.71 c\n"))
 
         page = Page(pdf, Letter.PORTRAIT)
         Arc().setRadiusX(179.07474).setRadiusY(46.57458)
                 .setStartAngle(11.943497).setSweep(338.10748)
                 .setStartPointToEndOf(Line(397.40942, 538.2834, 232.55406, 318.26773))
                 .setStrokeColor(0x000000).setLocation(182.30334, 248.89684).drawOn(page)
-        #expect(TestSupport.content(page).contains("376.51 449.26 275.7 456.2 225.54 476.35 c\n"))
+        #expect(TestSupport.content(page).contains("408.97 430.25 308.16 437.18 258 457.33 c\n"))
     }
 
     // An Arc, and so an Ellipse, given a stroke width and no color is drawn a
     // black line of that width: it was drawn 0 wide, a hairline, whatever the
-    // width; with no width it is 0 wide as before.
+    // width; with no width it is 0.5 points wide, as every line PDFjet draws.
     @Test func anArcOfAWidthAndNoColorIsDrawnThatWide() {
         for (name, arc) in [("arc", Arc()), ("ellipse", Ellipse())] {
             let page = self.page()
@@ -114,8 +114,8 @@ import Testing
         _ = arc.setRadius(40).setSweep(90)
         arc.drawOn(page)
         let content = TestSupport.content(page)
-        #expect(content.contains("\n0 w\n") && !content.contains(" d\n"),
-                "an arc of no width is not 0 wide and solid: \(content)")
+        #expect(content.contains("\n0.5 w\n") && !content.contains(" d\n"),
+                "an arc of no width is not 0.5 wide and solid: \(content)")
         // And dashed when it has a dash (review of 12 October 2026, R21)
         let dashedPage = self.page()
         let dashed = Arc()
@@ -124,5 +124,34 @@ import Testing
         dashed.drawOn(dashedPage)
         let dashedContent = TestSupport.content(dashedPage)
         #expect(dashedContent.contains("[6 3] 0 d\n"), "an arc of no color has no dash: \(dashedContent)")
+    }
+
+    // An Arc and an Ellipse of a stroke color and no width are 0.5 points wide,
+    // as every line PDFjet draws: they were 0 wide, the hairline of the device.
+    @Test func anArcAndAnEllipseAreHalfAPointWideUnlessSet() {
+        for (name, arc) in [("arc", Arc().setSweep(90)), ("ellipse", Ellipse())] {
+            let page = self.page()
+            arc.setLocation(100, 100)
+            _ = arc.setRadius(40).setStrokeColor(Color.red)
+            arc.drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(content.contains("\n0.5 w\n"), "\(name): not drawn 0.5 wide: \(content)")
+        }
+    }
+
+    // An elliptical arc started at the end of a slanted line starts there: the
+    // angle of the point from the center was taken for the parameter of the
+    // ellipse, and the arc started 13 points away.
+    @Test func anEllipticalArcStartsAtTheEndOfItsLine() {
+        for sweep: Float in [90, -90] {
+            let page = self.page()
+            Arc().setStartPointToEndOf(Line(0, 0, 100, 100))
+                    .setRadiusX(50).setRadiusY(20).setSweep(sweep).drawOn(page)
+            let content = TestSupport.content(page)
+            let line = content.components(separatedBy: "\n").first(where: { $0.hasSuffix(" m") }) ?? ""
+            let xy = line.split(separator: " ").compactMap { Float($0) }
+            #expect(xy.count == 2 && abs(xy[0] - 100) <= 0.02 && abs(xy[1] - (page.height - 100)) <= 0.02,
+                    "sweep \(sweep): the arc starts at \(line), not at the end of the line")
+        }
     }
 }

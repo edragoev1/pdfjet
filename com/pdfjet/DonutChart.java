@@ -420,6 +420,19 @@ public class DonutChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return drawChart(null);
+        }
+        // The text unturned and filled, whatever the page was left with
+        Runnable restore = page.plainText();
+        try {
+            return drawChart(page);
+        } finally {
+            restore.run();
+        }
+    }
+
+    private float[] drawChart(Page page) throws Exception {
         // The title and the subtitle above the circle, when there are any
         Font titleFont = (f2 != null) ? f2 : f1;
         float titleSize = (f1 != null) ? f1.getSize() : (titleFont != null ? titleFont.getSize() : 0f);

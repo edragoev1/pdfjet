@@ -2317,6 +2317,32 @@ public class Page {
     }
 
     ///
+    /// Sets the text rotation and the text rendering mode of the page to none
+    /// and to fill, the ones a chart draws its text with, and returns what puts
+    /// back the ones the page had. The charts drew their text in the rotation
+    /// and the mode the program had left on the page, and BarChart then set the
+    /// rotation to none.
+    ///
+    func plainText() -> () -> Void {
+        let tmx = self.tmx
+        let tm0 = self.tm0
+        let tm1 = self.tm1
+        let tm2 = self.tm2
+        let tm3 = self.tm3
+        let mode = self.renderingMode
+        setTextRotation(0)
+        self.renderingMode = 0
+        return {
+            self.tmx = tmx
+            self.tm0 = tm0
+            self.tm1 = tm1
+            self.tm2 = tm2
+            self.tm3 = tm3
+            self.renderingMode = mode
+        }
+    }
+
+    ///
     /// Draws a cubic bezier curve starting from the current point to the end point p3
     ///
     /// - Parameter x1: first control point x

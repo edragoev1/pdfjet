@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -80,7 +82,7 @@ func TestShapesColorsAreSetAsAnIntOrAsAnArray(t *testing.T) {
 
 // An Arc, and so an Ellipse, given a stroke width and no color is drawn a
 // black line of that width: it was drawn 0 wide, a hairline, whatever the
-// width; with no width it is 0 wide as before.
+// width; with no width it is 0.5 points wide, as every line PDFjet draws.
 func TestShapesAnArcOfAWidthAndNoColorIsDrawnThatWide(t *testing.T) {
 	for name, arc := range map[string]*Arc{"arc": NewArc(), "ellipse": &NewEllipse().Arc} {
 		pdf := testNewPDF()
@@ -101,8 +103,8 @@ func TestShapesAnArcOfAWidthAndNoColorIsDrawnThatWide(t *testing.T) {
 	arc.SetRadius(40)
 	arc.SetSweep(90)
 	arc.DrawOn(page)
-	if content := testContent(page); !strings.Contains(content, "\n0 w\n") || strings.Contains(content, " d\n") {
-		t.Errorf("an arc of no width is not 0 wide and solid: %s", content)
+	if content := testContent(page); !strings.Contains(content, "\n0.5 w\n") || strings.Contains(content, " d\n") {
+		t.Errorf("an arc of no width is not 0.5 wide and solid: %s", content)
 	}
 	// And dashed when it has a dash (review of 12 October 2026, R21)
 	page = NewPage(pdf, testLetterPortrait())
@@ -115,5 +117,46 @@ func TestShapesAnArcOfAWidthAndNoColorIsDrawnThatWide(t *testing.T) {
 	arc.DrawOn(page)
 	if content := testContent(page); !strings.Contains(content, "[6 3] 0 d\n") {
 		t.Errorf("an arc of no color has no dash: %s", content)
+	}
+}
+
+// An Arc and an Ellipse of a stroke color and no width are 0.5 points wide, as
+// every line PDFjet draws: they were 0 wide, the hairline of the device.
+func TestShapesAnArcAndAnEllipseAreHalfAPointWideUnlessSet(t *testing.T) {
+	for name, arc := range map[string]*Arc{"arc": NewArc().SetSweep(90), "ellipse": &NewEllipse().Arc} {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		arc.SetLocation(100, 100)
+		arc.SetRadius(40)
+		arc.SetStrokeColor(color.Red)
+		arc.DrawOn(page)
+		if content := testContent(page); !strings.Contains(content, "\n0.5 w\n") {
+			t.Errorf("%s: not drawn 0.5 wide: %s", name, content)
+		}
+	}
+}
+
+// An elliptical arc started at the end of a slanted line starts there: the
+// angle of the point from the center was taken for the parameter of the
+// ellipse, and the arc started 13 points away.
+func TestShapesAnEllipticalArcStartsAtTheEndOfItsLine(t *testing.T) {
+	for _, sweep := range []float32{90, -90} {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		NewArc().SetStartPointToEndOf(NewLine(0, 0, 100, 100)).
+			SetRadiusX(50).SetRadiusY(20).SetSweep(sweep).DrawOn(page)
+		content := testContent(page)
+		var x, y float32
+		i := strings.Index(content, " m\n")
+		if i == -1 {
+			t.Fatalf("sweep %v: no path: %s", sweep, content)
+		}
+		j := strings.LastIndex(content[:i], "\n")
+		if _, err := fmt.Sscanf(content[j+1:i], "%f %f", &x, &y); err != nil {
+			t.Fatalf("sweep %v: %v in %q", sweep, err, content[j+1:i])
+		}
+		if math.Abs(float64(x-100)) > 0.02 || math.Abs(float64(y-(page.height-100))) > 0.02 {
+			t.Errorf("sweep %v: the arc starts at %v %v, not at the end of the line", sweep, x, y)
+		}
 	}
 }

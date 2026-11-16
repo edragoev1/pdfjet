@@ -481,6 +481,10 @@ public class DonutChart : Drawable {
         guard let page = page else {    // Measured
             return [box[2], box[3]]
         }
+        let restore = page.plainText()    // The text unturned and filled, whatever the page was left with
+        defer {
+            restore()
+        }
 
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, nil, getAltDescription(values, percentages))

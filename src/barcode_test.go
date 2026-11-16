@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
@@ -336,5 +337,18 @@ func TestBarcodeTheBarsAreSolidOnADashedPage(t *testing.T) {
 	NewBarcode(CODE_128, "A1").SetFont(testHelvetica(pdf)).DrawOn(page)
 	if content := testContent(page); !strings.Contains(content, "q\n0 0 0 RG\n[] 0 d\n") {
 		t.Errorf("the bars are dashed: %.80q", content)
+	}
+}
+
+// The bars have butt caps whatever cap the page was left with: a round or
+// projecting cap made each bar longer by half its width at both ends (ISO
+// 32000, 8.4.3.3).
+func TestBarcodeTheBarsHaveButtCapsOnAPageOfProjectingCaps(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	page.SetLineCapStyle(capstyle.ProjectingSquare)
+	NewBarcode(CODE_128, "A1").SetFont(testHelvetica(pdf)).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "q\n0 0 0 RG\n[] 0 d\n0 J\n") {
+		t.Errorf("the bars have the page's caps: %.80q", content)
 	}
 }
