@@ -662,10 +662,7 @@ embed. In this order:
    font. Use the files of the `static` folder of the download, one for each
    weight. A variable font, such as `Roboto[wght].ttf`, is drawn in its
    default weight only, so it gives Regular even for Bold, and a CFF2
-   variable font is refused. A variable font with no static files can be
-   made into one for each weight with the free fontTools
-   (`pip install fonttools`):
-   `fonttools varLib.instancer Roboto[wght].ttf wght=700 -o Roboto-Bold.ttf`.
+   variable font is refused: see the question below.
 3. **Any other font only once its license says so.** The SIL Open Font
    License is the one to look for. The fonts that come with Windows or
    macOS, such as Georgia, Tahoma, Arial, Calibri or Helvetica Neue, are
@@ -687,6 +684,23 @@ kerning and line metrics. A path loads the file it names: a path to the
 `.ttf` of one of them, such as `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`,
 that is not a file fails with an error that names the `.otf` path and the
 constant to write, here `IBMPlexSans.Regular`.
+
+### I have a variable font: how do I use it with PDFjet?
+
+A PDF embeds one weight of a font at a time, never the variable font
+itself, so each weight you use is a font file of its own. If the download
+has a `static` folder, as those of Google Fonts do, use its files, one for
+each weight. If it has only the variable font, make the weights you need
+with the free fontTools (`pip install fonttools`), once:
+
+```
+fonttools varLib.instancer Roboto[wght].ttf wght=400 -o Roboto-Regular.ttf
+fonttools varLib.instancer Roboto[wght].ttf wght=700 -o Roboto-Bold.ttf
+```
+
+and load each file as any other font. A variable font loaded as it is draws
+its default weight only, Regular even where you wanted Bold; a CFF2
+variable font is refused.
 
 ## Right to left text
 
