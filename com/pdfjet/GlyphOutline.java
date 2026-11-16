@@ -1128,20 +1128,21 @@ final class GlyphOutline {
                 pop();
                 break;
             case 20: {  // put
-                int index = (int) pop();
+                // Compared as a number before it is made an integer, as index
+                double index = pop();
                 a = pop();
-                if (index < 0 || index >= storage.length) {
+                if (!(index >= 0 && index < storage.length)) { // NaN too
                     throw new Subset.NotSubset();
                 }
-                storage[index] = a;
+                storage[(int) index] = a;
                 break;
             }
             case 21: {  // get
-                int index = (int) pop();
-                if (index < 0 || index >= storage.length) {
+                double index = pop();
+                if (!(index >= 0 && index < storage.length)) { // NaN too
                     throw new Subset.NotSubset();
                 }
-                push(storage[index]);
+                push(storage[(int) index]);
                 break;
             }
             case 22: {  // ifelse

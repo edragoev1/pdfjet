@@ -186,6 +186,8 @@ class Review919Test {
         ops.put("roll", concat(new byte[] {(byte) 0x8C, (byte) 0x8D, (byte) 0x8E, (byte) 0x8E}, big,
                 new byte[] {0x0C, 0x1E}));
         ops.put("index", concat(new byte[] {(byte) 0x8C}, big, new byte[] {0x0C, 0x1D}));
+        ops.put("put", concat(new byte[] {(byte) 0x8C}, big, new byte[] {0x0C, 0x14}));
+        ops.put("get", concat(big, new byte[] {0x0C, 0x15}));
         for (Map.Entry<String, byte[]> op : ops.entrySet()) {
             // 0 0 rmoveto endchar
             byte[] cs = concat(op.getValue(), new byte[] {(byte) 0x8B, (byte) 0x8B, 0x15, 0x0E});

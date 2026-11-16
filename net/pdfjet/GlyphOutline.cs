@@ -1132,20 +1132,21 @@ internal sealed class GlyphOutline {
                 Pop();
                 break;
             case 20: {  // put
-                int index = (int) Pop();
+                // Compared as a number before it is made an integer, as index
+                double index = Pop();
                 a = Pop();
-                if (index < 0 || index >= storage.Length) {
+                if (!(index >= 0 && index < storage.Length)) { // NaN too
                     throw new Subset.NotSubset();
                 }
-                storage[index] = a;
+                storage[(int) index] = a;
                 break;
             }
             case 21: {  // get
-                int index = (int) Pop();
-                if (index < 0 || index >= storage.Length) {
+                double index = Pop();
+                if (!(index >= 0 && index < storage.Length)) { // NaN too
                     throw new Subset.NotSubset();
                 }
-                Push(storage[index]);
+                Push(storage[(int) index]);
                 break;
             }
             case 22: {  // ifelse

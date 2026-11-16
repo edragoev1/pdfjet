@@ -168,6 +168,8 @@ public class ReviewNineOneNineTest {
         Dictionary<string, byte[]> ops = new Dictionary<string, byte[]> {
             {"roll", Concat(new byte[] {0x8C, 0x8D, 0x8E, 0x8E}, big, new byte[] {0x0C, 0x1E})},
             {"index", Concat(new byte[] {0x8C}, big, new byte[] {0x0C, 0x1D})},
+            {"put", Concat(new byte[] {0x8C}, big, new byte[] {0x0C, 0x14})},
+            {"get", Concat(big, new byte[] {0x0C, 0x15})},
         };
         foreach (KeyValuePair<string, byte[]> op in ops) {
             byte[] cs = Concat(op.Value, new byte[] {0x8B, 0x8B, 0x15, 0x0E});  // 0 0 rmoveto endchar
