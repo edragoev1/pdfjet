@@ -156,6 +156,19 @@ import Testing
         }
     }
 
+    // A font size not finite, or so large that the glyphs' matrix overflows
+    // when written, is an error.
+    @Test func drawGlyphsAFontSizeOutOfRangeIsAnError() throws {
+        for size: Float in [Float.infinity, Float.nan, 0, 20000] {
+            let memory = MemoryPDF()
+            let font = try TestSupport.plexSans(memory.pdf)
+            font.setSize(size)
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            page.drawGlyphs(font, [36], [50, 100], "A", nil)
+            #expect(memory.pdf.error?.contains("font size") == true, "\(size): \(memory.pdf.error ?? "")")
+        }
+    }
+
     // The matrix of a glyph at a font size too large for an Int64 in
     // hundred-millionths is written, not trapped on.
     @Test func glyphNumbersTooLargeDoNotTrap() {

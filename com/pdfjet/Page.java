@@ -3309,6 +3309,12 @@ final public class Page {
                 return;
             }
         }
+        // The size times the glyphs' matrix is written with 7 decimals
+        if (!(font.size > 0f && font.size <= 10000f)) {    // NaN too
+            pdf.fail(new IllegalArgumentException(
+                    "drawGlyphs needs a font size of more than 0 and at most 10,000 points."));
+            return;
+        }
         Subset.Program program = font.program;
         if (program.outline == null) {
             try {

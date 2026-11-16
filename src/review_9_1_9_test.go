@@ -162,6 +162,21 @@ func TestDrawGlyphsAPositionNotFiniteIsAnError(t *testing.T) {
 	}
 }
 
+// A font size not finite, or so large that the glyphs' matrix overflows when
+// written, is an error.
+func TestDrawGlyphsAFontSizeOutOfRangeIsAnError(t *testing.T) {
+	for _, size := range []float32{float32(math.Inf(1)), float32(math.NaN()), 0, 20000} {
+		doc := testNewDoc()
+		font := testPlexSans(doc.pdf)
+		font.SetSize(size)
+		page := NewPage(doc.pdf, letter.Portrait())
+		page.DrawGlyphs(font, []int{36}, []float32{50, 100}, "A", "")
+		if doc.pdf.err == nil || !strings.Contains(doc.pdf.err.Error(), "font size") {
+			t.Errorf("%v: %v", size, doc.pdf.err)
+		}
+	}
+}
+
 // The header of a BigTable whose header and rows have one font took the
 // rows' fallback font: the header has its own, and the rows theirs.
 func TestBigTableOfOneFontGivesTheHeaderItsOwnFallbackFont(t *testing.T) {

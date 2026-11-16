@@ -2790,6 +2790,11 @@ func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, text
 			return
 		}
 	}
+	// The size times the glyphs' matrix is written with 7 decimals
+	if !(font.size > 0 && font.size <= 10000) { // NaN too
+		pdf.fail("DrawGlyphs needs a font size of more than 0 and at most 10,000 points.")
+		return
+	}
 	program := font.program
 	if program.outline == nil {
 		outline, err := newGlyphOutline(program.font, program.cff)

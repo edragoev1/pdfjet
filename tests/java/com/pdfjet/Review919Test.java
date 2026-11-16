@@ -211,6 +211,21 @@ class Review919Test {
         }
     }
 
+    // A font size not finite, or so large that the glyphs' matrix overflows
+    // when written, is an error.
+    @Test
+    void drawGlyphsAFontSizeOutOfRangeIsAnError() throws Exception {
+        for (float size : new float[] {Float.POSITIVE_INFINITY, Float.NaN, 0f, 20000f}) {
+            PDF pdf = TestSupport.newPDF();
+            final Font font = TestSupport.plexSans(pdf);
+            font.setSize(size);
+            final Page page = new Page(pdf, Letter.PORTRAIT);
+            Exception e = assertThrows(IllegalArgumentException.class,
+                    () -> page.drawGlyphs(font, new int[] {36}, new float[] {50f, 100f}, "A", ""));
+            assertTrue(e.getMessage().contains("font size"), size + ": " + e.getMessage());
+        }
+    }
+
     // The header of a BigTable whose header and rows have one font took the
     // rows' fallback font: the header has its own, and the rows theirs.
     @Test

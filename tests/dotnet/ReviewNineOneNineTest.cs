@@ -198,6 +198,21 @@ public class ReviewNineOneNineTest {
         }
     }
 
+    // A font size not finite, or so large that the glyphs' matrix overflows
+    // when written, is an error.
+    [Fact]
+    public void DrawGlyphsAFontSizeOutOfRangeIsAnError() {
+        foreach (float size in new float[] {float.PositiveInfinity, float.NaN, 0f, 20000f}) {
+            PDF pdf = new PDF(new MemoryStream());
+            Font font = TestSupport.PlexSans(pdf);
+            font.SetSize(size);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            ArgumentException e = Assert.Throws<ArgumentException>(
+                    () => page.DrawGlyphs(font, new int[] {36}, new float[] {50f, 100f}, "A", null));
+            Assert.Contains("font size", e.Message);
+        }
+    }
+
     // The header of a BigTable whose header and rows have one font took the
     // rows' fallback font: the header has its own, and the rows theirs.
     [Fact]

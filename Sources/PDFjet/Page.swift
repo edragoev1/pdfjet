@@ -3089,6 +3089,11 @@ public class Page {
             pdf.fail("drawGlyphs needs positions between -1,000,000 and 1,000,000 points.")
             return
         }
+        // The size times the glyphs' matrix is written with 7 decimals
+        if !(font.size > 0 && font.size <= 10000) {     // NaN too
+            pdf.fail("drawGlyphs needs a font size of more than 0 and at most 10,000 points.")
+            return
+        }
         if program.outline == nil {
             do {
                 program.outline = try GlyphOutline(program.font, program.cff)
