@@ -1229,14 +1229,25 @@ public class Page {
             x[i] = x[i - 1] + font.GlyphAdvance(gids[i - 1]);
         }
         int[] offsets = new int[2*n];
+        // The letter before a mark, and the letter after it, each found once
+        // for all the marks beside it: looked for again for each mark, a
+        // letter of thousands of marks took seconds.
+        int before = -1;
+        int after = -1;
         for (int i = 0; i < n; i++) {
             if (!IsMark(codePoints[i])) {
+                before = i;
                 continue;
             }
-            int step = IsRightToLeft(codePoints[i]) ? 1 : -1;
-            int baseIndex = i + step;
-            while (baseIndex >= 0 && baseIndex < n && IsMark(codePoints[baseIndex])) {
-                baseIndex += step;
+            int baseIndex = before;
+            if (IsRightToLeft(codePoints[i])) {
+                if (after <= i) {
+                    after = i + 1;
+                    while (after < n && IsMark(codePoints[after])) {
+                        after++;
+                    }
+                }
+                baseIndex = after;
             }
             if (baseIndex >= 0 && baseIndex < n) {
                 int[] offset = MarkToBaseOffset(font, codePoints[baseIndex], gids[baseIndex], gids[i]);
@@ -1261,23 +1272,44 @@ public class Page {
             }
             int count = end - start;
             for (int k = 0; k < count; k++) {
-                int mark = rightToLeft ? end - 1 - k : start + k;
-                // Moves the mark back past the marks that sort after it. A mark
-                // of order 0 is never moved, and no mark moves past it.
-                int markOrder = MarkOrder(codePoints[mark]);
-                int l = k - 1;
-                while (markOrder != 0 && l >= 0 && MarkOrder(codePoints[order[l]]) > markOrder) {
-                    order[l + 1] = order[l];
-                    l--;
-                }
-                order[l + 1] = mark;
+                order[k] = rightToLeft ? end - 1 - k : start + k;
             }
+            SortMarks(codePoints, order, count);
             for (int k = 1; k < count; k++) {
                 PlaceOnMark(font, gids, x, offsets, order[k], order[k - 1]);
             }
             start = end;
         }
         return offsets;
+    }
+
+    // Sorts the first count marks of order by their order, those of the same
+    // order as they were typed. A mark of order 0 is never moved, and no mark
+    // moves past it: each run of the marks between them is sorted by itself,
+    // by its order and then its place in the run.
+    private static void SortMarks(int[] codePoints, int[] order, int count) {
+        int a = 0;
+        while (a < count) {
+            if (MarkOrder(codePoints[order[a]]) == 0) {
+                a++;
+                continue;
+            }
+            int b = a + 1;
+            while (b < count && MarkOrder(codePoints[order[b]]) != 0) {
+                b++;
+            }
+            int[] run = new int[b - a];
+            Array.Copy(order, a, run, 0, b - a);
+            long[] keys = new long[b - a];
+            for (int k = 0; k < keys.Length; k++) {
+                keys[k] = ((long) MarkOrder(codePoints[run[k]]) << 32) | (long) k;
+            }
+            Array.Sort(keys);
+            for (int k = 0; k < keys.Length; k++) {
+                order[a + k] = run[(int) (keys[k] & 0xFFFFFFFFL)];
+            }
+            a = b;
+        }
     }
 
     // Returns the offset of the mark from the letter or ligature it goes on, in

@@ -1336,14 +1336,25 @@ final public class Page {
             x[i] = x[i - 1] + font.glyphAdvance(gids[i - 1]);
         }
         int[] offsets = new int[2*n];
+        // The letter before a mark, and the letter after it, each found once
+        // for all the marks beside it: looked for again for each mark, a
+        // letter of thousands of marks took seconds.
+        int before = -1;
+        int after = -1;
         for (int i = 0; i < n; i++) {
             if (!isMark(codePoints[i])) {
+                before = i;
                 continue;
             }
-            int step = isRightToLeft(codePoints[i]) ? 1 : -1;
-            int base = i + step;
-            while (base >= 0 && base < n && isMark(codePoints[base])) {
-                base += step;
+            int base = before;
+            if (isRightToLeft(codePoints[i])) {
+                if (after <= i) {
+                    after = i + 1;
+                    while (after < n && isMark(codePoints[after])) {
+                        after++;
+                    }
+                }
+                base = after;
             }
             if (base >= 0 && base < n) {
                 int[] offset = markToBaseOffset(font, codePoints[base], gids[base], gids[i]);
@@ -1368,23 +1379,43 @@ final public class Page {
             }
             int count = j - i;
             for (int k = 0; k < count; k++) {
-                int mark = rightToLeft ? j - 1 - k : i + k;
-                // Moves the mark back past the marks that sort after it. A mark
-                // of order 0 is never moved, and no mark moves past it.
-                int markOrder = markOrder(codePoints[mark]);
-                int l = k - 1;
-                while (markOrder != 0 && l >= 0 && markOrder(codePoints[order[l]]) > markOrder) {
-                    order[l + 1] = order[l];
-                    l--;
-                }
-                order[l + 1] = mark;
+                order[k] = rightToLeft ? j - 1 - k : i + k;
             }
+            sortMarks(codePoints, order, count);
             for (int k = 1; k < count; k++) {
                 placeOnMark(font, gids, x, offsets, order[k], order[k - 1]);
             }
             i = j;
         }
         return offsets;
+    }
+
+    // Sorts the first count marks of order by their order, those of the same
+    // order as they were typed. A mark of order 0 is never moved, and no mark
+    // moves past it: each run of the marks between them is sorted by itself,
+    // by its order and then its place in the run.
+    private static void sortMarks(int[] codePoints, int[] order, int count) {
+        int a = 0;
+        while (a < count) {
+            if (markOrder(codePoints[order[a]]) == 0) {
+                a++;
+                continue;
+            }
+            int b = a + 1;
+            while (b < count && markOrder(codePoints[order[b]]) != 0) {
+                b++;
+            }
+            int[] run = Arrays.copyOfRange(order, a, b);
+            long[] keys = new long[b - a];
+            for (int k = 0; k < keys.length; k++) {
+                keys[k] = ((long) markOrder(codePoints[run[k]]) << 32) | k;
+            }
+            Arrays.sort(keys);
+            for (int k = 0; k < keys.length; k++) {
+                order[a + k] = run[(int) (keys[k] & 0xFFFFFFFFL)];
+            }
+            a = b;
+        }
     }
 
     // Returns the order of a mark among the marks of its letter, or 0 for a

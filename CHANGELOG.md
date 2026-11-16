@@ -508,6 +508,16 @@ samples, which `check-llms.sh` builds, runs and checks in every port. The
 Java guide is in the Java Core zip and the Maven jars, the .NET guide in
 the .NET Core zip and the NuGet package PDFjet.
 
+Fixed: **the marks of a letter are placed in linear time.** For each mark,
+PDFjet looked for its letter back past all the marks before it, and sorted
+the marks of a letter by insertion, so the time grew with the square of the
+marks on one letter: "Zalgo" text of 16,000 marks on a letter took 2.3 s in
+Go and 4 s in the browser. The letter is now found once for all the marks
+beside it, and the marks are sorted stably by their order; each mark goes
+where it went, as Go's `TestMarkOffsets` checks against the code it
+replaced, and the four ports write the same pages of random Latin, Hebrew,
+Arabic and Thai marks. The 16,000 marks take 0.01 s.
+
 ## v9.1.7 — 2026-11-05
 
 The next release, with PDFjet Pro's 9.1.7 (TODO.md).

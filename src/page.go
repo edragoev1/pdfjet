@@ -1037,17 +1037,24 @@ func markOffsets(font *Font, codePoints []rune, gids []int) []int {
 		x[i] = x[i-1] + font.glyphAdvance(gids[i-1])
 	}
 	offsets := make([]int, 2*n)
+	// The letter before a mark, and the letter after it, each found once for
+	// all the marks beside it: looked for again for each mark, a letter of
+	// thousands of marks took seconds.
+	before, after := -1, -1
 	for i := 0; i < n; i++ {
 		if !isMark(codePoints[i]) {
+			before = i
 			continue
 		}
-		step := -1
+		base := before
 		if isRightToLeft(codePoints[i]) {
-			step = 1
-		}
-		base := i + step
-		for base >= 0 && base < n && isMark(codePoints[base]) {
-			base += step
+			if after <= i {
+				after = i + 1
+				for after < n && isMark(codePoints[after]) {
+					after++
+				}
+			}
+			base = after
 		}
 		if base >= 0 && base < n {
 			if offset := markToBaseOffset(font, codePoints[base], gids[base], gids[i]); offset != nil {
@@ -1071,19 +1078,27 @@ func markOffsets(font *Font, codePoints []rune, gids []int) []int {
 		}
 		count := end - start
 		for k := 0; k < count; k++ {
-			mark := start + k
+			order[k] = start + k
 			if rightToLeft {
-				mark = end - 1 - k
+				order[k] = end - 1 - k
 			}
-			// Moves the mark back past the marks that sort after it. A mark of
-			// order 0 is never moved, and no mark moves past it.
-			rank := markOrder(codePoints[mark])
-			l := k - 1
-			for rank != 0 && l >= 0 && markOrder(codePoints[order[l]]) > rank {
-				order[l+1] = order[l]
-				l--
+		}
+		// The marks sorted by their order, those of the same order as they
+		// were typed. A mark of order 0 is never moved, and no mark moves
+		// past it: each run of the marks between them is sorted by itself.
+		for a := 0; a < count; {
+			if markOrder(codePoints[order[a]]) == 0 {
+				a++
+				continue
 			}
-			order[l+1] = mark
+			b := a + 1
+			for b < count && markOrder(codePoints[order[b]]) != 0 {
+				b++
+			}
+			slices.SortStableFunc(order[a:b], func(p, q int) int {
+				return markOrder(codePoints[p]) - markOrder(codePoints[q])
+			})
+			a = b
 		}
 		for k := 1; k < count; k++ {
 			placeOnMark(font, gids, x, offsets, order[k], order[k-1])

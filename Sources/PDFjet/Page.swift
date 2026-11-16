@@ -1146,11 +1146,25 @@ public class Page {
             x[i] = x[i - 1] + font.glyphAdvance(gids[i - 1])
         }
         var offsets = [Int](repeating: 0, count: 2*n)
-        for i in 0..<n where Page.isMark(codePoints[i]) {
-            let step = Page.isRightToLeft(codePoints[i]) ? 1 : -1
-            var base = i + step
-            while base >= 0 && base < n && Page.isMark(codePoints[base]) {
-                base += step
+        // The letter before a mark, and the letter after it, each found once
+        // for all the marks beside it: looked for again for each mark, a
+        // letter of thousands of marks took seconds.
+        var before = -1
+        var after = -1
+        for i in 0..<n {
+            if !Page.isMark(codePoints[i]) {
+                before = i
+                continue
+            }
+            var base = before
+            if Page.isRightToLeft(codePoints[i]) {
+                if after <= i {
+                    after = i + 1
+                    while after < n && Page.isMark(codePoints[after]) {
+                        after += 1
+                    }
+                }
+                base = after
             }
             if base >= 0 && base < n,
                     let offset = markToBaseOffset(font, codePoints[base], gids[base], gids[i]) {
@@ -1173,23 +1187,43 @@ public class Page {
             }
             let count = end - start
             for k in 0..<count {
-                let mark = rightToLeft ? end - 1 - k : start + k
-                // Moves the mark back past the marks that sort after it. A mark
-                // of order 0 is never moved, and no mark moves past it.
-                let rank = markOrder(codePoints[mark])
-                var l = k - 1
-                while rank != 0 && l >= 0 && markOrder(codePoints[order[l]]) > rank {
-                    order[l + 1] = order[l]
-                    l -= 1
-                }
-                order[l + 1] = mark
+                order[k] = rightToLeft ? end - 1 - k : start + k
             }
+            sortMarks(codePoints, &order, count)
             for k in stride(from: 1, to: count, by: 1) {
                 placeOnMark(font, gids, x, &offsets, order[k], order[k - 1])
             }
             start = end
         }
         return offsets
+    }
+
+    // Sorts the first count marks of order by their order, those of the same
+    // order as they were typed. A mark of order 0 is never moved, and no mark
+    // moves past it: each run of the marks between them is sorted by itself,
+    // by its order and then its place in the run.
+    private func sortMarks(_ codePoints: [Int], _ order: inout [Int], _ count: Int) {
+        var a = 0
+        while a < count {
+            if markOrder(codePoints[order[a]]) == 0 {
+                a += 1
+                continue
+            }
+            var b = a + 1
+            while b < count && markOrder(codePoints[order[b]]) != 0 {
+                b += 1
+            }
+            let run = Array(order[a..<b])
+            var keys = [Int](repeating: 0, count: b - a)
+            for k in 0..<keys.count {
+                keys[k] = (markOrder(codePoints[run[k]]) << 32) | k
+            }
+            keys.sort()
+            for k in 0..<keys.count {
+                order[a + k] = run[keys[k] & 0xFFFF_FFFF]
+            }
+            a = b
+        }
     }
 
     // Returns the offset of the mark from the letter or ligature it goes on, in
