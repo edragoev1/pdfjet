@@ -802,4 +802,114 @@ class ReviewReaderTest {
                 "<< /Length 1 /Filter /Crypt /DecodeParms 9 0 R >>\nstream\nx\nendstream"));
         assertFalse(objects.get(3).hasIdentityCrypt());
     }
+
+    // Returns a PDF whose page content has its /Length in object 5, an object
+    // of an object stream, as pdfTeX and Ghostscript write them, and a
+    // cross-reference stream.
+    private static byte[] pdfWithLengthInObjectStream(String content) throws Exception {
+        String[] inStream = {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>",
+            "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
+            String.valueOf(content.length())
+        };
+        int[] numbers = {1, 2, 3, 5};
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        out.write(latin1("%PDF-1.7\n"));
+        int offset4 = out.size();
+        out.write(latin1("4 0 obj\n<< /Length 5 0 R >>\nstream\n" + content + "\nendstream\nendobj\n"));
+        StringBuilder header = new StringBuilder();
+        StringBuilder body = new StringBuilder();
+        for (int i = 0; i < numbers.length; i++) {
+            header.append(numbers[i]).append(' ').append(body.length()).append(' ');
+            body.append(inStream[i]).append('\n');
+        }
+        int offset6 = out.size();
+        out.write(latin1("6 0 obj\n<< /Type /ObjStm /N 4 /First " + header.length()
+                + " /Length " + (header.length() + body.length()) + " >>\nstream\n"
+                + header + body + "\nendstream\nendobj\n"));
+        int offset7 = out.size();
+        int[] index = {-1, 0, 1, 2, -1, 3, -1, -1};
+        int[] offsets = {0, 0, 0, 0, offset4, 0, offset6, offset7};
+        ByteArrayOutputStream rows = new ByteArrayOutputStream();
+        for (int number = 0; number < index.length; number++) {
+            if (number == 0) {
+                rows.write(new byte[] {0, 0, 0, 0, 0, (byte) 0xff, (byte) 0xff});
+            } else if (index[number] == -1) {
+                int offset = offsets[number];
+                rows.write(new byte[] {1, (byte) (offset >> 24), (byte) (offset >> 16),
+                        (byte) (offset >> 8), (byte) offset, 0, 0});
+            } else {
+                rows.write(new byte[] {2, 0, 0, 0, 6, 0, (byte) index[number]});
+            }
+        }
+        out.write(latin1("7 0 obj\n<< /Type /XRef /Size 8 /W [1 4 2] /Root 1 0 R /Length "
+                + rows.size() + " >>\nstream\n"));
+        rows.writeTo(out);
+        out.write(latin1("\nendstream\nendobj\nstartxref\n" + offset7 + "\n%%EOF\n"));
+        return out.toByteArray();
+    }
+
+    @Test
+    void aLengthInAnObjectStreamIsTheLengthOfTheStream() throws Exception {
+        // It was not found, as the objects of the object streams were not
+        // read yet, and the stream ended at the first endstream, the one in
+        // its text, or lost the carriage return its data ends with.
+        String[] contents = {
+            "BT /F1 12 Tf 72 700 Td (a endstream b) Tj ET\nBT 72 680 Td (second line) Tj ET\n",
+            "q Q\r"
+        };
+        for (String content : contents) {
+            List<PDFobj> objects = TestSupport.read(pdfWithLengthInObjectStream(content));
+            assertEquals(content, new String(objects.get(3).getData(), StandardCharsets.ISO_8859_1));
+        }
+    }
+
+    @Test
+    void theEmptyObjectsUpToAHighNumberAreTakenFromTheBudget() throws Exception {
+        // A PDF of 2 MB that numbers its one object 2,000,000 made two million
+        // empty objects, hundreds of bytes for each byte of the PDF.
+        final byte[] pdf = pdfWithObjectNumbered(2000000, 2000000);
+        Exception e = assertThrows(Exception.class, () -> TestSupport.read(pdf));
+        assertEquals("The PDF of 2000000 bytes cannot hold an object numbered 2000000.", e.getMessage());
+        // One of 1 MB numbered 300,000 is read, its empty objects within
+        // those a PDF of its length may have.
+        assertEquals(300000, TestSupport.read(pdfWithObjectNumbered(1000000, 300000)).size());
+    }
+
+    // Returns a PDF of size bytes of three objects and one more of the number.
+    private static byte[] pdfWithObjectNumbered(int size, int number) throws Exception {
+        String[] objects = {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"
+        };
+        StringBuilder sb = new StringBuilder("%PDF-1.4\n");
+        int[] offsets = new int[3];
+        for (int i = 0; i < 3; i++) {
+            offsets[i] = sb.length();
+            sb.append(i + 1).append(" 0 obj\n").append(objects[i]).append("\nendobj\n");
+        }
+        String tail = number + " 0 obj\nnull\nendobj\n";
+        String xref = String.format(Locale.ROOT,
+                "xref\n0 4\n0000000000 65535 f \n%010d 00000 n \n%010d 00000 n \n%010d 00000 n \n%d 1\n",
+                offsets[0], offsets[1], offsets[2], number);
+        String trailer = "trailer\n<< /Size " + (number + 1) + " /Root 1 0 R >>\nstartxref\n";
+        // The padding is a comment, and the offsets are written in 10 digits.
+        int fixed = sb.length() + tail.length() + xref.length() + "0000000000 00000 n \n".length()
+                + trailer.length() + "0000000000\n%%EOF\n".length();
+        sb.append('%');
+        for (int i = 0; i < size - fixed - 2; i++) {
+            sb.append('x');
+        }
+        sb.append('\n');
+        int objOffset = sb.length();
+        sb.append(tail);
+        int xrefOffset = sb.length();
+        sb.append(xref);
+        sb.append(String.format(Locale.ROOT, "%010d 00000 n \n", objOffset));
+        sb.append(trailer);
+        sb.append(String.format(Locale.ROOT, "%010d\n%%%%EOF\n", xrefOffset));
+        return latin1(sb.toString());
+    }
 }

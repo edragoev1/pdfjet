@@ -2882,9 +2882,14 @@ public sealed class PDF {
     // file, and a larger one in a file that has as many bytes. The empty
     // objects up to a larger number would take the memory a file of a few
     // bytes never names.
-    internal List<PDFobj> GetSortedObjects(List<PDFobj> objects, int size) {
-        List<PDFobj> sorted = new List<PDFobj>();
-
+    //
+    // The empty objects past MIN_OBJ_NUMBER_LIMIT are taken from the budget as
+    // the objects of object streams are: each one takes a few hundred bytes,
+    // and a file of 16 MB that numbered its one object 16,000,000 made 3.5 GB
+    // of them, more than the 128 bytes for each byte of the PDF that the
+    // reader may take.
+    internal List<PDFobj> GetSortedObjects(
+            List<PDFobj> objects, int size, PDFobj.DecodeBudget budget) {
         int maxObjNumber = 0;
         foreach (PDFobj obj in objects) {
             if (obj.number > maxObjNumber) {
@@ -2896,19 +2901,59 @@ public sealed class PDF {
                     + " bytes cannot hold an object numbered " + maxObjNumber + ".");
         }
 
-        for (int number = 1; number <= maxObjNumber; number++) {
-            PDFobj obj = new PDFobj();
-            obj.SetNumber(number);
-            sorted.Add(obj);
-        }
-
+        PDFobj[] byNumber = new PDFobj[maxObjNumber];
         foreach (PDFobj obj in objects) {
             if (obj.number > 0) {
-                sorted[obj.number - 1] = obj;
+                byNumber[obj.number - 1] = obj;
             }
         }
 
+        int empty = -MIN_OBJ_NUMBER_LIMIT;
+        foreach (PDFobj obj in byNumber) {
+            if (obj == null) {
+                empty++;
+            }
+        }
+        if (empty > 0) {
+            int free = Math.Min(empty, budget.freeObjects);
+            budget.freeObjects -= free;
+            if (empty - free > budget.left / OBJECT_COST) {
+                throw new InvalidDataException("The PDF of " + size
+                        + " bytes cannot hold an object numbered " + maxObjNumber + ".");
+            }
+            budget.left -= (empty - free) * OBJECT_COST;
+        }
+
+        List<PDFobj> sorted = new List<PDFobj>(maxObjNumber);
+        for (int i = 0; i < maxObjNumber; i++) {
+            PDFobj obj = byNumber[i];
+            if (obj == null) {
+                obj = new PDFobj();
+                obj.SetNumber(i + 1);
+            }
+            sorted.Add(obj);
+        }
+
         return sorted;
+    }
+
+    // Returns the number of the object that holds the /Length of the stream,
+    // or 0 when the /Length is not a reference.
+    private static int LengthReference(PDFobj obj) {
+        int open = obj.dict.IndexOf("<<");
+        if (open == -1) {
+            return 0;
+        }
+        int i = EntryIndex(obj.dict.GetRange(open, obj.dict.Count - open), "/Length");
+        if (i == -1) {
+            return 0;
+        }
+        i += open;
+        if (i + 3 >= obj.dict.Count
+                || !obj.dict[i + 2].Equals("0") || !obj.dict[i + 3].Equals("R")) {
+            return 0;
+        }
+        return Math.Max(ToInteger(obj.dict[i + 1]), 0);
     }
 
     /// <summary>
@@ -2957,6 +3002,12 @@ public sealed class PDF {
         }
 
         List<PDFobj> objects2 = new List<PDFobj>();
+        // The streams whose /Length is an object in an object stream, read
+        // when the object streams have been: ISO 32000-1 7.5.7 keeps only the
+        // /Length of an object stream out of one, and pdfTeX and Ghostscript
+        // put the /Length of other streams in them. Read before, such a stream
+        // ended at the first endstream, even one in its data.
+        List<PDFobj> deferred = new List<PDFobj>();
         foreach (PDFobj obj in objects1) {
             String type = obj.GetValue("/Type");
             if (type.Equals("/XRef")) {
@@ -2969,8 +3020,13 @@ public sealed class PDF {
                 decryptor.DecryptStrings(obj);
             }
             if (obj.dict.Contains("stream")) {
-                obj.readObjects = numbered;     // For a /Filter that is an object of its own
-                obj.SetStreamAndData(buf, obj.GetLength(numbered), decryptor, budget);
+                int number = LengthReference(obj);
+                if (number > 0 && !numbered.ContainsKey(number) && !type.Equals("/ObjStm")) {
+                    deferred.Add(obj);
+                } else {
+                    obj.readObjects = numbered;     // For a /Filter that is an object of its own
+                    obj.SetStreamAndData(buf, obj.GetLength(numbered), decryptor, budget);
+                }
             }
 
             if (type.Equals("/ObjStm")) {
@@ -3029,7 +3085,26 @@ public sealed class PDF {
             }
         }
 
-        List<PDFobj> sorted = GetSortedObjects(objects2, buf.Length);
+        if (deferred.Count > 0) {
+            // The objects of the object streams, whose numbers no object of
+            // the PDF's own has: the newest one of a number comes last and
+            // wins.
+            Dictionary<int, PDFobj> inStreams = new Dictionary<int, PDFobj>();
+            foreach (PDFobj obj in objects2) {
+                if (!numbered.ContainsKey(obj.number)) {
+                    inStreams[obj.number] = obj;
+                }
+            }
+            foreach (KeyValuePair<int, PDFobj> entry in inStreams) {
+                numbered[entry.Key] = entry.Value;
+            }
+            foreach (PDFobj obj in deferred) {
+                obj.readObjects = numbered;     // For a /Filter that is an object of its own
+                obj.SetStreamAndData(buf, obj.GetLength(numbered), decryptor, budget);
+            }
+        }
+
+        List<PDFobj> sorted = GetSortedObjects(objects2, buf.Length, budget);
         PDFobj root = PDFobj.ObjectNumbered(sorted, TrailerRoot(trailer));
         if (root != null) {
             root.root = true;

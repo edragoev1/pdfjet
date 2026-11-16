@@ -692,4 +692,110 @@ import Testing
             "<< /Length 1 /Filter /Crypt /DecodeParms 9 0 R >>\nstream\nx\nendstream"]))
         #expect(!objects[3].hasIdentityCrypt())
     }
+
+    // Returns a PDF whose page content has its /Length in object 5, an object
+    // of an object stream, as pdfTeX and Ghostscript write them, and a
+    // cross-reference stream.
+    private func pdfWithLengthInObjectStream(_ content: String) -> [UInt8] {
+        let inStream = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>",
+            "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
+            String(content.utf8.count),
+        ]
+        let numbers = [1, 2, 3, 5]
+        var out = TestSupport.bytes("%PDF-1.7\n")
+        let offset4 = out.count
+        out += TestSupport.bytes("4 0 obj\n<< /Length 5 0 R >>\nstream\n\(content)\nendstream\nendobj\n")
+        var header = ""
+        var body = ""
+        for (i, number) in numbers.enumerated() {
+            header += "\(number) \(body.utf8.count) "
+            body += inStream[i] + "\n"
+        }
+        let offset6 = out.count
+        out += TestSupport.bytes("6 0 obj\n<< /Type /ObjStm /N 4 /First \(header.utf8.count)"
+                + " /Length \(header.utf8.count + body.utf8.count) >>\nstream\n"
+                + header + body + "\nendstream\nendobj\n")
+        let offset7 = out.count
+        let index = [-1, 0, 1, 2, -1, 3, -1, -1]
+        let offsets = [0, 0, 0, 0, offset4, 0, offset6, offset7]
+        var rows = [UInt8]()
+        for number in 0..<index.count {
+            if number == 0 {
+                rows += [0, 0, 0, 0, 0, 0xff, 0xff]
+            } else if index[number] == -1 {
+                let offset = offsets[number]
+                rows += [1, UInt8(truncatingIfNeeded: offset >> 24), UInt8(truncatingIfNeeded: offset >> 16),
+                        UInt8(truncatingIfNeeded: offset >> 8), UInt8(truncatingIfNeeded: offset), 0, 0]
+            } else {
+                rows += [2, 0, 0, 0, 6, 0, UInt8(index[number])]
+            }
+        }
+        out += TestSupport.bytes("7 0 obj\n<< /Type /XRef /Size 8 /W [1 4 2] /Root 1 0 R /Length "
+                + "\(rows.count) >>\nstream\n")
+        out += rows
+        out += TestSupport.bytes("\nendstream\nendobj\nstartxref\n\(offset7)\n%%EOF\n")
+        return out
+    }
+
+    @Test func aLengthInAnObjectStreamIsTheLengthOfTheStream() throws {
+        // It was not found, as the objects of the object streams were not
+        // read yet, and the stream ended at the first endstream, the one in
+        // its text, or lost the carriage return its data ends with.
+        for content in [
+            "BT /F1 12 Tf 72 700 Td (a endstream b) Tj ET\nBT 72 680 Td (second line) Tj ET\n",
+            "q Q\r",
+        ] {
+            let objects = try TestSupport.read(pdfWithLengthInObjectStream(content))
+            #expect(TestSupport.latin1(objects[3].getData()) == content)
+        }
+    }
+
+    @Test func theEmptyObjectsUpToAHighNumberAreTakenFromTheBudget() throws {
+        // A PDF of 2 MB that numbers its one object 2,000,000 made two million
+        // empty objects, hundreds of bytes for each byte of the PDF.
+        do {
+            _ = try TestSupport.read(pdfWithObjectNumbered(2000000, 2000000))
+            Issue.record("the PDF was read")
+        } catch let error as PDFjetError {
+            #expect(error.message == "The PDF of 2000000 bytes cannot hold an object numbered 2000000.")
+        }
+        // One of 1 MB numbered 300,000 is read, its empty objects within
+        // those a PDF of its length may have.
+        #expect(try TestSupport.read(pdfWithObjectNumbered(1000000, 300000)).count == 300000)
+    }
+
+    // Returns a PDF of size bytes of three objects and one more of the number.
+    private func pdfWithObjectNumbered(_ size: Int, _ number: Int) -> [UInt8] {
+        let objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+        ]
+        var out = TestSupport.bytes("%PDF-1.4\n")
+        var offsets = [Int]()
+        for (i, object) in objects.enumerated() {
+            offsets.append(out.count)
+            out += TestSupport.bytes("\(i + 1) 0 obj\n\(object)\nendobj\n")
+        }
+        let tail = TestSupport.bytes("\(number) 0 obj\nnull\nendobj\n")
+        let xref = TestSupport.bytes(String(format: "xref\n0 4\n0000000000 65535 f \n%010d 00000 n \n"
+                + "%010d 00000 n \n%010d 00000 n \n%d 1\n", offsets[0], offsets[1], offsets[2], number))
+        let trailer = TestSupport.bytes("trailer\n<< /Size \(number + 1) /Root 1 0 R >>\nstartxref\n")
+        // The padding is a comment, and the offsets are written in 10 digits.
+        let fixed = out.count + tail.count + xref.count + "0000000000 00000 n \n".utf8.count
+                + trailer.count + "0000000000\n%%EOF\n".utf8.count
+        out += TestSupport.bytes("%")
+        out += [UInt8](repeating: UInt8(ascii: "x"), count: size - fixed - 2)
+        out += TestSupport.bytes("\n")
+        let objOffset = out.count
+        out += tail
+        let xrefOffset = out.count
+        out += xref
+        out += TestSupport.bytes(String(format: "%010d 00000 n \n", objOffset))
+        out += trailer
+        out += TestSupport.bytes(String(format: "%010d\n%%%%EOF\n", xrefOffset))
+        return out
+    }
 }

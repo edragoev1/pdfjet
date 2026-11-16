@@ -3039,9 +3039,14 @@ final public class PDF {
     // in any file, and a larger one in a file that has as many bytes. The empty
     // objects up to a larger number would take the memory a file of a few
     // bytes never names.
-    private List<PDFobj> getSortedObjects(List<PDFobj> objects, int size) throws Exception {
-        List<PDFobj> sorted = new ArrayList<PDFobj>();
-
+    //
+    // The empty objects past MIN_OBJ_NUMBER_LIMIT are taken from the budget as
+    // the objects of object streams are: each one takes a few hundred bytes,
+    // and a file of 16 MB that numbered its one object 16,000,000 made 3.6 GB
+    // of them, more than the 128 bytes for each byte of the PDF that the
+    // reader may take.
+    private List<PDFobj> getSortedObjects(
+            List<PDFobj> objects, int size, PDFobj.DecodeBudget budget) throws Exception {
         int maxObjNumber = 0;
         for (PDFobj obj : objects) {
             if (obj.number > maxObjNumber) {
@@ -3053,19 +3058,59 @@ final public class PDF {
                     + " bytes cannot hold an object numbered " + maxObjNumber + ".");
         }
 
-        for (int number = 1; number <= maxObjNumber; number++) {
-            PDFobj obj = new PDFobj();
-            obj.setNumber(number);
-            sorted.add(obj);
-        }
-
+        PDFobj[] byNumber = new PDFobj[maxObjNumber];
         for (PDFobj obj : objects) {
             if (obj.number > 0) {
-                sorted.set(obj.number - 1, obj);
+                byNumber[obj.number - 1] = obj;
             }
         }
 
+        int empty = -MIN_OBJ_NUMBER_LIMIT;
+        for (PDFobj obj : byNumber) {
+            if (obj == null) {
+                empty++;
+            }
+        }
+        if (empty > 0) {
+            int free = Math.min(empty, budget.freeObjects);
+            budget.freeObjects -= free;
+            if (empty - free > budget.left / OBJECT_COST) {
+                throw new Exception("The PDF of " + size
+                        + " bytes cannot hold an object numbered " + maxObjNumber + ".");
+            }
+            budget.left -= (empty - free) * OBJECT_COST;
+        }
+
+        List<PDFobj> sorted = new ArrayList<PDFobj>(maxObjNumber);
+        for (int i = 0; i < maxObjNumber; i++) {
+            PDFobj obj = byNumber[i];
+            if (obj == null) {
+                obj = new PDFobj();
+                obj.setNumber(i + 1);
+            }
+            sorted.add(obj);
+        }
+
         return sorted;
+    }
+
+    // Returns the number of the object that holds the /Length of the stream,
+    // or 0 when the /Length is not a reference.
+    private static int lengthReference(PDFobj obj) {
+        int open = obj.dict.indexOf("<<");
+        if (open == -1) {
+            return 0;
+        }
+        int i = entryIndex(obj.dict.subList(open, obj.dict.size()), "/Length");
+        if (i == -1) {
+            return 0;
+        }
+        i += open;
+        if (i + 3 >= obj.dict.size()
+                || !obj.dict.get(i + 2).equals("0") || !obj.dict.get(i + 3).equals("R")) {
+            return 0;
+        }
+        return Math.max(toInteger(obj.dict.get(i + 1)), 0);
     }
 
     /**
@@ -3123,6 +3168,12 @@ final public class PDF {
         }
 
         List<PDFobj> objects2 = new ArrayList<PDFobj>();
+        // The streams whose /Length is an object in an object stream, read
+        // when the object streams have been: ISO 32000-1 7.5.7 keeps only the
+        // /Length of an object stream out of one, and pdfTeX and Ghostscript
+        // put the /Length of other streams in them. Read before, such a stream
+        // ended at the first endstream, even one in its data.
+        List<PDFobj> deferred = new ArrayList<PDFobj>();
         for (PDFobj obj : objects1) {
             String type = obj.getValue("/Type");
             if (type.equals("/XRef")) {
@@ -3135,8 +3186,13 @@ final public class PDF {
                 decryptor.decryptStrings(obj);
             }
             if (obj.dict.contains("stream")) {
-                obj.readObjects = numbered;     // For a /Filter that is an object of its own
-                obj.setStreamAndData(buf, obj.getLength(numbered), decryptor, budget);
+                int number = lengthReference(obj);
+                if (number > 0 && !numbered.containsKey(number) && !type.equals("/ObjStm")) {
+                    deferred.add(obj);
+                } else {
+                    obj.readObjects = numbered;     // For a /Filter that is an object of its own
+                    obj.setStreamAndData(buf, obj.getLength(numbered), decryptor, budget);
+                }
             }
 
             if (type.equals("/ObjStm")) {
@@ -3195,7 +3251,24 @@ final public class PDF {
             }
         }
 
-        List<PDFobj> sorted = getSortedObjects(objects2, buf.length);
+        if (!deferred.isEmpty()) {
+            // The objects of the object streams, whose numbers no object of
+            // the PDF's own has: the newest one of a number comes last and
+            // wins.
+            Map<Integer, PDFobj> inStreams = new HashMap<Integer, PDFobj>();
+            for (PDFobj obj : objects2) {
+                if (!numbered.containsKey(obj.number)) {
+                    inStreams.put(obj.number, obj);
+                }
+            }
+            numbered.putAll(inStreams);
+            for (PDFobj obj : deferred) {
+                obj.readObjects = numbered;     // For a /Filter that is an object of its own
+                obj.setStreamAndData(buf, obj.getLength(numbered), decryptor, budget);
+            }
+        }
+
+        List<PDFobj> sorted = getSortedObjects(objects2, buf.length, budget);
         PDFobj root = PDFobj.objectNumbered(sorted, trailerRoot(trailer));
         if (root != null) {
             root.root = true;

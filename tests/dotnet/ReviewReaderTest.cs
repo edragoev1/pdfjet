@@ -772,5 +772,110 @@ public class ReviewReaderTest {
                 "<< /Length 1 /Filter /Crypt /DecodeParms 9 0 R >>\nstream\nx\nendstream"));
         Assert.False(objects[3].HasIdentityCrypt());
     }
+
+    // Returns a PDF whose page content has its /Length in object 5, an object
+    // of an object stream, as pdfTeX and Ghostscript write them, and a
+    // cross-reference stream.
+    private static byte[] PdfWithLengthInObjectStream(string content) {
+        string[] inStream = {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>",
+            "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
+            content.Length.ToString()
+        };
+        int[] numbers = {1, 2, 3, 5};
+        MemoryStream output = new MemoryStream();
+        output.Write(Latin1("%PDF-1.7\n"));
+        int offset4 = (int) output.Length;
+        output.Write(Latin1("4 0 obj\n<< /Length 5 0 R >>\nstream\n" + content + "\nendstream\nendobj\n"));
+        StringBuilder header = new StringBuilder();
+        StringBuilder body = new StringBuilder();
+        for (int i = 0; i < numbers.Length; i++) {
+            header.Append(numbers[i]).Append(' ').Append(body.Length).Append(' ');
+            body.Append(inStream[i]).Append('\n');
+        }
+        int offset6 = (int) output.Length;
+        output.Write(Latin1("6 0 obj\n<< /Type /ObjStm /N 4 /First " + header.Length
+                + " /Length " + (header.Length + body.Length) + " >>\nstream\n"
+                + header + body + "\nendstream\nendobj\n"));
+        int offset7 = (int) output.Length;
+        int[] index = {-1, 0, 1, 2, -1, 3, -1, -1};
+        int[] offsets = {0, 0, 0, 0, offset4, 0, offset6, offset7};
+        MemoryStream rows = new MemoryStream();
+        for (int number = 0; number < index.Length; number++) {
+            if (number == 0) {
+                rows.Write(new byte[] {0, 0, 0, 0, 0, 0xff, 0xff});
+            } else if (index[number] == -1) {
+                int offset = offsets[number];
+                rows.Write(new byte[] {1, (byte) (offset >> 24), (byte) (offset >> 16),
+                        (byte) (offset >> 8), (byte) offset, 0, 0});
+            } else {
+                rows.Write(new byte[] {2, 0, 0, 0, 6, 0, (byte) index[number]});
+            }
+        }
+        output.Write(Latin1("7 0 obj\n<< /Type /XRef /Size 8 /W [1 4 2] /Root 1 0 R /Length "
+                + rows.Length + " >>\nstream\n"));
+        rows.WriteTo(output);
+        output.Write(Latin1("\nendstream\nendobj\nstartxref\n" + offset7 + "\n%%EOF\n"));
+        return output.ToArray();
+    }
+
+    [Fact]
+    public void ALengthInAnObjectStreamIsTheLengthOfTheStream() {
+        // It was not found, as the objects of the object streams were not
+        // read yet, and the stream ended at the first endstream, the one in
+        // its text, or lost the carriage return its data ends with.
+        string[] contents = {
+            "BT /F1 12 Tf 72 700 Td (a endstream b) Tj ET\nBT 72 680 Td (second line) Tj ET\n",
+            "q Q\r"
+        };
+        foreach (string content in contents) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithLengthInObjectStream(content));
+            Assert.Equal(content, Encoding.Latin1.GetString(objects[3].GetData()));
+        }
+    }
+
+    [Fact]
+    public void TheEmptyObjectsUpToAHighNumberAreTakenFromTheBudget() {
+        // A PDF of 2 MB that numbers its one object 2,000,000 made two million
+        // empty objects, hundreds of bytes for each byte of the PDF.
+        Assert.Equal("The PDF of 2000000 bytes cannot hold an object numbered 2000000.",
+                ReadError(Encoding.Latin1.GetString(PdfWithObjectNumbered(2000000, 2000000))));
+        // One of 1 MB numbered 300,000 is read, its empty objects within
+        // those a PDF of its length may have.
+        Assert.Equal(300000, TestSupport.Read(PdfWithObjectNumbered(1000000, 300000)).Count);
+    }
+
+    // Returns a PDF of size bytes of three objects and one more of the number.
+    private static byte[] PdfWithObjectNumbered(int size, int number) {
+        string[] objects = {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"
+        };
+        StringBuilder sb = new StringBuilder("%PDF-1.4\n");
+        int[] offsets = new int[3];
+        for (int i = 0; i < 3; i++) {
+            offsets[i] = sb.Length;
+            sb.Append(i + 1).Append(" 0 obj\n").Append(objects[i]).Append("\nendobj\n");
+        }
+        string tail = number + " 0 obj\nnull\nendobj\n";
+        string xref = "xref\n0 4\n0000000000 65535 f \n" + offsets[0].ToString("D10") + " 00000 n \n"
+                + offsets[1].ToString("D10") + " 00000 n \n" + offsets[2].ToString("D10") + " 00000 n \n"
+                + number + " 1\n";
+        string trailer = "trailer\n<< /Size " + (number + 1) + " /Root 1 0 R >>\nstartxref\n";
+        // The padding is a comment, and the offsets are written in 10 digits.
+        int fixedLength = sb.Length + tail.Length + xref.Length + "0000000000 00000 n \n".Length
+                + trailer.Length + "0000000000\n%%EOF\n".Length;
+        sb.Append('%').Append('x', size - fixedLength - 2).Append('\n');
+        int objOffset = sb.Length;
+        sb.Append(tail);
+        int xrefOffset = sb.Length;
+        sb.Append(xref);
+        sb.Append(objOffset.ToString("D10")).Append(" 00000 n \n");
+        sb.Append(trailer);
+        sb.Append(xrefOffset.ToString("D10")).Append("\n%%EOF\n");
+        return Latin1(sb.ToString());
+    }
 }
 }   // End of namespace PDFjet.NET

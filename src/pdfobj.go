@@ -839,6 +839,24 @@ func (obj *PDFobj) getLength(numbered map[int]*PDFobj) int {
 	return number
 }
 
+// lengthReference returns the number of the object that holds the /Length of
+// the stream, or 0 when the /Length is not a reference.
+func (obj *PDFobj) lengthReference() int {
+	open := slices.Index(obj.dict, "<<")
+	if open == -1 {
+		return 0
+	}
+	i := dictEntryIndex(obj.dict[open:], "/Length")
+	if i == -1 {
+		return 0
+	}
+	i += open
+	if i+3 >= len(obj.dict) || obj.dict[i+2] != "0" || obj.dict[i+3] != "R" {
+		return 0
+	}
+	return max(toInteger(obj.dict[i+1]), 0)
+}
+
 // getLengthFromObject returns the /Length stored in the object with the number,
 // or 0 when the PDF has no such object.
 func getLengthFromObject(numbered map[int]*PDFobj, number int) int {
