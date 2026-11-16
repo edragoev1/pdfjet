@@ -660,5 +660,62 @@ public class ReviewWriterTest {
         pdf.Complete();     // It closes the stream
         Assert.Equal("en-US", pdf.language);
     }
+
+    // The /Vertices of a polygon read past the end of an odd number of values
+    // out of a container: Go panicked in Complete and Swift trapped.
+    [Fact]
+    public void APolygonOfAnOddNumberOfValuesLeavesTheLastOut() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        string raw = Document(Compliance.PDF_1_7, (pdf, page) => {
+            PolygonAnnotation polygon = new PolygonAnnotation().SetVertices(new float[] {0f, 0f, 50f, 0f, 25f});
+            polygon.SetLocation(100f, 100f);
+            polygon.DrawOn(page);
+        });
+        Assert.Contains("/Vertices [ 100 692 150 692 ]", raw);
+    }
+
+    // PDF/A-1 has the annotations of PDF 1.4 alone: veraPDF refused a
+    // polygon (ISO 19005-1, 6.5.2).
+    [Fact]
+    public void APolygonIsRefusedInPDFA1() {
+        foreach (Compliance compliance in new Compliance[] {Compliance.PDF_A_1A, Compliance.PDF_A_1B, Compliance.PDF_A_2B}) {
+            PDF pdf = new PDF(new MemoryStream(), compliance).SetTitle("Test");
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextLine(TestSupport.PlexSans(pdf), "Text").SetLocation(50f, 50f).DrawOn(page);
+            PolygonAnnotation polygon = new PolygonAnnotation().SetVertices(new float[] {0f, 0f, 50f, 0f, 25f, 40f});
+            polygon.SetLocation(100f, 100f);
+            polygon.SetContents("A polygon");
+            if (compliance == Compliance.PDF_A_2B) {
+                polygon.DrawOn(page);
+                pdf.Complete();
+            } else {
+                Exception e = Assert.Throws<InvalidOperationException>(() => polygon.DrawOn(page));
+                Assert.Contains("cannot have a polygon annotation", e.Message);
+            }
+        }
+    }
+
+    // A Figure in a composite text line was a kid of its P that the P's /K,
+    // written from its words, left out: no screen reader reached it.
+    [Fact]
+    public void AFigureInAParagraphDrawnWordByWordIsInItsK() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        string raw = Document(Compliance.PDF_UA_1, (pdf, page) => {
+            Font font = TestSupport.Helvetica(pdf);
+            CompositeTextLine line = new CompositeTextLine(50f, 100f);
+            line.AddComponent(new TextLine(font, "Rating: "));
+            TextLine stars = new TextLine(font, "***");
+            stars.SetStructureType(StructElem.FIGURE);
+            stars.SetAltDescription("three stars");
+            line.AddComponent(stars);
+            line.AddComponent(new TextLine(font, " of five"));
+            line.DrawOn(page);
+        });
+        Match figure = Regex.Match(raw, "(\\d+) 0 obj\n<<\n/Type /StructElem /S /Figure\n");
+        Assert.True(figure.Success, "no Figure");
+        // The heading is the marked content 0
+        string want = "/K [1 " + figure.Groups[1].Value + " 0 R 3]";
+        Assert.True(Regex.IsMatch(raw, "/S /P\n[^>]*" + Regex.Escape(want)), "no P of " + want);
+    }
 }
 }

@@ -711,4 +711,61 @@ class ReviewWriterTest {
         pdf.complete();
         assertFalse(TestSupport.latin1(bos.toByteArray()).contains("/Lang <"));
     }
+
+    // The /Vertices of a polygon read past the end of an odd number of values
+    // out of a container: Go panicked in complete and Swift trapped.
+    @Test
+    void aPolygonOfAnOddNumberOfValuesLeavesTheLastOut() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        String raw = document(Compliance.PDF_1_7, (pdf, page) -> {
+            PolygonAnnotation polygon = new PolygonAnnotation().setVertices(new float[] {0f, 0f, 50f, 0f, 25f});
+            polygon.setLocation(100f, 100f);
+            polygon.drawOn(page);
+        });
+        assertTrue(raw.contains("/Vertices [ 100 692 150 692 ]"), raw);
+    }
+
+    // PDF/A-1 has the annotations of PDF 1.4 alone: veraPDF refused a
+    // polygon (ISO 19005-1, 6.5.2).
+    @Test
+    void aPolygonIsRefusedInPDFA1() throws Exception {
+        for (Compliance compliance : new Compliance[] {Compliance.PDF_A_1A, Compliance.PDF_A_1B, Compliance.PDF_A_2B}) {
+            PDF pdf = new PDF(new ByteArrayOutputStream(), compliance).setTitle("Test");
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextLine(TestSupport.plexSans(pdf), "Text").setLocation(50f, 50f).drawOn(page);
+            PolygonAnnotation polygon = new PolygonAnnotation().setVertices(new float[] {0f, 0f, 50f, 0f, 25f, 40f});
+            polygon.setLocation(100f, 100f);
+            polygon.setContents("A polygon");
+            if (compliance == Compliance.PDF_A_2B) {
+                polygon.drawOn(page);
+                pdf.complete();
+            } else {
+                String message = fails(IllegalStateException.class, () -> polygon.drawOn(page));
+                assertTrue(message.contains("cannot have a polygon annotation"), message);
+            }
+        }
+    }
+
+    // A Figure in a composite text line was a kid of its P that the P's /K,
+    // written from its words, left out: no screen reader reached it.
+    @Test
+    void aFigureInAParagraphDrawnWordByWordIsInItsK() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        String raw = document(Compliance.PDF_UA_1, (pdf, page) -> {
+            Font font = TestSupport.helvetica(pdf);
+            CompositeTextLine line = new CompositeTextLine(50f, 100f);
+            line.addComponent(new TextLine(font, "Rating: "));
+            TextLine stars = new TextLine(font, "***");
+            stars.setStructureType(StructElem.FIGURE);
+            stars.setAltDescription("three stars");
+            line.addComponent(stars);
+            line.addComponent(new TextLine(font, " of five"));
+            line.drawOn(page);
+        });
+        Matcher figure = Pattern.compile("(\\d+) 0 obj\n<<\n/Type /StructElem /S /Figure\n").matcher(raw);
+        assertTrue(figure.find(), "no Figure");
+        // The heading is the marked content 0
+        String want = "/K [1 " + figure.group(1) + " 0 R 3]";
+        assertTrue(Pattern.compile("/S /P\n[^>]*" + Pattern.quote(want)).matcher(raw).find(), "no P of " + want);
+    }
 }

@@ -221,7 +221,7 @@ import Testing
         try memory.pdf.attachText("article-1.txt", "\u{0938}\u{092d}\u{0940} text")
         try memory.pdf.complete()
         let doc = TestSupport.latin1(memory.bytes)
-        #expect(doc.contains("/Subtype /text#2Fplain;#20charset=utf-8"), "the media type")
+        #expect(doc.contains("/Subtype /text#2Fplain\n"), "the media type, with no parameters for PDF/A-3")
         #expect(doc.contains("/AFRelationship /Source"), "the relationship")
         #expect(doc.contains("/AF ["), "an associated file")
         #expect(doc.contains("/Desc "), "the description")

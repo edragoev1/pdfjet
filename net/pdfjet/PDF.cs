@@ -1765,7 +1765,9 @@ public sealed class PDF {
             }
         } else if (annot.annotationType.Equals(Annotation.Polygon)) {
             Append("/Vertices [ ");
-            for (int i = 0; i < annot.vertices.Length; i += 2) {
+            // Whole pairs only: an odd last value, which is no vertex, is left out,
+            // as it is with a container and in the rectangle and the appearance.
+            for (int i = 0; i + 1 < annot.vertices.Length; i += 2) {
                 Append(annot.x1 + annot.vertices[i]);
                 Append(' ');
                 Append(annot.y1 - annot.vertices[i + 1]);
@@ -2703,9 +2705,10 @@ public sealed class PDF {
     /// <summary>
     /// Attaches the text, in UTF-8, as a file the document carries: an
     /// associated file of the relationship Source, of the media type
-    /// "text/plain; charset=utf-8". This is how a document whose text is drawn
-    /// as outlines, with Page.DrawGlyphs, which cannot be selected or
-    /// searched, carries its exact text for anyone who needs it: a reader
+    /// "text/plain". The encoding is told in the description, since PDF/A-3
+    /// takes a media type with no parameters. This is how a document whose
+    /// text is drawn as outlines, with Page.DrawGlyphs, which cannot be
+    /// selected or searched, carries its exact text for anyone who needs it: a reader
     /// shows the file beside the document. It is attached only when this is
     /// called. A document of PDF/A-1, which carries no files, or of PDF/A-2,
     /// which carries only documents of PDF/A, refuses it.
@@ -2728,7 +2731,7 @@ public sealed class PDF {
         }
         EmbeddedFile file = new EmbeddedFile(this, name,
                 new MemoryStream(Encoding.UTF8.GetBytes(text)), true,
-                "text/plain; charset=utf-8", Relationship.SOURCE, "The text of this document.");
+                "text/plain", Relationship.SOURCE, "The text of this document, in UTF-8.");
         return AddAssociatedFile(file);
     }
 

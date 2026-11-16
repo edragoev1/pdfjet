@@ -249,7 +249,7 @@ class DrawGlyphsTest {
         pdf.attachText("article-1.txt", "सभी text");
         pdf.complete();
         String doc = document(bos);
-        assertTrue(doc.contains("/Subtype /text#2Fplain;#20charset=utf-8"), "the media type");
+        assertTrue(doc.contains("/Subtype /text#2Fplain\n"), "the media type, with no parameters for PDF/A-3");
         assertTrue(doc.contains("/AFRelationship /Source"), "the relationship");
         assertTrue(doc.contains("/AF ["), "an associated file");
         assertTrue(doc.contains("/Desc "), "the description");

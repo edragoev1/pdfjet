@@ -3080,6 +3080,7 @@ public class Page {
             element.altDescription = altDescription;
             element.attributes = attributes;
             AddStructure(element, structParent);
+            AmongTheWords(element);
 
             Append("/");
             Append(structure.Type());
@@ -3095,6 +3096,16 @@ public class Page {
                 artifactDepth = markedContentDepth;
                 figure = element;
             }
+        }
+    }
+
+    // Puts the element, a kid of a paragraph drawn word by word, like the
+    // Figure of an image in a composite text line, among the words of the
+    // paragraph, whose /K lists its marked contents and its kids in the order
+    // they are drawn: it was left out, and read by no screen reader.
+    private void AmongTheWords(StructElement element) {
+        if (mcidParent != null && mcidParent == structParent) {
+            mcidParent.mcids.Add(-element.objNumber);
         }
     }
 
@@ -3429,6 +3440,7 @@ public class Page {
     internal StructElement BeginLink() {
         StructElement link = AddStructElement(structParent, StructElem.LINK, null);
         if (link != null) {
+            AmongTheWords(link);
             structElementStack.Add(structParent);
             structParent = link;
         }
@@ -3727,6 +3739,12 @@ public class Page {
         if (pdf.IsTagged() && buf is WrittenContent) {
             pdf.Fail(new InvalidOperationException("The page was already written to the PDF: "
                     + "draw on a page before creating the next page or completing the PDF."));
+        }
+        // PDF/A-1 has the annotations of PDF 1.4 alone, and the polygon came with
+        // PDF 1.5 (ISO 19005-1, 6.5.2): veraPDF refused the document.
+        if (annotation.annotationType.Equals(Annotation.Polygon) && pdf.IsPDFA1()) {
+            pdf.Fail(new InvalidOperationException("A document of " + pdf.compliance
+                    + " cannot have a polygon annotation: PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it."));
         }
         TransformAnnotation(annotation);
         if (annotation.hitSize > 0f) {

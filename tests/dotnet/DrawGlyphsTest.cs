@@ -240,7 +240,7 @@ public class DrawGlyphsTest {
         pdf.AttachText("article-1.txt", "सभी text");
         pdf.Complete();
         string doc = TestSupport.Latin1(bos.ToArray());
-        Assert.Contains("/Subtype /text#2Fplain;#20charset=utf-8", doc);   // The media type
+        Assert.Contains("/Subtype /text#2Fplain\n", doc);  // The media type, with no parameters for PDF/A-3
         Assert.Contains("/AFRelationship /Source", doc);                   // The relationship
         Assert.Contains("/AF [", doc);                                     // An associated file
         Assert.Contains("/Desc ", doc);                                    // The description

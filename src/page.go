@@ -2657,6 +2657,7 @@ func (page *Page) addBDC(
 		element.altDescription = altDescription
 		element.attributes = attributes
 		page.addStructure(element, page.structParent)
+		page.amongTheWords(element)
 
 		page.appendString("/")
 		page.appendString(string(structure))
@@ -2673,6 +2674,16 @@ func (page *Page) addBDC(
 			page.artifactDepth = page.markedContentDepth
 			page.figure = element
 		}
+	}
+}
+
+// amongTheWords puts the element, a kid of a paragraph drawn word by word,
+// like the Figure of an image in a composite text line, among the words of the
+// paragraph, whose /K lists its marked contents and its kids in the order
+// they are drawn: it was left out, and read by no screen reader.
+func (page *Page) amongTheWords(element *structElement) {
+	if parent := page.mcidParent; parent != nil && parent == page.structParent {
+		parent.mcids = append(parent.mcids, -element.objNumber)
 	}
 }
 
@@ -2986,6 +2997,7 @@ func (page *Page) addLinkBDC(
 func (page *Page) beginLink() *structElement {
 	link := page.addStructElement(page.structParent, structelem.Link, "")
 	if link != nil {
+		page.amongTheWords(link)
 		page.structElementStack = append(page.structElementStack, page.structParent)
 		page.structParent = link
 	}
@@ -3088,6 +3100,13 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 	// The element of an annotation of a tagged document is written with its
 	// page, and a page that was written has no place for it.
 	if page.pdf.isTagged() && !page.open() {
+		return
+	}
+	// PDF/A-1 has the annotations of PDF 1.4 alone, and the polygon came with
+	// PDF 1.5 (ISO 19005-1, 6.5.2): veraPDF refused the document.
+	if annotation.annotationType == annotationPolygon && page.pdf.isPDFA1() {
+		page.pdf.fail("A document of " + page.pdf.compliance.String() +
+			" cannot have a polygon annotation: PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.")
 		return
 	}
 	page.transformAnnotation(annotation)
