@@ -63,6 +63,14 @@ there is a way.
   it has that its empty numbers would pass the reader's budget (a 2 MB file
   numbered 2,000,000, say); such files took hundreds of bytes of memory a
   byte.
+- An image copied from an existing PDF into a PDF/A document is refused when
+  its filter is LZWDecode, Crypt or not standard, which PDF/A forbids; and
+  any copied image whose /Width, /Height, /BitsPerComponent, /ImageMask,
+  /SMaskInData or /Filter is not a valid value is refused, where it was
+  written as read.
+- SVG text: each of x, y, dx and dy comes from the closest text or tspan
+  that sets it, as browsers do; a tspan's dx replaced the text's instead of
+  adding to it.
 - Barcodes and PDF417 draw their bars with butt caps whatever the page's
   line cap, and charts draw their text upright whatever the page's text
   rotation; neither changes the page's settings any more.
@@ -606,6 +614,34 @@ tests in the four ports:
   rotation (above); `Arc.setStartPointToEndOf` with two radii starts the arc
   at the end of a slanted line; a Swift chart of a size past the range of
   Int records its error, where it crashed.
+
+Fixed, from the third review of 9.1.9 (16 November 2026), each with tests in
+the four ports:
+
+- **SVG:** path data used again (the d of a path, the points of a polyline)
+  counts a quarter of its characters against the limit on attributes read
+  again, added in this release, so a detailed symbol or clip path reused a
+  thousand times is drawn again; path data padded to fool it is still
+  refused. Text x, y, dx and dy as browsers place them (above).
+- **Images copied from PDFs:** the PDF/A filter check and the checked values
+  (above); /Width, /Height, /BitsPerComponent and /ImageMask in objects of
+  their own are read from them, where the object number was written; a
+  JPEG 2000 image's /SMaskInData is copied, so it keeps its transparency
+  (and PDF/A-1 refuses it, as a soft mask).
+- **Reading:** Swift finds a /Filter or /DecodeParms in an object stream for
+  a stream whose /Length is in one too, as the other ports.
+- **Fonts:** callsubr and callgsubr in a CFF glyph, and Swift's put and get,
+  compare their number before making it an integer, so a NaN or a fraction
+  below 0 is a damaged glyph on every processor; Java and C# compute GPOS
+  MarkToMark anchors in 64 bits, where a large class count wrapped round.
+- **PNG:** the four ports check the image data right after the bytes an image
+  needs as zlib does, so they accept and refuse the same damaged PNGs; Swift
+  reads a stored block cut short after them.
+- **BigTable:** with setWrapText, a first row that fits only a new page starts
+  the table there, header and all, where the setFirstPage page was left
+  with the header alone.
+- **Tagged PDF:** a Figure text line that a TextFrame or TextColumn wraps is
+  one Figure, its alternative description read once.
 
 ## v9.1.7 — 2026-11-05
 
