@@ -196,6 +196,64 @@ class Review919Test {
         }
     }
 
+    // put, get, callsubr and callgsubr compare their operands as numbers before
+    // integers, as index and roll: -0.5 is no storage index 0, and NaN or
+    // -107.5 (the bias of the 256 local subroutines of IBM Plex Sans, less 0.5)
+    // is no subroutine, in the four ports alike and on every processor.
+    @Test
+    void aCFFStorageOrSubroutineOperandNotAnIntegerIsRefused() throws Exception {
+        byte[] minusHalf = {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0x80, 0x00};  // -0.5 in 16.16
+        // NaN as 32767, dup mul seven times (inf), dup sub
+        ByteArrayOutputStream nanBytes = new ByteArrayOutputStream();
+        nanBytes.write(new byte[] {0x1C, 0x7F, (byte) 0xFF}, 0, 3);
+        for (int k = 0; k < 7; k++) {
+            nanBytes.write(new byte[] {0x0C, 0x1B, 0x0C, 0x18}, 0, 4);
+        }
+        nanBytes.write(new byte[] {0x0C, 0x1B, 0x0C, 0x0B}, 0, 4);
+        byte[] nan = nanBytes.toByteArray();
+        byte[] moveTo = {(byte) 0x8B, (byte) 0x8B, 0x15};  // 0 0 rmoveto
+        Map<String, byte[]> ops = new LinkedHashMap<String, byte[]>();
+        ops.put("put -0.5", concat(new byte[] {(byte) 0x8C}, minusHalf, new byte[] {0x0C, 0x14}, moveTo));
+        ops.put("get -0.5", concat(moveTo, minusHalf, new byte[] {0x0C, 0x15, 0x0C, 0x12}));
+        ops.put("callsubr NaN", concat(nan, new byte[] {0x0A}, moveTo));
+        ops.put("callgsubr NaN", concat(nan, new byte[] {0x1D}, moveTo));
+        // 0 0 rmoveto -107.5 callsubr rlineto: local subroutine 0 gives 4 numbers
+        ops.put("callsubr -107.5", concat(moveTo,
+                new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0x94, (byte) 0x80, 0x00, 0x0A, 0x05}));
+        for (Map.Entry<String, byte[]> op : ops.entrySet()) {
+            byte[] cs = concat(op.getValue(), new byte[] {0x0E});   // endchar
+            final GlyphOutline outline = cffOutlineWithCharString(cs);
+            assertThrows(IllegalArgumentException.class, () -> outline.outline(1), op.getKey());
+        }
+    }
+
+    // MarkToMark computes where the anchor of a pair is in 64 bits: m2*classCount
+    // passed the int and wrapped round to an anchor inside the table, where Go
+    // and Swift read past the table and skip the pair. The table: classCount
+    // 65535, the mark glyph 40000 on the marks 0 to 32769, and at mark2Array +
+    // 65536, where m2 = 32769 wrapped round to, an anchor offset of 200.
+    @Test
+    void gposMarkToMarkOfAClassCountTooLargeDoesNotWrapRound() {
+        int mark2Array = 62;
+        byte[] table = new byte[mark2Array + 65536 + 2];
+        byte[] head = {
+            0, 1, 0, 0, 0, 0, 0, 0, 0, 10,  // The header: version 1.0, lookup list at 10
+            0, 1, 0, 4,  // Lookup list: one lookup, at 14
+            0, 6, 0, 0, 0, 1, 0, 8,  // Mark to mark lookup: one subtable, at 22
+            0, 1, 0, 12, 0, 18, (byte) 0xFF, (byte) 0xFF, 0, 28, 0, 40,  // Mark to mark at 22
+            0, 1, 0, 1, (byte) 0x9C, 0x40,  // Mark1 coverage: glyph 40000
+            0, 2, 0, 1, 0, 0, (byte) 0x80, 0x01, 0, 0,  // Mark2 coverage: glyphs 0 to 32769
+            0, 1, 0, 0, 0, 6, 0, 1, 0, 0, 0, 0,  // Mark1 array: class 0, anchor 0, 0
+        };
+        System.arraycopy(head, 0, table, 0, head.length);
+        table[mark2Array + 200 + 1] = 1;    // An anchor of 100, 50
+        table[mark2Array + 200 + 3] = 100;
+        table[mark2Array + 200 + 5] = 50;
+        table[mark2Array + 65536 + 1] = (byte) 200;
+        GPOS gpos = GPOS.of(table, 0, table.length, 0, false).read();
+        assertEquals(0, gpos.markToMarkOffsets.size(), "the anchor of mark 32769 wrapped round");
+    }
+
     // A position of a glyph not finite, or far off the page, is an error, not
     // a number of no meaning in the content.
     @Test
