@@ -910,7 +910,7 @@ public class SVGImageTest {
     public void ManyGradientsOfOneGradientOfManyStopsAreReadOnce() {
         const int count = 5000;
         var svgs = new System.Collections.Generic.Dictionary<int, string>();
-        foreach (int n in new int[] {count, 2*count}) {
+        foreach (int n in new int[] {count, 4*count}) {
             StringBuilder svg = new StringBuilder("<svg width=\"10\" height=\"10\"><linearGradient id=\"s\">");
             for (int i = 0; i < n; i++) {
                 svg.Append("<stop stop-color=\"red\"/>");

@@ -308,13 +308,15 @@ public static class TestSupport {
         return shortest;
     }
 
-    // Checks that the work of size 2n takes less than 3.8 times
-    // the work of size n, each the shortest of three runs: the time of a linear
-    // algorithm doubles, and that of a quadratic one, whose time dominates at n,
-    // comes near four times. A ratio holds on a busy computer, where limits in
-    // seconds failed (CI, 30 October 2026); the sizes are timed in turns, and all
+    // Checks that the work of size 4n takes less than 8 times the work of
+    // size n, each the shortest of three runs: the time of a linear algorithm
+    // grows 4 times, and that of a quadratic one, whose time dominates at n,
+    // near 16 times. A ratio holds on a busy computer, where limits in seconds
+    // failed (CI, 30 October 2026); the sizes are timed in turns, and all
     // again up to three times, as load can fall on one of them only, where a
-    // quadratic algorithm fails every time.
+    // quadratic algorithm fails every time. It compared 2n with n under 3.8
+    // until 16 November 2026, which a GitHub runner's noise passed now and
+    // then (64 ms against 15), as a quadratic algorithm's 4 is near it.
     public static void AssertLinearTime(int n, Action<int> work) {
         long small = 0L;
         long large = 0L;
@@ -326,15 +328,15 @@ public static class TestSupport {
                 work(n);
                 small = Math.Min(small, watch.ElapsedTicks);
                 watch.Restart();
-                work(2*n);
+                work(4*n);
                 large = Math.Min(large, watch.ElapsedTicks);
             }
-            if (5L*large < 19L*small) {
+            if (large < 8L*small) {
                 return;
             }
         }
         long perMillisecond = System.Diagnostics.Stopwatch.Frequency/1000L;
-        Assert.Fail("size " + 2*n + " took " + large/perMillisecond + " ms, and size " + n + " " + small/perMillisecond + " ms");
+        Assert.Fail("size " + 4*n + " took " + large/perMillisecond + " ms, and size " + n + " " + small/perMillisecond + " ms");
     }
 }
 

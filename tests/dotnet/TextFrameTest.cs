@@ -729,7 +729,7 @@ public class TextFrameTest {
         Markup markup = new Markup(font, font, font, font, font);
         var paragraphs = new Dictionary<int, Paragraph> {
             {letters, markup.Paragraph("**" + new String('x', letters) + "**y")},
-            {2*letters, markup.Paragraph("**" + new String('x', 2*letters) + "**y")},
+            {4*letters, markup.Paragraph("**" + new String('x', 4*letters) + "**y")},
         };
         TestSupport.AssertLinearTime(letters, n => {
             new TextFrame(new List<Paragraph> {paragraphs[n]}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(null);
@@ -742,7 +742,7 @@ public class TextFrameTest {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         const int words = 100000;
-        String text = new System.Text.StringBuilder().Insert(0, "word ", 2*words).ToString();
+        String text = new System.Text.StringBuilder().Insert(0, "word ", 4*words).ToString();
         TestSupport.AssertLinearTime(words, n => {
             TextLine line = new TextLine(font, text.Substring(0, 5*n));
             TextFrame frame = new TextFrame(new List<Paragraph> {new Paragraph().Add(line)})
