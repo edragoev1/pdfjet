@@ -80,8 +80,15 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
   run, with no reload and nothing moving; .ttf, which every library reads,
   is the default. A library that cannot embed an .otf of CFF outlines shows
   "not supported" in the .otf view, checked by a real run and its
-  documentation, never assumed. The same toggle on pdfjet.com/benchmarks,
-  its wording approved first. Not published until then.
+  documentation, never assumed. Beside the checkbox, one quiet line for
+  readers new to it (".ttf and .otf are two formats of the same fonts;
+  PDFjet carries .otf, whose embedded subsets are smaller; every library
+  reads .ttf") and a short "how" for those who know fonts (CFF outlines
+  cubic and compact, PDFjet's subsets without subroutines, which libraries
+  embed .otf whole or not at all): the owner, 16 November 2026, "more
+  interesting for developers that know something about fonts". The same
+  toggle on pdfjet.com/benchmarks, its wording approved first. Not
+  published until then.
 
 - ✅ **DONE 15 November 2026, in 9.1.9, not after it (pdfjet d3a58f4b4): the
   32 business documents of PDFjet Forms as examples 53 to 84, and labels as
