@@ -518,6 +518,31 @@ where it went, as Go's `TestMarkOffsets` checks against the code it
 replaced, and the four ports write the same pages of random Latin, Hebrew,
 Arabic and Thai marks. The 16,000 marks take 0.01 s.
 
+Fixed, in the four ports, from the review of 9.1.9 (16 November 2026):
+
+- **A .ttf added to an existing PDF** (`new Font(objects, stream)`) and
+  subset drew the wrong glyphs: since its subset is numbered again (above),
+  its CIDFont needs the `CIDToGIDMap` a new PDF writes, and it said
+  `/Identity`. It now writes the map; a font kept whole keeps `/Identity`.
+  9.1.7 is not affected.
+- **The outlines `drawGlyphs` reads from a font are bounded.** A TrueType
+  composite glyph of many parts, nested 16 deep, took time that grew
+  exponentially; the glyphs and points one glyph reads are now bounded, as
+  the work of a CFF charstring is. A point past 1,000,000 units or not a
+  finite number, a FontMatrix entry past 1,000, and the charstring operators
+  `index`, `roll`, `put` and `get` with an operand out of range are a damaged
+  glyph, an error, alike in the four ports and on every processor, where Go
+  wrote numbers of no meaning into the page and Swift stopped.
+- **`drawGlyphs` takes positions between -1,000,000 and 1,000,000 points
+  and a font size of more than 0 and at most 10,000 points;** others are an
+  error.
+- **Drawing on a page of an existing PDF that has no content** wrote a
+  content stream that began with `Q`, restoring a graphics state never
+  saved; it now begins with `q`.
+- Swift: a font whose table directory names a table with a byte past 127,
+  such as `0xE8 "ead"`, was read as `head` and stopped Swift; it is a table
+  of an unknown name, as in the other ports.
+
 ## v9.1.7 — 2026-11-05
 
 The next release, with PDFjet Pro's 9.1.7 (TODO.md).
