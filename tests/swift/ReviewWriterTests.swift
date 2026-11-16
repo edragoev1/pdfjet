@@ -655,6 +655,46 @@ import Testing
                 .contains { $0.prefix(while: { $0 != ">" }).contains(want) }, "no P of \(want)")
     }
 
+    /// A paragraph with a Figure text line that wraps across the rows of a
+    /// narrow TextFrame or TextColumn.
+    private func wrappedFigureParagraph(_ font: Font) -> Paragraph {
+        let stars = TextLine(font, "starstarstar starstarstar starstarstar starstarstar")
+        _ = stars.setStructureType(StructElem.FIGURE)
+        _ = stars.setAltDescription("three stars")
+        return Paragraph()
+                .add(TextLine(font, "Rating words before the figure "))
+                .add(stars)
+                .add(TextLine(font, " of five and more words after it"))
+    }
+
+    /// A Figure text line that wraps across rows was a Figure for each row, or
+    /// each word, each with the description of the whole line, which a screen
+    /// reader read again for each.
+    @Test(arguments: ["TextFrame", "TextColumn"])
+    func aFigureThatWrapsIsOneFigure(_ name: String) throws {
+        let raw = try document(Compliance.PDF_UA_1) { pdf, page in
+            let paragraph = wrappedFigureParagraph(TestSupport.helvetica(pdf))
+            if name == "TextFrame" {
+                let frame = TextFrame([paragraph]).setWidth(150)
+                _ = frame.setLocation(50, 100)
+                _ = frame.drawOn(page)
+            } else {
+                let column = TextColumn().addParagraph(paragraph)
+                _ = column.setLocation(50, 100)
+                _ = column.setWidth(150)
+                _ = column.drawOn(page)
+            }
+        }
+        let figure = try #require(raw.firstMatch(
+                of: /(\d+) 0 obj\n<<\n\/Type \/StructElem \/S \/Figure\n[^>]*\/K \[\d+ \d+/),
+                "no Figure of the marked contents of its pieces")
+        #expect(raw.components(separatedBy: "/S /Figure\n").count == 2, "more than one Figure")
+        let k = try #require(raw.firstMatch(of: /\/S \/P\n[^>]*\/K \[([^\]]*)\]/), "no P")
+        let kids = " \(k.1) "
+        let reference = " \(figure.1) 0 R "
+        #expect(kids.components(separatedBy: reference).count == 2, "the Figure is not once in the P's /K: \(kids)")
+    }
+
     /// Two names of destinations that are canonically equivalent, as é and
     /// e with its accent, are two destinations, as in the other ports: a
     /// dictionary of Swift strings made them one, and the link to the second

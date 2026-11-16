@@ -62,6 +62,9 @@ public class TextLine implements BaselineDrawable {
     private String uriAltDescription = null;
 
     private StructElem structureType = StructElem.P;
+    // The text line this one is a piece of, drawn row by row or word by word
+    // in a TextFrame or TextColumn, or null: the pieces of a Figure are one.
+    private TextLine pieceOf = null;
 
 
     /**
@@ -657,6 +660,7 @@ public class TextLine implements BaselineDrawable {
         textLine.uriActualText = uriActualText;
         textLine.uriAltDescription = uriAltDescription;
         textLine.structureType = structureType;
+        textLine.pieceOf = (pieceOf != null) ? pieceOf : this;
         return textLine;
     }
 
@@ -693,7 +697,9 @@ public class TextLine implements BaselineDrawable {
         if (!Util.isEmpty(uri) || !Util.isEmpty(key)) {
             link = page.addLinkBDC(structureType, language, null, alt);
         } else {
+            page.pieceOf = pieceOf;
             page.addBDC(structureType, language, null, alt);
+            page.pieceOf = null;
         }
         page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.addEMC();

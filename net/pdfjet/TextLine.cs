@@ -52,6 +52,9 @@ public class TextLine : IBaselineDrawable {
     private String uriAltDescription = null;
 
     private StructElem structureType = StructElem.P;
+    // The text line this one is a piece of, drawn row by row or word by word
+    // in a TextFrame or TextColumn, or null: the pieces of a Figure are one.
+    private TextLine pieceOf = null;
 
     /// <summary>
     /// Constructor for creating text line objects.
@@ -523,6 +526,7 @@ public class TextLine : IBaselineDrawable {
         textLine.uriActualText = uriActualText;
         textLine.uriAltDescription = uriAltDescription;
         textLine.structureType = structureType;
+        textLine.pieceOf = pieceOf ?? this;
         return textLine;
     }
 
@@ -557,7 +561,9 @@ public class TextLine : IBaselineDrawable {
         if (!String.IsNullOrEmpty(uri) || !String.IsNullOrEmpty(key)) {
             link = page.AddLinkBDC(structureType, language, null, alt);
         } else {
+            page.pieceOf = pieceOf;
             page.AddBDC(structureType, language, null, alt);
+            page.pieceOf = null;
         }
         page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.AddEMC();

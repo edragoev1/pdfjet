@@ -145,6 +145,12 @@ type Page struct {
 	// The figure AddBDC began last, whose bounding box SetFigureBoundingBox
 	// sets, or nil.
 	figure *structElement
+	// The text line that the text line being drawn is a piece of, or nil; and
+	// the text line of the Figure that AddBDC made last, with the Figure. See
+	// figurePiece.
+	pieceOf      *TextLine
+	pieces       *TextLine
+	piecesFigure *structElement
 
 	// The transform of the containers that what is drawn is in, which moves,
 	// turns and scales it with its cm operators, or nil outside of one: a
@@ -2665,6 +2671,9 @@ func (page *Page) addBDC(
 			page.appendString("BDC\n")
 			return
 		}
+		if structure == structelem.Figure && page.figurePiece() {
+			return
+		}
 		element := newStructElement()
 		element.structure = string(structure)
 		element.mcid = page.mcid
@@ -2689,8 +2698,38 @@ func (page *Page) addBDC(
 		if structure == structelem.Figure {
 			page.artifactDepth = page.markedContentDepth
 			page.figure = element
+			page.pieces, page.piecesFigure = page.pieceOf, element
 		}
 	}
+}
+
+// figurePiece begins the marked content of a piece of a Figure text line that
+// a TextFrame or TextColumn draws in rows, or word by word, as one more of
+// the Figure of the piece drawn just before it in the paragraph, and returns
+// true; or false when it is the first piece. A figure is one element whose
+// description a screen reader reads once: each piece was a Figure of its own,
+// with the description of the whole line again.
+func (page *Page) figurePiece() bool {
+	figure := page.piecesFigure
+	parent := page.mcidParent
+	if page.pieceOf == nil || page.pieces != page.pieceOf || figure == nil ||
+		parent == nil || parent != page.structParent || figure.parent != parent ||
+		len(parent.mcids) == 0 || parent.mcids[len(parent.mcids)-1] != -figure.objNumber {
+		return false
+	}
+	if figure.mcid >= 0 {
+		figure.mcids = append(figure.mcids, figure.mcid)
+		figure.mcid = -1
+	}
+	figure.mcids = append(figure.mcids, page.mcid)
+	page.appendString("/Figure <</MCID ")
+	page.appendInteger(page.mcid)
+	page.mcid++
+	page.appendString(">>\n")
+	page.appendString("BDC\n")
+	page.artifactDepth = page.markedContentDepth
+	page.figure = figure
+	return true
 }
 
 // amongTheWords puts the element, a kid of a paragraph drawn word by word,

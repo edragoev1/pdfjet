@@ -769,3 +769,57 @@ func TestWriterAFigureInAParagraphDrawnWordByWordIsInItsK(t *testing.T) {
 		t.Errorf("no P of %s", want)
 	}
 }
+
+// testWrappedFigureParagraph returns a paragraph with a Figure text line that
+// wraps across the rows of a narrow TextFrame or TextColumn.
+func testWrappedFigureParagraph(font *Font) *Paragraph {
+	stars := NewTextLine(font, "starstarstar starstarstar starstarstar starstarstar")
+	stars.SetStructureType(structelem.Figure)
+	stars.SetAltDescription("three stars")
+	return NewParagraph().
+		Add(NewTextLine(font, "Rating words before the figure ")).
+		Add(stars).
+		Add(NewTextLine(font, " of five and more words after it"))
+}
+
+func TestWriterAFigureThatWrapsIsOneFigure(t *testing.T) {
+	// A Figure text line that wraps across rows was a Figure for each row,
+	// or each word, each with the description of the whole line, which a
+	// screen reader read again for each.
+	testAllowCoreFonts(t)
+	for _, name := range []string{"TextFrame", "TextColumn"} {
+		var figures []*structElement
+		raw := testWriterDoc(t, compliance.PDF_UA_1, func(pdf *PDF, page *Page) {
+			paragraph := testWrappedFigureParagraph(testHelvetica(pdf))
+			if name == "TextFrame" {
+				frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(150)
+				frame.SetLocation(50, 100)
+				frame.DrawOn(page)
+			} else {
+				column := NewTextColumn().AddParagraph(paragraph)
+				column.SetLocation(50, 100)
+				column.SetWidth(150)
+				column.DrawOn(page)
+			}
+			for _, element := range page.structures {
+				if element.structure == string(structelem.Figure) {
+					figures = append(figures, element)
+				}
+			}
+		})
+		if len(figures) != 1 {
+			t.Fatalf("%s: %d Figures", name, len(figures))
+		}
+		figure := figures[0]
+		if len(figure.mcids) < 2 {
+			t.Errorf("%s: the Figure has %d marked contents", name, len(figure.mcids))
+		}
+		if n := strings.Count(raw, "/S /Figure"); n != 1 {
+			t.Errorf("%s: %d Figures written", name, n)
+		}
+		k := regexp.MustCompile(`/S /P\n[^>]*/K \[([^\]]*)\]`).FindStringSubmatch(raw)
+		if k == nil || strings.Count(" "+k[1]+" ", " "+strconv.Itoa(figure.objNumber)+" 0 R") != 1 {
+			t.Errorf("%s: the Figure is not once in the P's /K: %q", name, k)
+		}
+	}
+}
