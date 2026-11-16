@@ -107,6 +107,23 @@ class FontWriter {
         pdf.endObj();
     }
 
+    // The CIDToGIDMap of a TrueType subset (ISO 32000-1, 9.7.4.2): for each
+    // CID, the number of the glyph in the font, two bytes, high byte first,
+    // the number of the glyph in the subset, in which the glyphs kept are
+    // numbered in their order, from 0; 0 for a glyph not kept.
+    static byte[] cidToGIDMap(boolean[] kept) {
+        byte[] map = new byte[2 * kept.length];
+        int gid = 0;
+        for (int cid = 0; cid < kept.length; cid++) {
+            if (kept[cid]) {
+                map[2 * cid] = (byte) (gid >> 8);
+                map[2 * cid + 1] = (byte) gid;
+                gid++;
+            }
+        }
+        return map;
+    }
+
     // Writes the CID font with the name given, which is the font's own, or
     // that of a subset, whose widths are those of the glyphs it keeps.
     static void addCIDFontDictionaryObject(PDF pdf, Font font, String baseFont, boolean[] kept) throws IOException {
@@ -115,6 +132,15 @@ class FontWriter {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;
                 return;
             }
+        }
+
+        // The map of a TrueType subset, whose glyphs are numbered again,
+        // from the CIDs, their numbers in the whole font, to their numbers in
+        // the subset; a whole font is mapped by /Identity
+        int cidToGIDMap = 0;
+        if (!font.cff && kept != null) {
+            addCompressedStream(pdf, cidToGIDMap(kept));
+            cidToGIDMap = pdf.getObjNumber();
         }
 
         pdf.newObj();
@@ -156,7 +182,13 @@ class FontWriter {
         pdf.append(widthsArray(font, kept));
         pdf.append('\n');
 
-        pdf.append("/CIDToGIDMap /Identity\n");
+        if (cidToGIDMap != 0) {
+            pdf.append("/CIDToGIDMap ");
+            pdf.append(cidToGIDMap);
+            pdf.append(" 0 R\n");
+        } else {
+            pdf.append("/CIDToGIDMap /Identity\n");
+        }
         pdf.append(">>\n");
         pdf.endObj();
 

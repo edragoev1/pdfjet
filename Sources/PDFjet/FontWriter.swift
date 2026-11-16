@@ -219,12 +219,36 @@ class FontWriter {
 
     // Writes the CID font with the name given, which is the font's own, or
     // that of a subset, whose widths are those of the glyphs it keeps.
+    // The CIDToGIDMap of a TrueType subset (ISO 32000-1, 9.7.4.2): for each
+    // CID, the number of the glyph in the font, two bytes, high byte first,
+    // the number of the glyph in the subset, in which the glyphs kept are
+    // numbered in their order, from 0; 0 for a glyph not kept.
+    static func cidToGIDMap(_ kept: [Bool]) -> [UInt8] {
+        var map = [UInt8](repeating: 0, count: 2 * kept.count)
+        var gid = 0
+        for cid in 0..<kept.count where kept[cid] {
+            map[2 * cid] = UInt8(truncatingIfNeeded: gid >> 8)
+            map[2 * cid + 1] = UInt8(truncatingIfNeeded: gid)
+            gid += 1
+        }
+        return map
+    }
+
     static func addCIDFontDictionaryObject(_ pdf: PDF, _ font: Font, _ baseFont: String, _ kept: [Bool]?) {
         for f in pdf.fonts {
             if f.cidFontDictObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber
                 return
             }
+        }
+
+        // The map of a TrueType subset, whose glyphs are numbered again,
+        // from the CIDs, their numbers in the whole font, to their numbers in
+        // the subset; a whole font is mapped by /Identity
+        var mapObjNumber = 0
+        if !font.cff, let kept = kept {
+            addCompressedStream(pdf, cidToGIDMap(kept))
+            mapObjNumber = pdf.getObjNumber()
         }
 
         pdf.newObj()
@@ -260,7 +284,13 @@ class FontWriter {
         pdf.append(widthsArray(font, kept))
         pdf.append(Token.newline)
 
-        pdf.append("/CIDToGIDMap /Identity\n")
+        if mapObjNumber != 0 {
+            pdf.append("/CIDToGIDMap ")
+            pdf.append(mapObjNumber)
+            pdf.append(" 0 R\n")
+        } else {
+            pdf.append("/CIDToGIDMap /Identity\n")
+        }
         pdf.append(Token.endDictionary)
         pdf.endObj()
 

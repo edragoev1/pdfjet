@@ -23,8 +23,9 @@ under "In detail". In the four ports, Java, C#, Go and Swift, unless said.
   `setTopLine(false)`, and corners closed as a `Table` closes them.
 - **Smaller PDFs.** An .otf is embedded as a subset of the glyphs drawn
   alone, without subroutines: a page of code in Cascadia Mono is 16.9 KB in
-  place of 208.8 KB. A .ttf subset ends at the last glyph it keeps: a
-  12-page statement in Noto Sans is 31% smaller, in IBM Plex Sans 14%. A
+  place of 208.8 KB. A .ttf subset has the glyphs drawn alone, numbered
+  again, which a CIDToGIDMap maps the PDF's glyph numbers to: a notice in
+  eight languages in Noto Sans is 42% smaller, in IBM Plex Sans 8%. A
   `Table` writes its borders as continuous lines, and a `BigTable` no text
   for an empty field: a long table is 4 to 5% smaller. Links to one address
   share one action.
@@ -63,8 +64,9 @@ there is a way.
 - A `BigTable` closes the corners of its lines, by half the width of the
   pen; it writes no text for an empty field, and strokes the lines of a
   page as one path, the look otherwise the same.
-- A subset of a .ttf ends at the last glyph it keeps; the glyph numbers, the
-  content streams, the widths and the ToUnicode map are as before.
+- A subset of a .ttf has the glyphs drawn alone, numbered again, and its
+  CIDFont a `CIDToGIDMap` stream in place of `/Identity`; the content
+  streams, the widths and the ToUnicode map are as before.
 - The links to one address share one action: `/A n 0 R` in place of the
   action in each link.
 - In `Markdown`, a heading stays with the table under it, over a short
@@ -113,16 +115,26 @@ program that wants each cell's own lines, as before, byte for byte, calls
 `table.setJoinedBorders(false)` (C# and Go `SetJoinedBorders(false)`).
 
 Changed, in the four ports, in the bytes and not the look: **a subset of a
-TrueType font (.ttf) ends at the last glyph it keeps.** A subset kept every
-glyph number of the font, the outlines of the glyphs not drawn emptied, and
-its loca and hmtx tables an entry for each: 4,503 of them for Noto Sans,
-1,019 for IBM Plex Sans, whatever the page drew. The glyphs after the last
-one kept are now left out of the maxp, loca and hmtx tables, and of the
-hhea table's count of the metrics; the glyph numbers, the content streams,
-the widths and the ToUnicode map are as before. A 12-page statement in Noto
-Sans is 31% smaller (63.3 to 43.7 KB), in IBM Plex Sans 14% (50.6 to 43.6
-KB). The CIDSet of a PDF/A-1 document, a bit for each glyph number, ends
-there too.
+TrueType font (.ttf) has the glyphs drawn alone, numbered again.** A subset
+kept every glyph number of the font, the outlines of the glyphs not drawn
+emptied, and its loca and hmtx tables an entry for each: 4,503 of them for
+Noto Sans, 1,019 for IBM Plex Sans, whatever the page drew. It now has the
+glyphs kept alone, numbered from 0 in the order of their numbers in the
+font, a composite glyph's parts named by their new numbers, and the maxp,
+hhea, loca and hmtx tables made for them; the CIDFont maps the PDF's glyph
+numbers, its CIDs, to them with a `CIDToGIDMap` stream (ISO 32000-1,
+9.7.4.2) in place of `/Identity`. The content streams, the widths, the
+ToUnicode map and the CIDSet of a PDF/A-1 document are of the glyph numbers
+of the font, as before; the CIDSet ends at the last glyph kept. A notice in
+eight languages, Greek and Cyrillic among them, is 42% smaller in Noto Sans
+(36.9 to 21.5 KB), whose letters of those scripts have numbers in the
+thousands, and 8% in IBM Plex Sans (28.6 to 26.2 KB). A page whose glyphs
+all have low numbers is a few dozen bytes larger, the map's own object: an
+invoice in IBM Plex Sans, 40 bytes of 22 KB. Poppler and MuPDF draw the
+pages as before, pixel for pixel, and veraPDF passes PDF/A-1b, 2b, 3b and
+PDF/UA-1 documents of them; a .otf subset is as before. For example, the
+CIDFont of a .ttf subset wrote `/CIDToGIDMap /Identity`; it now writes
+`/CIDToGIDMap 9 0 R`.
 
 Changed, in the four ports, in the bytes and not the look: **a `BigTable`
 writes no text for an empty field, and strokes the lines of a page as one

@@ -73,6 +73,28 @@ class SubsetTest {
         return Arrays.copyOfRange(font, glyf + start, glyf + end);
     }
 
+    // The glyph numbers of the parts of a composite glyph, in their order.
+    private static java.util.List<Integer> components(byte[] glyph) {
+        java.util.List<Integer> parts = new java.util.ArrayList<Integer>();
+        int at = 10;
+        while (true) {
+            int flags = u16(glyph, at);
+            parts.add(u16(glyph, at + 2));
+            at += 4;
+            at += (flags & 0x0001) != 0 ? 4 : 2;
+            if ((flags & 0x0008) != 0) {
+                at += 2;
+            } else if ((flags & 0x0040) != 0) {
+                at += 4;
+            } else if ((flags & 0x0080) != 0) {
+                at += 8;
+            }
+            if ((flags & 0x0020) == 0) {
+                return parts;
+            }
+        }
+    }
+
     private static boolean[] used(int... gids) {
         boolean[] used = new boolean[0x10000];
         for (int gid : gids) {
@@ -92,20 +114,44 @@ class SubsetTest {
         assertEquals(1, u16(ttf, table(ttf, "head") + 50));
         boolean[][] kept = new boolean[1][];
         byte[] subset = Subset.subsetTrueType(ttf, used(16, 229), kept);
-        // The subset ends at the last glyph kept, 3051, of the 4,319.
+        // kept is of the numbers in the font, up to the last glyph kept, 3051.
         assertEquals(3052, kept[0].length);
         Set<Integer> want = new HashSet<Integer>(Arrays.asList(0, 16, 1, 3051, 229, 225, 3029, 3020));
         for (int gid = 0; gid < kept[0].length; gid++) {
             assertEquals(want.contains(gid), kept[0][gid], "glyph " + gid);
-            byte[] glyph = glyph(subset, gid);
-            if (kept[0][gid]) {
-                // The glyph as it was, padded to four bytes.
-                byte[] whole = glyph(ttf, gid);
-                assertArrayEquals(whole, Arrays.copyOf(glyph, whole.length), "glyph " + gid);
-                assertTrue(glyph.length - whole.length < 4);
+        }
+        // The glyphs kept, numbered again in their order: 0, 1, 16, 225, 229,
+        // 3020, 3029 and 3051 are 0 to 7 in the subset, which has those alone.
+        int[] olds = {0, 1, 16, 225, 229, 3020, 3029, 3051};
+        assertEquals(olds.length, u16(subset, table(subset, "maxp") + 4));
+        assertEquals(olds.length, u16(subset, table(subset, "hhea") + 34));
+        assertEquals(4 * olds.length, u32(subset, entry(subset, "hmtx") + 12));
+        int metrics = u16(ttf, table(ttf, "hhea") + 34);
+        for (int n = 0; n < olds.length; n++) {
+            int old = olds[n];
+            byte[] whole = glyph(ttf, old);
+            byte[] glyph = glyph(subset, n);
+            assertTrue(glyph.length - whole.length >= 0 && glyph.length - whole.length < 4, "glyph " + old);
+            if (old == 16 || old == 229) {
+                // A composite glyph, its parts named by their new numbers:
+                // Ä of A (1) and the dieresis (3051), 1 and 7; ặ of a (225),
+                // the dot below (3029) and the breve (3020), 3, 6 and 5.
+                int[] parts = old == 16 ? new int[] {1, 7} : new int[] {3, 6, 5};
+                java.util.List<Integer> found = components(glyph);
+                assertEquals(parts.length, found.size(), "glyph " + old);
+                for (int part : parts) {
+                    assertTrue(found.contains(part), "glyph " + old + ": " + found);
+                }
             } else {
-                assertEquals(0, glyph.length, "glyph " + gid);
+                // The glyph as it was, padded to four bytes.
+                assertArrayEquals(whole, Arrays.copyOf(glyph, whole.length), "glyph " + old);
             }
+            // Its advance and left side bearing as they were
+            int advance = u16(ttf, table(ttf, "hmtx") + 4 * Math.min(old, metrics - 1));
+            int lsb = old < metrics ? u16(ttf, table(ttf, "hmtx") + 4 * old + 2)
+                    : u16(ttf, table(ttf, "hmtx") + 4 * metrics + 2 * (old - metrics));
+            assertEquals(advance, u16(subset, table(subset, "hmtx") + 4 * n), "the advance of glyph " + old);
+            assertEquals(lsb, u16(subset, table(subset, "hmtx") + 4 * n + 2), "the side bearing of glyph " + old);
         }
         assertTrue(subset.length <= ttf.length / 4, "the subset is " + subset.length + " bytes");
         // The other tables a reader needs as they were; shaping left out, and
@@ -114,19 +160,16 @@ class SubsetTest {
             assertEquals(-1, entry(subset, name), "the subset has the " + name + " table");
         }
         assertEquals(0x00030000, u32(subset, table(subset, "post")));
-        // The OS/2 table as it was; the hhea and maxp tables but for their
-        // counts, of the long metrics and of the glyphs, cut at the end of the
-        // subset; the hmtx table the start of the font's.
-        for (String name : new String[] {"hmtx", "hhea", "OS/2", "maxp"}) {
+        // The OS/2 table as it was, and the hhea and maxp tables but for
+        // their counts, of the long metrics and of the glyphs.
+        for (String name : new String[] {"hhea", "OS/2", "maxp"}) {
             int length = u32(subset, entry(subset, name) + 12);
             byte[] was = Arrays.copyOfRange(ttf, table(ttf, name), table(ttf, name) + length);
             byte[] now = Arrays.copyOfRange(subset, table(subset, name), table(subset, name) + length);
             if (name.equals("maxp")) {
-                assertEquals(3052, u16(now, 4));
                 now[4] = was[4];
                 now[5] = was[5];
             } else if (name.equals("hhea")) {
-                assertEquals(Math.min(3052, u16(was, 34)), u16(now, 34));
                 now[34] = was[34];
                 now[35] = was[35];
             }
@@ -143,30 +186,38 @@ class SubsetTest {
         byte[] ttf = fontBytes(PLEX);
         assertEquals(0, u16(ttf, table(ttf, "head") + 50));
         byte[] subset = Subset.subsetTrueType(ttf, used(5), new boolean[1][]);
+        // Glyph 5, the second of the subset, after .notdef
         byte[] whole = glyph(ttf, 5);
-        assertArrayEquals(whole, Arrays.copyOf(glyph(subset, 5), whole.length));
-        assertEquals(0, glyph(subset, 4).length);
+        assertEquals(2, u16(subset, table(subset, "maxp") + 4));
+        assertArrayEquals(whole, Arrays.copyOf(glyph(subset, 1), whole.length));
     }
 
     @Test
-    void endsAtTheLastGlyphKept() throws Exception {
-        // IBM Plex Sans has 1,019 glyphs and a long metric for each; a subset
-        // of glyph 33, A, has 34, and the hhea table counts 34 long metrics.
+    void numbersTheGlyphsKeptAgain() throws Exception {
+        // IBM Plex Sans has 1,019 glyphs; a subset of glyph 33, A, has two,
+        // .notdef and A, a long metric for each, and kept is of the numbers
+        // in the font, up to 33. The map of the CIDs to them gives A, CID 33,
+        // the glyph 1.
         byte[] ttf = fontBytes(PLEX);
-        int glyphs = u16(ttf, table(ttf, "maxp") + 4);
+        assertEquals(1019, u16(ttf, table(ttf, "maxp") + 4));
         int metrics = u16(ttf, table(ttf, "hhea") + 34);
-        assertEquals(1019, glyphs);
+        assertTrue(metrics > 33);
         boolean[][] kept = new boolean[1][];
         byte[] subset = Subset.subsetTrueType(ttf, used(33), kept);
         assertEquals(34, kept[0].length);
-        assertEquals(34, u16(subset, table(subset, "maxp") + 4));
-        assertEquals(Math.min(34, metrics), u16(subset, table(subset, "hhea") + 34));
-        int longMetrics = Math.min(34, metrics);
-        assertEquals(4 * longMetrics + 2 * (34 - longMetrics), u32(subset, entry(subset, "hmtx") + 12));
-        assertEquals(2 * 35, u32(subset, entry(subset, "loca") + 12));
+        assertEquals(2, u16(subset, table(subset, "maxp") + 4));
+        assertEquals(2, u16(subset, table(subset, "hhea") + 34));
+        assertEquals(8, u32(subset, entry(subset, "hmtx") + 12));
+        assertEquals(2 * 3, u32(subset, entry(subset, "loca") + 12));
         // The width and side bearing of A as they were
-        assertEquals(u32(ttf, table(ttf, "hmtx") + 4 * 33), u32(subset, table(subset, "hmtx") + 4 * 33));
-        assertArrayEquals(glyph(ttf, 33), Arrays.copyOf(glyph(subset, 33), glyph(ttf, 33).length));
+        assertEquals(u32(ttf, table(ttf, "hmtx") + 4 * 33), u32(subset, table(subset, "hmtx") + 4));
+        assertArrayEquals(glyph(ttf, 33), Arrays.copyOf(glyph(subset, 1), glyph(ttf, 33).length));
+        byte[] map = FontWriter.cidToGIDMap(kept[0]);
+        assertEquals(2 * 34, map.length);
+        for (int cid = 0; cid < 34; cid++) {
+            int gid = (map[2 * cid] & 0xFF) << 8 | (map[2 * cid + 1] & 0xFF);
+            assertEquals(cid == 33 ? 1 : 0, gid, "CID " + cid);
+        }
     }
 
     @Test
@@ -238,8 +289,15 @@ class SubsetTest {
             // In IBM Plex Sans, Ä (395) is made of A (33) and the dieresis
             // of capitals (971), and B is 34. Noto Sans had Ä (134), A (36),
             // the dieresis (106) and B (37).
-            assertTrue(glyph(program, 395).length > 0 && glyph(program, 33).length > 0, path);
-            assertEquals(0, glyph(program, 34).length, path);
+            // The subset has the four glyphs kept, numbered again: .notdef,
+            // A, Ä and the dieresis, 0 to 3, Ä of 1 and 3; the CIDs are their
+            // numbers in the font, which the CIDToGIDMap maps to them.
+            assertEquals(4, u16(program, table(program, "maxp") + 4), path);
+            for (int gid = 1; gid < 4; gid++) {
+                assertTrue(glyph(program, gid).length > 0, path + ": glyph " + gid);
+            }
+            assertEquals(Arrays.asList(1, 3), components(glyph(program, 2)), path);
+            assertTrue(Pattern.compile("/CIDToGIDMap \\d+ 0 R\n").matcher(raw).find(), path);
             // The widths of the glyphs kept: .notdef, A, Ä and the dieresis.
             assertTrue(Pattern.compile("/W \\[\n0\\[\\d+ \\]\n33\\[\\d+ \\]\n395\\[\\d+ \\]\n971\\[\\d+ \\]\\]\n")
                     .matcher(raw).find(), path + ": the widths");
@@ -262,8 +320,10 @@ class SubsetTest {
         String raw = doc(Compliance.PDF_1_7, PLEX, true, "A", "B");
         assertEquals(1, count(Pattern.compile("/Length1 "), raw));
         byte[] program = program(raw);
-        // A and B, 33 and 34 in IBM Plex Sans; 36 and 37 in Noto Sans.
-        assertTrue(glyph(program, 33).length > 0 && glyph(program, 34).length > 0);
+        // A and B, 33 and 34 in IBM Plex Sans, 1 and 2 in the subset, after
+        // .notdef; 36 and 37 in Noto Sans.
+        assertEquals(3, u16(program, table(program, "maxp") + 4));
+        assertTrue(glyph(program, 1).length > 0 && glyph(program, 2).length > 0);
         // Two Type0 fonts and their CID font.
         assertEquals(3, count(TAGGED, raw));
     }

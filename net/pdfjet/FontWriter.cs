@@ -110,12 +110,38 @@ class FontWriter {
 
     // Writes the CID font with the name given, which is the font's own, or
     // that of a subset, whose widths are those of the glyphs it keeps.
+    // The CIDToGIDMap of a TrueType subset (ISO 32000-1, 9.7.4.2): for each
+    // CID, the number of the glyph in the font, two bytes, high byte first,
+    // the number of the glyph in the subset, in which the glyphs kept are
+    // numbered in their order, from 0; 0 for a glyph not kept.
+    internal static byte[] CIDToGIDMap(bool[] kept) {
+        byte[] map = new byte[2 * kept.Length];
+        int gid = 0;
+        for (int cid = 0; cid < kept.Length; cid++) {
+            if (kept[cid]) {
+                map[2 * cid] = (byte) (gid >> 8);
+                map[2 * cid + 1] = (byte) gid;
+                gid++;
+            }
+        }
+        return map;
+    }
+
     internal static void AddCIDFontDictionaryObject(PDF pdf, Font font, String baseFont, bool[] kept) {
         foreach (Font f in pdf.fonts) {
             if (f.cidFontDictObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;
                 return;
             }
+        }
+
+        // The map of a TrueType subset, whose glyphs are numbered again,
+        // from the CIDs, their numbers in the whole font, to their numbers in
+        // the subset; a whole font is mapped by /Identity
+        int cidToGIDMap = 0;
+        if (!font.cff && kept != null) {
+            AddCompressedStream(pdf, CIDToGIDMap(kept));
+            cidToGIDMap = pdf.GetObjNumber();
         }
 
         pdf.NewObj();
@@ -157,7 +183,13 @@ class FontWriter {
         pdf.Append(WidthsArray(font, kept));
         pdf.Append('\n');
 
-        pdf.Append("/CIDToGIDMap /Identity\n");
+        if (cidToGIDMap != 0) {
+            pdf.Append("/CIDToGIDMap ");
+            pdf.Append(cidToGIDMap);
+            pdf.Append(" 0 R\n");
+        } else {
+            pdf.Append("/CIDToGIDMap /Identity\n");
+        }
         pdf.Append(">>\n");
         pdf.EndObj();
 

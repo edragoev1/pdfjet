@@ -45,9 +45,12 @@ struct GlyphChars {
 }
 
 /// The subsets of the embedded fonts, .ttf and .otf files, embedded at
-/// complete() with the outlines of the glyphs the document did not draw
-/// emptied. The glyph numbers stay, so the widths, the character map and the
-/// ToUnicode map are those of the whole font.
+/// complete() with the glyphs the document drew alone. The PDF names each
+/// glyph by its number in the whole font, its CID, so the widths, the
+/// character map and the ToUnicode map are those of the whole font: a .ttf
+/// subset numbers its glyphs again, and its CIDFont maps the CIDs to them
+/// with a CIDToGIDMap; an .otf subset gives each glyph its number in the font
+/// as its CID in its charset.
 class Subset {
     /// The font program of a TrueType font, or the CFF table of an OpenType
     /// font with CFF outlines, kept until complete(). Fonts read from one file
@@ -342,17 +345,18 @@ class Subset {
         let length: Int
     }
 
-    /// Returns the TrueType font with the outlines of the glyphs not used
-    /// emptied, and the glyphs kept: those used, glyph 0 and the parts of the
-    /// composite glyphs kept. Every glyph keeps its number, so the tables
-    /// kept, subsetTables, are copied as they are, but for the glyf and loca
-    /// tables made again, the head table's checksum adjustment, and the post
-    /// table without the names of the glyphs. The font ends at the last glyph
-    /// kept: the glyphs after it are left out of the maxp, loca and hmtx
-    /// tables, and of the hhea table's count of the metrics, so that a subset
-    /// of a font of thousands of glyphs carries no entry for each of them
-    /// (Noto Sans's 4,503 glyphs were 36 KB of loca and hmtx for a page that
-    /// drew 38). A font that forbids subsetting
+    /// Returns the TrueType font of the glyphs used alone, and the glyphs
+    /// kept: those used, glyph 0 and the parts of the composite glyphs kept.
+    /// The tables kept, subsetTables, are copied as they are, but for the
+    /// glyf, loca and hmtx tables made again, the counts of the maxp and hhea
+    /// tables, the head table's checksum adjustment, and the post table
+    /// without the names of the glyphs. The glyphs kept are numbered again,
+    /// from 0, in the order of their numbers in the font, and the maxp, hhea
+    /// and hmtx tables made for them, so that a subset of a font of thousands
+    /// of glyphs carries no entry for each of them (Noto Sans's 4,503 glyphs
+    /// were 36 KB of loca and hmtx for a page that drew 38); the glyphs kept
+    /// returned are of the numbers in the font, which the CIDToGIDMap maps to
+    /// the new ones. A font that forbids subsetting
     /// in the fsType of its OS/2 table, or whose tables cannot be read, throws
     /// NotSubset, and is embedded whole.
     static func subsetTrueType(_ ttf: [UInt8], _ used: [Bool]) throws -> ([UInt8], [Bool]) {
@@ -396,7 +400,7 @@ class Subset {
         if let os2 = os2, os2.length >= 10, try u16(ttf, os2.offset + 8) & 0x0100 != 0 {
             throw NotSubset()   // No subsetting
         }
-        var numGlyphs = try u16(ttf, maxp.offset + 4)
+        let numGlyphs = try u16(ttf, maxp.offset + 4)
         let longOffsets = try u16(ttf, head.offset + 50)
         if numGlyphs == 0 || longOffsets > 1 || loca.length < (numGlyphs + 1) * (2 + 2 * longOffsets) {
             throw NotSubset()
@@ -472,28 +476,40 @@ class Subset {
             }
         }
 
-        // The glyphs of the subset: up to the last one kept, unless the hhea
-        // and hmtx tables, which are cut with them, cannot be read; then all
-        // of them, as the font has them.
-        let fontGlyphs = numGlyphs
-        var last = numGlyphs - 1
-        while last > 0 && !keep[last] {
-            last -= 1
-        }
+        // The glyphs of the subset, numbered again: the glyphs kept in the
+        // order of their numbers in the font, glyph 0 first, each the next
+        // number, so that a subset of a font of thousands of glyphs has an
+        // entry in its loca and hmtx tables for each glyph it keeps alone.
+        // The PDF names a glyph by its number in the font, its CID, which the
+        // CIDToGIDMap of the CIDFont maps to its number here (FontWriter).
+        // A font whose metrics cannot be read is not subset.
         var numberOfHMetrics = 0
         if let hhea = hhea, hhea.length >= 36, hmtx != nil {
             numberOfHMetrics = try u16(ttf, hhea.offset + 34)
         }
-        if let hmtx = hmtx, numberOfHMetrics > 0, numberOfHMetrics <= numGlyphs,
-                hmtx.length >= 4 * numberOfHMetrics + 2 * (numGlyphs - numberOfHMetrics) {
-            numGlyphs = last + 1
+        guard let hmtx = hmtx, numberOfHMetrics > 0, numberOfHMetrics <= numGlyphs,
+                hmtx.length >= 4 * numberOfHMetrics + 2 * (numGlyphs - numberOfHMetrics) else {
+            throw NotSubset()
+        }
+        var last = numGlyphs - 1
+        while last > 0 && !keep[last] {
+            last -= 1
+        }
+        var newGid = [Int](repeating: -1, count: last + 1)
+        var glyphs = 0
+        for gid in 0...last where keep[gid] {
+            newGid[gid] = glyphs
+            glyphs += 1
         }
 
-        // The glyf and loca tables, the kept glyphs copied, each padded to a
-        // multiple of four bytes, the others empty.
+        // The glyf, loca and hmtx tables of the glyphs kept, each glyph
+        // padded to a multiple of four bytes, a composite glyph's parts named
+        // by their new numbers, and a long metric for each glyph.
         var newGlyf = [UInt8]()
         var newLoca = [UInt8]()
-        newLoca.reserveCapacity((numGlyphs + 1) * (2 + 2 * longOffsets))
+        newLoca.reserveCapacity((glyphs + 1) * (2 + 2 * longOffsets))
+        var newHmtx = [UInt8]()
+        newHmtx.reserveCapacity(4 * glyphs)
         func appendOffset(_ offset: Int) {
             if longOffsets == 1 {
                 newLoca.append(contentsOf: [UInt8(truncatingIfNeeded: offset >> 24), UInt8(truncatingIfNeeded: offset >> 16),
@@ -502,21 +518,31 @@ class Subset {
                 newLoca.append(contentsOf: [UInt8(truncatingIfNeeded: offset >> 9), UInt8(truncatingIfNeeded: offset >> 1)])
             }
         }
-        for gid in 0..<numGlyphs {
+        for gid in 0...last where keep[gid] {
             appendOffset(newGlyf.count)
-            if keep[gid] {
-                newGlyf.append(contentsOf: ttf[starts[gid]..<ends[gid]])
-                while newGlyf.count % 4 != 0 {
-                    newGlyf.append(0)
-                }
-                // Glyphs whose outlines overlap, each copied again, could make
-                // the subset larger than the whole font many times over (the
-                // review of 9 October 2026: 112 KB into 384 MB); a subset is never
-                // larger than the glyf table and the padding of each glyph.
-                if newGlyf.count > glyf.length + 3 * numGlyphs {
-                    throw NotSubset()
-                }
+            let at = newGlyf.count
+            newGlyf.append(contentsOf: ttf[starts[gid]..<ends[gid]])
+            if ends[gid] - starts[gid] >= 10, try u16(ttf, starts[gid]) >= 0x8000 {
+                try Subset.renumberComponents(&newGlyf, at, ends[gid] - starts[gid], newGid)
             }
+            while newGlyf.count % 4 != 0 {
+                newGlyf.append(0)
+            }
+            // Glyphs whose outlines overlap, each copied again, could make
+            // the subset larger than the whole font many times over (the
+            // review of 9 October 2026: 112 KB into 384 MB); a subset is never
+            // larger than the glyf table and the padding of each glyph.
+            if newGlyf.count > glyf.length + 3 * glyphs {
+                throw NotSubset()
+            }
+            // The advance of a glyph past numberOfHMetrics is the last one's,
+            // and its left side bearing follows the long metrics.
+            let advance = try u16(ttf, hmtx.offset + 4 * min(gid, numberOfHMetrics - 1))
+            let lsb = (gid < numberOfHMetrics)
+                    ? try u16(ttf, hmtx.offset + 4 * gid + 2)
+                    : try u16(ttf, hmtx.offset + 4 * numberOfHMetrics + 2 * (gid - numberOfHMetrics))
+            newHmtx.append(contentsOf: [UInt8(truncatingIfNeeded: advance >> 8), UInt8(truncatingIfNeeded: advance),
+                    UInt8(truncatingIfNeeded: lsb >> 8), UInt8(truncatingIfNeeded: lsb)])
         }
         appendOffset(newGlyf.count)
         if longOffsets == 0 && newGlyf.count > 0x1FFFE {
@@ -536,19 +562,17 @@ class Subset {
                 var h = Array(ttf[t.offset..<(t.offset + t.length)])
                 h[8] = 0; h[9] = 0; h[10] = 0; h[11] = 0    // checkSumAdjustment, set below
                 data.append(h)
-            } else if t.tag == "maxp" && numGlyphs < fontGlyphs {
+            } else if t.tag == "maxp" {
                 var m = Array(ttf[t.offset..<(t.offset + t.length)])
-                m[4] = UInt8(truncatingIfNeeded: numGlyphs >> 8); m[5] = UInt8(truncatingIfNeeded: numGlyphs)
+                m[4] = UInt8(truncatingIfNeeded: glyphs >> 8); m[5] = UInt8(truncatingIfNeeded: glyphs)
                 data.append(m)
-            } else if t.tag == "hhea" && numGlyphs < numberOfHMetrics {
+            } else if t.tag == "hhea" {
                 var h = Array(ttf[t.offset..<(t.offset + t.length)])
-                h[34] = UInt8(truncatingIfNeeded: numGlyphs >> 8); h[35] = UInt8(truncatingIfNeeded: numGlyphs)
+                // numberOfHMetrics: one for each glyph
+                h[34] = UInt8(truncatingIfNeeded: glyphs >> 8); h[35] = UInt8(truncatingIfNeeded: glyphs)
                 data.append(h)
-            } else if t.tag == "hmtx" && numGlyphs < fontGlyphs {
-                // A long metric for each glyph up to numberOfHMetrics, then a
-                // left side bearing for each glyph after
-                let metrics = min(numGlyphs, numberOfHMetrics)
-                data.append(Array(ttf[t.offset..<(t.offset + 4 * metrics + 2 * (numGlyphs - metrics))]))
+            } else if t.tag == "hmtx" {
+                data.append(newHmtx)
             } else if t.tag == "post" {
                 if t.length < 32 {
                     continue
@@ -611,7 +635,35 @@ class Subset {
         out[headAt + 9] = UInt8(truncatingIfNeeded: adjustment >> 16)
         out[headAt + 10] = UInt8(truncatingIfNeeded: adjustment >> 8)
         out[headAt + 11] = UInt8(truncatingIfNeeded: adjustment)
-        return (out, numGlyphs < fontGlyphs ? Array(keep[0..<numGlyphs]) : keep)
+        return (out, Array(keep[0...last]))
+    }
+
+    // Names the parts of the composite glyph at start in the glyf table by
+    // their new numbers, as each was kept with it.
+    private static func renumberComponents(_ glyf: inout [UInt8], _ start: Int, _ length: Int, _ newGid: [Int]) throws {
+        let end = start + length
+        var at = start + 10
+        while true {
+            let flags = try u16(glyf, at)
+            let component = try u16(glyf, at + 2)
+            if at + 4 > end || component >= newGid.count || newGid[component] < 0 {
+                throw NotSubset()
+            }
+            glyf[at + 2] = UInt8(truncatingIfNeeded: newGid[component] >> 8)
+            glyf[at + 3] = UInt8(truncatingIfNeeded: newGid[component])
+            at += 4
+            at += (flags & 0x0001) != 0 ? 4 : 2         // ARG_1_AND_2_ARE_WORDS
+            if (flags & 0x0008) != 0 {                  // WE_HAVE_A_SCALE
+                at += 2
+            } else if (flags & 0x0040) != 0 {           // WE_HAVE_AN_X_AND_Y_SCALE
+                at += 4
+            } else if (flags & 0x0080) != 0 {           // WE_HAVE_A_TWO_BY_TWO
+                at += 8
+            }
+            if (flags & 0x0020) == 0 {                  // MORE_COMPONENTS
+                break
+            }
+        }
     }
 
     /// Returns the sum of the big-endian 32-bit words of the data, the last one

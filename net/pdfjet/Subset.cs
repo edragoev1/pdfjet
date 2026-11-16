@@ -11,9 +11,12 @@ using System.Text;
 namespace PDFjet.NET {
 /// <summary>
 /// The subsets of the embedded fonts, .ttf and .otf files, embedded at
-/// Complete() with the outlines of the glyphs the document did not draw
-/// emptied. The glyph numbers stay, so the widths, the character map and the
-/// ToUnicode map are those of the whole font.
+/// Complete() with the glyphs the document drew alone. The PDF names each
+/// glyph by its number in the whole font, its CID, so the widths, the
+/// character map and the ToUnicode map are those of the whole font: a .ttf
+/// subset numbers its glyphs again, and its CIDFont maps the CIDs to them
+/// with a CIDToGIDMap; an .otf subset gives each glyph its number in the font
+/// as its CID in its charset.
 /// </summary>
 class Subset {
     /// <summary>
@@ -370,17 +373,18 @@ class Subset {
     }
 
     /// <summary>
-    /// Returns the TrueType font with the outlines of the glyphs not used
-    /// emptied, and gives in kept the glyphs kept: those used, glyph 0 and the
-    /// parts of the composite glyphs kept. Every glyph keeps its number, so the
-    /// tables kept, SubsetTables, are copied as they are, but for the glyf and
-    /// loca tables made again, the head table's checksum adjustment, and the
-    /// post table without the names of the glyphs. The font ends at the last
-    /// glyph kept: the glyphs after it are left out of the maxp, loca and hmtx
-    /// tables, and of the hhea table's count of the metrics, so that a subset
-    /// of a font of thousands of glyphs carries no entry for each of them
-    /// (Noto Sans's 4,503 glyphs were 36 KB of loca and hmtx for a page that
-    /// drew 38). A font that forbids
+    /// Returns the TrueType font of the glyphs used alone, and gives in kept
+    /// the glyphs kept: those used, glyph 0 and the parts of the composite
+    /// glyphs kept. The tables kept, SubsetTables, are copied as they are, but
+    /// for the glyf, loca and hmtx tables made again, the counts of the maxp
+    /// and hhea tables, the head table's checksum adjustment, and the post
+    /// table without the names of the glyphs. The glyphs kept are numbered
+    /// again, from 0, in the order of their numbers in the font, and the
+    /// maxp, hhea and hmtx tables made for them, so that a subset of a font of
+    /// thousands of glyphs carries no entry for each of them (Noto Sans's
+    /// 4,503 glyphs were 36 KB of loca and hmtx for a page that drew 38); kept
+    /// is of the numbers in the font, which the CIDToGIDMap maps to the new
+    /// ones. A font that forbids
     /// subsetting in the fsType of its OS/2 table, or whose tables cannot be
     /// read, throws NotSubset, and is embedded whole.
     /// </summary>
@@ -506,34 +510,43 @@ class Subset {
             }
         }
 
-        // The glyphs of the subset: up to the last one kept, unless the hhea
-        // and hmtx tables, which are cut with them, cannot be read; then all
-        // of them, as the font has them.
-        int fontGlyphs = numGlyphs;
-        int last = numGlyphs - 1;
-        while (last > 0 && !keep[last]) {
-            last--;
-        }
+        // The glyphs of the subset, numbered again: the glyphs kept in the
+        // order of their numbers in the font, glyph 0 first, each the next
+        // number, so that a subset of a font of thousands of glyphs has an
+        // entry in its loca and hmtx tables for each glyph it keeps alone.
+        // The PDF names a glyph by its number in the font, its CID, which the
+        // CIDToGIDMap of the CIDFont maps to its number here (FontWriter).
+        // A font whose metrics cannot be read is not subset.
         int numberOfHMetrics = 0;
         if (hhea != null && hhea.length >= 36 && hmtx != null) {
             numberOfHMetrics = U16(ttf, hhea.offset + 34);
         }
-        if (numberOfHMetrics > 0 && numberOfHMetrics <= numGlyphs &&
-                hmtx.length >= 4 * numberOfHMetrics + 2 * (numGlyphs - numberOfHMetrics)) {
-            numGlyphs = last + 1;
+        if (numberOfHMetrics == 0 || numberOfHMetrics > numGlyphs ||
+                hmtx.length < 4 * numberOfHMetrics + 2 * (numGlyphs - numberOfHMetrics)) {
+            throw new NotSubset();
+        }
+        int last = numGlyphs - 1;
+        while (last > 0 && !keep[last]) {
+            last--;
+        }
+        int[] newGid = new int[last + 1];
+        int glyphs = 0;
+        for (int gid = 0; gid <= last; gid++) {
+            newGid[gid] = keep[gid] ? glyphs++ : -1;
         }
 
-        // The glyf and loca tables, the kept glyphs copied, each padded to a
-        // multiple of four bytes, the others empty.
+        // The glyf, loca and hmtx tables of the glyphs kept, each glyph
+        // padded to a multiple of four bytes, a composite glyph's parts named
+        // by their new numbers, and a long metric for each glyph.
         long glyfLength = 0;
-        for (int gid = 0; gid < numGlyphs; gid++) {
+        for (int gid = 0; gid <= last; gid++) {
             if (keep[gid]) {
                 glyfLength += (ends[gid] - starts[gid] + 3) & ~3;
                 // Glyphs whose outlines overlap, each copied again, could make
                 // the subset larger than the whole font many times over (the
                 // review of 9 October 2026: 112 KB into 384 MB); a subset is never
                 // larger than the glyf table and the padding of each glyph.
-                if (glyfLength > (long) glyf.length + 3L * numGlyphs) {
+                if (glyfLength > (long) glyf.length + 3L * glyphs) {
                     throw new NotSubset();
                 }
             }
@@ -542,20 +555,32 @@ class Subset {
             throw new NotSubset();
         }
         byte[] newGlyf = new byte[glyfLength];
-        byte[] newLoca = new byte[(numGlyphs + 1) * (2 + 2 * longOffsets)];
+        byte[] newLoca = new byte[(glyphs + 1) * (2 + 2 * longOffsets)];
+        byte[] newHmtx = new byte[4 * glyphs];
         int position = 0;
-        for (int gid = 0; gid <= numGlyphs; gid++) {
-            if (longOffsets == 1) {
-                PutInt(newLoca, 4 * gid, position);
-            } else {
-                newLoca[2 * gid] = (byte) (position >> 9);
-                newLoca[2 * gid + 1] = (byte) (position >> 1);
+        int n = 0;
+        for (int gid = 0; gid <= last; gid++) {
+            if (!keep[gid]) {
+                continue;
             }
-            if (gid < numGlyphs && keep[gid]) {
-                Array.Copy(ttf, starts[gid], newGlyf, position, ends[gid] - starts[gid]);
-                position += (ends[gid] - starts[gid] + 3) & ~3;
+            PutLoca(newLoca, longOffsets, n, position);
+            int length = ends[gid] - starts[gid];
+            Array.Copy(ttf, starts[gid], newGlyf, position, length);
+            if (length >= 10 && U16(ttf, starts[gid]) >= 0x8000) {
+                RenumberComponents(newGlyf, position, length, newGid);
             }
+            // The advance of a glyph past numberOfHMetrics is the last one's,
+            // and its left side bearing follows the long metrics.
+            int advance = U16(ttf, hmtx.offset + 4 * Math.Min(gid, numberOfHMetrics - 1));
+            int lsb = (gid < numberOfHMetrics)
+                    ? U16(ttf, hmtx.offset + 4 * gid + 2)
+                    : U16(ttf, hmtx.offset + 4 * numberOfHMetrics + 2 * (gid - numberOfHMetrics));
+            PutShort(newHmtx, 4 * n, advance);
+            PutShort(newHmtx, 4 * n + 2, lsb);
+            position += (length + 3) & ~3;
+            n++;
         }
+        PutLoca(newLoca, longOffsets, glyphs, position);
 
         // The font again, its tables in the order of their tags.
         tables.Sort((a, b) => String.CompareOrdinal(a.tag, b.tag));
@@ -570,19 +595,16 @@ class Subset {
                 byte[] h = Slice(ttf, t.offset, t.length);
                 h[8] = h[9] = h[10] = h[11] = 0; // checkSumAdjustment, set below
                 data.Add(h);
-            } else if (t.tag == "maxp" && numGlyphs < fontGlyphs) {
+            } else if (t.tag == "maxp") {
                 byte[] m = Slice(ttf, t.offset, t.length);
-                PutShort(m, 4, numGlyphs);
+                PutShort(m, 4, glyphs);
                 data.Add(m);
-            } else if (t.tag == "hhea" && numGlyphs < numberOfHMetrics) {
+            } else if (t.tag == "hhea") {
                 byte[] h = Slice(ttf, t.offset, t.length);
-                PutShort(h, 34, numGlyphs);
+                PutShort(h, 34, glyphs);    // numberOfHMetrics: one for each glyph
                 data.Add(h);
-            } else if (t.tag == "hmtx" && numGlyphs < fontGlyphs) {
-                // A long metric for each glyph up to numberOfHMetrics, then a
-                // left side bearing for each glyph after
-                int metrics = Math.Min(numGlyphs, numberOfHMetrics);
-                data.Add(Slice(ttf, t.offset, 4 * metrics + 2 * (numGlyphs - metrics)));
+            } else if (t.tag == "hmtx") {
+                data.Add(newHmtx);
             } else if (t.tag == "post") {
                 if (t.length < 32) {
                     continue;
@@ -636,9 +658,7 @@ class Subset {
             position += (d.Length + 3) & ~3;
         }
         PutInt(output, headAt + 8, unchecked((int) (0xB1B0AFBAu - TableChecksum(output))));
-        if (numGlyphs < fontGlyphs) {
-            Array.Resize(ref keep, numGlyphs);
-        }
+        Array.Resize(ref keep, last + 1);
         kept = keep;
         return output;
     }
@@ -647,6 +667,44 @@ class Subset {
         byte[] slice = new byte[length];
         Array.Copy(buf, offset, slice, 0, length);
         return slice;
+    }
+
+    // Writes the offset of the glyph in the glyf table into its entry of the
+    // loca table, of four bytes or of two, the offset halved.
+    private static void PutLoca(byte[] loca, int longOffsets, int gid, int offset) {
+        if (longOffsets == 1) {
+            PutInt(loca, 4 * gid, offset);
+        } else {
+            loca[2 * gid] = (byte) (offset >> 9);
+            loca[2 * gid + 1] = (byte) (offset >> 1);
+        }
+    }
+
+    // Names the parts of the composite glyph at start in the glyf table by
+    // their new numbers, as each was kept with it.
+    private static void RenumberComponents(byte[] glyf, int start, int length, int[] newGid) {
+        int end = start + length;
+        int at = start + 10;
+        while (true) {
+            int flags = U16(glyf, at);
+            int component = U16(glyf, at + 2);
+            if (at + 4 > end || component >= newGid.Length || newGid[component] < 0) {
+                throw new NotSubset();
+            }
+            PutShort(glyf, at + 2, newGid[component]);
+            at += 4;
+            at += (flags & 0x0001) != 0 ? 4 : 2;     // ARG_1_AND_2_ARE_WORDS
+            if ((flags & 0x0008) != 0) {            // WE_HAVE_A_SCALE
+                at += 2;
+            } else if ((flags & 0x0040) != 0) {     // WE_HAVE_AN_X_AND_Y_SCALE
+                at += 4;
+            } else if ((flags & 0x0080) != 0) {     // WE_HAVE_A_TWO_BY_TWO
+                at += 8;
+            }
+            if ((flags & 0x0020) == 0) {            // MORE_COMPONENTS
+                break;
+            }
+        }
     }
 
     private static void PutShort(byte[] buf, int at, int value) {

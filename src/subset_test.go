@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -65,7 +66,7 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The subset ends at the last glyph kept, 3051, of the 4,319.
+	// kept is of the numbers in the font, up to the last glyph kept, 3051.
 	if len(kept) != 3052 {
 		t.Fatalf("%d glyphs, not 3052", len(kept))
 	}
@@ -74,15 +75,52 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 		if keep != want[gid] {
 			t.Errorf("glyph %d kept: %v", gid, keep)
 		}
-		glyph := testSubsetGlyph(t, subset, gid)
-		if keep {
-			// The glyph as it was, padded to four bytes.
-			whole := testSubsetGlyph(t, ttf, gid)
-			if !bytes.Equal(glyph[:len(whole)], whole) || len(glyph)-len(whole) >= 4 {
-				t.Errorf("glyph %d is not copied as it was", gid)
+	}
+	u16 := func(font []byte, at int) int { return int(binary.BigEndian.Uint16(font[at:])) }
+	u32 := func(font []byte, at int) int { return int(binary.BigEndian.Uint32(font[at:])) }
+	// The glyphs kept, numbered again in their order: 0, 1, 16, 225, 229,
+	// 3020, 3029 and 3051 are 0 to 7 in the subset, which has those alone.
+	olds := []int{0, 1, 16, 225, 229, 3020, 3029, 3051}
+	if u16(subset, testOpenTypeTable(t, subset, "maxp")+4) != len(olds) ||
+		u16(subset, testOpenTypeTable(t, subset, "hhea")+34) != len(olds) ||
+		u32(subset, testOpenTypeEntry(t, subset, "hmtx")+12) != 4*len(olds) {
+		t.Error("the counts of the subset")
+	}
+	metrics := u16(ttf, testOpenTypeTable(t, ttf, "hhea")+34)
+	hmtx, subsetHmtx := testOpenTypeTable(t, ttf, "hmtx"), testOpenTypeTable(t, subset, "hmtx")
+	for n, old := range olds {
+		whole := testSubsetGlyph(t, ttf, old)
+		glyph := testSubsetGlyph(t, subset, n)
+		if len(glyph) < len(whole) || len(glyph)-len(whole) >= 4 {
+			t.Errorf("glyph %d is %d bytes, of %d", old, len(glyph), len(whole))
+			continue
+		}
+		switch old {
+		case 16, 229:
+			// A composite glyph, its parts named by their new numbers: Ä of A
+			// (1) and the dieresis (3051), 1 and 7; ặ of a (225), the dot
+			// below (3029) and the breve (3020), 3, 6 and 5.
+			parts := map[int][]int{16: {1, 7}, 229: {3, 6, 5}}[old]
+			found := testSubsetComponents(glyph)
+			slices.Sort(found)
+			slices.Sort(parts)
+			if !slices.Equal(found, parts) {
+				t.Errorf("glyph %d is made of %v, not %v", old, found, parts)
 			}
-		} else if len(glyph) != 0 {
-			t.Errorf("glyph %d is not empty", gid)
+		default:
+			// The glyph as it was, padded to four bytes.
+			if !bytes.Equal(glyph[:len(whole)], whole) {
+				t.Errorf("glyph %d is not copied as it was", old)
+			}
+		}
+		// Its advance and left side bearing as they were
+		advance := u16(ttf, hmtx+4*min(old, metrics-1))
+		lsb := u16(ttf, hmtx+4*metrics+2*(old-metrics))
+		if old < metrics {
+			lsb = u16(ttf, hmtx+4*old+2)
+		}
+		if u16(subset, subsetHmtx+4*n) != advance || u16(subset, subsetHmtx+4*n+2) != lsb {
+			t.Errorf("the metrics of glyph %d", old)
 		}
 	}
 	if len(subset) > len(ttf)/4 {
@@ -98,24 +136,17 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 	if post := testOpenTypeTable(t, subset, "post"); binary.BigEndian.Uint32(subset[post:]) != 0x00030000 {
 		t.Error("the post table is not of version 3")
 	}
-	// The OS/2 table as it was; the hhea and maxp tables but for their
-	// counts, of the long metrics and of the glyphs, cut at the end of the
-	// subset; the hmtx table the start of the font's.
-	for _, name := range []string{"hmtx", "hhea", "OS/2", "maxp"} {
+	// The OS/2 table as it was, and the hhea and maxp tables but for their
+	// counts, of the long metrics and of the glyphs.
+	for _, name := range []string{"hhea", "OS/2", "maxp"} {
 		length := int(binary.BigEndian.Uint32(subset[testOpenTypeEntry(t, subset, name)+12:]))
 		at := testOpenTypeTable(t, ttf, name)
 		was := ttf[at : at+length]
 		now := append([]byte(nil), subset[testOpenTypeTable(t, subset, name):][:length]...)
 		switch name {
 		case "maxp":
-			if n := binary.BigEndian.Uint16(now[4:]); n != 3052 {
-				t.Errorf("the maxp table counts %d glyphs", n)
-			}
 			copy(now[4:6], was[4:6])
 		case "hhea":
-			if n, want := binary.BigEndian.Uint16(now[34:]), min(3052, binary.BigEndian.Uint16(was[34:])); n != want {
-				t.Errorf("the hhea table counts %d long metrics, not %d", n, want)
-			}
 			copy(now[34:36], was[34:36])
 		}
 		if !bytes.Equal(was, now) {
@@ -141,47 +172,90 @@ func TestSubsetOfAFontWithShortOffsets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Glyph 5, the second of the subset, after .notdef
 	whole := testSubsetGlyph(t, ttf, gid)
-	if glyph := testSubsetGlyph(t, subset, gid); !bytes.Equal(glyph[:len(whole)], whole) {
+	if glyph := testSubsetGlyph(t, subset, 1); !bytes.Equal(glyph[:len(whole)], whole) {
 		t.Error("the glyph is not copied as it was")
 	}
-	if len(testSubsetGlyph(t, subset, gid-1)) != 0 {
-		t.Error("the glyph before it is not empty")
+	if n := binary.BigEndian.Uint16(subset[testOpenTypeTable(t, subset, "maxp")+4:]); n != 2 {
+		t.Errorf("%d glyphs, not 2", n)
 	}
 }
 
-// IBM Plex Sans has 1,019 glyphs and a long metric for each; a subset of
-// glyph 33, A, has 34, and the hhea table counts 34 long metrics.
-func TestSubsetEndsAtTheLastGlyphKept(t *testing.T) {
+// IBM Plex Sans has 1,019 glyphs; a subset of glyph 33, A, has two, .notdef
+// and A, a long metric for each, and the glyphs kept are of the numbers in
+// the font, up to 33. The map of the CIDs to them gives A, CID 33, the glyph 1.
+func TestSubsetNumbersTheGlyphsKeptAgain(t *testing.T) {
 	ttf := testOpenTypeFontBytes(t, testSubsetPlex)
 	u16 := func(font []byte, at int) int { return int(binary.BigEndian.Uint16(font[at:])) }
 	u32 := func(font []byte, at int) int { return int(binary.BigEndian.Uint32(font[at:])) }
 	if glyphs := u16(ttf, testOpenTypeTable(t, ttf, "maxp")+4); glyphs != 1019 {
 		t.Fatalf("%d glyphs", glyphs)
 	}
-	metrics := u16(ttf, testOpenTypeTable(t, ttf, "hhea")+34)
+	if metrics := u16(ttf, testOpenTypeTable(t, ttf, "hhea")+34); metrics <= 33 {
+		t.Fatalf("%d long metrics", metrics)
+	}
 	subset, kept, err := subsetTrueType(ttf, testSubsetUsed(33))
 	if err != nil {
 		t.Fatal(err)
 	}
-	longMetrics := min(34, metrics)
-	if len(kept) != 34 || u16(subset, testOpenTypeTable(t, subset, "maxp")+4) != 34 ||
-		u16(subset, testOpenTypeTable(t, subset, "hhea")+34) != longMetrics {
-		t.Error("the subset does not end at glyph 33")
+	if len(kept) != 34 || u16(subset, testOpenTypeTable(t, subset, "maxp")+4) != 2 ||
+		u16(subset, testOpenTypeTable(t, subset, "hhea")+34) != 2 {
+		t.Error("the subset is not of two glyphs")
 	}
-	if n := u32(subset, testOpenTypeEntry(t, subset, "hmtx")+12); n != 4*longMetrics+2*(34-longMetrics) {
+	if n := u32(subset, testOpenTypeEntry(t, subset, "hmtx")+12); n != 8 {
 		t.Errorf("the hmtx table is %d bytes", n)
 	}
-	if n := u32(subset, testOpenTypeEntry(t, subset, "loca")+12); n != 2*35 {
+	if n := u32(subset, testOpenTypeEntry(t, subset, "loca")+12); n != 2*3 {
 		t.Errorf("the loca table is %d bytes", n)
 	}
 	// The width and side bearing of A as they were
-	if u32(ttf, testOpenTypeTable(t, ttf, "hmtx")+4*33) != u32(subset, testOpenTypeTable(t, subset, "hmtx")+4*33) {
+	if u32(ttf, testOpenTypeTable(t, ttf, "hmtx")+4*33) != u32(subset, testOpenTypeTable(t, subset, "hmtx")+4) {
 		t.Error("the metrics of A changed")
 	}
 	whole := testSubsetGlyph(t, ttf, 33)
-	if !bytes.Equal(testSubsetGlyph(t, subset, 33)[:len(whole)], whole) {
+	if !bytes.Equal(testSubsetGlyph(t, subset, 1)[:len(whole)], whole) {
 		t.Error("A is not copied as it was")
+	}
+	m := cidToGIDMap(kept)
+	if len(m) != 2*34 {
+		t.Fatalf("the map is %d bytes", len(m))
+	}
+	for cid := 0; cid < 34; cid++ {
+		want := 0
+		if cid == 33 {
+			want = 1
+		}
+		if gid := u16(m, 2*cid); gid != want {
+			t.Errorf("CID %d is the glyph %d", cid, gid)
+		}
+	}
+}
+
+// testSubsetComponents returns the glyph numbers of the parts of a composite
+// glyph, in their order.
+func testSubsetComponents(glyph []byte) []int {
+	var parts []int
+	at := 10
+	for {
+		flags := int(binary.BigEndian.Uint16(glyph[at:]))
+		parts = append(parts, int(binary.BigEndian.Uint16(glyph[at+2:])))
+		at += 4
+		if flags&0x0001 != 0 {
+			at += 4
+		} else {
+			at += 2
+		}
+		if flags&0x0008 != 0 {
+			at += 2
+		} else if flags&0x0040 != 0 {
+			at += 4
+		} else if flags&0x0080 != 0 {
+			at += 8
+		}
+		if flags&0x0020 == 0 {
+			return parts
+		}
 	}
 }
 
@@ -237,10 +311,23 @@ func TestSubsetATrueTypeFontIsEmbeddedAsASubsetUnderATaggedName(t *testing.T) {
 		// In IBM Plex Sans, Ä (395) is made of A (33) and the dieresis of
 		// capitals (971), and B is 34. Noto Sans had Ä (134), A (36), the
 		// dieresis (106) and B (37).
+		// The subset has the four glyphs kept, numbered again: .notdef, A,
+		// Ä and the dieresis, 0 to 3, Ä of 1 and 3; the CIDs are their
+		// numbers in the font, which the CIDToGIDMap maps to them.
 		program := testSubsetProgram(t, raw)
-		if len(testSubsetGlyph(t, program, 395)) == 0 || len(testSubsetGlyph(t, program, 33)) == 0 ||
-			len(testSubsetGlyph(t, program, 34)) != 0 {
-			t.Errorf("%s: the glyphs kept", path)
+		if n := binary.BigEndian.Uint16(program[testOpenTypeTable(t, program, "maxp")+4:]); n != 4 {
+			t.Errorf("%s: %d glyphs, not 4", path, n)
+		}
+		for gid := 1; gid < 4; gid++ {
+			if len(testSubsetGlyph(t, program, gid)) == 0 {
+				t.Errorf("%s: glyph %d is empty", path, gid)
+			}
+		}
+		if parts := testSubsetComponents(testSubsetGlyph(t, program, 2)); !slices.Equal(parts, []int{1, 3}) {
+			t.Errorf("%s: Ä is made of %v", path, parts)
+		}
+		if !regexp.MustCompile(`/CIDToGIDMap \d+ 0 R\n`).MatchString(raw) {
+			t.Errorf("%s: no CIDToGIDMap", path)
 		}
 		// The widths of the glyphs kept: .notdef, A, Ä and the dieresis.
 		if !regexp.MustCompile(`/W \[\n0\[\d+ \]\n33\[\d+ \]\n395\[\d+ \]\n971\[\d+ \]\]\n`).MatchString(raw) {
@@ -271,8 +358,12 @@ func TestSubsetTwoFontsOfOneFileShareOneSubset(t *testing.T) {
 		t.Fatalf("%d font programs", n)
 	}
 	program := testSubsetProgram(t, raw)
-	// A and B, 33 and 34 in IBM Plex Sans; 36 and 37 in Noto Sans.
-	if len(testSubsetGlyph(t, program, 33)) == 0 || len(testSubsetGlyph(t, program, 34)) == 0 {
+	// A and B, 33 and 34 in IBM Plex Sans, 1 and 2 in the subset, after
+	// .notdef; 36 and 37 in Noto Sans.
+	if n := binary.BigEndian.Uint16(program[testOpenTypeTable(t, program, "maxp")+4:]); n != 3 {
+		t.Errorf("%d glyphs, not 3", n)
+	}
+	if len(testSubsetGlyph(t, program, 1)) == 0 || len(testSubsetGlyph(t, program, 2)) == 0 {
 		t.Error("the glyphs of one of the fonts are missing")
 	}
 	if n := len(regexp.MustCompile(`/BaseFont /[A-Z]{6}\+IBMPlexSans\n`).FindAllString(raw, -1)); n != 3 {

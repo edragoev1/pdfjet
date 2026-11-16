@@ -77,19 +77,39 @@ import Testing
         let ttf = try fontBytes("tests/fonts/CascadiaMono-Regular.ttf")
         #expect(u16(ttf, table(ttf, "head") + 50) == 1)
         let (subset, kept) = try Subset.subsetTrueType(ttf, used(16, 229))
-        // The subset ends at the last glyph kept, 3051, of the 4,319.
+        // kept is of the numbers in the font, up to the last glyph kept, 3051.
         #expect(kept.count == 3052)
         let want: Set<Int> = [0, 16, 1, 3051, 229, 225, 3029, 3020]
         for gid in 0..<kept.count {
             #expect(want.contains(gid) == kept[gid], "glyph \(gid)")
-            let glyph = glyph(subset, gid)
-            if kept[gid] {
-                // The glyph as it was, padded to four bytes.
-                let whole = self.glyph(ttf, gid)
-                #expect(Array(glyph.prefix(whole.count)) == whole && glyph.count - whole.count < 4, "glyph \(gid)")
+        }
+        // The glyphs kept, numbered again in their order: 0, 1, 16, 225, 229,
+        // 3020, 3029 and 3051 are 0 to 7 in the subset, which has those alone.
+        let olds = [0, 1, 16, 225, 229, 3020, 3029, 3051]
+        #expect(u16(subset, table(subset, "maxp") + 4) == olds.count)
+        #expect(u16(subset, table(subset, "hhea") + 34) == olds.count)
+        #expect(u32(subset, entry(subset, "hmtx") + 12) == 4 * olds.count)
+        let metrics = u16(ttf, table(ttf, "hhea") + 34)
+        for (n, old) in olds.enumerated() {
+            let whole = self.glyph(ttf, old)
+            let glyph = self.glyph(subset, n)
+            #expect(glyph.count >= whole.count && glyph.count - whole.count < 4, "glyph \(old)")
+            if old == 16 || old == 229 {
+                // A composite glyph, its parts named by their new numbers: Ä
+                // of A (1) and the dieresis (3051), 1 and 7; ặ of a (225), the
+                // dot below (3029) and the breve (3020), 3, 6 and 5.
+                let parts = old == 16 ? [1, 7] : [3, 5, 6]
+                #expect(components(glyph).sorted() == parts, "glyph \(old)")
             } else {
-                #expect(glyph.isEmpty, "glyph \(gid)")
+                // The glyph as it was, padded to four bytes.
+                #expect(Array(glyph.prefix(whole.count)) == whole, "glyph \(old)")
             }
+            // Its advance and left side bearing as they were
+            let hmtx = table(ttf, "hmtx")
+            let advance = u16(ttf, hmtx + 4 * min(old, metrics - 1))
+            let lsb = old < metrics ? u16(ttf, hmtx + 4 * old + 2) : u16(ttf, hmtx + 4 * metrics + 2 * (old - metrics))
+            #expect(u16(subset, table(subset, "hmtx") + 4 * n) == advance, "the advance of glyph \(old)")
+            #expect(u16(subset, table(subset, "hmtx") + 4 * n + 2) == lsb, "the side bearing of glyph \(old)")
         }
         #expect(subset.count <= ttf.count / 4, "the subset is \(subset.count) bytes")
         // The other tables a reader needs as they were; shaping left out, and
@@ -98,20 +118,17 @@ import Testing
             #expect(entry(subset, name) == -1, "the subset has the \(name) table")
         }
         #expect(u32(subset, table(subset, "post")) == 0x00030000)
-        // The OS/2 table as it was; the hhea and maxp tables but for their
-        // counts, of the long metrics and of the glyphs, cut at the end of the
-        // subset; the hmtx table the start of the font's.
-        for name in ["hmtx", "hhea", "OS/2", "maxp"] {
+        // The OS/2 table as it was, and the hhea and maxp tables but for
+        // their counts, of the long metrics and of the glyphs.
+        for name in ["hhea", "OS/2", "maxp"] {
             let length = u32(subset, entry(subset, name) + 12)
             let at = table(ttf, name)
             let subsetAt = table(subset, name)
             let was = Array(ttf[at..<(at + length)])
             var now = Array(subset[subsetAt..<(subsetAt + length)])
             if name == "maxp" {
-                #expect(u16(now, 4) == 3052)
                 now[4] = was[4]; now[5] = was[5]
             } else if name == "hhea" {
-                #expect(u16(now, 34) == min(3052, u16(was, 34)))
                 now[34] = was[34]; now[35] = was[35]
             }
             #expect(was == now, "the \(name) table changed")
@@ -126,28 +143,57 @@ import Testing
         let ttf = try fontBytes(plex)
         #expect(u16(ttf, table(ttf, "head") + 50) == 0)
         let (subset, _) = try Subset.subsetTrueType(ttf, used(5))
+        // Glyph 5, the second of the subset, after .notdef
         let whole = glyph(ttf, 5)
-        #expect(Array(glyph(subset, 5).prefix(whole.count)) == whole)
-        #expect(glyph(subset, 4).isEmpty)
+        #expect(u16(subset, table(subset, "maxp") + 4) == 2)
+        #expect(Array(glyph(subset, 1).prefix(whole.count)) == whole)
     }
 
-    @Test func endsAtTheLastGlyphKept() throws {
-        // IBM Plex Sans has 1,019 glyphs and a long metric for each; a subset
-        // of glyph 33, A, has 34, and the hhea table counts 34 long metrics.
+    @Test func numbersTheGlyphsKeptAgain() throws {
+        // IBM Plex Sans has 1,019 glyphs; a subset of glyph 33, A, has two,
+        // .notdef and A, a long metric for each, and kept is of the numbers
+        // in the font, up to 33. The map of the CIDs to them gives A, CID 33,
+        // the glyph 1.
         let ttf = try fontBytes(plex)
         #expect(u16(ttf, table(ttf, "maxp") + 4) == 1019)
-        let metrics = u16(ttf, table(ttf, "hhea") + 34)
+        #expect(u16(ttf, table(ttf, "hhea") + 34) > 33)
         let (subset, kept) = try Subset.subsetTrueType(ttf, used(33))
-        let longMetrics = min(34, metrics)
         #expect(kept.count == 34)
-        #expect(u16(subset, table(subset, "maxp") + 4) == 34)
-        #expect(u16(subset, table(subset, "hhea") + 34) == longMetrics)
-        #expect(u32(subset, entry(subset, "hmtx") + 12) == 4 * longMetrics + 2 * (34 - longMetrics))
-        #expect(u32(subset, entry(subset, "loca") + 12) == 2 * 35)
+        #expect(u16(subset, table(subset, "maxp") + 4) == 2)
+        #expect(u16(subset, table(subset, "hhea") + 34) == 2)
+        #expect(u32(subset, entry(subset, "hmtx") + 12) == 8)
+        #expect(u32(subset, entry(subset, "loca") + 12) == 2 * 3)
         // The width and side bearing of A as they were
-        #expect(u32(ttf, table(ttf, "hmtx") + 4 * 33) == u32(subset, table(subset, "hmtx") + 4 * 33))
+        #expect(u32(ttf, table(ttf, "hmtx") + 4 * 33) == u32(subset, table(subset, "hmtx") + 4))
         let whole = glyph(ttf, 33)
-        #expect(Array(glyph(subset, 33).prefix(whole.count)) == whole)
+        #expect(Array(glyph(subset, 1).prefix(whole.count)) == whole)
+        let map = FontWriter.cidToGIDMap(kept)
+        #expect(map.count == 2 * 34)
+        for cid in 0..<34 {
+            #expect(u16(map, 2 * cid) == (cid == 33 ? 1 : 0), "CID \(cid)")
+        }
+    }
+
+    // The glyph numbers of the parts of a composite glyph, in their order.
+    private func components(_ glyph: [UInt8]) -> [Int] {
+        var parts = [Int]()
+        var at = 10
+        while true {
+            let flags = u16(glyph, at)
+            parts.append(u16(glyph, at + 2))
+            at += 4
+            at += (flags & 0x0001) != 0 ? 4 : 2
+            if (flags & 0x0008) != 0 {
+                at += 2
+            } else if (flags & 0x0040) != 0 {
+                at += 4
+            } else if (flags & 0x0080) != 0 {
+                at += 8
+            }
+            if (flags & 0x0020) == 0 {
+                return parts
+            }
+        }
     }
 
     @Test func isRefusedByAFontWhoseLicenseForbidsIt() throws {
@@ -222,8 +268,15 @@ import Testing
             // In IBM Plex Sans, Ä (395) is made of A (33) and the dieresis
             // of capitals (971), and B is 34. Noto Sans had Ä (134), A (36),
             // the dieresis (106) and B (37).
-            #expect(!glyph(program, 395).isEmpty && !glyph(program, 33).isEmpty, "\(path)")
-            #expect(glyph(program, 34).isEmpty, "\(path)")
+            // The subset has the four glyphs kept, numbered again: .notdef,
+            // A, Ä and the dieresis, 0 to 3, Ä of 1 and 3; the CIDs are their
+            // numbers in the font, which the CIDToGIDMap maps to them.
+            #expect(u16(program, table(program, "maxp") + 4) == 4, "\(path)")
+            for gid in 1..<4 {
+                #expect(!glyph(program, gid).isEmpty, "\(path): glyph \(gid)")
+            }
+            #expect(components(glyph(program, 2)) == [1, 3], "\(path)")
+            #expect(try match("/CIDToGIDMap \\d+ 0 R\n", raw) != nil, "\(path): the CIDToGIDMap")
             // The widths of the glyphs kept: .notdef, A, Ä and the dieresis.
             #expect(try match("/W \\[\n0\\[\\d+ \\]\n33\\[\\d+ \\]\n395\\[\\d+ \\]\n971\\[\\d+ \\]\\]\n", raw) != nil,
                     "\(path): the widths")
@@ -244,8 +297,10 @@ import Testing
         let raw = try document(Compliance.PDF_1_7, plex, true, "A", "B")
         #expect(try count("/Length1 ", raw) == 1)
         let program = try program(raw)
-        // A and B, 33 and 34 in IBM Plex Sans; 36 and 37 in Noto Sans.
-        #expect(!glyph(program, 33).isEmpty && !glyph(program, 34).isEmpty)
+        // A and B, 33 and 34 in IBM Plex Sans, 1 and 2 in the subset, after
+        // .notdef; 36 and 37 in Noto Sans.
+        #expect(u16(program, table(program, "maxp") + 4) == 3)
+        #expect(!glyph(program, 1).isEmpty && !glyph(program, 2).isEmpty)
         // Two Type0 fonts and their CID font.
         #expect(try count(tagged, raw) == 3)
     }

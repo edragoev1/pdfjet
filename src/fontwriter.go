@@ -121,12 +121,57 @@ func (pdf *PDF) addCompressedStream(data []byte) {
 // addCIDFontDictionaryObject writes the CID font with the name given,
 // which is the font's own, or that of a subset, whose widths are those of the
 // glyphs it keeps.
+// cidToGIDMap returns the CIDToGIDMap of a TrueType subset (ISO 32000-1,
+// 9.7.4.2): for each CID, the number of the glyph in the font, two bytes,
+// high byte first, the number of the glyph in the subset, in which the glyphs
+// kept are numbered in their order, from 0; 0 for a glyph not kept.
+func cidToGIDMap(kept []bool) []byte {
+	m := make([]byte, 2*len(kept))
+	gid := 0
+	for cid, keep := range kept {
+		if keep {
+			m[2*cid], m[2*cid+1] = byte(gid>>8), byte(gid)
+			gid++
+		}
+	}
+	return m
+}
+
+// addCIDToGIDMapObject writes the CIDToGIDMap of the glyphs kept as a
+// compressed stream, and returns its object number.
+func addCIDToGIDMapObject(pdf *PDF, kept []bool) int {
+	compressed := deflateFontProgram(cidToGIDMap(kept))
+	if pdf.encryption != nil {
+		compressed = pdf.encryption.encrypt(compressed)
+	}
+	pdf.newObj()
+	pdf.appendString("<<\n")
+	pdf.appendString("/Filter /FlateDecode\n")
+	pdf.appendString("/Length ")
+	pdf.appendInteger(len(compressed))
+	pdf.appendString("\n")
+	pdf.appendString(">>\n")
+	pdf.appendString("stream\n")
+	pdf.appendByteArray(compressed)
+	pdf.appendString("\nendstream\n")
+	pdf.endObj()
+	return pdf.getObjNumber()
+}
+
 func addCIDFontDictionaryObject(pdf *PDF, font *Font, baseFont string, kept []bool) {
 	for _, f := range pdf.fonts {
 		if f.cidFontDictObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.cidFontDictObjNumber = f.cidFontDictObjNumber
 			return
 		}
+	}
+
+	// The map of a TrueType subset, whose glyphs are numbered again, from
+	// the CIDs, their numbers in the whole font, to their numbers in the
+	// subset; a whole font is mapped by /Identity
+	mapObjNumber := 0
+	if !font.cff && kept != nil {
+		mapObjNumber = addCIDToGIDMapObject(pdf, kept)
 	}
 
 	pdf.newObj()
@@ -169,7 +214,13 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font, baseFont string, kept []bo
 	pdf.appendString(widthsArray(font, kept))
 	pdf.appendString("\n")
 
-	pdf.appendString("/CIDToGIDMap /Identity\n")
+	if mapObjNumber != 0 {
+		pdf.appendString("/CIDToGIDMap ")
+		pdf.appendInteger(mapObjNumber)
+		pdf.appendString(" 0 R\n")
+	} else {
+		pdf.appendString("/CIDToGIDMap /Identity\n")
+	}
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.endObj()
 
