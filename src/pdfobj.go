@@ -1270,7 +1270,9 @@ func (obj *PDFobj) wrapContents(before, after []byte, objects *[]*PDFobj) bool {
 		if end == -1 {
 			return false
 		}
-		value := slices.Concat([]string{"/Contents", "["}, addStream(after), []string{"]"})
+		// The content before, which saves the graphics state that the
+		// content after restores, in the one stream
+		value := slices.Concat([]string{"/Contents", "["}, addStream(slices.Concat(before, after)), []string{"]"})
 		obj.dict = slices.Concat(obj.dict[:end], value, obj.dict[end:])
 		return true
 	}

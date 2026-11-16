@@ -270,6 +270,11 @@ func cffMatrixOf(dict []cffEntry) (*[6]float64, error) {
 			if err != nil || len(m) != 6 {
 				return nil, errNotSubset
 			}
+			for _, v := range m {
+				if !(math.Abs(v) <= 1000) { // NaN too
+					return nil, errNotSubset
+				}
+			}
 			return &[6]float64{m[0], m[1], m[2], m[3], m[4], m[5]}, nil
 		}
 	}
@@ -385,11 +390,14 @@ func (o *glyphOutline) outline(gid int) (path glyphPath, err error) {
 			return glyphPath{}, damaged
 		}
 	} else {
-		points := &glyphPoints{}
+		points := &glyphPoints{work: new(int)}
 		if err := o.trueTypePoints(gid, points, 0); err != nil {
 			return glyphPath{}, damaged
 		}
 		points.draw(pen)
+	}
+	if pen.outOfRange {
+		return glyphPath{}, damaged
 	}
 	return pen.path(), nil
 }
@@ -404,9 +412,19 @@ type glyphPen struct {
 	startX, startY         float64
 	x, y                   float64
 	open                   bool // A contour is begun and has a segment
+	outOfRange             bool // A point past glyphMaxCoordinate, or not finite
 }
 
+// glyphMaxCoordinate bounds the points of an outline, in the units of the
+// font: a font's are within ±32,768, and a charstring's arithmetic can make
+// larger ones, or ones not finite, which a path cannot have.
+const glyphMaxCoordinate = 1e6
+
 func (pen *glyphPen) point(px, py float64) {
+	if !(math.Abs(px) <= glyphMaxCoordinate && math.Abs(py) <= glyphMaxCoordinate) {
+		pen.outOfRange = true // NaN too
+		px, py = 0, 0
+	}
 	if px < pen.xMin {
 		pen.xMin = px
 	}
@@ -518,6 +536,7 @@ type glyphPoints struct {
 	x, y []float64
 	on   []bool
 	ends []int
+	work *int // The glyphs and points read for the outline, its parts' too
 }
 
 func (p *glyphPoints) add(px, py float64, onCurve bool) {
@@ -590,6 +609,13 @@ func (o *glyphOutline) trueTypePoints(gid int, points *glyphPoints, depth int) e
 	if depth > 16 {
 		return errNotSubset // Composite glyphs nested too deep, or in a loop
 	}
+	// A composite glyph of many parts, each of many parts, 16 deep, would
+	// take time and memory that grow exponentially: the work of a glyph is
+	// bounded, as that of a charstring is.
+	*points.work++
+	if *points.work > glyphMaxWork {
+		return errNotSubset
+	}
 	var start, end int
 	var err1, err2 error
 	if o.longOffsets {
@@ -636,6 +662,10 @@ func (o *glyphOutline) simplePoints(at, limit, contours int, points *glyphPoints
 			return errNotSubset
 		}
 		n = ends[i] + 1
+	}
+	*points.work += n
+	if *points.work > glyphMaxWork {
+		return errNotSubset
 	}
 	p += 2 * contours
 	instructions, err := o.u16(p)
@@ -795,7 +825,7 @@ func (o *glyphOutline) compositePoints(p, limit int, points *glyphPoints, depth 
 		if p > limit {
 			return errNotSubset
 		}
-		part := &glyphPoints{}
+		part := &glyphPoints{work: points.work}
 		if err := o.trueTypePoints(component, part, depth+1); err != nil {
 			return err
 		}
@@ -879,7 +909,9 @@ func (o *glyphOutline) u32(at int) (int, error) {
 // ------------------------------------------------------------------
 // CFF: the Type 2 charstrings (Adobe Technical Note #5177)
 
-// glyphMaxWork is the most bytes of charstrings a glyph runs, subroutines and all.
+// glyphMaxWork is the most bytes of charstrings a glyph runs, subroutines and
+// all; and the most glyphs and points a TrueType glyph reads, its parts and
+// theirs.
 const glyphMaxWork = 1 << 20
 
 // charString is the interpreter of the charstring of one glyph.
@@ -1347,12 +1379,15 @@ func (cs *charString) escaped(b1 int) error {
 		if err != nil {
 			return err
 		}
-		index := int(v)
-		if index < 0 {
-			index = 0
-		}
-		if index >= cs.sp {
+		// Compared as a number before it is made an integer, which differs
+		// from language to language and from processor to processor for
+		// one too large
+		if math.IsNaN(v) || v >= float64(cs.sp) {
 			return errNotSubset
+		}
+		index := 0
+		if v > 0 {
+			index = int(v)
 		}
 		return cs.push(s[cs.sp-1-index])
 	case 30: // roll
@@ -1364,10 +1399,11 @@ func (cs *charString) escaped(b1 int) error {
 		if err != nil {
 			return err
 		}
-		j, n := int(jv), int(nv)
-		if n <= 0 || n > cs.sp {
+		// Compared as numbers before they are made integers, as index
+		if !(nv >= 1 && nv <= float64(cs.sp)) || !(math.Abs(jv) <= 1e9) {
 			return errNotSubset
 		}
+		j, n := int(jv), int(nv)
 		part := make([]float64, n)
 		for m := 0; m < n; m++ {
 			part[((m+j)%n+n)%n] = s[cs.sp-n+m]

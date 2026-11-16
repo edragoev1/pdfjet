@@ -535,7 +535,9 @@ func (markdown *Markdown) headingHeight(block *markdownBlock, width float32) flo
 // table that did not fit under them started the next page, leaving the
 // heading and the paragraph at the bottom of this one.
 func (markdown *Markdown) keptWithTable(paragraph, next *markdownBlock, width float32) bool {
-	if next.kind != markdownTable {
+	// Only a paragraph: a rule, a list or a quote between the heading and
+	// the table has no text to measure as one
+	if paragraph.kind != markdownParagraph || next.kind != markdownTable {
 		return false
 	}
 	return markdownLeadsIntoTable(paragraph, next) ||

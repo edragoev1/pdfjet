@@ -30,6 +30,7 @@ type fontObjects struct {
 	descriptor *PDFobj
 	cidFont    *PDFobj
 	toUnicode  *PDFobj
+	cidToGID   *PDFobj // The CIDToGIDMap of a TrueType font, nil for a CFF one
 	type0      *PDFobj
 }
 
@@ -41,6 +42,12 @@ func addFontToObjects(objects *[]*PDFobj, font *Font) {
 	objs.descriptor = appendEmptyObject(objects)
 	objs.cidFont = appendEmptyObject(objects)
 	objs.toUnicode = appendEmptyObject(objects)
+	if !font.cff {
+		// A subset of a TrueType font is numbered again, and its glyphs
+		// mapped from the CIDs; it is known only when the pages are drawn
+		// whether the font is subset, so the object is numbered now.
+		objs.cidToGID = appendEmptyObject(objects)
+	}
 	objs.type0 = appendEmptyObject(objects)
 	objs.type0.font = font
 	font.fileObjNumber = objs.file.number
@@ -100,7 +107,24 @@ func (font *Font) completeObjects() {
 	obj.setStream(compressed)
 
 	completeFontDescriptor(objs.descriptor, font, baseFont)
-	completeCIDFontDictionary(objs.cidFont, font, baseFont, kept)
+	mapObjNumber := 0
+	if objs.cidToGID != nil {
+		obj = objs.cidToGID
+		if kept != nil {
+			compressedMap := deflateFontProgram(cidToGIDMap(kept))
+			obj.add("<<")
+			obj.add("/Filter")
+			obj.add("/FlateDecode")
+			obj.add("/Length")
+			obj.add(strconv.Itoa(len(compressedMap)))
+			obj.add(">>")
+			obj.setStream(compressedMap)
+			mapObjNumber = obj.number
+		} else {
+			obj.add("null") // The whole font: the map is /Identity
+		}
+	}
+	completeCIDFontDictionary(objs.cidFont, font, baseFont, kept, mapObjNumber)
 
 	cmap := deflateFontProgram([]byte(toUnicodeCMap(font, kept)))
 	obj = objs.toUnicode
@@ -212,7 +236,7 @@ func completeFontDescriptor(obj *PDFobj, font *Font, fontName string) {
 	obj.add(">>")
 }
 
-func completeCIDFontDictionary(obj *PDFobj, font *Font, baseFont string, kept []bool) {
+func completeCIDFontDictionary(obj *PDFobj, font *Font, baseFont string, kept []bool, mapObjNumber int) {
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/Font")
@@ -246,6 +270,12 @@ func completeCIDFontDictionary(obj *PDFobj, font *Font, baseFont string, kept []
 	obj.add("/W")
 	obj.add(widthsArray(font, kept))
 	obj.add("/CIDToGIDMap")
-	obj.add("/Identity")
+	if mapObjNumber > 0 {
+		obj.add(strconv.Itoa(mapObjNumber))
+		obj.add("0")
+		obj.add("R")
+	} else {
+		obj.add("/Identity")
+	}
 	obj.add(">>")
 }

@@ -92,10 +92,18 @@ func (line *tableSegment) y1() float32 {
 	return line.at + float32(line.width/2)
 }
 
-// overlaps returns true when the lines share more than an edge.
+// tableLineMargin is the margin around a line, in points, within which
+// another line may paint a pixel of its own: a line covers whole pixels of a
+// screen or a printer, the hairline of width 0 one at least, so two lines
+// that only meet, end to end or edge to edge, may paint one pixel.
+const tableLineMargin = 1
+
+// overlaps returns true when the lines may paint a pixel in common: they are
+// then stroked in the order the cells drew them.
 func (line *tableSegment) overlaps(other *tableSegment) bool {
-	return line.x0() < other.x1() && other.x0() < line.x1() &&
-		line.y0() < other.y1() && other.y0() < line.y1()
+	const m = 2 * tableLineMargin
+	return line.x0() < other.x1()+m && other.x0() < line.x1()+m &&
+		line.y0() < other.y1()+m && other.y0() < line.y1()+m
 }
 
 // addBorders keeps the borders of a cell that drawBorders would stroke, with

@@ -2784,6 +2784,12 @@ func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, text
 		pdf.fail("DrawGlyphs needs an x and a y for each glyph.")
 		return
 	}
+	for _, v := range positions {
+		if !(math.Abs(float64(v)) <= 1e6) { // NaN too
+			pdf.fail("DrawGlyphs needs positions between -1,000,000 and 1,000,000 points.")
+			return
+		}
+	}
 	program := font.program
 	if program.outline == nil {
 		outline, err := newGlyphOutline(program.font, program.cff)

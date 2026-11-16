@@ -634,11 +634,11 @@ func (bt *BigTable) drawFieldsAndLine(
 		// drawn whole and none is measured here.
 		drawn := text
 		if bt.clipped != nil && bt.clipped[i] < bt.widths[i] {
-			drawn = bigTableFit(text, bt.measureOf(font), bt.clipped[i])
+			drawn = bigTableFit(text, bt.measureOf(header), bt.clipped[i])
 		}
 		xText := bt.vertLines[i] + bt.padding
 		if bt.alignment[i] == alignment.Right {
-			xText = (bt.vertLines[i+1] - bt.padding) - bt.measureOf(font).width(drawn)
+			xText = (bt.vertLines[i+1] - bt.padding) - bt.measureOf(header).width(drawn)
 		}
 		if tagged {
 			// A cell holds its text and nothing else, so the cell element
@@ -659,7 +659,7 @@ func (bt *BigTable) drawFieldsAndLine(
 			bt.page.AddArtifactBMC()
 		}
 		if drawn != "" {
-			bt.drawText(font, drawn, xText, bt.yText)
+			bt.drawText(header, drawn, xText, bt.yText)
 		}
 		bt.page.AddEMC()
 	}
@@ -876,7 +876,7 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 	bt.widths = make([]float32, bt.numberOfColumns)
 	bt.alignment = make([]alignment.Alignment, bt.numberOfColumns)
 
-	bt.measure(header, bt.f1)
+	bt.measure(header, true)
 	rowNumber := 0
 	for fields := range rows {
 		if len(fields) < bt.fieldsNeeded {
@@ -887,7 +887,7 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 				bt.alignment[i] = bt.getAlignment(fields[bt.columns[i]])
 			}
 		}
-		bt.measure(fields, bt.f2)
+		bt.measure(fields, false)
 		rowNumber++
 	}
 	bt.dataRows = rowNumber
@@ -900,13 +900,13 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 // the row is drawn with: the header font for the header and the body font for
 // a row under it. The widths are those of the text, and setVertLines adds the
 // padding, so it can be set later.
-func (bt *BigTable) measure(fields []string, font *Font) {
+func (bt *BigTable) measure(fields []string, header bool) {
 	for i := 0; i < bt.numberOfColumns; i++ {
 		text := fields[bt.columns[i]]
 		if bt.checkLineBreaks && hasLineBreak(text) {
 			text = lineBreaksToSpaces(text)
 		}
-		width := bt.measureOf(font).width(text)
+		width := bt.measureOf(header).width(text)
 		if width > bt.widths[i] {
 			bt.widths[i] = width
 		}
@@ -1160,12 +1160,12 @@ func (bt *BigTable) setWrapWidths() {
 			bt.vertLines[i+1] = vertLineX
 		}
 	}
-	bt.headerLines, bt.headerCount = bt.wrapFields(bt.headerFields, bt.f1)
+	bt.headerLines, bt.headerCount = bt.wrapFields(bt.headerFields, true)
 }
 
 // wrapFields returns the lines of each field of the row drawn, wrapped to the
 // width of its column in the font, and the most lines of any of them.
-func (bt *BigTable) wrapFields(fields []string, font *Font) ([][]string, int) {
+func (bt *BigTable) wrapFields(fields []string, header bool) ([][]string, int) {
 	lines := make([][]string, bt.numberOfColumns)
 	count := 1
 	for i := 0; i < bt.numberOfColumns; i++ {
@@ -1173,7 +1173,7 @@ func (bt *BigTable) wrapFields(fields []string, font *Font) ([][]string, int) {
 		if bt.checkLineBreaks && hasLineBreak(text) {
 			text = lineBreaksToSpaces(text)
 		}
-		lines[i] = bigTableWrap(text, bt.measureOf(font), bt.textWidths[i])
+		lines[i] = bigTableWrap(text, bt.measureOf(header), bt.textWidths[i])
 		count = max(count, len(lines[i]))
 	}
 	return lines, count
@@ -1252,7 +1252,7 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 	}
 	font := bt.f2
 	lineHeight := font.ascent + font.descent
-	lines, count := bt.wrapFields(fields, font)
+	lines, count := bt.wrapFields(fields, false)
 	limit := bt.page.height - bt.bottomMargin
 	if count > 1 && bt.yText+float32(float32(count-1)*lineHeight) > limit && !bt.firstRowOnPage {
 		bt.drawTheVerticalLines()
@@ -1273,7 +1273,7 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 					}
 					whole[i] = text
 					lines[i] = lines[i][:most]
-					lines[i][most-1] = bigTableMark(lines[i][most-1], bt.measureOf(font), bt.textWidths[i])
+					lines[i][most-1] = bigTableMark(lines[i][most-1], bt.measureOf(false), bt.textWidths[i])
 				}
 			}
 			count = most
@@ -1350,13 +1350,13 @@ func (bt *BigTable) drawWrappedFields(
 			}
 			xText := bt.vertLines[i] + bt.padding
 			if bt.alignment[i] == alignment.Right {
-				xText = (bt.vertLines[i+1] - bt.padding) - bt.measureOf(font).width(line)
+				xText = (bt.vertLines[i+1] - bt.padding) - bt.measureOf(header).width(line)
 			}
 			yText := bt.yText
 			if k > 0 {
 				yText += float32(float32(k) * lineHeight)
 			}
-			bt.drawText(font, line, xText, yText)
+			bt.drawText(header, line, xText, yText)
 		}
 		bt.page.AddEMC()
 	}
@@ -1403,7 +1403,7 @@ func (bt *BigTable) countWrappedPages() int {
 			newPage = false
 			first = true
 		}
-		_, lines := bt.wrapFields(fields, font)
+		_, lines := bt.wrapFields(fields, false)
 		limit := pageHeight - bt.bottomMargin
 		if lines > 1 && yPos+float32(float32(lines-1)*lineHeight) > limit && !first {
 			count++
@@ -1440,19 +1440,21 @@ func (m bigTableMeasure) width(text string) float32 {
 	return m.font.StringWidthUsingFallbackFont(m.fallback, m.font.size, text)
 }
 
-// measureOf returns the measure of the font: the rows' with their fallback
-// font, the header's with its own.
-func (bt *BigTable) measureOf(font *Font) bigTableMeasure {
-	if font == bt.f2 {
-		return bigTableMeasure{font, bt.fallback2}
+// measureOf returns the measure of the header's font with its fallback font,
+// or of the rows' with theirs: by the row, not by the font, as the header and
+// the rows can have one font and fallback fonts of their own.
+func (bt *BigTable) measureOf(header bool) bigTableMeasure {
+	if header {
+		return bigTableMeasure{bt.f1, bt.fallback1}
 	}
-	return bigTableMeasure{font, bt.fallback1}
+	return bigTableMeasure{bt.f2, bt.fallback2}
 }
 
 // drawText draws the text at its baseline, in the font and its fallback
 // font, if it has one.
-func (bt *BigTable) drawText(font *Font, text string, x, y float32) {
-	fallback := bt.measureOf(font).fallback
+func (bt *BigTable) drawText(header bool, text string, x, y float32) {
+	m := bt.measureOf(header)
+	font, fallback := m.font, m.fallback
 	if fallback == nil {
 		bt.page.drawTextLine(font, text, x, y)
 		return

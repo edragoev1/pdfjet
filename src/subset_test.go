@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"regexp"
 	"slices"
@@ -550,4 +551,36 @@ func TestSubsetOverlappingGlyphsAreRefused(t *testing.T) {
 		}
 	}
 	testSubsetRefused(t, ttf, used)
+}
+
+// A TrueType subset is numbered again, so its CIDFont maps the CIDs to the
+// glyphs kept with a CIDToGIDMap stream; /Identity drew glyph 40 of a
+// subset of 6 for H (the review of 16 November 2026). The whole font keeps
+// /Identity.
+func TestSubsetOfATrueTypeFontAddedToAnExistingPDFMapsItsCIDs(t *testing.T) {
+	objects := testSubsetInExistingPDF(t, testSubsetPlex, true)
+	value := testFindObject(objects, "/CIDToGIDMap").GetValue("/CIDToGIDMap")
+	if value == "/Identity" {
+		t.Fatal("/CIDToGIDMap /Identity for a subset")
+	}
+	number, _ := strconv.Atoi(strings.Fields(value)[0])
+	var m []byte
+	for _, obj := range objects {
+		if obj.number == number {
+			m = obj.GetData()
+		}
+	}
+	// .notdef, H, e, l and o: the CIDs of H, e, l and o map to 1 to 4
+	var gids []int
+	for cid := 0; cid+1 < len(m); cid += 2 {
+		if gid := int(m[cid])<<8 | int(m[cid+1]); gid != 0 {
+			gids = append(gids, gid)
+		}
+	}
+	if fmt.Sprint(gids) != "[1 2 3 4]" {
+		t.Errorf("the glyphs mapped to: %v", gids)
+	}
+
+	whole := testSubsetInExistingPDF(t, testSubsetPlex, false)
+	testWant(t, "/Identity", testFindObject(whole, "/CIDToGIDMap").GetValue("/CIDToGIDMap"))
 }
