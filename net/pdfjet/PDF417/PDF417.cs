@@ -202,6 +202,10 @@ public class PDF417 : IDrawable {
             page.SaveGraphicsState();
             page.SetPenColor(color);
             page.SetDefaultStrokeDashPattern();     // Not the caller's, which broke the bars
+            // Butt caps: a round or projecting cap made each bar longer by half
+            // its width at both ends, into the rows above and below it (ISO
+            // 32000, 8.4.3.3)
+            page.SetLineCapStyle(CapStyle.BUTT);
         }
         float[] xy = DrawPdf417(page);
         if (page != null) {

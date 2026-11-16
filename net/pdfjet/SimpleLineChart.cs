@@ -492,6 +492,19 @@ public class SimpleLineChart : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return DrawChart(null);
+        }
+        // The text unturned and filled, whatever the page was left with
+        Action restore = page.PlainText();
+        try {
+            return DrawChart(page);
+        } finally {
+            restore();
+        }
+    }
+
+    private float[] DrawChart(Page page) {
         int n = Count();
         List<float> all = new List<float>();
         foreach (Line line in lines) {

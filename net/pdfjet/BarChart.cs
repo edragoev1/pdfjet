@@ -431,6 +431,19 @@ public class BarChart : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>the bottom right corner coordinates [x, y].</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return DrawChart(null);
+        }
+        // The text unturned and filled, whatever the page was left with
+        Action restore = page.PlainText();
+        try {
+            return DrawChart(page);
+        } finally {
+            restore();
+        }
+    }
+
+    private float[] DrawChart(Page page) {
         int n = NumberOfCategories();
         if (page == null || n == 0 || f1 == null || f2 == null) {  // Measured, or nothing to draw
             return new float[] {x1 + w, y1 + h};

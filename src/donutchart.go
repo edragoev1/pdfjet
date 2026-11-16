@@ -498,6 +498,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	if page == nil { // Measured
 		return [2]float32{box[2], box[3]}
 	}
+	defer page.plainText()()
 
 	// The chart is one figure, described by its alternate description.
 	page.AddBDC(structelem.Figure, "", "", dc.getAltDescription(values, percentages))

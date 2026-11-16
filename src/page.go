@@ -2204,6 +2204,22 @@ func (page *Page) SetTextRotation(degrees int) *Page {
 	return page
 }
 
+// plainText sets the text rotation and the text rendering mode of the page
+// to none and to fill, the ones a chart draws its text with, and returns the
+// function that puts back the ones the page had. The charts drew their text
+// in the rotation and the mode the program had left on the page, and
+// BarChart then set the rotation to none.
+func (page *Page) plainText() func() {
+	tmx, tm0, tm1, tm2, tm3 := page.tmx, page.tm0, page.tm1, page.tm2, page.tm3
+	mode := page.renderingMode
+	page.SetTextRotation(0)
+	page.renderingMode = 0
+	return func() {
+		page.tmx, page.tm0, page.tm1, page.tm2, page.tm3 = tmx, tm0, tm1, tm2, tm3
+		page.renderingMode = mode
+	}
+}
+
 // CurveTo adds a cubic Bézier curve command to the page’s content stream.
 // The coordinates (x1,y1) and (x2,y2) are the two control points,
 // and (x3,y3) is the end point of the curve.

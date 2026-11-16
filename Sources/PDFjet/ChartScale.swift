@@ -24,8 +24,23 @@ enum ChartScale {
     // (the owner, 4 November 2026: "we can create more space if the user tries
     // to jam too much info")
     static func noRoom(_ chart: String, _ w: Float, _ h: Float) -> String {
-        return chart + " of \(Int(w.rounded())) by \(Int(h.rounded()))"
+        return chart + " of \(points(w)) by \(points(h))"
                 + " points has no room for its plot: make it larger, or its title, names or numbers shorter."
+    }
+
+    // A size in whole points, as Go's %.0f writes one beyond the range of Int:
+    // Int() of an infinite size, or of one past Int.max, stopped the program.
+    private static func points(_ value: Float) -> String {
+        if value.isNaN {
+            return "NaN"
+        }
+        if value.isInfinite {
+            return value < 0.0 ? "-Inf" : "+Inf"
+        }
+        if abs(value) < 1e18 {
+            return "\(Int(value.rounded()))"
+        }
+        return String(format: "%.0f", Double(value))
     }
 
     // Formats a label with minDigits to maxDigits decimal places, rounding

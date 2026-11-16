@@ -519,6 +519,10 @@ public class SimpleLineChart : Drawable {
         guard let page = page, !all.isEmpty else {   // Measured, or nothing to draw
             return [x + w, y + h]
         }
+        let restore = page.plainText()    // The text unturned and filled, whatever the page was left with
+        defer {
+            restore()
+        }
         let size = f2.getSize()
         let pad = pad()
         let ascent = f2.getAscent(size)

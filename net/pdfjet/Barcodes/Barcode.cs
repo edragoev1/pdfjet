@@ -276,6 +276,9 @@ public class Barcode : IDrawable {
             page.SaveGraphicsState();
             page.SetPenColor(color);
             page.SetDefaultStrokeDashPattern();     // Not the caller's, which broke the bars
+            // Butt caps: a round or projecting cap made each bar longer by half
+            // its width at both ends (ISO 32000, 8.4.3.3)
+            page.SetLineCapStyle(CapStyle.BUTT);
         }
         try {
             Extent extent;

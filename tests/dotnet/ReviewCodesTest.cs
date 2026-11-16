@@ -399,5 +399,22 @@ public class ReviewCodesTest {
         new PDF417("Hello, World!").DrawOn(page);
         Assert.Contains("q\n0 0 0 RG\n[] 0 d\n", TestSupport.Content(page));
     }
+
+    // The bars have butt caps whatever cap the page was left with: a round or
+    // projecting cap made each bar longer by half its width at both ends, and a
+    // PDF417 bar, one row tall, into the rows above and below it (ISO 32000,
+    // 8.4.3.3).
+    [Fact]
+    public void TheBarsHaveButtCapsOnAPageOfProjectingCaps() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetLineCapStyle(CapStyle.PROJECTING_SQUARE);
+        new Barcode(Barcode.CODE_128, "A1").SetFont(TestSupport.Helvetica(pdf)).DrawOn(page);
+        Assert.Contains("q\n0 0 0 RG\n[] 0 d\n0 J\n", TestSupport.Content(page));
+        page = new Page(pdf, Letter.PORTRAIT);
+        page.SetLineCapStyle(CapStyle.PROJECTING_SQUARE);
+        new PDF417("Hello, PDF417 with projecting caps").DrawOn(page);
+        Assert.Contains("q\n0 0 0 RG\n[] 0 d\n0 J\n", TestSupport.Content(page));
+    }
 }
 }   // End of namespace PDFjet.NET

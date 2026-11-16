@@ -387,6 +387,19 @@ public class SimpleBarChart : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return DrawChart(null);
+        }
+        // The text unturned and filled, whatever the page was left with
+        Action restore = page.PlainText();
+        try {
+            return DrawChart(page);
+        } finally {
+            restore();
+        }
+    }
+
+    private float[] DrawChart(Page page) {
         float h = GetHeight();
         if (page == null || values.Count == 0 || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};

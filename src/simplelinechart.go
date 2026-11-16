@@ -414,6 +414,7 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	if page == nil || len(values) == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
 	}
+	defer page.plainText()()
 	f1, f2 := chart.f1, chart.f2
 	size := f2.size
 	pad := chart.pad()

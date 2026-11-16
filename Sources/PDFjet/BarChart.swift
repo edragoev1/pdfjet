@@ -492,6 +492,10 @@ public class BarChart : Drawable {
             return [x1 + w, y1 + h]
         }
         let page = page!
+        let restore = page.plainText()    // The text unturned and filled, whatever the page was left with
+        defer {
+            restore()
+        }
         if maxFractionDigits > ChartScale.maxDigits {
             page.pdf.fail(ChartScale.tooManyDigits)
             return [x1 + w, y1 + h]

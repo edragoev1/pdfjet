@@ -558,5 +558,44 @@ public class BarChartTest {
         return NewChart(pdf).SetSize(300f, height).SetCategories("a", "b", "c").SetValueAxisRange(0f, 10f)
                 .AddLineSeries("", new float[] {1f, middle, 3f});
     }
+
+    // The charts draw their text unturned and filled whatever text rotation and
+    // rendering mode the program left on the page, and leave the page with them:
+    // every label was turned with the page's rotation, drawn in its mode, and
+    // BarChart then set the rotation to none.
+    [Fact]
+    public void TheChartsDrawTheirTextUnturnedAndKeepThePagesRotation() {
+        string[] names = {"BarChart", "SimpleBarChart", "SimpleLineChart", "SimpleScatterChart", "DonutChart"};
+        foreach (string name in names) {
+            PDF pdf = TestSupport.NewPDF();
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            Font font = TestSupport.Helvetica(pdf);
+            page.SetTextRotation(90);
+            page.SetTextRenderingMode(3);
+            if (name == "BarChart") {
+                new BarChart(font, font).SetTitle("Title").SetCategories("a", "b")
+                        .AddSeries("s", new float[] {1f, 2f}).SetSize(300f, 200f).SetLocation(50f, 50f).DrawOn(page);
+            } else if (name == "SimpleBarChart") {
+                new SimpleBarChart(font, font).SetTitle("Title").Add("a", 1f).Add("b", 2f)
+                        .SetLocation(50f, 50f).DrawOn(page);
+            } else if (name == "SimpleLineChart") {
+                new SimpleLineChart(font, font).SetTitle("Title").SetCategories("a", "b")
+                        .AddLine("line", new float[] {1f, 2f}).SetSize(300f, 200f).SetLocation(50f, 50f).DrawOn(page);
+            } else if (name == "SimpleScatterChart") {
+                new SimpleScatterChart(font, font).SetTitle("Title").Add(1f, 1f).Add(2f, 3f)
+                        .SetSize(300f, 200f).SetLocation(50f, 50f).DrawOn(page);
+            } else {
+                new DonutChart(font, font).SetTitle("Title").Add("a", 1f).Add("b", 2f)
+                        .SetLocation(50f, 50f).DrawOn(page);
+            }
+            string chart = TestSupport.Content(page);
+            Assert.True(chart.Contains(" Tj\n") || chart.Contains(" TJ\n"), name + ": no text drawn");
+            Assert.False(chart.Contains("0 -1 1 0 ") || chart.Contains("3 Tr\n"),
+                    name + ": the text is turned or invisible");
+            page.DrawString(font, 10f, "after", 50f, 500f);
+            string after = TestSupport.Content(page).Substring(chart.Length);
+            Assert.True(after.Contains("3 Tr\n0 -1 1 0 "), name + ": the page is left without its rotation and mode: " + after);
+        }
+    }
 }
 }

@@ -526,4 +526,43 @@ class BarChartTest {
         return chart(pdf).setSize(300f, height).setCategories("a", "b", "c").setValueAxisRange(0f, 10f)
                 .addLineSeries("", new float[] {1f, middle, 3f});
     }
+
+    // The charts draw their text unturned and filled whatever text rotation and
+    // rendering mode the program left on the page, and leave the page with them:
+    // every label was turned with the page's rotation, drawn in its mode, and
+    // BarChart then set the rotation to none.
+    @Test
+    void theChartsDrawTheirTextUnturnedAndKeepThePagesRotation() throws Exception {
+        String[] names = {"BarChart", "SimpleBarChart", "SimpleLineChart", "SimpleScatterChart", "DonutChart"};
+        for (String name : names) {
+            PDF pdf = TestSupport.newPDF();
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            Font font = TestSupport.helvetica(pdf);
+            page.setTextRotation(90);
+            page.setTextRenderingMode(3);
+            if (name.equals("BarChart")) {
+                new BarChart(font, font).setTitle("Title").setCategories("a", "b")
+                        .addSeries("s", new float[] {1f, 2f}).setSize(300f, 200f).setLocation(50f, 50f).drawOn(page);
+            } else if (name.equals("SimpleBarChart")) {
+                new SimpleBarChart(font, font).setTitle("Title").add("a", 1f).add("b", 2f)
+                        .setLocation(50f, 50f).drawOn(page);
+            } else if (name.equals("SimpleLineChart")) {
+                new SimpleLineChart(font, font).setTitle("Title").setCategories("a", "b")
+                        .addLine("line", new float[] {1f, 2f}).setSize(300f, 200f).setLocation(50f, 50f).drawOn(page);
+            } else if (name.equals("SimpleScatterChart")) {
+                new SimpleScatterChart(font, font).setTitle("Title").add(1f, 1f).add(2f, 3f)
+                        .setSize(300f, 200f).setLocation(50f, 50f).drawOn(page);
+            } else {
+                new DonutChart(font, font).setTitle("Title").add("a", 1f).add("b", 2f)
+                        .setLocation(50f, 50f).drawOn(page);
+            }
+            String chart = TestSupport.content(page);
+            assertTrue(chart.contains(" Tj\n") || chart.contains(" TJ\n"), name + ": no text drawn");
+            assertFalse(chart.contains("0 -1 1 0 ") || chart.contains("3 Tr\n"),
+                    name + ": the text is turned or invisible");
+            page.drawString(font, null, 10f, "after", 50f, 500f);
+            String after = TestSupport.content(page).substring(chart.length());
+            assertTrue(after.contains("3 Tr\n0 -1 1 0 "), name + ": the page is left without its rotation and mode: " + after);
+        }
+    }
 }

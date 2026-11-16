@@ -16,6 +16,7 @@ import (
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -315,6 +316,10 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 		page.SaveGraphicsState()
 		page.SetPenColor(barcode.color)
 		page.SetDefaultStrokeDashPattern() // Not the caller's, which broke the bars
+		// Butt caps: a round or projecting cap made each bar longer by half
+		// its width at both ends, into the rows above and below it (ISO
+		// 32000, 8.4.3.3)
+		page.SetLineCapStyle(capstyle.Butt)
 	}
 	xy := barcode.drawBars(page)
 	if page != nil {

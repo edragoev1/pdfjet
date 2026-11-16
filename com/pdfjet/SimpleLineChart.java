@@ -513,6 +513,19 @@ public class SimpleLineChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return drawChart(null);
+        }
+        // The text unturned and filled, whatever the page was left with
+        Runnable restore = page.plainText();
+        try {
+            return drawChart(page);
+        } finally {
+            restore.run();
+        }
+    }
+
+    private float[] drawChart(Page page) throws Exception {
         final int n = count();
         List<Float> all = new ArrayList<Float>();
         for (Line line : lines) {
