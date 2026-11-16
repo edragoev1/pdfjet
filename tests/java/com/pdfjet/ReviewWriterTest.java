@@ -768,4 +768,51 @@ class ReviewWriterTest {
         String want = "/K [1 " + figure.group(1) + " 0 R 3]";
         assertTrue(Pattern.compile("/S /P\n[^>]*" + Pattern.quote(want)).matcher(raw).find(), "no P of " + want);
     }
+
+    // A paragraph with a Figure text line that wraps across the rows of a
+    // narrow TextFrame or TextColumn.
+    private static Paragraph wrappedFigureParagraph(Font font) {
+        TextLine stars = new TextLine(font, "starstarstar starstarstar starstarstar starstarstar");
+        stars.setStructureType(StructElem.FIGURE);
+        stars.setAltDescription("three stars");
+        return new Paragraph()
+                .add(new TextLine(font, "Rating words before the figure "))
+                .add(stars)
+                .add(new TextLine(font, " of five and more words after it"));
+    }
+
+    // A Figure text line that wraps across rows was a Figure for each row, or
+    // each word, each with the description of the whole line, which a screen
+    // reader read again for each.
+    @Test
+    void aFigureThatWrapsIsOneFigure() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        for (final String name : new String[] {"TextFrame", "TextColumn"}) {
+            String raw = document(Compliance.PDF_UA_1, (pdf, page) -> {
+                Paragraph paragraph = wrappedFigureParagraph(TestSupport.helvetica(pdf));
+                if (name.equals("TextFrame")) {
+                    List<Paragraph> paragraphs = new ArrayList<Paragraph>();
+                    paragraphs.add(paragraph);
+                    TextFrame frame = new TextFrame(paragraphs).setWidth(150f);
+                    frame.setLocation(50f, 100f);
+                    frame.drawOn(page);
+                } else {
+                    TextColumn column = new TextColumn().addParagraph(paragraph);
+                    column.setLocation(50f, 100f);
+                    column.setWidth(150f);
+                    column.drawOn(page);
+                }
+            });
+            Matcher figure = Pattern.compile("(\\d+) 0 obj\n<<\n/Type /StructElem /S /Figure\n[^>]*/K \\[\\d+ \\d+").matcher(raw);
+            assertTrue(figure.find(), name + ": no Figure of the marked contents of its pieces");
+            assertEquals(2, raw.split("/S /Figure\n", -1).length, name + ": more than one Figure");
+            Matcher k = Pattern.compile("/S /P\n[^>]*/K \\[([^\\]]*)\\]").matcher(raw);
+            assertTrue(k.find(), name + ": no P");
+            figure.reset().find();
+            String kids = " " + k.group(1) + " ";
+            String ref = " " + figure.group(1) + " 0 R ";
+            assertEquals(kids.indexOf(ref), kids.lastIndexOf(ref), name + ": the Figure is in the P's /K more than once");
+            assertTrue(kids.contains(ref), name + ": the Figure is not in the P's /K");
+        }
+    }
 }

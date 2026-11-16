@@ -717,5 +717,49 @@ public class ReviewWriterTest {
         string want = "/K [1 " + figure.Groups[1].Value + " 0 R 3]";
         Assert.True(Regex.IsMatch(raw, "/S /P\n[^>]*" + Regex.Escape(want)), "no P of " + want);
     }
+
+    // A paragraph with a Figure text line that wraps across the rows of a
+    // narrow TextFrame or TextColumn.
+    private static Paragraph WrappedFigureParagraph(Font font) {
+        TextLine stars = new TextLine(font, "starstarstar starstarstar starstarstar starstarstar");
+        stars.SetStructureType(StructElem.FIGURE);
+        stars.SetAltDescription("three stars");
+        return new Paragraph()
+                .Add(new TextLine(font, "Rating words before the figure "))
+                .Add(stars)
+                .Add(new TextLine(font, " of five and more words after it"));
+    }
+
+    // A Figure text line that wraps across rows was a Figure for each row, or
+    // each word, each with the description of the whole line, which a screen
+    // reader read again for each.
+    [Theory]
+    [InlineData("TextFrame")]
+    [InlineData("TextColumn")]
+    public void AFigureThatWrapsIsOneFigure(string name) {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        string raw = Document(Compliance.PDF_UA_1, (pdf, page) => {
+            Paragraph paragraph = WrappedFigureParagraph(TestSupport.Helvetica(pdf));
+            if (name == "TextFrame") {
+                TextFrame frame = new TextFrame(new List<Paragraph> { paragraph }).SetWidth(150f);
+                frame.SetLocation(50f, 100f);
+                frame.DrawOn(page);
+            } else {
+                TextColumn column = new TextColumn().AddParagraph(paragraph);
+                column.SetLocation(50f, 100f);
+                column.SetWidth(150f);
+                column.DrawOn(page);
+            }
+        });
+        Match figure = Regex.Match(raw, "(\\d+) 0 obj\n<<\n/Type /StructElem /S /Figure\n[^>]*/K \\[\\d+ \\d+");
+        Assert.True(figure.Success, "no Figure of the marked contents of its pieces");
+        Assert.Single(Regex.Matches(raw, "/S /Figure\n"));
+        Match k = Regex.Match(raw, "/S /P\n[^>]*/K \\[([^\\]]*)\\]");
+        Assert.True(k.Success, "no P");
+        string kids = " " + k.Groups[1].Value + " ";
+        string reference = " " + figure.Groups[1].Value + " 0 R ";
+        Assert.True(kids.Contains(reference), "the Figure is not in the P's /K");
+        Assert.Equal(kids.IndexOf(reference), kids.LastIndexOf(reference));
+    }
 }
 }

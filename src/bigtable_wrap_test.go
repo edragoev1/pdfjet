@@ -306,8 +306,10 @@ func TestBigTableTheFallbackFontsDrawWhatTheFontsDoNotHave(t *testing.T) {
 }
 
 // The first row on the page SetFirstPage set, which has room for a line or
-// two, starts the next page when it fits there whole: it was cut at the lines
-// that fit, and the rest of its text was never drawn.
+// two, starts the table on the next page when it fits there whole: it was cut
+// at the lines that fit, and the rest of its text was never drawn. The header
+// goes with it: moved alone, the row left the header and the footer on the
+// first page, with no row under them.
 func TestBigTableWrapTheFirstRowStartsTheNextPageWhenItFitsThere(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
@@ -319,18 +321,35 @@ func TestBigTableWrapTheFirstRowStartsTheNextPageWhenItFitsThere(t *testing.T) {
 		table.SetColumnWidths(100, 100)
 		table.SetFirstPage(first, 792-20-60)
 	})
-	if len(pages) != 2 || pages[0] != first {
-		t.Fatalf("%d pages", len(pages))
+	if len(pages) != 1 || pages[0] == first {
+		t.Fatalf("%d pages, the first page used: %v", len(pages), len(pages) > 0 && pages[0] == first)
 	}
-	if drawn := strings.Join(testDrawnText(pages[0]), " "); strings.Contains(drawn, "alpha") {
-		t.Errorf("the first row was drawn on the first page: %q", drawn)
+	if drawn := testDrawnText(first); len(drawn) != 0 {
+		t.Errorf("the first page was drawn on: %q", drawn)
 	}
-	drawn := strings.Join(testDrawnText(pages[1]), " ")
-	if !strings.Contains(drawn, "omega") || strings.Contains(drawn, bigTableEllipsis) {
-		t.Errorf("the first row is not whole on the next page: %q", drawn)
+	drawn := strings.Join(testDrawnText(pages[0]), " ")
+	if !strings.HasPrefix(drawn, "No Notes first alpha") || !strings.Contains(drawn, "omega") ||
+		strings.Contains(drawn, bigTableEllipsis) {
+		t.Errorf("the header and the first row are not whole on the next page: %q", drawn)
 	}
-	if !strings.Contains(testContent(pages[1]), testHex("Page 2 of 2")) {
+	if !strings.Contains(testContent(pages[0]), testHex("Page 1 of 1")) {
 		t.Error("the pages are not counted as they are drawn")
+	}
+}
+
+// A first row too tall for a whole page starts the table on the page
+// SetFirstPage set all the same: it is cut wherever it starts.
+func TestBigTableWrapAFirstRowTallerThanAPageStartsOnTheFirstPage(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	first := NewPage(pdf, letter.Portrait())
+	rows := [][]string{{"first", strings.Repeat("word ", 400)}, {"second", "short"}}
+	pages := testWrapTable(t, pdf, font, true, []string{"No", "Notes"}, rows, func(table *BigTable) {
+		table.SetColumnWidths(100, 100)
+		table.SetFirstPage(first, 792-20-60)
+	})
+	if len(pages) < 2 || pages[0] != first {
+		t.Fatalf("%d pages", len(pages))
 	}
 }
 

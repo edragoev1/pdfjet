@@ -49,6 +49,9 @@ type TextLine struct {
 	uriActualText      string
 	uriAltDescription  string
 	structureType      structelem.StructElem
+	// The text line this one is a piece of, drawn row by row or word by word
+	// in a TextFrame or TextColumn, or nil: the pieces of a Figure are one.
+	pieceOf *TextLine
 
 	// True when a TextBlock wrapped its text at a space after this line: the
 	// space is drawn after the line, so that a screen reader and a text
@@ -470,6 +473,10 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 	line.uriActualText = textLine.uriActualText
 	line.uriAltDescription = textLine.uriAltDescription
 	line.structureType = textLine.structureType
+	line.pieceOf = textLine
+	if textLine.pieceOf != nil {
+		line.pieceOf = textLine.pieceOf
+	}
 	return line
 }
 
@@ -505,7 +512,9 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if textLine.uri != "" || textLine.key != "" {
 		link = page.addLinkBDC(textLine.structureType, textLine.language, "", alt)
 	} else {
+		page.pieceOf = textLine.pieceOf
 		page.AddBDC(textLine.structureType, textLine.language, "", alt)
+		page.pieceOf = nil
 	}
 	page.drawStringUsingHighlightColors(
 		textLine.font,

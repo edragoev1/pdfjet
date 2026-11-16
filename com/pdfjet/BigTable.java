@@ -79,6 +79,7 @@ public class BigTable {
     private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
     private boolean startNewPage = true;
     private int dataRows;           // The rows under the header, counted by setTableData
+    private String[] firstRow;      // The first of them, or null
     private int pageCount;          // The pages they take, counted by complete()
     private int pageNumber;         // The page being drawn
     private boolean footerDrawn;
@@ -578,7 +579,11 @@ public class BigTable {
     }
 
     // True when the table starts on the page setFirstPage set: when the header
-    // and the first row fit on it above its bottom margin.
+    // and the first row fit on it above its bottom margin. A first row that
+    // wraps onto more lines than fit there, but fits a new page, starts the
+    // table on the next page, so that the header is not left alone at the
+    // bottom of this one; a first row too tall for a new page as well starts
+    // here, as it is cut wherever it starts.
     private boolean startsOnFirstPage() {
         if (firstPage == null) {
             return false;
@@ -589,7 +594,19 @@ public class BigTable {
         if (extra > 0f) {
             need += extra;
         }
-        return need <= firstPage.height - bottomMargin;
+        float limit = firstPage.height - bottomMargin;
+        if (need > limit) {
+            return false;
+        }
+        if (wrap && firstRow != null) {
+            int lines = mostLines(wrapFields(firstRow, false));
+            float lineHeight = f2.ascent + f2.descent;
+            if (lines > 1 && firstRowY(firstPageY) + (float) (lines - 1) * lineHeight > limit
+                    && fitsNewPage(lines)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Draws the footer of the page that was just finished, once. The page is
@@ -890,6 +907,7 @@ public class BigTable {
                     "The header does not have a field for every column."));
         }
         this.rows = rows;
+        this.firstRow = null;
         this.vertLines = new float[this.numberOfColumns + 1];
         this.headerFields = header.clone();
         this.widths = new float[this.numberOfColumns];
@@ -905,6 +923,7 @@ public class BigTable {
                     continue;
                 }
                 if (rowNumber == 0) {    // Determine alignment from first data row
+                    firstRow = fields.clone();
                     for (int i = 0; i < this.numberOfColumns; i++) {
                         alignment[i] = getAlignment(fields[columns[i]]);
                     }
@@ -1398,8 +1417,7 @@ public class BigTable {
         String[][] lines = wrapFields(fields, false);
         int count = mostLines(lines);
         float limit = page.height - bottomMargin;
-        if (count > 1 && this.yText + (float) (count - 1) * lineHeight > limit &&
-                (!firstRowOnPage || (page == firstPage && fitsNewPage(count)))) {
+        if (count > 1 && this.yText + (float) (count - 1) * lineHeight > limit && !firstRowOnPage) {
             drawTheVerticalLines();
             drawFooter();
             newPage();
@@ -1434,10 +1452,10 @@ public class BigTable {
         }
     }
 
-    // Whether a row of the lines fits whole on a new page. The first row on
-    // the page setFirstPage set, which may have room for one line, starts the
-    // next page when it fits there: it was cut at the lines that fit, though
-    // the next page had room for all of them.
+    // Whether a row of the lines fits whole on a new page. The first row,
+    // which may have room for one line on the page setFirstPage set, starts
+    // the table on the next page when it fits there: it was cut at the lines
+    // that fit, though the next page had room for all of them.
     private boolean fitsNewPage(int lines) {
         float lineHeight = f2.ascent + f2.descent;
         return firstRowY(this.y) + (float) (lines - 1) * lineHeight <= pageSize.getHeight() - bottomMargin;
@@ -1568,8 +1586,7 @@ public class BigTable {
                 }
                 int lines = mostLines(wrapFields(fields, false));
                 float limit = pageHeight - this.bottomMargin;
-                if (lines > 1 && yPos + (float) (lines - 1) * lineHeight > limit &&
-                        (!first || (count == 1 && startsOnFirstPage() && fitsNewPage(lines)))) {
+                if (lines > 1 && yPos + (float) (lines - 1) * lineHeight > limit && !first) {
                     count++;
                     pageHeight = pageSize.getHeight();
                     yPos = yTop;

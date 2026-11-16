@@ -92,9 +92,10 @@ type BigTable struct {
 	numberOfColumns int       // The length of columns
 	fieldsNeeded    int       // The fields a row needs: the largest index plus 1
 	startNewPage    bool
-	dataRows        int // The rows under the header, counted by SetTableData
-	pageCount       int // The pages they take, counted by Complete
-	pageNumber      int // The page being drawn
+	dataRows        int      // The rows under the header, counted by SetTableData
+	firstRow        []string // The first of them, or nil
+	pageCount       int      // The pages they take, counted by Complete
+	pageNumber      int      // The page being drawn
 	footerDrawn     bool
 	// In a PDF/UA document the table is a Table element that the rows of
 	// every page go on adding to; see drawFieldsAndLine.
@@ -496,6 +497,10 @@ func (bt *BigTable) headerExtra() float32 {
 
 // startsOnFirstPage returns true when the table starts on the page SetFirstPage
 // set: when the header and the first row fit on it above its bottom margin.
+// A first row that wraps onto more lines than fit there, but fits a new page,
+// starts the table on the next page, so that the header is not left alone at
+// the bottom of this one; a first row too tall for a new page as well starts
+// here, as it is cut wherever it starts.
 func (bt *BigTable) startsOnFirstPage() bool {
 	if bt.firstPage == nil {
 		return false
@@ -505,7 +510,19 @@ func (bt *BigTable) startsOnFirstPage() bool {
 	if extra := bt.headerExtra(); extra > 0 {
 		need += extra
 	}
-	return need <= bt.firstPage.height-bt.bottomMargin
+	limit := bt.firstPage.height - bt.bottomMargin
+	if need > limit {
+		return false
+	}
+	if bt.wrap && bt.firstRow != nil {
+		_, lines := bt.wrapFields(bt.firstRow, false)
+		lineHeight := bt.f2.ascent + bt.f2.descent
+		if lines > 1 && bt.firstRowY(bt.firstPageY)+float32(float32(lines-1)*lineHeight) > limit &&
+			bt.fitsNewPage(lines) {
+			return false
+		}
+	}
+	return true
 }
 
 // drawFooter draws the footer of the page that was just finished, once. The
@@ -870,6 +887,7 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 		return bt
 	}
 	bt.rows = rows
+	bt.firstRow = nil
 	bt.readErr = nil
 	bt.vertLines = make([]float32, bt.numberOfColumns+1)
 	bt.headerFields = append([]string(nil), header...)
@@ -883,6 +901,7 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 			continue
 		}
 		if rowNumber == 0 { // Determine alignment from first data row
+			bt.firstRow = append([]string(nil), fields...)
 			for i := 0; i < bt.numberOfColumns; i++ {
 				bt.alignment[i] = bt.getAlignment(fields[bt.columns[i]])
 			}
@@ -1264,8 +1283,7 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 	lineHeight := font.ascent + font.descent
 	lines, count := bt.wrapFields(fields, false)
 	limit := bt.page.height - bt.bottomMargin
-	if count > 1 && bt.yText+float32(float32(count-1)*lineHeight) > limit &&
-		(!bt.firstRowOnPage || (bt.page == bt.firstPage && bt.fitsNewPage(count))) {
+	if count > 1 && bt.yText+float32(float32(count-1)*lineHeight) > limit && !bt.firstRowOnPage {
 		bt.drawTheVerticalLines()
 		bt.drawFooter()
 		bt.newPage()
@@ -1304,9 +1322,9 @@ func (bt *BigTable) drawWrappedRow(fields []string) {
 }
 
 // fitsNewPage returns true when a row of the lines fits whole on a new page.
-// The first row on the page SetFirstPage set, which may have room for one
-// line, starts the next page when it fits there: it was cut at the lines that
-// fit, though the next page had room for all of them.
+// The first row, which may have room for one line on the page SetFirstPage
+// set, starts the table on the next page when it fits there: it was cut at
+// the lines that fit, though the next page had room for all of them.
 func (bt *BigTable) fitsNewPage(lines int) bool {
 	lineHeight := bt.f2.ascent + bt.f2.descent
 	return bt.firstRowY(bt.y)+float32(float32(lines-1)*lineHeight) <= bt.pageSize.GetHeight()-bt.bottomMargin
@@ -1425,8 +1443,7 @@ func (bt *BigTable) countWrappedPages() int {
 		}
 		_, lines := bt.wrapFields(fields, false)
 		limit := pageHeight - bt.bottomMargin
-		if lines > 1 && yPos+float32(float32(lines-1)*lineHeight) > limit &&
-			(!first || (count == 1 && bt.startsOnFirstPage() && bt.fitsNewPage(lines))) {
+		if lines > 1 && yPos+float32(float32(lines-1)*lineHeight) > limit && !first {
 			count++
 			pageHeight = bt.pageSize.GetHeight()
 			yPos = yTop

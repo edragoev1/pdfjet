@@ -194,6 +194,12 @@ public class Page {
     // The figure addBDC began last, whose bounding box setFigureBoundingBox
     // sets, or nil.
     private var figure: StructElement?
+    // The text line that the text line being drawn is a piece of, or nil; and
+    // the text line of the Figure that addBDC made last, with the Figure. See
+    // figurePiece.
+    internal var pieceOf: TextLine?
+    private var pieces: TextLine?
+    private var piecesFigure: StructElement?
     // The transform of the containers that what is drawn is in, which moves,
     // turns and scales it with its cm operators, or nil outside of one: a
     // point x, y of the drawing is at t[0]*x + t[2]*y + t[4], t[1]*x +
@@ -2968,6 +2974,9 @@ public class Page {
                 mcid += 1
                 return
             }
+            if structure == StructElem.FIGURE && figurePiece() {
+                return
+            }
             let element = StructElement()
             element.structure = structure.rawValue
             element.mcid = mcid
@@ -2991,8 +3000,37 @@ public class Page {
             if structure == StructElem.FIGURE {
                 artifactDepth = markedContentDepth
                 figure = element
+                pieces = pieceOf
+                piecesFigure = element
             }
         }
+    }
+
+    // Begins the marked content of a piece of a Figure text line that a
+    // TextFrame or TextColumn draws in rows, or word by word, as one more of
+    // the Figure of the piece drawn just before it in the paragraph, and
+    // returns true; or false when it is the first piece. A figure is one
+    // element whose description a screen reader reads once: each piece was a
+    // Figure of its own, with the description of the whole line again.
+    private func figurePiece() -> Bool {
+        guard let pieceOf = pieceOf, pieces === pieceOf, let figure = piecesFigure,
+                let parent = mcidParent, parent === structParent, figure.parent === parent,
+                parent.mcids.last == -(figure.objNumber ?? 0) else {
+            return false
+        }
+        if figure.mcid >= 0 {
+            figure.mcids.append(figure.mcid)
+            figure.mcid = -1
+        }
+        figure.mcids.append(mcid)
+        append("/Figure <</MCID ")
+        append(mcid)
+        append(Token.endDictionary)
+        append("BDC\n")
+        mcid += 1
+        artifactDepth = markedContentDepth
+        self.figure = figure
+        return true
     }
 
     // Puts the element, a kid of a paragraph drawn word by word, like the

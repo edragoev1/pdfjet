@@ -52,6 +52,9 @@ public class TextLine : BaselineDrawable {
     private var uriAltDescription: String?
 
     private var structureType = StructElem.P
+    // The text line this one is a piece of, drawn row by row or word by word
+    // in a TextFrame or TextColumn, or nil: the pieces of a Figure are one.
+    private var pieceOf: TextLine?
 
     private var textColor: [Float] = [0.0, 0.0, 0.0]
     private var decorationColor: [Float] = [0.0, 0.0, 0.0]
@@ -573,6 +576,7 @@ public class TextLine : BaselineDrawable {
         textLine.uriActualText = uriActualText
         textLine.uriAltDescription = uriAltDescription
         textLine.structureType = structureType
+        textLine.pieceOf = pieceOf ?? self
         return textLine
     }
 
@@ -612,7 +616,9 @@ public class TextLine : BaselineDrawable {
         if !(uri ?? "").isEmpty || !(key ?? "").isEmpty {
             link = page!.addLinkBDC(structureType, language, "", alt)
         } else {
+            page!.pieceOf = pieceOf
             page!.addBDC(structureType, language, "", alt)
+            page!.pieceOf = nil
         }
         page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         page!.addEMC()

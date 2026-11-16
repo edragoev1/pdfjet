@@ -134,6 +134,12 @@ public class Page {
     // The figure AddBDC began last, whose bounding box SetFigureBoundingBox
     // sets, or null.
     private StructElement figure = null;
+    // The text line that the text line being drawn is a piece of, or null; and
+    // the text line of the Figure that AddBDC made last, with the Figure. See
+    // FigurePiece.
+    internal TextLine pieceOf = null;
+    private TextLine pieces = null;
+    private StructElement piecesFigure = null;
     // The transform of the containers that what is drawn is in, which moves,
     // turns and scales it with its cm operators, or null outside of one: a
     // point x, y of the drawing is at t[0]*x + t[2]*y + t[4], t[1]*x +
@@ -3098,6 +3104,9 @@ public class Page {
                 Append("BDC\n");
                 return;
             }
+            if (structure == StructElem.FIGURE && FigurePiece()) {
+                return;
+            }
             StructElement element = new StructElement();
             element.structure = structure.Type();
             element.mcid = mcid;
@@ -3121,8 +3130,38 @@ public class Page {
             if (structure == StructElem.FIGURE) {
                 artifactDepth = markedContentDepth;
                 figure = element;
+                pieces = pieceOf;
+                piecesFigure = element;
             }
         }
+    }
+
+    // Begins the marked content of a piece of a Figure text line that a
+    // TextFrame or TextColumn draws in rows, or word by word, as one more of
+    // the Figure of the piece drawn just before it in the paragraph, and
+    // returns true; or false when it is the first piece. A figure is one
+    // element whose description a screen reader reads once: each piece was a
+    // Figure of its own, with the description of the whole line again.
+    private bool FigurePiece() {
+        StructElement figure = piecesFigure;
+        StructElement parent = mcidParent;
+        if (pieceOf == null || pieces != pieceOf || figure == null ||
+                parent == null || parent != structParent || figure.parent != parent ||
+                parent.mcids.Count == 0 || parent.mcids[parent.mcids.Count - 1] != -figure.objNumber) {
+            return false;
+        }
+        if (figure.mcid >= 0) {
+            figure.mcids.Add(figure.mcid);
+            figure.mcid = -1;
+        }
+        figure.mcids.Add(mcid);
+        Append("/Figure <</MCID ");
+        Append(mcid++);
+        Append(">>\n");
+        Append("BDC\n");
+        artifactDepth = markedContentDepth;
+        this.figure = figure;
+        return true;
     }
 
     // Puts the element, a kid of a paragraph drawn word by word, like the
