@@ -568,11 +568,16 @@ public class Font {
     // made a Float exactly: stringWidth sums them as an Int and makes the sum
     // a Float, exact below 2^24.
     func runWidth(_ r: Run, _ fontSize: Float) -> Float {
-        let units = r.advance + (kerns() ? r.kerning : 0)
-        if abs(units) >= (1 << 24) {
+        let units = r.advance + r.kerning
+        if r.advance >= (1 << 24) || r.kerning >= (1 << 24) || r.kerning <= -(1 << 24)
+                || units >= (1 << 24) || units <= -(1 << 24) {
             return -1.0
         }
-        return Float(units) * fontSize / Float(self.unitsPerEm)
+        var width = Float(r.advance)
+        if kerns() {
+            width += Float(r.kerning)
+        }
+        return width * fontSize / Float(self.unitsPerEm)
     }
 
     // Returns the kerning of the text, in font units: the sum of the pairs of

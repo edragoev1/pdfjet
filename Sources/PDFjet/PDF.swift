@@ -14,8 +14,10 @@ public final class PDF {
     var images = [Image]()
     var pages = [Page]()
     var destinations = [String : Destination]()
-    // The object of the action of each URI a link goes to
-    private var uriActions = [String: Int]()
+    // The object of the action of each URI a link goes to, by the bytes of
+    // the URI: Swift's strings that are canonically equivalent are equal, as
+    // é and e with its accent, which are two URIs
+    private var uriActions = [[UInt8]: Int]()
     var groups = [OptionalContentGroup]()
     var states = [String : Int]()
     var stamps = [Stamp]()
@@ -1568,7 +1570,8 @@ public final class PDF {
     // it, written before the first: each link carried the address itself,
     // and twenty links to an address of 20,000 characters added about 800 KB.
     private func addURIAction(_ uri: String) -> Int {
-        if let number = uriActions[uri] {
+        let key = [UInt8](uri.utf8)
+        if let number = uriActions[key] {
             return number
         }
         newObj()
@@ -1579,7 +1582,7 @@ public final class PDF {
         append(">\n")
         append(Token.endDictionary)
         endObj()
-        uriActions[uri] = getObjNumber()
+        uriActions[key] = getObjNumber()
         return getObjNumber()
     }
 

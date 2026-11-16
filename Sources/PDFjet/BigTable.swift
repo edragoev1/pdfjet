@@ -626,11 +626,11 @@ public class BigTable {
             // field of it is drawn whole and none is measured here.
             var drawn = text
             if let clipped = self.clipped, clipped[i] < widths[i] {
-                drawn = BigTable.fit(text, measureOf(font), clipped[i])
+                drawn = BigTable.fit(text, measureOf(header), clipped[i])
             }
             var xText = vertLines[i] + self.padding
             if alignment[i] == Alignment.RIGHT {
-                xText = (vertLines[i + 1] - self.padding) - measureOf(font).width(drawn)
+                xText = (vertLines[i + 1] - self.padding) - measureOf(header).width(drawn)
             }
             if tagged {
                 // A cell holds its text and nothing else, so the cell element
@@ -649,7 +649,7 @@ public class BigTable {
                 page!.addArtifactBMC()
             }
             if !drawn.isEmpty {
-                drawText(font, drawn, xText, self.yText)
+                drawText(header, drawn, xText, self.yText)
             }
             page!.addEMC()
         }
@@ -815,7 +815,7 @@ public class BigTable {
         self.widths = [Float](repeating: 0.0, count: numberOfColumns)
         self.alignment = [Alignment](repeating: Alignment.LEFT, count: numberOfColumns)
 
-        measure(header, f1)
+        measure(header, true)
         var rowNumber = 0
         for fields in IteratorSequence(rows()) {
             if fields.count < fieldsNeeded {
@@ -826,7 +826,7 @@ public class BigTable {
                     alignment[i] = getAlignment(fields[columns[i]])
                 }
             }
-            measure(fields, f2)
+            measure(fields, false)
             rowNumber += 1
         }
         self.dataRows = rowNumber
@@ -840,10 +840,10 @@ public class BigTable {
     // Widens the columns to fit the fields of a row, measured in the font the
     // row is drawn with: the header font for the header and the body font for
     // a row under it.
-    private func measure(_ fields: [String], _ font: Font) {
+    private func measure(_ fields: [String], _ header: Bool) {
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
-            let width = measureOf(font).width(text)
+            let width = measureOf(header).width(text)
             if width > widths[i] {
                 widths[i] = width
             }
@@ -1091,18 +1091,18 @@ public class BigTable {
                 vertLines[i + 1] = vertLineX
             }
         }
-        (headerLines, headerCount) = wrapFields(headerFields, f1)
+        (headerLines, headerCount) = wrapFields(headerFields, true)
     }
 
     // The lines of each field of the row drawn, wrapped to the width of its
     // column in the font, and the most lines of any of them.
-    private func wrapFields(_ fields: [String], _ font: Font) -> ([[String]], Int) {
+    private func wrapFields(_ fields: [String], _ header: Bool) -> ([[String]], Int) {
         var lines = [[String]]()
         lines.reserveCapacity(numberOfColumns)
         var count = 1
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
-            let field = BigTable.wrapText(text, measureOf(font), textWidths[i])
+            let field = BigTable.wrapText(text, measureOf(header), textWidths[i])
             lines.append(field)
             count = max(count, field.count)
         }
@@ -1185,7 +1185,7 @@ public class BigTable {
         }
         let font = f2
         let lineHeight = font.ascent + font.descent
-        var (lines, count) = wrapFields(fields, font)
+        var (lines, count) = wrapFields(fields, false)
         var limit = page!.height - bottomMargin
         if count > 1 && self.yText + Float(count - 1) * lineHeight > limit && !firstRowOnPage {
             drawTheVerticalLines()
@@ -1201,7 +1201,7 @@ public class BigTable {
                 for i in 0..<lines.count where lines[i].count > most {
                     texts[i] = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
                     lines[i] = Array(lines[i][0..<most])
-                    lines[i][most - 1] = BigTable.mark(lines[i][most - 1], measureOf(font), textWidths[i])
+                    lines[i][most - 1] = BigTable.mark(lines[i][most - 1], measureOf(false), textWidths[i])
                 }
                 whole = texts
                 count = most
@@ -1278,13 +1278,13 @@ public class BigTable {
             for (k, line) in lines[i].enumerated() where !line.isEmpty {
                 var xText = vertLines[i] + self.padding
                 if alignment[i] == Alignment.RIGHT {
-                    xText = (vertLines[i + 1] - self.padding) - measureOf(font).width(line)
+                    xText = (vertLines[i + 1] - self.padding) - measureOf(header).width(line)
                 }
                 var yText = self.yText
                 if k > 0 {
                     yText += Float(k) * lineHeight
                 }
-                drawText(font, line, xText, yText)
+                drawText(header, line, xText, yText)
             }
             page!.addEMC()
         }
@@ -1334,7 +1334,7 @@ public class BigTable {
                 isNewPage = false
                 first = true
             }
-            var (_, lines) = wrapFields(fields, font)
+            var (_, lines) = wrapFields(fields, false)
             var limit = pageHeight - self.bottomMargin
             if lines > 1 && yPos + Float(lines - 1) * lineHeight > limit && !first {
                 count += 1
@@ -1371,19 +1371,22 @@ public class BigTable {
         }
     }
 
-    // The measure of the font: the rows' with their fallback font, the
-    // header's with its own.
-    private func measureOf(_ font: Font) -> TextMeasure {
-        if font === f2 {
-            return TextMeasure(font: font, fallback: fallback2)
+    // The measure of the header's font with its fallback font, or of the
+    // rows' with theirs: by the row, not by the font, as the header and the
+    // rows can have one font and fallback fonts of their own.
+    func measureOf(_ header: Bool) -> TextMeasure {
+        if header {
+            return TextMeasure(font: f1, fallback: fallback1)
         }
-        return TextMeasure(font: font, fallback: fallback1)
+        return TextMeasure(font: f2, fallback: fallback2)
     }
 
     // Draws the text at its baseline, in the font and its fallback font, if
     // it has one.
-    private func drawText(_ font: Font, _ text: String, _ x: Float, _ y: Float) {
-        guard let fallback = measureOf(font).fallback else {
+    private func drawText(_ header: Bool, _ text: String, _ x: Float, _ y: Float) {
+        let m = measureOf(header)
+        let font = m.font
+        guard let fallback = m.fallback else {
             page!.drawTextLine(font, text, x, y)
             return
         }

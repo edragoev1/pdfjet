@@ -29,21 +29,23 @@ final class GlyphOutline {
         let yMax: Double
     }
 
-    private let data: [UInt8]
+    // The data, the length of the glyf table and the charstrings are
+    // variables, so that a test can give a glyph bytes of its own
+    var data: [UInt8]
     private let cff: Bool
     // The units of the font to the em: a b c d e f
     private(set) var matrix = [Double]()
     private var numGlyphs = 0
 
     // TrueType
-    private var glyfOffset = 0
-    private var glyfLength = 0
-    private var locaOffset = 0
+    private(set) var glyfOffset = 0
+    var glyfLength = 0
+    private(set) var locaOffset = 0
     private var locaLength = 0
-    private var longOffsets = false
+    private(set) var longOffsets = false
 
     // CFF
-    private var charStrings = CFFSubset.Index(start: 0, end: 0, objects: [0])
+    var charStrings = CFFSubset.Index(start: 0, end: 0, objects: [0])
     private var globalSubrs = CFFSubset.Index(start: 0, end: 0, objects: [0])
     private var localSubrs = [CFFSubset.Index?]()   // Of each Font DICT, or of the font
     private var fdOf: [Int]?                        // The Font DICT of each glyph, or nil
@@ -176,6 +178,9 @@ final class GlyphOutline {
             if m.count != 6 {
                 throw Subset.NotSubset()
             }
+            for v in m where !(abs(v) <= 1000) {    // NaN too
+                throw Subset.NotSubset()
+            }
             return m
         }
         return nil
@@ -283,7 +288,7 @@ final class GlyphOutline {
                 let charString = CharString(self, pen, gid)
                 try charString.run(charStrings.objects[gid], charStrings.objects[gid + 1], 0)
             } else {
-                var points = Points()
+                var points = Points(work: Points.Work())
                 try trueTypePoints(gid, &points, 0)
                 points.draw(pen)
             }
@@ -292,11 +297,19 @@ final class GlyphOutline {
         } catch {
             throw PDFjetError(message: GlyphOutline.unreadable + "glyph number \(gid) is damaged.")
         }
+        if pen.outOfRange {
+            throw PDFjetError(message: GlyphOutline.unreadable + "glyph number \(gid) is damaged.")
+        }
         return pen.path()
     }
 
     // ------------------------------------------------------------------
     // The path: the operators of PDF, in the units of the font
+
+    // The bound of the points of an outline, in the units of the font: a
+    // font's are within ±32,768, and a charstring's arithmetic can make
+    // larger ones, or ones not finite, which a path cannot have.
+    static let maxCoordinate = 1e6
 
     /// Writes the path operators and finds the box of the points.
     final class Pen {
@@ -310,8 +323,16 @@ final class GlyphOutline {
         private(set) var x = 0.0
         private(set) var y = 0.0
         private var open = false    // A contour is begun and has a segment
+        private(set) var outOfRange = false // A point past maxCoordinate, or not finite
 
         private func point(_ px: Double, _ py: Double) {
+            var px = px
+            var py = py
+            if !(abs(px) <= GlyphOutline.maxCoordinate && abs(py) <= GlyphOutline.maxCoordinate) {
+                outOfRange = true   // NaN too
+                px = 0
+                py = 0
+            }
             if px < xMin { xMin = px }
             if py < yMin { yMin = py }
             if px > xMax { xMax = px }
@@ -386,7 +407,11 @@ final class GlyphOutline {
         for _ in 0..<decimals {
             scale *= 10
         }
-        let n = Int64((abs(value) * Double(scale) + 0.5).rounded(.down))
+        // A value too large for an Int64, or not finite, as a font size can
+        // make the matrix of a glyph, is the largest one, and NaN 0: made an
+        // integer, it would trap.
+        let d = (abs(value) * Double(scale) + 0.5).rounded(.down)
+        let n: Int64 = d < 9223372036854775808.0 ? Int64(d) : (d.isNaN ? 0 : Int64.max)
         if n == 0 {
             return "0"
         }
@@ -415,6 +440,12 @@ final class GlyphOutline {
         var y = [Double]()
         var on = [Bool]()
         var ends = [Int]()
+        let work: Work  // The glyphs and points read for the outline, its parts' too
+
+        // The work of an outline, shared by the points of its parts.
+        final class Work {
+            var count = 0
+        }
 
         var count: Int { x.count }
 
@@ -493,6 +524,13 @@ final class GlyphOutline {
         if depth > 16 {
             throw Subset.NotSubset()    // Composite glyphs nested too deep, or in a loop
         }
+        // A composite glyph of many parts, each of many parts, 16 deep, would
+        // take time and memory that grow exponentially: the work of a glyph is
+        // bounded, as that of a charstring is.
+        points.work.count += 1
+        if points.work.count > GlyphOutline.maxWork {
+            throw Subset.NotSubset()
+        }
         var start: Int
         var end: Int
         if longOffsets {
@@ -528,6 +566,10 @@ final class GlyphOutline {
                 throw Subset.NotSubset()
             }
             n = ends[i] + 1
+        }
+        points.work.count += n
+        if points.work.count > GlyphOutline.maxWork {
+            throw Subset.NotSubset()
         }
         p += 2 * contours
         let instructions = try u16(p)
@@ -635,7 +677,7 @@ final class GlyphOutline {
             if p > limit {
                 throw Subset.NotSubset()
             }
-            var part = Points()
+            var part = Points(work: points.work)
             try trueTypePoints(component, &part, depth + 1)
             for i in 0..<part.count {
                 let px = part.x[i]
@@ -708,7 +750,8 @@ final class GlyphOutline {
     // ------------------------------------------------------------------
     // CFF: the Type 2 charstrings (Adobe Technical Note #5177)
 
-    // The most bytes of charstrings a glyph runs, subroutines and all.
+    // The most bytes of charstrings a glyph runs, subroutines and all; and the
+    // most glyphs and points a TrueType glyph reads, its parts and theirs.
     private static let maxWork = 1 << 20
 
     /// The interpreter of the charstring of one glyph.
@@ -1105,20 +1148,27 @@ final class GlyphOutline {
                 try push(b)
                 try push(a)
             case 29:    // index
-                var i = try index(try pop())
-                if i < 0 {
-                    i = 0
-                }
-                if i >= sp {
+                let v = try pop()
+                // Compared as a number before it is made an integer, which differs
+                // from language to language and from processor to processor for
+                // one too large
+                if v.isNaN || v >= Double(sp) {
                     throw Subset.NotSubset()
+                }
+                var i = 0
+                if v > 0 {
+                    i = Int(v)
                 }
                 try push(stack[sp - 1 - i])
             case 30:    // roll
-                let j = try index(try pop())
-                let n = try index(try pop())
-                if n <= 0 || n > sp {
+                let jv = try pop()
+                let nv = try pop()
+                // Compared as numbers before they are made integers, as index
+                if !(nv >= 1 && nv <= Double(sp)) || !(abs(jv) <= 1e9) {
                     throw Subset.NotSubset()
                 }
+                let j = Int(jv)
+                let n = Int(nv)
                 var part = [Double](repeating: 0, count: n)
                 for m in 0..<n {
                     part[((m + j) % n + n) % n] = stack[sp - n + m]

@@ -379,7 +379,11 @@ class Subset {
             if !seen.insert(raw).inserted {
                 throw NotSubset()
             }
-            let tag = String(decoding: ttf[entry..<(entry + 4)].map { $0 & 0x7F }, as: UTF8.self)
+            // The tag of its bytes, each a character of its own, as the other
+            // ports read it: a byte with its high bit set makes a tag none
+            // of those below, as 0xE8 "ead" is not "head", which a mask of
+            // the high bit made it, and h[8] = 0 trapped on a table of 4 bytes
+            let tag = String(ttf[entry..<(entry + 4)].map { Character(Unicode.Scalar($0)) })
             let table = Table(tag: tag, offset: offset, length: length)
             tables.append(table)
             switch tag {

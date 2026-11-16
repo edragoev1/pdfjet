@@ -3085,6 +3085,10 @@ public class Page {
             pdf.fail("drawGlyphs needs an x and a y for each glyph.")
             return
         }
+        for v in positions where !(abs(v) <= 1e6) {     // NaN too
+            pdf.fail("drawGlyphs needs positions between -1,000,000 and 1,000,000 points.")
+            return
+        }
         if program.outline == nil {
             do {
                 program.outline = try GlyphOutline(program.font, program.cff)

@@ -1213,7 +1213,9 @@ public final class PDFobj {
             guard let last = dict.lastIndex(of: ">>") else {
                 return false
             }
-            dict.insert(contentsOf: ["/Contents", "["] + PDFobj.addStream(after, &objects) + ["]"], at: last)
+            // The content before, which saves the graphics state that the
+            // content after restores, in the one stream
+            dict.insert(contentsOf: ["/Contents", "["] + PDFobj.addStream(before + after, &objects) + ["]"], at: last)
             return true
         }
         let start = i + 1

@@ -23,7 +23,7 @@ final class TableLines {
     // A line: horizontal at y = at, from x = from to x = to, or vertical at
     // x = at, from y = from to y = to, with the pen of the page when the cell
     // drew it, and how far its caps reach past its ends.
-    private final class Segment {
+    final class Segment {
         let vertical: Bool
         let at: Float
         var from: Float
@@ -57,15 +57,20 @@ final class TableLines {
         func x1() -> Float { return vertical ? at + width/2 : to + cap }
         func y1() -> Float { return vertical ? to + cap : at + width/2 }
 
-        // True when the line and the rectangle share more than an edge.
-        func overlaps(_ left: Float, _ top: Float, _ right: Float, _ bottom: Float) -> Bool {
-            return x0() < right && left < x1() && y0() < bottom && top < y1()
-        }
-
+        // True when the lines may paint a pixel in common: they are then
+        // stroked in the order the cells drew them.
         func overlaps(_ other: Segment) -> Bool {
-            return overlaps(other.x0(), other.y0(), other.x1(), other.y1())
+            let m = 2 * TableLines.tableLineMargin
+            return x0() < other.x1() + m && other.x0() < x1() + m &&
+                    y0() < other.y1() + m && other.y0() < y1() + m
         }
     }
+
+    // The margin around a line, in points, within which another line may
+    // paint a pixel of its own: a line covers whole pixels of a screen or a
+    // printer, the hairline of width 0 one at least, so two lines that only
+    // meet, end to end or edge to edge, may paint one pixel.
+    static let tableLineMargin: Float = 1
 
     // The lines in the order the cells drew them.
     private var pending = [Segment]()
@@ -127,10 +132,10 @@ final class TableLines {
     // it as it did.
     func beforeFill(_ page: Page, _ left: Float, _ top: Float, _ right: Float, _ bottom: Float) {
         for line in pending {
-            let x0 = max(line.x0(), left)
-            let y0 = max(line.y0(), top)
-            let x1 = min(line.x1(), right)
-            let y1 = min(line.y1(), bottom)
+            let x0 = TableLines.larger(line.x0(), left)
+            let y0 = TableLines.larger(line.y0(), top)
+            let x1 = TableLines.smaller(line.x1(), right)
+            let y1 = TableLines.smaller(line.y1(), bottom)
             if x0 > x1 || y0 > y1 {
                 continue    // Apart
             }
@@ -140,6 +145,22 @@ final class TableLines {
             flush(page)
             return
         }
+    }
+
+    // The larger and the smaller of two numbers, NaN when either is, as in
+    // the other ports: Swift's max and min return the other number.
+    static func larger(_ a: Float, _ b: Float) -> Float {
+        if a.isNaN || b.isNaN {
+            return Float.nan
+        }
+        return a > b ? a : b
+    }
+
+    static func smaller(_ a: Float, _ b: Float) -> Float {
+        if a.isNaN || b.isNaN {
+            return Float.nan
+        }
+        return a < b ? a : b
     }
 
     // Writes the lines kept so far, joined, and leaves the page with the pen
