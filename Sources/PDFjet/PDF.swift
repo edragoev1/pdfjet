@@ -2413,8 +2413,14 @@ public final class PDF {
     // any file, and a larger one in a file that has as many bytes. The empty
     // objects up to a larger number would take the memory a file of a few
     // bytes never names.
-    func getSortedObjects(_ objects: [PDFobj], _ size: Int) throws -> [PDFobj] {
-        var sorted = [PDFobj]()
+    //
+    // The empty objects past minObjNumberLimit are taken from the budget as the
+    // objects of object streams are: each one takes a few hundred bytes, and a
+    // file of 16 MB that numbered its one object 16,000,000 made 4.3 GB of
+    // them, more than the 128 bytes for each byte of the PDF that the reader
+    // may take.
+    func getSortedObjects(
+            _ objects: [PDFobj], _ size: Int, _ budget: PDFobj.DecodeBudget) throws -> [PDFobj] {
         var maxObjNumber = 0
         for obj in objects {
             if obj.number > maxObjNumber {
@@ -2425,15 +2431,52 @@ public final class PDF {
             throw PDFjetError(message: "The PDF of \(size) bytes cannot hold "
                     + "an object numbered \(maxObjNumber).")
         }
-        for number in stride(from: 1, through: maxObjNumber, by: 1) {
-            let obj = PDFobj()
-            obj.setNumber(number)
-            sorted.append(obj)
-        }
+        var byNumber = [PDFobj?](repeating: nil, count: maxObjNumber)
         for obj in objects where obj.number > 0 {
-            sorted[obj.number - 1] = obj
+            byNumber[obj.number - 1] = obj
+        }
+        var empty = -PDF.minObjNumberLimit
+        for obj in byNumber where obj == nil {
+            empty += 1
+        }
+        if empty > 0 {
+            let free = min(empty, budget.freeObjects)
+            budget.freeObjects -= free
+            if empty - free > budget.left / PDF.objectCost {
+                throw PDFjetError(message: "The PDF of \(size) bytes cannot hold "
+                        + "an object numbered \(maxObjNumber).")
+            }
+            budget.left -= (empty - free) * PDF.objectCost
+        }
+        var sorted = [PDFobj]()
+        sorted.reserveCapacity(maxObjNumber)
+        for (i, found) in byNumber.enumerated() {
+            if let obj = found {
+                sorted.append(obj)
+            } else {
+                let obj = PDFobj()
+                obj.setNumber(i + 1)
+                sorted.append(obj)
+            }
         }
         return sorted
+    }
+
+    // Returns the number of the object that holds the /Length of the stream,
+    // or 0 when the /Length is not a reference.
+    private func lengthReference(_ obj: PDFobj) -> Int {
+        guard let open = obj.dict.firstIndex(of: "<<") else {
+            return 0
+        }
+        let key = PDF.entryIndex(Array(obj.dict[open...]), "/Length")
+        if key == -1 {
+            return 0
+        }
+        let i = key + open
+        if i + 3 >= obj.dict.count || obj.dict[i + 2] != "0" || obj.dict[i + 3] != "R" {
+            return 0
+        }
+        return max(toInteger(obj.dict[i + 1]), 0)
     }
 
     ///
@@ -2497,6 +2540,12 @@ public final class PDF {
         let readSoFar = ReadObjects(Array(numbered.values))
 
         var objects2 = [PDFobj]()
+        // The streams whose /Length is an object in an object stream, read
+        // when the object streams have been: ISO 32000-1 7.5.7 keeps only the
+        // /Length of an object stream out of one, and pdfTeX and Ghostscript
+        // put the /Length of other streams in them. Read before, such a stream
+        // ended at the first endstream, even one in its data.
+        var deferred = [PDFobj]()
         for obj in objects1 {
             let type = obj.getValue("/Type")
             if type == "/XRef" {
@@ -2509,8 +2558,13 @@ public final class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
-                obj.readObjects = readSoFar     // For a /Filter that is an object of its own
-                try obj.setStreamAndData(&buffer1, try obj.getLength(numbered), decryptor, budget)
+                let number = lengthReference(obj)
+                if number > 0 && numbered[number] == nil && type != "/ObjStm" {
+                    deferred.append(obj)
+                } else {
+                    obj.readObjects = readSoFar     // For a /Filter that is an object of its own
+                    try obj.setStreamAndData(&buffer1, try obj.getLength(numbered), decryptor, budget)
+                }
             }
             if type == "/ObjStm" {
                 // A malformed object stream is an error, as in the other
@@ -2561,7 +2615,21 @@ public final class PDF {
                 objects2.append(obj)
             }
         }
-        let sorted = try getSortedObjects(objects2, buffer1.count)
+        if !deferred.isEmpty {
+            // The objects of the object streams, whose numbers no object of
+            // the PDF's own has: the newest one of a number comes last and
+            // wins.
+            var inStreams = [Int: PDFobj]()
+            for obj in objects2 where numbered[obj.number] == nil {
+                inStreams[obj.number] = obj
+            }
+            numbered.merge(inStreams) { _, inStream in inStream }
+            for obj in deferred {
+                obj.readObjects = readSoFar     // For a /Filter that is an object of its own
+                try obj.setStreamAndData(&buffer1, try obj.getLength(numbered), decryptor, budget)
+            }
+        }
+        let sorted = try getSortedObjects(objects2, buffer1.count, budget)
         if let root = PDF.objectNumbered(sorted, String(trailerRoot(trailer))) {
             root.root = true
         }

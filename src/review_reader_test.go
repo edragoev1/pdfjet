@@ -761,3 +761,100 @@ func TestReviewReaderANullCryptInAnArrayThatIsReadIsIdentity(t *testing.T) {
 		t.Error("parameters that cannot be read are taken for the Identity filter")
 	}
 }
+
+// testPDFWithLengthInObjectStream returns a PDF whose page content has its
+// /Length in object 5, an object of an object stream, as pdfTeX and
+// Ghostscript write them, and a cross-reference stream.
+func testPDFWithLengthInObjectStream(content string) []byte {
+	inStream := map[int]string{
+		1: "<< /Type /Catalog /Pages 2 0 R >>",
+		2: "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>",
+		3: "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
+		5: fmt.Sprint(len(content)),
+	}
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.7\n")
+	offsets := map[int]int{4: sb.Len()}
+	fmt.Fprintf(&sb, "4 0 obj\n<< /Length 5 0 R >>\nstream\n%s\nendstream\nendobj\n", content)
+	var header, body strings.Builder
+	for _, number := range []int{1, 2, 3, 5} {
+		fmt.Fprintf(&header, "%d %d ", number, body.Len())
+		body.WriteString(inStream[number] + "\n")
+	}
+	offsets[6] = sb.Len()
+	fmt.Fprintf(&sb, "6 0 obj\n<< /Type /ObjStm /N 4 /First %d /Length %d >>\nstream\n%s%s\nendstream\nendobj\n",
+		header.Len(), header.Len()+body.Len(), header.String(), body.String())
+	offsets[7] = sb.Len()
+	var rows bytes.Buffer
+	for number, index := range []int{-1, 0, 1, 2, -1, 3, -1, -1} {
+		switch {
+		case number == 0:
+			rows.Write([]byte{0, 0, 0, 0, 0, 0xff, 0xff})
+		case index == -1:
+			offset := offsets[number]
+			rows.Write([]byte{1, byte(offset >> 24), byte(offset >> 16), byte(offset >> 8), byte(offset), 0, 0})
+		default:
+			rows.Write([]byte{2, 0, 0, 0, 6, 0, byte(index)})
+		}
+	}
+	fmt.Fprintf(&sb, "7 0 obj\n<< /Type /XRef /Size 8 /W [1 4 2] /Root 1 0 R /Length %d >>\nstream\n%s\nendstream\nendobj\n",
+		rows.Len(), rows.String())
+	fmt.Fprintf(&sb, "startxref\n%d\n%%%%EOF\n", offsets[7])
+	return []byte(sb.String())
+}
+
+func TestReviewReaderALengthInAnObjectStreamIsTheLengthOfTheStream(t *testing.T) {
+	// It was not found, as the objects of the object streams were not read
+	// yet, and the stream ended at the first endstream, the one in its text,
+	// or lost the carriage return its data ends with.
+	for _, content := range []string{
+		"BT /F1 12 Tf 72 700 Td (a endstream b) Tj ET\nBT 72 680 Td (second line) Tj ET\n",
+		"q Q\r",
+	} {
+		objects := testRead(t, testPDFWithLengthInObjectStream(content))
+		testWant(t, content, string(objects[3].GetData()))
+	}
+}
+
+func TestReviewReaderTheEmptyObjectsUpToAHighNumberAreTakenFromTheBudget(t *testing.T) {
+	// A PDF of 2 MB that numbers its one object 2,000,000 made two million
+	// empty objects, 287 bytes for each byte of the PDF.
+	pdf := testPDFWithObjectNumbered(2000000, 2000000)
+	testWant(t, "The PDF of 2000000 bytes cannot hold an object numbered 2000000.",
+		testReadError(t, string(pdf)))
+	// One of 1 MB numbered 300,000 is read, its empty objects within those
+	// a PDF of its length may have.
+	objects := testRead(t, testPDFWithObjectNumbered(1000000, 300000))
+	testWant(t, "300000", fmt.Sprint(len(objects)))
+}
+
+// testPDFWithObjectNumbered returns a PDF of size bytes of three objects and
+// one more of the number.
+func testPDFWithObjectNumbered(size, number int) []byte {
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.4\n")
+	offsets := make([]int, 0)
+	for i, object := range []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+	} {
+		offsets = append(offsets, sb.Len())
+		fmt.Fprintf(&sb, "%d 0 obj\n%s\nendobj\n", i+1, object)
+	}
+	tail := fmt.Sprintf("%d 0 obj\nnull\nendobj\n", number)
+	xref := fmt.Sprintf("xref\n0 4\n0000000000 65535 f \n%010d 00000 n \n%010d 00000 n \n%010d 00000 n \n%d 1\n",
+		offsets[0], offsets[1], offsets[2], number)
+	trailer := fmt.Sprintf("trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n", number+1)
+	// The padding is a comment, and the offsets are written in 10 digits.
+	fixed := sb.Len() + len(tail) + len(xref) + len("0000000000 00000 n \n") + len(trailer) + len("0000000000\n%%EOF\n")
+	sb.WriteString("%" + strings.Repeat("x", size-fixed-2) + "\n")
+	objOffset := sb.Len()
+	sb.WriteString(tail)
+	xrefOffset := sb.Len()
+	sb.WriteString(xref)
+	fmt.Fprintf(&sb, "%010d 00000 n \n", objOffset)
+	sb.WriteString(trailer)
+	fmt.Fprintf(&sb, "%010d\n%%%%EOF\n", xrefOffset)
+	return []byte(sb.String())
+}

@@ -2784,9 +2784,12 @@ const minObjNumberLimit = 262144
 // any file, and a larger one in a file that has as many bytes. The empty
 // objects up to a larger number would take the memory a file of a few bytes
 // never names.
-func (pdf *PDF) getSortedObjects(objects []*PDFobj, size int) ([]*PDFobj, error) {
-	sorted := make([]*PDFobj, 0)
-
+//
+// The empty objects past minObjNumberLimit are taken from the budget as the
+// objects of object streams are: each one takes about 290 bytes, and a file of
+// 16 MB that numbered its one object 16,000,000 made 4.4 GB of them, more than
+// the 128 bytes for each byte of the PDF that the reader may take.
+func (pdf *PDF) getSortedObjects(objects []*PDFobj, size int, budget *decodeBudget) ([]*PDFobj, error) {
 	maxObjNumber := 0
 	for _, obj := range objects {
 		if obj.number > maxObjNumber {
@@ -2798,15 +2801,34 @@ func (pdf *PDF) getSortedObjects(objects []*PDFobj, size int) ([]*PDFobj, error)
 			"The PDF of %d bytes cannot hold an object numbered %d.", size, maxObjNumber)
 	}
 
-	for number := 1; number <= maxObjNumber; number++ {
-		obj := newPDFobj()
-		obj.setNumber(number)
-		sorted = append(sorted, obj)
-	}
-
+	sorted := make([]*PDFobj, maxObjNumber)
 	for _, obj := range objects {
 		if obj.number > 0 {
 			sorted[obj.number-1] = obj
+		}
+	}
+
+	empty := -minObjNumberLimit
+	for _, obj := range sorted {
+		if obj == nil {
+			empty++
+		}
+	}
+	if empty > 0 {
+		free := min(empty, budget.freeObjects)
+		budget.freeObjects -= free
+		if empty-free > budget.left/objectCost {
+			return nil, fmt.Errorf(
+				"The PDF of %d bytes cannot hold an object numbered %d.", size, maxObjNumber)
+		}
+		budget.left -= (empty - free) * objectCost
+	}
+
+	for i, obj := range sorted {
+		if obj == nil {
+			obj = newPDFobj()
+			obj.setNumber(i + 1)
+			sorted[i] = obj
 		}
 	}
 
@@ -2882,6 +2904,12 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 	}
 
 	objects2 := make([]*PDFobj, 0)
+	// The streams whose /Length is an object in an object stream, read when
+	// the object streams have been: ISO 32000-1 7.5.7 keeps only the /Length
+	// of an object stream out of one, and pdfTeX and Ghostscript put the
+	// /Length of other streams in them. Read before, such a stream ended at
+	// the first endstream, even one in its data.
+	deferred := make([]*PDFobj, 0)
 	for _, obj := range objects1 {
 		objType := obj.GetValue("/Type")
 		if objType == "/XRef" {
@@ -2894,9 +2922,13 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 			dec.decryptStrings(obj)
 		}
 		if contains(obj.dict, "stream") {
-			length := obj.getLength(numbered)
-			obj.readObjects = numbered // For a /Filter that is an object of its own
-			obj.setStreamAndData(buf, length, dec, budget)
+			if number := obj.lengthReference(); number > 0 && numbered[number] == nil && objType != "/ObjStm" {
+				deferred = append(deferred, obj)
+			} else {
+				length := obj.getLength(numbered)
+				obj.readObjects = numbered // For a /Filter that is an object of its own
+				obj.setStreamAndData(buf, length, dec, budget)
+			}
 		}
 
 		if objType == "/ObjStm" {
@@ -2958,7 +2990,26 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 	}
 
-	sorted, err := pdf.getSortedObjects(objects2, len(buf))
+	if len(deferred) > 0 {
+		// The objects of the object streams, whose numbers no object of the
+		// PDF's own has: the newest one of a number comes last and wins.
+		inStreams := make(map[int]*PDFobj)
+		for _, obj := range objects2 {
+			if numbered[obj.number] == nil {
+				inStreams[obj.number] = obj
+			}
+		}
+		for number, obj := range inStreams {
+			numbered[number] = obj
+		}
+		for _, obj := range deferred {
+			length := obj.getLength(numbered)
+			obj.readObjects = numbered // For a /Filter that is an object of its own
+			obj.setStreamAndData(buf, length, dec, budget)
+		}
+	}
+
+	sorted, err := pdf.getSortedObjects(objects2, len(buf), budget)
 	if err != nil {
 		return nil, err
 	}
