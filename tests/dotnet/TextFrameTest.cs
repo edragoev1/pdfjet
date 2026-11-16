@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using Xunit;
 
 namespace PDFjet.NET {
+[Collection("Timing")]
 public class TextFrameTest {
     // Draws two paragraphs of one line and returns how far below the first the second starts.
     private static float ParagraphDistance(float? gap) {

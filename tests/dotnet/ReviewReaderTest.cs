@@ -18,6 +18,7 @@ namespace PDFjet.NET {
 /// more than a minute, or overflowed the stack, and takes a time in proportion
 /// to its size now.
 /// </summary>
+[Collection("Timing")]
 public class ReviewReaderTest {
     private const string EARLIER = "The PDF was not completed because of an earlier error: ";
 

@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using Xunit;
 
 namespace PDFjet.NET {
+[Collection("Timing")]
 public class TextBlockTest {
     private const string TEN_WORDS = "one two three four five six seven eight nine ten";
 

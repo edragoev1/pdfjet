@@ -10,6 +10,7 @@ using System.Text;
 using Xunit;
 
 namespace PDFjet.NET {
+[Collection("Timing")]
 public class SVGImageTest {
     private static SVGImage Parse(string svg) {
         return new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes(svg)));

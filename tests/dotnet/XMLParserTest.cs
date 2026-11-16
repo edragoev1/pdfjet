@@ -18,6 +18,7 @@ namespace PDFjet.NET {
 /// reads, of an SVG and of the Cross Industry Invoice of PDFjet Pro, where it
 /// came from, and what it refuses.
 /// </summary>
+[Collection("Timing")]
 public class XMLParserTest {
     // An invoice as the Cross Industry Invoice of ZUGFeRD and Factur-X is
     // written: the prefixes of the namespaces, the codes in attributes, and a

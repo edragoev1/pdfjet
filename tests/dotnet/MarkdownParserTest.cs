@@ -11,6 +11,7 @@ using System.Text;
 using Xunit;
 
 namespace PDFjet.NET {
+[Collection("Timing")]
 public class MarkdownParserTest {
     // The blocks as text: H1(text), P(text), CODE(text), RULE, IMG(alt|source),
     // QUOTE[...], UL[...] or OL3[...] with its start, * after a list that is

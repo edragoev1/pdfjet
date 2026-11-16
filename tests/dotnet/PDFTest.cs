@@ -13,6 +13,7 @@ using Xunit;
 
 namespace PDFjet.NET {
 /// <summary>Writing a document and reading it back.</summary>
+[Collection("Timing")]
 public class PDFTest {
     private static byte[] Document(params PageSize[] sizes) {
         MemoryStream stream = new MemoryStream();

@@ -337,4 +337,14 @@ public static class TestSupport {
         Assert.Fail("size " + 2*n + " took " + large/perMillisecond + " ms, and size " + n + " " + small/perMillisecond + " ms");
     }
 }
+
+/// <summary>The classes whose tests compare the time of a small and a large
+/// piece of work (AssertLinearTime, and the shortest of several runs): xUnit
+/// runs the classes of the tests at the same time, and on a GitHub runner one
+/// class slowed another's larger piece, failing a different such test on
+/// most pushes of 16 November 2026 (86 ms against 9).
+/// This collection runs alone, after the others.</summary>
+[CollectionDefinition("Timing", DisableParallelization = true)]
+public class TimingCollection {
+}
 }

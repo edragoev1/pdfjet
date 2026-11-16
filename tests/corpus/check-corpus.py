@@ -78,7 +78,11 @@ def build_port(port, out):
         subprocess.run(['javac', '-O', '-encoding', 'utf-8'] + release +
                        ['-Xlint', '-Xlint:-options', '-Werror', '-d', classes] + sources,
                        cwd=ROOT, check=True)
-        return ['java', '-cp', classes, 'Corpus']
+        # No performance data file: two JVMs of the same process id, one
+        # after the other in parallel jobs, warned on standard output that
+        # /tmp/hsperfdata_runner/<pid> was locked, and the warning before
+        # the JSON made the file a crash (16 November 2026).
+        return ['java', '-XX:-UsePerfData', '-cp', classes, 'Corpus']
     if port == 'dotnet':
         subprocess.run(['dotnet', 'build', 'tests/corpus/dotnet/Corpus.csproj', '-c', 'release', '-v', 'q',
                         '-nologo', '-p:TreatWarningsAsErrors=true', '--artifacts-path', out],
