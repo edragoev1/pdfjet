@@ -194,6 +194,11 @@ final class GlyphOutline {
                 if (m.length != 6) {
                     throw new Subset.NotSubset();
                 }
+                for (double v : m) {
+                    if (!(Math.abs(v) <= 1000)) {   // NaN too
+                        throw new Subset.NotSubset();
+                    }
+                }
                 return m;
             }
         }
@@ -301,9 +306,12 @@ final class GlyphOutline {
             if (cff) {
                 new CharString(pen, gid).run(charStrings.objects[gid], charStrings.objects[gid + 1], 0);
             } else {
-                Points points = new Points();
+                Points points = new Points(new int[1]);
                 trueTypePoints(gid, points, 0);
                 points.draw(pen);
+            }
+            if (pen.outOfRange) {
+                throw new Subset.NotSubset();
             }
         } catch (Subset.NotSubset | RuntimeException e) {
             if (e instanceof IllegalArgumentException && e.getMessage() != null
@@ -318,6 +326,11 @@ final class GlyphOutline {
     // ------------------------------------------------------------------
     // The path: the operators of PDF, in the units of the font
 
+    // The bound of the points of an outline, in the units of the font: a
+    // font's are within ±32,768, and a charstring's arithmetic can make larger
+    // ones, or ones not finite, which a path cannot have.
+    private static final double MAX_COORDINATE = 1e6;
+
     /** Writes the path operators and finds the box of the points. */
     static final class Pen {
         private final StringBuilder sb = new StringBuilder();
@@ -330,8 +343,14 @@ final class GlyphOutline {
         private double x;
         private double y;
         private boolean open;       // A contour is begun and has a segment
+        private boolean outOfRange; // A point past MAX_COORDINATE, or not finite
 
         private void point(double px, double py) {
+            if (!(Math.abs(px) <= MAX_COORDINATE && Math.abs(py) <= MAX_COORDINATE)) {
+                outOfRange = true;  // NaN too
+                px = 0;
+                py = 0;
+            }
             if (px < xMin) xMin = px;
             if (py < yMin) yMin = py;
             if (px > xMax) xMax = px;
@@ -437,6 +456,11 @@ final class GlyphOutline {
         boolean[] on = new boolean[64];
         int count;
         List<Integer> ends = new ArrayList<Integer>();
+        final int[] work;   // The glyphs and points read for the outline, its parts' too
+
+        Points(int[] work) {
+            this.work = work;
+        }
 
         void add(double px, double py, boolean onCurve) {
             if (count == x.length) {
@@ -519,6 +543,13 @@ final class GlyphOutline {
         if (depth > 16) {
             throw new Subset.NotSubset();   // Composite glyphs nested too deep, or in a loop
         }
+        // A composite glyph of many parts, each of many parts, 16 deep, would
+        // take time and memory that grow exponentially: the work of a glyph is
+        // bounded, as that of a charstring is.
+        points.work[0]++;
+        if (points.work[0] > MAX_WORK) {
+            throw new Subset.NotSubset();
+        }
         int start;
         int end;
         if (longOffsets) {
@@ -554,6 +585,10 @@ final class GlyphOutline {
                 throw new Subset.NotSubset();
             }
             n = ends[i] + 1;
+        }
+        points.work[0] += n;
+        if (points.work[0] > MAX_WORK) {
+            throw new Subset.NotSubset();
         }
         p += 2 * contours;
         int instructions = u16(p);
@@ -652,7 +687,7 @@ final class GlyphOutline {
             if (p > limit) {
                 throw new Subset.NotSubset();
             }
-            Points part = new Points();
+            Points part = new Points(points.work);
             trueTypePoints(component, part, depth + 1);
             for (int i = 0; i < part.count; i++) {
                 double px = part.x[i];
@@ -726,7 +761,8 @@ final class GlyphOutline {
     // ------------------------------------------------------------------
     // CFF: the Type 2 charstrings (Adobe Technical Note #5177)
 
-    // The most bytes of charstrings a glyph runs, subroutines and all.
+    // The most bytes of charstrings a glyph runs, subroutines and all; and the
+    // most glyphs and points a TrueType glyph reads, its parts and theirs.
     private static final int MAX_WORK = 1 << 20;
 
     /** The interpreter of the charstring of one glyph. */
@@ -1139,22 +1175,29 @@ final class GlyphOutline {
                 push(a);
                 break;
             case 29: {  // index
-                int index = (int) pop();
-                if (index < 0) {
-                    index = 0;
-                }
-                if (index >= sp) {
+                double v = pop();
+                // Compared as a number before it is made an integer, which
+                // differs from language to language and from processor to
+                // processor for one too large
+                if (Double.isNaN(v) || v >= sp) {
                     throw new Subset.NotSubset();
+                }
+                int index = 0;
+                if (v > 0) {
+                    index = (int) v;
                 }
                 push(stack[sp - 1 - index]);
                 break;
             }
             case 30: {  // roll
-                int j = (int) pop();
-                int n = (int) pop();
-                if (n <= 0 || n > sp) {
+                double jv = pop();
+                double nv = pop();
+                // Compared as numbers before they are made integers, as index
+                if (!(nv >= 1 && nv <= sp) || !(Math.abs(jv) <= 1e9)) {
                     throw new Subset.NotSubset();
                 }
+                int j = (int) jv;
+                int n = (int) nv;
                 double[] part = new double[n];
                 for (int m = 0; m < n; m++) {
                     part[((m + j) % n + n) % n] = stack[sp - n + m];

@@ -22,6 +22,7 @@ class FontObjects {
     PDFobj descriptor;
     PDFobj cidFont;
     PDFobj toUnicode;
+    PDFobj cidToGID;    // The CIDToGIDMap of a TrueType font, null for a CFF one
     PDFobj type0;
 
     // Numbers the objects of the font, added to the objects of an existing
@@ -33,6 +34,12 @@ class FontObjects {
         objs.descriptor = appendEmptyObject(objects);
         objs.cidFont = appendEmptyObject(objects);
         objs.toUnicode = appendEmptyObject(objects);
+        if (!font.cff) {
+            // A subset of a TrueType font is numbered again, and its glyphs
+            // mapped from the CIDs; it is known only when the pages are drawn
+            // whether the font is subset, so the object is numbered now.
+            objs.cidToGID = appendEmptyObject(objects);
+        }
         objs.type0 = appendEmptyObject(objects);
         objs.type0.font = font;
         font.fileObjNumber = objs.file.number;
@@ -92,7 +99,24 @@ class FontObjects {
         obj.setStream(compressed);
 
         completeFontDescriptor(objs.descriptor, font, baseFont);
-        completeCIDFontDictionary(objs.cidFont, font, baseFont, font.kept);
+        int mapObjNumber = 0;
+        if (objs.cidToGID != null) {
+            obj = objs.cidToGID;
+            if (font.kept != null) {
+                byte[] compressedMap = Compressor.deflate(FontWriter.cidToGIDMap(font.kept));
+                obj.dict.add("<<");
+                obj.dict.add("/Filter");
+                obj.dict.add("/FlateDecode");
+                obj.dict.add("/Length");
+                obj.dict.add(String.valueOf(compressedMap.length));
+                obj.dict.add(">>");
+                obj.setStream(compressedMap);
+                mapObjNumber = obj.number;
+            } else {
+                obj.dict.add("null");   // The whole font: the map is /Identity
+            }
+        }
+        completeCIDFontDictionary(objs.cidFont, font, baseFont, font.kept, mapObjNumber);
 
         byte[] cmap = Compressor.deflate(
                 Util.utf8(FontWriter.toUnicodeCMap(font, font.kept)));
@@ -202,7 +226,7 @@ class FontObjects {
     }
 
     private static void completeCIDFontDictionary(
-            PDFobj obj, Font font, String baseFont, boolean[] kept) {
+            PDFobj obj, Font font, String baseFont, boolean[] kept, int mapObjNumber) {
         obj.dict.add("<<");
         obj.dict.add("/Type");
         obj.dict.add("/Font");
@@ -232,7 +256,13 @@ class FontObjects {
         obj.dict.add("/W");
         obj.dict.add(FontWriter.widthsArray(font, kept));
         obj.dict.add("/CIDToGIDMap");
-        obj.dict.add("/Identity");
+        if (mapObjNumber > 0) {
+            obj.dict.add(String.valueOf(mapObjNumber));
+            obj.dict.add("0");
+            obj.dict.add("R");
+        } else {
+            obj.dict.add("/Identity");
+        }
         obj.dict.add(">>");
     }
 }   // End of FontObjects.java

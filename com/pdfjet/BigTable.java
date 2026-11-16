@@ -721,10 +721,10 @@ public class BigTable {
             // column that was not cut is as wide as its widest field, so
             // every field of it is drawn whole and none is measured here.
             String drawn = (clipped != null && clipped[i] < widths[i])
-                    ? fit(text, measureOf(font), clipped[i]) : text;
+                    ? fit(text, measureOf(header), clipped[i]) : text;
             float xText = vertLines[i] + this.padding;
             if (alignment[i] == Alignment.RIGHT) {
-                xText = (vertLines[i + 1] - this.padding) - measureOf(font).width(drawn);
+                xText = (vertLines[i + 1] - this.padding) - measureOf(header).width(drawn);
             }
             if (tagged) {
                 // A cell holds its text and nothing else, so the cell element
@@ -742,7 +742,7 @@ public class BigTable {
                 page.addArtifactBMC();
             }
             if (!drawn.isEmpty()) {
-                drawText(font, drawn, xText, this.yText);
+                drawText(header, drawn, xText, this.yText);
             }
             page.addEMC();
         }
@@ -895,7 +895,7 @@ public class BigTable {
         this.widths = new float[this.numberOfColumns];
         this.alignment = new Alignment[this.numberOfColumns];
 
-        measure(header, f1);
+        measure(header, true);
         int rowNumber = 0;
         Iterator<String[]> iterator = rows.iterator();
         try {
@@ -909,7 +909,7 @@ public class BigTable {
                         alignment[i] = getAlignment(fields[columns[i]]);
                     }
                 }
-                measure(fields, f2);
+                measure(fields, false);
                 rowNumber++;
             }
         } finally {
@@ -925,10 +925,10 @@ public class BigTable {
     // row is drawn with: the header font for the header and the body font for
     // a row under it. The widths are those of the text, and setVertLines adds
     // the padding, so it can be set later.
-    private void measure(String[] fields, Font font) {
+    private void measure(String[] fields, boolean header) {
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-            float width = measureOf(font).width(text);
+            float width = measureOf(header).width(text);
             if (width > widths[i]) {
                 this.widths[i] = width;
             }
@@ -1035,15 +1035,15 @@ public class BigTable {
             pdf.fail(new IllegalArgumentException("The table has " + this.widths.length + " columns, and "
                     + count + " percentages: give one for each column."));
         }
-        if (wrap) {
-            setWrapWidths();
-            return;
-        }
         if (points != null && points.length != this.widths.length) {
             int count = points.length;
             points = null;
             pdf.fail(new IllegalArgumentException("The table has " + this.widths.length + " columns, and "
                     + count + " widths: give one for each column."));
+        }
+        if (wrap) {
+            setWrapWidths();
+            return;
         }
         if (percents != null || points != null) {
             setVertLinesInPercent();
@@ -1277,17 +1277,17 @@ public class BigTable {
                 this.vertLines[i + 1] = vertLineX;
             }
         }
-        this.headerLines = wrapFields(headerFields, f1);
+        this.headerLines = wrapFields(headerFields, true);
         this.headerCount = mostLines(headerLines);
     }
 
     // The lines of each field of the row drawn, wrapped to the width of its
     // column in the font.
-    private String[][] wrapFields(String[] fields, Font font) {
+    private String[][] wrapFields(String[] fields, boolean header) {
         String[][] lines = new String[this.numberOfColumns][];
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-            lines[i] = wrap(text, measureOf(font), textWidths[i]);
+            lines[i] = wrap(text, measureOf(header), textWidths[i]);
         }
         return lines;
     }
@@ -1384,7 +1384,7 @@ public class BigTable {
         }
         Font font = f2;
         float lineHeight = font.ascent + font.descent;
-        String[][] lines = wrapFields(fields, font);
+        String[][] lines = wrapFields(fields, false);
         int count = mostLines(lines);
         float limit = page.height - bottomMargin;
         if (count > 1 && this.yText + (float) (count - 1) * lineHeight > limit && !firstRowOnPage) {
@@ -1403,7 +1403,7 @@ public class BigTable {
                         whole[i] = checkLineBreaks
                                 ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
                         lines[i] = Arrays.copyOf(lines[i], most);
-                        lines[i][most - 1] = mark(lines[i][most - 1], measureOf(font), textWidths[i]);
+                        lines[i][most - 1] = mark(lines[i][most - 1], measureOf(false), textWidths[i]);
                     }
                 }
                 count = most;
@@ -1489,13 +1489,13 @@ public class BigTable {
                 }
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
-                    xText = (vertLines[i + 1] - this.padding) - measureOf(font).width(line);
+                    xText = (vertLines[i + 1] - this.padding) - measureOf(header).width(line);
                 }
                 float yText = this.yText;
                 if (k > 0) {
                     yText += (float) k * lineHeight;
                 }
-                drawText(font, line, xText, yText);
+                drawText(header, line, xText, yText);
             }
             page.addEMC();
         }
@@ -1545,7 +1545,7 @@ public class BigTable {
                     newPage = false;
                     first = true;
                 }
-                int lines = mostLines(wrapFields(fields, font));
+                int lines = mostLines(wrapFields(fields, false));
                 float limit = pageHeight - this.bottomMargin;
                 if (lines > 1 && yPos + (float) (lines - 1) * lineHeight > limit && !first) {
                     count++;
@@ -1590,19 +1590,22 @@ public class BigTable {
         }
     }
 
-    // The measure of the font: the rows' with their fallback font, the
-    // header's with its own.
-    private Measure measureOf(Font font) {
-        if (font == f2) {
-            return new Measure(font, fallback2);
+    // The measure of the header's font with its fallback font, or of the
+    // rows' with theirs: by the row, not by the font, as the header and the
+    // rows can have one font and fallback fonts of their own.
+    Measure measureOf(boolean header) {
+        if (header) {
+            return new Measure(f1, fallback1);
         }
-        return new Measure(font, fallback1);
+        return new Measure(f2, fallback2);
     }
 
     // Draws the text at its baseline, in the font and its fallback font, if
     // it has one.
-    private void drawText(Font font, String text, float x, float y) {
-        Font fallback = measureOf(font).fallback;
+    private void drawText(boolean header, String text, float x, float y) {
+        Measure m = measureOf(header);
+        Font font = m.font;
+        Font fallback = m.fallback;
         if (fallback == null) {
             page.drawTextLine(font, text, x, y);
             return;

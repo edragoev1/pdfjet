@@ -418,6 +418,37 @@ class SubsetTest {
                 Integer.parseInt(TestSupport.findObject(objects, "/Length1").getValue("/Length1")));
     }
 
+    // A TrueType subset is numbered again, so its CIDFont maps the CIDs to the
+    // glyphs kept with a CIDToGIDMap stream; /Identity drew glyph 40 of a
+    // subset of 6 for H (the review of 16 November 2026). The whole font keeps
+    // /Identity.
+    @Test
+    void subsetOfATrueTypeFontAddedToAnExistingPDFMapsItsCIDs() throws Exception {
+        java.util.List<PDFobj> objects = subsetInExistingPDF(PLEX, true);
+        String value = TestSupport.findObject(objects, "/CIDToGIDMap").getValue("/CIDToGIDMap");
+        assertFalse(value.equals("/Identity"), "/CIDToGIDMap /Identity for a subset");
+        int number = Integer.parseInt(value.trim().split("\\s+")[0]);
+        byte[] m = null;
+        for (PDFobj obj : objects) {
+            if (obj.number == number) {
+                m = obj.getData();
+            }
+        }
+        assertNotNull(m);
+        // .notdef, H, e, l and o: the CIDs of H, e, l and o map to 1 to 4
+        java.util.List<Integer> gids = new java.util.ArrayList<Integer>();
+        for (int cid = 0; cid + 1 < m.length; cid += 2) {
+            int gid = (m[cid] & 0xFF) << 8 | (m[cid + 1] & 0xFF);
+            if (gid != 0) {
+                gids.add(gid);
+            }
+        }
+        assertEquals("[1, 2, 3, 4]", gids.toString());
+
+        java.util.List<PDFobj> whole = subsetInExistingPDF(PLEX, false);
+        assertEquals("/Identity", TestSupport.findObject(whole, "/CIDToGIDMap").getValue("/CIDToGIDMap"));
+    }
+
     // Checks that the font, made wrong, is not subset, and so embedded whole,
     // rather than an exception or a subset made of it.
     private static void assertRefused(final byte[] ttf, final boolean[] used) {

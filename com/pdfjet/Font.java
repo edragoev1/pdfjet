@@ -597,12 +597,12 @@ final public class Font {
     // each word: its advances and its kerning in font units, and the first and
     // last glyph drawn, between which the kerning of two texts joined is.
     static final class Run {
-        final int advance;
-        final int kerning;
+        final long advance;
+        final long kerning;
         final int first;
         final int last;
 
-        Run(int advance, int kerning, int first, int last) {
+        Run(long advance, long kerning, int first, int last) {
             this.advance = advance;
             this.kerning = kerning;
             this.first = first;
@@ -618,14 +618,14 @@ final public class Font {
 
     // Returns the run of the text, what stringWidth sums of it.
     Run run(String text) {
-        int advance = 0;
+        long advance = 0;
         for (int i = 0; i < text.length(); ) {
             int cp = text.codePointAt(i);
             i += Character.charCount(cp);
             advance += (cp >= 0x20 && cp < 0x7F && asciiGID[cp - 0x20] != 0)
                     ? asciiAdvance[cp - 0x20] : advanceWidthOf(cp);
         }
-        int kerning = 0;
+        long kerning = 0;
         int first = -1;
         int last = -1;
         boolean kerns = kerns();
@@ -648,7 +648,7 @@ final public class Font {
 
     // Returns the run of two texts, one after the other.
     Run joinRuns(Run a, Run b) {
-        int kerning = a.kerning + b.kerning;
+        long kerning = a.kerning + b.kerning;
         if (kerns() && a.last >= 0 && b.first >= 0) {
             kerning += glyphKerning(a.last, b.first);
         }
@@ -661,9 +661,9 @@ final public class Font {
     // summed exactly in a float: below 2^24, the float sums of whole numbers
     // that stringWidth makes are exact, whatever their order.
     float runWidth(Run r, float fontSize) {
-        long units = (long) r.advance + r.kerning;
-        if (r.advance >= (1 << 24) || Math.abs((long) r.kerning) >= (1 << 24)
-                || Math.abs(units) >= (1 << 24)) {
+        long units = r.advance + r.kerning;
+        if (r.advance >= (1 << 24) || r.kerning >= (1 << 24) || r.kerning <= -(1 << 24)
+                || units >= (1 << 24) || units <= -(1 << 24)) {
             return -1f;
         }
         float width = (float) r.advance;

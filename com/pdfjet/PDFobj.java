@@ -1300,7 +1300,12 @@ public class PDFobj {
                 return false;
             }
             List<String> value = new ArrayList<String>(Arrays.asList("/Contents", "["));
-            value.addAll(addStream(after, objects));
+            // The content before, which saves the graphics state that the
+            // content after restores, in the one stream
+            byte[] both = new byte[before.length + after.length];
+            System.arraycopy(before, 0, both, 0, before.length);
+            System.arraycopy(after, 0, both, before.length, after.length);
+            value.addAll(addStream(both, objects));
             value.add("]");
             dict.addAll(end, value);
             return true;
