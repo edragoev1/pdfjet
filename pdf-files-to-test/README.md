@@ -99,7 +99,10 @@ go run ./.github/scripts/viewer-checklist pdf-files-to-test/Checklist.pdf
 The other files are the ones the checklist names, the Java examples of
 `./build-java.sh`: Example_01, 02, 03, 04, 05, 06, 13, 19, 20, 21, 23, 28,
 35 (the layers, optional content groups, of a map of Europe), 40, 42, 45, 46
-and 47, and the two PDFs of `.github/scripts/encrypted-pdfs`:
+and 47; since 9.1.9 also Example_51 (BigTable with setWrapText), 52
+(drawGlyphs and attachText: Hindi and Khmer as outlines, the text attached;
+PAC leaves it out), 53 (an invoice), 60 (a certificate, landscape), 79 (a
+catalog of two pages) and 85 (shipping labels, 30 to a sheet); and the two PDFs of `.github/scripts/encrypted-pdfs`:
 
 ```sh
 go run ./.github/scripts/encrypted-pdfs pdf-files-to-test

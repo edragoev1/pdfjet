@@ -50,18 +50,35 @@ var sections = []section{
 		"Copied_Image: both pictures of circles sit on the orange box, the copied one on the right too, " +
 			"with no white box behind it.",
 	}},
+	{"Acrobat Reader on Windows: new in 9.1.9", "The examples of the code and the documents new in 9.1.9.", []string{
+		"Example_51: the 30 pages of the table, its header row at the top of each, and the long fields " +
+			"wrapped onto more lines, none cut short at the edge of its column.",
+		"Example_52: the Hindi of page 1 and the Khmer of page 2 sharp at 400%, the vowel signs and " +
+			"stacked consonants in place. The text cannot be selected or searched, as it is drawn as outlines.",
+		"Example_52: the Attachments panel lists udhr-hindi.txt and udhr-khmer.txt, and each opens with its text.",
+		"Example_53, the invoice: the table of the items, the subtotal, the tax and the total line up, " +
+			"and \"Page 1 of 1\" is at the bottom.",
+		"Example_60, the certificate: the page is landscape, the lines are centered, and the serif faces of IBM Plex are used.",
+		"Example_79, the catalog: both pages show the pictures, the grid of three to a row, " +
+			"the prices in Cascadia Mono, and the QR code.",
+		"Example_85: printed at actual size, the 30 labels fall in the 3 x 10 grid of the sheet, and each QR code " +
+			"scans with a phone to its order number.",
+	}},
 	{"NVDA with Acrobat Reader", "", []string{
 		"Example_01: NVDA reads the English, Greek and Bulgarian text, each in its own language.",
 		"Example_19: H moves from heading to heading, in the order of the page.",
 		"Example_21: in the table, NVDA says the column header of each cell (Ctrl+Alt+arrow keys).",
 		"Example_28: NVDA reads the description of the donut chart, not only \"graphic\".",
 		"Example_40: NVDA says \"link\" and the text of each entry of the contents.",
+		"Example_52: NVDA reads the Hindi and the Khmer from the tags, though the glyphs are outlines.",
+		"Example_53: NVDA reads the invoice in order, and the column header of each cell of its table.",
 	}},
 	{"Edge on Windows", "Edge draws PDFs with Adobe's engine.", []string{
 		"Example_47 opens with hello, and prints; copying is not allowed.",
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
 		"Example_42: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
 		"Example_01, 02, 04, 19, 20 and 21 look as they do in Acrobat Reader.",
+		"Example_51, 52, 53, 60, 79 and 85 look as they do in Acrobat Reader.",
 	}},
 	{"Foxit PDF Reader", "", []string{
 		"Example_47 opens with hello, and prints; copying is not allowed.",
@@ -77,6 +94,7 @@ var sections = []section{
 		"Example_42: the attachments open, the note shows its text, the link opens, and the shapes are drawn.",
 		"Example_40: the entries of the contents jump to their pages.",
 		"Example_03 and 13 show their Chinese, Japanese and Korean text, and Example_05 its greetings, in fonts of the system.",
+		"Example_51, 52, 53, 60, 79 and 85 look as they do in Acrobat Reader.",
 	}},
 	{"VoiceOver in Preview", "", []string{
 		"Example_01: VoiceOver reads the English, Greek and Bulgarian text, each in its own language.",
@@ -166,14 +184,14 @@ func main() {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("PDFjet 9.1.7: the manual viewer pass")
+	pdf.SetTitle("PDFjet 9.1.9: the manual viewer pass")
 	pdf.SetLanguage("en-US")
 
 	regular = pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	semiBold = pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	newPage()
 
-	title := pdfjet.NewTextLine(semiBold, "PDFjet 9.1.7: the manual viewer pass")
+	title := pdfjet.NewTextLine(semiBold, "PDFjet 9.1.9: the manual viewer pass")
 	title.SetStructureType(structelem.H1)
 	title.SetFontSize(18)
 	title.SetTextColor(ink)
@@ -183,7 +201,8 @@ func main() {
 
 	intro := textBlock(regular, 10, "The manual viewer pass of TODO.md. The files are in pdf-files-to-test: the Java "+
 		"examples built from main, Example_47 with the user password hello and the owner password world, "+
-		"Encrypted_Cyrillic and Encrypted_200_Bytes, and Kerning and Copied_Image, of the code new in 9.1.5. Tick each box when it holds; when it does not, "+
+		"Encrypted_Cyrillic and Encrypted_200_Bytes, and Kerning and Copied_Image, of the code new in 9.1.5, "+
+		"and Example_51, 52, 53, 60, 79 and 85, new in 9.1.9. Tick each box when it holds; when it does not, "+
 		"write what you see on the lines below the viewer.", marginX, 612-2*marginX, soft)
 	y = intro.DrawOn(page)[1] + 8
 
