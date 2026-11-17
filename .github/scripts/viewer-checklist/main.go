@@ -80,13 +80,6 @@ var sections = []section{
 		"Example_01, 02, 04, 19, 20 and 21 look as they do in Acrobat Reader.",
 		"Example_51, 52, 53, 60, 79 and 85 look as they do in Acrobat Reader.",
 	}},
-	{"Foxit PDF Reader", "", []string{
-		"Example_47 opens with hello, and prints; copying is not allowed.",
-		"Example_35: the Layers panel lists its three layers, and each hides and shows.",
-		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
-		"Example_42: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
-		"Example_01, 02, 04, 19, 20 and 21 look as they do in Acrobat Reader.",
-	}},
 	{"Preview on the Mac", "", []string{
 		"Example_47 opens with hello; the Inspector (Cmd-I), lock tab, shows printing allowed and copying not.",
 		"Example_47 opens with the owner password world.",
@@ -95,12 +88,6 @@ var sections = []section{
 		"Example_40: the entries of the contents jump to their pages.",
 		"Example_03 and 13 show their Chinese, Japanese and Korean text, and Example_05 its greetings, in fonts of the system.",
 		"Example_51, 52, 53, 60, 79 and 85 look as they do in Acrobat Reader.",
-	}},
-	{"VoiceOver in Preview", "", []string{
-		"Example_01: VoiceOver reads the English, Greek and Bulgarian text, each in its own language.",
-		"Example_19: the headings come in the order of the page (VO+Cmd+H).",
-		"Example_21: VoiceOver says the column header of each cell of the table.",
-		"Example_28: VoiceOver reads the description of the donut chart.",
 	}},
 	{"Firefox, now and then", "Firefox is checked automatically; this is a look by hand.", []string{
 		"Example_47 asks for a password, and opens with hello.",
