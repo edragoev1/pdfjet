@@ -3148,42 +3148,8 @@ public class Page {
     ///   - language: the language of the text, such as "hi" or "km", or nil.
     public func drawGlyphs(_ font: Font, _ glyphs: [Int], _ positions: [Float],
             _ text: String?, _ language: String?) {
-        if let identity = font.pdfIdentity, identity != pdf.identity {
-            pdf.fail("The font belongs to another PDF.")
+        if !glyphsDrawable(font, glyphs, positions) {
             return
-        }
-        guard !font.isCoreFont && !font.isCJK, let program = font.program else {
-            pdf.fail("drawGlyphs needs a font loaded from the font file the glyphs were shaped with.")
-            return
-        }
-        if positions.count != 2 * glyphs.count {
-            pdf.fail("drawGlyphs needs an x and a y for each glyph.")
-            return
-        }
-        for v in positions where !(abs(v) <= 1e6) {     // NaN too
-            pdf.fail("drawGlyphs needs positions between -1,000,000 and 1,000,000 points.")
-            return
-        }
-        // The size times the glyphs' matrix is written with 7 decimals
-        if !(font.size > 0 && font.size <= 10000) {     // NaN too
-            pdf.fail("drawGlyphs needs a font size of more than 0 and at most 10,000 points.")
-            return
-        }
-        if program.outline == nil {
-            do {
-                program.outline = try GlyphOutline(program.font, program.cff)
-            } catch {
-                pdf.fail((error as? PDFjetError)?.message ?? "\(error)")
-                return
-            }
-            program.glyphStamps = [:]
-        }
-        let outline = program.outline!
-        for gid in glyphs {
-            if gid < 0 || gid >= outline.count() {
-                pdf.fail("The font has no glyph number \(gid).")
-                return
-            }
         }
         let tagged = pdf.isTagged() && artifactDepth == 0
         if tagged && !glyphs.isEmpty && (text ?? "").isEmpty {
@@ -3193,26 +3159,93 @@ public class Page {
         if glyphs.isEmpty {
             return
         }
-        font.drawnAsOutlines = true
         // A paragraph of their own, in a tagged document, drawn outside any
         let own = tagged && !insideTaggedContent()
         if own {
             addBDC(StructElem.P, language, nil, nil)
         }
-        // The text they stand for, and its language, as the actual text of
-        // the marked content of the outlines (ISO 32000-1, 14.9.4)
-        if tagged {
-            append("/Span <<")
-            if let language = language, !language.isEmpty {
-                append("/Lang <")
-                append(pdf.toHex(language))
-                append("> ")
-            }
-            append("/ActualText <")
-            append(Page.toUTF16Hex(text!))
-            append(">>> BDC\n")
+        beginActualText(text ?? "", language)
+        placeGlyphs(font, font.size, glyphs, positions)
+        endActualText()
+        if own {
+            addEMC()
         }
-        let size = font.size
+    }
+
+    // Checks the font, the glyphs and their positions for drawGlyphs, and
+    // reads the font's outlines the first time; false, the document failed,
+    // when they cannot be drawn.
+    func glyphsDrawable(_ font: Font, _ glyphs: [Int], _ positions: [Float]) -> Bool {
+        if let identity = font.pdfIdentity, identity != pdf.identity {
+            pdf.fail("The font belongs to another PDF.")
+            return false
+        }
+        guard !font.isCoreFont && !font.isCJK, let program = font.program else {
+            pdf.fail("drawGlyphs needs a font loaded from the font file the glyphs were shaped with.")
+            return false
+        }
+        if positions.count != 2 * glyphs.count {
+            pdf.fail("drawGlyphs needs an x and a y for each glyph.")
+            return false
+        }
+        for v in positions where !(abs(v) <= 1e6) {     // NaN too
+            pdf.fail("drawGlyphs needs positions between -1,000,000 and 1,000,000 points.")
+            return false
+        }
+        // The size times the glyphs' matrix is written with 7 decimals
+        if !(font.size > 0 && font.size <= 10000) {     // NaN too
+            pdf.fail("drawGlyphs needs a font size of more than 0 and at most 10,000 points.")
+            return false
+        }
+        if program.outline == nil {
+            do {
+                program.outline = try GlyphOutline(program.font, program.cff)
+            } catch {
+                pdf.fail((error as? PDFjetError)?.message ?? "\(error)")
+                return false
+            }
+            program.glyphStamps = [:]
+        }
+        let outline = program.outline!
+        for gid in glyphs {
+            if gid < 0 || gid >= outline.count() {
+                pdf.fail("The font has no glyph number \(gid).")
+                return false
+            }
+        }
+        return true
+    }
+
+    // In a tagged document, begins the marked content of glyphs drawn as
+    // outlines, with the text they stand for, and its language, as its actual
+    // text (ISO 32000-1, 14.9.4); endActualText ends it.
+    func beginActualText(_ text: String, _ language: String?) {
+        if !pdf.isTagged() || artifactDepth != 0 {
+            return
+        }
+        append("/Span <<")
+        if let language = language, !language.isEmpty {
+            append("/Lang <")
+            append(pdf.toHex(language))
+            append("> ")
+        }
+        append("/ActualText <")
+        append(Page.toUTF16Hex(text))
+        append(">>> BDC\n")
+    }
+
+    func endActualText() {
+        if pdf.isTagged() && artifactDepth == 0 {
+            append("EMC\n")
+        }
+    }
+
+    // Draws the glyphs, checked by glyphsDrawable, at the size, each as the
+    // stamp of its outline, made the first time the glyph is drawn.
+    func placeGlyphs(_ font: Font, _ size: Float, _ glyphs: [Int], _ positions: [Float]) {
+        font.drawnAsOutlines = true
+        let program = font.program!
+        let outline = program.outline!
         for k in 0..<glyphs.count {
             let gid = glyphs[k]
             // The glyph's stamp, made the first time it is drawn; nil for a
@@ -3231,12 +3264,6 @@ public class Page {
                 stamp.placeGlyph(self, Page.glyphMatrix(outline.matrixOf(gid), size,
                         positions[2 * k], height - positions[2 * k + 1]))
             }
-        }
-        if tagged {
-            append("EMC\n")
-        }
-        if own {
-            addEMC()
         }
     }
 

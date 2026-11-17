@@ -34,6 +34,11 @@ public class Font {
     // whether anything draws with it as a font, text or a stamp's: a font
     // drawGlyphs alone drew with is not written into the document.
     var drawnAsOutlines = false
+    // The font file, for ComplexText, whose text engine reads it: the path it
+    // was loaded from, or the bytes it was loaded from, kept; read from the
+    // path the first time ComplexText needs it.
+    private var fontPath: String?
+    private var fontFile: [UInt8]?
     var referenced = false
 
     // Font attributes
@@ -351,7 +356,40 @@ public class Font {
         self.compliance = pdf.compliance
         let bytes = try Font.open(fontPath)
         try OpenTypeFont.register(pdf, self, bytes)
+        self.fontPath = fontPath
         setSize(size)
+    }
+
+    ///
+    /// Constructor for OpenType and TrueType fonts, .otf and .ttf, from the
+    /// bytes of the font file, such as an app's resource read whole. The font
+    /// keeps the bytes, as ComplexText gives them to the text engine that
+    /// shapes it.
+    ///
+    /// - Parameter pdf: the PDF object that requires this font.
+    /// - Parameter fontFile: the bytes of the font file.
+    /// - Throws: an error if the bytes are not an OpenType or TrueType font.
+    ///
+    public init(_ pdf: PDF, _ fontFile: [UInt8]) throws {
+        self.pdfIdentity = pdf.identity
+        self.compliance = pdf.compliance
+        try OpenTypeFont.register(pdf, self, fontFile)
+        self.fontFile = fontFile
+        setSize(size)
+    }
+
+    // The bytes of the font file, for ComplexText: those it was loaded from,
+    // the TrueType font it keeps, or the file of its path read again; nil for
+    // a font loaded from a stream, a core font or a CJK font.
+    func shapingFile() throws -> [UInt8]? {
+        if fontFile == nil {
+            if let program = program, !program.cff {
+                fontFile = program.font
+            } else if let fontPath = fontPath {
+                fontFile = try Font.open(fontPath)
+            }
+        }
+        return fontFile
     }
 
     // Returns the bytes of the font file of the path, in one read, as Java, C#
