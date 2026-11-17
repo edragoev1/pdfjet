@@ -20,14 +20,38 @@ public interface IShaper {
     /// <summary>
     /// Wraps the text to the width and shapes each line.
     /// </summary>
-    /// <param name="text">the text.</param>
-    /// <param name="language">the language of the text, such as "hi" or "km", or null.</param>
-    /// <param name="fontFiles">the bytes of the font files: the first for the
-    /// text, the others, in order, for the characters it does not have.</param>
-    /// <param name="fontSize">the font size, in points.</param>
-    /// <param name="width">the width of the lines, in points.</param>
+    /// <param name="request">the text, its language, the font files, the
+    /// font size and the width of the lines.</param>
     /// <returns>the lines, in order.</returns>
-    List<ShapedLine> Shape(String text, String language, byte[][] fontFiles, float fontSize, float width);
+    List<ShapedLine> Shape(ShapingRequest request);
+}
+
+/// <summary>
+/// What a shaper is asked to shape: the text, its language, the font files,
+/// the font size and the width of the lines. One object, so that what a
+/// shaper is told can grow without changing the IShaper interface.
+/// </summary>
+public sealed class ShapingRequest {
+    /// <summary>The text.</summary>
+    public String Text { get; }
+    /// <summary>The language of the text, such as "hi" or "km", or null.</summary>
+    public String Language { get; }
+    /// <summary>The bytes of the font files: the first for the text, the
+    /// others, in order, for the characters it does not have.</summary>
+    public byte[][] FontFiles { get; }
+    /// <summary>The font size, in points.</summary>
+    public float FontSize { get; }
+    /// <summary>The width of the lines, in points.</summary>
+    public float Width { get; }
+
+    /// <summary>A request to shape text.</summary>
+    public ShapingRequest(String text, String language, byte[][] fontFiles, float fontSize, float width) {
+        Text = text;
+        Language = language;
+        FontFiles = fontFiles;
+        FontSize = fontSize;
+        Width = width;
+    }
 }
 
 /// <summary>
@@ -41,7 +65,7 @@ public sealed class ShapedLine {
     public int End { get; }
     /// <summary>For each glyph, the index of its font among the font files the
     /// shaper was given, or -1 for a glyph of none of them, which is not drawn.</summary>
-    public int[] Fonts { get; }
+    public int[] FontIndexes { get; }
     /// <summary>The glyph numbers, in their fonts.</summary>
     public int[] Glyphs { get; }
     /// <summary>The x and the y of each glyph, in points, from the left end of
@@ -52,13 +76,13 @@ public sealed class ShapedLine {
     public float Width { get; }
 
     /// <summary>A shaped line.</summary>
-    public ShapedLine(int start, int end, int[] fonts, int[] glyphs, float[] positions, float width) {
-        if (fonts.Length != glyphs.Length || positions.Length != 2 * glyphs.Length) {
+    public ShapedLine(int start, int end, int[] fontIndexes, int[] glyphs, float[] positions, float width) {
+        if (fontIndexes.Length != glyphs.Length || positions.Length != 2 * glyphs.Length) {
             throw new ArgumentException("A shaped line needs a font and an x and a y for each glyph.");
         }
         Start = start;
         End = end;
-        Fonts = fonts;
+        FontIndexes = fontIndexes;
         Glyphs = glyphs;
         Positions = positions;
         Width = width;

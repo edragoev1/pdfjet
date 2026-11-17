@@ -171,7 +171,12 @@ public class HarfBuzzShaper : IShaper {
         return font;
     }
 
-    public List<ShapedLine> Shape(String text, String language, byte[][] fontFiles, float fontSize, float width) {
+    public List<ShapedLine> Shape(ShapingRequest request) {
+        String text = request.Text;
+        String language = request.Language;
+        byte[][] fontFiles = request.FontFiles;
+        float fontSize = request.FontSize;
+        float width = request.Width;
         ShapingFont[] shapers = new ShapingFont[fontFiles.Length];
         for (int i = 0; i < shapers.Length; i++) {
             shapers[i] = FontOf(fontFiles[i]);

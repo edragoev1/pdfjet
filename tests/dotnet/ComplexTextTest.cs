@@ -41,11 +41,11 @@ public class ComplexTextTest {
             this.lines = new List<ShapedLine>(lines);
         }
 
-        public List<ShapedLine> Shape(string text, string language, byte[][] fontFiles, float fontSize, float width) {
-            this.files = fontFiles;
-            this.size = fontSize;
-            this.width = width;
-            this.language = language;
+        public List<ShapedLine> Shape(ShapingRequest request) {
+            this.files = request.FontFiles;
+            this.size = request.FontSize;
+            this.width = request.Width;
+            this.language = request.Language;
             return lines;
         }
     }
@@ -158,8 +158,8 @@ public class ComplexTextTest {
                 new ShapedLine(1, 2, new int[] {0}, new int[] {a}, new float[] {0f, 0f}, 7f));
         ComplexText text = new ComplexText(font, "AA").SetShaper(shaper);
         float body = font.GetAscent() + font.GetDescent() + font.GetLineGap(10f);
-        Assert.Equal(2 * body, text.GetHeight(), 3);
-        Assert.Equal(3 * body, text.SetLineSpacing(1.5f).GetHeight(), 3);
+        Assert.Equal(2 * body, text.GetTextHeight(), 3);
+        Assert.Equal(3 * body, text.SetLineSpacing(1.5f).GetTextHeight(), 3);
     }
 
     // A shaper that gives each paragraph as many lines as its letters, one
@@ -171,7 +171,8 @@ public class ComplexTextTest {
             this.font = font;
         }
 
-        public List<ShapedLine> Shape(string text, string language, byte[][] fontFiles, float fontSize, float width) {
+        public List<ShapedLine> Shape(ShapingRequest request) {
+            string text = request.Text;
             List<ShapedLine> lines = new List<ShapedLine>();
             for (int i = 0; i < text.Length; i++) {
                 lines.Add(new ShapedLine(i, i + 1, new int[] {0}, new int[] {font.unicodeToGID.Get(text[i])},
@@ -192,13 +193,13 @@ public class ComplexTextTest {
                 .SetLanguage("en")
                 .SetParagraphGap(5f)
                 .SetHeight(4 * line + 5f);
-        Assert.Equal(6 * line + 5f, text.GetHeight(), 3);
+        Assert.Equal(6 * line + 5f, text.GetTextHeight(), 3);
         // Three lines of the first paragraph, the gap, one of the second
         Page first = new Page(pdf, Letter.PORTRAIT);
         float[] corner = text.SetLocation(50f, 100f).DrawOn(first);
         Assert.Equal(100f + 4 * line + 5f, corner[1], 3);
         Assert.True(text.HasMoreText());
-        Assert.Equal(2 * line, text.GetHeight(), 3);
+        Assert.Equal(2 * line, text.GetTextHeight(), 3);
         string content = TestSupport.Content(first);
         Assert.Equal(4, Count(content, " cm /Fm"));
         Assert.Equal(2, Count(content, "/P <<"));
@@ -207,9 +208,22 @@ public class ComplexTextTest {
         corner = text.SetLocation(50f, 50f).DrawOn(second);
         Assert.Equal(50f + 2 * line, corner[1], 3);
         Assert.False(text.HasMoreText());
-        Assert.Equal(0f, text.GetHeight());
+        Assert.Equal(0f, text.GetTextHeight());
         Assert.Equal(2, Count(TestSupport.Content(second), " cm /Fm"));
         pdf.Complete();
+    }
+
+    [Fact]
+    public void GetHeightIsTheHeightSetAndTheGapIsTextFramesEmptyLine() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        ComplexText text = new ComplexText(font, new List<string> {"A", "B"}).SetShaper(new LetterShaper(font));
+        Assert.Equal(0f, text.GetHeight());
+        Assert.Equal(500f, text.SetHeight(500f).GetHeight());
+        // Two lines, one empty line between them, as a TextFrame's default
+        float line = font.GetAscent() + font.GetDescent() + font.GetLineGap(10f);
+        float gap = font.GetAscent() + font.GetDescent() + 2f * font.GetLineGap(10f);
+        Assert.Equal(2 * line + gap, text.GetTextHeight(), 3);
     }
 
     [Fact]

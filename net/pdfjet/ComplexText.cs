@@ -65,7 +65,7 @@ public class ComplexText : IDrawable {
     private float y;
     private float width = 300f;
     private float height;               // 0: all of the text
-    private float paragraphGap = -1f;   // Less than 0: half the font's size
+    private float paragraphGap = -1f;   // Less than 0: one empty line, as TextFrame's
     private int textColor = Color.black;
     private Alignment textAlignment = Alignment.LEFT;
     private float lineSpacing = 1.0f;
@@ -139,8 +139,8 @@ public class ComplexText : IDrawable {
     }
 
     /// <summary>Sets the space between paragraphs, from the bottom of a
-    /// paragraph's last line to the top of the next one's first; half the
-    /// font's size by default. A negative gap is taken as 0.</summary>
+    /// paragraph's last line to the top of the next one's first; one empty
+    /// line by default, as TextFrame's. A negative gap is taken as 0.</summary>
     public ComplexText SetParagraphGap(float paragraphGap) {
         this.paragraphGap = Math.Max(0f, paragraphGap);
         return this;
@@ -191,10 +191,15 @@ public class ComplexText : IDrawable {
         return false;
     }
 
+    /// <summary>Returns the height set with SetHeight, as TextFrame's; 0 for none.</summary>
+    public float GetHeight() {
+        return height;
+    }
+
     /// <summary>Returns the height of the text not drawn yet, wrapped to the
     /// width, whatever the height set, in points: shapes it, if it is not
     /// shaped yet.</summary>
-    public float GetHeight() {
+    public float GetTextHeight() {
         float total = 0f;
         bool first = true;
         for (int p = paragraph; p < paragraphs.Count; p++) {
@@ -279,10 +284,10 @@ public class ComplexText : IDrawable {
         int from = 0;
         while (from < line.Glyphs.Length) {
             int to = from;
-            while (to < line.Glyphs.Length && line.Fonts[to] == line.Fonts[from]) {
+            while (to < line.Glyphs.Length && line.FontIndexes[to] == line.FontIndexes[from]) {
                 to++;
             }
-            int index = line.Fonts[from];
+            int index = line.FontIndexes[from];
             if (index >= 0 && index < fonts.Length) {
                 int[] run = new int[to - from];
                 float[] places = new float[2 * run.Length];
@@ -311,15 +316,20 @@ public class ComplexText : IDrawable {
         return (font.GetAscent() + font.GetDescent() + font.GetLineGap(font.GetSize())) * lineSpacing;
     }
 
+    // One empty line by default, as TextFrame's: the ascent and the descent,
+    // and the line gap on each side
     private float Gap() {
-        return paragraphGap < 0f ? 0.5f * font.GetSize() : paragraphGap;
+        if (paragraphGap >= 0f) {
+            return paragraphGap;
+        }
+        return font.GetAscent() + font.GetDescent() + 2f * font.GetLineGap(font.GetSize());
     }
 
     // How far each glyph of the line moves to the right, for its alignment:
     // all the same for CENTER and RIGHT; for JUSTIFY, each glyph by the room
     // given to the spaces before it, the last line left as it is.
     private float[] Shifts(ShapedLine line, bool last, int[] spaces) {
-        int[] fontOf = line.Fonts;
+        int[] fontOf = line.FontIndexes;
         int[] glyphs = line.Glyphs;
         float[] shifts = new float[glyphs.Length];
         float room = width - line.Width;
@@ -380,7 +390,7 @@ public class ComplexText : IDrawable {
                             + "by path or from their bytes, as the text engine reads the same file.");
                 }
             }
-            shapedLines[p] = shaper.Shape(paragraphs[p], language, files, shapedSize, width);
+            shapedLines[p] = shaper.Shape(new ShapingRequest(paragraphs[p], language, files, shapedSize, width));
         }
         return shapedLines[p];
     }
