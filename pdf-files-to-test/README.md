@@ -11,11 +11,11 @@ PAC runs in Wine on Ubuntu (it ran on Windows before 28 October 2026).
 
 **Only files that claim PDF/UA go to PAC:** those whose XMP metadata has pdfuaid:part, as an example has when it calls `setCompliance` with a PDF/UA level. A file that does not is untagged, and PAC fails it on every text object and its metadata, which says nothing about PDFjet's tagging. On 28 September 2026 Example_07 (PDF/A-3b), Example_34 (PDF/A-1b), Example_43 (its PDF/UA commented out, as a tagged table of 2,000 pages is too large; its 11.7 MB of 2,000 pages crash PAC) and Example_37, 41, 46 and 51 (no compliance) did not.
 
-**Leave out Example_17 and Example_33.** They claim PDF/UA and pass
-veraPDF, but they crash PAC (29 September 2026; Example_17 on 28 October 2026).
-Example_17 has 694 pages. Example_52, of 745 pages then, was left out too
-until 14 November 2026, when it became the two pages of Hindi and Khmer
-drawn with drawGlyphs; it goes to PAC since 9.1.9.
+**Leave out Example_17.** It claims PDF/UA and passes veraPDF, but its 694
+pages crash PAC (28 October 2026). Example_33 and Example_52 crashed PAC too
+on 29 September 2026, and were left out until 9.1.9; now two pages each
+(Example_52 the Hindi and Khmer drawn with drawGlyphs since 14 November
+2026), both pass PAC (16 November 2026) and go in.
 
 **Only files that embed all their fonts go here.** PDF/UA asks for every font
 to be embedded (Matterhorn 31-001), so a file with one that is not fails for
