@@ -37,8 +37,8 @@ same output come in four languages, and none of them needs a third-party library
 >
 > | | Add |
 > |---|---|
-> | Maven | `<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId><version>9.1.7</version></dependency>` |
-> | Gradle | `implementation("com.pdfjet:pdfjet-fonts-world:9.1.7")` |
+> | Maven | `<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId><version>9.1.9</version></dependency>` |
+> | Gradle | `implementation("com.pdfjet:pdfjet-fonts-world:9.1.9")` |
 > | NuGet | `dotnet add package PDFjet.Fonts.World` |
 > | Go | `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"` |
 > | Swift | `.product(name: "PDFjetFontsWorld", package: "pdfjet")` |
@@ -147,14 +147,14 @@ PDFjet is on Maven Central, as `com.pdfjet:pdfjet`. With Maven:
 <dependency>
   <groupId>com.pdfjet</groupId>
   <artifactId>pdfjet</artifactId>
-  <version>9.1.7</version>
+  <version>9.1.9</version>
 </dependency>
 ```
 
 With Gradle:
 
 ```groovy
-implementation("com.pdfjet:pdfjet:9.1.7")
+implementation("com.pdfjet:pdfjet:9.1.9")
 ```
 
 PDFjet includes every European language (Latin, Greek, Cyrillic). **For
@@ -165,12 +165,12 @@ version:** the fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai.
 <dependency>
   <groupId>com.pdfjet</groupId>
   <artifactId>pdfjet-fonts-world</artifactId>
-  <version>9.1.7</version>
+  <version>9.1.9</version>
 </dependency>
 ```
 
 ```groovy
-implementation("com.pdfjet:pdfjet-fonts-world:9.1.7")
+implementation("com.pdfjet:pdfjet-fonts-world:9.1.9")
 ```
 
 From 9.1.7 the jar of Maven Central carries IBM Plex Sans and Serif and
@@ -209,13 +209,13 @@ PDFjet is on NuGet, as `PDFjet`, for .NET 8 or later and .NET Framework 4.8,
 strong-named. With the .NET CLI:
 
 ```bash
-dotnet add package PDFjet --version 9.1.7
+dotnet add package PDFjet --version 9.1.9
 ```
 
 Or in the project file:
 
 ```xml
-<PackageReference Include="PDFjet" Version="9.1.7" />
+<PackageReference Include="PDFjet" Version="9.1.9" />
 ```
 
 PDFjet includes every European language (Latin, Greek, Cyrillic). **For
@@ -344,7 +344,7 @@ Add PDFjet to the `Package.swift` of your package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.7"),
+    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.9"),
 ],
 targets: [
     .executableTarget(name: "App", dependencies: [

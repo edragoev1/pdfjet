@@ -7,7 +7,7 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.1.9 — not released yet
+## v9.1.9 — 2026-11-17
 
 The release notes, the most important first; every change in detail follows,
 under "In detail". In the four ports, Java, C#, Go and Swift, unless said.
