@@ -35,8 +35,11 @@ than waiting for 9.2.1. The rules:
    build. README.md's install lines keep naming the last release, 9.1.9,
    which is what the public installs; CHANGELOG.md has
    "## v9.2.0 — customer builds, not released" over the fixes.
-3. The next release, 9.2.1, is 9.2.0 and whatever comes after, with its
-   date; nobody is left on a customer build.
+3. When enough fixes have gathered in 9.2.0, it is released as 9.2.1: its
+   CHANGELOG section "v9.2.0 — customer builds, not released" becomes
+   "v9.2.1 — the date", the version moves to 9.2.1 and the release goes
+   out as any release does; then main becomes 9.2.2. Nobody is left on a
+   customer build.
 4. PDFjet Pro in step: a customer of Pro gets Pro built on 9.2.0, with the
    same number.
 
