@@ -19,6 +19,26 @@ being right, not by the calendar (the owner, 29 October 2026; was early
 2027); the plan of 9.0.7, the first public
 release since 9.0.3 (12 October 2026), is in the history of this file.
 
+**Even numbers are customer builds** (the owner, 17 November 2026). When a
+customer finds a fault, they need not wait for the next release: a build
+with the fix gets the even number before it, 9.2.0 before 9.2.1, 9.2.2
+before 9.2.3, so its number says "the last release and a fix". The rules:
+
+1. Never public. No tag pushed to the public repositories (Go and SwiftPM
+   take versions from tags, and a v9.2.0 tag would be everyone's latest),
+   nothing uploaded to NuGet or Maven Central (a version there can never be
+   removed or used again), no GitHub release. The customer gets a zip,
+   from a hidden folder of pdfjet.com, as the Pro downloads are.
+2. Built from the release tag and the fix alone, on a branch such as
+   fix-9.2.0 started at v9.1.9, never from main, which may hold work not
+   released; the producer string says the even number (util/check-version.sh
+   and the version commit as for a release), so a PDF tells which build
+   made it.
+3. The fix goes into the next odd release too, so that everyone has it
+   there and no customer is left on an even build.
+4. PDFjet Pro in step: a customer of Pro gets Pro built on the even core,
+   with the same number, as for a release.
+
 ## Checks before each release
 
 - **PDFjet Pro, the same day, with the same number.** The library is tagged
