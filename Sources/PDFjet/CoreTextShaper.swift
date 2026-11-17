@@ -33,8 +33,12 @@ final class CoreTextShaper: Shaper {
         }
     }
 
-    func shape(_ text: String, _ language: String?, _ fontFiles: [[UInt8]],
-            _ fontSize: Float, _ width: Float) throws -> [ShapedLine] {
+    func shape(_ request: ShapingRequest) throws -> [ShapedLine] {
+        let text = request.text
+        let language = request.language
+        let fontFiles = request.fontFiles
+        let fontSize = request.fontSize
+        let width = request.width
         let fonts = try fontFiles.map {
             CTFontCreateWithFontDescriptor(try Descriptors.shared.descriptor($0), CGFloat(fontSize), nil)
         }

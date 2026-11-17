@@ -60,7 +60,7 @@ public class ComplexText: Drawable {
     private var y: Float = 0.0
     private var width: Float = 300.0
     private var height: Float = 0.0         // 0: all of the text
-    private var paragraphGap: Float = -1.0  // Less than 0: half the font's size
+    private var paragraphGap: Float = -1.0  // Less than 0: one empty line, as TextFrame's
     private var textColor: Int32 = Color.black
     private var textAlignment = Alignment.LEFT
     private var lineSpacing: Float = 1.0
@@ -142,8 +142,8 @@ public class ComplexText: Drawable {
     }
 
     /// Sets the space between paragraphs, from the bottom of a paragraph's
-    /// last line to the top of the next one's first; half the font's size by
-    /// default. A negative gap is taken as 0.
+    /// last line to the top of the next one's first; one empty line by
+    /// default, as TextFrame's. A negative gap is taken as 0.
     @discardableResult
     public func setParagraphGap(_ paragraphGap: Float) -> ComplexText {
         self.paragraphGap = max(0, paragraphGap)
@@ -206,6 +206,11 @@ public class ComplexText: Drawable {
         return false
     }
 
+    /// Returns the height set with setHeight, as TextFrame's; 0 for none.
+    public func getHeight() -> Float {
+        return height
+    }
+
     ///
     /// Returns the height of the text not drawn yet, wrapped to the width,
     /// whatever the height set: shapes it, if it is not shaped yet.
@@ -213,7 +218,7 @@ public class ComplexText: Drawable {
     /// - Returns: the height, in points.
     /// - Throws: an error if the text cannot be shaped.
     ///
-    public func getHeight() throws -> Float {
+    public func getTextHeight() throws -> Float {
         var total: Float = 0
         var first = true
         var p = paragraph
@@ -240,7 +245,7 @@ public class ComplexText: Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         guard let page = page else {
-            return [x + width, y + ((try? getHeight()) ?? 0.0)]
+            return [x + width, y + ((try? getTextHeight()) ?? 0.0)]
         }
         let fonts = self.fonts()
         let size = font.getSize()
@@ -312,10 +317,10 @@ public class ComplexText: Drawable {
         var from = 0
         while from < line.glyphs.count {
             var to = from
-            while to < line.glyphs.count && line.fonts[to] == line.fonts[from] {
+            while to < line.glyphs.count && line.fontIndexes[to] == line.fontIndexes[from] {
                 to += 1
             }
-            let index = line.fonts[from]
+            let index = line.fontIndexes[from]
             if index >= 0 && index < fonts.count {
                 var run = [Int]()
                 var places = [Float]()
@@ -348,8 +353,13 @@ public class ComplexText: Drawable {
         return (font.getAscent() + font.getDescent() + font.getLineGap(font.getSize())) * lineSpacing
     }
 
+    // One empty line by default, as TextFrame's: the ascent and the descent,
+    // and the line gap on each side
     private func gap() -> Float {
-        return paragraphGap < 0 ? 0.5 * font.getSize() : paragraphGap
+        if paragraphGap >= 0 {
+            return paragraphGap
+        }
+        return font.getAscent() + font.getDescent() + 2 * font.getLineGap(font.getSize())
     }
 
     // How far each glyph of the line moves to the right, for its alignment:
@@ -362,7 +372,7 @@ public class ComplexText: Drawable {
             return shifts
         }
         func isSpace(_ i: Int) -> Bool {
-            let font = line.fonts[i]
+            let font = line.fontIndexes[i]
             return font >= 0 && font < spaces.count && spaces[font] != 0 && line.glyphs[i] == spaces[font]
         }
         if textAlignment == Alignment.CENTER || textAlignment == Alignment.RIGHT {
@@ -405,7 +415,7 @@ public class ComplexText: Drawable {
             }
             files.append(file)
         }
-        let lines = try currentShaper().shape(paragraphs[p], language, files, shapedSize, width)
+        let lines = try currentShaper().shape(ShapingRequest(paragraphs[p], language, files, shapedSize, width))
         shapedLines![p] = lines
         return lines
     }

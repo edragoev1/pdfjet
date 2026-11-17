@@ -33,12 +33,11 @@ import Testing
             self.lines = lines
         }
 
-        func shape(_ text: String, _ language: String?, _ fontFiles: [[UInt8]],
-                _ fontSize: Float, _ width: Float) throws -> [ShapedLine] {
-            self.files = fontFiles
-            self.size = fontSize
-            self.width = width
-            self.language = language
+        func shape(_ request: ShapingRequest) throws -> [ShapedLine] {
+            self.files = request.fontFiles
+            self.size = request.fontSize
+            self.width = request.width
+            self.language = request.language
             return lines
         }
     }
@@ -129,8 +128,8 @@ import Testing
         ])
         let text = ComplexText(font, "AA").setShaper(shaper)
         let body = font.getAscent() + font.getDescent() + font.getLineGap(10)
-        #expect(abs(try text.getHeight() - 2 * body) < 0.001)
-        #expect(abs(try text.setLineSpacing(1.5).getHeight() - 3 * body) < 0.001)
+        #expect(abs(try text.getTextHeight() - 2 * body) < 0.001)
+        #expect(abs(try text.setLineSpacing(1.5).getTextHeight() - 3 * body) < 0.001)
     }
 
     // A shaper that gives each paragraph as many lines as its letters, one
@@ -142,10 +141,9 @@ import Testing
             self.font = font
         }
 
-        func shape(_ text: String, _ language: String?, _ fontFiles: [[UInt8]],
-                _ fontSize: Float, _ width: Float) throws -> [ShapedLine] {
+        func shape(_ request: ShapingRequest) throws -> [ShapedLine] {
             var lines = [ShapedLine]()
-            for (i, c) in text.utf16.enumerated() {
+            for (i, c) in request.text.utf16.enumerated() {
                 lines.append(ShapedLine(i, i + 1, [0], [font.unicodeToGID[Int(c)]], [0, 0], 7))
             }
             return lines
@@ -162,13 +160,13 @@ import Testing
                 .setLanguage("en")
                 .setParagraphGap(5)
                 .setHeight(4 * line + 5)
-        #expect(abs(try text.getHeight() - (6 * line + 5)) < 0.001)
+        #expect(abs(try text.getTextHeight() - (6 * line + 5)) < 0.001)
         // Three lines of the first paragraph, the gap, one of the second
         let first = Page(memory.pdf, Letter.PORTRAIT)
         var corner = text.setLocation(50, 100).drawOn(first)
         #expect(abs(corner[1] - (100 + 4 * line + 5)) < 0.001)
         #expect(try text.hasMoreText())
-        #expect(abs(try text.getHeight() - 2 * line) < 0.001)
+        #expect(abs(try text.getTextHeight() - 2 * line) < 0.001)
         let content = TestSupport.content(first)
         #expect(count(content, " cm /Fm") == 4, "\(content)")
         #expect(count(content, "/P <<") == 2, "a paragraph each, the second begun")
@@ -177,9 +175,21 @@ import Testing
         corner = text.setLocation(50, 50).drawOn(second)
         #expect(abs(corner[1] - (50 + 2 * line)) < 0.001)
         #expect(try !text.hasMoreText())
-        #expect(try text.getHeight() == 0)
+        #expect(try text.getTextHeight() == 0)
         #expect(count(TestSupport.content(second), " cm /Fm") == 2)
         try memory.pdf.complete()
+    }
+
+    @Test func getHeightIsTheHeightSetAndTheGapIsTextFramesEmptyLine() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, ComplexTextTests.latin).setSize(10)
+        let text = ComplexText(font, ["A", "B"]).setShaper(LetterShaper(font))
+        #expect(text.getHeight() == 0)
+        #expect(text.setHeight(500).getHeight() == 500)
+        // Two lines, one empty line between them, as a TextFrame's default
+        let line = font.getAscent() + font.getDescent() + font.getLineGap(10)
+        let gap = font.getAscent() + font.getDescent() + 2 * font.getLineGap(10)
+        #expect(abs(try text.getTextHeight() - (2 * line + gap)) < 0.001)
     }
 
     @Test func aHeightTooSmallForALineStillDrawsOneEachTime() throws {
@@ -232,7 +242,7 @@ import Testing
                 .setLanguage("hi")
                 .setLocation(50, 100)
                 .setWidth(200)
-        let height = try text.getHeight()
+        let height = try text.getTextHeight()
         let corner = text.drawOn(page)
         #expect(corner[0] == 250)
         #expect(abs(corner[1] - (100 + height)) < 0.001)

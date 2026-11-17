@@ -20,17 +20,39 @@ public protocol Shaper {
     ///
     /// Wraps the text to the width and shapes each line.
     ///
-    /// - Parameter text: the text.
-    /// - Parameter language: the language of the text, such as "hi" or "km", or nil.
-    /// - Parameter fontFiles: the bytes of the font files: the first for the
-    ///   text, the others, in order, for the characters it does not have.
-    /// - Parameter fontSize: the font size, in points.
-    /// - Parameter width: the width of the lines, in points.
+    /// - Parameter request: the text, its language, the font files, the font
+    ///   size and the width of the lines.
     /// - Returns: the lines, in order.
     /// - Throws: an error if the text cannot be shaped.
     ///
-    func shape(_ text: String, _ language: String?, _ fontFiles: [[UInt8]],
-            _ fontSize: Float, _ width: Float) throws -> [ShapedLine]
+    func shape(_ request: ShapingRequest) throws -> [ShapedLine]
+}
+
+///
+/// What a Shaper is asked to shape: the text, its language, the font files,
+/// the font size and the width of the lines. One value, so that what a
+/// shaper is told can grow without changing the Shaper protocol.
+///
+public struct ShapingRequest {
+    /// The text.
+    public let text: String
+    /// The language of the text, such as "hi" or "km", or nil.
+    public let language: String?
+    /// The bytes of the font files: the first for the text, the others, in
+    /// order, for the characters it does not have.
+    public let fontFiles: [[UInt8]]
+    /// The font size, in points.
+    public let fontSize: Float
+    /// The width of the lines, in points.
+    public let width: Float
+
+    public init(_ text: String, _ language: String?, _ fontFiles: [[UInt8]], _ fontSize: Float, _ width: Float) {
+        self.text = text
+        self.language = language
+        self.fontFiles = fontFiles
+        self.fontSize = fontSize
+        self.width = width
+    }
 }
 
 ///
@@ -44,7 +66,7 @@ public struct ShapedLine {
     public let end: Int
     /// For each glyph, the index of its font among the font files the shaper
     /// was given, or -1 for a glyph of none of them, which is not drawn.
-    public let fonts: [Int]
+    public let fontIndexes: [Int]
     /// The glyph numbers, in their fonts.
     public let glyphs: [Int]
     /// The x and the y of each glyph, in points, from the left end of the
@@ -54,13 +76,13 @@ public struct ShapedLine {
     /// end: what is centered, aligned to the right or justified.
     public let width: Float
 
-    public init(_ start: Int, _ end: Int, _ fonts: [Int], _ glyphs: [Int], _ positions: [Float],
+    public init(_ start: Int, _ end: Int, _ fontIndexes: [Int], _ glyphs: [Int], _ positions: [Float],
             _ width: Float) {
-        precondition(fonts.count == glyphs.count && positions.count == 2 * glyphs.count,
+        precondition(fontIndexes.count == glyphs.count && positions.count == 2 * glyphs.count,
                 "A shaped line needs a font and an x and a y for each glyph.")
         self.start = start
         self.end = end
-        self.fonts = fonts
+        self.fontIndexes = fontIndexes
         self.glyphs = glyphs
         self.positions = positions
         self.width = width
