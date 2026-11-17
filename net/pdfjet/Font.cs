@@ -37,6 +37,11 @@ public class Font {
     // whether anything draws with it as a font, text or a stamp's: a font
     // DrawGlyphs alone drew with is not written into the document.
     internal bool drawnAsOutlines;
+    // The font file, for ComplexText, whose text engine reads it: the path it
+    // was loaded from, or the bytes it was loaded from, kept; read from the
+    // path the first time ComplexText needs it.
+    private String fontPath;
+    private byte[] fontFile;
     internal bool referenced;
 
     // Font attributes
@@ -337,7 +342,41 @@ public class Font {
         using (Stream inputStream = Open(fontPath)) {
             OpenTypeFont.Register(pdf, this, inputStream);
         }
+        this.fontPath = fontPath;
         SetSize(size);
+    }
+
+    /// <summary>
+    /// Constructor for OpenType and TrueType fonts, .otf and .ttf, from the
+    /// bytes of the font file, such as an app's resource read whole. The font
+    /// keeps the bytes, as ComplexText gives them to the text engine that
+    /// shapes it.
+    /// </summary>
+    /// <param name="pdf">the PDF object that requires this font.</param>
+    /// <param name="fontFile">the bytes of the font file.</param>
+    public Font(PDF pdf, byte[] fontFile) {
+        this.pdf = pdf;
+        using (Stream inputStream = new MemoryStream(fontFile)) {
+            OpenTypeFont.Register(pdf, this, inputStream);
+        }
+        this.fontFile = fontFile;
+        SetSize(size);
+    }
+
+    // The bytes of the font file, for ComplexText: those it was loaded from,
+    // the TrueType font it keeps, or the file of its path read again; null for
+    // a font loaded from a stream, a core font or a CJK font.
+    internal byte[] FontFile() {
+        if (fontFile == null) {
+            if (program != null && !program.cff) {
+                fontFile = program.font;
+            } else if (fontPath != null) {
+                using (Stream inputStream = Open(fontPath)) {
+                    fontFile = Content.GetFromStream(inputStream);
+                }
+            }
+        }
+        return fontFile;
     }
 
     // Opens the font file of the path, or, when there is no such file, the

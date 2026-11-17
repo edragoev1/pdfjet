@@ -3277,50 +3277,8 @@ public class Page {
     /// <param name="text">the text the glyphs stand for, as it is read.</param>
     /// <param name="language">the language of the text, such as "hi" or "km", or null.</param>
     public void DrawGlyphs(Font font, int[] glyphs, float[] positions, String text, String language) {
-        if (font == null || glyphs == null || positions == null) {
-            pdf.Fail(new ArgumentException("DrawGlyphs needs a font, glyphs and their positions."));
+        if (!GlyphsDrawable(font, glyphs, positions)) {
             return;
-        }
-        if (font.pdf != null && font.pdf != pdf) {
-            pdf.Fail(new ArgumentException("The font belongs to another PDF."));
-            return;
-        }
-        if (font.isCoreFont || font.isCJK || font.program == null) {
-            pdf.Fail(new ArgumentException(
-                    "DrawGlyphs needs a font loaded from the font file the glyphs were shaped with."));
-            return;
-        }
-        if (positions.Length != 2 * glyphs.Length) {
-            pdf.Fail(new ArgumentException("DrawGlyphs needs an x and a y for each glyph."));
-            return;
-        }
-        foreach (float v in positions) {
-            if (!(Math.Abs(v) <= 1e6)) {    // NaN too
-                pdf.Fail(new ArgumentException("DrawGlyphs needs positions between -1,000,000 and 1,000,000 points."));
-                return;
-            }
-        }
-        // The size times the glyphs' matrix is written with 7 decimals
-        if (!(font.size > 0f && font.size <= 10000f)) {    // NaN too
-            pdf.Fail(new ArgumentException("DrawGlyphs needs a font size of more than 0 and at most 10,000 points."));
-            return;
-        }
-        Subset.Program program = font.program;
-        if (program.outline == null) {
-            try {
-                program.outline = new GlyphOutline(program.font, program.cff);
-            } catch (ArgumentException e) {
-                pdf.Fail(e);
-                return;
-            }
-            program.glyphStamps = new Dictionary<int, Stamp>();
-        }
-        GlyphOutline outline = program.outline;
-        foreach (int gid in glyphs) {
-            if (gid < 0 || gid >= outline.Count()) {
-                pdf.Fail(new ArgumentException("The font has no glyph number " + gid + "."));
-                return;
-            }
         }
         bool tagged = pdf.IsTagged() && artifactDepth == 0;
         if (tagged && glyphs.Length > 0 && String.IsNullOrEmpty(text)) {
@@ -3331,26 +3289,100 @@ public class Page {
         if (glyphs.Length == 0) {
             return;
         }
-        font.drawnAsOutlines = true;
         // A paragraph of their own, in a tagged document, drawn outside any
         bool own = tagged && !InsideTaggedContent();
         if (own) {
             AddBDC(StructElem.P, language, null, null);
         }
-        // The text they stand for, and its language, as the actual text of
-        // the marked content of the outlines (ISO 32000-1, 14.9.4)
-        if (tagged) {
-            Append("/Span <<");
-            if (!String.IsNullOrEmpty(language)) {
-                Append("/Lang <");
-                Append(Util.ToHexString(System.Text.Encoding.UTF8.GetBytes(language)));
-                Append("> ");
-            }
-            Append("/ActualText <");
-            Append(ToUTF16Hex(text));
-            Append(">>> BDC\n");
+        BeginActualText(text, language);
+        PlaceGlyphs(font, font.size, glyphs, positions);
+        EndActualText();
+        if (own) {
+            AddEMC();
         }
-        float size = font.size;
+    }
+
+    // Checks the font, the glyphs and their positions for DrawGlyphs, and
+    // reads the font's outlines the first time; false, the document failed,
+    // when they cannot be drawn.
+    internal bool GlyphsDrawable(Font font, int[] glyphs, float[] positions) {
+        if (font == null || glyphs == null || positions == null) {
+            pdf.Fail(new ArgumentException("DrawGlyphs needs a font, glyphs and their positions."));
+            return false;
+        }
+        if (font.pdf != null && font.pdf != pdf) {
+            pdf.Fail(new ArgumentException("The font belongs to another PDF."));
+            return false;
+        }
+        if (font.isCoreFont || font.isCJK || font.program == null) {
+            pdf.Fail(new ArgumentException(
+                    "DrawGlyphs needs a font loaded from the font file the glyphs were shaped with."));
+            return false;
+        }
+        if (positions.Length != 2 * glyphs.Length) {
+            pdf.Fail(new ArgumentException("DrawGlyphs needs an x and a y for each glyph."));
+            return false;
+        }
+        foreach (float v in positions) {
+            if (!(Math.Abs(v) <= 1e6)) {    // NaN too
+                pdf.Fail(new ArgumentException("DrawGlyphs needs positions between -1,000,000 and 1,000,000 points."));
+                return false;
+            }
+        }
+        // The size times the glyphs' matrix is written with 7 decimals
+        if (!(font.size > 0f && font.size <= 10000f)) {    // NaN too
+            pdf.Fail(new ArgumentException("DrawGlyphs needs a font size of more than 0 and at most 10,000 points."));
+            return false;
+        }
+        Subset.Program program = font.program;
+        if (program.outline == null) {
+            try {
+                program.outline = new GlyphOutline(program.font, program.cff);
+            } catch (ArgumentException e) {
+                pdf.Fail(e);
+                return false;
+            }
+            program.glyphStamps = new Dictionary<int, Stamp>();
+        }
+        foreach (int gid in glyphs) {
+            if (gid < 0 || gid >= program.outline.Count()) {
+                pdf.Fail(new ArgumentException("The font has no glyph number " + gid + "."));
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // In a tagged document, begins the marked content of glyphs drawn as
+    // outlines, with the text they stand for, and its language, as its actual
+    // text (ISO 32000-1, 14.9.4); EndActualText ends it.
+    internal void BeginActualText(String text, String language) {
+        if (!pdf.IsTagged() || artifactDepth != 0) {
+            return;
+        }
+        Append("/Span <<");
+        if (!String.IsNullOrEmpty(language)) {
+            Append("/Lang <");
+            Append(Util.ToHexString(System.Text.Encoding.UTF8.GetBytes(language)));
+            Append("> ");
+        }
+        Append("/ActualText <");
+        Append(ToUTF16Hex(text));
+        Append(">>> BDC\n");
+    }
+
+    internal void EndActualText() {
+        if (pdf.IsTagged() && artifactDepth == 0) {
+            Append("EMC\n");
+        }
+    }
+
+    // Draws the glyphs, checked by GlyphsDrawable, at the size, each as the
+    // stamp of its outline, made the first time the glyph is drawn.
+    internal void PlaceGlyphs(Font font, float size, int[] glyphs, float[] positions) {
+        font.drawnAsOutlines = true;
+        Subset.Program program = font.program;
+        GlyphOutline outline = program.outline;
         for (int k = 0; k < glyphs.Length; k++) {
             int gid = glyphs[k];
             // The glyph's stamp, made the first time it is drawn; null for
@@ -3364,12 +3396,6 @@ public class Page {
                 stamp.PlaceGlyph(this, GlyphMatrix(outline.MatrixOf(gid), size,
                         positions[2 * k], height - positions[2 * k + 1]));
             }
-        }
-        if (tagged) {
-            Append("EMC\n");
-        }
-        if (own) {
-            AddEMC();
         }
     }
 

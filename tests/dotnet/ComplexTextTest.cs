@@ -1,0 +1,146 @@
+/**
+ * ComplexTextTest.cs
+ *
+ * Copyright (c) 2026 PDFjet Software
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text.RegularExpressions;
+using Xunit;
+
+namespace PDFjet.NET {
+// ComplexText: a shaper wraps and shapes the text, and the glyphs it found
+// are drawn with DrawGlyphs, each line tagged with its text. .NET has no
+// shaper of its own: the tests give one that returns fixed lines.
+public class ComplexTextTest {
+    private const string DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
+    private const string LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
+    private const string CASCADIA = "tests/fonts/CascadiaMono-Regular.ttf";
+
+    private static int Count(string text, string part) {
+        int n = 0;
+        for (int i = text.IndexOf(part, StringComparison.Ordinal); i >= 0;
+                i = text.IndexOf(part, i + 1, StringComparison.Ordinal)) {
+            n++;
+        }
+        return n;
+    }
+
+    // A shaper that gives the lines it was made with, and keeps what it was given
+    private class FixedShaper : IShaper {
+        internal readonly List<ShapedLine> lines;
+        internal byte[][] files;
+        internal float size;
+        internal float width;
+        internal string language;
+
+        internal FixedShaper(params ShapedLine[] lines) {
+            this.lines = new List<ShapedLine>(lines);
+        }
+
+        public List<ShapedLine> Shape(string text, string language, byte[][] fontFiles, float fontSize, float width) {
+            this.files = fontFiles;
+            this.size = fontSize;
+            this.width = width;
+            this.language = language;
+            return lines;
+        }
+    }
+
+    [Fact]
+    public void TheShaperGivesTheGlyphsAndTheirPlaces() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        Font fallback = new Font(pdf, CASCADIA);
+        int a = font.unicodeToGID.Get('A');
+        int b = fallback.unicodeToGID.Get('B');
+        FixedShaper shaper = new FixedShaper(
+                new ShapedLine(0, 2, new int[] {0, 1}, new int[] {a, b}, new float[] {0f, 0f, 7f, 0f}),
+                // A glyph of a font that was not given is not drawn
+                new ShapedLine(2, 3, new int[] {-1}, new int[] {5}, new float[] {0f, 0f}));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        float[] corner = new ComplexText(font, "ABC")
+                .SetFallbackFont(fallback)
+                .SetLanguage("en")
+                .SetShaper(shaper)
+                .SetLocation(50f, 100f)
+                .SetWidth(120f)
+                .DrawOn(page);
+        Assert.Equal(2, shaper.files.Length);
+        Assert.Equal(10f, shaper.size);
+        Assert.Equal(120f, shaper.width);
+        Assert.Equal("en", shaper.language);
+
+        float lineHeight = font.GetAscent() + font.GetDescent() + 2.5f;
+        Assert.Equal(100f + 2 * lineHeight, corner[1], 3);
+        // The fallback's glyph at the font's size, 10 points, on the first line's baseline
+        float y = 792f - (100f + font.GetAscent());
+        string content = TestSupport.Content(page);
+        List<float[]> places = new List<float[]>();
+        foreach (Match m in Regex.Matches(content, @"q (\S+) 0 0 \S+ (\S+) (\S+) cm /Fm")) {
+            places.Add(new float[] {
+                float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture),
+                float.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture),
+                float.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture)});
+        }
+        Assert.Equal(2, places.Count);
+        Assert.True(Math.Abs(places[0][0] - 0.01f) < 1e-6f);            // Plex, 1,000 units an em
+        Assert.True(Math.Abs(places[1][0] - 10f / 2048f) < 1e-6f);      // Cascadia, 2,048
+        Assert.Equal(50f, places[0][1]);
+        Assert.Equal(57f, places[1][1]);
+        Assert.True(Math.Abs(places[0][2] - y) < 0.006f && Math.Abs(places[1][2] - y) < 0.006f);
+        pdf.Complete();
+    }
+
+    [Fact]
+    public void ATaggedTextIsAParagraphOfLinesWithTheirText() {
+        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, LATIN);
+        int a = font.unicodeToGID.Get('A');
+        int b = font.unicodeToGID.Get('B');
+        FixedShaper shaper = new FixedShaper(
+                new ShapedLine(0, 2, new int[] {0, 0}, new int[] {a, a}, new float[] {0f, 0f, 7f, 0f}),
+                new ShapedLine(2, 4, new int[] {0, 0}, new int[] {b, b}, new float[] {0f, 0f, 7f, 0f}));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new ComplexText(font, "AABB").SetLanguage("hi").SetShaper(shaper).SetLocation(50f, 100f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Equal(1, Count(content, "/P <</MCID 0>>\nBDC\n"));
+        Assert.Contains("/Span <</Lang <6869> /ActualText <" + Page.ToUTF16Hex("AA") + ">>> BDC\n", content);
+        Assert.Contains("/Span <</Lang <6869> /ActualText <" + Page.ToUTF16Hex("BB") + ">>> BDC\n", content);
+        Assert.DoesNotContain("BT", content);
+        pdf.Complete();
+    }
+
+    [Fact]
+    public void TheFontFileIsWhatTheFontWasLoadedFrom() {
+        PDF pdf = new PDF(new MemoryStream());
+        byte[] bytes = File.ReadAllBytes(DEVANAGARI);
+        Font fromBytes = new Font(pdf, bytes);
+        Font fromPath = new Font(pdf, DEVANAGARI);
+        Font trueType = new Font(pdf, (Stream) new FileStream(CASCADIA, FileMode.Open, FileAccess.Read));
+        FixedShaper shaper = new FixedShaper();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new ComplexText(fromBytes, "x").SetFallbackFont(fromPath).SetShaper(shaper).DrawOn(page);
+        Assert.Same(bytes, shaper.files[0]);
+        Assert.Equal(bytes, shaper.files[1]);
+        // A TrueType font keeps its whole file, from a stream too
+        new ComplexText(trueType, "x").SetShaper(shaper).DrawOn(page);
+        Assert.Equal(File.ReadAllBytes(CASCADIA), shaper.files[0]);
+    }
+
+    [Fact]
+    public void WithoutAShaperOrAFontFileItSaysSo() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font plex = new Font(pdf, (Stream) new FileStream(LATIN, FileMode.Open, FileAccess.Read));
+        Font fromPath = new Font(pdf, LATIN);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Assert.Throws<InvalidOperationException>(() => new ComplexText(fromPath, "x").DrawOn(page));
+        Assert.Throws<ArgumentException>(
+                () => new ComplexText(plex, "x").SetShaper(new FixedShaper()).DrawOn(page));
+    }
+}
+}   // End of namespace PDFjet.NET
