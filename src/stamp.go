@@ -453,7 +453,7 @@ func newGlyphStamp(pdf *PDF, path glyphPath) *Stamp {
 		content = pdf.encryption.encrypt(content)
 	}
 	pdf.newObj()
-	pdf.appendString("<<\n/Type /XObject\n/Subtype /Form\n/BBox [")
+	pdf.appendString("<<\n/Subtype /Form\n/BBox [")
 	pdf.appendString(glyphDecimals(math.Floor(path.xMin), 0))
 	pdf.appendString(" ")
 	pdf.appendString(glyphDecimals(math.Floor(path.yMin), 0))
@@ -461,7 +461,7 @@ func newGlyphStamp(pdf *PDF, path glyphPath) *Stamp {
 	pdf.appendString(glyphDecimals(math.Ceil(path.xMax), 0))
 	pdf.appendString(" ")
 	pdf.appendString(glyphDecimals(math.Ceil(path.yMax), 0))
-	pdf.appendString("]\n/Resources <<>>\n/Filter /FlateDecode\n/Length ")
+	pdf.appendString("]\n/Filter /FlateDecode\n/Length ")
 	pdf.appendInteger(len(content))
 	pdf.appendString("\n>>\nstream\n")
 	pdf.appendByteArray(content)

@@ -10,7 +10,17 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## v9.2.0 — customer builds, not released
 
 The faults found after 9.1.9 and small improvements, given to the customers
-who need them before 9.2.1 (TODO.md, "The numbers"). Nothing yet.
+who need them before 9.2.1 (TODO.md, "The numbers").
+
+- **Smaller glyphs from `drawGlyphs`**, in the four ports. Each glyph's
+  outline is written in whole units of the font, where the control points of
+  a TrueType quadratic curve drawn as a cubic one had two decimals; they move
+  by at most half a unit, 0.05% of the em, unseen at any size (Example_52 at
+  600 dpi: no pixel changes from ink to paper or back). The glyph's form
+  XObject leaves out the empty `/Resources <<>>` and the optional
+  `/Type /XObject`. Example_52 is 11% smaller (Java 202,080 bytes to 180,464),
+  and still passes PDF/UA. Nothing else changes: the other examples are the
+  same, but for the version and Example_37's Data Matrix text.
 
 ## v9.1.9 — 2026-11-17
 

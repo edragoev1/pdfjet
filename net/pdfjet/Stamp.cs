@@ -431,7 +431,7 @@ public class Stamp : IDrawable {
             content = AES256.Encrypt(content, pdf.encryption.GetKey());
         }
         pdf.NewObj();
-        pdf.Append("<<\n/Type /XObject\n/Subtype /Form\n/BBox [");
+        pdf.Append("<<\n/Subtype /Form\n/BBox [");
         pdf.Append(GlyphOutline.Decimals(Math.Floor(path.xMin), 0));
         pdf.Append(' ');
         pdf.Append(GlyphOutline.Decimals(Math.Floor(path.yMin), 0));
@@ -439,7 +439,7 @@ public class Stamp : IDrawable {
         pdf.Append(GlyphOutline.Decimals(Math.Ceiling(path.xMax), 0));
         pdf.Append(' ');
         pdf.Append(GlyphOutline.Decimals(Math.Ceiling(path.yMax), 0));
-        pdf.Append("]\n/Resources <<>>\n/Filter /FlateDecode\n/Length ");
+        pdf.Append("]\n/Filter /FlateDecode\n/Length ");
         pdf.Append(content.Length);
         pdf.Append("\n>>\nstream\n");
         pdf.Append(content);

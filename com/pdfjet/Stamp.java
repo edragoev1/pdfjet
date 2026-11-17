@@ -573,7 +573,7 @@ public class Stamp implements Drawable {
             content = AES256.encrypt(content, pdf.encryption.getKey());
         }
         pdf.newObj();
-        pdf.append("<<\n/Type /XObject\n/Subtype /Form\n/BBox [");
+        pdf.append("<<\n/Subtype /Form\n/BBox [");
         pdf.append(GlyphOutline.decimals(Math.floor(path.xMin), 0));
         pdf.append(' ');
         pdf.append(GlyphOutline.decimals(Math.floor(path.yMin), 0));
@@ -581,7 +581,7 @@ public class Stamp implements Drawable {
         pdf.append(GlyphOutline.decimals(Math.ceil(path.xMax), 0));
         pdf.append(' ');
         pdf.append(GlyphOutline.decimals(Math.ceil(path.yMax), 0));
-        pdf.append("]\n/Resources <<>>\n/Filter /FlateDecode\n/Length ");
+        pdf.append("]\n/Filter /FlateDecode\n/Length ");
         pdf.append(content.length);
         pdf.append("\n>>\nstream\n");
         pdf.append(content);

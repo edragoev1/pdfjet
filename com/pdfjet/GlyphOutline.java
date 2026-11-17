@@ -412,11 +412,14 @@ final class GlyphOutline {
     }
 
     /**
-     * A number of a path, in the units of the font: in hundredths, trailing
-     * zeros left out, the same in the four ports. Rounded half away from zero.
+     * A number of a path, in the units of the font: whole units, the same in
+     * the four ports, rounded half away from zero. The font's own points are
+     * whole units; the control points of a quadratic curve drawn as a cubic
+     * one are not, and move by at most half a unit, 0.05% of the em, unseen
+     * at any size, for outlines 15% smaller (9.2.0).
      */
     static String number(double value) {
-        return decimals(value, 2);
+        return decimals(value, 0);
     }
 
     /** The value with at most the decimals given, rounded half away from zero. */
