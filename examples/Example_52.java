@@ -22,9 +22,9 @@ import com.pdfjet.fonts.*;
  * found, at their places, as outlines read from the font file: sharp on
  * screen and in print, and read by screen readers, as each paragraph is
  * tagged with its text and its language. On Android 12 and later, Android's
- * own text engine shapes them, with the same code. A page of each, filled
- * with the Universal Declaration of Human Rights from its beginning: Hindi on
- * the first page, Khmer on the second.
+ * own text engine shapes them, with the same code. The Universal Declaration
+ * of Human Rights in Hindi, then in Khmer: the paragraphs flow from page to
+ * page, a paragraph cut where a page ends.
  */
 public class Example_52 {
     private static final String DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
@@ -34,6 +34,7 @@ public class Example_52 {
     private static final float SIZE = 10.5f;
     private static final float LEFT = 50f;
     private static final float WIDTH = 512f;
+    private static final float TOP = 50f;       // The top margin
     private static final float BOTTOM = 742f;   // The page's 792 points less the margin
 
     public Example_52() throws Exception {
@@ -47,9 +48,9 @@ public class Example_52 {
         Font body = new Font(pdf, IBMPlexSans.Regular);
         body.setSize(9f);
 
-        String hindi = drawPage(pdf, heading, body, "Hindi", "hi", DEVANAGARI,
+        String hindi = draw(pdf, heading, body, "Hindi", "hi", DEVANAGARI,
                 "resources/data/udhr/udhr_hin.txt");
-        String khmer = drawPage(pdf, heading, body, "Khmer", "km", KHMER,
+        String khmer = draw(pdf, heading, body, "Khmer", "km", KHMER,
                 "resources/data/udhr/udhr_khm.txt");
 
         // The pages draw the text as outlines, which cannot be selected or
@@ -60,9 +61,9 @@ public class Example_52 {
         pdf.complete();
     }
 
-    // Draws a page of the Declaration in the language, its paragraphs from
-    // the beginning until the page is full, and returns the text drawn.
-    private static String drawPage(PDF pdf, Font heading, Font body, String name, String language,
+    // Draws the Declaration in the language, from a new page, on as many
+    // pages as it takes, and returns its text.
+    private static String draw(PDF pdf, Font heading, Font body, String name, String language,
             String scriptFile, String textFile) throws Exception {
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(heading, "Universal Declaration of Human Rights, in " + name)
@@ -79,25 +80,31 @@ public class Example_52 {
         Font script = new Font(pdf, scriptFile).setSize(SIZE);
         Font latin = new Font(pdf, LATIN);
 
-        StringBuilder drawn = new StringBuilder();
-        float y = 96f;  // The top of the next paragraph
-        for (String paragraph : paragraphs(textFile)) {
-            ComplexText text = new ComplexText(script, paragraph)
-                    .setFallbackFont(latin)
-                    .setLanguage(language)
-                    .setLocation(LEFT, y)
-                    .setWidth(WIDTH);
-            if (y + text.getHeight() > BOTTOM) {
-                break;      // The page is full
+        List<String> paragraphs = paragraphs(textFile);
+        ComplexText text = new ComplexText(script, paragraphs)
+                .setFallbackFont(latin)
+                .setLanguage(language)
+                .setWidth(WIDTH)
+                .setParagraphGap(0.5f * SIZE);
+        float top = 96f;    // Below the heading, on the first page
+        while (true) {
+            text.setHeight(BOTTOM - top).setLocation(LEFT, top).drawOn(page);
+            if (!text.hasMoreText()) {
+                break;
             }
-            y = text.drawOn(page)[1] + 0.5f * SIZE;
-            // A blank line between paragraphs, as plain text has them
-            if (drawn.length() > 0) {
-                drawn.append('\n');
-            }
-            drawn.append(paragraph).append('\n');
+            page = new Page(pdf, Letter.PORTRAIT);
+            top = TOP;
         }
-        return drawn.toString();
+
+        // A blank line between paragraphs, as plain text has them
+        StringBuilder all = new StringBuilder();
+        for (String paragraph : paragraphs) {
+            if (all.length() > 0) {
+                all.append('\n');
+            }
+            all.append(paragraph).append('\n');
+        }
+        return all.toString();
     }
 
     // The paragraphs of the text file, one to a line.

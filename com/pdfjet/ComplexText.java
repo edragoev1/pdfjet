@@ -6,6 +6,9 @@
  */
 package com.pdfjet;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,14 +29,28 @@ import java.util.List;
  *         .setWidth(512f)
  *         .drawOn(page);
  * </pre>
+ * Paragraphs, given as a list, flow from page to page, as a TextFrame's: with
+ * a height, drawOn draws the lines that fit and keeps the rest, a paragraph
+ * cut where the height ends, for the next drawOn, on the next page.
+ * <pre>
+ * ComplexText text = new ComplexText(hindi, paragraphs)
+ *         .setFallbackFont(latin)
+ *         .setLanguage("hi")
+ *         .setWidth(512f)
+ *         .setHeight(692f);
+ * while (text.hasMoreText()) {
+ *     text.setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
+ * }
+ * </pre>
  * The engine: Java's java.awt.font on servers and desktops, and Android's own
  * on Android 12 and later; setShaper gives another. Left-to-right scripts:
  * Arabic and Hebrew are TextLine's and TextBlock's.
  * <p>
- * In a tagged document, PDF/UA or a PDF/A of level A, the text is a paragraph
- * in its language, each line with its text, which screen readers read. The
- * text cannot be selected, copied or searched, as it is drawn as outlines; a
- * document that needs its exact text along can carry it with PDF.attachText.
+ * In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
+ * paragraph in its language, each line with its text, which screen readers
+ * read. The text cannot be selected, copied or searched, as it is drawn as
+ * outlines; a document that needs its exact text along can carry it with
+ * PDF.attachText.
  * <p>
  * The fonts must be loaded from their font files, by path, as the fonts PDFjet
  * carries are, or from their bytes, as the engine reads the same file: the
@@ -42,18 +59,28 @@ import java.util.List;
 public class ComplexText implements Drawable {
     private final Font font;
     private Font fallbackFont;
-    private String text;
+    private final List<String> paragraphs;
     private String language;
     private float x;
     private float y;
     private float width = 300f;
+    private float height;               // 0: all of the text
+    private float paragraphGap = -1f;   // Less than 0: half the font's size
     private int textColor = Color.black;
     private Alignment textAlignment = Alignment.LEFT;
     private float lineSpacing = 1.0f;
     private StructElem structureType = StructElem.P;
     private Shaper shaper;
-    private List<ShapedLine> lines;     // Shaped, until the text, a font or the width changes
-    private float shapedSize;           // The font's size the lines were shaped at
+
+    // The paragraph drawn next, and its line drawn next
+    private int paragraph;
+    private int line;
+
+    // The lines of each paragraph, shaped the first time they are needed,
+    // until a font, the language or the width changes; and the font's size
+    // they were shaped at
+    private List<List<ShapedLine>> shapedLines;
+    private float shapedSize;
 
     /**
      * Text to draw in the font.
@@ -62,8 +89,21 @@ public class ComplexText implements Drawable {
      * @param text the text.
      */
     public ComplexText(Font font, String text) {
+        this(font, Collections.singletonList(text == null ? "" : text));
+    }
+
+    /**
+     * Paragraphs to draw in the font, one after the other.
+     *
+     * @param font the font, at its size, loaded from its font file.
+     * @param paragraphs the paragraphs.
+     */
+    public ComplexText(Font font, List<String> paragraphs) {
         this.font = font;
-        this.text = text;
+        this.paragraphs = new ArrayList<String>();
+        for (String p : paragraphs) {
+            this.paragraphs.add(p == null ? "" : p);
+        }
     }
 
     /**
@@ -75,7 +115,7 @@ public class ComplexText implements Drawable {
      */
     public ComplexText setFallbackFont(Font font) {
         this.fallbackFont = font;
-        this.lines = null;
+        this.shapedLines = null;
         return this;
     }
 
@@ -88,7 +128,7 @@ public class ComplexText implements Drawable {
      */
     public ComplexText setLanguage(String language) {
         this.language = language;
-        this.lines = null;
+        this.shapedLines = null;
         return this;
     }
 
@@ -113,7 +153,33 @@ public class ComplexText implements Drawable {
      */
     public ComplexText setWidth(float width) {
         this.width = width;
-        this.lines = null;
+        this.shapedLines = null;
+        return this;
+    }
+
+    /**
+     * Sets the height the text is drawn in: drawOn draws the lines that fit
+     * and keeps the rest for the next drawOn. With a height of 0, the default,
+     * drawOn draws all of the text.
+     *
+     * @param height the height, in points.
+     * @return this ComplexText.
+     */
+    public ComplexText setHeight(float height) {
+        this.height = height;
+        return this;
+    }
+
+    /**
+     * Sets the space between paragraphs, from the bottom of a paragraph's last
+     * line to the top of the next one's first; half the font's size by
+     * default.
+     *
+     * @param paragraphGap the space, 0 or more; a negative gap is taken as 0.
+     * @return this ComplexText.
+     */
+    public ComplexText setParagraphGap(float paragraphGap) {
+        this.paragraphGap = Math.max(0f, paragraphGap);
         return this;
     }
 
@@ -130,7 +196,8 @@ public class ComplexText implements Drawable {
 
     /**
      * Sets the alignment of the lines: LEFT, the default, CENTER, RIGHT or
-     * JUSTIFY, which spreads the words of each line but the last to the width.
+     * JUSTIFY, which spreads the words of each line but the last of a
+     * paragraph to the width.
      *
      * @param textAlignment the alignment.
      * @return this ComplexText.
@@ -153,7 +220,7 @@ public class ComplexText implements Drawable {
     }
 
     /**
-     * Sets the structure type of the text in a tagged document; P, a
+     * Sets the structure type of each paragraph in a tagged document; P, a
      * paragraph, by default.
      *
      * @param structureType the structure type.
@@ -172,95 +239,162 @@ public class ComplexText implements Drawable {
      */
     public ComplexText setShaper(Shaper shaper) {
         this.shaper = shaper;
-        this.lines = null;
+        this.shapedLines = null;
         return this;
     }
 
     /**
-     * Returns the height of the text, wrapped to the width: shapes it, if it
-     * is not shaped yet.
+     * Returns true if some of the text has not been drawn yet.
+     *
+     * @return true if there is more text to draw.
+     * @throws Exception if the text cannot be shaped.
+     */
+    public boolean hasMoreText() throws Exception {
+        for (int p = paragraph; p < paragraphs.size(); p++) {
+            if (shaped(p).size() > (p == paragraph ? line : 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns the height of the text not drawn yet, wrapped to the width,
+     * whatever the height set: shapes it, if it is not shaped yet.
      *
      * @return the height, in points.
      * @throws Exception if the text cannot be shaped.
      */
     public float getHeight() throws Exception {
-        return shaped().size() * lineHeight();
+        float total = 0f;
+        boolean first = true;
+        for (int p = paragraph; p < paragraphs.size(); p++) {
+            int lines = shaped(p).size() - (p == paragraph ? line : 0);
+            if (lines > 0) {
+                total += (first ? 0f : gap()) + lines * lineHeight();
+                first = false;
+            }
+        }
+        return total;
     }
 
     /**
-     * Draws the text, wrapped to the width, from its location.
+     * Draws the text not drawn yet, wrapped to the width, from its location:
+     * all of it, or with a height, the lines that fit, the rest kept for the
+     * next drawOn.
      *
      * @param page the page to draw on.
-     * @return the x and the y of the bottom right corner of the text.
+     * @return the x and the y of the bottom right corner of the text drawn.
      * @throws Exception if the text cannot be shaped or drawn.
      */
     @Override
     public float[] drawOn(Page page) throws Exception {
-        List<ShapedLine> shapedLines = shaped();
-        Font[] fonts = fallbackFont == null ? new Font[] {font} : new Font[] {font, fallbackFont};
+        Font[] fonts = fonts();
         float size = font.getSize();
         float ascent = font.getAscent();
         float lineHeight = lineHeight();
-
-        boolean own = page.pdf.isTagged() && !page.insideTaggedContent();
-        page.setBrushColor(textColor);
-        if (own) {
-            page.addBDC(structureType, language, null, null);
-        }
+        float bottom = height > 0f ? y + height : Float.MAX_VALUE;
         // The space of each font, for justified lines
         int[] spaces = new int[fonts.length];
         for (int i = 0; i < fonts.length; i++) {
             spaces[i] = fonts[i].unicodeToGID == null ? 0 : fonts[i].unicodeToGID.get(' ');
         }
+
+        page.setBrushColor(textColor);
         float top = y;
-        for (int n = 0; n < shapedLines.size(); n++) {
-            ShapedLine line = shapedLines.get(n);
-            String lineText = text.substring(line.getStart(), line.getEnd());
-            float baseline = top + ascent;
-            top += lineHeight;
-            int[] fontOf = line.getFonts();
-            int[] glyphs = line.getGlyphs();
-            float[] positions = line.getPositions();
-            if (lineText.trim().isEmpty()) {
+        boolean drawn = false;      // A line drawn by this drawOn
+        while (paragraph < paragraphs.size()) {
+            List<ShapedLine> lines = shaped(paragraph);
+            if (line >= lines.size()) {
+                paragraph++;
+                line = 0;
                 continue;
             }
-            float[] shifts = shifts(line, n == shapedLines.size() - 1, spaces);
-            page.beginActualText(lineText, language);
-            // The glyphs of each font, one run of them at a time
-            int from = 0;
-            while (from < glyphs.length) {
-                int to = from;
-                while (to < glyphs.length && fontOf[to] == fontOf[from]) {
-                    to++;
-                }
-                if (fontOf[from] >= 0 && fontOf[from] < fonts.length) {
-                    int[] run = new int[to - from];
-                    float[] places = new float[2 * run.length];
-                    for (int i = from; i < to; i++) {
-                        run[i - from] = glyphs[i];
-                        places[2 * (i - from)] = x + positions[2 * i] + shifts[i];
-                        places[2 * (i - from) + 1] = baseline + positions[2 * i + 1];
-                    }
-                    Font runFont = fonts[fontOf[from]];
-                    if (!page.glyphsDrawable(runFont, run, places)) {
-                        return new float[] {x + width, y};
-                    }
-                    page.placeGlyphs(runFont, size, run, places);
-                }
-                from = to;
+            float gap = drawn && line == 0 ? gap() : 0f;
+            // At least one line each drawOn, so that text in a height too small
+            // for a line still ends
+            if (drawn && top + gap + lineHeight > bottom) {
+                break;
             }
-            page.endActualText();
-        }
-        if (own) {
-            page.addEMC();
+            top += gap;
+            String text = paragraphs.get(paragraph);
+            boolean own = page.pdf.isTagged() && !page.insideTaggedContent();
+            if (own) {
+                page.addBDC(structureType, language, null, null);
+            }
+            while (line < lines.size() && (!drawn || top + lineHeight <= bottom)) {
+                ShapedLine shapedLine = lines.get(line);
+                boolean last = line == lines.size() - 1;
+                if (!drawLine(page, shapedLine, text, top + ascent, last, fonts, spaces, size)) {
+                    return new float[] {x + width, top};
+                }
+                top += lineHeight;
+                line++;
+                drawn = true;
+            }
+            if (own) {
+                page.addEMC();
+            }
+            if (line < lines.size()) {
+                break;      // The height is full
+            }
+            paragraph++;
+            line = 0;
         }
         return new float[] {x + width, top};
+    }
+
+    // Draws the line at its baseline: the glyphs of each font, one run of
+    // them at a time, tagged with the line's text; false if the document failed.
+    private boolean drawLine(Page page, ShapedLine line, String text, float baseline, boolean last,
+            Font[] fonts, int[] spaces, float size) throws Exception {
+        String lineText = text.substring(line.getStart(), line.getEnd());
+        if (lineText.trim().isEmpty()) {
+            return true;
+        }
+        int[] fontOf = line.getFonts();
+        int[] glyphs = line.getGlyphs();
+        float[] positions = line.getPositions();
+        float[] shifts = shifts(line, last, spaces);
+        page.beginActualText(lineText, language);
+        int from = 0;
+        while (from < glyphs.length) {
+            int to = from;
+            while (to < glyphs.length && fontOf[to] == fontOf[from]) {
+                to++;
+            }
+            if (fontOf[from] >= 0 && fontOf[from] < fonts.length) {
+                int[] run = new int[to - from];
+                float[] places = new float[2 * run.length];
+                for (int i = from; i < to; i++) {
+                    run[i - from] = glyphs[i];
+                    places[2 * (i - from)] = x + positions[2 * i] + shifts[i];
+                    places[2 * (i - from) + 1] = baseline + positions[2 * i + 1];
+                }
+                Font runFont = fonts[fontOf[from]];
+                if (!page.glyphsDrawable(runFont, run, places)) {
+                    return false;
+                }
+                page.placeGlyphs(runFont, size, run, places);
+            }
+            from = to;
+        }
+        page.endActualText();
+        return true;
+    }
+
+    private Font[] fonts() {
+        return fallbackFont == null ? new Font[] {font} : new Font[] {font, fallbackFont};
     }
 
     // The distance from a line to the next, as TextBlock's
     private float lineHeight() {
         float size = font.getSize();
         return (font.getAscent() + font.getDescent() + font.getLineGap(size)) * lineSpacing;
+    }
+
+    private float gap() {
+        return paragraphGap < 0f ? 0.5f * font.getSize() : paragraphGap;
     }
 
     // How far each glyph of the line moves to the right, for its alignment:
@@ -275,7 +409,7 @@ public class ComplexText implements Drawable {
             return shifts;
         }
         if (textAlignment == Alignment.CENTER || textAlignment == Alignment.RIGHT) {
-            java.util.Arrays.fill(shifts, textAlignment == Alignment.CENTER ? room / 2f : room);
+            Arrays.fill(shifts, textAlignment == Alignment.CENTER ? room / 2f : room);
         } else if (textAlignment == Alignment.JUSTIFY && !last) {
             // The spaces between the words: not those at the end of the line
             int end = glyphs.length;
@@ -305,10 +439,16 @@ public class ComplexText implements Drawable {
         return font >= 0 && font < spaces.length && spaces[font] != 0 && glyph == spaces[font];
     }
 
-    // The lines, shaped the first time they are needed
-    private List<ShapedLine> shaped() throws Exception {
-        if (lines == null || shapedSize != font.getSize()) {
-            Font[] fonts = fallbackFont == null ? new Font[] {font} : new Font[] {font, fallbackFont};
+    // The lines of the paragraph, shaped the first time they are needed
+    private List<ShapedLine> shaped(int p) throws Exception {
+        if (shapedLines == null || shapedSize != font.getSize()) {
+            shapedLines = new ArrayList<List<ShapedLine>>(Collections.<List<ShapedLine>>nCopies(
+                    paragraphs.size(), null));
+            shapedSize = font.getSize();
+        }
+        List<ShapedLine> lines = shapedLines.get(p);
+        if (lines == null) {
+            Font[] fonts = fonts();
             byte[][] files = new byte[fonts.length][];
             for (int i = 0; i < fonts.length; i++) {
                 files[i] = fonts[i].fontFile();
@@ -317,8 +457,8 @@ public class ComplexText implements Drawable {
                             + "by path or from their bytes, as the text engine reads the same file.");
                 }
             }
-            shapedSize = font.getSize();
-            lines = shaper().shape(text == null ? "" : text, language, files, shapedSize, width);
+            lines = shaper().shape(paragraphs.get(p), language, files, shapedSize, width);
+            shapedLines.set(p, lines);
         }
         return lines;
     }

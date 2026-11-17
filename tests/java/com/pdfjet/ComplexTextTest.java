@@ -205,6 +205,70 @@ class ComplexTextTest {
         assertEquals(100f + 3 * body, corner[1], 0.001f);
     }
 
+    // A shaper that gives each paragraph as many lines as its letters, one
+    // glyph of the letter each
+    private static final class LetterShaper implements Shaper {
+        final Font font;
+
+        LetterShaper(Font font) {
+            this.font = font;
+        }
+
+        @Override
+        public List<ShapedLine> shape(String text, String language, byte[][] fontFiles, float fontSize, float width) {
+            List<ShapedLine> lines = new java.util.ArrayList<ShapedLine>();
+            for (int i = 0; i < text.length(); i++) {
+                lines.add(new ShapedLine(i, i + 1, new int[] {0}, new int[] {font.unicodeToGID.get(text.charAt(i))},
+                        new float[] {0f, 0f}, 7f));
+            }
+            return lines;
+        }
+    }
+
+    @Test
+    void paragraphsFlowFromPageToPageCutWhereTheHeightEnds() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Title");
+        Font font = new Font(pdf, LATIN).setSize(10f);
+        float line = font.getAscent() + font.getDescent() + font.getLineGap(10f);
+        ComplexText text = new ComplexText(font, Arrays.asList("AAA", "BBB"))
+                .setShaper(new LetterShaper(font))
+                .setLanguage("en")
+                .setParagraphGap(5f)
+                .setHeight(4 * line + 5f);
+        assertEquals(6 * line + 5f, text.getHeight(), 0.001f);
+        // Three lines of the first paragraph, the gap, one of the second
+        Page first = new Page(pdf, Letter.PORTRAIT);
+        float[] corner = text.setLocation(50f, 100f).drawOn(first);
+        assertEquals(100f + 4 * line + 5f, corner[1], 0.001f);
+        assertTrue(text.hasMoreText());
+        assertEquals(2 * line, text.getHeight(), 0.001f);
+        String content = TestSupport.content(first);
+        assertEquals(4, count(content, " cm /Fm"), content);
+        assertEquals(2, count(content, "/P <<"), "a paragraph each, the second begun");
+        // The rest of the second paragraph, from the top of the next page
+        Page second = new Page(pdf, Letter.PORTRAIT);
+        corner = text.setLocation(50f, 50f).drawOn(second);
+        assertEquals(50f + 2 * line, corner[1], 0.001f);
+        assertFalse(text.hasMoreText());
+        assertEquals(0f, text.getHeight(), 0.001f);
+        assertEquals(2, count(TestSupport.content(second), " cm /Fm"));
+        pdf.complete();
+    }
+
+    @Test
+    void aHeightTooSmallForALineStillDrawsOneEachTime() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, LATIN).setSize(10f);
+        ComplexText text = new ComplexText(font, "AB").setShaper(new LetterShaper(font)).setHeight(1f);
+        int pages = 0;
+        while (text.hasMoreText()) {
+            text.drawOn(new Page(pdf, Letter.PORTRAIT));
+            pages++;
+        }
+        assertEquals(2, pages);
+    }
+
     @Test
     void theFontFileIsWhatTheFontWasLoadedFrom() throws Exception {
         PDF pdf = new PDF(new ByteArrayOutputStream());
