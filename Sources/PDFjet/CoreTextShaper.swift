@@ -11,28 +11,32 @@ import Foundation
 // The shaper of Apple's platforms: Core Text. A typesetter breaks the text
 // into lines and shapes each, each character in the first font that has it.
 final class CoreTextShaper: Shaper {
-    // Core Text's font of each font file, made once
-    private static var descriptors = [Data: CTFontDescriptor]()
-    private static let lock = NSLock()
+    // Core Text's font of each font file, made once, for every thread: the
+    // lock guards the map
+    private final class Descriptors: @unchecked Sendable {
+        static let shared = Descriptors()
+        private var map = [Data: CTFontDescriptor]()
+        private let lock = NSLock()
 
-    private static func descriptor(_ file: [UInt8]) throws -> CTFontDescriptor {
-        let data = Data(file)
-        lock.lock()
-        defer { lock.unlock() }
-        if let descriptor = descriptors[data] {
+        func descriptor(_ file: [UInt8]) throws -> CTFontDescriptor {
+            let data = Data(file)
+            lock.lock()
+            defer { lock.unlock() }
+            if let descriptor = map[data] {
+                return descriptor
+            }
+            guard let descriptor = CTFontManagerCreateFontDescriptorFromData(data as CFData) else {
+                throw PDFjetError(message: "Core Text cannot read the font file.")
+            }
+            map[data] = descriptor
             return descriptor
         }
-        guard let descriptor = CTFontManagerCreateFontDescriptorFromData(data as CFData) else {
-            throw PDFjetError(message: "Core Text cannot read the font file.")
-        }
-        descriptors[data] = descriptor
-        return descriptor
     }
 
     func shape(_ text: String, _ language: String?, _ fontFiles: [[UInt8]],
             _ fontSize: Float, _ width: Float) throws -> [ShapedLine] {
         let fonts = try fontFiles.map {
-            CTFontCreateWithFontDescriptor(try CoreTextShaper.descriptor($0), CGFloat(fontSize), nil)
+            CTFontCreateWithFontDescriptor(try Descriptors.shared.descriptor($0), CGFloat(fontSize), nil)
         }
         let names = fonts.map { CTFontCopyPostScriptName($0) as String }
         var attributes: [NSAttributedString.Key: Any] = [
