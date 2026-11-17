@@ -1468,6 +1468,27 @@ release since 9.0.3 (12 October 2026), is in the history of this file.
      a second document can take as it is, by a copy of the Image for
      another PDF or the like, would make such a batch several times
      faster; to design, measured in the four ports first.
+- **For v9.2.1: smaller glyphs from `drawGlyphs`** (the owner, 17 November
+  2026). Measured on Android 15 with the new OutlinedText.java for Android:
+  a short page (about 400 letters, 141 different glyphs) is 95.5 KB, of
+  which 45 KB are the 141 glyph form XObjects' outlines (about 320 bytes
+  each, deflated) and 15.4 KB their dictionaries (about 110 bytes each,
+  with `/Resources << >>` empty and `/Length` an object of its own); a full
+  page each of Hindi and Khmer (264 glyphs) is 202 KB, where the same pages
+  as outlines of every letter are 774 KB. Two changes, in the four ports,
+  that change no pixel:
+  1. The control points that the TrueType quadratic curves become, written
+     with two decimals (`229 44.33 223 26.67 211 16 c`), rounded to whole
+     font units: at most half a unit off, 0.05% of the em, unseen at any
+     size and zoom, as the glyph is scaled where it is placed; the points
+     of the font itself are whole units already.
+  2. Each glyph's form XObject without the empty `/Resources`, and its
+     `/Length` direct, not an object of its own (one object and its cross
+     reference entry fewer per glyph).
+  Expected: a quarter to a third off each glyph, to be measured on the
+  Android and Example_52 pages before and after. Not for 9.1.9, which stays
+  as it is until 2027 but for real faults (the owner, 16 November 2026).
+
 - **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
   "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
   is drawn with the font's default Cyrillic letters, т as a small capital
