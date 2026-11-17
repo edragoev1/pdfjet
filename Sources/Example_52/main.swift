@@ -15,9 +15,9 @@ import PDFjet
  * stacked consonants -- and PDFjet draws the glyphs it found, at their
  * places, as outlines read from the font file: sharp on screen and in print,
  * and read by screen readers, as each paragraph is tagged with its text and
- * its language. A page of each, filled with the Universal Declaration of
- * Human Rights from its beginning: Hindi on the first page, Khmer on the
- * second. Core Text is Apple's: on Linux the example says so and draws
+ * its language. The Universal Declaration of Human Rights in Hindi, then in
+ * Khmer: the paragraphs flow from page to page, a paragraph cut where a page
+ * ends. Core Text is Apple's: on Linux the example says so and draws
  * nothing.
  */
 #if canImport(CoreText)
@@ -29,6 +29,7 @@ public class Example_52 {
     private static let size: Float = 10.5
     private static let left: Float = 50.0
     private static let width: Float = 512.0
+    private static let top: Float = 50.0        // The top margin
     private static let bottom: Float = 742.0    // The page's 792 points less the margin
 
     public init() throws {
@@ -42,9 +43,9 @@ public class Example_52 {
         let body = try Font(pdf, IBMPlexSans.Regular)
         body.setSize(9.0)
 
-        let hindi = try Example_52.drawPage(pdf, heading, body, "Hindi", "hi", Example_52.devanagari,
+        let hindi = try Example_52.draw(pdf, heading, body, "Hindi", "hi", Example_52.devanagari,
                 "resources/data/udhr/udhr_hin.txt")
-        let khmer = try Example_52.drawPage(pdf, heading, body, "Khmer", "km", Example_52.khmer,
+        let khmer = try Example_52.draw(pdf, heading, body, "Khmer", "km", Example_52.khmer,
                 "resources/data/udhr/udhr_khm.txt")
 
         // The pages draw the text as outlines, which cannot be selected or
@@ -55,11 +56,11 @@ public class Example_52 {
         try pdf.complete()
     }
 
-    // Draws a page of the Declaration in the language, its paragraphs from
-    // the beginning until the page is full, and returns the text drawn.
-    private static func drawPage(_ pdf: PDF, _ heading: Font, _ body: Font, _ name: String,
+    // Draws the Declaration in the language, from a new page, on as many
+    // pages as it takes, and returns its text.
+    private static func draw(_ pdf: PDF, _ heading: Font, _ body: Font, _ name: String,
             _ language: String, _ scriptFile: String, _ textFile: String) throws -> String {
-        let page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.PORTRAIT)
         TextLine(heading, "Universal Declaration of Human Rights, in " + name)
                 .setStructureType(StructElem.H1)
                 .setLocation(left, 60.0)
@@ -74,29 +75,26 @@ public class Example_52 {
         let script = try Font(pdf, scriptFile).setSize(size)
         let latinFont = try Font(pdf, latin)
 
-        var drawn = ""
-        var y: Float = 96.0     // The top of the next paragraph
         let paragraphs = try String(contentsOfFile: textFile, encoding: .utf8)
                 .components(separatedBy: "\n")
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
-        for paragraph in paragraphs {
-            let text = ComplexText(script, paragraph)
-                    .setFallbackFont(latinFont)
-                    .setLanguage(language)
-                    .setLocation(left, y)
-                    .setWidth(width)
-            if y + (try text.getHeight()) > bottom {
-                break       // The page is full
+        let text = ComplexText(script, paragraphs)
+                .setFallbackFont(latinFont)
+                .setLanguage(language)
+                .setWidth(width)
+                .setParagraphGap(0.5 * size)
+        var y: Float = 96.0     // Below the heading, on the first page
+        while true {
+            text.setHeight(bottom - y).setLocation(left, y).drawOn(page)
+            if !(try text.hasMoreText()) {
+                break
             }
-            y = text.drawOn(page)[1] + 0.5 * size
-            // A blank line between paragraphs, as plain text has them
-            if !drawn.isEmpty {
-                drawn += "\n"
-            }
-            drawn += paragraph + "\n"
+            page = Page(pdf, Letter.PORTRAIT)
+            y = top
         }
-        return drawn
+        // A blank line between paragraphs, as plain text has them
+        return paragraphs.map { $0 + "\n" }.joined(separator: "\n")
     }
 }   // End of Example_52.swift
 

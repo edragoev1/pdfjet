@@ -24,11 +24,24 @@ import Foundation
 ///             .setWidth(512.0)
 ///             .drawOn(page)
 ///
+/// Paragraphs, given as a list, flow from page to page, as a TextFrame's:
+/// with a height, drawOn draws the lines that fit and keeps the rest, a
+/// paragraph cut where the height ends, for the next drawOn, on the next page.
+///
+///     let text = ComplexText(hindi, paragraphs)
+///             .setFallbackFont(latin)
+///             .setLanguage("hi")
+///             .setWidth(512.0)
+///             .setHeight(692.0)
+///     while try text.hasMoreText() {
+///         text.setLocation(50.0, 50.0).drawOn(Page(pdf, Letter.PORTRAIT))
+///     }
+///
 /// The engine: Apple's Core Text on iPhone, iPad and Mac; setShaper gives
 /// another, as on Linux, which has none. Left-to-right scripts: Arabic and
 /// Hebrew are TextLine's and TextBlock's.
 ///
-/// In a tagged document, PDF/UA or a PDF/A of level A, the text is a
+/// In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
 /// paragraph in its language, each line with its text, which screen readers
 /// read. The text cannot be selected, copied or searched, as it is drawn as
 /// outlines; a document that needs its exact text along can carry it with
@@ -41,18 +54,28 @@ import Foundation
 public class ComplexText: Drawable {
     private let font: Font
     private var fallbackFont: Font?
-    private let text: String
+    private let paragraphs: [String]
     private var language: String?
     private var x: Float = 0.0
     private var y: Float = 0.0
     private var width: Float = 300.0
+    private var height: Float = 0.0         // 0: all of the text
+    private var paragraphGap: Float = -1.0  // Less than 0: half the font's size
     private var textColor: Int32 = Color.black
     private var textAlignment = Alignment.LEFT
     private var lineSpacing: Float = 1.0
     private var structureType = StructElem.P
     private var shaper: Shaper?
-    private var lines: [ShapedLine]?    // Shaped, until a font, the language or the width changes
-    private var shapedSize: Float = 0.0 // The font's size the lines were shaped at
+
+    // The paragraph drawn next, and its line drawn next
+    private var paragraph = 0
+    private var line = 0
+
+    // The lines of each paragraph, shaped the first time they are needed,
+    // until a font, the language or the width changes; and the font's size
+    // they were shaped at
+    private var shapedLines: [[ShapedLine]?]?
+    private var shapedSize: Float = 0.0
 
     ///
     /// Text to draw in the font.
@@ -60,9 +83,19 @@ public class ComplexText: Drawable {
     /// - Parameter font: the font, at its size, loaded from its font file.
     /// - Parameter text: the text.
     ///
-    public init(_ font: Font, _ text: String) {
+    public convenience init(_ font: Font, _ text: String) {
+        self.init(font, [text])
+    }
+
+    ///
+    /// Paragraphs to draw in the font, one after the other.
+    ///
+    /// - Parameter font: the font, at its size, loaded from its font file.
+    /// - Parameter paragraphs: the paragraphs.
+    ///
+    public init(_ font: Font, _ paragraphs: [String]) {
         self.font = font
-        self.text = text
+        self.paragraphs = paragraphs
     }
 
     /// Sets the font of the characters the font does not have, such as
@@ -70,7 +103,7 @@ public class ComplexText: Drawable {
     @discardableResult
     public func setFallbackFont(_ font: Font) -> ComplexText {
         self.fallbackFont = font
-        self.lines = nil
+        self.shapedLines = nil
         return self
     }
 
@@ -79,7 +112,7 @@ public class ComplexText: Drawable {
     @discardableResult
     public func setLanguage(_ language: String) -> ComplexText {
         self.language = language
-        self.lines = nil
+        self.shapedLines = nil
         return self
     }
 
@@ -95,7 +128,25 @@ public class ComplexText: Drawable {
     @discardableResult
     public func setWidth(_ width: Float) -> ComplexText {
         self.width = width
-        self.lines = nil
+        self.shapedLines = nil
+        return self
+    }
+
+    /// Sets the height the text is drawn in: drawOn draws the lines that fit
+    /// and keeps the rest for the next drawOn. With a height of 0, the
+    /// default, drawOn draws all of the text.
+    @discardableResult
+    public func setHeight(_ height: Float) -> ComplexText {
+        self.height = height
+        return self
+    }
+
+    /// Sets the space between paragraphs, from the bottom of a paragraph's
+    /// last line to the top of the next one's first; half the font's size by
+    /// default. A negative gap is taken as 0.
+    @discardableResult
+    public func setParagraphGap(_ paragraphGap: Float) -> ComplexText {
+        self.paragraphGap = max(0, paragraphGap)
         return self
     }
 
@@ -107,7 +158,8 @@ public class ComplexText: Drawable {
     }
 
     /// Sets the alignment of the lines: LEFT, the default, CENTER, RIGHT or
-    /// JUSTIFY, which spreads the words of each line but the last to the width.
+    /// JUSTIFY, which spreads the words of each line but the last of a
+    /// paragraph to the width.
     @discardableResult
     public func setTextAlignment(_ textAlignment: Alignment) -> ComplexText {
         self.textAlignment = textAlignment
@@ -122,7 +174,7 @@ public class ComplexText: Drawable {
         return self
     }
 
-    /// Sets the structure type of the text in a tagged document; P, a
+    /// Sets the structure type of each paragraph in a tagged document; P, a
     /// paragraph, by default.
     @discardableResult
     public func setStructureType(_ structureType: StructElem) -> ComplexText {
@@ -134,100 +186,170 @@ public class ComplexText: Drawable {
     @discardableResult
     public func setShaper(_ shaper: Shaper) -> ComplexText {
         self.shaper = shaper
-        self.lines = nil
+        self.shapedLines = nil
         return self
     }
 
     ///
-    /// Returns the height of the text, wrapped to the width: shapes it, if it
-    /// is not shaped yet.
+    /// Returns true if some of the text has not been drawn yet.
+    ///
+    /// - Throws: an error if the text cannot be shaped.
+    ///
+    public func hasMoreText() throws -> Bool {
+        var p = paragraph
+        while p < paragraphs.count {
+            if try shaped(p).count > (p == paragraph ? line : 0) {
+                return true
+            }
+            p += 1
+        }
+        return false
+    }
+
+    ///
+    /// Returns the height of the text not drawn yet, wrapped to the width,
+    /// whatever the height set: shapes it, if it is not shaped yet.
     ///
     /// - Returns: the height, in points.
     /// - Throws: an error if the text cannot be shaped.
     ///
     public func getHeight() throws -> Float {
-        return Float(try shaped().count) * lineHeight()
+        var total: Float = 0
+        var first = true
+        var p = paragraph
+        while p < paragraphs.count {
+            let lines = try shaped(p).count - (p == paragraph ? line : 0)
+            if lines > 0 {
+                total += (first ? 0 : gap()) + Float(lines) * lineHeight()
+                first = false
+            }
+            p += 1
+        }
+        return total
     }
 
     ///
-    /// Draws the text, wrapped to the width, from its location. Text that
-    /// cannot be shaped fails the document, as complete() says.
+    /// Draws the text not drawn yet, wrapped to the width, from its location:
+    /// all of it, or with a height, the lines that fit, the rest kept for the
+    /// next drawOn. Text that cannot be shaped fails the document, as
+    /// complete() says.
     ///
     /// - Parameter page: the page to draw on.
-    /// - Returns: the x and the y of the bottom right corner of the text.
+    /// - Returns: the x and the y of the bottom right corner of the text drawn.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         guard let page = page else {
             return [x + width, y + ((try? getHeight()) ?? 0.0)]
         }
-        let shapedLines: [ShapedLine]
-        do {
-            shapedLines = try shaped()
-        } catch {
-            page.pdf.fail((error as? PDFjetError)?.message ?? "\(error)")
-            return [x + width, y]
+        let fonts = self.fonts()
+        let size = font.getSize()
+        let ascent = font.getAscent()
+        let lineHeight = self.lineHeight()
+        let bottom = height > 0 ? y + height : Float.greatestFiniteMagnitude
+        // The space of each font, for justified lines
+        let spaces = fonts.map { $0.unicodeToGID[0x20] }
+
+        page.setBrushColor(textColor)
+        var top = y
+        var drawn = false       // A line drawn by this drawOn
+        while paragraph < paragraphs.count {
+            let lines: [ShapedLine]
+            do {
+                lines = try shaped(paragraph)
+            } catch {
+                page.pdf.fail((error as? PDFjetError)?.message ?? "\(error)")
+                return [x + width, top]
+            }
+            if line >= lines.count {
+                paragraph += 1
+                line = 0
+                continue
+            }
+            let gap = drawn && line == 0 ? self.gap() : 0
+            // At least one line each drawOn, so that text in a height too
+            // small for a line still ends
+            if drawn && top + gap + lineHeight > bottom {
+                break
+            }
+            top += gap
+            let utf16 = Array(paragraphs[paragraph].utf16)
+            let own = page.pdf.isTagged() && !page.insideTaggedContent()
+            if own {
+                page.addBDC(structureType, language, nil, nil)
+            }
+            while line < lines.count && (!drawn || top + lineHeight <= bottom) {
+                let last = line == lines.count - 1
+                if !drawLine(page, lines[line], utf16, top + ascent, last, fonts, spaces, size) {
+                    return [x + width, top]
+                }
+                top += lineHeight
+                line += 1
+                drawn = true
+            }
+            if own {
+                page.addEMC()
+            }
+            if line < lines.count {
+                break       // The height is full
+            }
+            paragraph += 1
+            line = 0
         }
+        return [x + width, top]
+    }
+
+    // Draws the line at its baseline: the glyphs of each font, one run of
+    // them at a time, tagged with the line's text; false if the document failed.
+    private func drawLine(_ page: Page, _ line: ShapedLine, _ utf16: [UInt16], _ baseline: Float,
+            _ last: Bool, _ fonts: [Font], _ spaces: [Int], _ size: Float) -> Bool {
+        let lineText = String(decoding: utf16[line.start..<line.end], as: UTF16.self)
+        if lineText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        let shifts = self.shifts(line, last, spaces)
+        page.beginActualText(lineText, language)
+        var from = 0
+        while from < line.glyphs.count {
+            var to = from
+            while to < line.glyphs.count && line.fonts[to] == line.fonts[from] {
+                to += 1
+            }
+            let index = line.fonts[from]
+            if index >= 0 && index < fonts.count {
+                var run = [Int]()
+                var places = [Float]()
+                for i in from..<to {
+                    run.append(line.glyphs[i])
+                    places.append(x + line.positions[2 * i] + shifts[i])
+                    places.append(baseline + line.positions[2 * i + 1])
+                }
+                if !page.glyphsDrawable(fonts[index], run, places) {
+                    return false
+                }
+                page.placeGlyphs(fonts[index], size, run, places)
+            }
+            from = to
+        }
+        page.endActualText()
+        return true
+    }
+
+    private func fonts() -> [Font] {
         var fonts = [font]
         if let fallbackFont = fallbackFont {
             fonts.append(fallbackFont)
         }
-        let size = font.getSize()
-        let ascent = font.getAscent()
-        let height = lineHeight()
-        let utf16 = Array(text.utf16)
-
-        let own = page.pdf.isTagged() && !page.insideTaggedContent()
-        page.setBrushColor(textColor)
-        if own {
-            page.addBDC(structureType, language, nil, nil)
-        }
-        // The space of each font, for justified lines
-        let spaces = fonts.map { $0.unicodeToGID[0x20] }
-        var top = y
-        for (n, line) in shapedLines.enumerated() {
-            let lineText = String(decoding: utf16[line.start..<line.end], as: UTF16.self)
-            let baseline = top + ascent
-            top += height
-            if lineText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                continue
-            }
-            let shifts = self.shifts(line, n == shapedLines.count - 1, spaces)
-            page.beginActualText(lineText, language)
-            // The glyphs of each font, one run of them at a time
-            var from = 0
-            while from < line.glyphs.count {
-                var to = from
-                while to < line.glyphs.count && line.fonts[to] == line.fonts[from] {
-                    to += 1
-                }
-                let index = line.fonts[from]
-                if index >= 0 && index < fonts.count {
-                    var run = [Int]()
-                    var places = [Float]()
-                    for i in from..<to {
-                        run.append(line.glyphs[i])
-                        places.append(x + line.positions[2 * i] + shifts[i])
-                        places.append(baseline + line.positions[2 * i + 1])
-                    }
-                    if !page.glyphsDrawable(fonts[index], run, places) {
-                        return [x + width, y]
-                    }
-                    page.placeGlyphs(fonts[index], size, run, places)
-                }
-                from = to
-            }
-            page.endActualText()
-        }
-        if own {
-            page.addEMC()
-        }
-        return [x + width, top]
+        return fonts
     }
 
     // The distance from a line to the next, as TextBlock's
     private func lineHeight() -> Float {
         return (font.getAscent() + font.getDescent() + font.getLineGap(font.getSize())) * lineSpacing
+    }
+
+    private func gap() -> Float {
+        return paragraphGap < 0 ? 0.5 * font.getSize() : paragraphGap
     }
 
     // How far each glyph of the line moves to the right, for its alignment:
@@ -266,27 +388,26 @@ public class ComplexText: Drawable {
         return shifts
     }
 
-    // The lines, shaped the first time they are needed
-    private func shaped() throws -> [ShapedLine] {
-        if let lines = lines, shapedSize == font.getSize() {
+    // The lines of the paragraph, shaped the first time they are needed
+    private func shaped(_ p: Int) throws -> [ShapedLine] {
+        if shapedLines == nil || shapedSize != font.getSize() {
+            shapedLines = [[ShapedLine]?](repeating: nil, count: paragraphs.count)
+            shapedSize = font.getSize()
+        }
+        if let lines = shapedLines![p] {
             return lines
         }
-        var fonts = [font]
-        if let fallbackFont = fallbackFont {
-            fonts.append(fallbackFont)
-        }
         var files = [[UInt8]]()
-        for f in fonts {
+        for f in fonts() {
             guard let file = try f.shapingFile() else {
                 throw PDFjetError(message: "ComplexText needs fonts loaded from their font files, "
                         + "by path or from their bytes, as the text engine reads the same file.")
             }
             files.append(file)
         }
-        shapedSize = font.getSize()
-        let shaped = try currentShaper().shape(text, language, files, shapedSize, width)
-        lines = shaped
-        return shaped
+        let lines = try currentShaper().shape(paragraphs[p], language, files, shapedSize, width)
+        shapedLines![p] = lines
+        return lines
     }
 
     private func currentShaper() throws -> Shaper {

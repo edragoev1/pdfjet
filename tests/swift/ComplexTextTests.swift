@@ -133,6 +133,67 @@ import Testing
         #expect(abs(try text.setLineSpacing(1.5).getHeight() - 3 * body) < 0.001)
     }
 
+    // A shaper that gives each paragraph as many lines as its letters, one
+    // glyph of the letter each
+    private final class LetterShaper: Shaper {
+        let font: Font
+
+        init(_ font: Font) {
+            self.font = font
+        }
+
+        func shape(_ text: String, _ language: String?, _ fontFiles: [[UInt8]],
+                _ fontSize: Float, _ width: Float) throws -> [ShapedLine] {
+            var lines = [ShapedLine]()
+            for (i, c) in text.utf16.enumerated() {
+                lines.append(ShapedLine(i, i + 1, [0], [font.unicodeToGID[Int(c)]], [0, 0], 7))
+            }
+            return lines
+        }
+    }
+
+    @Test func paragraphsFlowFromPageToPageCutWhereTheHeightEnds() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Title")
+        let font = try Font(memory.pdf, ComplexTextTests.latin).setSize(10)
+        let line = font.getAscent() + font.getDescent() + font.getLineGap(10)
+        let text = ComplexText(font, ["AAA", "BBB"])
+                .setShaper(LetterShaper(font))
+                .setLanguage("en")
+                .setParagraphGap(5)
+                .setHeight(4 * line + 5)
+        #expect(abs(try text.getHeight() - (6 * line + 5)) < 0.001)
+        // Three lines of the first paragraph, the gap, one of the second
+        let first = Page(memory.pdf, Letter.PORTRAIT)
+        var corner = text.setLocation(50, 100).drawOn(first)
+        #expect(abs(corner[1] - (100 + 4 * line + 5)) < 0.001)
+        #expect(try text.hasMoreText())
+        #expect(abs(try text.getHeight() - 2 * line) < 0.001)
+        let content = TestSupport.content(first)
+        #expect(count(content, " cm /Fm") == 4, "\(content)")
+        #expect(count(content, "/P <<") == 2, "a paragraph each, the second begun")
+        // The rest of the second paragraph, from the top of the next page
+        let second = Page(memory.pdf, Letter.PORTRAIT)
+        corner = text.setLocation(50, 50).drawOn(second)
+        #expect(abs(corner[1] - (50 + 2 * line)) < 0.001)
+        #expect(try !text.hasMoreText())
+        #expect(try text.getHeight() == 0)
+        #expect(count(TestSupport.content(second), " cm /Fm") == 2)
+        try memory.pdf.complete()
+    }
+
+    @Test func aHeightTooSmallForALineStillDrawsOneEachTime() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, ComplexTextTests.latin).setSize(10)
+        let text = ComplexText(font, "AB").setShaper(LetterShaper(font)).setHeight(1)
+        var pages = 0
+        while try text.hasMoreText() {
+            text.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            pages += 1
+        }
+        #expect(pages == 2)
+    }
+
     @Test func theFontFileIsWhatTheFontWasLoadedFrom() throws {
         let memory = MemoryPDF()
         let bytes = [UInt8](try Data(contentsOf: URL(fileURLWithPath: ComplexTextTests.devanagari)))
