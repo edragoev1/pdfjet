@@ -26,18 +26,22 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   `TextFrame` does: with `setHeight`, `drawOn` draws the lines that fit, a
   paragraph cut where the height ends, and keeps the rest for the next
   `drawOn`, while `hasMoreText`; `setParagraphGap` sets the space between
-  paragraphs, half the font's size by default. The engine is a
-  `Shaper`: Java's
-  java.awt.font on servers and desktops, and Android's own on Android 12 and
-  later, both in the one jar; Core Text in Swift on Apple platforms; in .NET
-  and Go, which have none, a shaper the program gives with `setShaper`
-  (Example_52 has one with HarfBuzzSharp and one with go-text, packages of
-  the examples, never of PDFjet). The fonts are loaded by path, as the fonts
+  paragraphs, one empty line by default, as `TextFrame`'s. `getHeight` is
+  the height set, as `TextFrame`'s, and `getTextHeight` the height of the
+  text not drawn yet. The engine is a `Shaper`, given a `ShapingRequest`
+  (the text, its language, the font files, the size, the width) and giving
+  back `ShapedLine`s (each glyph's font index, number and place, and the
+  line's width): Java's java.awt.font on servers and desktops, and
+  Android's own on Android 12 and later, both in the one jar; Core Text in
+  Swift on Apple platforms; in .NET and Go, which have none, a shaper the
+  program gives with `setShaper` (Example_52 has one with HarfBuzzSharp and
+  one with go-text, packages of the examples, never of PDFjet). The fonts are loaded by path, as the fonts
   PDFjet carries are, or from their bytes, with the new `Font(pdf, byte[])`
   (Go `NewFontFromBytes`), as the engine reads the same file. Example_52 in
   the four ports draws with it the whole Declaration, in Hindi and then in
   Khmer, 7 pages, and attaches the whole text. On Android 12 and 15
-  (emulators) a page of Hindi or Khmer is about 132 KB and passes PDF/UA.
+  (emulators) a full page of Hindi or Khmer is about 70 KB and passes
+  PDF/UA.
 - **Smaller glyphs from `drawGlyphs`**, in the four ports. Each glyph's
   outline is written in whole units of the font, where the control points of
   a TrueType quadratic curve drawn as a cubic one had two decimals; they move
