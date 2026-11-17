@@ -1,9 +1,9 @@
-Copyright 2016 Google Inc. All Rights Reserved. (Noto Sans, version 2.001)
-Copyright 2022 The Noto Project Authors (https://github.com/notofonts)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/khmer)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-http://scripts.sil.org/OFL
+https://scripts.sil.org/OFL
+
 
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

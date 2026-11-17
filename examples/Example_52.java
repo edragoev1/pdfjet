@@ -42,8 +42,8 @@ public class Example_52 {
     private static final FontRenderContext CONTEXT =
             new FontRenderContext(new AffineTransform(), true, true);
 
-    private static final String DEVANAGARI = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf";
-    private static final String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf";
+    private static final String DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
+    private static final String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.otf";
     private static final String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
 
     private static final float SIZE = 10.5f;

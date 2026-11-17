@@ -21,6 +21,12 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   `/Type /XObject`. Example_52 is 11% smaller (Java 202,080 bytes to 180,464),
   and still passes PDF/UA. Nothing else changes: the other examples are the
   same, but for the version and Example_37's Data Matrix text.
+- **Example_52 in .otf fonts:** its Hindi in IBM Plex Sans Devanagari 1.2
+  (complete for Hindi, Marathi, Nepali and Sanskrit, in the IBM Plex of the
+  rest of the page) and its Khmer in Noto Sans Khmer 2.004, both .otf, whose
+  CFF outlines go into the PDF as they are: Example_52 is 150 KB in Java,
+  where 9.1.9's was 202 KB with the .ttf fonts. The `drawGlyphs` tests keep
+  Noto Sans Devanagari's .ttf, for the TrueType outlines.
 
 ## v9.1.9 — 2026-11-17
 

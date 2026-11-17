@@ -1492,6 +1492,21 @@ than waiting for 9.2.1. The rules:
      a second document can take as it is, by a copy of the Image for
      another PDF or the like, would make such a batch several times
      faster; to design, measured in the four ports first.
+- **For v9.2.1: IBM Plex Sans Devanagari in the world fonts** (the owner,
+  17 November 2026: "In 9.2.1 we will include the IBM Devanagari font in the
+  World package"). The .otf of IBM's release @ibm/plex-sans-devanagari 1.1.0
+  (font version 1.2, CFF, SIL OFL 1.1), the faces as the other world
+  families carry them, with its license, and a constant IBMPlexSansDevanagari
+  in the four ports and the world packages (Maven, NuGet, Go, SwiftPM).
+  PDFjet does not shape Devanagari: the font is for drawGlyphs, the platform
+  shaping with the same file. Measured 17 November 2026: complete for Hindi,
+  Marathi, Nepali, Sanskrit (without the Vedic accents), Konkani, Maithili,
+  Dogri and Bodo, each shaped correctly by HarfBuzz (conjuncts, Marathi's
+  eyelash ra and ळ, nukta letters); not Sindhi or Kashmiri in Devanagari.
+  Example_52's Hindi page in it is 25.5 bytes a character, Noto Sans
+  Devanagari's 27.2, and its .ttf's 32.5 (the CFF curves go in as they are).
+  README, the llms guides and the fonts list name it with the asterisk of
+  complex scripts.
 - **For 9.2.0, the customer builds: smaller glyphs from `drawGlyphs`** (the
   owner, 17 November 2026; first for Robert Giroux's Android app). Measured on Android 15 with the new OutlinedText.java for Android:
   a full page each of Hindi and Khmer (264 glyphs) is 202 KB, where the same

@@ -26,8 +26,8 @@ import CoreText
  */
 #if canImport(CoreText)
 public class Example_52 {
-    private static let devanagari = "examples/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
-    private static let khmer = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.ttf"
+    private static let devanagari = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf"
+    private static let khmer = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.otf"
     private static let latin = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 
     private static let size: Float = 10.5
