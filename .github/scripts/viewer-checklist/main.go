@@ -28,8 +28,7 @@ type section struct {
 var sections = []section{
 	{"Acrobat Reader on Windows", "", []string{
 		"Example_47 asks for a password, and opens with the user password hello.",
-		"Opened with hello: File > Properties > Security shows printing allowed and copying of content not allowed.",
-		"Example_47 opens with the owner password world, and then copying is allowed.",
+		"Example_47 opens with the owner password world too.",
 		"Encrypted_Cyrillic opens with the password пароль (a Russian keyboard, or pasted).",
 		"Encrypted_200_Bytes opens with 0123456789 typed 20 times, 200 characters (paste it).",
 		"Example_42: the push pin and the paperclip open circles.png and Example_02.java, and each can be saved.",
@@ -74,14 +73,14 @@ var sections = []section{
 		"Example_53: NVDA reads the invoice in order, and the column header of each cell of its table.",
 	}},
 	{"Edge on Windows", "Edge draws PDFs with Adobe's engine.", []string{
-		"Example_47 opens with hello, and prints; copying is not allowed.",
+		"Example_47 opens with hello.",
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
 		"Example_42: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
 		"Example_01, 02, 04, 19, 20 and 21 look as they do in Acrobat Reader.",
 		"Example_51, 52, 53, 60, 79 and 85 look as they do in Acrobat Reader.",
 	}},
 	{"Preview on the Mac", "", []string{
-		"Example_47 opens with hello; the Inspector (Cmd-I), lock tab, shows printing allowed and copying not.",
+		"Example_47 opens with hello.",
 		"Example_47 opens with the owner password world.",
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
 		"Example_42: the attachments open, the note shows its text, the link opens, and the shapes are drawn.",
