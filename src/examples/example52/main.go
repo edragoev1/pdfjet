@@ -7,6 +7,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -25,14 +26,15 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Example_52 draws Hindi and Khmer, scripts PDFjet does not shape itself:
-// go-text/typesetting, HarfBuzz in Go, shapes them -- conjuncts, vowel signs,
-// stacked consonants -- and Page.DrawGlyphs draws the glyphs it found, at
-// their places, as outlines read from the font file: sharp on screen and in
-// print, and read by screen readers, as each paragraph is tagged with its
-// text and its language. Any engine that finds the glyphs can do the
-// shaping. A page of each, filled with the Universal Declaration of Human
-// Rights from its beginning: Hindi on the first page, Khmer on the second.
+// Example_52 draws Hindi and Khmer, scripts PDFjet does not shape itself,
+// with ComplexText: go-text/typesetting, HarfBuzz in Go, shapes them --
+// conjuncts, vowel signs, stacked consonants -- and PDFjet draws the glyphs
+// it found, at their places, as outlines read from the font file: sharp on
+// screen and in print, and read by screen readers, as each paragraph is
+// tagged with its text and its language. Go has no text engine of its own
+// that gives glyphs: goTextShaper below is the shaper ComplexText is given.
+// A page of each, filled with the Universal Declaration of Human Rights from
+// its beginning: Hindi on the first page, Khmer on the second.
 //
 // The example is a module of its own: go-text is its dependency, never
 // PDFjet's. Run it from the folder of the repository:
@@ -50,113 +52,91 @@ const (
 	bottom = float32(742) // The page's 792 points less the margin
 )
 
-// A face of go-text, which shapes, and the same font file loaded by PDFjet,
-// which reads the outlines, so that the glyph numbers match.
-type shapingFont struct {
-	face   *font.Face
-	font   *pdfjet.Font
-	script language.Script
+// goTextShaper is a shaper for ComplexText that shapes with
+// go-text/typesetting: each character in the first font that has it, each
+// run of one font shaped on its own, and the lines broken at spaces.
+type goTextShaper struct {
+	faces map[*byte]*font.Face // go-text's face of each font file, made once
 }
 
-func loadFont(pdf *pdfjet.PDF, path string, script language.Script) shapingFont {
-	file, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	face, err := font.ParseTTF(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	outlines := pdfjet.NewFontFromFile(pdf, path)
-	outlines.SetSize(size)
-	return shapingFont{face, outlines, script}
-}
-
-// A glyph shaped, in points from the start of the paragraph
+// A glyph shaped, in points from the start of the text
 type glyph struct {
 	id      int
-	font    int // Its font: 0 the script's, 1 the Latin one
+	font    int
 	cluster int // The index in the text, in runes, of its cluster's first character
 	x, y    float32
 	advance float32
 }
 
-// drawPage draws a page of the Declaration in the language, its paragraphs
-// from the beginning until the page is full, and returns the text drawn.
-func drawPage(pdf *pdfjet.PDF, heading, body *pdfjet.Font, name, lang, scriptFile string,
-	script language.Script, textFile string) string {
-	page := pdfjet.NewPage(pdf, letter.Portrait())
-	pdfjet.NewTextLine(heading, "Universal Declaration of Human Rights, in "+name).
-		SetStructureType(structelem.H1).
-		SetLocation(left, 60).
-		DrawOn(page)
-	pdfjet.NewTextLine(body, "Shaped by go-text/typesetting, drawn by PDFjet with DrawGlyphs as outlines;"+
-		" the text is attached to the document.").
-		SetLocation(left, 80).
-		DrawOn(page)
-
-	fonts := []shapingFont{
-		loadFont(pdf, scriptFile, script),
-		loadFont(pdf, latin, language.Latin),
+func (shaper *goTextShaper) face(file []byte) (*font.Face, error) {
+	if face, ok := shaper.faces[&file[0]]; ok {
+		return face, nil
 	}
-	ascent := fonts[0].font.GetAscent(size)
-	descent := fonts[0].font.GetDescent(size)
-
-	var drawn strings.Builder
-	y := float32(96) // The top of the next line
-	for _, paragraph := range paragraphs(textFile) {
-		text := drawParagraph(page, paragraph, lang, fonts, &y, ascent, descent)
-		if text == "" {
-			break // The page is full
-		}
-		// A blank line between paragraphs, as plain text has them
-		if drawn.Len() > 0 {
-			drawn.WriteString("\n")
-		}
-		drawn.WriteString(text)
-		drawn.WriteString("\n")
-		if len(text) < len(paragraph) {
-			break // The page is full
-		}
-		y += 0.5 * size
+	face, err := font.ParseTTF(bytes.NewReader(file))
+	if err != nil {
+		return nil, err
 	}
-	return drawn.String()
+	shaper.faces[&file[0]] = face
+	return face, nil
 }
 
-// drawParagraph draws the paragraph, wrapped to the width at spaces, as many
-// of its lines as fit above the bottom of the page, from the top *y, which it
-// moves below them, and returns the text of the lines drawn. The script's
-// font is used where it has the characters, IBM Plex Sans elsewhere.
-func drawParagraph(page *pdfjet.Page, text, lang string, fonts []shapingFont,
-	y *float32, ascent, descent float32) string {
-	runes := []rune(text)
-
-	// Each character in the script's font where it has it, else in the Latin
-	// one; each run of one font shaped on its own
-	fontOf := make([]int, len(runes))
-	for i, r := range runes {
-		if _, ok := fonts[0].face.NominalGlyph(r); !ok {
-			fontOf[i] = 1
+// scriptOf returns the script of the first character of the runes that has
+// one of its own, Latin if none has.
+func scriptOf(runes []rune) language.Script {
+	for _, r := range runes {
+		if script := language.LookupScript(r); script != language.Common && script != language.Inherited {
+			return script
 		}
 	}
+	return language.Latin
+}
+
+func (shaper *goTextShaper) Shape(text, lang string, fontFiles [][]byte, fontSize, width float32) (
+	[]pdfjet.ShapedLine, error) {
+	faces := make([]*font.Face, len(fontFiles))
+	for i, file := range fontFiles {
+		face, err := shaper.face(file)
+		if err != nil {
+			return nil, err
+		}
+		faces[i] = face
+	}
+	runes := []rune(text)
+	// The index in the text, in bytes, of each rune, and of the end
+	offsets := make([]int, 0, len(runes)+1)
+	for i := range text {
+		offsets = append(offsets, i)
+	}
+	offsets = append(offsets, len(text))
+
+	// Each character in the first font that has it, else in the first
+	fontOf := make([]int, len(runes))
+	for i, r := range runes {
+		for k, face := range faces {
+			if _, ok := face.NominalGlyph(r); ok {
+				fontOf[i] = k
+				break
+			}
+		}
+	}
+	// Each run of one font shaped on its own
 	var glyphs []glyph
 	var pen float32
-	shaper := shaping.HarfbuzzShaper{}
+	harfbuzz := shaping.HarfbuzzShaper{}
 	for start := 0; start < len(runes); {
 		end := start + 1
 		for end < len(runes) && fontOf[end] == fontOf[start] {
 			end++
 		}
-		f := fonts[fontOf[start]]
-		upem := int(f.face.Upem())
+		face := faces[fontOf[start]]
+		upem := int(face.Upem())
 		// Shaped at a size of one pixel a font unit, then scaled to points
-		output := shaper.Shape(shaping.Input{
+		output := harfbuzz.Shape(shaping.Input{
 			Text: runes, RunStart: start, RunEnd: end,
-			Direction: di.DirectionLTR, Face: f.face, Size: fixed.I(upem),
-			Script: f.script, Language: language.NewLanguage(lang),
+			Direction: di.DirectionLTR, Face: face, Size: fixed.I(upem),
+			Script: scriptOf(runes[start:end]), Language: language.NewLanguage(lang),
 		})
-		scale := size / float32(upem) / 64
+		scale := fontSize / float32(upem) / 64
 		for _, g := range output.Glyphs {
 			glyphs = append(glyphs, glyph{
 				id: int(g.GlyphID), font: fontOf[start], cluster: g.TextIndex(),
@@ -168,16 +148,10 @@ func drawParagraph(page *pdfjet.Page, text, lang string, fonts []shapingFont,
 		start = end
 	}
 
-	drawnEnd := 0 // The end, in runes, of the text of the lines drawn
+	// The lines: all the glyphs left if they fit, else up to the last space
+	// after a word that fits
+	var lines []pdfjet.ShapedLine
 	for first := 0; first < len(glyphs); {
-		if *y+ascent+descent > bottom {
-			break
-		}
-		if drawnEnd == 0 {
-			page.AddBDC(structelem.P, lang, "", "")
-		}
-		// The glyphs of the line: all that are left if they fit, else up to
-		// the last space after a word that fits
 		lineStart := glyphs[first].x
 		last := len(glyphs)
 		lastSpace := -1
@@ -189,40 +163,65 @@ func drawParagraph(page *pdfjet.Page, text, lang string, fonts []shapingFont,
 				break
 			}
 		}
-		baseline := *y + ascent
-		// The line, a run of one font at a time: its glyphs and their places
-		for start := first; start < last; {
-			end := start + 1
-			for end < last && glyphs[end].font == glyphs[start].font {
-				end++
-			}
-			textStart := glyphs[start].cluster
-			textEnd := len(runes)
-			if end < len(glyphs) {
-				textEnd = glyphs[end].cluster
-			}
-			ids := make([]int, end-start)
-			positions := make([]float32, 2*(end-start))
-			for i := start; i < end; i++ {
-				ids[i-start] = glyphs[i].id
-				positions[2*(i-start)] = left + glyphs[i].x - lineStart
-				positions[2*(i-start)+1] = baseline + glyphs[i].y
-			}
-			page.DrawGlyphs(fonts[glyphs[start].font].font, ids, positions,
-				string(runes[textStart:textEnd]), lang)
-			start = end
-		}
-		*y = baseline + descent + 0.25*size
-		drawnEnd = len(runes)
+		line := pdfjet.ShapedLine{Start: offsets[glyphs[first].cluster], End: len(text)}
 		if last < len(glyphs) {
-			drawnEnd = glyphs[last].cluster
+			line.End = offsets[glyphs[last].cluster]
 		}
+		for i := first; i < last; i++ {
+			line.Fonts = append(line.Fonts, glyphs[i].font)
+			line.Glyphs = append(line.Glyphs, glyphs[i].id)
+			line.Positions = append(line.Positions, glyphs[i].x-lineStart, glyphs[i].y)
+		}
+		lines = append(lines, line)
 		first = last
 	}
-	if drawnEnd > 0 {
-		page.AddEMC()
+	return lines, nil
+}
+
+// drawPage draws a page of the Declaration in the language, its paragraphs
+// from the beginning until the page is full, and returns the text drawn.
+func drawPage(pdf *pdfjet.PDF, heading, body *pdfjet.Font, shaper pdfjet.Shaper, name, lang,
+	scriptFile, textFile string) string {
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	pdfjet.NewTextLine(heading, "Universal Declaration of Human Rights, in "+name).
+		SetStructureType(structelem.H1).
+		SetLocation(left, 60).
+		DrawOn(page)
+	pdfjet.NewTextLine(body, "Shaped by go-text/typesetting, drawn by PDFjet's ComplexText as outlines;"+
+		" the text is attached to the document.").
+		SetLocation(left, 80).
+		DrawOn(page)
+
+	// The script's font, and IBM Plex Sans for the characters it does not
+	// have, such as digits and punctuation of the Latin script
+	script := pdfjet.NewFontFromFile(pdf, scriptFile)
+	script.SetSize(size)
+	latinFont := pdfjet.NewFontFromFile(pdf, latin)
+
+	var drawn strings.Builder
+	y := float32(96) // The top of the next paragraph
+	for _, paragraph := range paragraphs(textFile) {
+		text := pdfjet.NewComplexText(script, paragraph).
+			SetFallbackFont(latinFont).
+			SetLanguage(lang).
+			SetShaper(shaper).
+			SetWidth(width)
+		height, err := text.GetHeight()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if y+height > bottom {
+			break // The page is full
+		}
+		y = text.SetLocation(left, y).DrawOn(page)[1] + 0.5*size
+		// A blank line between paragraphs, as plain text has them
+		if drawn.Len() > 0 {
+			drawn.WriteString("\n")
+		}
+		drawn.WriteString(paragraph)
+		drawn.WriteString("\n")
 	}
-	return string(runes[:drawnEnd])
+	return drawn.String()
 }
 
 // paragraphs returns the paragraphs of the text file, one to a line.
@@ -262,9 +261,10 @@ func Example52() {
 	body := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	body.SetSize(9)
 
-	hindi := drawPage(pdf, heading, body, "Hindi", "hi", devanagari, language.Devanagari,
+	shaper := &goTextShaper{faces: make(map[*byte]*font.Face)}
+	hindi := drawPage(pdf, heading, body, shaper, "Hindi", "hi", devanagari,
 		"resources/data/udhr/udhr_hin.txt")
-	khmerText := drawPage(pdf, heading, body, "Khmer", "km", khmer, language.Khmer,
+	khmerText := drawPage(pdf, heading, body, shaper, "Khmer", "km", khmer,
 		"resources/data/udhr/udhr_khm.txt")
 
 	// The pages draw the text as outlines, which cannot be selected or

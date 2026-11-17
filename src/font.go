@@ -47,7 +47,12 @@ type Font struct {
 	// whether anything draws with it as a font, text or a stamp's: a font
 	// DrawGlyphs alone drew with is not written into the document.
 	drawnAsOutlines bool
-	referenced      bool
+	// The font file, for ComplexText, whose text engine reads it: the path
+	// it was loaded from, or the bytes it was loaded from, kept; read from the
+	// path the first time ComplexText needs it.
+	fontPath   string
+	fontFile   []byte
+	referenced bool
 
 	unitsPerEm             int
 	bBoxLLx                int16 // Font bounding box
@@ -347,8 +352,40 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	font := new(Font)
 	font.pdf = pdf
 	registerOpenTypeFont(pdf, font, buf)
+	font.fontPath = filePath
 	font.SetSize(defaultFontSize)
 	return font
+}
+
+// NewFontFromBytes constructs a font from the bytes of an OpenType or
+// TrueType font file, a .otf or a .ttf, such as one embedded in the program,
+// and adds it to the PDF. The font keeps the bytes, as ComplexText gives them
+// to the text engine that shapes it.
+func NewFontFromBytes(pdf *PDF, fontFile []byte) *Font {
+	font := new(Font)
+	font.pdf = pdf
+	registerOpenTypeFont(pdf, font, fontFile)
+	font.fontFile = fontFile
+	font.SetSize(defaultFontSize)
+	return font
+}
+
+// shapingFile returns the bytes of the font file, for ComplexText: those it
+// was loaded from, the TrueType font it keeps, or the file of its path read
+// again; nil for a font loaded from a reader, a core font or a CJK font.
+func (font *Font) shapingFile() ([]byte, error) {
+	if font.fontFile == nil {
+		if font.program != nil && !font.program.cff {
+			font.fontFile = font.program.font
+		} else if font.fontPath != "" {
+			buf, err := readFontFile(font.fontPath)
+			if err != nil {
+				return nil, err
+			}
+			font.fontFile = buf
+		}
+	}
+	return font.fontFile, nil
 }
 
 // ReadFontFromFile creates a font from the .otf or .ttf file at the path, as
@@ -372,6 +409,7 @@ func ReadFontFromFile(pdf *PDF, filePath string) (font *Font, err error) {
 	font.pdf = pdf
 	// It reads the font before it adds anything to the PDF
 	registerOpenTypeFont(pdf, font, buf)
+	font.fontPath = filePath
 	font.SetSize(defaultFontSize)
 	return font, nil
 }

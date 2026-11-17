@@ -2834,49 +2834,8 @@ func (page *Page) addArtifactBDC(properties string) {
 // CFF outlines; not a core font or a CJK font.
 func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, text, language string) {
 	pdf := page.pdf
-	if font == nil {
-		pdf.fail("DrawGlyphs needs a font, glyphs and their positions.")
+	if !page.glyphsDrawable(font, glyphs, positions) {
 		return
-	}
-	if font.pdf != nil && font.pdf != pdf {
-		pdf.fail("The font belongs to another PDF.")
-		return
-	}
-	if font.isCoreFont || font.isCJK || font.program == nil {
-		pdf.fail("DrawGlyphs needs a font loaded from the font file the glyphs were shaped with.")
-		return
-	}
-	if len(positions) != 2*len(glyphs) {
-		pdf.fail("DrawGlyphs needs an x and a y for each glyph.")
-		return
-	}
-	for _, v := range positions {
-		if !(math.Abs(float64(v)) <= 1e6) { // NaN too
-			pdf.fail("DrawGlyphs needs positions between -1,000,000 and 1,000,000 points.")
-			return
-		}
-	}
-	// The size times the glyphs' matrix is written with 7 decimals
-	if !(font.size > 0 && font.size <= 10000) { // NaN too
-		pdf.fail("DrawGlyphs needs a font size of more than 0 and at most 10,000 points.")
-		return
-	}
-	program := font.program
-	if program.outline == nil {
-		outline, err := newGlyphOutline(program.font, program.cff)
-		if err != nil {
-			pdf.fail(err.Error())
-			return
-		}
-		program.outline = outline
-		program.glyphStamps = make(map[int]*Stamp)
-	}
-	outline := program.outline
-	for _, gid := range glyphs {
-		if gid < 0 || gid >= outline.count() {
-			pdf.fail(fmt.Sprintf("The font has no glyph number %d.", gid))
-			return
-		}
 	}
 	tagged := pdf.isTagged() && page.artifactDepth == 0
 	if tagged && len(glyphs) > 0 && text == "" {
@@ -2886,26 +2845,101 @@ func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, text
 	if len(glyphs) == 0 {
 		return
 	}
-	font.drawnAsOutlines = true
 	// A paragraph of their own, in a tagged document, drawn outside any
 	own := tagged && !page.insideTaggedContent()
 	if own {
 		page.AddBDC(structelem.P, language, "", "")
 	}
-	// The text they stand for, and its language, as the actual text of the
-	// marked content of the outlines (ISO 32000-1, 14.9.4)
-	if tagged {
-		page.appendString("/Span <<")
-		if language != "" {
-			page.appendString("/Lang <")
-			page.appendString(hex.EncodeToString([]byte(language)))
-			page.appendString("> ")
-		}
-		page.appendString("/ActualText <")
-		page.appendString(toUTF16Hex(text))
-		page.appendString(">>> BDC\n")
+	page.beginActualText(text, language)
+	page.placeGlyphs(font, font.size, glyphs, positions)
+	page.endActualText()
+	if own {
+		page.AddEMC()
 	}
-	size := font.size
+}
+
+// glyphsDrawable checks the font, the glyphs and their positions for
+// DrawGlyphs, and reads the font's outlines the first time; false, the
+// document failed, when they cannot be drawn.
+func (page *Page) glyphsDrawable(font *Font, glyphs []int, positions []float32) bool {
+	pdf := page.pdf
+	if font == nil {
+		pdf.fail("DrawGlyphs needs a font, glyphs and their positions.")
+		return false
+	}
+	if font.pdf != nil && font.pdf != pdf {
+		pdf.fail("The font belongs to another PDF.")
+		return false
+	}
+	if font.isCoreFont || font.isCJK || font.program == nil {
+		pdf.fail("DrawGlyphs needs a font loaded from the font file the glyphs were shaped with.")
+		return false
+	}
+	if len(positions) != 2*len(glyphs) {
+		pdf.fail("DrawGlyphs needs an x and a y for each glyph.")
+		return false
+	}
+	for _, v := range positions {
+		if !(math.Abs(float64(v)) <= 1e6) { // NaN too
+			pdf.fail("DrawGlyphs needs positions between -1,000,000 and 1,000,000 points.")
+			return false
+		}
+	}
+	// The size times the glyphs' matrix is written with 7 decimals
+	if !(font.size > 0 && font.size <= 10000) { // NaN too
+		pdf.fail("DrawGlyphs needs a font size of more than 0 and at most 10,000 points.")
+		return false
+	}
+	program := font.program
+	if program.outline == nil {
+		outline, err := newGlyphOutline(program.font, program.cff)
+		if err != nil {
+			pdf.fail(err.Error())
+			return false
+		}
+		program.outline = outline
+		program.glyphStamps = make(map[int]*Stamp)
+	}
+	for _, gid := range glyphs {
+		if gid < 0 || gid >= program.outline.count() {
+			pdf.fail(fmt.Sprintf("The font has no glyph number %d.", gid))
+			return false
+		}
+	}
+	return true
+}
+
+// beginActualText begins, in a tagged document, the marked content of
+// glyphs drawn as outlines, with the text they stand for, and its language,
+// as its actual text (ISO 32000-1, 14.9.4); endActualText ends it.
+func (page *Page) beginActualText(text, language string) {
+	if !page.pdf.isTagged() || page.artifactDepth != 0 {
+		return
+	}
+	page.appendString("/Span <<")
+	if language != "" {
+		page.appendString("/Lang <")
+		page.appendString(hex.EncodeToString([]byte(language)))
+		page.appendString("> ")
+	}
+	page.appendString("/ActualText <")
+	page.appendString(toUTF16Hex(text))
+	page.appendString(">>> BDC\n")
+}
+
+func (page *Page) endActualText() {
+	if page.pdf.isTagged() && page.artifactDepth == 0 {
+		page.appendString("EMC\n")
+	}
+}
+
+// placeGlyphs draws the glyphs, checked by glyphsDrawable, at the size, each
+// as the stamp of its outline, made the first time the glyph is drawn.
+func (page *Page) placeGlyphs(font *Font, size float32, glyphs []int, positions []float32) {
+	pdf := page.pdf
+	font.drawnAsOutlines = true
+	program := font.program
+	outline := program.outline
 	for k, gid := range glyphs {
 		// The glyph's stamp, made the first time it is drawn; nil for a
 		// glyph of no outline, as the space
@@ -2925,12 +2959,6 @@ func (page *Page) DrawGlyphs(font *Font, glyphs []int, positions []float32, text
 			stamp.placeGlyph(page, glyphMatrix(outline.matrixOf(gid), size,
 				positions[2*k], page.height-positions[2*k+1]))
 		}
-	}
-	if tagged {
-		page.appendString("EMC\n")
-	}
-	if own {
-		page.AddEMC()
 	}
 }
 
