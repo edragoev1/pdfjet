@@ -33,7 +33,7 @@ published trimmed or with NativeAOT keeps the fonts: the package says so to
 the build.
 
 The package has IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold,
-and IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold, about 41 MB, under
+and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, Thin to Bold, about 41 MB, under
 the SIL Open Font License 1.1, with their licenses. One
 `PDFjet.Fonts.World.dll`, for .NET Standard 2.0, serves .NET 8 and later and
 .NET Framework 4.8 alike. They are apart from `PDFjet` so that a program

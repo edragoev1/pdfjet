@@ -5,7 +5,7 @@
 # Serif and Cascadia Mono (-p:PDFjetFonts=true), so that the package works
 # out of the box (the owner, 29 October 2026), with the licenses of the
 # fonts beside them; and PDFjet.Fonts.World, the fonts of the other scripts,
-# IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai,
+# IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai,
 # in one assembly for .NET Standard 2.0, PDFjet.Fonts.World.dll, which serves
 # both, so that they are stored once (the owner, 30 October 2026); PDFjet
 # loads it by its name when one of its fonts is asked for. The System.Memory
@@ -102,7 +102,7 @@ dotnet build "$build/nuget/world/PDFjet.Fonts.World.csproj" -c release -p:TreatW
     "${sign[@]}" -p:FileVersion="$version" -p:InformationalVersion="$packageVersion"
 cp "$build/nuget/world/bin/release/netstandard2.0/PDFjet.Fonts.World.dll" "$worldStage/lib/netstandard2.0/"
 for face in JP-Regular.otf KR-Regular.otf SC-Regular.otf TC-Regular.otf \
-        Arabic-Regular.otf Hebrew-Regular.otf Thai-Regular.otf; do
+        Arabic-Regular.otf Devanagari-Regular.otf Hebrew-Regular.otf Thai-Regular.otf; do
     family=IBMPlexSans${face%%-*}
     if ! grep -q -a "PDFjet.Fonts/world/$family/IBMPlexSans$face" \
             "$worldStage/lib/netstandard2.0/PDFjet.Fonts.World.dll"; then

@@ -13,7 +13,7 @@ import Testing
 /// which the library has.
 @Suite struct BundledFontsTests {
     private static let structs = [
-        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
+        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew",
         "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
         "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
     ]
@@ -69,7 +69,7 @@ import Testing
                 carried.insert("fonts/" + family + "/" + font)
             }
         }
-        #expect(carried.count == 71)
+        #expect(carried.count == 78)
         var named = Set<String>()
         for name in BundledFontsTests.structs {
             let found = try constants(name)
@@ -226,11 +226,11 @@ import Testing
         #expect(inBundle.path.contains("PDFjet_PDFjetFontsWorld."), "\(inBundle.path)")
         #expect(try Data(contentsOf: inBundle) == Data(contentsOf: onDisk))
         for path in [IBMPlexSansKR.Regular, IBMPlexSansSC.SemiBold, IBMPlexSansTC.Bold,
-                IBMPlexSansArabic.Regular, IBMPlexSansHebrew.Thin, IBMPlexSansThai.Text] {
+                IBMPlexSansArabic.Regular, IBMPlexSansDevanagari.Regular, IBMPlexSansHebrew.Thin, IBMPlexSansThai.Text] {
             #expect(BundledFonts.url(path, missing) != nil, "\(path)")
         }
         let files = try FileManager.default.subpathsOfDirectory(atPath: worldBundle.bundleURL.path)
-        #expect(files.filter { $0.hasSuffix(".otf") }.count == 33)
+        #expect(files.filter { $0.hasSuffix(".otf") }.count == 40)
         #expect(files.filter { $0.hasSuffix(".ttf") }.isEmpty)
         #expect(files.contains { $0.hasSuffix("license.txt") })
         #expect(!files.contains { $0.hasSuffix(".go") })

@@ -12,7 +12,7 @@ import Foundation
 /// resources/fonts/world, each family in a folder of its name with its
 /// license: the resources of this module, which SwiftPM copies as they are,
 /// so that the one copy of them in the repository serves Java, C#, Go and
-/// Swift alike. An app that draws in them, about 52 MB, adds the product
+/// Swift alike. An app that draws in them, about 54 MB, adds the product
 /// PDFjetFontsWorld to the dependencies of its target,
 /// .product(name: "PDFjetFontsWorld", package: "pdfjet"); no code is
 /// needed, as PDFjet, which does not depend on this module, finds its bundle,

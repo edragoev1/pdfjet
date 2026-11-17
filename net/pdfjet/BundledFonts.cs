@@ -15,7 +15,7 @@ namespace PDFjet.NET {
 /// folder of its name, with its license: IBM Plex Sans and Serif, from Thin
 /// to Bold, and Cascadia Mono, from Light to Bold, as .otf, upright
 /// and italic, for every European language, in Latin, Greek and Cyrillic; and, in
-/// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
+/// resources/fonts/world, IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, Thin to Bold,
 /// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
 /// All are under the SIL Open Font License 1.1. A path to one of them, such
 /// as fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the font
@@ -57,7 +57,7 @@ internal static class BundledFonts {
             }
             faces[family] = files;
         }
-        foreach (String family in new String[] {"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
+        foreach (String family in new String[] {"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
             List<String> files = new List<String>();
             foreach (String style in new String[] {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}) {
                 files.Add(family + "-" + style + ".otf");

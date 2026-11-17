@@ -43,7 +43,7 @@ var worldFaces = func() map[string][]string {
 			faces[family] = append(faces[family], family+"-"+style+".otf")
 		}
 	}
-	for _, family := range []string{"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"} {
+	for _, family := range []string{"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"} {
 		for _, style := range []string{"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"} {
 			faces[family] = append(faces[family], family+"-"+style+".otf")
 		}

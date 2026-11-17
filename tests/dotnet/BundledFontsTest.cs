@@ -18,7 +18,7 @@ namespace PDFjet.NET {
 /// </summary>
 public class BundledFontsTest {
     private static readonly String[] CLASSES = {
-        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
+        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew",
         "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
         "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
     };
@@ -48,7 +48,7 @@ public class BundledFontsTest {
                 }
             }
         }
-        Assert.Equal(71, carried.Count);
+        Assert.Equal(78, carried.Count);
         SortedSet<String> constants = new SortedSet<String>(StringComparer.Ordinal);
         foreach (String name in CLASSES) {
             Type c = typeof(Font).Assembly.GetType("PDFjet.NET." + name, true);
@@ -119,8 +119,8 @@ public class BundledFontsTest {
             }
         }
         // IBM Plex Sans JP, KR, SC and TC, three faces each, and IBM Plex Sans
-        // Arabic, Hebrew and Thai, seven each, with a license each
-        Assert.Equal(12 + 21 + 7, worldFiles.Count);
+        // Arabic, Devanagari, Hebrew and Thai, seven each, with a license each
+        Assert.Equal(12 + 28 + 8, worldFiles.Count);
 #if PDFJET_FONTS
         // The fonts and their licenses, Family/File, and nothing else
         Assert.Equal(files, resources);

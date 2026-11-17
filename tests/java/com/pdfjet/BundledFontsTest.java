@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
  */
 class BundledFontsTest {
     private static final String[] CLASSES = {
-        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
+        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew",
         "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
         "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
     };
@@ -54,7 +54,7 @@ class BundledFontsTest {
                 }
             }
         }
-        assertEquals(71, carried.size());
+        assertEquals(78, carried.size());
         Set<String> constants = new TreeSet<String>();
         for (String name : CLASSES) {
             Class<?> c = Class.forName("com.pdfjet.fonts." + name);

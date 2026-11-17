@@ -37,6 +37,7 @@ import (
 //go:embed IBMPlexSansSC/*.otf IBMPlexSansSC/license.txt
 //go:embed IBMPlexSansTC/*.otf IBMPlexSansTC/license.txt
 //go:embed IBMPlexSansArabic/*.otf IBMPlexSansArabic/license.txt
+//go:embed IBMPlexSansDevanagari/*.otf IBMPlexSansDevanagari/license.txt
 //go:embed IBMPlexSansHebrew/*.otf IBMPlexSansHebrew/license.txt
 //go:embed IBMPlexSansThai/*.otf IBMPlexSansThai/license.txt
 var files embed.FS
@@ -44,7 +45,7 @@ var files embed.FS
 func init() {
 	for _, family := range []string{
 		"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC",
-		"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai",
+		"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai",
 	} {
 		sub, err := fs.Sub(files, family)
 		if err != nil {

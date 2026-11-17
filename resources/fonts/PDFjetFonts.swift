@@ -13,7 +13,7 @@ import Foundation
 /// the one copy of them in the repository serves Java, C#, Go and Swift
 /// alike. The product PDFjet depends on this module, so that these fonts,
 /// about 7 MB, work with no step of one's own; the fonts of the other
-/// scripts, about 52 MB, are in the module PDFjetFontsWorld, of
+/// scripts, about 54 MB, are in the module PDFjetFontsWorld, of
 /// resources/fonts/world, the product an app adds when it draws in them. The
 /// bundle has the files of the family folders side by side, as .process puts
 /// them, and the license of IBM Plex once.

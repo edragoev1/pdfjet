@@ -13,7 +13,7 @@
   <version>$version$</version>
   <packaging>jar</packaging>
   <name>PDFjet world fonts</name>
-  <description>The fonts of PDFjet for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: IBM Plex Sans JP, KR, SC and TC, and IBM Plex Sans Arabic, Hebrew and Thai, under the SIL Open Font License 1.1, for com.pdfjet:pdfjet of the same version: add it next to com.pdfjet:pdfjet, and constants such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular work. No code and no dependencies.</description>
+  <description>The fonts of PDFjet for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: IBM Plex Sans JP, KR, SC and TC, and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, under the SIL Open Font License 1.1, for com.pdfjet:pdfjet of the same version: add it next to com.pdfjet:pdfjet, and constants such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular work. No code and no dependencies.</description>
   <url>https://github.com/edragoev1/pdfjet</url>
   <licenses>
     <license>

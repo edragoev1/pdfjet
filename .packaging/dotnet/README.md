@@ -80,7 +80,7 @@ put `net48/PDFjet.dll` (with its four DLLs) in `lib/net48/` and `PDFjet.dll` in
 
 PDFjet carries IBM Plex Sans and Serif and Cascadia Mono,
 from Light or Thin to Bold, upright and italic, for every European
-language; and IBM Plex Sans Arabic, Hebrew and Thai and IBM Plex Sans JP,
+language; and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai and IBM Plex Sans JP,
 KR, SC and TC, for Arabic, Hebrew, Thai, Chinese, Japanese and Korean. They
 are in `resources/fonts` of this package, each family with its license,
 those of the other scripts in `resources/fonts/world`. Their

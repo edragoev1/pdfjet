@@ -27,6 +27,17 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   CFF outlines go into the PDF as they are: Example_52 is 150 KB in Java,
   where 9.1.9's was 202 KB with the .ttf fonts. The `drawGlyphs` tests keep
   Noto Sans Devanagari's .ttf, for the TrueType outlines.
+- **IBM Plex Sans Devanagari in the world fonts**, Thin to Bold, .otf, with a
+  constant `IBMPlexSansDevanagari` in the four ports and the world packages
+  (resources/fonts/world, Maven's pdfjet-fonts-world, NuGet's
+  PDFjet.Fonts.World, Go's world package, Swift's PDFjetFontsWorld): 78 fonts
+  carried, where there were 71, the world fonts about 54 MB. PDFjet does not
+  shape Devanagari: the font is for `drawGlyphs`, the platform's text engine
+  shaping the text with the same file; in a TextLine or a TextBlock the
+  letters would come out unshaped, and the README and the guides for AI coding
+  assistants say so. Complete for Hindi, Marathi, Nepali and Sanskrit
+  (without the Vedic accents), Konkani, Maithili, Dogri and Bodo; not for
+  Sindhi or Kashmiri in Devanagari.
 
 ## v9.1.9 — 2026-11-17
 

@@ -17,7 +17,7 @@ import java.util.Map;
  * folder of its name, with its license: IBM Plex Sans and Serif, from Thin
  * to Bold, and Cascadia Mono, from Light to Bold, as .otf, upright
  * and italic, for every European language, in Latin, Greek and Cyrillic; and, in
- * resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
+ * resources/fonts/world, IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, Thin to Bold,
  * and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
  * All are under the SIL Open Font License 1.1. A path to one of them, such as
  * fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of
@@ -43,7 +43,7 @@ final class BundledFonts {
 
     // The families of the fonts of resources/fonts/world and the jar
     // com.pdfjet:pdfjet-fonts-world, apart from the European ones, as they
-    // are about 52 MB, and the styles of the faces of each that PDFjet
+    // are about 54 MB, and the styles of the faces of each that PDFjet
     // carries, all .otf.
     private static final Map<String, List<String>> WORLD_FACES = worldFaces();
 
@@ -56,7 +56,7 @@ final class BundledFonts {
             }
             faces.put(family, files);
         }
-        for (String family : new String[] {"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
+        for (String family : new String[] {"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
             List<String> files = new ArrayList<String>();
             for (String style : new String[] {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}) {
                 files.add(family + "-" + style + ".otf");

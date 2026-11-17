@@ -10,7 +10,7 @@ import Foundation
 /// its name, with its license: IBM Plex Sans and Serif, from Thin to Bold,
 /// and Cascadia Mono, from Light to Bold, as .otf, upright and
 /// italic, for every European language, in Latin, Greek and Cyrillic; and, in
-/// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to
+/// resources/fonts/world, IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, Thin to
 /// Bold, and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as
 /// .otf. All are under the SIL Open Font License 1.1. A path to one of them,
 /// such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the
@@ -46,7 +46,7 @@ enum BundledFonts {
         for family in ["IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"] {
             faces[family] = ["Regular", "SemiBold", "Bold"].map { family + "-" + $0 + ".otf" }
         }
-        for family in ["IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"] {
+        for family in ["IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"] {
             faces[family] = ["Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"].map {
                 family + "-" + $0 + ".otf"
             }

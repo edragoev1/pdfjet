@@ -89,10 +89,11 @@ same output come in four languages, and none of them needs a third-party library
   SimpleScatterChart in the same look, and bar and donut charts too.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
-- **Fonts ready to use.** 71 TrueType and OpenType fonts, IBM Plex Sans and
+- **Fonts ready to use.** 78 TrueType and OpenType fonts, IBM Plex Sans and
   Serif, Cascadia Mono, and IBM Plex Sans JP, KR, SC, TC, Arabic, Hebrew and
   Thai, with Unicode text in Latin, Greek, Cyrillic, CJK and right to left
-  scripts, embedded as subsets of the glyphs a document draws. IBM
+  scripts, and IBM Plex Sans Devanagari for Hindi drawn with `drawGlyphs`
+  (see "Hindi, Khmer and other complex scripts"), embedded as subsets of the glyphs a document draws. IBM
   Plex Sans alone covers all 24 official languages of the European Union,
   from Czech ř and Romanian ș to Greek and Bulgarian, with the euro sign and
   each language's quotation marks: a one-page PDF in it is about 28 KB. A
@@ -177,7 +178,7 @@ From 9.1.7 the jar of Maven Central carries IBM Plex Sans and Serif and
 Cascadia Mono, so their constants in `com.pdfjet.fonts`, such as
 `IBMPlexSans.Regular`, work with nothing else to download; that jar is
 about 5 MB. `pdfjet-fonts-world`, about 41 MB, has IBM Plex Sans JP, KR, SC
-and TC and IBM Plex Sans Arabic, Hebrew and Thai, which PDFjet finds on the
+and TC and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, which PDFjet finds on the
 classpath; without it, `IBMPlexSansJP`, `IBMPlexSansArabic` and the others
 throw an error that names it. The `PDFjet.jar` of the
 [releases on GitHub](https://github.com/edragoev1/pdfjet/releases), and the
@@ -311,7 +312,7 @@ import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 Go builds the fonts a program embeds into the program itself, uncompressed.
 So only IBM Plex Sans and Serif and Cascadia Mono are built in, 7 MB: a
 program like the one above is about 12 MB. The fonts of the other scripts,
-IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Hebrew and Thai,
+IBM Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai,
 are 52 MB more, built in only when the program has the line above, which
 makes it about 66 MB. Without it, `IBMPlexSansJP.Regular`,
 `IBMPlexSansArabic.Regular` and the others are read from the folder
@@ -365,7 +366,7 @@ Thai. The product `PDFjet` carries IBM Plex Sans and Serif and Cascadia
 Mono, about 7 MB, so their constants, such as `IBMPlexSans.Regular`, work
 anywhere. A Swift program is often an iPhone or Mac app, which should not
 carry the 52 MB of the fonts of the other scripts, IBM Plex Sans JP, KR, SC
-and TC and IBM Plex Sans Arabic, Hebrew and Thai, unless it draws in them:
+and TC and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, unless it draws in them:
 with the `PDFjetFontsWorld` line, they are built into your app, and no code
 is needed, as PDFjet finds their bundle on its own. Without it, PDFjet reads
 them from the folder `resources/fonts/world` of the working directory, as
@@ -657,7 +658,7 @@ embed. In this order:
 
 1. **The fonts PDFjet carries** first, in `resources/fonts` and read from the
    library itself: IBM Plex Sans and Serif and Cascadia Mono; and, in the
-   add-on of the other scripts, IBM Plex Sans Arabic, Hebrew and Thai and IBM
+   add-on of the other scripts, IBM Plex Sans Arabic, Devanagari, Hebrew and Thai and IBM
    Plex Sans JP, KR, SC and TC. All are under the SIL Open Font License, which
    lets any document embed them, for any use.
 2. **Google Fonts**, [fonts.google.com](https://fonts.google.com), next:

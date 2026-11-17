@@ -1492,7 +1492,8 @@ than waiting for 9.2.1. The rules:
      a second document can take as it is, by a copy of the Image for
      another PDF or the like, would make such a batch several times
      faster; to design, measured in the four ports first.
-- **For v9.2.1: IBM Plex Sans Devanagari in the world fonts** (the owner,
+- ✅ **Done for 9.2.0 (the owner, 17 November 2026: "put the Devanagari font
+  there"): IBM Plex Sans Devanagari in the world fonts** (the owner,
   17 November 2026: "In 9.2.1 we will include the IBM Devanagari font in the
   World package"). The .otf of IBM's release @ibm/plex-sans-devanagari 1.1.0
   (font version 1.2, CFF, SIL OFL 1.1), the faces as the other world

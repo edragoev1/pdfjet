@@ -106,10 +106,10 @@ fi
 for family in "$work"/world/com/pdfjet/fonts/world/*/; do
     [ -f "$family/license.txt" ] || { echo "$family has no license" >&2; exit 1; }
 done
-if [ "$(find "$work/world/com/pdfjet/fonts/world" -name '*.otf' | wc -l)" -ne 33 ] ||
+if [ "$(find "$work/world/com/pdfjet/fonts/world" -name '*.otf' | wc -l)" -ne 40 ] ||
         [ "$(find "$work/world/com/pdfjet/fonts/world" -name '*.ttf' | wc -l)" -ne 0 ]; then
     echo "The fonts of pdfjet-fonts-world are not the 12 .otf of IBM Plex Sans JP, KR, SC and TC" \
-        "and the 21 .otf of IBM Plex Sans Arabic, Hebrew and Thai" >&2; exit 1
+        "and the 28 .otf of IBM Plex Sans Arabic, Devanagari, Hebrew and Thai" >&2; exit 1
 fi
 printf 'Automatic-Module-Name: com.pdfjet.fonts.world\nImplementation-Title: PDFjet world fonts\nImplementation-Version: %s\n' \
     "$packageVersion" > "$work/world-manifest.txt"
@@ -121,8 +121,9 @@ cat > "$work/world-readme/README.txt" <<README
 com.pdfjet:pdfjet-fonts-world $packageVersion has no code: it is the fonts PDFjet
 carries for Chinese, Japanese, Korean, Arabic, Hebrew and Thai, IBM Plex Sans
 JP, KR, SC and TC, Regular, SemiBold and Bold, and IBM Plex Sans Arabic,
-Hebrew and Thai, Thin to Bold, with their licenses (SIL Open Font License
-1.1), as resources at com/pdfjet/fonts/world. PDFjet, com.pdfjet:pdfjet,
+Hebrew and Thai, Thin to Bold, and IBM Plex Sans Devanagari, Thin to Bold,
+for drawGlyphs, with their licenses (SIL Open Font License 1.1), as resources
+at com/pdfjet/fonts/world. PDFjet, com.pdfjet:pdfjet,
 finds them on the classpath: a path such as IBMPlexSansJP.Regular or
 IBMPlexSansArabic.Regular works when this jar is next to it.
 https://github.com/edragoev1/pdfjet

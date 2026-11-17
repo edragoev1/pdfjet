@@ -69,7 +69,7 @@ let package = Package(
         // target PDFjetFonts.
         .library(name: "PDFjet", targets: ["PDFjet"]),
         // The fonts of every other script, IBM Plex Sans JP, KR, SC and TC,
-        // and IBM Plex Sans Arabic, Hebrew and Thai, about 52 MB, for an app
+        // and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, about 54 MB, for an app
         // that draws in them:
         // .product(name: "PDFjetFontsWorld", package: "pdfjet-swift").
         .library(name: "PDFjetFontsWorld", targets: ["PDFjetFontsWorld"]),
@@ -100,6 +100,7 @@ let package = Package(
                 "IBMPlexSansSC/license.txt",
                 "IBMPlexSansTC/license.txt",
                 "IBMPlexSansArabic/license.txt",
+                "IBMPlexSansDevanagari/license.txt",
                 "IBMPlexSansHebrew/license.txt",
                 "IBMPlexSansThai/license.txt",
             ],
@@ -110,6 +111,7 @@ let package = Package(
                 .process("IBMPlexSansSC"),
                 .process("IBMPlexSansTC"),
                 .process("IBMPlexSansArabic"),
+                .process("IBMPlexSansDevanagari"),
                 .process("IBMPlexSansHebrew"),
                 .process("IBMPlexSansThai"),
             ]

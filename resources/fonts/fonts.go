@@ -12,7 +12,7 @@
 // Go builds the files a package embeds into every program that imports it,
 // uncompressed, so this package embeds the European fonts alone, about 7 MB.
 // The fonts of every other script, IBM Plex Sans JP, KR, SC and TC, IBM Plex
-// Sans Arabic, Hebrew and Thai, about 52 MB, are in the
+// Sans Arabic, Hebrew and Thai, about 54 MB, are in the
 // folder world, the package that embeds them, and a program builds them in
 // with one line:
 //
