@@ -9,6 +9,10 @@
 #   util/check-version.sh                the version, checked
 #   util/check-version.sh --draft        the same, with no date asked of CHANGELOG
 #   util/check-version.sh --at v9.1.7    the files of that commit, not of this tree
+#
+# An even version, such as 9.2.0, is the customer builds between releases:
+# its CHANGELOG heading is "## v9.2.0 — customer builds, not released", and
+# README.md's install lines are not checked.
 
 cd "$(dirname "$0")/.." || exit 1
 
@@ -58,7 +62,15 @@ for file in tests/java/com/pdfjet/ReviewWriterTest.java tests/dotnet/ReviewWrite
         src/review_writer_test.go tests/swift/ReviewWriterTests.swift; do
     expect "$file" "PDFjet $VERSION"
 done
-if [ -z "$DRAFT" ]; then
+# An even number is the customer builds between two releases (TODO.md, "The
+# numbers"): its CHANGELOG heading says so, and README.md's install lines
+# keep naming the last release, which is what the public installs
+if [ -z "$DRAFT" ] && [ $(( ${NUMBER##*.} % 2 )) -eq 0 ]; then
+    if ! content CHANGELOG.md | grep -qxF "## $VERSION — customer builds, not released"; then
+        echo "CHANGELOG.md has no \"## $VERSION — customer builds, not released\"" >&2
+        failed=1
+    fi
+elif [ -z "$DRAFT" ]; then
     if ! content CHANGELOG.md | grep -qE "^## $VERSION — [0-9]{4}-[0-9]{2}-[0-9]{2}\$"; then
         echo "CHANGELOG.md has no \"## $VERSION — YYYY-MM-DD\": give the release its date" >&2
         failed=1

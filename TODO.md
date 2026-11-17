@@ -19,25 +19,26 @@ being right, not by the calendar (the owner, 29 October 2026; was early
 2027); the plan of 9.0.7, the first public
 release since 9.0.3 (12 October 2026), is in the history of this file.
 
-**Even numbers are customer builds** (the owner, 17 November 2026). When a
-customer finds a fault, they need not wait for the next release: a build
-with the fix gets the even number before it, 9.2.0 before 9.2.1, 9.2.2
-before 9.2.3, so its number says "the last release and a fix". The rules:
+**After each release, main is the next even number, for customer builds**
+(the owner, 17 November 2026). Once 9.1.9 is out, main becomes 9.2.0: the
+faults found after the release are fixed there, with their tests, and a
+customer who needs a fix gets a build of 9.2.0 from a hidden link, rather
+than waiting for 9.2.1. The rules:
 
-1. Never public. No tag pushed to the public repositories (Go and SwiftPM
-   take versions from tags, and a v9.2.0 tag would be everyone's latest),
-   nothing uploaded to NuGet or Maven Central (a version there can never be
-   removed or used again), no GitHub release. The customer gets a zip,
-   from a hidden folder of pdfjet.com, as the Pro downloads are.
-2. Built from the release tag and the fix alone, on a branch such as
-   fix-9.2.0 started at v9.1.9, never from main, which may hold work not
-   released; the producer string says the even number (util/check-version.sh
-   and the version commit as for a release), so a PDF tells which build
-   made it.
-3. The fix goes into the next odd release too, so that everyone has it
-   there and no customer is left on an even build.
-4. PDFjet Pro in step: a customer of Pro gets Pro built on the even core,
-   with the same number, as for a release.
+1. Never public. No v9.2.0 tag pushed (Go and SwiftPM take versions from
+   tags, and it would be everyone's latest), nothing uploaded to NuGet or
+   Maven Central (a version there can never be removed or used again), no
+   GitHub release, no website change. The customer gets a zip from a
+   hidden folder of pdfjet.com, as the Pro downloads are.
+2. Main takes fixes and small improvements only, as after any release; the
+   producer string says 9.2.0, so a PDF tells it was made by a customer
+   build. README.md's install lines keep naming the last release, 9.1.9,
+   which is what the public installs; CHANGELOG.md has
+   "## v9.2.0 — customer builds, not released" over the fixes.
+3. The next release, 9.2.1, is 9.2.0 and whatever comes after, with its
+   date; nobody is left on a customer build.
+4. PDFjet Pro in step: a customer of Pro gets Pro built on 9.2.0, with the
+   same number.
 
 ## Checks before each release
 
@@ -1488,8 +1489,8 @@ before 9.2.3, so its number says "the last release and a fix". The rules:
      a second document can take as it is, by a copy of the Image for
      another PDF or the like, would make such a batch several times
      faster; to design, measured in the four ports first.
-- **For v9.2.1: smaller glyphs from `drawGlyphs`** (the owner, 17 November
-  2026). Measured on Android 15 with the new OutlinedText.java for Android:
+- **For 9.2.0, the customer builds: smaller glyphs from `drawGlyphs`** (the
+  owner, 17 November 2026; first for Robert Giroux's Android app). Measured on Android 15 with the new OutlinedText.java for Android:
   a full page each of Hindi and Khmer (264 glyphs) is 202 KB, where the same
   pages as outlines of every letter are 774 KB; a short page (about 400
   letters, 141 different glyphs) is 95.5 KB. Each glyph's form XObject is,
@@ -1505,8 +1506,7 @@ before 9.2.3, so its number says "the last release and a fix". The rules:
   2. The dictionary without the empty `/Resources <<>>` (16 bytes) and the
      optional `/Type /XObject` (14).
   Together about 78 of some 490 bytes a glyph, 15%: a full page of about
-  100 KB to about 85. Modest; not for 9.1.9, which stays as it is until
-  2027 but for real faults (the owner, 16 November 2026).
+  100 KB to about 85.
 - **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
   "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
   is drawn with the font's default Cyrillic letters, т as a small capital

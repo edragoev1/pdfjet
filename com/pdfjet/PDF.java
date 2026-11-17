@@ -114,7 +114,7 @@ final public class PDF {
     private final Map<String, Integer> uriActions = new HashMap<String, Integer>();
     private OutputStream os = null;
     private final List<Long> objOffset = new ArrayList<Long>();
-    private static final String producer = "PDFjet v9.1.9";
+    private static final String producer = "PDFjet v9.2.0";
     // The version of the library, such as 9.1.7, of the producer string
     static final String VERSION = producer.substring("PDFjet v".length());
     private String title;

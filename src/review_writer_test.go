@@ -484,7 +484,7 @@ func TestWriterAPDFA3FileNeedsAMediaType(t *testing.T) {
 func TestWriterTheProducerIsTheVersionOfTheLibrary(t *testing.T) {
 	doc := testNewDoc()
 	NewPage(doc.pdf, letter.Portrait())
-	if raw := string(doc.complete()); !strings.Contains(raw, "/Producer "+testWriterTextString("PDFjet v9.1.9")) {
+	if raw := string(doc.complete()); !strings.Contains(raw, "/Producer "+testWriterTextString("PDFjet v9.2.0")) {
 		t.Error("the producer")
 	}
 }

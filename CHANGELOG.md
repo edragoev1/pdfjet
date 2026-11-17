@@ -7,6 +7,11 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.2.0 — customer builds, not released
+
+The faults found after 9.1.9 and small improvements, given to the customers
+who need them before 9.2.1 (TODO.md, "The numbers"). Nothing yet.
+
 ## v9.1.9 — 2026-11-17
 
 The release notes, the most important first; every change in detail follows,
