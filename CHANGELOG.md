@@ -12,6 +12,23 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **New: `ComplexText`**, in the four ports: Hindi, Khmer and the other
+  scripts PDFjet does not shape, drawn as simply as a `TextBlock`. The text,
+  its font and a fallback font for the other characters (English words in
+  Hindi), its language, its location and width, then `drawOn`: the
+  platform's text engine wraps and shapes it, and PDFjet draws the glyphs as
+  `drawGlyphs` does, as outlines, each line tagged with its text in its
+  language for screen readers. The engine is a `Shaper`: Java's
+  java.awt.font on servers and desktops, and Android's own on Android 12 and
+  later, both in the one jar; Core Text in Swift on Apple platforms; in .NET
+  and Go, which have none, a shaper the program gives with `setShaper`
+  (Example_52 has one with HarfBuzzSharp and one with go-text, packages of
+  the examples, never of PDFjet). The fonts are loaded by path, as the fonts
+  PDFjet carries are, or from their bytes, with the new `Font(pdf, byte[])`
+  (Go `NewFontFromBytes`), as the engine reads the same file. Example_52 in
+  the four ports draws with it: the same glyphs at the same places, each
+  page ending at the last paragraph that fits. On Android 12 and 15
+  (emulators) a page of Hindi or Khmer is about 132 KB and passes PDF/UA.
 - **Smaller glyphs from `drawGlyphs`**, in the four ports. Each glyph's
   outline is written in whole units of the font, where the control points of
   a TrueType quadratic curve drawn as a cubic one had two decimals; they move

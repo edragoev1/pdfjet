@@ -92,7 +92,7 @@ same output come in four languages, and none of them needs a third-party library
 - **Fonts ready to use.** 78 TrueType and OpenType fonts, IBM Plex Sans and
   Serif, Cascadia Mono, and IBM Plex Sans JP, KR, SC, TC, Arabic, Hebrew and
   Thai, with Unicode text in Latin, Greek, Cyrillic, CJK and right to left
-  scripts, and IBM Plex Sans Devanagari for Hindi drawn with `drawGlyphs`
+  scripts, and IBM Plex Sans Devanagari for Hindi drawn with `ComplexText`
   (see "Hindi, Khmer and other complex scripts"), embedded as subsets of the glyphs a document draws. IBM
   Plex Sans alone covers all 24 official languages of the European Union,
   from Czech ř and Romanian ș to Greek and Bulgarian, with the euro sign and
@@ -100,17 +100,22 @@ same output come in four languages, and none of them needs a third-party library
   page of Chinese in IBM Plex Sans SC is about 180 KB, where the whole font
   is 7 MB.
 - **Hindi, Khmer and other complex scripts.** PDFjet does not shape these
-  scripts itself; the platform's text engine does, and `Page.drawGlyphs`
-  draws the glyphs it found as outlines, read from the font file: the same
-  on every screen, sharp in print, and read by screen readers in a tagged
-  PDF, where each run carries its real text and language (PDF/UA). The text
-  cannot be selected or searched; `PDF.attachText` attaches the exact text
-  to the document for anyone who needs it. Java's java.awt.font, Android's
-  TextShaper and Apple's Core Text are built in; in .NET and Go, a shaping
-  package (HarfBuzzSharp, go-text) in your program, never in PDFjet.
-  Example_52 draws a page of Hindi and a page of Khmer with each. The
-  examples break lines at spaces: for Khmer, Thai, Lao and Burmese, written
-  without spaces between words, use a line breaker such as ICU's.
+  scripts itself; the platform's text engine does, and `ComplexText` draws
+  what it found, as simply as a `TextBlock`: the text, the fonts, the
+  language and the width, then `drawOn`. The glyphs are drawn as outlines,
+  read from the font file: the same on every screen, sharp in print, and
+  read by screen readers in a tagged PDF, where each line carries its real
+  text and language (PDF/UA). The text cannot be selected or searched;
+  `PDF.attachText` attaches the exact text to the document for anyone who
+  needs it. The engine is built in for Java on servers and desktops
+  (java.awt.font), Android 12 and later (Android's own), and Swift on Apple
+  platforms (Core Text); in .NET and Go, ComplexText is given a shaper that
+  calls a shaping package in your program (HarfBuzzSharp, go-text), never in
+  PDFjet, as Example_52 shows. `Page.drawGlyphs` draws glyphs shaped by any
+  engine, for a layout of your own. Example_52 draws a page of Hindi and a
+  page of Khmer with each. In .NET and Go the example's shaper breaks lines
+  at spaces: for Khmer, Thai, Lao and Burmese, written without spaces
+  between words, use a line breaker such as ICU's.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics. For
   logos, icons and drawings, use SVG: it stays sharp at any size and in
   print, and it is far smaller and faster than a PNG with transparency,

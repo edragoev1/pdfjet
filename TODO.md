@@ -1526,8 +1526,15 @@ than waiting for 9.2.1. The rules:
      optional `/Type /XObject` (14).
   Together about 78 of some 490 bytes a glyph, 15%: a full page of about
   100 KB to about 85.
-- **For 9.2.0: `ComplexText`, Hindi, Khmer and the other scripts PDFjet
-  does not shape, as simple as a TextBlock, in Core in the four ports** (the
+- ✅ **Done for 9.2.0, 17 November 2026, in the four ports (Java
+  8eff46fcd, Swift 3f022d8fc, .NET 3698bc54a, Go 516fda44a): `ComplexText`,
+  Hindi, Khmer and the other scripts PDFjet does not shape, as simple as a
+  TextBlock, in Core** (the owner: "Keep today's plan, start with Java").
+  Java's tests 1,344, Swift's 1,359 (on Linux; the Core Text test runs on
+  the Mac of CI), .NET's 1,378 and Go's pass; Example_52 in each port the
+  same glyphs at the same places as before; on the Android 12 and 15
+  emulators (android-pdf-compare) the sample and the full pages pass
+  PDF/UA, a full page about 132 KB. The plan as it was (the
   owner, 17 November 2026: "I thought all these methods will be in the
   library... There is too much low level stuff... Let's fix this API for
   9.2.0 and beyond"; "We should have this in the 4 ports in Core so it can
