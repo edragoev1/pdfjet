@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using HarfBuzzSharp;
 using PDFjet.NET;
@@ -134,11 +135,10 @@ public class Example_52 {
  * on its own, and the lines broken at spaces.
  */
 public class HarfBuzzShaper : IShaper {
-    // HarfBuzz's font of each font file, made once. The blob and the face
-    // are kept with the font: HarfBuzz reads the font file from the blob's
-    // memory, which the garbage collector would free with the blob.
+    // HarfBuzz's font of each font file, made once. HarfBuzz reads the font
+    // file from memory of its own, a copy the garbage collector does not
+    // move or free, released when HarfBuzz is done with it.
     private class ShapingFont {
-        internal Blob blob;
         internal Face face;
         internal HarfBuzzSharp.Font font;
         internal int upem;
@@ -157,9 +157,11 @@ public class HarfBuzzShaper : IShaper {
 
     private ShapingFont FontOf(byte[] file) {
         if (!fonts.TryGetValue(file, out ShapingFont font)) {
+            IntPtr memory = Marshal.AllocHGlobal(file.Length);
+            Marshal.Copy(file, 0, memory, file.Length);
             font = new ShapingFont();
-            font.blob = Blob.FromStream(new MemoryStream(file));
-            font.face = new Face(font.blob, 0);
+            font.face = new Face(new Blob(memory, file.Length, MemoryMode.ReadOnly,
+                    () => Marshal.FreeHGlobal(memory)), 0);
             font.upem = font.face.UnitsPerEm;
             font.font = new HarfBuzzSharp.Font(font.face);
             // One unit a font unit: the places come in the font's units
