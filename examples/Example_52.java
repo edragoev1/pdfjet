@@ -6,42 +6,27 @@
  */
 package examples;
 
-import java.awt.font.FontRenderContext;
-import java.awt.font.GlyphVector;
-import java.awt.font.LineBreakMeasurer;
-import java.awt.font.TextAttribute;
-import java.awt.font.TextLayout;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.text.AttributedCharacterIterator;
-import java.text.AttributedString;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_52.java
  *
- * Draws Hindi and Khmer, scripts PDFjet does not shape itself: Java's own
- * text engine, java.awt.font, shapes them -- conjuncts, vowel signs, stacked
- * consonants -- and Page.drawGlyphs draws the glyphs it found, at their
- * places, as outlines read from the font file: sharp on screen and in print,
- * and read by screen readers, as each paragraph is tagged with its text and
- * its language. Any engine that finds the glyphs can do the shaping:
- * java.awt.font here, Android's TextShaper, Apple's Core Text or HarfBuzz
- * elsewhere. A page of each, filled with the Universal Declaration of Human
- * Rights from its beginning: Hindi on the first page, Khmer on the second.
+ * Draws Hindi and Khmer, scripts PDFjet does not shape itself, with
+ * ComplexText: Java's own text engine, java.awt.font, shapes them --
+ * conjuncts, vowel signs, stacked consonants -- and PDFjet draws the glyphs it
+ * found, at their places, as outlines read from the font file: sharp on
+ * screen and in print, and read by screen readers, as each paragraph is
+ * tagged with its text and its language. On Android 12 and later, Android's
+ * own text engine shapes them, with the same code. A page of each, filled
+ * with the Universal Declaration of Human Rights from its beginning: Hindi on
+ * the first page, Khmer on the second.
  */
 public class Example_52 {
-    // Fractional metrics, as a PDF has them: no rounding to whole pixels
-    private static final FontRenderContext CONTEXT =
-            new FontRenderContext(new AffineTransform(), true, true);
-
     private static final String DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
     private static final String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.otf";
     private static final String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
@@ -84,104 +69,35 @@ public class Example_52 {
                 .setStructureType(StructElem.H1)
                 .setLocation(LEFT, 60f)
                 .drawOn(page);
-        new TextLine(body, "Shaped by java.awt.font, drawn by PDFjet with drawGlyphs as outlines;"
+        new TextLine(body, "Shaped by java.awt.font, drawn by PDFjet's ComplexText as outlines;"
                 + " the text is attached to the document.")
                 .setLocation(LEFT, 80f)
                 .drawOn(page);
 
-        // The same font files are loaded by java.awt.font, which shapes, and
-        // by PDFjet, which reads the outlines, so that the glyph numbers match.
-        java.awt.Font script = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, new File(scriptFile)).deriveFont(SIZE);
-        java.awt.Font latin = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, new File(LATIN)).deriveFont(SIZE);
-        Map<java.awt.Font, Font> fonts = new HashMap<java.awt.Font, Font>();
-        Font scriptFont = new Font(pdf, new FileInputStream(scriptFile)).setSize(SIZE);
-        fonts.put(script, scriptFont);
-        fonts.put(latin, new Font(pdf, new FileInputStream(LATIN)).setSize(SIZE));
-        float ascent = scriptFont.getAscent();
-        float descent = scriptFont.getDescent();
+        // The script's font, and IBM Plex Sans for the characters it does
+        // not have, such as digits and punctuation of the Latin script
+        Font script = new Font(pdf, scriptFile).setSize(SIZE);
+        Font latin = new Font(pdf, LATIN);
 
         StringBuilder drawn = new StringBuilder();
-        float[] y = {96f};  // The top of the next line
+        float y = 96f;  // The top of the next paragraph
         for (String paragraph : paragraphs(textFile)) {
-            String text = drawParagraph(page, paragraph, language, script, latin, fonts, y, ascent, descent);
-            if (text.isEmpty()) {
+            ComplexText text = new ComplexText(script, paragraph)
+                    .setFallbackFont(latin)
+                    .setLanguage(language)
+                    .setLocation(LEFT, y)
+                    .setWidth(WIDTH);
+            if (y + text.getHeight() > BOTTOM) {
                 break;      // The page is full
             }
+            y = text.drawOn(page)[1] + 0.5f * SIZE;
             // A blank line between paragraphs, as plain text has them
             if (drawn.length() > 0) {
                 drawn.append('\n');
             }
-            drawn.append(text).append('\n');
-            if (text.length() < paragraph.length()) {
-                break;      // The page is full
-            }
-            y[0] += 0.5f * SIZE;
+            drawn.append(paragraph).append('\n');
         }
         return drawn.toString();
-    }
-
-    // Draws the paragraph, wrapped to the width, as many of its lines as fit
-    // above the bottom of the page, from the top y[0], which it moves below
-    // them, and returns the text of the lines drawn.
-    // The script's font is used where it has the characters, IBM Plex Sans
-    // elsewhere.
-    private static String drawParagraph(Page page, String text, String language,
-            java.awt.Font script, java.awt.Font latin, Map<java.awt.Font, Font> fonts,
-            float[] y, float ascent, float descent) throws Exception {
-        // Each character in the script's font where it has it, else in the Latin one
-        AttributedString styled = new AttributedString(text);
-        for (int i = 0; i < text.length(); ) {
-            int c = text.codePointAt(i);
-            int n = Character.charCount(c);
-            styled.addAttribute(TextAttribute.FONT, script.canDisplay(c) ? script : latin, i, i + n);
-            i += n;
-        }
-
-        char[] chars = text.toCharArray();
-        LineBreakMeasurer lines = new LineBreakMeasurer(styled.getIterator(), CONTEXT);
-        int drawnEnd = 0;
-        while (lines.getPosition() < text.length()) {
-            if (y[0] + ascent + descent > BOTTOM) {
-                break;
-            }
-            if (drawnEnd == 0) {
-                page.addBDC(StructElem.P, language, null, null);
-            }
-            int start = lines.getPosition();
-            lines.nextLayout(WIDTH);
-            int end = lines.getPosition();
-            float baseline = y[0] + ascent;
-            // The line, a run of one font at a time: its glyphs and their places
-            AttributedCharacterIterator runs = styled.getIterator(null, start, end);
-            float offset = 0f;
-            int runStart = start;
-            while (runStart < end) {
-                runs.setIndex(runStart);
-                int runEnd = Math.min(runs.getRunLimit(TextAttribute.FONT), end);
-                java.awt.Font font = (java.awt.Font) runs.getAttribute(TextAttribute.FONT);
-                GlyphVector shaped = font.layoutGlyphVector(
-                        CONTEXT, chars, runStart, runEnd, java.awt.Font.LAYOUT_LEFT_TO_RIGHT);
-                int count = shaped.getNumGlyphs();
-                int[] glyphs = new int[count];
-                float[] positions = new float[2 * count];
-                for (int i = 0; i < count; i++) {
-                    Point2D p = shaped.getGlyphPosition(i);
-                    glyphs[i] = shaped.getGlyphCode(i);
-                    positions[2 * i] = LEFT + offset + (float) p.getX();
-                    positions[2 * i + 1] = baseline + (float) p.getY();
-                }
-                page.drawGlyphs(fonts.get(font), glyphs, positions,
-                        text.substring(runStart, runEnd), language);
-                offset += (float) shaped.getGlyphPosition(count).getX();
-                runStart = runEnd;
-            }
-            y[0] = baseline + descent + 0.25f * SIZE;
-            drawnEnd = end;
-        }
-        if (drawnEnd > 0) {
-            page.addEMC();
-        }
-        return text.substring(0, drawnEnd);
     }
 
     // The paragraphs of the text file, one to a line.

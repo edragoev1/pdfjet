@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -47,6 +48,11 @@ final public class Font {
     // whether anything draws with it as a font, text or a stamp's: a font
     // drawGlyphs alone drew with is not written into the document.
     boolean drawnAsOutlines;
+    // The font file, for ComplexText, whose text engine reads it: the path it
+    // was loaded from, or the bytes it was loaded from, kept; read from the
+    // path the first time ComplexText needs it.
+    private String fontPath;
+    private byte[] fontFile;
     boolean referenced;
 
     // Font attributes
@@ -411,7 +417,41 @@ final public class Font {
         try (InputStream inputStream = open(fontPath)) {
             OpenTypeFont.register(pdf, this, inputStream);
         }
+        this.fontPath = fontPath;
         setSize(size);
+    }
+
+    /**
+     * Constructor for OpenType and TrueType fonts, .otf and .ttf, from the
+     * bytes of the font file, such as an app's asset read whole. The font
+     * keeps the bytes, as ComplexText gives them to the text engine that
+     * shapes it.
+     *
+     * @param pdf      the PDF object that requires this font.
+     * @param fontFile the bytes of the font file.
+     * @throws Exception If the bytes are not an OpenType or TrueType font.
+     */
+    public Font(PDF pdf, byte[] fontFile) throws Exception {
+        this.pdf = pdf;
+        OpenTypeFont.register(pdf, this, new ByteArrayInputStream(fontFile));
+        this.fontFile = fontFile;
+        setSize(size);
+    }
+
+    // The bytes of the font file, for ComplexText: those it was loaded from,
+    // the TrueType font it keeps, or the file of its path read again; null for
+    // a font loaded from a stream, a core font or a CJK font.
+    byte[] fontFile() throws Exception {
+        if (fontFile == null) {
+            if (program != null && !program.cff) {
+                fontFile = program.font;
+            } else if (fontPath != null) {
+                try (InputStream in = open(fontPath)) {
+                    fontFile = Content.getFromStream(in);
+                }
+            }
+        }
+        return fontFile;
     }
 
     // Opens the font file of the path, or, when there is no such file, the

@@ -3361,52 +3361,8 @@ final public class Page {
      */
     public void drawGlyphs(Font font, int[] glyphs, float[] positions, String text, String language)
             throws IOException {
-        if (font == null || glyphs == null || positions == null) {
-            pdf.fail(new IllegalArgumentException("drawGlyphs needs a font, glyphs and their positions."));
+        if (!glyphsDrawable(font, glyphs, positions)) {
             return;
-        }
-        if (font.pdf != null && font.pdf != pdf) {
-            pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
-            return;
-        }
-        if (font.isCoreFont || font.isCJK || font.program == null) {
-            pdf.fail(new IllegalArgumentException(
-                    "drawGlyphs needs a font loaded from the font file the glyphs were shaped with."));
-            return;
-        }
-        if (positions.length != 2 * glyphs.length) {
-            pdf.fail(new IllegalArgumentException("drawGlyphs needs an x and a y for each glyph."));
-            return;
-        }
-        for (float v : positions) {
-            if (!(Math.abs(v) <= 1e6)) {    // NaN too
-                pdf.fail(new IllegalArgumentException(
-                        "drawGlyphs needs positions between -1,000,000 and 1,000,000 points."));
-                return;
-            }
-        }
-        // The size times the glyphs' matrix is written with 7 decimals
-        if (!(font.size > 0f && font.size <= 10000f)) {    // NaN too
-            pdf.fail(new IllegalArgumentException(
-                    "drawGlyphs needs a font size of more than 0 and at most 10,000 points."));
-            return;
-        }
-        Subset.Program program = font.program;
-        if (program.outline == null) {
-            try {
-                program.outline = new GlyphOutline(program.font, program.cff);
-            } catch (IllegalArgumentException e) {
-                pdf.fail(e);
-                return;
-            }
-            program.glyphStamps = new HashMap<Integer, Stamp>();
-        }
-        GlyphOutline outline = program.outline;
-        for (int gid : glyphs) {
-            if (gid < 0 || gid >= outline.count()) {
-                pdf.fail(new IllegalArgumentException("The font has no glyph number " + gid + "."));
-                return;
-            }
         }
         boolean tagged = pdf.isTagged() && artifactDepth == 0;
         if (tagged && glyphs.length > 0 && (text == null || text.isEmpty())) {
@@ -3417,26 +3373,102 @@ final public class Page {
         if (glyphs.length == 0) {
             return;
         }
-        font.drawnAsOutlines = true;
         // A paragraph of their own, in a tagged document, drawn outside any
         boolean own = tagged && !insideTaggedContent();
         if (own) {
             addBDC(StructElem.P, language, null, null);
         }
-        // The text they stand for, and its language, as the actual text of
-        // the marked content of the outlines (ISO 32000-1, 14.9.4)
-        if (tagged) {
-            append("/Span <<");
-            if (language != null && !language.isEmpty()) {
-                append("/Lang <");
-                append(Util.toHexString(Util.utf8(language)));
-                append("> ");
-            }
-            append("/ActualText <");
-            append(toUTF16Hex(text));
-            append(">>> BDC\n");
+        beginActualText(text, language);
+        placeGlyphs(font, font.size, glyphs, positions);
+        endActualText();
+        if (own) {
+            addEMC();
         }
-        float size = font.size;
+    }
+
+    // Checks the font, the glyphs and their positions for drawGlyphs, and
+    // reads the font's outlines the first time; false, the document failed,
+    // when they cannot be drawn.
+    boolean glyphsDrawable(Font font, int[] glyphs, float[] positions) {
+        if (font == null || glyphs == null || positions == null) {
+            pdf.fail(new IllegalArgumentException("drawGlyphs needs a font, glyphs and their positions."));
+            return false;
+        }
+        if (font.pdf != null && font.pdf != pdf) {
+            pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
+            return false;
+        }
+        if (font.isCoreFont || font.isCJK || font.program == null) {
+            pdf.fail(new IllegalArgumentException(
+                    "drawGlyphs needs a font loaded from the font file the glyphs were shaped with."));
+            return false;
+        }
+        if (positions.length != 2 * glyphs.length) {
+            pdf.fail(new IllegalArgumentException("drawGlyphs needs an x and a y for each glyph."));
+            return false;
+        }
+        for (float v : positions) {
+            if (!(Math.abs(v) <= 1e6)) {    // NaN too
+                pdf.fail(new IllegalArgumentException(
+                        "drawGlyphs needs positions between -1,000,000 and 1,000,000 points."));
+                return false;
+            }
+        }
+        // The size times the glyphs' matrix is written with 7 decimals
+        if (!(font.size > 0f && font.size <= 10000f)) {    // NaN too
+            pdf.fail(new IllegalArgumentException(
+                    "drawGlyphs needs a font size of more than 0 and at most 10,000 points."));
+            return false;
+        }
+        Subset.Program program = font.program;
+        if (program.outline == null) {
+            try {
+                program.outline = new GlyphOutline(program.font, program.cff);
+            } catch (IllegalArgumentException e) {
+                pdf.fail(e);
+                return false;
+            }
+            program.glyphStamps = new HashMap<Integer, Stamp>();
+        }
+        for (int gid : glyphs) {
+            if (gid < 0 || gid >= program.outline.count()) {
+                pdf.fail(new IllegalArgumentException("The font has no glyph number " + gid + "."));
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // In a tagged document, begins the marked content of glyphs drawn as
+    // outlines, with the text they stand for, and its language, as its actual
+    // text (ISO 32000-1, 14.9.4); endActualText ends it.
+    void beginActualText(String text, String language) {
+        if (!pdf.isTagged() || artifactDepth != 0) {
+            return;
+        }
+        append("/Span <<");
+        if (language != null && !language.isEmpty()) {
+            append("/Lang <");
+            append(Util.toHexString(Util.utf8(language)));
+            append("> ");
+        }
+        append("/ActualText <");
+        append(toUTF16Hex(text));
+        append(">>> BDC\n");
+    }
+
+    void endActualText() {
+        if (pdf.isTagged() && artifactDepth == 0) {
+            append("EMC\n");
+        }
+    }
+
+    // Draws the glyphs, checked by glyphsDrawable, at the size, each as the
+    // stamp of its outline, made the first time the glyph is drawn.
+    void placeGlyphs(Font font, float size, int[] glyphs, float[] positions) throws IOException {
+        font.drawnAsOutlines = true;
+        Subset.Program program = font.program;
+        GlyphOutline outline = program.outline;
         for (int k = 0; k < glyphs.length; k++) {
             int gid = glyphs[k];
             // The glyph's stamp, made the first time it is drawn; null for
@@ -3450,12 +3482,6 @@ final public class Page {
                 stamp.placeGlyph(this, glyphMatrix(outline.matrixOf(gid), size,
                         positions[2 * k], height - positions[2 * k + 1]));
             }
-        }
-        if (tagged) {
-            append("EMC\n");
-        }
-        if (own) {
-            addEMC();
         }
     }
 
