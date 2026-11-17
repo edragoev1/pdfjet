@@ -140,8 +140,12 @@ final class AndroidShaper implements Shaper {
     }
 
     @Override
-    public List<ShapedLine> shape(String text, String language, byte[][] fontFiles, float fontSize, float width)
-            throws Exception {
+    public List<ShapedLine> shape(ShapingRequest request) throws Exception {
+        String text = request.getText();
+        String language = request.getLanguage();
+        byte[][] fontFiles = request.getFontFiles();
+        float fontSize = request.getFontSize();
+        float width = request.getWidth();
         Api a = api();
         Object[] fonts = new Object[fontFiles.length];
         for (int i = 0; i < fonts.length; i++) {

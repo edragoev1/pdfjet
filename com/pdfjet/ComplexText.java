@@ -65,7 +65,7 @@ public class ComplexText implements Drawable {
     private float y;
     private float width = 300f;
     private float height;               // 0: all of the text
-    private float paragraphGap = -1f;   // Less than 0: half the font's size
+    private float paragraphGap = -1f;   // Less than 0: one empty line, as TextFrame's
     private int textColor = Color.black;
     private Alignment textAlignment = Alignment.LEFT;
     private float lineSpacing = 1.0f;
@@ -172,8 +172,8 @@ public class ComplexText implements Drawable {
 
     /**
      * Sets the space between paragraphs, from the bottom of a paragraph's last
-     * line to the top of the next one's first; half the font's size by
-     * default.
+     * line to the top of the next one's first; one empty line by default, as
+     * TextFrame's.
      *
      * @param paragraphGap the space, 0 or more; a negative gap is taken as 0.
      * @return this ComplexText.
@@ -259,13 +259,22 @@ public class ComplexText implements Drawable {
     }
 
     /**
+     * Returns the height set with setHeight, as TextFrame's; 0 for none.
+     *
+     * @return the height, in points.
+     */
+    public float getHeight() {
+        return height;
+    }
+
+    /**
      * Returns the height of the text not drawn yet, wrapped to the width,
      * whatever the height set: shapes it, if it is not shaped yet.
      *
      * @return the height, in points.
      * @throws Exception if the text cannot be shaped.
      */
-    public float getHeight() throws Exception {
+    public float getTextHeight() throws Exception {
         float total = 0f;
         boolean first = true;
         for (int p = paragraph; p < paragraphs.size(); p++) {
@@ -352,7 +361,7 @@ public class ComplexText implements Drawable {
         if (lineText.trim().isEmpty()) {
             return true;
         }
-        int[] fontOf = line.getFonts();
+        int[] fontOf = line.getFontIndexes();
         int[] glyphs = line.getGlyphs();
         float[] positions = line.getPositions();
         float[] shifts = shifts(line, last, spaces);
@@ -393,15 +402,21 @@ public class ComplexText implements Drawable {
         return (font.getAscent() + font.getDescent() + font.getLineGap(size)) * lineSpacing;
     }
 
+    // One empty line by default, as TextFrame's: the ascent and the descent,
+    // and the line gap on each side
     private float gap() {
-        return paragraphGap < 0f ? 0.5f * font.getSize() : paragraphGap;
+        if (paragraphGap >= 0f) {
+            return paragraphGap;
+        }
+        float size = font.getSize();
+        return font.getAscent() + font.getDescent() + 2f * font.getLineGap(size);
     }
 
     // How far each glyph of the line moves to the right, for its alignment:
     // all the same for CENTER and RIGHT; for JUSTIFY, each glyph by the room
     // given to the spaces before it, the last line left as it is.
     private float[] shifts(ShapedLine line, boolean last, int[] spaces) {
-        int[] fontOf = line.getFonts();
+        int[] fontOf = line.getFontIndexes();
         int[] glyphs = line.getGlyphs();
         float[] shifts = new float[glyphs.length];
         float room = width - line.getWidth();
@@ -457,7 +472,7 @@ public class ComplexText implements Drawable {
                             + "by path or from their bytes, as the text engine reads the same file.");
                 }
             }
-            lines = shaper().shape(paragraphs.get(p), language, files, shapedSize, width);
+            lines = shaper().shape(new ShapingRequest(paragraphs.get(p), language, files, shapedSize, width));
             shapedLines.set(p, lines);
         }
         return lines;

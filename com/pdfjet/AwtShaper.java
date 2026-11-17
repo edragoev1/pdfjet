@@ -43,8 +43,11 @@ final class AwtShaper implements Shaper {
     }
 
     @Override
-    public List<ShapedLine> shape(String text, String language, byte[][] fontFiles, float fontSize, float width)
-            throws Exception {
+    public List<ShapedLine> shape(ShapingRequest request) throws Exception {
+        String text = request.getText();
+        byte[][] fontFiles = request.getFontFiles();
+        float fontSize = request.getFontSize();
+        float width = request.getWidth();
         java.awt.Font[] fonts = new java.awt.Font[fontFiles.length];
         for (int i = 0; i < fonts.length; i++) {
             fonts[i] = font(fontFiles[i]).deriveFont(fontSize);

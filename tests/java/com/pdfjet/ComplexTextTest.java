@@ -55,11 +55,11 @@ class ComplexTextTest {
         }
 
         @Override
-        public List<ShapedLine> shape(String text, String language, byte[][] fontFiles, float fontSize, float width) {
-            this.files = fontFiles;
-            this.size = fontSize;
-            this.width = width;
-            this.language = language;
+        public List<ShapedLine> shape(ShapingRequest request) {
+            this.files = request.getFontFiles();
+            this.size = request.getFontSize();
+            this.width = request.getWidth();
+            this.language = request.getLanguage();
             return lines;
         }
     }
@@ -76,7 +76,7 @@ class ComplexTextTest {
                 .setLanguage("hi")
                 .setLocation(50f, 100f)
                 .setWidth(200f);
-        float height = text.getHeight();
+        float height = text.getTextHeight();
         float[] corner = text.drawOn(page);
         assertEquals(250f, corner[0], 0.001f);
         assertEquals(100f + height, corner[1], 0.001f);
@@ -197,8 +197,8 @@ class ComplexTextTest {
                 new ShapedLine(1, 2, new int[] {0}, new int[] {a}, new float[] {0f, 0f}, 7f));
         ComplexText text = new ComplexText(font, "AA").setShaper(shaper);
         float body = font.getAscent() + font.getDescent() + font.getLineGap(10f);
-        assertEquals(2 * body, text.getHeight(), 0.001f);
-        assertEquals(3 * body, text.setLineSpacing(1.5f).getHeight(), 0.001f);
+        assertEquals(2 * body, text.getTextHeight(), 0.001f);
+        assertEquals(3 * body, text.setLineSpacing(1.5f).getTextHeight(), 0.001f);
         // As a TextBlock of the same font and spacing, line to line
         Page page = new Page(pdf, Letter.PORTRAIT);
         float[] corner = text.setLocation(50f, 100f).drawOn(page);
@@ -215,7 +215,8 @@ class ComplexTextTest {
         }
 
         @Override
-        public List<ShapedLine> shape(String text, String language, byte[][] fontFiles, float fontSize, float width) {
+        public List<ShapedLine> shape(ShapingRequest request) {
+            String text = request.getText();
             List<ShapedLine> lines = new java.util.ArrayList<ShapedLine>();
             for (int i = 0; i < text.length(); i++) {
                 lines.add(new ShapedLine(i, i + 1, new int[] {0}, new int[] {font.unicodeToGID.get(text.charAt(i))},
@@ -236,13 +237,13 @@ class ComplexTextTest {
                 .setLanguage("en")
                 .setParagraphGap(5f)
                 .setHeight(4 * line + 5f);
-        assertEquals(6 * line + 5f, text.getHeight(), 0.001f);
+        assertEquals(6 * line + 5f, text.getTextHeight(), 0.001f);
         // Three lines of the first paragraph, the gap, one of the second
         Page first = new Page(pdf, Letter.PORTRAIT);
         float[] corner = text.setLocation(50f, 100f).drawOn(first);
         assertEquals(100f + 4 * line + 5f, corner[1], 0.001f);
         assertTrue(text.hasMoreText());
-        assertEquals(2 * line, text.getHeight(), 0.001f);
+        assertEquals(2 * line, text.getTextHeight(), 0.001f);
         String content = TestSupport.content(first);
         assertEquals(4, count(content, " cm /Fm"), content);
         assertEquals(2, count(content, "/P <<"), "a paragraph each, the second begun");
@@ -251,9 +252,23 @@ class ComplexTextTest {
         corner = text.setLocation(50f, 50f).drawOn(second);
         assertEquals(50f + 2 * line, corner[1], 0.001f);
         assertFalse(text.hasMoreText());
-        assertEquals(0f, text.getHeight(), 0.001f);
+        assertEquals(0f, text.getTextHeight(), 0.001f);
         assertEquals(2, count(TestSupport.content(second), " cm /Fm"));
         pdf.complete();
+    }
+
+    @Test
+    void getHeightIsTheHeightSetAndTheGapIsTextFramesEmptyLine() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, LATIN).setSize(10f);
+        ComplexText text = new ComplexText(font, Arrays.asList("A", "B")).setShaper(new LetterShaper(font));
+        assertEquals(0f, text.getHeight());
+        assertEquals(500f, text.setHeight(500f).getHeight());
+        // Two lines, one empty line between them, as a TextFrame's default:
+        // the ascent and the descent, and the line gap on each side
+        float line = font.getAscent() + font.getDescent() + font.getLineGap(10f);
+        float gap = font.getAscent() + font.getDescent() + 2f * font.getLineGap(10f);
+        assertEquals(2 * line + gap, text.getTextHeight(), 0.001f);
     }
 
     @Test

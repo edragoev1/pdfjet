@@ -22,15 +22,10 @@ public interface Shaper {
     /**
      * Wraps the text to the width and shapes each line.
      *
-     * @param text the text.
-     * @param language the language of the text, such as "hi" or "km", or null.
-     * @param fontFiles the bytes of the font files: the first for the text,
-     *     the others, in order, for the characters it does not have.
-     * @param fontSize the font size, in points.
-     * @param width the width of the lines, in points.
+     * @param request the text, its language, the font files, the font size
+     *     and the width of the lines.
      * @return the lines, in order.
      * @throws Exception if the text cannot be shaped.
      */
-    List<ShapedLine> shape(String text, String language, byte[][] fontFiles, float fontSize, float width)
-            throws Exception;
+    List<ShapedLine> shape(ShapingRequest request) throws Exception;
 }   // End of Shaper.java
