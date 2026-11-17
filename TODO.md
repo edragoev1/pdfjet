@@ -1526,6 +1526,49 @@ than waiting for 9.2.1. The rules:
      optional `/Type /XObject` (14).
   Together about 78 of some 490 bytes a glyph, 15%: a full page of about
   100 KB to about 85.
+- **For 9.2.0: `ComplexText`, Hindi, Khmer and the other scripts PDFjet
+  does not shape, as simple as a TextBlock, in Core in the four ports** (the
+  owner, 17 November 2026: "I thought all these methods will be in the
+  library... There is too much low level stuff... Let's fix this API for
+  9.2.0 and beyond"; "We should have this in the 4 ports in Core so it can
+  be used from everywhere if possible"). Today an app calls drawGlyphs
+  itself: it lays the text out in lines, shapes each line with the
+  platform's engine, groups the glyphs by font, loads a PDFjet Font for each
+  font file and passes glyph numbers and positions, as Example_52 and the
+  OutlinedText.java made for Robert Giroux's Android app do (121 lines for
+  Android 12 and later). All of that moves into PDFjet:
+  1. **`ComplexText`**, used like TextBlock: the text, its language, the
+     fonts (the script's, then the fallback for the other characters, such
+     as English words; as files or streams, since the platform's engine
+     reads the same file), the size, the color, the width and the location,
+     then `drawOn(page)`, which returns the bottom right corner as the other
+     components do. It wraps, tags (a P with the language, each line's text
+     as its actual text for screen readers), groups the glyphs by font and
+     draws them with drawGlyphs; the PDFjet Font of each font file is loaded
+     once for the PDF.
+  2. **`Shaper`**, a small interface with one job: the text, the fonts, the
+     size and the width in; the lines out, each with its range of the text
+     and its glyphs (font file, glyph number, position). ComplexText picks
+     the platform's shaper by itself; an app can pass its own.
+  3. **The shapers PDFjet carries.** Java on servers and desktops:
+     java.awt.font (part of every JDK). Java on Android 12 (API 31) and
+     later: Android's TextRunShaper and StaticLayout, reached by name at
+     run time, so the one jar still builds and runs everywhere and an app
+     copies nothing. Swift on Apple platforms: Core Text (`#if
+     canImport(CoreText)`; on Linux a clear error). .NET and Go have none
+     built in: the interface alone, with an example each that shapes with
+     HarfBuzzSharp and go-text, so Core keeps no outside dependency.
+  4. PDFjet's font code stays frozen: the shaping is always the platform's
+     engine, never PDFjet's. The headless Chrome shaping planned for Pro
+     (January 2027) would be one more Shaper behind the same API.
+  5. Example_52 rewritten with ComplexText in the four ports (its PDF
+     unchanged but for what the new wrapping gives), tests in each port,
+     README, the llms guides and the CHANGELOG under 9.2.0, with the
+     asterisk of complex scripts.
+  Order: Java first, both shapers, tested on the Android 12 and 15
+  emulators (android-pdf-compare) and with Example_52; then Swift, .NET and
+  Go. Robert's zip waits for it: he gets ComplexText in a new 9.2.0 jar, no
+  OutlinedText.java to copy.
 - **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
   "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
   is drawn with the font's default Cyrillic letters, т as a small capital
