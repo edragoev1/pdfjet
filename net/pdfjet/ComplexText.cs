@@ -26,11 +26,25 @@ namespace PDFjet.NET {
 ///         .SetWidth(512f)
 ///         .DrawOn(page);
 /// </code>
+/// Paragraphs, given as a list, flow from page to page, as a TextFrame's:
+/// with a height, DrawOn draws the lines that fit and keeps the rest, a
+/// paragraph cut where the height ends, for the next DrawOn, on the next page.
+/// <code>
+/// ComplexText text = new ComplexText(hindi, paragraphs)
+///         .SetFallbackFont(latin)
+///         .SetLanguage("hi")
+///         .SetShaper(shaper)
+///         .SetWidth(512f)
+///         .SetHeight(692f);
+/// while (text.HasMoreText()) {
+///     text.SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+/// }
+/// </code>
 /// .NET has no text engine of its own that gives glyphs: SetShaper gives
 /// one, such as a shaper that calls HarfBuzz through HarfBuzzSharp.
 /// Left-to-right scripts: Arabic and Hebrew are TextLine's and TextBlock's.
 /// <para>
-/// In a tagged document, PDF/UA or a PDF/A of level A, the text is a
+/// In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
 /// paragraph in its language, each line with its text, which screen readers
 /// read. The text cannot be selected, copied or searched, as it is drawn as
 /// outlines; a document that needs its exact text along can carry it with
@@ -45,30 +59,48 @@ namespace PDFjet.NET {
 public class ComplexText : IDrawable {
     private readonly Font font;
     private Font fallbackFont;
-    private readonly String text;
+    private readonly List<String> paragraphs;
     private String language;
     private float x;
     private float y;
     private float width = 300f;
+    private float height;               // 0: all of the text
+    private float paragraphGap = -1f;   // Less than 0: half the font's size
     private int textColor = Color.black;
     private Alignment textAlignment = Alignment.LEFT;
     private float lineSpacing = 1.0f;
     private StructElem structureType = StructElem.P;
     private IShaper shaper;
-    private List<ShapedLine> lines;     // Shaped, until a font, the language or the width changes
-    private float shapedSize;           // The font's size the lines were shaped at
+
+    // The paragraph drawn next, and its line drawn next
+    private int paragraph;
+    private int line;
+
+    // The lines of each paragraph, shaped the first time they are needed,
+    // until a font, the language or the width changes; and the font's size
+    // they were shaped at
+    private List<ShapedLine>[] shapedLines;
+    private float shapedSize;
 
     /// <summary>Text to draw in the font, at its size, loaded from its font file.</summary>
-    public ComplexText(Font font, String text) {
+    public ComplexText(Font font, String text) : this(font, new List<String> {text ?? ""}) {
+    }
+
+    /// <summary>Paragraphs to draw in the font, at its size, loaded from its
+    /// font file, one after the other.</summary>
+    public ComplexText(Font font, List<String> paragraphs) {
         this.font = font;
-        this.text = text;
+        this.paragraphs = new List<String>();
+        foreach (String p in paragraphs) {
+            this.paragraphs.Add(p ?? "");
+        }
     }
 
     /// <summary>Sets the font of the characters the font does not have, such as
     /// English words in Hindi text, drawn at the font's size.</summary>
     public ComplexText SetFallbackFont(Font font) {
         this.fallbackFont = font;
-        this.lines = null;
+        this.shapedLines = null;
         return this;
     }
 
@@ -76,7 +108,7 @@ public class ComplexText : IDrawable {
     /// shapes by it, and a tagged document gives it to screen readers.</summary>
     public ComplexText SetLanguage(String language) {
         this.language = language;
-        this.lines = null;
+        this.shapedLines = null;
         return this;
     }
 
@@ -94,7 +126,23 @@ public class ComplexText : IDrawable {
     /// <summary>Sets the width the text is wrapped to; 300 points by default.</summary>
     public ComplexText SetWidth(float width) {
         this.width = width;
-        this.lines = null;
+        this.shapedLines = null;
+        return this;
+    }
+
+    /// <summary>Sets the height the text is drawn in: DrawOn draws the lines
+    /// that fit and keeps the rest for the next DrawOn. With a height of 0,
+    /// the default, DrawOn draws all of the text.</summary>
+    public ComplexText SetHeight(float height) {
+        this.height = height;
+        return this;
+    }
+
+    /// <summary>Sets the space between paragraphs, from the bottom of a
+    /// paragraph's last line to the top of the next one's first; half the
+    /// font's size by default. A negative gap is taken as 0.</summary>
+    public ComplexText SetParagraphGap(float paragraphGap) {
+        this.paragraphGap = Math.Max(0f, paragraphGap);
         return this;
     }
 
@@ -105,8 +153,8 @@ public class ComplexText : IDrawable {
     }
 
     /// <summary>Sets the alignment of the lines: LEFT, the default, CENTER,
-    /// RIGHT or JUSTIFY, which spreads the words of each line but the last to
-    /// the width.</summary>
+    /// RIGHT or JUSTIFY, which spreads the words of each line but the last of
+    /// a paragraph to the width.</summary>
     public ComplexText SetTextAlignment(Alignment textAlignment) {
         this.textAlignment = textAlignment;
         return this;
@@ -119,8 +167,8 @@ public class ComplexText : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the structure type of the text in a tagged document; P, a
-    /// paragraph, by default.</summary>
+    /// <summary>Sets the structure type of each paragraph in a tagged document;
+    /// P, a paragraph, by default.</summary>
     public ComplexText SetStructureType(StructElem structureType) {
         this.structureType = structureType;
         return this;
@@ -129,80 +177,142 @@ public class ComplexText : IDrawable {
     /// <summary>Sets the text engine that shapes the text.</summary>
     public ComplexText SetShaper(IShaper shaper) {
         this.shaper = shaper;
-        this.lines = null;
+        this.shapedLines = null;
         return this;
     }
 
-    /// <summary>Returns the height of the text, wrapped to the width, in
-    /// points: shapes it, if it is not shaped yet.</summary>
-    public float GetHeight() {
-        return Shaped().Count * LineHeight();
+    /// <summary>Returns true if some of the text has not been drawn yet.</summary>
+    public bool HasMoreText() {
+        for (int p = paragraph; p < paragraphs.Count; p++) {
+            if (Shaped(p).Count > (p == paragraph ? line : 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    /// <summary>Draws the text, wrapped to the width, from its location.</summary>
-    /// <returns>the x and the y of the bottom right corner of the text.</returns>
+    /// <summary>Returns the height of the text not drawn yet, wrapped to the
+    /// width, whatever the height set, in points: shapes it, if it is not
+    /// shaped yet.</summary>
+    public float GetHeight() {
+        float total = 0f;
+        bool first = true;
+        for (int p = paragraph; p < paragraphs.Count; p++) {
+            int lines = Shaped(p).Count - (p == paragraph ? line : 0);
+            if (lines > 0) {
+                total += (first ? 0f : Gap()) + lines * LineHeight();
+                first = false;
+            }
+        }
+        return total;
+    }
+
+    /// <summary>Draws the text not drawn yet, wrapped to the width, from its
+    /// location: all of it, or with a height, the lines that fit, the rest
+    /// kept for the next DrawOn.</summary>
+    /// <returns>the x and the y of the bottom right corner of the text drawn.</returns>
     public float[] DrawOn(Page page) {
-        List<ShapedLine> shapedLines = Shaped();
-        Font[] fonts = fallbackFont == null ? new Font[] {font} : new Font[] {font, fallbackFont};
+        Font[] fonts = Fonts();
         float size = font.GetSize();
         float ascent = font.GetAscent();
         float lineHeight = LineHeight();
-
-        bool own = page.pdf.IsTagged() && !page.InsideTaggedContent();
-        page.SetBrushColor(textColor);
-        if (own) {
-            page.AddBDC(structureType, language, null, null);
-        }
+        float bottom = height > 0f ? y + height : float.MaxValue;
         // The space of each font, for justified lines
         int[] spaces = new int[fonts.Length];
         for (int i = 0; i < fonts.Length; i++) {
             spaces[i] = fonts[i].unicodeToGID == null ? 0 : fonts[i].unicodeToGID.Get(' ');
         }
+
+        page.SetBrushColor(textColor);
         float top = y;
-        for (int n = 0; n < shapedLines.Count; n++) {
-            ShapedLine line = shapedLines[n];
-            String lineText = text.Substring(line.Start, line.End - line.Start);
-            float baseline = top + ascent;
-            top += lineHeight;
-            if (lineText.Trim().Length == 0) {
+        bool drawn = false;     // A line drawn by this DrawOn
+        while (paragraph < paragraphs.Count) {
+            List<ShapedLine> lines = Shaped(paragraph);
+            if (line >= lines.Count) {
+                paragraph++;
+                line = 0;
                 continue;
             }
-            float[] shifts = Shifts(line, n == shapedLines.Count - 1, spaces);
-            page.BeginActualText(lineText, language);
-            // The glyphs of each font, one run of them at a time
-            int from = 0;
-            while (from < line.Glyphs.Length) {
-                int to = from;
-                while (to < line.Glyphs.Length && line.Fonts[to] == line.Fonts[from]) {
-                    to++;
-                }
-                int index = line.Fonts[from];
-                if (index >= 0 && index < fonts.Length) {
-                    int[] run = new int[to - from];
-                    float[] places = new float[2 * run.Length];
-                    for (int i = from; i < to; i++) {
-                        run[i - from] = line.Glyphs[i];
-                        places[2 * (i - from)] = x + line.Positions[2 * i] + shifts[i];
-                        places[2 * (i - from) + 1] = baseline + line.Positions[2 * i + 1];
-                    }
-                    if (!page.GlyphsDrawable(fonts[index], run, places)) {
-                        return new float[] {x + width, y};
-                    }
-                    page.PlaceGlyphs(fonts[index], size, run, places);
-                }
-                from = to;
+            float gap = drawn && line == 0 ? Gap() : 0f;
+            // At least one line each DrawOn, so that text in a height too
+            // small for a line still ends
+            if (drawn && top + gap + lineHeight > bottom) {
+                break;
             }
-            page.EndActualText();
-        }
-        if (own) {
-            page.AddEMC();
+            top += gap;
+            String text = paragraphs[paragraph];
+            bool own = page.pdf.IsTagged() && !page.InsideTaggedContent();
+            if (own) {
+                page.AddBDC(structureType, language, null, null);
+            }
+            while (line < lines.Count && (!drawn || top + lineHeight <= bottom)) {
+                bool last = line == lines.Count - 1;
+                if (!DrawLine(page, lines[line], text, top + ascent, last, fonts, spaces, size)) {
+                    return new float[] {x + width, top};
+                }
+                top += lineHeight;
+                line++;
+                drawn = true;
+            }
+            if (own) {
+                page.AddEMC();
+            }
+            if (line < lines.Count) {
+                break;      // The height is full
+            }
+            paragraph++;
+            line = 0;
         }
         return new float[] {x + width, top};
+    }
+
+    // Draws the line at its baseline: the glyphs of each font, one run of
+    // them at a time, tagged with the line's text; false if the document failed.
+    private bool DrawLine(Page page, ShapedLine line, String text, float baseline, bool last,
+            Font[] fonts, int[] spaces, float size) {
+        String lineText = text.Substring(line.Start, line.End - line.Start);
+        if (lineText.Trim().Length == 0) {
+            return true;
+        }
+        float[] shifts = Shifts(line, last, spaces);
+        page.BeginActualText(lineText, language);
+        int from = 0;
+        while (from < line.Glyphs.Length) {
+            int to = from;
+            while (to < line.Glyphs.Length && line.Fonts[to] == line.Fonts[from]) {
+                to++;
+            }
+            int index = line.Fonts[from];
+            if (index >= 0 && index < fonts.Length) {
+                int[] run = new int[to - from];
+                float[] places = new float[2 * run.Length];
+                for (int i = from; i < to; i++) {
+                    run[i - from] = line.Glyphs[i];
+                    places[2 * (i - from)] = x + line.Positions[2 * i] + shifts[i];
+                    places[2 * (i - from) + 1] = baseline + line.Positions[2 * i + 1];
+                }
+                if (!page.GlyphsDrawable(fonts[index], run, places)) {
+                    return false;
+                }
+                page.PlaceGlyphs(fonts[index], size, run, places);
+            }
+            from = to;
+        }
+        page.EndActualText();
+        return true;
+    }
+
+    private Font[] Fonts() {
+        return fallbackFont == null ? new Font[] {font} : new Font[] {font, fallbackFont};
     }
 
     // The distance from a line to the next, as TextBlock's
     private float LineHeight() {
         return (font.GetAscent() + font.GetDescent() + font.GetLineGap(font.GetSize())) * lineSpacing;
+    }
+
+    private float Gap() {
+        return paragraphGap < 0f ? 0.5f * font.GetSize() : paragraphGap;
     }
 
     // How far each glyph of the line moves to the right, for its alignment:
@@ -250,14 +360,18 @@ public class ComplexText : IDrawable {
         return font >= 0 && font < spaces.Length && spaces[font] != 0 && glyph == spaces[font];
     }
 
-    // The lines, shaped the first time they are needed
-    private List<ShapedLine> Shaped() {
-        if (lines == null || shapedSize != font.GetSize()) {
+    // The lines of the paragraph, shaped the first time they are needed
+    private List<ShapedLine> Shaped(int p) {
+        if (shapedLines == null || shapedSize != font.GetSize()) {
+            shapedLines = new List<ShapedLine>[paragraphs.Count];
+            shapedSize = font.GetSize();
+        }
+        if (shapedLines[p] == null) {
             if (shaper == null) {
                 throw new InvalidOperationException("ComplexText needs a text engine to shape the text, "
                         + "given with SetShaper, such as one that calls HarfBuzz through HarfBuzzSharp.");
             }
-            Font[] fonts = fallbackFont == null ? new Font[] {font} : new Font[] {font, fallbackFont};
+            Font[] fonts = Fonts();
             byte[][] files = new byte[fonts.Length][];
             for (int i = 0; i < fonts.Length; i++) {
                 files[i] = fonts[i].FontFile();
@@ -266,10 +380,9 @@ public class ComplexText : IDrawable {
                             + "by path or from their bytes, as the text engine reads the same file.");
                 }
             }
-            shapedSize = font.GetSize();
-            lines = shaper.Shape(text ?? "", language, files, shapedSize, width);
+            shapedLines[p] = shaper.Shape(paragraphs[p], language, files, shapedSize, width);
         }
-        return lines;
+        return shapedLines[p];
     }
 }
 }   // End of namespace PDFjet.NET

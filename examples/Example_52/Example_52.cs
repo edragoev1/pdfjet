@@ -23,9 +23,9 @@ using Buffer = HarfBuzzSharp.Buffer;
  * their places, as outlines read from the font file: sharp on screen and in
  * print, and read by screen readers, as each paragraph is tagged with its
  * text and its language. .NET has no text engine of its own that gives
- * glyphs: HarfBuzzShaper below is the shaper ComplexText is given. A page of
- * each, filled with the Universal Declaration of Human Rights from its
- * beginning: Hindi on the first page, Khmer on the second.
+ * glyphs: HarfBuzzShaper below is the shaper ComplexText is given. The
+ * Universal Declaration of Human Rights in Hindi, then in Khmer: the
+ * paragraphs flow from page to page, a paragraph cut where a page ends.
  *
  * HarfBuzzSharp is a package of this example alone, never of PDFjet.
  */
@@ -37,6 +37,7 @@ public class Example_52 {
     private const float SIZE = 10.5f;
     private const float LEFT = 50f;
     private const float WIDTH = 512f;
+    private const float TOP = 50f;      // The top margin
     private const float BOTTOM = 742f;  // The page's 792 points less the margin
 
     public Example_52() {
@@ -52,9 +53,9 @@ public class Example_52 {
         body.SetSize(9f);
 
         HarfBuzzShaper shaper = new HarfBuzzShaper();
-        String hindi = DrawPage(pdf, heading, body, shaper, "Hindi", "hi", DEVANAGARI,
+        String hindi = Draw(pdf, heading, body, shaper, "Hindi", "hi", DEVANAGARI,
                 "resources/data/udhr/udhr_hin.txt");
-        String khmer = DrawPage(pdf, heading, body, shaper, "Khmer", "km", KHMER,
+        String khmer = Draw(pdf, heading, body, shaper, "Khmer", "km", KHMER,
                 "resources/data/udhr/udhr_khm.txt");
 
         // The pages draw the text as outlines, which cannot be selected or
@@ -65,9 +66,9 @@ public class Example_52 {
         pdf.Complete();
     }
 
-    // Draws a page of the Declaration in the language, its paragraphs from
-    // the beginning until the page is full, and returns the text drawn.
-    private static String DrawPage(PDF pdf, Font heading, Font body, IShaper shaper, String name,
+    // Draws the Declaration in the language, from a new page, on as many
+    // pages as it takes, and returns its text.
+    private static String Draw(PDF pdf, Font heading, Font body, IShaper shaper, String name,
             String language, String scriptFile, String textFile) {
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(heading, "Universal Declaration of Human Rights, in " + name)
@@ -84,30 +85,37 @@ public class Example_52 {
         Font script = new Font(pdf, scriptFile).SetSize(SIZE);
         Font latin = new Font(pdf, LATIN);
 
-        StringBuilder drawn = new StringBuilder();
-        float y = 96f;  // The top of the next paragraph
+        List<String> paragraphs = new List<String>();
         foreach (String line in File.ReadAllLines(textFile, Encoding.UTF8)) {
-            String paragraph = line.Trim();
-            if (paragraph.Length == 0) {
-                continue;
+            if (line.Trim().Length > 0) {
+                paragraphs.Add(line.Trim());
             }
-            ComplexText text = new ComplexText(script, paragraph)
-                    .SetFallbackFont(latin)
-                    .SetLanguage(language)
-                    .SetShaper(shaper)
-                    .SetLocation(LEFT, y)
-                    .SetWidth(WIDTH);
-            if (y + text.GetHeight() > BOTTOM) {
-                break;      // The page is full
-            }
-            y = text.DrawOn(page)[1] + 0.5f * SIZE;
-            // A blank line between paragraphs, as plain text has them
-            if (drawn.Length > 0) {
-                drawn.Append('\n');
-            }
-            drawn.Append(paragraph).Append('\n');
         }
-        return drawn.ToString();
+        ComplexText text = new ComplexText(script, paragraphs)
+                .SetFallbackFont(latin)
+                .SetLanguage(language)
+                .SetShaper(shaper)
+                .SetWidth(WIDTH)
+                .SetParagraphGap(0.5f * SIZE);
+        float top = 96f;    // Below the heading, on the first page
+        while (true) {
+            text.SetHeight(BOTTOM - top).SetLocation(LEFT, top).DrawOn(page);
+            if (!text.HasMoreText()) {
+                break;
+            }
+            page = new Page(pdf, Letter.PORTRAIT);
+            top = TOP;
+        }
+
+        // A blank line between paragraphs, as plain text has them
+        StringBuilder all = new StringBuilder();
+        foreach (String paragraph in paragraphs) {
+            if (all.Length > 0) {
+                all.Append('\n');
+            }
+            all.Append(paragraph).Append('\n');
+        }
+        return all.ToString();
     }
 
     public static void Main(String[] args) {
@@ -126,8 +134,12 @@ public class Example_52 {
  * on its own, and the lines broken at spaces.
  */
 public class HarfBuzzShaper : IShaper {
-    // HarfBuzz's font of each font file, made once
+    // HarfBuzz's font of each font file, made once. The blob and the face
+    // are kept with the font: HarfBuzz reads the font file from the blob's
+    // memory, which the garbage collector would free with the blob.
     private class ShapingFont {
+        internal Blob blob;
+        internal Face face;
         internal HarfBuzzSharp.Font font;
         internal int upem;
     }
@@ -145,10 +157,11 @@ public class HarfBuzzShaper : IShaper {
 
     private ShapingFont FontOf(byte[] file) {
         if (!fonts.TryGetValue(file, out ShapingFont font)) {
-            Face face = new Face(Blob.FromStream(new MemoryStream(file)), 0);
             font = new ShapingFont();
-            font.upem = face.UnitsPerEm;
-            font.font = new HarfBuzzSharp.Font(face);
+            font.blob = Blob.FromStream(new MemoryStream(file));
+            font.face = new Face(font.blob, 0);
+            font.upem = font.face.UnitsPerEm;
+            font.font = new HarfBuzzSharp.Font(font.face);
             // One unit a font unit: the places come in the font's units
             font.font.SetScale(font.upem, font.upem);
             fonts[file] = font;

@@ -162,6 +162,69 @@ public class ComplexTextTest {
         Assert.Equal(3 * body, text.SetLineSpacing(1.5f).GetHeight(), 3);
     }
 
+    // A shaper that gives each paragraph as many lines as its letters, one
+    // glyph of the letter each
+    private class LetterShaper : IShaper {
+        private readonly Font font;
+
+        internal LetterShaper(Font font) {
+            this.font = font;
+        }
+
+        public List<ShapedLine> Shape(string text, string language, byte[][] fontFiles, float fontSize, float width) {
+            List<ShapedLine> lines = new List<ShapedLine>();
+            for (int i = 0; i < text.Length; i++) {
+                lines.Add(new ShapedLine(i, i + 1, new int[] {0}, new int[] {font.unicodeToGID.Get(text[i])},
+                        new float[] {0f, 0f}, 7f));
+            }
+            return lines;
+        }
+    }
+
+    [Fact]
+    public void ParagraphsFlowFromPageToPageCutWhereTheHeightEnds() {
+        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        float line = font.GetAscent() + font.GetDescent() + font.GetLineGap(10f);
+        ComplexText text = new ComplexText(font, new List<string> {"AAA", "BBB"})
+                .SetShaper(new LetterShaper(font))
+                .SetLanguage("en")
+                .SetParagraphGap(5f)
+                .SetHeight(4 * line + 5f);
+        Assert.Equal(6 * line + 5f, text.GetHeight(), 3);
+        // Three lines of the first paragraph, the gap, one of the second
+        Page first = new Page(pdf, Letter.PORTRAIT);
+        float[] corner = text.SetLocation(50f, 100f).DrawOn(first);
+        Assert.Equal(100f + 4 * line + 5f, corner[1], 3);
+        Assert.True(text.HasMoreText());
+        Assert.Equal(2 * line, text.GetHeight(), 3);
+        string content = TestSupport.Content(first);
+        Assert.Equal(4, Count(content, " cm /Fm"));
+        Assert.Equal(2, Count(content, "/P <<"));
+        // The rest of the second paragraph, from the top of the next page
+        Page second = new Page(pdf, Letter.PORTRAIT);
+        corner = text.SetLocation(50f, 50f).DrawOn(second);
+        Assert.Equal(50f + 2 * line, corner[1], 3);
+        Assert.False(text.HasMoreText());
+        Assert.Equal(0f, text.GetHeight());
+        Assert.Equal(2, Count(TestSupport.Content(second), " cm /Fm"));
+        pdf.Complete();
+    }
+
+    [Fact]
+    public void AHeightTooSmallForALineStillDrawsOneEachTime() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        ComplexText text = new ComplexText(font, "AB").SetShaper(new LetterShaper(font)).SetHeight(1f);
+        int pages = 0;
+        while (text.HasMoreText()) {
+            text.DrawOn(new Page(pdf, Letter.PORTRAIT));
+            pages++;
+        }
+        Assert.Equal(2, pages);
+    }
+
     [Fact]
     public void TheFontFileIsWhatTheFontWasLoadedFrom() {
         PDF pdf = new PDF(new MemoryStream());
