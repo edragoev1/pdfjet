@@ -199,14 +199,34 @@ public class MarkdownParserTest {
     // as long, over the limit of 24 (15 October).
     [Fact]
     public void LongInputsAreReadQuickly() {
-        // 5000 against 40000 repeats under 32 times, each the shortest of
-        // three runs, and all again up to three times (AssertLinearTime): one
-        // timing of each failed on a GitHub runner (16 November 2026, 45 times)
+        // 2500 against 40000 repeats, 16 times the text, under 96 times the
+        // time, each the shortest of three runs, and all again up to three
+        // times: linear is 16, quadratic 256. At 8 times the text under 32,
+        // GitHub's runners failed it at 44 (16 November 2026, net8.0 and
+        // net10.0 alike), where the parser is linear (7 times here): the
+        // larger text pays for memory and collections on a small machine.
         var texts = new Dictionary<int, string>();
-        foreach (int n in new int[] {5000, 40000}) {
+        foreach (int n in new int[] {2500, 40000}) {
             texts[n] = Repeated(n);
         }
-        TestSupport.AssertLinearTime(5000, n => Assert.True(MarkdownParser.Parse(texts[n]).Count > 0));
+        long small = 0, large = 0;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            small = long.MaxValue;
+            large = long.MaxValue;
+            for (int run = 0; run < 3; run++) {
+                Stopwatch watch = Stopwatch.StartNew();
+                Assert.True(MarkdownParser.Parse(texts[2500]).Count > 0);
+                small = Math.Min(small, watch.ElapsedTicks);
+                watch.Restart();
+                Assert.True(MarkdownParser.Parse(texts[40000]).Count > 0);
+                large = Math.Min(large, watch.ElapsedTicks);
+            }
+            if (large < 96L * small) {
+                return;
+            }
+        }
+        long perMillisecond = Stopwatch.Frequency / 1000L;
+        Assert.Fail("40000 repeats took " + large / perMillisecond + " ms, and 2500 " + small / perMillisecond + " ms");
     }
 
     // A table of more than 64 columns is marked too wide, and its rows are not
