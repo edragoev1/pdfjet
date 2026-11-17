@@ -60,9 +60,9 @@ import Testing
         let a = font.unicodeToGID[0x41]
         let b = fallback.unicodeToGID[0x42]
         let shaper = FixedShaper([
-            ShapedLine(0, 2, [0, 1], [a, b], [0, 0, 7, 0]),
+            ShapedLine(0, 2, [0, 1], [a, b], [0, 0, 7, 0], 13),
             // A glyph of a font that was not given is not drawn
-            ShapedLine(2, 3, [-1], [5], [0, 0]),
+            ShapedLine(2, 3, [-1], [5], [0, 0], 6),
         ])
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let corner = ComplexText(font, "ABC")
@@ -77,7 +77,7 @@ import Testing
         #expect(shaper.width == 120)
         #expect(shaper.language == "en")
 
-        let lineHeight = font.getAscent() + font.getDescent() + 2.5
+        let lineHeight = font.getAscent() + font.getDescent() + font.getLineGap(10)
         #expect(abs(corner[1] - (100 + 2 * lineHeight)) < 0.001)
         // The fallback's glyph at the font's size, 10 points, on the first line's baseline
         let y = 792 - (100 + font.getAscent())
@@ -88,6 +88,49 @@ import Testing
         #expect(placed[0][1] == 50 && placed[1][1] == 57)
         #expect(abs(placed[0][2] - y) < 0.006 && abs(placed[1][2] - y) < 0.006)
         try memory.pdf.complete()
+    }
+
+    // Two lines: "A A B " of 30 points without its last space, then "B";
+    // the x of each glyph drawn
+    private func aligned(_ alignment: Alignment) throws -> [Float] {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, ComplexTextTests.latin).setSize(10)
+        let a = font.unicodeToGID[0x41]
+        let b = font.unicodeToGID[0x42]
+        let space = font.unicodeToGID[0x20]
+        let shaper = FixedShaper([
+            ShapedLine(0, 6, [0, 0, 0, 0, 0, 0], [a, space, a, space, b, space],
+                    [0, 0, 10, 0, 12, 0, 22, 0, 24, 0, 30, 0], 30),
+            ShapedLine(6, 7, [0], [b], [0, 0], 6),
+        ])
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        ComplexText(font, "A A B B").setShaper(shaper).setTextAlignment(alignment)
+                .setWidth(100).setLocation(50, 100).drawOn(page)
+        return places(TestSupport.content(page)).map { $0[1] }
+    }
+
+    @Test func theLinesAreAligned() throws {
+        // The glyphs drawn: A, A, B of the first line, B of the second
+        #expect(try aligned(Alignment.LEFT) == [50, 62, 74, 50])
+        #expect(try aligned(Alignment.CENTER) == [85, 97, 109, 97])
+        #expect(try aligned(Alignment.RIGHT) == [120, 132, 144, 144])
+        // Justified: the 70 points left over go to the two spaces between the
+        // words; the last line is left as it is
+        #expect(try aligned(Alignment.JUSTIFY) == [50, 97, 144, 50])
+    }
+
+    @Test func theLineSpacingIsAMultipleOfTheBodyHeightAsTextBlocks() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, ComplexTextTests.latin).setSize(10)
+        let a = font.unicodeToGID[0x41]
+        let shaper = FixedShaper([
+            ShapedLine(0, 1, [0], [a], [0, 0], 7),
+            ShapedLine(1, 2, [0], [a], [0, 0], 7),
+        ])
+        let text = ComplexText(font, "AA").setShaper(shaper)
+        let body = font.getAscent() + font.getDescent() + font.getLineGap(10)
+        #expect(abs(try text.getHeight() - 2 * body) < 0.001)
+        #expect(abs(try text.setLineSpacing(1.5).getHeight() - 3 * body) < 0.001)
     }
 
     @Test func theFontFileIsWhatTheFontWasLoadedFrom() throws {
@@ -138,7 +181,7 @@ import Testing
         #expect(count(content, "/P <</MCID 0>>\nBDC\n") == 1, "\(content)")
         let lines = count(content, "/Span <</Lang <" + memory.pdf.toHex("hi") + "> /ActualText <")
         #expect(lines >= 3, "wrapped to 200 points: \(lines) lines")
-        #expect(abs(Float(lines) * (hindi.getAscent() + hindi.getDescent() + 3) - height) < 0.01)
+        #expect(abs(Float(lines) * (hindi.getAscent() + hindi.getDescent() + hindi.getLineGap(12)) - height) < 0.01)
         #expect(!content.contains("BT"), "\(content)")
         try memory.pdf.complete()
     }

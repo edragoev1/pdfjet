@@ -235,7 +235,13 @@ public class HarfBuzzShaper : IShaper {
                 positions[2 * (i - first) + 1] = glyphs[i].y;
             }
             int textEnd = last < glyphs.Count ? glyphs[last].cluster : text.Length;
-            lines.Add(new ShapedLine(glyphs[first].cluster, textEnd, fonts, ids, positions));
+            // The width of the line without the spaces at its end
+            int visible = last;
+            while (visible > first && text[glyphs[visible - 1].cluster] == ' ') {
+                visible--;
+            }
+            float lineWidth = visible > first ? glyphs[visible - 1].x + glyphs[visible - 1].advance - lineStart : 0f;
+            lines.Add(new ShapedLine(glyphs[first].cluster, textEnd, fonts, ids, positions, lineWidth));
             first = last;
         }
         return lines;

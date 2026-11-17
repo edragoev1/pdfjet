@@ -9,6 +9,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -48,6 +49,9 @@ type ShapedLine struct {
 	// end of the line at its baseline, y growing down: x0, y0, x1, y1 and so
 	// on.
 	Positions []float32
+	// Width is the width of the line, in points, without the white space at
+	// its end: what is centered, aligned to the right or justified.
+	Width float32
 }
 
 // ComplexText is text in a script PDFjet does not shape itself, such as
@@ -88,6 +92,8 @@ type ComplexText struct {
 	x, y          float32
 	width         float32
 	textColor     int32
+	textAlignment alignment.Alignment
+	lineSpacing   float32
 	structureType structelem.StructElem
 	shaper        Shaper
 	lines         []ShapedLine // Shaped, until a font, the language or the width changes
@@ -103,6 +109,8 @@ func NewComplexText(font *Font, text string) *ComplexText {
 		text:          text,
 		width:         300,
 		textColor:     color.Black,
+		textAlignment: alignment.Left,
+		lineSpacing:   1,
 		structureType: structelem.P,
 	}
 }
@@ -142,6 +150,21 @@ func (complexText *ComplexText) SetWidth(width float32) *ComplexText {
 // SetTextColor sets the color of the text, as 0xRRGGBB.
 func (complexText *ComplexText) SetTextColor(c int32) *ComplexText {
 	complexText.textColor = c
+	return complexText
+}
+
+// SetTextAlignment sets the alignment of the lines: alignment.Left, the
+// default, alignment.Center, alignment.Right or alignment.Justify, which
+// spreads the words of each line but the last to the width.
+func (complexText *ComplexText) SetTextAlignment(textAlignment alignment.Alignment) *ComplexText {
+	complexText.textAlignment = textAlignment
+	return complexText
+}
+
+// SetLineSpacing sets the line spacing as a multiple of the font's body
+// height, as TextBlock's: 1.0 by default.
+func (complexText *ComplexText) SetLineSpacing(lineSpacing float32) *ComplexText {
+	complexText.lineSpacing = lineSpacing
 	return complexText
 }
 
@@ -193,14 +216,22 @@ func (complexText *ComplexText) DrawOn(page *Page) [2]float32 {
 	if own {
 		page.AddBDC(complexText.structureType, complexText.language, "", "")
 	}
+	// The space of each font, for justified lines
+	spaces := make([]int, len(fonts))
+	for i, f := range fonts {
+		if f.unicodeToGID != nil {
+			spaces[i] = f.unicodeToGID.get(' ')
+		}
+	}
 	top := y
-	for _, line := range lines {
+	for n, line := range lines {
 		lineText := complexText.text[line.Start:line.End]
 		baseline := top + ascent
 		top += lineHeight
 		if strings.TrimSpace(lineText) == "" {
 			continue
 		}
+		shifts := complexText.shifts(line, n == len(lines)-1, spaces)
 		page.beginActualText(lineText, complexText.language)
 		// The glyphs of each font, one run of them at a time
 		for from := 0; from < len(line.Glyphs); {
@@ -214,7 +245,7 @@ func (complexText *ComplexText) DrawOn(page *Page) [2]float32 {
 				places := make([]float32, 2*(to-from))
 				for i := from; i < to; i++ {
 					run[i-from] = line.Glyphs[i]
-					places[2*(i-from)] = x + line.Positions[2*i]
+					places[2*(i-from)] = x + line.Positions[2*i] + shifts[i]
 					places[2*(i-from)+1] = baseline + line.Positions[2*i+1]
 				}
 				if !page.glyphsDrawable(fonts[index], run, places) {
@@ -232,11 +263,58 @@ func (complexText *ComplexText) DrawOn(page *Page) [2]float32 {
 	return [2]float32{x + width, top}
 }
 
+// lineHeight returns the distance from a line to the next, as TextBlock's.
 func (complexText *ComplexText) lineHeight() float32 {
-	// The line's ascent and descent, and a quarter of the size between lines
 	font := complexText.font
 	size := font.GetSize()
-	return font.GetAscent(size) + font.GetDescent(size) + 0.25*size
+	return (font.GetAscent(size) + font.GetDescent(size) + font.GetLineGap(size)) * complexText.lineSpacing
+}
+
+// shifts returns how far each glyph of the line moves to the right, for its
+// alignment: all the same for Center and Right; for Justify, each glyph by
+// the room given to the spaces before it, the last line left as it is.
+func (complexText *ComplexText) shifts(line ShapedLine, last bool, spaces []int) []float32 {
+	shifts := make([]float32, len(line.Glyphs))
+	room := complexText.width - line.Width
+	if line.Width <= 0 || room <= 0 {
+		return shifts
+	}
+	isSpace := func(i int) bool {
+		f := line.Fonts[i]
+		return f >= 0 && f < len(spaces) && spaces[f] != 0 && line.Glyphs[i] == spaces[f]
+	}
+	switch {
+	case complexText.textAlignment == alignment.Center || complexText.textAlignment == alignment.Right:
+		shift := room
+		if complexText.textAlignment == alignment.Center {
+			shift = room / 2
+		}
+		for i := range shifts {
+			shifts[i] = shift
+		}
+	case complexText.textAlignment == alignment.Justify && !last:
+		// The spaces between the words: not those at the end of the line
+		end := len(line.Glyphs)
+		for end > 0 && isSpace(end-1) {
+			end--
+		}
+		count := 0
+		for i := 0; i < end; i++ {
+			if isSpace(i) {
+				count++
+			}
+		}
+		if count > 0 {
+			var shift float32
+			for i := range shifts {
+				shifts[i] = shift
+				if i < end && isSpace(i) {
+					shift += room / float32(count)
+				}
+			}
+		}
+	}
+	return shifts
 }
 
 // shape returns the lines, shaped the first time they are needed.

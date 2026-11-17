@@ -58,9 +58,9 @@ public class ComplexTextTest {
         int a = font.unicodeToGID.Get('A');
         int b = fallback.unicodeToGID.Get('B');
         FixedShaper shaper = new FixedShaper(
-                new ShapedLine(0, 2, new int[] {0, 1}, new int[] {a, b}, new float[] {0f, 0f, 7f, 0f}),
+                new ShapedLine(0, 2, new int[] {0, 1}, new int[] {a, b}, new float[] {0f, 0f, 7f, 0f}, 13f),
                 // A glyph of a font that was not given is not drawn
-                new ShapedLine(2, 3, new int[] {-1}, new int[] {5}, new float[] {0f, 0f}));
+                new ShapedLine(2, 3, new int[] {-1}, new int[] {5}, new float[] {0f, 0f}, 6f));
         Page page = new Page(pdf, Letter.PORTRAIT);
         float[] corner = new ComplexText(font, "ABC")
                 .SetFallbackFont(fallback)
@@ -74,7 +74,7 @@ public class ComplexTextTest {
         Assert.Equal(120f, shaper.width);
         Assert.Equal("en", shaper.language);
 
-        float lineHeight = font.GetAscent() + font.GetDescent() + 2.5f;
+        float lineHeight = font.GetAscent() + font.GetDescent() + font.GetLineGap(10f);
         Assert.Equal(100f + 2 * lineHeight, corner[1], 3);
         // The fallback's glyph at the font's size, 10 points, on the first line's baseline
         float y = 792f - (100f + font.GetAscent());
@@ -103,8 +103,8 @@ public class ComplexTextTest {
         int a = font.unicodeToGID.Get('A');
         int b = font.unicodeToGID.Get('B');
         FixedShaper shaper = new FixedShaper(
-                new ShapedLine(0, 2, new int[] {0, 0}, new int[] {a, a}, new float[] {0f, 0f, 7f, 0f}),
-                new ShapedLine(2, 4, new int[] {0, 0}, new int[] {b, b}, new float[] {0f, 0f, 7f, 0f}));
+                new ShapedLine(0, 2, new int[] {0, 0}, new int[] {a, a}, new float[] {0f, 0f, 7f, 0f}, 13f),
+                new ShapedLine(2, 4, new int[] {0, 0}, new int[] {b, b}, new float[] {0f, 0f, 7f, 0f}, 13f));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new ComplexText(font, "AABB").SetLanguage("hi").SetShaper(shaper).SetLocation(50f, 100f).DrawOn(page);
         string content = TestSupport.Content(page);
@@ -113,6 +113,53 @@ public class ComplexTextTest {
         Assert.Contains("/Span <</Lang <6869> /ActualText <" + Page.ToUTF16Hex("BB") + ">>> BDC\n", content);
         Assert.DoesNotContain("BT", content);
         pdf.Complete();
+    }
+
+    // Two lines: "A A B " of 30 points without its last space, then "B";
+    // the x of each glyph drawn
+    private static List<float> Aligned(Alignment alignment) {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        int a = font.unicodeToGID.Get('A');
+        int b = font.unicodeToGID.Get('B');
+        int space = font.unicodeToGID.Get(' ');
+        FixedShaper shaper = new FixedShaper(
+                new ShapedLine(0, 6, new int[] {0, 0, 0, 0, 0, 0}, new int[] {a, space, a, space, b, space},
+                        new float[] {0f, 0f, 10f, 0f, 12f, 0f, 22f, 0f, 24f, 0f, 30f, 0f}, 30f),
+                new ShapedLine(6, 7, new int[] {0}, new int[] {b}, new float[] {0f, 0f}, 6f));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new ComplexText(font, "A A B B").SetShaper(shaper).SetTextAlignment(alignment)
+                .SetLocation(50f, 100f).SetWidth(100f).DrawOn(page);
+        List<float> xs = new List<float>();
+        foreach (Match m in Regex.Matches(TestSupport.Content(page), @"q \S+ 0 0 \S+ (\S+) \S+ cm /Fm")) {
+            xs.Add(float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture));
+        }
+        return xs;
+    }
+
+    [Fact]
+    public void TheLinesAreAligned() {
+        // The glyphs drawn: A, A, B of the first line, B of the second
+        Assert.Equal(new List<float> {50f, 62f, 74f, 50f}, Aligned(Alignment.LEFT));
+        Assert.Equal(new List<float> {85f, 97f, 109f, 97f}, Aligned(Alignment.CENTER));
+        Assert.Equal(new List<float> {120f, 132f, 144f, 144f}, Aligned(Alignment.RIGHT));
+        // Justified: the 70 points left over go to the two spaces between the
+        // words; the last line is left as it is
+        Assert.Equal(new List<float> {50f, 97f, 144f, 50f}, Aligned(Alignment.JUSTIFY));
+    }
+
+    [Fact]
+    public void TheLineSpacingIsAMultipleOfTheBodyHeightAsTextBlocks() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        int a = font.unicodeToGID.Get('A');
+        FixedShaper shaper = new FixedShaper(
+                new ShapedLine(0, 1, new int[] {0}, new int[] {a}, new float[] {0f, 0f}, 7f),
+                new ShapedLine(1, 2, new int[] {0}, new int[] {a}, new float[] {0f, 0f}, 7f));
+        ComplexText text = new ComplexText(font, "AA").SetShaper(shaper);
+        float body = font.GetAscent() + font.GetDescent() + font.GetLineGap(10f);
+        Assert.Equal(2 * body, text.GetHeight(), 3);
+        Assert.Equal(3 * body, text.SetLineSpacing(1.5f).GetHeight(), 3);
     }
 
     [Fact]

@@ -62,7 +62,7 @@ final class AndroidShaper implements Shaper {
         final Method setTextLocale;                 // Paint.setTextLocale(Locale)
         final Method obtain;                        // StaticLayout.Builder.obtain(...)
         final Method layoutBuild;                   // StaticLayout.Builder.build()
-        final Method lineCount, lineStart, lineEnd, lineLeft;
+        final Method lineCount, lineStart, lineEnd, lineLeft, lineWidth;
         final Method shapeTextRun;                  // TextRunShaper.shapeTextRun(...)
         final Method glyphCount, glyphId, glyphX, glyphY, glyphFont;
 
@@ -97,6 +97,7 @@ final class AndroidShaper implements Shaper {
             lineStart = layout.getMethod("getLineStart", int.class);
             lineEnd = layout.getMethod("getLineEnd", int.class);
             lineLeft = layout.getMethod("getLineLeft", int.class);
+            lineWidth = layout.getMethod("getLineWidth", int.class);   // Without the white space at its end
             shapeTextRun = shaper.getMethod("shapeTextRun", CharSequence.class, int.class, int.class,
                     int.class, int.class, float.class, float.class, boolean.class, paint);
             glyphCount = glyphs.getMethod("glyphCount");
@@ -187,7 +188,8 @@ final class AndroidShaper implements Shaper {
                 positions[2 * i] = (Float) a.glyphX.invoke(shaped, i) / SCALE;
                 positions[2 * i + 1] = (Float) a.glyphY.invoke(shaped, i) / SCALE;
             }
-            lines.add(new ShapedLine(start, end, fontOf, glyphs, positions));
+            float visible = (Float) a.lineWidth.invoke(layout, line) / SCALE;
+            lines.add(new ShapedLine(start, end, fontOf, glyphs, positions, visible));
         }
         return lines;
     }

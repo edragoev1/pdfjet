@@ -8,11 +8,13 @@ package pdfjet
 import (
 	"bytes"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -50,7 +52,7 @@ func TestComplexTextTheShaperGivesTheGlyphsAndTheirPlaces(t *testing.T) {
 	a := font.unicodeToGID.get('A')
 	b := fallback.unicodeToGID.get('B')
 	shaper := &testFixedShaper{lines: []ShapedLine{
-		{Start: 0, End: 2, Fonts: []int{0, 1}, Glyphs: []int{a, b}, Positions: []float32{0, 0, 7, 0}},
+		{Start: 0, End: 2, Fonts: []int{0, 1}, Glyphs: []int{a, b}, Positions: []float32{0, 0, 7, 0}, Width: 13},
 		// A glyph of a font that was not given is not drawn
 		{Start: 2, End: 3, Fonts: []int{-1}, Glyphs: []int{5}, Positions: []float32{0, 0}},
 	}}
@@ -66,7 +68,7 @@ func TestComplexTextTheShaperGivesTheGlyphsAndTheirPlaces(t *testing.T) {
 		t.Errorf("the shaper was given %d files, %v, %v, %q", len(shaper.files), shaper.size, shaper.width,
 			shaper.language)
 	}
-	lineHeight := font.GetAscent(10) + font.GetDescent(10) + 2.5
+	lineHeight := font.GetAscent(10) + font.GetDescent(10) + font.GetLineGap(10)
 	testNear(t, "the bottom", 100+2*lineHeight, corner[1], 0.001)
 	// The fallback's glyph at the font's size, 10 points, on the first line's baseline
 	y := 792 - (100 + font.GetAscent(10))
@@ -166,4 +168,68 @@ func TestComplexTextWithoutAShaperOrAFontFileItSaysSo(t *testing.T) {
 	if doc.pdf.Complete() == nil {
 		t.Error("the document did not fail")
 	}
+}
+
+// testAligned draws two lines: "A A B " of 30 points without its last space,
+// then "B", and returns the x of each glyph drawn.
+func testAligned(t *testing.T, textAlignment alignment.Alignment) []float32 {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
+	font.SetSize(10)
+	a := font.unicodeToGID.get('A')
+	b := font.unicodeToGID.get('B')
+	space := font.unicodeToGID.get(' ')
+	shaper := &testFixedShaper{lines: []ShapedLine{
+		{Start: 0, End: 6, Fonts: []int{0, 0, 0, 0, 0, 0}, Glyphs: []int{a, space, a, space, b, space},
+			Positions: []float32{0, 0, 10, 0, 12, 0, 22, 0, 24, 0, 30, 0}, Width: 30},
+		{Start: 6, End: 7, Fonts: []int{0}, Glyphs: []int{b}, Positions: []float32{0, 0}, Width: 6},
+	}}
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewComplexText(font, "A A B B").SetShaper(shaper).SetTextAlignment(textAlignment).
+		SetWidth(100).SetLocation(50, 100).DrawOn(page)
+	var xs []float32
+	for _, m := range regexp.MustCompile(`q \S+ 0 0 \S+ (\S+) \S+ cm /Fm`).FindAllStringSubmatch(testContent(page), -1) {
+		v, err := strconv.ParseFloat(m[1], 32)
+		if err != nil {
+			t.Fatal(err)
+		}
+		xs = append(xs, float32(v))
+	}
+	return xs
+}
+
+func TestComplexTextTheLinesAreAligned(t *testing.T) {
+	// The glyphs drawn: A, A, B of the first line, B of the second; justified,
+	// the 70 points left over go to the two spaces between the words, and the
+	// last line is left as it is
+	for _, c := range []struct {
+		alignment alignment.Alignment
+		want      []float32
+	}{
+		{alignment.Left, []float32{50, 62, 74, 50}},
+		{alignment.Center, []float32{85, 97, 109, 97}},
+		{alignment.Right, []float32{120, 132, 144, 144}},
+		{alignment.Justify, []float32{50, 97, 144, 50}},
+	} {
+		if got := testAligned(t, c.alignment); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("alignment %d: %v, not %v", c.alignment, got, c.want)
+		}
+	}
+}
+
+func TestComplexTextTheLineSpacingIsAMultipleOfTheBodyHeightAsTextBlocks(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
+	font.SetSize(10)
+	a := font.unicodeToGID.get('A')
+	shaper := &testFixedShaper{lines: []ShapedLine{
+		{Start: 0, End: 1, Fonts: []int{0}, Glyphs: []int{a}, Positions: []float32{0, 0}, Width: 7},
+		{Start: 1, End: 2, Fonts: []int{0}, Glyphs: []int{a}, Positions: []float32{0, 0}, Width: 7},
+	}}
+	text := NewComplexText(font, "AA").SetShaper(shaper)
+	body := font.GetAscent(10) + font.GetDescent(10) + font.GetLineGap(10)
+	height, _ := text.GetHeight()
+	testNear(t, "at 1.0", 2*body, height, 0.001)
+	height, _ = text.SetLineSpacing(1.5).GetHeight()
+	testNear(t, "at 1.5", 3*body, height, 0.001)
 }

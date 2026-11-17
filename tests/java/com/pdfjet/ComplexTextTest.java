@@ -86,7 +86,7 @@ class ComplexTextTest {
         assertEquals(1, count(content, "/P <</MCID 0>>\nBDC\n"), content);
         int lines = count(content, "/Span <</Lang <6869> /ActualText <");
         assertTrue(lines >= 3, "wrapped to 200 points: " + lines + " lines");
-        assertEquals(lines * (hindi.getAscent() + hindi.getDescent() + 3f), height, 0.01f);
+        assertEquals(lines * (hindi.getAscent() + hindi.getDescent() + hindi.getLineGap(12f)), height, 0.01f);
         assertFalse(content.contains("BT"), content);
         // The lines' texts, one after the other, are the text
         StringBuilder joined = new StringBuilder();
@@ -112,9 +112,9 @@ class ComplexTextTest {
         int a = font.unicodeToGID.get('A');
         int b = fallback.unicodeToGID.get('B');
         FixedShaper shaper = new FixedShaper(
-                new ShapedLine(0, 2, new int[] {0, 1}, new int[] {a, b}, new float[] {0f, 0f, 7f, 0f}),
+                new ShapedLine(0, 2, new int[] {0, 1}, new int[] {a, b}, new float[] {0f, 0f, 7f, 0f}, 13f),
                 // A glyph of a font that was not given is not drawn
-                new ShapedLine(2, 3, new int[] {-1}, new int[] {5}, new float[] {0f, 0f}));
+                new ShapedLine(2, 3, new int[] {-1}, new int[] {5}, new float[] {0f, 0f}, 6f));
         Page page = new Page(pdf, Letter.PORTRAIT);
         float[] corner = new ComplexText(font, "ABC")
                 .setFallbackFont(fallback)
@@ -128,7 +128,7 @@ class ComplexTextTest {
         assertEquals(120f, shaper.width);
         assertEquals("en", shaper.language);
 
-        float lineHeight = font.getAscent() + font.getDescent() + 2.5f;
+        float lineHeight = font.getAscent() + font.getDescent() + font.getLineGap(10f);
         assertEquals(100f + 2 * lineHeight, corner[1], 0.001f);
         // The fallback's glyph at the font's size, 10 points, on the first line's baseline
         float y = 792f - (100f + font.getAscent());
@@ -147,6 +147,62 @@ class ComplexTextTest {
         assertEquals(y, places.get(0)[2], 0.006f);
         assertEquals(y, places.get(1)[2], 0.006f);
         pdf.complete();
+    }
+
+    // The x of each glyph placed in the content
+    private static List<Float> xs(String content) {
+        List<Float> xs = new java.util.ArrayList<Float>();
+        Matcher m = Pattern.compile("q \\S+ 0 0 \\S+ (\\S+) \\S+ cm /Fm").matcher(content);
+        while (m.find()) {
+            xs.add(Float.parseFloat(m.group(1)));
+        }
+        return xs;
+    }
+
+    // Two lines: "A A B " of 30 points without its last space, then "B"
+    private static List<Float> aligned(Alignment alignment) throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, LATIN).setSize(10f);
+        int a = font.unicodeToGID.get('A');
+        int b = font.unicodeToGID.get('B');
+        int space = font.unicodeToGID.get(' ');
+        FixedShaper shaper = new FixedShaper(
+                new ShapedLine(0, 6, new int[] {0, 0, 0, 0, 0, 0}, new int[] {a, space, a, space, b, space},
+                        new float[] {0f, 0f, 10f, 0f, 12f, 0f, 22f, 0f, 24f, 0f, 30f, 0f}, 30f),
+                new ShapedLine(6, 7, new int[] {0}, new int[] {b}, new float[] {0f, 0f}, 6f));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new ComplexText(font, "A A B B").setShaper(shaper).setTextAlignment(alignment)
+                .setLocation(50f, 100f).setWidth(100f).drawOn(page);
+        return xs(TestSupport.content(page));
+    }
+
+    @Test
+    void theLinesAreAligned() throws Exception {
+        // The glyphs drawn: A, A, B of the first line, B of the second
+        assertEquals(Arrays.asList(50f, 62f, 74f, 50f), aligned(Alignment.LEFT));
+        assertEquals(Arrays.asList(85f, 97f, 109f, 97f), aligned(Alignment.CENTER));
+        assertEquals(Arrays.asList(120f, 132f, 144f, 144f), aligned(Alignment.RIGHT));
+        // Justified: the 70 points left over go to the two spaces between the
+        // words; the last line is left as it is
+        assertEquals(Arrays.asList(50f, 97f, 144f, 50f), aligned(Alignment.JUSTIFY));
+    }
+
+    @Test
+    void theLineSpacingIsAMultipleOfTheBodyHeightAsTextBlocks() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, LATIN).setSize(10f);
+        int a = font.unicodeToGID.get('A');
+        FixedShaper shaper = new FixedShaper(
+                new ShapedLine(0, 1, new int[] {0}, new int[] {a}, new float[] {0f, 0f}, 7f),
+                new ShapedLine(1, 2, new int[] {0}, new int[] {a}, new float[] {0f, 0f}, 7f));
+        ComplexText text = new ComplexText(font, "AA").setShaper(shaper);
+        float body = font.getAscent() + font.getDescent() + font.getLineGap(10f);
+        assertEquals(2 * body, text.getHeight(), 0.001f);
+        assertEquals(3 * body, text.setLineSpacing(1.5f).getHeight(), 0.001f);
+        // As a TextBlock of the same font and spacing, line to line
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        float[] corner = text.setLocation(50f, 100f).drawOn(page);
+        assertEquals(100f + 3 * body, corner[1], 0.001f);
     }
 
     @Test

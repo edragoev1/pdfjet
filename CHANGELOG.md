@@ -18,7 +18,11 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   Hindi), its language, its location and width, then `drawOn`: the
   platform's text engine wraps and shapes it, and PDFjet draws the glyphs as
   `drawGlyphs` does, as outlines, each line tagged with its text in its
-  language for screen readers. The engine is a `Shaper`: Java's
+  language for screen readers. `setTextAlignment` aligns the lines to the
+  left, the center or the right, or justifies them (the words of each line
+  but the last spread to the width); `setLineSpacing` is a multiple of the
+  font's body height, as `TextBlock`'s, 1.0 by default. The engine is a
+  `Shaper`: Java's
   java.awt.font on servers and desktops, and Android's own on Android 12 and
   later, both in the one jar; Core Text in Swift on Apple platforms; in .NET
   and Go, which have none, a shaper the program gives with `setShaper`

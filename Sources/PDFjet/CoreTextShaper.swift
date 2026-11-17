@@ -97,7 +97,10 @@ final class CoreTextShaper: Shaper {
                     positions.append(-Float(points[k].y))
                 }
             }
-            lines.append(ShapedLine(start, start + count, fontOf, glyphs, positions))
+            // The width of the line without the white space at its end
+            let visible = Float(CTLineGetTypographicBounds(line, nil, nil, nil)
+                    - CTLineGetTrailingWhitespaceWidth(line))
+            lines.append(ShapedLine(start, start + count, fontOf, glyphs, positions, visible))
             start += count
         }
         return lines

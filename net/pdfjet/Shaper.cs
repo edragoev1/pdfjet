@@ -47,9 +47,12 @@ public sealed class ShapedLine {
     /// <summary>The x and the y of each glyph, in points, from the left end of
     /// the line at its baseline, y growing down: x0, y0, x1, y1 and so on.</summary>
     public float[] Positions { get; }
+    /// <summary>The width of the line, in points, without the white space at
+    /// its end: what is centered, aligned to the right or justified.</summary>
+    public float Width { get; }
 
     /// <summary>A shaped line.</summary>
-    public ShapedLine(int start, int end, int[] fonts, int[] glyphs, float[] positions) {
+    public ShapedLine(int start, int end, int[] fonts, int[] glyphs, float[] positions, float width) {
         if (fonts.Length != glyphs.Length || positions.Length != 2 * glyphs.Length) {
             throw new ArgumentException("A shaped line needs a font and an x and a y for each glyph.");
         }
@@ -58,6 +61,7 @@ public sealed class ShapedLine {
         Fonts = fonts;
         Glyphs = glyphs;
         Positions = positions;
+        Width = width;
     }
 }
 }   // End of namespace PDFjet.NET

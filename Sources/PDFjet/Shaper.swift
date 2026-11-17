@@ -50,8 +50,12 @@ public struct ShapedLine {
     /// The x and the y of each glyph, in points, from the left end of the
     /// line at its baseline, y growing down: x0, y0, x1, y1 and so on.
     public let positions: [Float]
+    /// The width of the line, in points, without the white space at its
+    /// end: what is centered, aligned to the right or justified.
+    public let width: Float
 
-    public init(_ start: Int, _ end: Int, _ fonts: [Int], _ glyphs: [Int], _ positions: [Float]) {
+    public init(_ start: Int, _ end: Int, _ fonts: [Int], _ glyphs: [Int], _ positions: [Float],
+            _ width: Float) {
         precondition(fonts.count == glyphs.count && positions.count == 2 * glyphs.count,
                 "A shaped line needs a font and an x and a y for each glyph.")
         self.start = start
@@ -59,5 +63,6 @@ public struct ShapedLine {
         self.fonts = fonts
         self.glyphs = glyphs
         self.positions = positions
+        self.width = width
     }
 }   // End of Shaper.swift

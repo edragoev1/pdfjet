@@ -48,6 +48,8 @@ public class ComplexText implements Drawable {
     private float y;
     private float width = 300f;
     private int textColor = Color.black;
+    private Alignment textAlignment = Alignment.LEFT;
+    private float lineSpacing = 1.0f;
     private StructElem structureType = StructElem.P;
     private Shaper shaper;
     private List<ShapedLine> lines;     // Shaped, until the text, a font or the width changes
@@ -127,6 +129,30 @@ public class ComplexText implements Drawable {
     }
 
     /**
+     * Sets the alignment of the lines: LEFT, the default, CENTER, RIGHT or
+     * JUSTIFY, which spreads the words of each line but the last to the width.
+     *
+     * @param textAlignment the alignment.
+     * @return this ComplexText.
+     */
+    public ComplexText setTextAlignment(Alignment textAlignment) {
+        this.textAlignment = textAlignment;
+        return this;
+    }
+
+    /**
+     * Sets the line spacing as a multiple of the font's body height, as
+     * TextBlock's: 1.0 by default.
+     *
+     * @param lineSpacing the line spacing.
+     * @return this ComplexText.
+     */
+    public ComplexText setLineSpacing(float lineSpacing) {
+        this.lineSpacing = lineSpacing;
+        return this;
+    }
+
+    /**
      * Sets the structure type of the text in a tagged document; P, a
      * paragraph, by default.
      *
@@ -181,8 +207,14 @@ public class ComplexText implements Drawable {
         if (own) {
             page.addBDC(structureType, language, null, null);
         }
+        // The space of each font, for justified lines
+        int[] spaces = new int[fonts.length];
+        for (int i = 0; i < fonts.length; i++) {
+            spaces[i] = fonts[i].unicodeToGID == null ? 0 : fonts[i].unicodeToGID.get(' ');
+        }
         float top = y;
-        for (ShapedLine line : shapedLines) {
+        for (int n = 0; n < shapedLines.size(); n++) {
+            ShapedLine line = shapedLines.get(n);
             String lineText = text.substring(line.getStart(), line.getEnd());
             float baseline = top + ascent;
             top += lineHeight;
@@ -192,6 +224,7 @@ public class ComplexText implements Drawable {
             if (lineText.trim().isEmpty()) {
                 continue;
             }
+            float[] shifts = shifts(line, n == shapedLines.size() - 1, spaces);
             page.beginActualText(lineText, language);
             // The glyphs of each font, one run of them at a time
             int from = 0;
@@ -205,7 +238,7 @@ public class ComplexText implements Drawable {
                     float[] places = new float[2 * run.length];
                     for (int i = from; i < to; i++) {
                         run[i - from] = glyphs[i];
-                        places[2 * (i - from)] = x + positions[2 * i];
+                        places[2 * (i - from)] = x + positions[2 * i] + shifts[i];
                         places[2 * (i - from) + 1] = baseline + positions[2 * i + 1];
                     }
                     Font runFont = fonts[fontOf[from]];
@@ -224,9 +257,52 @@ public class ComplexText implements Drawable {
         return new float[] {x + width, top};
     }
 
+    // The distance from a line to the next, as TextBlock's
     private float lineHeight() {
-        // The line's ascent and descent, and a quarter of the size between lines
-        return font.getAscent() + font.getDescent() + 0.25f * font.getSize();
+        float size = font.getSize();
+        return (font.getAscent() + font.getDescent() + font.getLineGap(size)) * lineSpacing;
+    }
+
+    // How far each glyph of the line moves to the right, for its alignment:
+    // all the same for CENTER and RIGHT; for JUSTIFY, each glyph by the room
+    // given to the spaces before it, the last line left as it is.
+    private float[] shifts(ShapedLine line, boolean last, int[] spaces) {
+        int[] fontOf = line.getFonts();
+        int[] glyphs = line.getGlyphs();
+        float[] shifts = new float[glyphs.length];
+        float room = width - line.getWidth();
+        if (line.getWidth() <= 0f || room <= 0f) {
+            return shifts;
+        }
+        if (textAlignment == Alignment.CENTER || textAlignment == Alignment.RIGHT) {
+            java.util.Arrays.fill(shifts, textAlignment == Alignment.CENTER ? room / 2f : room);
+        } else if (textAlignment == Alignment.JUSTIFY && !last) {
+            // The spaces between the words: not those at the end of the line
+            int end = glyphs.length;
+            while (end > 0 && isSpace(fontOf[end - 1], glyphs[end - 1], spaces)) {
+                end--;
+            }
+            int count = 0;
+            for (int i = 0; i < end; i++) {
+                if (isSpace(fontOf[i], glyphs[i], spaces)) {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                float shift = 0f;
+                for (int i = 0; i < glyphs.length; i++) {
+                    shifts[i] = shift;
+                    if (i < end && isSpace(fontOf[i], glyphs[i], spaces)) {
+                        shift += room / count;
+                    }
+                }
+            }
+        }
+        return shifts;
+    }
+
+    private static boolean isSpace(int font, int glyph, int[] spaces) {
+        return font >= 0 && font < spaces.length && spaces[font] != 0 && glyph == spaces[font];
     }
 
     // The lines, shaped the first time they are needed

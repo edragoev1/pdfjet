@@ -51,6 +51,8 @@ public class ComplexText : IDrawable {
     private float y;
     private float width = 300f;
     private int textColor = Color.black;
+    private Alignment textAlignment = Alignment.LEFT;
+    private float lineSpacing = 1.0f;
     private StructElem structureType = StructElem.P;
     private IShaper shaper;
     private List<ShapedLine> lines;     // Shaped, until a font, the language or the width changes
@@ -102,6 +104,21 @@ public class ComplexText : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the alignment of the lines: LEFT, the default, CENTER,
+    /// RIGHT or JUSTIFY, which spreads the words of each line but the last to
+    /// the width.</summary>
+    public ComplexText SetTextAlignment(Alignment textAlignment) {
+        this.textAlignment = textAlignment;
+        return this;
+    }
+
+    /// <summary>Sets the line spacing as a multiple of the font's body height,
+    /// as TextBlock's: 1.0 by default.</summary>
+    public ComplexText SetLineSpacing(float lineSpacing) {
+        this.lineSpacing = lineSpacing;
+        return this;
+    }
+
     /// <summary>Sets the structure type of the text in a tagged document; P, a
     /// paragraph, by default.</summary>
     public ComplexText SetStructureType(StructElem structureType) {
@@ -136,14 +153,21 @@ public class ComplexText : IDrawable {
         if (own) {
             page.AddBDC(structureType, language, null, null);
         }
+        // The space of each font, for justified lines
+        int[] spaces = new int[fonts.Length];
+        for (int i = 0; i < fonts.Length; i++) {
+            spaces[i] = fonts[i].unicodeToGID == null ? 0 : fonts[i].unicodeToGID.Get(' ');
+        }
         float top = y;
-        foreach (ShapedLine line in shapedLines) {
+        for (int n = 0; n < shapedLines.Count; n++) {
+            ShapedLine line = shapedLines[n];
             String lineText = text.Substring(line.Start, line.End - line.Start);
             float baseline = top + ascent;
             top += lineHeight;
             if (lineText.Trim().Length == 0) {
                 continue;
             }
+            float[] shifts = Shifts(line, n == shapedLines.Count - 1, spaces);
             page.BeginActualText(lineText, language);
             // The glyphs of each font, one run of them at a time
             int from = 0;
@@ -158,7 +182,7 @@ public class ComplexText : IDrawable {
                     float[] places = new float[2 * run.Length];
                     for (int i = from; i < to; i++) {
                         run[i - from] = line.Glyphs[i];
-                        places[2 * (i - from)] = x + line.Positions[2 * i];
+                        places[2 * (i - from)] = x + line.Positions[2 * i] + shifts[i];
                         places[2 * (i - from) + 1] = baseline + line.Positions[2 * i + 1];
                     }
                     if (!page.GlyphsDrawable(fonts[index], run, places)) {
@@ -176,9 +200,54 @@ public class ComplexText : IDrawable {
         return new float[] {x + width, top};
     }
 
+    // The distance from a line to the next, as TextBlock's
     private float LineHeight() {
-        // The line's ascent and descent, and a quarter of the size between lines
-        return font.GetAscent() + font.GetDescent() + 0.25f * font.GetSize();
+        return (font.GetAscent() + font.GetDescent() + font.GetLineGap(font.GetSize())) * lineSpacing;
+    }
+
+    // How far each glyph of the line moves to the right, for its alignment:
+    // all the same for CENTER and RIGHT; for JUSTIFY, each glyph by the room
+    // given to the spaces before it, the last line left as it is.
+    private float[] Shifts(ShapedLine line, bool last, int[] spaces) {
+        int[] fontOf = line.Fonts;
+        int[] glyphs = line.Glyphs;
+        float[] shifts = new float[glyphs.Length];
+        float room = width - line.Width;
+        if (line.Width <= 0f || room <= 0f) {
+            return shifts;
+        }
+        if (textAlignment == Alignment.CENTER || textAlignment == Alignment.RIGHT) {
+            float shift = textAlignment == Alignment.CENTER ? room / 2f : room;
+            for (int i = 0; i < shifts.Length; i++) {
+                shifts[i] = shift;
+            }
+        } else if (textAlignment == Alignment.JUSTIFY && !last) {
+            // The spaces between the words: not those at the end of the line
+            int end = glyphs.Length;
+            while (end > 0 && IsSpace(fontOf[end - 1], glyphs[end - 1], spaces)) {
+                end--;
+            }
+            int count = 0;
+            for (int i = 0; i < end; i++) {
+                if (IsSpace(fontOf[i], glyphs[i], spaces)) {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                float shift = 0f;
+                for (int i = 0; i < glyphs.Length; i++) {
+                    shifts[i] = shift;
+                    if (i < end && IsSpace(fontOf[i], glyphs[i], spaces)) {
+                        shift += room / count;
+                    }
+                }
+            }
+        }
+        return shifts;
+    }
+
+    private static bool IsSpace(int font, int glyph, int[] spaces) {
+        return font >= 0 && font < spaces.Length && spaces[font] != 0 && glyph == spaces[font];
     }
 
     // The lines, shaped the first time they are needed

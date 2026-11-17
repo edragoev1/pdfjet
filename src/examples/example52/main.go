@@ -167,6 +167,14 @@ func (shaper *goTextShaper) Shape(text, lang string, fontFiles [][]byte, fontSiz
 		if last < len(glyphs) {
 			line.End = offsets[glyphs[last].cluster]
 		}
+		// The width of the line without the spaces at its end
+		visible := last
+		for visible > first && runes[glyphs[visible-1].cluster] == ' ' {
+			visible--
+		}
+		if visible > first {
+			line.Width = glyphs[visible-1].x + glyphs[visible-1].advance - lineStart
+		}
 		for i := first; i < last; i++ {
 			line.Fonts = append(line.Fonts, glyphs[i].font)
 			line.Glyphs = append(line.Glyphs, glyphs[i].id)

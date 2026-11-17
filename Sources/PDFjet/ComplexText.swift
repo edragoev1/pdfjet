@@ -47,6 +47,8 @@ public class ComplexText: Drawable {
     private var y: Float = 0.0
     private var width: Float = 300.0
     private var textColor: Int32 = Color.black
+    private var textAlignment = Alignment.LEFT
+    private var lineSpacing: Float = 1.0
     private var structureType = StructElem.P
     private var shaper: Shaper?
     private var lines: [ShapedLine]?    // Shaped, until a font, the language or the width changes
@@ -101,6 +103,22 @@ public class ComplexText: Drawable {
     @discardableResult
     public func setTextColor(_ color: Int32) -> ComplexText {
         self.textColor = color
+        return self
+    }
+
+    /// Sets the alignment of the lines: LEFT, the default, CENTER, RIGHT or
+    /// JUSTIFY, which spreads the words of each line but the last to the width.
+    @discardableResult
+    public func setTextAlignment(_ textAlignment: Alignment) -> ComplexText {
+        self.textAlignment = textAlignment
+        return self
+    }
+
+    /// Sets the line spacing as a multiple of the font's body height, as
+    /// TextBlock's: 1.0 by default.
+    @discardableResult
+    public func setLineSpacing(_ lineSpacing: Float) -> ComplexText {
+        self.lineSpacing = lineSpacing
         return self
     }
 
@@ -164,14 +182,17 @@ public class ComplexText: Drawable {
         if own {
             page.addBDC(structureType, language, nil, nil)
         }
+        // The space of each font, for justified lines
+        let spaces = fonts.map { $0.unicodeToGID[0x20] }
         var top = y
-        for line in shapedLines {
+        for (n, line) in shapedLines.enumerated() {
             let lineText = String(decoding: utf16[line.start..<line.end], as: UTF16.self)
             let baseline = top + ascent
             top += height
             if lineText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 continue
             }
+            let shifts = self.shifts(line, n == shapedLines.count - 1, spaces)
             page.beginActualText(lineText, language)
             // The glyphs of each font, one run of them at a time
             var from = 0
@@ -186,7 +207,7 @@ public class ComplexText: Drawable {
                     var places = [Float]()
                     for i in from..<to {
                         run.append(line.glyphs[i])
-                        places.append(x + line.positions[2 * i])
+                        places.append(x + line.positions[2 * i] + shifts[i])
                         places.append(baseline + line.positions[2 * i + 1])
                     }
                     if !page.glyphsDrawable(fonts[index], run, places) {
@@ -204,9 +225,45 @@ public class ComplexText: Drawable {
         return [x + width, top]
     }
 
+    // The distance from a line to the next, as TextBlock's
     private func lineHeight() -> Float {
-        // The line's ascent and descent, and a quarter of the size between lines
-        return font.getAscent() + font.getDescent() + 0.25 * font.getSize()
+        return (font.getAscent() + font.getDescent() + font.getLineGap(font.getSize())) * lineSpacing
+    }
+
+    // How far each glyph of the line moves to the right, for its alignment:
+    // all the same for CENTER and RIGHT; for JUSTIFY, each glyph by the room
+    // given to the spaces before it, the last line left as it is.
+    private func shifts(_ line: ShapedLine, _ last: Bool, _ spaces: [Int]) -> [Float] {
+        var shifts = [Float](repeating: 0, count: line.glyphs.count)
+        let room = width - line.width
+        if line.width <= 0 || room <= 0 {
+            return shifts
+        }
+        func isSpace(_ i: Int) -> Bool {
+            let font = line.fonts[i]
+            return font >= 0 && font < spaces.count && spaces[font] != 0 && line.glyphs[i] == spaces[font]
+        }
+        if textAlignment == Alignment.CENTER || textAlignment == Alignment.RIGHT {
+            let shift = textAlignment == Alignment.CENTER ? room / 2 : room
+            shifts = [Float](repeating: shift, count: line.glyphs.count)
+        } else if textAlignment == Alignment.JUSTIFY && !last {
+            // The spaces between the words: not those at the end of the line
+            var end = line.glyphs.count
+            while end > 0 && isSpace(end - 1) {
+                end -= 1
+            }
+            let count = (0..<end).filter { isSpace($0) }.count
+            if count > 0 {
+                var shift: Float = 0
+                for i in 0..<line.glyphs.count {
+                    shifts[i] = shift
+                    if i < end && isSpace(i) {
+                        shift += room / Float(count)
+                    }
+                }
+            }
+        }
+        return shifts
     }
 
     // The lines, shaped the first time they are needed

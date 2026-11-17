@@ -73,7 +73,8 @@ final class AwtShaper implements Shaper {
         LineBreakMeasurer measurer = new LineBreakMeasurer(styled.getIterator(), CONTEXT);
         while (measurer.getPosition() < text.length()) {
             int start = measurer.getPosition();
-            measurer.nextLayout(width);
+            // The width of the line without the white space at its end
+            float visible = measurer.nextLayout(width).getVisibleAdvance();
             int end = measurer.getPosition();
             // The line, a run of one font at a time
             List<Integer> fontOf = new ArrayList<Integer>();
@@ -103,7 +104,7 @@ final class AwtShaper implements Shaper {
                 offset += (float) shaped.getGlyphPosition(count).getX();
                 runStart = runEnd;
             }
-            lines.add(new ShapedLine(start, end, ints(fontOf), ints(glyphs), floats(positions)));
+            lines.add(new ShapedLine(start, end, ints(fontOf), ints(glyphs), floats(positions), visible));
         }
         return lines;
     }

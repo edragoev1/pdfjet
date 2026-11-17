@@ -16,6 +16,7 @@ public final class ShapedLine {
     private final int[] fonts;
     private final int[] glyphs;
     private final float[] positions;
+    private final float width;
 
     /**
      * A shaped line.
@@ -29,8 +30,10 @@ public final class ShapedLine {
      * @param positions the x and the y of each glyph, in points, from the left
      *     end of the line at its baseline, y growing down: x0, y0, x1, y1 and
      *     so on.
+     * @param width the width of the line, in points, without the white space
+     *     at its end: what is centered, aligned to the right or justified.
      */
-    public ShapedLine(int start, int end, int[] fonts, int[] glyphs, float[] positions) {
+    public ShapedLine(int start, int end, int[] fonts, int[] glyphs, float[] positions, float width) {
         if (fonts.length != glyphs.length || positions.length != 2 * glyphs.length) {
             throw new IllegalArgumentException("A shaped line needs a font and an x and a y for each glyph.");
         }
@@ -39,6 +42,7 @@ public final class ShapedLine {
         this.fonts = fonts;
         this.glyphs = glyphs;
         this.positions = positions;
+        this.width = width;
     }
 
     /** @return the index in the text of the line's first character. */
@@ -64,5 +68,10 @@ public final class ShapedLine {
     /** @return the x and the y of each glyph, from the line's left end at its baseline. */
     public float[] getPositions() {
         return positions;
+    }
+
+    /** @return the width of the line, without the white space at its end. */
+    public float getWidth() {
+        return width;
     }
 }   // End of ShapedLine.java
