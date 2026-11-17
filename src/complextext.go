@@ -22,15 +22,26 @@ import (
 // of its own that gives glyphs: a program gives one, such as a shaper that
 // calls go-text/typesetting, HarfBuzz in Go.
 type Shaper interface {
-	// Shape wraps the text to the width and shapes each line.
-	//   - text: the text.
-	//   - language: the language of the text, such as "hi" or "km", or "".
-	//   - fontFiles: the bytes of the font files: the first for the text, the
-	//     others, in order, for the characters it does not have.
-	//   - fontSize: the font size, in points.
-	//   - width: the width of the lines, in points.
-	// Returns the lines, in order.
-	Shape(text, language string, fontFiles [][]byte, fontSize, width float32) ([]ShapedLine, error)
+	// Shape wraps the text to the width and shapes each line: the text, its
+	// language, the font files, the font size and the width of the lines are
+	// in the request. It returns the lines, in order.
+	Shape(request ShapingRequest) ([]ShapedLine, error)
+}
+
+// ShapingRequest is what a Shaper is asked to shape. One struct, so that what
+// a shaper is told can grow without changing the Shaper interface.
+type ShapingRequest struct {
+	// Text is the text.
+	Text string
+	// Language is the language of the text, such as "hi" or "km", or "".
+	Language string
+	// FontFiles are the bytes of the font files: the first for the text, the
+	// others, in order, for the characters it does not have.
+	FontFiles [][]byte
+	// FontSize is the font size, in points.
+	FontSize float32
+	// Width is the width of the lines, in points.
+	Width float32
 }
 
 // ShapedLine is a line of text a Shaper shaped: the part of the text it
@@ -40,10 +51,10 @@ type ShapedLine struct {
 	Start int
 	// End is the index in the text, in bytes, after the line's last character.
 	End int
-	// Fonts is, for each glyph, the index of its font among the font files
-	// the shaper was given, or -1 for a glyph of none of them, which is not
-	// drawn.
-	Fonts []int
+	// FontIndexes is, for each glyph, the index of its font among the font
+	// files the shaper was given, or -1 for a glyph of none of them, which is
+	// not drawn.
+	FontIndexes []int
 	// Glyphs are the glyph numbers, in their fonts.
 	Glyphs []int
 	// Positions are the x and the y of each glyph, in points, from the left
@@ -108,7 +119,7 @@ type ComplexText struct {
 	x, y          float32
 	width         float32
 	height        float32 // 0: all of the text
-	paragraphGap  float32 // Less than 0: half the font's size
+	paragraphGap  float32 // Less than 0: one empty line, as TextFrame's
 	textColor     int32
 	textAlignment alignment.Alignment
 	lineSpacing   float32
@@ -188,8 +199,8 @@ func (complexText *ComplexText) SetHeight(height float32) *ComplexText {
 }
 
 // SetParagraphGap sets the space between paragraphs, from the bottom of a
-// paragraph's last line to the top of the next one's first; half the font's
-// size by default. A negative gap is taken as 0.
+// paragraph's last line to the top of the next one's first; one empty line by
+// default, as TextFrame's. A negative gap is taken as 0.
 func (complexText *ComplexText) SetParagraphGap(paragraphGap float32) *ComplexText {
 	complexText.paragraphGap = max(0, paragraphGap)
 	return complexText
@@ -248,10 +259,16 @@ func (complexText *ComplexText) HasMoreText() (bool, error) {
 	return false, nil
 }
 
-// GetHeight returns the height of the text not drawn yet, wrapped to the
+// GetHeight returns the height set with SetHeight, as TextFrame's; 0 for
+// none.
+func (complexText *ComplexText) GetHeight() float32 {
+	return complexText.height
+}
+
+// GetTextHeight returns the height of the text not drawn yet, wrapped to the
 // width, whatever the height set, in points: it shapes the text, if it is not
 // shaped yet.
-func (complexText *ComplexText) GetHeight() (float32, error) {
+func (complexText *ComplexText) GetTextHeight() (float32, error) {
 	var total float32
 	first := true
 	for p := complexText.paragraph; p < len(complexText.paragraphs); p++ {
@@ -361,10 +378,10 @@ func (complexText *ComplexText) drawLine(page *Page, line ShapedLine, text strin
 	page.beginActualText(lineText, complexText.language)
 	for from := 0; from < len(line.Glyphs); {
 		to := from
-		for to < len(line.Glyphs) && line.Fonts[to] == line.Fonts[from] {
+		for to < len(line.Glyphs) && line.FontIndexes[to] == line.FontIndexes[from] {
 			to++
 		}
-		index := line.Fonts[from]
+		index := line.FontIndexes[from]
 		if index >= 0 && index < len(fonts) {
 			run := make([]int, to-from)
 			places := make([]float32, 2*(to-from))
@@ -399,11 +416,15 @@ func (complexText *ComplexText) lineHeight() float32 {
 	return (font.GetAscent(size) + font.GetDescent(size) + font.GetLineGap(size)) * complexText.lineSpacing
 }
 
+// gap returns the space between paragraphs: one empty line by default, as
+// TextFrame's, the ascent and the descent and the line gap on each side.
 func (complexText *ComplexText) gap() float32 {
-	if complexText.paragraphGap < 0 {
-		return complexText.font.GetSize() / 2
+	if complexText.paragraphGap >= 0 {
+		return complexText.paragraphGap
 	}
-	return complexText.paragraphGap
+	font := complexText.font
+	size := font.GetSize()
+	return font.GetAscent(size) + font.GetDescent(size) + float32(2*font.GetLineGap(size))
 }
 
 // shifts returns how far each glyph of the line moves to the right, for its
@@ -416,7 +437,7 @@ func (complexText *ComplexText) shifts(line ShapedLine, last bool, spaces []int)
 		return shifts
 	}
 	isSpace := func(i int) bool {
-		f := line.Fonts[i]
+		f := line.FontIndexes[i]
 		return f >= 0 && f < len(spaces) && spaces[f] != 0 && line.Glyphs[i] == spaces[f]
 	}
 	switch {
@@ -482,13 +503,13 @@ func (complexText *ComplexText) shaped(p int) ([]ShapedLine, error) {
 		files[i] = file
 	}
 	text := complexText.paragraphs[p]
-	lines, err := complexText.shaper.Shape(text, complexText.language, files,
-		complexText.shapedSize, complexText.width)
+	lines, err := complexText.shaper.Shape(ShapingRequest{Text: text, Language: complexText.language,
+		FontFiles: files, FontSize: complexText.shapedSize, Width: complexText.width})
 	if err != nil {
 		return nil, err
 	}
 	for _, line := range lines {
-		if len(line.Fonts) != len(line.Glyphs) || len(line.Positions) != 2*len(line.Glyphs) ||
+		if len(line.FontIndexes) != len(line.Glyphs) || len(line.Positions) != 2*len(line.Glyphs) ||
 			line.Start < 0 || line.Start > line.End || line.End > len(text) {
 			return nil, errors.New("A shaped line needs a font and an x and a y for each glyph, " +
 				"and its part of the text.")

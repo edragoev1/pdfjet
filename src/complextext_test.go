@@ -35,12 +35,11 @@ type testFixedShaper struct {
 	language string
 }
 
-func (shaper *testFixedShaper) Shape(text, language string, fontFiles [][]byte, fontSize, width float32) (
-	[]ShapedLine, error) {
-	shaper.files = fontFiles
-	shaper.size = fontSize
-	shaper.width = width
-	shaper.language = language
+func (shaper *testFixedShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
+	shaper.files = request.FontFiles
+	shaper.size = request.FontSize
+	shaper.width = request.Width
+	shaper.language = request.Language
 	return shaper.lines, nil
 }
 
@@ -52,9 +51,9 @@ func TestComplexTextTheShaperGivesTheGlyphsAndTheirPlaces(t *testing.T) {
 	a := font.unicodeToGID.get('A')
 	b := fallback.unicodeToGID.get('B')
 	shaper := &testFixedShaper{lines: []ShapedLine{
-		{Start: 0, End: 2, Fonts: []int{0, 1}, Glyphs: []int{a, b}, Positions: []float32{0, 0, 7, 0}, Width: 13},
+		{Start: 0, End: 2, FontIndexes: []int{0, 1}, Glyphs: []int{a, b}, Positions: []float32{0, 0, 7, 0}, Width: 13},
 		// A glyph of a font that was not given is not drawn
-		{Start: 2, End: 3, Fonts: []int{-1}, Glyphs: []int{5}, Positions: []float32{0, 0}},
+		{Start: 2, End: 3, FontIndexes: []int{-1}, Glyphs: []int{5}, Positions: []float32{0, 0}},
 	}}
 	page := NewPage(doc.pdf, letter.Portrait())
 	corner := NewComplexText(font, "ABC").
@@ -100,8 +99,8 @@ func TestComplexTextATaggedTextIsAParagraphOfLinesWithTheirText(t *testing.T) {
 	a := font.unicodeToGID.get('A')
 	b := font.unicodeToGID.get('B')
 	shaper := &testFixedShaper{lines: []ShapedLine{
-		{Start: 0, End: 2, Fonts: []int{0, 0}, Glyphs: []int{a, a}, Positions: []float32{0, 0, 7, 0}},
-		{Start: 2, End: 4, Fonts: []int{0, 0}, Glyphs: []int{b, b}, Positions: []float32{0, 0, 7, 0}},
+		{Start: 0, End: 2, FontIndexes: []int{0, 0}, Glyphs: []int{a, a}, Positions: []float32{0, 0, 7, 0}},
+		{Start: 2, End: 4, FontIndexes: []int{0, 0}, Glyphs: []int{b, b}, Positions: []float32{0, 0, 7, 0}},
 	}}
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewComplexText(font, "AABB").SetLanguage("hi").SetShaper(shaper).SetLocation(50, 100).DrawOn(page)
@@ -150,7 +149,7 @@ func TestComplexTextTheFontFileIsWhatTheFontWasLoadedFrom(t *testing.T) {
 func TestComplexTextWithoutAShaperOrAFontFileItSaysSo(t *testing.T) {
 	doc := testNewDoc()
 	fromPath := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
-	if _, err := NewComplexText(fromPath, "x").GetHeight(); err == nil || !strings.Contains(err.Error(), "SetShaper") {
+	if _, err := NewComplexText(fromPath, "x").GetTextHeight(); err == nil || !strings.Contains(err.Error(), "SetShaper") {
 		t.Errorf("no shaper: %v", err)
 	}
 	otf, err := os.ReadFile(testRepoPath(t, testComplexLatin))
@@ -158,7 +157,7 @@ func TestComplexTextWithoutAShaperOrAFontFileItSaysSo(t *testing.T) {
 		t.Fatal(err)
 	}
 	fromReader := NewFont(doc.pdf, bytes.NewReader(otf))
-	_, err = NewComplexText(fromReader, "x").SetShaper(&testFixedShaper{}).GetHeight()
+	_, err = NewComplexText(fromReader, "x").SetShaper(&testFixedShaper{}).GetTextHeight()
 	if err == nil || !strings.Contains(err.Error(), "font files") {
 		t.Errorf("an .otf from a reader: %v", err)
 	}
@@ -180,9 +179,9 @@ func testAligned(t *testing.T, textAlignment alignment.Alignment) []float32 {
 	b := font.unicodeToGID.get('B')
 	space := font.unicodeToGID.get(' ')
 	shaper := &testFixedShaper{lines: []ShapedLine{
-		{Start: 0, End: 6, Fonts: []int{0, 0, 0, 0, 0, 0}, Glyphs: []int{a, space, a, space, b, space},
+		{Start: 0, End: 6, FontIndexes: []int{0, 0, 0, 0, 0, 0}, Glyphs: []int{a, space, a, space, b, space},
 			Positions: []float32{0, 0, 10, 0, 12, 0, 22, 0, 24, 0, 30, 0}, Width: 30},
-		{Start: 6, End: 7, Fonts: []int{0}, Glyphs: []int{b}, Positions: []float32{0, 0}, Width: 6},
+		{Start: 6, End: 7, FontIndexes: []int{0}, Glyphs: []int{b}, Positions: []float32{0, 0}, Width: 6},
 	}}
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewComplexText(font, "A A B B").SetShaper(shaper).SetTextAlignment(textAlignment).
@@ -223,14 +222,14 @@ func TestComplexTextTheLineSpacingIsAMultipleOfTheBodyHeightAsTextBlocks(t *test
 	font.SetSize(10)
 	a := font.unicodeToGID.get('A')
 	shaper := &testFixedShaper{lines: []ShapedLine{
-		{Start: 0, End: 1, Fonts: []int{0}, Glyphs: []int{a}, Positions: []float32{0, 0}, Width: 7},
-		{Start: 1, End: 2, Fonts: []int{0}, Glyphs: []int{a}, Positions: []float32{0, 0}, Width: 7},
+		{Start: 0, End: 1, FontIndexes: []int{0}, Glyphs: []int{a}, Positions: []float32{0, 0}, Width: 7},
+		{Start: 1, End: 2, FontIndexes: []int{0}, Glyphs: []int{a}, Positions: []float32{0, 0}, Width: 7},
 	}}
 	text := NewComplexText(font, "AA").SetShaper(shaper)
 	body := font.GetAscent(10) + font.GetDescent(10) + font.GetLineGap(10)
-	height, _ := text.GetHeight()
+	height, _ := text.GetTextHeight()
 	testNear(t, "at 1.0", 2*body, height, 0.001)
-	height, _ = text.SetLineSpacing(1.5).GetHeight()
+	height, _ = text.SetLineSpacing(1.5).GetTextHeight()
 	testNear(t, "at 1.5", 3*body, height, 0.001)
 }
 
@@ -240,11 +239,10 @@ type testLetterShaper struct {
 	font *Font
 }
 
-func (shaper *testLetterShaper) Shape(text, language string, fontFiles [][]byte, fontSize, width float32) (
-	[]ShapedLine, error) {
+func (shaper *testLetterShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 	var lines []ShapedLine
-	for i, r := range text {
-		lines = append(lines, ShapedLine{Start: i, End: i + 1, Fonts: []int{0},
+	for i, r := range request.Text {
+		lines = append(lines, ShapedLine{Start: i, End: i + 1, FontIndexes: []int{0},
 			Glyphs: []int{shaper.font.unicodeToGID.get(r)}, Positions: []float32{0, 0}, Width: 7})
 	}
 	return lines, nil
@@ -261,7 +259,7 @@ func TestComplexTextParagraphsFlowFromPageToPageCutWhereTheHeightEnds(t *testing
 		SetLanguage("en").
 		SetParagraphGap(5).
 		SetHeight(4*line + 5)
-	height, _ := text.GetHeight()
+	height, _ := text.GetTextHeight()
 	testNear(t, "the height of all", 6*line+5, height, 0.001)
 	// Three lines of the first paragraph, the gap, one of the second
 	first := NewPage(doc.pdf, letter.Portrait())
@@ -270,7 +268,7 @@ func TestComplexTextParagraphsFlowFromPageToPageCutWhereTheHeightEnds(t *testing
 	if more, _ := text.HasMoreText(); !more {
 		t.Error("no more text after the first page")
 	}
-	height, _ = text.GetHeight()
+	height, _ = text.GetTextHeight()
 	testNear(t, "the height left", 2*line, height, 0.001)
 	content := testContent(first)
 	if strings.Count(content, " cm /Fm") != 4 || strings.Count(content, "/P <<") != 2 {
@@ -302,4 +300,19 @@ func TestComplexTextAHeightTooSmallForALineStillDrawsOneEachTime(t *testing.T) {
 	if pages != 2 {
 		t.Errorf("%d pages", pages)
 	}
+}
+
+func TestComplexTextGetHeightIsTheHeightSetAndTheGapIsTextFramesEmptyLine(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
+	font.SetSize(10)
+	text := NewComplexTextFromList(font, []string{"A", "B"}).SetShaper(&testLetterShaper{font})
+	if text.GetHeight() != 0 || text.SetHeight(500).GetHeight() != 500 {
+		t.Error("GetHeight is not the height set")
+	}
+	// Two lines, one empty line between them, as a TextFrame's default
+	line := font.GetAscent(10) + font.GetDescent(10) + font.GetLineGap(10)
+	gap := font.GetAscent(10) + font.GetDescent(10) + float32(2*font.GetLineGap(10))
+	height, _ := text.GetTextHeight()
+	testNear(t, "two lines and the gap", float32(2*line)+gap, height, 0.001)
 }

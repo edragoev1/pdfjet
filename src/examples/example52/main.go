@@ -92,8 +92,9 @@ func scriptOf(runes []rune) language.Script {
 	return language.Latin
 }
 
-func (shaper *goTextShaper) Shape(text, lang string, fontFiles [][]byte, fontSize, width float32) (
-	[]pdfjet.ShapedLine, error) {
+func (shaper *goTextShaper) Shape(request pdfjet.ShapingRequest) ([]pdfjet.ShapedLine, error) {
+	text, lang, fontFiles := request.Text, request.Language, request.FontFiles
+	fontSize, width := request.FontSize, request.Width
 	faces := make([]*font.Face, len(fontFiles))
 	for i, file := range fontFiles {
 		face, err := shaper.face(file)
@@ -177,7 +178,7 @@ func (shaper *goTextShaper) Shape(text, lang string, fontFiles [][]byte, fontSiz
 			line.Width = glyphs[visible-1].x + glyphs[visible-1].advance - lineStart
 		}
 		for i := first; i < last; i++ {
-			line.Fonts = append(line.Fonts, glyphs[i].font)
+			line.FontIndexes = append(line.FontIndexes, glyphs[i].font)
 			line.Glyphs = append(line.Glyphs, glyphs[i].id)
 			line.Positions = append(line.Positions, glyphs[i].x-lineStart, glyphs[i].y)
 		}
