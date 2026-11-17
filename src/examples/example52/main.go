@@ -33,8 +33,8 @@ import (
 // screen and in print, and read by screen readers, as each paragraph is
 // tagged with its text and its language. Go has no text engine of its own
 // that gives glyphs: goTextShaper below is the shaper ComplexText is given.
-// A page of each, filled with the Universal Declaration of Human Rights from
-// its beginning: Hindi on the first page, Khmer on the second.
+// The Universal Declaration of Human Rights in Hindi, then in Khmer: the
+// paragraphs flow from page to page, a paragraph cut where a page ends.
 //
 // The example is a module of its own: go-text is its dependency, never
 // PDFjet's. Run it from the folder of the repository:
@@ -49,6 +49,7 @@ const (
 	size   = float32(10.5)
 	left   = float32(50)
 	width  = float32(512)
+	top    = float32(50)  // The top margin
 	bottom = float32(742) // The page's 792 points less the margin
 )
 
@@ -186,9 +187,9 @@ func (shaper *goTextShaper) Shape(text, lang string, fontFiles [][]byte, fontSiz
 	return lines, nil
 }
 
-// drawPage draws a page of the Declaration in the language, its paragraphs
-// from the beginning until the page is full, and returns the text drawn.
-func drawPage(pdf *pdfjet.PDF, heading, body *pdfjet.Font, shaper pdfjet.Shaper, name, lang,
+// draw draws the Declaration in the language, from a new page, on as many
+// pages as it takes, and returns its text.
+func draw(pdf *pdfjet.PDF, heading, body *pdfjet.Font, shaper pdfjet.Shaper, name, lang,
 	scriptFile, textFile string) string {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(heading, "Universal Declaration of Human Rights, in "+name).
@@ -206,30 +207,37 @@ func drawPage(pdf *pdfjet.PDF, heading, body *pdfjet.Font, shaper pdfjet.Shaper,
 	script.SetSize(size)
 	latinFont := pdfjet.NewFontFromFile(pdf, latin)
 
-	var drawn strings.Builder
-	y := float32(96) // The top of the next paragraph
-	for _, paragraph := range paragraphs(textFile) {
-		text := pdfjet.NewComplexText(script, paragraph).
-			SetFallbackFont(latinFont).
-			SetLanguage(lang).
-			SetShaper(shaper).
-			SetWidth(width)
-		height, err := text.GetHeight()
+	paragraphs := paragraphs(textFile)
+	text := pdfjet.NewComplexTextFromList(script, paragraphs).
+		SetFallbackFont(latinFont).
+		SetLanguage(lang).
+		SetShaper(shaper).
+		SetWidth(width).
+		SetParagraphGap(0.5 * size)
+	y := float32(96) // Below the heading, on the first page
+	for {
+		text.SetHeight(bottom-y).SetLocation(left, y).DrawOn(page)
+		more, err := text.HasMoreText()
 		if err != nil {
 			log.Fatal(err)
 		}
-		if y+height > bottom {
-			break // The page is full
+		if !more {
+			break
 		}
-		y = text.SetLocation(left, y).DrawOn(page)[1] + 0.5*size
-		// A blank line between paragraphs, as plain text has them
-		if drawn.Len() > 0 {
-			drawn.WriteString("\n")
-		}
-		drawn.WriteString(paragraph)
-		drawn.WriteString("\n")
+		page = pdfjet.NewPage(pdf, letter.Portrait())
+		y = top
 	}
-	return drawn.String()
+
+	// A blank line between paragraphs, as plain text has them
+	var all strings.Builder
+	for _, paragraph := range paragraphs {
+		if all.Len() > 0 {
+			all.WriteString("\n")
+		}
+		all.WriteString(paragraph)
+		all.WriteString("\n")
+	}
+	return all.String()
 }
 
 // paragraphs returns the paragraphs of the text file, one to a line.
@@ -270,9 +278,9 @@ func Example52() {
 	body.SetSize(9)
 
 	shaper := &goTextShaper{faces: make(map[*byte]*font.Face)}
-	hindi := drawPage(pdf, heading, body, shaper, "Hindi", "hi", devanagari,
+	hindi := draw(pdf, heading, body, shaper, "Hindi", "hi", devanagari,
 		"resources/data/udhr/udhr_hin.txt")
-	khmerText := drawPage(pdf, heading, body, shaper, "Khmer", "km", khmer,
+	khmerText := draw(pdf, heading, body, shaper, "Khmer", "km", khmer,
 		"resources/data/udhr/udhr_khm.txt")
 
 	// The pages draw the text as outlines, which cannot be selected or

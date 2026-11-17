@@ -233,3 +233,73 @@ func TestComplexTextTheLineSpacingIsAMultipleOfTheBodyHeightAsTextBlocks(t *test
 	height, _ = text.SetLineSpacing(1.5).GetHeight()
 	testNear(t, "at 1.5", 3*body, height, 0.001)
 }
+
+// testLetterShaper gives each paragraph as many lines as its letters, one
+// glyph of the letter each.
+type testLetterShaper struct {
+	font *Font
+}
+
+func (shaper *testLetterShaper) Shape(text, language string, fontFiles [][]byte, fontSize, width float32) (
+	[]ShapedLine, error) {
+	var lines []ShapedLine
+	for i, r := range text {
+		lines = append(lines, ShapedLine{Start: i, End: i + 1, Fonts: []int{0},
+			Glyphs: []int{shaper.font.unicodeToGID.get(r)}, Positions: []float32{0, 0}, Width: 7})
+	}
+	return lines, nil
+}
+
+func TestComplexTextParagraphsFlowFromPageToPageCutWhereTheHeightEnds(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
+	font.SetSize(10)
+	line := font.GetAscent(10) + font.GetDescent(10) + font.GetLineGap(10)
+	text := NewComplexTextFromList(font, []string{"AAA", "BBB"}).
+		SetShaper(&testLetterShaper{font}).
+		SetLanguage("en").
+		SetParagraphGap(5).
+		SetHeight(4*line + 5)
+	height, _ := text.GetHeight()
+	testNear(t, "the height of all", 6*line+5, height, 0.001)
+	// Three lines of the first paragraph, the gap, one of the second
+	first := NewPage(doc.pdf, letter.Portrait())
+	corner := text.SetLocation(50, 100).DrawOn(first)
+	testNear(t, "the bottom on the first page", 100+4*line+5, corner[1], 0.001)
+	if more, _ := text.HasMoreText(); !more {
+		t.Error("no more text after the first page")
+	}
+	height, _ = text.GetHeight()
+	testNear(t, "the height left", 2*line, height, 0.001)
+	content := testContent(first)
+	if strings.Count(content, " cm /Fm") != 4 || strings.Count(content, "/P <<") != 2 {
+		t.Error(content)
+	}
+	// The rest of the second paragraph, from the top of the next page
+	second := NewPage(doc.pdf, letter.Portrait())
+	corner = text.SetLocation(50, 50).DrawOn(second)
+	testNear(t, "the bottom on the second page", 50+2*line, corner[1], 0.001)
+	if more, _ := text.HasMoreText(); more {
+		t.Error("more text after the second page")
+	}
+	if strings.Count(testContent(second), " cm /Fm") != 2 {
+		t.Error(testContent(second))
+	}
+	doc.complete()
+}
+
+func TestComplexTextAHeightTooSmallForALineStillDrawsOneEachTime(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
+	font.SetSize(10)
+	text := NewComplexText(font, "AB").SetShaper(&testLetterShaper{font}).SetHeight(1)
+	pages := 0
+	for more, _ := text.HasMoreText(); more; more, _ = text.HasMoreText() {
+		text.SetLocation(0, 0).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+		pages++
+	}
+	if pages != 2 {
+		t.Errorf("%d pages", pages)
+	}
+}
