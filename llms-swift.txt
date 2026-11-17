@@ -8,11 +8,11 @@ In the `Package.swift` of your package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.9"),
+    .package(url: "https://github.com/edragoev1/pdfjet-swift", from: "9.1.9"),
 ],
 targets: [
     .executableTarget(name: "App", dependencies: [
-        .product(name: "PDFjet", package: "pdfjet"),
+        .product(name: "PDFjet", package: "pdfjet-swift"),
     ]),
 ]
 ```

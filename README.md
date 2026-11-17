@@ -41,7 +41,7 @@ same output come in four languages, and none of them needs a third-party library
 > | Gradle | `implementation("com.pdfjet:pdfjet-fonts-world:9.1.9")` |
 > | NuGet | `dotnet add package PDFjet.Fonts.World` |
 > | Go | `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"` |
-> | Swift | `.product(name: "PDFjetFontsWorld", package: "pdfjet")` |
+> | Swift | `.product(name: "PDFjetFontsWorld", package: "pdfjet-swift")` |
 >
 > From 9.1.7 the jar of Maven Central, the package of NuGet, a Go program
 > and the Swift product carry IBM Plex Sans and Serif and Cascadia Mono,
@@ -340,16 +340,20 @@ the streams, and none of Apple's frameworks (no CoreGraphics, PDFKit or
 CryptoKit): its compression, encryption, fonts, images and layout are its
 own. The Build workflow tests it on Linux and on macOS on every push.
 
-Add PDFjet to the `Package.swift` of your package:
+Add PDFjet to the `Package.swift` of your package, from
+[pdfjet-swift](https://github.com/edragoev1/pdfjet-swift): the same library,
+copied there from each release with the same version, as a download of about
+50 MB, where SwiftPM would clone this whole repository, about 1 GB of history
+of the four ports, their examples and their test data:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.9"),
+    .package(url: "https://github.com/edragoev1/pdfjet-swift", from: "9.1.9"),
 ],
 targets: [
     .executableTarget(name: "App", dependencies: [
-        .product(name: "PDFjet", package: "pdfjet"),
-        .product(name: "PDFjetFontsWorld", package: "pdfjet"),   // Only for scripts not European
+        .product(name: "PDFjet", package: "pdfjet-swift"),
+        .product(name: "PDFjetFontsWorld", package: "pdfjet-swift"),   // Only for scripts not European
     ]),
 ]
 ```
