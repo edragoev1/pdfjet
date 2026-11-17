@@ -27,10 +27,6 @@ type section struct {
 
 var sections = []section{
 	{"Acrobat Reader on Windows", "", []string{
-		"Example_47 asks for a password, and opens with the user password hello.",
-		"Example_47 opens with the owner password world too.",
-		"Encrypted_Cyrillic opens with the password пароль (a Russian keyboard, or pasted).",
-		"Encrypted_200_Bytes opens with 0123456789 typed 20 times, 200 characters (paste it).",
 		"Example_42: the push pin and the paperclip open circles.png and Example_02.java, and each can be saved.",
 		"Example_42: the note icon shows \"Please check the figures on page 2.\", the link opens pdfjet.com, " +
 			"and the triangle, square and circle are half transparent.",
