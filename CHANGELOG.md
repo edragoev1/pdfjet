@@ -21,7 +21,12 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   language for screen readers. `setTextAlignment` aligns the lines to the
   left, the center or the right, or justifies them (the words of each line
   but the last spread to the width); `setLineSpacing` is a multiple of the
-  font's body height, as `TextBlock`'s, 1.0 by default. The engine is a
+  font's body height, as `TextBlock`'s, 1.0 by default. Given a list of
+  paragraphs (Go `NewComplexTextFromList`), it flows from page to page as a
+  `TextFrame` does: with `setHeight`, `drawOn` draws the lines that fit, a
+  paragraph cut where the height ends, and keeps the rest for the next
+  `drawOn`, while `hasMoreText`; `setParagraphGap` sets the space between
+  paragraphs, half the font's size by default. The engine is a
   `Shaper`: Java's
   java.awt.font on servers and desktops, and Android's own on Android 12 and
   later, both in the one jar; Core Text in Swift on Apple platforms; in .NET
@@ -30,8 +35,8 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   the examples, never of PDFjet). The fonts are loaded by path, as the fonts
   PDFjet carries are, or from their bytes, with the new `Font(pdf, byte[])`
   (Go `NewFontFromBytes`), as the engine reads the same file. Example_52 in
-  the four ports draws with it: the same glyphs at the same places, each
-  page ending at the last paragraph that fits. On Android 12 and 15
+  the four ports draws with it the whole Declaration, in Hindi and then in
+  Khmer, 7 pages, and attaches the whole text. On Android 12 and 15
   (emulators) a page of Hindi or Khmer is about 132 KB and passes PDF/UA.
 - **Smaller glyphs from `drawGlyphs`**, in the four ports. Each glyph's
   outline is written in whole units of the font, where the control points of

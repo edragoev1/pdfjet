@@ -102,7 +102,8 @@ same output come in four languages, and none of them needs a third-party library
 - **Hindi, Khmer and other complex scripts.** PDFjet does not shape these
   scripts itself; the platform's text engine does, and `ComplexText` draws
   what it found, as simply as a `TextBlock`: the text, the fonts, the
-  language and the width, then `drawOn`. The glyphs are drawn as outlines,
+  language and the width, then `drawOn`; aligned, justified, and given a
+  list of paragraphs, flowing from page to page. The glyphs are drawn as outlines,
   read from the font file: the same on every screen, sharp in print, and
   read by screen readers in a tagged PDF, where each line carries its real
   text and language (PDF/UA). The text cannot be selected or searched;
