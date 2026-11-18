@@ -2,7 +2,7 @@
 REM Builds the example projects of PDFjet Pro against PDFjet.dll, which
 REM has PDFjet Pro in it, and runs them.
 
-for %%e in (SignDocument WriteInvoice DrawSwissQRBill DrawEPCQRCode HyphenateText) do dotnet run --project examples\pro\%%e -c release || exit /b 1
+for %%e in (SignDocument WriteInvoice DrawSwissQRBill DrawEPCQRCode HyphenateText FillTemplate) do dotnet run --project examples\pro\%%e -c release || exit /b 1
 
 REM SignLongTerm signs with the test PKI of examples\pro\ltv, whose OCSP
 REM responder, CRLs and time stamp authority ltv-server.py answers for on

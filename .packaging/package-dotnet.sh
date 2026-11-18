@@ -239,16 +239,16 @@ mkdir pro-src
 git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj
 tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD net/pdfjet/Sign net/pdfjet/Invoice \
-    net/pdfjet/Hyphenation src/hyphenation/patterns \
-    examples/package/dotnet tests/data/rsa-signer.p12 \
+    net/pdfjet/Hyphenation net/pdfjet/Template src/hyphenation/patterns \
+    examples/package/dotnet examples/package/java/invoice-template.pdf tests/data/rsa-signer.p12 \
     tests/ltv-server.py tests/data/ltv-signer.p12 tests/data/ltv-root.pem tests/data/ltv-root.key \
     tests/data/ltv-root-index.txt tests/data/ltv-ca.pem tests/data/ltv-ca.key tests/data/ltv-ca-index.txt \
     tests/data/ltv-tsa.pem tests/data/ltv-tsa.key tests/data/ltv-ocsp.pem tests/data/ltv-ocsp.key
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
-perl -0pi -e 's|(    <Compile Include="net/pdfjet/Encryption/\*\.cs" />\n)|$1    <Compile Include="net/pdfjet/Sign/*.cs" />\n    <Compile Include="net/pdfjet/Invoice/*.cs" />\n    <Compile Include="net/pdfjet/Hyphenation/*.cs" />\n    <EmbeddedResource Include="src/hyphenation/patterns/*.txt" LogicalName="PDFjet.Hyphenation.%(Filename)%(Extension)" />\n|' \
+perl -0pi -e 's|(    <Compile Include="net/pdfjet/Encryption/\*\.cs" />\n)|$1    <Compile Include="net/pdfjet/Sign/*.cs" />\n    <Compile Include="net/pdfjet/Invoice/*.cs" />\n    <Compile Include="net/pdfjet/Hyphenation/*.cs" />\n    <Compile Include="net/pdfjet/Template/*.cs" />\n    <EmbeddedResource Include="src/hyphenation/patterns/*.txt" LogicalName="PDFjet.Hyphenation.%(Filename)%(Extension)" />\n|' \
     pro-src/PDFjet.csproj
-if ! grep -q 'net/pdfjet/Hyphenation/\*\.cs' pro-src/PDFjet.csproj; then
+if ! grep -q 'net/pdfjet/Template/\*\.cs' pro-src/PDFjet.csproj; then
     echo "The sources of PDFjet Pro could not be added to PDFjet.csproj"
     exit 1
 fi
@@ -259,6 +259,8 @@ dotnet build pro-src/PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
 cp pro-out/PDFjet.dll PDFjet.dll
 mkdir -p examples/pro
 cp -r pro-src/examples/package/dotnet/* examples/pro/
+# The design of PDFjet Forms that FillTemplate fills in
+cp pro-src/examples/package/java/invoice-template.pdf examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
 # The test PKI of the long-term signature example, SignLongTerm, which no one
 # trusts, and ltv-server.py, its OCSP responder, CRLs, CA certificates and time
@@ -284,7 +286,7 @@ rm -rf ../dotnet-pro
 # Creates the PDFs of PDFjet Pro with the package's own script.
 ./build-pro.sh
 rm -rf examples/pro/*/bin examples/pro/*/obj
-for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText \
+for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode Pro_HyphenateText Pro_FillTemplate \
         Pro_SignLongTerm_B-LT Pro_SignLongTerm_B-LTA Pro_SignLongTerm_B-LTA-renewed; do
     if ! tail -c 32 "$pdf.pdf" 2>/dev/null | grep -q '%%EOF'; then
         echo "$pdf.pdf was not created or is incomplete"
