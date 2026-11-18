@@ -36,27 +36,47 @@ public final class ShapingRequest {
         this.width = width;
     }
 
-    /** @return the text. */
+    /**
+     * Returns the text.
+     *
+     * @return the text.
+     */
     public String getText() {
         return text;
     }
 
-    /** @return the language of the text, such as "hi" or "km", or null. */
+    /**
+     * Returns the language of the text, such as "hi" or "km", or null.
+     *
+     * @return the language of the text, such as "hi" or "km", or null.
+     */
     public String getLanguage() {
         return language;
     }
 
-    /** @return the bytes of the font files: the first for the text, the others for the characters it does not have. */
+    /**
+     * Returns the bytes of the font files: the first for the text, the others for the characters it does not have.
+     *
+     * @return the bytes of the font files: the first for the text, the others for the characters it does not have.
+     */
     public byte[][] getFontFiles() {
         return fontFiles;
     }
 
-    /** @return the font size, in points. */
+    /**
+     * Returns the font size, in points.
+     *
+     * @return the font size, in points.
+     */
     public float getFontSize() {
         return fontSize;
     }
 
-    /** @return the width of the lines, in points. */
+    /**
+     * Returns the width of the lines, in points.
+     *
+     * @return the width of the lines, in points.
+     */
     public float getWidth() {
         return width;
     }

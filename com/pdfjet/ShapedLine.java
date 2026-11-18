@@ -45,32 +45,56 @@ public final class ShapedLine {
         this.width = width;
     }
 
-    /** @return the index in the text of the line's first character. */
+    /**
+     * Returns the index in the text of the line's first character.
+     *
+     * @return the index in the text of the line's first character.
+     */
     public int getStart() {
         return start;
     }
 
-    /** @return the index in the text after the line's last character. */
+    /**
+     * Returns the index in the text after the line's last character.
+     *
+     * @return the index in the text after the line's last character.
+     */
     public int getEnd() {
         return end;
     }
 
-    /** @return for each glyph, the index of its font among the font files, or -1. */
+    /**
+     * Returns for each glyph, the index of its font among the font files, or -1.
+     *
+     * @return for each glyph, the index of its font among the font files, or -1.
+     */
     public int[] getFontIndexes() {
         return fontIndexes;
     }
 
-    /** @return the glyph numbers. */
+    /**
+     * Returns the glyph numbers.
+     *
+     * @return the glyph numbers.
+     */
     public int[] getGlyphs() {
         return glyphs;
     }
 
-    /** @return the x and the y of each glyph, from the line's left end at its baseline. */
+    /**
+     * Returns the x and the y of each glyph, from the line's left end at its baseline.
+     *
+     * @return the x and the y of each glyph, from the line's left end at its baseline.
+     */
     public float[] getPositions() {
         return positions;
     }
 
-    /** @return the width of the line, without the white space at its end. */
+    /**
+     * Returns the width of the line, without the white space at its end.
+     *
+     * @return the width of the line, without the white space at its end.
+     */
     public float getWidth() {
         return width;
     }
