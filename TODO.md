@@ -87,6 +87,54 @@ than waiting for 9.2.1. The rules:
 
 ## Open
 
+- **For v9.2.1: Noto Sans for the Indic scripts** (the owner, 19 November
+  2026: Noto is what Google tests the shaping of these scripts with).
+  **DECIDED the same day (the owner): "we absolutely use Noto for all Indic
+  languages, Khmer, etc."**: Noto for every script ComplexText draws, the
+  Indic scripts, Sinhala, Khmer, Lao and Myanmar; Thai, Arabic and Hebrew,
+  which PDFjet lays out itself, stay on IBM Plex. IBM
+  Plex has Devanagari alone; Noto Sans has every Indic script, designed to
+  match, under the same SIL Open Font License, and HarfBuzz, which Chrome and
+  Android shape with, is tested against it. For ComplexText and drawGlyphs
+  (9.2.0), which read the outlines of both .otf (CFF) and .ttf (glyf), the
+  .otf, as every font PDFjet carries is. To decide first:
+  - The scripts (decided): Devanagari (Hindi, Marathi, Nepali), Bengali,
+    Gurmukhi (Punjabi), Gujarati, Odia, Tamil, Telugu, Kannada, Malayalam,
+    Sinhala, Khmer, Lao and Myanmar.
+  - The faces: Regular and Bold alone, or Plex's set of weights; Noto Sans
+    alone, or Noto Serif too.
+  - IBM Plex Sans Devanagari: replaced, or kept beside Noto Sans Devanagari
+    (its constants are public: a behavior change if they go).
+  - The release of Noto pinned, as for Plex (the benchmarks used Noto Sans
+    2.015), its files carried unmodified.
+  - The size it adds to pdfjet-fonts-world, PDFjet.Fonts.World, the Go
+    package world and PDFjetFontsWorld: Ubuntu's Noto Sans .ttf, Regular
+    alone, are 1.4 MB for the ten scripts (Devanagari 224 KB, Sinhala 300,
+    Gurmukhi 52); with Bold about 2.8 MB. The .otf to be measured.
+  - Then: the constants in the four ports, Example_52 and the ComplexText
+    tests on them, check-fonts.py, and the README's font list.
+  For a PDF made by Chrome instead (the server route): Noto too, its .ttf
+  better than its .otf, which Chrome writes as Type 3 fonts. Measured 19
+  November 2026, Chrome 158 printing the Hindi UDHR to PDF (9,015 letters,
+  621 words). Letters wrong in a copy, PDFium (Chrome's viewer), poppler,
+  MuPDF: Noto Sans Devanagari 2.007 .otf 81, 0, 114; its .ttf 81, 0, 13;
+  Ubuntu's older Noto .ttf 8, 0, 1; IBM Plex Sans Devanagari .otf 836, 1,
+  105. Words found in each reader's text, its spaces kept:
+
+  | Hindi, made by Chrome | PDFium | poppler | MuPDF |
+  |---|---|---|---|
+  | Noto .ttf | about 260 of 621 | 605 to 607 of 621 | 617 to 620 of 621 |
+  | IBM Plex .otf | 248 of 621 | 607 of 621 | 596 of 621 |
+  | The HTML page in Chrome | Find in page 621 of 621, copied exactly | | |
+
+  Chrome's viewer puts spaces inside the words of Chrome's own Hindi PDFs
+  (दि सम्बर for दिसम्बर), so a word searched for whole is often not found;
+  it also repeats a piece of a word in places. MuPDF drops the reph (र्) of
+  an .otf drawn as Type 3. Found means the word is in the text a reader
+  gives, not a Find clicked in the viewer, which may match across the
+  spaces. No PDF gave 100% in every reader: only the HTML page. (Other PDF
+  makers measured too: in private/pdfjet-pro-private/DESIGN-complex-scripts.md.)
+
 - **pdf-libs-benchmarks, run again: PDFjet on the .ttf files too, to
   compare** (the owner, 15 November 2026). The run of 15 November 2026 gave
   each library the font format it does best with: PDFjet's four ports the
