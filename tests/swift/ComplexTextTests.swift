@@ -230,6 +230,78 @@ import Testing
         }
     }
 
+    // Without a page, drawOn measures: the corner drawOn would return, the
+    // text left as it was, so that a Table cell can measure it
+    @Test func drawOnWithoutAPageMeasuresAndKeepsTheText() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, ComplexTextTests.latin).setSize(10)
+        let line = font.getAscent() + font.getDescent() + font.getLineGap(10)
+        let text = ComplexText(font, "ABCD").setShaper(LetterShaper(font)).setWidth(150)
+        text.setLocation(50, 100)
+        let first = text.drawOn(nil)
+        let second = text.drawOn(nil)
+        #expect(abs(first[0] - 200) < 0.001)
+        #expect(abs(first[1] - (100 + 4 * line)) < 0.001)
+        #expect(first == second)
+        #expect(try text.hasMoreText())
+        // With a height, the lines that fit, as drawOn draws them
+        text.setHeight(2.5 * line)
+        #expect(abs(text.drawOn(nil)[1] - (100 + 2 * line)) < 0.001)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        #expect(abs(text.drawOn(page)[1] - (100 + 2 * line)) < 0.001)
+        try memory.pdf.complete()
+    }
+
+    // Text such as Hindi in Table cells: each cell as tall as its text
+    // wrapped to the column, the text drawn whole each time, as the header
+    // row is on each page; the caller's text where it was
+    @Test func inTableCellsItWrapsAndRepeatsTheHeader() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Title")
+        let font = try Font(memory.pdf, ComplexTextTests.latin).setSize(10)
+        let line = font.getAscent() + font.getDescent() + font.getLineGap(10)
+        let shaper = LetterShaper(font)
+        var data: [[Cell]] = [[
+            Cell(font).setDrawable(ComplexText(font, "X").setShaper(shaper).setLanguage("hi")),
+            Cell(font).setDrawable(ComplexText(font, "Z").setShaper(shaper).setLanguage("hi")),
+        ]]
+        let kept = ComplexText(font, "ABC").setShaper(shaper).setLanguage("hi")
+        kept.setLocation(7, 9)
+        for r in 0..<40 {
+            let text = r == 0 ? kept : ComplexText(font, "ABC").setShaper(shaper).setLanguage("hi")
+            data.append([Cell(font, "Row \(r + 1)"), Cell(font).setDrawable(text)])
+        }
+        let table = Table().setTableData(data, 1)
+        table.setLocation(50, 50)
+        table.setColumnWidth(0, 100).setColumnWidth(1, 250)
+        // A cell is as tall as its lines, three here, and its padding
+        let cell = data[1][1]
+        #expect(abs(cell.getHeight(250) - (3 * line + cell.getTopPadding() + cell.getBottomPadding())) < 0.01)
+        var pages = [Page]()
+        table.drawOn(memory.pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count >= 2, "the table on \(pages.count) page")
+        // The header row: its words as text on the first page; on the next
+        // pages drawn again, as an artifact, as PDF/UA has a repeated header
+        let firstPage = TestSupport.content(pages[0])
+        #expect(count(firstPage, "/ActualText <" + Page.toUTF16Hex("X") + ">") == 1)
+        #expect(count(firstPage, "/ActualText <" + Page.toUTF16Hex("Z") + ">") == 1)
+        for i in 1..<pages.count {
+            let content = TestSupport.content(pages[i])
+            guard let start = content.range(of: "/Artifact BMC\n") else {
+                Issue.record("page \(i + 1) has no header")
+                continue
+            }
+            let rest = content[start.lowerBound...]
+            let end = rest.range(of: "EMC\n")?.lowerBound ?? rest.endIndex
+            #expect(count(String(rest[..<end]), " cm /Fm") >= 2, "page \(i + 1): its header's glyphs drawn")
+        }
+        // The caller's text kept where it was, and whole; as wide as the
+        // cell's inside, as a text block in a cell is
+        let corner = kept.drawOn(nil)
+        #expect(abs(corner[0] - (7 + 250 - (cell.getLeftPadding() + cell.getRightPadding()))) < 0.001)
+        #expect(abs(corner[1] - (9 + 3 * line)) < 0.001)
+    }
+
 #if canImport(CoreText)
     @Test func coreTextShapesHindiIntoTaggedLinesOfOutlines() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)

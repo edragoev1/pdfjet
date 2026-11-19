@@ -252,7 +252,7 @@ func (cell *Cell) SetFontSize(fontSize float32) *Cell {
 // cell holds one drawable, so this replaces the image, barcode, text block or
 // text column set before. The drawable is placed by its top left corner, at the
 // padding, and aligned in the cell as the text is; it is measured with
-// DrawOn(nil). A text block gets the width of the cell.
+// DrawOn(nil). A text block or a complex text gets the width of the cell.
 //   - drawable: the drawable, for example a QRCode, an SVGImage or a Table.
 func (cell *Cell) SetDrawable(drawable Drawable) *Cell {
 	cell.drawable = drawable
@@ -363,6 +363,8 @@ func (cell *Cell) SetWidth(width float32) *Cell {
 	cell.width = width
 	if textBlock, ok := cell.drawable.(*TextBlock); ok {
 		textBlock.SetWidth(cell.width - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
+	} else if complexText, ok := cell.drawable.(*ComplexText); ok {
+		complexText.SetWidth(cell.width - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
 	}
 	return cell
 }
@@ -442,6 +444,8 @@ func (cell *Cell) GetHeight(width float32) float32 {
 	} else if cell.text == "" && cell.drawable != nil { // The text is drawn first
 		if textBlock, ok := cell.drawable.(*TextBlock); ok {
 			textBlock.SetWidth(width)
+		} else if complexText, ok := cell.drawable.(*ComplexText); ok {
+			complexText.SetWidth(width)
 		}
 		cellHeight = measureDrawable(cell.drawable)[1] + cell.paddingAt(cellTopPadding) + cell.paddingAt(cellBottomPadding)
 	} else if cell.hasText {
@@ -732,6 +736,13 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		textBlock.DrawOn(page)
 	} else if cell.drawable != nil {
 		flushTableLines(page)
+		// Text such as Hindi wraps to the cell, as a text block does, and is
+		// drawn whole each time the cell is, as a header row's on each page
+		if complexText, ok := cell.drawable.(*ComplexText); ok {
+			complexText.SetWidth(w - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
+			complexText.rewind()
+			defer complexText.rewind()
+		}
 		defer keepLocation(cell.drawable)()
 		if cell.alignmentAt(cellTextAlignment) == alignment.Right {
 			drawableWidth := measureDrawable(cell.drawable)[0]

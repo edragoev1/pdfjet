@@ -266,5 +266,87 @@ public class ComplexTextTest {
         Assert.Throws<ArgumentException>(
                 () => new ComplexText(plex, "x").SetShaper(new FixedShaper()).DrawOn(page));
     }
+
+    // The text as a span of actual text gives it: UTF-16, big end first,
+    // after its byte order mark, in hexadecimal
+    private static string Utf16Hex(string text) {
+        var sb = new System.Text.StringBuilder("FEFF");
+        foreach (char ch in text) {
+            sb.Append(((int) ch).ToString("X4", CultureInfo.InvariantCulture));
+        }
+        return sb.ToString();
+    }
+
+    // Without a page, DrawOn measures: the corner DrawOn would return, the
+    // text left as it was, so that a Table cell can measure it
+    [Fact]
+    public void DrawOnWithoutAPageMeasuresAndKeepsTheText() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        float line = font.GetAscent() + font.GetDescent() + font.GetLineGap(10f);
+        ComplexText text = new ComplexText(font, "ABCD").SetShaper(new LetterShaper(font)).SetWidth(150f);
+        text.SetLocation(50f, 100f);
+        float[] first = text.DrawOn(null);
+        float[] second = text.DrawOn(null);
+        Assert.Equal(200f, first[0], 3);
+        Assert.Equal(100f + 4 * line, first[1], 3);
+        Assert.Equal(first, second);
+        Assert.True(text.HasMoreText());
+        // With a height, the lines that fit, as DrawOn draws them
+        text.SetHeight(2.5f * line);
+        Assert.Equal(100f + 2 * line, text.DrawOn(null)[1], 3);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Assert.Equal(100f + 2 * line, text.DrawOn(page)[1], 3);
+        pdf.Complete();
+    }
+
+    // Text such as Hindi in Table cells: each cell as tall as its text
+    // wrapped to the column, the text drawn whole each time, as the header
+    // row is on each page; the caller's text where it was
+    [Fact]
+    public void InTableCellsItWrapsAndRepeatsTheHeader() {
+        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, LATIN).SetSize(10f);
+        float line = font.GetAscent() + font.GetDescent() + font.GetLineGap(10f);
+        LetterShaper shaper = new LetterShaper(font);
+        List<List<Cell>> data = new List<List<Cell>>();
+        data.Add(new List<Cell> {
+            new Cell(font).SetDrawable(new ComplexText(font, "X").SetShaper(shaper).SetLanguage("hi")),
+            new Cell(font).SetDrawable(new ComplexText(font, "Z").SetShaper(shaper).SetLanguage("hi")),
+        });
+        ComplexText kept = new ComplexText(font, "ABC").SetShaper(shaper).SetLanguage("hi");
+        kept.SetLocation(7f, 9f);
+        for (int r = 0; r < 40; r++) {
+            ComplexText text = r == 0 ? kept : new ComplexText(font, "ABC").SetShaper(shaper).SetLanguage("hi");
+            data.Add(new List<Cell> {new Cell(font, "Row " + (r + 1)), new Cell(font).SetDrawable(text)});
+        }
+        Table table = new Table().SetTableData(data, 1);
+        table.SetLocation(50f, 50f);
+        table.SetColumnWidth(0, 100f).SetColumnWidth(1, 250f);
+        // A cell is as tall as its lines, three here, and its padding
+        Cell cell = data[1][1];
+        Assert.Equal(3 * line + cell.GetTopPadding() + cell.GetBottomPadding(), cell.GetHeight(250f), 2);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.True(pages.Count >= 2, "the table on " + pages.Count + " page");
+        // The header row: its words as text on the first page; on the next
+        // pages drawn again, as an artifact, as PDF/UA has a repeated header
+        string firstPage = TestSupport.Content(pages[0]);
+        Assert.Equal(1, Count(firstPage, "/ActualText <" + Utf16Hex("X") + ">"));
+        Assert.Equal(1, Count(firstPage, "/ActualText <" + Utf16Hex("Z") + ">"));
+        for (int i = 1; i < pages.Count; i++) {
+            string content = TestSupport.Content(pages[i]);
+            int start = content.IndexOf("/Artifact BMC\n", StringComparison.Ordinal);
+            Assert.True(start >= 0, "page " + (i + 1) + " has its header");
+            string drawn = content.Substring(start, content.IndexOf("EMC\n", start, StringComparison.Ordinal) - start);
+            Assert.True(Count(drawn, " cm /Fm") >= 2, "page " + (i + 1) + ": its header's glyphs drawn");
+        }
+        // The caller's text kept where it was, and whole; as wide as the
+        // cell's inside, as a text block in a cell is
+        float[] corner = kept.DrawOn(null);
+        Assert.Equal(7f + 250f - (cell.GetLeftPadding() + cell.GetRightPadding()), corner[0], 3);
+        Assert.Equal(9f + 3 * line, corner[1], 3);
+    }
 }
-}   // End of namespace PDFjet.NET
+}

@@ -12,6 +12,18 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **`ComplexText` in a `Table` cell**, in the four ports: Hindi, Khmer and
+  the other scripts in tables, as `cell.setDrawable(new ComplexText(font,
+  text))`. The cell gives the text its width, less its padding, as it does
+  a `TextBlock`, is as tall as the text wrapped to it, and draws it whole
+  each time, as a header row is on each page; the text is left where the
+  caller had it. For this, `drawOn` without a page (`drawOn(null)`) now
+  measures: it returns the corner `drawOn` would, the lines that fit a
+  height counted as `drawOn` counts them, and draws nothing and keeps its
+  place in the text. In Java, C# and Go it failed before (Java and C# a
+  NullPointerException from `setBrushColor`); Swift's measured all the text,
+  whatever the height. Tests in the four ports.
+
 - **New: `ComplexText`**, in the four ports: Hindi, Khmer and the other
   scripts PDFjet does not shape, drawn as simply as a `TextBlock`. The text,
   its font and a fallback font for the other characters (English words in

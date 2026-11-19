@@ -96,13 +96,9 @@ than waiting for 9.2.1. The rules:
   Hindi** (the owner, the same day): no real text in place of ComplexText's
   outlines, and no shaper inside TextBlock, Table and the other components,
   as copy and search cannot be made reliable in every viewer and a half
-  feature is not wanted. A table of Hindi would be ComplexText in each cell,
-  which does not work yet (found the same day): Table measures a cell's
-  drawable with drawOn(null), and ComplexText.drawOn uses the page at once
-  (page.setBrushColor, a NullPointerException), and keeps its place in the
-  text as it draws, so a measure would also use up its lines. To decide:
-  drawOn(null) measuring without drawing or moving on, as TextBlock's, and
-  a test of the Hindi UDHR in Table cells, in the four ports. IBM
+  feature is not wanted. A table of Hindi is ComplexText in each cell:
+  done the same day in 9.2.0 (CHANGELOG.md), drawOn(null) measuring without
+  drawing or moving on, with tests in the four ports. IBM
   Plex has Devanagari alone; Noto Sans has every Indic script, designed to
   match, under the same SIL Open Font License, and HarfBuzz, which Chrome and
   Android shape with, is tested against it. For ComplexText and drawGlyphs

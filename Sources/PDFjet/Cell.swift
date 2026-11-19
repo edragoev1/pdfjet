@@ -282,7 +282,7 @@ public class Cell {
     /// Sets the drawable inside this cell and clears the cell text. A cell holds one drawable,
     /// so this replaces the image, barcode, text block or text column set before. The drawable
     /// is placed by its top left corner, at the padding, and aligned in the cell as the text is;
-    /// it is measured with drawOn(nil). A text block gets the width of the cell.
+    /// it is measured with drawOn(nil). A text block or a complex text gets the width of the cell.
     ///
     /// - Parameter drawable: the drawable, for example a QRCode, an SVGImage or a Table.
     /// - Returns: this Cell object.
@@ -369,6 +369,8 @@ public class Cell {
         self.width = width
         if let textBlock = drawable as? TextBlock {
             textBlock.setWidth(self.width - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
+        } else if let complexText = drawable as? ComplexText {
+            complexText.setWidth(self.width - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
         }
         return self
     }
@@ -503,6 +505,8 @@ public class Cell {
         if let drawable = drawable, text == nil || text == "" {   // The text is drawn first
             if let textBlock = drawable as? TextBlock {
                 textBlock.setWidth(width)
+            } else if let complexText = drawable as? ComplexText {
+                complexText.setWidth(width)
             }
             cellHeight = Cell.measure(drawable)[1] + paddingAt(Cell.topPaddingShift) + paddingAt(Cell.bottomPaddingShift)
         } else if text != nil {
@@ -804,6 +808,14 @@ public class Cell {
             textBlock.drawOn(page)
         } else if let drawable = drawable {
             Cell.flushTableLines(page)
+            // Text such as Hindi wraps to the cell, as a text block does, and
+            // is drawn whole each time the cell is, as a header row's on each
+            // page
+            if let complexText = drawable as? ComplexText {
+                complexText.setWidth(w - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
+                complexText.rewind()
+            }
+            defer { (drawable as? ComplexText)?.rewind() }
             let location = Cell.locationOf(drawable)
             defer { drawable.setLocation(location[0], location[1]) }
             if getTextAlignment() == Alignment.RIGHT {

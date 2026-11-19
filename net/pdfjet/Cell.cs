@@ -234,7 +234,7 @@ public class Cell {
     /// Sets the drawable inside this cell and clears the cell text. A cell holds one drawable,
     /// so this replaces the image, barcode, text block or text column set before. The drawable
     /// is placed by its top left corner, at the padding, and aligned in the cell as the text is;
-    /// it is measured with DrawOn(null). A text block gets the width of the cell.
+    /// it is measured with DrawOn(null). A text block or a complex text gets the width of the cell.
     /// </summary>
     /// <param name="drawable">the drawable, for example a QRCode, an SVGImage or a Table.</param>
     /// <returns>this Cell object.</returns>
@@ -347,6 +347,8 @@ public class Cell {
         this.width = width;
         if (drawable is TextBlock textBlock) {
             textBlock.SetWidth(this.width - (PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING)));
+        } else if (drawable is ComplexText complexText) {
+            complexText.SetWidth(this.width - (PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING)));
         }
         return this;
     }
@@ -430,6 +432,8 @@ public class Cell {
         } else if ((text == null || text.Equals("")) && drawable != null) {   // The text is drawn first
             if (drawable is TextBlock textBlock) {
                 textBlock.SetWidth(width);
+            } else if (drawable is ComplexText complexText) {
+                complexText.SetWidth(width);
             }
             cellHeight = Measure(drawable)[1] + PaddingAt(TOP_PADDING) + PaddingAt(BOTTOM_PADDING);
         } else if (text != null) {
@@ -718,6 +722,14 @@ public class Cell {
             textBlock.y = textY;
         } else if (drawable != null) {
             FlushTableLines(page);
+            // Text such as Hindi wraps to the cell, as a text block does, and
+            // is drawn whole each time the cell is, as a header row's on each
+            // page
+            ComplexText complexText = drawable as ComplexText;
+            if (complexText != null) {
+                complexText.SetWidth(w - (PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING)));
+                complexText.Rewind();
+            }
             float[] location = LocationOf(drawable);
             if (GetTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = Measure(drawable)[0];
@@ -732,6 +744,9 @@ public class Cell {
                 drawable.DrawOn(page);
             } finally {
                 drawable.SetLocation(location[0], location[1]);
+                if (complexText != null) {
+                    complexText.Rewind();
+                }
             }
         }
 

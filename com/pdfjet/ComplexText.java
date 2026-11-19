@@ -152,8 +152,10 @@ public class ComplexText implements Drawable {
      * @return this ComplexText.
      */
     public ComplexText setWidth(float width) {
-        this.width = width;
-        this.shapedLines = null;
+        if (width != this.width) {
+            this.width = width;
+            this.shapedLines = null;
+        }
         return this;
     }
 
@@ -290,14 +292,19 @@ public class ComplexText implements Drawable {
     /**
      * Draws the text not drawn yet, wrapped to the width, from its location:
      * all of it, or with a height, the lines that fit, the rest kept for the
-     * next drawOn.
+     * next drawOn. Without a page, measures them instead: the corner it
+     * returns is the one drawOn would, and nothing is drawn or kept, so that
+     * a Table cell can hold it, as it holds a TextBlock.
      *
-     * @param page the page to draw on.
+     * @param page the page to draw on, or null to measure.
      * @return the x and the y of the bottom right corner of the text drawn.
      * @throws Exception if the text cannot be shaped or drawn.
      */
     @Override
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return measure();
+        }
         Font[] fonts = fonts();
         float size = font.getSize();
         float ascent = font.getAscent();
@@ -351,6 +358,47 @@ public class ComplexText implements Drawable {
             line = 0;
         }
         return new float[] {x + width, top};
+    }
+
+    // The corner drawOn would return, the lines it would draw counted as it
+    // counts them, from the paragraph and the line drawn next, which stay
+    private float[] measure() throws Exception {
+        float lineHeight = lineHeight();
+        float bottom = height > 0f ? y + height : Float.MAX_VALUE;
+        float top = y;
+        boolean drawn = false;
+        int p = paragraph;
+        int l = line;
+        while (p < paragraphs.size()) {
+            List<ShapedLine> lines = shaped(p);
+            if (l >= lines.size()) {
+                p++;
+                l = 0;
+                continue;
+            }
+            float gap = drawn && l == 0 ? gap() : 0f;
+            if (drawn && top + gap + lineHeight > bottom) {
+                break;
+            }
+            top += gap;
+            while (l < lines.size() && (!drawn || top + lineHeight <= bottom)) {
+                top += lineHeight;
+                l++;
+                drawn = true;
+            }
+            if (l < lines.size()) {
+                break;
+            }
+            p++;
+            l = 0;
+        }
+        return new float[] {x + width, top};
+    }
+
+    // Back to the start of the text, as a Table cell draws it whole each time
+    void rewind() {
+        paragraph = 0;
+        line = 0;
     }
 
     // Draws the line at its baseline: the glyphs of each font, one run of

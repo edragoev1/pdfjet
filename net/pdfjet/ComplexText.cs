@@ -125,8 +125,10 @@ public class ComplexText : IDrawable {
 
     /// <summary>Sets the width the text is wrapped to; 300 points by default.</summary>
     public ComplexText SetWidth(float width) {
-        this.width = width;
-        this.shapedLines = null;
+        if (width != this.width) {
+            this.width = width;
+            this.shapedLines = null;
+        }
         return this;
     }
 
@@ -214,9 +216,15 @@ public class ComplexText : IDrawable {
 
     /// <summary>Draws the text not drawn yet, wrapped to the width, from its
     /// location: all of it, or with a height, the lines that fit, the rest
-    /// kept for the next DrawOn.</summary>
+    /// kept for the next DrawOn. Without a page, measures them instead: the
+    /// corner it returns is the one DrawOn would, and nothing is drawn or
+    /// kept, so that a Table cell can hold it, as it holds a TextBlock.</summary>
+    /// <param name="page">the page to draw on, or null to measure.</param>
     /// <returns>the x and the y of the bottom right corner of the text drawn.</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return Measure();
+        }
         Font[] fonts = Fonts();
         float size = font.GetSize();
         float ascent = font.GetAscent();
@@ -269,6 +277,47 @@ public class ComplexText : IDrawable {
             line = 0;
         }
         return new float[] {x + width, top};
+    }
+
+    // The corner DrawOn would return, the lines it would draw counted as it
+    // counts them, from the paragraph and the line drawn next, which stay
+    private float[] Measure() {
+        float lineHeight = LineHeight();
+        float bottom = height > 0f ? y + height : float.MaxValue;
+        float top = y;
+        bool drawn = false;
+        int p = paragraph;
+        int l = line;
+        while (p < paragraphs.Count) {
+            List<ShapedLine> lines = Shaped(p);
+            if (l >= lines.Count) {
+                p++;
+                l = 0;
+                continue;
+            }
+            float gap = drawn && l == 0 ? Gap() : 0f;
+            if (drawn && top + gap + lineHeight > bottom) {
+                break;
+            }
+            top += gap;
+            while (l < lines.Count && (!drawn || top + lineHeight <= bottom)) {
+                top += lineHeight;
+                l++;
+                drawn = true;
+            }
+            if (l < lines.Count) {
+                break;
+            }
+            p++;
+            l = 0;
+        }
+        return new float[] {x + width, top};
+    }
+
+    // Back to the start of the text, as a Table cell draws it whole each time
+    internal void Rewind() {
+        paragraph = 0;
+        line = 0;
     }
 
     // Draws the line at its baseline: the glyphs of each font, one run of

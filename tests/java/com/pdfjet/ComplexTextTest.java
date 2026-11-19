@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -322,4 +323,78 @@ class ComplexTextTest {
         assertTrue(count(content, " cm /Fm") > 40, content);
         pdf.complete();
     }
-}   // End of ComplexTextTest.java
+
+    // Without a page, drawOn measures: the corner drawOn would return, the
+    // text left as it was, so that a Table cell can measure it
+    @Test
+    void drawOnWithoutAPageMeasuresAndKeepsTheText() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font hindi = new Font(pdf, DEVANAGARI).setSize(12f);
+        ComplexText text = new ComplexText(hindi, HINDI).setLanguage("hi").setLocation(50f, 100f).setWidth(150f);
+        float height = text.getTextHeight();
+        float[] first = text.drawOn(null);
+        float[] second = text.drawOn(null);
+        assertEquals(200f, first[0], 0.001f);
+        assertEquals(100f + height, first[1], 0.001f);
+        assertArrayEquals(first, second, 0.001f);
+        assertTrue(text.hasMoreText());
+        assertEquals(height, text.getTextHeight(), 0.001f);
+        // With a height, the lines that fit, as drawOn draws them
+        float lineHeight = new ComplexText(hindi, "क").setWidth(150f).getTextHeight();
+        text.setHeight(2.5f * lineHeight);
+        assertEquals(100f + 2f * lineHeight, text.drawOn(null)[1], 0.001f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        assertEquals(100f + 2f * lineHeight, text.drawOn(page)[1], 0.001f);
+    }
+
+    // Hindi in Table cells: each cell as tall as its text wrapped to the
+    // column, the text drawn whole each time, as the header row is on each
+    // page; the caller's text where it was
+    @Test
+    void hindiInTableCellsWrapsAndRepeatsTheHeader() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Title");
+        Font hindi = new Font(pdf, DEVANAGARI).setSize(11f);
+        Font latin = new Font(pdf, LATIN).setSize(11f);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        List<Cell> header = new ArrayList<Cell>();
+        header.add(new Cell(latin).setDrawable(new ComplexText(hindi, "नाम").setLanguage("hi")));
+        header.add(new Cell(latin).setDrawable(new ComplexText(hindi, "विवरण").setLanguage("hi")));
+        data.add(header);
+        ComplexText kept = new ComplexText(hindi, HINDI).setFallbackFont(latin).setLanguage("hi").setLocation(7f, 9f);
+        for (int r = 0; r < 30; r++) {
+            List<Cell> row = new ArrayList<Cell>();
+            row.add(new Cell(latin, "Row " + (r + 1)));
+            row.add(new Cell(latin).setDrawable(r == 0 ? kept
+                    : new ComplexText(hindi, HINDI).setFallbackFont(latin).setLanguage("hi")));
+            data.add(row);
+        }
+        Table table = new Table().setTableData(data, 1).setLocation(50f, 50f);
+        table.setColumnWidth(0, 100f).setColumnWidth(1, 250f);
+        // A cell of Hindi is as tall as its lines in the column, more than one
+        Cell cell = data.get(1).get(1);
+        float inner = 250f - (cell.getLeftPadding() + cell.getRightPadding());
+        float lines = new ComplexText(hindi, HINDI).setFallbackFont(latin).setLanguage("hi").setWidth(inner).getTextHeight();
+        float oneLine = new ComplexText(hindi, "क").setWidth(inner).getTextHeight();
+        assertTrue(lines > 1.5f * oneLine, "wraps to more than one line: " + lines);
+        assertEquals(lines + cell.getTopPadding() + cell.getBottomPadding(), cell.getHeight(250f), 0.01f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertTrue(pages.size() >= 2, "the table runs over pages: " + pages.size());
+        // The header row: its words as text on the first page; on the next
+        // pages drawn again, as an artifact, as PDF/UA has a repeated header
+        String first = TestSupport.content(pages.get(0));
+        assertEquals(1, count(first, "/ActualText <" + Page.toUTF16Hex("नाम") + ">"), first);
+        assertEquals(1, count(first, "/ActualText <" + Page.toUTF16Hex("विवरण") + ">"), first);
+        for (int i = 1; i < pages.size(); i++) {
+            String content = TestSupport.content(pages.get(i));
+            int start = content.indexOf("/Artifact BMC\n");
+            assertTrue(start >= 0, "page " + (i + 1) + " has its header");
+            String drawn = content.substring(start, content.indexOf("EMC\n", start));
+            assertTrue(count(drawn, " Do Q\n") >= 3, "page " + (i + 1) + ": its header's glyphs drawn");
+        }
+        // The caller's text kept where it was, and whole
+        assertArrayEquals(new float[] {7f, 9f}, Cell.locationOf(kept), 0.001f);
+        assertTrue(kept.hasMoreText());
+    }
+}

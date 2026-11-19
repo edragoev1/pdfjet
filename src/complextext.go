@@ -185,8 +185,10 @@ func (complexText *ComplexText) SetLocation(x, y float32) Drawable {
 
 // SetWidth sets the width the text is wrapped to; 300 points by default.
 func (complexText *ComplexText) SetWidth(width float32) *ComplexText {
-	complexText.width = width
-	complexText.shapedLines = nil
+	if width != complexText.width {
+		complexText.width = width
+		complexText.shapedLines = nil
+	}
 	return complexText
 }
 
@@ -295,8 +297,13 @@ func (complexText *ComplexText) GetTextHeight() (float32, error) {
 // location: all of it, or with a height, the lines that fit, the rest kept
 // for the next DrawOn. It returns the x and the y of the bottom right corner
 // of the text drawn. Text that cannot be shaped fails the document, as
-// Complete says.
+// Complete says. Without a page, it measures instead: the corner it returns
+// is the one DrawOn would, and nothing is drawn or kept, so that a Table
+// cell can hold it, as it holds a TextBlock.
 func (complexText *ComplexText) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		return complexText.measure()
+	}
 	x, y, width := complexText.x, complexText.y, complexText.width
 	fonts := complexText.fonts()
 	font := complexText.font
@@ -363,6 +370,59 @@ func (complexText *ComplexText) DrawOn(page *Page) [2]float32 {
 		complexText.line = 0
 	}
 	return [2]float32{x + width, top}
+}
+
+// measure returns the corner DrawOn would, the lines it would draw counted
+// as it counts them, from the paragraph and the line drawn next, which stay.
+// Text that cannot be shaped measures to where it stops, DrawOn failing the
+// document then.
+func (complexText *ComplexText) measure() [2]float32 {
+	x, y, width := complexText.x, complexText.y, complexText.width
+	lineHeight := complexText.lineHeight()
+	bottom := float32(math.MaxFloat32)
+	if complexText.height > 0 {
+		bottom = y + complexText.height
+	}
+	top := y
+	drawn := false
+	p, l := complexText.paragraph, complexText.line
+	for p < len(complexText.paragraphs) {
+		lines, err := complexText.shaped(p)
+		if err != nil {
+			break
+		}
+		if l >= len(lines) {
+			p++
+			l = 0
+			continue
+		}
+		var gap float32
+		if drawn && l == 0 {
+			gap = complexText.gap()
+		}
+		if drawn && top+gap+lineHeight > bottom {
+			break
+		}
+		top += gap
+		for l < len(lines) && (!drawn || top+lineHeight <= bottom) {
+			top += lineHeight
+			l++
+			drawn = true
+		}
+		if l < len(lines) {
+			break
+		}
+		p++
+		l = 0
+	}
+	return [2]float32{x + width, top}
+}
+
+// rewind goes back to the start of the text, as a Table cell draws it whole
+// each time.
+func (complexText *ComplexText) rewind() {
+	complexText.paragraph = 0
+	complexText.line = 0
 }
 
 // drawLine draws the line at its baseline: the glyphs of each font, one run

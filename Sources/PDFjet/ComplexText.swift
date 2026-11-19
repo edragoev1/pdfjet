@@ -127,8 +127,10 @@ public class ComplexText: Drawable {
     /// Sets the width the text is wrapped to; 300 points by default.
     @discardableResult
     public func setWidth(_ width: Float) -> ComplexText {
-        self.width = width
-        self.shapedLines = nil
+        if width != self.width {
+            self.width = width
+            self.shapedLines = nil
+        }
         return self
     }
 
@@ -237,15 +239,17 @@ public class ComplexText: Drawable {
     /// Draws the text not drawn yet, wrapped to the width, from its location:
     /// all of it, or with a height, the lines that fit, the rest kept for the
     /// next drawOn. Text that cannot be shaped fails the document, as
-    /// complete() says.
+    /// complete() says. Without a page, measures them instead: the corner it
+    /// returns is the one drawOn would, and nothing is drawn or kept, so that
+    /// a Table cell can hold it, as it holds a TextBlock.
     ///
-    /// - Parameter page: the page to draw on.
+    /// - Parameter page: the page to draw on, or nil to measure.
     /// - Returns: the x and the y of the bottom right corner of the text drawn.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         guard let page = page else {
-            return [x + width, y + ((try? getTextHeight()) ?? 0.0)]
+            return measure()
         }
         let fonts = self.fonts()
         let size = font.getSize()
@@ -302,6 +306,51 @@ public class ComplexText: Drawable {
             line = 0
         }
         return [x + width, top]
+    }
+
+    // The corner drawOn would return, the lines it would draw counted as it
+    // counts them, from the paragraph and the line drawn next, which stay.
+    // Text that cannot be shaped measures to where it stops, drawOn failing
+    // the document then.
+    private func measure() -> [Float] {
+        let lineHeight = self.lineHeight()
+        let bottom = height > 0 ? y + height : Float.greatestFiniteMagnitude
+        var top = y
+        var drawn = false
+        var p = paragraph
+        var l = line
+        while p < paragraphs.count {
+            guard let lines = try? shaped(p) else {
+                break
+            }
+            if l >= lines.count {
+                p += 1
+                l = 0
+                continue
+            }
+            let gap = drawn && l == 0 ? self.gap() : 0
+            if drawn && top + gap + lineHeight > bottom {
+                break
+            }
+            top += gap
+            while l < lines.count && (!drawn || top + lineHeight <= bottom) {
+                top += lineHeight
+                l += 1
+                drawn = true
+            }
+            if l < lines.count {
+                break
+            }
+            p += 1
+            l = 0
+        }
+        return [x + width, top]
+    }
+
+    // Back to the start of the text, as a Table cell draws it whole each time
+    func rewind() {
+        paragraph = 0
+        line = 0
     }
 
     // Draws the line at its baseline: the glyphs of each font, one run of

@@ -316,3 +316,89 @@ func TestComplexTextGetHeightIsTheHeightSetAndTheGapIsTextFramesEmptyLine(t *tes
 	height, _ := text.GetTextHeight()
 	testNear(t, "two lines and the gap", float32(2*line)+gap, height, 0.001)
 }
+
+// Without a page, DrawOn measures: the corner DrawOn would return, the text
+// left as it was, so that a Table cell can measure it.
+func TestComplexTextDrawOnWithoutAPageMeasuresAndKeepsTheText(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
+	font.SetSize(10)
+	line := font.GetAscent(10) + font.GetDescent(10) + font.GetLineGap(10)
+	text := NewComplexText(font, "ABCD").SetShaper(&testLetterShaper{font}).SetWidth(150)
+	text.SetLocation(50, 100)
+	first := text.DrawOn(nil)
+	second := text.DrawOn(nil)
+	testNear(t, "the right edge", 200, first[0], 0.001)
+	testNear(t, "the bottom", 100+4*line, first[1], 0.001)
+	if first != second {
+		t.Errorf("measured twice: %v, then %v", first, second)
+	}
+	if more, _ := text.HasMoreText(); !more {
+		t.Error("the text used up by measuring it")
+	}
+	// With a height, the lines that fit, as DrawOn draws them
+	text.SetHeight(2.5 * line)
+	testNear(t, "the lines that fit", 100+2*line, text.DrawOn(nil)[1], 0.001)
+	page := NewPage(doc.pdf, letter.Portrait())
+	testNear(t, "the lines drawn", 100+2*line, text.DrawOn(page)[1], 0.001)
+	doc.complete()
+}
+
+// Text such as Hindi in Table cells: each cell as tall as its text wrapped
+// to the column, the text drawn whole each time, as the header row is on
+// each page; the caller's text where it was.
+func TestComplexTextInTableCellsWrapsAndRepeatsTheHeader(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
+	font.SetSize(10)
+	line := font.GetAscent(10) + font.GetDescent(10) + font.GetLineGap(10)
+	shaper := &testLetterShaper{font}
+	data := [][]*Cell{{
+		NewCell(font, "").SetDrawable(NewComplexText(font, "X").SetShaper(shaper).SetLanguage("hi")),
+		NewCell(font, "").SetDrawable(NewComplexText(font, "Z").SetShaper(shaper).SetLanguage("hi")),
+	}}
+	kept := NewComplexText(font, "ABC").SetShaper(shaper).SetLanguage("hi")
+	kept.SetLocation(7, 9)
+	for r := 0; r < 40; r++ {
+		text := kept
+		if r > 0 {
+			text = NewComplexText(font, "ABC").SetShaper(shaper).SetLanguage("hi")
+		}
+		data = append(data, []*Cell{NewCell(font, "Row "+strconv.Itoa(r+1)), NewCell(font, "").SetDrawable(text)})
+	}
+	table := NewTable().SetTableData(data, 1)
+	table.SetLocation(50, 50)
+	table.SetColumnWidth(0, 100).SetColumnWidth(1, 250)
+	// A cell is as tall as its lines, three here, and its padding
+	cell := data[1][1]
+	testNear(t, "the cell's height", 3*line+cell.GetTopPadding()+cell.GetBottomPadding(), cell.GetHeight(250), 0.01)
+	var pages []*Page
+	table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+	if len(pages) < 2 {
+		t.Fatalf("the table on %d page", len(pages))
+	}
+	// The header row: its words as text on the first page; on the next pages
+	// drawn again, as an artifact, as PDF/UA has a repeated header
+	first := testContent(pages[0])
+	for _, word := range []string{"X", "Z"} {
+		if strings.Count(first, "/ActualText <"+toUTF16Hex(word)+">") != 1 {
+			t.Errorf("the header's %s on the first page:\n%s", word, first)
+		}
+	}
+	for i := 1; i < len(pages); i++ {
+		content := testContent(pages[i])
+		start := strings.Index(content, "/Artifact BMC\n")
+		if start < 0 {
+			t.Fatalf("page %d has no header", i+1)
+		}
+		drawn := content[start : start+strings.Index(content[start:], "EMC\n")]
+		if strings.Count(drawn, " cm /Fm") < 2 {
+			t.Errorf("page %d: its header's glyphs not drawn:\n%s", i+1, drawn)
+		}
+	}
+	// The caller's text kept where it was, and whole
+	corner := kept.DrawOn(nil)
+	testNear(t, "the caller's x", 7+kept.width, corner[0], 0.001)
+	testNear(t, "the caller's y", 9+3*line, corner[1], 0.001)
+}
