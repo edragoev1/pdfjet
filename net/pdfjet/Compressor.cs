@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.IO;
 using System.IO.Compression;
 
@@ -29,6 +30,62 @@ class Compressor {
             zlib.Write(data, off, len);
         }
         return ms.ToArray();
+    }
+
+    // Deflates the samples of an image as they are written, to the bytes
+    // Deflate makes of them written whole, so that an image is compressed a
+    // row at a time, its samples never in memory whole (21 November 2026). It
+    // tells whether every byte written was one value, as a soft mask all of
+    // 255 is left out.
+    internal sealed class ImageWriter : IDisposable {
+        private readonly MemoryStream ms = new MemoryStream();
+        private ZLibStream zlib;
+        private long written = 0;
+        private int same = -1;  // The one value of every byte, -1 for none yet, -2 for more
+
+        internal ImageWriter() {
+            zlib = new ZLibStream(ms, CompressionMode.Compress, leaveOpen: true);
+        }
+
+        // Deflates the bytes, which it does not keep.
+        internal void Write(byte[] data) {
+            written += data.Length;
+            if (same != -2) {
+                foreach (byte b in data) {
+                    if (same == -1) {
+                        same = b;
+                    } else if (b != same) {
+                        same = -2;
+                        break;
+                    }
+                }
+            }
+            zlib.Write(data, 0, data.Length);
+        }
+
+        internal bool IsEmpty() {
+            return written == 0;
+        }
+
+        // Whether bytes were written and every one of them was the value.
+        internal bool AllAre(int value) {
+            return written > 0 && same == value;
+        }
+
+        // Ends the stream and returns it.
+        internal byte[] ToArray() {
+            zlib.Dispose();
+            zlib = null;
+            if (written == 0) {
+                return (byte[]) EMPTY.Clone();
+            }
+            return ms.ToArray();
+        }
+
+        public void Dispose() {
+            zlib?.Dispose();
+            zlib = null;
+        }
     }
 }   // End of Compressor.cs
 }   // End of package PDFjet.NET

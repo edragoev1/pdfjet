@@ -233,105 +233,212 @@ internal class PNGImage {
         if (idatChunks != null) {
             iDAT = idatChunks.ToArray();
         }
-        long imageDataLength = GetImageDataLength();
+        // The size and the bit depth of the color type checked, as their image
+        // data must be no more than Decompressor.MAX_DECODED_LENGTH
+        GetImageDataLength();
         if (iDAT == null) {
             throw new InvalidDataException("The PNG image has no image data.");
         }
-        // The rows of the image; data after the last row is ignored.
-        byte[] inflatedImageData = Decompressor.InflateExact(iDAT, (int) imageDataLength, out bool exact);
-        if (inflatedImageData.Length < imageDataLength) {
+        // The image data is read a row at a time as it inflates, a row and the
+        // one before it in memory, never the whole of it: an image of 8000 by
+        // 8000 with alpha took 1.3 GB read whole (21 November 2026). The IDAT
+        // data that is the rows of the image and nothing more is embedded as
+        // it is, checked as it inflates, and the reader undoes the filters of
+        // the rows, as a PNG decoder does. The IDAT data of an image with
+        // alpha, whose alpha goes in a soft mask of its own, and any other IDAT
+        // data are decoded and compressed again, as each row is undone. Data
+        // after the last row is ignored.
+        if (colorType == 0 || colorType == 2 || colorType == 3) {
+            int colors = (colorType == 2) ? 3 : 1;
+            if (PngRows((w * colors * bitDepth + 7) / 8, 1, null)) {
+                EmbedIDAT();
+                return;
+            }
+        }
+        Decode();
+        stream = deflatedImageData;
+    }
+
+    // Reads the rows of the image data as it inflates, the row and the one
+    // before it alone in memory: each row's filter undone and the row handed
+    // to each, or, with no each, its filter type checked alone. Returns
+    // whether the data is the image exactly. It fails as InflateExact does,
+    // then on data shorter than the image, then on the first filter type that
+    // PNG does not define, the order in which the image read whole failed.
+    private bool PngRows(int bytesPerRow, int bytesPerPixel, Action<byte[]> each) {
+        int rows = h;
+        byte[] raw = new byte[bytesPerRow + 1];
+        byte[][] lines = { new byte[bytesPerRow], new byte[bytesPerRow] };
+        int first = Math.Min(bytesPerPixel, bytesPerRow);
+        int fill = 0;
+        int row = 0;
+        int badFilter = -1;
+        byte[] prior = null;
+        long length = (long) rows * (bytesPerRow + 1);
+        int n = Decompressor.InflateExactTo(iDAT, (int) length, (p, off, len) => {
+            int end = off + len;
+            while (off < end && row < rows) {
+                int k = Math.Min(end - off, raw.Length - fill);
+                Array.Copy(p, off, raw, fill, k);
+                fill += k;
+                off += k;
+                if (fill < raw.Length) {
+                    return;
+                }
+                int filter = raw[0];
+                if (badFilter < 0 && filter > 4) {
+                    badFilter = filter;
+                } else if (badFilter < 0 && each != null) {
+                    byte[] line = lines[row & 1];
+                    Array.Copy(raw, 1, line, 0, bytesPerRow);
+                    UnfilterLine(line, prior, bytesPerRow, filter, bytesPerPixel, first);
+                    each(line);
+                    prior = line;
+                }
+                row++;
+                fill = 0;
+            }
+        }, out bool exact);
+        if (n < length) {
             throw new InvalidDataException("The PNG image data is shorter than the image.");
         }
-
-        // The IDAT data that is the rows of the image and nothing more is
-        // embedded as it is, and the reader undoes the filters of the rows, as
-        // a PNG decoder does. The IDAT data of an image with alpha, whose alpha
-        // goes in a soft mask of its own, and any other IDAT data are decoded
-        // and compressed again.
-        if (exact && (colorType == 0 || colorType == 2 || colorType == 3)) {
-            EmbedIDAT(inflatedImageData);
-        } else {
-            Decode(inflatedImageData);
-            stream = deflatedImageData;
+        if (badFilter >= 0) {
+            throw new InvalidDataException("Invalid PNG filter type " + badFilter + ".");
         }
+        return exact;
     }
 
     // Makes the IDAT data of a grayscale, truecolor or palette image the
     // stream of the image object, which is faster than decoding the samples
-    // and compressing them again. The filter type of each row is checked, as
-    // decoding checks it; the alpha of a palette image with a tRNS chunk is
-    // decoded for its soft mask.
-    private void EmbedIDAT(byte[] buf) {
-        int colors = (colorType == 2) ? 3 : 1;
-        int bytesPerRow = (w * colors * bitDepth + 7) / 8;
-        for (int row = 0; row < h; row++) {
-            int filter = buf[row * (bytesPerRow + 1)];
-            if (filter > 4) {
-                throw new InvalidDataException("Invalid PNG filter type " + filter + ".");
-            }
-        }
+    // and compressing them again; PngRows checked the filter type of each row,
+    // as decoding checks it. The alpha of a palette image with a tRNS chunk
+    // is decoded for its soft mask, a row at a time.
+    private void EmbedIDAT() {
         stream = iDAT;
-        decodeColors = colors;
+        decodeColors = (colorType == 2) ? 3 : 1;
         if (colorType == 3) {
             palette = new byte[3 << bitDepth];
             Array.Copy(pLTE, palette, palette.Length);
             // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
             if (tRNS != null && !BMPImage.AllBytesAre(tRNS, 255)) {
-                byte[] indexes = PaletteIndexes(Unfilter(buf, h, bytesPerRow, 1));
-                SetAlpha(PaletteAlpha(indexes));
+                var alpha = new Compressor.ImageWriter();
+                byte[] indexes = new byte[w];
+                byte[] a = new byte[w];
+                try {
+                    PngRows((w * bitDepth + 7) / 8, 1, line => {
+                        PaletteIndexesOf(line, indexes);
+                        PaletteAlphaOf(indexes, a);
+                        alpha.Write(a);
+                    });
+                } catch {
+                    alpha.Dispose();
+                    throw;
+                }
+                SetAlpha(alpha);
             }
         }
     }
 
-    // Deflates the alpha of the pixels for the soft mask of the image, unless
-    // every pixel is opaque: an image with no soft mask is drawn the same, is
-    // smaller, and is one that PDF/A-1 can hold.
-    private void SetAlpha(byte[] alpha) {
-        if (!BMPImage.AllBytesAre(alpha, 255)) {
-            deflatedAlphaData = Compressor.Deflate(alpha);
+    // Keeps the deflated alpha of the pixels for the soft mask of the image,
+    // unless the image has none or every pixel is opaque: an image with no
+    // soft mask is drawn the same, is smaller, and is one that PDF/A-1 can
+    // hold.
+    private void SetAlpha(Compressor.ImageWriter alpha) {
+        if (alpha.IsEmpty() || alpha.AllAre(255)) {
+            alpha.Dispose();
+            return;
         }
+        deflatedAlphaData = alpha.ToArray();
     }
 
-    // Decodes the samples of the rows of the image, and deflates them.
-    private void Decode(byte[] inflatedImageData) {
-        byte[] imageData;
+    // Decodes the samples of the rows of the image as they inflate, a row at
+    // a time, and deflates them as each row is undone; and the alpha, of a
+    // grayscale or truecolor image with alpha or of a palette image's tRNS
+    // chunk, for its soft mask.
+    private void Decode() {
+        int size = (bitDepth == 16) ? 2 : 1;   // The bytes of a sample
+        var color = new Compressor.ImageWriter();
+        var alpha = new Compressor.ImageWriter();
+        int bytesPerRow;
+        int bytesPerPixel;
+        Action<byte[]> each;
         if (colorType == 0) {
             // Grayscale Image
             if (bitDepth == 16) {
-                imageData = GetImageColorType0BitDepth16(inflatedImageData);
+                bytesPerRow = 2 * w;
+                bytesPerPixel = 2;
             } else if (bitDepth == 8) {
-                imageData = GetImageColorType0BitDepth8(inflatedImageData);
+                bytesPerRow = w;
+                bytesPerPixel = 1;
             } else if (bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
-                imageData = GetImageColorType0BitDepthBelow8(inflatedImageData);
+                bytesPerRow = (w * bitDepth + 7) / 8;
+                bytesPerPixel = 1;
             } else {
+                color.Dispose();
+                alpha.Dispose();
                 throw new NotSupportedException("Image with unsupported bit depth == " + bitDepth);
             }
+            each = line => color.Write(line);
         } else if (colorType == 4) {
-            // Grayscale image with alpha
-            if (bitDepth == 16) {
-                imageData = GetImageColorType4BitDepth16(inflatedImageData);
-            } else {
-                imageData = GetImageColorType4BitDepth8(inflatedImageData);
-            }
+            // Grayscale image with alpha, the alpha's first byte in the soft mask
+            bytesPerRow = 2 * size * w;
+            bytesPerPixel = 2 * size;
+            byte[] gray = new byte[size * w];
+            byte[] a = new byte[w];
+            each = line => {
+                for (int i = 0; i < w; i++) {
+                    Array.Copy(line, 2 * size * i, gray, size * i, size);
+                    a[i] = line[2 * size * i + size];
+                }
+                color.Write(gray);
+                alpha.Write(a);
+            };
         } else if (colorType == 6) {
-            if (bitDepth == 16) {
-                imageData = GetImageColorType6BitDepth16(inflatedImageData);
-            } else {
-                imageData = GetImageColorType6BitDepth8(inflatedImageData);
-            }
+            bytesPerRow = 4 * size * w;
+            bytesPerPixel = 4 * size;
+            byte[] rgb = new byte[3 * size * w];
+            byte[] a = new byte[w];
+            each = line => {
+                for (int i = 0; i < w; i++) {
+                    Array.Copy(line, 4 * size * i, rgb, 3 * size * i, 3 * size);
+                    a[i] = line[4 * size * i + 3 * size];
+                }
+                color.Write(rgb);
+                alpha.Write(a);
+            };
         } else if (colorType == 2) {
             // True color image; a PLTE chunk in it is only a suggested palette
-            if (bitDepth == 16) {
-                imageData = GetImageColorType2BitDepth16(inflatedImageData);
-            } else {
-                imageData = GetImageColorType2BitDepth8(inflatedImageData);
-            }
+            bytesPerRow = 3 * size * w;
+            bytesPerPixel = 3 * size;
+            each = line => color.Write(line);
         } else {
             // Indexed image
-            imageData = GetImageColorType3(inflatedImageData);
+            bytesPerRow = (w * bitDepth + 7) / 8;
+            bytesPerPixel = 1;
+            byte[] indexes = new byte[w];
+            byte[] rgb = new byte[3 * w];
+            byte[] a = new byte[w];
+            each = line => {
+                PaletteIndexesOf(line, indexes);
+                for (int i = 0; i < w; i++) {
+                    Array.Copy(pLTE, 3 * indexes[i], rgb, 3 * i, 3);
+                }
+                color.Write(rgb);
+                if (tRNS != null) {
+                    PaletteAlphaOf(indexes, a);
+                    alpha.Write(a);
+                }
+            };
         }
-
-        deflatedImageData = Compressor.Deflate(imageData);
+        try {
+            PngRows(bytesPerRow, bytesPerPixel, each);
+        } catch {
+            color.Dispose();
+            alpha.Dispose();
+            throw;
+        }
+        deflatedImageData = color.ToArray();
+        SetAlpha(alpha);
     }
 
     // Returns the color space and the bits per component of the image object:
@@ -416,7 +523,7 @@ internal class PNGImage {
     /// </summary>
     public byte[] GetData() {
         if (this.deflatedImageData == null) {
-            Decode(Decompressor.InflatePrefix(iDAT, (int) GetImageDataLength()));
+            Decode();
         }
         return this.deflatedImageData;
     }
@@ -581,64 +688,54 @@ internal class PNGImage {
                 ((UInt32) buf[off + 3]);
     }
 
-    // Returns the rows of the image data without the filter type byte each
-    // begins with, and with their filters undone. A row holds bytesPerRow
-    // bytes after the filter type, and the byte of the pixel on the left is
-    // bytesPerPixel bytes before, or the byte before for pixels smaller than a
-    // byte. It throws on a filter type that PNG does not define, as libpng does.
-    // The bytes of the first pixel of a row have no byte on the left, and the
-    // first row no row above, so they are undone apart from the rest, with the
-    // bytes they do not have taken as 0.
-    private static byte[] Unfilter(byte[] buf, int rows, int bytesPerRow, int bytesPerPixel) {
-        byte[] image = new byte[rows * bytesPerRow];
-        int first = Math.Min(bytesPerPixel, bytesPerRow);  // The bytes of the first pixel
-        int prior = -1;     // Where the row above begins, none for the first row
-        for (int row = 0; row < rows; row++) {
-            int offset = row * (bytesPerRow + 1);
-            int filter = buf[offset];
-            int line = row * bytesPerRow;
-            Array.Copy(buf, offset + 1, image, line, bytesPerRow);
-            if (filter == 0x00) {           // None
-            } else if (filter == 0x01 || (filter == 0x04 && prior < 0)) {
-                // Sub, and Paeth of the first row, which is the byte on the left.
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    image[line + i] += image[line + i - bytesPerPixel];
-                }
-            } else if (filter == 0x02) {    // Up
-                if (prior >= 0) {
-                    for (int i = 0; i < bytesPerRow; i++) {
-                        image[line + i] += image[prior + i];
-                    }
-                }
-            } else if (filter == 0x03 && prior < 0) {   // Average of the first row
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    image[line + i] += (byte) (image[line + i - bytesPerPixel] / 2);
-                }
-            } else if (filter == 0x03) {    // Average
-                for (int i = 0; i < first; i++) {
-                    image[line + i] += (byte) (image[prior + i] / 2);
-                }
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    int a = image[line + i - bytesPerPixel];    // The byte on the left
-                    int b = image[prior + i];                   // The byte above
-                    image[line + i] += (byte) ((a + b) / 2);
-                }
-            } else if (filter == 0x04) {    // Paeth, whose first pixel is the byte above
-                for (int i = 0; i < first; i++) {
-                    image[line + i] += image[prior + i];
-                }
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    int a = image[line + i - bytesPerPixel];    // Left, above and above on the left
-                    int b = image[prior + i];
-                    int c = image[prior + i - bytesPerPixel];
-                    image[line + i] += (byte) Paeth(a, b, c);
-                }
-            } else {
-                throw new InvalidDataException("Invalid PNG filter type " + filter + ".");
+    // Undoes the filter of a row, the row above it its prior, none for the
+    // first row. A row holds bytesPerRow bytes after its filter type, and the
+    // byte of the pixel on the left is bytesPerPixel bytes before, or the byte
+    // before for pixels smaller than a byte. The bytes of the first pixel,
+    // first of them, have no byte on the left, and the first row no row above,
+    // so they are undone apart from the rest, with the bytes they do not have
+    // taken as 0. It throws on a filter type that PNG does not define, as
+    // libpng does.
+    private static void UnfilterLine(byte[] line, byte[] prior, int bytesPerRow, int filter,
+            int bytesPerPixel, int first) {
+        if (filter == 0x00) {           // None
+        } else if (filter == 0x01 || (filter == 0x04 && prior == null)) {
+            // Sub, and Paeth of the first row, which is the byte on the left.
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                line[i] += line[i - bytesPerPixel];
             }
-            prior = line;
+        } else if (filter == 0x02) {    // Up
+            if (prior != null) {
+                for (int i = 0; i < bytesPerRow; i++) {
+                    line[i] += prior[i];
+                }
+            }
+        } else if (filter == 0x03 && prior == null) {   // Average of the first row
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                line[i] += (byte) (line[i - bytesPerPixel] / 2);
+            }
+        } else if (filter == 0x03) {    // Average
+            for (int i = 0; i < first; i++) {
+                line[i] += (byte) (prior[i] / 2);
+            }
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                int a = line[i - bytesPerPixel];    // The byte on the left
+                int b = prior[i];                   // The byte above
+                line[i] += (byte) ((a + b) / 2);
+            }
+        } else if (filter == 0x04) {    // Paeth, whose first pixel is the byte above
+            for (int i = 0; i < first; i++) {
+                line[i] += prior[i];
+            }
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                int a = line[i - bytesPerPixel];    // Left, above and above on the left
+                int b = prior[i];
+                int c = prior[i - bytesPerPixel];
+                line[i] += (byte) Paeth(a, b, c);
+            }
+        } else {
+            throw new InvalidDataException("Invalid PNG filter type " + filter + ".");
         }
-        return image;
     }
 
     // Returns whichever of the bytes on the left, above and above on the left
@@ -664,136 +761,22 @@ internal class PNGImage {
         return c;
     }
 
-    // Truecolor Image with Bit Depth == 16
-    private byte[] GetImageColorType2BitDepth16(byte[] buf) {
-        return Unfilter(buf, this.h, 6 * this.w, 6);
-    }
-
-    // Truecolor Image with Bit Depth == 8
-    private byte[] GetImageColorType2BitDepth8(byte[] buf) {
-        return Unfilter(buf, this.h, 3 * this.w, 3);
-    }
-
-    // Truecolor Image with Alpha Transparency
-    // The gray samples are the image and the alpha samples its soft mask.
-    private byte[] GetImageColorType4BitDepth8(byte[] buf) {
-        byte[] image = Unfilter(buf, this.h, 2 * this.w, 2);
-        byte[] gray = new byte[this.w * this.h];
-        byte[] alpha = new byte[this.w * this.h];
-        for (int i = 0; i < gray.Length; i++) {
-            gray[i] = image[2 * i];
-            alpha[i] = image[2 * i + 1];
-        }
-        SetAlpha(alpha);
-        return gray;
-    }
-
-    // The gray samples of 16 bits are the image, as those of an image without
-    // alpha; the soft mask of a PDF image has 8 bits here, the high byte of
-    // each alpha sample.
-    private byte[] GetImageColorType4BitDepth16(byte[] buf) {
-        byte[] image = Unfilter(buf, this.h, 4 * this.w, 4);
-        byte[] gray = new byte[2 * this.w * this.h];
-        byte[] alpha = new byte[this.w * this.h];
-        for (int i = 0; i < alpha.Length; i++) {
-            gray[2 * i] = image[4 * i];
-            gray[2 * i + 1] = image[4 * i + 1];
-            alpha[i] = image[4 * i + 2];
-        }
-        SetAlpha(alpha);
-        return gray;
-    }
-
-    // The samples of 16 bits of the colors are the image; the soft mask is
-    // the high byte of each alpha sample.
-    private byte[] GetImageColorType6BitDepth16(byte[] buf) {
-        byte[] image = Unfilter(buf, this.h, 8 * this.w, 8);
-        byte[] idata = new byte[6 * this.w * this.h];   // Image data
-        byte[] alpha = new byte[this.w * this.h];       // Alpha values
-        for (int i = 0; i < alpha.Length; i++) {
-            Array.Copy(image, 8 * i, idata, 6 * i, 6);
-            alpha[i] = image[8 * i + 6];
-        }
-        SetAlpha(alpha);
-        return idata;
-    }
-
-    private byte[] GetImageColorType6BitDepth8(byte[] buf) {
-        byte[] image = Unfilter(buf, this.h, 4 * this.w, 4);
-        byte[] idata = new byte[3 * this.w * this.h];   // Image data
-        byte[] alpha = new byte[this.w * this.h];       // Alpha values
-        for (int i = 0; i < alpha.Length; i++) {
-            idata[3*i] = image[4*i];
-            idata[3*i + 1] = image[4*i + 1];
-            idata[3*i + 2] = image[4*i + 2];
-            alpha[i] = image[4*i + 3];
-        }
-        SetAlpha(alpha);
-
-        return idata;
-    }
-
-    // Indexed-color image with bit depth == 1, 2, 4 or 8
-    // Each value is a palette index; a PLTE chunk shall appear.
-    // The filters are undone on the packed indexes, one byte per pixel whatever
-    // the bit depth, before the indexes are looked up in the palette.
-    private byte[] GetImageColorType3(byte[] buf) {
-        int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
-        byte[] indexes = PaletteIndexes(Unfilter(buf, this.h, bytesPerLine, 1));
-
-        byte[] image = new byte[3 * indexes.Length];
-        for (int i = 0; i < indexes.Length; i++) {
-            Array.Copy(pLTE, 3 * indexes[i], image, 3 * i, 3);
-        }
-
-        if (tRNS != null) {
-            SetAlpha(PaletteAlpha(indexes));
-        }
-
-        return image;
-    }
-
-    // Returns the palette index of each pixel, a byte each, of the unfiltered
-    // rows of a palette image.
-    private byte[] PaletteIndexes(byte[] rows) {
-        int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
-        byte[] indexes = new byte[this.w * this.h];
+    // Reads the palette's index of each pixel of a row.
+    private void PaletteIndexesOf(byte[] row, byte[] indexes) {
         int mask = (1 << this.bitDepth) - 1;
-        int n = 0;
-        for (int row = 0; row < this.h; row++) {
-            for (int col = 0; col < this.w; col++) {
-                int bit = col * this.bitDepth;
-                int b = rows[row * bytesPerLine + bit / 8];
-                indexes[n++] = (byte) ((b >> (8 - this.bitDepth - bit % 8)) & mask);
-            }
+        for (int col = 0; col < this.w; col++) {
+            int bit = col * this.bitDepth;
+            int b = row[bit / 8];
+            indexes[col] = (byte) ((b >> (8 - this.bitDepth - bit % 8)) & mask);
         }
-        return indexes;
     }
 
-    // Returns the alpha of each pixel of a palette image with a tRNS chunk:
-    // the alpha of its index, or opaque for an index the chunk has none for.
-    private byte[] PaletteAlpha(byte[] indexes) {
-        byte[] alpha = new byte[indexes.Length];
+    // Gives each index of a row its alpha in the tRNS chunk, and opaque to an
+    // index the chunk has none for.
+    private void PaletteAlphaOf(byte[] indexes, byte[] alpha) {
         for (int i = 0; i < indexes.Length; i++) {
             alpha[i] = (indexes[i] < tRNS.Length) ? tRNS[indexes[i]] : (byte) 0xff;
         }
-        return alpha;
-    }
-
-    // Grayscale Image with Bit Depth == 16
-    private byte[] GetImageColorType0BitDepth16(byte[] buf) {
-        return Unfilter(buf, this.h, 2 * this.w, 2);
-    }
-
-    // Grayscale Image with Bit Depth == 8
-    private byte[] GetImageColorType0BitDepth8(byte[] buf) {
-        return Unfilter(buf, this.h, this.w, 1);
-    }
-
-    // A grayscale image of 1, 2 or 4 bits per pixel. The filters work on
-    // bytes, one byte per pixel whatever the bit depth.
-    private byte[] GetImageColorType0BitDepthBelow8(byte[] buf) {
-        return Unfilter(buf, this.h, (this.w * this.bitDepth + 7) / 8, 1);
     }
 }   // End of PNGImage.cs
 }   // End of namespace PDFjet.NET

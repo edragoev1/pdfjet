@@ -539,8 +539,8 @@ than waiting for 9.2.1. The rules:
   lines with SetBorderWidth(0) for the old look, and the examples' PDFs and
   any fingerprints of tables written again. Not to do without the owner's
   yes.
-- **A PNG checked and decoded a row at a time: Go and Java done, .NET to
-  follow, Swift left as it is** (the owner, 21 November 2026; first thought
+- **Done, 21 November 2026: a PNG checked and decoded a row at a time, in
+  Go, Java and .NET; Swift left as it is** (the owner, 21 November 2026; first thought
   of on 11 November for a 128 MB Cloudflare Worker). Go, 21 November: the
   IDAT inflated as a stream (decompressor.InflateExactTo), each row
   unfiltered with the one before it and its samples and alpha deflated as
@@ -553,8 +553,11 @@ than waiting for 9.2.1. The rules:
   where an 8000 by 8000 PNG failed). Java, 21 November: the same design
   (Decompressor.inflateExactTo, its Adler-32 kept as it goes;
   Compressor.ImageWriter), the 39 PNGs byte for byte, the 8000 by 8000 one
-  in 62 MB and 2.1 s, not 2.1 GB and 3.5 s. .NET (ZLibStream) takes input in
-  pieces too: the same change. Swift stays as it is: Puff.swift and FlateEncode.swift
+  in 62 MB and 2.1 s, not 2.1 GB and 3.5 s. .NET, the same day: the same
+  design (Decompressor.InflateExactTo, its InflatePrefix fallback going on
+  from the bytes already handed out; Compressor.ImageWriter), the 39 PNGs
+  byte for byte, the 8000 by 8000 one in 108 MB and 2.0 s, not 1.3 GB and
+  2.6 s. Swift stays as it is: Puff.swift and FlateEncode.swift
   work on whole buffers.
 - **Maybe, a sixth free tool: printable puzzles or sheets** (the owner, 11
   November 2026: "some really simple tool like the 5 we already did but very

@@ -384,6 +384,19 @@ class Decompressor {
     /// that ends in the middle, before those bytes, throws.
     /// </summary>
     internal static byte[] InflatePrefix(byte[] data, int length) {
+        using var outStream = new MemoryStream();
+        InflatePrefixTo(data, length, (buf, off, len) => outStream.Write(buf, off, len), 0);
+        return outStream.ToArray();
+    }
+
+    // Where InflatePrefixTo and InflateExactTo hand the bytes they decode,
+    // which they do not keep
+    internal delegate void Sink(byte[] buf, int off, int len);
+
+    // Decodes the first length bytes of a zlib stream as InflatePrefix does,
+    // handing them to the sink as they are decoded, but for the first skip of
+    // them, which the sink has; returns how many it decoded, length or fewer.
+    private static int InflatePrefixTo(byte[] data, int length, Sink sink, int skip) {
         // The zlib header is checked as the header of a whole stream is, and
         // the Deflate data after it is decoded raw, so that nothing after the
         // first length bytes is read, not even the checksum, which zlib checks
@@ -397,19 +410,35 @@ class Decompressor {
         if ((cmf & 0x0F) != 8 || (cmf >> 4) > 7 || (cmf << 8 | flg) % 31 != 0 || (flg & 0x20) != 0) {
             throw new InvalidDataException("Invalid zlib header");
         }
-        using var outStream = new MemoryStream();
+        int n = 0;
         using (var deflate = new DeflateStream(
                 new MemoryStream(data, 2, data.Length - 2), CompressionMode.Decompress)) {
             byte[] buffer = new byte[65536];
-            while (outStream.Length < length) {
-                int count = deflate.Read(buffer, 0, (int) Math.Min(buffer.Length, length - outStream.Length));
+            while (n < length) {
+                int count = deflate.Read(buffer, 0, Math.Min(buffer.Length, length - n));
                 if (count <= 0) {
                     break;      // The end, or cut short; decoded again below
                 }
-                outStream.Write(buffer, 0, count);
+                Deliver(buffer, n, count, skip, sink);
+                n += count;
             }
         }
-        return (outStream.Length == length) ? outStream.ToArray() : Inflate(data, length);
+        if (n == length) {
+            return n;
+        }
+        // The bytes the sink has: those it had, and those handed to it here
+        byte[] whole = Inflate(data, length);
+        Deliver(whole, 0, whole.Length, Math.Max(skip, n), sink);
+        return whole.Length;
+    }
+
+    // Hands the sink the bytes of buf, the bytes from at of the stream, but
+    // for those before skip.
+    private static void Deliver(byte[] buf, int at, int count, int skip, Sink sink) {
+        int from = Math.Max(0, skip - at);
+        if (from < count) {
+            sink(buf, from, count - from);
+        }
     }
 
     /// <summary>
@@ -419,23 +448,37 @@ class Decompressor {
     /// has no bytes after its end.
     /// </summary>
     internal static byte[] InflateExact(byte[] data, int length, out bool exact) {
+        using var outStream = new MemoryStream();
+        InflateExactTo(data, length, (buf, off, len) => outStream.Write(buf, off, len), out exact);
+        return outStream.ToArray();
+    }
+
+    // Decodes the first length bytes of a zlib stream as InflateExact does,
+    // handing them to the sink as they are decoded, in pieces it must copy to
+    // keep, so that none of them is kept here: an image's samples read a row
+    // at a time, never whole (21 November 2026). Returns how many it decoded,
+    // length or fewer. Where zlib stops short of them, or stops with an
+    // error, they are decoded as InflatePrefix decodes them, the bytes the
+    // sink has already not handed to it again.
+    internal static int InflateExactTo(byte[] data, int length, Sink sink, out bool exact) {
         exact = false;
         // The last bytes of the input are read one at a time, so that the
         // input is read to its end only when the stream ends there.
         var inStream = new EndOfInputStream(data, true);
-        using var outStream = new MemoryStream();
+        int n = 0;
         bool again = false;
         try {
             using var zlib = new ZLibStream(inStream, CompressionMode.Decompress);
             byte[] buffer = new byte[65536];
-            while (outStream.Length < length) {
-                int count = zlib.Read(buffer, 0, (int) Math.Min(buffer.Length, length - outStream.Length));
+            while (n < length) {
+                int count = zlib.Read(buffer, 0, Math.Min(buffer.Length, length - n));
                 if (count <= 0) {
                     break;
                 }
-                outStream.Write(buffer, 0, count);
+                sink(buffer, 0, count);
+                n += count;
             }
-            if (outStream.Length == length) {
+            if (n == length) {
                 // A read of one more byte gets to the end of the stream, where
                 // zlib checks the checksum, and throws when it is wrong.
                 try {
@@ -454,7 +497,11 @@ class Decompressor {
         } catch (InvalidDataException) {
             // Decoded again below, with the errors of a prefix.
         }
-        return (outStream.Length == length && !again) ? outStream.ToArray() : InflatePrefix(data, length);
+        if (n == length && !again) {
+            return n;
+        }
+        exact = false;
+        return InflatePrefixTo(data, length, sink, n);
     }
 
     /// <summary>
