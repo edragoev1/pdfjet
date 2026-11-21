@@ -539,18 +539,21 @@ than waiting for 9.2.1. The rules:
   lines with SetBorderWidth(0) for the old look, and the examples' PDFs and
   any fingerprints of tables written again. Not to do without the owner's
   yes.
-- **Maybe, sometime in 2027 (decided 14 November 2026): a PNG checked and decoded a row at a time** (the owner, 11
-  November 2026, thinking of a 128 MB Cloudflare Worker). The IDAT data of an
-  opaque PNG is embedded as it is already, in the four ports and Forms'
-  TypeScript engine (embedIDAT of pngimage.go, Image.ts): no decoding, no
-  compressing again. But before that the whole IDAT is inflated once
-  (InflateExact) to check each row's filter type and that the data is the
-  image and nothing more: some 36 MB at once for a 12-megapixel photo, let go
-  at once. A PNG with alpha is decoded whole for its soft mask the same way.
-  Inflated as a stream instead, a row at a time, the check holds a row and
-  zlib's 32 KB window, and the alpha is deflated as its rows come: a few
-  hundred KB for an image of any size. The same bytes in the PDF. Only worth
-  it where memory is short, a Worker, or many large images at once.
+- **A PNG checked and decoded a row at a time: Go done, Java and .NET to
+  follow, Swift left as it is** (the owner, 21 November 2026; first thought
+  of on 11 November for a 128 MB Cloudflare Worker). Go, 21 November: the
+  IDAT inflated as a stream (decompressor.InflateExactTo), each row
+  unfiltered with the one before it and its samples and alpha deflated as
+  they come (compressor.ImageWriter); an opaque PNG of exactly its image
+  checked as it inflates and embedded as its IDAT, as before. The same bytes
+  in the PDF (39 PNGs, the broken ones failing in the same words and order);
+  an 8000 by 8000 PNG with alpha in 22 MB and 1.3 s, not 1.3 GB and 2.0 s,
+  one of 4000 by 3000 in 13 MB, not 207. Forms' TypeScript engine has it too
+  (readImage's lowMemory, for the Worker of pdfjet.com's Images to PDF,
+  where an 8000 by 8000 PNG failed). Java (java.util.zip's Inflater and
+  Deflater) and .NET (ZLibStream) take input in pieces, as Go's zlib does:
+  the same change. Swift stays as it is: Puff.swift and FlateEncode.swift
+  work on whole buffers.
 - **Maybe, a sixth free tool: printable puzzles or sheets** (the owner, 11
   November 2026: "some really simple tool like the 5 we already did but very
   useful ... entertainment - Sudoku generator - Print and play"). Kept to

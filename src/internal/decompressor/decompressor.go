@@ -408,16 +408,23 @@ func InflateExact(buf []byte, length int) ([]byte, bool, error) {
 }
 
 func inflate(buf []byte, maxLength int, prefix bool) (result []byte, exact bool, err error) {
+	if prefix {
+		var inflated bytes.Buffer
+		inflated.Grow(min(len(buf), maxLength))
+		_, exact, err := InflateExactTo(buf, maxLength, func(p []byte) { inflated.Write(p) })
+		if err != nil {
+			return nil, false, err
+		}
+		return inflated.Bytes(), exact, nil
+	}
 	input := bytes.NewReader(buf)
 	reader, err := zlib.NewReader(input)
 	if err != nil {
 		return nil, false, fmt.Errorf("invalid zlib data: %w", err)
 	}
 	defer func() {
-		// A prefix that has its bytes ignores the rest of the stream, and so
-		// an error the reader found in it, like the end of a stream cut short.
 		closeErr := reader.Close()
-		if closeErr != nil && err == nil && !(prefix && len(result) == maxLength) {
+		if closeErr != nil && err == nil {
 			result = nil
 			err = fmt.Errorf("failed to close reader: %w", closeErr)
 		}
@@ -425,39 +432,6 @@ func inflate(buf []byte, maxLength int, prefix bool) (result []byte, exact bool,
 
 	var inflated bytes.Buffer
 	inflated.Grow(min(len(buf), maxLength))
-	if prefix {
-		// The Deflate data up to the bytes asked for is checked as zlib
-		// checks it, which compress/flate does not do in full (puff.go).
-		if err := puffCheck(buf[2:], maxLength); err != nil {
-			return nil, false, fmt.Errorf("decompression failed: %w", err)
-		}
-		// A prefix reads no further than its length, and ignores the rest of
-		// the stream, its checksum too: the reader returns an error found at
-		// the end of the stream with the last bytes before it, which are the
-		// ones the prefix needs.
-		chunk := make([]byte, min(32*1024, maxLength))
-		for inflated.Len() < maxLength {
-			n, err := reader.Read(chunk[:min(len(chunk), maxLength-inflated.Len())])
-			inflated.Write(chunk[:n])
-			if inflated.Len() == maxLength || err == io.EOF {
-				break
-			}
-			if err != nil {
-				return nil, false, fmt.Errorf("decompression failed: %w", err)
-			}
-		}
-		if inflated.Len() == maxLength {
-			// A read of one more byte gets to the end of the stream, where
-			// the reader checks the checksum. The Deflate decoder reads a
-			// bytes.Reader a byte at a time, so the bytes after the end of
-			// the stream are left in it.
-			var next [1]byte
-			n, err := reader.Read(next[:])
-			exact = n == 0 && err == io.EOF && input.Len() == 0
-		}
-		return inflated.Bytes(), exact, nil
-	}
-	// One byte more than the limit tells that the stream decodes to more.
 	n, err := io.Copy(&inflated, io.LimitReader(reader, int64(maxLength)+1))
 	if err != nil {
 		return nil, false, fmt.Errorf("decompression failed: %w", err)
@@ -467,4 +441,50 @@ func inflate(buf []byte, maxLength int, prefix bool) (result []byte, exact bool,
 	}
 
 	return inflated.Bytes(), false, nil
+}
+
+// InflateExactTo inflates the first length bytes of the zlib data as
+// InflateExact does, but hands them to sink as they are decoded, in pieces of
+// at most 32 KB that sink must copy to keep, so that none of them is kept
+// here: an image's samples read a row at a time, never whole. It returns how
+// many bytes were decoded, less than length when the data ends before, and
+// whether the data decodes to exactly length bytes; its errors are
+// InflateExact's.
+func InflateExactTo(buf []byte, length int, sink func([]byte)) (n int, exact bool, err error) {
+	input := bytes.NewReader(buf)
+	reader, err := zlib.NewReader(input)
+	if err != nil {
+		return 0, false, fmt.Errorf("invalid zlib data: %w", err)
+	}
+	defer func() {
+		// The checksum after the first length bytes is not read; one of
+		// data that ends before them is
+		closeErr := reader.Close()
+		if closeErr != nil && err == nil && n != length {
+			err = fmt.Errorf("failed to close reader: %w", closeErr)
+		}
+	}()
+	if err := puffCheck(buf[2:], length); err != nil {
+		return 0, false, fmt.Errorf("decompression failed: %w", err)
+	}
+	chunk := make([]byte, min(32*1024, length))
+	for n < length {
+		m, err := reader.Read(chunk[:min(len(chunk), length-n)])
+		if m > 0 {
+			sink(chunk[:m])
+			n += m
+		}
+		if n == length || err == io.EOF {
+			break
+		}
+		if err != nil {
+			return n, false, fmt.Errorf("decompression failed: %w", err)
+		}
+	}
+	if n == length {
+		var next [1]byte
+		m, err := reader.Read(next[:])
+		exact = m == 0 && err == io.EOF && input.Len() == 0
+	}
+	return n, exact, nil
 }

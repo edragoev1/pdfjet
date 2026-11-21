@@ -12,6 +12,14 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **A PNG read a row at a time, in Go**: its image data inflated as a
+  stream, each row's filter undone with the row before it, and its samples
+  and its alpha compressed as they come, never the whole image in memory.
+  An 8000 by 8000 PNG with alpha takes 22 MB and 1.3 s, not 1.3 GB and
+  2.0 s; one of 4000 by 3000, 13 MB, not 207. The PDF is the same, byte for
+  byte, and a broken PNG fails in the same words. Java and .NET to follow;
+  Swift unchanged.
+
 - **`ComplexText` in a `Table` cell**, in the four ports: Hindi, Khmer and
   the other scripts in tables, as `cell.setDrawable(new ComplexText(font,
   text))`. The cell gives the text its width, less its padding, as it does
