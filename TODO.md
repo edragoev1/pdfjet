@@ -70,6 +70,32 @@ their tests.
 
 ## Open
 
+- **For 9.2.1: Thai line breaking by a word dictionary, in the four
+  ports.** Thai has no spaces between its words, only between phrases.
+  `TextBlock` breaks at spaces and at zero width spaces (U+200B) the caller
+  puts in, and a phrase wider than the line is broken at any character.
+  Real Thai text has no zero width spaces. Measured 21 November 2026 on the
+  Thai UDHR (UDHR in Unicode, 90 paragraphs, 9,290 characters), 300 points
+  wide in IBM Plex Sans Thai 12, each break checked against ICU's word
+  boundaries: `TextBlock` 165 breaks, 23 inside a word (14%: คุ้ม|ครอง,
+  อิสรภา|พ, ข|อง); Chrome 135 breaks, none inside a word.
+  - The data: ICU's Thai dictionary (icu4c/source/data/brkitr/dictionaries/
+    thaidict.txt, Unicode license), 26,392 words, 484 KB (104 KB gzipped),
+    carried with the world fonts beside IBM Plex Sans Thai, so a program
+    that draws no Thai neither carries nor loads it.
+  - The code: a word finder over it, the fewest unknown characters then the
+    fewest words (dictionary maximal matching), the same in the four ports.
+    A prototype of 20 lines found 98.9% of ICU's word ends in the Thai UDHR
+    (2,275 of 2,301), 29 more than ICU's; ICU's Thai engine ported instead
+    if 100% is wanted.
+  - The hook: the finder puts zero width spaces between the words of a run
+    of Thai that has none, and TextBlock breaks there as it does today; text
+    with zero width spaces is left as it is, Example_04 unchanged.
+  - Tests: the Thai UDHR with no break inside a word, the same lines in the
+    four ports.
+  - Later, the same code with ICU's other dictionaries, for the line
+    breaking of ComplexText: Lao (660 KB), Burmese (1.1 MB), Khmer (2 MB).
+
 - **One image used by many documents.** A batch of 1,000 letters, each
   with a 386 by 395 RGBA PNG logo, spends nearly nine tenths of each letter
   on the logo (8.78 ms a letter, 1.00 without it, in Java): the PNG is
