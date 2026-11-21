@@ -16,7 +16,7 @@ namespace PDFjet.NET {
 // are drawn with DrawGlyphs, each line tagged with its text. .NET has no
 // shaper of its own: the tests give one that returns fixed lines.
 public class ComplexTextTest {
-    private const string DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
+    private const string DEVANAGARI = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf";
     private const string LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
     private const string CASCADIA = "tests/fonts/CascadiaMono-Regular.ttf";
 

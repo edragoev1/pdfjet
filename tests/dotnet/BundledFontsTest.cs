@@ -18,9 +18,12 @@ namespace PDFjet.NET {
 /// </summary>
 public class BundledFontsTest {
     private static readonly String[] CLASSES = {
-        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew",
+        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
         "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
         "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
+        "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada",
+        "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya",
+        "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu",
     };
 
     // The folders of the families, those of the other scripts than the
@@ -48,7 +51,7 @@ public class BundledFontsTest {
                 }
             }
         }
-        Assert.Equal(78, carried.Count);
+        Assert.Equal(97, carried.Count);
         SortedSet<String> constants = new SortedSet<String>(StringComparer.Ordinal);
         foreach (String name in CLASSES) {
             Type c = typeof(Font).Assembly.GetType("PDFjet.NET." + name, true);
@@ -118,9 +121,10 @@ public class BundledFontsTest {
                 }
             }
         }
-        // IBM Plex Sans JP, KR, SC and TC, three faces each, and IBM Plex Sans
-        // Arabic, Devanagari, Hebrew and Thai, seven each, with a license each
-        Assert.Equal(12 + 28 + 8, worldFiles.Count);
+        // IBM Plex Sans JP, KR, SC and TC, three faces each, IBM Plex Sans
+        // Arabic, Hebrew and Thai, seven each, and Noto Sans of the 13 scripts
+        // ComplexText draws, two each, with a license each
+        Assert.Equal(12 + 21 + 26 + 20, worldFiles.Count);
 #if PDFJET_FONTS
         // The fonts and their licenses, Family/File, and nothing else
         Assert.Equal(files, resources);
@@ -174,7 +178,7 @@ public class BundledFontsTest {
     public void AWorldFontNotFoundNamesThePackageAndTheLineToAdd() {
         Assert.Equal("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf is not a file, nor in resources/fonts/world. "
                 + "IBM Plex Sans Arabic is in the NuGet package PDFjet.Fonts.World, with PDFjet's fonts for "
-                + "Chinese, Japanese, Korean, Arabic, Hebrew and Thai: dotnet add package PDFjet.Fonts.World"
+                + "Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar: dotnet add package PDFjet.Fonts.World"
                 + " --version " + PDF.VERSION
                 + " (in the project file: <PackageReference Include=\"PDFjet.Fonts.World\" Version=\"" + PDF.VERSION + "\" />)",
                 BundledFonts.WorldMissing(IBMPlexSansArabic.Regular));

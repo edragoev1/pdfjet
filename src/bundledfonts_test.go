@@ -26,13 +26,14 @@ import (
 	_ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansDevanagari"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansThai"
+	"github.com/edragoev1/pdfjet/v9/src/NotoSansDevanagari"
+	"github.com/edragoev1/pdfjet/v9/src/NotoSansKhmer"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -41,9 +42,12 @@ import (
 // of them, which the library has.
 
 var testFontPackages = []string{
-	"IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew",
+	"IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
 	"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
 	"IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
+	"NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada",
+	"NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya",
+	"NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu",
 }
 
 // testIsDeprecated tells if the doc comment has a paragraph that starts
@@ -97,8 +101,8 @@ func TestBundledFontsEveryFontCarriedHasAConstantAndEveryConstantNotDeprecatedIs
 		}
 	}
 	slices.Sort(carried)
-	if len(carried) != 78 {
-		t.Fatalf("%d fonts carried, not 78", len(carried))
+	if len(carried) != 97 {
+		t.Fatalf("%d fonts carried, not 97", len(carried))
 	}
 	var constants []string
 	deprecated := 0
@@ -197,7 +201,7 @@ func TestBundledFontsTheWorldFontsAreReadFromTheLibraryWhenTheProgramImportsTheP
 	t.Chdir(t.TempDir())
 	doc := testNewDoc()
 	for _, path := range []string{IBMPlexSansJP.Regular, IBMPlexSansKR.SemiBold, IBMPlexSansSC.Bold, IBMPlexSansTC.Regular,
-		IBMPlexSansArabic.Regular, IBMPlexSansDevanagari.Regular, IBMPlexSansHebrew.Thin, IBMPlexSansThai.Text} {
+		IBMPlexSansArabic.Regular, NotoSansDevanagari.Regular, NotoSansKhmer.Bold, IBMPlexSansHebrew.Thin, IBMPlexSansThai.Text} {
 		font := NewFontFromFile(doc.pdf, path)
 		if family := filepath.Base(filepath.Dir(path)); !strings.HasPrefix(font.GetName(), family) {
 			t.Errorf("%s: the font %s", path, font.GetName())

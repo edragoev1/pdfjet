@@ -15,7 +15,7 @@ namespace PDFjet.NET {
 /// glyphs it found with Page.DrawGlyphs: as outlines read from the font file,
 /// sharp on screen and in print, each glyph drawn once and reused.
 /// <code>
-/// Font hindi = new Font(pdf, IBMPlexSansDevanagari.Regular);
+/// Font hindi = new Font(pdf, NotoSansDevanagari.Regular);
 /// Font latin = new Font(pdf, IBMPlexSans.Regular);    // The English words
 /// hindi.SetSize(11f);
 /// float[] corner = new ComplexText(hindi, text)

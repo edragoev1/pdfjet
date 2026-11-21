@@ -89,11 +89,12 @@ same output come in four languages, and none of them needs a third-party library
   SimpleScatterChart in the same look, and bar and donut charts too.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
-- **Fonts ready to use.** 78 TrueType and OpenType fonts, IBM Plex Sans and
+- **Fonts ready to use.** 97 TrueType and OpenType fonts, IBM Plex Sans and
   Serif, Cascadia Mono, and IBM Plex Sans JP, KR, SC, TC, Arabic, Hebrew and
   Thai, with Unicode text in Latin, Greek, Cyrillic, CJK and right to left
-  scripts, and IBM Plex Sans Devanagari for Hindi drawn with `ComplexText`
-  (see "Hindi, Khmer and other complex scripts"), embedded as subsets of the glyphs a document draws. IBM
+  scripts, and Noto Sans for Hindi, Bengali, Tamil, Khmer and the other
+  scripts drawn with `ComplexText` (see "Hindi, Khmer and other complex
+  scripts"), embedded as subsets of the glyphs a document draws. IBM
   Plex Sans alone covers all 24 official languages of the European Union,
   from Czech ř and Romanian ș to Greek and Bulgarian, with the euro sign and
   each language's quotation marks: a one-page PDF in it is about 28 KB. A
@@ -112,7 +113,11 @@ same output come in four languages, and none of them needs a third-party library
   (java.awt.font), Android 12 and later (Android's own), and Swift on Apple
   platforms (Core Text); in .NET and Go, ComplexText is given a shaper that
   calls a shaping package in your program (HarfBuzzSharp, go-text), never in
-  PDFjet, as Example_52 shows. `Page.drawGlyphs` draws glyphs shaped by any
+  PDFjet, as Example_52 shows. The fonts come with the world fonts: Noto
+  Sans, Regular and Bold, for Devanagari (Hindi, Marathi, Nepali), Bengali,
+  Gurmukhi, Gujarati, Odia, Tamil, Telugu, Kannada, Malayalam, Sinhala,
+  Khmer, Lao and Myanmar, the fonts HarfBuzz, the engine of Chrome and
+  Android, is tested with. `Page.drawGlyphs` draws glyphs shaped by any
   engine, for a layout of your own. Example_52 draws a page of Hindi and a
   page of Khmer with each. In .NET and Go the example's shaper breaks lines
   at spaces: for Khmer, Thai, Lao and Burmese, written without spaces

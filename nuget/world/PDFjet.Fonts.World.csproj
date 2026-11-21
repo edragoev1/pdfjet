@@ -2,7 +2,8 @@
   <!-- PDFjet.Fonts.World.dll, the assembly of the NuGet package
        PDFjet.Fonts.World (package-nuget.sh): the fonts PDFjet carries for
        every script but the European ones, IBM Plex Sans JP, KR, SC and TC,
-       and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, the folders of
+       IBM Plex Sans Arabic, Hebrew and Thai, and Noto Sans of the scripts
+       ComplexText draws, the folders of
        resources/fonts/world, and their licenses, as resources and nothing
        else, named as in PDFjet.dll, PDFjet.Fonts/ and their path under
        resources/fonts, such as

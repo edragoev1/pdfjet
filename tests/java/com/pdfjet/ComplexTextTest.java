@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 // glyphs it found are drawn with drawGlyphs, each line tagged with its text.
 class ComplexTextTest {
 
-    private static final String DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
+    private static final String DEVANAGARI = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf";
     private static final String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
     private static final String CASCADIA = "tests/fonts/CascadiaMono-Regular.ttf";
     private static final String HINDI = "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता "

@@ -119,10 +119,11 @@ jar --create --date="$date" --file "$worldBase.jar" --manifest "$work/world-mani
 mkdir -p "$work/world-readme"
 cat > "$work/world-readme/README.txt" <<README
 com.pdfjet:pdfjet-fonts-world $packageVersion has no code: it is the fonts PDFjet
-carries for Chinese, Japanese, Korean, Arabic, Hebrew and Thai, IBM Plex Sans
-JP, KR, SC and TC, Regular, SemiBold and Bold, and IBM Plex Sans Arabic,
-Hebrew and Thai, Thin to Bold, and IBM Plex Sans Devanagari, Thin to Bold,
-for drawGlyphs, with their licenses (SIL Open Font License 1.1), as resources
+carries for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic
+scripts, Sinhala, Khmer, Lao and Myanmar: IBM Plex Sans JP, KR, SC and TC,
+Regular, SemiBold and Bold, IBM Plex Sans Arabic, Hebrew and Thai, Thin to
+Bold, and Noto Sans Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam, Sinhala, Khmer, Lao and Myanmar, Regular and
+Bold, for ComplexText, with their licenses (SIL Open Font License 1.1), as resources
 at com/pdfjet/fonts/world. PDFjet, com.pdfjet:pdfjet,
 finds them on the classpath: a path such as IBMPlexSansJP.Regular or
 IBMPlexSansArabic.Regular works when this jar is next to it.

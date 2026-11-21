@@ -13,9 +13,12 @@ import Testing
 /// which the library has.
 @Suite struct BundledFontsTests {
     private static let structs = [
-        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew",
+        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
         "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
         "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
+        "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada",
+        "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya",
+        "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu",
     ]
 
     // The constants of a font struct, read from its source, as Swift has no
@@ -69,7 +72,7 @@ import Testing
                 carried.insert("fonts/" + family + "/" + font)
             }
         }
-        #expect(carried.count == 78)
+        #expect(carried.count == 97)
         var named = Set<String>()
         for name in BundledFontsTests.structs {
             let found = try constants(name)
@@ -226,11 +229,11 @@ import Testing
         #expect(inBundle.path.contains("PDFjet_PDFjetFontsWorld."), "\(inBundle.path)")
         #expect(try Data(contentsOf: inBundle) == Data(contentsOf: onDisk))
         for path in [IBMPlexSansKR.Regular, IBMPlexSansSC.SemiBold, IBMPlexSansTC.Bold,
-                IBMPlexSansArabic.Regular, IBMPlexSansDevanagari.Regular, IBMPlexSansHebrew.Thin, IBMPlexSansThai.Text] {
+                IBMPlexSansArabic.Regular, NotoSansDevanagari.Regular, NotoSansKhmer.Bold, IBMPlexSansHebrew.Thin, IBMPlexSansThai.Text] {
             #expect(BundledFonts.url(path, missing) != nil, "\(path)")
         }
         let files = try FileManager.default.subpathsOfDirectory(atPath: worldBundle.bundleURL.path)
-        #expect(files.filter { $0.hasSuffix(".otf") }.count == 40)
+        #expect(files.filter { $0.hasSuffix(".otf") }.count == 59)  // 12 + 21 Plex, 26 Noto
         #expect(files.filter { $0.hasSuffix(".ttf") }.isEmpty)
         #expect(files.contains { $0.hasSuffix("license.txt") })
         #expect(!files.contains { $0.hasSuffix(".go") })
@@ -246,7 +249,7 @@ import Testing
         let message = try #require(BundledFonts.worldMissing(IBMPlexSansArabic.Regular))
         #expect(message == "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf is not a file, nor in "
                 + "resources/fonts/world. IBM Plex Sans Arabic is in the product PDFjetFontsWorld, with PDFjet's "
-                + "fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: add it to the dependencies of "
+                + "fonts for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar: add it to the dependencies of "
                 + "your target in Package.swift, .product(name: \"PDFjetFontsWorld\", package: \"pdfjet\")",
                 "\(message)")
         #expect(BundledFonts.worldMissing(IBMPlexSansJP.Regular)?.contains("IBM Plex Sans JP is in") == true)

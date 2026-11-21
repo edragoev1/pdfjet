@@ -15,8 +15,9 @@ namespace PDFjet.NET {
 /// folder of its name, with its license: IBM Plex Sans and Serif, from Thin
 /// to Bold, and Cascadia Mono, from Light to Bold, as .otf, upright
 /// and italic, for every European language, in Latin, Greek and Cyrillic; and, in
-/// resources/fonts/world, IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, Thin to Bold,
-/// and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
+/// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
+/// IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, and Noto Sans
+/// of the scripts ComplexText draws, Regular and Bold, as .otf.
 /// All are under the SIL Open Font License 1.1. A path to one of them, such
 /// as fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the font
 /// classes, is read from the folder resources/fonts when there is no such
@@ -57,18 +58,23 @@ internal static class BundledFonts {
             }
             faces[family] = files;
         }
-        foreach (String family in new String[] {"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
+        foreach (String family in new String[] {"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
             List<String> files = new List<String>();
             foreach (String style in new String[] {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}) {
                 files.Add(family + "-" + style + ".otf");
             }
             faces[family] = files;
         }
+        // Noto Sans of the scripts ComplexText draws, Regular and Bold
+        foreach (String family in new String[] {
+                "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu"}) {
+            faces[family] = new List<String> {family + "-Regular.otf", family + "-Bold.otf"};
+        }
         return faces;
     }
 
     // What the fonts of the package PDFjet.Fonts.World are for.
-    internal const String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai";
+    internal const String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar";
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf: its
@@ -94,7 +100,9 @@ internal static class BundledFonts {
     // Returns the name of a family as people write it, such as IBM Plex Sans
     // Arabic of IBMPlexSansArabic.
     internal static String FamilyName(String family) {
-        String name = "IBM Plex " + family.Substring("IBMPlex".Length);
+        String name = family.StartsWith("Noto", StringComparison.Ordinal)
+                ? "Noto " + family.Substring("Noto".Length)
+                : "IBM Plex " + family.Substring("IBMPlex".Length);
         int sans = name.IndexOf("Sans", StringComparison.Ordinal);
         return (sans < 0 || name.Length == sans + 4) ? name : name.Insert(sans + 4, " ");
     }

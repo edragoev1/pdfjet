@@ -42,8 +42,8 @@ import (
 //	cd src/examples/example52 && go build -o ../../../Example_52.exe . && cd ../../.. && ./Example_52.exe
 
 const (
-	devanagari = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf"
-	khmer      = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.otf"
+	devanagari = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf"
+	khmer      = "resources/fonts/world/NotoSansKhmer/NotoSansKhmer-Regular.otf"
 	latin      = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 
 	size   = float32(10.5)

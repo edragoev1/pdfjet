@@ -37,15 +37,28 @@ import (
 //go:embed IBMPlexSansSC/*.otf IBMPlexSansSC/license.txt
 //go:embed IBMPlexSansTC/*.otf IBMPlexSansTC/license.txt
 //go:embed IBMPlexSansArabic/*.otf IBMPlexSansArabic/license.txt
-//go:embed IBMPlexSansDevanagari/*.otf IBMPlexSansDevanagari/license.txt
 //go:embed IBMPlexSansHebrew/*.otf IBMPlexSansHebrew/license.txt
 //go:embed IBMPlexSansThai/*.otf IBMPlexSansThai/license.txt
+//go:embed NotoSansBengali/*.otf NotoSansBengali/license.txt
+//go:embed NotoSansDevanagari/*.otf NotoSansDevanagari/license.txt
+//go:embed NotoSansGujarati/*.otf NotoSansGujarati/license.txt
+//go:embed NotoSansGurmukhi/*.otf NotoSansGurmukhi/license.txt
+//go:embed NotoSansKannada/*.otf NotoSansKannada/license.txt
+//go:embed NotoSansKhmer/*.otf NotoSansKhmer/license.txt
+//go:embed NotoSansLao/*.otf NotoSansLao/license.txt
+//go:embed NotoSansMalayalam/*.otf NotoSansMalayalam/license.txt
+//go:embed NotoSansMyanmar/*.otf NotoSansMyanmar/license.txt
+//go:embed NotoSansOriya/*.otf NotoSansOriya/license.txt
+//go:embed NotoSansSinhala/*.otf NotoSansSinhala/license.txt
+//go:embed NotoSansTamil/*.otf NotoSansTamil/license.txt
+//go:embed NotoSansTelugu/*.otf NotoSansTelugu/license.txt
 var files embed.FS
 
 func init() {
 	for _, family := range []string{
 		"IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC",
-		"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai",
+		"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai",
+		"NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu",
 	} {
 		sub, err := fs.Sub(files, family)
 		if err != nil {

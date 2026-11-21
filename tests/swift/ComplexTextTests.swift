@@ -11,7 +11,7 @@ import Testing
 /// ComplexText: the platform's text engine shapes and wraps the text, and the
 /// glyphs it found are drawn with drawGlyphs, each line tagged with its text.
 @Suite struct ComplexTextTests {
-    private static let devanagari = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf"
+    private static let devanagari = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf"
     private static let latin = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
     private static let cascadia = "tests/fonts/CascadiaMono-Regular.ttf"
     private static let hindi = "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता "

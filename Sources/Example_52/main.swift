@@ -22,8 +22,8 @@ import PDFjet
  */
 #if canImport(CoreText)
 public class Example_52 {
-    private static let devanagari = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf"
-    private static let khmer = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.otf"
+    private static let devanagari = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf"
+    private static let khmer = "resources/fonts/world/NotoSansKhmer/NotoSansKhmer-Regular.otf"
     private static let latin = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 
     private static let size: Float = 10.5

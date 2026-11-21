@@ -19,7 +19,7 @@ import java.util.List;
  * the font file, sharp on screen and in print, each glyph drawn once and
  * reused.
  * <pre>
- * Font hindi = new Font(pdf, IBMPlexSansDevanagari.Regular);
+ * Font hindi = new Font(pdf, NotoSansDevanagari.Regular);
  * Font latin = new Font(pdf, IBMPlexSans.Regular);    // The English words
  * hindi.setSize(11f);
  * float[] corner = new ComplexText(hindi, text)

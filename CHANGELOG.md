@@ -87,23 +87,26 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   `/Type /XObject`. Example_52 is 11% smaller (Java 202,080 bytes to 180,464),
   and still passes PDF/UA. Nothing else changes: the other examples are the
   same, but for the version and Example_37's Data Matrix text.
-- **Example_52 in .otf fonts:** its Hindi in IBM Plex Sans Devanagari 1.2
-  (complete for Hindi, Marathi, Nepali and Sanskrit, in the IBM Plex of the
-  rest of the page) and its Khmer in Noto Sans Khmer 2.004, both .otf, whose
-  CFF outlines go into the PDF as they are: Example_52 is 150 KB in Java,
-  where 9.1.9's was 202 KB with the .ttf fonts. The `drawGlyphs` tests keep
-  Noto Sans Devanagari's .ttf, for the TrueType outlines.
-- **IBM Plex Sans Devanagari in the world fonts**, Thin to Bold, .otf, with a
-  constant `IBMPlexSansDevanagari` in the four ports and the world packages
+- **Noto Sans for the scripts `ComplexText` draws, in the world fonts**:
+  Noto Sans Devanagari 2.007 (Hindi, Marathi, Nepali, Sanskrit), Bengali
+  3.011, Gurmukhi 2.004, Gujarati 2.106, Oriya 2.007, Tamil 2.004, Telugu
+  2.005, Kannada 2.006, Malayalam 2.104, Sinhala 3.000, Khmer 2.004, Lao
+  2.003 and Myanmar 2.107, Regular and Bold, the unhinted .otf files of
+  Noto's releases, unmodified, each with its license (SIL Open Font License
+  1.1): HarfBuzz, the engine of Chrome and Android, is tested with them. A
+  class or package of constants for each family in the four ports
+  (`NotoSansDevanagari.Regular` and the others), in the world packages
   (resources/fonts/world, Maven's pdfjet-fonts-world, NuGet's
-  PDFjet.Fonts.World, Go's world package, Swift's PDFjetFontsWorld): 78 fonts
-  carried, where there were 71, the world fonts about 54 MB. PDFjet does not
-  shape Devanagari: the font is for `drawGlyphs`, the platform's text engine
-  shaping the text with the same file; in a TextLine or a TextBlock the
-  letters would come out unshaped, and the README and the guides for AI coding
-  assistants say so. Complete for Hindi, Marathi, Nepali and Sanskrit
-  (without the Vedic accents), Konkani, Maithili, Dogri and Bodo; not for
-  Sindhi or Kashmiri in Devanagari.
+  PDFjet.Fonts.World, Go's world package, Swift's PDFjetFontsWorld): 97
+  fonts carried, where 9.1.9 carried 71, the world fonts about 54 MB.
+  PDFjet does not shape these scripts: the fonts are for `ComplexText` and
+  `drawGlyphs`, the platform's text engine shaping the text with the same
+  file; in a TextLine or a TextBlock the letters would come out unshaped,
+  as the README and the guides for AI coding assistants say. Thai, Arabic
+  and Hebrew, which PDFjet lays out itself, stay in IBM Plex. Example_52
+  draws its Hindi in Noto Sans Devanagari and its Khmer in Noto Sans Khmer,
+  the fonts PDFjet carries (272 KB in Java, 6 pages); the `drawGlyphs` tests
+  keep Noto Sans Devanagari's .ttf, for the TrueType outlines.
 
 ## v9.1.9 — 2026-11-17
 

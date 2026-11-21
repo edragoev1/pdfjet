@@ -12,7 +12,8 @@ let package = Package(
         // target PDFjetFonts.
         .library(name: "PDFjet", targets: ["PDFjet"]),
         // The fonts of every other script, IBM Plex Sans JP, KR, SC and TC,
-        // and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, about 54 MB, for an app
+        // IBM Plex Sans Arabic, Hebrew and Thai, and Noto Sans of the scripts
+        // ComplexText draws, Regular and Bold, about 54 MB, for an app
         // that draws in them:
         // .product(name: "PDFjetFontsWorld", package: "pdfjet").
         .library(name: "PDFjetFontsWorld", targets: ["PDFjetFontsWorld"]),
@@ -61,9 +62,21 @@ let package = Package(
                 "IBMPlexSansSC/license.txt",
                 "IBMPlexSansTC/license.txt",
                 "IBMPlexSansArabic/license.txt",
-                "IBMPlexSansDevanagari/license.txt",
                 "IBMPlexSansHebrew/license.txt",
                 "IBMPlexSansThai/license.txt",
+                "NotoSansBengali/license.txt",
+                "NotoSansDevanagari/license.txt",
+                "NotoSansGujarati/license.txt",
+                "NotoSansGurmukhi/license.txt",
+                "NotoSansKannada/license.txt",
+                "NotoSansKhmer/license.txt",
+                "NotoSansLao/license.txt",
+                "NotoSansMalayalam/license.txt",
+                "NotoSansMyanmar/license.txt",
+                "NotoSansOriya/license.txt",
+                "NotoSansSinhala/license.txt",
+                "NotoSansTamil/license.txt",
+                "NotoSansTelugu/license.txt",
             ],
             sources: ["PDFjetFontsWorld.swift"],
             resources: [
@@ -72,9 +85,21 @@ let package = Package(
                 .process("IBMPlexSansSC"),
                 .process("IBMPlexSansTC"),
                 .process("IBMPlexSansArabic"),
-                .process("IBMPlexSansDevanagari"),
                 .process("IBMPlexSansHebrew"),
                 .process("IBMPlexSansThai"),
+                .process("NotoSansBengali"),
+                .process("NotoSansDevanagari"),
+                .process("NotoSansGujarati"),
+                .process("NotoSansGurmukhi"),
+                .process("NotoSansKannada"),
+                .process("NotoSansKhmer"),
+                .process("NotoSansLao"),
+                .process("NotoSansMalayalam"),
+                .process("NotoSansMyanmar"),
+                .process("NotoSansOriya"),
+                .process("NotoSansSinhala"),
+                .process("NotoSansTamil"),
+                .process("NotoSansTelugu"),
             ]
         ),
         .target(name: "PDFjet", dependencies: ["PDFjetFonts"]),

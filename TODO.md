@@ -70,19 +70,6 @@ their tests.
 
 ## Open
 
-- **Noto Sans for the scripts ComplexText draws.** Devanagari (Hindi,
-  Marathi, Nepali), Bengali, Gurmukhi, Gujarati, Odia, Tamil, Telugu,
-  Kannada, Malayalam, Sinhala, Khmer, Lao and Myanmar, in Noto Sans, which
-  HarfBuzz, the shaper of Chrome and Android, is tested against; Thai,
-  Arabic and Hebrew, which PDFjet lays out itself, stay on IBM Plex. The
-  .otf files, unmodified, of a pinned release, under the SIL Open Font
-  License. To decide: Regular and Bold alone or more weights; whether IBM
-  Plex Sans Devanagari stays beside it (its constants are public); the
-  size added to the world fonts packages (Ubuntu's Noto Sans .ttf, Regular
-  alone, 1.4 MB for the ten scripts; the .otf to be measured). Then the
-  constants in the four ports, Example_52 and the ComplexText tests on
-  them, check-fonts.py, and the README's font list.
-
 - **One image used by many documents.** A batch of 1,000 letters, each
   with a 386 by 395 RGBA PNG logo, spends nearly nine tenths of each letter
   on the logo (8.78 ms a letter, 1.00 without it, in Java): the PNG is

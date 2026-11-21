@@ -27,9 +27,12 @@ import org.junit.jupiter.api.Test;
  */
 class BundledFontsTest {
     private static final String[] CLASSES = {
-        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew",
+        "IBMPlexMath", "IBMPlexMono", "IBMPlexSans", "IBMPlexSansArabic", "IBMPlexSansHebrew",
         "IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC", "IBMPlexSansThai",
         "IBMPlexSerif", "JetBrainsMono", "CascadiaMono", "SourceSerif4", "NotoSans",
+        "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada",
+        "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya",
+        "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu",
     };
 
     @Test
@@ -54,7 +57,7 @@ class BundledFontsTest {
                 }
             }
         }
-        assertEquals(78, carried.size());
+        assertEquals(97, carried.size());
         Set<String> constants = new TreeSet<String>();
         for (String name : CLASSES) {
             Class<?> c = Class.forName("com.pdfjet.fonts." + name);
@@ -109,7 +112,7 @@ class BundledFontsTest {
         }
         assertEquals("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf is not a file, nor in resources/fonts/world. "
                 + "IBM Plex Sans Arabic is in the package com.pdfjet:pdfjet-fonts-world, with PDFjet's fonts for "
-                + "Chinese, Japanese, Korean, Arabic, Hebrew and Thai. Add it next to com.pdfjet:pdfjet: "
+                + "Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar. Add it next to com.pdfjet:pdfjet: "
                 + "<dependency><groupId>com.pdfjet</groupId><artifactId>pdfjet-fonts-world</artifactId>"
                 + "<version>" + PDF.VERSION + "</version></dependency> "
                 + "(Gradle: implementation(\"com.pdfjet:pdfjet-fonts-world:" + PDF.VERSION + "\"))",

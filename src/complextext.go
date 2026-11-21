@@ -73,7 +73,7 @@ type ShapedLine struct {
 // from the font file, sharp on screen and in print, each glyph drawn once and
 // reused.
 //
-//	hindi := pdfjet.NewFontFromFile(pdf, IBMPlexSansDevanagari.Regular)
+//	hindi := pdfjet.NewFontFromFile(pdf, NotoSansDevanagari.Regular)
 //	latin := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular) // The English words
 //	hindi.SetSize(11)
 //	corner := pdfjet.NewComplexText(hindi, text).

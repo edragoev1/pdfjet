@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The NuGet package PDFjet.Fonts.World, made by package-nuget.sh: the
      fonts PDFjet carries for the other scripts than the European ones, IBM
-     Plex Sans JP, KR, SC and TC and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai,
+     Plex Sans JP, KR, SC and TC, IBM Plex Sans Arabic, Hebrew and Thai, and
+     Noto Sans of the scripts ComplexText draws,
      as resources of one assembly for .NET Standard 2.0,
      PDFjet.Fonts.World.dll, which PDFjet loads by its name; $version$ and
      $commit$ are written in by the script. -->
@@ -16,7 +17,7 @@
     <repository type="git" url="https://github.com/edragoev1/pdfjet.git" commit="$commit$" />
     <icon>icon.png</icon>
     <readme>README.md</readme>
-    <description>The fonts of PDFjet for Chinese, Japanese, Korean, Arabic, Hebrew and Thai: IBM Plex Sans JP, KR, SC and TC, and IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, under the SIL Open Font License 1.1, for the package PDFjet of the same version: add it next to PDFjet, and constants such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular work. No code. For .NET 8 and later and .NET Framework 4.8.</description>
+    <description>The fonts of PDFjet for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar: IBM Plex Sans JP, KR, SC and TC, IBM Plex Sans Arabic, Hebrew and Thai, and Noto Sans Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam, Sinhala, Khmer, Lao and Myanmar (Regular and Bold, for ComplexText), under the SIL Open Font License 1.1, for the package PDFjet of the same version: add it next to PDFjet, and constants such as IBMPlexSansJP.Regular and IBMPlexSansArabic.Regular work. No code. For .NET 8 and later and .NET Framework 4.8.</description>
     <releaseNotes>https://github.com/edragoev1/pdfjet/blob/main/CHANGELOG.md</releaseNotes>
     <copyright>Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"</copyright>
     <tags>pdfjet pdf fonts cjk chinese japanese korean arabic hebrew thai ibm-plex</tags>

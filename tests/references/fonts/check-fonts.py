@@ -6,7 +6,7 @@
 It needs fontTools; the version it was written with is FONTTOOLS below, and a
 run says the version it had.
 
-The fonts are every .otf and .ttf under fonts/, the six fonts fetch-fonts.sh
+The fonts are every .otf and .ttf under resources/fonts/, the six fonts fetch-fonts.sh
 fetches, and the 14 core fonts. The port
 loads each one as a user does, and says what it read: see TestFontReference in
 src/fontreference_test.go. A font file is compared with what fontTools reads
@@ -534,7 +534,9 @@ def read_known(path):
 def font_files(fetched):
     """(source, {key: path}) for each font file."""
     fonts = []
-    shipped = os.path.join(ROOT, 'fonts')
+    # The fonts PDFjet carries, resources/fonts/world among them; they were
+    # in fonts/, and when they moved the check found none and passed
+    shipped = os.path.join(ROOT, 'resources', 'fonts')
     for dirpath, dirnames, filenames in os.walk(shipped):
         dirnames.sort()
         for name in sorted(filenames):
@@ -542,6 +544,8 @@ def font_files(fetched):
                 path = os.path.join(dirpath, name)
                 key = os.path.relpath(path, ROOT)
                 fonts.append((path, {key: path}))
+    if not fonts:
+        sys.exit(f'No .otf or .ttf file under {shipped}: the fonts PDFjet carries are not found.')
     for name in FETCHED:
         path = os.path.abspath(os.path.join(fetched, name))
         if not os.path.exists(path):

@@ -27,8 +27,8 @@ import com.pdfjet.fonts.*;
  * page, a paragraph cut where a page ends.
  */
 public class Example_52 {
-    private static final String DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
-    private static final String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.otf";
+    private static final String DEVANAGARI = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf";
+    private static final String KHMER = "resources/fonts/world/NotoSansKhmer/NotoSansKhmer-Regular.otf";
     private static final String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
 
     private static final float SIZE = 10.5f;

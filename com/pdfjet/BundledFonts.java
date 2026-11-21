@@ -17,8 +17,9 @@ import java.util.Map;
  * folder of its name, with its license: IBM Plex Sans and Serif, from Thin
  * to Bold, and Cascadia Mono, from Light to Bold, as .otf, upright
  * and italic, for every European language, in Latin, Greek and Cyrillic; and, in
- * resources/fonts/world, IBM Plex Sans Arabic, Devanagari, Hebrew and Thai, Thin to Bold,
- * and IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, as .otf.
+ * resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
+ * IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, and Noto Sans
+ * of the scripts ComplexText draws, Regular and Bold, as .otf.
  * All are under the SIL Open Font License 1.1. A path to one of them, such as
  * fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of
  * com.pdfjet.fonts, is read from the folder resources/fonts when there is no
@@ -56,9 +57,18 @@ final class BundledFonts {
             }
             faces.put(family, files);
         }
-        for (String family : new String[] {"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
+        for (String family : new String[] {"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"}) {
             List<String> files = new ArrayList<String>();
             for (String style : new String[] {"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"}) {
+                files.add(family + "-" + style + ".otf");
+            }
+            faces.put(family, files);
+        }
+        // Noto Sans of the scripts ComplexText draws, Regular and Bold
+        for (String family : new String[] {
+                "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu"}) {
+            List<String> files = new ArrayList<String>();
+            for (String style : new String[] {"Regular", "Bold"}) {
                 files.add(family + "-" + style + ".otf");
             }
             faces.put(family, files);
@@ -67,7 +77,7 @@ final class BundledFonts {
     }
 
     // What the fonts of the jar com.pdfjet:pdfjet-fonts-world are for.
-    static final String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai";
+    static final String WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar";
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf: its
@@ -93,7 +103,7 @@ final class BundledFonts {
     // Returns the name of a family as people write it, such as IBM Plex Sans
     // Arabic of IBMPlexSansArabic.
     static String familyName(String family) {
-        return family.replaceFirst("IBMPlex", "IBM Plex ").replaceFirst("Sans", "Sans ");
+        return family.replaceFirst("^IBMPlex", "IBM Plex ").replaceFirst("^Noto", "Noto ").replaceFirst("Sans", "Sans ");
     }
 
     // Returns the path of a font under resources/fonts, and under

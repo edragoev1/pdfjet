@@ -14,7 +14,7 @@ import Foundation
 /// from the font file, sharp on screen and in print, each glyph drawn once and
 /// reused.
 ///
-///     let hindi = try Font(pdf, IBMPlexSansDevanagari.Regular)
+///     let hindi = try Font(pdf, NotoSansDevanagari.Regular)
 ///     let latin = try Font(pdf, IBMPlexSans.Regular)     // The English words
 ///     hindi.setSize(11.0)
 ///     let corner = ComplexText(hindi, text)

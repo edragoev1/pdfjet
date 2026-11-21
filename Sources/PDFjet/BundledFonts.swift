@@ -46,10 +46,15 @@ enum BundledFonts {
         for family in ["IBMPlexSansJP", "IBMPlexSansKR", "IBMPlexSansSC", "IBMPlexSansTC"] {
             faces[family] = ["Regular", "SemiBold", "Bold"].map { family + "-" + $0 + ".otf" }
         }
-        for family in ["IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"] {
+        for family in ["IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"] {
             faces[family] = ["Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"].map {
                 family + "-" + $0 + ".otf"
             }
+        }
+        // Noto Sans of the scripts ComplexText draws, Regular and Bold
+        for family in [
+                "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu"] {
+            faces[family] = [family + "-Regular.otf", family + "-Bold.otf"]
         }
         return faces
     }()
@@ -104,7 +109,7 @@ enum BundledFonts {
     static let WORLD_PRODUCT = ".product(name: \"PDFjetFontsWorld\", package: \"pdfjet\")"
 
     // What the fonts of the product PDFjetFontsWorld are for.
-    static let WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai"
+    static let WORLD_SCRIPTS = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar"
 
     // Returns the name of a font under resources/fonts, Family/File, of a
     // path to it, such as fonts/IBMPlexSans/IBMPlexSans-Regular.otf: its
@@ -133,7 +138,9 @@ enum BundledFonts {
     // Returns the name of a family as people write it, such as IBM Plex Sans
     // Arabic of IBMPlexSansArabic.
     static func familyName(_ family: String) -> String {
-        var name = "IBM Plex " + family.dropFirst("IBMPlex".count)
+        var name = family.hasPrefix("Noto")
+                ? "Noto " + family.dropFirst("Noto".count)
+                : "IBM Plex " + family.dropFirst("IBMPlex".count)
         if let sans = name.range(of: "Sans"), sans.upperBound < name.endIndex {
             name.insert(" ", at: sans.upperBound)
         }

@@ -31,8 +31,8 @@ using Buffer = HarfBuzzSharp.Buffer;
  * HarfBuzzSharp is a package of this example alone, never of PDFjet.
  */
 public class Example_52 {
-    private const String DEVANAGARI = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf";
-    private const String KHMER = "examples/fonts/NotoSansKhmer/NotoSansKhmer-Regular.otf";
+    private const String DEVANAGARI = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf";
+    private const String KHMER = "resources/fonts/world/NotoSansKhmer/NotoSansKhmer-Regular.otf";
     private const String LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
 
     private const float SIZE = 10.5f;

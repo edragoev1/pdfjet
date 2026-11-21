@@ -18,8 +18,9 @@ import (
 // folder of its name, with its license: IBM Plex Sans and Serif, from Thin to
 // Bold, and Cascadia Mono, from Light to Bold, as .otf, upright and
 // italic, for the European languages; and, in resources/fonts/world, IBM Plex Sans Arabic,
-// Hebrew and Thai, Thin to Bold, and IBM Plex Sans JP, KR, SC and TC,
-// Regular, SemiBold and Bold, as .otf. All are under the SIL Open
+// Hebrew and Thai, Thin to Bold, IBM Plex Sans JP, KR, SC and TC, Regular,
+// SemiBold and Bold, and Noto Sans of the scripts ComplexText draws, Regular
+// and Bold, as .otf. All are under the SIL Open
 // Font License 1.1. A path to one of them, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the packages
 // IBMPlexSans and the others, is read from the folder resources/fonts of the
@@ -43,10 +44,16 @@ var worldFaces = func() map[string][]string {
 			faces[family] = append(faces[family], family+"-"+style+".otf")
 		}
 	}
-	for _, family := range []string{"IBMPlexSansArabic", "IBMPlexSansDevanagari", "IBMPlexSansHebrew", "IBMPlexSansThai"} {
+	for _, family := range []string{"IBMPlexSansArabic", "IBMPlexSansHebrew", "IBMPlexSansThai"} {
 		for _, style := range []string{"Thin", "Light", "Text", "Regular", "Medium", "SemiBold", "Bold"} {
 			faces[family] = append(faces[family], family+"-"+style+".otf")
 		}
+	}
+	// Noto Sans of the scripts ComplexText draws, Regular and Bold
+	for _, family := range []string{
+		"NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu",
+	} {
+		faces[family] = []string{family + "-Regular.otf", family + "-Bold.otf"}
 	}
 	return faces
 }()
@@ -56,12 +63,15 @@ var worldFaces = func() map[string][]string {
 const worldImport = `import _ "github.com/edragoev1/pdfjet/v9/resources/fonts/world"`
 
 // worldScripts says what the fonts of the package world are for.
-const worldScripts = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Thai"
+const worldScripts = "with PDFjet's fonts for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic scripts, Sinhala, Khmer, Lao and Myanmar"
 
 // bundledFamilyName returns the name of a family as people write it, such
 // as IBM Plex Sans Arabic of IBMPlexSansArabic.
 func bundledFamilyName(family string) string {
 	name := strings.Replace(family, "IBMPlex", "IBM Plex ", 1)
+	if strings.HasPrefix(family, "Noto") {
+		name = "Noto " + strings.TrimPrefix(family, "Noto")
+	}
 	return strings.Replace(name, "Sans", "Sans ", 1)
 }
 

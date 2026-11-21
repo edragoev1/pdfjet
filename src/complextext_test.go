@@ -23,7 +23,7 @@ import (
 // are drawn with DrawGlyphs, each line tagged with its text. Go has no
 // shaper of its own: the tests give one that returns fixed lines.
 
-const testComplexDevanagari = "examples/fonts/IBMPlexSansDevanagari/IBMPlexSansDevanagari-Regular.otf"
+const testComplexDevanagari = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf"
 const testComplexLatin = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"
 
 // testFixedShaper gives the lines it was made with, and keeps what it was given.
