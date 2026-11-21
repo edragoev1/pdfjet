@@ -1220,13 +1220,16 @@ public class Page {
                 b += 1
             }
             let run = Array(order[a..<b])
-            var keys = [Int](repeating: 0, count: b - a)
+            // Int64, as Int is 32 bits on wasm32 and armv7: 0xFFFF_FFFF did
+            // not compile there (the Swift Package Index's wasm build of
+            // 9.1.9), and a shift of 32 lost the order
+            var keys = [Int64](repeating: 0, count: b - a)
             for k in 0..<keys.count {
-                keys[k] = (markOrder(codePoints[run[k]]) << 32) | k
+                keys[k] = Int64(markOrder(codePoints[run[k]])) << 32 | Int64(k)
             }
             keys.sort()
             for k in 0..<keys.count {
-                order[a + k] = run[keys[k] & 0xFFFF_FFFF]
+                order[a + k] = run[Int(keys[k] & 0xFFFF_FFFF)]
             }
             a = b
         }

@@ -375,12 +375,14 @@ final class Kerning {
                 gpos.gposWork -= pairCount
                 // Each pair, by its second glyph and then its record, the first
                 // record of a pair kept, as it is the one applied
-                var records = [Int]()
+                // Int64, as Int is 32 bits on wasm32 and armv7, where a shift
+                // of 40 lost the second glyph
+                var records = [Int64]()
                 records.reserveCapacity(pairCount)
                 for j in 0..<pairCount {
                     let record = pairSet + 2 + j*(2 + size1 + size2)
                     let v = xAdvance >= 0 ? gpos.int16(at: record + 2 + xAdvance) : 0
-                    records.append(gpos.uint16(at: record) << 40 | j << 16 | (v & 0xFFFF))
+                    records.append(Int64(gpos.uint16(at: record)) << 40 | Int64(j) << 16 | Int64(v & 0xFFFF))
                 }
                 records.sort()
                 var setSeconds = [Int32]()

@@ -12,6 +12,13 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **Swift builds where `Int` is 32 bits**: wasm32 and watchOS
+  (`arm64_32`), where the Swift Package Index's builds of 9.1.9 failed on
+  `Page.swift` ("integer literal '4294967295' overflows when stored into
+  'Int'"). The order of combining marks and the kerning pairs read from
+  GPOS now sort on `Int64` keys; on a 32-bit `Int` their shifts of 32 and
+  40 bits also lost the mark order and the second glyph of each pair.
+  The library and the 85 examples compile for 32-bit armv7.
 - **The text of an SVG in Markdown is in the document's fonts**, in the
   four ports: an image `![…](diagram.svg)` draws its text in the
   Markdown's regular font, and text of a weight of 600 or more in its bold
