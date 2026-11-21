@@ -557,7 +557,15 @@ than waiting for 9.2.1. The rules:
   design (Decompressor.InflateExactTo, its InflatePrefix fallback going on
   from the bytes already handed out; Compressor.ImageWriter), the 39 PNGs
   byte for byte, the 8000 by 8000 one in 108 MB and 2.0 s, not 1.3 GB and
-  2.6 s. Swift stays as it is: Puff.swift and FlateEncode.swift
+  2.6 s. Swift, the owner the same day, with the iOS version for sale in view: not
+  now, to do when a customer or our own app needs a Share or Action
+  extension (which iOS gives some 120 MB), or large PNGs show up in
+  practice. An app has well over 1 GB, and an iPhone's photos are JPEG or
+  HEIC, embedded as they are, its screenshots opaque PNGs of a few MB. About
+  a day and a half: Puff.swift to hand out its bytes keeping a window of
+  32 KB, in its fast loop, and FlateEncode.swift, which indexes its whole
+  input, to take it in pieces with a sliding window, as zlib does; the
+  deflated bytes would differ from today's Swift, the samples not. Swift stays as it is: Puff.swift and FlateEncode.swift
   work on whole buffers.
 - **Maybe, a sixth free tool: printable puzzles or sheets** (the owner, 11
   November 2026: "some really simple tool like the 5 we already did but very
