@@ -10,6 +10,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"math"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -686,5 +688,30 @@ func TestMarkdownTheCodeOfATableCellIsOnTheBaselineOfItsRow(t *testing.T) {
 	want := float32(2.0) + regular.GetAscent(11.0)
 	if math.Abs(float64(got-want)) > 0.25 { // Padding is kept in steps
 		t.Errorf("the baseline is at %v, the row's at %v", got, want)
+	}
+}
+
+// An SVG of the Markdown draws its text in the document's fonts, regular
+// and, for a weight of 600 or more, bold, not in the fonts PDFjet carries,
+// which a program built without them has not: it failed there
+// (pdfjet.com's Markdown to PDF, 21 November 2026).
+func TestMarkdownSVGTextInTheDocumentsFonts(t *testing.T) {
+	testAllowCoreFonts(t)
+	directory := t.TempDir()
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">` +
+		`<text x="10" y="40">Label</text><text x="10" y="80" font-weight="bold">Strong</text></svg>`
+	if err := os.WriteFile(filepath.Join(directory, "diagram.svg"), []byte(svg), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	drawn := testDrawMarkdown("![A diagram](diagram.svg)", directory)
+	testAssertStructures(t, drawn, "Figure", 1)
+	if !strings.Contains(drawn.text, testHex("Label")) || !strings.Contains(drawn.text, testHex("Strong")) {
+		t.Error("the text of the SVG is not drawn")
+	}
+	if strings.Contains(drawn.pdf, "IBMPlexSans") {
+		t.Error("the text of the SVG is in a font PDFjet carries, not the document's")
+	}
+	if !strings.Contains(drawn.pdf, "/BaseFont /Helvetica-Bold") {
+		t.Error("the bold text of the SVG is not in the document's bold font")
 	}
 }

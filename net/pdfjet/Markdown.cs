@@ -1030,6 +1030,11 @@ public class Markdown {
             if (path.ToLowerInvariant().EndsWith(".svg", StringComparison.Ordinal)) {
                 SVGImage image = new SVGImage(path);
                 image.SetAltDescription(alt);
+                // The text of the SVG in the fonts of the document, regular and, for a
+                // font-weight of 600 or more, bold: with no font set, it took the
+                // fonts PDFjet carries, which a program built without them has not,
+                // and failed (pdfjet.com's Markdown to PDF, 21 November 2026)
+                image.SetFont(regular).SetBoldFont(bold);
                 imageWidth = image.GetWidth();
                 imageHeight = image.GetHeight();
                 scale = Math.Min(1f, Math.Min(width / imageWidth, (bottom - marginTop) / imageHeight));

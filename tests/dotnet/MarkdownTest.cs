@@ -373,6 +373,32 @@ public class MarkdownTest {
         }
     }
 
+    // An SVG of the Markdown draws its text in the document's fonts, regular
+    // and, for a weight of 600 or more, bold, not in the fonts PDFjet
+    // carries, which a program built without them has not: it failed there
+    // (pdfjet.com's Markdown to PDF, 21 November 2026).
+    [Fact]
+    public void SvgTextInTheDocumentsFonts() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        String directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "pdfjet-markdown-svg-" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(directory);
+        try {
+            String svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"100\">"
+                    + "<text x=\"10\" y=\"40\">Label</text>"
+                    + "<text x=\"10\" y=\"80\" font-weight=\"bold\">Strong</text></svg>";
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "diagram.svg"), svg);
+            Drawn drawn = Draw("![A diagram](diagram.svg)", directory);
+            Assert.Equal(1, Count(drawn.pdf, "Figure"));
+            Assert.Contains(TestSupport.Hex("Label"), drawn.text, StringComparison.Ordinal);
+            Assert.Contains(TestSupport.Hex("Strong"), drawn.text, StringComparison.Ordinal);
+            Assert.DoesNotContain("IBMPlexSans", drawn.pdf, StringComparison.Ordinal);
+            Assert.Contains("/BaseFont /Helvetica-Bold", drawn.pdf, StringComparison.Ordinal);
+        } finally {
+            System.IO.Directory.Delete(directory, true);
+        }
+    }
+
     [Fact]
     public void CodeKeepsItsLinesAndGoesOnOnTheNextPage() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();

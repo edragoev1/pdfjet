@@ -12,6 +12,14 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **The text of an SVG in Markdown is in the document's fonts**, in the
+  four ports: an image `![…](diagram.svg)` draws its text in the
+  Markdown's regular font, and text of a weight of 600 or more in its bold
+  one. Behavior change: such text was in IBM Plex Sans, one of the fonts
+  PDFjet carries, whatever the document's fonts; and a program built
+  without them (Go's `pdfjet_nofonts`) failed with "Reading the font …",
+  as pdfjet.com's Markdown to PDF did for any pasted SVG with text. Tests
+  in the four ports.
 - **A PNG read a row at a time, in Go, Java and C#**: its image data
   inflated as a stream, each row's filter undone with the row before it,
   and its samples and its alpha compressed as they come, never the whole

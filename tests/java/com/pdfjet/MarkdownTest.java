@@ -391,6 +391,32 @@ class MarkdownTest {
         }
     }
 
+    // An SVG of the Markdown draws its text in the document's fonts, regular
+    // and, for a weight of 600 or more, bold, not in the fonts PDFjet
+    // carries, which a program built without them has not: it failed there
+    // (pdfjet.com's Markdown to PDF, 21 November 2026).
+    @Test
+    void svgTextInTheDocumentsFonts() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        java.nio.file.Path directory = java.nio.file.Files.createTempDirectory("pdfjet-markdown-svg");
+        try {
+            String svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"100\">"
+                    + "<text x=\"10\" y=\"40\">Label</text>"
+                    + "<text x=\"10\" y=\"80\" font-weight=\"bold\">Strong</text></svg>";
+            java.nio.file.Files.write(directory.resolve("diagram.svg"),
+                    svg.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            Drawn drawn = draw("![A diagram](diagram.svg)", directory.toString());
+            assertEquals(1, count(drawn.pdf, "Figure"));
+            assertTrue(drawn.text.contains(TestSupport.hex("Label")) && drawn.text.contains(TestSupport.hex("Strong")),
+                    "the text of the SVG is drawn");
+            assertFalse(drawn.pdf.contains("IBMPlexSans"), "the text of the SVG is in the document's fonts");
+            assertTrue(drawn.pdf.contains("/BaseFont /Helvetica-Bold"), "the bold text of the SVG is in the bold font");
+        } finally {
+            java.nio.file.Files.deleteIfExists(directory.resolve("diagram.svg"));
+            java.nio.file.Files.deleteIfExists(directory);
+        }
+    }
+
     @Test
     void codeKeepsItsLinesAndGoesOnOnTheNextPage() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font

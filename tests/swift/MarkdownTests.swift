@@ -537,6 +537,28 @@ import Testing
         #expect(elapsed < .seconds(10), "\(elapsed)")
     }
 
+    // An SVG of the Markdown draws its text in the document's fonts, regular
+    // and, for a weight of 600 or more, bold, not in the fonts PDFjet
+    // carries, which a program built without them has not: it failed there
+    // (pdfjet.com's Markdown to PDF, 21 November 2026).
+    @Test func svgTextInTheDocumentsFonts() throws {
+        let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pdfjet-markdown-svg-" + UUID().uuidString).path
+        try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(atPath: directory)
+        }
+        let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"100\">"
+                + "<text x=\"10\" y=\"40\">Label</text>"
+                + "<text x=\"10\" y=\"80\" font-weight=\"bold\">Strong</text></svg>"
+        try svg.write(toFile: directory + "/diagram.svg", atomically: true, encoding: .utf8)
+        let drawn = try MarkdownTests.draw("![A diagram](diagram.svg)", directory)
+        #expect(MarkdownTests.count(drawn.pdf, "Figure") == 1)
+        #expect(drawn.text.contains(TestSupport.hex("Label")) && drawn.text.contains(TestSupport.hex("Strong")))
+        #expect(!drawn.pdf.contains("IBMPlexSans"))
+        #expect(drawn.pdf.contains("/BaseFont /Helvetica-Bold"))
+    }
+
     // Only a regular file of the image directory is read: a FIFO there was
     // read too, and blocked the reading until something wrote to it (the
     // review of 28 October 2026). A link to an image is followed.
