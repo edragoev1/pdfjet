@@ -239,105 +239,235 @@ class PNGImage {
         if (idat != null) {
             iDAT = idat.toByteArray();
         }
-        long imageDataLength = getImageDataLength();
+        // The size and the bit depth of the color type checked, as their image
+        // data must be no more than Decompressor.MAX_DECODED_LENGTH
+        getImageDataLength();
         if (iDAT == null) {
             throw new Exception("The PNG image has no image data.");
         }
-        // The rows of the image; data after the last row is ignored.
-        Decompressor.Inflated inflated = Decompressor.inflateExact(iDAT, (int) imageDataLength);
-        byte[] inflatedImageData = inflated.data;
-        if (inflatedImageData.length < imageDataLength) {
+        // The image data is read a row at a time as it inflates, a row and the
+        // one before it in memory, never the whole of it: an image of 8000 by
+        // 8000 with alpha took 2.4 GB read whole (21 November 2026). The IDAT
+        // data that is the rows of the image and nothing more is embedded as
+        // it is, checked as it inflates, and the reader undoes the filters of
+        // the rows, as a PNG decoder does. The IDAT data of an image with
+        // alpha, whose alpha goes in a soft mask of its own, and any other IDAT
+        // data are decoded and compressed again, as each row is undone. Data
+        // after the last row is ignored.
+        if (colorType == 0 || colorType == 2 || colorType == 3) {
+            int colors = (colorType == 2) ? 3 : 1;
+            if (pngRows((this.w * colors * this.bitDepth + 7) / 8, 1, null)) {
+                embedIDAT();
+                return;
+            }
+        }
+        decode();
+        stream = deflatedImageData;
+    }
+
+    // Where pngRows hands each row, its filter undone
+    private interface Row {
+        void take(byte[] line) throws Exception;
+    }
+
+    // Reads the rows of the image data as it inflates, the row and the one
+    // before it alone in memory: each row's filter undone and the row handed
+    // to each, or, with no each, its filter type checked alone. It returns
+    // whether the data is the image exactly. It fails as inflateExact does,
+    // then on data shorter than the image, then on the first filter type that
+    // PNG does not define, the order in which the image read whole failed.
+    private boolean pngRows(final int bytesPerRow, final int bytesPerPixel, final Row each)
+            throws Exception {
+        final int rows = this.h;
+        final byte[] raw = new byte[bytesPerRow + 1];
+        final byte[][] lines = {new byte[bytesPerRow], new byte[bytesPerRow]};
+        final int first = Math.min(bytesPerPixel, bytesPerRow);
+        // The bytes of the row read so far, the row, the first filter type
+        // that is not one, and whether the row has one above it
+        final int[] state = {0, 0, -1, 0};
+        long length = (long) rows * (bytesPerRow + 1);
+        boolean[] exact = new boolean[1];
+        int n = Decompressor.inflateExactTo(iDAT, (int) length, new Decompressor.Sink() {
+            public void write(byte[] p, int off, int len) throws Exception {
+                int end = off + len;
+                while (off < end && state[1] < rows) {
+                    int k = Math.min(end - off, raw.length - state[0]);
+                    System.arraycopy(p, off, raw, state[0], k);
+                    state[0] += k;
+                    off += k;
+                    if (state[0] < raw.length) {
+                        return;
+                    }
+                    int filter = raw[0] & 0xFF;
+                    if (state[2] < 0 && filter > 4) {
+                        state[2] = filter;
+                    } else if (state[2] < 0 && each != null) {
+                        byte[] line = lines[state[1] & 1];
+                        byte[] prior = (state[3] == 1) ? lines[(state[1] + 1) & 1] : null;
+                        System.arraycopy(raw, 1, line, 0, bytesPerRow);
+                        unfilterLine(line, 0, prior, 0, bytesPerRow, filter, bytesPerPixel, first);
+                        each.take(line);
+                        state[3] = 1;
+                    }
+                    state[1]++;
+                    state[0] = 0;
+                }
+            }
+        }, exact);
+        if (n < length) {
             throw new Exception("The PNG image data is shorter than the image.");
         }
-
-        // The IDAT data that is the rows of the image and nothing more is
-        // embedded as it is, and the reader undoes the filters of the rows, as
-        // a PNG decoder does. The IDAT data of an image with alpha, whose
-        // alpha goes in a soft mask of its own, and any other IDAT data are
-        // decoded and compressed again.
-        if (inflated.exact && (colorType == 0 || colorType == 2 || colorType == 3)) {
-            embedIDAT(inflatedImageData);
-        } else {
-            decode(inflatedImageData);
-            stream = deflatedImageData;
+        if (state[2] >= 0) {
+            throw new Exception("Invalid PNG filter type " + state[2] + ".");
         }
+        return exact[0];
     }
 
     // Makes the IDAT data of a grayscale, truecolor or palette image the
     // stream of the image object, which is faster than decoding the samples
-    // and compressing them again. The filter type of each row is checked, as
-    // decoding checks it; the alpha of a palette image with a tRNS chunk is
-    // decoded for its soft mask.
-    private void embedIDAT(byte[] buf) throws Exception {
-        int colors = (colorType == 2) ? 3 : 1;
-        int bytesPerRow = (this.w * colors * this.bitDepth + 7) / 8;
-        for (int row = 0; row < this.h; row++) {
-            int filter = buf[row * (bytesPerRow + 1)] & 0xFF;
-            if (filter > 4) {
-                throw new Exception("Invalid PNG filter type " + filter + ".");
-            }
-        }
+    // and compressing them again; pngRows checked the filter type of each
+    // row, as decoding checks it. The alpha of a palette image with a tRNS
+    // chunk is decoded for its soft mask, a row at a time.
+    private void embedIDAT() throws Exception {
         stream = iDAT;
-        decodeColors = colors;
+        decodeColors = (colorType == 2) ? 3 : 1;
         if (colorType == 3) {
             palette = Arrays.copyOf(pLTE, 3 << bitDepth);
             // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
             if (tRNS != null && !BMPImage.allBytesAre(tRNS, (byte) 255)) {
-                byte[] indexes = paletteIndexes(unfilter(buf, this.h, bytesPerRow, 1));
-                setAlpha(paletteAlpha(indexes));
+                final Compressor.ImageWriter alpha = new Compressor.ImageWriter();
+                final byte[] indexes = new byte[this.w];
+                final byte[] a = new byte[this.w];
+                try {
+                    pngRows((this.w * this.bitDepth + 7) / 8, 1, new Row() {
+                        public void take(byte[] line) {
+                            paletteIndexesOf(line, indexes);
+                            paletteAlphaOf(indexes, a);
+                            alpha.write(a);
+                        }
+                    });
+                } catch (Exception e) {
+                    alpha.end();
+                    throw e;
+                }
+                setAlpha(alpha);
             }
         }
     }
 
-    // Deflates the alpha of the pixels for the soft mask of the image, unless
-    // every pixel is opaque: an image with no soft mask is drawn the same, is
-    // smaller, and is one that PDF/A-1 can hold.
-    private void setAlpha(byte[] alpha) {
-        if (!BMPImage.allBytesAre(alpha, (byte) 255)) {
-            deflatedAlphaData = Compressor.deflate(alpha);
+    // Keeps the deflated alpha of the pixels for the soft mask of the image,
+    // unless the image has none or every pixel is opaque: an image with no
+    // soft mask is drawn the same, is smaller, and is one that PDF/A-1 can
+    // hold.
+    private void setAlpha(Compressor.ImageWriter alpha) {
+        if (alpha.isEmpty() || alpha.allAre(255)) {
+            alpha.end();
+            return;
         }
+        deflatedAlphaData = alpha.toByteArray();
     }
 
-    // Decodes the samples of the rows of the image, and deflates them.
-    private void decode(byte[] inflatedImageData) throws Exception {
-        byte[] image;
+    // Decodes the samples of the rows of the image as they inflate, a row at
+    // a time, and deflates them as each row is undone; and the alpha, of a
+    // grayscale or truecolor image with alpha or of a palette image's tRNS
+    // chunk, for its soft mask.
+    private void decode() throws Exception {
+        final int w = this.w;
+        final int size = (bitDepth == 16) ? 2 : 1;     // The bytes of a sample
+        final Compressor.ImageWriter color = new Compressor.ImageWriter();
+        final Compressor.ImageWriter alpha = new Compressor.ImageWriter();
+        int bytesPerRow;
+        int bytesPerPixel;
+        Row each;
         if (colorType == 0) {
             // Grayscale Image
             if (bitDepth == 16) {
-                image = getImageColorType0BitDepth16(inflatedImageData);
+                bytesPerRow = 2 * w;
+                bytesPerPixel = 2;
             } else if (bitDepth == 8) {
-                image = getImageColorType0BitDepth8(inflatedImageData);
+                bytesPerRow = w;
+                bytesPerPixel = 1;
             } else if (bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
-                image = getImageColorType0BitDepthBelow8(inflatedImageData);
+                bytesPerRow = (w * bitDepth + 7) / 8;
+                bytesPerPixel = 1;
             } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
+            each = new Row() {
+                public void take(byte[] line) {
+                    color.write(line);
+                }
+            };
         } else if (colorType == 4) {
-            // Grayscale image with alpha
-            if (bitDepth == 16) {
-                image = getImageColorType4BitDepth16(inflatedImageData);
-            } else {
-                image = getImageColorType4BitDepth8(inflatedImageData);
-            }
+            // Grayscale image with alpha, the alpha's first byte in the soft mask
+            bytesPerRow = 2 * size * w;
+            bytesPerPixel = 2 * size;
+            final byte[] gray = new byte[size * w];
+            final byte[] a = new byte[w];
+            each = new Row() {
+                public void take(byte[] line) {
+                    for (int i = 0; i < w; i++) {
+                        System.arraycopy(line, 2 * size * i, gray, size * i, size);
+                        a[i] = line[2 * size * i + size];
+                    }
+                    color.write(gray);
+                    alpha.write(a);
+                }
+            };
         } else if (colorType == 6) {
-            if (bitDepth == 16) {
-                image = getImageColorType6BitDepth16(inflatedImageData);
-            } else {
-                image = getImageColorType6BitDepth8(inflatedImageData);
-            }
+            bytesPerRow = 4 * size * w;
+            bytesPerPixel = 4 * size;
+            final byte[] rgb = new byte[3 * size * w];
+            final byte[] a = new byte[w];
+            each = new Row() {
+                public void take(byte[] line) {
+                    for (int i = 0; i < w; i++) {
+                        System.arraycopy(line, 4 * size * i, rgb, 3 * size * i, 3 * size);
+                        a[i] = line[4 * size * i + 3 * size];
+                    }
+                    color.write(rgb);
+                    alpha.write(a);
+                }
+            };
         } else if (colorType == 2) {
             // True color image; a PLTE chunk in it is only a suggested palette
-            if (bitDepth == 16) {
-                image = getImageColorType2BitDepth16(inflatedImageData);
-            } else {
-                image = getImageColorType2BitDepth8(inflatedImageData);
-            }
+            bytesPerRow = 3 * size * w;
+            bytesPerPixel = 3 * size;
+            each = new Row() {
+                public void take(byte[] line) {
+                    color.write(line);
+                }
+            };
         } else {
             // Indexed image
-            image = getImageColorType3(inflatedImageData);
+            bytesPerRow = (w * bitDepth + 7) / 8;
+            bytesPerPixel = 1;
+            final byte[] indexes = new byte[w];
+            final byte[] rgb = new byte[3 * w];
+            final byte[] a = new byte[w];
+            each = new Row() {
+                public void take(byte[] line) {
+                    paletteIndexesOf(line, indexes);
+                    for (int i = 0; i < w; i++) {
+                        System.arraycopy(pLTE, 3 * (indexes[i] & 0xFF), rgb, 3 * i, 3);
+                    }
+                    color.write(rgb);
+                    if (tRNS != null) {
+                        paletteAlphaOf(indexes, a);
+                        alpha.write(a);
+                    }
+                }
+            };
         }
-
-        deflatedImageData = Compressor.deflate(image);
+        try {
+            pngRows(bytesPerRow, bytesPerPixel, each);
+        } catch (Exception e) {
+            color.end();
+            alpha.end();
+            throw e;
+        }
+        deflatedImageData = color.toByteArray();
+        setAlpha(alpha);
     }
 
     // Returns the color space of the image object: DeviceRGB for a palette
@@ -474,7 +604,7 @@ class PNGImage {
      */
     public byte[] getData() throws Exception {
         if (this.deflatedImageData == null) {
-            decode(Decompressor.inflatePrefix(iDAT, (int) getImageDataLength()));
+            decode();
         }
         return this.deflatedImageData;
     }
@@ -613,66 +743,54 @@ class PNGImage {
                 (buf[off + 3] & 0xff);
     }
 
-    // Returns the rows of the image data without the filter type byte each
-    // begins with, and with their filters undone. A row holds bytesPerRow
-    // bytes after the filter type, and the byte of the pixel on the left is
-    // bytesPerPixel bytes before, or the byte before for pixels smaller than
-    // a byte. It throws on a filter type that PNG does not define, as libpng
-    // does. The bytes of the first pixel of a row have no byte on the left,
-    // and the first row no row above, so they are undone apart from the rest,
-    // with the bytes they do not have taken as 0.
-    private static byte[] unfilter(byte[] buf, int rows, int bytesPerRow, int bytesPerPixel)
-            throws Exception {
-        byte[] image = new byte[rows * bytesPerRow];
-        int first = Math.min(bytesPerPixel, bytesPerRow);   // The bytes of the first pixel
-        int prior = -1;     // Where the row above starts, none for the first row
-        for (int row = 0; row < rows; row++) {
-            int offset = row * (bytesPerRow + 1);
-            int filter = buf[offset] & 0xFF;
-            int line = row * bytesPerRow;
-            System.arraycopy(buf, offset + 1, image, line, bytesPerRow);
-            if (filter == 0x00) {               // None
-            } else if (filter == 0x01 || (filter == 0x04 && prior < 0)) {
-                // Sub, and Paeth of the first row, which is the byte on the left.
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    image[line + i] += image[line + i - bytesPerPixel];
-                }
-            } else if (filter == 0x02) {        // Up
-                if (prior >= 0) {
-                    for (int i = 0; i < bytesPerRow; i++) {
-                        image[line + i] += image[prior + i];
-                    }
-                }
-            } else if (filter == 0x03 && prior < 0) {   // Average of the first row
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    image[line + i] += (byte) ((image[line + i - bytesPerPixel] & 0xFF) / 2);
-                }
-            } else if (filter == 0x03) {        // Average
-                for (int i = 0; i < first; i++) {
-                    image[line + i] += (byte) ((image[prior + i] & 0xFF) / 2);
-                }
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    int a = image[line + i - bytesPerPixel] & 0xFF;
-                    int b = image[prior + i] & 0xFF;
-                    image[line + i] += (byte) ((a + b) / 2);
-                }
-            } else if (filter == 0x04) {        // Paeth, whose first pixel is the byte above
-                for (int i = 0; i < first; i++) {
-                    image[line + i] += image[prior + i];
-                }
-                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
-                    // Left, above and above on the left
-                    int a = image[line + i - bytesPerPixel] & 0xFF;
-                    int b = image[prior + i] & 0xFF;
-                    int c = image[prior + i - bytesPerPixel] & 0xFF;
-                    image[line + i] += (byte) paeth(a, b, c);
-                }
-            } else {
-                throw new Exception("Invalid PNG filter type " + filter + ".");
+    // Undoes the filter of the row at line of the array, the row above it at
+    // prior of the array above, none for the first row. A row holds
+    // bytesPerRow bytes after its filter type, and the byte of the pixel on
+    // the left is bytesPerPixel bytes before, or the byte before for pixels
+    // smaller than a byte. The bytes of the first pixel, first of them, have
+    // no byte on the left, and the first row no row above, so they are undone
+    // apart from the rest, with the bytes they do not have taken as 0. It
+    // throws on a filter type that PNG does not define, as libpng does.
+    private static void unfilterLine(byte[] image, int line, byte[] above, int prior,
+            int bytesPerRow, int filter, int bytesPerPixel, int first) throws Exception {
+        if (filter == 0x00) {               // None
+        } else if (filter == 0x01 || (filter == 0x04 && above == null)) {
+            // Sub, and Paeth of the first row, which is the byte on the left.
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                image[line + i] += image[line + i - bytesPerPixel];
             }
-            prior = line;
+        } else if (filter == 0x02) {        // Up
+            if (above != null) {
+                for (int i = 0; i < bytesPerRow; i++) {
+                    image[line + i] += above[prior + i];
+                }
+            }
+        } else if (filter == 0x03 && above == null) {   // Average of the first row
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                image[line + i] += (byte) ((image[line + i - bytesPerPixel] & 0xFF) / 2);
+            }
+        } else if (filter == 0x03) {        // Average
+            for (int i = 0; i < first; i++) {
+                image[line + i] += (byte) ((above[prior + i] & 0xFF) / 2);
+            }
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                int a = image[line + i - bytesPerPixel] & 0xFF;
+                int b = above[prior + i] & 0xFF;
+                image[line + i] += (byte) ((a + b) / 2);
+            }
+        } else if (filter == 0x04) {        // Paeth, whose first pixel is the byte above
+            for (int i = 0; i < first; i++) {
+                image[line + i] += above[prior + i];
+            }
+            for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                int a = image[line + i - bytesPerPixel] & 0xFF;
+                int b = above[prior + i] & 0xFF;
+                int c = above[prior + i - bytesPerPixel] & 0xFF;
+                image[line + i] += (byte) paeth(a, b, c);
+            }
+        } else {
+            throw new Exception("Invalid PNG filter type " + filter + ".");
         }
-        return image;
     }
 
     // Returns whichever of the bytes on the left, above and above on the left
@@ -689,132 +807,23 @@ class PNGImage {
         return c;
     }
 
-    // Truecolor Image with Bit Depth == 16
-    private byte[] getImageColorType2BitDepth16(byte[] buf) throws Exception {
-        return unfilter(buf, this.h, 6 * this.w, 6);
-    }
-
-    // Truecolor Image with Bit Depth == 8
-    private byte[] getImageColorType2BitDepth8(byte[] buf) throws Exception {
-        return unfilter(buf, this.h, 3 * this.w, 3);
-    }
-
-    // Truecolor Image with Alpha Transparency
-    // The gray samples are the image and the alpha samples its soft mask.
-    private byte[] getImageColorType4BitDepth8(byte[] buf) throws Exception {
-        byte[] image = unfilter(buf, this.h, 2 * this.w, 2);
-        byte[] gray = new byte[this.w * this.h];
-        byte[] alpha = new byte[this.w * this.h];
-        for (int i = 0; i < gray.length; i++) {
-            gray[i] = image[2 * i];
-            alpha[i] = image[2 * i + 1];
-        }
-        setAlpha(alpha);
-        return gray;
-    }
-
-    // The gray samples of 16 bits are the image, as those of an image without
-    // alpha; the soft mask of a PDF image has 8 bits here, the high byte of
-    // each alpha sample.
-    private byte[] getImageColorType4BitDepth16(byte[] buf) throws Exception {
-        byte[] image = unfilter(buf, this.h, 4 * this.w, 4);
-        byte[] gray = new byte[2 * this.w * this.h];
-        byte[] alpha = new byte[this.w * this.h];
-        for (int i = 0; i < alpha.length; i++) {
-            gray[2 * i] = image[4 * i];
-            gray[2 * i + 1] = image[4 * i + 1];
-            alpha[i] = image[4 * i + 2];
-        }
-        setAlpha(alpha);
-        return gray;
-    }
-
-    // The samples of 16 bits of the colors are the image; the soft mask is
-    // the high byte of each alpha sample.
-    private byte[] getImageColorType6BitDepth16(byte[] buf) throws Exception {
-        byte[] image = unfilter(buf, this.h, 8 * this.w, 8);
-        byte[] idata = new byte[6 * this.w * this.h];   // Image data
-        byte[] alpha = new byte[this.w * this.h];       // Alpha values
-        for (int i = 0; i < alpha.length; i++) {
-            System.arraycopy(image, 8 * i, idata, 6 * i, 6);
-            alpha[i] = image[8 * i + 6];
-        }
-        setAlpha(alpha);
-        return idata;
-    }
-
-    private byte[] getImageColorType6BitDepth8(byte[] buf) throws Exception {
-        byte[] image = unfilter(buf, this.h, 4 * this.w, 4);
-        byte[] idata = new byte[3 * this.w * this.h];   // Image data
-        byte[] alpha = new byte[this.w * this.h];       // Alpha values
-        for (int i = 0; i < alpha.length; i++) {
-            idata[3 * i] = image[4 * i];
-            idata[3 * i + 1] = image[4 * i + 1];
-            idata[3 * i + 2] = image[4 * i + 2];
-            alpha[i] = image[4 * i + 3];
-        }
-        setAlpha(alpha);
-        return idata;
-    }
-
-    // Indexed-color image with bit depth == 1, 2, 4 or 8
-    // Each value is a palette index; a PLTE chunk shall appear.
-    // The filters are undone on the packed indexes, one byte per pixel whatever
-    // the bit depth, before the indexes are looked up in the palette.
-    private byte[] getImageColorType3(byte[] buf) throws Exception {
-        int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
-        byte[] indexes = paletteIndexes(unfilter(buf, this.h, bytesPerLine, 1));
-        byte[] image = new byte[3 * indexes.length];
-        for (int i = 0; i < indexes.length; i++) {
-            System.arraycopy(pLTE, 3 * (indexes[i] & 0xFF), image, 3 * i, 3);
-        }
-        if (tRNS != null) {
-            setAlpha(paletteAlpha(indexes));
-        }
-        return image;
-    }
-
-    // Returns the palette index of each pixel, a byte each, of the unfiltered
-    // rows of a palette image.
-    private byte[] paletteIndexes(byte[] rows) {
-        int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
-        byte[] indexes = new byte[this.w * this.h];
+    // Reads the palette's index of each pixel of a row.
+    private void paletteIndexesOf(byte[] row, byte[] indexes) {
         int mask = (1 << this.bitDepth) - 1;
-        int n = 0;
-        for (int row = 0; row < this.h; row++) {
-            for (int col = 0; col < this.w; col++) {
-                int bit = col * this.bitDepth;
-                int b = rows[row * bytesPerLine + bit / 8] & 0xff;
-                indexes[n++] = (byte) ((b >> (8 - this.bitDepth - bit % 8)) & mask);
-            }
+        for (int col = 0; col < this.w; col++) {
+            int bit = col * this.bitDepth;
+            int b = row[bit / 8] & 0xff;
+            indexes[col] = (byte) ((b >> (8 - this.bitDepth - bit % 8)) & mask);
         }
-        return indexes;
     }
 
-    // Returns the alpha of each pixel of a palette image with a tRNS chunk:
-    // the alpha of its index, or opaque for an index the chunk has none for.
-    private byte[] paletteAlpha(byte[] indexes) {
-        byte[] alpha = new byte[indexes.length];
+    // Gives each index of a row its alpha in the tRNS chunk, and 255 to an
+    // index past its end.
+    private void paletteAlphaOf(byte[] indexes, byte[] alpha) {
         for (int i = 0; i < indexes.length; i++) {
             int k = indexes[i] & 0xFF;
             alpha[i] = (k < tRNS.length) ? tRNS[k] : (byte) 0xff;
         }
-        return alpha;
     }
 
-    // Grayscale Image with Bit Depth == 16
-    private byte[] getImageColorType0BitDepth16(byte[] buf) throws Exception {
-        return unfilter(buf, this.h, 2 * this.w, 2);
-    }
-
-    // Grayscale Image with Bit Depth == 8
-    private byte[] getImageColorType0BitDepth8(byte[] buf) throws Exception {
-        return unfilter(buf, this.h, this.w, 1);
-    }
-
-    // Grayscale Image with Bit Depth == 1, 2 or 4. The filters work on bytes,
-    // one byte per pixel whatever the bit depth.
-    private byte[] getImageColorType0BitDepthBelow8(byte[] buf) throws Exception {
-        return unfilter(buf, this.h, (this.w * this.bitDepth + 7) / 8, 1);
-    }
 }   // End of PNGImage.java

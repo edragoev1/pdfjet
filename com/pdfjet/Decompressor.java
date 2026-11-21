@@ -477,6 +477,35 @@ class Decompressor {
      * no bytes after its end.
      */
     static Inflated inflateExact(byte[] data, int length) throws Exception {
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, length));
+        boolean[] exact = new boolean[1];
+        int n = inflateExactTo(data, length, new Sink() {
+            public void write(byte[] buf, int off, int len) {
+                bos.write(buf, off, len);
+            }
+        }, exact);
+        if (n == length) {
+            return new Inflated(bos.toByteArray(), exact[0]);
+        }
+        return new Inflated(inflate(data, length), false);
+    }
+
+    /** Where inflateExactTo hands the bytes it decodes, which it does not keep. */
+    interface Sink {
+        void write(byte[] buf, int off, int len) throws Exception;
+    }
+
+    /**
+     * Decodes the first length bytes of a zlib stream as inflateExact does,
+     * handing them to the sink as they are decoded, in pieces of at most 4 KB
+     * that the sink must copy to keep, so that none of them is kept here: an
+     * image's samples read a row at a time, never whole (21 November 2026).
+     * It returns how many bytes it decoded, length or fewer, and sets exact[0]
+     * to whether the stream is those bytes and nothing more. A stream that
+     * ends before length bytes is decoded again whole, for the error it ends
+     * with, as inflateExact decodes it.
+     */
+    static int inflateExactTo(byte[] data, int length, Sink sink, boolean[] exact) throws Exception {
         // The zlib header is checked as the header of a whole stream is, and
         // the Deflate data after it is decoded raw, so that nothing after the
         // first length bytes is read, not even the checksum, which zlib checks
@@ -488,40 +517,47 @@ class Decompressor {
         if (!isZlibHeader(data)) {
             throw new DataFormatException("Invalid zlib header");
         }
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, length));
-        boolean exact = false;
+        exact[0] = false;
+        int n = 0;
+        Adler32 adler = new Adler32();  // Of the bytes decoded, for the checksum
         Inflater inflater = new Inflater(true);
         try {
             inflater.setInput(data, 2, data.length - 2);
             byte[] buf = new byte[4096];
-            while (!inflater.finished() && bos.size() < length) {
-                int count = inflater.inflate(buf, 0, Math.min(buf.length, length - bos.size()));
+            while (!inflater.finished() && n < length) {
+                int count = inflater.inflate(buf, 0, Math.min(buf.length, length - n));
                 if (count == 0 && !inflater.finished() && inflater.needsInput()) {
                     break;      // Cut short; decoded again below
                 }
-                bos.write(buf, 0, count);
+                if (count > 0) {
+                    adler.update(buf, 0, count);
+                    sink.write(buf, 0, count);
+                    n += count;
+                }
             }
-            if (bos.size() == length) {
+            if (n == length) {
                 // An inflate of one more byte gets to the end of the Deflate
                 // data, after which the Adler-32 of the bytes is the rest of
                 // the stream.
-                exact = inflater.inflate(new byte[1]) == 0 &&
+                exact[0] = inflater.inflate(new byte[1]) == 0 &&
                         inflater.finished() &&
                         inflater.getRemaining() == 4 &&
-                        toInt(data, data.length - 4) == adler32(bos.toByteArray());
+                        toInt(data, data.length - 4) == (int) adler.getValue();
             }
         } catch (DataFormatException e) {
             // An error after the first length bytes is ignored.
-            if (bos.size() != length) {
+            if (n != length) {
                 throw e;
             }
         } finally {
             inflater.end();
         }
-        if (bos.size() == length) {
-            return new Inflated(bos.toByteArray(), exact);
+        if (n < length) {
+            // Decoded whole for its error, or for the end of a stream of fewer
+            // bytes, as inflateExact decodes it
+            inflate(data, length);
         }
-        return new Inflated(inflate(data, length), false);
+        return n;
     }
 
     private static int toInt(byte[] buf, int off) {

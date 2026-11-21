@@ -539,7 +539,7 @@ than waiting for 9.2.1. The rules:
   lines with SetBorderWidth(0) for the old look, and the examples' PDFs and
   any fingerprints of tables written again. Not to do without the owner's
   yes.
-- **A PNG checked and decoded a row at a time: Go done, Java and .NET to
+- **A PNG checked and decoded a row at a time: Go and Java done, .NET to
   follow, Swift left as it is** (the owner, 21 November 2026; first thought
   of on 11 November for a 128 MB Cloudflare Worker). Go, 21 November: the
   IDAT inflated as a stream (decompressor.InflateExactTo), each row
@@ -550,9 +550,11 @@ than waiting for 9.2.1. The rules:
   an 8000 by 8000 PNG with alpha in 22 MB and 1.3 s, not 1.3 GB and 2.0 s,
   one of 4000 by 3000 in 13 MB, not 207. Forms' TypeScript engine has it too
   (readImage's lowMemory, for the Worker of pdfjet.com's Images to PDF,
-  where an 8000 by 8000 PNG failed). Java (java.util.zip's Inflater and
-  Deflater) and .NET (ZLibStream) take input in pieces, as Go's zlib does:
-  the same change. Swift stays as it is: Puff.swift and FlateEncode.swift
+  where an 8000 by 8000 PNG failed). Java, 21 November: the same design
+  (Decompressor.inflateExactTo, its Adler-32 kept as it goes;
+  Compressor.ImageWriter), the 39 PNGs byte for byte, the 8000 by 8000 one
+  in 62 MB and 2.1 s, not 2.1 GB and 3.5 s. .NET (ZLibStream) takes input in
+  pieces too: the same change. Swift stays as it is: Puff.swift and FlateEncode.swift
   work on whole buffers.
 - **Maybe, a sixth free tool: printable puzzles or sheets** (the owner, 11
   November 2026: "some really simple tool like the 5 we already did but very

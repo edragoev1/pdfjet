@@ -585,30 +585,13 @@ func toUint32(buf []byte, off int) uint32 {
 	return uint32(buf[off])<<24 | uint32(buf[off+1])<<16 | uint32(buf[off+2])<<8 | uint32(buf[off+3])
 }
 
-// unfilter returns the rows of the image data without the filter type byte
-// each begins with, and with their filters undone. A row holds bytesPerRow
-// bytes after the filter type, and the byte of the pixel on the left is
-// bytesPerPixel bytes before, or the byte before for pixels smaller than a
-// byte. It panics on a filter type that PNG does not define, as libpng does.
-// The bytes of the first pixel of a row have no byte on the left, and the
-// first row no row above, so they are undone apart from the rest, with the
-// bytes they do not have taken as 0.
-func unfilter(buf []byte, rows, bytesPerRow, bytesPerPixel int) []byte {
-	image := make([]byte, rows*bytesPerRow)
-	first := min(bytesPerPixel, bytesPerRow) // The bytes of the first pixel
-	var prior []byte                         // The row above, none for the first row
-	for row := 0; row < rows; row++ {
-		offset := row * (bytesPerRow + 1)
-		line := image[row*bytesPerRow : (row+1)*bytesPerRow]
-		copy(line, buf[offset+1:offset+1+bytesPerRow])
-		unfilterLine(line, prior, buf[offset], bytesPerPixel, first)
-		prior = line
-	}
-	return image
-}
-
 // unfilterLine undoes the filter of a row, the row above it its prior, none
-// for the first row, as unfilter undoes it.
+// for the first row: a row holds the bytes after its filter type, and the
+// byte of the pixel on the left is bytesPerPixel bytes before, or the byte
+// before for pixels smaller than a byte; the bytes of the first pixel, first
+// of them, have no byte on the left, and the first row no row above, so they
+// are undone apart from the rest, with the bytes they do not have taken as 0.
+// It panics on a filter type that PNG does not define, as libpng does.
 func unfilterLine(line, prior []byte, filter byte, bytesPerPixel, first int) {
 	switch {
 	case filter == 0x00: // None
