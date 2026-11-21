@@ -711,6 +711,65 @@ jobs:
             - name: Build the library
               run: swift build --target PDFjet -Xswiftc -warnings-as-errors
 
+    # The Swift library and examples compiled where Int is 32 bits, as the
+    # Swift Package Index builds every release for wasm32 and watchOS
+    # (arm64_32): 9.1.9's 0xFFFF_FFFF in Page.swift failed there, found only
+    # after the tag (21 November 2026). The target is armv7 of the Swift SDK
+    # for Android of the toolchain's version, its signature checked against
+    # the same Swift release key as the toolchain's; SIL alone, with the C
+    # headers of the runner image's NDK.
+    swift-32bit:
+        name: swift (32-bit Int)
+        runs-on: ubuntu-24.04
+        env:
+            ANDROID_SDK_URL: https://download.swift.org/swift-6.4.1-release/android-sdk/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE_android.artifactbundle.tar.gz
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            - uses: ./.github/actions/install-swift
+
+            - name: Restore the Swift SDK for Android download
+              id: restore-android
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: ~/swift-android-download
+                  key: swift-android-sdk-${{ env.ANDROID_SDK_URL }}
+
+            - name: Check and unpack the Swift SDK for Android
+              run: |
+                  mkdir -p ~/swift-android-download
+                  cd ~/swift-android-download
+                  if [ ! -f sdk.tar.gz ] || [ ! -f sdk.tar.gz.sig ]; then
+                      curl -fsSL --retry 3 --retry-all-errors \
+                          "$ANDROID_SDK_URL" -o sdk.tar.gz "$ANDROID_SDK_URL.sig" -o sdk.tar.gz.sig
+                  fi
+                  export GNUPGHOME="$(mktemp -d)"
+                  gpg --batch --quiet --import "$GITHUB_WORKSPACE/.github/actions/install-swift/swift-release-key.asc"
+                  gpg --batch --verify sdk.tar.gz.sig sdk.tar.gz
+                  rm -rf "$GNUPGHOME"
+                  mkdir "$RUNNER_TEMP/android-sdk"
+                  tar -xzf sdk.tar.gz --directory "$RUNNER_TEMP/android-sdk"
+                  sdk=$(ls -d "$RUNNER_TEMP"/android-sdk/*.artifactbundle/swift-android)
+                  # The C headers of the runner image's NDK; the SDK's own
+                  # setup script, which links them, is not run: its link to
+                  # clang's headers points at the machine it was built on,
+                  # and is replaced by the NDK's
+                  ndk="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+                  clang=$(ls -d "$ndk"/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/* | sort -V | tail -1)
+                  ln -sfn "$clang" "$sdk/swift-resources/usr/lib/swift/clang"
+                  echo "SWIFT_ANDROID_SDK=$sdk" >> "$GITHUB_ENV"
+                  echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
+
+            - name: Save the Swift SDK for Android download
+              if: steps.restore-android.outputs.cache-hit != 'true'
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: ~/swift-android-download
+                  key: swift-android-sdk-${{ env.ANDROID_SDK_URL }}
+
+            - name: Compile for 32-bit armv7
+              run: ./check-swift-32bit.sh
+
     # The Go port tested with Go 1.26, the oldest that go.mod asks for, as
     # the other jobs build with the toolchain of go.mod, 1.27: GOTOOLCHAIN
     # local keeps Go from switching to it. Go 1.26 deflates no bytes in 11
