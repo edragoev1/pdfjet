@@ -37,9 +37,9 @@ public class Font {
     // whether anything draws with it as a font, text or a stamp's: a font
     // DrawGlyphs alone drew with is not written into the document.
     internal bool drawnAsOutlines;
-    // The font file, for ComplexText, whose text engine reads it: the path it
+    // The font file, for a TextBlock or TextLine whose text engine reads it: the path it
     // was loaded from, or the bytes it was loaded from, kept; read from the
-    // path the first time ComplexText needs it.
+    // path the first time a shaper needs it.
     private String fontPath;
     private byte[] fontFile;
     internal bool referenced;
@@ -349,7 +349,7 @@ public class Font {
     /// <summary>
     /// Constructor for OpenType and TrueType fonts, .otf and .ttf, from the
     /// bytes of the font file, such as an app's resource read whole. The font
-    /// keeps the bytes, as ComplexText gives them to the text engine that
+    /// keeps the bytes, as a shaper is given them to the text engine that
     /// shapes it.
     /// </summary>
     /// <param name="pdf">the PDF object that requires this font.</param>
@@ -363,7 +363,7 @@ public class Font {
         SetSize(size);
     }
 
-    // The bytes of the font file, for ComplexText: those it was loaded from,
+    // The bytes of the font file, for a shaper: those it was loaded from,
     // the TrueType font it keeps, or the file of its path read again; null for
     // a font loaded from a stream, a core font or a CJK font.
     internal byte[] FontFile() {

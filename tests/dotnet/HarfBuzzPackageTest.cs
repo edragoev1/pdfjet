@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace PDFjet.NET {
 // The NuGet package PDFjet.HarfBuzz, which this project references as a
-// program adds it: ComplexText's shaper when none is set, and the same lines
+// program adds it: TextBlock's shaper when none is set, and the same lines
 // as hb-shape's.
 public class HarfBuzzPackageTest {
     private const string WORLD = "resources/fonts/world/";
@@ -40,14 +40,14 @@ public class HarfBuzzPackageTest {
         return list;
     }
 
-    // Found by its name: ComplexText's shaper when none is set, hb-shape or not
+    // Found by its name: TextBlock's shaper when none is set, hb-shape or not
     [Fact]
     public void IsTheShaperWhenNoneIsSet() {
-        Assert.NotNull(ComplexText.HarfBuzzPackage);
+        Assert.NotNull(Shaping.HarfBuzzPackage);
         PDF pdf = new PDF(new MemoryStream());
         Font khmer = new Font(pdf, TestSupport.RepoPath(LANGUAGES[1][2]));
         khmer.SetSize(12f);
-        float[] xy = new ComplexText(khmer, Paragraphs("khm").GetRange(0, 3)).SetLanguage("km").SetWidth(300f)
+        float[] xy = new TextBlock(khmer, String.Join("\n", Paragraphs("khm").GetRange(0, 3))).SetLanguage("km").SetWidth(300f)
                 .SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         Assert.True(xy[1] > 50 + 3 * 12, "drawn down to " + xy[1]);
         pdf.Complete();
@@ -64,7 +64,7 @@ public class HarfBuzzPackageTest {
         } catch (InvalidOperationException) {
             return;     // hb-shape is not installed
         }
-        IShaper package = ComplexText.HarfBuzzPackage;
+        IShaper package = Shaping.HarfBuzzPackage;
         Assert.NotNull(package);
         byte[] latin = File.ReadAllBytes(TestSupport.RepoPath("resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         foreach (string[] l in LANGUAGES) {
@@ -103,7 +103,7 @@ public class HarfBuzzPackageTest {
     }
 
     // Hebrew in a paragraph, of a fallback font, shaped left to right, as
-    // ComplexText draws, by the package and hb-shape alike, and the lines
+    // TextBlock draws, by the package and hb-shape alike, and the lines
     // broken without an error (ultra review, 22 November 2026)
     [Fact]
     public void HebrewInAParagraphIsShapedLeftToRight() {
@@ -112,7 +112,7 @@ public class HarfBuzzPackageTest {
             File.ReadAllBytes(TestSupport.RepoPath(WORLD + "IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf")),
         };
         ShapingRequest request = new ShapingRequest("שלום עולם नमस्ते दुनिया", "hi", files, 12f, 80f);
-        List<ShapedLine> got = ComplexText.HarfBuzzPackage.Shape(request);
+        List<ShapedLine> got = Shaping.HarfBuzzPackage.Shape(request);
         Assert.True(got.Count >= 2, got.Count + " lines");
         HBShape hbShape = new HBShape();
         try {

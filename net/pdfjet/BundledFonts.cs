@@ -17,7 +17,7 @@ namespace PDFjet.NET {
 /// and italic, for every European language, in Latin, Greek and Cyrillic; and, in
 /// resources/fonts/world, IBM Plex Sans Arabic, Hebrew and Thai, Thin to Bold,
 /// IBM Plex Sans JP, KR, SC and TC, Regular, SemiBold and Bold, and Noto Sans
-/// of the scripts ComplexText draws, Regular and Bold, as .otf.
+/// of the scripts TextBlock shapes, Regular and Bold, as .otf.
 /// All are under the SIL Open Font License 1.1. A path to one of them, such
 /// as fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the font
 /// classes, is read from the folder resources/fonts when there is no such
@@ -65,7 +65,7 @@ internal static class BundledFonts {
             }
             faces[family] = files;
         }
-        // Noto Sans of the scripts ComplexText draws, Regular and Bold
+        // Noto Sans of the scripts TextBlock shapes, Regular and Bold
         foreach (String family in new String[] {
                 "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu"}) {
             faces[family] = new List<String> {family + "-Regular.otf", family + "-Bold.otf"};

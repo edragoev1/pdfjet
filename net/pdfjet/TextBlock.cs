@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Globalization;
 using System.Text;
 
@@ -52,6 +53,15 @@ public class TextBlock : IDrawable {
     private bool underline = false;
     private bool strikeout = false;
     private bool rightToLeft = false;
+    private bool rightToLeftSet;    // True after SetRightToLeft: else each paragraph's own direction
+
+    // The shaper of text such as Hindi or Khmer, else the default one
+    private IShaper shaper;
+    // The lines a shaper found, by paragraph, width and size, so that a
+    // paragraph is shaped once however often the block is measured
+    private Dictionary<String, List<ShapedLine>> shapedLines;
+    // Why a paragraph could not be shaped, which DrawOn fails the document with
+    private Exception shapeError;
 
     /// <summary>Creates a text block with the specified font and text.</summary>
     public TextBlock(Font font, string textContent) {
@@ -342,11 +352,82 @@ public class TextBlock : IDrawable {
     /// Each paragraph is wrapped at the width in logical order, and each line
     /// is then reordered with Bidi.ReorderVisually, which also shapes the
     /// Arabic letters, and aligned to the right, unless the text alignment is
-    /// Alignment.CENTER.
+    /// Alignment.CENTER. Without it, each paragraph is right to left when its
+    /// first letter is Arabic or Hebrew, and left to right otherwise.
     /// </summary>
     public TextBlock SetRightToLeft(bool rightToLeft) {
         this.rightToLeft = rightToLeft;
+        this.rightToLeftSet = true;
         return this;
+    }
+
+    /// <summary>
+    /// Sets the text engine that shapes text such as Hindi or Khmer, which
+    /// TextBlock draws as outlines: without it, the one of SetDefaultShaper,
+    /// or else of the NuGet package PDFjet.HarfBuzz, added beside PDFjet.
+    /// </summary>
+    /// <param name="shaper">the shaper.</param>
+    public TextBlock SetShaper(IShaper shaper) {
+        this.shaper = shaper;
+        this.shapedLines = null;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the shaper of every TextBlock and TextLine given none. Without it,
+    /// text such as Hindi or Khmer is shaped with the NuGet package
+    /// PDFjet.HarfBuzz, when the program has it, HarfBuzz with nothing to
+    /// install; HBShape, HarfBuzz's program hb-shape, only when set.
+    /// </summary>
+    /// <param name="shaper">the shaper, or null for the one PDFjet chooses.</param>
+    public static void SetDefaultShaper(IShaper shaper) {
+        Shaping.defaultShaperSet = shaper;
+    }
+
+    // Whether the paragraph is right to left: as set with SetRightToLeft,
+    // else by its first letter, Arabic or Hebrew.
+    private bool ParagraphRightToLeft(String paragraph) {
+        if (rightToLeftSet) {
+            return rightToLeft;
+        }
+        for (int i = 0; i < paragraph.Length; i++) {
+            char c = paragraph[i];
+            if ((c >= 0x0590 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFDFF) || (c >= 0xFE70 && c <= 0xFEFF)) {
+                return true;
+            }
+            if (Char.IsLetter(c)) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // Shapes the paragraph, as Hindi or Khmer, wrapped at the width, and adds
+    // its lines, drawn as outlines: the block's font for the text, its
+    // fallback font for the characters the font has not.
+    private void AddShapedLines(List<TextLine> textLines, String paragraph, float textAreaWidth) {
+        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
+        String key = textAreaWidth + "|" + fontSize + "|" + paragraph;
+        if (shapedLines == null || !shapedLines.TryGetValue(key, out List<ShapedLine> lines)) {
+            try {
+                lines = Shaping.ShapeText(shaper, fonts, fontSize, language, paragraph, textAreaWidth);
+            } catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is IOException) {
+                if (shapeError == null) {
+                    shapeError = e;
+                }
+                return;
+            }
+            if (shapedLines == null) {
+                shapedLines = new Dictionary<String, List<ShapedLine>>();
+            }
+            shapedLines[key] = lines;
+        }
+        foreach (ShapedLine line in lines) {
+            String text = paragraph.Substring(line.Start, line.End - line.Start);
+            TextLine textLine = new TextLine(font, text.Trim());
+            textLine.shaped = new ShapedText {line = line, text = text, fonts = fonts, size = fontSize};
+            textLines.Add(textLine);
+        }
     }
 
     internal TextLine[] GetTextLines() {
@@ -358,10 +439,24 @@ public class TextBlock : IDrawable {
         while (lines.Count > 1 && lines[lines.Count - 1].Length == 0) {
             lines.RemoveAt(lines.Count - 1);
         }
+        shapeError = null;
+        // The direction of each paragraph, as wrapped: rightToLeft, the
+        // block's as set, is the paragraph's while its lines are made
+        bool blockRightToLeft = rightToLeft;
+        try {
         foreach (String given in lines) {
             String line = given;
+            if (Shaping.NeedsShaper(line)) {
+                AddShapedLines(textLines, line, textAreaWidth);
+                continue;
+            }
+            rightToLeft = ParagraphRightToLeft(line);
             if (rightToLeft) {
+                int first = textLines.Count;
                 AddRightToLeftLines(textLines, line, textAreaWidth);
+                for (int i = first; i < textLines.Count; i++) {
+                    textLines[i].rightToLeft = true;
+                }
                 continue;
             }
 
@@ -478,6 +573,9 @@ public class TextBlock : IDrawable {
                     }
                 }
             }
+        }
+        } finally {
+            rightToLeft = blockRightToLeft;
         }
 
         return textLines.ToArray();
@@ -857,6 +955,9 @@ public class TextBlock : IDrawable {
         }
         TextLine[] lines = new TextLine[fit];
         Array.Copy(textLines, lines, fit);
+        if (lines[fit - 1].shaped != null) {
+            return lines;   // Glyphs drawn as outlines, cut where the height ends
+        }
         String last = lines[fit - 1].text;
         // The offsets of the code points, to drop the last three
         List<int> offsets = new List<int>();
@@ -867,11 +968,12 @@ public class TextBlock : IDrawable {
         // end, where it is cut and the "..." goes, is at its left: cut at its
         // right, the start of the line was lost and the "..." came first in the
         // reading (review of 11 October 2026, #7)
-        if (this.rightToLeft) {
+        if (lines[fit - 1].rightToLeft) {
             if (offsets.Count > 3) {
                 last = last.Substring(offsets[3]);
             }
             lines[fit - 1] = new TextLine(font, "..." + last);
+            lines[fit - 1].rightToLeft = true;
             return lines;
         }
         if (offsets.Count > 3) {
@@ -885,16 +987,20 @@ public class TextBlock : IDrawable {
     private void RightAlignText(TextLine[] textLines) {
         float textAreaWidth = TextAreaWidth();
         foreach (TextLine textLine in textLines) {
-            textLine.xOffset =
-                textAreaWidth - StringWidth(textLine.text);
+            textLine.xOffset = textAreaWidth - WidthOf(textLine);
         }
+    }
+
+    // The width of a line of the block: of its glyphs, for one a shaper
+    // shaped, else of its text.
+    private float WidthOf(TextLine textLine) {
+        return textLine.shaped != null ? textLine.shaped.line.Width : StringWidth(textLine.text);
     }
 
     private void CenterText(TextLine[] textLines) {
         float textAreaWidth = TextAreaWidth();
         foreach (TextLine textLine in textLines) {
-            textLine.xOffset =
-                (textAreaWidth - StringWidth(textLine.text)) / 2f;
+            textLine.xOffset = (textAreaWidth - WidthOf(textLine)) / 2f;
         }
     }
 
@@ -940,8 +1046,11 @@ public class TextBlock : IDrawable {
 
         if (textAlignment == Alignment.CENTER) {
             CenterText(textLines);
-        } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
+        } else if (textAlignment == Alignment.RIGHT) {
             RightAlignText(textLines);
+        } else {
+            // The lines of right to left paragraphs, aligned to the right
+            RightAlignText(Array.FindAll(textLines, textLine => textLine.rightToLeft));
         }
         if (underline) {
             UnderlineText(textLines);
@@ -969,6 +1078,13 @@ public class TextBlock : IDrawable {
         // corner (review of 17 October 2026)
         if (float.IsNaN(width) || float.IsInfinity(width)) {
             page.pdf.Fail(new ArgumentException("The width of a text block is a finite number."));
+        }
+
+        // Text such as Hindi that could not be shaped, as with no shaper,
+        // fails the document, saying why
+        if (shapeError != null) {
+            page.pdf.Fail(shapeError);
+            return new float[] {this.x + this.width, this.y + blockHeight};
         }
 
         page.SaveGraphicsState();

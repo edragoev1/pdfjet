@@ -15,12 +15,12 @@ using PDFjet.NET;
  * Example_52.cs
  *
  * Draws Hindi and Khmer, scripts whose letters change shape and place, with
- * ComplexText: HarfBuzz shapes them -- conjuncts, vowel signs, stacked
+ * TextBlock: HarfBuzz shapes them -- conjuncts, vowel signs, stacked
  * consonants -- and PDFjet draws the glyphs it found, at their places, as
  * outlines read from the font file: sharp on screen and in print, and read by
  * screen readers, as each paragraph is tagged with its text and its language.
  * .NET has no text engine of its own that gives glyphs: the NuGet package
- * PDFjet.HarfBuzz, added beside PDFjet, gives ComplexText HarfBuzz on Windows,
+ * PDFjet.HarfBuzz, added beside PDFjet, gives PDFjet HarfBuzz on Windows,
  * Linux and macOS, x64 and arm64, with nothing to install and no code. The
  * Universal Declaration of Human Rights in Hindi, then in Khmer: the
  * paragraphs flow from page to page, a paragraph cut where a page ends.
@@ -70,7 +70,7 @@ public class Example_52 {
                 .SetStructureType(StructElem.H1)
                 .SetLocation(LEFT, 60f)
                 .DrawOn(page);
-        new TextLine(body, "Shaped by HarfBuzz, drawn by PDFjet's ComplexText as outlines;"
+        new TextLine(body, "Shaped by HarfBuzz, drawn by PDFjet's TextBlock as outlines;"
                 + " the text is attached to the document.")
                 .SetLocation(LEFT, 80f)
                 .DrawOn(page);
@@ -86,19 +86,21 @@ public class Example_52 {
                 paragraphs.Add(line.Trim());
             }
         }
-        ComplexText text = new ComplexText(script, paragraphs)
-                .SetFallbackFont(latin)
-                .SetLanguage(language)
-                .SetWidth(WIDTH)
-                .SetParagraphGap(0.5f * SIZE);
-        float top = 96f;    // Below the heading, on the first page
-        while (true) {
-            text.SetHeight(BOTTOM - top).SetLocation(LEFT, top).DrawOn(page);
-            if (!text.HasMoreText()) {
-                break;
+        // A TextBlock a paragraph: measured, without a page, and drawn on the
+        // next page when it does not fit on this one
+        float y = 96f;  // Below the heading, on the first page
+        foreach (String paragraph in paragraphs) {
+            TextBlock text = new TextBlock(script, paragraph)
+                    .SetFallbackFont(latin)
+                    .SetLanguage(language)
+                    .SetWidth(WIDTH)
+                    .SetLocation(LEFT, y);
+            if (text.DrawOn(null)[1] > BOTTOM) {
+                page = new Page(pdf, Letter.PORTRAIT);
+                y = TOP;
+                text.SetLocation(LEFT, y);
             }
-            page = new Page(pdf, Letter.PORTRAIT);
-            top = TOP;
+            y = text.DrawOn(page)[1] + 0.5f * SIZE;
         }
 
         // A blank line between paragraphs, as plain text has them

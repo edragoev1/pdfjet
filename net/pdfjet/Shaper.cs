@@ -9,13 +9,13 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
-/// A text engine that shapes text for ComplexText: it wraps the text to a
-/// width and finds, for each line, the glyphs of the fonts and their places.
-/// PDFjet does not shape scripts such as Hindi and Khmer itself; a shaper
-/// does, and ComplexText draws what it found. .NET has no text engine of its
-/// own that gives glyphs: the NuGet package PDFjet.HarfBuzz gives ComplexText
-/// HarfBuzz, nothing to install; SetShaper gives another, such as HBShape,
-/// which runs HarfBuzz's program hb-shape, used only when set.
+/// A text engine that shapes text for TextBlock and TextLine: it wraps the
+/// text to a width and finds, for each line, the glyphs of the fonts and their
+/// places. PDFjet does not shape scripts such as Hindi and Khmer itself; a
+/// shaper does, and PDFjet draws what it found, as outlines. .NET has no text
+/// engine of its own that gives glyphs: the NuGet package PDFjet.HarfBuzz
+/// gives PDFjet HarfBuzz, nothing to install; SetShaper gives another, such
+/// as HBShape, which runs HarfBuzz's program hb-shape, used only when set.
 /// </summary>
 public interface IShaper {
     /// <summary>

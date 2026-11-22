@@ -12,8 +12,8 @@ using Buffer = HarfBuzzSharp.Buffer;
 
 namespace PDFjet.HarfBuzz {
 /// <summary>
-/// HarfBuzz for PDFjet's ComplexText: added to a program, the NuGet package
-/// PDFjet.HarfBuzz is the shaper of every ComplexText given none, found by
+/// HarfBuzz for PDFjet's TextBlock and TextLine: added to a program, the NuGet
+/// package PDFjet.HarfBuzz is the shaper of every one given none, found by
 /// PDFjet by its name, with nothing to install and no code. It shapes as
 /// HBShape does with HarfBuzz's program hb-shape, and gives the same lines.
 /// </summary>
@@ -105,7 +105,7 @@ public sealed class HarfBuzzEngine {
                     buffer.Language = new Language(language);
                 }
                 buffer.GuessSegmentProperties();
-                // Left to right, as ComplexText draws, not guessed: an Arabic
+                // Left to right, as TextBlock draws, not guessed: an Arabic
                 // or Hebrew run would come back right to left, its clusters
                 // falling (ultra review, 22 November 2026)
                 buffer.Direction = Direction.LeftToRight;

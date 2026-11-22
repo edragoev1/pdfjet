@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -27,6 +28,12 @@ public class TextLine : IBaselineDrawable {
     // extractor see the word break, but is not part of its text, so that
     // the alignment and the underline measure the line without it.
     internal bool trailingSpace = false;
+    // The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
+    // outlines in place of the text; null for text drawn as text
+    internal ShapedText shaped;
+    private String shapedFor;           // The text shaped, when TextLine shaped it itself
+    // True for a line of a right to left paragraph of a TextBlock, aligned to the right
+    internal bool rightToLeft;
     // The hard line breaks after the text line, of Markdown's two spaces, \
     // or <br> at the end of a line: TextFrame starts a new row after it, and
     // leaves an empty row for each break after the first, as <br><br> does.
@@ -244,7 +251,61 @@ public class TextLine : IBaselineDrawable {
         if (text == null) {
             return 0f;
         }
+        try {
+            ShapedText glyphs = ShapedGlyphs();
+            if (glyphs != null) {
+                return glyphs.line.Width;
+            }
+        } catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is IOException) {
+            // Measured as text: DrawOn says why it cannot be drawn
+        }
         return font.StringWidth(fallbackFont, this.fontSize, text);
+    }
+
+    // The glyphs a shaper found for text such as Hindi or Khmer, one line of
+    // it, which DrawOn draws as outlines; null for text drawn as text. A
+    // TextBlock's line was shaped with its paragraph. Throws when it could
+    // not be shaped.
+    internal ShapedText ShapedGlyphs() {
+        if (shaped != null && (shapedFor == null || (shapedFor == text && shaped.size == fontSize))) {
+            return shaped;
+        }
+        if (text == null || !Shaping.NeedsShaper(text)) {
+            return null;
+        }
+        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
+        List<ShapedLine> lines = Shaping.ShapeText(null, fonts, fontSize, language, text, float.MaxValue / 4);
+        ShapedText glyphs = new ShapedText {text = text, fonts = fonts, size = fontSize};
+        // One line: the lines of a shaper that broke it anyway, joined
+        for (int i = 0; i < lines.Count; i++) {
+            ShapedLine line = lines[i];
+            if (i == 0) {
+                glyphs.line = line;
+                continue;
+            }
+            ShapedLine joined = glyphs.line;
+            float x0 = joined.Width;
+            int n = joined.Glyphs.Length + line.Glyphs.Length;
+            int[] fontIndexes = new int[n];
+            int[] ids = new int[n];
+            float[] positions = new float[2 * n];
+            Array.Copy(joined.FontIndexes, fontIndexes, joined.Glyphs.Length);
+            Array.Copy(line.FontIndexes, 0, fontIndexes, joined.Glyphs.Length, line.Glyphs.Length);
+            Array.Copy(joined.Glyphs, ids, joined.Glyphs.Length);
+            Array.Copy(line.Glyphs, 0, ids, joined.Glyphs.Length, line.Glyphs.Length);
+            Array.Copy(joined.Positions, positions, joined.Positions.Length);
+            for (int j = 0; j < line.Positions.Length; j += 2) {
+                positions[joined.Positions.Length + j] = x0 + line.Positions[j];
+                positions[joined.Positions.Length + j + 1] = line.Positions[j + 1];
+            }
+            glyphs.line = new ShapedLine(joined.Start, line.End, fontIndexes, ids, positions, x0 + line.Width);
+        }
+        if (glyphs.line == null) {
+            glyphs.line = new ShapedLine(0, text.Length, new int[0], new int[0], new float[0], 0f);
+        }
+        shaped = glyphs;
+        shapedFor = text;
+        return glyphs;
     }
 
     /// <summary>
@@ -565,7 +626,22 @@ public class TextLine : IBaselineDrawable {
             page.AddBDC(structureType, language, null, alt);
             page.pieceOf = null;
         }
-        page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
+        ShapedText glyphs;
+        try {
+            glyphs = ShapedGlyphs();
+        } catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is IOException) {
+            // Text such as Hindi that could not be shaped, as with no shaper,
+            // fails the document, saying why
+            page.AddEMC();
+            page.pdf.Fail(e);
+            return new float[] {x, y};
+        }
+        if (glyphs != null) {
+            // Glyphs a shaper found, drawn as outlines, not turned
+            page.DrawShapedLine(glyphs, x, y + verticalOffset, language);
+        } else {
+            page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
+        }
         page.AddEMC();
 
         // The trigonometry turns counterclockwise, where the rotation turns clockwise.
@@ -703,6 +779,10 @@ public class TextLine : IBaselineDrawable {
     // which left out the kerning between the space and the letter before it, so
     // the line stopped short of the word (the review of 28 October 2026).
     private float GetDecorationLength() {
+        ShapedText glyphs = shaped != null ? ShapedGlyphs() : null;
+        if (glyphs != null) {
+            return glyphs.line.Width;
+        }
         String drawn = text;
         if (isLastToken && drawn.EndsWith(Single.space, StringComparison.Ordinal)) {
             drawn = drawn.Substring(0, drawn.Length - 1);
@@ -714,7 +794,7 @@ public class TextLine : IBaselineDrawable {
     private float[] GetCorner(float verticalOffset) {
         // The trigonometry turns counterclockwise, where the rotation turns clockwise.
         double radians = Math.PI * -degrees / 180.0;
-        float len = font.StringWidth(fallbackFont, fontSize, text);
+        float len = GetWidth();
         double xMax = Math.Max((double) x, x + len*Math.Cos(radians));
         double yMax = Math.Max((double) (y + verticalOffset), (y + verticalOffset) - len*Math.Sin(radians));
         return new float[] {(float) xMax, (float) yMax};

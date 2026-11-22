@@ -20,8 +20,8 @@ namespace PDFjet.NET {
     /// path, else from the folder resources/fonts/world, as in the release
     /// packages on GitHub, else from that package, and a font found in none
     /// says what to add.
-    /// PDFjet does not shape Devanagari: these fonts are for ComplexText, which
-    /// draws the text as a shaping engine shapes it with the same font file,
+    /// PDFjet does not shape Devanagari: these fonts are for TextBlock and TextLine,
+    /// which draw the text as a shaping engine shapes it with the same font file,
     /// for Hindi, Marathi, Nepali and Sanskrit. Regular and Bold, from Noto's release, unmodified.
     /// </summary>
     public static class NotoSansDevanagari {

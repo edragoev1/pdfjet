@@ -20,7 +20,7 @@ Or in the project file:
 Then the constants of `IBMPlexSansJP`, `IBMPlexSansKR`, `IBMPlexSansSC`,
 `IBMPlexSansTC`, `IBMPlexSansArabic`, `IBMPlexSansHebrew` and
 `IBMPlexSansThai` work with nothing else to do, and those of Noto Sans of
-the scripts `ComplexText` draws (`NotoSansDevanagari`, `NotoSansBengali`,
+the scripts `TextBlock` shapes (`NotoSansDevanagari`, `NotoSansBengali`,
 `NotoSansTamil`, `NotoSansKhmer` and the others):
 
 ```csharp

@@ -13,7 +13,7 @@ using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
-/// A shaper for ComplexText that runs hb-shape, the program of HarfBuzz, the
+/// A shaper for TextBlock and TextLine that runs hb-shape, the program of HarfBuzz, the
 /// text engine of Chrome and Android, with nothing linked into the program;
 /// used only when given with SetShaper. The NuGet package PDFjet.HarfBuzz
 /// gives the same glyphs with nothing to install. Lines break at spaces and, in Thai, Lao,
@@ -25,7 +25,7 @@ namespace PDFjet.NET {
 /// It talks with hb-shape through files, not pipes, the same on every system:
 /// the text of each font in a temporary file, the glyphs back in another.
 /// <code>
-/// new ComplexText(hindi, text).SetFallbackFont(latin).SetShaper(new HBShape())
+/// new TextBlock(hindi, text).SetFallbackFont(latin).SetShaper(new HBShape())
 /// </code>
 /// </summary>
 public class HBShape : IShaper, IHarfBuzz {
@@ -222,7 +222,7 @@ public class HBShape : IShaper, IHarfBuzz {
             List<String> arguments = new List<String> {
                 "--font-file=" + fontPath, "--text-file=" + inPath, "--output-file=" + outPath,
                 "--no-glyph-names", "--output-format=json",
-                // Left to right, as ComplexText draws, not guessed: an Arabic
+                // Left to right, as TextBlock draws, not guessed: an Arabic
                 // or Hebrew run would come back right to left
                 "--direction=ltr",
             };

@@ -64,9 +64,9 @@ public class HBShapeTest {
         }
     }
 
-    // ComplexText draws Hindi with an English word, in two fonts, and Khmer
+    // TextBlock draws Hindi with an English word, in two fonts, and Khmer
     [Fact]
-    public void DrawsComplexText() {
+    public void DrawsTextBlocks() {
         HBShape hb = Installed();
         if (hb == null) {
             return;
@@ -80,7 +80,7 @@ public class HBShapeTest {
                 Tuple.Create(hindi, Udhr("hin")[2] + " PDFjet", "hi"), Tuple.Create(khmer, Udhr("khm")[2], "km")}) {
             c.Item1.SetSize(12f);
             Page page = new Page(pdf, Letter.PORTRAIT);
-            float[] xy = new ComplexText(c.Item1, c.Item2).SetFallbackFont(latin).SetLanguage(c.Item3)
+            float[] xy = new TextBlock(c.Item1, c.Item2).SetFallbackFont(latin).SetLanguage(c.Item3)
                     .SetShaper(hb).SetWidth(300f).SetLocation(50f, 50f).DrawOn(page);
             Assert.True(xy[1] > 50 + 3 * 12, c.Item3 + ": drawn down to " + xy[1]);
         }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The NuGet package PDFjet.HarfBuzz, made by package-nuget.sh: HarfBuzz for
-     PDFjet's ComplexText, through HarfBuzzSharp, whose packages bring
+     PDFjet's TextBlock and TextLine, through HarfBuzzSharp, whose packages bring
      HarfBuzz itself for Windows, Linux (glibc and musl) and macOS, x64 and
      arm64; one assembly for .NET Standard 2.0, PDFjet.HarfBuzz.dll, which
      PDFjet loads by its name; $version$ and $commit$ are written in by the
@@ -16,7 +16,7 @@
     <repository type="git" url="https://github.com/edragoev1/pdfjet.git" commit="$commit$" />
     <icon>icon.png</icon>
     <readme>README.md</readme>
-    <description>HarfBuzz for PDFjet's ComplexText, which draws Hindi, Bengali, Tamil, Telugu, Kannada, Malayalam, Gujarati, Punjabi, Odia, Sinhala, Khmer, Lao and Burmese: add it next to PDFjet, the same version, and ComplexText shapes with HarfBuzz on Windows, Linux and macOS, x64 and arm64, with nothing to install and no code. Through HarfBuzzSharp. For .NET 8 and later and .NET Framework 4.8.</description>
+    <description>HarfBuzz for PDFjet's TextBlock and TextLine, which draw Hindi, Bengali, Tamil, Telugu, Kannada, Malayalam, Gujarati, Punjabi, Odia, Sinhala, Khmer, Lao and Burmese: add it next to PDFjet, the same version, and TextBlock shapes with HarfBuzz on Windows, Linux and macOS, x64 and arm64, with nothing to install and no code. Through HarfBuzzSharp. For .NET 8 and later and .NET Framework 4.8.</description>
     <releaseNotes>https://github.com/edragoev1/pdfjet/blob/main/CHANGELOG.md</releaseNotes>
     <copyright>Copyright (c) 2026 PDFjet Software</copyright>
     <tags>pdfjet pdf harfbuzz text-shaping hindi indic khmer lao burmese complex-scripts</tags>

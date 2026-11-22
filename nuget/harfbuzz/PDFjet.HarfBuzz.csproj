@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- PDFjet.HarfBuzz.dll, the assembly of the NuGet package PDFjet.HarfBuzz
-       (package-nuget.sh): HarfBuzz for ComplexText, through HarfBuzzSharp,
+       (package-nuget.sh): HarfBuzz for TextBlock and TextLine, through HarfBuzzSharp,
        whose packages bring HarfBuzz itself for Windows, Linux (glibc and
        musl) and macOS, x64 and arm64, with nothing to install. PDFjet finds
        it by its name, as it does PDFjet.Fonts.World, and calls its one

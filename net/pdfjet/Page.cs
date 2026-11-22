@@ -3893,6 +3893,42 @@ public class Page {
         }
     }
 
+    // Draws the shaped line, its left at x and its baseline at baseline, in
+    // the language: the glyphs of each font, one run at a time, tagged with
+    // the line's text for screen readers and the copying of text. Returns
+    // false if the document failed.
+    internal bool DrawShapedLine(ShapedText shaped, float x, float baseline, String language) {
+        ShapedLine line = shaped.line;
+        if (line.Glyphs.Length == 0) {
+            return true;
+        }
+        BeginActualText(shaped.text, language);
+        int from = 0;
+        while (from < line.Glyphs.Length) {
+            int to = from;
+            while (to < line.Glyphs.Length && line.FontIndexes[to] == line.FontIndexes[from]) {
+                to++;
+            }
+            int index = line.FontIndexes[from];
+            if (index >= 0 && index < shaped.fonts.Length) {
+                int[] run = new int[to - from];
+                float[] places = new float[2 * run.Length];
+                for (int i = from; i < to; i++) {
+                    run[i - from] = line.Glyphs[i];
+                    places[2 * (i - from)] = x + line.Positions[2 * i];
+                    places[2 * (i - from) + 1] = baseline + line.Positions[2 * i + 1];
+                }
+                if (!GlyphsDrawable(shaped.fonts[index], run, places)) {
+                    return false;
+                }
+                PlaceGlyphs(shaped.fonts[index], shaped.size, run, places);
+            }
+            from = to;
+        }
+        EndActualText();
+        return true;
+    }
+
     internal void DrawTextBlock(
             Font font,
             Font fallbackFont,
@@ -3924,6 +3960,14 @@ public class Page {
         SetTextFont(font, fontSize);
         float yText = y;
         foreach (TextLine textLine in textLines) {
+            if (textLine.shaped != null) {
+                // Glyphs a shaper found, drawn as outlines, out of the text object
+                Append("ET\n");
+                DrawShapedLine(textLine.shaped, x + textLine.xOffset, yText + font.GetAscent(fontSize), language);
+                Append("BT\n");
+                yText += leading;
+                continue;
+            }
             Append("1 0 0 1 ");
             Append(x + textLine.xOffset);
             Append(' ');
@@ -3981,7 +4025,7 @@ public class Page {
         }
         foreach (TextLine textLine in textLines) {
             if (textLine.underline || textLine.strikeout) {
-                float width = hasFallbackFont ?
+                float width = textLine.shaped != null ? textLine.shaped.line.Width : hasFallbackFont ?
                         font.StringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
                         font.StringWidth(fontSize, textLine.text);
                 if (textLine.underline) {

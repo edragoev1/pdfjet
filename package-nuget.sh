@@ -112,7 +112,7 @@ for face in JP-Regular.otf KR-Regular.otf SC-Regular.otf TC-Regular.otf \
     fi
 done
 
-# The assembly of HarfBuzz for ComplexText, for .NET Standard 2.0
+# The assembly of HarfBuzz for TextBlock and TextLine, for .NET Standard 2.0
 dotnet build "$build/nuget/harfbuzz/PDFjet.HarfBuzz.csproj" -c release -p:TreatWarningsAsErrors=true \
     "${sign[@]}" -p:FileVersion="$version" -p:InformationalVersion="$packageVersion"
 cp "$build/nuget/harfbuzz/bin/release/netstandard2.0/PDFjet.HarfBuzz.dll" "$harfBuzzStage/lib/netstandard2.0/"
@@ -193,7 +193,7 @@ if [ "$with" != found ]; then
 fi
 echo "Without PDFjet.Fonts.World: $without"
 
-# ComplexText shapes with PDFjet.HarfBuzz.dll beside PDFjet, found by its
+# TextBlock shapes with PDFjet.HarfBuzz.dll beside PDFjet, found by its
 # name, without hb-shape; and without it and hb-shape, says what to add
 hbCheck=$build/hbcheck
 mkdir -p "$hbCheck"
@@ -222,7 +222,7 @@ using PDFjet.NET;
 PDF pdf = new PDF(new MemoryStream());
 Font khmer = new Font(pdf, args[0]);
 try {
-    float[] xy = new ComplexText(khmer, "ភាសាខ្មែរ ជា ភាសា ផ្លូវការ").SetWidth(300f).SetLocation(50f, 50f)
+    float[] xy = new TextBlock(khmer, "ភាសាខ្មែរ ជា ភាសា ផ្លូវការ").SetWidth(300f).SetLocation(50f, 50f)
             .DrawOn(new Page(pdf, Letter.PORTRAIT));
     Console.WriteLine(xy[1] > 50f ? "drawn" : "not drawn");
 } catch (InvalidOperationException e) {

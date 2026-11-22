@@ -1,7 +1,7 @@
 # PDFjet HarfBuzz
 
 **HarfBuzz for [PDFjet](https://www.nuget.org/packages/PDFjet)'s
-`ComplexText`,** which draws the scripts whose letters change shape and
+`TextBlock` and `TextLine`,** which draw the scripts whose letters change shape and
 place: Hindi, Marathi and Nepali (Devanagari), Bengali, Tamil, Telugu,
 Kannada, Malayalam, Gujarati, Punjabi, Odia, Sinhala, Khmer, Lao and
 Burmese. Add it next to the package `PDFjet`, the same version:
@@ -17,13 +17,15 @@ Or in the project file:
 <PackageReference Include="PDFjet.HarfBuzz" Version="9.2.1" />
 ```
 
-Then `ComplexText` shapes with HarfBuzz, the text engine of Chrome and
+Then `TextBlock` shapes with HarfBuzz, the text engine of Chrome and
 Android, with nothing to install and no code. The Noto Sans fonts of these
 scripts are in the package `PDFjet.Fonts.World`:
 
 ```csharp
 var hindi = new Font(pdf, NotoSansDevanagari.Regular);
-new ComplexText(hindi, paragraphs).SetWidth(500f).SetLocation(50f, 50f).DrawOn(page);
+var text = new TextBlock(hindi, paragraph).SetWidth(500f);
+text.SetLocation(50f, 50f);
+text.DrawOn(page);
 ```
 
 HarfBuzz comes with it, through HarfBuzzSharp, for Windows, Linux (glibc

@@ -53,7 +53,7 @@ public sealed class HarfBuzzGlyph {
 }
 
 /// <summary>
-/// A shaper for ComplexText that shapes with a HarfBuzz as HBShape does with
+/// A shaper for TextBlock and TextLine that shapes with a HarfBuzz as HBShape does with
 /// hb-shape: each character in the first font that has it, a mark in the font
 /// of the character it is on, each run of one font shaped in that font, and
 /// the lines broken at spaces and, in Thai, Lao, Khmer and Burmese, between
@@ -92,11 +92,11 @@ public sealed class HarfBuzzShaper : IShaper {
     public List<ShapedLine> Shape(ShapingRequest request) {
         String text = request.Text;
         if (text.IndexOf('\n') >= 0 || text.IndexOf('\r') >= 0) {
-            throw new ArgumentException("ComplexText's HarfBuzz shapes a paragraph: a text without line feeds");
+            throw new ArgumentException("PDFjet's HarfBuzz shapes a paragraph: a text without line feeds");
         }
         byte[][] files = request.FontFiles;
         if (files.Length == 0) {
-            throw new ArgumentException("ComplexText's HarfBuzz needs a font file");
+            throw new ArgumentException("PDFjet's HarfBuzz needs a font file");
         }
         OTF[] fonts = new OTF[files.Length];
         for (int i = 0; i < files.Length; i++) {
