@@ -255,6 +255,52 @@ import Testing
         try memory.pdf.complete()
     }
 
+    // A TextLine of text such as Hindi turned: its glyphs turned around its
+    // start as the same line of English is, the one rotation for both.
+    @Test func textLineTurnsItsGlyphsAsItsText() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, TextBlockShapedTests.devanagari).setSize(10)
+        let latin = try Font(memory.pdf, TextBlockShapedTests.latin).setSize(10)
+        TextBlock.setDefaultShaper(LetterShaper(font))
+        defer { TextBlock.setDefaultShaper(nil) }
+        func numbers(_ line: String) -> [Float] {
+            line.components(separatedBy: " ").prefix(4).map { Float($0)! }
+        }
+        for degrees in [30, 90, -45] {
+            let english = Page(memory.pdf, Letter.PORTRAIT)
+            let text = TextLine(latin, "Hello")
+            text.setLocation(50, 100)
+            text.setTextRotation(degrees)
+            text.drawOn(english)
+            let englishContent = TestSupport.content(english)
+            let hindi = Page(memory.pdf, Letter.PORTRAIT)
+            let line = TextLine(font, "कखग")
+            line.setLocation(50, 100)
+            line.setTextRotation(degrees)
+            line.drawOn(hindi)
+            let content = TestSupport.content(hindi)
+            let lines = content.components(separatedBy: "\n")
+            guard let tm = englishContent.components(separatedBy: "\n").first(where: { $0.hasSuffix(" Tm") }),
+                    let at = lines.firstIndex(of: "1 0 0 1 50 692 cm"), at > 0, lines[at - 1] == "q",
+                    at + 2 < lines.count, lines[at + 2] == "1 0 0 1 -50 -692 cm" else {
+                Issue.record("\(degrees) degrees:\n\(englishContent)\n\(content)")
+                continue
+            }
+            let a = numbers(tm)
+            let b = numbers(lines[at + 1])
+            for i in 0..<4 {
+                #expect(abs(a[i] - b[i]) < 1e-5, "\(degrees) degrees: \(tm) and \(lines[at + 1])")
+            }
+            #expect(count(content, " cm /Fm") == 3)
+        }
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let flat = TextLine(font, "कखग")
+        flat.setLocation(50, 100)
+        flat.drawOn(page)
+        #expect(!TestSupport.content(page).contains("1 0 0 1 -50 -692 cm"))
+        try memory.pdf.complete()
+    }
+
 #if os(Linux)
     // On Linux, without a shaper set, TextBlock does not run hb-shape, even
     // where it is installed: it says to set HBShape, so that a program

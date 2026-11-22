@@ -577,8 +577,8 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		page.pdf.fail(err.Error())
 		return [2]float32{textLine.x, textLine.y}
 	} else if shaped != nil {
-		// Glyphs a shaper found, drawn as outlines, not turned
-		page.drawShapedLine(shaped, textLine.x, textLine.y+verticalOffset, textLine.language)
+		// Glyphs a shaper found, drawn as outlines, turned as the text is
+		page.drawTurnedShapedLine(shaped, textLine.x, textLine.y+verticalOffset, textLine.language, textLine.degrees)
 	} else {
 		page.drawStringUsingHighlightColors(
 			textLine.font,

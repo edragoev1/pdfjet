@@ -3893,6 +3893,20 @@ public class Page {
         }
     }
 
+    // Draws the shaped line as DrawShapedLine does, turned by the degrees,
+    // clockwise, around its start at x on the baseline, as a TextLine's text
+    // is turned. Returns false if the document failed.
+    internal bool DrawTurnedShapedLine(ShapedText shaped, float x, float baseline, String language, int degrees) {
+        if (degrees % 360 == 0) {
+            return DrawShapedLine(shaped, x, baseline, language);
+        }
+        SaveGraphicsState();
+        RotateAroundCenter(x, height - baseline, -degrees);
+        bool drawn = DrawShapedLine(shaped, x, baseline, language);
+        RestoreGraphicsState();
+        return drawn;
+    }
+
     // Draws the shaped line, its left at x and its baseline at baseline, in
     // the language: the glyphs of each font, one run at a time, tagged with
     // the line's text for screen readers and the copying of text. Returns

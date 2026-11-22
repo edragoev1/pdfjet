@@ -18,7 +18,8 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   shape and place is shaped, by the same shapers as before, and drawn as
   outlines within the block's layout, each line tagged with its text; the
   other paragraphs, English, Arabic, Hebrew or Thai, are drawn as text, as
-  before. A TextLine of these scripts is shaped as one line. One class for
+  before. A TextLine of these scripts is shaped as one line, and turned
+  with `setTextRotation` as its text would be, around its start. One class for
   text in every language, in Table cells as any TextBlock. New API:
   `setShaper` on TextBlock; `SetDefaultShaper` in .NET and Swift on
   TextBlock (in Go the package function, as before). What the entries

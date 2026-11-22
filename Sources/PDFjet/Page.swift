@@ -4003,6 +4003,21 @@ public class Page {
         append(" cm\n")
     }
 
+    // Draws the shaped line as drawShapedLine does, turned by the degrees,
+    // clockwise, around its start at x on the baseline, as a TextLine's text
+    // is turned. Returns false if the document failed.
+    func drawTurnedShapedLine(_ shaped: ShapedText, _ x: Float, _ baseline: Float, _ language: String?,
+            _ degrees: Int) -> Bool {
+        if degrees % 360 == 0 {
+            return drawShapedLine(shaped, x, baseline, language)
+        }
+        saveGraphicsState()
+        rotateAroundCenter(x, height - baseline, Float(-degrees))
+        let drawn = drawShapedLine(shaped, x, baseline, language)
+        restoreGraphicsState()
+        return drawn
+    }
+
     // Draws the shaped line, its left at x and its baseline at baseline, in
     // the language: the glyphs of each font, one run at a time, tagged with
     // the line's text for screen readers and the copying of text. Returns

@@ -637,8 +637,8 @@ public class TextLine : IBaselineDrawable {
             return new float[] {x, y};
         }
         if (glyphs != null) {
-            // Glyphs a shaper found, drawn as outlines, not turned
-            page.DrawShapedLine(glyphs, x, y + verticalOffset, language);
+            // Glyphs a shaper found, drawn as outlines, turned as the text is
+            page.DrawTurnedShapedLine(glyphs, x, y + verticalOffset, language, degrees);
         } else {
             page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         }

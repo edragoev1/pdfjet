@@ -131,6 +131,20 @@ type shapedLine struct {
 	size  float32
 }
 
+// drawTurnedShapedLine draws the shaped line as drawShapedLine does, turned
+// by the degrees, clockwise, around its start at x on the baseline, as a
+// TextLine's text is turned. It returns false if the document failed.
+func (page *Page) drawTurnedShapedLine(shaped *shapedLine, x, baseline float32, language string, degrees int) bool {
+	if degrees%360 == 0 {
+		return page.drawShapedLine(shaped, x, baseline, language)
+	}
+	page.SaveGraphicsState()
+	page.rotateAroundCenter(x, page.height-baseline, float32(-degrees))
+	drawn := page.drawShapedLine(shaped, x, baseline, language)
+	page.RestoreGraphicsState()
+	return drawn
+}
+
 // drawShapedLine draws the shaped line, its left at x and its baseline at
 // baseline, in the language: the glyphs of each font, one run at a time,
 // tagged with the line's text for screen readers and the copying of text.

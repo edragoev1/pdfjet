@@ -277,5 +277,47 @@ public class TextBlockShapedTest {
             TextBlock.SetDefaultShaper(null);
         }
     }
+
+    // A TextLine of text such as Hindi turned: its glyphs turned around its
+    // start as the same line of English is, the one rotation for both.
+    [Fact]
+    public void TextLineTurnsItsGlyphsAsItsText() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, TestSupport.RepoPath(DEVANAGARI)).SetSize(10f);
+        Font latin = new Font(pdf, TestSupport.RepoPath(LATIN)).SetSize(10f);
+        TextBlock.SetDefaultShaper(new LetterShaper(font));
+        try {
+            foreach (int degrees in new[] {30, 90, -45}) {
+                Page english = new Page(pdf, Letter.PORTRAIT);
+                TextLine text = new TextLine(latin, "Hello");
+                text.SetLocation(50f, 100f);
+                text.SetTextRotation(degrees);
+                text.DrawOn(english);
+                string englishContent = TestSupport.Content(english);
+                Page hindi = new Page(pdf, Letter.PORTRAIT);
+                TextLine line = new TextLine(font, "कखग");
+                line.SetLocation(50f, 100f);
+                line.SetTextRotation(degrees);
+                line.DrawOn(hindi);
+                string content = TestSupport.Content(hindi);
+                Match tm = Regex.Match(englishContent, @"(\S+) (\S+) (\S+) (\S+) \S+ \S+ Tm");
+                Match cm = Regex.Match(content, @"q\n1 0 0 1 50 692 cm\n(\S+) (\S+) (\S+) (\S+) 0 0 cm\n1 0 0 1 -50 -692 cm\n");
+                Assert.True(tm.Success && cm.Success, degrees + " degrees:\n" + englishContent + "\n" + content);
+                for (int i = 1; i <= 4; i++) {
+                    Assert.Equal(float.Parse(tm.Groups[i].Value, CultureInfo.InvariantCulture),
+                            float.Parse(cm.Groups[i].Value, CultureInfo.InvariantCulture), 5);
+                }
+                Assert.Equal(3, Count(content, " cm /Fm"));
+            }
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            TextLine flat = new TextLine(font, "कखग");
+            flat.SetLocation(50f, 100f);
+            flat.DrawOn(page);
+            Assert.DoesNotContain("1 0 0 1 -50 -692 cm", TestSupport.Content(page));
+            pdf.Complete();
+        } finally {
+            TextBlock.SetDefaultShaper(null);
+        }
+    }
 }
 }   // End of namespace PDFjet.NET

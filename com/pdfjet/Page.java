@@ -4160,6 +4160,21 @@ final public class Page {
      * @param highlightColors the words to highlight and their colors.
      * @param language the language of the text, or null.
      */
+    // Draws the shaped line as drawShapedLine does, turned by the degrees,
+    // clockwise, around its start at x on the baseline, as a TextLine's text
+    // is turned. Returns false if the document failed.
+    boolean drawTurnedShapedLine(ShapedText shaped, float x, float baseline, String language, int degrees)
+            throws IOException {
+        if (degrees % 360 == 0) {
+            return drawShapedLine(shaped, x, baseline, language);
+        }
+        saveGraphicsState();
+        rotateAroundCenter(x, height - baseline, -degrees);
+        boolean drawn = drawShapedLine(shaped, x, baseline, language);
+        restoreGraphicsState();
+        return drawn;
+    }
+
     // Draws the shaped line, its left at x and its baseline at baseline, in
     // the language: the glyphs of each font, one run at a time, tagged with
     // the line's text for screen readers and the copying of text. Returns

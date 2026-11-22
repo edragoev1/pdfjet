@@ -771,8 +771,8 @@ public class TextLine implements BaselineDrawable {
             return new float[] {x, y};
         }
         if (glyphs != null) {
-            // Glyphs a shaper found, drawn as outlines, not turned
-            page.drawShapedLine(glyphs, x, y + verticalOffset, language);
+            // Glyphs a shaper found, drawn as outlines, turned as the text is
+            page.drawTurnedShapedLine(glyphs, x, y + verticalOffset, language, degrees);
         } else {
             page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         }

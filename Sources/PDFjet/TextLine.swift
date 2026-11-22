@@ -677,8 +677,8 @@ public class TextLine : BaselineDrawable {
             return [x, y]
         }
         if let glyphs = glyphs {
-            // Glyphs a shaper found, drawn as outlines, not turned
-            _ = page!.drawShapedLine(glyphs, self.x, self.y + verticalOffset, language)
+            // Glyphs a shaper found, drawn as outlines, turned as the text is
+            _ = page!.drawTurnedShapedLine(glyphs, self.x, self.y + verticalOffset, language, degrees)
         } else {
             page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         }

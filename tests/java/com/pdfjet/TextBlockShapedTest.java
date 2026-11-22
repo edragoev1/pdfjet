@@ -319,4 +319,41 @@ class TextBlockShapedTest {
         assertFalse(content.contains("Tj"), content);
         pdf.complete();
     }
+
+    // A TextLine of text such as Hindi turned: its glyphs turned around its
+    // start as the same line of English is, the one rotation for both.
+    @Test
+    void textLineTurnsItsGlyphsAsItsText() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, DEVANAGARI).setSize(10f);
+        Font latin = new Font(pdf, LATIN).setSize(10f);
+        for (int degrees : new int[] {30, 90, -45}) {
+            Page english = new Page(pdf, Letter.PORTRAIT);
+            TextLine text = new TextLine(latin, "Hello");
+            text.setLocation(50f, 100f);
+            text.setTextRotation(degrees);
+            text.drawOn(english);
+            String englishContent = TestSupport.content(english);
+            Page hindi = new Page(pdf, Letter.PORTRAIT);
+            TextLine line = new TextLine(font, "कखग");
+            line.setLocation(50f, 100f);
+            line.setTextRotation(degrees);
+            line.drawOn(hindi);
+            String content = TestSupport.content(hindi);
+            Matcher tm = Pattern.compile("(\\S+) (\\S+) (\\S+) (\\S+) \\S+ \\S+ Tm").matcher(englishContent);
+            Matcher cm = Pattern.compile(
+                    "q\n1 0 0 1 50 692 cm\n(\\S+) (\\S+) (\\S+) (\\S+) 0 0 cm\n1 0 0 1 -50 -692 cm\n").matcher(content);
+            assertTrue(tm.find() && cm.find(), degrees + " degrees:\n" + englishContent + "\n" + content);
+            for (int i = 1; i <= 4; i++) {
+                assertEquals(Float.parseFloat(tm.group(i)), Float.parseFloat(cm.group(i)), 1e-5f);
+            }
+            assertTrue(count(content, " cm /Fm") > 0, content);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine flat = new TextLine(font, "कखग");
+        flat.setLocation(50f, 100f);
+        flat.drawOn(page);
+        assertFalse(TestSupport.content(page).contains("1 0 0 1 -50 -692 cm"));
+        pdf.complete();
+    }
 }

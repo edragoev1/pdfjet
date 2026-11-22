@@ -319,3 +319,52 @@ func TestTextLineShapesTextSuchAsHindi(t *testing.T) {
 	}
 	doc.complete()
 }
+
+// A TextLine of text such as Hindi turned: its glyphs turned around its
+// start as the same line of English is, the one rotation for both.
+func TestTextLineTurnsItsGlyphsAsItsText(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexDevanagari))
+	font.SetSize(10)
+	SetDefaultShaper(&testLetterShaper{font})
+	defer SetDefaultShaper(nil)
+	latin := NewFontFromFile(doc.pdf, testRepoPath(t, testPlexOTF))
+	latin.SetSize(10)
+	for _, degrees := range []int{30, 90, -45} {
+		english := NewPage(doc.pdf, letter.Portrait())
+		text := NewTextLine(latin, "Hello")
+		text.SetLocation(50, 100)
+		text.SetTextRotation(degrees)
+		text.DrawOn(english)
+		englishContent := testContent(english)
+		hindi := NewPage(doc.pdf, letter.Portrait())
+		line := NewTextLine(font, "कखग")
+		line.SetLocation(50, 100)
+		line.SetTextRotation(degrees)
+		line.DrawOn(hindi)
+		tm := regexp.MustCompile(`(\S+) (\S+) (\S+) (\S+) \S+ \S+ Tm`).FindStringSubmatch(englishContent)
+		content := testContent(hindi)
+		cm := regexp.MustCompile(`q\n1 0 0 1 50 692 cm\n(\S+) (\S+) (\S+) (\S+) 0 0 cm\n1 0 0 1 -50 -692 cm\n`).
+			FindStringSubmatch(content)
+		if tm == nil || cm == nil {
+			t.Fatalf("%d degrees: no text matrix or no turn:\n%s\n%s", degrees, englishContent, content)
+		}
+		for i := 1; i <= 4; i++ {
+			a, _ := strconv.ParseFloat(tm[i], 64)
+			b, _ := strconv.ParseFloat(cm[i], 64)
+			testNear(t, "the turn", float32(a), float32(b), 1e-5)
+		}
+		if strings.Count(content, " cm /Fm") != 3 {
+			t.Errorf("%d degrees: not its three glyphs:\n%s", degrees, content)
+		}
+	}
+	// Not turned: no turn written
+	page := NewPage(doc.pdf, letter.Portrait())
+	line := NewTextLine(font, "कखग")
+	line.SetLocation(50, 100)
+	line.DrawOn(page)
+	if strings.Contains(testContent(page), "1 0 0 1 -50 -692 cm") {
+		t.Errorf("turned at 0 degrees:\n%s", testContent(page))
+	}
+	doc.complete()
+}
