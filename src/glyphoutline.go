@@ -499,7 +499,7 @@ func (pen *glyphPen) path() glyphPath {
 // units, the same in the four ports, rounded half away from zero. The font's
 // own points are whole units; the control points of a quadratic curve drawn
 // as a cubic one are not, and move by at most half a unit, 0.05% of the em,
-// unseen at any size, for outlines 15% smaller (9.2.0).
+// unseen at any size, for outlines 15% smaller (9.2.1).
 func glyphNumber(value float64) string {
 	return glyphDecimals(value, 0)
 }

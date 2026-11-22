@@ -7,54 +7,100 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.2.0 — customer builds, not released
+## v9.2.1 — not released yet
 
-The faults found after 9.1.9 and small improvements, given to the customers
-who need them before 9.2.1 (TODO.md, "The numbers").
+The release notes, the most important first; every change in detail follows,
+under "In detail". In the four ports, Java, C#, Go and Swift, unless said.
+It includes everything given to customers as the 9.2.0 builds.
 
-- **`TextBlock` and `TextLine` draw every script; `ComplexText` taken out**
-  (the four ports). A paragraph of a TextBlock in Hindi, Bengali, Tamil,
-  Sinhala, Khmer, Lao, Burmese or another script whose letters change
-  shape and place is shaped, by the same shapers as before, and drawn as
-  outlines within the block's layout, each line tagged with its text; the
-  other paragraphs, English, Arabic, Hebrew or Thai, are drawn as text, as
-  before. A TextLine of these scripts is shaped as one line, and turned
-  with `setTextRotation` as its text would be, around its start. One class for
-  text in every language, in Table cells as any TextBlock. New API:
-  `setShaper` on TextBlock; `SetDefaultShaper` in .NET and Swift on
-  TextBlock (in Go the package function, as before). What the entries
-  below say of `ComplexText` is now TextBlock's.
+### Highlights
 
-  Behavior change: `ComplexText` is gone, with its paragraph list, height
-  and `hasMoreText`; a TextBlock does not flow from page to page, so draw
-  a TextBlock a paragraph, measured first with `drawOn(null)`, as
-  Example_52 does. `new ComplexText(hindi, text).setWidth(500f)` becomes
-  `new TextBlock(hindi, text).setWidth(500f)`.
+- **Hindi, Khmer and the other Indic and Southeast Asian scripts in
+  `TextBlock` and `TextLine`:** Hindi, Bengali, Tamil, Telugu, Kannada,
+  Malayalam, Gujarati, Gurmukhi, Odia, Sinhala, Khmer, Lao and Burmese,
+  shaped by a text engine and drawn as outlines, tagged for screen readers
+  (PDF/UA); mixed with English, Arabic or Thai in one block; in Table
+  cells; turned. Java and Android and Swift on Apple platforms use the
+  platform's engine; .NET and Go add PDFjet's HarfBuzz, nothing to install
+  (`PDFjet.HarfBuzz` on NuGet, `github.com/edragoev1/pdfjet/harfbuzz/v9`);
+  `HBShape` runs HarfBuzz's `hb-shape` anywhere, when asked for.
+- **Noto Sans for these 13 scripts,** Regular and Bold, in the world fonts.
+- **Thai, Lao, Khmer and Burmese lines break between words,** by ICU's
+  dictionaries, as Chrome breaks them: the Thai UDHR's lines are Chrome's,
+  line for line.
+- **Arabic and Hebrew paragraphs right to left by themselves** in a
+  TextBlock.
+- **Large PNGs in a fraction of the memory** in Go, Java and C#: 22 MB in
+  place of 1.3 GB for an 8000 by 8000 PNG with alpha, in Go.
+- **Swift on 32-bit `Int`** (watchOS, wasm32), and the Swift package from
+  pdfjet-swift, a fraction of the 1 GB clone SwiftPM made.
 
-  Behavior change: a TextBlock paragraph whose first letter is Arabic or
-  Hebrew is right to left by itself, aligned to the right, where it was
-  drawn left to right unless `setRightToLeft(true)` was called; a block of
-  `"Hello\nمرحبا"` now draws its second line from the right. Calling
-  `setRightToLeft`, true or false, still sets the whole block.
+### Behavior changes since 9.1.9
 
-  Behavior change: Hindi and the other scripts in a TextLine or TextBlock
-  were drawn as text, their letters wrong; they are now shaped, and in .NET
-  and Go, without PDFjet's HarfBuzz add-on or a shaper set, and in Swift on
-  Linux without a shaper set, the document fails saying what to add.
+Each is described in detail below.
 
-- **`ComplexText` in Java, with java.awt.font, kerned and without invisible
-  glyphs, as HarfBuzz shapes:** compared on the UDHR of Hindi, Bengali,
+- Hindi and the other scripts above, in a TextBlock or a TextLine, are
+  shaped and drawn as outlines, where they were drawn as text, their
+  letters wrong. In .NET and Go without PDFjet's HarfBuzz add-on or a
+  shaper set, and in Swift on Linux without a shaper set, the document
+  fails saying what to add.
+- A TextBlock paragraph whose first letter is Arabic or Hebrew is right to
+  left, aligned to the right, unless `setRightToLeft` was called: a block
+  of `"Hello\nمرحبا"` draws its second line from the right.
+- Thai text without zero width spaces breaks between its words, not only
+  at its spaces.
+- An SVG's text in Markdown is in the document's fonts, not IBM Plex Sans.
+
+### In detail
+
+- **New: `TextBlock` and `TextLine` draw every script.** A paragraph of a
+  TextBlock in Hindi, Bengali, Gurmukhi, Gujarati, Odia, Tamil, Telugu,
+  Kannada, Malayalam, Sinhala, Khmer, Lao or Burmese, scripts whose letters
+  change shape and place, is wrapped and shaped by a text engine and drawn
+  as outlines within the block's layout, each line tagged with its text in
+  its language for screen readers (PDF/UA); the other paragraphs, English,
+  Thai, Arabic or Hebrew, are drawn as text, as before. A block can mix
+  them, and in a `Table` cell it is as any TextBlock. A TextLine of these
+  scripts is shaped as one line, and turned with `setTextRotation` as its
+  text would be. Give the block its font, and a fallback font for the other
+  characters (English words in Hindi), and its language. The text engine
+  is a `Shaper`, given a `ShapingRequest` (the text, its language, the font
+  files, the size, the width) and giving back `ShapedLine`s (each glyph's
+  font index, number and place, and the line's width): Java's java.awt.font
+  on servers and desktops, and Android's own on Android 12 and later, both
+  in the one jar; Core Text in Swift on Apple platforms; PDFjet's HarfBuzz
+  add-ons in .NET and Go (below); `HBShape` anywhere, when set (below);
+  or a shaper of the program's own, with `setShaper`, or for every block
+  and line with `SetDefaultShaper` (.NET, Swift: on TextBlock; Go: the
+  package function). The fonts are loaded by path, as the fonts PDFjet
+  carries are, or from their bytes, with the new `Font(pdf, byte[])` (Go
+  `NewFontFromBytes`), as the engine reads the same file. The glyphs are
+  outlines: the text cannot be selected or searched, and `PDF.attachText`
+  attaches it whole for anyone who needs it. Example_52 draws the whole
+  Universal Declaration of Human Rights, in Hindi and then in Khmer, a
+  TextBlock a paragraph, and attaches its text; on Android 12 and 15
+  (emulators) a full page of Hindi or Khmer is about 70 KB and passes
+  PDF/UA. For the customers of the 9.2.0 builds: their `ComplexText` is
+  gone; `new ComplexText(hindi, text)` is `new TextBlock(hindi, text)`, and
+  a TextBlock does not flow from page to page: draw one a paragraph,
+  measured first with `drawOn(null)`.
+- **A TextBlock paragraph whose first letter is Arabic or Hebrew is right
+  to left by itself,** aligned to the right, where it was drawn left to
+  right unless `setRightToLeft(true)` was called; `setRightToLeft`, true or
+  false, still sets the whole block.
+- **Java's shaping, java.awt.font, kerned and without invisible glyphs,
+  as HarfBuzz shapes:** compared on the UDHR of Hindi, Bengali,
   Tamil, Burmese, Khmer, Lao and Sinhala in Noto Sans (585 paragraphs),
   java.awt.font gave HarfBuzz's glyphs (hb-shape 15.2.0 and go-text agree
   to the last place) but placed Lao and Burmese up to 3.3 points apart at
   10 points: it leaves a font's kerning out unless asked. And it gives a
   zero width non-joiner the invisible glyph 0xFFFF, not a glyph of the
   font, which failed the PDF ("The font has no glyph number 65535") in 46
-  of the 95 paragraphs of Bengali. Behavior changes: the fonts are kerned,
-  and the invisible glyphs left out, as they draw nothing; the seven
+  of the 95 paragraphs of Bengali. The fonts are kerned, and the invisible
+  glyphs left out, as they draw nothing; the seven
   languages now within 0.003 points of HarfBuzz. A test: Bengali with a
   zero width non-joiner drawn.
-- **New: PDFjet's HarfBuzz for `ComplexText`, nothing to install,** on
+- **New: PDFjet's HarfBuzz for .NET and Go, nothing to install,** on
   Windows, Linux (Alpine too) and macOS, x64 and arm64 (AWS Graviton): in
   .NET the NuGet package `PDFjet.HarfBuzz`, HarfBuzz through HarfBuzzSharp,
   added next to `PDFjet` and found by its name, no code; in Go the module
@@ -67,20 +113,19 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   and Burmese (tests in both ports). New API for it: in Go `HarfBuzz`,
   `HarfBuzzGlyph`, `NewHarfBuzzShaper` and `SetDefaultShaper`; in .NET
   `IHarfBuzz`, `HarfBuzzGlyph`, `HarfBuzzShaper` and
-  `ComplexText.SetDefaultShaper`. Example_52 uses them, its own shapers,
-  go-text's and HarfBuzzSharp's, gone.
-- **`ComplexText` given no shaper, in .NET and Go,** which have no text
-  engine of their own: the shaper of `SetDefaultShaper`, else PDFjet's
+  `TextBlock.SetDefaultShaper`. Example_52 uses them.
+- **A TextBlock or TextLine given no shaper, in .NET and Go,** which have
+  no text engine of their own: the shaper of `SetDefaultShaper`, else PDFjet's
   HarfBuzz where the program has it; `HBShape`, HarfBuzz's program
   `hb-shape`, only when given with `SetShaper`, so that a program shapes the
   same wherever it runs, whatever is installed there. Without either,
-  `ComplexText` fails saying what to add (the error was "ComplexText needs a
-  text engine..."); in Swift on Linux it says to give `.setShaper(HBShape())`.
+  the document fails saying what to add; in Swift on Linux it says to give
+  `.setShaper(HBShape())` or `TextBlock.setDefaultShaper(HBShape())`.
   Java (java.awt.font) and Swift on Apple's platforms (Core Text) keep their
   engine.
-- **New: `HBShape`, a shaper for `ComplexText` that runs HarfBuzz's
-  `hb-shape`** (the four ports; in Swift on macOS and Linux): Hindi, Khmer and the other
-  scripts ComplexText draws, shaped by HarfBuzz, the text engine of Chrome
+- **New: `HBShape`, a shaper that runs HarfBuzz's `hb-shape`** (the four
+  ports; in Swift on macOS and Linux): Hindi, Khmer and the other scripts
+  TextBlock shapes, shaped by HarfBuzz, the text engine of Chrome
   and Android, on any server, with nothing linked into the program: `hb-shape`
   is installed on the server (HarfBuzz 15 or newer: `apt install
   libharfbuzz-bin`, `brew install harfbuzz`, or HarfBuzz's Windows zip).
@@ -93,7 +138,7 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   UDHR broken only between words; Hindi with an English word, and Khmer,
   drawn.
   After an ultra review (22 November 2026): `hb-shape` shapes left to
-  right, as `ComplexText` draws, not guessed, so that an Arabic or Hebrew
+  right, as TextBlock draws, not guessed, so that an Arabic or Hebrew
   run of a fallback font breaks no line; it is given only a language of a
   BCP 47 tag's letters, digits and hyphens, and, in .NET, each argument
   escaped as the command line reads it back; its temporary files are in a
@@ -117,13 +162,17 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   carries none of them. Tested against ICU 78.3: every run of the four
   scripts in their UDHR broken into ICU's words (2,381 runs, 7,144 word
   ends). The UDHR of Thai, Lao and Burmese added to resources/data/udhr.
-  And `ComplexText` in Java, with java.awt.font, breaks Lao, Khmer and
-  Burmese between their words: the JDK's line breaker breaks them nowhere
+  And in Java, java.awt.font's lines of Lao, Khmer and Burmese break
+  between their words: the JDK's line breaker breaks them nowhere
   but at spaces (Thai it breaks by a dictionary of its own), so a phrase
   wider than a line was broken inside a word; java.awt.font's
   LineBreakMeasurer is now given the JDK's breaks and ICU's word ends.
   Behavior change for those scripts in Java; tested on the Khmer UDHR, no
   break inside a word.
+- **The Swift package from pdfjet-swift**: Swift apps take PDFjet from
+  `https://github.com/edragoev1/pdfjet-swift`, the same library as a
+  download a fraction of the size, where SwiftPM cloned the 1 GB pdfjet
+  repository.
 - **Swift builds where `Int` is 32 bits**: wasm32 and watchOS
   (`arm64_32`), where the Swift Package Index's builds of 9.1.9 failed on
   `Page.swift` ("integer literal '4294967295' overflows when stored into
@@ -147,49 +196,6 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   108 MB and 2.0 s in C#, not 1.3 GB and 2.6 s, the most of it the runtime's
   own. The PDF is the same, byte for byte, and a broken PNG fails in the
   same words. Swift unchanged.
-
-- **`ComplexText` in a `Table` cell**, in the four ports: Hindi, Khmer and
-  the other scripts in tables, as `cell.setDrawable(new ComplexText(font,
-  text))`. The cell gives the text its width, less its padding, as it does
-  a `TextBlock`, is as tall as the text wrapped to it, and draws it whole
-  each time, as a header row is on each page; the text is left where the
-  caller had it. For this, `drawOn` without a page (`drawOn(null)`) now
-  measures: it returns the corner `drawOn` would, the lines that fit a
-  height counted as `drawOn` counts them, and draws nothing and keeps its
-  place in the text. In Java, C# and Go it failed before (Java and C# a
-  NullPointerException from `setBrushColor`); Swift's measured all the text,
-  whatever the height. Tests in the four ports.
-
-- **New: `ComplexText`**, in the four ports: Hindi, Khmer and the other
-  scripts PDFjet does not shape, drawn as simply as a `TextBlock`. The text,
-  its font and a fallback font for the other characters (English words in
-  Hindi), its language, its location and width, then `drawOn`: the
-  platform's text engine wraps and shapes it, and PDFjet draws the glyphs as
-  `drawGlyphs` does, as outlines, each line tagged with its text in its
-  language for screen readers. `setTextAlignment` aligns the lines to the
-  left, the center or the right, or justifies them (the words of each line
-  but the last spread to the width); `setLineSpacing` is a multiple of the
-  font's body height, as `TextBlock`'s, 1.0 by default. Given a list of
-  paragraphs (Go `NewComplexTextFromList`), it flows from page to page as a
-  `TextFrame` does: with `setHeight`, `drawOn` draws the lines that fit, a
-  paragraph cut where the height ends, and keeps the rest for the next
-  `drawOn`, while `hasMoreText`; `setParagraphGap` sets the space between
-  paragraphs, one empty line by default, as `TextFrame`'s. `getHeight` is
-  the height set, as `TextFrame`'s, and `getTextHeight` the height of the
-  text not drawn yet. The engine is a `Shaper`, given a `ShapingRequest`
-  (the text, its language, the font files, the size, the width) and giving
-  back `ShapedLine`s (each glyph's font index, number and place, and the
-  line's width): Java's java.awt.font on servers and desktops, and
-  Android's own on Android 12 and later, both in the one jar; Core Text in
-  Swift on Apple platforms; in .NET and Go, which have none, a shaper the
-  program gives with `setShaper` (Example_52 has one with HarfBuzzSharp and
-  one with go-text, packages of the examples, never of PDFjet). The fonts are loaded by path, as the fonts
-  PDFjet carries are, or from their bytes, with the new `Font(pdf, byte[])`
-  (Go `NewFontFromBytes`), as the engine reads the same file. Example_52 in
-  the four ports draws with it the whole Declaration, in Hindi and then in
-  Khmer, 7 pages, and attaches the whole text. On Android 12 and 15
-  (emulators) a full page of Hindi or Khmer is about 70 KB and passes
-  PDF/UA.
 - **Smaller glyphs from `drawGlyphs`**, in the four ports. Each glyph's
   outline is written in whole units of the font, where the control points of
   a TrueType quadratic curve drawn as a cubic one had two decimals; they move
@@ -199,7 +205,7 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   `/Type /XObject`. Example_52 is 11% smaller (Java 202,080 bytes to 180,464),
   and still passes PDF/UA. Nothing else changes: the other examples are the
   same, but for the version and Example_37's Data Matrix text.
-- **Noto Sans for the scripts `ComplexText` draws, in the world fonts**:
+- **Noto Sans for the scripts TextBlock shapes, in the world fonts**:
   Noto Sans Devanagari 2.007 (Hindi, Marathi, Nepali, Sanskrit), Bengali
   3.011, Gurmukhi 2.004, Gujarati 2.106, Oriya 2.007, Tamil 2.004, Telugu
   2.005, Kannada 2.006, Malayalam 2.104, Sinhala 3.000, Khmer 2.004, Lao
@@ -211,11 +217,10 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   (resources/fonts/world, Maven's pdfjet-fonts-world, NuGet's
   PDFjet.Fonts.World, Go's world package, Swift's PDFjetFontsWorld): 97
   fonts carried, where 9.1.9 carried 71, the world fonts about 54 MB.
-  PDFjet does not shape these scripts: the fonts are for `ComplexText` and
-  `drawGlyphs`, the platform's text engine shaping the text with the same
-  file; in a TextLine or a TextBlock the letters would come out unshaped,
-  as the README and the guides for AI coding assistants say. Thai, Arabic
-  and Hebrew, which PDFjet lays out itself, stay in IBM Plex. Example_52
+  PDFjet does not shape these scripts itself: the fonts are for TextBlock,
+  TextLine and `drawGlyphs`, the platform's text engine shaping the text
+  with the same file. Thai, Arabic and Hebrew, which PDFjet lays out
+  itself, stay in IBM Plex. Example_52
   draws its Hindi in Noto Sans Devanagari and its Khmer in Noto Sans Khmer,
   the fonts PDFjet carries (272 KB in Java, 6 pages); the `drawGlyphs` tests
   keep Noto Sans Devanagari's .ttf, for the TrueType outlines.

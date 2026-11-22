@@ -399,7 +399,7 @@ final class GlyphOutline {
     /// the four ports, rounded half away from zero. The font's own points are
     /// whole units; the control points of a quadratic curve drawn as a cubic
     /// one are not, and move by at most half a unit, 0.05% of the em, unseen
-    /// at any size, for outlines 15% smaller (9.2.0).
+    /// at any size, for outlines 15% smaller (9.2.1).
     static func number(_ value: Double) -> String {
         return decimals(value, 0)
     }
