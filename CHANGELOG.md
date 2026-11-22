@@ -13,7 +13,7 @@ The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
 - **New: `HBShape`, a shaper for `ComplexText` that runs HarfBuzz's
-  `hb-shape`** (Go and Java; C# and Swift to follow): Hindi, Khmer and the other
+  `hb-shape`** (Go, Java and C#; Swift to follow): Hindi, Khmer and the other
   scripts ComplexText draws, shaped by HarfBuzz, the text engine of Chrome
   and Android, on any server, with nothing linked into the program: `hb-shape`
   is installed on the server (HarfBuzz 15 or newer: `apt install
@@ -26,8 +26,8 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   where `hb-shape` is not installed: its glyphs hb-shape's own; the Khmer
   UDHR broken only between words; Hindi with an English word, and Khmer,
   drawn.
-- **Thai lines break between words, by ICU's dictionary** (Go and Java;
-  C# and Swift to follow): `TextBlock` puts a zero width space at each end
+- **Thai lines break between words, by ICU's dictionary** (Go, Java and
+  C#; Swift to follow): `TextBlock` puts a zero width space at each end
   of a word in Thai text that has none, where ICU's Thai dictionary finds
   it, and breaks there. Behavior change: such text was broken only at its
   spaces, a phrase too long for a line inside a word, at any character:

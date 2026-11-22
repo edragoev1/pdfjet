@@ -123,8 +123,9 @@ public class BundledFontsTest {
         }
         // IBM Plex Sans JP, KR, SC and TC, three faces each, IBM Plex Sans
         // Arabic, Hebrew and Thai, seven each, and Noto Sans of the 13 scripts
-        // ComplexText draws, two each, with a license each
-        Assert.Equal(12 + 21 + 26 + 20, worldFiles.Count);
+        // ComplexText draws, two each, with a license each; and ICU's four
+        // dictionaries, with their license
+        Assert.Equal(12 + 21 + 26 + 20 + 4 + 1, worldFiles.Count);
 #if PDFJET_FONTS
         // The fonts and their licenses, Family/File, and nothing else
         Assert.Equal(files, resources);

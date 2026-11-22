@@ -358,7 +358,8 @@ public class TextBlock : IDrawable {
         while (lines.Count > 1 && lines[lines.Count - 1].Length == 0) {
             lines.RemoveAt(lines.Count - 1);
         }
-        foreach (String line in lines) {
+        foreach (String given in lines) {
+            String line = given;
             if (rightToLeft) {
                 AddRightToLeftLines(textLines, line, textAreaWidth);
                 continue;
@@ -366,6 +367,9 @@ public class TextBlock : IDrawable {
 
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
+            // Thai text that has none is given one at each end of a word, as
+            // ICU's dictionary of Thai finds them.
+            line = DictionaryBreaks.ThaiWordBreaks(line);
             String text = line.Replace("\u200B", "");
             if (this.StringWidth(text) <= textAreaWidth) {
                 textLines.Add(new TextLine(font, text));
