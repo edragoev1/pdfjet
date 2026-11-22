@@ -12,6 +12,21 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **Thai lines break between words, by ICU's dictionary** (Go first; Java,
+  C# and Swift to follow): `TextBlock` puts a zero width space at each end
+  of a word in Thai text that has none, where ICU's Thai dictionary finds
+  it, and breaks there. Behavior change: such text was broken only at its
+  spaces, a phrase too long for a line inside a word, at any character:
+  in the Thai UDHR, 300 points wide in IBM Plex Sans Thai 12, 23 of 165
+  breaks were inside a word; now its 225 lines are Chrome's, line for line.
+  Text with zero width spaces of its own is left as it is (Example_04).
+  The engine is a port of ICU's dictionary break engines (dictbe.cpp) for
+  Thai, Lao, Khmer and Burmese, and the dictionaries are ICU's, carried
+  with the world fonts (resources/fonts/world/ICUDictionaries, 4.3 MB, the
+  Unicode License): a program without the world fonts draws no Thai and
+  carries none of them. Tested against ICU 78.3: every run of the four
+  scripts in their UDHR broken into ICU's words (2,381 runs, 7,144 word
+  ends). The UDHR of Thai, Lao and Burmese added to resources/data/udhr.
 - **Swift builds where `Int` is 32 bits**: wasm32 and watchOS
   (`arm64_32`), where the Swift Package Index's builds of 9.1.9 failed on
   `Page.swift` ("integer literal '4294967295' overflows when stored into
