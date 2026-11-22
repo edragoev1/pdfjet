@@ -64,7 +64,21 @@ type TextBlock struct {
 	strikeout              bool
 	keywordHighlightColors map[string]int32
 	rightToLeft            bool
+	rightToLeftSet         bool // True after SetRightToLeft: else each paragraph's own direction
 	structureType          structelem.StructElem
+
+	// The shaper of text such as Hindi or Khmer, else the default one
+	shaper Shaper
+	// The lines a shaper found, by paragraph, width and size, so that a
+	// paragraph is shaped once however often the block is measured
+	shapedLines map[shapedKey][]ShapedLine
+	// Why a paragraph could not be shaped, which DrawOn fails the document with
+	shapeErr error
+}
+
+type shapedKey struct {
+	text        string
+	width, size float32
 }
 
 // colorToRGB returns the red, green and blue components, from 0.0 to 1.0, of
@@ -365,10 +379,72 @@ func (textBlock *TextBlock) SetLanguage(language string) *TextBlock {
 // Hebrew text. Each paragraph is wrapped at the width in logical order, and
 // each line is then reordered with Bidi reordering, which also shapes the
 // Arabic letters, and aligned to the right, unless the text alignment is
-// alignment.Center.
+// alignment.Center. Without it, each paragraph is right to left when its
+// first letter is Arabic or Hebrew, and left to right otherwise.
 func (textBlock *TextBlock) SetRightToLeft(rightToLeft bool) *TextBlock {
 	textBlock.rightToLeft = rightToLeft
+	textBlock.rightToLeftSet = true
 	return textBlock
+}
+
+// SetShaper sets the text engine that shapes text such as Hindi or Khmer,
+// which TextBlock draws as outlines: without it, the one of
+// SetDefaultShaper, such as PDFjet's HarfBuzz module's.
+func (textBlock *TextBlock) SetShaper(shaper Shaper) *TextBlock {
+	textBlock.shaper = shaper
+	textBlock.shapedLines = nil
+	return textBlock
+}
+
+// paragraphRightToLeft tells whether the paragraph is right to left: as set
+// with SetRightToLeft, else by its first letter, Arabic or Hebrew.
+func (textBlock *TextBlock) paragraphRightToLeft(paragraph string) bool {
+	if textBlock.rightToLeftSet {
+		return textBlock.rightToLeft
+	}
+	for _, r := range paragraph {
+		if isRightToLeftBlock(r) || isArabicBlock(r) {
+			return true
+		}
+		if unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return false
+}
+
+// appendShapedLines shapes the paragraph, as Hindi or Khmer, wrapped at the
+// width, and appends its lines, drawn as outlines: the block's font for the
+// text, its fallback font for the characters the font has not.
+func (textBlock *TextBlock) appendShapedLines(
+	textLines []*TextLine, paragraph string, textAreaWidth float32) []*TextLine {
+	fonts := []*Font{textBlock.font}
+	if textBlock.fallbackFont != nil && textBlock.fallbackFont != textBlock.font {
+		fonts = append(fonts, textBlock.fallbackFont)
+	}
+	key := shapedKey{paragraph, textAreaWidth, textBlock.fontSize}
+	lines, ok := textBlock.shapedLines[key]
+	if !ok {
+		var err error
+		lines, err = shapeText(textBlock.shaper, fonts, textBlock.fontSize, textBlock.language, paragraph, textAreaWidth)
+		if err != nil {
+			if textBlock.shapeErr == nil {
+				textBlock.shapeErr = err
+			}
+			return textLines
+		}
+		if textBlock.shapedLines == nil {
+			textBlock.shapedLines = map[shapedKey][]ShapedLine{}
+		}
+		textBlock.shapedLines[key] = lines
+	}
+	for _, line := range lines {
+		text := paragraph[line.Start:line.End]
+		textLine := NewTextLine(textBlock.font, strings.TrimSpace(text))
+		textLine.shaped = &shapedLine{line: line, text: text, fonts: fonts, size: textBlock.fontSize}
+		textLines = append(textLines, textLine)
+	}
+	return textLines
 }
 
 // SetURIAction sets the URI opened when this text block is clicked.
@@ -398,9 +474,23 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 	for len(lines) > 1 && lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
 	}
+	textBlock.shapeErr = nil
+	// The direction of each paragraph, as wrapped: rightToLeft, the block's
+	// as set, is the paragraph's while its lines are made
+	blockRightToLeft := textBlock.rightToLeft
+	defer func() { textBlock.rightToLeft = blockRightToLeft }()
 	for _, line := range lines {
+		if needsShaper(line) {
+			textLines = textBlock.appendShapedLines(textLines, line, textAreaWidth)
+			continue
+		}
+		textBlock.rightToLeft = textBlock.paragraphRightToLeft(line)
 		if textBlock.rightToLeft {
+			first := len(textLines)
 			textLines = textBlock.appendRightToLeftLines(textLines, line, textAreaWidth)
+			for _, textLine := range textLines[first:] {
+				textLine.rightToLeft = true
+			}
 			continue
 		}
 		// A zero width space marks a place where the line may break in text
@@ -948,16 +1038,20 @@ func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32)
 	}
 	lines := make([]*TextLine, fit)
 	copy(lines, textLines)
+	if lines[fit-1].shaped != nil {
+		return lines // Glyphs drawn as outlines, cut where the height ends
+	}
 	last := []rune(lines[fit-1].text)
 	// A line of right to left text is kept in the order it is drawn, so its
 	// end, where it is cut and the "..." goes, is at its left: cut at its
 	// right, the start of the line was lost and the "..." came first in the
 	// reading (review of 11 October 2026, #7)
-	if textBlock.rightToLeft {
+	if lines[fit-1].rightToLeft {
 		if len(last) > 3 {
 			last = last[3:]
 		}
 		lines[fit-1] = NewTextLine(textBlock.font, "..."+string(last))
+		lines[fit-1].rightToLeft = true
 		return lines
 	}
 	if len(last) > 3 {
@@ -972,9 +1066,17 @@ func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32)
 func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 	textAreaWidth := textBlock.textAreaWidth()
 	for _, textLine := range textLines {
-		textLine.xOffset = textAreaWidth -
-			textBlock.stringWidth(textLine.text)
+		textLine.xOffset = textAreaWidth - textBlock.widthOf(textLine)
 	}
+}
+
+// widthOf returns the width of a line of the block: of its glyphs, for one a
+// shaper shaped, else of its text.
+func (textBlock *TextBlock) widthOf(textLine *TextLine) float32 {
+	if textLine.shaped != nil {
+		return textLine.shaped.line.Width
+	}
+	return textBlock.stringWidth(textLine.text)
 }
 
 // centerText sets the offsets from the left edge of the text, inside the
@@ -982,8 +1084,7 @@ func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	textAreaWidth := textBlock.textAreaWidth()
 	for _, textLine := range textLines {
-		textLine.xOffset = float32((textAreaWidth -
-			textBlock.stringWidth(textLine.text)) / 2.0)
+		textLine.xOffset = float32((textAreaWidth - textBlock.widthOf(textLine)) / 2.0)
 	}
 }
 
@@ -1013,8 +1114,17 @@ func (textBlock *TextBlock) layout() (textLines []*TextLine, yText, leading, blo
 	switch {
 	case textBlock.textAlignment == alignment.Center:
 		textBlock.centerText(textLines)
-	case textBlock.textAlignment == alignment.Right || textBlock.rightToLeft:
+	case textBlock.textAlignment == alignment.Right:
 		textBlock.rightAlignText(textLines)
+	default:
+		// The lines of right to left paragraphs, aligned to the right
+		var rightToLeft []*TextLine
+		for _, textLine := range textLines {
+			if textLine.rightToLeft {
+				rightToLeft = append(rightToLeft, textLine)
+			}
+		}
+		textBlock.rightAlignText(rightToLeft)
 	}
 	if textBlock.underline {
 		textBlock.underlineText(textLines)
@@ -1049,6 +1159,13 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	// corner (review of 17 October 2026)
 	if w := float64(textBlock.width); math.IsNaN(w) || math.IsInf(w, 0) {
 		page.pdf.fail("The width of a text block is a finite number.")
+		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
+	}
+
+	// Text such as Hindi that could not be shaped, as with no shaper, fails
+	// the document, saying why
+	if textBlock.shapeErr != nil {
+		page.pdf.fail(textBlock.shapeErr.Error())
 		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
 	}
 

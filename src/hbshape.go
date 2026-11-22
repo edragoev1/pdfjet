@@ -18,7 +18,7 @@ import (
 	"unicode"
 )
 
-// HBShape is a Shaper for ComplexText that runs hb-shape, the program of
+// HBShape is a Shaper for TextBlock and TextLine that runs hb-shape, the program of
 // HarfBuzz, the text engine of Chrome and Android, with nothing linked into
 // the program; used only when given with SetShaper. PDFjet's HarfBuzz module,
 // import _ "github.com/edragoev1/pdfjet/harfbuzz/v9", gives the same glyphs
@@ -34,7 +34,7 @@ import (
 // It talks with hb-shape through files, not pipes, the same on every system:
 // the text of each font in a temporary file, the glyphs back in another.
 //
-//	text := pdfjet.NewComplexText(hindi, paragraphs).
+//	text := pdfjet.NewTextBlock(hindi, text).
 //		SetFallbackFont(latin).
 //		SetShaper(pdfjet.NewHBShape())
 type HBShape struct {
@@ -77,7 +77,7 @@ type HarfBuzzGlyph struct {
 	YOffset  int // Up
 }
 
-// NewHarfBuzzShaper returns a shaper for ComplexText that shapes with the
+// NewHarfBuzzShaper returns a shaper for TextBlock that shapes with the
 // HarfBuzz as HBShape does with hb-shape: each character in the first font
 // that has it, a mark in the font of the character it is on, each run of one
 // font shaped in that font, and the lines broken at spaces and, in Thai,
@@ -95,7 +95,7 @@ func (s harfBuzzShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 	return harfBuzzShape(s.harfBuzz, request)
 }
 
-// The shaper ComplexText shapes with when none is set: the one of
+// The shaper TextBlock and TextLine shape with when none is set: the one of
 // SetDefaultShaper, such as the HarfBuzz module's; hb-shape only when asked
 // for, so that a program shapes the same wherever it runs, whatever is
 // installed there (22 November 2026)
@@ -104,7 +104,7 @@ var (
 	defaultShaperSet  Shaper
 )
 
-// SetDefaultShaper sets the shaper of every ComplexText given none. The module github.com/edragoev1/pdfjet/harfbuzz/v9 sets
+// SetDefaultShaper sets the shaper of every TextBlock and TextLine given none. The module github.com/edragoev1/pdfjet/harfbuzz/v9 sets
 // its own as it is imported, so that one line shapes with HarfBuzz, nothing
 // to install:
 //
@@ -117,7 +117,7 @@ func SetDefaultShaper(shaper Shaper) {
 	defaultShaperSet = shaper
 }
 
-// defaultShaper is ComplexText's shaper when none is set: SetDefaultShaper's,
+// defaultShaper is the shaper of TextBlock and TextLine when none is set: SetDefaultShaper's,
 // or nil
 func defaultShaper() Shaper {
 	defaultShaperLock.RLock()
@@ -125,10 +125,10 @@ func defaultShaper() Shaper {
 	return defaultShaperSet
 }
 
-// errNoShaper: a ComplexText with no shaper, set or default
-var errNoShaper = errors.New("ComplexText needs HarfBuzz to shape this text: add the one line " +
+// errNoShaper: text such as Hindi with no shaper, set or default
+var errNoShaper = errors.New("Text such as Hindi or Khmer needs HarfBuzz to be drawn: add the one line " +
 	"import _ \"github.com/edragoev1/pdfjet/harfbuzz/v9\" (HarfBuzz in Go, nothing to install), " +
-	"or give ComplexText a shaper with SetShaper, such as pdfjet.NewHBShape(), which runs HarfBuzz's " +
+	"or give the TextBlock a shaper with SetShaper, such as pdfjet.NewHBShape(), which runs HarfBuzz's " +
 	"program hb-shape where it is installed")
 
 // NewHBShape returns an HBShape that runs hb-shape of the PATH.
@@ -216,7 +216,7 @@ func (hb *HBShape) ShapeRuns(font []byte, runs []string, language string) ([][]H
 	if err := os.WriteFile(inPath, []byte(input.String()), 0o600); err != nil {
 		return nil, err
 	}
-	// Left to right, as ComplexText draws, not guessed: an Arabic or Hebrew
+	// Left to right, as TextBlock draws, not guessed: an Arabic or Hebrew
 	// run, as of a fallback font, would come back right to left, its
 	// clusters falling (ultra review, 22 November 2026)
 	args := []string{"--font-file=" + fontPath, "--text-file=" + inPath, "--output-file=" + outPath,
@@ -261,7 +261,7 @@ func (hb *HBShape) ShapeRuns(font []byte, runs []string, language string) ([][]H
 func harfBuzzShape(harfBuzz HarfBuzz, request ShapingRequest) ([]ShapedLine, error) {
 	text := request.Text
 	if strings.ContainsAny(text, "\r\n") {
-		return nil, errors.New("ComplexText's HarfBuzz shapes a paragraph: a text without line feeds")
+		return nil, errors.New("PDFjet's HarfBuzz shapes a paragraph: a text without line feeds")
 	}
 	fonts := make([]*openTypeFont, len(request.FontFiles))
 	for i, file := range request.FontFiles {
@@ -272,7 +272,7 @@ func harfBuzzShape(harfBuzz HarfBuzz, request ShapingRequest) ([]ShapedLine, err
 		fonts[i] = otf
 	}
 	if len(fonts) == 0 {
-		return nil, errors.New("ComplexText's HarfBuzz needs a font file")
+		return nil, errors.New("PDFjet's HarfBuzz needs a font file")
 	}
 	runes := []rune(text)
 	// The index in the text, in bytes, of each rune, and of the end

@@ -19,12 +19,12 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 
-	// HarfBuzz for ComplexText: one line, nothing to install
+	// HarfBuzz for TextBlock and TextLine: one line, nothing to install
 	_ "github.com/edragoev1/pdfjet/harfbuzz/v9"
 )
 
 // Example_52 draws Hindi and Khmer, scripts whose letters change shape and
-// place, with ComplexText: HarfBuzz shapes them -- conjuncts, vowel signs,
+// place, with TextBlock: HarfBuzz shapes them -- conjuncts, vowel signs,
 // stacked consonants -- and PDFjet draws the glyphs it found, at their places,
 // as outlines read from the font file: sharp on screen and in print, and read
 // by screen readers, as each paragraph is tagged with its text and its
@@ -32,7 +32,7 @@ import (
 //
 //	import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"
 //
-// gives ComplexText HarfBuzz in Go, go-text/typesetting, on every system and
+// gives PDFjet HarfBuzz in Go, go-text/typesetting, on every system and
 // CPU, with nothing to install. The Universal Declaration of Human Rights in
 // Hindi, then in Khmer: the paragraphs flow from page to page, a paragraph
 // cut where a page ends.
@@ -62,7 +62,7 @@ func draw(pdf *pdfjet.PDF, heading, body *pdfjet.Font, name, lang, scriptFile, t
 		SetStructureType(structelem.H1).
 		SetLocation(left, 60).
 		DrawOn(page)
-	pdfjet.NewTextLine(body, "Shaped by HarfBuzz, drawn by PDFjet's ComplexText as outlines;"+
+	pdfjet.NewTextLine(body, "Shaped by HarfBuzz, drawn by PDFjet's TextBlock as outlines;"+
 		" the text is attached to the document.").
 		SetLocation(left, 80).
 		DrawOn(page)
@@ -73,24 +73,22 @@ func draw(pdf *pdfjet.PDF, heading, body *pdfjet.Font, name, lang, scriptFile, t
 	script.SetSize(size)
 	latinFont := pdfjet.NewFontFromFile(pdf, latin)
 
+	// A TextBlock a paragraph: measured, without a page, and drawn on the
+	// next page when it does not fit on this one
 	paragraphs := paragraphs(textFile)
-	text := pdfjet.NewComplexTextFromList(script, paragraphs).
-		SetFallbackFont(latinFont).
-		SetLanguage(lang).
-		SetWidth(width).
-		SetParagraphGap(0.5 * size)
 	y := float32(96) // Below the heading, on the first page
-	for {
-		text.SetHeight(bottom-y).SetLocation(left, y).DrawOn(page)
-		more, err := text.HasMoreText()
-		if err != nil {
-			log.Fatal(err)
+	for _, paragraph := range paragraphs {
+		text := pdfjet.NewTextBlock(script, paragraph).
+			SetFallbackFont(latinFont).
+			SetLanguage(lang)
+		text.SetWidth(width)
+		text.SetLocation(left, y)
+		if text.DrawOn(nil)[1] > bottom {
+			page = pdfjet.NewPage(pdf, letter.Portrait())
+			y = top
+			text.SetLocation(left, y)
 		}
-		if !more {
-			break
-		}
-		page = pdfjet.NewPage(pdf, letter.Portrait())
-		y = top
+		y = text.DrawOn(page)[1] + 0.5*size
 	}
 
 	// A blank line between paragraphs, as plain text has them

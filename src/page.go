@@ -3677,6 +3677,14 @@ func (page *Page) drawTextBlock(
 	page.setTextFont(font, fontSize)
 	yText := y
 	for _, textLine := range textLines {
+		if textLine.shaped != nil {
+			// Glyphs a shaper found, drawn as outlines, out of the text object
+			page.appendString("ET\n")
+			page.drawShapedLine(textLine.shaped, x+textLine.xOffset, yText+font.GetAscent(fontSize), language)
+			page.appendString("BT\n")
+			yText += leading
+			continue
+		}
 		page.appendString("1 0 0 1 ")
 		page.appendFloat32(x + textLine.xOffset)
 		page.appendString(" ")
@@ -3735,7 +3743,9 @@ func (page *Page) drawTextBlock(
 	for _, textLine := range textLines {
 		if textLine.underline || textLine.strikeout {
 			width := font.StringWidth(fontSize, textLine.text)
-			if hasFallbackFont {
+			if textLine.shaped != nil {
+				width = textLine.shaped.line.Width
+			} else if hasFallbackFont {
 				width = font.stringWidthFBSizes(fallbackFont, fontSize, fallbackFontSize, textLine.text)
 			}
 			if textLine.underline {

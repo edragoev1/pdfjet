@@ -19,7 +19,7 @@ import (
 // Bold, and Cascadia Mono, from Light to Bold, as .otf, upright and
 // italic, for the European languages; and, in resources/fonts/world, IBM Plex Sans Arabic,
 // Hebrew and Thai, Thin to Bold, IBM Plex Sans JP, KR, SC and TC, Regular,
-// SemiBold and Bold, and Noto Sans of the scripts ComplexText draws, Regular
+// SemiBold and Bold, and Noto Sans of the scripts TextBlock shapes, Regular
 // and Bold, as .otf. All are under the SIL Open
 // Font License 1.1. A path to one of them, such as
 // fonts/IBMPlexSans/IBMPlexSans-Regular.otf, the constants of the packages
@@ -49,7 +49,7 @@ var worldFaces = func() map[string][]string {
 			faces[family] = append(faces[family], family+"-"+style+".otf")
 		}
 	}
-	// Noto Sans of the scripts ComplexText draws, Regular and Bold
+	// Noto Sans of the scripts TextBlock shapes, Regular and Bold
 	for _, family := range []string{
 		"NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu",
 	} {

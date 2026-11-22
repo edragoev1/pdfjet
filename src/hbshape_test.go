@@ -131,9 +131,9 @@ func TestHBShapeBreaksBetweenWords(t *testing.T) {
 	}
 }
 
-// ComplexText draws Hindi with an English word, in two fonts, and Khmer,
+// TextBlock draws Hindi with an English word, in two fonts, and Khmer,
 // shaped by hb-shape, into a PDF that completes.
-func TestHBShapeDrawsComplexText(t *testing.T) {
+func TestHBShapeDrawsTextBlocks(t *testing.T) {
 	hb := testHBShape(t)
 	doc := testNewDoc()
 	hindi := NewFontFromFile(doc.pdf, testNotoDevanagari)
@@ -149,8 +149,10 @@ func TestHBShapeDrawsComplexText(t *testing.T) {
 	} {
 		c.font.SetSize(12)
 		page := NewPage(doc.pdf, letter.Portrait())
-		xy := NewComplexText(c.font, c.text).SetFallbackFont(latin).SetLanguage(c.lang).SetShaper(hb).
-			SetWidth(300).SetLocation(50, 50).DrawOn(page)
+		block := NewTextBlock(c.font, c.text).SetFallbackFont(latin).SetLanguage(c.lang).SetShaper(hb)
+		block.SetWidth(300)
+		block.SetLocation(50, 50)
+		xy := block.DrawOn(page)
 		if xy[1] <= 50+3*12 {
 			t.Errorf("%s: drawn down to %v", c.lang, xy[1])
 		}
@@ -163,16 +165,17 @@ func TestHBShapeDrawsComplexText(t *testing.T) {
 	}
 }
 
-// Without a shaper set, ComplexText does not run hb-shape, even where it is
+// Without a shaper set, TextBlock does not run hb-shape, even where it is
 // installed: it fails, saying what to import, so that a program shapes the
 // same wherever it runs, whatever is installed there
-func TestComplexTextWithoutAShaperRunsNoHBShape(t *testing.T) {
+func TestTextBlockWithoutAShaperRunsNoHBShape(t *testing.T) {
 	testHBShape(t)
 	doc := testNewDoc()
 	khmer := NewFontFromFile(doc.pdf, testNotoKhmer)
 	khmer.SetSize(12)
-	NewComplexText(khmer, testUDHR(t, "khm")[2]).SetLanguage("km").SetWidth(300).SetLocation(50, 50).
-		DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	block := NewTextBlock(khmer, testUDHR(t, "khm")[2]).SetLanguage("km")
+	block.SetWidth(300)
+	block.DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	err := doc.pdf.Complete()
 	if err == nil || !strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`) ||
 		!strings.Contains(err.Error(), "SetShaper") || !strings.Contains(err.Error(), "NewHBShape") {
@@ -188,8 +191,9 @@ func TestHBShapeWithoutHBShapeSaysWhatToDo(t *testing.T) {
 	doc := testNewDoc()
 	khmer := NewFontFromFile(doc.pdf, testNotoKhmer)
 	khmer.SetSize(12)
-	NewComplexText(khmer, "ភាសាខ្មែរ").SetShaper(NewHBShape()).SetWidth(300).SetLocation(50, 50).
-		DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	block := NewTextBlock(khmer, "ភាសាខ្មែរ").SetShaper(NewHBShape())
+	block.SetWidth(300)
+	block.DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	err := doc.pdf.Complete()
 	if err == nil || !strings.Contains(err.Error(), "apt install libharfbuzz-bin") ||
 		!strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`) {

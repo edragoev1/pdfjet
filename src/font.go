@@ -47,9 +47,9 @@ type Font struct {
 	// whether anything draws with it as a font, text or a stamp's: a font
 	// DrawGlyphs alone drew with is not written into the document.
 	drawnAsOutlines bool
-	// The font file, for ComplexText, whose text engine reads it: the path
+	// The font file, for a TextBlock or TextLine whose text engine reads it: the path
 	// it was loaded from, or the bytes it was loaded from, kept; read from the
-	// path the first time ComplexText needs it.
+	// path the first time a shaper needs it.
 	fontPath   string
 	fontFile   []byte
 	referenced bool
@@ -359,7 +359,7 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 
 // NewFontFromBytes constructs a font from the bytes of an OpenType or
 // TrueType font file, a .otf or a .ttf, such as one embedded in the program,
-// and adds it to the PDF. The font keeps the bytes, as ComplexText gives them
+// and adds it to the PDF. The font keeps the bytes, as a shaper is given them
 // to the text engine that shapes it.
 func NewFontFromBytes(pdf *PDF, fontFile []byte) *Font {
 	font := new(Font)
@@ -370,7 +370,7 @@ func NewFontFromBytes(pdf *PDF, fontFile []byte) *Font {
 	return font
 }
 
-// shapingFile returns the bytes of the font file, for ComplexText: those it
+// shapingFile returns the bytes of the font file, for a shaper: those it
 // was loaded from, the TrueType font it keeps, or the file of its path read
 // again; nil for a font loaded from a reader, a core font or a CJK font.
 func (font *Font) shapingFile() ([]byte, error) {

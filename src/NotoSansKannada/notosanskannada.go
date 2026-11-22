@@ -11,8 +11,8 @@
 // folder resources/fonts/world, else from the library when the program
 // imports github.com/edragoev1/pdfjet/v9/resources/fonts/world.
 //
-// PDFjet does not shape Kannada: these fonts are for ComplexText, which
-// draws the text as a shaping engine shapes it with the same font file, for
+// PDFjet does not shape Kannada: these fonts are for TextBlock and TextLine,
+// which draw the text as a shaping engine shapes it with the same font file, for
 // Kannada. Regular and Bold, from Noto's release, unmodified.
 package NotoSansKannada
 

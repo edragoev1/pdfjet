@@ -86,7 +86,7 @@ func TestShapesAsHBShape(t *testing.T) {
 	}
 }
 
-// Imported, the module is the shaper of a ComplexText given none, without
+// Imported, the module is the shaper of a TextBlock given none, without
 // hb-shape: the Khmer is drawn, its PDF complete.
 func TestImportedItIsTheDefault(t *testing.T) {
 	t.Chdir("..")
@@ -96,8 +96,10 @@ func TestImportedItIsTheDefault(t *testing.T) {
 	pdf := pdfjet.NewPDF(w)
 	khmer := pdfjet.NewFontFromFile(pdf, languages[1].font)
 	khmer.SetSize(12)
-	text := pdfjet.NewComplexTextFromList(khmer, paragraphs(t, languages[1].text)[:3]).SetWidth(300)
-	text.SetLocation(50, 50).DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
+	text := pdfjet.NewTextBlock(khmer, strings.Join(paragraphs(t, languages[1].text)[:3], "\n"))
+	text.SetWidth(300)
+	text.SetLocation(50, 50)
+	text.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 	if err := pdf.Complete(); err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +134,7 @@ func TestKeepsTheLastFacesOnly(t *testing.T) {
 }
 
 // Hebrew in a paragraph, of a fallback font, is shaped left to right, as
-// ComplexText draws, by go-text and hb-shape alike, and breaks no line
+// TextBlock draws, by go-text and hb-shape alike, and breaks no line
 // (ultra review, 22 November 2026: hb-shape guessed right to left, and its
 // falling clusters panicked the line breaking)
 func TestHebrewInAParagraphIsShapedLeftToRight(t *testing.T) {

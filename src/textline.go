@@ -49,6 +49,13 @@ type TextLine struct {
 	uriActualText      string
 	uriAltDescription  string
 	structureType      structelem.StructElem
+	// The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
+	// outlines in place of the text; nil for text drawn as text
+	shaped    *shapedLine
+	shapedFor string // The text shaped, when TextLine shaped it itself
+	// True for a line of a right to left paragraph of a TextBlock, aligned
+	// to the right
+	rightToLeft bool
 	// The text line this one is a piece of, drawn row by row or word by word
 	// in a TextFrame or TextColumn, or nil: the pieces of a Figure are one.
 	pieceOf *TextLine
@@ -215,7 +222,54 @@ func (textLine *TextLine) destinationY() float32 {
 // GetWidth returns the width of this TextLine.
 // Returns the width.
 func (textLine *TextLine) GetWidth() float32 {
+	if shaped, _ := textLine.shapedText(); shaped != nil {
+		return shaped.line.Width
+	}
 	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
+}
+
+// shapedText returns the glyphs a shaper found for text such as Hindi or
+// Khmer, one line of it, which DrawOn draws as outlines; nil for text drawn as
+// text. A TextBlock's line was shaped with its paragraph.
+func (textLine *TextLine) shapedText() (*shapedLine, error) {
+	if textLine.shaped != nil {
+		if textLine.shaped.size == textLine.fontSize && textLine.shapedFor == textLine.text {
+			return textLine.shaped, nil
+		}
+		if textLine.shapedFor == "" {
+			return textLine.shaped, nil // A TextBlock's
+		}
+	}
+	if !needsShaper(textLine.text) {
+		return nil, nil
+	}
+	fonts := []*Font{textLine.font}
+	if textLine.fallbackFont != nil && textLine.fallbackFont != textLine.font {
+		fonts = append(fonts, textLine.fallbackFont)
+	}
+	lines, err := shapeText(nil, fonts, textLine.fontSize, textLine.language, textLine.text, math.MaxFloat32/4)
+	if err != nil {
+		return nil, err
+	}
+	shaped := &shapedLine{text: textLine.text, fonts: fonts, size: textLine.fontSize}
+	for i, line := range lines {
+		// One line: the lines of a shaper that broke it anyway, joined
+		if i == 0 {
+			shaped.line = line
+			continue
+		}
+		x := shaped.line.Width
+		shaped.line.End = line.End
+		shaped.line.FontIndexes = append(shaped.line.FontIndexes, line.FontIndexes...)
+		shaped.line.Glyphs = append(shaped.line.Glyphs, line.Glyphs...)
+		for j := 0; j < len(line.Positions); j += 2 {
+			shaped.line.Positions = append(shaped.line.Positions, x+line.Positions[j], line.Positions[j+1])
+		}
+		shaped.line.Width = x + line.Width
+	}
+	textLine.shaped = shaped
+	textLine.shapedFor = textLine.text
+	return shaped, nil
 }
 
 // GetHeight returns the height of this TextLine.
@@ -516,15 +570,26 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		page.AddBDC(textLine.structureType, textLine.language, "", alt)
 		page.pieceOf = nil
 	}
-	page.drawStringUsingHighlightColors(
-		textLine.font,
-		textLine.fallbackFont,
-		textLine.fontSize,
-		textLine.text,
-		textLine.x,
-		textLine.y+verticalOffset,
-		textLine.textColor,
-		textLine.colorMap)
+	if shaped, err := textLine.shapedText(); err != nil {
+		// Text such as Hindi that could not be shaped, as with no shaper,
+		// fails the document, saying why
+		page.AddEMC()
+		page.pdf.fail(err.Error())
+		return [2]float32{textLine.x, textLine.y}
+	} else if shaped != nil {
+		// Glyphs a shaper found, drawn as outlines, not turned
+		page.drawShapedLine(shaped, textLine.x, textLine.y+verticalOffset, textLine.language)
+	} else {
+		page.drawStringUsingHighlightColors(
+			textLine.font,
+			textLine.fallbackFont,
+			textLine.fontSize,
+			textLine.text,
+			textLine.x,
+			textLine.y+verticalOffset,
+			textLine.textColor,
+			textLine.colorMap)
+	}
 	page.AddEMC()
 
 	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
@@ -602,6 +667,9 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 // space, which left out the kerning between the space and the letter before
 // it, so the line stopped short of the word (the review of 28 October 2026).
 func (textLine *TextLine) decorationLength() float32 {
+	if shaped, _ := textLine.shapedText(); shaped != nil {
+		return shaped.line.Width
+	}
 	text := textLine.text
 	if textLine.isLastToken {
 		text = strings.TrimSuffix(text, single.Space)
@@ -614,7 +682,7 @@ func (textLine *TextLine) decorationLength() float32 {
 func (textLine *TextLine) corner(verticalOffset float32) [2]float32 {
 	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
 	radians := float64(float64(math.Pi*float64(-textLine.degrees)) / 180.0)
-	length := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	length := textLine.GetWidth()
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(float64(length)*math.Cos(radians)))
 	yMax := math.Max(
 		float64(textLine.y+verticalOffset),

@@ -3,11 +3,11 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-// Package harfbuzz gives PDFjet's ComplexText HarfBuzz to shape Hindi,
+// Package harfbuzz gives PDFjet's TextBlock and TextLine HarfBuzz to shape Hindi,
 // Bengali, Tamil, Khmer, Lao, Burmese and the other scripts whose letters
 // change shape and place: go-text/typesetting, HarfBuzz written in Go, on
 // every system and CPU Go runs on, with nothing to install. Imported, it is
-// the shaper of every ComplexText given none:
+// the shaper of every TextBlock and TextLine given none:
 //
 //	import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"
 //
@@ -33,8 +33,8 @@ func init() {
 	pdfjet.SetDefaultShaper(NewShaper())
 }
 
-// NewShaper returns a shaper for ComplexText that shapes with
-// go-text/typesetting, for a ComplexText given it with SetShaper.
+// NewShaper returns a shaper that shapes with go-text/typesetting, for a
+// TextBlock given it with SetShaper.
 func NewShaper() pdfjet.Shaper {
 	return pdfjet.NewHarfBuzzShaper(&goText{faces: map[*byte]*font.Face{}})
 }
