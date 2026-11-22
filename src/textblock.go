@@ -405,15 +405,16 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 		}
 		// A zero width space marks a place where the line may break in text
 		// without spaces between its words, like Thai text. It is not drawn.
-		// Thai text that has none is given one at each end of a word, as
-		// ICU's dictionary of Thai finds them.
-		line = thaiWordBreaks(line)
 		text := strings.ReplaceAll(line, "\u200B", "")
 		if textBlock.stringWidth(text) <= textAreaWidth {
 			textLines = append(
 				textLines,
 				NewTextLine(textBlock.font, text))
 		} else {
+			// Thai text that has none is given one at each end of a word,
+			// as ICU's dictionary of Thai finds them, when the line is to be
+			// broken alone (ultra review, 22 November 2026)
+			line = thaiWordBreaks(line)
 			if isCJK(text) {
 				var sb strings.Builder
 				for _, ch := range text {

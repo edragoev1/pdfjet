@@ -367,13 +367,14 @@ public class TextBlock : IDrawable {
 
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
-            // Thai text that has none is given one at each end of a word, as
-            // ICU's dictionary of Thai finds them.
-            line = DictionaryBreaks.ThaiWordBreaks(line);
             String text = line.Replace("\u200B", "");
             if (this.StringWidth(text) <= textAreaWidth) {
                 textLines.Add(new TextLine(font, text));
             } else {
+                // Thai text that has none is given one at each end of a word,
+                // as ICU's dictionary of Thai finds them, when the line is to
+                // be broken alone (ultra review, 22 November 2026)
+                line = DictionaryBreaks.ThaiWordBreaks(line);
                 if (Util.IsCJK(text)) {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {

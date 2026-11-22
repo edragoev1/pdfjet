@@ -53,6 +53,21 @@ type HarfBuzz interface {
 	ShapeRuns(font []byte, runs []string, language string) ([][]HarfBuzzGlyph, error)
 }
 
+// isLanguageTag tells whether the language is a BCP 47 tag of its letters,
+// digits and hyphens, as hb-shape is given it: else none is given (ultra
+// review, 22 November 2026)
+func isLanguageTag(language string) bool {
+	if language == "" || len(language) > 35 {
+		return false
+	}
+	for _, c := range language {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-') {
+			return false
+		}
+	}
+	return true
+}
+
 // HarfBuzzGlyph is a glyph a HarfBuzz shaped, in font units.
 type HarfBuzzGlyph struct {
 	Glyph    int // The glyph's id in the font
@@ -201,9 +216,12 @@ func (hb *HBShape) ShapeRuns(font []byte, runs []string, language string) ([][]H
 	if err := os.WriteFile(inPath, []byte(input.String()), 0o600); err != nil {
 		return nil, err
 	}
+	// Left to right, as ComplexText draws, not guessed: an Arabic or Hebrew
+	// run, as of a fallback font, would come back right to left, its
+	// clusters falling (ultra review, 22 November 2026)
 	args := []string{"--font-file=" + fontPath, "--text-file=" + inPath, "--output-file=" + outPath,
-		"--no-glyph-names", "--output-format=json"}
-	if language != "" {
+		"--no-glyph-names", "--output-format=json", "--direction=ltr"}
+	if isLanguageTag(language) {
 		args = append(args, "--language="+language)
 	}
 	var stderr bytes.Buffer
@@ -348,7 +366,7 @@ func hbLines(glyphs []hbShaped, runes []rune, offsets []int, end int, width floa
 	// or at the end of a word
 	breakBefore := func(i int) bool {
 		c := glyphs[i].cluster
-		if i == 0 || glyphs[i-1].cluster == c {
+		if i == 0 || c == 0 || glyphs[i-1].cluster == c {
 			return false
 		}
 		return runes[c-1] == ' ' || (wordEnd[c] && runes[c] != ' ')

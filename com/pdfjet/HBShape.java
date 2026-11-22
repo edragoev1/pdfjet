@@ -225,8 +225,12 @@ public class HBShape implements Shaper {
                 command.add("--text-file=" + in.getPath());
                 command.add("--no-glyph-names");
                 command.add("--output-format=json");
+                // Left to right, as ComplexText draws, not guessed: an Arabic
+                // or Hebrew run would come back right to left, its clusters
+                // falling (ultra review, 22 November 2026)
+                command.add("--direction=ltr");
                 String language = request.getLanguage();
-                if (language != null && !language.isEmpty()) {
+                if (isLanguageTag(language)) {
                     command.add("--language=" + language);
                 }
                 run(command.toArray(new String[0]), out);
@@ -290,7 +294,7 @@ public class HBShape implements Shaper {
             int lastBreak = -1;
             for (int i = first; i < glyphs.size(); i++) {
                 Glyph g = glyphs.get(i);
-                if (i > first && glyphs.get(i - 1).cluster != g.cluster
+                if (i > first && g.cluster > 0 && glyphs.get(i - 1).cluster != g.cluster
                         && (cps[g.cluster - 1] == ' ' || (wordEnd.contains(g.cluster) && cps[g.cluster] != ' '))) {
                     lastBreak = i;
                 }
@@ -325,5 +329,21 @@ public class HBShape implements Shaper {
             first = last;
         }
         return lines;
+    }
+
+    // Whether the language is a BCP 47 tag of its letters, digits and
+    // hyphens, as hb-shape is given it: else none is given, as in the other
+    // ports (ultra review, 22 November 2026)
+    static boolean isLanguageTag(String language) {
+        if (language == null || language.isEmpty() || language.length() > 35) {
+            return false;
+        }
+        for (int i = 0; i < language.length(); i++) {
+            char c = language.charAt(i);
+            if (!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-')) {
+                return false;
+            }
+        }
+        return true;
     }
 }   // End of HBShape.java

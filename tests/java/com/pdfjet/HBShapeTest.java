@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -144,5 +145,15 @@ class HBShapeTest {
         }
         pdf.complete();
         assertTrue(out.size() > 1000);
+    }
+
+    // hb-shape is given a language only of a BCP 47 tag's letters, digits
+    // and hyphens (ultra review, 22 November 2026)
+    @Test
+    void takesALanguageTagOnly() {
+        assertTrue(HBShape.isLanguageTag("hi") && HBShape.isLanguageTag("zh-Hant-TW"));
+        assertFalse(HBShape.isLanguageTag("hi\" --output-file=x \""));
+        assertFalse(HBShape.isLanguageTag(""));
+        assertFalse(HBShape.isLanguageTag(null));
     }
 }

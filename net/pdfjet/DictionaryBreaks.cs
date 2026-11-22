@@ -521,9 +521,20 @@ internal static class DictionaryBreaks {
                 sb.Append('\u200B');
                 next++;
             }
-            sb.Append(Char.ConvertFromUtf32(cps[i]));
+            AppendCodePoint(sb, cps[i]);
         }
         return sb.ToString();
+    }
+
+    // Appends the code point, a lone surrogate of CodePoints as it was, which
+    // Char.ConvertFromUtf32 refuses (ultra review, 22 November 2026: a Thai
+    // line with half of an emoji failed the whole document)
+    internal static void AppendCodePoint(StringBuilder sb, int c) {
+        if (c >= 0xD800 && c <= 0xDFFF) {
+            sb.Append((char) c);
+        } else {
+            sb.Append(Char.ConvertFromUtf32(c));
+        }
     }
 }
 }   // End of namespace PDFjet.NET

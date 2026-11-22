@@ -538,13 +538,14 @@ public class TextBlock implements Drawable {
             }
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
-            // Thai text that has none is given one at each end of a word, as
-            // ICU's dictionary of Thai finds them.
-            line = DictionaryBreaks.thaiWordBreaks(line);
             String text = line.replace("\u200B", "");
             if (stringWidth(text) <= textAreaWidth) {
                 textLines.add(new TextLine(font, text));
             } else {
+                // Thai text that has none is given one at each end of a word,
+                // as ICU's dictionary of Thai finds them, when the line is to
+                // be broken alone (ultra review, 22 November 2026)
+                line = DictionaryBreaks.thaiWordBreaks(line);
                 if (Util.isCJK(text)) {
                     StringBuilder sb = new StringBuilder();
                     int i = 0;

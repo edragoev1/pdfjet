@@ -16,6 +16,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/go-text/typesetting/font"
 )
 
 const world = "resources/fonts/world/"
@@ -103,5 +104,49 @@ func TestImportedItIsTheDefault(t *testing.T) {
 	w.Flush()
 	if out.Len() < 1000 {
 		t.Errorf("a PDF of %d bytes", out.Len())
+	}
+}
+
+// The faces kept are the last maxFaces used, so that a server that reads
+// its fonts again for each document does not keep them all (ultra review,
+// 22 November 2026); one used again is kept the longest.
+func TestKeepsTheLastFacesOnly(t *testing.T) {
+	t.Chdir("..")
+	file := read(t, languages[1].font)
+	g := &goText{faces: map[*byte]*font.Face{}}
+	first := append([]byte(nil), file...)
+	for i := range 3 * maxFaces {
+		if _, err := g.ShapeRuns(first, []string{"ក"}, "km"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := g.ShapeRuns(append([]byte(nil), file...), []string{"ក"}, "km"); err != nil {
+			t.Fatal(err)
+		}
+		if len(g.faces) > maxFaces || len(g.order) != len(g.faces) {
+			t.Fatalf("after %d documents: %d faces, %d in order", i+1, len(g.faces), len(g.order))
+		}
+	}
+	if _, ok := g.faces[&first[0]]; !ok {
+		t.Error("the font used again was let go")
+	}
+}
+
+// Hebrew in a paragraph, of a fallback font, is shaped left to right, as
+// ComplexText draws, by go-text and hb-shape alike, and breaks no line
+// (ultra review, 22 November 2026: hb-shape guessed right to left, and its
+// falling clusters panicked the line breaking)
+func TestHebrewInAParagraphIsShapedLeftToRight(t *testing.T) {
+	t.Chdir("..")
+	files := [][]byte{read(t, languages[0].font), read(t, world+"IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf")}
+	request := pdfjet.ShapingRequest{Text: "שלום עולם नमस्ते दुनिया", Language: "hi", FontFiles: files, FontSize: 12, Width: 80}
+	got, err := NewShaper().Shape(request)
+	if err != nil || len(got) < 2 {
+		t.Fatalf("%d lines, %v", len(got), err)
+	}
+	if _, err := exec.LookPath("hb-shape"); err == nil {
+		want, err := pdfjet.NewHBShape().Shape(request)
+		if err != nil || !reflect.DeepEqual(got, want) {
+			t.Errorf("hb-shape: %v, the same lines: %v", err, reflect.DeepEqual(got, want))
+		}
 	}
 }

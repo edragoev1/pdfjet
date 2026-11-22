@@ -92,5 +92,15 @@ import Testing
             #expect(xy[1] > 50 + 3 * 12, "\(lang): drawn down to \(xy[1])")
         }
     }
+
+#if os(macOS) || os(Linux)
+    // hb-shape is given a language only of a BCP 47 tag's letters, digits
+    // and hyphens (ultra review, 22 November 2026)
+    @Test func takesALanguageTagOnly() {
+        #expect(HBShape.isLanguageTag("hi") && HBShape.isLanguageTag("zh-Hant-TW"))
+        #expect(!HBShape.isLanguageTag("hi\" --output-file=x \""))
+        #expect(!HBShape.isLanguageTag(""))
+    }
+#endif
 }
 #endif

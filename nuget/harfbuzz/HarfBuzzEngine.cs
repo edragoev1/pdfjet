@@ -20,27 +20,55 @@ namespace PDFjet.HarfBuzz {
 public sealed class HarfBuzzEngine {
     // A font file read once, kept by the array PDFjet gives it
     private sealed class ShapingFont {
+        internal byte[] file;
         internal Face face;
         internal Font font;
     }
 
-    private readonly Dictionary<byte[], ShapingFont> fonts = new Dictionary<byte[], ShapingFont>();
+    // The fonts kept: a document's, read once for all its paragraphs, and
+    // never all the fonts of a server's documents, each of its own file, nor
+    // their copies in native memory (ultra review, 22 November 2026)
+    private const int MAX_FONTS = 8;
+
+    // The last MAX_FONTS used, the least recently used first; shaping holds
+    // its lock, so that a font let go is never one being shaped with
+    private readonly List<ShapingFont> fonts = new List<ShapingFont>();
 
     private ShapingFont FontOf(byte[] file) {
-        lock (fonts) {
-            if (!fonts.TryGetValue(file, out ShapingFont font)) {
-                IntPtr memory = Marshal.AllocHGlobal(file.Length);
-                Marshal.Copy(file, 0, memory, file.Length);
-                font = new ShapingFont();
-                font.face = new Face(new Blob(memory, file.Length, MemoryMode.ReadOnly,
-                        () => Marshal.FreeHGlobal(memory)), 0);
-                font.font = new Font(font.face);
-                // A unit a font unit: the glyphs come in the font's units, as
-                // hb-shape gives them
-                font.font.SetScale(font.face.UnitsPerEm, font.face.UnitsPerEm);
-                fonts[file] = font;
+        for (int i = 0; i < fonts.Count; i++) {
+            if (ReferenceEquals(fonts[i].file, file)) {
+                ShapingFont found = fonts[i];
+                fonts.RemoveAt(i);
+                fonts.Add(found);
+                return found;
             }
-            return font;
+        }
+        if (fonts.Count >= MAX_FONTS) {
+            ShapingFont oldest = fonts[0];
+            fonts.RemoveAt(0);
+            oldest.font.Dispose();
+            oldest.face.Dispose();
+        }
+        IntPtr memory = Marshal.AllocHGlobal(file.Length);
+        Marshal.Copy(file, 0, memory, file.Length);
+        ShapingFont font = new ShapingFont();
+        font.file = file;
+        font.face = new Face(new Blob(memory, file.Length, MemoryMode.ReadOnly,
+                () => Marshal.FreeHGlobal(memory)), 0);
+        font.font = new Font(font.face);
+        // A unit a font unit: the glyphs come in the font's units, as
+        // hb-shape gives them
+        font.font.SetScale(font.face.UnitsPerEm, font.face.UnitsPerEm);
+        fonts.Add(font);
+        return font;
+    }
+
+    // How many fonts are kept, for the tests
+    public int FontsKept {
+        get {
+            lock (fonts) {
+                return fonts.Count;
+            }
         }
     }
 
@@ -58,7 +86,12 @@ public sealed class HarfBuzzEngine {
         if (font == null || font.Length == 0) {
             throw new ArgumentException("PDFjet.HarfBuzz: an empty font file");
         }
-        ShapingFont shaping = FontOf(font);
+        lock (fonts) {
+            return Shape(FontOf(font), runs, language);
+        }
+    }
+
+    private static int[][] Shape(ShapingFont shaping, string[] runs, string language) {
         int[][] shaped = new int[runs.Length][];
         for (int r = 0; r < runs.Length; r++) {
             string text = runs[r];
@@ -72,6 +105,10 @@ public sealed class HarfBuzzEngine {
                     buffer.Language = new Language(language);
                 }
                 buffer.GuessSegmentProperties();
+                // Left to right, as ComplexText draws, not guessed: an Arabic
+                // or Hebrew run would come back right to left, its clusters
+                // falling (ultra review, 22 November 2026)
+                buffer.Direction = Direction.LeftToRight;
                 shaping.font.Shape(buffer);
                 GlyphInfo[] infos = buffer.GlyphInfos;
                 GlyphPosition[] places = buffer.GlyphPositions;

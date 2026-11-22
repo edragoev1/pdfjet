@@ -153,7 +153,10 @@ public final class HBShape: Shaper, Sendable {
 
         // Each font's runs shaped in one run of hb-shape, a run a line
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("pdfjet-hbshape-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        // The user's alone: other users of the machine do not read the text
+        // being shaped (ultra review, 22 November 2026)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700])
         defer {
             try? FileManager.default.removeItem(at: dir)
         }
@@ -176,9 +179,12 @@ public final class HBShape: Shaper, Sendable {
             let inFile = dir.appendingPathComponent("in\(k).txt")
             try Data(request.fontFiles[k]).write(to: font)
             try Data(String(input).utf8).write(to: inFile)
+            // Left to right, as ComplexText draws, not guessed: an Arabic or
+            // Hebrew run would come back right to left, its clusters falling
+            // (ultra review, 22 November 2026)
             var arguments = ["--font-file=" + font.path, "--text-file=" + inFile.path,
-                    "--no-glyph-names", "--output-format=json"]
-            if let language = request.language, !language.isEmpty {
+                    "--no-glyph-names", "--output-format=json", "--direction=ltr"]
+            if let language = request.language, HBShape.isLanguageTag(language) {
                 arguments.append("--language=" + language)
             }
             let output = try run(arguments)
@@ -211,6 +217,17 @@ public final class HBShape: Shaper, Sendable {
         return HBShape.lines(glyphs, cps, offsets, offsets[cps.count], request.width)
     }
 
+    /// Whether the language is a BCP 47 tag of its letters, digits and
+    /// hyphens, as hb-shape is given it: else none is given.
+    static func isLanguageTag(_ language: String) -> Bool {
+        if language.isEmpty || language.count > 35 {
+            return false
+        }
+        return language.unicodeScalars.allSatisfy { c in
+            (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c == "-"
+        }
+    }
+
     // The lines no wider than the width: broken after a space, or between two
     // words of Thai, Lao, Khmer or Burmese, the last place that fits; a word
     // wider than a line alone on its line
@@ -225,7 +242,7 @@ public final class HBShape: Shaper, Sendable {
             var lastBreak = -1
             for i in first..<glyphs.count {
                 let g = glyphs[i]
-                if i > first && glyphs[i - 1].cluster != g.cluster
+                if i > first && g.cluster > 0 && glyphs[i - 1].cluster != g.cluster
                         && (cps[g.cluster - 1] == 0x20 || (wordEnd.contains(g.cluster) && cps[g.cluster] != 0x20)) {
                     lastBreak = i
                 }

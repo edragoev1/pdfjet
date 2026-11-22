@@ -154,7 +154,7 @@ public sealed class HarfBuzzShaper : IShaper {
                     list.Add(run);
                     StringBuilder runText = new StringBuilder();
                     for (int i = run[0]; i < run[1]; i++) {
-                        runText.Append(Char.ConvertFromUtf32(cps[i]));
+                        DictionaryBreaks.AppendCodePoint(runText, cps[i]);
                     }
                     texts.Add(runText.ToString());
                 }
@@ -204,7 +204,7 @@ public sealed class HarfBuzzShaper : IShaper {
             int lastBreak = -1;
             for (int i = first; i < glyphs.Count; i++) {
                 Glyph g = glyphs[i];
-                if (i > first && glyphs[i - 1].cluster != g.cluster
+                if (i > first && g.cluster > 0 && glyphs[i - 1].cluster != g.cluster
                         && (cps[g.cluster - 1] == ' ' || (wordEnd.Contains(g.cluster) && cps[g.cluster] != ' '))) {
                     lastBreak = i;
                 }

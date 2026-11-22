@@ -62,6 +62,16 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   where `hb-shape` is not installed: its glyphs hb-shape's own; the Khmer
   UDHR broken only between words; Hindi with an English word, and Khmer,
   drawn.
+  After an ultra review (22 November 2026): `hb-shape` shapes left to
+  right, as `ComplexText` draws, not guessed, so that an Arabic or Hebrew
+  run of a fallback font breaks no line; it is given only a language of a
+  BCP 47 tag's letters, digits and hyphens, and, in .NET, each argument
+  escaped as the command line reads it back; its temporary files are in a
+  folder of the user's alone, in .NET and Swift as in Go and Java; and a
+  Thai line with half of an emoji is drawn, in .NET, where it failed the
+  document. PDFjet's HarfBuzz keeps the fonts of the last documents only,
+  and shapes left to right too. TextBlock runs Thai's dictionary only on a
+  line it breaks.
 - **Thai lines break between words, by ICU's dictionary** (the four
   ports): `TextBlock` puts a zero width space at each end
   of a word in Thai text that has none, where ICU's Thai dictionary finds

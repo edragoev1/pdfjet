@@ -42,10 +42,16 @@ public class HBShape : IShaper, IHarfBuzz {
         this.program = program;
     }
 
-    // A folder for the temporary files, of a plain ASCII path: a Windows
-    // build of a Linux tool can mishandle a path like C:\Users\Евгени\...
+    // A folder for the temporary files: the user's, of a plain ASCII path on
+    // Windows, where a Windows build of a Linux tool can mishandle a path
+    // like C:\Users\Евгени\..., else the machine's; elsewhere the user's
+    // alone (ultra review, 22 November 2026: on Linux the machine's was
+    // /usr/share, not writable)
     private static String TempRoot() {
         String temp = System.IO.Path.GetTempPath();
+        if (System.IO.Path.DirectorySeparatorChar != '\\') {
+            return temp;
+        }
         foreach (char c in temp) {
             if (c > 0x7E) {
                 return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
@@ -54,8 +60,54 @@ public class HBShape : IShaper, IHarfBuzz {
         return temp;
     }
 
-    private static String Quote(String argument) {
-        return "\"" + argument + "\"";
+    // A folder of the user's alone where the system has modes of files,
+    // as the Go port's MkdirTemp makes: other users of the machine do not
+    // read the text being shaped (ultra review, 22 November 2026)
+    private static void CreatePrivateDirectory(String dir) {
+#if NET7_0_OR_GREATER
+        if (!OperatingSystem.IsWindows()) {
+            Directory.CreateDirectory(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            return;
+        }
+#endif
+        Directory.CreateDirectory(dir);
+    }
+
+    // An argument as Windows' rules of a command line read it back, as one,
+    // whatever it holds: its quotes escaped, and the backslashes before them
+    // and at its end doubled; .NET parses arguments by the same rules on
+    // every system (ultra review, 22 November 2026: a quote in a language
+    // could add options of hb-shape's)
+    internal static String Quote(String argument) {
+        StringBuilder sb = new StringBuilder("\"");
+        int backslashes = 0;
+        foreach (char c in argument) {
+            if (c == '\\') {
+                backslashes++;
+            } else if (c == '"') {
+                sb.Append('\\', 2 * backslashes + 1).Append('"');
+                backslashes = 0;
+            } else {
+                sb.Append('\\', backslashes).Append(c);
+                backslashes = 0;
+            }
+        }
+        sb.Append('\\', 2 * backslashes).Append('"');
+        return sb.ToString();
+    }
+
+    // Whether the language is a BCP 47 tag of its letters, digits and
+    // hyphens, as hb-shape is given it: else none is given
+    internal static bool IsLanguageTag(String language) {
+        if (String.IsNullOrEmpty(language) || language.Length > 35) {
+            return false;
+        }
+        foreach (char c in language) {
+            if (!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-')) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Runs hb-shape with the arguments and waits for it to end; what it
@@ -156,7 +208,7 @@ public class HBShape : IShaper, IHarfBuzz {
     /// <returns>the glyphs of each run, in font units.</returns>
     public IList<HarfBuzzGlyph[]> ShapeRuns(byte[] font, IList<String> runs, String language) {
         String dir = System.IO.Path.Combine(TempRoot(), "pdfjet-hbshape-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(dir);
+        CreatePrivateDirectory(dir);
         try {
             StringBuilder input = new StringBuilder();
             foreach (String run in runs) {
@@ -170,8 +222,11 @@ public class HBShape : IShaper, IHarfBuzz {
             List<String> arguments = new List<String> {
                 "--font-file=" + fontPath, "--text-file=" + inPath, "--output-file=" + outPath,
                 "--no-glyph-names", "--output-format=json",
+                // Left to right, as ComplexText draws, not guessed: an Arabic
+                // or Hebrew run would come back right to left
+                "--direction=ltr",
             };
-            if (!String.IsNullOrEmpty(language)) {
+            if (IsLanguageTag(language)) {
                 arguments.Add("--language=" + language);
             }
             Run(arguments.ToArray());

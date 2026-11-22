@@ -87,5 +87,19 @@ public class HBShapeTest {
         pdf.Complete();
         Assert.True(output.ToArray().Length > 1000);
     }
+
+    // An argument comes back whole, as Windows' rules of a command line read
+    // it, whatever quotes and backslashes it holds (ultra review, 22
+    // November 2026: a quote could add options of hb-shape's)
+    [Fact]
+    public void QuotesEachArgumentWhole() {
+        Assert.Equal("\"plain\"", HBShape.Quote("plain"));
+        Assert.Equal("\"a\\\"b\"", HBShape.Quote("a\"b"));
+        Assert.Equal("\"C:\\dir\\\\\"", HBShape.Quote("C:\\dir\\"));
+        Assert.Equal("\"a\\\\\\\"b\"", HBShape.Quote("a\\\"b"));
+        Assert.True(HBShape.IsLanguageTag("hi") && HBShape.IsLanguageTag("zh-Hant-TW"));
+        Assert.False(HBShape.IsLanguageTag("hi\" --output-file=x \""));
+        Assert.False(HBShape.IsLanguageTag(""));
+    }
 }
 }

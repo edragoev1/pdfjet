@@ -89,5 +89,57 @@ public class HarfBuzzPackageTest {
         }
     }
 
+
+    // The engine keeps the fonts of the last documents only, never all of a
+    // server's, each of its own array (ultra review, 22 November 2026)
+    [Fact]
+    public void KeepsTheLastFontsOnly() {
+        byte[] file = File.ReadAllBytes(TestSupport.RepoPath(LANGUAGES[1][2]));
+        PDFjet.HarfBuzz.HarfBuzzEngine engine = new PDFjet.HarfBuzz.HarfBuzzEngine();
+        for (int i = 0; i < 30; i++) {
+            engine.ShapeRuns((byte[]) file.Clone(), new[] {"ក"}, "km");
+            Assert.True(engine.FontsKept <= 8, "after " + (i + 1) + ": " + engine.FontsKept);
+        }
+    }
+
+    // Hebrew in a paragraph, of a fallback font, shaped left to right, as
+    // ComplexText draws, by the package and hb-shape alike, and the lines
+    // broken without an error (ultra review, 22 November 2026)
+    [Fact]
+    public void HebrewInAParagraphIsShapedLeftToRight() {
+        byte[][] files = {
+            File.ReadAllBytes(TestSupport.RepoPath(LANGUAGES[0][2])),
+            File.ReadAllBytes(TestSupport.RepoPath(WORLD + "IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.otf")),
+        };
+        ShapingRequest request = new ShapingRequest("שלום עולם नमस्ते दुनिया", "hi", files, 12f, 80f);
+        List<ShapedLine> got = ComplexText.HarfBuzzPackage.Shape(request);
+        Assert.True(got.Count >= 2, got.Count + " lines");
+        HBShape hbShape = new HBShape();
+        try {
+            hbShape.GetVersion();
+        } catch (InvalidOperationException) {
+            return;
+        }
+        List<ShapedLine> want = hbShape.Shape(request);
+        Assert.Equal(want.Count, got.Count);
+        for (int i = 0; i < want.Count; i++) {
+            Assert.Equal(want[i].Glyphs, got[i].Glyphs);
+            Assert.Equal(want[i].Start, got[i].Start);
+        }
+    }
+
+    // A Thai line with half of an emoji, to be broken, is drawn, not a
+    // failed document (ultra review, 22 November 2026)
+    [Fact]
+    public void AThaiLineWithALoneSurrogateIsDrawn() {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        Font thai = new Font(pdf, TestSupport.RepoPath(WORLD + "IBMPlexSansThai/IBMPlexSansThai-Regular.otf"));
+        thai.SetSize(12f);
+        string text = "ข้อ ๑ มนุษย์ทั้งหลายเกิดมามีอิสระและเสมอภาคกันในเกียรติศักดิ์และสิทธิ\uD83D ต่างมีเหตุผลและมโนธรรม";
+        new TextBlock(thai, text).SetWidth(120f).SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        Assert.True(output.ToArray().Length > 1000);
+    }
 }
 }   // End of namespace PDFjet.NET

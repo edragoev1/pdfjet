@@ -39,25 +39,49 @@ func NewShaper() pdfjet.Shaper {
 	return pdfjet.NewHarfBuzzShaper(&goText{faces: map[*byte]*font.Face{}})
 }
 
+// maxFaces is how many faces goText keeps: a document's fonts, read once
+// for all its paragraphs, and never all the fonts of a server's documents,
+// each of its own file (ultra review, 22 November 2026)
+const maxFaces = 8
+
 // goText is the HarfBuzz of go-text/typesetting: the face of each font file
-// read once, kept by the address of the file's first byte.
+// read once, kept by the address of the file's first byte, the last maxFaces
+// used.
 type goText struct {
 	lock  sync.Mutex
 	faces map[*byte]*font.Face
+	order []*byte // Least recently used first
 }
 
 func (g *goText) face(file []byte) (*font.Face, error) {
 	g.lock.Lock()
 	defer g.lock.Unlock()
-	if face, ok := g.faces[&file[0]]; ok {
+	key := &file[0]
+	if face, ok := g.faces[key]; ok {
+		g.used(key)
 		return face, nil
 	}
 	face, err := font.ParseTTF(bytes.NewReader(file))
 	if err != nil {
 		return nil, err
 	}
-	g.faces[&file[0]] = face
+	if len(g.order) >= maxFaces {
+		delete(g.faces, g.order[0])
+		g.order = g.order[1:]
+	}
+	g.faces[key] = face
+	g.order = append(g.order, key)
 	return face, nil
+}
+
+// used moves the key to the end of order, the most recently used
+func (g *goText) used(key *byte) {
+	for i, k := range g.order {
+		if k == key {
+			g.order = append(append(g.order[:i:i], g.order[i+1:]...), key)
+			return
+		}
+	}
 }
 
 // scriptOf returns the script of the first character of the runes that has
