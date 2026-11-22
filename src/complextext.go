@@ -550,7 +550,7 @@ func (complexText *ComplexText) shaped(p int) ([]ShapedLine, error) {
 	}
 	shaper := complexText.shaper
 	if shaper == nil {
-		shaper = defaultShaper
+		shaper = defaultShaper()
 	}
 	fonts := complexText.fonts()
 	files := make([][]byte, len(fonts))

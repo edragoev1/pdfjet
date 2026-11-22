@@ -27,7 +27,7 @@ namespace PDFjet.NET {
 /// new ComplexText(hindi, text).SetFallbackFont(latin).SetShaper(new HBShape())
 /// </code>
 /// </summary>
-public class HBShape : IShaper {
+public class HBShape : IShaper, IHarfBuzz {
     private readonly String program;
 
     /// <summary>An HBShape that runs hb-shape of the PATH.</summary>
@@ -77,10 +77,10 @@ public class HBShape : IShaper {
         try {
             process = Process.Start(info);
         } catch (System.ComponentModel.Win32Exception e) {
-            throw new InvalidOperationException("ComplexText shapes with HarfBuzz's program hb-shape, which could not "
-                    + "be run: install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: "
-                    + "HarfBuzz's harfbuzz-win64 zip, its path given to HBShape), or give ComplexText a shaper of your "
-                    + "own with SetShaper, such as one that calls HarfBuzz through HarfBuzzSharp (Example_52). "
+            throw new InvalidOperationException("ComplexText needs HarfBuzz to shape this text: add the NuGet "
+                    + "package PDFjet.HarfBuzz, nothing to install, or install HarfBuzz's program hb-shape (Ubuntu: "
+                    + "apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: HarfBuzz's harfbuzz-win64 "
+                    + "zip, its path given to HBShape), or give ComplexText a shaper of your own with SetShaper. "
                     + e.Message, e);
         }
         using (process) {
@@ -105,16 +105,6 @@ public class HBShape : IShaper {
         String text = Run("--version");
         int end = text.IndexOf('\n');
         return (end >= 0 ? text.Substring(0, end) : text).Trim();
-    }
-
-    // A glyph shaped, in points from the start of the text
-    private sealed class Glyph {
-        internal int id;
-        internal int font;
-        internal int cluster;   // The index in the text, in code points, of its cluster's first character
-        internal float x;
-        internal float y;
-        internal float advance;
     }
 
     // hb-shape's line of JSON, [{"g":1,"cl":0,"dx":0,"dy":0,"ax":259,"ay":0},...]:
@@ -153,108 +143,60 @@ public class HBShape : IShaper {
     /// font size and the width of the lines.</param>
     /// <returns>the lines, in order.</returns>
     public List<ShapedLine> Shape(ShapingRequest request) {
-        String text = request.Text;
-        if (text.IndexOf('\n') >= 0 || text.IndexOf('\r') >= 0) {
-            throw new ArgumentException("HBShape shapes a paragraph: a text without line feeds");
-        }
-        byte[][] files = request.FontFiles;
-        if (files.Length == 0) {
-            throw new ArgumentException("HBShape needs a font file");
-        }
-        OTF[] fonts = new OTF[files.Length];
-        for (int i = 0; i < files.Length; i++) {
-            fonts[i] = new OTF(new MemoryStream(files[i]));
-        }
-        int[] cps = DictionaryBreaks.CodePoints(text);
-        // The index in the text, in chars, of each code point, and of the end
-        int[] offsets = new int[cps.Length + 1];
-        for (int i = 0, at = 0; i < cps.Length; i++) {
-            offsets[i] = at;
-            at += (cps[i] > 0xFFFF) ? 2 : 1;
-            offsets[i + 1] = at;
-        }
+        return new HarfBuzzShaper(this).Shape(request);
+    }
 
-        // Each character in the first font that has it, else in the first; a
-        // mark in the font of the character it is on
-        int[] fontOf = new int[cps.Length];
-        for (int i = 0; i < cps.Length; i++) {
-            int c = cps[i];
-            UnicodeCategory category = (c <= 0xFFFF)
-                    ? CharUnicodeInfo.GetUnicodeCategory((char) c)
-                    : CharUnicodeInfo.GetUnicodeCategory(Char.ConvertFromUtf32(c), 0);
-            if (i > 0 && (category == UnicodeCategory.NonSpacingMark
-                    || category == UnicodeCategory.SpacingCombiningMark || category == UnicodeCategory.EnclosingMark)) {
-                fontOf[i] = fontOf[i - 1];
-                continue;
-            }
-            for (int k = 0; k < fonts.Length; k++) {
-                OTF otf = fonts[k];
-                if (category == UnicodeCategory.Control
-                        || (c >= otf.firstChar && c <= otf.lastChar && otf.unicodeToGID.Get(c) != 0)) {
-                    fontOf[i] = k;
-                    break;
-                }
-            }
-        }
-        // The runs of one font: start and end
-        List<int[]> runs = new List<int[]>();
-        for (int start = 0; start < cps.Length;) {
-            int end = start + 1;
-            while (end < cps.Length && fontOf[end] == fontOf[start]) {
-                end++;
-            }
-            runs.Add(new int[] {start, end});
-            start = end;
-        }
-
-        // Each font's runs shaped in one run of hb-shape, a run a line
+    /// <summary>
+    /// Shapes each run in the font with hb-shape, all of them in one run of
+    /// it, a run a line of its input file.
+    /// </summary>
+    /// <param name="font">the font file.</param>
+    /// <param name="runs">the runs of text.</param>
+    /// <param name="language">the language, or null.</param>
+    /// <returns>the glyphs of each run, in font units.</returns>
+    public IList<HarfBuzzGlyph[]> ShapeRuns(byte[] font, IList<String> runs, String language) {
         String dir = System.IO.Path.Combine(TempRoot(), "pdfjet-hbshape-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
-        Dictionary<int, List<int[]>> shapedRuns = new Dictionary<int, List<int[]>>();
         try {
-            for (int k = 0; k < fonts.Length; k++) {
-                List<int[]> list = new List<int[]>();
-                StringBuilder input = new StringBuilder();
-                foreach (int[] run in runs) {
-                    if (fontOf[run[0]] == k) {
-                        list.Add(run);
-                        for (int i = run[0]; i < run[1]; i++) {
-                            input.Append(Char.ConvertFromUtf32(cps[i]));
-                        }
-                        input.Append('\n');
-                    }
-                }
-                if (list.Count == 0) {
-                    continue;
-                }
-                String font = System.IO.Path.Combine(dir, "font" + k);
-                String inPath = System.IO.Path.Combine(dir, "in" + k + ".txt");
-                String outPath = System.IO.Path.Combine(dir, "out" + k + ".txt");
-                File.WriteAllBytes(font, files[k]);
-                File.WriteAllBytes(inPath, new UTF8Encoding(false).GetBytes(input.ToString()));
-                List<String> arguments = new List<String> {
-                    "--font-file=" + font, "--text-file=" + inPath, "--output-file=" + outPath,
-                    "--no-glyph-names", "--output-format=json",
-                };
-                if (!String.IsNullOrEmpty(request.Language)) {
-                    arguments.Add("--language=" + request.Language);
-                }
-                Run(arguments.ToArray());
-                List<String> lines = new List<String>();
-                foreach (String line in File.ReadAllText(outPath, new UTF8Encoding(false)).Split('\n')) {
-                    String l = line.Replace("\r", "");
-                    if (l.Length > 0) {
-                        lines.Add(l);
-                    }
-                }
-                if (lines.Count != list.Count) {
-                    throw new InvalidOperationException("hb-shape gave " + lines.Count + " lines for "
-                            + list.Count + " runs of text");
-                }
-                for (int i = 0; i < lines.Count; i++) {
-                    shapedRuns[list[i][0]] = ReadGlyphs(lines[i]);
+            StringBuilder input = new StringBuilder();
+            foreach (String run in runs) {
+                input.Append(run).Append('\n');
+            }
+            String fontPath = System.IO.Path.Combine(dir, "font");
+            String inPath = System.IO.Path.Combine(dir, "in.txt");
+            String outPath = System.IO.Path.Combine(dir, "out.txt");
+            File.WriteAllBytes(fontPath, font);
+            File.WriteAllBytes(inPath, new UTF8Encoding(false).GetBytes(input.ToString()));
+            List<String> arguments = new List<String> {
+                "--font-file=" + fontPath, "--text-file=" + inPath, "--output-file=" + outPath,
+                "--no-glyph-names", "--output-format=json",
+            };
+            if (!String.IsNullOrEmpty(language)) {
+                arguments.Add("--language=" + language);
+            }
+            Run(arguments.ToArray());
+            List<String> lines = new List<String>();
+            foreach (String line in File.ReadAllText(outPath, new UTF8Encoding(false)).Split('\n')) {
+                String l = line.Replace("\r", "");
+                if (l.Length > 0) {
+                    lines.Add(l);
                 }
             }
+            if (lines.Count != runs.Count) {
+                throw new InvalidOperationException("hb-shape gave " + lines.Count + " lines for "
+                        + runs.Count + " runs of text");
+            }
+            List<HarfBuzzGlyph[]> shaped = new List<HarfBuzzGlyph[]>();
+            foreach (String line in lines) {
+                List<int[]> read = ReadGlyphs(line);
+                HarfBuzzGlyph[] glyphs = new HarfBuzzGlyph[read.Count];
+                for (int i = 0; i < glyphs.Length; i++) {
+                    int[] g = read[i];
+                    glyphs[i] = new HarfBuzzGlyph(g[0], g[1], g[2], g[3], g[4]);
+                }
+                shaped.Add(glyphs);
+            }
+            return shaped;
         } finally {
             try {
                 Directory.Delete(dir, true);
@@ -264,74 +206,6 @@ public class HBShape : IShaper {
                 // Left too
             }
         }
-
-        // The glyphs of the runs in order, in points
-        List<Glyph> glyphs = new List<Glyph>();
-        float pen = 0f;
-        foreach (int[] run in runs) {
-            int k = fontOf[run[0]];
-            float scale = request.FontSize / fonts[k].unitsPerEm;
-            foreach (int[] g in shapedRuns[run[0]]) {
-                if (run[0] + g[1] >= run[1]) {
-                    throw new InvalidOperationException("hb-shape gave a glyph of a character past its run");
-                }
-                glyphs.Add(new Glyph {
-                    id = g[0], font = k, cluster = run[0] + g[1],
-                    x = pen + g[3] * scale, y = -g[4] * scale, advance = g[2] * scale,
-                });
-                pen += g[2] * scale;
-            }
-        }
-        return Lines(glyphs, cps, offsets, text.Length, request.Width);
-    }
-
-    // The lines no wider than the width: broken after a space, or between two
-    // words of Thai, Lao, Khmer or Burmese, the last place that fits; a word
-    // wider than a line alone on its line
-    private static List<ShapedLine> Lines(List<Glyph> glyphs, int[] cps, int[] offsets, int end, float width) {
-        HashSet<int> wordEnd = new HashSet<int>(DictionaryBreaks.WordEnds(cps));
-        List<ShapedLine> lines = new List<ShapedLine>();
-        for (int first = 0; first < glyphs.Count;) {
-            float lineStart = glyphs[first].x;
-            int last = glyphs.Count;
-            int lastBreak = -1;
-            for (int i = first; i < glyphs.Count; i++) {
-                Glyph g = glyphs[i];
-                if (i > first && glyphs[i - 1].cluster != g.cluster
-                        && (cps[g.cluster - 1] == ' ' || (wordEnd.Contains(g.cluster) && cps[g.cluster] != ' '))) {
-                    lastBreak = i;
-                }
-                if (cps[g.cluster] != ' ' && g.x + g.advance - lineStart > width && lastBreak > first) {
-                    last = lastBreak;
-                    break;
-                }
-            }
-            int lineEnd = (last < glyphs.Count) ? offsets[glyphs[last].cluster] : end;
-            // The width of the line without the spaces at its end
-            int visible = last;
-            while (visible > first && cps[glyphs[visible - 1].cluster] == ' ') {
-                visible--;
-            }
-            float lineWidth = 0f;
-            if (visible > first) {
-                Glyph g = glyphs[visible - 1];
-                lineWidth = g.x + g.advance - lineStart;
-            }
-            int n = last - first;
-            int[] fontIndexes = new int[n];
-            int[] ids = new int[n];
-            float[] positions = new float[2 * n];
-            for (int i = 0; i < n; i++) {
-                Glyph g = glyphs[first + i];
-                fontIndexes[i] = g.font;
-                ids[i] = g.id;
-                positions[2 * i] = g.x - lineStart;
-                positions[2 * i + 1] = g.y;
-            }
-            lines.Add(new ShapedLine(offsets[glyphs[first].cluster], lineEnd, fontIndexes, ids, positions, lineWidth));
-            first = last;
-        }
-        return lines;
     }
 }
 }   // End of namespace PDFjet.NET

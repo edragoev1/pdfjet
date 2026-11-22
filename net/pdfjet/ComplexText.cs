@@ -6,6 +6,8 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -60,8 +62,90 @@ namespace PDFjet.NET {
 /// </para>
 /// </summary>
 public class ComplexText : IDrawable {
-    // The shaper when none is set: HarfBuzz's program hb-shape
-    private static readonly IShaper DefaultShaper = new HBShape();
+    // The shaper of SetDefaultShaper; else the NuGet package PDFjet.HarfBuzz,
+    // found by its name, as PDFjet.Fonts.World is, when the program has it;
+    // else HarfBuzz's program hb-shape
+    private static volatile IShaper defaultShaperSet;
+    private static readonly Lazy<IShaper> harfBuzzPackage = new Lazy<IShaper>(LoadHarfBuzzPackage);
+
+    // The NuGet package PDFjet.HarfBuzz: an assembly for .NET Standard 2.0,
+    // with no reference to PDFjet, so that one build serves every framework,
+    // as PDFjet.Fonts.World does; its engine's one method, ShapeRuns(byte[]
+    // font, string[] runs, string language), gives each run's glyphs as ints,
+    // five a glyph: the glyph, its cluster in code points in its run, its
+    // advance and its two offsets, in font units
+    internal const String HARFBUZZ_ASSEMBLY = "PDFjet.HarfBuzz";
+    internal const String HARFBUZZ_TYPE = "PDFjet.HarfBuzz.HarfBuzzEngine";
+
+    private sealed class PackageHarfBuzz : IHarfBuzz {
+        private readonly Object engine;
+        private readonly MethodInfo shapeRuns;
+
+        internal PackageHarfBuzz(Object engine, MethodInfo shapeRuns) {
+            this.engine = engine;
+            this.shapeRuns = shapeRuns;
+        }
+
+        public IList<HarfBuzzGlyph[]> ShapeRuns(byte[] font, IList<String> runs, String language) {
+            String[] texts = new String[runs.Count];
+            runs.CopyTo(texts, 0);
+            int[][] shaped;
+            try {
+                shaped = (int[][]) shapeRuns.Invoke(engine, new Object[] {font, texts, language});
+            } catch (TargetInvocationException e) when (e.InnerException != null) {
+                throw new InvalidOperationException("PDFjet.HarfBuzz: " + e.InnerException.Message, e.InnerException);
+            }
+            List<HarfBuzzGlyph[]> list = new List<HarfBuzzGlyph[]>();
+            foreach (int[] run in shaped) {
+                HarfBuzzGlyph[] glyphs = new HarfBuzzGlyph[run.Length / 5];
+                for (int i = 0; i < glyphs.Length; i++) {
+                    glyphs[i] = new HarfBuzzGlyph(run[5 * i], run[5 * i + 1], run[5 * i + 2], run[5 * i + 3], run[5 * i + 4]);
+                }
+                list.Add(glyphs);
+            }
+            return list;
+        }
+    }
+
+    private static IShaper LoadHarfBuzzPackage() {
+        try {
+            Assembly assembly = Assembly.Load(new AssemblyName(HARFBUZZ_ASSEMBLY));
+            Type type = assembly.GetType(HARFBUZZ_TYPE);
+            MethodInfo method = type?.GetMethod("ShapeRuns", new Type[] {typeof(byte[]), typeof(String[]), typeof(String)});
+            if (method != null && method.ReturnType == typeof(int[][])) {
+                return new HarfBuzzShaper(new PackageHarfBuzz(Activator.CreateInstance(type), method));
+            }
+        } catch (FileNotFoundException) {
+            // The program has not the package
+        } catch (FileLoadException) {
+            // Nor one that loads
+        } catch (BadImageFormatException) {
+            // Nor
+        }
+        return null;
+    }
+
+    // The shaper of the package PDFjet.HarfBuzz, null where the program has it not
+    internal static IShaper HarfBuzzPackage {
+        get { return harfBuzzPackage.Value; }
+    }
+
+    private static IShaper DefaultShaper {
+        get {
+            return defaultShaperSet ?? harfBuzzPackage.Value ?? new HBShape();
+        }
+    }
+
+    /// <summary>
+    /// Sets the shaper of every ComplexText given none. Without it, a
+    /// ComplexText shapes with the NuGet package PDFjet.HarfBuzz, when the
+    /// program has it, HarfBuzz with nothing to install, and else with
+    /// HarfBuzz's program hb-shape, HBShape.
+    /// </summary>
+    /// <param name="shaper">the shaper, or null for the one PDFjet chooses.</param>
+    public static void SetDefaultShaper(IShaper shaper) {
+        defaultShaperSet = shaper;
+    }
 
     private readonly Font font;
     private Font fallbackFont;

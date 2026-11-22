@@ -70,8 +70,9 @@ fi
 stage=$PWD/out/nuget/stage
 build=$PWD/out/nuget/build
 worldStage=$PWD/out/nuget/stage-world
-rm -rf "$stage" "$worldStage" "$build" && mkdir -p "$stage/lib/net8.0" "$stage/lib/net48" "$stage/font-licenses" \
-    "$worldStage/lib/netstandard2.0" "$worldStage/font-licenses" "$build"
+harfBuzzStage=$PWD/out/nuget/stage-harfbuzz
+rm -rf "$stage" "$worldStage" "$harfBuzzStage" "$build" && mkdir -p "$stage/lib/net8.0" "$stage/lib/net48" "$stage/font-licenses" \
+    "$worldStage/lib/netstandard2.0" "$worldStage/font-licenses" "$harfBuzzStage/lib/netstandard2.0" "$build"
 
 # The sources of the library and the fonts of the tag, built apart from this
 # working tree; through a file, not a pipe, so that a failing archive stops.
@@ -110,6 +111,11 @@ for face in JP-Regular.otf KR-Regular.otf SC-Regular.otf TC-Regular.otf \
         exit 1
     fi
 done
+
+# The assembly of HarfBuzz for ComplexText, for .NET Standard 2.0
+dotnet build "$build/nuget/harfbuzz/PDFjet.HarfBuzz.csproj" -c release -p:TreatWarningsAsErrors=true \
+    "${sign[@]}" -p:FileVersion="$version" -p:InformationalVersion="$packageVersion"
+cp "$build/nuget/harfbuzz/bin/release/netstandard2.0/PDFjet.HarfBuzz.dll" "$harfBuzzStage/lib/netstandard2.0/"
 
 # The licenses of the fonts the DLLs carry, which go with every copy, as the
 # SIL Open Font License asks: one a family, as <Family>-<its file>, such as
@@ -187,6 +193,58 @@ if [ "$with" != found ]; then
 fi
 echo "Without PDFjet.Fonts.World: $without"
 
+# ComplexText shapes with PDFjet.HarfBuzz.dll beside PDFjet, found by its
+# name, without hb-shape; and without it and hb-shape, says what to add
+hbCheck=$build/hbcheck
+mkdir -p "$hbCheck"
+cat > "$hbCheck/HBCheck.csproj" <<PROJECT
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PDFjet"><HintPath>$stage/lib/net8.0/PDFjet.dll</HintPath></Reference>
+  </ItemGroup>
+  <!-- As the package PDFjet.HarfBuzz adds it, with its dependencies -->
+  <ItemGroup Condition="'\$(HarfBuzz)' == 'true'">
+    <Reference Include="PDFjet.HarfBuzz"><HintPath>$harfBuzzStage/lib/netstandard2.0/PDFjet.HarfBuzz.dll</HintPath></Reference>
+    <PackageReference Include="HarfBuzzSharp" Version="8.3.1.1" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
+  </ItemGroup>
+</Project>
+PROJECT
+cat > "$hbCheck/HBCheck.cs" <<'CODE'
+using System;
+using System.IO;
+using PDFjet.NET;
+
+PDF pdf = new PDF(new MemoryStream());
+Font khmer = new Font(pdf, new MemoryStream(File.ReadAllBytes(args[0])));
+try {
+    float[] xy = new ComplexText(khmer, "ភាសាខ្មែរ ជា ភាសា ផ្លូវការ").SetWidth(300f).SetLocation(50f, 50f)
+            .DrawOn(new Page(pdf, Letter.PORTRAIT));
+    Console.WriteLine(xy[1] > 50f ? "drawn" : "not drawn");
+} catch (InvalidOperationException e) {
+    Console.WriteLine(e.Message);
+}
+CODE
+khmerFont=$build/resources/fonts/world/NotoSansKhmer/NotoSansKhmer-Regular.otf
+dotnet build "$hbCheck/HBCheck.csproj" -c release -o "$hbCheck/without" --nologo -v quiet
+rm -rf "$hbCheck/obj"
+dotnet build "$hbCheck/HBCheck.csproj" -c release -p:HarfBuzz=true -o "$hbCheck/with" --nologo -v quiet
+dotnetDir=$(dirname "$(command -v dotnet)")
+hbWithout=$(cd "$hbCheck/without" && PATH="$dotnetDir" dotnet HBCheck.dll "$khmerFont")
+hbWith=$(cd "$hbCheck/with" && PATH="$dotnetDir" dotnet HBCheck.dll "$khmerFont")
+case $hbWithout in
+    *"PDFjet.HarfBuzz"*) ;;
+    *) echo "Without PDFjet.HarfBuzz.dll and hb-shape: $hbWithout" >&2; exit 1 ;;
+esac
+if [ "$hbWith" != drawn ]; then
+    echo "With PDFjet.HarfBuzz.dll: $hbWith" >&2; exit 1
+fi
+echo "With PDFjet.HarfBuzz, without hb-shape: $hbWith"
+
 # The nuspecs and the READMEs of the commit the DLLs are of
 # and the guide for AI coding assistants, llms-dotnet.txt, at the root of the
 # package PDFjet
@@ -196,6 +254,10 @@ cp "$build/nuget/world/README.md" "$build/nuget/icon.png" "$worldStage/"
 cp -r "$build/nuget/world/buildTransitive" "$worldStage/"
 sed -e "s/\$version\\$/$packageVersion/" -e "s/\$commit\\$/$commit/" "$build/nuget/world/PDFjet.Fonts.World.nuspec" \
     > "$worldStage/PDFjet.Fonts.World.nuspec"
+cp "$build/nuget/harfbuzz/README.md" "$build/nuget/icon.png" "$harfBuzzStage/"
+cp -r "$build/nuget/harfbuzz/buildTransitive" "$harfBuzzStage/"
+sed -e "s/\$version\\$/$packageVersion/" -e "s/\$commit\\$/$commit/" "$build/nuget/harfbuzz/PDFjet.HarfBuzz.nuspec" \
+    > "$harfBuzzStage/PDFjet.HarfBuzz.nuspec"
 rm -rf "$build"
 # dotnet pack needs a project, even one it does not build: a stub, with the
 # .nuspec doing the rest
@@ -209,9 +271,13 @@ cat > "$stage/pack.csproj" <<'PROJECT'
 </Project>
 PROJECT
 cp "$stage/pack.csproj" "$worldStage/pack.csproj"
+cp "$stage/pack.csproj" "$harfBuzzStage/pack.csproj"
 dotnet pack "$stage/pack.csproj" -p:NuspecFile=PDFjet.nuspec -p:NuspecBasePath=. \
     -o out/nuget --nologo -v quiet
 dotnet pack "$worldStage/pack.csproj" -p:NuspecFile=PDFjet.Fonts.World.nuspec -p:NuspecBasePath=. \
     -o out/nuget --nologo -v quiet
+dotnet pack "$harfBuzzStage/pack.csproj" -p:NuspecFile=PDFjet.HarfBuzz.nuspec -p:NuspecBasePath=. \
+    -o out/nuget --nologo -v quiet
 echo "out/nuget/PDFjet.$packageVersion.nupkg: $(du -h "out/nuget/PDFjet.$packageVersion.nupkg" | cut -f1), from $ref, commit $commit"
 echo "out/nuget/PDFjet.Fonts.World.$packageVersion.nupkg: $(du -h "out/nuget/PDFjet.Fonts.World.$packageVersion.nupkg" | cut -f1)"
+echo "out/nuget/PDFjet.HarfBuzz.$packageVersion.nupkg: $(du -h "out/nuget/PDFjet.HarfBuzz.$packageVersion.nupkg" | cut -f1)"

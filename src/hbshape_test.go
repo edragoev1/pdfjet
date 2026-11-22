@@ -177,8 +177,8 @@ func TestComplexTextShapesWithHBShapeWhenNoShaperIsSet(t *testing.T) {
 	doc.complete()
 }
 
-// Without a shaper set and without hb-shape, the PDF fails, saying both
-// what to install and that a shaper of the program's own can be given
+// Without a shaper set and without hb-shape, the PDF fails, saying what to
+// import, what to install, and that a shaper of the program's own can be given
 func TestComplexTextWithoutHBShapeSaysWhatToDo(t *testing.T) {
 	t.Chdir("..")
 	t.Setenv("PATH", t.TempDir())
@@ -187,7 +187,8 @@ func TestComplexTextWithoutHBShapeSaysWhatToDo(t *testing.T) {
 	khmer.SetSize(12)
 	NewComplexText(khmer, "ភាសាខ្មែរ").SetWidth(300).SetLocation(50, 50).DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	err := doc.pdf.Complete()
-	if err == nil || !strings.Contains(err.Error(), "apt install libharfbuzz-bin") || !strings.Contains(err.Error(), "SetShaper") {
+	if err == nil || !strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`) ||
+		!strings.Contains(err.Error(), "apt install libharfbuzz-bin") || !strings.Contains(err.Error(), "SetShaper") {
 		t.Errorf("%v", err)
 	}
 }

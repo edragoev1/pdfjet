@@ -8,9 +8,14 @@
 # resources/fonts have no tests, but go vet reads them and go test builds them.
 # Built with the tag pdfjet_nofonts, which leaves those fonts out of a program,
 # the library is checked by go vet again and by the tests of that tag.
+# The HarfBuzz module, harfbuzz/, a module of its own, is vetted and tested
+# next (its comparison with hb-shape runs where hb-shape is installed), and
+# Example_52, which imports it, built.
 cd "$(dirname "$0")/src" || exit 1
 
 go vet ./... ../resources/fonts/... || exit 1
 go vet -tags pdfjet_nofonts . ../resources/fonts || exit 1
 go test -tags pdfjet_nofonts -run '^TestNoFonts' . || exit 1
-go test ./... ../resources/fonts/...
+go test ./... ../resources/fonts/... || exit 1
+(cd ../harfbuzz && go vet ./... && go test ./...) || exit 1
+(cd examples/example52 && go vet . && go build -o /dev/null .)

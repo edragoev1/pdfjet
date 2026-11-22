@@ -10,10 +10,9 @@
       <HintPath>../../bin/release/net8.0/PDFjet.dll</HintPath>
     </Reference>
   </ItemGroup>
-  <!-- HarfBuzz shapes the Hindi and the Khmer: a dependency of this example
-       alone, never of PDFjet. The Linux library is a package of its own. -->
+  <!-- PDFjet.HarfBuzz, as a program adds the NuGet package beside PDFjet:
+       ComplexText's HarfBuzz, found by its name -->
   <ItemGroup>
-    <PackageReference Include="HarfBuzzSharp" Version="8.3.1.1" />
-    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
+    <ProjectReference Include="../../nuget/harfbuzz/PDFjet.HarfBuzz.csproj" />
   </ItemGroup>
 </Project>

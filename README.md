@@ -113,24 +113,25 @@ same output come in four languages, and none of them needs a third-party library
   (java.awt.font, HarfBuzz since Java 9), Android 12 and later (Android's
   own), and Swift on Apple platforms (Core Text). Java 8's java.awt.font has
   no HarfBuzz: it shapes with the older ICU layout engine, retired since, so
-  on Java 8 give `ComplexText` an `HBShape`. On a server, in any of the four languages and on
-  Linux, Windows or macOS, `HBShape` shapes with HarfBuzz itself, the
-  engine of Chrome and Android: it runs `hb-shape`, HarfBuzz's program,
-  installed with one line (`apt install libharfbuzz-bin`, `brew install
-  harfbuzz`, or HarfBuzz's Windows zip; HarfBuzz 15 or newer), and nothing
-  is linked into your program. In .NET, Go and Swift on Linux, which have no
-  text engine of their own, `ComplexText` uses it unless given another. In .NET and Go a shaper of your own can also
-  call a shaping package (HarfBuzzSharp, go-text), as Example_52 shows. The
+  on Java 8 give `ComplexText` an `HBShape`. .NET and Go have no text
+  engine of their own: add PDFjet's HarfBuzz, nothing to install, on
+  Windows, Linux and macOS, x64 and arm64 (AWS Graviton too): in .NET the
+  NuGet package `PDFjet.HarfBuzz` (HarfBuzz through HarfBuzzSharp), in Go
+  the one line `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`
+  (go-text/typesetting, HarfBuzz in pure Go). Without it, and in Swift on
+  Linux, `HBShape` shapes with HarfBuzz's own program, `hb-shape`, where it
+  is installed (`apt install libharfbuzz-bin`, `brew install harfbuzz`, or
+  HarfBuzz's Windows zip). Each gives the same glyphs at the same places,
+  and the same lines. The
   fonts come with the world fonts: Noto
   Sans, Regular and Bold, for Devanagari (Hindi, Marathi, Nepali), Bengali,
   Gurmukhi, Gujarati, Odia, Tamil, Telugu, Kannada, Malayalam, Sinhala,
   Khmer, Lao and Myanmar, the fonts HarfBuzz, the engine of Chrome and
   Android, is tested with. `Page.drawGlyphs` draws glyphs shaped by any
   engine, for a layout of your own. Example_52 draws a page of Hindi and a
-  page of Khmer with each. Khmer, Lao and Burmese, written without spaces
+  page of Khmer. Khmer, Lao and Burmese, written without spaces
   between words, break between their words by ICU's dictionaries, which
-  come with the world fonts: with java.awt.font, `HBShape`, Android and Core
-  Text.
+  come with the world fonts: with every engine.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics. For
   logos, icons and drawings, use SVG: it stays sharp at any size and in
   print, and it is far smaller and faster than a PNG with transparency,

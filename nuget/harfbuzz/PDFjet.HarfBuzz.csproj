@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- PDFjet.HarfBuzz.dll, the assembly of the NuGet package PDFjet.HarfBuzz
+       (package-nuget.sh): HarfBuzz for ComplexText, through HarfBuzzSharp,
+       whose packages bring HarfBuzz itself for Windows, Linux (glibc and
+       musl) and macOS, x64 and arm64, with nothing to install. PDFjet finds
+       it by its name, as it does PDFjet.Fonts.World, and calls its one
+       method; it has no reference to PDFjet, so that one assembly for .NET
+       Standard 2.0 serves .NET 8 and later and .NET Framework 4.8. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>library</OutputType>
+    <AssemblyName>PDFjet.HarfBuzz</AssemblyName>
+    <RootNamespace>PDFjet.HarfBuzz</RootNamespace>
+    <AssemblyVersion>9.0.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Company>PDFjet Software</Company>
+    <Product>PDFjet</Product>
+    <Copyright>Copyright (c) 2026 PDFjet Software</Copyright>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="HarfBuzzSharp" Version="8.3.1.1" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
+  </ItemGroup>
+</Project>

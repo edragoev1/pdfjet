@@ -64,21 +64,6 @@ public class HBShapeTest {
         }
     }
 
-    // Without a shaper set, ComplexText shapes with hb-shape
-    [Fact]
-    public void ComplexTextShapesWithHBShapeWhenNoShaperIsSet() {
-        if (Installed() == null) {
-            return;
-        }
-        PDF pdf = new PDF(new MemoryStream());
-        Font khmer = new Font(pdf, TestSupport.RepoPath(KHMER));
-        khmer.SetSize(12f);
-        float[] xy = new ComplexText(khmer, Udhr("khm")[2]).SetLanguage("km").SetWidth(300f).SetLocation(50f, 50f)
-                .DrawOn(new Page(pdf, Letter.PORTRAIT));
-        Assert.True(xy[1] > 50 + 3 * 12, "drawn down to " + xy[1]);
-        pdf.Complete();
-    }
-
     // ComplexText draws Hindi with an English word, in two fonts, and Khmer
     [Fact]
     public void DrawsComplexText() {
