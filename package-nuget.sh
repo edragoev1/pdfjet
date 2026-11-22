@@ -220,7 +220,7 @@ using System.IO;
 using PDFjet.NET;
 
 PDF pdf = new PDF(new MemoryStream());
-Font khmer = new Font(pdf, new MemoryStream(File.ReadAllBytes(args[0])));
+Font khmer = new Font(pdf, args[0]);
 try {
     float[] xy = new ComplexText(khmer, "ភាសាខ្មែរ ជា ភាសា ផ្លូវការ").SetWidth(300f).SetLocation(50f, 50f)
             .DrawOn(new Page(pdf, Letter.PORTRAIT));
