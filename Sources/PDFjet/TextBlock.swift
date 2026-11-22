@@ -368,13 +368,17 @@ public class TextBlock : Drawable {
         while lines.count > 1 && lines[lines.count - 1].isEmpty {
             lines.removeLast()
         }
-        for line in lines {
+        for given in lines {
+            var line = given
             if rightToLeft {
                 addRightToLeftLines(&textLines, line, textAreaWidth)
                 continue
             }
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
+            // Thai text that has none is given one at each end of a word, as
+            // ICU's dictionary of Thai finds them.
+            line = DictionaryBreaks.thaiWordBreaks(line)
             let text = line.replacingOccurrences(of: "\u{200B}", with: "", options: .literal)
             if stringWidth(text) <= textAreaWidth {
                 textLines.append(TextLine(font, text))
