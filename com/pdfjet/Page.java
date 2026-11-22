@@ -3336,11 +3336,11 @@ final public class Page {
      * <p>
      * What the outlines give: the text looks as the engine shaped it, on any
      * screen and in print, with no font in the document, as the font is only
-     * read for its outlines. In a tagged document, PDF/UA or a PDF/A of level
-     * A, the glyphs are part of the content they are drawn in, such as a
-     * paragraph begun with addBDC, or, drawn outside any, a paragraph of their
-     * own; the text they stand for is their actual text, in the language
-     * given, which screen readers read. What they do not give: the text
+     * read for its outlines. The text they stand for is their actual text, in
+     * the language given, in any document. In a tagged document, PDF/UA or a
+     * PDF/A of level A, the glyphs are part of the content they are drawn in,
+     * such as a paragraph begun with addBDC, or, drawn outside any, a
+     * paragraph of their own, and screen readers read their actual text. What they do not give: the text
      * cannot be selected, copied or searched, as it is not text. A document
      * that needs its exact text along can carry it with PDF.attachText.
      * <p>
@@ -3439,11 +3439,14 @@ final public class Page {
         return true;
     }
 
-    // In a tagged document, begins the marked content of glyphs drawn as
-    // outlines, with the text they stand for, and its language, as its actual
-    // text (ISO 32000-1, 14.9.4); endActualText ends it.
+    // In any document but inside an artifact, begins the marked content of
+    // glyphs drawn as outlines, with the text they stand for, and its
+    // language, as its actual text (ISO 32000-1, 14.9.4); endActualText ends
+    // it.
     void beginActualText(String text, String language) {
-        if (!pdf.isTagged() || artifactDepth != 0) {
+        // In any document, tagged or not: marked content of its own needs no
+        // structure, and gives the outlines their text
+        if (artifactDepth != 0) {
             return;
         }
         append("/Span <<");
@@ -3458,7 +3461,7 @@ final public class Page {
     }
 
     void endActualText() {
-        if (pdf.isTagged() && artifactDepth == 0) {
+        if (artifactDepth == 0) {
             append("EMC\n");
         }
     }

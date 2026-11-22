@@ -580,9 +580,6 @@ public class TextFrame implements Drawable {
         if (risesOutOfFrame(textLine)) {
             return false;
         }
-        Font font = textLine.font;
-        Font fallbackFont = textLine.fallbackFont;
-        float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
         float runLength = 0f;
         // Where the rest of the token starts, in a token broken into rows: the
@@ -700,7 +697,7 @@ public class TextFrame implements Drawable {
             spaceAfterRow(textLine);
         }
         addToRow(paragraph, textLine, buf.toString(), true);
-        xText += font.stringWidth(fallbackFont, fontSize, buf.toString());
+        xText += textLine.widthOf(buf.toString());
         return true;
     }
 
@@ -785,7 +782,7 @@ public class TextFrame implements Drawable {
         int end = TextBlock.nextCharacterBreak(token, 0);
         while (end < token.length()) {
             int next = TextBlock.nextCharacterBreak(token, end);
-            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, token.substring(0, next)) > w) {
+            if (textLine.widthOf(token.substring(0, next)) > w) {
                 break;
             }
             end = next;
@@ -1129,8 +1126,10 @@ public class TextFrame implements Drawable {
         return text.substring(0, end);
     }
 
+    // The width of the text in the text line's style: of its glyphs, for text
+    // such as Hindi, as the TextLine draws it
     private static float width(TextLine textLine, String text) {
-        return textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, text);
+        return textLine.widthOf(text);
     }
 
     // Splits the text of the text line into words, or, for CJK text, which has no

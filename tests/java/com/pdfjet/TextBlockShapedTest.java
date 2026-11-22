@@ -356,4 +356,121 @@ class TextBlockShapedTest {
         assertFalse(TestSupport.content(page).contains("1 0 0 1 -50 -692 cm"));
         pdf.complete();
     }
+
+    // A shaper as LetterShaper, which counts its calls and keeps the files
+    private static final class CountingShaper implements Shaper {
+        private final LetterShaper letters;
+        int calls;
+        byte[][] files;
+
+        CountingShaper(Font font) {
+            this.letters = new LetterShaper(font);
+        }
+
+        @Override
+        public List<ShapedLine> shape(ShapingRequest request) {
+            calls++;
+            files = request.getFontFiles();
+            return letters.shape(request);
+        }
+    }
+
+    // A TextFrame of Hindi words places them by their shaped widths, the
+    // widths they are drawn at, each word shaped once however often measured.
+    @Test
+    void textFrameMeasuresShapedWords() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, DEVANAGARI).setSize(10f);
+        CountingShaper shaper = new CountingShaper(font);
+        Shaping.defaultShaperSet = shaper;
+        try {
+            Paragraph paragraph = new Paragraph().add(new TextLine(font, "कख गघ ङच"));
+            TextFrame frame = new TextFrame(Arrays.asList(paragraph));
+            frame.setLocation(10f, 10f);
+            frame.setWidth(300f);
+            frame.setHeight(500f);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            frame.drawOn(page);
+            List<Float> xs = new ArrayList<>();
+            for (float[] place : places(TestSupport.content(page))) {
+                xs.add(place[1]);
+            }
+            // Each word drawn with the space after it, shaped with it: the test's
+            // shaper gives a space 7 points, as every letter
+            assertEquals(Arrays.asList(10f, 17f, 31f, 38f, 52f, 59f), xs, TestSupport.content(page));
+            assertTrue(shaper.calls <= 8, "shaped " + shaper.calls + " times");
+            pdf.complete();
+        } finally {
+            Shaping.defaultShaperSet = null;
+        }
+    }
+
+    // A TextBlock or a TextLine given another font, fallback font or language
+    // shapes its text again: the glyphs of one font are not drawn in another
+    @Test
+    void shapedTextIsShapedAgainInAnotherFont() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font regular = new Font(pdf, DEVANAGARI);
+        Font other = new Font(pdf, LATIN);
+        CountingShaper shaper = new CountingShaper(regular);
+        TextBlock block = new TextBlock(regular, "कख").setShaper(shaper).setWidth(200f);
+        block.drawOn(null);
+        block.drawOn(null);
+        assertEquals(1, shaper.calls);
+        block.setFont(other);
+        block.drawOn(null);
+        block.setLanguage("mr");
+        block.drawOn(null);
+        assertEquals(3, shaper.calls);
+        Shaping.defaultShaperSet = shaper;
+        try {
+            TextLine line = new TextLine(regular, "कख");
+            line.getWidth();
+            line.getWidth();
+            line.setFont(other);
+            line.getWidth();
+            assertEquals(5, shaper.calls);
+        } finally {
+            Shaping.defaultShaperSet = null;
+        }
+    }
+
+    // A fallback font the text engine cannot read, as a core font, is left out
+    // of the shaping: Hindi with a Latin core fallback is drawn
+    @Test
+    void aFallbackFontWithoutAFileIsLeftOut() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, DEVANAGARI);
+        CountingShaper shaper = new CountingShaper(font);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, "कख").setFallbackFont(new Font(pdf, CoreFont.HELVETICA)).setShaper(shaper)
+                .setWidth(200f).drawOn(page);
+        assertEquals(1, shaper.files.length);
+        assertEquals(2, count(TestSupport.content(page), " cm /Fm"));
+        pdf.complete();
+    }
+
+    // In an untagged document, the outlines of shaped text carry its text, as
+    // marked content of their own, which a reader may copy and search
+    @Test
+    void untaggedShapedTextCarriesItsText() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, DEVANAGARI);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, "कख").setShaper(new LetterShaper(font)).setWidth(200f).drawOn(page);
+        assertTrue(TestSupport.content(page).contains("/ActualText <" + Page.toUTF16Hex("क") + ">>> BDC"));
+        pdf.complete();
+    }
+
+    // A paragraph that starts with a byte order mark is not right to left
+    @Test
+    void aByteOrderMarkIsNotArabic() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, LATIN);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, "\uFEFFHello").setWidth(300f).setLocation(50f, 100f).drawOn(page);
+        Matcher m = Pattern.compile("1 0 0 1 (\\S+) \\S+ Tm").matcher(TestSupport.content(page));
+        assertTrue(m.find());
+        assertEquals(50f, Float.parseFloat(m.group(1)));
+    }
 }

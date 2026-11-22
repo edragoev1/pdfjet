@@ -463,7 +463,7 @@ public class TextColumn implements Drawable {
     }
 
     private static float width(TextLine textLine, String text) {
-        return textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, text);
+        return textLine.widthOf(text);   // Of its glyphs, for text such as Hindi
     }
 
     private static String trimTrailingSpaces(String text) {

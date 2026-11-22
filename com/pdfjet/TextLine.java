@@ -40,8 +40,8 @@ public class TextLine implements BaselineDrawable {
     boolean trailingSpace = false;
     // The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
     // outlines in place of the text; null for text drawn as text
-    ShapedText shaped;
-    private String shapedFor;           // The text shaped, when TextLine shaped it itself
+    ShapedText shaped;                  // A TextBlock's line, shaped with its paragraph
+    private Shaping.Pieces pieces;      // The texts this line and its copies shaped
     // True for a line of a right to left paragraph of a TextBlock, aligned to the right
     boolean rightToLeft;
     // The hard line breaks after the text line, of Markdown's two spaces, \
@@ -107,6 +107,7 @@ public class TextLine implements BaselineDrawable {
      */
     public TextLine setText(String text) {
         this.text = text;
+        this.pieces = null;
         this.altDescription = text;
         return this;
     }
@@ -336,45 +337,44 @@ public class TextLine implements BaselineDrawable {
     // it, which drawOn draws as outlines; null for text drawn as text. A
     // TextBlock's line was shaped with its paragraph.
     ShapedText shapedGlyphs() throws Exception {
-        if (shaped != null && (shapedFor == null || (shapedFor.equals(text) && shaped.size == fontSize))) {
+        if (shaped != null) {
             return shaped;
         }
+        return shapeOf(text);
+    }
+
+    // The text shaped in this line's style, as one line, or null for text
+    // drawn as text; shaped once, kept in the pieces this line shares with
+    // its copies, made again when the style changed.
+    ShapedText shapeOf(String text) throws Exception {
         if (text == null || !Shaping.needsShaper(text)) {
             return null;
         }
-        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
-        List<ShapedLine> lines = Shaping.shapeText(null, fonts, fontSize, language, text, Float.MAX_VALUE / 4);
-        ShapedLine joined = null;
-        // One line: the lines of a shaper that broke it anyway, joined
-        for (ShapedLine line : lines) {
-            if (joined == null) {
-                joined = line;
-                continue;
-            }
-            float x0 = joined.getWidth();
-            int a = joined.getGlyphs().length;
-            int n = a + line.getGlyphs().length;
-            int[] fontIndexes = new int[n];
-            int[] ids = new int[n];
-            float[] positions = new float[2 * n];
-            System.arraycopy(joined.getFontIndexes(), 0, fontIndexes, 0, a);
-            System.arraycopy(line.getFontIndexes(), 0, fontIndexes, a, n - a);
-            System.arraycopy(joined.getGlyphs(), 0, ids, 0, a);
-            System.arraycopy(line.getGlyphs(), 0, ids, a, n - a);
-            System.arraycopy(joined.getPositions(), 0, positions, 0, 2 * a);
-            float[] more = line.getPositions();
-            for (int j = 0; j < more.length; j += 2) {
-                positions[2 * a + j] = x0 + more[j];
-                positions[2 * a + j + 1] = more[j + 1];
-            }
-            joined = new ShapedLine(joined.getStart(), line.getEnd(), fontIndexes, ids, positions, x0 + line.getWidth());
+        Shaping.Style style = new Shaping.Style(font, fallbackFont, fontSize, language);
+        if (pieces == null || !pieces.style.equals(style)) {
+            pieces = new Shaping.Pieces(style);
         }
-        if (joined == null) {
-            joined = new ShapedLine(0, text.length(), new int[0], new int[0], new float[0], 0f);
+        ShapedText glyphs = pieces.shaped.get(text);
+        if (glyphs == null) {
+            glyphs = Shaping.shapeOneLine(Shaping.shapingFonts(font, fallbackFont), fontSize, language, text);
+            pieces.shaped.put(text, glyphs);
         }
-        shaped = new ShapedText(joined, text, fonts, fontSize);
-        shapedFor = text;
-        return shaped;
+        return glyphs;
+    }
+
+    // The width of the text in this line's style: of its glyphs, for text
+    // such as Hindi a shaper shapes, else of its characters. What cannot be
+    // shaped is measured as text; drawOn says why it cannot be drawn.
+    float widthOf(String text) {
+        try {
+            ShapedText glyphs = shapeOf(text);
+            if (glyphs != null) {
+                return glyphs.line.getWidth();
+            }
+        } catch (Exception e) {
+            // Measured as text
+        }
+        return font.stringWidth(fallbackFont, fontSize, text);
     }
 
     /**
@@ -720,6 +720,7 @@ public class TextLine implements BaselineDrawable {
         textLine.uriActualText = uriActualText;
         textLine.uriAltDescription = uriAltDescription;
         textLine.structureType = structureType;
+        textLine.pieces = pieces;   // The words it shaped, shaped once
         textLine.pieceOf = (pieceOf != null) ? pieceOf : this;
         return textLine;
     }
@@ -890,7 +891,7 @@ public class TextLine implements BaselineDrawable {
     // past the spaces before it, and before the spaces after it. A text of
     // spaces alone spans its whole width.
     private float[] getVisibleSpan() {
-        float width = font.stringWidth(fallbackFont, fontSize, text);
+        float width = widthOf(text);
         int first = 0;
         while (first < text.length() && text.charAt(first) == ' ') {
             first++;
@@ -902,8 +903,8 @@ public class TextLine implements BaselineDrawable {
         if (first == last || (first == 0 && last == text.length())) {
             return new float[] {0f, width};
         }
-        float start = font.stringWidth(fallbackFont, fontSize, text.substring(0, first));
-        float end = font.stringWidth(fallbackFont, fontSize, text.substring(0, last));
+        float start = widthOf(text.substring(0, first));
+        float end = widthOf(text.substring(0, last));
         return new float[] {start, end};
     }
 
@@ -920,7 +921,7 @@ public class TextLine implements BaselineDrawable {
         if (isLastToken && drawn.endsWith(Single.space)) {
             drawn = drawn.substring(0, drawn.length() - 1);
         }
-        return font.stringWidth(fallbackFont, fontSize, drawn);
+        return widthOf(drawn);
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

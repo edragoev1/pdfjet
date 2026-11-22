@@ -75,7 +75,7 @@ class DrawGlyphsTest {
         assertTrue(content.contains("q 0.012 0 0 0.012 60 692 cm /Fm"), content);
         assertFalse(content.contains("BT"), content);
         assertFalse(content.contains("Tf"), content);
-        assertFalse(content.contains("BDC"), content);  // Untagged: just the shapes
+        assertTrue(content.contains("/ActualText <"), content);    // Untagged: with their text too
         pdf.complete();
         String doc = document(bos);
         assertFalse(doc.contains("/FontFile"), "no font program");

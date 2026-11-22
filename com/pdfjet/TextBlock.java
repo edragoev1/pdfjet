@@ -60,6 +60,9 @@ public class TextBlock implements Drawable {
     // The lines a shaper found, by paragraph, width and size, so that a
     // paragraph is shaped once however often the block is measured
     private Map<String, List<ShapedLine>> shapedLines;
+    // The font, fallback font and language the lines were shaped in: in
+    // another, they are shaped again
+    private Shaping.Style shapedStyle;
     // Why a paragraph could not be shaped, which drawOn fails the document with
     private Exception shapeError;
 
@@ -138,6 +141,7 @@ public class TextBlock implements Drawable {
      */
     public TextBlock setText(String text) {
         this.textContent = text;
+        this.shapedLines = null;    // The lines of another text are not needed again
         return this;
     }
 
@@ -552,7 +556,11 @@ public class TextBlock implements Drawable {
         }
         for (int i = 0; i < paragraph.length(); i++) {
             char c = paragraph.charAt(i);
-            if ((c >= 0x0590 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFDFF) || (c >= 0xFE70 && c <= 0xFEFF)) {
+            // The right to left blocks of bidi.go, Hebrew and Arabic; not
+            // U+FEFF, the byte order mark, past the Arabic forms
+            if ((c >= 0x0590 && c <= 0x05FF) || (c >= 0x0600 && c <= 0x07BF) || (c >= 0x07C0 && c <= 0x085F)
+                    || (c >= 0x0860 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFB4F) || (c >= 0xFB50 && c <= 0xFD3D)
+                    || (c >= 0xFD50 && c <= 0xFDCE) || (c >= 0xFDF0 && c <= 0xFDFC) || (c >= 0xFE70 && c <= 0xFEFC)) {
                 return true;
             }
             if (Character.isLetter(c)) {
@@ -566,7 +574,12 @@ public class TextBlock implements Drawable {
     // its lines, drawn as outlines: the block's font for the text, its
     // fallback font for the characters the font has not.
     private void addShapedLines(List<TextLine> textLines, String paragraph, float textAreaWidth) {
-        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
+        Font[] fonts = Shaping.shapingFonts(font, fallbackFont);
+        Shaping.Style style = new Shaping.Style(font, fallbackFont, 0f, language);
+        if (!style.equals(shapedStyle)) {
+            shapedLines = null;
+            shapedStyle = style;
+        }
         String key = textAreaWidth + "|" + fontSize + "|" + paragraph;
         List<ShapedLine> lines = shapedLines == null ? null : shapedLines.get(key);
         if (lines == null) {
