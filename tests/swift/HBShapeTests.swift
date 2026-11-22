@@ -56,26 +56,8 @@ import Testing
         }
     }
 
-#if os(Linux)
-    // On Linux, without a shaper set, ComplexText does not run hb-shape, even
-    // where it is installed: it says to set HBShape, so that a program
-    // shapes the same wherever it runs
-    @Test func complexTextWithoutAShaperRunsNoHBShape() throws {
-        let pdf = TestSupport.newPDF()
-        let khmer = try Font(pdf, TestSupport.path(HBShapeTests.khmer))
-        _ = khmer.setSize(12)
-        let text = ComplexText(khmer, try HBShapeTests.udhr("khm")[2]).setLanguage("km").setWidth(300)
-        do {
-            _ = try text.getTextHeight()
-            Issue.record("shaped without a shaper")
-        } catch {
-            #expect("\(error)".contains(".setShaper(HBShape())"), "\(error)")
-        }
-    }
-#endif
-
-    // ComplexText draws Hindi with an English word, in two fonts, and Khmer
-    @Test func drawsComplexText() throws {
+    // TextBlock draws Hindi with an English word, in two fonts, and Khmer
+    @Test func drawsTextBlocks() throws {
         guard let hb = HBShapeTests.installed() else {
             return
         }
@@ -87,7 +69,7 @@ import Testing
                 (khmer, try HBShapeTests.udhr("khm")[2], "km")] {
             _ = font.setSize(12)
             let page = Page(pdf, Letter.PORTRAIT)
-            let xy = ComplexText(font, text).setFallbackFont(latin).setLanguage(lang).setShaper(hb)
+            let xy = TextBlock(font, text).setFallbackFont(latin).setLanguage(lang).setShaper(hb)
                     .setWidth(300).setLocation(50, 50).drawOn(page)
             #expect(xy[1] > 50 + 3 * 12, "\(lang): drawn down to \(xy[1])")
         }

@@ -13,7 +13,7 @@ let package = Package(
         .library(name: "PDFjet", targets: ["PDFjet"]),
         // The fonts of every other script, IBM Plex Sans JP, KR, SC and TC,
         // IBM Plex Sans Arabic, Hebrew and Thai, and Noto Sans of the scripts
-        // ComplexText draws, Regular and Bold, about 54 MB, for an app
+        // TextBlock shapes, Regular and Bold, about 54 MB, for an app
         // that draws in them:
         // .product(name: "PDFjetFontsWorld", package: "pdfjet").
         .library(name: "PDFjetFontsWorld", targets: ["PDFjetFontsWorld"]),

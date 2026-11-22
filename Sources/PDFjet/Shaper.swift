@@ -7,14 +7,15 @@
 import Foundation
 
 ///
-/// A text engine that shapes text for ComplexText: it wraps the text to a
-/// width and finds, for each line, the glyphs of the fonts and their places.
-/// PDFjet does not shape scripts such as Hindi and Khmer itself; a shaper
-/// does, and ComplexText draws what it found.
+/// A text engine that shapes text for TextBlock and TextLine: it wraps the
+/// text to a width and finds, for each line, the glyphs of the fonts and their
+/// places. PDFjet does not shape scripts such as Hindi and Khmer itself; a
+/// shaper does, and PDFjet draws what it found, as outlines.
 ///
-/// ComplexText picks the platform's shaper by itself: Apple's Core Text on
-/// iPhone, iPad and Mac. Swift on Linux has none: a program gives its own,
-/// such as one that calls HarfBuzz.
+/// PDFjet picks the platform's shaper by itself: Apple's Core Text on
+/// iPhone, iPad and Mac. Swift on Linux has none: a program gives one, such
+/// as HBShape(), which runs HarfBuzz's program hb-shape, with setShaper or
+/// TextBlock.setDefaultShaper.
 ///
 public protocol Shaper {
     ///

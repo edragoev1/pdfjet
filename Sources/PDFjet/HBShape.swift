@@ -8,7 +8,7 @@
 import Foundation
 
 ///
-/// A Shaper for ComplexText that runs hb-shape, the program of HarfBuzz, the
+/// A Shaper for TextBlock and TextLine that runs hb-shape, the program of HarfBuzz, the
 /// text engine of Chrome and Android: the same shaping on every server, with
 /// nothing linked into the program, for Swift on Linux, which has no text
 /// engine of its own, and on a Mac for output the same as a Linux server's
@@ -20,7 +20,7 @@ import Foundation
 /// It talks with hb-shape through files, not pipes: the text of each font in
 /// a temporary file, the glyphs back in another.
 ///
-///     ComplexText(hindi, text).setFallbackFont(latin).setShaper(HBShape())
+///     TextBlock(hindi, text).setFallbackFont(latin).setShaper(HBShape())
 ///
 public final class HBShape: Shaper, Sendable {
     private let program: String
@@ -57,7 +57,7 @@ public final class HBShape: Shaper, Sendable {
         do {
             try process.run()
         } catch {
-            throw PDFjetError(message: "ComplexText's HBShape could not run hb-shape, the program of HarfBuzz: "
+            throw PDFjetError(message: "HBShape could not run hb-shape, the program of HarfBuzz: "
                     + "install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz), "
                     + "or give its path to HBShape. \(error)")
         }
@@ -68,7 +68,7 @@ public final class HBShape: Shaper, Sendable {
             if process.terminationStatus == 127 {   // env found no such program
                 throw PDFjetError(message: "HBShape runs HarfBuzz's program hb-shape, which is not "
                         + "installed: install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz), "
-                        + "its path given to HBShape, or give ComplexText a Shaper of your own with setShaper.")
+                        + "its path given to HBShape, or give TextBlock a Shaper of your own with setShaper.")
             }
             throw PDFjetError(message: "hb-shape: exit \(process.terminationStatus)"
                     + (message.isEmpty ? "" : ": " + message))
@@ -179,7 +179,7 @@ public final class HBShape: Shaper, Sendable {
             let inFile = dir.appendingPathComponent("in\(k).txt")
             try Data(request.fontFiles[k]).write(to: font)
             try Data(String(input).utf8).write(to: inFile)
-            // Left to right, as ComplexText draws, not guessed: an Arabic or
+            // Left to right, as TextBlock draws, not guessed: an Arabic or
             // Hebrew run would come back right to left, its clusters falling
             // (ultra review, 22 November 2026)
             var arguments = ["--font-file=" + font.path, "--text-file=" + inFile.path,

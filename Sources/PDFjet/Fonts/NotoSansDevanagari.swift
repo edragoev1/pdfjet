@@ -18,8 +18,8 @@ import Foundation
 /// the working directory, else from the bundle of PDFjetFontsWorld, and a
 /// font found in none says what to add.
 ///
-/// PDFjet does not shape Devanagari: these fonts are for ComplexText, which
-/// draws the text as Core Text shapes it with the same font file, for
+/// PDFjet does not shape Devanagari: these fonts are for TextBlock and TextLine,
+/// which draw the text as Core Text shapes it with the same font file, for
 /// Hindi, Marathi, Nepali and Sanskrit. Regular and Bold, from Noto's release, unmodified.
 ///
 public struct NotoSansDevanagari {

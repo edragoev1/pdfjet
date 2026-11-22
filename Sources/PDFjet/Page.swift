@@ -4003,6 +4003,42 @@ public class Page {
         append(" cm\n")
     }
 
+    // Draws the shaped line, its left at x and its baseline at baseline, in
+    // the language: the glyphs of each font, one run at a time, tagged with
+    // the line's text for screen readers and the copying of text. Returns
+    // false if the document failed.
+    func drawShapedLine(_ shaped: ShapedText, _ x: Float, _ baseline: Float, _ language: String?) -> Bool {
+        let line = shaped.line
+        if line.glyphs.isEmpty {
+            return true
+        }
+        beginActualText(shaped.text, language)
+        var from = 0
+        while from < line.glyphs.count {
+            var to = from
+            while to < line.glyphs.count && line.fontIndexes[to] == line.fontIndexes[from] {
+                to += 1
+            }
+            let index = line.fontIndexes[from]
+            if index >= 0 && index < shaped.fonts.count {
+                var run = [Int]()
+                var places = [Float]()
+                for i in from..<to {
+                    run.append(line.glyphs[i])
+                    places.append(x + line.positions[2 * i])
+                    places.append(baseline + line.positions[2 * i + 1])
+                }
+                if !glyphsDrawable(shaped.fonts[index], run, places) {
+                    return false
+                }
+                placeGlyphs(shaped.fonts[index], shaped.size, run, places)
+            }
+            from = to
+        }
+        endActualText()
+        return true
+    }
+
     func drawTextBlock(
             _ font: Font,
             _ fallbackFont: Font?,
@@ -4034,6 +4070,14 @@ public class Page {
         setTextFont(font, fontSize)
         var yText: Float = y
         for textLine in textLines {
+            if let shaped = textLine.shaped {
+                // Glyphs a shaper found, drawn as outlines, out of the text object
+                append("ET\n")
+                _ = drawShapedLine(shaped, x + textLine.xOffset, yText + font.getAscent(fontSize), language)
+                append("BT\n")
+                yText += leading
+                continue
+            }
             append("1 0 0 1 ")
             append(x + textLine.xOffset)
             append(" ")
@@ -4091,7 +4135,7 @@ public class Page {
         }
         for textLine in textLines {
             if textLine.underline || textLine.strikeout {
-                let width = hasFallbackFont ?
+                let width = textLine.shaped != nil ? textLine.shaped!.line.width : hasFallbackFont ?
                         font.stringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
                         font.stringWidth(fontSize, textLine.text)
                 if textLine.underline {

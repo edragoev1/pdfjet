@@ -51,7 +51,7 @@ enum BundledFonts {
                 family + "-" + $0 + ".otf"
             }
         }
-        // Noto Sans of the scripts ComplexText draws, Regular and Bold
+        // Noto Sans of the scripts TextBlock shapes, Regular and Bold
         for family in [
                 "NotoSansBengali", "NotoSansDevanagari", "NotoSansGujarati", "NotoSansGurmukhi", "NotoSansKannada", "NotoSansKhmer", "NotoSansLao", "NotoSansMalayalam", "NotoSansMyanmar", "NotoSansOriya", "NotoSansSinhala", "NotoSansTamil", "NotoSansTelugu"] {
             faces[family] = [family + "-Regular.otf", family + "-Bold.otf"]

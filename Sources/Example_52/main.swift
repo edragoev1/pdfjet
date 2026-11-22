@@ -11,7 +11,7 @@ import PDFjet
  * Example_52.swift
  *
  * Draws Hindi and Khmer, scripts PDFjet does not shape itself, with
- * ComplexText: Apple's Core Text shapes them -- conjuncts, vowel signs,
+ * TextBlock: Apple's Core Text shapes them -- conjuncts, vowel signs,
  * stacked consonants -- and PDFjet draws the glyphs it found, at their
  * places, as outlines read from the font file: sharp on screen and in print,
  * and read by screen readers, as each paragraph is tagged with its text and
@@ -65,7 +65,7 @@ public class Example_52 {
                 .setStructureType(StructElem.H1)
                 .setLocation(left, 60.0)
                 .drawOn(page)
-        TextLine(body, "Shaped by Core Text, drawn by PDFjet's ComplexText as outlines;"
+        TextLine(body, "Shaped by Core Text, drawn by PDFjet's TextBlock as outlines;"
                 + " the text is attached to the document.")
                 .setLocation(left, 80.0)
                 .drawOn(page)
@@ -79,19 +79,21 @@ public class Example_52 {
                 .components(separatedBy: "\n")
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
-        let text = ComplexText(script, paragraphs)
-                .setFallbackFont(latinFont)
-                .setLanguage(language)
-                .setWidth(width)
-                .setParagraphGap(0.5 * size)
+        // A TextBlock a paragraph: measured, without a page, and drawn on the
+        // next page when it does not fit on this one
         var y: Float = 96.0     // Below the heading, on the first page
-        while true {
-            text.setHeight(bottom - y).setLocation(left, y).drawOn(page)
-            if !(try text.hasMoreText()) {
-                break
+        for paragraph in paragraphs {
+            let text = TextBlock(script, paragraph)
+                    .setFallbackFont(latinFont)
+                    .setLanguage(language)
+                    .setWidth(width)
+                    .setLocation(left, y)
+            if text.drawOn(nil)[1] > bottom {
+                page = Page(pdf, Letter.PORTRAIT)
+                y = top
+                text.setLocation(left, y)
             }
-            page = Page(pdf, Letter.PORTRAIT)
-            y = top
+            y = text.drawOn(page)[1] + 0.5 * size
         }
         // A blank line between paragraphs, as plain text has them
         return paragraphs.map { $0 + "\n" }.joined(separator: "\n")

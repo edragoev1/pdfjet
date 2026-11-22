@@ -34,9 +34,9 @@ public class Font {
     // whether anything draws with it as a font, text or a stamp's: a font
     // drawGlyphs alone drew with is not written into the document.
     var drawnAsOutlines = false
-    // The font file, for ComplexText, whose text engine reads it: the path it
+    // The font file, for TextBlock and TextLine, whose text engine reads it: the path it
     // was loaded from, or the bytes it was loaded from, kept; read from the
-    // path the first time ComplexText needs it.
+    // path the first time a shaper needs it.
     private var fontPath: String?
     private var fontFile: [UInt8]?
     var referenced = false
@@ -363,7 +363,7 @@ public class Font {
     ///
     /// Constructor for OpenType and TrueType fonts, .otf and .ttf, from the
     /// bytes of the font file, such as an app's resource read whole. The font
-    /// keeps the bytes, as ComplexText gives them to the text engine that
+    /// keeps the bytes, as PDFjet gives them to the text engine that
     /// shapes it.
     ///
     /// - Parameter pdf: the PDF object that requires this font.
@@ -378,7 +378,7 @@ public class Font {
         setSize(size)
     }
 
-    // The bytes of the font file, for ComplexText: those it was loaded from,
+    // The bytes of the font file, for a shaper: those it was loaded from,
     // the TrueType font it keeps, or the file of its path read again; nil for
     // a font loaded from a stream, a core font or a CJK font.
     func shapingFile() throws -> [UInt8]? {
