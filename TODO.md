@@ -32,6 +32,14 @@ their tests.
   first, then PDFjet Pro: `./set-version.sh X` in pdfjet-pro, its tests
   against the release, CHANGELOG.md, the tag vX. The library's CHANGELOG
   says what changed in it, plainly.
+- **PDFjet's HarfBuzz, released with it, the same number.** Go: once the
+  tag vX of the library is pushed, `harfbuzz/go.mod` requires it
+  (`cd harfbuzz && go mod edit -require=github.com/edragoev1/pdfjet/v9@vX
+  && go mod tidy`, the replace kept for working in the repository),
+  committed, and that commit tagged `harfbuzz/vX`, as Go finds a module of
+  a folder by the folder's tag. .NET: `package-nuget.sh X` makes
+  `PDFjet.HarfBuzz.X.nupkg` beside `PDFjet` and `PDFjet.Fonts.World`, and
+  checks it draws Khmer without hb-shape; the three are uploaded together.
 - **The four ports agree.** `./check-examples.sh` builds and runs the
   examples and the unit tests of the four ports, compares the example PDFs
   with Java's, page by page and in every content stream, checks the PDF/UA and
@@ -70,16 +78,10 @@ their tests.
 
 ## Open
 
-- **Left of the word dictionaries (done for 9.2.1 in the four ports, 22
-  November 2026; CHANGELOG.md):**
-  - CI: install hb-shape (`apt install libharfbuzz-bin`) in the Linux jobs
-    of the four ports, so that HBShape's tests run there; they are skipped,
-    or pass without testing, where it is not installed.
-  - A Thai reader looks at the Thai UDHR's lines once, and at the letters
-    that change their form in GSUB (ญ, ฐ with a lower vowel), which PDFjet
-    does not read; and the same for Lao, Khmer and Burmese when a reader is
-    found.
-
+- **Thai's two letters of another form.** Thai is real text (TextBlock),
+  its lines Chrome's by ICU's dictionary, but ญ and ฐ take a form without
+  their lower part before a lower vowel, by the font's GSUB, which PDFjet
+  does not apply: a rare pair, drawn with the part that touches the vowel.
 - **One image used by many documents.** A batch of 1,000 letters, each
   with a 386 by 395 RGBA PNG logo, spends nearly nine tenths of each letter
   on the logo (8.78 ms a letter, 1.00 without it, in Java): the PNG is

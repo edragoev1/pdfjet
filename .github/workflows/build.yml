@@ -86,6 +86,11 @@ jobs:
             # bash -e stops at the first example that fails. The Java and C#
             # scripts compile the examples in parallel, so an example that does
             # not compile fails the job when the script runs it.
+            # HarfBuzz's program hb-shape, so that the tests of HBShape, and
+            # those that compare PDFjet's HarfBuzz with it, run, not skipped
+            - name: Install hb-shape
+              run: sudo apt-get install -y --no-install-recommends libharfbuzz-bin && hb-shape --version
+
             - name: Build and run the examples
               run: bash -e build-${{ matrix.port }}.sh
 
@@ -785,6 +790,11 @@ jobs:
             - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
               with:
                   go-version: "1.26"
+
+            # HarfBuzz's program hb-shape, so that the tests of HBShape, and
+            # those that compare PDFjet's HarfBuzz with it, run, not skipped
+            - name: Install hb-shape
+              run: sudo apt-get install -y --no-install-recommends libharfbuzz-bin && hb-shape --version
 
             - name: Unit tests
               run: |
