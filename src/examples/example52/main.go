@@ -32,7 +32,10 @@ import (
 // it found, at their places, as outlines read from the font file: sharp on
 // screen and in print, and read by screen readers, as each paragraph is
 // tagged with its text and its language. Go has no text engine of its own
-// that gives glyphs: goTextShaper below is the shaper ComplexText is given.
+// that gives glyphs: ComplexText runs HarfBuzz's program hb-shape when it is
+// installed (apt install libharfbuzz-bin, brew install harfbuzz), with no
+// code; where it is not, goTextShaper below is the shaper it is given, the
+// same glyphs at the same places.
 // The Universal Declaration of Human Rights in Hindi, then in Khmer: the
 // paragraphs flow from page to page, a paragraph cut where a page ends.
 //
@@ -190,14 +193,14 @@ func (shaper *goTextShaper) Shape(request pdfjet.ShapingRequest) ([]pdfjet.Shape
 
 // draw draws the Declaration in the language, from a new page, on as many
 // pages as it takes, and returns its text.
-func draw(pdf *pdfjet.PDF, heading, body *pdfjet.Font, shaper pdfjet.Shaper, name, lang,
+func draw(pdf *pdfjet.PDF, heading, body *pdfjet.Font, shaper pdfjet.Shaper, engine, name, lang,
 	scriptFile, textFile string) string {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(heading, "Universal Declaration of Human Rights, in "+name).
 		SetStructureType(structelem.H1).
 		SetLocation(left, 60).
 		DrawOn(page)
-	pdfjet.NewTextLine(body, "Shaped by go-text/typesetting, drawn by PDFjet's ComplexText as outlines;"+
+	pdfjet.NewTextLine(body, "Shaped by "+engine+", drawn by PDFjet's ComplexText as outlines;"+
 		" the text is attached to the document.").
 		SetLocation(left, 80).
 		DrawOn(page)
@@ -212,9 +215,11 @@ func draw(pdf *pdfjet.PDF, heading, body *pdfjet.Font, shaper pdfjet.Shaper, nam
 	text := pdfjet.NewComplexTextFromList(script, paragraphs).
 		SetFallbackFont(latinFont).
 		SetLanguage(lang).
-		SetShaper(shaper).
 		SetWidth(width).
 		SetParagraphGap(0.5 * size)
+	if shaper != nil {
+		text.SetShaper(shaper)
+	}
 	y := float32(96) // Below the heading, on the first page
 	for {
 		text.SetHeight(bottom-y).SetLocation(left, y).DrawOn(page)
@@ -278,10 +283,17 @@ func Example52() {
 	body := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	body.SetSize(9)
 
-	shaper := &goTextShaper{faces: make(map[*byte]*font.Face)}
-	hindi := draw(pdf, heading, body, shaper, "Hindi", "hi", devanagari,
+	// HarfBuzz's hb-shape, ComplexText's shaper when none is given, where it
+	// is installed; else go-text, a shaper of the program's own
+	var shaper pdfjet.Shaper
+	engine := "HarfBuzz's hb-shape"
+	if _, err := pdfjet.NewHBShape().Version(); err != nil {
+		shaper = &goTextShaper{faces: make(map[*byte]*font.Face)}
+		engine = "go-text/typesetting"
+	}
+	hindi := draw(pdf, heading, body, shaper, engine, "Hindi", "hi", devanagari,
 		"resources/data/udhr/udhr_hin.txt")
-	khmerText := draw(pdf, heading, body, shaper, "Khmer", "km", khmer,
+	khmerText := draw(pdf, heading, body, shaper, engine, "Khmer", "km", khmer,
 		"resources/data/udhr/udhr_khm.txt")
 
 	// The pages draw the text as outlines, which cannot be selected or

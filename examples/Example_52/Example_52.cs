@@ -24,7 +24,10 @@ using Buffer = HarfBuzzSharp.Buffer;
  * their places, as outlines read from the font file: sharp on screen and in
  * print, and read by screen readers, as each paragraph is tagged with its
  * text and its language. .NET has no text engine of its own that gives
- * glyphs: HarfBuzzShaper below is the shaper ComplexText is given. The
+ * glyphs: ComplexText runs HarfBuzz's program hb-shape when it is installed
+ * (apt install libharfbuzz-bin, brew install harfbuzz, or HarfBuzz's Windows
+ * zip), with no code; where it is not, HarfBuzzShaper below is the shaper it
+ * is given, the same glyphs at the same places. The
  * Universal Declaration of Human Rights in Hindi, then in Khmer: the
  * paragraphs flow from page to page, a paragraph cut where a page ends.
  *
@@ -53,10 +56,19 @@ public class Example_52 {
         Font body = new Font(pdf, IBMPlexSans.Regular);
         body.SetSize(9f);
 
-        HarfBuzzShaper shaper = new HarfBuzzShaper();
-        String hindi = Draw(pdf, heading, body, shaper, "Hindi", "hi", DEVANAGARI,
+        // HarfBuzz's hb-shape, ComplexText's shaper when none is given, where
+        // it is installed; else HarfBuzzSharp, a shaper of the program's own
+        IShaper shaper = null;
+        String engine = "HarfBuzz's hb-shape";
+        try {
+            new HBShape().GetVersion();
+        } catch (InvalidOperationException) {
+            shaper = new HarfBuzzShaper();
+            engine = "HarfBuzz (HarfBuzzSharp)";
+        }
+        String hindi = Draw(pdf, heading, body, shaper, engine, "Hindi", "hi", DEVANAGARI,
                 "resources/data/udhr/udhr_hin.txt");
-        String khmer = Draw(pdf, heading, body, shaper, "Khmer", "km", KHMER,
+        String khmer = Draw(pdf, heading, body, shaper, engine, "Khmer", "km", KHMER,
                 "resources/data/udhr/udhr_khm.txt");
 
         // The pages draw the text as outlines, which cannot be selected or
@@ -69,14 +81,14 @@ public class Example_52 {
 
     // Draws the Declaration in the language, from a new page, on as many
     // pages as it takes, and returns its text.
-    private static String Draw(PDF pdf, Font heading, Font body, IShaper shaper, String name,
+    private static String Draw(PDF pdf, Font heading, Font body, IShaper shaper, String engine, String name,
             String language, String scriptFile, String textFile) {
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(heading, "Universal Declaration of Human Rights, in " + name)
                 .SetStructureType(StructElem.H1)
                 .SetLocation(LEFT, 60f)
                 .DrawOn(page);
-        new TextLine(body, "Shaped by HarfBuzz (HarfBuzzSharp), drawn by PDFjet's ComplexText as outlines;"
+        new TextLine(body, "Shaped by " + engine + ", drawn by PDFjet's ComplexText as outlines;"
                 + " the text is attached to the document.")
                 .SetLocation(LEFT, 80f)
                 .DrawOn(page);
@@ -95,9 +107,11 @@ public class Example_52 {
         ComplexText text = new ComplexText(script, paragraphs)
                 .SetFallbackFont(latin)
                 .SetLanguage(language)
-                .SetShaper(shaper)
                 .SetWidth(WIDTH)
                 .SetParagraphGap(0.5f * SIZE);
+        if (shaper != null) {
+            text.SetShaper(shaper);
+        }
         float top = 96f;    // Below the heading, on the first page
         while (true) {
             text.SetHeight(BOTTOM - top).SetLocation(LEFT, top).DrawOn(page);

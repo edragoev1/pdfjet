@@ -110,8 +110,10 @@ same output come in four languages, and none of them needs a third-party library
   text and language (PDF/UA). The text cannot be selected or searched;
   `PDF.attachText` attaches the exact text to the document for anyone who
   needs it. The engine is built in for Java on servers and desktops
-  (java.awt.font), Android 12 and later (Android's own), and Swift on Apple
-  platforms (Core Text). On a server, in any of the four languages and on
+  (java.awt.font, HarfBuzz since Java 9), Android 12 and later (Android's
+  own), and Swift on Apple platforms (Core Text). Java 8's java.awt.font has
+  no HarfBuzz: it shapes with the older ICU layout engine, retired since, so
+  on Java 8 give `ComplexText` an `HBShape`. On a server, in any of the four languages and on
   Linux, Windows or macOS, `HBShape` shapes with HarfBuzz itself, the
   engine of Chrome and Android: it runs `hb-shape`, HarfBuzz's program,
   installed with one line (`apt install libharfbuzz-bin`, `brew install
