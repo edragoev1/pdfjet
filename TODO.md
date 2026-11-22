@@ -70,43 +70,15 @@ their tests.
 
 ## Open
 
-- **For 9.2.1: line breaking by word dictionaries for Thai, Lao, Khmer and
-  Burmese, in the four ports.** These scripts have no spaces between their
-  words. Without word boundaries a line is broken inside a word: PDFjet's
-  Thai claims support only with this done.
-  - Thai, measured 21 November 2026 on the Thai UDHR (UDHR in Unicode, 90
-    paragraphs, 9,290 characters, no zero width spaces), 300 points wide in
-    IBM Plex Sans Thai 12, each break checked against ICU's word boundaries:
-    `TextBlock` 165 breaks, 23 inside a word (14%: คุ้ม|ครอง, อิสรภา|พ,
-    ข|อง); Chrome 135 breaks, none inside a word.
-  - Lao, Khmer and Burmese go through `ComplexText`. Its shapers break the
-    lines: Android and Core Text between words already; java.awt.font
-    (JDK 25's BreakIterator) not at all in Lao, Khmer or Burmese (Thai
-    yes); the .NET and Go example shapers at spaces alone.
-  - The data: ICU's dictionaries (icu4c/source/data/brkitr/dictionaries,
-    Unicode license): thaidict 26,392 words, 484 KB; laodict 30,551,
-    660 KB; burmesedict 41,122, 1.1 MB; khmerdict 81,030, 2 MB (0.8 MB
-    gzipped together). Carried with the world fonts, in their packages
-    (resources/fonts/world, Maven's pdfjet-fonts-world, NuGet's
-    PDFjet.Fonts.World, Go's world package, Swift's PDFjetFontsWorld):
-    a program that draws none of these scripts neither carries nor loads
-    them.
-  - The engine: ICU's dictionary break engines (icu4c/source/common/
-    dictbe.cpp: Thai, Lao, Khmer, Burmese, one engine with each script's
-    settings: look ahead over words, words not in the dictionary, marks and
-    prefixes) ported, the same in the four ports. A simple maximal
-    matching was tried first: of ICU's word ends in each UDHR it found
-    Thai 98.9%, Lao 96.6%, Burmese 96.5%, Khmer 95.9%, with 1.3%, 3.2%,
-    3.4% and 5.8% more ends than ICU's, places inside words: not enough.
-  - The hooks: `TextBlock` (Thai) puts zero width spaces between the words
-    of a run that has none and breaks there as today; text with zero width
-    spaces is left as it is, Example_04 unchanged. `ComplexText`:
-    java.awt.font's LineBreakMeasurer given a BreakIterator of the
-    dictionary; the .NET and Go example shapers break at the dictionary's
-    word ends. Nothing changes for any other script.
-  - Tests: each script's UDHR with no break inside a word and the word ends
-    ICU's, the same lines in the four ports; Example_52's Khmer page broken
-    between words in Java.
+- **Left of the word dictionaries (done for 9.2.1 in the four ports, 22
+  November 2026; CHANGELOG.md):**
+  - CI: install hb-shape (`apt install libharfbuzz-bin`) in the Linux jobs
+    of the four ports, so that HBShape's tests run there; they are skipped,
+    or pass without testing, where it is not installed.
+  - A Thai reader looks at the Thai UDHR's lines once, and at the letters
+    that change their form in GSUB (ญ, ฐ with a lower vowel), which PDFjet
+    does not read; and the same for Lao, Khmer and Burmese when a reader is
+    found.
 
 - **One image used by many documents.** A batch of 1,000 letters, each
   with a 386 by 395 RGBA PNG logo, spends nearly nine tenths of each letter
