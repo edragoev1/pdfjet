@@ -41,6 +41,13 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   carries none of them. Tested against ICU 78.3: every run of the four
   scripts in their UDHR broken into ICU's words (2,381 runs, 7,144 word
   ends). The UDHR of Thai, Lao and Burmese added to resources/data/udhr.
+  And `ComplexText` in Java, with java.awt.font, breaks Lao, Khmer and
+  Burmese between their words: the JDK's line breaker breaks them nowhere
+  but at spaces (Thai it breaks by a dictionary of its own), so a phrase
+  wider than a line was broken inside a word; java.awt.font's
+  LineBreakMeasurer is now given the JDK's breaks and ICU's word ends.
+  Behavior change for those scripts in Java; tested on the Khmer UDHR, no
+  break inside a word.
 - **Swift builds where `Int` is 32 bits**: wasm32 and watchOS
   (`arm64_32`), where the Swift Package Index's builds of 9.1.9 failed on
   `Page.swift` ("integer literal '4294967295' overflows when stored into

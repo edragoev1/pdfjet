@@ -56,6 +56,35 @@ class DictionaryBreaksTest {
         }
     }
 
+    // java.awt.font, which breaks Khmer nowhere but at its spaces, breaks it
+    // between its words, where ICU's dictionary puts their ends
+    @Test
+    void awtShaperBreaksKhmerBetweenWords() throws Exception {
+        byte[] font = Files.readAllBytes(
+                TestSupport.file("resources/fonts/world/NotoSansKhmer/NotoSansKhmer-Regular.otf").toPath());
+        AwtShaper shaper = new AwtShaper();
+        int breaks = 0;
+        int inside = 0;
+        for (String paragraph : Files.readAllLines(
+                TestSupport.file("resources/data/udhr/udhr_khm.txt").toPath(), StandardCharsets.UTF_8)) {
+            if (paragraph.isEmpty()) {
+                continue;
+            }
+            List<ShapedLine> lines = shaper.shape(new ShapingRequest(paragraph, "km", new byte[][] {font}, 12f, 300f));
+            int[] cps = paragraph.codePoints().toArray();
+            java.util.Set<Integer> ends = new java.util.HashSet<>(DictionaryBreaks.wordEnds(cps));
+            for (int i = 0; i < lines.size() - 1; i++) {
+                int at = paragraph.codePointCount(0, lines.get(i).getEnd());
+                breaks++;
+                if (cps[at - 1] != ' ' && cps[at] != ' ' && !ends.contains(at)) {
+                    inside++;
+                }
+            }
+        }
+        assertTrue(breaks >= 50, breaks + " breaks");
+        assertEquals(0, inside, inside + " of " + breaks + " breaks inside a word");
+    }
+
     // Thai text without zero width spaces breaks between its words: the Thai
     // UDHR, each paragraph 300 points wide in IBM Plex Sans Thai 12, in the
     // lines Chrome breaks it into (tests/data/dictionarybreaks/thai-textblock-300.txt).

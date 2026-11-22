@@ -73,7 +73,9 @@ final class AwtShaper implements Shaper {
             return lines;
         }
         char[] chars = text.toCharArray();
-        LineBreakMeasurer measurer = new LineBreakMeasurer(styled.getIterator(), CONTEXT);
+        // The JDK's line breaks, and the ends of the words of Lao, Khmer and
+        // Burmese, which it breaks nowhere, by ICU's dictionaries
+        LineBreakMeasurer measurer = new LineBreakMeasurer(styled.getIterator(), new DictionaryLineBreaks(), CONTEXT);
         while (measurer.getPosition() < text.length()) {
             int start = measurer.getPosition();
             // The width of the line without the white space at its end
