@@ -62,8 +62,6 @@ public final class HBShape: Shaper, Sendable {
                     + "or give its path to HBShape. \(error)")
         }
         process.waitUntilExit()
-        try? outHandle.close()
-        try? errHandle.close()
         if process.terminationStatus != 0 {
             let message = (try? String(contentsOf: err, encoding: .utf8))?
                     .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
