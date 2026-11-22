@@ -40,8 +40,11 @@ namespace PDFjet.NET {
 ///     text.SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
 /// }
 /// </code>
-/// .NET has no text engine of its own that gives glyphs: SetShaper gives
-/// one, such as a shaper that calls HarfBuzz through HarfBuzzSharp.
+/// .NET has no text engine of its own that gives glyphs: without SetShaper,
+/// ComplexText runs HBShape, HarfBuzz's program hb-shape, installed on the
+/// server (apt install libharfbuzz-bin, brew install harfbuzz, or HarfBuzz's
+/// Windows zip); SetShaper gives another, such as a shaper that calls
+/// HarfBuzz through HarfBuzzSharp.
 /// Left-to-right scripts: Arabic and Hebrew are TextLine's and TextBlock's.
 /// <para>
 /// In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
@@ -57,6 +60,9 @@ namespace PDFjet.NET {
 /// </para>
 /// </summary>
 public class ComplexText : IDrawable {
+    // The shaper when none is set: HarfBuzz's program hb-shape
+    private static readonly IShaper DefaultShaper = new HBShape();
+
     private readonly Font font;
     private Font fallbackFont;
     private readonly List<String> paragraphs;
@@ -426,10 +432,6 @@ public class ComplexText : IDrawable {
             shapedSize = font.GetSize();
         }
         if (shapedLines[p] == null) {
-            if (shaper == null) {
-                throw new InvalidOperationException("ComplexText needs a text engine to shape the text, "
-                        + "given with SetShaper, such as one that calls HarfBuzz through HarfBuzzSharp.");
-            }
             Font[] fonts = Fonts();
             byte[][] files = new byte[fonts.Length][];
             for (int i = 0; i < fonts.Length; i++) {
@@ -439,7 +441,7 @@ public class ComplexText : IDrawable {
                             + "by path or from their bytes, as the text engine reads the same file.");
                 }
             }
-            shapedLines[p] = shaper.Shape(new ShapingRequest(paragraphs[p], language, files, shapedSize, width));
+            shapedLines[p] = (shaper ?? DefaultShaper).Shape(new ShapingRequest(paragraphs[p], language, files, shapedSize, width));
         }
         return shapedLines[p];
     }

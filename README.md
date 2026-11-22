@@ -116,7 +116,8 @@ same output come in four languages, and none of them needs a third-party library
   engine of Chrome and Android: it runs `hb-shape`, HarfBuzz's program,
   installed with one line (`apt install libharfbuzz-bin`, `brew install
   harfbuzz`, or HarfBuzz's Windows zip; HarfBuzz 15 or newer), and nothing
-  is linked into your program. In .NET and Go a shaper of your own can also
+  is linked into your program. In .NET, Go and Swift on Linux, which have no
+  text engine of their own, `ComplexText` uses it unless given another. In .NET and Go a shaper of your own can also
   call a shaping package (HarfBuzzSharp, go-text), as Example_52 shows. The
   fonts come with the world fonts: Noto
   Sans, Regular and Bold, for Devanagari (Hindi, Marathi, Nepali), Bengali,

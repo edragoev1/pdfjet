@@ -40,6 +40,9 @@ type HBShape struct {
 	Program string
 }
 
+// defaultShaper is ComplexText's shaper when none is set
+var defaultShaper Shaper = NewHBShape()
+
 // NewHBShape returns an HBShape that runs hb-shape of the PATH.
 func NewHBShape() *HBShape {
 	return &HBShape{Program: "hb-shape"}
@@ -58,9 +61,10 @@ func (hb *HBShape) Version() (string, error) {
 
 func (hb *HBShape) notRun(err error, stderr []byte) error {
 	if errors.Is(err, exec.ErrNotFound) {
-		return errors.New("ComplexText's HBShape could not find hb-shape, the program of HarfBuzz: " +
+		return errors.New("ComplexText shapes with HarfBuzz's program hb-shape, which is not installed: " +
 			"install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: " +
-			"HarfBuzz's harfbuzz-win64 zip), or give its path in HBShape.Program")
+			"HarfBuzz's harfbuzz-win64 zip, its path in HBShape.Program), or give ComplexText a shaper " +
+			"of your own with SetShaper, such as one that calls go-text/typesetting (Example_52)")
 	}
 	message := strings.TrimSpace(string(stderr))
 	if message != "" {

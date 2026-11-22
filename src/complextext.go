@@ -19,8 +19,9 @@ import (
 // text to a width and finds, for each line, the glyphs of the fonts and
 // their places. PDFjet does not shape scripts such as Hindi and Khmer itself;
 // a shaper does, and ComplexText draws what it found. Go has no text engine
-// of its own that gives glyphs: a program gives one, such as a shaper that
-// calls go-text/typesetting, HarfBuzz in Go.
+// of its own that gives glyphs: without one set, ComplexText runs HBShape,
+// HarfBuzz's program hb-shape, installed on the server; a program can give
+// its own, such as a shaper that calls go-text/typesetting, HarfBuzz in Go.
 type Shaper interface {
 	// Shape wraps the text to the width and shapes each line: the text, its
 	// language, the font files, the font size and the width of the lines are
@@ -98,8 +99,10 @@ type ShapedLine struct {
 //		text.SetLocation(50, 50).DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 //	}
 //
-// Go has no text engine of its own that gives glyphs: SetShaper gives one,
-// such as a shaper that calls go-text/typesetting. Left-to-right scripts:
+// Go has no text engine of its own that gives glyphs: without SetShaper,
+// ComplexText runs HBShape, HarfBuzz's program hb-shape, installed on the
+// server (apt install libharfbuzz-bin, brew install harfbuzz); SetShaper
+// gives another, such as a shaper that calls go-text/typesetting. Left-to-right scripts:
 // Arabic and Hebrew are TextLine's and TextBlock's.
 //
 // In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
@@ -236,7 +239,7 @@ func (complexText *ComplexText) SetStructureType(structureType structelem.Struct
 	return complexText
 }
 
-// SetShaper sets the text engine that shapes the text.
+// SetShaper sets the text engine that shapes the text: HBShape when none is set.
 func (complexText *ComplexText) SetShaper(shaper Shaper) *ComplexText {
 	complexText.shaper = shaper
 	complexText.shapedLines = nil
@@ -545,9 +548,9 @@ func (complexText *ComplexText) shaped(p int) ([]ShapedLine, error) {
 	if complexText.shapedLines[p] != nil {
 		return complexText.shapedLines[p], nil
 	}
-	if complexText.shaper == nil {
-		return nil, errors.New("ComplexText needs a text engine to shape the text, given with SetShaper, " +
-			"such as one that calls go-text/typesetting.")
+	shaper := complexText.shaper
+	if shaper == nil {
+		shaper = defaultShaper
 	}
 	fonts := complexText.fonts()
 	files := make([][]byte, len(fonts))
@@ -563,7 +566,7 @@ func (complexText *ComplexText) shaped(p int) ([]ShapedLine, error) {
 		files[i] = file
 	}
 	text := complexText.paragraphs[p]
-	lines, err := complexText.shaper.Shape(ShapingRequest{Text: text, Language: complexText.language,
+	lines, err := shaper.Shape(ShapingRequest{Text: text, Language: complexText.language,
 		FontFiles: files, FontSize: complexText.shapedSize, Width: complexText.width})
 	if err != nil {
 		return nil, err

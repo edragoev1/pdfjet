@@ -147,6 +147,8 @@ func TestComplexTextTheFontFileIsWhatTheFontWasLoadedFrom(t *testing.T) {
 }
 
 func TestComplexTextWithoutAShaperOrAFontFileItSaysSo(t *testing.T) {
+	// No shaper set and no hb-shape, which ComplexText runs then
+	t.Setenv("PATH", t.TempDir())
 	doc := testNewDoc()
 	fromPath := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexLatin))
 	if _, err := NewComplexText(fromPath, "x").GetTextHeight(); err == nil || !strings.Contains(err.Error(), "SetShaper") {

@@ -262,7 +262,10 @@ public class ComplexTextTest {
         Font plex = new Font(pdf, (Stream) new FileStream(LATIN, FileMode.Open, FileAccess.Read));
         Font fromPath = new Font(pdf, LATIN);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Assert.Throws<InvalidOperationException>(() => new ComplexText(fromPath, "x").DrawOn(page));
+        // No shaper of its own: hb-shape, not installed here, says what to do
+        InvalidOperationException missing = Assert.Throws<InvalidOperationException>(
+                () => new ComplexText(fromPath, "x").SetShaper(new HBShape("/no/such/hb-shape")).DrawOn(page));
+        Assert.Contains("SetShaper", missing.Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentException>(
                 () => new ComplexText(plex, "x").SetShaper(new FixedShaper()).DrawOn(page));
     }

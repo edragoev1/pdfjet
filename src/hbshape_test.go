@@ -162,3 +162,32 @@ func TestHBShapeDrawsComplexText(t *testing.T) {
 		t.Error("the PDF is empty")
 	}
 }
+
+// Without a shaper set, ComplexText shapes with hb-shape
+func TestComplexTextShapesWithHBShapeWhenNoShaperIsSet(t *testing.T) {
+	testHBShape(t)
+	doc := testNewDoc()
+	khmer := NewFontFromFile(doc.pdf, testNotoKhmer)
+	khmer.SetSize(12)
+	page := NewPage(doc.pdf, letter.Portrait())
+	xy := NewComplexText(khmer, testUDHR(t, "khm")[2]).SetLanguage("km").SetWidth(300).SetLocation(50, 50).DrawOn(page)
+	if xy[1] <= 50+3*12 || !strings.Contains(testContent(page), "/Fm") {
+		t.Errorf("drawn down to %v", xy[1])
+	}
+	doc.complete()
+}
+
+// Without a shaper set and without hb-shape, the PDF fails, saying both
+// what to install and that a shaper of the program's own can be given
+func TestComplexTextWithoutHBShapeSaysWhatToDo(t *testing.T) {
+	t.Chdir("..")
+	t.Setenv("PATH", t.TempDir())
+	doc := testNewDoc()
+	khmer := NewFontFromFile(doc.pdf, testNotoKhmer)
+	khmer.SetSize(12)
+	NewComplexText(khmer, "ភាសាខ្មែរ").SetWidth(300).SetLocation(50, 50).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	err := doc.pdf.Complete()
+	if err == nil || !strings.Contains(err.Error(), "apt install libharfbuzz-bin") || !strings.Contains(err.Error(), "SetShaper") {
+		t.Errorf("%v", err)
+	}
+}

@@ -24,6 +24,14 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   and the invisible glyphs left out, as they draw nothing; the seven
   languages now within 0.003 points of HarfBuzz. A test: Bengali with a
   zero width non-joiner drawn.
+- **`ComplexText` shapes with `HBShape` when no shaper is set, in .NET, Go
+  and Swift on Linux**, which have no text engine of their own: installing
+  `hb-shape` is all a server needs. Behavior change: `ComplexText` without
+  `SetShaper` failed there ("ComplexText needs a text engine..."); without
+  `hb-shape` too, it now fails saying what to install, or that a shaper of
+  the program's own can be given, as Example_52 gives one. Java (java.awt.font)
+  and Swift on Apple's platforms (Core Text) keep their engine. Tests in the
+  three ports.
 - **New: `HBShape`, a shaper for `ComplexText` that runs HarfBuzz's
   `hb-shape`** (the four ports; in Swift on macOS and Linux): Hindi, Khmer and the other
   scripts ComplexText draws, shaped by HarfBuzz, the text engine of Chrome

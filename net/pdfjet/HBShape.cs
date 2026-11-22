@@ -77,9 +77,11 @@ public class HBShape : IShaper {
         try {
             process = Process.Start(info);
         } catch (System.ComponentModel.Win32Exception e) {
-            throw new InvalidOperationException("ComplexText's HBShape could not run hb-shape, the program of HarfBuzz: "
-                    + "install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: "
-                    + "HarfBuzz's harfbuzz-win64 zip), or give its path to HBShape. " + e.Message, e);
+            throw new InvalidOperationException("ComplexText shapes with HarfBuzz's program hb-shape, which could not "
+                    + "be run: install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: "
+                    + "HarfBuzz's harfbuzz-win64 zip, its path given to HBShape), or give ComplexText a shaper of your "
+                    + "own with SetShaper, such as one that calls HarfBuzz through HarfBuzzSharp (Example_52). "
+                    + e.Message, e);
         }
         using (process) {
             // Both read at once, so that neither waits on a full pipe
