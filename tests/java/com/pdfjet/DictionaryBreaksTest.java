@@ -102,7 +102,7 @@ class DictionaryBreaksTest {
                 assertTrue(glyph < 0xFFFE, "glyph " + glyph);
             }
         }
-        new ComplexText(font, text).setLanguage("bn").setWidth(300f).setLocation(50f, 50f)
+        new TextBlock(font, text).setLanguage("bn").setWidth(300f).setLocation(50f, 50f)
                 .drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
     }

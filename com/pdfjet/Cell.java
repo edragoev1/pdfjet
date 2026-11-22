@@ -442,8 +442,6 @@ public class Cell {
         this.width = width;
         if (drawable instanceof TextBlock) {
             ((TextBlock) drawable).setWidth(this.width - (paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING)));
-        } else if (drawable instanceof ComplexText) {
-            ((ComplexText) drawable).setWidth(this.width - (paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING)));
         }
         return this;
     }
@@ -626,8 +624,6 @@ public class Cell {
         } else if ((text == null || text.equals("")) && drawable != null) {    // The text is drawn first
             if (drawable instanceof TextBlock) {
                 ((TextBlock) drawable).setWidth(width);
-            } else if (drawable instanceof ComplexText) {
-                ((ComplexText) drawable).setWidth(width);
             }
             cellHeight = measure(drawable)[1] + paddingAt(TOP_PADDING) + paddingAt(BOTTOM_PADDING);
         } else if (text != null) {
@@ -938,13 +934,6 @@ public class Cell {
             textBlock.y = textY;
         } else if (drawable != null) {
             flushTableLines(page);
-            // Text such as Hindi wraps to the cell, as a text block does, and
-            // is drawn whole each time the cell is, as a header row's on each
-            // page
-            if (drawable instanceof ComplexText) {
-                ((ComplexText) drawable).setWidth(w - (paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING)));
-                ((ComplexText) drawable).rewind();
-            }
             float[] location = locationOf(drawable);
             if (getTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = measure(drawable)[0];
@@ -959,9 +948,6 @@ public class Cell {
                 drawable.drawOn(page);
             } finally {
                 drawable.setLocation(location[0], location[1]);
-                if (drawable instanceof ComplexText) {
-                    ((ComplexText) drawable).rewind();
-                }
             }
         }
 

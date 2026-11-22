@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,6 +38,12 @@ public class TextLine implements BaselineDrawable {
     // extractor see the word break, but is not part of its text, so that
     // the alignment and the underline measure the line without it.
     boolean trailingSpace = false;
+    // The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
+    // outlines in place of the text; null for text drawn as text
+    ShapedText shaped;
+    private String shapedFor;           // The text shaped, when TextLine shaped it itself
+    // True for a line of a right to left paragraph of a TextBlock, aligned to the right
+    boolean rightToLeft;
     // The hard line breaks after the text line, of Markdown's two spaces, \
     // or <br> at the end of a line: TextFrame starts a new row after it, and
     // leaves an empty row for each break after the first, as <br><br> does.
@@ -314,7 +321,60 @@ public class TextLine implements BaselineDrawable {
         if (text == null) {
             return 0f;
         }
+        try {
+            ShapedText glyphs = shapedGlyphs();
+            if (glyphs != null) {
+                return glyphs.line.getWidth();
+            }
+        } catch (Exception e) {
+            // Measured as text: drawOn says why it cannot be drawn
+        }
         return font.stringWidth(fallbackFont, this.fontSize, text);
+    }
+
+    // The glyphs a shaper found for text such as Hindi or Khmer, one line of
+    // it, which drawOn draws as outlines; null for text drawn as text. A
+    // TextBlock's line was shaped with its paragraph.
+    ShapedText shapedGlyphs() throws Exception {
+        if (shaped != null && (shapedFor == null || (shapedFor.equals(text) && shaped.size == fontSize))) {
+            return shaped;
+        }
+        if (text == null || !Shaping.needsShaper(text)) {
+            return null;
+        }
+        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
+        List<ShapedLine> lines = Shaping.shapeText(null, fonts, fontSize, language, text, Float.MAX_VALUE / 4);
+        ShapedLine joined = null;
+        // One line: the lines of a shaper that broke it anyway, joined
+        for (ShapedLine line : lines) {
+            if (joined == null) {
+                joined = line;
+                continue;
+            }
+            float x0 = joined.getWidth();
+            int a = joined.getGlyphs().length;
+            int n = a + line.getGlyphs().length;
+            int[] fontIndexes = new int[n];
+            int[] ids = new int[n];
+            float[] positions = new float[2 * n];
+            System.arraycopy(joined.getFontIndexes(), 0, fontIndexes, 0, a);
+            System.arraycopy(line.getFontIndexes(), 0, fontIndexes, a, n - a);
+            System.arraycopy(joined.getGlyphs(), 0, ids, 0, a);
+            System.arraycopy(line.getGlyphs(), 0, ids, a, n - a);
+            System.arraycopy(joined.getPositions(), 0, positions, 0, 2 * a);
+            float[] more = line.getPositions();
+            for (int j = 0; j < more.length; j += 2) {
+                positions[2 * a + j] = x0 + more[j];
+                positions[2 * a + j + 1] = more[j + 1];
+            }
+            joined = new ShapedLine(joined.getStart(), line.getEnd(), fontIndexes, ids, positions, x0 + line.getWidth());
+        }
+        if (joined == null) {
+            joined = new ShapedLine(0, text.length(), new int[0], new int[0], new float[0], 0f);
+        }
+        shaped = new ShapedText(joined, text, fonts, fontSize);
+        shapedFor = text;
+        return shaped;
     }
 
     /**
@@ -701,7 +761,21 @@ public class TextLine implements BaselineDrawable {
             page.addBDC(structureType, language, null, alt);
             page.pieceOf = null;
         }
-        page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
+        ShapedText glyphs;
+        try {
+            glyphs = shapedGlyphs();
+        } catch (Exception e) {
+            // Text such as Hindi that could not be shaped fails the document, saying why
+            page.addEMC();
+            page.pdf.fail(Shaping.failure(e));
+            return new float[] {x, y};
+        }
+        if (glyphs != null) {
+            // Glyphs a shaper found, drawn as outlines, not turned
+            page.drawShapedLine(glyphs, x, y + verticalOffset, language);
+        } else {
+            page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
+        }
         page.addEMC();
 
         // The trigonometry turns counterclockwise, where the rotation turns clockwise.
@@ -839,6 +913,9 @@ public class TextLine implements BaselineDrawable {
     // which left out the kerning between the space and the letter before it, so
     // the line stopped short of the word (the review of 28 October 2026).
     private float getDecorationLength() {
+        if (shaped != null) {
+            return getWidth();
+        }
         String drawn = text;
         if (isLastToken && drawn.endsWith(Single.space)) {
             drawn = drawn.substring(0, drawn.length() - 1);
@@ -850,7 +927,7 @@ public class TextLine implements BaselineDrawable {
     private float[] getCorner(float verticalOffset) {
         // The trigonometry turns counterclockwise, where the rotation turns clockwise.
         double radians = Math.PI * -degrees / 180.0;
-        float len = font.stringWidth(fallbackFont, fontSize, text);
+        float len = getWidth();
         double xMax = Math.max(x, x + len*Math.cos(radians));
         double yMax = Math.max(y + verticalOffset, (y + verticalOffset) - len*Math.sin(radians));
         return new float[] {(float) xMax, (float) yMax};

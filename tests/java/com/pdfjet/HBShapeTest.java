@@ -125,9 +125,9 @@ class HBShapeTest {
         }
     }
 
-    // ComplexText draws Hindi with an English word, in two fonts, and Khmer
+    // TextBlock draws Hindi with an English word, in two fonts, and Khmer
     @Test
-    void drawsComplexText() throws Exception {
+    void drawsTextBlocks() throws Exception {
         HBShape hb = hbShape();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PDF pdf = new PDF(out);
@@ -139,7 +139,7 @@ class HBShapeTest {
             Font font = (Font) c[0];
             font.setSize(12f);
             Page page = new Page(pdf, Letter.PORTRAIT);
-            float[] xy = new ComplexText(font, (String) c[1]).setFallbackFont(latin).setLanguage((String) c[2])
+            float[] xy = new TextBlock(font, (String) c[1]).setFallbackFont(latin).setLanguage((String) c[2])
                     .setShaper(hb).setWidth(300f).setLocation(50f, 50f).drawOn(page);
             assertTrue(xy[1] > 50 + 3 * 12, c[2] + ": drawn down to " + xy[1]);
         }

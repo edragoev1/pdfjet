@@ -4160,6 +4160,45 @@ final public class Page {
      * @param highlightColors the words to highlight and their colors.
      * @param language the language of the text, or null.
      */
+    // Draws the shaped line, its left at x and its baseline at baseline, in
+    // the language: the glyphs of each font, one run at a time, tagged with
+    // the line's text for screen readers and the copying of text. Returns
+    // false if the document failed.
+    boolean drawShapedLine(ShapedText shaped, float x, float baseline, String language) throws IOException {
+        ShapedLine line = shaped.line;
+        int[] fontOf = line.getFontIndexes();
+        int[] glyphs = line.getGlyphs();
+        float[] positions = line.getPositions();
+        if (glyphs.length == 0) {
+            return true;
+        }
+        beginActualText(shaped.text, language);
+        int from = 0;
+        while (from < glyphs.length) {
+            int to = from;
+            while (to < glyphs.length && fontOf[to] == fontOf[from]) {
+                to++;
+            }
+            int index = fontOf[from];
+            if (index >= 0 && index < shaped.fonts.length) {
+                int[] run = new int[to - from];
+                float[] places = new float[2 * run.length];
+                for (int i = from; i < to; i++) {
+                    run[i - from] = glyphs[i];
+                    places[2 * (i - from)] = x + positions[2 * i];
+                    places[2 * (i - from) + 1] = baseline + positions[2 * i + 1];
+                }
+                if (!glyphsDrawable(shaped.fonts[index], run, places)) {
+                    return false;
+                }
+                placeGlyphs(shaped.fonts[index], shaped.size, run, places);
+            }
+            from = to;
+        }
+        endActualText();
+        return true;
+    }
+
     protected void drawTextBlock(
             Font font,
             Font fallbackFont,
@@ -4171,7 +4210,7 @@ final public class Page {
             float leading,
             float[] color,
             Map<String, Integer> highlightColors,
-            String language) {
+            String language) throws IOException {
         if (textLines == null || textLines.length == 0) {
             return;
         }
@@ -4191,6 +4230,14 @@ final public class Page {
         setTextFont(font, fontSize);
         float yText = y;
         for (TextLine textLine : textLines) {
+            if (textLine.shaped != null) {
+                // Glyphs a shaper found, drawn as outlines, out of the text object
+                append("ET\n");
+                drawShapedLine(textLine.shaped, x + textLine.xOffset, yText + font.getAscent(fontSize), language);
+                append("BT\n");
+                yText += leading;
+                continue;
+            }
             append("1 0 0 1 ");
             append(x + textLine.xOffset);
             append(' ');
@@ -4248,7 +4295,7 @@ final public class Page {
         }
         for (TextLine textLine : textLines) {
             if (textLine.underline || textLine.strikeout) {
-                float width = hasFallbackFont ?
+                float width = textLine.shaped != null ? textLine.shaped.line.getWidth() : hasFallbackFont ?
                         font.stringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
                         font.stringWidth(fontSize, textLine.text);
                 if (textLine.underline) {

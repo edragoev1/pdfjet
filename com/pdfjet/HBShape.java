@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A Shaper for ComplexText that runs hb-shape, the program of HarfBuzz, the
+ * A Shaper for TextBlock and TextLine that runs hb-shape, the program of HarfBuzz, the
  * text engine of Chrome and Android: the same shaping on every server, with
  * nothing linked into the program. Lines break at spaces and, in Thai, Lao,
  * Khmer and Burmese, between words, by ICU's dictionaries of the world fonts.
@@ -33,7 +33,7 @@ import java.util.Set;
  * It talks with hb-shape through files, not pipes, the same on every system:
  * the text of each font in a temporary file, the glyphs back in another.
  * <pre>
- * new ComplexText(hindi, text).setFallbackFont(latin).setShaper(new HBShape())
+ * new TextBlock(hindi, text).setFallbackFont(latin).setShaper(new HBShape())
  * </pre>
  */
 public class HBShape implements Shaper {
@@ -82,7 +82,7 @@ public class HBShape implements Shaper {
                         .redirectOutput(out).redirectError(err).redirectInput(ProcessBuilder.Redirect.PIPE)
                         .start();
             } catch (IOException e) {
-                throw new Exception("ComplexText's HBShape could not run hb-shape, the program of HarfBuzz: "
+                throw new Exception("HBShape could not run hb-shape, the program of HarfBuzz: "
                         + "install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; "
                         + "Windows: HarfBuzz's harfbuzz-win64 zip), or give its path to HBShape. " + e.getMessage(), e);
             }
@@ -225,7 +225,7 @@ public class HBShape implements Shaper {
                 command.add("--text-file=" + in.getPath());
                 command.add("--no-glyph-names");
                 command.add("--output-format=json");
-                // Left to right, as ComplexText draws, not guessed: an Arabic
+                // Left to right, as TextBlock draws, not guessed: an Arabic
                 // or Hebrew run would come back right to left, its clusters
                 // falling (ultra review, 22 November 2026)
                 command.add("--direction=ltr");

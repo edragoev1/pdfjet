@@ -19,8 +19,8 @@ package com.pdfjet.fonts;
  * else from the folder resources/fonts/world, as in the release packages on
  * GitHub, else from that jar, and a font found in none says what to add.
  * <p>
- * PDFjet does not shape Tamil: these fonts are for ComplexText, which
- * draws the text as the platform's text engine shapes it with the same font
+ * PDFjet does not shape Tamil: these fonts are for TextBlock and TextLine,
+ * which draw the text as the platform's text engine shapes it with the same font
  * file, for Tamil. Regular and Bold, from Noto's release, unmodified.
  */
 public class NotoSansTamil {

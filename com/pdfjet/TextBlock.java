@@ -53,6 +53,15 @@ public class TextBlock implements Drawable {
     private boolean underline;
     private boolean strikeout;
     private boolean rightToLeft;
+    private boolean rightToLeftSet;     // True after setRightToLeft: else each paragraph's own direction
+
+    // The shaper of text such as Hindi or Khmer, else the default one
+    private Shaper shaper;
+    // The lines a shaper found, by paragraph, width and size, so that a
+    // paragraph is shaped once however often the block is measured
+    private Map<String, List<ShapedLine>> shapedLines;
+    // Why a paragraph could not be shaped, which drawOn fails the document with
+    private Exception shapeError;
 
     /**
      * Creates a text block and sets the font.
@@ -509,14 +518,77 @@ public class TextBlock implements Drawable {
      * Each paragraph is wrapped at the width in logical order, and each line
      * is then reordered with Bidi.reorderVisually, which also shapes the
      * Arabic letters, and aligned to the right, unless the text alignment is
-     * Alignment.CENTER.
+     * Alignment.CENTER. Without it, each paragraph is right to left when its
+     * first letter is Arabic or Hebrew, and left to right otherwise.
      *
      * @param rightToLeft true if the text is right to left.
      * @return this TextBlock object.
      */
     public TextBlock setRightToLeft(boolean rightToLeft) {
         this.rightToLeft = rightToLeft;
+        this.rightToLeftSet = true;
         return this;
+    }
+
+    /**
+     * Sets the text engine that shapes text such as Hindi or Khmer, which
+     * TextBlock draws as outlines: without it, Java's java.awt.font, or
+     * Android's text engine on Android 12 or later.
+     *
+     * @param shaper the shaper.
+     * @return this TextBlock object.
+     */
+    public TextBlock setShaper(Shaper shaper) {
+        this.shaper = shaper;
+        this.shapedLines = null;
+        return this;
+    }
+
+    // Whether the paragraph is right to left: as set with setRightToLeft,
+    // else by its first letter, Arabic or Hebrew.
+    private boolean paragraphRightToLeft(String paragraph) {
+        if (rightToLeftSet) {
+            return rightToLeft;
+        }
+        for (int i = 0; i < paragraph.length(); i++) {
+            char c = paragraph.charAt(i);
+            if ((c >= 0x0590 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFDFF) || (c >= 0xFE70 && c <= 0xFEFF)) {
+                return true;
+            }
+            if (Character.isLetter(c)) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // Shapes the paragraph, as Hindi or Khmer, wrapped at the width, and adds
+    // its lines, drawn as outlines: the block's font for the text, its
+    // fallback font for the characters the font has not.
+    private void addShapedLines(List<TextLine> textLines, String paragraph, float textAreaWidth) {
+        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
+        String key = textAreaWidth + "|" + fontSize + "|" + paragraph;
+        List<ShapedLine> lines = shapedLines == null ? null : shapedLines.get(key);
+        if (lines == null) {
+            try {
+                lines = Shaping.shapeText(shaper, fonts, fontSize, language, paragraph, textAreaWidth);
+            } catch (Exception e) {
+                if (shapeError == null) {
+                    shapeError = e;
+                }
+                return;
+            }
+            if (shapedLines == null) {
+                shapedLines = new HashMap<>();
+            }
+            shapedLines.put(key, lines);
+        }
+        for (ShapedLine line : lines) {
+            String text = paragraph.substring(line.getStart(), line.getEnd());
+            TextLine textLine = new TextLine(font, text.trim());
+            textLine.shaped = new ShapedText(line, text, fonts, fontSize);
+            textLines.add(textLine);
+        }
     }
 
     TextLine[] getTextLines() {
@@ -531,9 +603,23 @@ public class TextBlock implements Drawable {
             // all for a text of only line breaks. That is one empty line.
             lines = new String[] {""};
         }
+        shapeError = null;
+        // The direction of each paragraph, as wrapped: rightToLeft, the
+        // block's as set, is the paragraph's while its lines are made
+        boolean blockRightToLeft = rightToLeft;
+        try {
         for (String line : lines) {
+            if (Shaping.needsShaper(line)) {
+                addShapedLines(textLines, line, textAreaWidth);
+                continue;
+            }
+            rightToLeft = paragraphRightToLeft(line);
             if (rightToLeft) {
+                int first = textLines.size();
                 addRightToLeftLines(textLines, line, textAreaWidth);
+                for (int i = first; i < textLines.size(); i++) {
+                    textLines.get(i).rightToLeft = true;
+                }
                 continue;
             }
             // A zero width space marks a place where the line may break in text
@@ -647,6 +733,9 @@ public class TextBlock implements Drawable {
                     }
                 }
             }
+        }
+        } finally {
+            rightToLeft = blockRightToLeft;
         }
 
         return textLines.toArray(new TextLine[] {});
@@ -1053,17 +1142,21 @@ public class TextBlock implements Drawable {
         }
         TextLine[] lines = new TextLine[fit];
         System.arraycopy(textLines, 0, lines, 0, fit);
+        if (lines[fit - 1].shaped != null) {
+            return lines;   // Glyphs drawn as outlines, cut where the height ends
+        }
         String last = lines[fit - 1].text;
         int count = last.codePointCount(0, last.length());
         // A line of right to left text is kept in the order it is drawn, so
         // its end, where it is cut and the "..." goes, is at its left: cut at
         // its right, the start of the line was lost and the "..." came first
         // in the reading (review of 11 October 2026, #7)
-        if (rightToLeft) {
+        if (lines[fit - 1].rightToLeft) {
             if (count > 3) {
                 last = last.substring(last.offsetByCodePoints(0, 3));
             }
             lines[fit - 1] = new TextLine(font, "..." + last);
+            lines[fit - 1].rightToLeft = true;
             return lines;
         }
         if (count > 3) {
@@ -1077,14 +1170,20 @@ public class TextBlock implements Drawable {
     private void rightAlignText(TextLine[] textLines) {
         float textAreaWidth = textAreaWidth();
         for (TextLine textLine : textLines) {
-            textLine.xOffset = textAreaWidth - stringWidth(textLine.text);
+            textLine.xOffset = textAreaWidth - widthOf(textLine);
         }
+    }
+
+    // The width of a line of the block: of its glyphs, for one a shaper
+    // shaped, else of its text.
+    private float widthOf(TextLine textLine) {
+        return textLine.shaped != null ? textLine.shaped.line.getWidth() : stringWidth(textLine.text);
     }
 
     private void centerText(TextLine[] textLines) {
         float textAreaWidth = textAreaWidth();
         for (TextLine textLine : textLines) {
-            textLine.xOffset = (textAreaWidth - stringWidth(textLine.text)) / 2f;
+            textLine.xOffset = (textAreaWidth - widthOf(textLine)) / 2f;
         }
     }
 
@@ -1139,8 +1238,17 @@ public class TextBlock implements Drawable {
 
         if (textAlignment == Alignment.CENTER) {
             centerText(layout.textLines);
-        } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
+        } else if (textAlignment == Alignment.RIGHT) {
             rightAlignText(layout.textLines);
+        } else {
+            // The lines of right to left paragraphs, aligned to the right
+            List<TextLine> rightToLeftLines = new ArrayList<>();
+            for (TextLine textLine : layout.textLines) {
+                if (textLine.rightToLeft) {
+                    rightToLeftLines.add(textLine);
+                }
+            }
+            rightAlignText(rightToLeftLines.toArray(new TextLine[] {}));
         }
         if (underline) {
             underlineText(layout.textLines);
@@ -1178,6 +1286,10 @@ public class TextBlock implements Drawable {
         // corner (review of 17 October 2026)
         if (Float.isNaN(width) || Float.isInfinite(width)) {
             page.pdf.fail(new IllegalArgumentException("The width of a text block is a finite number."));
+        }
+        // Text such as Hindi that could not be shaped fails the document, saying why
+        if (shapeError != null) {
+            page.pdf.fail(Shaping.failure(shapeError));
         }
 
         page.saveGraphicsState();

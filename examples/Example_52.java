@@ -17,7 +17,7 @@ import com.pdfjet.fonts.*;
  * Example_52.java
  *
  * Draws Hindi and Khmer, scripts PDFjet does not shape itself, with
- * ComplexText: Java's own text engine, java.awt.font, shapes them --
+ * TextBlock: Java's own text engine, java.awt.font, shapes them --
  * conjuncts, vowel signs, stacked consonants -- and PDFjet draws the glyphs it
  * found, at their places, as outlines read from the font file: sharp on
  * screen and in print, and read by screen readers, as each paragraph is
@@ -70,7 +70,7 @@ public class Example_52 {
                 .setStructureType(StructElem.H1)
                 .setLocation(LEFT, 60f)
                 .drawOn(page);
-        new TextLine(body, "Shaped by java.awt.font, drawn by PDFjet's ComplexText as outlines;"
+        new TextLine(body, "Shaped by java.awt.font, drawn by PDFjet's TextBlock as outlines;"
                 + " the text is attached to the document.")
                 .setLocation(LEFT, 80f)
                 .drawOn(page);
@@ -81,19 +81,21 @@ public class Example_52 {
         Font latin = new Font(pdf, LATIN);
 
         List<String> paragraphs = paragraphs(textFile);
-        ComplexText text = new ComplexText(script, paragraphs)
-                .setFallbackFont(latin)
-                .setLanguage(language)
-                .setWidth(WIDTH)
-                .setParagraphGap(0.5f * SIZE);
-        float top = 96f;    // Below the heading, on the first page
-        while (true) {
-            text.setHeight(BOTTOM - top).setLocation(LEFT, top).drawOn(page);
-            if (!text.hasMoreText()) {
-                break;
+        // A TextBlock a paragraph: measured, without a page, and drawn on the
+        // next page when it does not fit on this one
+        float y = 96f;  // Below the heading, on the first page
+        for (String paragraph : paragraphs) {
+            TextBlock text = new TextBlock(script, paragraph)
+                    .setFallbackFont(latin)
+                    .setLanguage(language)
+                    .setWidth(WIDTH)
+                    .setLocation(LEFT, y);
+            if (text.drawOn(null)[1] > BOTTOM) {
+                page = new Page(pdf, Letter.PORTRAIT);
+                y = TOP;
+                text.setLocation(LEFT, y);
             }
-            page = new Page(pdf, Letter.PORTRAIT);
-            top = TOP;
+            y = text.drawOn(page)[1] + 0.5f * SIZE;
         }
 
         // A blank line between paragraphs, as plain text has them
