@@ -15,8 +15,11 @@ namespace PDFjet.NET {
 // TextBlock and TextLine with text such as Hindi or Khmer: a shaper wraps
 // and shapes it, and the glyphs it found are drawn as outlines, each line
 // tagged with its text; the other paragraphs are drawn as text. The tests
-// give a shaper that returns fixed lines.
+// give a shaper that returns fixed lines. In the DefaultShaper collection,
+// run alone: two tests set the default shaper, which is the process's.
+[Collection("DefaultShaper")]
 public class TextBlockShapedTest {
+
     private const string DEVANAGARI = "resources/fonts/world/NotoSansDevanagari/NotoSansDevanagari-Regular.otf";
     private const string ARABIC = "resources/fonts/world/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf";
     private const string LATIN = "resources/fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
@@ -319,5 +322,10 @@ public class TextBlockShapedTest {
             TextBlock.SetDefaultShaper(null);
         }
     }
+}
+
+// The tests that set the default shaper, or need none set, run alone
+[CollectionDefinition("DefaultShaper", DisableParallelization = true)]
+public class DefaultShaperCollection {
 }
 }   // End of namespace PDFjet.NET

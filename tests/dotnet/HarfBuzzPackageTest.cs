@@ -15,6 +15,8 @@ namespace PDFjet.NET {
 // The NuGet package PDFjet.HarfBuzz, which this project references as a
 // program adds it: TextBlock's shaper when none is set, and the same lines
 // as hb-shape's.
+// Run alone: TextBlockShapedTest sets the default shaper for a moment
+[Collection("DefaultShaper")]
 public class HarfBuzzPackageTest {
     private const string WORLD = "resources/fonts/world/";
     private static readonly string[][] LANGUAGES = {
