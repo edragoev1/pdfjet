@@ -435,7 +435,7 @@ public class TextColumn : Drawable {
     }
 
     private static func width(_ textLine: TextLine, _ text: String?) -> Float {
-        return textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, text)
+        return textLine.widthOf(text ?? "")  // Of its glyphs, for text such as Hindi
     }
 
     private static func trimTrailingSpaces(_ text: String?) -> String {

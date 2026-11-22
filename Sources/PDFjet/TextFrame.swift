@@ -483,9 +483,6 @@ public class TextFrame : Drawable {
         if risesOutOfFrame(textLine) {
             return false
         }
-        let font = textLine.font!
-        let fallbackFont = textLine.fallbackFont
-        let fontSize = textLine.fontSize
         var buf = String()
         var runLength: Float = 0.0
         // Where the rest of the token starts, in a token broken into rows: the
@@ -608,7 +605,7 @@ public class TextFrame : Drawable {
             spaceAfterRow(textLine)
         }
         addToRow(paragraph, textLine, buf, true)
-        xText += font.stringWidth(fallbackFont, fontSize, buf)
+        xText += textLine.widthOf(buf)
         return true
     }
 
@@ -705,7 +702,7 @@ public class TextFrame : Drawable {
         var end = TextFrame.nextCharacterBreakIn(scalars, scalars.startIndex)
         while end < scalars.endIndex {
             let next = TextFrame.nextCharacterBreakIn(scalars, end)
-            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, String(scalars[..<next])) > w {
+            if textLine.widthOf(String(scalars[..<next])) > w {
                 break
             }
             end = next
@@ -1052,7 +1049,7 @@ public class TextFrame : Drawable {
     }
 
     private static func width(_ textLine: TextLine, _ text: String) -> Float {
-        return textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, text)
+        return textLine.widthOf(text)    // Of its glyphs, for text such as Hindi
     }
 
     // Splits the text of the text line into words, or, for CJK text, which has no

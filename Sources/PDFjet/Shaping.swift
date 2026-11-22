@@ -105,15 +105,73 @@ enum Shaping {
         return lines
     }
 
-    // The part of the text a shaped line holds
-    static func text(_ text: String, _ line: ShapedLine) -> String {
-        let utf16 = Array(text.utf16)
+    // The part of the text a shaped line holds, of the text's UTF-16 code
+    // units, made once for all its lines
+    static func text(_ utf16: [UInt16], _ line: ShapedLine) -> String {
         return String(decoding: utf16[line.start..<line.end], as: UTF16.self)
+    }
+
+    // The fonts text is shaped in: the font, and the fallback font for the
+    // characters the font has not, when it has a file the text engine can
+    // read; a fallback without one, as a core font, is left out, so that a
+    // Latin fallback does not fail Hindi text.
+    static func shapingFonts(_ font: Font, _ fallback: Font?) -> [Font] {
+        if let fallback = fallback, fallback !== font, (try? fallback.shapingFile()) != nil {
+            return [font, fallback]
+        }
+        return [font]
+    }
+
+    // Shapes the text as one line, not wrapped, with the default shaper: the
+    // lines of a shaper that broke it anyway, joined.
+    static func shapeOneLine(_ fonts: [Font], _ size: Float, _ language: String?, _ text: String) throws -> ShapedText {
+        let lines = try shapeText(nil, fonts, size, language, text, Float.greatestFiniteMagnitude / 4)
+        var joined: ShapedLine?
+        for line in lines {
+            guard let first = joined else {
+                joined = line
+                continue
+            }
+            let x0 = first.width
+            var positions = first.positions
+            for j in stride(from: 0, to: line.positions.count, by: 2) {
+                positions.append(x0 + line.positions[j])
+                positions.append(line.positions[j + 1])
+            }
+            joined = ShapedLine(first.start, line.end, first.fontIndexes + line.fontIndexes,
+                    first.glyphs + line.glyphs, positions, x0 + line.width)
+        }
+        return ShapedText(joined ?? ShapedLine(0, text.utf16.count, [], [], [], 0), text, fonts, size)
     }
 
     // The message a document fails with, for an error a shaper threw
     static func message(_ error: Error) -> String {
         return (error as? PDFjetError)?.message ?? "\(error)"
+    }
+}
+
+// What shaped text depends on besides its text: a cache of shaped text is
+// good only for the style it was made in.
+struct ShapingStyle: Equatable {
+    let font: Font
+    let fallback: Font?
+    let size: Float
+    let language: String?
+
+    static func == (a: ShapingStyle, b: ShapingStyle) -> Bool {
+        return a.font === b.font && a.fallback === b.fallback && a.size == b.size && a.language == b.language
+    }
+}
+
+// A TextLine's cache of the texts it shaped, its own and its words', which
+// the copies a TextFrame or a TextColumn draws share, so that each is shaped
+// once, however often it is measured and drawn.
+final class ShapedPieces {
+    let style: ShapingStyle
+    var shaped = [String: ShapedText]()
+
+    init(_ style: ShapingStyle) {
+        self.style = style
     }
 }
 

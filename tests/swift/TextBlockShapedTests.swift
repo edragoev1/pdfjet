@@ -301,6 +301,106 @@ import Testing
         try memory.pdf.complete()
     }
 
+    // A shaper as LetterShaper, which counts its calls and keeps the files
+    private final class CountingShaper: Shaper {
+        let letters: LetterShaper
+        var calls = 0
+        var files = [[UInt8]]()
+
+        init(_ font: Font) {
+            letters = LetterShaper(font)
+        }
+
+        func shape(_ request: ShapingRequest) throws -> [ShapedLine] {
+            calls += 1
+            files = request.fontFiles
+            return try letters.shape(request)
+        }
+    }
+
+    // A TextFrame of Hindi words places them by their shaped widths, the
+    // widths they are drawn at, each word shaped once however often measured
+    @Test func textFrameMeasuresShapedWords() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, TextBlockShapedTests.devanagari).setSize(10)
+        let shaper = CountingShaper(font)
+        TextBlock.setDefaultShaper(shaper)
+        defer { TextBlock.setDefaultShaper(nil) }
+        let paragraph = Paragraph().add(TextLine(font, "कख गघ ङच"))
+        let frame = TextFrame([paragraph])
+        frame.setLocation(10, 10)
+        frame.setWidth(300)
+        frame.setHeight(500)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        frame.drawOn(page)
+        // Each word drawn with the space after it, shaped with it: the test's
+        // shaper gives a space 7 points, as every letter
+        #expect(places(TestSupport.content(page)).map { $0[1] } == [10, 17, 31, 38, 52, 59])
+        #expect(shaper.calls <= 8, "shaped \(shaper.calls) times")
+        try memory.pdf.complete()
+    }
+
+    // A TextBlock or a TextLine given another font, fallback font or language
+    // shapes its text again: the glyphs of one font are not drawn in another
+    @Test func shapedTextIsShapedAgainInAnotherFont() throws {
+        let memory = MemoryPDF()
+        let regular = try Font(memory.pdf, TextBlockShapedTests.devanagari)
+        let other = try Font(memory.pdf, TextBlockShapedTests.latin)
+        let shaper = CountingShaper(regular)
+        let block = TextBlock(regular, "कख").setShaper(shaper).setWidth(200)
+        block.drawOn(nil)
+        block.drawOn(nil)
+        #expect(shaper.calls == 1)
+        block.setFont(other)
+        block.drawOn(nil)
+        block.setLanguage("mr")
+        block.drawOn(nil)
+        #expect(shaper.calls == 3)
+        TextBlock.setDefaultShaper(shaper)
+        defer { TextBlock.setDefaultShaper(nil) }
+        let line = TextLine(regular, "कख")
+        _ = line.getWidth()
+        _ = line.getWidth()
+        line.setFont(other)
+        _ = line.getWidth()
+        #expect(shaper.calls == 5)
+    }
+
+    // A fallback font the text engine cannot read, as a core font, is left out
+    // of the shaping: Hindi with a Latin core fallback is drawn
+    @Test func aFallbackFontWithoutAFileIsLeftOut() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, TextBlockShapedTests.devanagari)
+        let shaper = CountingShaper(font)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextBlock(font, "कख").setFallbackFont(try Font(memory.pdf, CoreFont.HELVETICA)).setShaper(shaper)
+                .setWidth(200).drawOn(page)
+        #expect(shaper.files.count == 1)
+        #expect(count(TestSupport.content(page), " cm /Fm") == 2)
+        try memory.pdf.complete()
+    }
+
+    // In an untagged document, the outlines of shaped text carry its text, as
+    // marked content of their own, which a reader may copy and search
+    @Test func untaggedShapedTextCarriesItsText() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, TextBlockShapedTests.devanagari)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextBlock(font, "कख").setShaper(LetterShaper(font)).setWidth(200).drawOn(page)
+        #expect(TestSupport.content(page).contains("/ActualText <" + Page.toUTF16Hex("क") + ">>> BDC"))
+        try memory.pdf.complete()
+    }
+
+    // A paragraph that starts with a byte order mark is not right to left
+    @Test func aByteOrderMarkIsNotArabic() throws {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, TextBlockShapedTests.latin)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextBlock(font, "\u{FEFF}Hello").setWidth(300).setLocation(50, 100).drawOn(page)
+        let tm = TestSupport.content(page).components(separatedBy: "\n").first { $0.hasSuffix(" Tm") }
+        #expect(tm?.hasPrefix("1 0 0 1 50 ") == true, "\(tm ?? "")")
+    }
+
 #if os(Linux)
     // On Linux, without a shaper set, TextBlock does not run hb-shape, even
     // where it is installed: it says to set HBShape, so that a program

@@ -3223,7 +3223,9 @@ public class Page {
     // outlines, with the text they stand for, and its language, as its actual
     // text (ISO 32000-1, 14.9.4); endActualText ends it.
     func beginActualText(_ text: String, _ language: String?) {
-        if !pdf.isTagged() || artifactDepth != 0 {
+        // In any document, tagged or not: marked content of its own needs no
+        // structure, and gives the outlines their text
+        if artifactDepth != 0 {
             return
         }
         append("/Span <<")
@@ -3238,7 +3240,7 @@ public class Page {
     }
 
     func endActualText() {
-        if pdf.isTagged() && artifactDepth == 0 {
+        if artifactDepth == 0 {
             append("EMC\n")
         }
     }

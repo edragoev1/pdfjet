@@ -60,7 +60,7 @@ import Testing
         #expect(content.contains("q 0.012 0 0 0.012 60 692 cm /Fm"), "\(content)")
         #expect(!content.contains("BT"), "\(content)")
         #expect(!content.contains("Tf"), "\(content)")
-        #expect(!content.contains("BDC"), "\(content)")     // Untagged: just the shapes
+        #expect(content.contains("/ActualText <"), "\(content)")   // Untagged: with their text too
         try memory.pdf.complete()
         let doc = TestSupport.latin1(memory.bytes)
         #expect(!doc.contains("/FontFile"), "no font program")

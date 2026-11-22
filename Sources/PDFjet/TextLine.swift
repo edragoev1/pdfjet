@@ -35,8 +35,8 @@ public class TextLine : BaselineDrawable {
     var trailingSpace = false
     // The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
     // outlines in place of the text; nil for text drawn as text
-    var shaped: ShapedText?
-    private var shapedFor: String?      // The text shaped, when TextLine shaped it itself
+    var shaped: ShapedText?             // A TextBlock's line, shaped with its paragraph
+    private var pieces: ShapedPieces?   // The texts this line and its copies shaped
     // True for a line of a right to left paragraph of a TextBlock, aligned to the right
     var rightToLeft = false
     // The hard line breaks after the text line, of Markdown's two spaces, \
@@ -100,6 +100,7 @@ public class TextLine : BaselineDrawable {
     @discardableResult
     public func setText(_ text: String) -> TextLine {
         self.text = text
+        self.pieces = nil
         self.altDescription = text
         return self
     }
@@ -263,37 +264,39 @@ public class TextLine : BaselineDrawable {
     // it, which drawOn draws as outlines; nil for text drawn as text. A
     // TextBlock's line was shaped with its paragraph.
     func shapedGlyphs() throws -> ShapedText? {
-        if let shaped = shaped, shapedFor == nil || (shapedFor == text && shaped.size == fontSize) {
+        if let shaped = shaped {
             return shaped
         }
+        return try shapeOf(text)
+    }
+
+    // The text shaped in this line's style, as one line, or nil for text
+    // drawn as text; shaped once, kept in the pieces this line shares with
+    // its copies, made again when the style changed.
+    func shapeOf(_ text: String?) throws -> ShapedText? {
         guard let text = text, Shaping.needsShaper(text), let font = font else {
             return nil
         }
-        var fonts = [font]
-        if let fallbackFont = fallbackFont, fallbackFont !== font {
-            fonts.append(fallbackFont)
+        let style = ShapingStyle(font: font, fallback: fallbackFont, size: fontSize, language: language)
+        if pieces == nil || pieces!.style != style {
+            pieces = ShapedPieces(style)
         }
-        let lines = try Shaping.shapeText(nil, fonts, fontSize, language, text, Float.greatestFiniteMagnitude / 4)
-        // One line: the lines of a shaper that broke it anyway, joined
-        var joined: ShapedLine?
-        for line in lines {
-            guard let first = joined else {
-                joined = line
-                continue
-            }
-            let x0 = first.width
-            var positions = first.positions
-            for j in stride(from: 0, to: line.positions.count, by: 2) {
-                positions.append(x0 + line.positions[j])
-                positions.append(line.positions[j + 1])
-            }
-            joined = ShapedLine(first.start, line.end, first.fontIndexes + line.fontIndexes,
-                    first.glyphs + line.glyphs, positions, x0 + line.width)
+        if let glyphs = pieces!.shaped[text] {
+            return glyphs
         }
-        let glyphs = ShapedText(joined ?? ShapedLine(0, text.utf16.count, [], [], [], 0), text, fonts, fontSize)
-        shaped = glyphs
-        shapedFor = text
+        let glyphs = try Shaping.shapeOneLine(Shaping.shapingFonts(font, fallbackFont), fontSize, language, text)
+        pieces!.shaped[text] = glyphs
         return glyphs
+    }
+
+    // The width of the text in this line's style: of its glyphs, for text
+    // such as Hindi a shaper shapes, else of its characters. What cannot be
+    // shaped is measured as text; drawOn says why it cannot be drawn.
+    func widthOf(_ text: String) -> Float {
+        if let glyphs = try? shapeOf(text) {
+            return glyphs.line.width
+        }
+        return font!.stringWidth(fallbackFont, fontSize, text)
     }
 
     ///
@@ -623,6 +626,7 @@ public class TextLine : BaselineDrawable {
         textLine.uriActualText = uriActualText
         textLine.uriAltDescription = uriAltDescription
         textLine.structureType = structureType
+        textLine.pieces = pieces    // The words it shaped, shaped once
         textLine.pieceOf = pieceOf ?? self
         return textLine
     }
@@ -794,7 +798,7 @@ public class TextLine : BaselineDrawable {
     // spaces alone spans its whole width.
     private func getVisibleSpan() -> (Float, Float) {
         let scalars = Array(text!.unicodeScalars)
-        let width = font!.stringWidth(fallbackFont, fontSize, text!)
+        let width = widthOf(text!)
         var first = 0
         while first < scalars.count && scalars[first] == " " {
             first += 1
@@ -810,8 +814,8 @@ public class TextLine : BaselineDrawable {
         before.append(contentsOf: scalars[0..<first])
         var through = String.UnicodeScalarView()
         through.append(contentsOf: scalars[0..<last])
-        let start = font!.stringWidth(fallbackFont, fontSize, String(before))
-        let end = font!.stringWidth(fallbackFont, fontSize, String(through))
+        let start = widthOf(String(before))
+        let end = widthOf(String(through))
         return (start, end)
     }
 
@@ -828,7 +832,7 @@ public class TextLine : BaselineDrawable {
         if isLastToken && drawn.unicodeScalars.last == " " {
             drawn = String(drawn.unicodeScalars.dropLast())
         }
-        return font!.stringWidth(fallbackFont, fontSize, drawn)
+        return widthOf(drawn)
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

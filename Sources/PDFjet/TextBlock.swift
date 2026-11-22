@@ -50,6 +50,9 @@ public class TextBlock : Drawable {
     // The lines a shaper found, by paragraph, width and size, so that a
     // paragraph is shaped once however often the block is measured
     private var shapedLines: [String: [ShapedLine]]?
+    // The font, fallback font and language the lines were shaped in: in
+    // another, they are shaped again
+    private var shapedStyle: ShapingStyle?
     // Why a paragraph could not be shaped, which drawOn fails the document with
     private var shapeError: Error?
 
@@ -102,6 +105,7 @@ public class TextBlock : Drawable {
     @discardableResult
     public func setText(_ text: String) -> TextBlock {
         self.textContent = text
+        self.shapedLines = nil  // The lines of another text are not needed again
         return self
     }
 
@@ -384,7 +388,12 @@ public class TextBlock : Drawable {
         }
         for scalar in paragraph.unicodeScalars {
             let c = scalar.value
-            if (c >= 0x0590 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFDFF) || (c >= 0xFE70 && c <= 0xFEFF) {
+            // The right to left blocks of bidi.go, Hebrew and Arabic; not
+            // U+FEFF, the byte order mark, past the Arabic forms
+            if (c >= 0x0590 && c <= 0x05FF) || (c >= 0x0600 && c <= 0x07BF) || (c >= 0x07C0 && c <= 0x085F)
+                    || (c >= 0x0860 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFB4F) || (c >= 0xFB50 && c <= 0xFD3D)
+                    || (c >= 0xFD50 && c <= 0xFDCE) || (c >= 0xFDF0 && c <= 0xFDFC) || (c >= 0xFE70 && c <= 0xFEFC)
+                    || (c >= 0x10800 && c <= 0x10FFF) || (c >= 0x1E800 && c <= 0x1EFFF) {
                 return true
             }
             if scalar.properties.isAlphabetic {
@@ -398,9 +407,11 @@ public class TextBlock : Drawable {
     // its lines, drawn as outlines: the block's font for the text, its
     // fallback font for the characters the font has not.
     private func addShapedLines(_ textLines: inout [TextLine], _ paragraph: String, _ textAreaWidth: Float) {
-        var fonts = [font]
-        if let fallbackFont = fallbackFont, fallbackFont !== font {
-            fonts.append(fallbackFont)
+        let fonts = Shaping.shapingFonts(font, fallbackFont)
+        let style = ShapingStyle(font: font, fallback: fallbackFont, size: 0, language: language)
+        if shapedStyle != style {
+            shapedLines = nil
+            shapedStyle = style
         }
         let key = "\(textAreaWidth)|\(fontSize)|" + paragraph
         var lines = shapedLines?[key]
@@ -418,8 +429,9 @@ public class TextBlock : Drawable {
             }
             shapedLines![key] = lines
         }
+        let utf16 = Array(paragraph.utf16)
         for line in lines! {
-            let text = Shaping.text(paragraph, line)
+            let text = Shaping.text(utf16, line)
             let textLine = TextLine(font, text.trimmingCharacters(in: .whitespaces))
             textLine.shaped = ShapedText(line, text, fonts, fontSize)
             textLines.append(textLine)
