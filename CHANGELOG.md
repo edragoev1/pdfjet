@@ -12,6 +12,35 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **`TextBlock` and `TextLine` draw every script; `ComplexText` taken out**
+  (the four ports). A paragraph of a TextBlock in Hindi, Bengali, Tamil,
+  Sinhala, Khmer, Lao, Burmese or another script whose letters change
+  shape and place is shaped, by the same shapers as before, and drawn as
+  outlines within the block's layout, each line tagged with its text; the
+  other paragraphs, English, Arabic, Hebrew or Thai, are drawn as text, as
+  before. A TextLine of these scripts is shaped as one line. One class for
+  text in every language, in Table cells as any TextBlock. New API:
+  `setShaper` on TextBlock; `SetDefaultShaper` in .NET and Swift on
+  TextBlock (in Go the package function, as before). What the entries
+  below say of `ComplexText` is now TextBlock's.
+
+  Behavior change: `ComplexText` is gone, with its paragraph list, height
+  and `hasMoreText`; a TextBlock does not flow from page to page, so draw
+  a TextBlock a paragraph, measured first with `drawOn(null)`, as
+  Example_52 does. `new ComplexText(hindi, text).setWidth(500f)` becomes
+  `new TextBlock(hindi, text).setWidth(500f)`.
+
+  Behavior change: a TextBlock paragraph whose first letter is Arabic or
+  Hebrew is right to left by itself, aligned to the right, where it was
+  drawn left to right unless `setRightToLeft(true)` was called; a block of
+  `"Hello\nمرحبا"` now draws its second line from the right. Calling
+  `setRightToLeft`, true or false, still sets the whole block.
+
+  Behavior change: Hindi and the other scripts in a TextLine or TextBlock
+  were drawn as text, their letters wrong; they are now shaped, and in .NET
+  and Go, without PDFjet's HarfBuzz add-on or a shaper set, and in Swift on
+  Linux without a shaper set, the document fails saying what to add.
+
 - **`ComplexText` in Java, with java.awt.font, kerned and without invisible
   glyphs, as HarfBuzz shapes:** compared on the UDHR of Hindi, Bengali,
   Tamil, Burmese, Khmer, Lao and Sinhala in Noto Sans (585 paragraphs),

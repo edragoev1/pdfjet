@@ -93,7 +93,7 @@ same output come in four languages, and none of them needs a third-party library
   Serif, Cascadia Mono, and IBM Plex Sans JP, KR, SC, TC, Arabic, Hebrew and
   Thai, with Unicode text in Latin, Greek, Cyrillic, CJK and right to left
   scripts, and Noto Sans for Hindi, Bengali, Tamil, Khmer and the other
-  scripts drawn with `ComplexText` (see "Hindi, Khmer and other complex
+  scripts drawn as outlines (see "Hindi, Khmer and other complex
   scripts"), embedded as subsets of the glyphs a document draws. IBM
   Plex Sans alone covers all 24 official languages of the European Union,
   from Czech ř and Romanian ș to Greek and Bulgarian, with the euro sign and
@@ -101,10 +101,11 @@ same output come in four languages, and none of them needs a third-party library
   page of Chinese in IBM Plex Sans SC is about 180 KB, where the whole font
   is 7 MB.
 - **Hindi, Khmer and other complex scripts.** PDFjet does not shape these
-  scripts itself; the platform's text engine does, and `ComplexText` draws
-  what it found, as simply as a `TextBlock`: the text, the fonts, the
-  language and the width, then `drawOn`; aligned, justified, and given a
-  list of paragraphs, flowing from page to page. The glyphs are drawn as outlines,
+  scripts itself; the platform's text engine does, and `TextBlock` and
+  `TextLine` draw what it found, as they draw any text: the text, the
+  fonts, the language and the width, then `drawOn`. A block can mix
+  paragraphs of English, Hindi and Arabic, each drawn as it needs. The
+  glyphs of these scripts are drawn as outlines,
   read from the font file: the same on every screen, sharp in print, and
   read by screen readers in a tagged PDF, where each line carries its real
   text and language (PDF/UA). The text cannot be selected or searched;
@@ -113,13 +114,13 @@ same output come in four languages, and none of them needs a third-party library
   (java.awt.font, HarfBuzz since Java 9), Android 12 and later (Android's
   own), and Swift on Apple platforms (Core Text). Java 8's java.awt.font has
   no HarfBuzz: it shapes with the older ICU layout engine, retired since, so
-  on Java 8 give `ComplexText` an `HBShape`. .NET and Go have no text
+  on Java 8 give the `TextBlock` an `HBShape`. .NET and Go have no text
   engine of their own: add PDFjet's HarfBuzz, nothing to install, on
   Windows, Linux and macOS, x64 and arm64 (AWS Graviton too): in .NET the
   NuGet package `PDFjet.HarfBuzz` (HarfBuzz through HarfBuzzSharp), in Go
   the one line `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`
-  (go-text/typesetting, HarfBuzz in pure Go); without it, `ComplexText`
-  says what to add. `HBShape` shapes with HarfBuzz's own program,
+  (go-text/typesetting, HarfBuzz in pure Go); without it, the document
+  fails saying what to add. `HBShape` shapes with HarfBuzz's own program,
   `hb-shape`, installed with one line (`apt install libharfbuzz-bin`, `brew
   install harfbuzz`, or HarfBuzz's Windows zip), and only when given with
   `setShaper`, so that a program shapes the same wherever it runs: for
@@ -586,7 +587,7 @@ has one job:
 | Class | Use it for |
 |---|---|
 | `TextLine` | One line of text in one font: a title, a label, a value. It does not wrap. |
-| `TextBlock` | One run of text in one font that wraps at its width: a note, a table cell, a paragraph in a box. It breaks words that do not fit, wraps right to left and Thai text, highlights keywords, and can be cut to a height with the lines aligned to the top, center or bottom. |
+| `TextBlock` | One run of text in one font that wraps at its width: a note, a table cell, a paragraph in a box. It breaks words that do not fit, wraps right to left and Thai text, draws Hindi, Khmer and the other complex scripts as outlines, highlights keywords, and can be cut to a height with the lines aligned to the top, center or bottom. |
 | `TextColumn` | Paragraphs of `TextLine` objects that differ in font, size or color, drawn in one place: an article page with bold or colored words, justified paragraphs, CJK paragraphs, or a rotated column. |
 | `TextFrame` | Paragraphs that continue from one frame to the next: the columns of an article or the pages of a long text. `hasMoreText` says whether a next frame is needed. |
 | `Container` | A group of drawable elements, shapes, text, images, annotations and other containers, that are moved, rotated and scaled together and drawn into a page. |

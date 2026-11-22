@@ -123,7 +123,7 @@ carries for Chinese, Japanese, Korean, Arabic, Hebrew, Thai, the Indic
 scripts, Sinhala, Khmer, Lao and Myanmar: IBM Plex Sans JP, KR, SC and TC,
 Regular, SemiBold and Bold, IBM Plex Sans Arabic, Hebrew and Thai, Thin to
 Bold, and Noto Sans Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam, Sinhala, Khmer, Lao and Myanmar, Regular and
-Bold, for ComplexText, with their licenses (SIL Open Font License 1.1), as resources
+Bold, for TextBlock and TextLine, with their licenses (SIL Open Font License 1.1), as resources
 at com/pdfjet/fonts/world. PDFjet, com.pdfjet:pdfjet,
 finds them on the classpath: a path such as IBMPlexSansJP.Regular or
 IBMPlexSansArabic.Regular works when this jar is next to it.

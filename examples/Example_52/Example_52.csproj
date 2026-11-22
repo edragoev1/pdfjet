@@ -11,7 +11,7 @@
     </Reference>
   </ItemGroup>
   <!-- PDFjet.HarfBuzz, as a program adds the NuGet package beside PDFjet:
-       ComplexText's HarfBuzz, found by its name -->
+       TextBlock's HarfBuzz, found by its name -->
   <ItemGroup>
     <ProjectReference Include="../../nuget/harfbuzz/PDFjet.HarfBuzz.csproj" />
   </ItemGroup>

@@ -1,4 +1,4 @@
-// The HarfBuzz module of PDFjet: ComplexText's shaper for Go, HarfBuzz in
+// The HarfBuzz module of PDFjet: TextBlock's shaper for Go, HarfBuzz in
 // pure Go (go-text/typesetting), on every system and CPU Go runs on, with
 // nothing to install. A module of its own, so that PDFjet itself keeps no
 // dependency. Released with PDFjet, of the same version: the tag

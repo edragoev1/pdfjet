@@ -153,9 +153,10 @@ their tests.
 ## Known and accepted (document, do not fix)
 
 - Only Arabic and Persian letters are shaped by PDFjet itself. The Indic
-  scripts, Sinhala, Khmer, Lao and Myanmar are drawn by `ComplexText`, with
-  the platform's shaper (java.awt.font, Android, Core Text) or one an app
-  passes (HarfBuzzSharp in .NET, go-text in Go): their glyphs drawn as
+  scripts, Sinhala, Khmer, Lao and Myanmar are drawn by `TextBlock` and
+  `TextLine`, with the platform's shaper (java.awt.font, Android, Core
+  Text) or PDFjet's HarfBuzz add-ons (HarfBuzzSharp in .NET, go-text in
+  Go), or `HBShape` when set: their glyphs drawn as
   outlines, the text as the actual text of tagged content. PDFjet's font
   code reads no GSUB.
 - No Nastaliq Urdu.
