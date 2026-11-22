@@ -17,6 +17,7 @@ import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -50,7 +51,12 @@ final class AwtShaper implements Shaper {
         float width = request.getWidth();
         java.awt.Font[] fonts = new java.awt.Font[fontFiles.length];
         for (int i = 0; i < fonts.length; i++) {
-            fonts[i] = font(fontFiles[i]).deriveFont(fontSize);
+            // At the size, kerned, as HarfBuzz and Chrome shape: java.awt.font
+            // leaves a font's kerning out unless asked for it
+            Map<TextAttribute, Object> attributes = new HashMap<TextAttribute, Object>();
+            attributes.put(TextAttribute.SIZE, fontSize);
+            attributes.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
+            fonts[i] = font(fontFiles[i]).deriveFont(attributes);
         }
         // Each character in the first font that has it, else in the first
         AttributedString styled = new AttributedString(text);
@@ -100,6 +106,12 @@ final class AwtShaper implements Shaper {
                         CONTEXT, chars, runStart, runEnd, java.awt.Font.LAYOUT_LEFT_TO_RIGHT);
                 int count = shaped.getNumGlyphs();
                 for (int i = 0; i < count; i++) {
+                    // 0xFFFF and 0xFFFE are java.awt.font's invisible glyphs, of a
+                    // zero width non-joiner and the like: not glyphs of the font,
+                    // and nothing to draw
+                    if (shaped.getGlyphCode(i) >= 0xFFFE) {
+                        continue;
+                    }
                     Point2D p = shaped.getGlyphPosition(i);
                     fontOf.add(index);
                     glyphs.add(shaped.getGlyphCode(i));

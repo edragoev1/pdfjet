@@ -12,6 +12,18 @@ This is the first entry in this file; earlier releases were not tracked here.
 The faults found after 9.1.9 and small improvements, given to the customers
 who need them before 9.2.1 (TODO.md, "The numbers").
 
+- **`ComplexText` in Java, with java.awt.font, kerned and without invisible
+  glyphs, as HarfBuzz shapes:** compared on the UDHR of Hindi, Bengali,
+  Tamil, Burmese, Khmer, Lao and Sinhala in Noto Sans (585 paragraphs),
+  java.awt.font gave HarfBuzz's glyphs (hb-shape 15.2.0 and go-text agree
+  to the last place) but placed Lao and Burmese up to 3.3 points apart at
+  10 points: it leaves a font's kerning out unless asked. And it gives a
+  zero width non-joiner the invisible glyph 0xFFFF, not a glyph of the
+  font, which failed the PDF ("The font has no glyph number 65535") in 46
+  of the 95 paragraphs of Bengali. Behavior changes: the fonts are kerned,
+  and the invisible glyphs left out, as they draw nothing; the seven
+  languages now within 0.003 points of HarfBuzz. A test: Bengali with a
+  zero width non-joiner drawn.
 - **New: `HBShape`, a shaper for `ComplexText` that runs HarfBuzz's
   `hb-shape`** (the four ports; in Swift on macOS and Linux): Hindi, Khmer and the other
   scripts ComplexText draws, shaped by HarfBuzz, the text engine of Chrome

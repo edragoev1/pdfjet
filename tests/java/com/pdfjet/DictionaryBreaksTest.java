@@ -85,6 +85,28 @@ class DictionaryBreaksTest {
         assertEquals(0, inside, inside + " of " + breaks + " breaks inside a word");
     }
 
+    // Bengali with a zero width non-joiner, shaped by java.awt.font: its
+    // invisible glyph, 0xFFFF, is not a glyph of the font, and failed the PDF
+    // ("The font has no glyph number 65535"); it is left out, as it draws nothing
+    @Test
+    void awtShaperLeavesItsInvisibleGlyphsOut() throws Exception {
+        String text = "\u0986\u09AE\u09BF \u0995\u09BE\u09B0\u200C\u09CD\u09AF \u0985\u09A7\u09BF\u0995\u09BE\u09B0";
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = new Font(pdf, TestSupport.file("resources/fonts/world/NotoSansBengali/NotoSansBengali-Regular.otf").getPath());
+        font.setSize(12f);
+        List<ShapedLine> lines = new AwtShaper().shape(new ShapingRequest(text, "bn",
+                new byte[][] {Files.readAllBytes(TestSupport.file(
+                        "resources/fonts/world/NotoSansBengali/NotoSansBengali-Regular.otf").toPath())}, 12f, 300f));
+        for (ShapedLine line : lines) {
+            for (int glyph : line.getGlyphs()) {
+                assertTrue(glyph < 0xFFFE, "glyph " + glyph);
+            }
+        }
+        new ComplexText(font, text).setLanguage("bn").setWidth(300f).setLocation(50f, 50f)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+    }
+
     // Thai text without zero width spaces breaks between its words: the Thai
     // UDHR, each paragraph 300 points wide in IBM Plex Sans Thai 12, in the
     // lines Chrome breaks it into (tests/data/dictionarybreaks/thai-textblock-300.txt).
