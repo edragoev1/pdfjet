@@ -430,7 +430,7 @@ public class TextColumn : IDrawable {
     }
 
     private static float Width(TextLine textLine, String text) {
-        return textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, text);
+        return textLine.WidthOf(text);   // Of its glyphs, for text such as Hindi
     }
 
     private static String TrimTrailingSpaces(String text) {

@@ -30,8 +30,8 @@ public class TextLine : IBaselineDrawable {
     internal bool trailingSpace = false;
     // The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
     // outlines in place of the text; null for text drawn as text
-    internal ShapedText shaped;
-    private String shapedFor;           // The text shaped, when TextLine shaped it itself
+    internal ShapedText shaped;         // A TextBlock's line, shaped with its paragraph
+    private ShapedPieces pieces;        // The texts this line and its copies shaped
     // True for a line of a right to left paragraph of a TextBlock, aligned to the right
     internal bool rightToLeft;
     // The hard line breaks after the text line, of Markdown's two spaces, \
@@ -93,6 +93,7 @@ public class TextLine : IBaselineDrawable {
     /// <returns>this TextLine.</returns>
     public TextLine SetText(String text) {
         this.text = text;
+        this.pieces = null;
         this.altDescription = text;
         return this;
     }
@@ -256,7 +257,7 @@ public class TextLine : IBaselineDrawable {
             if (glyphs != null) {
                 return glyphs.line.Width;
             }
-        } catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is IOException) {
+        } catch (Exception) {
             // Measured as text: DrawOn says why it cannot be drawn
         }
         return font.StringWidth(fallbackFont, this.fontSize, text);
@@ -267,45 +268,40 @@ public class TextLine : IBaselineDrawable {
     // TextBlock's line was shaped with its paragraph. Throws when it could
     // not be shaped.
     internal ShapedText ShapedGlyphs() {
-        if (shaped != null && (shapedFor == null || (shapedFor == text && shaped.size == fontSize))) {
-            return shaped;
-        }
+        return shaped ?? ShapeOf(text);
+    }
+
+    // The text shaped in this line's style, as one line, or null for text
+    // drawn as text; shaped once, kept in the pieces this line shares with
+    // its copies, made again when the style changed.
+    internal ShapedText ShapeOf(String text) {
         if (text == null || !Shaping.NeedsShaper(text)) {
             return null;
         }
-        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
-        List<ShapedLine> lines = Shaping.ShapeText(null, fonts, fontSize, language, text, float.MaxValue / 4);
-        ShapedText glyphs = new ShapedText {text = text, fonts = fonts, size = fontSize};
-        // One line: the lines of a shaper that broke it anyway, joined
-        for (int i = 0; i < lines.Count; i++) {
-            ShapedLine line = lines[i];
-            if (i == 0) {
-                glyphs.line = line;
-                continue;
-            }
-            ShapedLine joined = glyphs.line;
-            float x0 = joined.Width;
-            int n = joined.Glyphs.Length + line.Glyphs.Length;
-            int[] fontIndexes = new int[n];
-            int[] ids = new int[n];
-            float[] positions = new float[2 * n];
-            Array.Copy(joined.FontIndexes, fontIndexes, joined.Glyphs.Length);
-            Array.Copy(line.FontIndexes, 0, fontIndexes, joined.Glyphs.Length, line.Glyphs.Length);
-            Array.Copy(joined.Glyphs, ids, joined.Glyphs.Length);
-            Array.Copy(line.Glyphs, 0, ids, joined.Glyphs.Length, line.Glyphs.Length);
-            Array.Copy(joined.Positions, positions, joined.Positions.Length);
-            for (int j = 0; j < line.Positions.Length; j += 2) {
-                positions[joined.Positions.Length + j] = x0 + line.Positions[j];
-                positions[joined.Positions.Length + j + 1] = line.Positions[j + 1];
-            }
-            glyphs.line = new ShapedLine(joined.Start, line.End, fontIndexes, ids, positions, x0 + line.Width);
+        ShapingStyle style = new ShapingStyle(font, fallbackFont, fontSize, language);
+        if (pieces == null || !pieces.style.Equals(style)) {
+            pieces = new ShapedPieces(style);
         }
-        if (glyphs.line == null) {
-            glyphs.line = new ShapedLine(0, text.Length, new int[0], new int[0], new float[0], 0f);
+        if (!pieces.shaped.TryGetValue(text, out ShapedText glyphs)) {
+            glyphs = Shaping.ShapeOneLine(Shaping.ShapingFonts(font, fallbackFont), fontSize, language, text);
+            pieces.shaped[text] = glyphs;
         }
-        shaped = glyphs;
-        shapedFor = text;
         return glyphs;
+    }
+
+    // The width of the text in this line's style: of its glyphs, for text
+    // such as Hindi a shaper shapes, else of its characters. What cannot be
+    // shaped is measured as text; DrawOn says why it cannot be drawn.
+    internal float WidthOf(String text) {
+        try {
+            ShapedText glyphs = ShapeOf(text);
+            if (glyphs != null) {
+                return glyphs.line.Width;
+            }
+        } catch (Exception) {
+            // Measured as text
+        }
+        return font.StringWidth(fallbackFont, fontSize, text);
     }
 
     /// <summary>
@@ -587,6 +583,7 @@ public class TextLine : IBaselineDrawable {
         textLine.uriActualText = uriActualText;
         textLine.uriAltDescription = uriAltDescription;
         textLine.structureType = structureType;
+        textLine.pieces = pieces;   // The words it shaped, shaped once
         textLine.pieceOf = pieceOf ?? this;
         return textLine;
     }
@@ -629,7 +626,7 @@ public class TextLine : IBaselineDrawable {
         ShapedText glyphs;
         try {
             glyphs = ShapedGlyphs();
-        } catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is IOException) {
+        } catch (Exception e) {
             // Text such as Hindi that could not be shaped, as with no shaper,
             // fails the document, saying why
             page.AddEMC();
@@ -756,7 +753,7 @@ public class TextLine : IBaselineDrawable {
     // past the spaces before it, and before the spaces after it. A text of
     // spaces alone spans its whole width.
     private float[] GetVisibleSpan() {
-        float width = font.StringWidth(fallbackFont, fontSize, text);
+        float width = WidthOf(text);
         int first = 0;
         while (first < text.Length && text[first] == ' ') {
             first++;
@@ -768,8 +765,8 @@ public class TextLine : IBaselineDrawable {
         if (first == last || (first == 0 && last == text.Length)) {
             return new float[] {0f, width};
         }
-        float start = font.StringWidth(fallbackFont, fontSize, text.Substring(0, first));
-        float end = font.StringWidth(fallbackFont, fontSize, text.Substring(0, last));
+        float start = WidthOf(text.Substring(0, first));
+        float end = WidthOf(text.Substring(0, last));
         return new float[] {start, end};
     }
 
@@ -779,15 +776,14 @@ public class TextLine : IBaselineDrawable {
     // which left out the kerning between the space and the letter before it, so
     // the line stopped short of the word (the review of 28 October 2026).
     private float GetDecorationLength() {
-        ShapedText glyphs = shaped != null ? ShapedGlyphs() : null;
-        if (glyphs != null) {
-            return glyphs.line.Width;
+        if (shaped != null) {
+            return shaped.line.Width;
         }
         String drawn = text;
         if (isLastToken && drawn.EndsWith(Single.space, StringComparison.Ordinal)) {
             drawn = drawn.Substring(0, drawn.Length - 1);
         }
-        return font.StringWidth(fallbackFont, fontSize, drawn);
+        return WidthOf(drawn);
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

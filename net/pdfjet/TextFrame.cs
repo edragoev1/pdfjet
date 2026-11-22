@@ -495,12 +495,9 @@ public class TextFrame : IDrawable {
     // of the frame. Returns false when a row does not fit in the height of the
     // frame; the tokens that are left stay for the next frame.
     private bool DrawTokens(Page page, Paragraph paragraph, TextLine textLine) {
-        Font font = textLine.font;
         if (RisesOutOfFrame(textLine)) {
             return false;
         }
-        Font fallbackFont = textLine.fallbackFont;
-        float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
         float runLength = 0f;
         // Where the rest of the token starts, in a token broken into rows: the
@@ -617,7 +614,7 @@ public class TextFrame : IDrawable {
             SpaceAfterRow(textLine);
         }
         AddToRow(paragraph, textLine, buf.ToString(), true);
-        xText += font.StringWidth(fallbackFont, fontSize, buf.ToString());
+        xText += textLine.WidthOf(buf.ToString());
         return true;
     }
 
@@ -703,7 +700,7 @@ public class TextFrame : IDrawable {
         int end = TextBlock.NextCharacterBreak(token, 0);
         while (end < token.Length) {
             int next = TextBlock.NextCharacterBreak(token, end);
-            if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, token.Substring(0, next)) > w) {
+            if (textLine.WidthOf(token.Substring(0, next)) > w) {
                 break;
             }
             end = next;
@@ -1042,7 +1039,7 @@ public class TextFrame : IDrawable {
     }
 
     private static float Width(TextLine textLine, String text) {
-        return textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, text);
+        return textLine.WidthOf(text);   // Of its glyphs, for text such as Hindi
     }
 
     // Splits the text of the text line into words, or, for CJK text, which has no

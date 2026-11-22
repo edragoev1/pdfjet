@@ -60,6 +60,9 @@ public class TextBlock : IDrawable {
     // The lines a shaper found, by paragraph, width and size, so that a
     // paragraph is shaped once however often the block is measured
     private Dictionary<String, List<ShapedLine>> shapedLines;
+    // The font, fallback font and language the lines were shaped in: in
+    // another, they are shaped again
+    private ShapingStyle shapedStyle;
     // Why a paragraph could not be shaped, which DrawOn fails the document with
     private Exception shapeError;
 
@@ -109,6 +112,7 @@ public class TextBlock : IDrawable {
     /// <summary>Sets the text.</summary>
     public TextBlock SetText(string text) {
         this.textContent = text;
+        this.shapedLines = null;    // The lines of another text are not needed again
         return this;
     }
 
@@ -392,7 +396,11 @@ public class TextBlock : IDrawable {
         }
         for (int i = 0; i < paragraph.Length; i++) {
             char c = paragraph[i];
-            if ((c >= 0x0590 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFDFF) || (c >= 0xFE70 && c <= 0xFEFF)) {
+            // The right to left blocks of bidi.go, Hebrew and Arabic; not
+            // U+FEFF, the byte order mark, past the Arabic forms
+            if ((c >= 0x0590 && c <= 0x05FF) || (c >= 0x0600 && c <= 0x07BF) || (c >= 0x07C0 && c <= 0x085F)
+                    || (c >= 0x0860 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFB4F) || (c >= 0xFB50 && c <= 0xFD3D)
+                    || (c >= 0xFD50 && c <= 0xFDCE) || (c >= 0xFDF0 && c <= 0xFDFC) || (c >= 0xFE70 && c <= 0xFEFC)) {
                 return true;
             }
             if (Char.IsLetter(c)) {
@@ -406,12 +414,17 @@ public class TextBlock : IDrawable {
     // its lines, drawn as outlines: the block's font for the text, its
     // fallback font for the characters the font has not.
     private void AddShapedLines(List<TextLine> textLines, String paragraph, float textAreaWidth) {
-        Font[] fonts = (fallbackFont != null && fallbackFont != font) ? new Font[] {font, fallbackFont} : new Font[] {font};
+        Font[] fonts = Shaping.ShapingFonts(font, fallbackFont);
+        ShapingStyle style = new ShapingStyle(font, fallbackFont, 0f, language);
+        if (!style.Equals(shapedStyle)) {
+            shapedLines = null;
+            shapedStyle = style;
+        }
         String key = textAreaWidth + "|" + fontSize + "|" + paragraph;
         if (shapedLines == null || !shapedLines.TryGetValue(key, out List<ShapedLine> lines)) {
             try {
                 lines = Shaping.ShapeText(shaper, fonts, fontSize, language, paragraph, textAreaWidth);
-            } catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is IOException) {
+            } catch (Exception e) {
                 if (shapeError == null) {
                     shapeError = e;
                 }

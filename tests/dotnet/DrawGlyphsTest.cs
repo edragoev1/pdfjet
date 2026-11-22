@@ -63,7 +63,7 @@ public class DrawGlyphsTest {
         Assert.Contains("q 0.012 0 0 0.012 60 692 cm /Fm", content);
         Assert.DoesNotContain("BT", content);
         Assert.DoesNotContain("Tf", content);
-        Assert.DoesNotContain("BDC", content);  // Untagged: just the shapes
+        Assert.Contains("/ActualText <", content);   // Untagged: with their text too
         pdf.Complete();
         string doc = TestSupport.Latin1(bos.ToArray());
         Assert.DoesNotContain("/FontFile", doc);    // No font program

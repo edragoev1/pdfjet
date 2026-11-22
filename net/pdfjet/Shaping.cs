@@ -125,6 +125,57 @@ internal static class Shaping {
         return false;
     }
 
+    // The fonts text is shaped in: the font, and the fallback font for the
+    // characters the font has not, when it has a file the text engine can
+    // read; a fallback without one, as a core font, is left out, so that a
+    // Latin fallback does not fail Hindi text.
+    internal static Font[] ShapingFonts(Font font, Font fallback) {
+        if (fallback != null && fallback != font) {
+            try {
+                if (fallback.FontFile() != null) {
+                    return new Font[] {font, fallback};
+                }
+            } catch (Exception) {
+                // Left out, as a font without a file
+            }
+        }
+        return new Font[] {font};
+    }
+
+    // Shapes the text as one line, not wrapped, with the default shaper: the
+    // lines of a shaper that broke it anyway, joined.
+    internal static ShapedText ShapeOneLine(Font[] fonts, float size, String language, String text) {
+        List<ShapedLine> lines = ShapeText(null, fonts, size, language, text, float.MaxValue / 4);
+        ShapedText glyphs = new ShapedText {text = text, fonts = fonts, size = size};
+        for (int i = 0; i < lines.Count; i++) {
+            ShapedLine line = lines[i];
+            if (i == 0) {
+                glyphs.line = line;
+                continue;
+            }
+            ShapedLine joined = glyphs.line;
+            float x0 = joined.Width;
+            int n = joined.Glyphs.Length + line.Glyphs.Length;
+            int[] fontIndexes = new int[n];
+            int[] ids = new int[n];
+            float[] positions = new float[2 * n];
+            Array.Copy(joined.FontIndexes, fontIndexes, joined.Glyphs.Length);
+            Array.Copy(line.FontIndexes, 0, fontIndexes, joined.Glyphs.Length, line.Glyphs.Length);
+            Array.Copy(joined.Glyphs, ids, joined.Glyphs.Length);
+            Array.Copy(line.Glyphs, 0, ids, joined.Glyphs.Length, line.Glyphs.Length);
+            Array.Copy(joined.Positions, positions, joined.Positions.Length);
+            for (int j = 0; j < line.Positions.Length; j += 2) {
+                positions[joined.Positions.Length + j] = x0 + line.Positions[j];
+                positions[joined.Positions.Length + j + 1] = line.Positions[j + 1];
+            }
+            glyphs.line = new ShapedLine(joined.Start, line.End, fontIndexes, ids, positions, x0 + line.Width);
+        }
+        if (glyphs.line == null) {
+            glyphs.line = new ShapedLine(0, text.Length, new int[0], new int[0], new float[0], 0f);
+        }
+        return glyphs;
+    }
+
     // Shapes the text with the shaper, or the default one, in the fonts, at
     // the size, wrapped to the width; the lines checked, so that a shaper of
     // the program's own cannot make PDFjet draw past them.
@@ -150,6 +201,44 @@ internal static class Shaping {
             }
         }
         return lines;
+    }
+}
+
+// What shaped text depends on besides its text: a cache of shaped text is
+// good only for the style it was made in.
+internal sealed class ShapingStyle {
+    private readonly Font font;
+    private readonly Font fallback;
+    private readonly float size;
+    private readonly String language;
+
+    internal ShapingStyle(Font font, Font fallback, float size, String language) {
+        this.font = font;
+        this.fallback = fallback;
+        this.size = size;
+        this.language = language;
+    }
+
+    public override bool Equals(object other) {
+        return other is ShapingStyle style && font == style.font && fallback == style.fallback
+                && size == style.size && language == style.language;
+    }
+
+    public override int GetHashCode() {
+        return (font?.GetHashCode() ?? 0) ^ (fallback?.GetHashCode() ?? 0) ^ size.GetHashCode()
+                ^ (language?.GetHashCode() ?? 0);
+    }
+}
+
+// A TextLine's cache of the texts it shaped, its own and its words', which
+// the copies a TextFrame or a TextColumn draws share, so that each is shaped
+// once, however often it is measured and drawn.
+internal sealed class ShapedPieces {
+    internal readonly ShapingStyle style;
+    internal readonly Dictionary<String, ShapedText> shaped = new Dictionary<String, ShapedText>();
+
+    internal ShapedPieces(ShapingStyle style) {
+        this.style = style;
     }
 }
 

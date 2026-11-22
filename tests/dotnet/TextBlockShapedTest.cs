@@ -257,6 +257,122 @@ public class TextBlockShapedTest {
         }
     }
 
+    // A shaper as LetterShaper, which counts its calls and keeps the files
+    private class CountingShaper : IShaper {
+        private readonly LetterShaper letters;
+        internal int calls;
+        internal byte[][] files;
+
+        internal CountingShaper(Font font) {
+            this.letters = new LetterShaper(font);
+        }
+
+        public List<ShapedLine> Shape(ShapingRequest request) {
+            calls++;
+            files = request.FontFiles;
+            return letters.Shape(request);
+        }
+    }
+
+    // A TextFrame of Hindi words places them by their shaped widths, the
+    // widths they are drawn at, each word shaped once however often measured
+    [Fact]
+    public void TextFrameMeasuresShapedWords() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, TestSupport.RepoPath(DEVANAGARI)).SetSize(10f);
+        CountingShaper shaper = new CountingShaper(font);
+        TextBlock.SetDefaultShaper(shaper);
+        try {
+            Paragraph paragraph = new Paragraph().Add(new TextLine(font, "कख गघ ङच"));
+            TextFrame frame = new TextFrame(new List<Paragraph> {paragraph});
+            frame.SetLocation(10f, 10f);
+            frame.SetWidth(300f);
+            frame.SetHeight(500f);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            frame.DrawOn(page);
+            List<float> xs = new List<float>();
+            foreach (float[] place in Places(TestSupport.Content(page))) {
+                xs.Add(place[1]);
+            }
+            // Each word drawn with the space after it, shaped with it: the
+            // test's shaper gives a space 7 points, as every letter
+            Assert.Equal(new List<float> {10f, 17f, 31f, 38f, 52f, 59f}, xs);
+            Assert.True(shaper.calls <= 8, "shaped " + shaper.calls + " times");
+            pdf.Complete();
+        } finally {
+            TextBlock.SetDefaultShaper(null);
+        }
+    }
+
+    // A TextBlock or a TextLine given another font, fallback font or language
+    // shapes its text again: the glyphs of one font are not drawn in another
+    [Fact]
+    public void ShapedTextIsShapedAgainInAnotherFont() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font regular = new Font(pdf, TestSupport.RepoPath(DEVANAGARI));
+        Font other = new Font(pdf, TestSupport.RepoPath(LATIN));
+        CountingShaper shaper = new CountingShaper(regular);
+        TextBlock block = new TextBlock(regular, "कख").SetShaper(shaper).SetWidth(200f);
+        block.DrawOn(null);
+        block.DrawOn(null);
+        Assert.Equal(1, shaper.calls);
+        block.SetFont(other);
+        block.DrawOn(null);
+        block.SetLanguage("mr");
+        block.DrawOn(null);
+        Assert.Equal(3, shaper.calls);
+        TextBlock.SetDefaultShaper(shaper);
+        try {
+            TextLine line = new TextLine(regular, "कख");
+            line.GetWidth();
+            line.GetWidth();
+            line.SetFont(other);
+            line.GetWidth();
+            Assert.Equal(5, shaper.calls);
+        } finally {
+            TextBlock.SetDefaultShaper(null);
+        }
+    }
+
+    // A fallback font the text engine cannot read, as a core font, is left out
+    // of the shaping: Hindi with a Latin core fallback is drawn
+    [Fact]
+    public void AFallbackFontWithoutAFileIsLeftOut() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, TestSupport.RepoPath(DEVANAGARI));
+        CountingShaper shaper = new CountingShaper(font);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, "कख").SetFallbackFont(new Font(pdf, CoreFont.HELVETICA)).SetShaper(shaper)
+                .SetWidth(200f).DrawOn(page);
+        Assert.Single(shaper.files);
+        Assert.Equal(2, Count(TestSupport.Content(page), " cm /Fm"));
+        pdf.Complete();
+    }
+
+    // In an untagged document, the outlines of shaped text carry its text, as
+    // marked content of their own, which a reader may copy and search
+    [Fact]
+    public void UntaggedShapedTextCarriesItsText() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, TestSupport.RepoPath(DEVANAGARI));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, "कख").SetShaper(new LetterShaper(font)).SetWidth(200f).DrawOn(page);
+        Assert.Contains("/ActualText <" + Page.ToUTF16Hex("क") + ">>> BDC", TestSupport.Content(page));
+        pdf.Complete();
+    }
+
+    // A paragraph that starts with a byte order mark is not right to left
+    [Fact]
+    public void AByteOrderMarkIsNotArabic() {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, TestSupport.RepoPath(LATIN));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, "\uFEFFHello").SetWidth(300f).SetLocation(50f, 100f).DrawOn(page);
+        Match m = Regex.Match(TestSupport.Content(page), @"1 0 0 1 (\S+) \S+ Tm");
+        Assert.True(m.Success);
+        Assert.Equal(50f, float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture));
+    }
+
     // TextLine with text such as Hindi: shaped as one line, drawn as glyphs,
     // tagged with its text, its width the glyphs'.
     [Fact]
