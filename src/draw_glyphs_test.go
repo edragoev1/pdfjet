@@ -66,8 +66,9 @@ func TestDrawGlyphsTheGlyphsAreOutlinesAndNoFontIsWritten(t *testing.T) {
 		!strings.Contains(content, "q 0.012 0 0 0.012 60 692 cm /Fm") {
 		t.Error(content)
 	}
-	if strings.Contains(content, "BT") || strings.Contains(content, "Tf") || strings.Contains(content, "BDC") {
-		t.Error(content) // Untagged: just the shapes
+	if strings.Contains(content, "BT") || strings.Contains(content, "Tf") ||
+		!strings.Contains(content, "/Span <</Lang <656e> /ActualText <"+toUTF16Hex("AB")+">>> BDC\n") {
+		t.Error(content) // Untagged: the shapes, with their text as actual text
 	}
 	pdf := string(doc.complete())
 	for _, part := range []string{"/FontFile", "/Type /Font", "/ToUnicode"} {

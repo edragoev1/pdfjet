@@ -392,8 +392,10 @@ func visibleWidth(textLines []*TextLine) float32 {
 	return runLength
 }
 
+// textLineWidth is the width of the text in the text line's style: of its
+// glyphs, for text such as Hindi, as the TextLine draws it
 func textLineWidth(textLine *TextLine, text string) float32 {
-	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
+	return textLine.widthOf(text)
 }
 
 func (textColumn *TextColumn) moveToNextLine(lineHeight float32) [2]float32 {

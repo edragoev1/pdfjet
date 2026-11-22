@@ -51,8 +51,8 @@ type TextLine struct {
 	structureType      structelem.StructElem
 	// The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
 	// outlines in place of the text; nil for text drawn as text
-	shaped    *shapedLine
-	shapedFor string // The text shaped, when TextLine shaped it itself
+	shaped    *shapedLine    // A TextBlock's line, shaped with its paragraph
+	pieces    *shapedPieces // The texts this line and its copies shaped
 	// True for a line of a right to left paragraph of a TextBlock, aligned
 	// to the right
 	rightToLeft bool
@@ -97,6 +97,7 @@ func NewEmptyTextLine(font *Font) *TextLine {
 // Returns this TextLine.
 func (textLine *TextLine) SetText(text string) *TextLine {
 	textLine.text = text
+	textLine.pieces = nil
 	textLine.altDescription = text
 	return textLine
 }
@@ -225,7 +226,7 @@ func (textLine *TextLine) GetWidth() float32 {
 	if shaped, _ := textLine.shapedText(); shaped != nil {
 		return shaped.line.Width
 	}
-	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	return textLine.widthOf(textLine.text)
 }
 
 // shapedText returns the glyphs a shaper found for text such as Hindi or
@@ -233,43 +234,42 @@ func (textLine *TextLine) GetWidth() float32 {
 // text. A TextBlock's line was shaped with its paragraph.
 func (textLine *TextLine) shapedText() (*shapedLine, error) {
 	if textLine.shaped != nil {
-		if textLine.shaped.size == textLine.fontSize && textLine.shapedFor == textLine.text {
-			return textLine.shaped, nil
-		}
-		if textLine.shapedFor == "" {
-			return textLine.shaped, nil // A TextBlock's
-		}
+		return textLine.shaped, nil // A TextBlock's
 	}
-	if !needsShaper(textLine.text) {
+	return textLine.shapeOf(textLine.text)
+}
+
+// shapeOf returns the text shaped in this line's style, as one line, or nil
+// for text drawn as text; shaped once, kept in the pieces this line shares
+// with its copies, made again when the style changed.
+func (textLine *TextLine) shapeOf(text string) (*shapedLine, error) {
+	if !needsShaper(text) {
 		return nil, nil
 	}
-	fonts := []*Font{textLine.font}
-	if textLine.fallbackFont != nil && textLine.fallbackFont != textLine.font {
-		fonts = append(fonts, textLine.fallbackFont)
+	style := shapingStyle{textLine.font, textLine.fallbackFont, textLine.fontSize, textLine.language}
+	if textLine.pieces == nil || textLine.pieces.style != style {
+		textLine.pieces = &shapedPieces{style: style, shaped: map[string]*shapedLine{}}
 	}
-	lines, err := shapeText(nil, fonts, textLine.fontSize, textLine.language, textLine.text, math.MaxFloat32/4)
+	if shaped, ok := textLine.pieces.shaped[text]; ok {
+		return shaped, nil
+	}
+	shaped, err := shapeOneLine(shapingFonts(textLine.font, textLine.fallbackFont),
+		textLine.fontSize, textLine.language, text)
 	if err != nil {
 		return nil, err
 	}
-	shaped := &shapedLine{text: textLine.text, fonts: fonts, size: textLine.fontSize}
-	for i, line := range lines {
-		// One line: the lines of a shaper that broke it anyway, joined
-		if i == 0 {
-			shaped.line = line
-			continue
-		}
-		x := shaped.line.Width
-		shaped.line.End = line.End
-		shaped.line.FontIndexes = append(shaped.line.FontIndexes, line.FontIndexes...)
-		shaped.line.Glyphs = append(shaped.line.Glyphs, line.Glyphs...)
-		for j := 0; j < len(line.Positions); j += 2 {
-			shaped.line.Positions = append(shaped.line.Positions, x+line.Positions[j], line.Positions[j+1])
-		}
-		shaped.line.Width = x + line.Width
-	}
-	textLine.shaped = shaped
-	textLine.shapedFor = textLine.text
+	textLine.pieces.shaped[text] = shaped
 	return shaped, nil
+}
+
+// widthOf returns the width of the text in this line's style: of its glyphs,
+// for text such as Hindi a shaper shapes, else of its characters. What
+// cannot be shaped is measured as text; DrawOn says why it cannot be drawn.
+func (textLine *TextLine) widthOf(text string) float32 {
+	if shaped, err := textLine.shapeOf(text); err == nil && shaped != nil {
+		return shaped.line.Width
+	}
+	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
 }
 
 // GetHeight returns the height of this TextLine.
@@ -527,6 +527,7 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 	line.uriActualText = textLine.uriActualText
 	line.uriAltDescription = textLine.uriAltDescription
 	line.structureType = textLine.structureType
+	line.pieces = textLine.pieces // The words it shaped, shaped once
 	line.pieceOf = textLine
 	if textLine.pieceOf != nil {
 		line.pieceOf = textLine.pieceOf
@@ -674,7 +675,7 @@ func (textLine *TextLine) decorationLength() float32 {
 	if textLine.isLastToken {
 		text = strings.TrimSuffix(text, single.Space)
 	}
-	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
+	return textLine.widthOf(text)
 }
 
 // corner returns the right end of the baseline, or its lower end when the text
@@ -727,15 +728,13 @@ func (textLine *TextLine) linkBox(verticalOffset float32) (float32, float32, flo
 // baseline: past the spaces before it, and before the spaces after it. A text
 // of spaces alone spans its whole width.
 func (textLine *TextLine) visibleSpan() (float32, float32) {
-	width := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	width := textLine.widthOf(textLine.text)
 	trimmed := strings.Trim(textLine.text, single.Space)
 	if trimmed == "" || trimmed == textLine.text {
 		return 0, width
 	}
-	start := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize,
-		textLine.text[:len(textLine.text)-len(strings.TrimLeft(textLine.text, single.Space))])
-	end := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize,
-		strings.TrimRight(textLine.text, single.Space))
+	start := textLine.widthOf(textLine.text[:len(textLine.text)-len(strings.TrimLeft(textLine.text, single.Space))])
+	end := textLine.widthOf(strings.TrimRight(textLine.text, single.Space))
 	return start, end
 }
 

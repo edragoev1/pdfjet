@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -365,6 +366,118 @@ func TestTextLineTurnsItsGlyphsAsItsText(t *testing.T) {
 	line.DrawOn(page)
 	if strings.Contains(testContent(page), "1 0 0 1 -50 -692 cm") {
 		t.Errorf("turned at 0 degrees:\n%s", testContent(page))
+	}
+	doc.complete()
+}
+
+// testCountingShaper shapes as testLetterShaper does, and counts its calls
+type testCountingShaper struct {
+	testLetterShaper
+	calls int
+	files [][]byte
+}
+
+func (shaper *testCountingShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
+	shaper.calls++
+	shaper.files = request.FontFiles
+	return shaper.testLetterShaper.Shape(request)
+}
+
+// A TextFrame of Hindi words places them by their shaped widths, the
+// widths they are drawn at, each word shaped once however often measured
+func TestTextFrameMeasuresShapedWords(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexDevanagari))
+	font.SetSize(10)
+	shaper := &testCountingShaper{testLetterShaper: testLetterShaper{font}}
+	SetDefaultShaper(shaper)
+	defer SetDefaultShaper(nil)
+	paragraph := NewParagraph().Add(NewTextLine(font, "कख गघ ङच"))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+	frame.SetLocation(10, 10)
+	frame.SetHeight(500)
+	page := NewPage(doc.pdf, letter.Portrait())
+	frame.DrawOn(page)
+	var xs []float32
+	for _, m := range regexp.MustCompile(`q \S+ 0 0 \S+ (\S+) \S+ cm /Fm`).FindAllStringSubmatch(testContent(page), -1) {
+		xs = append(xs, testNumber(t, m[1]))
+	}
+	if len(xs) != 6 {
+		t.Fatalf("%d glyphs: %v\n%s", len(xs), xs, testContent(page))
+	}
+	// Each word drawn with the space after it, shaped with it: the test's
+	// shaper gives a space 7 points, as every letter
+	want := []float32{10, 17, 31, 38, 52, 59}
+	for i := range want {
+		testNear(t, "a glyph's x", want[i], xs[i], 0.01)
+	}
+	if shaper.calls > 8 {
+		t.Errorf("shaped %d times: each word once, and the pieces drawn", shaper.calls)
+	}
+	doc.complete()
+}
+
+// A TextBlock or a TextLine given another font, fallback font or language
+// shapes its text again: the glyphs of one font are not drawn in another
+func TestShapedTextIsShapedAgainInAnotherFont(t *testing.T) {
+	doc := testNewDoc()
+	regular := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexDevanagari))
+	bold := NewFontFromFile(doc.pdf, testRepoPath(t, testPlexOTF))
+	shaper := &testCountingShaper{testLetterShaper: testLetterShaper{regular}}
+	block := NewTextBlock(regular, "कख").SetShaper(shaper)
+	block.SetWidth(200)
+	block.DrawOn(nil)
+	block.DrawOn(nil)
+	if shaper.calls != 1 {
+		t.Fatalf("shaped %d times in one font", shaper.calls)
+	}
+	block.SetFont(bold)
+	block.DrawOn(nil)
+	block.SetLanguage("mr")
+	block.DrawOn(nil)
+	if shaper.calls != 3 {
+		t.Errorf("shaped %d times: not again in another font and language", shaper.calls)
+	}
+	SetDefaultShaper(shaper)
+	defer SetDefaultShaper(nil)
+	line := NewTextLine(regular, "कख")
+	line.GetWidth()
+	line.GetWidth()
+	line.SetFont(bold)
+	line.GetWidth()
+	if shaper.calls != 5 {
+		t.Errorf("a TextLine shaped %d times in all, not 5", shaper.calls)
+	}
+}
+
+// A fallback font the text engine cannot read, as a core font, is left out
+// of the shaping: Hindi with a Latin core fallback is drawn
+func TestAFallbackFontWithoutAFileIsLeftOut(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexDevanagari))
+	shaper := &testCountingShaper{testLetterShaper: testLetterShaper{font}}
+	page := NewPage(doc.pdf, letter.Portrait())
+	block := NewTextBlock(font, "कख").SetShaper(shaper)
+	block.SetFallbackFont(NewCoreFont(doc.pdf, corefont.Helvetica()))
+	block.SetWidth(200)
+	block.DrawOn(page)
+	if len(shaper.files) != 1 || strings.Count(testContent(page), " cm /Fm") != 2 {
+		t.Errorf("%d font files, not 1:\n%s", len(shaper.files), testContent(page))
+	}
+	doc.complete()
+}
+
+// In an untagged document, the outlines of shaped text carry its text, as
+// marked content of their own, which a reader may copy and search
+func TestUntaggedShapedTextCarriesItsText(t *testing.T) {
+	doc := testNewDoc()
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexDevanagari))
+	page := NewPage(doc.pdf, letter.Portrait())
+	block := NewTextBlock(font, "कख").SetShaper(&testLetterShaper{font})
+	block.SetWidth(200)
+	block.DrawOn(page)
+	if !strings.Contains(testContent(page), "/ActualText <"+toUTF16Hex("क")+">>> BDC") {
+		t.Errorf("no actual text:\n%s", testContent(page))
 	}
 	doc.complete()
 }

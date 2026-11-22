@@ -2819,11 +2819,11 @@ func (page *Page) addArtifactBDC(properties string) {
 //
 // What the outlines give: the text looks as the engine shaped it, on any
 // screen and in print, with no font in the document, as the font is only read
-// for its outlines. In a tagged document, PDF/UA or a PDF/A of level A, the
-// glyphs are part of the content they are drawn in, such as a paragraph begun
-// with AddBDC, or, drawn outside any, a paragraph of their own; the text they
-// stand for is their actual text, in the language given, which screen readers
-// read. What they do not give: the text cannot be selected, copied or
+// for its outlines. The text they stand for is their actual text, in the
+// language given, in any document. In a tagged document, PDF/UA or a PDF/A of
+// level A, the glyphs are part of the content they are drawn in, such as a
+// paragraph begun with AddBDC, or, drawn outside any, a paragraph of their
+// own, and screen readers read their actual text. What they do not give: the text cannot be selected, copied or
 // searched, as it is not text. A document that needs its exact text along can
 // carry it with PDF.AttachText.
 //
@@ -2909,11 +2909,13 @@ func (page *Page) glyphsDrawable(font *Font, glyphs []int, positions []float32) 
 	return true
 }
 
-// beginActualText begins, in a tagged document, the marked content of
-// glyphs drawn as outlines, with the text they stand for, and its language,
+// beginActualText begins, in any document but inside an artifact, the
+// marked content of glyphs drawn as outlines, with the text they stand for, and its language,
 // as its actual text (ISO 32000-1, 14.9.4); endActualText ends it.
 func (page *Page) beginActualText(text, language string) {
-	if !page.pdf.isTagged() || page.artifactDepth != 0 {
+	// In any document, tagged or not: marked content of its own needs no
+	// structure, and gives the outlines their text
+	if page.artifactDepth != 0 {
 		return
 	}
 	page.appendString("/Span <<")
@@ -2928,7 +2930,7 @@ func (page *Page) beginActualText(text, language string) {
 }
 
 func (page *Page) endActualText() {
-	if page.pdf.isTagged() && page.artifactDepth == 0 {
+	if page.artifactDepth == 0 {
 		page.appendString("EMC\n")
 	}
 }

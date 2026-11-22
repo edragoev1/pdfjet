@@ -72,6 +72,9 @@ type TextBlock struct {
 	// The lines a shaper found, by paragraph, width and size, so that a
 	// paragraph is shaped once however often the block is measured
 	shapedLines map[shapedKey][]ShapedLine
+	// The font, fallback font and language the lines were shaped in: in
+	// another, they are shaped again
+	shapedStyle shapingStyle
 	// Why a paragraph could not be shaped, which DrawOn fails the document with
 	shapeErr error
 }
@@ -161,6 +164,7 @@ func (textBlock *TextBlock) SetFallbackFontSize(size float32) *TextBlock {
 // SetText sets the text of this text block.
 func (textBlock *TextBlock) SetText(text string) *TextBlock {
 	textBlock.textContent = text
+	textBlock.shapedLines = nil // The lines of another text are not needed again
 	return textBlock
 }
 
@@ -418,9 +422,11 @@ func (textBlock *TextBlock) paragraphRightToLeft(paragraph string) bool {
 // text, its fallback font for the characters the font has not.
 func (textBlock *TextBlock) appendShapedLines(
 	textLines []*TextLine, paragraph string, textAreaWidth float32) []*TextLine {
-	fonts := []*Font{textBlock.font}
-	if textBlock.fallbackFont != nil && textBlock.fallbackFont != textBlock.font {
-		fonts = append(fonts, textBlock.fallbackFont)
+	fonts := shapingFonts(textBlock.font, textBlock.fallbackFont)
+	style := shapingStyle{textBlock.font, textBlock.fallbackFont, 0, textBlock.language}
+	if textBlock.shapedStyle != style {
+		textBlock.shapedLines = nil
+		textBlock.shapedStyle = style
 	}
 	key := shapedKey{paragraph, textAreaWidth, textBlock.fontSize}
 	lines, ok := textBlock.shapedLines[key]

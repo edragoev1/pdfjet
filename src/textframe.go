@@ -486,9 +486,6 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 // the width of the frame. It returns false when a row does not fit in the
 // height of the frame; the tokens that are left stay for the next frame.
 func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *TextLine) bool {
-	font := textLine.font
-	fallbackFont := textLine.fallbackFont
-	fontSize := textLine.fontSize
 	if tf.risesOutOfFrame(textLine) {
 		return false
 	}
@@ -601,7 +598,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		tf.spaceAfterRow(textLine)
 	}
 	tf.addToRow(paragraph, textLine, buf.String(), true)
-	tf.xText += font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())
+	tf.xText += textLine.widthOf(buf.String())
 	return true
 }
 
@@ -659,7 +656,7 @@ func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
 	end := nextCharacterBreakIn(token, 0)
 	for end < len(token) {
 		next := nextCharacterBreakIn(token, end)
-		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:next]) > tf.w {
+		if textLine.widthOf(token[:next]) > tf.w {
 			break
 		}
 		end = next
@@ -1031,8 +1028,10 @@ func trimTrailingSpaces(text string) string {
 	return strings.TrimRight(text, " ")
 }
 
+// textWidth is the width of the text in the text line's style: of its
+// glyphs, for text such as Hindi, as the TextLine draws it
 func textWidth(textLine *TextLine, text string) float32 {
-	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
+	return textLine.widthOf(text)
 }
 
 // tokenize splits the text of the text line into words, or, for CJK text,

@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"errors"
+	"math"
 )
 
 // Shaper is a text engine that shapes text for TextBlock and TextLine: it
@@ -120,6 +121,62 @@ func shapeText(shaper Shaper, fonts []*Font, size float32, language, text string
 		}
 	}
 	return lines, nil
+}
+
+// shapingFonts returns the fonts text is shaped in: the font, and the
+// fallback font for the characters the font has not, when it has a file the
+// text engine can read; a fallback without one, as a core font, is left out,
+// so that a Latin fallback does not fail Hindi text.
+func shapingFonts(font, fallback *Font) []*Font {
+	fonts := []*Font{font}
+	if fallback != nil && fallback != font {
+		if file, err := fallback.shapingFile(); err == nil && file != nil {
+			fonts = append(fonts, fallback)
+		}
+	}
+	return fonts
+}
+
+// shapeOneLine shapes the text as one line, not wrapped, with the default
+// shaper: the lines of a shaper that broke it anyway, joined.
+func shapeOneLine(fonts []*Font, size float32, language, text string) (*shapedLine, error) {
+	lines, err := shapeText(nil, fonts, size, language, text, math.MaxFloat32/4)
+	if err != nil {
+		return nil, err
+	}
+	shaped := &shapedLine{text: text, fonts: fonts, size: size}
+	for i, line := range lines {
+		if i == 0 {
+			shaped.line = line
+			continue
+		}
+		x := shaped.line.Width
+		shaped.line.End = line.End
+		shaped.line.FontIndexes = append(shaped.line.FontIndexes, line.FontIndexes...)
+		shaped.line.Glyphs = append(shaped.line.Glyphs, line.Glyphs...)
+		for j := 0; j < len(line.Positions); j += 2 {
+			shaped.line.Positions = append(shaped.line.Positions, x+line.Positions[j], line.Positions[j+1])
+		}
+		shaped.line.Width = x + line.Width
+	}
+	return shaped, nil
+}
+
+// shapingStyle is what shaped text depends on besides its text: a cache of
+// shaped text is good only for the style it was made in.
+type shapingStyle struct {
+	font     *Font
+	fallback *Font
+	size     float32
+	language string
+}
+
+// shapedPieces is a TextLine's cache of the texts it shaped, its own and its
+// words', which the copies a TextFrame or a TextColumn draws share, so that
+// each is shaped once, however often it is measured and drawn.
+type shapedPieces struct {
+	style  shapingStyle
+	shaped map[string]*shapedLine
 }
 
 // shapedLine is a line of TextBlock or TextLine a shaper shaped: its glyphs,
