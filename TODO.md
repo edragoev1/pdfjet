@@ -70,31 +70,43 @@ their tests.
 
 ## Open
 
-- **For 9.2.1: Thai line breaking by a word dictionary, in the four
-  ports.** Thai has no spaces between its words, only between phrases.
-  `TextBlock` breaks at spaces and at zero width spaces (U+200B) the caller
-  puts in, and a phrase wider than the line is broken at any character.
-  Real Thai text has no zero width spaces. Measured 21 November 2026 on the
-  Thai UDHR (UDHR in Unicode, 90 paragraphs, 9,290 characters), 300 points
-  wide in IBM Plex Sans Thai 12, each break checked against ICU's word
-  boundaries: `TextBlock` 165 breaks, 23 inside a word (14%: คุ้ม|ครอง,
-  อิสรภา|พ, ข|อง); Chrome 135 breaks, none inside a word.
-  - The data: ICU's Thai dictionary (icu4c/source/data/brkitr/dictionaries/
-    thaidict.txt, Unicode license), 26,392 words, 484 KB (104 KB gzipped),
-    carried with the world fonts beside IBM Plex Sans Thai, so a program
-    that draws no Thai neither carries nor loads it.
-  - The code: a word finder over it, the fewest unknown characters then the
-    fewest words (dictionary maximal matching), the same in the four ports.
-    A prototype of 20 lines found 98.9% of ICU's word ends in the Thai UDHR
-    (2,275 of 2,301), 29 more than ICU's; ICU's Thai engine ported instead
-    if 100% is wanted.
-  - The hook: the finder puts zero width spaces between the words of a run
-    of Thai that has none, and TextBlock breaks there as it does today; text
-    with zero width spaces is left as it is, Example_04 unchanged.
-  - Tests: the Thai UDHR with no break inside a word, the same lines in the
-    four ports.
-  - Later, the same code with ICU's other dictionaries, for the line
-    breaking of ComplexText: Lao (660 KB), Burmese (1.1 MB), Khmer (2 MB).
+- **For 9.2.1: line breaking by word dictionaries for Thai, Lao, Khmer and
+  Burmese, in the four ports.** These scripts have no spaces between their
+  words. Without word boundaries a line is broken inside a word: PDFjet's
+  Thai claims support only with this done.
+  - Thai, measured 21 November 2026 on the Thai UDHR (UDHR in Unicode, 90
+    paragraphs, 9,290 characters, no zero width spaces), 300 points wide in
+    IBM Plex Sans Thai 12, each break checked against ICU's word boundaries:
+    `TextBlock` 165 breaks, 23 inside a word (14%: คุ้ม|ครอง, อิสรภา|พ,
+    ข|อง); Chrome 135 breaks, none inside a word.
+  - Lao, Khmer and Burmese go through `ComplexText`. Its shapers break the
+    lines: Android and Core Text between words already; java.awt.font
+    (JDK 25's BreakIterator) not at all in Lao, Khmer or Burmese (Thai
+    yes); the .NET and Go example shapers at spaces alone.
+  - The data: ICU's dictionaries (icu4c/source/data/brkitr/dictionaries,
+    Unicode license): thaidict 26,392 words, 484 KB; laodict 30,551,
+    660 KB; burmesedict 41,122, 1.1 MB; khmerdict 81,030, 2 MB (0.8 MB
+    gzipped together). Carried with the world fonts, in their packages
+    (resources/fonts/world, Maven's pdfjet-fonts-world, NuGet's
+    PDFjet.Fonts.World, Go's world package, Swift's PDFjetFontsWorld):
+    a program that draws none of these scripts neither carries nor loads
+    them.
+  - The engine: ICU's dictionary break engines (icu4c/source/common/
+    dictbe.cpp: Thai, Lao, Khmer, Burmese, one engine with each script's
+    settings: look ahead over words, words not in the dictionary, marks and
+    prefixes) ported, the same in the four ports. A simple maximal
+    matching was tried first: of ICU's word ends in each UDHR it found
+    Thai 98.9%, Lao 96.6%, Burmese 96.5%, Khmer 95.9%, with 1.3%, 3.2%,
+    3.4% and 5.8% more ends than ICU's, places inside words: not enough.
+  - The hooks: `TextBlock` (Thai) puts zero width spaces between the words
+    of a run that has none and breaks there as today; text with zero width
+    spaces is left as it is, Example_04 unchanged. `ComplexText`:
+    java.awt.font's LineBreakMeasurer given a BreakIterator of the
+    dictionary; the .NET and Go example shapers break at the dictionary's
+    word ends. Nothing changes for any other script.
+  - Tests: each script's UDHR with no break inside a word and the word ends
+    ICU's, the same lines in the four ports; Example_52's Khmer page broken
+    between words in Java.
 
 - **One image used by many documents.** A batch of 1,000 letters, each
   with a 386 by 395 RGBA PNG logo, spends nearly nine tenths of each letter
