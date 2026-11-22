@@ -52,10 +52,15 @@ class HBShapeTest {
         List<ShapedLine> lines = hb.shape(new ShapingRequest(paragraph, "hi",
                 new byte[][] {bytes(DEVANAGARI)}, 10f, 1e6f));
         assertEquals(1, lines.size());
+        // The text in a UTF-8 file, as HBShape gives it, not as an argument:
+        // Java writes arguments in the encoding of the system's locale, and
+        // one it has not, as CI's Turkish run's, made the Hindi question marks
         File out = File.createTempFile("pdfjet-test-", ".json");
+        File in = File.createTempFile("pdfjet-test-", ".txt");
+        Files.write(in.toPath(), paragraph.getBytes(StandardCharsets.UTF_8));
         try {
             Process p = new ProcessBuilder("hb-shape", "--no-glyph-names", "--output-format=json", "--language=hi",
-                    TestSupport.file(DEVANAGARI).getPath(), paragraph).redirectOutput(out).start();
+                    "--text-file=" + in.getPath(), TestSupport.file(DEVANAGARI).getPath()).redirectOutput(out).start();
             assertEquals(0, p.waitFor());
             String json = new String(Files.readAllBytes(out.toPath()), StandardCharsets.UTF_8).trim();
             ShapedLine line = lines.get(0);
@@ -82,6 +87,7 @@ class HBShapeTest {
             assertEquals(paragraph.length(), line.getEnd());
         } finally {
             out.delete();
+            in.delete();
         }
     }
 
