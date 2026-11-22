@@ -111,17 +111,23 @@ same output come in four languages, and none of them needs a third-party library
   `PDF.attachText` attaches the exact text to the document for anyone who
   needs it. The engine is built in for Java on servers and desktops
   (java.awt.font), Android 12 and later (Android's own), and Swift on Apple
-  platforms (Core Text); in .NET and Go, ComplexText is given a shaper that
-  calls a shaping package in your program (HarfBuzzSharp, go-text), never in
-  PDFjet, as Example_52 shows. The fonts come with the world fonts: Noto
+  platforms (Core Text). On a server, in any of the four languages and on
+  Linux, Windows or macOS, `HBShape` shapes with HarfBuzz itself, the
+  engine of Chrome and Android: it runs `hb-shape`, HarfBuzz's program,
+  installed with one line (`apt install libharfbuzz-bin`, `brew install
+  harfbuzz`, or HarfBuzz's Windows zip; HarfBuzz 15 or newer), and nothing
+  is linked into your program. In .NET and Go a shaper of your own can also
+  call a shaping package (HarfBuzzSharp, go-text), as Example_52 shows. The
+  fonts come with the world fonts: Noto
   Sans, Regular and Bold, for Devanagari (Hindi, Marathi, Nepali), Bengali,
   Gurmukhi, Gujarati, Odia, Tamil, Telugu, Kannada, Malayalam, Sinhala,
   Khmer, Lao and Myanmar, the fonts HarfBuzz, the engine of Chrome and
   Android, is tested with. `Page.drawGlyphs` draws glyphs shaped by any
   engine, for a layout of your own. Example_52 draws a page of Hindi and a
-  page of Khmer with each. In .NET and Go the example's shaper breaks lines
-  at spaces: for Khmer, Thai, Lao and Burmese, written without spaces
-  between words, use a line breaker such as ICU's.
+  page of Khmer with each. Khmer, Lao and Burmese, written without spaces
+  between words, break between their words by ICU's dictionaries, which
+  come with the world fonts: with java.awt.font, `HBShape`, Android and Core
+  Text.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics. For
   logos, icons and drawings, use SVG: it stays sharp at any size and in
   print, and it is far smaller and faster than a PNG with transparency,
@@ -791,13 +797,17 @@ Poppler and MuPDF reverse that text as well.
 ## Text without spaces between words
 
 `TextBlock` wraps text at its spaces. Thai text has no spaces between its
-words, so put a zero width space (U+200B) between the words where a line may
-break. It is not drawn. A word too wide for a line by itself
-is broken between its characters, so text without zero width spaces still fits
-in the text block, but its lines can break inside words. A right to left word is
+words: `TextBlock` finds them with ICU's dictionary of Thai, which comes with
+the world fonts, and breaks there, as Chrome does (the Thai UDHR, 300 points
+wide, breaks into Chrome's very lines). Text that already has zero width
+spaces (U+200B) between its words is broken at them alone, as before; a
+zero width space is not drawn. A word too wide for a line by itself is broken
+between its characters, so it still fits in the text block. A right to left word is
 shaped as a whole before it is broken, so its letters keep their joined forms on
 both sides of the break. The Thai text of Example_04,
 `resources/data/languages/thai.txt`, has a zero width space between its words.
+ICU's dictionaries of Thai, Lao, Khmer and Burmese are under the Unicode
+License, in `resources/fonts/world/ICUDictionaries`.
 
 ## Marks
 
