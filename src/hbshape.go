@@ -19,8 +19,10 @@ import (
 )
 
 // HBShape is a Shaper for ComplexText that runs hb-shape, the program of
-// HarfBuzz, the text engine of Chrome and Android: the same shaping on every
-// server, with nothing linked into the program. Lines break at spaces and, in
+// HarfBuzz, the text engine of Chrome and Android, with nothing linked into
+// the program; used only when given with SetShaper. PDFjet's HarfBuzz module,
+// import _ "github.com/edragoev1/pdfjet/harfbuzz/v9", gives the same glyphs
+// with nothing to install. Lines break at spaces and, in
 // Thai, Lao, Khmer and Burmese, between words, by ICU's dictionaries of the
 // world fonts. hb-shape is installed on the server, HarfBuzz 15 or newer:
 //
@@ -79,20 +81,21 @@ func (s harfBuzzShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 }
 
 // The shaper ComplexText shapes with when none is set: the one of
-// SetDefaultShaper, such as the HarfBuzz module's, else HBShape
+// SetDefaultShaper, such as the HarfBuzz module's; hb-shape only when asked
+// for, so that a program shapes the same wherever it runs, whatever is
+// installed there (22 November 2026)
 var (
 	defaultShaperLock sync.RWMutex
 	defaultShaperSet  Shaper
 )
 
-// SetDefaultShaper sets the shaper of every ComplexText given none, in
-// place of HBShape. The module github.com/edragoev1/pdfjet/harfbuzz/v9 sets
+// SetDefaultShaper sets the shaper of every ComplexText given none. The module github.com/edragoev1/pdfjet/harfbuzz/v9 sets
 // its own as it is imported, so that one line shapes with HarfBuzz, nothing
 // to install:
 //
 //	import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"
 //
-// nil sets HBShape back.
+// nil takes it away again.
 func SetDefaultShaper(shaper Shaper) {
 	defaultShaperLock.Lock()
 	defer defaultShaperLock.Unlock()
@@ -100,15 +103,18 @@ func SetDefaultShaper(shaper Shaper) {
 }
 
 // defaultShaper is ComplexText's shaper when none is set: SetDefaultShaper's,
-// else HBShape
+// or nil
 func defaultShaper() Shaper {
 	defaultShaperLock.RLock()
 	defer defaultShaperLock.RUnlock()
-	if defaultShaperSet != nil {
-		return defaultShaperSet
-	}
-	return NewHBShape()
+	return defaultShaperSet
 }
+
+// errNoShaper: a ComplexText with no shaper, set or default
+var errNoShaper = errors.New("ComplexText needs HarfBuzz to shape this text: add the one line " +
+	"import _ \"github.com/edragoev1/pdfjet/harfbuzz/v9\" (HarfBuzz in Go, nothing to install), " +
+	"or give ComplexText a shaper with SetShaper, such as pdfjet.NewHBShape(), which runs HarfBuzz's " +
+	"program hb-shape where it is installed")
 
 // NewHBShape returns an HBShape that runs hb-shape of the PATH.
 func NewHBShape() *HBShape {
@@ -128,12 +134,10 @@ func (hb *HBShape) Version() (string, error) {
 
 func (hb *HBShape) notRun(err error, stderr []byte) error {
 	if errors.Is(err, exec.ErrNotFound) {
-		return errors.New("ComplexText needs HarfBuzz to shape this text: import " +
-			"github.com/edragoev1/pdfjet/harfbuzz/v9, one line with nothing to install " +
-			"(import _ \"github.com/edragoev1/pdfjet/harfbuzz/v9\"), or install HarfBuzz's program " +
-			"hb-shape (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: " +
-			"HarfBuzz's harfbuzz-win64 zip, its path in HBShape.Program), or give ComplexText a shaper " +
-			"of your own with SetShaper")
+		return errors.New("HBShape runs HarfBuzz's program hb-shape, which is not installed: " +
+			"install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: " +
+			"HarfBuzz's harfbuzz-win64 zip, its path in HBShape.Program), or, with nothing to install, " +
+			"leave out SetShaper and add the one line import _ \"github.com/edragoev1/pdfjet/harfbuzz/v9\"")
 	}
 	message := strings.TrimSpace(string(stderr))
 	if message != "" {

@@ -163,32 +163,36 @@ func TestHBShapeDrawsComplexText(t *testing.T) {
 	}
 }
 
-// Without a shaper set, ComplexText shapes with hb-shape
-func TestComplexTextShapesWithHBShapeWhenNoShaperIsSet(t *testing.T) {
+// Without a shaper set, ComplexText does not run hb-shape, even where it is
+// installed: it fails, saying what to import, so that a program shapes the
+// same wherever it runs, whatever is installed there
+func TestComplexTextWithoutAShaperRunsNoHBShape(t *testing.T) {
 	testHBShape(t)
 	doc := testNewDoc()
 	khmer := NewFontFromFile(doc.pdf, testNotoKhmer)
 	khmer.SetSize(12)
-	page := NewPage(doc.pdf, letter.Portrait())
-	xy := NewComplexText(khmer, testUDHR(t, "khm")[2]).SetLanguage("km").SetWidth(300).SetLocation(50, 50).DrawOn(page)
-	if xy[1] <= 50+3*12 || !strings.Contains(testContent(page), "/Fm") {
-		t.Errorf("drawn down to %v", xy[1])
+	NewComplexText(khmer, testUDHR(t, "khm")[2]).SetLanguage("km").SetWidth(300).SetLocation(50, 50).
+		DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	err := doc.pdf.Complete()
+	if err == nil || !strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`) ||
+		!strings.Contains(err.Error(), "SetShaper") || !strings.Contains(err.Error(), "NewHBShape") {
+		t.Errorf("%v", err)
 	}
-	doc.complete()
 }
 
-// Without a shaper set and without hb-shape, the PDF fails, saying what to
-// import, what to install, and that a shaper of the program's own can be given
-func TestComplexTextWithoutHBShapeSaysWhatToDo(t *testing.T) {
+// HBShape set, without hb-shape, the PDF fails, saying what to install, and
+// what to import instead
+func TestHBShapeWithoutHBShapeSaysWhatToDo(t *testing.T) {
 	t.Chdir("..")
 	t.Setenv("PATH", t.TempDir())
 	doc := testNewDoc()
 	khmer := NewFontFromFile(doc.pdf, testNotoKhmer)
 	khmer.SetSize(12)
-	NewComplexText(khmer, "ភាសាខ្មែរ").SetWidth(300).SetLocation(50, 50).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	NewComplexText(khmer, "ភាសាខ្មែរ").SetShaper(NewHBShape()).SetWidth(300).SetLocation(50, 50).
+		DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	err := doc.pdf.Complete()
-	if err == nil || !strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`) ||
-		!strings.Contains(err.Error(), "apt install libharfbuzz-bin") || !strings.Contains(err.Error(), "SetShaper") {
+	if err == nil || !strings.Contains(err.Error(), "apt install libharfbuzz-bin") ||
+		!strings.Contains(err.Error(), `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`) {
 		t.Errorf("%v", err)
 	}
 }

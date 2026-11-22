@@ -14,8 +14,9 @@ using System.Text;
 namespace PDFjet.NET {
 /// <summary>
 /// A shaper for ComplexText that runs hb-shape, the program of HarfBuzz, the
-/// text engine of Chrome and Android: the same shaping on every server, with
-/// nothing linked into the program. Lines break at spaces and, in Thai, Lao,
+/// text engine of Chrome and Android, with nothing linked into the program;
+/// used only when given with SetShaper. The NuGet package PDFjet.HarfBuzz
+/// gives the same glyphs with nothing to install. Lines break at spaces and, in Thai, Lao,
 /// Khmer and Burmese, between words, by ICU's dictionaries of the world fonts.
 /// hb-shape is installed on the server, HarfBuzz 15 or newer: on Ubuntu and
 /// Debian apt install libharfbuzz-bin; on Fedora and RHEL dnf install
@@ -77,11 +78,10 @@ public class HBShape : IShaper, IHarfBuzz {
         try {
             process = Process.Start(info);
         } catch (System.ComponentModel.Win32Exception e) {
-            throw new InvalidOperationException("ComplexText needs HarfBuzz to shape this text: add the NuGet "
-                    + "package PDFjet.HarfBuzz, nothing to install, or install HarfBuzz's program hb-shape (Ubuntu: "
-                    + "apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: HarfBuzz's harfbuzz-win64 "
-                    + "zip, its path given to HBShape), or give ComplexText a shaper of your own with SetShaper. "
-                    + e.Message, e);
+            throw new InvalidOperationException("HBShape runs HarfBuzz's program hb-shape, which could not be run: "
+                    + "install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz; Windows: "
+                    + "HarfBuzz's harfbuzz-win64 zip, its path given to HBShape), or, with nothing to install, leave "
+                    + "out SetShaper and add the NuGet package PDFjet.HarfBuzz. " + e.Message, e);
         }
         using (process) {
             // Both read at once, so that neither waits on a full pipe

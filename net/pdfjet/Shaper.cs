@@ -13,9 +13,9 @@ namespace PDFjet.NET {
 /// width and finds, for each line, the glyphs of the fonts and their places.
 /// PDFjet does not shape scripts such as Hindi and Khmer itself; a shaper
 /// does, and ComplexText draws what it found. .NET has no text engine of its
-/// own that gives glyphs: without one set, ComplexText runs HBShape,
-/// HarfBuzz's program hb-shape; a program can give its own, such as a shaper
-/// that calls HarfBuzz through HarfBuzzSharp.
+/// own that gives glyphs: the NuGet package PDFjet.HarfBuzz gives ComplexText
+/// HarfBuzz, nothing to install; SetShaper gives another, such as HBShape,
+/// which runs HarfBuzz's program hb-shape, used only when set.
 /// </summary>
 public interface IShaper {
     /// <summary>

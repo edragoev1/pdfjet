@@ -42,11 +42,12 @@ namespace PDFjet.NET {
 ///     text.SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
 /// }
 /// </code>
-/// .NET has no text engine of its own that gives glyphs: without SetShaper,
-/// ComplexText runs HBShape, HarfBuzz's program hb-shape, installed on the
-/// server (apt install libharfbuzz-bin, brew install harfbuzz, or HarfBuzz's
-/// Windows zip); SetShaper gives another, such as a shaper that calls
-/// HarfBuzz through HarfBuzzSharp.
+/// .NET has no text engine of its own that gives glyphs: add the NuGet
+/// package PDFjet.HarfBuzz beside PDFjet, and ComplexText shapes with
+/// HarfBuzz on Windows, Linux and macOS, nothing to install and no code;
+/// without it and without SetShaper, ComplexText fails, saying so. SetShaper
+/// gives another, such as HBShape, HarfBuzz's program hb-shape, used only
+/// when set.
 /// Left-to-right scripts: Arabic and Hebrew are TextLine's and TextBlock's.
 /// <para>
 /// In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
@@ -64,7 +65,8 @@ namespace PDFjet.NET {
 public class ComplexText : IDrawable {
     // The shaper of SetDefaultShaper; else the NuGet package PDFjet.HarfBuzz,
     // found by its name, as PDFjet.Fonts.World is, when the program has it;
-    // else HarfBuzz's program hb-shape
+    // hb-shape only when asked for, so that a program shapes the same
+    // wherever it runs, whatever is installed there (22 November 2026)
     private static volatile IShaper defaultShaperSet;
     private static readonly Lazy<IShaper> harfBuzzPackage = new Lazy<IShaper>(LoadHarfBuzzPackage);
 
@@ -132,15 +134,22 @@ public class ComplexText : IDrawable {
 
     private static IShaper DefaultShaper {
         get {
-            return defaultShaperSet ?? harfBuzzPackage.Value ?? new HBShape();
+            IShaper shaper = defaultShaperSet ?? harfBuzzPackage.Value;
+            if (shaper == null) {
+                throw new InvalidOperationException("ComplexText needs HarfBuzz to shape this text: add the NuGet "
+                        + "package PDFjet.HarfBuzz (HarfBuzz, nothing to install, no code), or give ComplexText a "
+                        + "shaper with SetShaper, such as new HBShape(), which runs HarfBuzz's program hb-shape "
+                        + "where it is installed.");
+            }
+            return shaper;
         }
     }
 
     /// <summary>
     /// Sets the shaper of every ComplexText given none. Without it, a
     /// ComplexText shapes with the NuGet package PDFjet.HarfBuzz, when the
-    /// program has it, HarfBuzz with nothing to install, and else with
-    /// HarfBuzz's program hb-shape, HBShape.
+    /// program has it, HarfBuzz with nothing to install; HBShape, HarfBuzz's
+    /// program hb-shape, only when set.
     /// </summary>
     /// <param name="shaper">the shaper, or null for the one PDFjet chooses.</param>
     public static void SetDefaultShaper(IShaper shaper) {

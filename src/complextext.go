@@ -19,9 +19,10 @@ import (
 // text to a width and finds, for each line, the glyphs of the fonts and
 // their places. PDFjet does not shape scripts such as Hindi and Khmer itself;
 // a shaper does, and ComplexText draws what it found. Go has no text engine
-// of its own that gives glyphs: without one set, ComplexText runs HBShape,
-// HarfBuzz's program hb-shape, installed on the server; a program can give
-// its own, such as a shaper that calls go-text/typesetting, HarfBuzz in Go.
+// of its own that gives glyphs: the one line
+// import _ "github.com/edragoev1/pdfjet/harfbuzz/v9" gives ComplexText
+// HarfBuzz, nothing to install; SetShaper gives another, such as HBShape,
+// which runs HarfBuzz's program hb-shape, used only when set.
 type Shaper interface {
 	// Shape wraps the text to the width and shapes each line: the text, its
 	// language, the font files, the font size and the width of the lines are
@@ -99,10 +100,14 @@ type ShapedLine struct {
 //		text.SetLocation(50, 50).DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 //	}
 //
-// Go has no text engine of its own that gives glyphs: without SetShaper,
-// ComplexText runs HBShape, HarfBuzz's program hb-shape, installed on the
-// server (apt install libharfbuzz-bin, brew install harfbuzz); SetShaper
-// gives another, such as a shaper that calls go-text/typesetting. Left-to-right scripts:
+// Go has no text engine of its own that gives glyphs: the one line
+//
+//	import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"
+//
+// gives ComplexText HarfBuzz in Go, on every system and CPU, nothing to
+// install; without it and without SetShaper, ComplexText fails, saying so.
+// SetShaper gives another, such as HBShape, HarfBuzz's program hb-shape,
+// used only when set. Left-to-right scripts:
 // Arabic and Hebrew are TextLine's and TextBlock's.
 //
 // In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
@@ -239,7 +244,8 @@ func (complexText *ComplexText) SetStructureType(structureType structelem.Struct
 	return complexText
 }
 
-// SetShaper sets the text engine that shapes the text: HBShape when none is set.
+// SetShaper sets the text engine that shapes the text; without it, the one of
+// SetDefaultShaper, such as PDFjet's HarfBuzz module's.
 func (complexText *ComplexText) SetShaper(shaper Shaper) *ComplexText {
 	complexText.shaper = shaper
 	complexText.shapedLines = nil
@@ -551,6 +557,9 @@ func (complexText *ComplexText) shaped(p int) ([]ShapedLine, error) {
 	shaper := complexText.shaper
 	if shaper == nil {
 		shaper = defaultShaper()
+	}
+	if shaper == nil {
+		return nil, errNoShaper
 	}
 	fonts := complexText.fonts()
 	files := make([][]byte, len(fonts))

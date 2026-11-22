@@ -66,7 +66,7 @@ public final class HBShape: Shaper, Sendable {
             let message = (try? String(contentsOf: err, encoding: .utf8))?
                     .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if process.terminationStatus == 127 {   // env found no such program
-                throw PDFjetError(message: "ComplexText shapes with HarfBuzz's program hb-shape, which is not "
+                throw PDFjetError(message: "HBShape runs HarfBuzz's program hb-shape, which is not "
                         + "installed: install it (Ubuntu: apt install libharfbuzz-bin; macOS: brew install harfbuzz), "
                         + "its path given to HBShape, or give ComplexText a Shaper of your own with setShaper.")
             }

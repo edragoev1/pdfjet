@@ -118,11 +118,13 @@ same output come in four languages, and none of them needs a third-party library
   Windows, Linux and macOS, x64 and arm64 (AWS Graviton too): in .NET the
   NuGet package `PDFjet.HarfBuzz` (HarfBuzz through HarfBuzzSharp), in Go
   the one line `import _ "github.com/edragoev1/pdfjet/harfbuzz/v9"`
-  (go-text/typesetting, HarfBuzz in pure Go). Without it, and in Swift on
-  Linux, `HBShape` shapes with HarfBuzz's own program, `hb-shape`, where it
-  is installed (`apt install libharfbuzz-bin`, `brew install harfbuzz`, or
-  HarfBuzz's Windows zip). Each gives the same glyphs at the same places,
-  and the same lines. The
+  (go-text/typesetting, HarfBuzz in pure Go); without it, `ComplexText`
+  says what to add. `HBShape` shapes with HarfBuzz's own program,
+  `hb-shape`, installed with one line (`apt install libharfbuzz-bin`, `brew
+  install harfbuzz`, or HarfBuzz's Windows zip), and only when given with
+  `setShaper`, so that a program shapes the same wherever it runs: for
+  Swift on Linux and Java 8, in the four languages. Each gives the same
+  glyphs at the same places, and the same lines. The
   fonts come with the world fonts: Noto
   Sans, Regular and Bold, for Devanagari (Hindi, Marathi, Nepali), Bengali,
   Gurmukhi, Gujarati, Odia, Tamil, Telugu, Kannada, Malayalam, Sinhala,

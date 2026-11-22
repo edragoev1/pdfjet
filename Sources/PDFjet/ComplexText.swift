@@ -38,9 +38,9 @@ import Foundation
 ///     }
 ///
 /// The engine: Apple's Core Text on iPhone, iPad and Mac; on Linux, which
-/// has none, HBShape, HarfBuzz's program hb-shape, installed on the server
-/// (apt install libharfbuzz-bin, brew install harfbuzz); setShaper gives
-/// another. Left-to-right scripts: Arabic and
+/// has none, the one given with setShaper, such as HBShape, HarfBuzz's
+/// program hb-shape, installed on the server (apt install libharfbuzz-bin,
+/// brew install harfbuzz): .setShaper(HBShape()). Left-to-right scripts: Arabic and
 /// Hebrew are TextLine's and TextBlock's.
 ///
 /// In a tagged document, PDF/UA or a PDF/A of level A, each paragraph is a
@@ -478,8 +478,11 @@ public class ComplexText: Drawable {
 #if canImport(CoreText)
         return CoreTextShaper()
 #elseif os(Linux)
-        // No text engine of its own: HarfBuzz's program hb-shape
-        return HBShape()
+        // No text engine of its own; hb-shape only when asked for, so that a
+        // program shapes the same wherever it runs (22 November 2026)
+        throw PDFjetError(message: "ComplexText on Linux needs a shaper: .setShaper(HBShape()), which runs "
+                + "HarfBuzz's program hb-shape (Ubuntu: apt install libharfbuzz-bin; brew install harfbuzz), "
+                + "or a Shaper of your own.")
 #else
         throw PDFjetError(message: "ComplexText needs a text engine to shape the text: "
                 + "Core Text, on Apple's platforms, or a Shaper given with setShaper.")

@@ -39,14 +39,15 @@ who need them before 9.2.1 (TODO.md, "The numbers").
   `IHarfBuzz`, `HarfBuzzGlyph`, `HarfBuzzShaper` and
   `ComplexText.SetDefaultShaper`. Example_52 uses them, its own shapers,
   go-text's and HarfBuzzSharp's, gone.
-- **`ComplexText` given no shaper, in .NET, Go and Swift on Linux,** which
-  have no text engine of their own: the shaper of `SetDefaultShaper`, else
-  PDFjet's HarfBuzz where the program has it (.NET, Go), else `HBShape`,
-  where `hb-shape` is installed. Behavior change: `ComplexText` without
-  `SetShaper` failed there ("ComplexText needs a text engine..."); without
-  any of them it now fails saying what to add or install, or that a shaper
-  of the program's own can be given. Java (java.awt.font) and Swift on
-  Apple's platforms (Core Text) keep their engine.
+- **`ComplexText` given no shaper, in .NET and Go,** which have no text
+  engine of their own: the shaper of `SetDefaultShaper`, else PDFjet's
+  HarfBuzz where the program has it; `HBShape`, HarfBuzz's program
+  `hb-shape`, only when given with `SetShaper`, so that a program shapes the
+  same wherever it runs, whatever is installed there. Without either,
+  `ComplexText` fails saying what to add (the error was "ComplexText needs a
+  text engine..."); in Swift on Linux it says to give `.setShaper(HBShape())`.
+  Java (java.awt.font) and Swift on Apple's platforms (Core Text) keep their
+  engine.
 - **New: `HBShape`, a shaper for `ComplexText` that runs HarfBuzz's
   `hb-shape`** (the four ports; in Swift on macOS and Linux): Hindi, Khmer and the other
   scripts ComplexText draws, shaped by HarfBuzz, the text engine of Chrome
