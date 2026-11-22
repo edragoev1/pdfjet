@@ -1,6 +1,6 @@
 # Line breaking by word dictionaries
 
-- `expected.json`: for each run of Thai, Lao, Khmer and Burmese in the UDHR
+- `expected.tsv`: for each run of Thai, Lao, Khmer and Burmese in the UDHR
   of `resources/data/udhr`, where ICU breaks it into words; made by
   `node make-expected.mjs` from the top folder of the repository, with
   Node's ICU (Intl.Segmenter). The dictionary break engines of the four

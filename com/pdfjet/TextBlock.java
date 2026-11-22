@@ -519,7 +519,7 @@ public class TextBlock implements Drawable {
         return this;
     }
 
-    private TextLine[] getTextLines() {
+    TextLine[] getTextLines() {
         List<TextLine> textLines = new ArrayList<>();
 
         // The padding can be wider than the block, and a text area narrower
@@ -538,6 +538,9 @@ public class TextBlock implements Drawable {
             }
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
+            // Thai text that has none is given one at each end of a word, as
+            // ICU's dictionary of Thai finds them.
+            line = DictionaryBreaks.thaiWordBreaks(line);
             String text = line.replace("\u200B", "");
             if (stringWidth(text) <= textAreaWidth) {
                 textLines.add(new TextLine(font, text));

@@ -221,10 +221,10 @@ func (hb *HBShape) Shape(request ShapingRequest) ([]ShapedLine, error) {
 			}
 			glyphs = append(glyphs, hbShaped{
 				id: g.G, font: k, cluster: r.start + g.Cl,
-				x: pen + float32(g.Dx)*scale, y: -float32(g.Dy) * scale,
-				advance: float32(g.Ax) * scale,
+				x: pen + float32(float32(g.Dx)*scale), y: -float32(g.Dy) * scale,
+				advance: float32(float32(g.Ax) * scale),
 			})
-			pen += float32(g.Ax) * scale
+			pen += float32(float32(g.Ax) * scale)
 		}
 	}
 	return hbLines(glyphs, runes, offsets, len(text), request.Width), nil

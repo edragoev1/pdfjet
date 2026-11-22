@@ -1,6 +1,6 @@
 // make-expected.mjs
 //
-// Writes expected.json: for each run of Thai, Lao, Khmer and Burmese in the
+// Writes expected.tsv: for each run of Thai, Lao, Khmer and Burmese in the
 // UDHR of resources/data/udhr, the places ICU breaks it into words, as the
 // dictionary break engines of PDFjet's four ports must find them. ICU is
 // Node's (Intl.Segmenter), whose word boundaries in such a run come from the
@@ -14,7 +14,8 @@ const scripts = [
   ["khm", "km", /[ក-៓ៗៜ៝]+/gu],
   ["mya", "my", /[က-ဿၐ-ႏႚ-႟ꧠ-ꧯꧺ-ꧾꩠ-ꩿ]+/gu],
 ];
-const out = { icu: process.versions.icu, unicode: process.versions.unicode, scripts: {} };
+const rows = [`# ICU ${process.versions.icu}, Unicode ${process.versions.unicode}: script, run, word ends (code points, comma-separated; none at the run's end)`];
+const counts = {};
 for (const [code, lang, run] of scripts) {
   const text = readFileSync(`resources/data/udhr/udhr_${code}.txt`, "utf8");
   const seg = new Intl.Segmenter(lang, { granularity: "word" });
@@ -26,9 +27,10 @@ for (const [code, lang, run] of scripts) {
       at += [...part.segment].length; // In code points, as the ports count runes
       if (at < [...s].length) ends.push(at);
     }
-    runs.push({ text: s, ends });
+    rows.push(`${code}\t${s}\t${ends.join(",")}`);
+    runs.push(s);
   }
-  out.scripts[code] = runs;
+  counts[code] = runs.length;
 }
-writeFileSync("tests/data/dictionarybreaks/expected.json", JSON.stringify(out) + "\n");
-console.log(`ICU ${out.icu}: ` + Object.entries(out.scripts).map(([k, v]) => `${k} ${v.length} runs`).join(", "));
+writeFileSync("tests/data/dictionarybreaks/expected.tsv", rows.join("\n") + "\n");
+console.log(`ICU ${process.versions.icu}: ` + Object.entries(counts).map(([k, v]) => `${k} ${v} runs`).join(", "));

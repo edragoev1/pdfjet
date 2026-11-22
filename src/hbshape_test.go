@@ -71,12 +71,12 @@ func TestHBShapeGivesHBShapesGlyphs(t *testing.T) {
 	var pen float32
 	scale := float32(10) / 1000 // Noto Sans Devanagari has 1,000 units an em
 	for i, g := range want {
-		x := pen + float32(g.Dx)*scale
+		x := pen + float32(float32(g.Dx)*scale)
 		if line.Glyphs[i] != g.G || line.FontIndexes[i] != 0 ||
 			line.Positions[2*i] != x || line.Positions[2*i+1] != -float32(g.Dy)*scale {
 			t.Fatalf("glyph %d: %d at %v, hb-shape %+v", i, line.Glyphs[i], line.Positions[2*i:2*i+2], g)
 		}
-		pen += float32(g.Ax) * scale
+		pen += float32(float32(g.Ax) * scale)
 	}
 	if line.Start != 0 || line.End != len(paragraph) {
 		t.Errorf("the line is %d to %d of %d", line.Start, line.End, len(paragraph))
