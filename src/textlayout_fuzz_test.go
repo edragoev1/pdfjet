@@ -85,6 +85,9 @@ func (shaper *fuzzShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 	var x, spaces float32
 	space := shaper.font.StringWidth(request.FontSize, " ")
 	for i, r := range request.Text {
+		// The bytes of the character in the text: 1 for a byte that is not
+		// UTF-8, which range reads as U+FFFD, of 3
+		_, size := utf8.DecodeRuneInString(request.Text[i:])
 		if r == ' ' {
 			spaces += space
 			line.End = i + 1
@@ -108,18 +111,45 @@ func (shaper *fuzzShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 		line.Positions = append(line.Positions, x, 0)
 		x += advance
 		line.Width = x
-		line.End = i + utf8.RuneLen(r)
+		line.End = i + size
 	}
 	return append(lines, line), nil
+}
+
+// fuzzAdvance is the width the fuzzShaper gives the character: in the font,
+// or in the fallback when the font has none and the fallback has it.
+func fuzzAdvance(font, fallback *Font, size float32, r rune) float32 {
+	if font.unicodeToGID.get(r) == 0 && fallback.unicodeToGID.get(r) != 0 {
+		font = fallback
+	}
+	return font.StringWidth(size, string(r))
+}
+
+// fuzzWidestCharacter returns the width of the widest part of the text that
+// a TextFrame cannot cut, a letter with the marks that stay with it, as
+// nextCharacterBreakIn finds them: what may overflow a frame narrower than it.
+func fuzzWidestCharacter(text string, font, fallback *Font, size float32) float32 {
+	var widest float32
+	for i := 0; i < len(text); {
+		next := nextCharacterBreakIn(text, i)
+		var w float32
+		for _, r := range text[i:next] {
+			w += fuzzAdvance(font, fallback, size, r)
+		}
+		widest = max(widest, w)
+		i = next
+	}
+	return widest
 }
 
 // The places of what a page draws: the x of each text line and each glyph
 var fuzzPlaces = regexp.MustCompile(`(?m)^1 0 0 1 (\S+) \S+ Tm$|q \S+ \S+ \S+ \S+ (\S+) \S+ cm /Fm`)
 
 // fuzzCheckPlaces fails when the page draws text or a glyph to the left of
-// the block, or past its right side by more than the slack: a character,
-// in a TextFrame, which breaks a word too long for it; anything in a
-// TextBlock, where a word a shaper cannot break overflows to the right
+// the block, or past its right side by more than the slack: the widest
+// letter with its marks, in a TextFrame, which breaks a word too long for
+// it; anything in a TextBlock, where a word a shaper cannot break overflows
+// to the right
 func fuzzCheckPlaces(t *testing.T, content string, left, right, slack float32) {
 	t.Helper()
 	for _, m := range fuzzPlaces.FindAllStringSubmatch(content, -1) {
@@ -189,7 +219,9 @@ func FuzzTextFrameLayout(f *testing.F) {
 		SetDefaultShaper(&fuzzShaper{font, fallback})
 		defer SetDefaultShaper(nil)
 		var paragraphs []*Paragraph
-		for _, part := range strings.Split(fuzzText(data), "\n") {
+		text := fuzzText(data)
+		slack := max(1.5*font.size, fuzzWidestCharacter(text, font, fallback, font.size)+0.01)
+		for _, part := range strings.Split(text, "\n") {
 			line := NewTextLine(font, part)
 			line.SetFallbackFont(fallback)
 			paragraphs = append(paragraphs, NewParagraph().Add(line))
@@ -208,7 +240,7 @@ func FuzzTextFrameLayout(f *testing.F) {
 			if doc.pdf.err != nil {
 				t.Fatalf("the document failed: %v", doc.pdf.err)
 			}
-			fuzzCheckPlaces(t, testContent(page), 20, 20+w, 1.5*font.size)
+			fuzzCheckPlaces(t, testContent(page), 20, 20+w, slack)
 			if !frame.HasMoreText() {
 				break
 			}

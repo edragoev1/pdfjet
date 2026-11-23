@@ -139,7 +139,10 @@ func fuzzDrawMarkdown(t *testing.T, text string) {
 		return // A text with no blocks needs no page.
 	}
 	pdf.AddPages(pages)
-	if err := pdf.Complete(); err != nil {
+	// Text such as Hindi, even a single mark of it, with no shaper is an
+	// error, never drawn wrong
+	if err := pdf.Complete(); err != nil &&
+		!(needsShaper(text) && strings.Contains(err.Error(), errNoShaper.Error())) {
 		t.Fatal(err)
 	}
 }
