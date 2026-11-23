@@ -812,18 +812,10 @@ func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 // each object: an object of a PDF that was updated is in it once, as the last
 // one of its number.
 func (obj *PDFobj) getLength(numbered map[int]*PDFobj) int {
-	// The entry of the dictionary, and not a /Length inside another value or
-	// that is the value of another entry, "/Height/Length", as pdf.js tests
-	// it in issue19611.
-	open := slices.Index(obj.dict, "<<")
-	if open == -1 {
-		return 0
-	}
-	i := dictEntryIndex(obj.dict[open:], "/Length")
+	i := obj.lengthIndex()
 	if i == -1 {
 		return 0
 	}
-	i += open
 	number := toLength(tokenAt(obj.dict, i+1))
 	if i+2 >= len(obj.dict) {
 		panic(errors.New("The dictionary ends after the /Length."))
@@ -842,19 +834,27 @@ func (obj *PDFobj) getLength(numbered map[int]*PDFobj) int {
 // lengthReference returns the number of the object that holds the /Length of
 // the stream, or 0 when the /Length is not a reference.
 func (obj *PDFobj) lengthReference() int {
-	open := slices.Index(obj.dict, "<<")
-	if open == -1 {
-		return 0
-	}
-	i := dictEntryIndex(obj.dict[open:], "/Length")
-	if i == -1 {
-		return 0
-	}
-	i += open
-	if i+3 >= len(obj.dict) || obj.dict[i+2] != "0" || obj.dict[i+3] != "R" {
+	i := obj.lengthIndex()
+	if i == -1 || i+3 >= len(obj.dict) || obj.dict[i+2] != "0" || obj.dict[i+3] != "R" {
 		return 0
 	}
 	return max(toInteger(obj.dict[i+1]), 0)
+}
+
+// lengthIndex returns the index of the /Length of the stream's dictionary,
+// or -1 when it has none. It is the entry of the dictionary, and not a
+// /Length inside another value or that is the value of another entry,
+// "/Height/Length", as pdf.js tests it in issue19611.
+func (obj *PDFobj) lengthIndex() int {
+	open := slices.Index(obj.dict, "<<")
+	if open == -1 {
+		return -1
+	}
+	i := dictEntryIndex(obj.dict[open:], "/Length")
+	if i == -1 {
+		return -1
+	}
+	return i + open
 }
 
 // getLengthFromObject returns the /Length stored in the object with the number,
@@ -1099,17 +1099,13 @@ func (obj *PDFobj) addFontResource(obj2 *PDFobj, objects *[]*PDFobj, fontID stri
 			token := tokenAt(obj2.dict, i+1)
 			if token == "<<" {
 				obj2.dict = insertStringAt(obj2.dict, "/"+fontID, i+2)
-				obj2.dict = insertStringAt(obj2.dict, strconv.Itoa(number), i+3)
-				obj2.dict = insertStringAt(obj2.dict, "0", i+4)
-				obj2.dict = insertStringAt(obj2.dict, "R", i+5)
+				obj2.dict = insertRef(obj2.dict, strconv.Itoa(number), i+3)
 				return
 			} else if obj3 := objectAt(*objects, token); obj3 != nil {
 				for j := 0; j < len(obj3.dict); j++ {
 					if obj3.dict[j] == "<<" {
 						obj3.dict = insertStringAt(obj3.dict, "/"+fontID, j+1)
-						obj3.dict = insertStringAt(obj3.dict, strconv.Itoa(number), j+2)
-						obj3.dict = insertStringAt(obj3.dict, "0", j+3)
-						obj3.dict = insertStringAt(obj3.dict, "R", j+4)
+						obj3.dict = insertRef(obj3.dict, strconv.Itoa(number), j+2)
 						return
 					}
 				}
@@ -1208,6 +1204,14 @@ func (obj *PDFobj) AddFontResource(font *Font, objects *[]*PDFobj) {
 
 // AddContent appends a content stream to the contents of this page.
 func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
+	obj.addContentStream(content, objects, false)
+}
+
+// addContentStream adds the content stream to the contents of this page,
+// before the streams it has when first, or else after them: in its /Contents
+// array, in the array of an indirect /Contents, or in an array made of its
+// one stream and the new one.
+func (obj *PDFobj) addContentStream(content []byte, objects *[]*PDFobj, first bool) {
 	obj2 := newPDFobj()
 	obj2.setNumber(len(*objects) + 1)
 	obj2.setStream(content)
@@ -1220,45 +1224,57 @@ func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
 			i++
 			token := tokenAt(obj.dict, i)
 			if token == "[" {
+				if first {
+					// Array of content object streams
+					obj.dict = insertRef(obj.dict, objNumber, i+1)
+					return
+				}
 				// Array of content objects, which can end before its "]".
 				for i++; i < len(obj.dict); i += 3 {
 					if obj.dict[i] == "]" {
-						obj.dict = insertStringAt(obj.dict, "R", i)
-						obj.dict = insertStringAt(obj.dict, "0", i)
-						obj.dict = insertStringAt(obj.dict, objNumber, i)
+						obj.dict = insertRef(obj.dict, objNumber, i)
 						return
 					}
 				}
 				return
-			} else {
-				// Single content object
-				obj3 := objectAt(*objects, token)
-				if obj3 == nil {
-					return
-				}
-				if obj3.data == nil && obj3.stream == nil {
-					// This is not a stream object!
-					for j := 0; j < len(obj3.dict); j++ {
-						if obj3.dict[j] == "]" {
-							obj3.dict = insertStringAt(obj3.dict, "R", j)
-							obj3.dict = insertStringAt(obj3.dict, "0", j)
-							obj3.dict = insertStringAt(obj3.dict, objNumber, j)
-							return
-						}
-					}
-				}
-				if tokenAt(obj.dict, i+1) != "0" || tokenAt(obj.dict, i+2) != "R" {
-					return // Not a whole "n 0 R" to put in an array.
-				}
-				obj.dict = insertStringAt(obj.dict, "[", i)
-				obj.dict = insertStringAt(obj.dict, "]", i+4)
-				obj.dict = insertStringAt(obj.dict, "R", i+4)
-				obj.dict = insertStringAt(obj.dict, "0", i+4)
-				obj.dict = insertStringAt(obj.dict, objNumber, i+4)
+			}
+			// Single content object
+			obj3 := objectAt(*objects, token)
+			if obj3 == nil {
 				return
 			}
+			if obj3.data == nil && obj3.stream == nil {
+				// This is not a stream object!
+				for j := 0; j < len(obj3.dict); j++ {
+					if first && obj3.dict[j] == "[" {
+						obj3.dict = insertRef(obj3.dict, objNumber, j+1)
+						return
+					}
+					if !first && obj3.dict[j] == "]" {
+						obj3.dict = insertRef(obj3.dict, objNumber, j)
+						return
+					}
+				}
+			}
+			if tokenAt(obj.dict, i+1) != "0" || tokenAt(obj.dict, i+2) != "R" {
+				return // Not a whole "n 0 R" to put in an array.
+			}
+			obj.dict = insertStringAt(obj.dict, "[", i)
+			obj.dict = insertStringAt(obj.dict, "]", i+4)
+			if first {
+				obj.dict = insertRef(obj.dict, objNumber, i+1)
+			} else {
+				obj.dict = insertRef(obj.dict, objNumber, i+4)
+			}
+			return
 		}
 	}
+}
+
+// insertRef inserts the reference "n 0 R" to the object of the number into
+// the tokens at the index.
+func insertRef(dict []string, objNumber string, index int) []string {
+	return insertArrayAt(dict, []string{objNumber, "0", "R"}, index)
 }
 
 // wrapContents puts a content stream before the content streams of this page
@@ -1373,54 +1389,7 @@ func (obj *PDFobj) mediaBoxOrigin() (float32, float32) {
 // ScribMaster and HandWrite Pro. Additional code to handle PDFs with indirect
 // array of stream objects was written by EDragoev.
 func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
-	obj2 := newPDFobj()
-	obj2.setNumber(len(*objects) + 1)
-	obj2.setStream(content)
-	*objects = append(*objects, obj2)
-
-	objNumber := strconv.Itoa(obj2.number)
-	// The page's own /Contents, not an annotation's in it
-	for i := obj.entryIndexOf("/Contents"); i >= 0 && i < len(obj.dict); i++ {
-		if obj.dict[i] == "/Contents" {
-			i++
-			token := tokenAt(obj.dict, i)
-			if token == "[" {
-				// Array of content object streams
-				i++
-				obj.dict = insertStringAt(obj.dict, "R", i)
-				obj.dict = insertStringAt(obj.dict, "0", i)
-				obj.dict = insertStringAt(obj.dict, objNumber, i)
-				return
-			}
-			// Single content object
-			obj3 := objectAt(*objects, token)
-			if obj3 == nil {
-				return
-			}
-			if obj3.data == nil && obj3.stream == nil {
-				// This is not a stream object!
-				for j := 0; j < len(obj3.dict); j++ {
-					if obj3.dict[j] == "[" {
-						j++
-						obj3.dict = insertStringAt(obj3.dict, "R", j)
-						obj3.dict = insertStringAt(obj3.dict, "0", j)
-						obj3.dict = insertStringAt(obj3.dict, objNumber, j)
-						return
-					}
-				}
-			}
-			if tokenAt(obj.dict, i+1) != "0" || tokenAt(obj.dict, i+2) != "R" {
-				return // Not a whole "n 0 R" to put in an array.
-			}
-			obj.dict = insertStringAt(obj.dict, "[", i)
-			obj.dict = insertStringAt(obj.dict, "]", i+4)
-			i++
-			obj.dict = insertStringAt(obj.dict, "R", i)
-			obj.dict = insertStringAt(obj.dict, "0", i)
-			obj.dict = insertStringAt(obj.dict, objNumber, i)
-			return
-		}
-	}
+	obj.addContentStream(content, objects, true)
 }
 
 // getMaxGSNumber returns the largest number of the /GS names in the
