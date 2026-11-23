@@ -144,24 +144,9 @@ public class RadioButton : IDrawable {
         page.AddEMC();
 
         if (!String.IsNullOrEmpty(uri)) {
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x + 3*r1,
-                    y,
-                    x + 3*r1 + font.StringWidth(fontSize, label),
-                    y + font.GetBodyHeight(fontSize),
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    null,
-                    language,
-                    actualText,
-                    altDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x + 3*r1, y, x + 3*r1 + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize),
+                    uri, null, language, actualText, altDescription, link));
         }
 
         return new float[] { x + 6*r1 + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };

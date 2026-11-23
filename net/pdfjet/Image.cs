@@ -743,24 +743,9 @@ public class Image : IDrawable {
             // The link covers the image as it is drawn, turned or not.
             float linkW = (degrees == 90 || degrees == 270) ? h : w;
             float linkH = (degrees == 90 || degrees == 270) ? w : h;
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + linkW,
-                    y + linkH,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x, y, x + linkW, y + linkH,
+                    uri, key, language, actualText, altDescription, link));
         }
 
         return corner;

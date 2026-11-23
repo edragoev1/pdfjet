@@ -236,23 +236,9 @@ public class Rect  : IDrawable {
         page.AddEMC();
 
         if (this.uri != null || this.key != null) {
-            page.AddAnnotation(new Annotation(
-                Annotation.Link,
-                this.x,
-                this.y,
-                this.x + this.w,
-                this.y + this.h,
-                null,       // Vertices
-                null,       // Fill Color
-                0f,         // Opacity
-                null,       // Title
-                null,       // Contents
-                this.uri,
-                this.key,
-                this.language,
-                this.actualText,
-                this.altDescription
-            ));
+            page.AddAnnotation(Annotation.NewLink(
+                    this.x, this.y, this.x + this.w, this.y + this.h,
+                    this.uri, this.key, this.language, this.actualText, this.altDescription, null));
         }
 
         return new float[] { this.x + this.w, this.y + this.h };

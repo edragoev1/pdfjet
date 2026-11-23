@@ -318,11 +318,8 @@ public class Point : IDrawable {
         page.AddEMC();
         if (!String.IsNullOrEmpty(uri)) {
             page.EndLink(link);
-            Annotation annotation = new Annotation(
-                    Annotation.Link, x - r, y - r, x + r, y + r,
-                    null, null, 0f, null, null, uri, null, null, null, description);
-            annotation.linkElement = link;
-            page.AddAnnotation(annotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x - r, y - r, x + r, y + r, uri, null, null, null, description, link));
         }
 
         return new float[] {x + r, y + r};

@@ -234,24 +234,9 @@ public class CheckBox : IDrawable {
 
         if (!String.IsNullOrEmpty(uri)) {
             // The link is a structure element of its own, see Page.AddAnnotation.
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x + 3f*w/2f,
-                    y,
-                    x + 3f*w/2f + font.StringWidth(fontSize, label),
-                    y + font.GetBodyHeight(fontSize),
-                    null,       // Vertices
-                    null,       // Fill Color
-                    0f,         // Opacity
-                    null,       // Title
-                    null,       // Contents
-                    uri,
-                    null,
-                    language,
-                    actualText,
-                    altDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x + 3f*w/2f, y, x + 3f*w/2f + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize),
+                    uri, null, language, actualText, altDescription, link));
         }
 
         return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };

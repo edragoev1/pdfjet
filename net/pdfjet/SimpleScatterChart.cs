@@ -1025,22 +1025,9 @@ public class SimpleScatterChart : IDrawable {
     // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static Annotation LinkOf(Point p, float[] box) {
-        Annotation annotation = new Annotation(
-                Annotation.Link,
-                box[0],
-                box[1],
-                box[0] + box[2],
-                box[1] + box[3],
-                null,   // Vertices
-                null,   // Fill Color
-                0f,     // Opacity
-                null,   // Title
-                null,   // Contents
-                p.uri,
-                null,
-                null,
-                null,
-                p.name);
+        Annotation annotation = Annotation.NewLink(
+                box[0], box[1], box[0] + box[2], box[1] + box[3],
+                p.uri, null, null, null, p.name, null);
         annotation.hitSize = p.dot ? HIT_SIZE : 0f;
         return annotation;
     }

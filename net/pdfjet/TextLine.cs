@@ -681,24 +681,9 @@ public class TextLine : IBaselineDrawable {
 
         if (!String.IsNullOrEmpty(uri) || !String.IsNullOrEmpty(key)) {
             float[] box = GetLinkBox(verticalOffset);
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    box[0],
-                    box[1],
-                    box[2],
-                    box[3],
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    box[0], box[1], box[2], box[3],
+                    uri, key, uriLanguage, uriActualText, uriAltDescription, link));
         }
         page.SetTextRotation(0);
 

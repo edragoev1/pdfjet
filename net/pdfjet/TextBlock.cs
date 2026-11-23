@@ -1125,22 +1125,9 @@ public class TextBlock : IDrawable {
         page.RestoreGraphicsState();
 
         if (!String.IsNullOrEmpty(uri)) {
-            page.AddAnnotation(new Annotation(
-                    Annotation.Link,
-                    this.x,
-                    this.y,
-                    this.x + this.width,
-                    this.y + blockHeight,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    null,   // The destination name
-                    null,   // Language
-                    null,   // Actual text
-                    null)); // Alt description
+            page.AddAnnotation(Annotation.NewLink(
+                    this.x, this.y, this.x + this.width, this.y + blockHeight,
+                    uri, null, null, null, null, null));
         }
 
         return new float[] {this.x + this.width, this.y + blockHeight};
