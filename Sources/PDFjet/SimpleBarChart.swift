@@ -310,16 +310,11 @@ public class SimpleBarChart : Drawable {
     /// - Returns: the height of the chart.
     ///
     public func getHeight() -> Float {
-        var h = top() + Float(values.count) * rowHeight() + pad()
+        var h = top() + Float(values.count) * rowHeight() + ChartScale.chartPad(f2)
         if hasReference() {
-            h += 1.4 * subtitleSize()       // The line's label under the bars
+            h += 1.4 * ChartScale.chartSubtitleSize(f2)       // The line's label under the bars
         }
         return h
-    }
-
-    // The space around the chart's content, a size of the text of the bars.
-    private func pad() -> Float {
-        return f2.getSize()
     }
 
     // The height of a row, a bar and the space under it.
@@ -327,24 +322,9 @@ public class SimpleBarChart : Drawable {
         return 2.4 * f2.getSize()
     }
 
-    // The size of the subtitle.
-    private func subtitleSize() -> Float {
-        return 0.8 * f2.getSize()
-    }
-
     // The height above the first row: the padding, the title and the subtitle.
     private func top() -> Float {
-        var top = pad()
-        if !title.isEmpty {
-            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize())
-        }
-        if !subtitle.isEmpty {
-            top += 1.4 * subtitleSize()
-        }
-        if !title.isEmpty || !subtitle.isEmpty {
-            top += f2.getSize()
-        }
-        return top
+        return ChartScale.chartTitleTop(f1, f2, title, subtitle)
     }
 
     // The value written at the end of a bar.
@@ -415,7 +395,7 @@ public class SimpleBarChart : Drawable {
             return [x + w, y + h]
         }
         let size = f2.getSize()
-        let pad = pad()
+        let pad = ChartScale.chartPad(f2)
 
         // The widest name and value, and the room left for the bars
         // A name wider than two fifths of the chart is shortened with an ellipsis
@@ -459,21 +439,7 @@ public class SimpleBarChart : Drawable {
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
         page.saveGraphicsState()
 
-        if panelColor >= 0 {
-            page.setBrushColor(panelColor)
-            page.fillRect(x, y, w, h)
-        }
-        var baseline = y + pad
-        if !title.isEmpty {
-            baseline += f1.getAscent(f1.getSize())
-            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2.0 * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), nil)
-            baseline += f1.getDescent(f1.getSize())
-        }
-        if !subtitle.isEmpty {
-            baseline += 1.4 * subtitleSize()
-            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2.0 * pad),
-                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
-        }
+        ChartScale.drawChartTitles(page, f1, f2, title, subtitle, panelColor, x, y, w, h)
 
         let rowTop = y + top()
         let barHeight = 1.6 * size
@@ -533,10 +499,10 @@ public class SimpleBarChart : Drawable {
             }
             page.setDefaultStrokeDashPattern()
             let text = referenceText()
-            let width = f2.stringWidth(subtitleSize(), text)
+            let width = f2.stringWidth(ChartScale.chartSubtitleSize(f2), text)
             // Centered under the line, within the chart
             let textX = Swift.max(x + pad, Swift.min(lineX - width / 2.0, x + w - pad - width))
-            page.drawString(f2, subtitleSize(), text, textX, lineBottom + 1.2 * subtitleSize(),
+            page.drawString(f2, ChartScale.chartSubtitleSize(f2), text, textX, lineBottom + 1.2 * ChartScale.chartSubtitleSize(f2),
                     Util.toRGB(SimpleBarChart.INK), nil)
         }
 

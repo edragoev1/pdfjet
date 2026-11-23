@@ -575,6 +575,110 @@ enum ChartScale {
         return description + SimpleBarChart.punctuationAfter(description, ".") + " " + note + "."
     }
 
+    // The space around a chart's content, a size of f2, the font of its
+    // numbers and of the text of its bars.
+    static func chartPad(_ f2: Font) -> Float {
+        return f2.getSize()
+    }
+
+    // The size of a chart's subtitle.
+    static func chartSubtitleSize(_ f2: Font) -> Float {
+        return 0.8 * f2.getSize()
+    }
+
+    // The height of a chart above what it draws under its title: the
+    // padding, the title and the subtitle, and a size of f2 under them when
+    // there is either.
+    static func chartTitleTop(_ f1: Font, _ f2: Font, _ title: String, _ subtitle: String) -> Float {
+        var top = chartPad(f2)
+        if !title.isEmpty {
+            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize())
+        }
+        if !subtitle.isEmpty {
+            top += 1.4 * chartSubtitleSize(f2)
+        }
+        if !title.isEmpty || !subtitle.isEmpty {
+            top += f2.getSize()
+        }
+        return top
+    }
+
+    // Fills the panel of a chart, x, y, w by h, unless its color is negative,
+    // and draws the title and the subtitle at its top left, each shortened to
+    // the width. Returns the baseline of the last drawn, or the top padding.
+    @discardableResult
+    static func drawChartTitles(_ page: Page, _ f1: Font, _ f2: Font, _ title: String, _ subtitle: String,
+            _ panelColor: Int32, _ x: Float, _ y: Float, _ w: Float, _ h: Float) -> Float {
+        let pad = chartPad(f2)
+        let subtitleSize = chartSubtitleSize(f2)
+        if panelColor >= 0 {
+            page.setBrushColor(panelColor)
+            page.fillRect(x, y, w, h)
+        }
+        var baseline = y + pad
+        if !title.isEmpty {
+            baseline += f1.getAscent(f1.getSize())
+            page.drawString(f1, f1.getSize(), shorten(f1, f1.getSize(), title, w - 2.0 * pad), x + pad, baseline,
+                    Util.toRGB(SimpleBarChart.INK), nil)
+            baseline += f1.getDescent(f1.getSize())
+        }
+        if !subtitle.isEmpty {
+            baseline += 1.4 * subtitleSize
+            page.drawString(f2, subtitleSize, shorten(f2, subtitleSize, subtitle, w - 2.0 * pad),
+                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
+        }
+        return baseline
+    }
+
+    // The bottom of the plot of a line or a scatter chart whose panel ends
+    // at panelBottom: above the padding, the row of numbers or categories under
+    // the plot, the x title when there is one, and the row of the note. A
+    // chart that has not the room for the note keeps its plot, and leaves the
+    // note out, returned empty: its description says the number.
+    static func plotBottom(_ f2: Font, _ xAxisTitle: String, _ note: String, _ top: Float,
+            _ panelBottom: Float) -> (Float, String) {
+        let size = f2.getSize()
+        var bottom = panelBottom - chartPad(f2) - 1.4 * size
+        if !xAxisTitle.isEmpty {
+            bottom -= 1.4 * size
+        }
+        if !note.isEmpty {
+            let above = bottom - 1.4 * chartSubtitleSize(f2)
+            if above > top {
+                return (above, note)
+            }
+            return (bottom, "")
+        }
+        return (bottom, note)
+    }
+
+    // Draws the axis titles of a line or a scatter chart, shortened to the
+    // width and the height of the plot, from left to right and from top to
+    // bottom: a long one ran past the chart (the review of 28 October 2026);
+    // and the note under the plot, when there is one.
+    static func drawAxisTitles(_ page: Page, _ f2: Font, _ xAxisTitle: String, _ yAxisTitle: String,
+            _ note: String, _ left: Float, _ right: Float, _ top: Float, _ bottom: Float,
+            _ x: Float, _ y: Float, _ w: Float, _ h: Float) {
+        let size = f2.getSize()
+        let pad = chartPad(f2)
+        if !xAxisTitle.isEmpty {
+            let xTitle = shorten(f2, size, xAxisTitle, right - left)
+            page.drawString(f2, size, xTitle, left + (right - left - f2.stringWidth(size, xTitle)) / 2.0,
+                    bottom + 2.8 * size, Util.toRGB(SimpleBarChart.INK), nil)
+        }
+        if !yAxisTitle.isEmpty {
+            let yTitle = shorten(f2, size, yAxisTitle, bottom - top)
+            page.setTextRotation(-90)
+            page.drawString(f2, size, yTitle, x + pad + f2.getAscent(size),
+                    bottom - (bottom - top - f2.stringWidth(size, yTitle)) / 2.0,
+                    Util.toRGB(SimpleBarChart.INK), nil)
+            page.setTextRotation(0)
+        }
+        if !note.isEmpty {
+            drawOutsideNote(page, f2, chartSubtitleSize(f2), note, right, x + pad, x + w - pad, y + h - pad)
+        }
+    }
+
     ///
     /// Draws the note, small and in the gray of the numbers, on the baseline,
     /// its right end at x and inside the width from lo to hi, past which it is
