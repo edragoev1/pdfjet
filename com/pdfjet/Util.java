@@ -124,6 +124,21 @@ class Util {
         return Math.round(value * 255f);
     }
 
+    // A metre is 72/0.0254 points.
+    private static final double POINTS_PER_METER = 72.0/0.0254;
+
+    // Returns the size in points of a BMP or PNG image of w by h pixels at
+    // the pixels per metre of each axis, both above 0, or null for a size
+    // too large for a PDF number.
+    static float[] physicalSize(int w, int h, int pixelsPerMeterX, int pixelsPerMeterY) {
+        float width = (float) (w*POINTS_PER_METER/pixelsPerMeterX);
+        float height = (float) (h*POINTS_PER_METER/pixelsPerMeterY);
+        if (FastFloat.isWritable(width) && FastFloat.isWritable(height)) {
+            return new float[] {width, height};
+        }
+        return null;
+    }
+
     /** Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color. */
     static float[] toRGB(int color) {
         return new float[] {((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};

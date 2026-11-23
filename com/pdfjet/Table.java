@@ -1024,13 +1024,7 @@ public class Table implements Drawable {
         if (tableData.isEmpty()) {
             return new float[] {x1, y1};    // An empty table draws nothing.
         }
-        wrapAroundCellText();
-        applyRowSpans();
-        setRightBorderOnLastColumn();
-        setBottomBorderOnLastRow();
-        heights = getRowHeights();
-        striped = getStripedRows();
-        columnSums = new HashMap<Integer, ColumnSums>();
+        prepareToDraw();
         try {
             float[] xy = drawPage(page, 0);
             return new float[] {x1 + getWidth(), xy[1]};
@@ -1070,13 +1064,7 @@ public class Table implements Drawable {
         if (tableData.isEmpty()) {
             return new float[] {x1, y1};    // An empty table needs no page.
         }
-        wrapAroundCellText();
-        applyRowSpans();
-        setRightBorderOnLastColumn();
-        setBottomBorderOnLastRow();
-        heights = getRowHeights();
-        striped = getStripedRows();
-        columnSums = new HashMap<Integer, ColumnSums>();
+        prepareToDraw();
         try {
             // A table with no rows left to draw needs no page, and ends where it starts.
             float[] xy = new float[] {x1, y1};
@@ -1094,6 +1082,19 @@ public class Table implements Drawable {
         } finally {
             columnSums = null;
         }
+    }
+
+    // Readies the table for drawing: wraps the text of the cells, spans the
+    // rows, closes the borders of the last column and row, and works out the
+    // heights of the rows and the stripes, with no column sums yet.
+    private void prepareToDraw() throws Exception {
+        wrapAroundCellText();
+        applyRowSpans();
+        setRightBorderOnLastColumn();
+        setBottomBorderOnLastRow();
+        heights = getRowHeights();
+        striped = getStripedRows();
+        columnSums = new HashMap<Integer, ColumnSums>();
     }
 
     // Draws the header rows and the rows that fit on the page under them. The

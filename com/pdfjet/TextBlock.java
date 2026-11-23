@@ -309,10 +309,7 @@ public class TextBlock implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
+        this.textColor = Util.toRGB(color);
         return this;
     }
 
@@ -350,10 +347,7 @@ public class TextBlock implements Drawable {
             this.borderColor = null;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.borderColor = new float[] {r, g, b};
+        this.borderColor = Util.toRGB(color);
         return this;
     }
 
@@ -399,10 +393,7 @@ public class TextBlock implements Drawable {
             this.fillColor = null;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
+        this.fillColor = Util.toRGB(color);
         return this;
     }
 
@@ -1340,22 +1331,9 @@ public class TextBlock implements Drawable {
         page.restoreGraphicsState();
 
         if (!Util.isEmpty(uri)) {
-            page.addAnnotation(new Annotation(
-                    Annotation.Link,
-                    this.x,
-                    this.y,
-                    this.x + this.width,
-                    this.y + blockHeight,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    null,   // The destination name
-                    null,   // Language
-                    null,   // Actual text
-                    null)); // Alt description
+            page.addAnnotation(Annotation.link(
+                    this.x, this.y, this.x + this.width, this.y + blockHeight,
+                    uri, null, null, null, null));
         }
 
         return new float[] {this.x + this.width, this.y + blockHeight};

@@ -10,11 +10,9 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.zip.DataFormatException;
 
 /**
@@ -1402,12 +1400,7 @@ public class PDFobj {
      * @param objects the objects list.
      */
     public void addContent(byte[] content, List<PDFobj> objects) {
-        PDFobj obj = new PDFobj();
-        obj.setNumber(objects.size() + 1);
-        obj.setStream(content);
-        objects.add(obj);
-
-        String objNumber = String.valueOf(obj.number);
+        String objNumber = addContentObject(content, objects);
         // The page's own /Contents, not an annotation's in it
         for (int i = entryIndexOf("/Contents"); i >= 0 && i < dict.size(); i++) {
             if (dict.get(i).equals("/Contents")) {
@@ -1455,6 +1448,17 @@ public class PDFobj {
         }
     }
 
+    // Adds the content as a stream object of its own after the objects, and
+    // returns its number, which addContent and addPrefixContent put in the
+    // page's /Contents.
+    private static String addContentObject(byte[] content, List<PDFobj> objects) {
+        PDFobj obj = new PDFobj();
+        obj.setNumber(objects.size() + 1);
+        obj.setStream(content);
+        objects.add(obj);
+        return String.valueOf(obj.number);
+    }
+
     /**
      * Adds new content object before the existing content objects.
      * The original code was provided by Stefan Ostermann author of ScribMaster and HandWrite Pro.
@@ -1464,12 +1468,7 @@ public class PDFobj {
      * @param objects the existing list of content objects
      */
     public void addPrefixContent(byte[] content, List<PDFobj> objects) {
-        PDFobj obj = new PDFobj();
-        obj.setNumber(objects.size() + 1);
-        obj.setStream(content);
-        objects.add(obj);
-
-        String objNumber = String.valueOf(obj.number);
+        String objNumber = addContentObject(content, objects);
         // The page's own /Contents, not an annotation's in it
         for (int i = entryIndexOf("/Contents"); i >= 0 && i < dict.size(); i++) {
             if (dict.get(i).equals("/Contents")) {

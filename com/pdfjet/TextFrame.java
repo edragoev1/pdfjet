@@ -295,10 +295,7 @@ public class TextFrame implements Drawable {
             this.border = false;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        return setBorderColor(new float[] {r, g, b});
+        return setBorderColor(Util.toRGB(color));
     }
 
     /**

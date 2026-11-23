@@ -8,7 +8,6 @@ package com.pdfjet;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.text.*;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.zip.*;
@@ -418,6 +417,21 @@ final public class PDF {
         append(Token.END_OBJ);
     }
 
+    // Writes the tail of a stream object from its /Length on: the length of
+    // the stream, the end of the dictionary, the stream and the end of the
+    // object. The caller has written the start of the dictionary and its
+    // other entries, and encrypts the stream first when the document is.
+    void appendStreamBody(byte[] stream) throws IOException {
+        append(Token.LENGTH);
+        append(stream.length);
+        append(Token.NEWLINE);
+        append(Token.END_DICTIONARY);
+        append(Token.STREAM);
+        append(stream);
+        append(Token.END_STREAM);
+        endObj();
+    }
+
     /**
      * Returns the number of the most recently started object.
      *
@@ -601,14 +615,7 @@ final public class PDF {
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Metadata\n");
         append("/Subtype /XML\n");
-        append("/Length ");
-        append(xml.length);
-        append(Token.NEWLINE);
-        append(Token.END_DICTIONARY);
-        append(Token.STREAM);
-        append(xml, 0, xml.length);
-        append(Token.END_STREAM);
-        endObj();
+        appendStreamBody(xml);
 
         return getObjNumber();
     }
@@ -1531,14 +1538,7 @@ final public class PDF {
 
             newObj();
             append(Token.BEGIN_DICTIONARY);
-            append(Token.LENGTH);
-            append(buf.length);
-            append(Token.NEWLINE);
-            append(Token.END_DICTIONARY);
-            append(Token.STREAM);
-            append(buf);
-            append(Token.END_STREAM);
-            endObj();
+            appendStreamBody(buf);
             page.contents.add(getObjNumber());
         }
         addPageStructElements(page);
@@ -1638,15 +1638,36 @@ final public class PDF {
             append(opacity);
             append(">>>>>>\n");
         }
-        append("/Length ");
-        append(content.length);
-        append(Token.NEWLINE);
-        append(Token.END_DICTIONARY);
-        append("stream\n");
-        append(content);
-        append("\nendstream\n");
-        endObj();
+        appendStreamBody(content);
         return getObjNumber();
+    }
+
+    // Writes the entry of an annotation with the text as a text string, when
+    // there is a text: its /T or its /Contents.
+    private void appendTextEntry(String key, String text) throws IOException {
+        if (text != null && !text.isEmpty()) {
+            append(key);
+            appendTextString(text);
+            append("\n");
+        }
+    }
+
+    // Writes the interior color of a polygon, square or circle annotation,
+    // and its opacity, which PDF/A-1 has not.
+    private void appendFillAndOpacity(Annotation annot) throws IOException {
+        append("/IC [");
+        append(annot.fillColor[0]);
+        append(' ');
+        append(annot.fillColor[1]);
+        append(' ');
+        append(annot.fillColor[2]);
+        append("]\n");
+
+        if (!isPDFA1()) {
+            append("/CA ");
+            append(annot.opacity);
+            append("\n");
+        }
     }
 
     // Appends the fill color of the annotation to the content of its appearance.
@@ -1776,17 +1797,8 @@ final public class PDF {
             append(annot.fileAttachment.icon);
             append("\n");
 
-            if (annot.fileAttachment.title != null && !annot.fileAttachment.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.fileAttachment.title);
-                append("\n");
-            }
-
-            if (annot.fileAttachment.contents != null && !annot.fileAttachment.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.fileAttachment.contents);
-                append("\n");
-            }
+            appendTextEntry("/T ", annot.fileAttachment.title);
+            appendTextEntry("/Contents ", annot.fileAttachment.contents);
         } else if (annot.annotationType.equals(Annotation.Link)) {
             // PDF/UA requires a link to carry an alternate description in its
             // Contents key.
@@ -1800,11 +1812,7 @@ final public class PDF {
             if (description == null || description.isEmpty()) {
                 description = annot.key;
             }
-            if (description != null && !description.isEmpty()) {
-                append("/Contents ");
-                appendTextString(description);
-                append("\n");
-            }
+            appendTextEntry("/Contents ", description);
             if (uriAction > 0) {
                 append("/A ");
                 append(uriAction);
@@ -1837,72 +1845,18 @@ final public class PDF {
             }
             append("]\n");
 
-            append("/IC [");
-            append(annot.fillColor[0]);
-            append(' ');
-            append(annot.fillColor[1]);
-            append(' ');
-            append(annot.fillColor[2]);
-            append("]\n");
-
-            if (!isPDFA1()) {
-                append("/CA ");
-                append(annot.opacity);
-                append("\n");
-            }
-
-            if (annot.title != null && !annot.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.title);
-                append("\n");
-            }
-
-            if (annot.contents != null && !annot.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.contents);
-                append("\n");
-            }
+            appendFillAndOpacity(annot);
+            appendTextEntry("/T ", annot.title);
+            appendTextEntry("/Contents ", annot.contents);
         } else if (annot.annotationType.equals(Annotation.Square) ||
                 annot.annotationType.equals(Annotation.Circle)) {
-            append("/IC [");
-            append(annot.fillColor[0]);
-            append(' ');
-            append(annot.fillColor[1]);
-            append(' ');
-            append(annot.fillColor[2]);
-            append("]\n");
-
-            if (!isPDFA1()) {
-                append("/CA ");
-                append(annot.opacity);
-                append("\n");
-            }
-
-            if (annot.title != null && !annot.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.title);
-                append("\n");
-            }
-
-            if (annot.contents != null && !annot.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.contents);
-                append("\n");
-            }
+            appendFillAndOpacity(annot);
+            appendTextEntry("/T ", annot.title);
+            appendTextEntry("/Contents ", annot.contents);
         } else if (annot.annotationType.equals(Annotation.Text)) {
             append("/Name /Comment\n");
-
-            if (annot.title != null && !annot.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.title);
-                append("\n");
-            }
-
-            if (annot.contents != null && !annot.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.contents);
-                append("\n");
-            }
+            appendTextEntry("/T ", annot.title);
+            appendTextEntry("/Contents ", annot.contents);
         }
 
         if (index != -1) {

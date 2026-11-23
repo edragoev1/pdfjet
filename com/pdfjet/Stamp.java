@@ -8,7 +8,6 @@ package com.pdfjet;
 
 import java.io.*;
 import java.util.*;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Content that is drawn once with the path and text methods of this class,
@@ -199,6 +198,16 @@ public class Stamp implements Drawable {
         }
     }
 
+    // Writes the three components of an RGB color and the operator, rg or RG.
+    private void appendRGB(float[] rgbColor, String operator) {
+        append(rgbColor[0]);
+        append(" ");
+        append(rgbColor[1]);
+        append(" ");
+        append(rgbColor[2]);
+        append(operator);
+    }
+
     /**
      * Sets the fill color for the content drawn after it.
      *
@@ -206,12 +215,7 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp setFillColor(float[] rgbColor) {
-        append(rgbColor[0]);
-        append(" ");
-        append(rgbColor[1]);
-        append(" ");
-        append(rgbColor[2]);
-        append(" rg\n");
+        appendRGB(rgbColor, " rg\n");
         return this;
     }
 
@@ -226,16 +230,7 @@ public class Stamp implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        append(r);
-        append(" ");
-        append(g);
-        append(" ");
-        append(b);
-        append(" rg\n");
-        return this;
+        return setFillColor(Util.toRGB(color));
     }
 
     /**
@@ -245,12 +240,7 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp setStrokeColor(float[] rgbColor) {
-        append(rgbColor[0]);
-        append(" ");
-        append(rgbColor[1]);
-        append(" ");
-        append(rgbColor[2]);
-        append(" RG\n");
+        appendRGB(rgbColor, " RG\n");
         return this;
     }
 
@@ -265,16 +255,7 @@ public class Stamp implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        append(r);
-        append(" ");
-        append(g);
-        append(" ");
-        append(b);
-        append(" RG\n");
-        return this;
+        return setStrokeColor(Util.toRGB(color));
     }
 
     /**
@@ -554,14 +535,7 @@ public class Stamp implements Drawable {
         if (pdf.encryption != null) {
             content = AES256.encrypt(content, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(content.length);
-        pdf.append(Token.NEWLINE);
-        pdf.append(Token.END_DICTIONARY);   // End of XObject dictionary
-        pdf.append(Token.STREAM);
-        pdf.append(content);
-        pdf.append(Token.END_STREAM);
-        pdf.endObj();
+        pdf.appendStreamBody(content);
         pdf.stamps.add(this);
         objNumber = pdf.getObjNumber();
     }
@@ -589,12 +563,8 @@ public class Stamp implements Drawable {
         pdf.append(GlyphOutline.decimals(Math.ceil(path.xMax), 0));
         pdf.append(' ');
         pdf.append(GlyphOutline.decimals(Math.ceil(path.yMax), 0));
-        pdf.append("]\n/Filter /FlateDecode\n/Length ");
-        pdf.append(content.length);
-        pdf.append("\n>>\nstream\n");
-        pdf.append(content);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.append("]\n/Filter /FlateDecode\n");
+        pdf.appendStreamBody(content);
         pdf.stamps.add(stamp);
         stamp.objNumber = pdf.getObjNumber();
         return stamp;

@@ -172,10 +172,7 @@ public class Point implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
+        this.fillColor = Util.toRGB(color);
         return this;
     }
 
@@ -210,10 +207,7 @@ public class Point implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.strokeColor = new float[] {r, g, b};
+        this.strokeColor = Util.toRGB(color);
         return this;
     }
 
@@ -380,9 +374,9 @@ public class Point implements Drawable {
         page.addEMC();
         if (uri != null && !uri.isEmpty()) {
             page.endLink(link);
-            Annotation annotation = new Annotation(
-                    Annotation.Link, x - r, y - r, x + r, y + r,
-                    null, null, 0f, null, null, uri, null, null, null, description);
+            Annotation annotation = Annotation.link(
+                    x - r, y - r, x + r, y + r,
+                    uri, null, null, null, description);
             annotation.linkElement = link;
             page.addAnnotation(annotation);
         }

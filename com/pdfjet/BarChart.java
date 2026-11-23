@@ -473,16 +473,7 @@ public class BarChart implements Drawable {
      * @return the bottom right corner coordinates [x, y].
      */
     public float[] drawOn(Page page) throws Exception {
-        if (page == null) {
-            return drawChart(null);
-        }
-        // The text unturned and filled, whatever the page was left with
-        Runnable restore = page.plainText();
-        try {
-            return drawChart(page);
-        } finally {
-            restore.run();
-        }
+        return ChartScale.drawWithPlainText(page, this::drawChart);
     }
 
     private float[] drawChart(Page page) throws Exception {

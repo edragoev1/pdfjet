@@ -238,14 +238,7 @@ class Subset {
             pdf.append(metadataObjNumber);
             pdf.append(" 0 R\n");
         }
-        pdf.append("/Length ");
-        pdf.append(compressed.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(compressed);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(compressed);
         font.fileObjNumber = pdf.getObjNumber();
         return font.kept;
     }
@@ -476,15 +469,7 @@ class Subset {
                     keep[component] = true;
                     stack[top++] = component;
                 }
-                at += 4;
-                at += (flags & 0x0001) != 0 ? 4 : 2;     // ARG_1_AND_2_ARE_WORDS
-                if ((flags & 0x0008) != 0) {            // WE_HAVE_A_SCALE
-                    at += 2;
-                } else if ((flags & 0x0040) != 0) {     // WE_HAVE_AN_X_AND_Y_SCALE
-                    at += 4;
-                } else if ((flags & 0x0080) != 0) {     // WE_HAVE_A_TWO_BY_TWO
-                    at += 8;
-                }
+                at = nextComponent(at, flags);
                 if ((flags & 0x0020) == 0) {            // MORE_COMPONENTS
                     break;
                 }
@@ -673,19 +658,27 @@ class Subset {
                 throw new NotSubset();
             }
             putShort(glyf, at + 2, newGid[component]);
-            at += 4;
-            at += (flags & 0x0001) != 0 ? 4 : 2;     // ARG_1_AND_2_ARE_WORDS
-            if ((flags & 0x0008) != 0) {            // WE_HAVE_A_SCALE
-                at += 2;
-            } else if ((flags & 0x0040) != 0) {     // WE_HAVE_AN_X_AND_Y_SCALE
-                at += 4;
-            } else if ((flags & 0x0080) != 0) {     // WE_HAVE_A_TWO_BY_TWO
-                at += 8;
-            }
+            at = nextComponent(at, flags);
             if ((flags & 0x0020) == 0) {            // MORE_COMPONENTS
                 break;
             }
         }
+    }
+
+    // Returns where the next component of a composite glyph starts, after
+    // the one at, with the flags: its flags and glyph index, its two
+    // arguments, words or bytes, and its scale or matrix, if any.
+    private static int nextComponent(int at, int flags) {
+        at += 4;
+        at += (flags & 0x0001) != 0 ? 4 : 2;     // ARG_1_AND_2_ARE_WORDS
+        if ((flags & 0x0008) != 0) {            // WE_HAVE_A_SCALE
+            at += 2;
+        } else if ((flags & 0x0040) != 0) {     // WE_HAVE_AN_X_AND_Y_SCALE
+            at += 4;
+        } else if ((flags & 0x0080) != 0) {     // WE_HAVE_A_TWO_BY_TWO
+            at += 8;
+        }
+        return at;
     }
 
     private static void putShort(byte[] buf, int at, int value) {

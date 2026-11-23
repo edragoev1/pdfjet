@@ -805,20 +805,26 @@ final public class Page {
 
         if (highlightColors == null) {
             setBrushColor(textColor);
-            if (font.isCoreFont) {
-                append("[<");
-                drawASCIIString(font, str);
-                append(">] TJ\n");  // Need TJ for kerning
-            } else {
-                append("<");
-                drawUnicodeString(font, str);
-                append("> Tj\n");
-            }
+            showText(font, str);
 
         } else {
             drawColoredString(font, str, textColor, highlightColors);
         }
         append("ET\n");
+    }
+
+    // Shows the string in the font: in a TJ array for a core font, which
+    // the kerning needs, or with Tj for an embedded one.
+    private void showText(Font font, String str) {
+        if (font.isCoreFont) {
+            append("[<");
+            drawASCIIString(font, str);
+            append(">] TJ\n");
+        } else {
+            append("<");
+            drawUnicodeString(font, str);
+            append("> Tj\n");
+        }
     }
 
     // Draws the string of an SVG image with the text matrix, in the brush
@@ -847,15 +853,7 @@ final public class Page {
             append(' ');
         }
         append("Tm\n");
-        if (font.isCoreFont) {
-            append("[<");
-            drawASCIIString(font, str);
-            append(">] TJ\n");
-        } else {
-            append("<");
-            drawUnicodeString(font, str);
-            append("> Tj\n");
-        }
+        showText(font, str);
     }
 
     // Begins a text object whose glyphs clip what is drawn after it, by the
@@ -1589,13 +1587,11 @@ final public class Page {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        if (brushColorWritten && brushColor[0] == r && brushColor[1] == g && brushColor[2] == b) {
+        float[] rgb = Util.toRGB(color);
+        if (brushColorWritten && brushColor[0] == rgb[0] && brushColor[1] == rgb[1] && brushColor[2] == rgb[2]) {
             return this;    // The content is drawn with this color already
         }
-        setBrushColor(new float[] {r, g, b});
+        setBrushColor(rgb);
         return this;
     }
 
@@ -1608,33 +1604,13 @@ final public class Page {
      * @return this Page object.
      */
     public Page setBrushColor(float[] rgbColor) {
-        if (rgbColor == null) {
-            return this; // Early exit if null
-        }
-        if (rgbColor.length < 3) {
-            pdf.fail(new IllegalArgumentException(RGB_COUNT));
-        }
-
-        if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
-            rgbColor[1] < 0f || rgbColor[1] > 1f ||
-            rgbColor[2] < 0f || rgbColor[2] > 1f) {
-            PDF.Log.LOG.warning("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return this; // Early exit if out of range
-        }
-
-        if (brushColorWritten && brushColor[0] == rgbColor[0] && brushColor[1] == rgbColor[1] && brushColor[2] == rgbColor[2]) {
-            return this;    // The content is drawn with this color already
+        if (!isColorToWrite(rgbColor, brushColor, brushColorWritten)) {
+            return this;
         }
         // Now set the brush color, to a copy that the caller cannot change
         brushColor = rgbColor.clone();
         brushColorWritten = true;
-
-        append(rgbColor[0]);
-        append(Token.SPACE);
-        append(rgbColor[1]);
-        append(Token.SPACE);
-        append(rgbColor[2]);
-        append(" rg\n");
+        appendRGB(rgbColor, " rg\n");
         return this;
     }
 
@@ -1664,13 +1640,11 @@ final public class Page {
             return this;
         }
         penChanges++;
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        if (penColorWritten && penColor[0] == r && penColor[1] == g && penColor[2] == b) {
+        float[] rgb = Util.toRGB(color);
+        if (penColorWritten && penColor[0] == rgb[0] && penColor[1] == rgb[1] && penColor[2] == rgb[2]) {
             return this;    // The content is drawn with this color already
         }
-        setPenColor(new float[] {r, g, b});
+        setPenColor(rgb);
         return this;
     }
 
@@ -1684,33 +1658,13 @@ final public class Page {
      */
     public Page setPenColor(float[] rgbColor) {
         penChanges++;
-        if (rgbColor == null) {
-            return this; // Early exit if null
-        }
-        if (rgbColor.length < 3) {
-            pdf.fail(new IllegalArgumentException(RGB_COUNT));
-        }
-
-        if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
-            rgbColor[1] < 0f || rgbColor[1] > 1f ||
-            rgbColor[2] < 0f || rgbColor[2] > 1f) {
-            PDF.Log.LOG.warning("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return this; // Early exit if out of range
-        }
-
-        if (penColorWritten && penColor[0] == rgbColor[0] && penColor[1] == rgbColor[1] && penColor[2] == rgbColor[2]) {
-            return this;    // The content is drawn with this color already
+        if (!isColorToWrite(rgbColor, penColor, penColorWritten)) {
+            return this;
         }
         // Now set the pen color, to a copy that the caller cannot change
         penColor = rgbColor.clone();
         penColorWritten = true;
-
-        append(rgbColor[0]);
-        append(Token.SPACE);
-        append(rgbColor[1]);
-        append(Token.SPACE);
-        append(rgbColor[2]);
-        append(" RG\n");
+        appendRGB(rgbColor, " RG\n");
         return this;
     }
 
@@ -1736,14 +1690,7 @@ final public class Page {
      */
     public Page setBrushColorCMYK(float c, float m, float y, float k) {
         checkCMYK();
-        append(c);
-        append(' ');
-        append(m);
-        append(' ');
-        append(y);
-        append(' ');
-        append(k);
-        append(" k\n");
+        appendCMYK(c, m, y, k, " k\n");
         brushColor = cmykToRGB(c, m, y, k);
         brushColorWritten = false;
         return this;
@@ -1762,6 +1709,46 @@ final public class Page {
     public Page setPenColorCMYK(float c, float m, float y, float k) {
         penChanges++;
         checkCMYK();
+        appendCMYK(c, m, y, k, " K\n");
+        penColor = cmykToRGB(c, m, y, k);
+        penColorWritten = false;
+        return this;
+    }
+
+    // Returns whether setBrushColor or setPenColor writes the RGB color: not
+    // when it is null; not when a component is out of range, which is logged;
+    // and not when the content is drawn with it already. Fewer than three
+    // components fail the document.
+    private boolean isColorToWrite(float[] rgbColor, float[] current, boolean written) {
+        if (rgbColor == null) {
+            return false;
+        }
+        if (rgbColor.length < 3) {
+            pdf.fail(new IllegalArgumentException(RGB_COUNT));
+        }
+
+        if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
+            rgbColor[1] < 0f || rgbColor[1] > 1f ||
+            rgbColor[2] < 0f || rgbColor[2] > 1f) {
+            PDF.Log.LOG.warning("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
+            return false;
+        }
+
+        return !(written && current[0] == rgbColor[0] && current[1] == rgbColor[1] && current[2] == rgbColor[2]);
+    }
+
+    // Writes the three components of an RGB color and the operator, rg or RG.
+    private void appendRGB(float[] rgbColor, String operator) {
+        append(rgbColor[0]);
+        append(Token.SPACE);
+        append(rgbColor[1]);
+        append(Token.SPACE);
+        append(rgbColor[2]);
+        append(operator);
+    }
+
+    // Writes the four components of a CMYK color and the operator, k or K.
+    private void appendCMYK(float c, float m, float y, float k, String operator) {
         append(c);
         append(' ');
         append(m);
@@ -1769,10 +1756,7 @@ final public class Page {
         append(y);
         append(' ');
         append(k);
-        append(" K\n");
-        penColor = cmykToRGB(c, m, y, k);
-        penColorWritten = false;
-        return this;
+        append(operator);
     }
 
     // Fails the document when it cannot use a CMYK color. The output intent of
@@ -3563,6 +3547,26 @@ final public class Page {
         pdf.headings.add(new Heading(level, title, this, transformed(x, top)[1]));
     }
 
+    // Begins the marked content of a check box or a radio button: a P in the
+    // Link of its uri when it has one, returned; a shape when it has no label,
+    // as a box or a button with no label, nor a description, has nothing to
+    // read; or else a P. It returns null but for a link.
+    StructElement addControlBDC(
+            String uri,
+            String label,
+            String language,
+            String actualText,
+            String altDescription) {
+        if (!Util.isEmpty(uri)) {
+            return addLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else if (Util.isEmpty(label)) {
+            addShapeBDC(language, actualText, altDescription);
+        } else {
+            addBDC(StructElem.P, language, actualText, altDescription);
+        }
+        return null;
+    }
+
     // Begins the marked content of a text that is a link, and returns the Link
     // element its annotation joins, as PDF/UA asks: the Link holds the text
     // and the annotation both, so that a screen reader reads the text as the
@@ -4013,15 +4017,7 @@ final public class Page {
         append("BT\n");
         setTextLocation(x, y);
         setTextFont(font, font.size);
-        if (font.isCoreFont) {
-            append("[<");
-            drawASCIIString(font, str);
-            append(">] TJ\n");
-        } else {
-            append("<");
-            drawUnicodeString(font, str);
-            append("> Tj\n");
-        }
+        showText(font, str);
         append("ET\n");
     }
 
@@ -4264,30 +4260,14 @@ final public class Page {
             if (hasFallbackFont) {
                 drawTextBlockLine(font, fallbackFont, fontSize, fallbackFontSize, textLine.text, color, highlightColors);
             } else if (highlightColors == null) {
-                if (font.isCoreFont) {
-                    append("[<");
-                    drawASCIIString(font, textLine.text);
-                    append(">] TJ\n");
-                } else {
-                    append("<");
-                    drawUnicodeString(font, textLine.text);
-                    append("> Tj\n");
-                }
+                showText(font, textLine.text);
             } else {
                 drawColoredString(font, textLine.text, color, highlightColors);
             }
             if (textLine.trailingSpace) {
                 // The space the line was wrapped at, drawn after it: no ink, and
                 // the next line is placed with its own matrix, so nothing moves.
-                if (font.isCoreFont) {
-                    append("[<");
-                    drawASCIIString(font, Single.space);
-                    append(">] TJ\n");
-                } else {
-                    append("<");
-                    drawUnicodeString(font, Single.space);
-                    append("> Tj\n");
-                }
+                showText(font, Single.space);
             }
             yText += leading;
         }

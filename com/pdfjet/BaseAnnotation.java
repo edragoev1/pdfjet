@@ -86,10 +86,7 @@ public abstract class BaseAnnotation implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        setFillColor(new float[] {r, g, b});
+        setFillColor(Util.toRGB(color));
         return this;
     }
 

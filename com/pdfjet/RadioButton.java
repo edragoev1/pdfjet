@@ -120,15 +120,7 @@ public class RadioButton implements Drawable {
             return new float[] { x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
         }
 
-        StructElement link = null;
-        if (!Util.isEmpty(uri)) {
-            link = page.addLinkBDC(StructElem.P, language, actualText, altDescription);
-        } else if (Util.isEmpty(label)) {
-            // A button with no label, nor a description, has nothing to read.
-            page.addShapeBDC(language, actualText, altDescription);
-        } else {
-            page.addBDC(StructElem.P, language, actualText, altDescription);
-        }
+        StructElement link = page.addControlBDC(uri, label, language, actualText, altDescription);
         // The pen of the button is its own, and the page is left with the one it had.
         page.saveGraphicsState();
 
@@ -151,22 +143,10 @@ public class RadioButton implements Drawable {
         page.addEMC();
 
         if (!Util.isEmpty(uri)) {
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x + 3*r1,
-                    y,
-                    x + 3*r1 + font.stringWidth(fontSize, label),
-                    y + font.getBodyHeight(fontSize),
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    null,
-                    language,
-                    actualText,
-                    altDescription);
+            Annotation linkAnnotation = Annotation.link(
+                    x + 3*r1, y,
+                    x + 3*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize),
+                    uri, null, language, actualText, altDescription);
             linkAnnotation.linkElement = link;
             page.addAnnotation(linkAnnotation);
         }

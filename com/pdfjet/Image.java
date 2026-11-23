@@ -93,41 +93,7 @@ final public class Image implements Drawable {
      */
     public Image(PDF pdf, byte[] bytes) throws Exception {
         this.pdf = pdf;
-        ImageType imageType = typeOf(bytes);
-        InputStream inputStream = new ByteArrayInputStream(bytes);
-        byte[] data;
-        if (imageType == ImageType.JPG) {
-            JPGImage jpg = new JPGImage(bytes);
-            data = jpg.getData();
-            setPixels(jpg.getWidth(), jpg.getHeight());
-            if (jpg.getColorComponents() == 1) {
-                addImage(pdf, data, null, imageType, "DeviceGray", 8);
-            } else if (jpg.getColorComponents() == 3) {
-                addImage(pdf, data, null, imageType, "DeviceRGB", 8);
-            } else if (jpg.getColorComponents() == 4) {
-                invertedInks = jpg.isAdobe();
-                addImage(pdf, data, null, imageType, "DeviceCMYK", 8);
-            }
-            setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight());
-            setOrientation(jpg.orientation);
-        } else if (imageType == ImageType.PNG) {
-            PNGImage png = new PNGImage(inputStream);
-            setPixels(png.getWidth(), png.getHeight());
-            colorKeyMask = png.getColorKeyMask();
-            decodeColors = png.decodeColors;
-            palette = png.palette;
-            addImage(pdf, png.stream, png.getAlpha(), imageType,
-                    png.getColorSpace(), png.getBitsPerComponent());
-            setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight());
-        } else if (imageType == ImageType.BMP) {
-            BMPImage bmp = new BMPImage(inputStream);
-            data = bmp.getData();
-            setPixels(bmp.getWidth(), bmp.getHeight());
-            addImage(pdf, data, bmp.getAlpha(), imageType, "DeviceRGB", 8);
-            setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
-        }
-
-        inputStream.close();
+        decode(bytes, pdf, null);
     }
 
     /**
@@ -142,6 +108,12 @@ final public class Image implements Drawable {
     }
 
     private Image(List<PDFobj> objects, byte[] bytes) throws Exception {
+        decode(bytes, null, objects);
+    }
+
+    // Decodes the JPEG, PNG or BMP file and adds the image: to the objects
+    // of an existing PDF when there are objects, or else to the pdf.
+    private void decode(byte[] bytes, PDF pdf, List<PDFobj> objects) throws Exception {
         ImageType imageType = typeOf(bytes);
         InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] data;
@@ -150,12 +122,12 @@ final public class Image implements Drawable {
             data = jpg.getData();
             setPixels(jpg.getWidth(), jpg.getHeight());
             if (jpg.getColorComponents() == 1) {
-                addImageToObjects(objects, data, null, imageType, "DeviceGray", 8);
+                add(pdf, objects, data, null, imageType, "DeviceGray", 8);
             } else if (jpg.getColorComponents() == 3) {
-                addImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
+                add(pdf, objects, data, null, imageType, "DeviceRGB", 8);
             } else if (jpg.getColorComponents() == 4) {
                 invertedInks = jpg.isAdobe();
-                addImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
+                add(pdf, objects, data, null, imageType, "DeviceCMYK", 8);
             }
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight());
             setOrientation(jpg.orientation);
@@ -165,17 +137,33 @@ final public class Image implements Drawable {
             colorKeyMask = png.getColorKeyMask();
             decodeColors = png.decodeColors;
             palette = png.palette;
-            addImageToObjects(objects, png.stream, png.getAlpha(), imageType,
+            add(pdf, objects, png.stream, png.getAlpha(), imageType,
                     png.getColorSpace(), png.getBitsPerComponent());
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.getData();
             setPixels(bmp.getWidth(), bmp.getHeight());
-            addImageToObjects(objects, data, bmp.getAlpha(), imageType, "DeviceRGB", 8);
+            add(pdf, objects, data, bmp.getAlpha(), imageType, "DeviceRGB", 8);
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
         }
         inputStream.close();
+    }
+
+    // Adds the image to the objects when there are any, or else to the pdf.
+    private void add(
+            PDF pdf,
+            List<PDFobj> objects,
+            byte[] data,
+            byte[] alpha,
+            ImageType imageType,
+            String colorSpace,
+            int bitsPerComponent) throws Exception {
+        if (objects != null) {
+            addImageToObjects(objects, data, alpha, imageType, colorSpace, bitsPerComponent);
+        } else {
+            addImage(pdf, data, alpha, imageType, colorSpace, bitsPerComponent);
+        }
     }
 
     // The number of the key, which is a number in decimal, with an exponent
@@ -445,14 +433,7 @@ final public class Image implements Drawable {
         if (pdf.encryption != null) {
             stream = AES256.encrypt(stream, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(stream.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(stream, 0, stream.length);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(stream);
     }
 
     // Returns the filters as the value of /Filter: a name, or an array of names
@@ -654,6 +635,23 @@ final public class Image implements Drawable {
         return this;
     }
 
+    // Writes the matrix that scales the unit square of the image to a by d
+    // and moves it to e, f: "a 0 0 d e f cm".
+    private static void appendMatrix(Page page, float a, float d, float e, float f) {
+        page.append(a);
+        page.append(' ');
+        page.append(0f);
+        page.append(' ');
+        page.append(0f);
+        page.append(' ');
+        page.append(d);
+        page.append(' ');
+        page.append(e);
+        page.append(' ');
+        page.append(f);
+        page.append(" cm\n");
+    }
+
     /**
      * Draws this image on the specified page.
      *
@@ -684,59 +682,15 @@ final public class Image implements Drawable {
         page.saveGraphicsState();
 
         if (degrees == 0) {
-            page.append(w);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(h);
-            page.append(' ');
-            page.append(x);
-            page.append(' ');
-            page.append(page.height - (y + h));
-            page.append(" cm\n");
+            appendMatrix(page, w, h, x, page.height - (y + h));
         } else if (degrees == 90) {
-            page.append(h);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(w);
-            page.append(' ');
-            page.append(x);
-            page.append(' ');
-            page.append(page.height - y);
-            page.append(" cm\n");
+            appendMatrix(page, h, w, x, page.height - y);
             page.append("0 -1 1 0 0 0 cm\n");
         } else if (degrees == 180) {
-            page.append(w);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(h);
-            page.append(' ');
-            page.append(x + w);
-            page.append(' ');
-            page.append(page.height - y);
-            page.append(" cm\n");
+            appendMatrix(page, w, h, x + w, page.height - y);
             page.append("-1 0 0 -1 0 0 cm\n");
         } else if (degrees == 270) {
-            page.append(h);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(0f);
-            page.append(' ');
-            page.append(w);
-            page.append(' ');
-            page.append(x + h);
-            page.append(' ');
-            page.append(page.height - (y + w));
-            page.append(" cm\n");
+            appendMatrix(page, h, w, x + h, page.height - (y + w));
             page.append("0 1 -1 0 0 0 cm\n");
         }
 
@@ -765,22 +719,9 @@ final public class Image implements Drawable {
         if (uri != null || key != null) {
             // The link covers the image as it is drawn, turned or not.
             boolean turned = degrees == 90 || degrees == 270;
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + (turned ? h : w),
-                    y + (turned ? w : h),
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription);
+            Annotation linkAnnotation = Annotation.link(
+                    x, y, x + (turned ? h : w), y + (turned ? w : h),
+                    uri, key, language, actualText, altDescription);
             linkAnnotation.linkElement = link;
             page.addAnnotation(linkAnnotation);
         }
@@ -837,14 +778,7 @@ final public class Image implements Drawable {
         if (pdf.encryption != null) {
             buf = AES256.encrypt(data, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(buf.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(buf, 0, buf.length);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(buf);
         objNumber = pdf.getObjNumber();
     }
 
@@ -923,14 +857,7 @@ final public class Image implements Drawable {
         if (pdf.encryption != null) {
             buf = AES256.encrypt(data, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(buf.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(buf, 0, buf.length);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(buf);
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
     }

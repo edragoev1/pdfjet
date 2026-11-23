@@ -97,14 +97,7 @@ class FontWriter {
         pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Filter /FlateDecode\n");
-        pdf.append("/Length ");
-        pdf.append(compressed.length);
-        pdf.append("\n");
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(compressed);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(compressed);
     }
 
     // The CIDToGIDMap of a TrueType subset (ISO 32000-1, 9.7.4.2): for each

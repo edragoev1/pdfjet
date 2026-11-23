@@ -975,22 +975,9 @@ public class Cell {
                 return;
             }
             if (!Util.isEmpty(point.getURIAction())) {
-                page.addAnnotation(new Annotation(
-                        Annotation.Link,
-                        point.x - point.r,
-                        point.y - point.r,
-                        point.x + point.r,
-                        point.y + point.r,
-                        null,   // Vertices
-                        null,   // Fill Color
-                        0f,     // Opacity
-                        null,   // Title
-                        null,   // Contents
-                        point.getURIAction(),
-                        null,
-                        null,
-                        null,
-                        null));
+                page.addAnnotation(Annotation.link(
+                        point.x - point.r, point.y - point.r, point.x + point.r, point.y + point.r,
+                        point.getURIAction(), null, null, null, null));
             }
             page.addArtifactBMC();
             page.drawPoint(point);
@@ -1022,22 +1009,9 @@ public class Cell {
         page.setFigureBoundingBox(point.x - point.r, point.y - point.r, 2*point.r, 2*point.r);
         page.addEMC();
         page.endLink(link);
-        Annotation annotation = new Annotation(
-                Annotation.Link,
-                point.x - point.r,
-                point.y - point.r,
-                point.x + point.r,
-                point.y + point.r,
-                null,   // Vertices
-                null,   // Fill Color
-                0f,     // Opacity
-                null,   // Title
-                null,   // Contents
-                point.getURIAction(),
-                null,
-                null,
-                null,
-                description);
+        Annotation annotation = Annotation.link(
+                point.x - point.r, point.y - point.r, point.x + point.r, point.y + point.r,
+                point.getURIAction(), null, null, null, description);
         annotation.linkElement = link;
         page.addAnnotation(annotation);
     }
@@ -1218,22 +1192,9 @@ public class Cell {
         }
 
         if (!Util.isEmpty(uri)) {
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    xText,
-                    yText - ascent,
-                    xText + getTextWidth(),
-                    yText + descent(),
-                    null,       // Vertices
-                    null,       // Fill Color
-                    0f,         // Opacity
-                    null,       // Title
-                    null,       // Contents
-                    uri,
-                    null,
-                    null,
-                    null,
-                    null);
+            Annotation linkAnnotation = Annotation.link(
+                    xText, yText - ascent, xText + getTextWidth(), yText + descent(),
+                    uri, null, null, null, null);
             linkAnnotation.linkElement = link;
             page.addAnnotation(linkAnnotation);
         }
