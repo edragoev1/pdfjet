@@ -259,22 +259,10 @@ public class CheckBox implements Drawable {
 
         if (!Util.isEmpty(uri)) {
             // The link joins its Link element, see Page.addAnnotation.
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x + 3f*w/2f,
-                    y,
-                    x + 3f*w/2f + font.stringWidth(fontSize, label),
-                    y + font.getBodyHeight(fontSize),
-                    null,       // Vertices
-                    null,       // Fill Color
-                    0f,         // Opacity
-                    null,       // Title
-                    null,       // Contents
-                    uri,
-                    null,
-                    language,
-                    actualText,
-                    altDescription);
+            Annotation linkAnnotation = Annotation.link(
+                    x + 3f*w/2f, y,
+                    x + 3f*w/2f + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize),
+                    uri, null, language, actualText, altDescription);
             linkAnnotation.linkElement = link;
             page.addAnnotation(linkAnnotation);
         }

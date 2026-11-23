@@ -765,22 +765,9 @@ final public class Image implements Drawable {
         if (uri != null || key != null) {
             // The link covers the image as it is drawn, turned or not.
             boolean turned = degrees == 90 || degrees == 270;
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + (turned ? h : w),
-                    y + (turned ? w : h),
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription);
+            Annotation linkAnnotation = Annotation.link(
+                    x, y, x + (turned ? h : w), y + (turned ? w : h),
+                    uri, key, language, actualText, altDescription);
             linkAnnotation.linkElement = link;
             page.addAnnotation(linkAnnotation);
         }

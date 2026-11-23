@@ -106,4 +106,15 @@ class Annotation {
         this.actualText = Util.isEmpty(actualText) ? fallback : actualText;
         this.altDescription = Util.isEmpty(altDescription) ? fallback : altDescription;
     }
+
+    // Returns a link annotation over the rectangle from x1, y1 to x2, y2: to
+    // the uri, or to the destination named key, with no vertices, fill color,
+    // opacity, title or contents, as every drawable's link is made.
+    static Annotation link(
+            float x1, float y1, float x2, float y2,
+            String uri, String key, String language, String actualText, String altDescription) {
+        return new Annotation(
+                Link, x1, y1, x2, y2, null, null, 0f, null, null,
+                uri, key, language, actualText, altDescription);
+    }
 }

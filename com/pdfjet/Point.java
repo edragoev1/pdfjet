@@ -374,9 +374,9 @@ public class Point implements Drawable {
         page.addEMC();
         if (uri != null && !uri.isEmpty()) {
             page.endLink(link);
-            Annotation annotation = new Annotation(
-                    Annotation.Link, x - r, y - r, x + r, y + r,
-                    null, null, 0f, null, null, uri, null, null, null, description);
+            Annotation annotation = Annotation.link(
+                    x - r, y - r, x + r, y + r,
+                    uri, null, null, null, description);
             annotation.linkElement = link;
             page.addAnnotation(annotation);
         }

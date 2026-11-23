@@ -1331,22 +1331,9 @@ public class TextBlock implements Drawable {
         page.restoreGraphicsState();
 
         if (!Util.isEmpty(uri)) {
-            page.addAnnotation(new Annotation(
-                    Annotation.Link,
-                    this.x,
-                    this.y,
-                    this.x + this.width,
-                    this.y + blockHeight,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    null,   // The destination name
-                    null,   // Language
-                    null,   // Actual text
-                    null)); // Alt description
+            page.addAnnotation(Annotation.link(
+                    this.x, this.y, this.x + this.width, this.y + blockHeight,
+                    uri, null, null, null, null));
         }
 
         return new float[] {this.x + this.width, this.y + blockHeight};

@@ -822,22 +822,9 @@ public class TextLine implements BaselineDrawable {
 
         if (!Util.isEmpty(uri) || !Util.isEmpty(key)) {
             float[] box = getLinkBox(verticalOffset);
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    box[0],
-                    box[1],
-                    box[2],
-                    box[3],
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription);
+            Annotation linkAnnotation = Annotation.link(
+                    box[0], box[1], box[2], box[3],
+                    uri, key, uriLanguage, uriActualText, uriAltDescription);
             linkAnnotation.linkElement = link;
             page.addAnnotation(linkAnnotation);
         }

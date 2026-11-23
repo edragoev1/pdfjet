@@ -2358,22 +2358,9 @@ public class SVGImage implements Drawable {
         page.addEMC();
         page.endLink(link);
         if (uri != null || key != null) {
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + w,
-                    y + h,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription);
+            Annotation linkAnnotation = Annotation.link(
+                    x, y, x + w, y + h,
+                    uri, key, language, actualText, altDescription);
             linkAnnotation.linkElement = link;
             page.addAnnotation(linkAnnotation);
         }
