@@ -213,15 +213,7 @@ public class CheckBox implements Drawable {
             return new float[] { x + 3f*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
         }
 
-        StructElement link = null;
-        if (!Util.isEmpty(uri)) {
-            link = page.addLinkBDC(StructElem.P, language, actualText, altDescription);
-        } else if (Util.isEmpty(label)) {
-            // A box with no label, nor a description, has nothing to read.
-            page.addShapeBDC(language, actualText, altDescription);
-        } else {
-            page.addBDC(StructElem.P, language, actualText, altDescription);
-        }
+        StructElement link = page.addControlBDC(uri, label, language, actualText, altDescription);
         // The pen of the box is its own, and the page is left with the one it had.
         page.saveGraphicsState();
 

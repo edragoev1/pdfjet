@@ -3549,6 +3549,26 @@ final public class Page {
         pdf.headings.add(new Heading(level, title, this, transformed(x, top)[1]));
     }
 
+    // Begins the marked content of a check box or a radio button: a P in the
+    // Link of its uri when it has one, returned; a shape when it has no label,
+    // as a box or a button with no label, nor a description, has nothing to
+    // read; or else a P. It returns null but for a link.
+    StructElement addControlBDC(
+            String uri,
+            String label,
+            String language,
+            String actualText,
+            String altDescription) {
+        if (!Util.isEmpty(uri)) {
+            return addLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else if (Util.isEmpty(label)) {
+            addShapeBDC(language, actualText, altDescription);
+        } else {
+            addBDC(StructElem.P, language, actualText, altDescription);
+        }
+        return null;
+    }
+
     // Begins the marked content of a text that is a link, and returns the Link
     // element its annotation joins, as PDF/UA asks: the Link holds the text
     // and the annotation both, so that a screen reader reads the text as the
