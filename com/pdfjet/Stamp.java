@@ -535,14 +535,7 @@ public class Stamp implements Drawable {
         if (pdf.encryption != null) {
             content = AES256.encrypt(content, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(content.length);
-        pdf.append(Token.NEWLINE);
-        pdf.append(Token.END_DICTIONARY);   // End of XObject dictionary
-        pdf.append(Token.STREAM);
-        pdf.append(content);
-        pdf.append(Token.END_STREAM);
-        pdf.endObj();
+        pdf.appendStreamBody(content);
         pdf.stamps.add(this);
         objNumber = pdf.getObjNumber();
     }
@@ -570,12 +563,8 @@ public class Stamp implements Drawable {
         pdf.append(GlyphOutline.decimals(Math.ceil(path.xMax), 0));
         pdf.append(' ');
         pdf.append(GlyphOutline.decimals(Math.ceil(path.yMax), 0));
-        pdf.append("]\n/Filter /FlateDecode\n/Length ");
-        pdf.append(content.length);
-        pdf.append("\n>>\nstream\n");
-        pdf.append(content);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.append("]\n/Filter /FlateDecode\n");
+        pdf.appendStreamBody(content);
         pdf.stamps.add(stamp);
         stamp.objNumber = pdf.getObjNumber();
         return stamp;

@@ -445,14 +445,7 @@ final public class Image implements Drawable {
         if (pdf.encryption != null) {
             stream = AES256.encrypt(stream, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(stream.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(stream, 0, stream.length);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(stream);
     }
 
     // Returns the filters as the value of /Filter: a name, or an array of names
@@ -824,14 +817,7 @@ final public class Image implements Drawable {
         if (pdf.encryption != null) {
             buf = AES256.encrypt(data, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(buf.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(buf, 0, buf.length);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(buf);
         objNumber = pdf.getObjNumber();
     }
 
@@ -910,14 +896,7 @@ final public class Image implements Drawable {
         if (pdf.encryption != null) {
             buf = AES256.encrypt(data, pdf.encryption.getKey());
         }
-        pdf.append("/Length ");
-        pdf.append(buf.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(buf, 0, buf.length);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(buf);
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
     }

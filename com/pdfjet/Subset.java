@@ -238,14 +238,7 @@ class Subset {
             pdf.append(metadataObjNumber);
             pdf.append(" 0 R\n");
         }
-        pdf.append("/Length ");
-        pdf.append(compressed.length);
-        pdf.append('\n');
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(compressed);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
+        pdf.appendStreamBody(compressed);
         font.fileObjNumber = pdf.getObjNumber();
         return font.kept;
     }

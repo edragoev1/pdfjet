@@ -117,14 +117,7 @@ public class EmbeddedFile {
         if (compress) {
             pdf.append("/Filter /FlateDecode\n");
         }
-        pdf.append(Token.LENGTH);
-        pdf.append(buf.length);
-        pdf.append(Token.NEWLINE);
-        pdf.append(Token.END_DICTIONARY);
-        pdf.append(Token.STREAM);
-        pdf.append(buf);
-        pdf.append(Token.END_STREAM);
-        pdf.endObj();
+        pdf.appendStreamBody(buf);
 
         pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);

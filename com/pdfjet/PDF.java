@@ -417,6 +417,21 @@ final public class PDF {
         append(Token.END_OBJ);
     }
 
+    // Writes the tail of a stream object from its /Length on: the length of
+    // the stream, the end of the dictionary, the stream and the end of the
+    // object. The caller has written the start of the dictionary and its
+    // other entries, and encrypts the stream first when the document is.
+    void appendStreamBody(byte[] stream) throws IOException {
+        append(Token.LENGTH);
+        append(stream.length);
+        append(Token.NEWLINE);
+        append(Token.END_DICTIONARY);
+        append(Token.STREAM);
+        append(stream);
+        append(Token.END_STREAM);
+        endObj();
+    }
+
     /**
      * Returns the number of the most recently started object.
      *
@@ -600,14 +615,7 @@ final public class PDF {
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Metadata\n");
         append("/Subtype /XML\n");
-        append("/Length ");
-        append(xml.length);
-        append(Token.NEWLINE);
-        append(Token.END_DICTIONARY);
-        append(Token.STREAM);
-        append(xml, 0, xml.length);
-        append(Token.END_STREAM);
-        endObj();
+        appendStreamBody(xml);
 
         return getObjNumber();
     }
@@ -1530,14 +1538,7 @@ final public class PDF {
 
             newObj();
             append(Token.BEGIN_DICTIONARY);
-            append(Token.LENGTH);
-            append(buf.length);
-            append(Token.NEWLINE);
-            append(Token.END_DICTIONARY);
-            append(Token.STREAM);
-            append(buf);
-            append(Token.END_STREAM);
-            endObj();
+            appendStreamBody(buf);
             page.contents.add(getObjNumber());
         }
         addPageStructElements(page);
@@ -1637,14 +1638,7 @@ final public class PDF {
             append(opacity);
             append(">>>>>>\n");
         }
-        append("/Length ");
-        append(content.length);
-        append(Token.NEWLINE);
-        append(Token.END_DICTIONARY);
-        append("stream\n");
-        append(content);
-        append("\nendstream\n");
-        endObj();
+        appendStreamBody(content);
         return getObjNumber();
     }
 
