@@ -1642,6 +1642,34 @@ final public class PDF {
         return getObjNumber();
     }
 
+    // Writes the entry of an annotation with the text as a text string, when
+    // there is a text: its /T or its /Contents.
+    private void appendTextEntry(String key, String text) throws IOException {
+        if (text != null && !text.isEmpty()) {
+            append(key);
+            appendTextString(text);
+            append("\n");
+        }
+    }
+
+    // Writes the interior color of a polygon, square or circle annotation,
+    // and its opacity, which PDF/A-1 has not.
+    private void appendFillAndOpacity(Annotation annot) throws IOException {
+        append("/IC [");
+        append(annot.fillColor[0]);
+        append(' ');
+        append(annot.fillColor[1]);
+        append(' ');
+        append(annot.fillColor[2]);
+        append("]\n");
+
+        if (!isPDFA1()) {
+            append("/CA ");
+            append(annot.opacity);
+            append("\n");
+        }
+    }
+
     // Appends the fill color of the annotation to the content of its appearance.
     private static void appendFill(ByteArrayOutputStream buf, Annotation annot, boolean transparent) {
         if (transparent) {
@@ -1769,17 +1797,8 @@ final public class PDF {
             append(annot.fileAttachment.icon);
             append("\n");
 
-            if (annot.fileAttachment.title != null && !annot.fileAttachment.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.fileAttachment.title);
-                append("\n");
-            }
-
-            if (annot.fileAttachment.contents != null && !annot.fileAttachment.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.fileAttachment.contents);
-                append("\n");
-            }
+            appendTextEntry("/T ", annot.fileAttachment.title);
+            appendTextEntry("/Contents ", annot.fileAttachment.contents);
         } else if (annot.annotationType.equals(Annotation.Link)) {
             // PDF/UA requires a link to carry an alternate description in its
             // Contents key.
@@ -1793,11 +1812,7 @@ final public class PDF {
             if (description == null || description.isEmpty()) {
                 description = annot.key;
             }
-            if (description != null && !description.isEmpty()) {
-                append("/Contents ");
-                appendTextString(description);
-                append("\n");
-            }
+            appendTextEntry("/Contents ", description);
             if (uriAction > 0) {
                 append("/A ");
                 append(uriAction);
@@ -1830,72 +1845,18 @@ final public class PDF {
             }
             append("]\n");
 
-            append("/IC [");
-            append(annot.fillColor[0]);
-            append(' ');
-            append(annot.fillColor[1]);
-            append(' ');
-            append(annot.fillColor[2]);
-            append("]\n");
-
-            if (!isPDFA1()) {
-                append("/CA ");
-                append(annot.opacity);
-                append("\n");
-            }
-
-            if (annot.title != null && !annot.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.title);
-                append("\n");
-            }
-
-            if (annot.contents != null && !annot.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.contents);
-                append("\n");
-            }
+            appendFillAndOpacity(annot);
+            appendTextEntry("/T ", annot.title);
+            appendTextEntry("/Contents ", annot.contents);
         } else if (annot.annotationType.equals(Annotation.Square) ||
                 annot.annotationType.equals(Annotation.Circle)) {
-            append("/IC [");
-            append(annot.fillColor[0]);
-            append(' ');
-            append(annot.fillColor[1]);
-            append(' ');
-            append(annot.fillColor[2]);
-            append("]\n");
-
-            if (!isPDFA1()) {
-                append("/CA ");
-                append(annot.opacity);
-                append("\n");
-            }
-
-            if (annot.title != null && !annot.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.title);
-                append("\n");
-            }
-
-            if (annot.contents != null && !annot.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.contents);
-                append("\n");
-            }
+            appendFillAndOpacity(annot);
+            appendTextEntry("/T ", annot.title);
+            appendTextEntry("/Contents ", annot.contents);
         } else if (annot.annotationType.equals(Annotation.Text)) {
             append("/Name /Comment\n");
-
-            if (annot.title != null && !annot.title.isEmpty()) {
-                append("/T ");
-                appendTextString(annot.title);
-                append("\n");
-            }
-
-            if (annot.contents != null && !annot.contents.isEmpty()) {
-                append("/Contents ");
-                appendTextString(annot.contents);
-                append("\n");
-            }
+            appendTextEntry("/T ", annot.title);
+            appendTextEntry("/Contents ", annot.contents);
         }
 
         if (index != -1) {
