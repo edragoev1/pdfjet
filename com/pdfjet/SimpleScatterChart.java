@@ -366,28 +366,10 @@ public class SimpleScatterChart implements Drawable {
         return this;
     }
 
-    // The space around the chart's content, a size of its numbers.
-    private float pad() {
-        return f2.getSize();
-    }
-
-    // The size of the subtitle.
-    private float subtitleSize() {
-        return 0.8f * f2.getSize();
-    }
-
-    // The height above the plot: the padding, the title and the subtitle.
+    // The height above the plot: the padding, the title and the subtitle,
+    // and the legend.
     private float top() {
-        float top = pad();
-        if (!title.isEmpty()) {
-            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize());
-        }
-        if (!subtitle.isEmpty()) {
-            top += 1.4f * subtitleSize();
-        }
-        if (!title.isEmpty() || !subtitle.isEmpty()) {
-            top += f2.getSize();
-        }
+        float top = ChartScale.chartTitleTop(f1, f2, title, subtitle);
         // The legend, and half a size of the numbers under it, so that the
         // top number of the axis is not against its last row
         int rows = drawLegend(null, 0f);
@@ -419,7 +401,7 @@ public class SimpleScatterChart implements Drawable {
             return 0;
         }
         float size = f2.getSize();
-        float pad = pad();
+        float pad = ChartScale.chartPad(f2);
         float r = 0.35f*size;
         float gap = size/2f;
         float left = x + pad;
@@ -662,16 +644,7 @@ public class SimpleScatterChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
-        if (page == null) {
-            return drawChart(null);
-        }
-        // The text unturned and filled, whatever the page was left with
-        Runnable restore = page.plainText();
-        try {
-            return drawChart(page);
-        } finally {
-            restore.run();
-        }
+        return ChartScale.drawWithPlainText(page, this::drawChart);
     }
 
     private float[] drawChart(Page page) throws Exception {
@@ -680,7 +653,7 @@ public class SimpleScatterChart implements Drawable {
             return new float[] {x + w, y + h};
         }
         float size = f2.getSize();
-        float pad = pad();
+        float pad = ChartScale.chartPad(f2);
         float ascent = f2.getAscent(size);
 
         float[] xs = new float[points.size()];
@@ -724,7 +697,7 @@ public class SimpleScatterChart implements Drawable {
         // not the room keeps its plot, and its description says the number
         String note = outsideNote();
         if (!note.isEmpty()) {
-            float above = bottom - 1.4f * subtitleSize();
+            float above = bottom - 1.4f * ChartScale.chartSubtitleSize(f2);
             if (above > top) {
                 bottom = above;
             } else {
@@ -764,17 +737,7 @@ public class SimpleScatterChart implements Drawable {
             page.setBrushColor(panelColor);
             page.fillRect(x, y, w, h);
         }
-        float baseline = y + pad;
-        if (!title.isEmpty()) {
-            baseline += f1.getAscent(f1.getSize());
-            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2f * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), null);
-            baseline += f1.getDescent(f1.getSize());
-        }
-        if (!subtitle.isEmpty()) {
-            baseline += 1.4f * subtitleSize();
-            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
-                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
-        }
+        float baseline = ChartScale.drawChartTitles(page, f1, f2, title, subtitle, x, y, w);
         if (!series.isEmpty()) {
             if (!title.isEmpty() || !subtitle.isEmpty()) {
                 baseline += f2.getSize();
@@ -831,7 +794,7 @@ public class SimpleScatterChart implements Drawable {
             page.setTextRotation(0);
         }
         if (!note.isEmpty()) {
-            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
+            ChartScale.drawOutsideNote(page, f2, ChartScale.chartSubtitleSize(f2), note, right, x + pad, x + w - pad, y + h - pad);
         }
 
         // The trend line, from the left of the plot to its right, within its
@@ -852,13 +815,13 @@ public class SimpleScatterChart implements Drawable {
             // The label over the end of the line, lifted by as much as a
             // falling line rises under it
             String label = "trend";
-            float width = f2.stringWidth(subtitleSize(), label);
+            float width = f2.stringWidth(ChartScale.chartSubtitleSize(f2), label);
             float lift = size / 3f;
             if (x2 > x1 && y2 > y1) {
                 lift += width * ((y2 - y1) / (x2 - x1));
             }
             // Not left of the plot, where a short steep line put it
-            page.drawString(f2, subtitleSize(), label, Math.max(plotLeft, x2 - width), y2 - lift,
+            page.drawString(f2, ChartScale.chartSubtitleSize(f2), label, Math.max(plotLeft, x2 - width), y2 - lift,
                     Util.toRGB(TREND), null);
         }
 

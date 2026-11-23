@@ -33,6 +33,74 @@ final class ChartScale {
     private ChartScale() {
     }
 
+    // How a chart draws itself, on a page or, measured, on none.
+    interface Drawing {
+        float[] draw(Page page) throws Exception;
+    }
+
+    // Draws the chart with the text unturned and filled, whatever the page
+    // was left with, and puts back what it was; with no page the chart is
+    // only measured.
+    static float[] drawWithPlainText(Page page, Drawing chart) throws Exception {
+        if (page == null) {
+            return chart.draw(null);
+        }
+        Runnable restore = page.plainText();
+        try {
+            return chart.draw(page);
+        } finally {
+            restore.run();
+        }
+    }
+
+    // The space around the content of SimpleBarChart, SimpleLineChart and
+    // SimpleScatterChart: a size of f2, the font of their names and numbers.
+    static float chartPad(Font f2) {
+        return f2.getSize();
+    }
+
+    // The size of the subtitle of those charts.
+    static float chartSubtitleSize(Font f2) {
+        return 0.8f * f2.getSize();
+    }
+
+    // The height above the rows or the plot of those charts: the padding,
+    // the title and the subtitle.
+    static float chartTitleTop(Font f1, Font f2, String title, String subtitle) {
+        float top = chartPad(f2);
+        if (!title.isEmpty()) {
+            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize());
+        }
+        if (!subtitle.isEmpty()) {
+            top += 1.4f * chartSubtitleSize(f2);
+        }
+        if (!title.isEmpty() || !subtitle.isEmpty()) {
+            top += f2.getSize();
+        }
+        return top;
+    }
+
+    // Draws the title and the subtitle of those charts at the top of the
+    // chart, and returns the baseline of the last one drawn, or the padding
+    // under the top when there are none.
+    static float drawChartTitles(Page page, Font f1, Font f2, String title, String subtitle,
+            float x, float y, float w) throws Exception {
+        float pad = chartPad(f2);
+        float baseline = y + pad;
+        if (!title.isEmpty()) {
+            baseline += f1.getAscent(f1.getSize());
+            page.drawString(f1, f1.getSize(), shorten(f1, f1.getSize(), title, w - 2f * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), null);
+            baseline += f1.getDescent(f1.getSize());
+        }
+        if (!subtitle.isEmpty()) {
+            float subtitleSize = chartSubtitleSize(f2);
+            baseline += 1.4f * subtitleSize;
+            page.drawString(f2, subtitleSize, shorten(f2, subtitleSize, subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
+        }
+        return baseline;
+    }
+
     /**
      * Formats a label with minDigits to maxDigits decimal places, rounding the
      * exact value half to even. The label has a "." decimal separator and no

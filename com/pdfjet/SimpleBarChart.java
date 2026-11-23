@@ -312,41 +312,16 @@ public class SimpleBarChart implements Drawable {
         if (f1 == null || f2 == null) {
             return 0f;      // Without its fonts the chart draws nothing
         }
-        float h = top() + values.size() * rowHeight() + pad();
+        float h = ChartScale.chartTitleTop(f1, f2, title, subtitle) + values.size() * rowHeight() + ChartScale.chartPad(f2);
         if (hasReference()) {
-            h += 1.4f * subtitleSize();     // The line's label under the bars
+            h += 1.4f * ChartScale.chartSubtitleSize(f2);     // The line's label under the bars
         }
         return h;
-    }
-
-    // The space around the chart's content, a size of the text of the bars.
-    private float pad() {
-        return f2.getSize();
     }
 
     // The height of a row, a bar and the space under it.
     float rowHeight() {
         return 2.4f * f2.getSize();
-    }
-
-    // The size of the subtitle.
-    private float subtitleSize() {
-        return 0.8f * f2.getSize();
-    }
-
-    // The height above the first row: the padding, the title and the subtitle.
-    private float top() {
-        float top = pad();
-        if (!title.isEmpty()) {
-            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize());
-        }
-        if (!subtitle.isEmpty()) {
-            top += 1.4f * subtitleSize();
-        }
-        if (!title.isEmpty() || !subtitle.isEmpty()) {
-            top += f2.getSize();
-        }
-        return top;
     }
 
     // The value written at the end of a bar.
@@ -410,16 +385,7 @@ public class SimpleBarChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
-        if (page == null) {
-            return drawChart(null);
-        }
-        // The text unturned and filled, whatever the page was left with
-        Runnable restore = page.plainText();
-        try {
-            return drawChart(page);
-        } finally {
-            restore.run();
-        }
+        return ChartScale.drawWithPlainText(page, this::drawChart);
     }
 
     private float[] drawChart(Page page) throws Exception {
@@ -431,7 +397,7 @@ public class SimpleBarChart implements Drawable {
             page.pdf.fail(new IllegalArgumentException(ChartScale.TOO_MANY_DIGITS));
         }
         float size = f2.getSize();
-        float pad = pad();
+        float pad = ChartScale.chartPad(f2);
 
         // The widest name and value, and the room left for the bars
         // A name wider than two fifths of the chart is shortened with an ellipsis
@@ -478,19 +444,9 @@ public class SimpleBarChart implements Drawable {
             page.setBrushColor(panelColor);
             page.fillRect(x, y, w, h);
         }
-        float baseline = y + pad;
-        if (!title.isEmpty()) {
-            baseline += f1.getAscent(f1.getSize());
-            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2f * pad), x + pad, baseline, Util.toRGB(INK), null);
-            baseline += f1.getDescent(f1.getSize());
-        }
-        if (!subtitle.isEmpty()) {
-            baseline += 1.4f * subtitleSize();
-            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
-                    x + pad, baseline, Util.toRGB(MUTED), null);
-        }
+        ChartScale.drawChartTitles(page, f1, f2, title, subtitle, x, y, w);
 
-        float rowTop = y + top();
+        float rowTop = y + ChartScale.chartTitleTop(f1, f2, title, subtitle);
         float barHeight = 1.6f * size;
         float ascent = f2.getAscent(size);
         for (int i = 0; i < names.size(); i++) {
@@ -548,10 +504,10 @@ public class SimpleBarChart implements Drawable {
             }
             page.setDefaultStrokeDashPattern();
             String text = referenceText();
-            float width = f2.stringWidth(subtitleSize(), text);
+            float width = f2.stringWidth(ChartScale.chartSubtitleSize(f2), text);
             // Centered under the line, within the chart
             float textX = Math.max(x + pad, Math.min(lineX - width / 2f, x + w - pad - width));
-            page.drawString(f2, subtitleSize(), text, textX, lineBottom + 1.2f * subtitleSize(),
+            page.drawString(f2, ChartScale.chartSubtitleSize(f2), text, textX, lineBottom + 1.2f * ChartScale.chartSubtitleSize(f2),
                     Util.toRGB(INK), null);
         }
 

@@ -324,31 +324,6 @@ public class SimpleLineChart implements Drawable {
         return this;
     }
 
-    // The space around the chart's content, a size of its numbers.
-    private float pad() {
-        return f2.getSize();
-    }
-
-    // The size of the subtitle.
-    private float subtitleSize() {
-        return 0.8f * f2.getSize();
-    }
-
-    // The height above the plot: the padding, the title and the subtitle.
-    private float top() {
-        float top = pad();
-        if (!title.isEmpty()) {
-            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize());
-        }
-        if (!subtitle.isEmpty()) {
-            top += 1.4f * subtitleSize();
-        }
-        if (!title.isEmpty() || !subtitle.isEmpty()) {
-            top += f2.getSize();
-        }
-        return top;
-    }
-
     // The number of categories the chart draws: the categories set, or the
     // longest line when there are none.
     private int count() {
@@ -513,16 +488,7 @@ public class SimpleLineChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
-        if (page == null) {
-            return drawChart(null);
-        }
-        // The text unturned and filled, whatever the page was left with
-        Runnable restore = page.plainText();
-        try {
-            return drawChart(page);
-        } finally {
-            restore.run();
-        }
+        return ChartScale.drawWithPlainText(page, this::drawChart);
     }
 
     private float[] drawChart(Page page) throws Exception {
@@ -543,7 +509,7 @@ public class SimpleLineChart implements Drawable {
             values[i] = all.get(i);
         }
         float size = f2.getSize();
-        float pad = pad();
+        float pad = ChartScale.chartPad(f2);
         float ascent = f2.getAscent(size);
 
         if (!yRangeSet && !ChartScale.spanFits(values)) {
@@ -580,7 +546,7 @@ public class SimpleLineChart implements Drawable {
             left = Math.max(left, x + pad / 2f + f2.stringWidth(size, category(0)) / 2f);
             right = Math.min(right, x + w - pad / 2f - f2.stringWidth(size, category(n - 1)) / 2f);
         }
-        float top = y + top() + ascent / 2f;     // Room for the top number
+        float top = y + ChartScale.chartTitleTop(f1, f2, title, subtitle) + ascent / 2f;     // Room for the top number
         float bottom = y + h - pad - 1.4f * size;
         if (!xAxisTitle.isEmpty()) {
             bottom -= 1.4f * size;
@@ -589,7 +555,7 @@ public class SimpleLineChart implements Drawable {
         // not the room keeps its plot, and its description says the number
         String note = outsideNote();
         if (!note.isEmpty()) {
-            float above = bottom - 1.4f * subtitleSize();
+            float above = bottom - 1.4f * ChartScale.chartSubtitleSize(f2);
             if (above > top) {
                 bottom = above;
             } else {
@@ -611,17 +577,7 @@ public class SimpleLineChart implements Drawable {
             page.setBrushColor(panelColor);
             page.fillRect(x, y, w, h);
         }
-        float baseline = y + pad;
-        if (!title.isEmpty()) {
-            baseline += f1.getAscent(f1.getSize());
-            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2f * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), null);
-            baseline += f1.getDescent(f1.getSize());
-        }
-        if (!subtitle.isEmpty()) {
-            baseline += 1.4f * subtitleSize();
-            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
-                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
-        }
+        ChartScale.drawChartTitles(page, f1, f2, title, subtitle, x, y, w);
 
         // The horizontal grid and its numbers, and the categories under the
         // plot, each where it leaves the one before it room
@@ -674,7 +630,7 @@ public class SimpleLineChart implements Drawable {
             page.setTextRotation(0);
         }
         if (!note.isEmpty()) {
-            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
+            ChartScale.drawOutsideNote(page, f2, ChartScale.chartSubtitleSize(f2), note, right, x + pad, x + w - pad, y + h - pad);
         }
 
         // The lines, the highlighted one last, over the others, broken where a
@@ -770,7 +726,7 @@ public class SimpleLineChart implements Drawable {
         // and after one on a fall; but those outside the axis and the last of
         // each line, which its label at the end has
         if (valueLabels) {
-            float small = subtitleSize();
+            float small = ChartScale.chartSubtitleSize(f2);
             float gap = 0.5f * size;
             for (int i : order) {
                 Line line = lines.get(i);
