@@ -155,8 +155,9 @@ func isJavaWhitespace(r rune) bool {
 // A file that cannot be read this way is refused rather than guessed at.
 //
 // Every field is a slice of the line, as strings.Split makes them; the one
-// copy is of a quoted field that holds a doubled quote. BigTable reads every
-// line of its file through here.
+// copy is of a quoted field that holds a doubled quote. Only the tests split
+// a line alone; Table and BigTable read their files with readDelimitedRecord,
+// which splits each line as this does.
 func splitDelimited(line, delimiter string) []string {
 	fields, _ := splitDelimitedRecord(line, delimiter, false)
 	return fields
@@ -524,7 +525,8 @@ func caseIgnorable(r rune) bool {
 // isDecimalNumber returns true when the text is a number written in decimal,
 // with an exponent or not, and not one in hexadecimal, with underscores, or
 // named, as inf or nan, which the parsers of the four ports read differently
-// (review of 17 October 2026).
+// (review of 17 October 2026). It is the number SVG writes too: a sign or
+// none, digits with a fraction or a fraction alone, and an exponent or none.
 //
 // The characters are read one by one, not with a regular expression, which
 // allocated for each number read under the race detector (17 October 2026).

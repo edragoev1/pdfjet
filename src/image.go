@@ -126,46 +126,11 @@ func panicError(r any) error {
 //   - pdf: the PDF to which we add this image.
 //   - buf: the bytes of the image file.
 func NewImageFromBytes(pdf *PDF, buf []byte) *Image {
-	imageType := imageTypeOf(buf)
-	reader := bytes.NewReader(buf)
 	image := new(Image)
 	image.pdf = pdf
-
-	switch imageType {
-	case imagetype.JPG:
-		jpg, err := newJPGImageFromBytes(buf)
-		if err != nil {
-			panic(err)
-		}
-		data := jpg.getData()
-		image.setPixels(int(jpg.width), int(jpg.height))
-		if jpg.getColorComponents() == 1 {
-			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, 8)
-		} else if jpg.getColorComponents() == 3 {
-			image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
-		} else if jpg.getColorComponents() == 4 {
-			image.invertedInks = jpg.isAdobe()
-			image.addImageToPDF(pdf, data, nil, imageType, device.CMYK, 8)
-		}
-		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
-		image.setOrientation(int(jpg.orientation))
-	case imagetype.PNG:
-		png := newPNGImage(reader)
-		image.setPixels(png.w, png.h)
-		image.colorKeyMask = png.GetColorKeyMask()
-		image.decodeColors = png.decodeColors
-		image.palette = png.palette
-		colorSpace, bitsPerComponent := png.colorSpace()
-		image.addImageToPDF(pdf, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent)
-		image.setPhysicalSize(png.physicalWidth, png.physicalHeight)
-	case imagetype.BMP:
-		bmp := newBMPImage(reader)
-		data := bmp.getData()
-		image.setPixels(bmp.w, bmp.h)
-		image.addImageToPDF(pdf, data, bmp.getAlpha(), imageType, device.RGB, 8)
-		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
-	}
-
+	image.decode(buf, func(data, alpha []byte, imageType imagetype.ImageType, colorSpace string, bitsPerComponent int) {
+		image.addImageToPDF(pdf, data, alpha, imageType, colorSpace, bitsPerComponent)
+	})
 	return image
 }
 
@@ -173,11 +138,19 @@ func NewImageFromBytes(pdf *PDF, buf []byte) *Image {
 //   - objects: the map to which we add this image.
 //   - inputStream: the input stream to read the image from.
 func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
-	buf := content.GetFromStream(reader)
-	imageType := imageTypeOf(buf)
-	reader = bytes.NewReader(buf)
 	image := new(Image)
+	image.decode(content.GetFromStream(reader), func(data, alpha []byte, imageType imagetype.ImageType, colorSpace string, bitsPerComponent int) {
+		image.addImageToObjects(objects, data, alpha, imageType, colorSpace, bitsPerComponent)
+	})
+	return image
+}
 
+// decode reads the PNG, JPEG or BMP file of the bytes into the image, and
+// gives its image data to add, which writes the image object: to the PDF
+// being written or to the objects of an existing one.
+func (image *Image) decode(buf []byte, add func(data, alpha []byte, imageType imagetype.ImageType, colorSpace string, bitsPerComponent int)) {
+	imageType := imageTypeOf(buf)
+	reader := bytes.NewReader(buf)
 	switch imageType {
 	case imagetype.JPG:
 		jpg, err := newJPGImageFromBytes(buf)
@@ -186,13 +159,14 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 		}
 		data := jpg.getData()
 		image.setPixels(int(jpg.width), int(jpg.height))
+		// readJPGImage refuses a JPEG of other than 1, 3 or 4 color components.
 		if jpg.getColorComponents() == 1 {
-			image.addImageToObjects(objects, data, nil, imageType, device.Gray, 8)
+			add(data, nil, imageType, device.Gray, 8)
 		} else if jpg.getColorComponents() == 3 {
-			image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
-		} else if jpg.getColorComponents() == 4 {
+			add(data, nil, imageType, device.RGB, 8)
+		} else {
 			image.invertedInks = jpg.isAdobe()
-			image.addImageToObjects(objects, data, nil, imageType, device.CMYK, 8)
+			add(data, nil, imageType, device.CMYK, 8)
 		}
 		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
 		image.setOrientation(int(jpg.orientation))
@@ -203,17 +177,15 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 		image.decodeColors = png.decodeColors
 		image.palette = png.palette
 		colorSpace, bitsPerComponent := png.colorSpace()
-		image.addImageToObjects(objects, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent)
+		add(png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent)
 		image.setPhysicalSize(png.physicalWidth, png.physicalHeight)
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
 		data := bmp.getData()
 		image.setPixels(bmp.w, bmp.h)
-		image.addImageToObjects(objects, data, bmp.getAlpha(), imageType, device.RGB, 8)
+		add(data, bmp.getAlpha(), imageType, device.RGB, 8)
 		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
 	}
-
-	return image
 }
 
 // pixelsOf returns the number of pixels of the value as Java's (int) takes
