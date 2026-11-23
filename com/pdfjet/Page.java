@@ -805,20 +805,26 @@ final public class Page {
 
         if (highlightColors == null) {
             setBrushColor(textColor);
-            if (font.isCoreFont) {
-                append("[<");
-                drawASCIIString(font, str);
-                append(">] TJ\n");  // Need TJ for kerning
-            } else {
-                append("<");
-                drawUnicodeString(font, str);
-                append("> Tj\n");
-            }
+            showText(font, str);
 
         } else {
             drawColoredString(font, str, textColor, highlightColors);
         }
         append("ET\n");
+    }
+
+    // Shows the string in the font: in a TJ array for a core font, which
+    // the kerning needs, or with Tj for an embedded one.
+    private void showText(Font font, String str) {
+        if (font.isCoreFont) {
+            append("[<");
+            drawASCIIString(font, str);
+            append(">] TJ\n");
+        } else {
+            append("<");
+            drawUnicodeString(font, str);
+            append("> Tj\n");
+        }
     }
 
     // Draws the string of an SVG image with the text matrix, in the brush
@@ -847,15 +853,7 @@ final public class Page {
             append(' ');
         }
         append("Tm\n");
-        if (font.isCoreFont) {
-            append("[<");
-            drawASCIIString(font, str);
-            append(">] TJ\n");
-        } else {
-            append("<");
-            drawUnicodeString(font, str);
-            append("> Tj\n");
-        }
+        showText(font, str);
     }
 
     // Begins a text object whose glyphs clip what is drawn after it, by the
@@ -4019,15 +4017,7 @@ final public class Page {
         append("BT\n");
         setTextLocation(x, y);
         setTextFont(font, font.size);
-        if (font.isCoreFont) {
-            append("[<");
-            drawASCIIString(font, str);
-            append(">] TJ\n");
-        } else {
-            append("<");
-            drawUnicodeString(font, str);
-            append("> Tj\n");
-        }
+        showText(font, str);
         append("ET\n");
     }
 
@@ -4270,30 +4260,14 @@ final public class Page {
             if (hasFallbackFont) {
                 drawTextBlockLine(font, fallbackFont, fontSize, fallbackFontSize, textLine.text, color, highlightColors);
             } else if (highlightColors == null) {
-                if (font.isCoreFont) {
-                    append("[<");
-                    drawASCIIString(font, textLine.text);
-                    append(">] TJ\n");
-                } else {
-                    append("<");
-                    drawUnicodeString(font, textLine.text);
-                    append("> Tj\n");
-                }
+                showText(font, textLine.text);
             } else {
                 drawColoredString(font, textLine.text, color, highlightColors);
             }
             if (textLine.trailingSpace) {
                 // The space the line was wrapped at, drawn after it: no ink, and
                 // the next line is placed with its own matrix, so nothing moves.
-                if (font.isCoreFont) {
-                    append("[<");
-                    drawASCIIString(font, Single.space);
-                    append(">] TJ\n");
-                } else {
-                    append("<");
-                    drawUnicodeString(font, Single.space);
-                    append("> Tj\n");
-                }
+                showText(font, Single.space);
             }
             yText += leading;
         }
