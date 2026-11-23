@@ -1293,6 +1293,25 @@ public final class PDFobj {
 
     /// Adds a content stream to this page.
     public final func addContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
+        addContentObject(&content, &objects, false)
+    }
+
+    ///
+    /// Adds new content object before the existing content objects.
+    /// The original code was provided by Stefan Ostermann author of ScribMaster and HandWrite Pro.
+    /// Additional code to handle PDFs with indirect array of stream objects was written by EDragoev.
+    ///
+    /// - Parameter content: the content stream to add.
+    /// - Parameter objects: the objects of the PDF, which receive the new content object.
+    ///
+    public final func addPrefixContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
+        addContentObject(&content, &objects, true)
+    }
+
+    // Adds the content stream as an object of its own and puts a reference to
+    // it in the /Contents of this page: after the others, or before them when
+    // prefix is true.
+    private final func addContentObject(_ content: inout [UInt8], _ objects: inout [PDFobj], _ prefix: Bool) {
         let obj = PDFobj()
         obj.setNumber(objects.count + 1)
         obj.setStream(&content)
@@ -1306,8 +1325,15 @@ public final class PDFobj {
                 i += 1
                 let token = tokenAt(dict, i)
                 if token == "[" {
-                    // Array of content objects, which can end before its "]".
                     i += 1
+                    if prefix {
+                        // Array of content object streams
+                        dict.insert("R", at: indexAt(dict, i))
+                        dict.insert("0", at: indexAt(dict, i))
+                        dict.insert(objNumber, at: indexAt(dict, i))
+                        return
+                    }
+                    // Array of content objects, which can end before its "]".
                     while i < dict.count {
                         if dict[i] == "]" {
                             dict.insert("R", at: i)
@@ -1327,7 +1353,11 @@ public final class PDFobj {
                         // This is not a stream object!
                         var j = 0
                         while j < obj2.dict.count {
-                            if obj2.dict[j] == "]" {
+                            // After its "[", or before its "]"
+                            if obj2.dict[j] == (prefix ? "[" : "]") {
+                                if prefix {
+                                    j += 1
+                                }
                                 obj2.dict.insert("R", at: j)
                                 obj2.dict.insert("0", at: j)
                                 obj2.dict.insert(objNumber, at: j)
@@ -1341,72 +1371,10 @@ public final class PDFobj {
                     }
                     dict.insert("[", at: i)
                     dict.insert("]", at: i + 4)
-                    dict.insert("R", at: i + 4)
-                    dict.insert("0", at: i + 4)
-                    dict.insert(objNumber, at: i + 4)
-                    return
-                }
-            }
-            i += 1
-        }
-    }
-
-    ///
-    /// Adds new content object before the existing content objects.
-    /// The original code was provided by Stefan Ostermann author of ScribMaster and HandWrite Pro.
-    /// Additional code to handle PDFs with indirect array of stream objects was written by EDragoev.
-    ///
-    /// - Parameter content: the content stream to add.
-    /// - Parameter objects: the objects of the PDF, which receive the new content object.
-    ///
-    public final func addPrefixContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
-        let obj = PDFobj()
-        obj.setNumber(objects.count + 1)
-        obj.setStream(&content)
-        objects.append(obj)
-
-        let objNumber = String(obj.number)
-        // The page's own /Contents, not an annotation's in it
-        var i = entryIndexOf("/Contents")
-        while i >= 0 && i < dict.count {
-            if dict[i] == "/Contents" {
-                i += 1
-                let token = tokenAt(dict, i)
-                if token == "[" {
-                    // Array of content object streams
-                    i += 1
-                    dict.insert("R", at: indexAt(dict, i))
-                    dict.insert("0", at: indexAt(dict, i))
-                    dict.insert(objNumber, at: indexAt(dict, i))
-                    return
-                } else {
-                    // Single content object
-                    guard let obj2 = objectAt(objects, token) else {
-                        return
-                    }
-                    if obj2.data.count == 0 && obj2.stream == nil {
-                        // This is not a stream object!
-                        var j = 0
-                        while j < obj2.dict.count {
-                            if obj2.dict[j] == "[" {
-                                j += 1
-                                obj2.dict.insert("R", at: j)
-                                obj2.dict.insert("0", at: j)
-                                obj2.dict.insert(objNumber, at: j)
-                                return
-                            }
-                            j += 1
-                        }
-                    }
-                    if tokenAt(dict, i + 1) != "0" || tokenAt(dict, i + 2) != "R" {
-                        return  // Not a whole "n 0 R" to put in an array.
-                    }
-                    dict.insert("[", at: i)
-                    dict.insert("]", at: i + 4)
-                    i += 1
-                    dict.insert("R", at: i)
-                    dict.insert("0", at: i)
-                    dict.insert(objNumber, at: i)
+                    let at = prefix ? i + 1 : i + 4
+                    dict.insert("R", at: at)
+                    dict.insert("0", at: at)
+                    dict.insert(objNumber, at: at)
                     return
                 }
             }
