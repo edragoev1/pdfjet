@@ -7,7 +7,7 @@ go 1.26.0
 
 require (
 	github.com/edragoev1/pdfjet/harfbuzz/v9 v9.1.9
-	github.com/edragoev1/pdfjet/v9 v9.1.9
+	github.com/edragoev1/pdfjet/v9 v9.2.1
 )
 
 require (
