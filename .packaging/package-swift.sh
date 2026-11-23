@@ -151,6 +151,15 @@ EOF
 (cd "$DEST" && swift build -c release --product PDFjet > /dev/null && swift build -c release --product PDFjetFontsWorld > /dev/null)
 rm -rf "$DEST/.build"
 git -C "$DEST" add -A
+# The README is pdfjet-swift's own, kept as it is, but for the version of
+# its install line, Package.swift's dependency, which was left at the release
+# before (9.2.1's, 23 November 2026)
+perl -pi -e 's|(pdfjet-swift", from: ")[0-9.]+(")|${1}'"$VERSION"'${2}|' "$DEST/README.md"
+if ! grep -q "pdfjet-swift\", from: \"$VERSION\"" "$DEST/README.md"; then
+    echo "$DEST/README.md: its install line does not name $VERSION" >&2
+    exit 1
+fi
+git -C "$DEST" add README.md
 git -C "$DEST" commit -q -m "PDFjet $VERSION, from the tag $TAG of https://github.com/edragoev1/pdfjet"
 git -C "$DEST" tag -a "$TAG" -m "$TAG RELEASE"
 echo "$DEST: PDFjet $VERSION committed and tagged $TAG, $(du -sh --exclude=.git "$DEST" | cut -f1); push it with: git -C $DEST push origin main $TAG"
