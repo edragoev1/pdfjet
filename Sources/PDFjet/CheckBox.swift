@@ -196,15 +196,7 @@ public class CheckBox : Drawable {
             return [x + 3.0*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
         }
 
-        var link: StructElement?
-        if !(uri ?? "").isEmpty {
-            link = page!.addLinkBDC(StructElem.P, language, actualText, altDescription)
-        } else if label.isEmpty {
-            // A box with no label, nor a description, has nothing to read.
-            page!.addShapeBDC(language, actualText, altDescription)
-        } else {
-            page!.addBDC(StructElem.P, language, actualText, altDescription)
-        }
+        let link = CheckBox.beginChoice(page!, uri, label, language, actualText, altDescription)
         // The pen of the box is its own, and the page is left with the one it had.
         page!.saveGraphicsState()
 
@@ -233,32 +225,39 @@ public class CheckBox : Drawable {
             }
         }
 
-        // A linked label is blue.
-        let textColor: [Float] = !(uri ?? "").isEmpty ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
+        let textColor = CheckBox.labelColor(uri)
         page!.drawString(font, fontSize, label, x + 3.0*w/2.0, y + font.getAscent(fontSize), textColor, nil)
         page!.restoreGraphicsState()
         page!.addEMC()
 
         if !(uri ?? "").isEmpty {
             // The link is the P of the box and its label, see Page.addLinkBDC.
-            page!.addAnnotation(Annotation(
-                    Annotation.Link,
-                    x + 3.0*w/2.0,
-                    y,
-                    x + 3.0*w/2.0 + font.stringWidth(fontSize, label),
-                    y + font.getBodyHeight(fontSize),
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    nil,
-                    language,
-                    actualText,
-                    altDescription).joining(link))
+            page!.addAnnotation(Annotation.link(
+                    x + 3.0*w/2.0, y, x + 3.0*w/2.0 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize),
+                    uri, nil, language, actualText, altDescription).joining(link))
         }
 
         return [x + 3.0*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
+    }
+    // Begins the marked content of a check box or a radio button: the P of a
+    // Link when it has a uri, a shape when it has no label, else a P. Returns
+    // the Link element, or nil.
+    static func beginChoice(_ page: Page, _ uri: String?, _ label: String,
+            _ language: String?, _ actualText: String?, _ altDescription: String?) -> StructElement? {
+        var link: StructElement?
+        if !(uri ?? "").isEmpty {
+            link = page.addLinkBDC(StructElem.P, language, actualText, altDescription)
+        } else if label.isEmpty {
+            // A box or a button with no label, nor a description, has nothing to read.
+            page.addShapeBDC(language, actualText, altDescription)
+        } else {
+            page.addBDC(StructElem.P, language, actualText, altDescription)
+        }
+        return link
+    }
+
+    // The color of the label: a linked label is blue.
+    static func labelColor(_ uri: String?) -> [Float] {
+        return !(uri ?? "").isEmpty ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
     }
 }   // End of CheckBox.swift

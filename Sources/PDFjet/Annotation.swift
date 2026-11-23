@@ -84,6 +84,16 @@ class Annotation {
         return self
     }
 
+    // A link from x1, y1 to x2, y2, to the uri or to the destination named
+    // key, with no vertices, fill, title or contents.
+    static func link(
+            _ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float,
+            _ uri: String?, _ key: String?,
+            _ language: String?, _ actualText: String?, _ altDescription: String?) -> Annotation {
+        return Annotation(Annotation.Link, x1, y1, x2, y2, nil, nil, 0.0, nil, nil,
+                uri, key, language, actualText, altDescription)
+    }
+
     init(
         _ annotationType: String?,
         _ x1: Float,

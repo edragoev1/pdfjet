@@ -2163,22 +2163,9 @@ public class SVGImage : Drawable {
         page.addEMC()
         page.endLink(link)
         if (uri != nil || key != nil) {
-            page.addAnnotation(Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + w,
-                    y + h,
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription).joining(link))
+            page.addAnnotation(Annotation.link(
+                    x, y, x + w, y + h,
+                    uri, key, language, actualText, altDescription).joining(link))
         }
         return [self.x + self.w, self.y + self.h]
     }

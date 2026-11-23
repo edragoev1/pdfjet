@@ -123,15 +123,7 @@ public class RadioButton : Drawable {
             return [x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
         }
 
-        var link: StructElement?
-        if !(uri ?? "").isEmpty {
-            link = page!.addLinkBDC(StructElem.P, language, actualText, altDescription)
-        } else if label.isEmpty {
-            // A button with no label, nor a description, has nothing to read.
-            page!.addShapeBDC(language, actualText, altDescription)
-        } else {
-            page!.addBDC(StructElem.P, language, actualText, altDescription)
-        }
+        let link = CheckBox.beginChoice(page!, uri, label, language, actualText, altDescription)
         // The pen of the button is its own, and the page is left with the one it had.
         page!.saveGraphicsState()
 
@@ -146,30 +138,16 @@ public class RadioButton : Drawable {
             page!.fillCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2)
         }
 
-        // A linked label is blue.
-        let textColor: [Float] = !(uri ?? "").isEmpty ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
+        let textColor = CheckBox.labelColor(uri)
         page!.drawString(font, fontSize, label, x + 3*r1, y + font.getAscent(fontSize), textColor, nil)
         page!.restoreGraphicsState()
 
         page!.addEMC()
 
         if !(uri ?? "").isEmpty {
-            page!.addAnnotation(Annotation(
-                    Annotation.Link,
-                    x + 3*r1,
-                    y,
-                    x + 3*r1 + font.stringWidth(fontSize, label),
-                    y + font.getBodyHeight(fontSize),
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    nil,
-                    language,
-                    actualText,
-                    altDescription).joining(link))
+            page!.addAnnotation(Annotation.link(
+                    x + 3*r1, y, x + 3*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize),
+                    uri, nil, language, actualText, altDescription).joining(link))
         }
 
         return [x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]

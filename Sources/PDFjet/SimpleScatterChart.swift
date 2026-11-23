@@ -991,22 +991,9 @@ public class SimpleScatterChart : Drawable {
     // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static func linkOf(_ p: Point, _ box: [Float]) -> Annotation {
-        let annotation = Annotation(
-                Annotation.Link,
-                box[0],
-                box[1],
-                box[0] + box[2],
-                box[1] + box[3],
-                nil,    // Vertices
-                nil,    // Fill Color
-                0.0,    // Opacity
-                nil,    // Title
-                nil,    // Contents
-                p.uri,
-                nil,
-                nil,
-                nil,
-                p.name)
+        let annotation = Annotation.link(
+                box[0], box[1], box[0] + box[2], box[1] + box[3],
+                p.uri, nil, nil, nil, p.name)
         annotation.hitSize = p.dot ? HIT_SIZE : 0.0
         return annotation
     }

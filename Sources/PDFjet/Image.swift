@@ -686,22 +686,9 @@ public class Image : Drawable {
         if uri != nil || key != nil {
             // The link covers the image as it is drawn, turned or not.
             let turned = degrees == 90 || degrees == 270
-            page.addAnnotation(Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + (turned ? h! : w!),
-                    y + (turned ? w! : h!),
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription).joining(link))
+            page.addAnnotation(Annotation.link(
+                    x, y, x + (turned ? h! : w!), y + (turned ? w! : h!),
+                    uri, key, language, actualText, altDescription).joining(link))
         }
 
         return corner
