@@ -19,10 +19,10 @@ import (
 	"sort"
 )
 
-// Prepare returns the password prepared, or an error that names the
+// prepare returns the password prepared, or an error that names the
 // character that SASLprep prohibits, or that says its text mixes right to
 // left with left to right.
-func Prepare(password string) (string, error) {
+func prepare(password string) (string, error) {
 	mapped := make([]rune, 0, len(password))
 	for _, c := range password {
 		if inRanges(space, c) {
@@ -51,7 +51,7 @@ func Prepare(password string) (string, error) {
 // PasswordBytes returns the bytes of the password as PDF 2.0 asks of
 // AES-256: prepared, in UTF-8, at most 127 of them.
 func PasswordBytes(password string) ([]byte, error) {
-	prepared, err := Prepare(password)
+	prepared, err := prepare(password)
 	if err != nil {
 		return nil, err
 	}

@@ -203,10 +203,10 @@ func TestDecompressorTheDecodedLengthLimitIs256MiB(t *testing.T) {
 
 func TestDecompressorInflateRejectsDataThatDecodesToMoreThanTheLimit(t *testing.T) {
 	deflated := compressor.Deflate(make([]byte, 1000))
-	if data, err := InflateWithMaxLength(deflated, 1000); err != nil || len(data) != 1000 {
+	if data, err := inflateWithMaxLength(deflated, 1000); err != nil || len(data) != 1000 {
 		t.Errorf("decoded %d bytes, error %v", len(data), err)
 	}
-	_, err := InflateWithMaxLength(deflated, 999)
+	_, err := inflateWithMaxLength(deflated, 999)
 	if err == nil || err.Error() != "Flate data decodes to more than 999 bytes" {
 		t.Errorf("error %v", err)
 	}
@@ -250,10 +250,10 @@ func TestDecompressorInflatePrefixReturnsTheFirstBytesAndIgnoresTheRest(t *testi
 
 func TestDecompressorLzwDecodeRejectsDataThatDecodesToMoreThanTheLimit(t *testing.T) {
 	encoded := []byte{0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01}
-	if data, err := LZWDecodeWithMaxLength(encoded, 10); err != nil || len(data) != 10 {
+	if data, err := lzwDecodeWithMaxLength(encoded, 10); err != nil || len(data) != 10 {
 		t.Errorf("decoded %d bytes, error %v", len(data), err)
 	}
-	_, err := LZWDecodeWithMaxLength(encoded, 9)
+	_, err := lzwDecodeWithMaxLength(encoded, 9)
 	if err == nil || err.Error() != "LZW data decodes to more than 9 bytes" {
 		t.Errorf("error %v", err)
 	}

@@ -35,17 +35,17 @@ func errTooLong(filter string, maxLength int) error {
 // returns what was decoded up to there, as a missing end is common in real
 // files.
 func LZWDecode(buf []byte) ([]byte, error) {
-	return LZWDecodeWithMaxLength(buf, MaxDecodedLength)
+	return lzwDecodeWithMaxLength(buf, MaxDecodedLength)
 }
 
-// LZWDecodeWithMaxLength decodes the data of an LZWDecode stream like
+// lzwDecodeWithMaxLength decodes the data of an LZWDecode stream like
 // LZWDecode, and fails when it decodes to more than maxLength bytes.
-func LZWDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
+func lzwDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
 	return LZWDecodeWithEarlyChange(buf, maxLength, 1)
 }
 
 // LZWDecodeWithEarlyChange decodes the data of an LZWDecode stream like
-// LZWDecodeWithMaxLength, with the /EarlyChange of its /DecodeParms: with 0 the
+// lzwDecodeWithMaxLength, with the /EarlyChange of its /DecodeParms: with 0 the
 // codes get one bit longer only when the table needs it. It was ignored, and
 // such data decoded to wrong bytes with no error (review of 30 October 2026, B7).
 func LZWDecodeWithEarlyChange(buf []byte, maxLength, earlyChange int) ([]byte, error) {
@@ -361,19 +361,19 @@ func Inflate(buf []byte) ([]byte, error) {
 	return result, err
 }
 
-// InflateWithMaxLength decodes a zlib stream, which must end and decode to at
+// inflateWithMaxLength decodes a zlib stream, which must end and decode to at
 // most maxLength bytes.
-func InflateWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
+func inflateWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
 	result, _, err := inflate(buf, maxLength, false)
 	return result, err
 }
 
-// InflateStream decodes the Flate stream of a PDF like InflateWithMaxLength, and
+// InflateStream decodes the Flate stream of a PDF like inflateWithMaxLength, and
 // takes one whose Deflate data ends and whose Adler-32 is cut off, all or part
 // of it, as other readers do: an object stream like that failed the whole PDF
 // (review of 30 October 2026, B8). What is left of the checksum has to be right.
 func InflateStream(buf []byte, maxLength int) ([]byte, error) {
-	result, err := InflateWithMaxLength(buf, maxLength)
+	result, err := inflateWithMaxLength(buf, maxLength)
 	if err == nil || len(buf) < 2 || !errors.Is(err, io.ErrUnexpectedEOF) {
 		return result, err
 	}

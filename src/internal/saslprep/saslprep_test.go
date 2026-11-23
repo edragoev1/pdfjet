@@ -14,17 +14,17 @@ func TestPrepareTheExamplesOfRFC4013(t *testing.T) {
 		{"ª", "a"},
 		{"Ⅸ", "IX"},
 	} {
-		if got, err := Prepare(c.in); err != nil || got != c.want {
+		if got, err := prepare(c.in); err != nil || got != c.want {
 			t.Errorf("%q: %q, %v", c.in, got, err)
 		}
 	}
 	for _, in := range []string{"\u0007", "ا1"} {
-		if got, err := Prepare(in); err == nil {
+		if got, err := prepare(in); err == nil {
 			t.Errorf("%q: %q, not refused", in, got)
 		}
 	}
 	// Right to left text that starts and ends with a right to left character
-	if _, err := Prepare("ا1ب"); err != nil {
+	if _, err := prepare("ا1ب"); err != nil {
 		t.Error(err)
 	}
 }
@@ -49,11 +49,11 @@ func TestPrepareNormalizes(t *testing.T) {
 		// acute accent of the same class, before it, did not compose with
 		{"Á̊", "Á̊"},
 	} {
-		if got, err := Prepare(c.in); err != nil || got != c.want {
+		if got, err := prepare(c.in); err != nil || got != c.want {
 			t.Errorf("%q: %q (%U), %v; want %q", c.in, got, []rune(got), err, c.want)
 		}
 	}
-	if _, err := Prepare("pass"); err == nil {
+	if _, err := prepare("pass"); err == nil {
 		t.Error("a private use character is not refused")
 	}
 }
