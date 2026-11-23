@@ -361,14 +361,7 @@ class JPGImage {
     // holds is not read: it is a TIFF image file directory, which is a format
     // of its own, and a JFIF segment is what the density of a JPEG is.
     private void ReadAPP0(Stream stream) {
-        int length = GetUInt16(stream);
-        if (length < 2) {
-            throw new InvalidDataException("Invalid marker segment length.");
-        }
-        byte[] segment = new byte[length - 2];
-        for (int i = 0; i < segment.Length; i++) {
-            segment[i] = (byte) ReadByte(stream);   // throws on EOF
-        }
+        byte[] segment = ReadSegment(stream);
         if (segment.Length >= 12 &&
                 segment[0] == 'J' && segment[1] == 'F' && segment[2] == 'I' &&
                 segment[3] == 'F' && segment[4] == 0) {
@@ -387,14 +380,7 @@ class JPGImage {
     // kind, XMP among them, is passed over. The first orientation read is the
     // image's.
     private void ReadAPP1(Stream stream) {
-        int length = GetUInt16(stream);
-        if (length < 2) {
-            throw new InvalidDataException("Invalid marker segment length.");
-        }
-        byte[] segment = new byte[length - 2];
-        for (int i = 0; i < segment.Length; i++) {
-            segment[i] = (byte) ReadByte(stream);   // throws on EOF
-        }
+        byte[] segment = ReadSegment(stream);
         if (orientation == 0) {
             orientation = ExifOrientation(segment);
         }
@@ -486,6 +472,19 @@ class JPGImage {
         }
         float size = (float) (pixels*points/density);
         return FastFloat.IsWritable(size) ? size : 0f;
+    }
+
+    // Reads the parameters of a marker segment of APP0 or APP1, after its length.
+    private byte[] ReadSegment(Stream stream) {
+        int length = GetUInt16(stream);
+        if (length < 2) {
+            throw new InvalidDataException("Invalid marker segment length.");
+        }
+        byte[] segment = new byte[length - 2];
+        for (int i = 0; i < segment.Length; i++) {
+            segment[i] = (byte) ReadByte(stream);   // throws on EOF
+        }
+        return segment;
     }
 
     private void ReadAPP14(Stream stream) {

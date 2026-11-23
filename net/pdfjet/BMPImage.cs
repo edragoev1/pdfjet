@@ -405,15 +405,26 @@ class BMPImage {
     // large for a PDF number is passed over; the image keeps the size of its
     // pixels for both.
     private void SetPhysicalSize(int pixelsPerMeterX, int pixelsPerMeterY) {
+        float[] size = PhysicalSize(w, h, pixelsPerMeterX, pixelsPerMeterY);
+        if (size != null) {
+            this.physicalWidth = size[0];
+            this.physicalHeight = size[1];
+        }
+    }
+
+    // The width and the height in points of an image of w by h pixels at the
+    // pixels per metre of each axis, of a BMP or of a PNG image; or null for
+    // no size, of no pixels per metre or too large for a PDF number.
+    internal static float[] PhysicalSize(int w, int h, int pixelsPerMeterX, int pixelsPerMeterY) {
         if (pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0) {
-            return;
+            return null;
         }
-        float width = (float) (this.w*POINTS_PER_METER/pixelsPerMeterX);
-        float height = (float) (this.h*POINTS_PER_METER/pixelsPerMeterY);
+        float width = (float) (w*POINTS_PER_METER/pixelsPerMeterX);
+        float height = (float) (h*POINTS_PER_METER/pixelsPerMeterY);
         if (FastFloat.IsWritable(width) && FastFloat.IsWritable(height)) {
-            this.physicalWidth = width;
-            this.physicalHeight = height;
+            return new float[] {width, height};
         }
+        return null;
     }
 
     /// <summary>
