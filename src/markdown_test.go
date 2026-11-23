@@ -715,3 +715,38 @@ func TestMarkdownSVGTextInTheDocumentsFonts(t *testing.T) {
 		t.Error("the bold text of the SVG is not in the document's bold font")
 	}
 }
+
+// An SVG's italic, bold italic and monospace text keeps its style in the
+// document's fonts: before the code review of 23 November 2026 all of it was
+// drawn in the regular and bold ones, upright and proportional.
+func TestMarkdownSVGTextKeepsItsStyleInTheDocumentsFonts(t *testing.T) {
+	testAllowCoreFonts(t)
+	pdf := testNewPDF()
+	regular := NewCoreFont(pdf, corefont.Helvetica())
+	bold := NewCoreFont(pdf, corefont.HelveticaBold())
+	italic := NewCoreFont(pdf, corefont.HelveticaOblique())
+	boldItalic := NewCoreFont(pdf, corefont.HelveticaBoldOblique())
+	code := NewCoreFont(pdf, corefont.Courier())
+	image, err := NewSVGImage(strings.NewReader(`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	image.SetFont(regular).SetBoldFont(bold)
+	image.setMarkdownFonts(italic, boldItalic, code)
+	for _, c := range []struct {
+		run  svgTextRun
+		want *Font
+		name string
+	}{
+		{svgTextRun{family: bundledSans, weight: 400}, regular, "regular"},
+		{svgTextRun{family: bundledSans, weight: 700}, bold, "bold"},
+		{svgTextRun{family: bundledSans, weight: 400, italic: true}, italic, "italic"},
+		{svgTextRun{family: bundledSerif, weight: 700, italic: true}, boldItalic, "bold italic"},
+		{svgTextRun{family: bundledMono, weight: 400}, code, "monospace"},
+		{svgTextRun{family: bundledMono, weight: 700, italic: true}, code, "bold italic monospace"},
+	} {
+		if got := image.fontOf(&c.run, pdf); got != c.want {
+			t.Errorf("the %s text of the SVG is not in the document's %s font", c.name, c.name)
+		}
+	}
+}

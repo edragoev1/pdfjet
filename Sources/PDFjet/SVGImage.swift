@@ -25,6 +25,12 @@ public class SVGImage : Drawable {
     var altDescription: String?
     private var font: Font?
     private var boldFont: Font?
+    // The italic, bold italic and monospace fonts Markdown gives the image,
+    // with its regular and bold ones, so that its text keeps the style the
+    // SVG asks for in the fonts of the document (setMarkdownFonts)
+    private var italicFont: Font?
+    private var boldItalicFont: Font?
+    private var monoFont: Font?
 
     // While the file is read: the elements by the bytes of their ids, the
     // clip paths of the image, and the elements drawn again by a use element
@@ -1677,14 +1683,36 @@ public class SVGImage : Drawable {
         return self
     }
 
-    // Returns the font of a run: the one set, the bold one for a weight of 600
-    // or more when it is set, or else the face of the fonts PDFjet carries of
+    // Gives the image the italic, bold italic and monospace fonts of a
+    // Markdown document, with the regular and bold ones of setFont and
+    // setBoldFont: its text in the document's fonts keeps the style the SVG
+    // asks for, where the regular and bold ones alone drew all of it upright
+    // (code review, 23 November 2026).
+    func setMarkdownFonts(_ italic: Font, _ boldItalic: Font, _ mono: Font) {
+        self.italicFont = italic
+        self.boldItalicFont = boldItalic
+        self.monoFont = mono
+    }
+
+    // Returns the font of a run: of the fonts set, the monospace one for a
+    // monospace family, the bold italic or italic one for italic text, the
+    // bold one for a weight of 600 or more, each when it is set, or else the
+    // one of setFont; with none set, the face of the fonts PDFjet carries of
     // its family, weight and style. A face that is neither in resources/fonts
     // nor in the bundle of PDFjetFonts, which PDFjet depends on, is refused:
     // nil, and the document records why, as no core font is drawn in its
     // place.
-    private func fontOf(_ run: SVGText.Run, _ page: Page) -> Font? {
+    func fontOf(_ run: SVGText.Run, _ page: Page) -> Font? {
         if let font = font {
+            if run.family == BundledFonts.MONO, let mono = monoFont {
+                return mono
+            }
+            if run.italic, run.weight >= 600, let boldItalic = boldItalicFont {
+                return boldItalic
+            }
+            if run.italic, let italic = italicFont {
+                return italic
+            }
             return (run.weight >= 600 && boldFont != nil) ? boldFont! : font
         }
         let pdf = page.pdf

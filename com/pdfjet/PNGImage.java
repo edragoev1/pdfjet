@@ -254,13 +254,20 @@ class PNGImage {
         // alpha, whose alpha goes in a soft mask of its own, and any other IDAT
         // data are decoded and compressed again, as each row is undone. Data
         // after the last row is ignored.
-        if (colorType == 0 || colorType == 2 || colorType == 3) {
+        if (colorType == 3 && tRNS != null && !BMPImage.allBytesAre(tRNS, (byte) 255)) {
+            if (embedPaletteWithAlpha()) {
+                return;
+            }
+        } else if (colorType == 0 || colorType == 2 || colorType == 3) {
             int colors = (colorType == 2) ? 3 : 1;
             if (pngRows((this.w * colors * this.bitDepth + 7) / 8, 1, null)) {
                 embedIDAT();
                 return;
             }
         }
+        // IDAT data that is not the image exactly, bytes after its stream or
+        // a wrong checksum, is inflated a second time here, to be decoded:
+        // rare, and only known once the first pass has read to its end
         decode();
         stream = deflatedImageData;
     }
@@ -337,37 +344,48 @@ class PNGImage {
     // Makes the IDAT data of a grayscale, truecolor or palette image the
     // stream of the image object, which is faster than decoding the samples
     // and compressing them again; pngRows checked the filter type of each
-    // row, as decoding checks it. The alpha of a palette image with a tRNS
-    // chunk is decoded for its soft mask, a row at a time.
-    private void embedIDAT() throws Exception {
+    // row, as decoding checks it.
+    private void embedIDAT() {
         stream = iDAT;
         decodeColors = (colorType == 2) ? 3 : 1;
         if (colorType == 3) {
             palette = Arrays.copyOf(pLTE, 3 << bitDepth);
-            // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
-            if (tRNS != null && !BMPImage.allBytesAre(tRNS, (byte) 255)) {
-                final Compressor.ImageWriter alpha = new Compressor.ImageWriter();
-                // indexes and alpha, made with the first whole row
-                final byte[][] b = new byte[2][];
-                try {
-                    pngRows((this.w * this.bitDepth + 7) / 8, 1, new Row() {
-                        public void take(byte[] line) {
-                            if (b[0] == null) {
-                                b[0] = new byte[w];
-                                b[1] = new byte[w];
-                            }
-                            paletteIndexesOf(line, b[0]);
-                            paletteAlphaOf(b[0], b[1]);
-                            alpha.write(b[1]);
-                        }
-                    });
-                } catch (Exception e) {
-                    alpha.end();
-                    throw e;
-                }
-                setAlpha(alpha);
-            }
         }
+    }
+
+    // Reads the rows of a palette image with a tRNS chunk of some alpha but
+    // 255 once, its alpha decoded for the soft mask as the filter type of each
+    // row is checked, and embeds its IDAT data when the data is the image
+    // exactly, which it tells. The rows were read twice until the code review
+    // of 23 November 2026: once for the filter types, once for the alpha.
+    private boolean embedPaletteWithAlpha() throws Exception {
+        final Compressor.ImageWriter alpha = new Compressor.ImageWriter();
+        // indexes and alpha, made with the first whole row
+        final byte[][] b = new byte[2][];
+        boolean exact;
+        try {
+            exact = pngRows((this.w * this.bitDepth + 7) / 8, 1, new Row() {
+                public void take(byte[] line) {
+                    if (b[0] == null) {
+                        b[0] = new byte[w];
+                        b[1] = new byte[w];
+                    }
+                    paletteIndexesOf(line, b[0]);
+                    paletteAlphaOf(b[0], b[1]);
+                    alpha.write(b[1]);
+                }
+            });
+        } catch (Exception e) {
+            alpha.end();
+            throw e;
+        }
+        if (!exact) {
+            alpha.end();
+            return false;
+        }
+        embedIDAT();
+        setAlpha(alpha);
+        return true;
     }
 
     // Keeps the deflated alpha of the pixels for the soft mask of the image,
@@ -389,6 +407,13 @@ class PNGImage {
     private void decode() throws Exception {
         final int w = this.w;
         final int size = (bitDepth == 16) ? 2 : 1;     // The bytes of a sample
+        // The bit depth checked before the writers are made, so that none is
+        // left to the garbage collector with its native zlib memory (code
+        // review, 23 November 2026)
+        if (colorType == 0 && bitDepth != 16 && bitDepth != 8 &&
+                bitDepth != 4 && bitDepth != 2 && bitDepth != 1) {
+            throw new Exception("Image with unsupported bit depth == " + bitDepth);
+        }
         final Compressor.ImageWriter color = new Compressor.ImageWriter();
         final Compressor.ImageWriter alpha = new Compressor.ImageWriter();
         int bytesPerRow;
@@ -402,11 +427,10 @@ class PNGImage {
             } else if (bitDepth == 8) {
                 bytesPerRow = w;
                 bytesPerPixel = 1;
-            } else if (bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
+            } else {
+                // 4, 2 or 1, checked above
                 bytesPerRow = (w * bitDepth + 7) / 8;
                 bytesPerPixel = 1;
-            } else {
-                throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
             each = new Row() {
                 public void take(byte[] line) {

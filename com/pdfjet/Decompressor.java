@@ -358,7 +358,19 @@ class Decompressor {
 
     /** Decodes a zlib stream, which must end and decode to at most maxLength bytes. */
     static byte[] inflate(byte[] data, int maxLength) throws Exception {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, maxLength));
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, maxLength));
+        inflateTo(data, maxLength, new Sink() {
+            public void write(byte[] buf, int off, int len) {
+                bos.write(buf, off, len);
+            }
+        });
+        return bos.toByteArray();
+    }
+
+    // Decodes a zlib stream as inflate does, handing the bytes to the sink as
+    // they are decoded, in pieces it must copy to keep; returns how many.
+    private static int inflateTo(byte[] data, int maxLength, Sink sink) throws Exception {
+        int total = 0;      // At most maxLength, checked
         Inflater inflater = new Inflater();
         try {
             inflater.setInput(data);
@@ -367,7 +379,7 @@ class Decompressor {
                 // At most one byte more than the limit, which tells that the
                 // stream decodes to more.
                 int count = inflater.inflate(
-                        buf, 0, (int) Math.min(buf.length, (long) maxLength - bos.size() + 1));
+                        buf, 0, (int) Math.min(buf.length, (long) maxLength - total + 1));
                 // An empty stream is finished after an inflate that returns no
                 // bytes. A stream that is not finished and needs more input or
                 // a preset dictionary is truncated or invalid.
@@ -375,13 +387,16 @@ class Decompressor {
                         (inflater.needsInput() || inflater.needsDictionary())) {
                     throw new DataFormatException("Truncated or invalid Flate stream");
                 }
-                checkLength(bos.size() + count, maxLength, "Flate");
-                bos.write(buf, 0, count);
+                checkLength(total + count, maxLength, "Flate");
+                if (count > 0) {
+                    sink.write(buf, 0, count);
+                    total += count;
+                }
             }
         } finally {
             inflater.end();
         }
-        return bos.toByteArray();
+        return total;
     }
 
     /**
@@ -484,10 +499,10 @@ class Decompressor {
                 bos.write(buf, off, len);
             }
         }, exact);
-        if (n == length) {
-            return new Inflated(bos.toByteArray(), exact[0]);
-        }
-        return new Inflated(inflate(data, length), false);
+        // Fewer than length bytes are all the stream has: inflateExactTo
+        // decoded it whole for its error, and it had none (code review, 23
+        // November 2026: it was decoded a third time here)
+        return new Inflated(bos.toByteArray(), n == length && exact[0]);
     }
 
     /** Where inflateExactTo hands the bytes it decodes, which it does not keep. */
@@ -554,8 +569,13 @@ class Decompressor {
         }
         if (n < length) {
             // Decoded whole for its error, or for the end of a stream of fewer
-            // bytes, as inflateExact decodes it
-            inflate(data, length);
+            // bytes, as inflateExact decodes it: as a stream, its bytes
+            // counted and dropped, never all of them in memory (code review,
+            // 23 November 2026: a PNG cut short took 256 MB here)
+            inflateTo(data, length, new Sink() {
+                public void write(byte[] buf, int off, int len) {
+                }
+            });
         }
         return n;
     }

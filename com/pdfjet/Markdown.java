@@ -999,11 +999,15 @@ public class Markdown {
             if (path.toLowerCase(Locale.ROOT).endsWith(".svg")) {
                 SVGImage image = new SVGImage(path);
                 image.setAltDescription(alt);
-                // The text of the SVG in the fonts of the document, regular and, for a
-                // font-weight of 600 or more, bold: with no font set, it took the
-                // fonts PDFjet carries, which a program built without them has not,
-                // and failed (pdfjet.com's Markdown to PDF, 21 November 2026)
+                // The text of the SVG in the fonts of the document, in the style it asks
+                // for: regular, bold for a font-weight of 600 or more, italic, bold
+                // italic, and the code font for monospace. With no font set, it took the
+                // fonts PDFjet carries, which a program built without them has not, and
+                // failed (pdfjet.com's Markdown to PDF, 21 November 2026); with the
+                // regular and bold ones alone, all of it was upright and proportional
+                // (code review, 23 November 2026)
                 image.setFont(regular).setBoldFont(bold);
+                image.setMarkdownFonts(italic, boldItalic, code);
                 imageWidth = image.getWidth();
                 imageHeight = image.getHeight();
                 scale = Math.min(1f, Math.min(width / imageWidth, (bottom - marginTop) / imageHeight));

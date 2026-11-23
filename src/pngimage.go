@@ -187,7 +187,11 @@ func newPNGImage(reader io.Reader) *pngImage {
 	// alpha goes in a soft mask of its own, and any other IDAT data are
 	// decoded and compressed again, as each row is undone. Data after the
 	// last row is ignored.
-	if image.colorType == 0 || image.colorType == 2 || image.colorType == 3 {
+	if image.colorType == 3 && image.tRNS != nil && !allBytesAre(image.tRNS, 255) {
+		if image.embedPaletteWithAlpha() {
+			return image
+		}
+	} else if image.colorType == 0 || image.colorType == 2 || image.colorType == 3 {
 		colors := 1
 		if image.colorType == 2 {
 			colors = 3
@@ -197,6 +201,9 @@ func newPNGImage(reader io.Reader) *pngImage {
 			return image
 		}
 	}
+	// IDAT data that is not the image exactly, bytes after its stream or a
+	// wrong checksum, is inflated a second time here, to be decoded: rare,
+	// and only known once the first pass has read to its end
 	image.decode()
 	image.stream = image.deflatedImageData
 
@@ -259,8 +266,7 @@ func (image *pngImage) pngRows(bytesPerRow, bytesPerPixel int, each func(line []
 // embedIDAT makes the IDAT data of a grayscale, truecolor or palette image
 // the stream of the image object, which is faster than decoding the samples
 // and compressing them again; pngRows checked the filter type of each row,
-// as decoding checks it. The alpha of a palette image with a tRNS chunk is
-// decoded for its soft mask, a row at a time.
+// as decoding checks it.
 func (image *pngImage) embedIDAT() {
 	image.stream = image.iDAT
 	image.decodeColors = 1
@@ -269,27 +275,41 @@ func (image *pngImage) embedIDAT() {
 	}
 	if image.colorType == 3 {
 		image.palette = image.pLTE[:3<<image.bitDepth]
-		// A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
-		if image.tRNS != nil && !allBytesAre(image.tRNS, 255) {
-			alpha := compressor.NewImageWriter()
-			var indexes, a []byte
-			defer func() {
-				if r := recover(); r != nil {
-					alpha.Discard()
-					panic(r)
-				}
-			}()
-			image.pngRows((image.w*image.bitDepth+7)/8, 1, func(line []byte) {
-				if a == nil {
-					indexes, a = make([]byte, image.w), make([]byte, image.w)
-				}
-				image.paletteIndexesOf(line, indexes)
-				image.paletteAlphaOf(indexes, a)
-				alpha.Write(a)
-			})
-			image.setAlpha(alpha)
-		}
 	}
+}
+
+// embedPaletteWithAlpha reads the rows of a palette image with a tRNS chunk
+// of some alpha but 255 once, its alpha decoded for the soft mask as the
+// filter type of each row is checked, and embeds its IDAT data when the data
+// is the image exactly, which it tells. The rows were read twice until the
+// code review of 23 November 2026: once for the filter types, once for the
+// alpha.
+func (image *pngImage) embedPaletteWithAlpha() bool {
+	alpha := compressor.NewImageWriter()
+	var indexes, a []byte
+	exact := func() bool {
+		defer func() {
+			if r := recover(); r != nil {
+				alpha.Discard()
+				panic(r)
+			}
+		}()
+		return image.pngRows((image.w*image.bitDepth+7)/8, 1, func(line []byte) {
+			if a == nil {
+				indexes, a = make([]byte, image.w), make([]byte, image.w)
+			}
+			image.paletteIndexesOf(line, indexes)
+			image.paletteAlphaOf(indexes, a)
+			alpha.Write(a)
+		})
+	}()
+	if !exact {
+		alpha.Discard()
+		return false
+	}
+	image.embedIDAT()
+	image.setAlpha(alpha)
+	return true
 }
 
 // setAlpha keeps the deflated alpha of the pixels for the soft mask of the
@@ -315,8 +335,9 @@ func (image *pngImage) decode() {
 	if image.bitDepth == 16 {
 		size = 2
 	}
-	color := compressor.NewImageWriter()
-	alpha := compressor.NewImageWriter()
+	// The writers are made after the bit depth is checked, so that one of
+	// no decoding takes none from the pool (code review, 23 November 2026)
+	var color, alpha *compressor.ImageWriter
 	var bytesPerRow, bytesPerPixel int
 	var each func(line []byte)
 	switch image.colorType {
@@ -332,7 +353,7 @@ func (image *pngImage) decode() {
 		default:
 			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
-		each = color.Write
+		each = func(line []byte) { color.Write(line) }
 	case 4:
 		// Grayscale image with alpha, the alpha's first byte in the soft mask
 		bytesPerRow, bytesPerPixel = 2*size*w, 2*size
@@ -365,7 +386,7 @@ func (image *pngImage) decode() {
 	case 2:
 		// True color image; a PLTE chunk in it is only a suggested palette
 		bytesPerRow, bytesPerPixel = 3*size*w, 3*size
-		each = color.Write
+		each = func(line []byte) { color.Write(line) }
 	default:
 		// Indexed image
 		bytesPerRow, bytesPerPixel = (w*image.bitDepth+7)/8, 1
@@ -385,6 +406,8 @@ func (image *pngImage) decode() {
 			}
 		}
 	}
+	color = compressor.NewImageWriter()
+	alpha = compressor.NewImageWriter()
 	defer func() {
 		if r := recover(); r != nil {
 			color.Discard()

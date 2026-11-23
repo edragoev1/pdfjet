@@ -248,13 +248,20 @@ internal class PNGImage {
         // alpha, whose alpha goes in a soft mask of its own, and any other IDAT
         // data are decoded and compressed again, as each row is undone. Data
         // after the last row is ignored.
-        if (colorType == 0 || colorType == 2 || colorType == 3) {
+        if (colorType == 3 && tRNS != null && !BMPImage.AllBytesAre(tRNS, 255)) {
+            if (EmbedPaletteWithAlpha()) {
+                return;
+            }
+        } else if (colorType == 0 || colorType == 2 || colorType == 3) {
             int colors = (colorType == 2) ? 3 : 1;
             if (PngRows((w * colors * bitDepth + 7) / 8, 1, null)) {
                 EmbedIDAT();
                 return;
             }
         }
+        // IDAT data that is not the image exactly, bytes after its stream or
+        // a wrong checksum, is inflated a second time here, to be decoded:
+        // rare, and only known once the first pass has read to its end
         Decode();
         stream = deflatedImageData;
     }
@@ -322,36 +329,47 @@ internal class PNGImage {
     // Makes the IDAT data of a grayscale, truecolor or palette image the
     // stream of the image object, which is faster than decoding the samples
     // and compressing them again; PngRows checked the filter type of each row,
-    // as decoding checks it. The alpha of a palette image with a tRNS chunk
-    // is decoded for its soft mask, a row at a time.
+    // as decoding checks it.
     private void EmbedIDAT() {
         stream = iDAT;
         decodeColors = (colorType == 2) ? 3 : 1;
         if (colorType == 3) {
             palette = new byte[3 << bitDepth];
             Array.Copy(pLTE, palette, palette.Length);
-            // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
-            if (tRNS != null && !BMPImage.AllBytesAre(tRNS, 255)) {
-                var alpha = new Compressor.ImageWriter();
-                byte[] indexes = null;
-                byte[] a = null;
-                try {
-                    PngRows((w * bitDepth + 7) / 8, 1, line => {
-                        if (a == null) {
-                            indexes = new byte[w];
-                            a = new byte[w];
-                        }
-                        PaletteIndexesOf(line, indexes);
-                        PaletteAlphaOf(indexes, a);
-                        alpha.Write(a);
-                    });
-                } catch {
-                    alpha.Dispose();
-                    throw;
-                }
-                SetAlpha(alpha);
-            }
         }
+    }
+
+    // Reads the rows of a palette image with a tRNS chunk of some alpha but
+    // 255 once, its alpha decoded for the soft mask as the filter type of each
+    // row is checked, and embeds its IDAT data when the data is the image
+    // exactly, which it tells. The rows were read twice until the code review
+    // of 23 November 2026: once for the filter types, once for the alpha.
+    private bool EmbedPaletteWithAlpha() {
+        var alpha = new Compressor.ImageWriter();
+        byte[] indexes = null;
+        byte[] a = null;
+        bool exact;
+        try {
+            exact = PngRows((w * bitDepth + 7) / 8, 1, line => {
+                if (a == null) {
+                    indexes = new byte[w];
+                    a = new byte[w];
+                }
+                PaletteIndexesOf(line, indexes);
+                PaletteAlphaOf(indexes, a);
+                alpha.Write(a);
+            });
+        } catch {
+            alpha.Dispose();
+            throw;
+        }
+        if (!exact) {
+            alpha.Dispose();
+            return false;
+        }
+        EmbedIDAT();
+        SetAlpha(alpha);
+        return true;
     }
 
     // Keeps the deflated alpha of the pixels for the soft mask of the image,

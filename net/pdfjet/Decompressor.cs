@@ -352,6 +352,14 @@ class Decompressor {
     /// <summary>Decodes a zlib stream, which must end and decode to at most maxLength bytes.</summary>
     internal static byte[] Inflate(byte[] data, int maxLength) {
         using var outStream = new MemoryStream();
+        InflateTo(data, maxLength, (buf, off, len) => outStream.Write(buf, off, len));
+        return outStream.ToArray();
+    }
+
+    // Decodes a zlib stream as Inflate does, handing the bytes to the sink as
+    // they are decoded, in pieces it must copy to keep; returns how many.
+    private static long InflateTo(byte[] data, int maxLength, Sink sink) {
+        long total = 0;
         var inStream = new EndOfInputStream(data);
         using (var zlib = new ZLibStream(inStream, CompressionMode.Decompress)) {
             // Not CopyTo: ZLibStream.CopyTo reads all of its input, whether the
@@ -361,12 +369,13 @@ class Decompressor {
                 // At most one byte more than the limit, which tells that the
                 // stream decodes to more.
                 int count = zlib.Read(
-                        buffer, 0, (int) Math.Min(buffer.Length, (long) maxLength - outStream.Length + 1));
+                        buffer, 0, (int) Math.Min(buffer.Length, (long) maxLength - total + 1));
                 if (count <= 0) {
                     break;
                 }
-                CheckLength(outStream.Length + count, maxLength, "Flate");
-                outStream.Write(buffer, 0, count);
+                CheckLength(total + count, maxLength, "Flate");
+                sink(buffer, 0, count);
+                total += count;
             }
         }
         // ZLibStream returns the bytes decoded so far, without an error, when
@@ -375,7 +384,7 @@ class Decompressor {
         if (inStream.ReadAtEnd) {
             throw new InvalidDataException("Truncated or invalid Flate stream");
         }
-        return outStream.ToArray();
+        return total;
     }
 
     /// <summary>
@@ -426,10 +435,16 @@ class Decompressor {
         if (n == length) {
             return n;
         }
-        // The bytes the sink has: those it had, and those handed to it here
-        byte[] whole = Inflate(data, length);
-        Deliver(whole, 0, whole.Length, Math.Max(skip, n), sink);
-        return whole.Length;
+        // Decoded whole as a stream, for its error or the end of a stream of
+        // fewer bytes, a piece at a time, never all of it in memory; the sink
+        // is handed only the bytes it does not have
+        int had = Math.Max(skip, n);
+        long at = 0;
+        InflateTo(data, length, (buf, off, len) => {
+            Deliver(buf, (int) at, len, had, sink);
+            at += len;
+        });
+        return (int) at;
     }
 
     // Hands the sink the bytes of buf, the bytes from at of the stream, but
@@ -467,35 +482,39 @@ class Decompressor {
         var inStream = new EndOfInputStream(data, true);
         int n = 0;
         bool again = false;
-        try {
-            using var zlib = new ZLibStream(inStream, CompressionMode.Decompress);
-            byte[] buffer = new byte[65536];
-            while (n < length) {
-                int count = zlib.Read(buffer, 0, Math.Min(buffer.Length, length - n));
-                if (count <= 0) {
-                    break;
-                }
-                sink(buffer, 0, count);
-                n += count;
+        using var zlib = new ZLibStream(inStream, CompressionMode.Decompress);
+        byte[] buffer = new byte[65536];
+        // The sink is called outside the try: an error of its own is its
+        // own, never taken for one of zlib's and decoded again from a row
+        // half handed over (code review, 23 November 2026)
+        while (n < length) {
+            int count;
+            try {
+                count = zlib.Read(buffer, 0, Math.Min(buffer.Length, length - n));
+            } catch (InvalidDataException) {
+                break;      // Decoded again below, with the errors of a prefix
             }
-            if (n == length) {
-                // A read of one more byte gets to the end of the stream, where
-                // zlib checks the checksum, and throws when it is wrong.
-                try {
-                    exact = zlib.Read(buffer, 0, 1) == 0 &&
-                            !inStream.ReadAtEnd && inStream.Position == inStream.Length;
-                } catch (InvalidDataException) {
-                    // An error after the bytes. Fed the last bytes of the
-                    // input one at a time, zlib may have given the bytes
-                    // before it read the data after them, which it checks,
-                    // with the whole input, as far as it decodes without
-                    // writing a byte; InflatePrefix decodes with the whole
-                    // input, as the other ports do (review of 16 November 2026).
-                    again = true;
-                }
+            if (count <= 0) {
+                break;
             }
-        } catch (InvalidDataException) {
-            // Decoded again below, with the errors of a prefix.
+            sink(buffer, 0, count);
+            n += count;
+        }
+        if (n == length) {
+            // A read of one more byte gets to the end of the stream, where
+            // zlib checks the checksum, and throws when it is wrong.
+            try {
+                exact = zlib.Read(buffer, 0, 1) == 0 &&
+                        !inStream.ReadAtEnd && inStream.Position == inStream.Length;
+            } catch (InvalidDataException) {
+                // An error after the bytes. Fed the last bytes of the
+                // input one at a time, zlib may have given the bytes
+                // before it read the data after them, which it checks,
+                // with the whole input, as far as it decodes without
+                // writing a byte; InflatePrefix decodes with the whole
+                // input, as the other ports do (review of 16 November 2026).
+                again = true;
+            }
         }
         if (n == length && !again) {
             return n;

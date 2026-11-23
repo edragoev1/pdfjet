@@ -537,6 +537,38 @@ import Testing
         #expect(elapsed < .seconds(10), "\(elapsed)")
     }
 
+    // An SVG's italic, bold italic and monospace text keeps its style in the
+    // document's fonts: before the code review of 23 November 2026 all of it
+    // was drawn in the regular and bold ones, upright and proportional.
+    @Test func svgTextKeepsItsStyleInTheDocumentsFonts() throws {
+        let pdf = PDF(OutputStream(toMemory: ()))
+        let regular = try Font(pdf, CoreFont.HELVETICA)
+        let bold = try Font(pdf, CoreFont.HELVETICA_BOLD)
+        let italic = try Font(pdf, CoreFont.HELVETICA_OBLIQUE)
+        let boldItalic = try Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE)
+        let code = try Font(pdf, CoreFont.COURIER)
+        let image = try SVGImage(stream: InputStream(data: Data(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"/>".utf8)))
+        image.setFont(regular).setBoldFont(bold)
+        image.setMarkdownFonts(italic, boldItalic, code)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let cases: [(Int, Int, Bool, Font, String)] = [
+            (BundledFonts.SANS, 400, false, regular, "regular"),
+            (BundledFonts.SANS, 700, false, bold, "bold"),
+            (BundledFonts.SANS, 400, true, italic, "italic"),
+            (BundledFonts.SERIF, 700, true, boldItalic, "bold italic"),
+            (BundledFonts.MONO, 400, false, code, "monospace"),
+            (BundledFonts.MONO, 700, true, code, "bold italic monospace"),
+        ]
+        for (family, weight, isItalic, want, name) in cases {
+            let run = SVGText.Run()
+            run.family = family
+            run.weight = weight
+            run.italic = isItalic
+            #expect(image.fontOf(run, page) === want, "the \(name) text")
+        }
+    }
+
     // An SVG of the Markdown draws its text in the document's fonts, regular
     // and, for a weight of 600 or more, bold, not in the fonts PDFjet
     // carries, which a program built without them has not: it failed there

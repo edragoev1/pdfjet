@@ -50,7 +50,8 @@ Each is described in detail below.
   of `"Hello\nمرحبا"` draws its second line from the right.
 - Thai text without zero width spaces breaks between its words, not only
   at its spaces.
-- An SVG's text in Markdown is in the document's fonts, not IBM Plex Sans.
+- An SVG's text in Markdown is in the document's fonts, in the style it
+  asks for, not in the fonts PDFjet carries.
 - `drawGlyphs` in an untagged document marks its glyphs with their text as
   actual text, as it did in a tagged one only.
 
@@ -202,12 +203,14 @@ Each is described in detail below.
   The library and the 85 examples compile for 32-bit armv7.
 - **The text of an SVG in Markdown is in the document's fonts**, in the
   four ports: an image `![…](diagram.svg)` draws its text in the
-  Markdown's regular font, and text of a weight of 600 or more in its bold
-  one. Behavior change: such text was in IBM Plex Sans, one of the fonts
-  PDFjet carries, whatever the document's fonts; and a program built
-  without them (Go's `pdfjet_nofonts`) failed with "Reading the font …",
-  as pdfjet.com's Markdown to PDF did for any pasted SVG with text. Tests
-  in the four ports.
+  Markdown's fonts in the style the SVG asks for: regular, bold for a
+  weight of 600 or more, italic, bold italic, and the code font for a
+  monospace family. Behavior change: such text was in the fonts PDFjet
+  carries, IBM Plex Sans, IBM Plex Serif or Cascadia Mono by its family,
+  whatever the document's fonts; and a program built without them (Go's
+  `pdfjet_nofonts`) failed with "Reading the font …", as pdfjet.com's
+  Markdown to PDF did for any pasted SVG with text. A serif family is in
+  the regular font, as Markdown has no serif one. Tests in the four ports.
 - **A PNG read a row at a time, in Go, Java and C#**: its image data
   inflated as a stream, each row's filter undone with the row before it,
   and its samples and its alpha compressed as they come, never the whole
@@ -220,7 +223,11 @@ Each is described in detail below.
   header claims: an 88-byte PNG claiming a row of 808 million pixels took
   1.2 GB in Go before it failed as data shorter than the image, and now
   takes less than 1 MB (found by fuzzing, FuzzPNGImage). Tests in Go, Java
-  and C#.
+  and C#. A palette PNG with transparency is inflated once, its alpha read
+  as its rows are checked, where it was inflated twice; in Java and C#,
+  image data cut short is checked as a stream for its error, as in Go,
+  where it was inflated whole into memory first (code review, 23 November
+  2026).
 - **Smaller glyphs from `drawGlyphs`**, in the four ports. Each glyph's
   outline is written in whole units of the font, where the control points of
   a TrueType quadratic curve drawn as a cubic one had two decimals; they move

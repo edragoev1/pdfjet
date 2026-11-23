@@ -1103,11 +1103,15 @@ func (markdown *Markdown) imageOf(block *markdownBlock, width float32) *markdown
 			return image
 		}
 		svg.SetAltDescription(alt)
-		// The text of the SVG in the fonts of the document, regular and, for a
-		// font-weight of 600 or more, bold: with no font set, it took the
-		// fonts PDFjet carries, which a program built without them has not,
-		// and failed (pdfjet.com's Markdown to PDF, 21 November 2026)
+		// The text of the SVG in the fonts of the document, in the style it
+		// asks for: regular, bold for a font-weight of 600 or more, italic,
+		// bold italic, and the code font for monospace. With no font set, it
+		// took the fonts PDFjet carries, which a program built without them
+		// has not, and failed (pdfjet.com's Markdown to PDF, 21 November
+		// 2026); with the regular and bold ones alone, all of it was upright
+		// and proportional (code review, 23 November 2026)
 		svg.SetFont(markdown.regular).SetBoldFont(markdown.bold)
+		svg.setMarkdownFonts(markdown.italic, markdown.boldItalic, markdown.code)
 		imageWidth = svg.GetWidth()
 		imageHeight = svg.GetHeight()
 		scale = min(1, min(width/imageWidth, (markdown.bottom-markdown.marginTop)/imageHeight))

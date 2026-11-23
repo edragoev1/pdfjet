@@ -70,6 +70,12 @@ public class SVGImage : IDrawable {
     private String altDescription = null;
     private Font font = null;
     private Font boldFont = null;
+    // The italic, bold italic and monospace fonts Markdown gives the image,
+    // with its regular and bold ones, so that its text keeps the style the
+    // SVG asks for in the fonts of the document (SetMarkdownFonts)
+    private Font italicFont = null;
+    private Font boldItalicFont = null;
+    private Font monoFont = null;
 
     // While the file is read: the elements by their ids, the clip paths of
     // the image, and the elements drawn again by a use element or as a
@@ -1830,13 +1836,35 @@ public class SVGImage : IDrawable {
         return this;
     }
 
-    // Returns the font of a run: the one set, the bold one for a weight of 600
-    // or more when it is set, or else the face of the fonts PDFjet carries of
+    // Gives the image the italic, bold italic and monospace fonts of a
+    // Markdown document, with the regular and bold ones of SetFont and
+    // SetBoldFont: its text in the document's fonts keeps the style the SVG
+    // asks for, where the regular and bold ones alone drew all of it upright
+    // (code review, 23 November 2026).
+    internal void SetMarkdownFonts(Font italic, Font boldItalic, Font mono) {
+        this.italicFont = italic;
+        this.boldItalicFont = boldItalic;
+        this.monoFont = mono;
+    }
+
+    // Returns the font of a run: of the fonts set, the monospace one for a
+    // monospace family, the bold italic or italic one for italic text, the
+    // bold one for a weight of 600 or more, each when it is set, or else the
+    // one of SetFont; with none set, the face of the fonts PDFjet carries of
     // its family, weight and style, from resources/fonts or the library. With
     // neither, as the small DLL run away from resources/fonts, it throws: the
     // text is never drawn in a core font.
-    private Font FontOf(SVGText.Run run, Page page) {
+    internal Font FontOf(SVGText.Run run, Page page) {
         if (font != null) {
+            if (run.family == BundledFonts.MONO && monoFont != null) {
+                return monoFont;
+            }
+            if (run.italic && run.weight >= 600 && boldItalicFont != null) {
+                return boldItalicFont;
+            }
+            if (run.italic && italicFont != null) {
+                return italicFont;
+            }
             return (run.weight >= 600 && boldFont != null) ? boldFont : font;
         }
         PDF pdf = page.pdf;

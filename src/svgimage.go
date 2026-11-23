@@ -41,9 +41,15 @@ type SVGImage struct {
 	actualText          string
 	font                *Font
 	boldFont            *Font
-	clipShapes          []*svgPath // The clip paths of the image
-	inUnits             bool       // A size in a unit such as mm, and no viewBox
-	switches            []*svgSwitch
+	// The italic, bold italic and monospace fonts Markdown gives the image,
+	// with its regular and bold ones, so that its text keeps the style the
+	// SVG asks for in the fonts of the document (setMarkdownFonts)
+	italicFont     *Font
+	boldItalicFont *Font
+	monoFont       *Font
+	clipShapes     []*svgPath // The clip paths of the image
+	inUnits        bool       // A size in a unit such as mm, and no viewBox
+	switches       []*svgSwitch
 }
 
 // maxSVGReused is the most elements drawn again, by use elements and as
@@ -1921,13 +1927,33 @@ func (image *SVGImage) SetBoldFont(font *Font) *SVGImage {
 	return image
 }
 
-// fontOf returns the font of a run: the one set, the bold one for a weight of
-// 600 or more when it is set, or else the face of the fonts PDFjet carries of
-// its family, weight and style, which the Go port has embedded in it, but in a
+// setMarkdownFonts gives the image the italic, bold italic and monospace
+// fonts of a Markdown document, with the regular and bold ones of SetFont
+// and SetBoldFont: its text in the document's fonts keeps the style the SVG
+// asks for, italic italic and monospace in the code font, where the regular
+// and bold ones alone drew all of it upright (code review, 23 November 2026).
+func (image *SVGImage) setMarkdownFonts(italic, boldItalic, mono *Font) {
+	image.italicFont = italic
+	image.boldItalicFont = boldItalic
+	image.monoFont = mono
+}
+
+// fontOf returns the font of a run: of the fonts set, the monospace one for
+// a monospace family, the bold italic or italic one for italic text, the
+// bold one for a weight of 600 or more, each when it is set, or else the one
+// of SetFont; with none set, the face of the fonts PDFjet carries of its
+// family, weight and style, which the Go port has embedded in it, but in a
 // program built with the tag pdfjet_nofonts.
 func (image *SVGImage) fontOf(run *svgTextRun, pdf *PDF) *Font {
 	if image.font != nil {
-		if run.weight >= 600 && image.boldFont != nil {
+		switch {
+		case run.family == bundledMono && image.monoFont != nil:
+			return image.monoFont
+		case run.italic && run.weight >= 600 && image.boldItalicFont != nil:
+			return image.boldItalicFont
+		case run.italic && image.italicFont != nil:
+			return image.italicFont
+		case run.weight >= 600 && image.boldFont != nil:
 			return image.boldFont
 		}
 		return image.font

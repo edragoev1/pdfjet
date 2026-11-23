@@ -373,6 +373,37 @@ public class MarkdownTest {
         }
     }
 
+    // An SVG's italic, bold italic and monospace text keeps its style in the
+    // document's fonts: before the code review of 23 November 2026 all of it
+    // was drawn in the regular and bold ones, upright and proportional.
+    [Fact]
+    public void SvgTextKeepsItsStyleInTheDocumentsFonts() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        PDF pdf = new PDF(new System.IO.MemoryStream());
+        Font regular = new Font(pdf, CoreFont.HELVETICA);
+        Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font italic = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+        Font boldItalic = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
+        Font code = new Font(pdf, CoreFont.COURIER);
+        SVGImage image = new SVGImage(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"/>")));
+        image.SetFont(regular).SetBoldFont(bold);
+        image.SetMarkdownFonts(italic, boldItalic, code);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        var cases = new (int family, int weight, bool italic, Font want, String name)[] {
+            (BundledFonts.SANS, 400, false, regular, "regular"),
+            (BundledFonts.SANS, 700, false, bold, "bold"),
+            (BundledFonts.SANS, 400, true, italic, "italic"),
+            (BundledFonts.SERIF, 700, true, boldItalic, "bold italic"),
+            (BundledFonts.MONO, 400, false, code, "monospace"),
+            (BundledFonts.MONO, 700, true, code, "bold italic monospace"),
+        };
+        foreach (var c in cases) {
+            var run = new SVGText.Run { family = c.family, weight = c.weight, italic = c.italic };
+            Assert.True(ReferenceEquals(c.want, image.FontOf(run, page)), "the " + c.name + " text");
+        }
+    }
+
     // An SVG of the Markdown draws its text in the document's fonts, regular
     // and, for a weight of 600 or more, bold, not in the fonts PDFjet
     // carries, which a program built without them has not: it failed there

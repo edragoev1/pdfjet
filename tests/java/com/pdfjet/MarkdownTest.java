@@ -9,9 +9,11 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -388,6 +390,40 @@ class MarkdownTest {
             drawn = draw("![Not read](" + source + ")", images);
             assertEquals(0, count(drawn.pdf, "Figure"), source);
             assertTrue(drawn.text.contains(TestSupport.hex("Not read")), source);
+        }
+    }
+
+    // An SVG's italic, bold italic and monospace text keeps its style in the
+    // document's fonts: before the code review of 23 November 2026 all of it
+    // was drawn in the regular and bold ones, upright and proportional.
+    @Test
+    void svgTextKeepsItsStyleInTheDocumentsFonts() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font regular = new Font(pdf, CoreFont.HELVETICA);
+        Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font italic = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+        Font boldItalic = new Font(pdf, CoreFont.HELVETICA_BOLD_OBLIQUE);
+        Font code = new Font(pdf, CoreFont.COURIER);
+        SVGImage image = new SVGImage(new ByteArrayInputStream(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"/>".getBytes("UTF-8")));
+        image.setFont(regular).setBoldFont(bold);
+        image.setMarkdownFonts(italic, boldItalic, code);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Object[][] cases = {
+            {BundledFonts.SANS, 400, false, regular, "regular"},
+            {BundledFonts.SANS, 700, false, bold, "bold"},
+            {BundledFonts.SANS, 400, true, italic, "italic"},
+            {BundledFonts.SERIF, 700, true, boldItalic, "bold italic"},
+            {BundledFonts.MONO, 400, false, code, "monospace"},
+            {BundledFonts.MONO, 700, true, code, "bold italic monospace"},
+        };
+        for (Object[] c : cases) {
+            SVGText.Run run = new SVGText.Run();
+            run.family = (Integer) c[0];
+            run.weight = (Integer) c[1];
+            run.italic = (Boolean) c[2];
+            assertSame(c[3], image.fontOf(run, page), "the " + c[4] + " text is in the document's " + c[4] + " font");
         }
     }
 

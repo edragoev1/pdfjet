@@ -7,14 +7,26 @@ mkdir -p check-zlib/obj/copied
 python3 - <<'PY' || exit 1
 import re
 src = open('../net/pdfjet/Decompressor.cs', encoding='utf-8').read()
+# A method of the Decompressor, from its signature to its closing brace
 def method(sig):
-    i = src.index('    internal static byte[] ' + sig)
+    i = src.index('    ' + sig)
     return src[i:src.index('\n    }\n', i) + 7]
-def private(name):
-    i = src.index('    private static void ' + name)
-    return src[i:src.index('\n    }\n', i) + 7]
-body = method('Inflate(byte[] data, int maxLength)') + method('InflatePrefix(') + method('InflateExact(') \
-    + private('CheckLength')
+def line(sig):
+    i = src.index('    ' + sig)
+    return src[i:src.index('\n', i) + 1]
+# The three functions the check calls, and every method they call: since the
+# PNG was read a row at a time (21 November 2026) they hand their bytes to a
+# Sink through InflateTo, InflatePrefixTo and InflateExactTo, which the copy
+# missed until the code review of 23 November 2026
+body = method('internal static byte[] Inflate(byte[] data, int maxLength)') \
+    + method('private static long InflateTo(') \
+    + method('internal static byte[] InflatePrefix(') \
+    + line('internal delegate void Sink(') \
+    + method('private static int InflatePrefixTo(') \
+    + method('private static void Deliver(') \
+    + method('internal static byte[] InflateExact(') \
+    + method('internal static int InflateExactTo(') \
+    + method('private static void CheckLength')
 body = body.replace('new ZLibStream(inStream, CompressionMode.Decompress)', 'Make(inStream)') \
            .replace('new EndOfInputStream(data)', 'new EndOfInputStream(data, false)')
 open('check-zlib/obj/copied/Decoding.cs', 'w', encoding='utf-8').write(
