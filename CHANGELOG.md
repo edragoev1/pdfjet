@@ -54,6 +54,8 @@ Each is described in detail below.
   asks for, not in the fonts PDFjet carries.
 - `drawGlyphs` in an untagged document marks its glyphs with their text as
   actual text, as it did in a tagged one only.
+- `Stamp.drawPath` in Java and .NET writes its path's operators and line
+  breaks, as Go and Swift always did.
 
 ### In detail
 
@@ -211,6 +213,13 @@ Each is described in detail below.
   `pdfjet_nofonts`) failed with "Reading the font …", as pdfjet.com's
   Markdown to PDF did for any pasted SVG with text. A serif family is in
   the regular font, as Markdown has no serif one. Tests in the four ports.
+- **Fixed: `Stamp.drawPath` in Java and .NET.** Stamp had no way to
+  append a single character, so Java and C# turned each character into a
+  number: a curve's `c` was written as `99`, and the line break after each
+  operator as `10`, so a stamp's path ended `S10` and a viewer could not
+  read it. Since Stamp was added; Go and Swift were right. Behavior change:
+  the path is now drawn. Tests in Java and C# (found by the cleanup scan of
+  23 November 2026).
 - **A PNG read a row at a time, in Go, Java and C#**: its image data
   inflated as a stream, each row's filter undone with the row before it,
   and its samples and its alpha compressed as they come, never the whole

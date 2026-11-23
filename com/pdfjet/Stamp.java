@@ -178,6 +178,14 @@ public class Stamp implements Drawable {
         buf.write(bytes, 0, bytes.length);
     }
 
+    // A character of the content, an operator such as c or a newline: without
+    // this, Java widened a char to a float and wrote 99 for c and 10 for a
+    // newline (the cleanup scan of 23 November 2026)
+    private void append(char c) {
+        checkNotCompleted();
+        buf.write((byte) c);
+    }
+
     private void append(String str) {
         checkNotCompleted();
         byte[] bytes = Util.utf8(str);

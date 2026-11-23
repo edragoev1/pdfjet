@@ -146,6 +146,14 @@ public class Stamp : IDrawable {
         buf.Write(bytes, 0, bytes.Length);
     }
 
+    // A character of the content, an operator such as c or a newline: without
+    // this, C# converted a char to a float and wrote 99 for c and 10 for a
+    // newline (the cleanup scan of 23 November 2026)
+    private void Append(char c) {
+        CheckNotCompleted();
+        buf.WriteByte((byte) c);
+    }
+
     private void Append(String str) {
         CheckNotCompleted();
         byte[] bytes = Encoding.UTF8.GetBytes(str);
