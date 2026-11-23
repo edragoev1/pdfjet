@@ -28,7 +28,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pagelayout"
@@ -1376,23 +1375,9 @@ func (pdf *PDF) addPageContent(page *Page) {
 	page.checkBalanced()
 	page.written = true
 	if pdf.contentStreamsCompression {
-		compressed := compressor.Deflate(page.buf)
-		if pdf.encryption != nil {
-			compressed = pdf.encryption.encrypt(compressed)
-		}
+		buf := page.buf
 		page.buf = nil // Release the page content memory!
-
-		pdf.newObj()
-		pdf.appendString("<<\n")
-		pdf.appendString("/Filter /FlateDecode\n")
-		pdf.appendString("/Length ")
-		pdf.appendInteger(len(compressed))
-		pdf.appendString("\n")
-		pdf.appendString(">>\n")
-		pdf.appendString("stream\n")
-		pdf.appendByteArray(compressed)
-		pdf.appendString("\nendstream\n")
-		pdf.endObj()
+		pdf.addCompressedStream(buf)
 		page.contents = append(page.contents, pdf.getObjNumber())
 	} else { // No compression. Used for diagnostics
 		buf := page.buf
@@ -1403,14 +1388,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 
 		pdf.newObj()
 		pdf.appendString("<<\n")
-		pdf.appendString("/Length ")
-		pdf.appendInteger(len(buf))
-		pdf.appendString("\n")
-		pdf.appendString(">>\n")
-		pdf.appendString("stream\n")
-		pdf.appendByteArray(buf)
-		pdf.appendString("\nendstream\n")
-		pdf.endObj()
+		pdf.appendStreamBody(buf)
 		page.contents = append(page.contents, pdf.getObjNumber())
 	}
 	pdf.addPageStructElements(page)
@@ -1824,14 +1802,7 @@ func (pdf *PDF) addAppearanceObject(annot *annotationObject, minX, minY, maxX, m
 		pdf.appendFloat32(opacity)
 		pdf.appendString(">>>>>>\n")
 	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
+	pdf.appendStreamBody(buf)
 	return pdf.getObjNumber()
 }
 

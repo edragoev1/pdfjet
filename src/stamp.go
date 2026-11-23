@@ -426,14 +426,7 @@ func (s *Stamp) Complete() {
 	if s.pdf.encryption != nil {
 		content = s.pdf.encryption.encrypt(content)
 	}
-	s.pdf.appendString("/Length ")
-	s.pdf.appendInteger(len(content))
-	s.pdf.appendByte(token.Newline)
-	s.pdf.appendByteArray(token.EndDictionary) // End of XObject dictionary
-	s.pdf.appendByteArray(token.Stream)
-	s.pdf.appendByteArray(content)
-	s.pdf.appendByteArray(token.EndStream)
-	s.pdf.endObj()
+	s.pdf.appendStreamBody(content)
 	s.pdf.stamps = append(s.pdf.stamps, s)
 	s.objNumber = s.pdf.getObjNumber()
 }

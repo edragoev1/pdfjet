@@ -309,14 +309,7 @@ func embedFontProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) {
 		pdf.appendInteger(metadataObjNumber)
 		pdf.appendString(" 0 R\n")
 	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(compressed))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(compressed)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
+	pdf.appendStreamBody(compressed)
 	font.fileObjNumber = pdf.getObjNumber()
 }
 
@@ -363,28 +356,14 @@ func addCIDSetObject(pdf *PDF, font *Font, kept []bool) {
 			bits[gid/8] |= 0x80 >> (gid % 8)
 		}
 	}
-	compressed := deflateFontProgram(bits)
-	if pdf.encryption != nil {
-		compressed = pdf.encryption.encrypt(compressed)
-	}
-	pdf.newObj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Filter /FlateDecode\n")
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(compressed))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(compressed)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
+	pdf.addCompressedStream(bits)
 	font.cidSetObjNumber = pdf.getObjNumber()
 }
 
-// deflateFontProgram compresses a font program or a ToUnicode CMap with a
-// writer of the pool that page content uses, at the same level, rather than
-// a new writer of about a megabyte for each: 38% of what a page in three
-// fonts allocated (10 October 2026).
+// deflateFontProgram compresses a font program, a ToUnicode CMap or the
+// content of a page with a writer of the pool that page content uses, at the
+// same level, rather than a new writer of about a megabyte for each: 38% of
+// what a page in three fonts allocated (10 October 2026).
 func deflateFontProgram(buf []byte) []byte {
 	return compressor.Deflate(buf)
 }

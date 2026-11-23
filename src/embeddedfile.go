@@ -121,14 +121,7 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	if compress {
 		pdf.appendString("/Filter /FlateDecode\n")
 	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(content))
-	pdf.appendByte('\n')
-	pdf.appendByteArray(token.EndDictionary)
-	pdf.appendByteArray(token.Stream)
-	pdf.appendByteArray(content)
-	pdf.appendByteArray(token.EndStream)
-	pdf.endObj()
+	pdf.appendStreamBody(content)
 
 	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)

@@ -461,14 +461,7 @@ func appendImageObject(pdf *PDF, obj *PDFobj, softMask, mask int, maskArray []st
 	if pdf.encryption != nil {
 		stream = pdf.encryption.encrypt(stream)
 	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(stream))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(stream)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
+	pdf.appendStreamBody(stream)
 }
 
 // appendCopiedValue appends the key and the tokens of its value, read from
@@ -807,14 +800,7 @@ func (image *Image) addSoftMask(pdf *PDF, data []byte, colorSpace string, bitsPe
 	if pdf.encryption != nil {
 		buf = pdf.encryption.encrypt(data)
 	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
+	pdf.appendStreamBody(buf)
 	image.objNumber = pdf.getObjNumber()
 }
 
@@ -898,14 +884,7 @@ func (image *Image) addImageToPDF(
 	if pdf.encryption != nil {
 		buf = pdf.encryption.encrypt(data)
 	}
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
+	pdf.appendStreamBody(buf)
 	pdf.images = append(pdf.images, image)
 	image.objNumber = pdf.getObjNumber()
 }

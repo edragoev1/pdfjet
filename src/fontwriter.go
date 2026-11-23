@@ -108,19 +108,23 @@ func (pdf *PDF) addCompressedStream(data []byte) {
 	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Filter /FlateDecode\n")
+	pdf.appendStreamBody(compressed)
+}
+
+// appendStreamBody writes the tail of a stream object from its /Length on:
+// the length of the data, the end of the dictionary, and the data as a
+// stream, which the caller has encrypted when the document is.
+func (pdf *PDF) appendStreamBody(data []byte) {
 	pdf.appendString("/Length ")
-	pdf.appendInteger(len(compressed))
+	pdf.appendInteger(len(data))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-	pdf.appendByteArray(compressed)
+	pdf.appendByteArray(data)
 	pdf.appendString("\nendstream\n")
 	pdf.endObj()
 }
 
-// addCIDFontDictionaryObject writes the CID font with the name given,
-// which is the font's own, or that of a subset, whose widths are those of the
-// glyphs it keeps.
 // cidToGIDMap returns the CIDToGIDMap of a TrueType subset (ISO 32000-1,
 // 9.7.4.2): for each CID, the number of the glyph in the font, two bytes,
 // high byte first, the number of the glyph in the subset, in which the glyphs
@@ -140,24 +144,13 @@ func cidToGIDMap(kept []bool) []byte {
 // addCIDToGIDMapObject writes the CIDToGIDMap of the glyphs kept as a
 // compressed stream, and returns its object number.
 func addCIDToGIDMapObject(pdf *PDF, kept []bool) int {
-	compressed := deflateFontProgram(cidToGIDMap(kept))
-	if pdf.encryption != nil {
-		compressed = pdf.encryption.encrypt(compressed)
-	}
-	pdf.newObj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Filter /FlateDecode\n")
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(compressed))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(compressed)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
+	pdf.addCompressedStream(cidToGIDMap(kept))
 	return pdf.getObjNumber()
 }
 
+// addCIDFontDictionaryObject writes the CID font with the name given,
+// which is the font's own, or that of a subset, whose widths are those of the
+// glyphs it keeps.
 func addCIDFontDictionaryObject(pdf *PDF, font *Font, baseFont string, kept []bool) {
 	for _, f := range pdf.fonts {
 		if f.cidFontDictObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
