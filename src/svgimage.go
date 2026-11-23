@@ -1671,6 +1671,18 @@ var svgUnits = []struct {
 	{"cm", 72.0 / 2.54},
 }
 
+// svgUnitOf returns the number of the length, its unit taken off, and the
+// points of its unit, 1 for a length without one.
+func svgUnitOf(value string) (string, float32) {
+	value = strings.TrimSpace(value)
+	for _, unit := range svgUnits {
+		if strings.HasSuffix(value, unit.suffix) {
+			return strings.TrimSpace(strings.TrimSuffix(value, unit.suffix)), unit.points
+		}
+	}
+	return value, 1.0
+}
+
 // svgPixel is a user unit of an svg element whose size is in a unit such as mm
 // and that has no viewBox, in points. Such a size is the size of its pixels, 96
 // in an inch, and what is in it is drawn in those.
@@ -1691,15 +1703,7 @@ func svgHasUnit(value string) bool {
 // and 0 for a length that PDFjet cannot read, a percentage among them, which
 // leaves the size to the viewBox.
 func parseLength(value string) float32 {
-	value = strings.TrimSpace(value)
-	scale := float32(1.0)
-	for _, unit := range svgUnits {
-		if strings.HasSuffix(value, unit.suffix) {
-			value = strings.TrimSpace(strings.TrimSuffix(value, unit.suffix))
-			scale = unit.points
-			break
-		}
-	}
+	value, scale := svgUnitOf(value)
 	number, err := parseSVGFloat(value, 32)
 	if err != nil || math.IsInf(number, 0) || math.IsNaN(number) {
 		return 0.0
@@ -2026,18 +2030,7 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 		strokePass := (pass == 0) == path.strokeFirst
 		if !strokePass && fill {
 			page.SetBrushColor(path.fill)
-			for _, op := range path.operations {
-				if op.cmd == 'M' {
-					page.MoveTo(op.x+image.x, op.y+image.y)
-				} else if op.cmd == 'L' {
-					page.LineTo(op.x+image.x, op.y+image.y)
-				} else if op.cmd == 'C' {
-					page.CurveTo(
-						op.x1+image.x, op.y1+image.y,
-						op.x2+image.x, op.y2+image.y,
-						op.x+image.x, op.y+image.y)
-				}
-			}
+			image.appendPath(page, path.operations, false)
 			if path.evenOdd {
 				page.appendString("f*\n")
 			} else {
@@ -2050,26 +2043,33 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 			page.SetPenWidth(path.strokeWidth)
 			// Z closes a subpath, and the path is stroked once, all of its
 			// subpaths together, as SVG strokes it.
-			for _, op := range path.operations {
-				if op.cmd == 'M' {
-					page.MoveTo(op.x+image.x, op.y+image.y)
-				} else if op.cmd == 'L' {
-					page.LineTo(op.x+image.x, op.y+image.y)
-				} else if op.cmd == 'C' {
-					page.CurveTo(
-						op.x1+image.x, op.y1+image.y,
-						op.x2+image.x, op.y2+image.y,
-						op.x+image.x, op.y+image.y)
-				} else if op.cmd == 'Z' {
-					page.appendString("h\n")
-				}
-			}
+			image.appendPath(page, path.operations, true)
 			page.StrokePath()
 		}
 	}
 
 	if state {
 		page.RestoreGraphicsState()
+	}
+}
+
+// appendPath appends the path operations, moved to where the image is, to the
+// page: its moves, lines and curves, and, when closes, the Z that closes a
+// subpath, which a stroke and a clip close and a fill needs not.
+func (image *SVGImage) appendPath(page *Page, operations []*svgPathOp, closes bool) {
+	for _, op := range operations {
+		if op.cmd == 'M' {
+			page.MoveTo(op.x+image.x, op.y+image.y)
+		} else if op.cmd == 'L' {
+			page.LineTo(op.x+image.x, op.y+image.y)
+		} else if op.cmd == 'C' {
+			page.CurveTo(
+				op.x1+image.x, op.y1+image.y,
+				op.x2+image.x, op.y2+image.y,
+				op.x+image.x, op.y+image.y)
+		} else if op.cmd == 'Z' && closes {
+			page.appendString("h\n")
+		}
 	}
 }
 
@@ -2080,17 +2080,7 @@ func (image *SVGImage) clip(clips []*svgPath, page *Page) {
 			image.clipToText(clip, page)
 			continue
 		}
-		for _, op := range clip.operations {
-			if op.cmd == 'M' {
-				page.MoveTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'L' {
-				page.LineTo(op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'C' {
-				page.CurveTo(op.x1+image.x, op.y1+image.y, op.x2+image.x, op.y2+image.y, op.x+image.x, op.y+image.y)
-			} else if op.cmd == 'Z' {
-				page.appendString("h\n")
-			}
-		}
+		image.appendPath(page, clip.operations, true)
 		if clip.evenOdd {
 			page.appendString("W*\nn\n")
 		} else {

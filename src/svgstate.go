@@ -821,15 +821,7 @@ func parseSVGOpacity(value string) (float32, bool) {
 // parseSVGLength reads a length in user units, which PDFjet draws as points,
 // with or without a unit; an empty value is 0, as an omitted attribute.
 func parseSVGLength(value string) (float32, error) {
-	value = strings.TrimSpace(value)
-	scale := float32(1.0)
-	for _, unit := range svgUnits {
-		if strings.HasSuffix(value, unit.suffix) {
-			value = strings.TrimSpace(strings.TrimSuffix(value, unit.suffix))
-			scale = unit.points
-			break
-		}
-	}
+	value, scale := svgUnitOf(value)
 	number, err := parseFloatLenient(value)
 	if err == nil && (math.IsInf(float64(number), 0) || math.IsNaN(float64(number))) {
 		return 0.0, fmt.Errorf("%q is not a number", value)
