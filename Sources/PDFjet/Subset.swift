@@ -251,14 +251,7 @@ class Subset {
             pdf.append(metadataObjNumber)
             pdf.append(" 0 R\n")
         }
-        pdf.append("/Length ")
-        pdf.append(encrypted.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(encrypted)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(encrypted)
         font.fileObjNumber = pdf.getObjNumber()
         return font.kept
     }

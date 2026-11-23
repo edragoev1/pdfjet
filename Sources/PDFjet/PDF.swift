@@ -427,6 +427,20 @@ public final class PDF {
         append(Token.endObj)
     }
 
+    // Writes the rest of a stream object from its /Length on: the length, the
+    // end of the dictionary, the stream and the end of the object. The caller
+    // encrypts the bytes first, as every stream of an encrypted document is.
+    func appendStreamBody(_ bytes: [UInt8]) {
+        append(Token.length)
+        append(bytes.count)
+        append(Token.newline)
+        append(Token.endDictionary)
+        append(Token.stream)
+        append(bytes)
+        append(Token.endStream)
+        endObj()
+    }
+
     func getObjNumber() -> Int {
         return objOffset.count
     }
@@ -599,14 +613,7 @@ public final class PDF {
         append(Token.beginDictionary)
         append("/Type /Metadata\n")
         append("/Subtype /XML\n")
-        append(Token.length)
-        append(buf.count)
-        append(Token.newline)
-        append(Token.endDictionary)
-        append(Token.stream)
-        append(buf)
-        append(Token.endStream)
-        endObj()
+        appendStreamBody(buf)
 
         return self.getObjNumber()
     }
@@ -1410,42 +1417,24 @@ public final class PDF {
 
     private func addPageContent(_ page: Page) {
         page.checkBalanced()
+        var buffer: [UInt8]
         if contentStreamsCompression {
-            var buffer = [UInt8]()
+            buffer = [UInt8]()
             FlateEncode(&buffer, page.buf, flateMemory)
-            page.buf.removeAll()   // Release the page content memory!
-            page.written = true
-            buffer = encrypted(buffer)
-
-            newObj()
-            append(Token.beginDictionary)
-            append("/Filter /FlateDecode\n")
-            append(Token.length)
-            append(buffer.count)
-            append(Token.newline)
-            append(Token.endDictionary)
-            append(Token.stream)
-            append(buffer)
-            append(Token.endStream)
-            endObj()
-            page.contents.append(getObjNumber())
         } else {    // No compression. Used for diagnostics
-            let buffer = encrypted(page.buf)
-            page.buf.removeAll()   // Release the page content memory!
-            page.written = true
-
-            newObj()
-            append(Token.beginDictionary)
-            append(Token.length)
-            append(buffer.count)
-            append(Token.newline)
-            append(Token.endDictionary)
-            append(Token.stream)
-            append(buffer)
-            append(Token.endStream)
-            endObj()
-            page.contents.append(getObjNumber())
+            buffer = page.buf
         }
+        page.buf.removeAll()   // Release the page content memory!
+        page.written = true
+        buffer = encrypted(buffer)
+
+        newObj()
+        append(Token.beginDictionary)
+        if contentStreamsCompression {
+            append("/Filter /FlateDecode\n")
+        }
+        appendStreamBody(buffer)
+        page.contents.append(getObjNumber())
         addPageStructElements(page)
     }
 

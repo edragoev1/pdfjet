@@ -317,15 +317,7 @@ public class Image : Drawable {
             pdf.append(" 0 R\n")
         }
         appendCopiedValue(pdf, "/Mask", maskArray)
-        let stream = pdf.encrypted(obj.stream ?? [])
-        pdf.append("/Length ")
-        pdf.append(stream.count)
-        pdf.append("\n")
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(stream, 0, stream.count)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(pdf.encrypted(obj.stream ?? []))
     }
 
     // Appends the key and the tokens of its value, read from another PDF, if
@@ -803,15 +795,7 @@ public class Image : Drawable {
         pdf.append("/BitsPerComponent ")
         pdf.append(bitsPerComponent)
         pdf.append(Token.newline)
-        let buf = pdf.encrypted(alpha)
-        pdf.append("/Length ")
-        pdf.append(buf.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(buf, 0, buf.count)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(pdf.encrypted(alpha))
         objNumber = pdf.getObjNumber()
     }
 
@@ -879,15 +863,7 @@ public class Image : Drawable {
             pdf.append(pixelWidth)
             pdf.append(">>\n")
         }
-        let buf = pdf.encrypted(data)
-        pdf.append("/Length ")
-        pdf.append(buf.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(buf, 0, buf.count)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(pdf.encrypted(data))
         pdf.images.append(self)
         self.objNumber = pdf.getObjNumber()
     }
