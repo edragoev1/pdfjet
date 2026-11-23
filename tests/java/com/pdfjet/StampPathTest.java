@@ -35,7 +35,10 @@ public class StampPathTest {
         stamp.setLocation(50f, 50f);
         stamp.drawOn(page);
         pdf.complete();
-        String text = new String(out.toByteArray(), StandardCharsets.ISO_8859_1);
+        // Without the document's ID, in the trailer and the metadata: 32
+        // random hex digits, which can hold "f10"
+        String text = new String(out.toByteArray(), StandardCharsets.ISO_8859_1)
+                .replaceAll("[0-9a-f]{32}", "");
         assertTrue(text.contains(" c\nS\n"), "the curve's c and the stroke's S, each on its line");
         assertTrue(text.contains(" l\nf\n"), "the fill's f on its line");
         assertFalse(text.contains("S10") || text.contains("f10"), "no 10 for a newline");

@@ -31,7 +31,10 @@ public class StampPathTest {
         stamp.SetLocation(50f, 50f);
         stamp.DrawOn(page);
         pdf.Complete();
-        string text = TestSupport.Latin1(stream.ToArray());
+        // Without the document's ID, in the trailer and the metadata: 32
+        // random hex digits, which can hold "f10"
+        string text = System.Text.RegularExpressions.Regex.Replace(
+                TestSupport.Latin1(stream.ToArray()), "[0-9a-f]{32}", "");
         Assert.Contains(" c\nS\n", text);
         Assert.Contains(" l\nf\n", text);
         Assert.DoesNotContain("S10", text);
