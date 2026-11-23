@@ -16,14 +16,15 @@ It includes everything given to customers as the 9.2.0 builds.
 ### Highlights
 
 - **Hindi, Khmer and the other Indic and Southeast Asian scripts in
-  `TextBlock` and `TextLine`:** Hindi, Bengali, Tamil, Telugu, Kannada,
-  Malayalam, Gujarati, Gurmukhi, Odia, Sinhala, Khmer, Lao and Burmese,
-  shaped by a text engine and drawn as outlines, tagged for screen readers
-  (PDF/UA); mixed with English, Arabic or Thai in one block; in Table
-  cells; turned. Java and Android and Swift on Apple platforms use the
-  platform's engine; .NET and Go add PDFjet's HarfBuzz, nothing to install
-  (`PDFjet.HarfBuzz` on NuGet, `github.com/edragoev1/pdfjet/harfbuzz/v9`);
-  `HBShape` runs HarfBuzz's `hb-shape` anywhere, when asked for.
+  `TextBlock` and `TextLine`, and in `TextFrame` and `TextColumn`:** Hindi,
+  Bengali, Tamil, Telugu, Kannada, Malayalam, Gujarati, Gurmukhi, Odia,
+  Sinhala, Khmer, Lao and Burmese, shaped by a text engine and drawn as
+  outlines, tagged for screen readers (PDF/UA); mixed with English, Arabic or
+  Thai in one block; in Table cells; turned. Java and Android and Swift on
+  Apple platforms use the platform's engine; .NET and Go add PDFjet's
+  HarfBuzz, nothing to install (`PDFjet.HarfBuzz` on NuGet,
+  `github.com/edragoev1/pdfjet/harfbuzz/v9`); `HBShape` runs HarfBuzz's
+  `hb-shape` anywhere, when asked for.
 - **Noto Sans for these 13 scripts,** Regular and Bold, in the world fonts.
 - **Thai, Lao, Khmer and Burmese lines break between words,** by ICU's
   dictionaries, as Chrome breaks them: the Thai UDHR's lines are Chrome's,
@@ -39,10 +40,10 @@ It includes everything given to customers as the 9.2.0 builds.
 
 Each is described in detail below.
 
-- Hindi and the other scripts above, in a TextBlock or a TextLine, are
-  shaped and drawn as outlines, where they were drawn as text, their
-  letters wrong. In .NET and Go without PDFjet's HarfBuzz add-on or a
-  shaper set, and in Swift on Linux without a shaper set, the document
+- Hindi and the other scripts above, in a TextBlock, a TextLine, a TextFrame
+  or a TextColumn, are shaped and drawn as outlines, where they were drawn as
+  text, their letters wrong. In .NET and Go without PDFjet's HarfBuzz add-on
+  or a shaper set, and in Swift on Linux without a shaper set, the document
   fails saying what to add.
 - A TextBlock paragraph whose first letter is Arabic or Hebrew is right to
   left, aligned to the right, unless `setRightToLeft` was called: a block
@@ -50,40 +51,47 @@ Each is described in detail below.
 - Thai text without zero width spaces breaks between its words, not only
   at its spaces.
 - An SVG's text in Markdown is in the document's fonts, not IBM Plex Sans.
+- `drawGlyphs` in an untagged document marks its glyphs with their text as
+  actual text, as it did in a tagged one only.
 
 ### In detail
 
 - **New: `TextBlock` and `TextLine` draw every script.** A paragraph of a
   TextBlock in Hindi, Bengali, Gurmukhi, Gujarati, Odia, Tamil, Telugu,
   Kannada, Malayalam, Sinhala, Khmer, Lao or Burmese, scripts whose letters
-  change shape and place, is wrapped and shaped by a text engine and drawn
-  as outlines within the block's layout, each line tagged with its text in
-  its language for screen readers (PDF/UA); the other paragraphs, English,
-  Thai, Arabic or Hebrew, are drawn as text, as before. A block can mix
-  them, and in a `Table` cell it is as any TextBlock. A TextLine of these
-  scripts is shaped as one line, and turned with `setTextRotation` as its
-  text would be. Give the block its font, and a fallback font for the other
-  characters (English words in Hindi), and its language. The text engine
-  is a `Shaper`, given a `ShapingRequest` (the text, its language, the font
-  files, the size, the width) and giving back `ShapedLine`s (each glyph's
-  font index, number and place, and the line's width): Java's java.awt.font
-  on servers and desktops, and Android's own on Android 12 and later, both
-  in the one jar; Core Text in Swift on Apple platforms; PDFjet's HarfBuzz
-  add-ons in .NET and Go (below); `HBShape` anywhere, when set (below);
-  or a shaper of the program's own, with `setShaper`, or for every block
-  and line with `SetDefaultShaper` (.NET, Swift: on TextBlock; Go: the
-  package function). The fonts are loaded by path, as the fonts PDFjet
-  carries are, or from their bytes, with the new `Font(pdf, byte[])` (Go
-  `NewFontFromBytes`), as the engine reads the same file. The glyphs are
-  outlines: the text cannot be selected or searched, and `PDF.attachText`
-  attaches it whole for anyone who needs it. Example_52 draws the whole
-  Universal Declaration of Human Rights, in Hindi and then in Khmer, a
-  TextBlock a paragraph, and attaches its text; on Android 12 and 15
-  (emulators) a full page of Hindi or Khmer is about 70 KB and passes
-  PDF/UA. For the customers of the 9.2.0 builds: their `ComplexText` is
-  gone; `new ComplexText(hindi, text)` is `new TextBlock(hindi, text)`, and
-  a TextBlock does not flow from page to page: draw one a paragraph,
-  measured first with `drawOn(null)`.
+  change shape and place, is wrapped and shaped by a text engine and drawn as
+  outlines within the block's layout, each line tagged with its text in its
+  language for screen readers (PDF/UA); the other paragraphs, English, Thai,
+  Arabic or Hebrew, are drawn as text, as before. A block can mix them, and in
+  a `Table` cell it is as any TextBlock. A TextLine of these scripts is shaped
+  as one line, and turned with `setTextRotation` as its text would be.
+  `TextFrame` and `TextColumn` measure their words as they draw them, shaped,
+  each word shaped once however often it is measured; the spaces between them
+  are the font's. A paragraph is shaped once, and again only in another font,
+  fallback font, size or language. Give the block its font, and a fallback
+  font for the other characters (English words in Hindi), and its language; a
+  fallback font the text engine cannot read, as a core font, is left out of
+  the shaping. The text engine is a `Shaper`, given a `ShapingRequest` (the
+  text, its language, the font files, the size, the width) and giving back
+  `ShapedLine`s (each glyph's font index, number and place, and the line's
+  width): Java's java.awt.font on servers and desktops, and Android's own on
+  Android 12 and later, both in the one jar; Core Text in Swift on Apple
+  platforms; PDFjet's HarfBuzz add-ons in .NET and Go (below); `HBShape`
+  anywhere, when set (below); or a shaper of the program's own, with
+  `setShaper`, or for every block and line with `SetDefaultShaper` (.NET,
+  Swift: on TextBlock; Go: the package function). The fonts are loaded by
+  path, as the fonts PDFjet carries are, or from their bytes, with the new
+  `Font(pdf, byte[])` (Go `NewFontFromBytes`), as the engine reads the same
+  file. The glyphs are outlines, each line marked with its text as actual
+  text, in untagged documents too; viewers differ in how they select and
+  search it, and `PDF.attachText` attaches the text whole for anyone who needs
+  it. Example_52 draws the whole Universal Declaration of Human Rights, in
+  Hindi and then in Khmer, a TextBlock a paragraph, and attaches its text; on
+  Android 12 and 15 (emulators) a full page of Hindi or Khmer is about 70 KB
+  and passes PDF/UA. For the customers of the 9.2.0 builds: their
+  `ComplexText` is gone; `new ComplexText(hindi, text)` is `new
+  TextBlock(hindi, text)`, and a TextBlock does not flow from page to page:
+  draw one a paragraph, measured first with `drawOn(null)`.
 - **A TextBlock paragraph whose first letter is Arabic or Hebrew is right
   to left by itself,** aligned to the right, where it was drawn left to
   right unless `setRightToLeft(true)` was called; `setRightToLeft`, true or
