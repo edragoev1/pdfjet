@@ -293,41 +293,16 @@ public class SimpleBarChart : IDrawable {
         if (f1 == null || f2 == null) {
             return 0f;      // Without its fonts the chart draws nothing
         }
-        float h = Top() + values.Count * RowHeight() + Pad();
+        float h = ChartScale.ChartTitleTop(f1, f2, title, subtitle) + values.Count * RowHeight() + ChartScale.ChartPad(f2);
         if (HasReference()) {
-            h += 1.4f * SubtitleSize();     // The line's label under the bars
+            h += 1.4f * ChartScale.ChartSubtitleSize(f2);     // The line's label under the bars
         }
         return h;
-    }
-
-    // The space around the chart's content, a size of the text of the bars.
-    private float Pad() {
-        return f2.GetSize();
     }
 
     // The height of a row, a bar and the space under it.
     internal float RowHeight() {
         return 2.4f * f2.GetSize();
-    }
-
-    // The size of the subtitle.
-    private float SubtitleSize() {
-        return 0.8f * f2.GetSize();
-    }
-
-    // The height above the first row: the padding, the title and the subtitle.
-    private float Top() {
-        float top = Pad();
-        if (title.Length > 0) {
-            top += f1.GetAscent(f1.GetSize()) + f1.GetDescent(f1.GetSize());
-        }
-        if (subtitle.Length > 0) {
-            top += 1.4f * SubtitleSize();
-        }
-        if (title.Length > 0 || subtitle.Length > 0) {
-            top += f2.GetSize();
-        }
-        return top;
     }
 
     // The value written at the end of a bar.
@@ -387,16 +362,7 @@ public class SimpleBarChart : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
     public float[] DrawOn(Page page) {
-        if (page == null) {
-            return DrawChart(null);
-        }
-        // The text unturned and filled, whatever the page was left with
-        Action restore = page.PlainText();
-        try {
-            return DrawChart(page);
-        } finally {
-            restore();
-        }
+        return ChartScale.DrawWithPlainText(page, DrawChart);
     }
 
     private float[] DrawChart(Page page) {
@@ -408,7 +374,7 @@ public class SimpleBarChart : IDrawable {
             page.pdf.Fail(new ArgumentException(ChartScale.TOO_MANY_DIGITS));
         }
         float size = f2.GetSize();
-        float pad = Pad();
+        float pad = ChartScale.ChartPad(f2);
 
         // The widest name and value, and the room left for the bars
         // A name wider than two fifths of the chart is shortened with an ellipsis
@@ -451,23 +417,9 @@ public class SimpleBarChart : IDrawable {
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         page.SaveGraphicsState();
 
-        if (panelColor >= 0) {
-            page.SetBrushColor(panelColor);
-            page.FillRect(x, y, w, h);
-        }
-        float baseline = y + pad;
-        if (title.Length > 0) {
-            baseline += f1.GetAscent(f1.GetSize());
-            page.DrawString(f1, f1.GetSize(), ChartScale.Shorten(f1, f1.GetSize(), title, w - 2f * pad), x + pad, baseline, Util.ToRGB(INK), null);
-            baseline += f1.GetDescent(f1.GetSize());
-        }
-        if (subtitle.Length > 0) {
-            baseline += 1.4f * SubtitleSize();
-            page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
-                    x + pad, baseline, Util.ToRGB(MUTED), null);
-        }
+        ChartScale.DrawChartTitles(page, f1, f2, panelColor, x, y, w, h, title, subtitle);
 
-        float rowTop = y + Top();
+        float rowTop = y + ChartScale.ChartTitleTop(f1, f2, title, subtitle);
         float barHeight = 1.6f * size;
         float ascent = f2.GetAscent(size);
         for (int i = 0; i < names.Count; i++) {
@@ -525,10 +477,10 @@ public class SimpleBarChart : IDrawable {
             }
             page.SetDefaultStrokeDashPattern();
             String text = ReferenceText();
-            float width = f2.StringWidth(SubtitleSize(), text);
+            float width = f2.StringWidth(ChartScale.ChartSubtitleSize(f2), text);
             // Centered under the line, within the chart
             float textX = Math.Max(x + pad, Math.Min(lineX - width / 2f, x + w - pad - width));
-            page.DrawString(f2, SubtitleSize(), text, textX, lineBottom + 1.2f * SubtitleSize(),
+            page.DrawString(f2, ChartScale.ChartSubtitleSize(f2), text, textX, lineBottom + 1.2f * ChartScale.ChartSubtitleSize(f2),
                     Util.ToRGB(INK), null);
         }
 

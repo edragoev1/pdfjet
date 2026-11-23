@@ -555,6 +555,94 @@ internal static class ChartScale {
                 Util.ToRGB(SimpleBarChart.MUTED), null);
     }
 
+    // Draws the chart on the page with its text unturned and filled, whatever
+    // the page was left with, and puts back what the page had; or measures it,
+    // when there is no page.
+    internal static float[] DrawWithPlainText(Page page, Func<Page, float[]> drawChart) {
+        if (page == null) {
+            return drawChart(null);
+        }
+        Action restore = page.PlainText();
+        try {
+            return drawChart(page);
+        } finally {
+            restore();
+        }
+    }
+
+    // The space around the content of a SimpleBarChart, a SimpleLineChart or
+    // a SimpleScatterChart, a size of f2, the font of its bars or numbers.
+    internal static float ChartPad(Font f2) {
+        return f2.GetSize();
+    }
+
+    // The size of the subtitle of such a chart.
+    internal static float ChartSubtitleSize(Font f2) {
+        return 0.8f * f2.GetSize();
+    }
+
+    // The height above the rows or the plot of such a chart: the padding, the
+    // title in f1 and the subtitle.
+    internal static float ChartTitleTop(Font f1, Font f2, String title, String subtitle) {
+        float top = ChartPad(f2);
+        if (title.Length > 0) {
+            top += f1.GetAscent(f1.GetSize()) + f1.GetDescent(f1.GetSize());
+        }
+        if (subtitle.Length > 0) {
+            top += 1.4f * ChartSubtitleSize(f2);
+        }
+        if (title.Length > 0 || subtitle.Length > 0) {
+            top += f2.GetSize();
+        }
+        return top;
+    }
+
+    // Draws the panel of such a chart, when its color is set, and its title
+    // and subtitle, each shortened to the width, and returns the baseline of
+    // the last of them, or the top of the content when there are none.
+    internal static float DrawChartTitles(Page page, Font f1, Font f2, int panelColor,
+            float x, float y, float w, float h, String title, String subtitle) {
+        float pad = ChartPad(f2);
+        if (panelColor >= 0) {
+            page.SetBrushColor(panelColor);
+            page.FillRect(x, y, w, h);
+        }
+        float baseline = y + pad;
+        if (title.Length > 0) {
+            baseline += f1.GetAscent(f1.GetSize());
+            page.DrawString(f1, f1.GetSize(), Shorten(f1, f1.GetSize(), title, w - 2f * pad), x + pad, baseline, Util.ToRGB(SimpleBarChart.INK), null);
+            baseline += f1.GetDescent(f1.GetSize());
+        }
+        if (subtitle.Length > 0) {
+            baseline += 1.4f * ChartSubtitleSize(f2);
+            page.DrawString(f2, ChartSubtitleSize(f2), Shorten(f2, ChartSubtitleSize(f2), subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
+        }
+        return baseline;
+    }
+
+    // The bottom of the plot of a SimpleLineChart or a SimpleScatterChart,
+    // over the numbers of its x axis and its title, from the bottom of the
+    // chart's content; and over the note, a row of its own under the rest,
+    // when there is one: a chart that has not the room keeps its plot, the
+    // note is left out, and its description says the number.
+    internal static float PlotBottom(float contentBottom, Font f2, bool xAxisTitle, float top, ref String note) {
+        float size = f2.GetSize();
+        float bottom = contentBottom - 1.4f * size;
+        if (xAxisTitle) {
+            bottom -= 1.4f * size;
+        }
+        if (note.Length > 0) {
+            float above = bottom - 1.4f * ChartSubtitleSize(f2);
+            if (above > top) {
+                bottom = above;
+            } else {
+                note = "";
+            }
+        }
+        return bottom;
+    }
+
     /// <summary>
     /// Tells if the axis can be drawn: the span of a range that is set, or of
     /// values that are, can be past the largest float.

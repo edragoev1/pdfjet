@@ -404,16 +404,7 @@ namespace PDFjet.NET {
         /// nothing, not its title either, and returns the corner of its
         /// circle.</returns>
         public float[] DrawOn(Page page) {
-            if (page == null) {
-                return DrawChart(null);
-            }
-            // The text unturned and filled, whatever the page was left with
-            Action restore = page.PlainText();
-            try {
-                return DrawChart(page);
-            } finally {
-                restore();
-            }
+            return ChartScale.DrawWithPlainText(page, DrawChart);
         }
 
         private float[] DrawChart(Page page) {

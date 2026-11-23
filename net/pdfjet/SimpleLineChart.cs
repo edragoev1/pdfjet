@@ -309,31 +309,6 @@ public class SimpleLineChart : IDrawable {
         return this;
     }
 
-    // The space around the chart's content, a size of its numbers.
-    private float Pad() {
-        return f2.GetSize();
-    }
-
-    // The size of the subtitle.
-    private float SubtitleSize() {
-        return 0.8f * f2.GetSize();
-    }
-
-    // The height above the plot: the padding, the title and the subtitle.
-    private float Top() {
-        float top = Pad();
-        if (title.Length > 0) {
-            top += f1.GetAscent(f1.GetSize()) + f1.GetDescent(f1.GetSize());
-        }
-        if (subtitle.Length > 0) {
-            top += 1.4f * SubtitleSize();
-        }
-        if (title.Length > 0 || subtitle.Length > 0) {
-            top += f2.GetSize();
-        }
-        return top;
-    }
-
     // The number of categories the chart draws: the categories set, or the
     // longest line when there are none.
     private int Count() {
@@ -492,16 +467,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
     public float[] DrawOn(Page page) {
-        if (page == null) {
-            return DrawChart(null);
-        }
-        // The text unturned and filled, whatever the page was left with
-        Action restore = page.PlainText();
-        try {
-            return DrawChart(page);
-        } finally {
-            restore();
-        }
+        return ChartScale.DrawWithPlainText(page, DrawChart);
     }
 
     private float[] DrawChart(Page page) {
@@ -518,7 +484,7 @@ public class SimpleLineChart : IDrawable {
             return new float[] {x + w, y + h};
         }
         float size = f2.GetSize();
-        float pad = Pad();
+        float pad = ChartScale.ChartPad(f2);
         float ascent = f2.GetAscent(size);
 
         if (!yRangeSet && !ChartScale.SpanFits(all.ToArray())) {
@@ -555,22 +521,10 @@ public class SimpleLineChart : IDrawable {
             left = Math.Max(left, x + pad / 2f + f2.StringWidth(size, Category(0)) / 2f);
             right = Math.Min(right, x + w - pad / 2f - f2.StringWidth(size, Category(n - 1)) / 2f);
         }
-        float top = y + Top() + ascent / 2f;     // Room for the top number
-        float bottom = y + h - pad - 1.4f * size;
-        if (xAxisTitle.Length > 0) {
-            bottom -= 1.4f * size;
-        }
-        // Room for the note, a row of its own under the rest; a chart that has
-        // not the room keeps its plot, and its description says the number
+        float top = y + ChartScale.ChartTitleTop(f1, f2, title, subtitle) + ascent / 2f;     // Room for the top number
+        // Room for the note, a row of its own under the rest
         String note = OutsideNote();
-        if (note.Length > 0) {
-            float above = bottom - 1.4f * SubtitleSize();
-            if (above > top) {
-                bottom = above;
-            } else {
-                note = "";
-            }
-        }
+        float bottom = ChartScale.PlotBottom(y + h - pad, f2, xAxisTitle.Length > 0, top, ref note);
         if (right <= left || bottom <= top) {
             page.pdf.Fail(new ArgumentException(ChartScale.NoRoom("A SimpleLineChart", w, h)));
         }
@@ -582,21 +536,7 @@ public class SimpleLineChart : IDrawable {
         page.SaveGraphicsState();
         page.SetDefaultStrokeDashPattern();     // Not the caller's, which dashed the lines
 
-        if (panelColor >= 0) {
-            page.SetBrushColor(panelColor);
-            page.FillRect(x, y, w, h);
-        }
-        float baseline = y + pad;
-        if (title.Length > 0) {
-            baseline += f1.GetAscent(f1.GetSize());
-            page.DrawString(f1, f1.GetSize(), ChartScale.Shorten(f1, f1.GetSize(), title, w - 2f * pad), x + pad, baseline, Util.ToRGB(SimpleBarChart.INK), null);
-            baseline += f1.GetDescent(f1.GetSize());
-        }
-        if (subtitle.Length > 0) {
-            baseline += 1.4f * SubtitleSize();
-            page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
-                    x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
-        }
+        ChartScale.DrawChartTitles(page, f1, f2, panelColor, x, y, w, h, title, subtitle);
 
         // The horizontal grid and its numbers, and the categories under the
         // plot, each where it leaves the one before it room
@@ -649,7 +589,7 @@ public class SimpleLineChart : IDrawable {
             page.SetTextRotation(0);
         }
         if (note.Length > 0) {
-            ChartScale.DrawOutsideNote(page, f2, SubtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
+            ChartScale.DrawOutsideNote(page, f2, ChartScale.ChartSubtitleSize(f2), note, right, x + pad, x + w - pad, y + h - pad);
         }
 
         // The lines, the highlighted one last, over the others, broken where a
@@ -745,7 +685,7 @@ public class SimpleLineChart : IDrawable {
         // and after one on a fall; but those outside the axis and the last of
         // each line, which its label at the end has
         if (valueLabels) {
-            float small = SubtitleSize();
+            float small = ChartScale.ChartSubtitleSize(f2);
             float gap = 0.5f * size;
             foreach (int i in order) {
                 Line line = lines[i];
