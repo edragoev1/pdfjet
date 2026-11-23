@@ -12,6 +12,7 @@ import (
 	"hash/crc32"
 	"math"
 	"os"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -1307,5 +1308,26 @@ func TestPNGImageTheSoftMaskOfACopiedImageKeepsItsMatte(t *testing.T) {
 	}
 	if !bytes.Equal(mask.stream, softMask.stream) {
 		t.Error("the stream of the soft mask is not the one copied")
+	}
+}
+
+// A PNG whose header claims rows of tens of millions of pixels over a few
+// bytes of image data fails as data shorter than the image, and takes memory
+// for the data it has, not for the rows it claims: fuzzing found 88 bytes that
+// took 1.2 GB.
+func TestPNGImageAWideHeaderOverLittleDataTakesLittleMemory(t *testing.T) {
+	idat := compressor.Deflate([]byte{0})
+	for _, png := range [][]byte{
+		testPNG(60_000_000, 1, 8, 0, nil, idat),             // Gray, its IDAT embedded
+		testPNG(20_000_000, 2, 8, 6, nil, idat),             // RGB and alpha, decoded
+		testPNG(50_000_000, 1, 8, 3, make([]byte, 6), idat), // Palette, decoded
+	} {
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		testWant(t, "The PNG image data is shorter than the image.", testPNGError(png))
+		runtime.ReadMemStats(&after)
+		if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 16<<20 {
+			t.Errorf("%d bytes allocated", allocated)
+		}
 	}
 }

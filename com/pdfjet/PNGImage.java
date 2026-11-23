@@ -279,8 +279,11 @@ class PNGImage {
     private boolean pngRows(final int bytesPerRow, final int bytesPerPixel, final Row each)
             throws Exception {
         final int rows = this.h;
-        final byte[] raw = new byte[bytesPerRow + 1];
-        final byte[][] lines = {new byte[bytesPerRow], new byte[bytesPerRow]};
+        // The row grows with the data that inflates, and the two lines are
+        // made when the first row is whole: a header of a width of millions of
+        // pixels over a few bytes of data takes memory for those bytes alone
+        final byte[][] raw = {new byte[Math.min(bytesPerRow + 1, 32 * 1024)]};
+        final byte[][] lines = new byte[2][];
         final int first = Math.min(bytesPerPixel, bytesPerRow);
         // The bytes of the row read so far, the row, the first filter type
         // that is not one, and whether the row has one above it
@@ -291,20 +294,28 @@ class PNGImage {
             public void write(byte[] p, int off, int len) throws Exception {
                 int end = off + len;
                 while (off < end && state[1] < rows) {
-                    int k = Math.min(end - off, raw.length - state[0]);
-                    System.arraycopy(p, off, raw, state[0], k);
+                    int k = Math.min(end - off, bytesPerRow + 1 - state[0]);
+                    if (state[0] + k > raw[0].length) {
+                        raw[0] = Arrays.copyOf(raw[0],
+                                (int) Math.min(bytesPerRow + 1, Math.max(2L * raw[0].length, state[0] + k)));
+                    }
+                    System.arraycopy(p, off, raw[0], state[0], k);
                     state[0] += k;
                     off += k;
-                    if (state[0] < raw.length) {
+                    if (state[0] < bytesPerRow + 1) {
                         return;
                     }
-                    int filter = raw[0] & 0xFF;
+                    int filter = raw[0][0] & 0xFF;
                     if (state[2] < 0 && filter > 4) {
                         state[2] = filter;
                     } else if (state[2] < 0 && each != null) {
+                        if (lines[0] == null) {
+                            lines[0] = new byte[bytesPerRow];
+                            lines[1] = new byte[bytesPerRow];
+                        }
                         byte[] line = lines[state[1] & 1];
                         byte[] prior = (state[3] == 1) ? lines[(state[1] + 1) & 1] : null;
-                        System.arraycopy(raw, 1, line, 0, bytesPerRow);
+                        System.arraycopy(raw[0], 1, line, 0, bytesPerRow);
                         unfilterLine(line, 0, prior, 0, bytesPerRow, filter, bytesPerPixel, first);
                         each.take(line);
                         state[3] = 1;
@@ -336,14 +347,18 @@ class PNGImage {
             // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
             if (tRNS != null && !BMPImage.allBytesAre(tRNS, (byte) 255)) {
                 final Compressor.ImageWriter alpha = new Compressor.ImageWriter();
-                final byte[] indexes = new byte[this.w];
-                final byte[] a = new byte[this.w];
+                // indexes and alpha, made with the first whole row
+                final byte[][] b = new byte[2][];
                 try {
                     pngRows((this.w * this.bitDepth + 7) / 8, 1, new Row() {
                         public void take(byte[] line) {
-                            paletteIndexesOf(line, indexes);
-                            paletteAlphaOf(indexes, a);
-                            alpha.write(a);
+                            if (b[0] == null) {
+                                b[0] = new byte[w];
+                                b[1] = new byte[w];
+                            }
+                            paletteIndexesOf(line, b[0]);
+                            paletteAlphaOf(b[0], b[1]);
+                            alpha.write(b[1]);
                         }
                     });
                 } catch (Exception e) {
@@ -402,31 +417,37 @@ class PNGImage {
             // Grayscale image with alpha, the alpha's first byte in the soft mask
             bytesPerRow = 2 * size * w;
             bytesPerPixel = 2 * size;
-            final byte[] gray = new byte[size * w];
-            final byte[] a = new byte[w];
+            final byte[][] b = new byte[2][];       // gray and alpha
             each = new Row() {
                 public void take(byte[] line) {
-                    for (int i = 0; i < w; i++) {
-                        System.arraycopy(line, 2 * size * i, gray, size * i, size);
-                        a[i] = line[2 * size * i + size];
+                    if (b[0] == null) {
+                        b[0] = new byte[size * w];
+                        b[1] = new byte[w];
                     }
-                    color.write(gray);
-                    alpha.write(a);
+                    for (int i = 0; i < w; i++) {
+                        System.arraycopy(line, 2 * size * i, b[0], size * i, size);
+                        b[1][i] = line[2 * size * i + size];
+                    }
+                    color.write(b[0]);
+                    alpha.write(b[1]);
                 }
             };
         } else if (colorType == 6) {
             bytesPerRow = 4 * size * w;
             bytesPerPixel = 4 * size;
-            final byte[] rgb = new byte[3 * size * w];
-            final byte[] a = new byte[w];
+            final byte[][] b = new byte[2][];       // rgb and alpha
             each = new Row() {
                 public void take(byte[] line) {
-                    for (int i = 0; i < w; i++) {
-                        System.arraycopy(line, 4 * size * i, rgb, 3 * size * i, 3 * size);
-                        a[i] = line[4 * size * i + 3 * size];
+                    if (b[0] == null) {
+                        b[0] = new byte[3 * size * w];
+                        b[1] = new byte[w];
                     }
-                    color.write(rgb);
-                    alpha.write(a);
+                    for (int i = 0; i < w; i++) {
+                        System.arraycopy(line, 4 * size * i, b[0], 3 * size * i, 3 * size);
+                        b[1][i] = line[4 * size * i + 3 * size];
+                    }
+                    color.write(b[0]);
+                    alpha.write(b[1]);
                 }
             };
         } else if (colorType == 2) {
@@ -442,19 +463,22 @@ class PNGImage {
             // Indexed image
             bytesPerRow = (w * bitDepth + 7) / 8;
             bytesPerPixel = 1;
-            final byte[] indexes = new byte[w];
-            final byte[] rgb = new byte[3 * w];
-            final byte[] a = new byte[w];
+            final byte[][] b = new byte[3][];       // indexes, rgb and alpha
             each = new Row() {
                 public void take(byte[] line) {
-                    paletteIndexesOf(line, indexes);
-                    for (int i = 0; i < w; i++) {
-                        System.arraycopy(pLTE, 3 * (indexes[i] & 0xFF), rgb, 3 * i, 3);
+                    if (b[0] == null) {
+                        b[0] = new byte[w];
+                        b[1] = new byte[3 * w];
+                        b[2] = new byte[w];
                     }
-                    color.write(rgb);
+                    paletteIndexesOf(line, b[0]);
+                    for (int i = 0; i < w; i++) {
+                        System.arraycopy(pLTE, 3 * (b[0][i] & 0xFF), b[1], 3 * i, 3);
+                    }
+                    color.write(b[1]);
                     if (tRNS != null) {
-                        paletteAlphaOf(indexes, a);
-                        alpha.write(a);
+                        paletteAlphaOf(b[0], b[2]);
+                        alpha.write(b[2]);
                     }
                 }
             };

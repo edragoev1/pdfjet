@@ -210,23 +210,30 @@ func newPNGImage(reader io.Reader) *pngImage {
 // on data shorter than the image, then on the first filter type that PNG
 // does not define, the order in which the image read whole failed.
 func (image *pngImage) pngRows(bytesPerRow, bytesPerPixel int, each func(line []byte)) bool {
-	raw := make([]byte, bytesPerRow+1)
-	lines := [2][]byte{make([]byte, bytesPerRow), make([]byte, bytesPerRow)}
+	// The row grows with the data that inflates, and the two lines are made
+	// when the first row is whole: a header of a width of millions of pixels
+	// over a few bytes of data takes memory for those bytes alone (fuzzing,
+	// 23 November 2026: 88 bytes took 1.2 GB)
+	var raw []byte
+	var lines [2][]byte
 	var prior []byte
 	first := min(bytesPerPixel, bytesPerRow)
-	fill, row, badFilter := 0, 0, -1
+	row, badFilter := 0, -1
 	length := image.h * (bytesPerRow + 1)
 	n, exact, err := decompressor.InflateExactTo(image.iDAT, length, func(p []byte) {
 		for len(p) > 0 && row < image.h {
-			k := copy(raw[fill:], p)
-			fill += k
+			k := min(len(p), bytesPerRow+1-len(raw))
+			raw = append(raw, p[:k]...)
 			p = p[k:]
-			if fill < len(raw) {
+			if len(raw) < bytesPerRow+1 {
 				return
 			}
 			if filter := raw[0]; badFilter < 0 && filter > 4 {
 				badFilter = int(filter)
 			} else if badFilter < 0 && each != nil {
+				if lines[0] == nil {
+					lines = [2][]byte{make([]byte, bytesPerRow), make([]byte, bytesPerRow)}
+				}
 				line := lines[row&1]
 				copy(line, raw[1:])
 				unfilterLine(line, prior, filter, bytesPerPixel, first)
@@ -234,7 +241,7 @@ func (image *pngImage) pngRows(bytesPerRow, bytesPerPixel int, each func(line []
 				prior = line
 			}
 			row++
-			fill = 0
+			raw = raw[:0]
 		}
 	})
 	if err != nil {
@@ -265,8 +272,7 @@ func (image *pngImage) embedIDAT() {
 		// A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
 		if image.tRNS != nil && !allBytesAre(image.tRNS, 255) {
 			alpha := compressor.NewImageWriter()
-			indexes := make([]byte, image.w)
-			a := make([]byte, image.w)
+			var indexes, a []byte
 			defer func() {
 				if r := recover(); r != nil {
 					alpha.Discard()
@@ -274,6 +280,9 @@ func (image *pngImage) embedIDAT() {
 				}
 			}()
 			image.pngRows((image.w*image.bitDepth+7)/8, 1, func(line []byte) {
+				if a == nil {
+					indexes, a = make([]byte, image.w), make([]byte, image.w)
+				}
 				image.paletteIndexesOf(line, indexes)
 				image.paletteAlphaOf(indexes, a)
 				alpha.Write(a)
@@ -296,7 +305,8 @@ func (image *pngImage) setAlpha(alpha *compressor.ImageWriter) {
 }
 
 // decode decodes the samples of the rows of the image as they inflate, a
-// row at a time, and deflates them as each row is undone; and the alpha, of
+// row at a time, its buffers made with the first whole row, as pngRows makes
+// its own, and deflates them as each row is undone; and the alpha, of
 // a grayscale or truecolor image with alpha or of a palette image's tRNS
 // chunk, for its soft mask.
 func (image *pngImage) decode() {
@@ -326,9 +336,11 @@ func (image *pngImage) decode() {
 	case 4:
 		// Grayscale image with alpha, the alpha's first byte in the soft mask
 		bytesPerRow, bytesPerPixel = 2*size*w, 2*size
-		gray := make([]byte, size*w)
-		a := make([]byte, w)
+		var gray, a []byte
 		each = func(line []byte) {
+			if a == nil {
+				gray, a = make([]byte, size*w), make([]byte, w)
+			}
 			for i := 0; i < w; i++ {
 				copy(gray[size*i:size*i+size], line[2*size*i:2*size*i+size])
 				a[i] = line[2*size*i+size]
@@ -338,9 +350,11 @@ func (image *pngImage) decode() {
 		}
 	case 6:
 		bytesPerRow, bytesPerPixel = 4*size*w, 4*size
-		rgb := make([]byte, 3*size*w)
-		a := make([]byte, w)
+		var rgb, a []byte
 		each = func(line []byte) {
+			if a == nil {
+				rgb, a = make([]byte, 3*size*w), make([]byte, w)
+			}
 			for i := 0; i < w; i++ {
 				copy(rgb[3*size*i:3*size*i+3*size], line[4*size*i:4*size*i+3*size])
 				a[i] = line[4*size*i+3*size]
@@ -355,10 +369,11 @@ func (image *pngImage) decode() {
 	default:
 		// Indexed image
 		bytesPerRow, bytesPerPixel = (w*image.bitDepth+7)/8, 1
-		indexes := make([]byte, w)
-		rgb := make([]byte, 3*w)
-		a := make([]byte, w)
+		var indexes, rgb, a []byte
 		each = func(line []byte) {
+			if a == nil {
+				indexes, rgb, a = make([]byte, w), make([]byte, 3*w), make([]byte, w)
+			}
 			image.paletteIndexesOf(line, indexes)
 			for i, k := range indexes {
 				copy(rgb[3*i:3*i+3], image.pLTE[3*int(k):3*int(k)+3])

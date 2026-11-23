@@ -16,8 +16,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 

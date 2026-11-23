@@ -216,6 +216,11 @@ Each is described in detail below.
   108 MB and 2.0 s in C#, not 1.3 GB and 2.6 s, the most of it the runtime's
   own. The PDF is the same, byte for byte, and a broken PNG fails in the
   same words. Swift unchanged.
+  Its buffers grow with the data as it inflates, not with the width the
+  header claims: an 88-byte PNG claiming a row of 808 million pixels took
+  1.2 GB in Go before it failed as data shorter than the image, and now
+  takes less than 1 MB (found by fuzzing, FuzzPNGImage). Tests in Go, Java
+  and C#.
 - **Smaller glyphs from `drawGlyphs`**, in the four ports. Each glyph's
   outline is written in whole units of the font, where the control points of
   a TrueType quadratic curve drawn as a cubic one had two decimals; they move

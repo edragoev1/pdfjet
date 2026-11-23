@@ -267,8 +267,11 @@ internal class PNGImage {
     // PNG does not define, the order in which the image read whole failed.
     private bool PngRows(int bytesPerRow, int bytesPerPixel, Action<byte[]> each) {
         int rows = h;
-        byte[] raw = new byte[bytesPerRow + 1];
-        byte[][] lines = { new byte[bytesPerRow], new byte[bytesPerRow] };
+        // The row grows with the data that inflates, and the two lines are
+        // made when the first row is whole: a header of a width of millions of
+        // pixels over a few bytes of data takes memory for those bytes alone
+        byte[] raw = new byte[Math.Min(bytesPerRow + 1, 32 * 1024)];
+        byte[][] lines = new byte[2][];
         int first = Math.Min(bytesPerPixel, bytesPerRow);
         int fill = 0;
         int row = 0;
@@ -278,17 +281,25 @@ internal class PNGImage {
         int n = Decompressor.InflateExactTo(iDAT, (int) length, (p, off, len) => {
             int end = off + len;
             while (off < end && row < rows) {
-                int k = Math.Min(end - off, raw.Length - fill);
+                int k = Math.Min(end - off, bytesPerRow + 1 - fill);
+                if (fill + k > raw.Length) {
+                    Array.Resize(ref raw,
+                            (int) Math.Min(bytesPerRow + 1, Math.Max(2L * raw.Length, fill + k)));
+                }
                 Array.Copy(p, off, raw, fill, k);
                 fill += k;
                 off += k;
-                if (fill < raw.Length) {
+                if (fill < bytesPerRow + 1) {
                     return;
                 }
                 int filter = raw[0];
                 if (badFilter < 0 && filter > 4) {
                     badFilter = filter;
                 } else if (badFilter < 0 && each != null) {
+                    if (lines[0] == null) {
+                        lines[0] = new byte[bytesPerRow];
+                        lines[1] = new byte[bytesPerRow];
+                    }
                     byte[] line = lines[row & 1];
                     Array.Copy(raw, 1, line, 0, bytesPerRow);
                     UnfilterLine(line, prior, bytesPerRow, filter, bytesPerPixel, first);
@@ -322,10 +333,14 @@ internal class PNGImage {
             // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
             if (tRNS != null && !BMPImage.AllBytesAre(tRNS, 255)) {
                 var alpha = new Compressor.ImageWriter();
-                byte[] indexes = new byte[w];
-                byte[] a = new byte[w];
+                byte[] indexes = null;
+                byte[] a = null;
                 try {
                     PngRows((w * bitDepth + 7) / 8, 1, line => {
+                        if (a == null) {
+                            indexes = new byte[w];
+                            a = new byte[w];
+                        }
                         PaletteIndexesOf(line, indexes);
                         PaletteAlphaOf(indexes, a);
                         alpha.Write(a);
@@ -383,9 +398,13 @@ internal class PNGImage {
             // Grayscale image with alpha, the alpha's first byte in the soft mask
             bytesPerRow = 2 * size * w;
             bytesPerPixel = 2 * size;
-            byte[] gray = new byte[size * w];
-            byte[] a = new byte[w];
+            byte[] gray = null;
+            byte[] a = null;
             each = line => {
+                if (a == null) {
+                    gray = new byte[size * w];
+                    a = new byte[w];
+                }
                 for (int i = 0; i < w; i++) {
                     Array.Copy(line, 2 * size * i, gray, size * i, size);
                     a[i] = line[2 * size * i + size];
@@ -396,9 +415,13 @@ internal class PNGImage {
         } else if (colorType == 6) {
             bytesPerRow = 4 * size * w;
             bytesPerPixel = 4 * size;
-            byte[] rgb = new byte[3 * size * w];
-            byte[] a = new byte[w];
+            byte[] rgb = null;
+            byte[] a = null;
             each = line => {
+                if (a == null) {
+                    rgb = new byte[3 * size * w];
+                    a = new byte[w];
+                }
                 for (int i = 0; i < w; i++) {
                     Array.Copy(line, 4 * size * i, rgb, 3 * size * i, 3 * size);
                     a[i] = line[4 * size * i + 3 * size];
@@ -415,10 +438,15 @@ internal class PNGImage {
             // Indexed image
             bytesPerRow = (w * bitDepth + 7) / 8;
             bytesPerPixel = 1;
-            byte[] indexes = new byte[w];
-            byte[] rgb = new byte[3 * w];
-            byte[] a = new byte[w];
+            byte[] indexes = null;
+            byte[] rgb = null;
+            byte[] a = null;
             each = line => {
+                if (a == null) {
+                    indexes = new byte[w];
+                    rgb = new byte[3 * w];
+                    a = new byte[w];
+                }
                 PaletteIndexesOf(line, indexes);
                 for (int i = 0; i < w; i++) {
                     Array.Copy(pLTE, 3 * indexes[i], rgb, 3 * i, 3);

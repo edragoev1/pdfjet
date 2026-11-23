@@ -292,6 +292,27 @@ class PNGImageTest {
                 decodeError(png(2, 1, 8, 2, null, Compressor.deflate(rows))));
     }
 
+    // A PNG whose header claims rows of tens of millions of pixels over a few
+    // bytes of image data fails as data shorter than the image, and takes
+    // memory for the data it has, not for the rows it claims: fuzzing found
+    // 88 bytes that took 1.2 GB.
+    @Test
+    void aWideHeaderOverLittleDataTakesLittleMemory() {
+        com.sun.management.ThreadMXBean threads =
+                (com.sun.management.ThreadMXBean) java.lang.management.ManagementFactory.getThreadMXBean();
+        long thread = Thread.currentThread().getId();
+        byte[] idat = Compressor.deflate(new byte[1]);
+        for (byte[] png : new byte[][] {
+                png(60000000, 1, 8, 0, null, idat),             // Gray, its IDAT embedded
+                png(20000000, 2, 8, 6, null, idat),             // RGB and alpha, decoded
+                png(50000000, 1, 8, 3, new byte[6], idat)}) {   // Palette, decoded
+            long before = threads.getThreadAllocatedBytes(thread);
+            assertEquals("The PNG image data is shorter than the image.", decodeError(png));
+            long allocated = threads.getThreadAllocatedBytes(thread) - before;
+            assertTrue(allocated < 16 << 20, allocated + " bytes allocated");
+        }
+    }
+
     @Test
     void rejectsAnImageLargerThanTheLimitBeforeDecodingIt() {
         // 20000 x 20000 RGB samples are 1.2 GB.

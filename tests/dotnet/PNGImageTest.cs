@@ -196,6 +196,24 @@ public class PNGImageTest {
 
     // A PNG file with the IHDR of the size, bit depth and color type, a PLTE
     // chunk when there is a palette, and one IDAT chunk.
+    // A PNG whose header claims rows of tens of millions of pixels over a few
+    // bytes of image data fails as data shorter than the image, and takes
+    // memory for the data it has, not for the rows it claims: fuzzing found
+    // 88 bytes that took 1.2 GB.
+    [Fact]
+    public void AWideHeaderOverLittleDataTakesLittleMemory() {
+        byte[] idat = Compressor.Deflate(new byte[1]);
+        foreach (byte[] png in new byte[][] {
+                Png(60000000, 1, 8, 0, null, idat),             // Gray, its IDAT embedded
+                Png(20000000, 2, 8, 6, null, idat),             // RGB and alpha, decoded
+                Png(50000000, 1, 8, 3, new byte[6], idat)}) {   // Palette, decoded
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            Assert.Equal("The PNG image data is shorter than the image.", DecodeError(png));
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.True(allocated < 16 << 20, allocated + " bytes allocated");
+        }
+    }
+
     private static byte[] Png(int width, int height, int bitDepth, int colorType, byte[] palette, byte[] idat) {
         return Png(width, height, bitDepth, colorType, 0, 0, palette, idat);
     }

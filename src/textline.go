@@ -51,8 +51,8 @@ type TextLine struct {
 	structureType      structelem.StructElem
 	// The glyphs a shaper found, of text such as Hindi or Khmer, drawn as
 	// outlines in place of the text; nil for text drawn as text
-	shaped    *shapedLine    // A TextBlock's line, shaped with its paragraph
-	pieces    *shapedPieces // The texts this line and its copies shaped
+	shaped *shapedLine   // A TextBlock's line, shaped with its paragraph
+	pieces *shapedPieces // The texts this line and its copies shaped
 	// True for a line of a right to left paragraph of a TextBlock, aligned
 	// to the right
 	rightToLeft bool
