@@ -1030,7 +1030,9 @@ public class TextBlock : Drawable {
     private func rightAlignText(_ textLines: [TextLine]) {
         let textAreaWidth = self.textAreaWidth()
         for textLine in textLines {
-            textLine.xOffset = textAreaWidth - widthOf(textLine)
+            // A line wider than the block, as a word a shaper cannot break,
+            // starts at its left side, as with LEFT, and overflows to the right
+            textLine.xOffset = max(0, textAreaWidth - widthOf(textLine))
         }
     }
 
@@ -1043,7 +1045,7 @@ public class TextBlock : Drawable {
     private func centerText(_ textLines: [TextLine]) {
         let textAreaWidth = self.textAreaWidth()
         for textLine in textLines {
-            textLine.xOffset = (textAreaWidth - widthOf(textLine)) / 2.0
+            textLine.xOffset = max(0, (textAreaWidth - widthOf(textLine)) / 2.0)
         }
     }
 

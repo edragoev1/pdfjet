@@ -507,4 +507,23 @@ class TextBlockShapedTest {
         assertTrue(m.find());
         assertEquals(50f, Float.parseFloat(m.group(1)));
     }
+
+    // A line wider than its block, as a word a shaper cannot break, starts at
+    // the block's left side when aligned to the right or the center: it was
+    // drawn left of the block (found by FuzzTextBlockLayout)
+    @Test
+    void aLineWiderThanItsBlockStartsAtItsLeft() throws Exception {
+        for (Alignment alignment : new Alignment[] {Alignment.RIGHT, Alignment.CENTER}) {
+            PDF pdf = new PDF(new ByteArrayOutputStream());
+            Font font = new Font(pdf, DEVANAGARI);
+            int k = font.unicodeToGID.get(0x0915);
+            FixedShaper shaper = new FixedShaper(new ShapedLine(0, 6, new int[6], new int[] {k, k, k, k, k, k},
+                    new float[] {0f, 0f, 7f, 0f, 14f, 0f, 21f, 0f, 28f, 0f, 35f, 0f}, 42f));
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextBlock(font, "कखगघङच").setShaper(shaper).setTextAlignment(alignment)
+                    .setWidth(31f).setLocation(20f, 20f).drawOn(page);
+            assertEquals(20f, places(TestSupport.content(page)).get(0)[1], alignment.toString());
+            pdf.complete();
+        }
+    }
 }

@@ -1183,7 +1183,9 @@ public class TextBlock implements Drawable {
     private void rightAlignText(TextLine[] textLines) {
         float textAreaWidth = textAreaWidth();
         for (TextLine textLine : textLines) {
-            textLine.xOffset = textAreaWidth - widthOf(textLine);
+            // A line wider than the block, as a word a shaper cannot break,
+            // starts at its left side, as with LEFT, and overflows to the right
+            textLine.xOffset = Math.max(0f, textAreaWidth - widthOf(textLine));
         }
     }
 
@@ -1196,7 +1198,7 @@ public class TextBlock implements Drawable {
     private void centerText(TextLine[] textLines) {
         float textAreaWidth = textAreaWidth();
         for (TextLine textLine : textLines) {
-            textLine.xOffset = (textAreaWidth - widthOf(textLine)) / 2f;
+            textLine.xOffset = Math.max(0f, (textAreaWidth - widthOf(textLine)) / 2f);
         }
     }
 

@@ -406,6 +406,25 @@ public class TextBlockShapedTest {
         Assert.Equal(50f, float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture));
     }
 
+    // A line wider than its block, as a word a shaper cannot break, starts at
+    // the block's left side when aligned to the right or the center: it was
+    // drawn left of the block (found by FuzzTextBlockLayout)
+    [Theory]
+    [InlineData(Alignment.RIGHT)]
+    [InlineData(Alignment.CENTER)]
+    public void ALineWiderThanItsBlockStartsAtItsLeft(Alignment alignment) {
+        PDF pdf = new PDF(new MemoryStream());
+        Font font = new Font(pdf, TestSupport.RepoPath(DEVANAGARI));
+        int k = font.unicodeToGID.Get(0x0915);
+        FixedShaper shaper = new FixedShaper(new ShapedLine(0, 6, new int[6], new int[] {k, k, k, k, k, k},
+                new float[] {0f, 0f, 7f, 0f, 14f, 0f, 21f, 0f, 28f, 0f, 35f, 0f}, 42f));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, "कखगघङच").SetShaper(shaper).SetTextAlignment(alignment)
+                .SetWidth(31f).SetLocation(20f, 20f).DrawOn(page);
+        Assert.Equal(20f, Places(TestSupport.Content(page))[0][1]);
+        pdf.Complete();
+    }
+
     // TextLine with text such as Hindi: shaped as one line, drawn as glyphs,
     // tagged with its text, its width the glyphs'.
     [Fact]

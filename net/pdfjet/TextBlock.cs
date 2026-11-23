@@ -1000,7 +1000,9 @@ public class TextBlock : IDrawable {
     private void RightAlignText(TextLine[] textLines) {
         float textAreaWidth = TextAreaWidth();
         foreach (TextLine textLine in textLines) {
-            textLine.xOffset = textAreaWidth - WidthOf(textLine);
+            // A line wider than the block, as a word a shaper cannot break,
+            // starts at its left side, as with LEFT, and overflows to the right
+            textLine.xOffset = Math.Max(0f, textAreaWidth - WidthOf(textLine));
         }
     }
 
@@ -1013,7 +1015,7 @@ public class TextBlock : IDrawable {
     private void CenterText(TextLine[] textLines) {
         float textAreaWidth = TextAreaWidth();
         foreach (TextLine textLine in textLines) {
-            textLine.xOffset = (textAreaWidth - WidthOf(textLine)) / 2f;
+            textLine.xOffset = Math.Max(0f, (textAreaWidth - WidthOf(textLine)) / 2f);
         }
     }
 

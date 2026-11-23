@@ -510,3 +510,41 @@ func TestUntaggedShapedTextCarriesItsText(t *testing.T) {
 	}
 	doc.complete()
 }
+
+// testOneLineShaper shapes the text as one line, each character a glyph 7
+// points wide: a word that cannot be broken
+type testOneLineShaper struct {
+	font *Font
+}
+
+func (shaper *testOneLineShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
+	line := ShapedLine{End: len(request.Text)}
+	for _, r := range request.Text {
+		line.FontIndexes = append(line.FontIndexes, 0)
+		line.Glyphs = append(line.Glyphs, shaper.font.unicodeToGID.get(r))
+		line.Positions = append(line.Positions, line.Width, 0)
+		line.Width += 7
+	}
+	return []ShapedLine{line}, nil
+}
+
+// A line wider than its block, as a word a shaper cannot break, starts at
+// the block's left side when aligned to the right or the center, and
+// overflows to the right: it was drawn left of the block (found by
+// FuzzTextBlockLayout)
+func TestALineWiderThanItsBlockStartsAtItsLeft(t *testing.T) {
+	for _, align := range []alignment.Alignment{alignment.Right, alignment.Center} {
+		doc := testNewDoc()
+		font := NewFontFromFile(doc.pdf, testRepoPath(t, testComplexDevanagari))
+		page := NewPage(doc.pdf, letter.Portrait())
+		block := NewTextBlock(font, "कखगघङच").SetShaper(&testOneLineShaper{font}).SetTextAlignment(align)
+		block.SetWidth(31)
+		block.SetLocation(20, 20)
+		block.DrawOn(page)
+		m := regexp.MustCompile(`q \S+ 0 0 \S+ (\S+) \S+ cm /Fm`).FindStringSubmatch(testContent(page))
+		if m == nil || testNumber(t, m[1]) != 20 {
+			t.Errorf("%v: not at the block's left side:\n%s", align, testContent(page))
+		}
+		doc.complete()
+	}
+}

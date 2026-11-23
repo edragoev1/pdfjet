@@ -92,6 +92,10 @@ Each is described in detail below.
   `ComplexText` is gone; `new ComplexText(hindi, text)` is `new
   TextBlock(hindi, text)`, and a TextBlock does not flow from page to page:
   draw one a paragraph, measured first with `drawOn(null)`.
+- **A line wider than its TextBlock starts at its left side** when aligned
+  to the right or the center, and overflows to the right, as with LEFT: a
+  word a shaper cannot break, wider than the block, was drawn left of it,
+  outside the block (found by fuzzing, FuzzTextBlockLayout).
 - **A TextBlock paragraph whose first letter is Arabic or Hebrew is right
   to left by itself,** aligned to the right, where it was drawn left to
   right unless `setRightToLeft(true)` was called; `setRightToLeft`, true or

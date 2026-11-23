@@ -1072,7 +1072,9 @@ func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32)
 func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 	textAreaWidth := textBlock.textAreaWidth()
 	for _, textLine := range textLines {
-		textLine.xOffset = textAreaWidth - textBlock.widthOf(textLine)
+		// A line wider than the block, as a word a shaper cannot break,
+		// starts at its left side, as with Left, and overflows to the right
+		textLine.xOffset = max(0, textAreaWidth-textBlock.widthOf(textLine))
 	}
 }
 
@@ -1090,7 +1092,7 @@ func (textBlock *TextBlock) widthOf(textLine *TextLine) float32 {
 func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	textAreaWidth := textBlock.textAreaWidth()
 	for _, textLine := range textLines {
-		textLine.xOffset = float32((textAreaWidth - textBlock.widthOf(textLine)) / 2.0)
+		textLine.xOffset = max(0, float32((textAreaWidth-textBlock.widthOf(textLine))/2.0))
 	}
 }
 

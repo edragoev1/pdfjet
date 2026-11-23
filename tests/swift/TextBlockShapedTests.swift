@@ -432,6 +432,24 @@ import Testing
         #expect(tm?.hasPrefix("1 0 0 1 50 ") == true, "\(tm ?? "")")
     }
 
+    // A line wider than its block, as a word a shaper cannot break, starts at
+    // the block's left side when aligned to the right or the center: it was
+    // drawn left of the block (found by FuzzTextBlockLayout)
+    @Test func aLineWiderThanItsBlockStartsAtItsLeft() throws {
+        for alignment in [Alignment.RIGHT, Alignment.CENTER] {
+            let memory = MemoryPDF()
+            let font = try Font(memory.pdf, TextBlockShapedTests.devanagari)
+            let k = font.unicodeToGID[0x0915]
+            let shaper = FixedShaper([ShapedLine(0, 6, [0, 0, 0, 0, 0, 0], [k, k, k, k, k, k],
+                    [0, 0, 7, 0, 14, 0, 21, 0, 28, 0, 35, 0], 42)])
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            TextBlock(font, "कखगघङच").setShaper(shaper).setTextAlignment(alignment)
+                    .setWidth(31).setLocation(20, 20).drawOn(page)
+            #expect(places(TestSupport.content(page)).first?[1] == 20, "\(alignment)")
+            try memory.pdf.complete()
+        }
+    }
+
 #if os(Linux)
     // On Linux, without a shaper set, TextBlock does not run hb-shape, even
     // where it is installed: it says to set HBShape, so that a program
