@@ -297,11 +297,7 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 		// The page starts at the corner of its /MediaBox: at 0, 0 of a box
 		// of [100 100 712 892] the drawing was outside the page (review of
 		// 12 October 2026, F2)
-		page.appendString("1 0 0 1 ")
-		page.appendFloat32(x0)
-		page.appendString(" ")
-		page.appendFloat32(y0)
-		page.appendString(" cm\n")
+		page.appendTranslation(x0, y0)
 	}
 	if pageObj.gsNumber != -1 {
 		page.appendString("/GS")
@@ -3595,19 +3591,30 @@ func (page *Page) appendByteArray(a []byte) {
 
 // rotateAroundCenter rotates the coordinate system around the specified center.
 func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(centerX)
-	page.appendString(" ")
-	page.appendFloat32(centerY)
-	page.appendString(" cm\n")
+	page.appendTranslation(centerX, centerY)
 
 	radians := float64(float64(float64(degrees)*math.Pi) / 180)
 	page.appendRotation(float32(math.Cos(radians)), float32(math.Sin(radians)))
 
+	page.appendTranslation(-centerX, -centerY)
+}
+
+// appendTranslation appends the cm operator that moves the origin by x and y.
+func (page *Page) appendTranslation(x, y float32) {
 	page.appendString("1 0 0 1 ")
-	page.appendFloat32(-centerX)
+	page.appendFloat32(x)
 	page.appendString(" ")
-	page.appendFloat32(-centerY)
+	page.appendFloat32(y)
+	page.appendString(" cm\n")
+}
+
+// appendMatrix appends the cm operator of the matrix a b c d e f.
+func (page *Page) appendMatrix(a, b, c, d, e, f float32) {
+	for _, value := range [5]float32{a, b, c, d, e} {
+		page.appendFloat32(value)
+		page.appendString(" ")
+	}
+	page.appendFloat32(f)
 	page.appendString(" cm\n")
 }
 

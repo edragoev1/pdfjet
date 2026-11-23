@@ -630,18 +630,10 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	drawY := (page.height - s.height) - s.y
 
 	// 5. POSITION: move to desired location on page
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(drawX)
-	page.appendString(" ")
-	page.appendFloat32(drawY)
-	page.appendString(" cm\n")
+	page.appendTranslation(drawX, drawY)
 
 	// 4. MOVE BACK: after rotation
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(float32(s.width / 2))
-	page.appendString(" ")
-	page.appendFloat32(float32(s.height / 2))
-	page.appendString(" cm\n")
+	page.appendTranslation(float32(s.width/2), float32(s.height/2))
 
 	// 3. ROTATE: rotate around origin
 	radians := float64(float64(s.rotateDegrees) * (math.Pi / 180))
@@ -656,11 +648,7 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	}
 
 	// 2. MOVE: move the center of the object to origin
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(float32(-s.width / 2))
-	page.appendString(" ")
-	page.appendFloat32(float32(-s.height / 2))
-	page.appendString(" cm\n")
+	page.appendTranslation(float32(-s.width/2), float32(-s.height/2))
 
 	// 1. DRAW: draw the object
 	page.appendString(page.resourceName("/XObject", "/Fm", s.objNumber, nil, s.objNumber))

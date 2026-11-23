@@ -163,21 +163,13 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 
 	// 1) Translate container to its final position
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(c.x)
-	page.appendByte(' ')
-	page.appendFloat32(-c.y)
-	page.appendString(" cm\n")
+	page.appendTranslation(c.x, -c.y)
 
 	cx := float32(c.width / 2)
 	cy := float32(c.height / 2)
 
 	// 2) Move origin to container center
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(cx)
-	page.appendByte(' ')
-	page.appendFloat32(page.height - cy)
-	page.appendString(" cm\n")
+	page.appendTranslation(cx, page.height-cy)
 
 	// 3) Rotate around container center
 	rad := float64(float64(c.rotateDegrees) * (math.Pi / 180.0))
@@ -192,11 +184,7 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendString(" 0 0 cm\n")
 
 	// 5) Move origin back for child drawing
-	page.appendString("1 0 0 1 ")
-	page.appendFloat32(-cx)
-	page.appendByte(' ')
-	page.appendFloat32(-(page.height - cy))
-	page.appendString(" cm\n")
+	page.appendTranslation(-cx, -(page.height - cy))
 
 	// 6) Draw children elements. What the page does not move with the cm
 	// operators above, the rectangles of the links and of the annotations and
