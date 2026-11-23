@@ -549,19 +549,7 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 				kept[component] = true
 				stack = append(stack, component)
 			}
-			at += 4
-			if flags&0x0001 != 0 { // ARG_1_AND_2_ARE_WORDS
-				at += 4
-			} else {
-				at += 2
-			}
-			if flags&0x0008 != 0 { // WE_HAVE_A_SCALE
-				at += 2
-			} else if flags&0x0040 != 0 { // WE_HAVE_AN_X_AND_Y_SCALE
-				at += 4
-			} else if flags&0x0080 != 0 { // WE_HAVE_A_TWO_BY_TWO
-				at += 8
-			}
+			at += componentLength(flags)
 			if flags&0x0020 == 0 { // MORE_COMPONENTS
 				break
 			}
@@ -745,23 +733,31 @@ func renumberComponents(glyph []byte, newGID []int) bool {
 			return false
 		}
 		glyph[at+2], glyph[at+3] = byte(newGID[component]>>8), byte(newGID[component])
-		at += 4
-		if flags&0x0001 != 0 { // ARG_1_AND_2_ARE_WORDS
-			at += 4
-		} else {
-			at += 2
-		}
-		if flags&0x0008 != 0 { // WE_HAVE_A_SCALE
-			at += 2
-		} else if flags&0x0040 != 0 { // WE_HAVE_AN_X_AND_Y_SCALE
-			at += 4
-		} else if flags&0x0080 != 0 { // WE_HAVE_A_TWO_BY_TWO
-			at += 8
-		}
+		at += componentLength(flags)
 		if flags&0x0020 == 0 { // MORE_COMPONENTS
 			return true
 		}
 	}
+}
+
+// componentLength returns the length of a part of a composite glyph with the
+// flags: its flags and its glyph number, its two arguments, of a byte or of
+// two, and its scale or matrix, if it has one.
+func componentLength(flags int) int {
+	length := 4
+	if flags&0x0001 != 0 { // ARG_1_AND_2_ARE_WORDS
+		length += 4
+	} else {
+		length += 2
+	}
+	if flags&0x0008 != 0 { // WE_HAVE_A_SCALE
+		length += 2
+	} else if flags&0x0040 != 0 { // WE_HAVE_AN_X_AND_Y_SCALE
+		length += 4
+	} else if flags&0x0080 != 0 { // WE_HAVE_A_TWO_BY_TWO
+		length += 8
+	}
+	return length
 }
 
 // tableChecksum is the sum of the big-endian 32-bit words of the data, the
