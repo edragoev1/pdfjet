@@ -6,10 +6,8 @@
 package pdfjet
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 
@@ -37,17 +35,9 @@ func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFi
 	// A Windows path too: its folders gave the name of the user away (review of
 	// 30 October 2026, F1)
 	fileName := filePath[strings.LastIndexAny(filePath, "/\\")+1:]
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			panic("Error closing file: " + err.Error())
-		}
-	}(file)
-	return NewEmbeddedFile(pdf, fileName, bufio.NewReader(file), compress)
+	return readFile(filePath, func(reader io.Reader) *EmbeddedFile {
+		return NewEmbeddedFile(pdf, fileName, reader, compress)
+	})
 }
 
 // NewEmbeddedFile is the constructor.

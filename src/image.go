@@ -12,14 +12,12 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"runtime"
 	"slices"
 	"strconv"
@@ -68,17 +66,9 @@ type Image struct {
 // NewImageFromFile creates an image from the PNG, BMP or JPEG file at the specified path.
 // It panics if the extension is not supported or the file cannot be opened.
 func NewImageFromFile(pdf *PDF, filePath string) *Image {
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			panic("Error closing file: " + err.Error())
-		}
-	}(file)
-	return NewImage(pdf, bufio.NewReader(file))
+	return readFile(filePath, func(reader io.Reader) *Image {
+		return NewImage(pdf, reader)
+	})
 }
 
 // NewImage the main constructor for the Image class.

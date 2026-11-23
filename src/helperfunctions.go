@@ -6,10 +6,12 @@
 package pdfjet
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"unicode"
@@ -565,4 +567,21 @@ func isDecimalNumber(text string) bool {
 		}
 	}
 	return i == len(text)
+}
+
+// readFile opens the file at the path, gives read a buffered reader of it,
+// and closes it when read returns. It panics if the file cannot be opened or
+// closed.
+func readFile[T any](filePath string, read func(io.Reader) T) T {
+	file, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic("Error closing file: " + err.Error())
+		}
+	}(file)
+	return read(bufio.NewReader(file))
 }
