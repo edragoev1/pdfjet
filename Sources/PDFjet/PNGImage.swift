@@ -663,8 +663,9 @@ class PNGImage {
     }
 
     // Returns whichever of the bytes on the left, above and above on the left
-    // is nearest to their sum less the one above on the left.
-    private static func paeth(_ a: Int, _ b: Int, _ c: Int) -> Int {
+    // is nearest to their sum less the one above on the left. The predictor
+    // of a stream read from a PDF uses it too.
+    static func paeth(_ a: Int, _ b: Int, _ c: Int) -> Int {
         let pa = abs(b - c)         // p - a, where p = a + b - c
         let pb = abs(a - c)         // p - b
         let pc = abs(a + b - 2*c)   // p - c

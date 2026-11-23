@@ -101,22 +101,11 @@ private func applyPNGPredictor(_ data: [UInt8], _ bytesPerPixel: Int, _ rowLengt
             } else if filter == 3 {     // Average
                 value += (left + up) / 2
             } else if filter == 4 {     // Paeth
-                value += paeth(left, up, upLeft)
+                value += PNGImage.paeth(left, up, upLeft)
             }                           // 0 is None, and so are unknown types.
             decoded[j] = UInt8(value & 0xFF)
             j += 1
         }
     }
     return decoded
-}
-
-private func paeth(_ left: Int, _ up: Int, _ upLeft: Int) -> Int {
-    let p = left + up - upLeft
-    let pLeft = abs(p - left)
-    let pUp = abs(p - up)
-    let pUpLeft = abs(p - upLeft)
-    if pLeft <= pUp && pLeft <= pUpLeft {
-        return left
-    }
-    return (pUp <= pUpLeft) ? up : upLeft
 }
