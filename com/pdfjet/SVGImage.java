@@ -2066,18 +2066,7 @@ public class SVGImage implements Drawable {
             boolean strokePass = (pass == 0) == path.strokeFirst;
             if (!strokePass && fill) {
                 page.setBrushColor(path.fill);
-                for (PathOp op : path.operations) {
-                    if (op.cmd == 'M') {
-                        page.moveTo(op.x + x, op.y + y);
-                    } else if (op.cmd == 'L') {
-                        page.lineTo(op.x + x, op.y + y);
-                    } else if (op.cmd == 'C') {
-                        page.curveTo(
-                            op.x1 + x, op.y1 + y,
-                            op.x2 + x, op.y2 + y,
-                            op.x + x, op.y + y);
-                    }
-                }
+                appendPath(page, path.operations, false);
                 if (path.evenOdd) {
                     page.append("f*\n");
                 } else {
@@ -2090,26 +2079,33 @@ public class SVGImage implements Drawable {
                 page.setPenWidth(path.strokeWidth);
                 // Z closes a subpath, and the path is stroked once, all of its
                 // subpaths together, as SVG strokes it.
-                for (PathOp op : path.operations) {
-                    if (op.cmd == 'M') {
-                        page.moveTo(op.x + x, op.y + y);
-                    } else if (op.cmd == 'L') {
-                        page.lineTo(op.x + x, op.y + y);
-                    } else if (op.cmd == 'C') {
-                        page.curveTo(
-                            op.x1 + x, op.y1 + y,
-                            op.x2 + x, op.y2 + y,
-                            op.x + x, op.y + y);
-                    } else if (op.cmd == 'Z') {
-                        page.append("h\n");
-                    }
-                }
+                appendPath(page, path.operations, true);
                 page.strokePath();
             }
         }
 
         if (state) {
             page.restoreGraphicsState();
+        }
+    }
+
+    // Writes the moves, lines and curves of the path, moved to x, y; and its
+    // closes too, h, when the subpaths are closed: for a stroke and a clip,
+    // and not for a fill, which closes them itself.
+    private void appendPath(Page page, List<PathOp> operations, boolean close) {
+        for (PathOp op : operations) {
+            if (op.cmd == 'M') {
+                page.moveTo(op.x + x, op.y + y);
+            } else if (op.cmd == 'L') {
+                page.lineTo(op.x + x, op.y + y);
+            } else if (op.cmd == 'C') {
+                page.curveTo(
+                    op.x1 + x, op.y1 + y,
+                    op.x2 + x, op.y2 + y,
+                    op.x + x, op.y + y);
+            } else if (op.cmd == 'Z' && close) {
+                page.append("h\n");
+            }
         }
     }
 
@@ -2123,17 +2119,7 @@ public class SVGImage implements Drawable {
                 clipToText(clip, page);
                 continue;
             }
-            for (PathOp op : clip.operations) {
-                if (op.cmd == 'M') {
-                    page.moveTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'L') {
-                    page.lineTo(op.x + x, op.y + y);
-                } else if (op.cmd == 'C') {
-                    page.curveTo(op.x1 + x, op.y1 + y, op.x2 + x, op.y2 + y, op.x + x, op.y + y);
-                } else if (op.cmd == 'Z') {
-                    page.append("h\n");
-                }
-            }
+            appendPath(page, clip.operations, true);
             if (clip.evenOdd) {
                 page.append("W*\nn\n");
             } else {
