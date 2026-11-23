@@ -570,15 +570,7 @@ func (page *Page) drawString(
 
 	if colors == nil {
 		page.SetBrushColorRGB(brush)
-		if font.isCoreFont {
-			page.appendString("[<")
-			page.drawASCIIString(font, str)
-			page.appendString(">] TJ\n")
-		} else {
-			page.appendString("<")
-			page.drawUnicodeString(font, str)
-			page.appendString("> Tj\n")
-		}
+		page.showString(font, str)
 	} else {
 		page.drawColoredString(font, str, brush, colors)
 	}
@@ -611,15 +603,7 @@ func (page *Page) showSVGText(font *Font, str string, tm [6]float32) {
 		page.appendString(" ")
 	}
 	page.appendString("Tm\n")
-	if font.isCoreFont {
-		page.appendString("[<")
-		page.drawASCIIString(font, str)
-		page.appendString(">] TJ\n")
-	} else {
-		page.appendString("<")
-		page.drawUnicodeString(font, str)
-		page.appendString("> Tj\n")
-	}
+	page.showString(font, str)
 }
 
 // beginSVGClipText begins a text object whose glyphs clip what is drawn after
@@ -1665,14 +1649,7 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 	if !page.canUseCMYK() {
 		return page
 	}
-	page.appendFloat32(c)
-	page.appendString(" ")
-	page.appendFloat32(m)
-	page.appendString(" ")
-	page.appendFloat32(y)
-	page.appendString(" ")
-	page.appendFloat32(k)
-	page.appendString(" K\n")
+	page.appendCMYK(c, m, y, k, " K\n")
 	page.penColor = cmykToRGB(c, m, y, k)
 	page.penColorWritten = false
 	return page
@@ -1688,6 +1665,15 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 	if !page.canUseCMYK() {
 		return page
 	}
+	page.appendCMYK(c, m, y, k, " k\n")
+	page.brushColor = cmykToRGB(c, m, y, k)
+	page.brushColorWritten = false
+	return page
+}
+
+// appendCMYK appends the color, its cyan, magenta, yellow and black, and the
+// operator that sets it, K for the pen or k for the brush.
+func (page *Page) appendCMYK(c, m, y, k float32, operator string) {
 	page.appendFloat32(c)
 	page.appendString(" ")
 	page.appendFloat32(m)
@@ -1695,10 +1681,7 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 	page.appendFloat32(y)
 	page.appendString(" ")
 	page.appendFloat32(k)
-	page.appendString(" k\n")
-	page.brushColor = cmykToRGB(c, m, y, k)
-	page.brushColorWritten = false
-	return page
+	page.appendString(operator)
 }
 
 // canUseCMYK reports whether the document can use a CMYK color, and fails
@@ -3507,15 +3490,7 @@ func (page *Page) drawTextLine(font *Font, str string, x float32, y float32) {
 	page.beginText()
 	page.setTextLocation(x, y)
 	page.setTextFont(font, font.size)
-	if font.isCoreFont {
-		page.appendString("[<")
-		page.drawASCIIString(font, str)
-		page.appendString(">] TJ\n")
-	} else {
-		page.appendString("<")
-		page.drawUnicodeString(font, str)
-		page.appendString("> Tj\n")
-	}
+	page.showString(font, str)
 	page.endText()
 }
 
@@ -3702,30 +3677,14 @@ func (page *Page) drawTextBlock(
 		if hasFallbackFont {
 			page.drawTextBlockLine(font, fallbackFont, fontSize, fallbackFontSize, textLine.text, textColor, highlightColors)
 		} else if highlightColors == nil {
-			if font.isCoreFont {
-				page.appendString("[<")
-				page.drawASCIIString(font, textLine.text)
-				page.appendString(">] TJ\n")
-			} else {
-				page.appendString("<")
-				page.drawUnicodeString(font, textLine.text)
-				page.appendString("> Tj\n")
-			}
+			page.showString(font, textLine.text)
 		} else {
 			page.drawColoredString(font, textLine.text, textColor, highlightColors)
 		}
 		if textLine.trailingSpace {
 			// The space the line was wrapped at, drawn after it: no ink, and
 			// the next line is placed with its own matrix, so nothing moves.
-			if font.isCoreFont {
-				page.appendString("[<")
-				page.drawASCIIString(font, single.Space)
-				page.appendString(">] TJ\n")
-			} else {
-				page.appendString("<")
-				page.drawUnicodeString(font, single.Space)
-				page.appendString("> Tj\n")
-			}
+			page.showString(font, single.Space)
 		}
 		yText += leading
 	}
@@ -3801,6 +3760,20 @@ func (page *Page) drawTextBlockLine(
 	}
 }
 
+// showString shows the string at the text position in the font: in a TJ
+// array of its character codes for a core font, or a Tj of its glyphs.
+func (page *Page) showString(font *Font, str string) {
+	if font.isCoreFont {
+		page.appendString("[<")
+		page.drawASCIIString(font, str)
+		page.appendString(">] TJ\n")
+	} else {
+		page.appendString("<")
+		page.drawUnicodeString(font, str)
+		page.appendString("> Tj\n")
+	}
+}
+
 // drawTextBlockRun draws the text at the text position in the font set last.
 func (page *Page) drawTextBlockRun(
 	font *Font, text string, textColor [3]float32, highlightColors map[string]int32) {
@@ -3809,13 +3782,7 @@ func (page *Page) drawTextBlockRun(
 	}
 	if highlightColors != nil {
 		page.drawColoredString(font, text, textColor, highlightColors)
-	} else if font.isCoreFont {
-		page.appendString("[<")
-		page.drawASCIIString(font, text)
-		page.appendString(">] TJ\n")
 	} else {
-		page.appendString("<")
-		page.drawUnicodeString(font, text)
-		page.appendString("> Tj\n")
+		page.showString(font, text)
 	}
 }
