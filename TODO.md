@@ -90,6 +90,16 @@ their tests.
   document. An image whose decoded and deflated data a second PDF can take
   as it is would make such a batch several times faster. To design,
   measured in the four ports first.
+- **9.2.3, a candidate: BigTable's wrapping measured as the line grows.**
+  With SetWrapText, bigTableWrap measures the whole line again for each word
+  it adds (`m.width(line + " " + word)`), so a field costs about the square
+  of its words. TextBlock's way (Font's run and joinRuns): each word's run
+  measured once and the line's width from the runs joined, exact to the bit,
+  so every example PDF stays the same (check-examples.sh). Only without a
+  fallback font, which measures in its own way. Long words are already cut
+  by a binary search (bigTableRunesThatFit, bigTableCut). Measure first: the
+  gain is for fields long enough to wrap over several lines. Swift's Font to
+  be checked for run and joinRuns.
 
 - **Korean line breaking by design.** isCJK, which chooses how TextBlock
   breaks a line, counts the Hangul jamo (U+1100 to U+11FF) but not the
