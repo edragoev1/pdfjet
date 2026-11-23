@@ -127,7 +127,7 @@ TAR=$PWD/$STAGE.tar
 # package, as in the repository.
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/dotnet-pro LICENSE \
-    net net48 PDFjet.csproj resources/fonts resources/data examples resources/images tests/data/PngSuite docfx \
+    net net48 PDFjet.csproj nuget/harfbuzz resources/fonts resources/data examples resources/images tests/data/PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html llms-dotnet.txt
 tar -x -C "$STAGE" -f "$TAR"
 rm "$TAR"
@@ -167,6 +167,24 @@ dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
     -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
     -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
 cp bin/release/net8.0/PDFjet.dll .
+
+# PDFjet.HarfBuzz.dll beside PDFjet.dll, as the NuGet package PDFjet.HarfBuzz
+# adds it (package-nuget.sh): HarfBuzz for TextBlock and TextLine, which
+# Example_52 draws Hindi and Khmer with. In the repository the example refers
+# to the add-on's project, which the package has not: built here, strong-named
+# with the same key and version, and the example given it with HarfBuzzSharp's
+# packages, as a program adds them (9.2.1's package, 23 November 2026).
+dotnet build nuget/harfbuzz/PDFjet.HarfBuzz.csproj -c release -p:TreatWarningsAsErrors=true \
+    -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
+    -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
+cp nuget/harfbuzz/bin/release/netstandard2.0/PDFjet.HarfBuzz.dll .
+rm -rf nuget
+perl -0pi -e 's|<ProjectReference Include="../../nuget/harfbuzz/PDFjet.HarfBuzz.csproj" />|<Reference Include="PDFjet.HarfBuzz">\n      <HintPath>../../PDFjet.HarfBuzz.dll</HintPath>\n    </Reference>\n    <PackageReference Include="HarfBuzzSharp" Version="8.3.1.1" />\n    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />|' \
+    examples/Example_52/Example_52.csproj
+if grep -q 'nuget/harfbuzz' examples/Example_*/Example_*.csproj; then
+    echo "An example project still refers to the add-on's project, nuget/harfbuzz"
+    exit 1
+fi
 
 # The same library for .NET Framework 4.8, from the same sources, strong-named
 # with the same key and version: net48/PDFjet.dll and the System.Memory DLLs
