@@ -10,11 +10,11 @@ Maven:
 <dependency>
   <groupId>com.pdfjet</groupId>
   <artifactId>pdfjet</artifactId>
-  <version>9.1.9</version>
+  <version>9.2.1</version>
 </dependency>
 ```
 
-Gradle: `implementation("com.pdfjet:pdfjet:9.1.9")`. For Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add `com.pdfjet:pdfjet-fonts-world` of the same version.
+Gradle: `implementation("com.pdfjet:pdfjet:9.2.1")`. For Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add `com.pdfjet:pdfjet-fonts-world` of the same version.
 
 ```java
 import java.io.*;

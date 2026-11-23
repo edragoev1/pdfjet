@@ -5,10 +5,10 @@
 ## Install
 
 ```bash
-dotnet add package PDFjet --version 9.1.9
+dotnet add package PDFjet --version 9.2.1
 ```
 
-Or in the project file: `<PackageReference Include="PDFjet" Version="9.1.9" />`. For Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add the package `PDFjet.Fonts.World` of the same version.
+Or in the project file: `<PackageReference Include="PDFjet" Version="9.2.1" />`. For Chinese, Japanese, Korean, Arabic, Hebrew and Thai, add the package `PDFjet.Fonts.World` of the same version.
 
 ```csharp
 using System.Collections.Generic;
