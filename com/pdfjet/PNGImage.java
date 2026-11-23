@@ -58,9 +58,6 @@ class PNGImage {
     private float physicalWidth;
     private float physicalHeight;
 
-    // A metre is 72/0.0254 points.
-    private static final double POINTS_PER_METER = 72.0/0.0254;
-
     /**
      * Used to embed PNG images in the PDF document.
      *
@@ -579,11 +576,10 @@ class PNGImage {
         if (pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0) {
             return;     // Also for a count above 2^31, which reads negative.
         }
-        float width = (float) (this.w*POINTS_PER_METER/pixelsPerMeterX);
-        float height = (float) (this.h*POINTS_PER_METER/pixelsPerMeterY);
-        if (FastFloat.isWritable(width) && FastFloat.isWritable(height)) {
-            this.physicalWidth = width;
-            this.physicalHeight = height;
+        float[] size = Util.physicalSize(this.w, this.h, pixelsPerMeterX, pixelsPerMeterY);
+        if (size != null) {
+            this.physicalWidth = size[0];
+            this.physicalHeight = size[1];
         }
     }
 
