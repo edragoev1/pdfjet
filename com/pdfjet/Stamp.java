@@ -198,6 +198,16 @@ public class Stamp implements Drawable {
         }
     }
 
+    // Writes the three components of an RGB color and the operator, rg or RG.
+    private void appendRGB(float[] rgbColor, String operator) {
+        append(rgbColor[0]);
+        append(" ");
+        append(rgbColor[1]);
+        append(" ");
+        append(rgbColor[2]);
+        append(operator);
+    }
+
     /**
      * Sets the fill color for the content drawn after it.
      *
@@ -205,12 +215,7 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp setFillColor(float[] rgbColor) {
-        append(rgbColor[0]);
-        append(" ");
-        append(rgbColor[1]);
-        append(" ");
-        append(rgbColor[2]);
-        append(" rg\n");
+        appendRGB(rgbColor, " rg\n");
         return this;
     }
 
@@ -225,16 +230,7 @@ public class Stamp implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        append(r);
-        append(" ");
-        append(g);
-        append(" ");
-        append(b);
-        append(" rg\n");
-        return this;
+        return setFillColor(Util.toRGB(color));
     }
 
     /**
@@ -244,12 +240,7 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp setStrokeColor(float[] rgbColor) {
-        append(rgbColor[0]);
-        append(" ");
-        append(rgbColor[1]);
-        append(" ");
-        append(rgbColor[2]);
-        append(" RG\n");
+        appendRGB(rgbColor, " RG\n");
         return this;
     }
 
@@ -264,16 +255,7 @@ public class Stamp implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        append(r);
-        append(" ");
-        append(g);
-        append(" ");
-        append(b);
-        append(" RG\n");
-        return this;
+        return setStrokeColor(Util.toRGB(color));
     }
 
     /**
