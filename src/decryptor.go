@@ -418,28 +418,8 @@ func (d *decryptor) decryptStrings(obj *PDFobj) {
 	}
 }
 
-// isSignatureDict tells if the dictionary the token at i is in is a
-// signature dictionary: of /Type /Sig or /DocTimeStamp, or with a
-// /ByteRange, which only a signature dictionary has.
-func isSignatureDict(dict []string, i int) bool {
-	// The start of the dictionary
-	start := i
-	for level := 0; start >= 0; start-- {
-		if dict[start] == ">>" {
-			level++
-		} else if dict[start] == "<<" {
-			if level == 0 {
-				break
-			}
-			level--
-		}
-	}
-	return isSignatureDictFrom(dict, start)
-}
-
 // dictionaryStarts returns the index of the << of the dictionary each token
-// is in, the innermost, or -1 for one in none, as isSignatureDict finds it, in
-// one pass.
+// is in, the innermost, or -1 for one in none, in one pass.
 func dictionaryStarts(dict []string) []int {
 	starts := make([]int, len(dict))
 	open := make([]int, 0, 8)
@@ -458,7 +438,8 @@ func dictionaryStarts(dict []string) []int {
 }
 
 // isSignatureDictFrom tells if the dictionary whose << is at start is a
-// signature dictionary.
+// signature dictionary: of /Type /Sig or /DocTimeStamp, or with a
+// /ByteRange, which only a signature dictionary has.
 func isSignatureDictFrom(dict []string, start int) bool {
 	// Its entries, not those of the dictionaries in it
 	level := 0

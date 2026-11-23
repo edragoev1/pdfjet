@@ -15,7 +15,6 @@ import (
 	"os"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
-	"github.com/edragoev1/pdfjet/v9/src/internal/imagetype"
 )
 
 // ImageSize is the size an image is drawn at, and its pixels, read from the
@@ -30,7 +29,6 @@ import (
 // Exif orientation is its height by its width. What only the image data
 // shows, a JPEG cut short or the rows of a PNG, is NewImage's to refuse.
 type ImageSize struct {
-	imageType   imagetype.ImageType
 	width       float32
 	height      float32
 	pixelWidth  int
@@ -94,8 +92,8 @@ func (size *ImageSize) GetPixelHeight() int {
 
 // newImageSize returns the size of an image of the pixels, drawn at the
 // physical size when it has one, as Image's setPhysicalSize draws it.
-func newImageSize(imageType imagetype.ImageType, pixelWidth, pixelHeight int, physicalWidth, physicalHeight float32) *ImageSize {
-	size := &ImageSize{imageType: imageType, pixelWidth: pixelWidth, pixelHeight: pixelHeight,
+func newImageSize(pixelWidth, pixelHeight int, physicalWidth, physicalHeight float32) *ImageSize {
+	size := &ImageSize{pixelWidth: pixelWidth, pixelHeight: pixelHeight,
 		width: float32(pixelWidth), height: float32(pixelHeight)}
 	if physicalWidth > 0.0 && physicalHeight > 0.0 {
 		size.width = physicalWidth
@@ -214,7 +212,7 @@ func pngSizeOf(image *pngImage, hasIDAT, hasPLTE bool) (size *ImageSize, err err
 	if !hasIDAT {
 		return nil, errors.New("The PNG image has no image data.")
 	}
-	return newImageSize(imagetype.PNG, image.w, image.h, image.physicalWidth, image.physicalHeight), nil
+	return newImageSize(image.w, image.h, image.physicalWidth, image.physicalHeight), nil
 }
 
 // readJPGSize reads the segments of a JPEG to its frame header, as
@@ -267,7 +265,7 @@ func readJPGSize(r *bufio.Reader) (*ImageSize, error) {
 					"Error: The JPEG frame header is %d bytes, not the %d of its %d color components.",
 					length, 3*int(components)+8, components)
 			}
-			size := newImageSize(imagetype.JPG, int(image.width), int(image.height),
+			size := newImageSize(int(image.width), int(image.height),
 				image.GetPhysicalWidth(), image.GetPhysicalHeight())
 			// Turned a quarter of the way, as Image's setOrientation turns it
 			if image.orientation >= 5 && image.orientation <= 8 {
@@ -391,5 +389,5 @@ func readBMPSize(r *bufio.Reader) (size *ImageSize, err error) {
 		}
 	}
 	image.setPhysicalSize(le(38), le(42))
-	return newImageSize(imagetype.BMP, image.w, image.h, image.physicalWidth, image.physicalHeight), nil
+	return newImageSize(image.w, image.h, image.physicalWidth, image.physicalHeight), nil
 }

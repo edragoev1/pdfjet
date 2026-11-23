@@ -124,7 +124,6 @@ const (
 	CodeB  = 100 // Latch to SET_B, in SET_C
 	FNC1   = 102 // FNC 1, which starts GS1-128 and separates its fields
 	FNC4   = 100 // FNC 4
-	CodeA  = 101 // Latch to SET_A
 	StartA = 103
 	StartB = 104
 	StartC = 105

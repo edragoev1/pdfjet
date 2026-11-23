@@ -17,10 +17,9 @@ import (
 
 // fontTable is used to construct font table objects.
 type fontTable struct {
-	name     string
-	checkSum uint32
-	offset   int
-	length   int
+	name   string
+	offset int
+	length int
 }
 
 // openTypeFont is used to construct TTF and OTF font objects.
@@ -44,7 +43,6 @@ type openTypeFont struct {
 	indexToLocFormat   int
 	loca               *fontTable
 	glyf               *fontTable
-	postVersion        uint32
 	italicAngle        uint32
 	underlinePosition  int16
 	underlineThickness int16
@@ -113,7 +111,7 @@ func newOpenTypeFont(buf []byte) *openTypeFont {
 	for i := 0; i < numOfTables; i++ {
 		table := new(fontTable)
 		table.name = string(readNBytes(otf, 4))
-		table.checkSum = readUint32(otf)
+		readUint32(otf) // Skip the checksum.
 		table.offset = int(readUint32(otf))
 		table.length = int(readUint32(otf))
 
@@ -504,7 +502,7 @@ func getHmtxTable(otf *openTypeFont, table *fontTable) {
 
 func getPostTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset
-	otf.postVersion = readUint32(otf)
+	readUint32(otf) // Skip the version.
 	otf.italicAngle = readUint32(otf)
 	otf.underlinePosition = readInt16(otf)
 	otf.underlineThickness = readInt16(otf)
