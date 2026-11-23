@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"bufio"
+	"html"
 	"io"
 	"strings"
 	"testing"
@@ -140,9 +141,17 @@ func fuzzDrawMarkdown(t *testing.T, text string) {
 	}
 	pdf.AddPages(pages)
 	// Text such as Hindi, even a single mark of it, with no shaper is an
-	// error, never drawn wrong
+	// error, never drawn wrong; so is a table whose header rows are taller
+	// than the page, as a table's are
 	if err := pdf.Complete(); err != nil &&
-		!(needsShaper(text) && strings.Contains(err.Error(), errNoShaper.Error())) {
+		!(fuzzNeedsShaper(text) && strings.Contains(err.Error(), errNoShaper.Error())) &&
+		!strings.Contains(err.Error(), "The header rows of the table") {
 		t.Fatal(err)
 	}
+}
+
+// fuzzNeedsShaper tells whether the text, or the characters its references
+// such as &#x900; stand for, needs a shaper to be drawn.
+func fuzzNeedsShaper(text string) bool {
+	return needsShaper(text) || needsShaper(html.UnescapeString(text))
 }

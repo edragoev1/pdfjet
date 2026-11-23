@@ -84,7 +84,7 @@ func FuzzMarkup(f *testing.F) {
 			// Text such as Hindi, even a single mark of it, with no shaper is an
 			// error, never drawn wrong
 			if err := pdf.Complete(); err != nil &&
-				!(needsShaper(text) && strings.Contains(err.Error(), errNoShaper.Error())) {
+				!(fuzzNeedsShaper(text) && strings.Contains(err.Error(), errNoShaper.Error())) {
 				t.Fatal(err)
 			}
 			if n := utf8.RuneCountInString(text); n > 0 {
