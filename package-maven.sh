@@ -106,10 +106,11 @@ fi
 for family in "$work"/world/com/pdfjet/fonts/world/*/; do
     [ -f "$family/license.txt" ] || { echo "$family has no license" >&2; exit 1; }
 done
-if [ "$(find "$work/world/com/pdfjet/fonts/world" -name '*.otf' | wc -l)" -ne 40 ] ||
+if [ "$(find "$work/world/com/pdfjet/fonts/world" -name '*.otf' | wc -l)" -ne 59 ] ||
         [ "$(find "$work/world/com/pdfjet/fonts/world" -name '*.ttf' | wc -l)" -ne 0 ]; then
-    echo "The fonts of pdfjet-fonts-world are not the 12 .otf of IBM Plex Sans JP, KR, SC and TC" \
-        "and the 28 .otf of IBM Plex Sans Arabic, Devanagari, Hebrew and Thai" >&2; exit 1
+    echo "The fonts of pdfjet-fonts-world are not the 12 .otf of IBM Plex Sans JP, KR, SC and TC," \
+        "the 21 .otf of IBM Plex Sans Arabic, Hebrew and Thai and the 26 .otf of Noto Sans for" \
+        "the 13 Indic and Southeast Asian scripts" >&2; exit 1
 fi
 printf 'Automatic-Module-Name: com.pdfjet.fonts.world\nImplementation-Title: PDFjet world fonts\nImplementation-Version: %s\n' \
     "$packageVersion" > "$work/world-manifest.txt"
