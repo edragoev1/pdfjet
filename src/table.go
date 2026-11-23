@@ -12,9 +12,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
-	"bufio"
 	"fmt"
-	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -152,11 +150,10 @@ func ReadTableFromFile(f1, f2 *Font, fileName string) (table *Table, err error) 
 			panic(err)
 		}
 	}(f)
-	scanner := bufio.NewScanner(f)
-	// A line can be longer than the 64 KB that the scanner reads by default,
-	// and ends at a line feed, a carriage return or the two together.
-	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
-	scanner.Split(scanDataLines)
+	// The byte order mark is taken off the first line below, not by
+	// newDataScanner, so that a file of a byte order mark alone is a row of one
+	// empty cell.
+	scanner := newLineScanner(f)
 	nextLine := func() (string, bool) {
 		if scanner.Scan() {
 			return utf8text.Decode(scanner.Bytes()), true
@@ -1024,19 +1021,11 @@ func (table *Table) GetColumn(index int) []*Cell {
 //
 // Returns the x and y coordinates of the bottom right corner of the table.
 func (table *Table) DrawOn(page *Page) [2]float32 {
-	if len(table.tableData) == 0 {
-		return [2]float32{table.x1, table.y1} // An empty table draws nothing.
-	}
-	if page != nil && table.refused(page.pdf) {
+	// An empty table, or one refused, draws nothing.
+	if len(table.tableData) == 0 || (page != nil && table.refused(page.pdf)) {
 		return [2]float32{table.x1, table.y1}
 	}
-	table.wrapAroundCellText()
-	table.applyRowSpans()
-	table.setRightBorderOnLastColumn()
-	table.setBottomBorderOnLastRow()
-	table.heights = table.getRowHeights()
-	table.striped = table.getStripedRows()
-	table.columnSums = make(map[[2]int]*columnSums)
+	table.prepare()
 	defer func() { table.columnSums = nil }()
 	xy := table.drawPage(page, 0)
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
@@ -1062,19 +1051,11 @@ func (table *Table) DrawOnPagesFrom(pdf *PDF, first *Page, pages *[]*Page, pageS
 // is not nil: a page that has other content above the table, which
 // SetFirstPageTopMargin puts the table under. The next pages are new.
 func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
-	if len(table.tableData) == 0 {
-		return [2]float32{table.x1, table.y1} // An empty table needs no page.
-	}
-	if table.refused(pdf) {
+	// An empty table, or one refused, needs no page.
+	if len(table.tableData) == 0 || table.refused(pdf) {
 		return [2]float32{table.x1, table.y1}
 	}
-	table.wrapAroundCellText()
-	table.applyRowSpans()
-	table.setRightBorderOnLastColumn()
-	table.setBottomBorderOnLastRow()
-	table.heights = table.getRowHeights()
-	table.striped = table.getStripedRows()
-	table.columnSums = make(map[[2]int]*columnSums)
+	table.prepare()
 	defer func() { table.columnSums = nil }()
 	// A table with no rows left to draw needs no page, and ends where it starts.
 	xy := [2]float32{table.x1, table.y1}
@@ -1092,6 +1073,19 @@ func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize 
 		pageNumber++
 	}
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
+}
+
+// prepare readies the table to be drawn: it wraps the text of the cells,
+// spans the rows, sets the borders of the last column and row, and measures
+// the rows. The sums of the columns are kept while it is drawn.
+func (table *Table) prepare() {
+	table.wrapAroundCellText()
+	table.applyRowSpans()
+	table.setRightBorderOnLastColumn()
+	table.setBottomBorderOnLastRow()
+	table.heights = table.getRowHeights()
+	table.striped = table.getStripedRows()
+	table.columnSums = make(map[[2]int]*columnSums)
 }
 
 // drawPage draws the header rows and the rows that fit on the page under

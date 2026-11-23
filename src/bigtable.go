@@ -15,6 +15,7 @@ package pdfjet
 
 import (
 	"bufio"
+	"io"
 	"iter"
 	"math"
 	"os"
@@ -780,6 +781,13 @@ func newDataScanner(file *os.File) *bufio.Scanner {
 	if bom, err := reader.Peek(3); err == nil && string(bom) == "\uFEFF" {
 		_, _ = reader.Discard(3)
 	}
+	return newLineScanner(reader)
+}
+
+// newLineScanner returns a scanner of the lines of the data file. A line can
+// be longer than the 64 KB that the scanner reads by default, and ends at a
+// line feed, a carriage return or the two together.
+func newLineScanner(reader io.Reader) *bufio.Scanner {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
 	scanner.Split(scanDataLines)
