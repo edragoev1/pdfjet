@@ -161,8 +161,6 @@ internal static class Net48Extensions {
     }
 
     extension(string s) {
-        public bool EndsWith(char c) => s.Length > 0 && s[s.Length - 1] == c;
-
         public bool Contains(char c) => s.IndexOf(c) >= 0;
 
         public string[] Split(string separator, System.StringSplitOptions options) =>
@@ -214,21 +212,6 @@ internal static class CharUnicodeInfo {
 
 }
 
-namespace System {
-
-/// <summary>MathF of .NET Core: the functions of Math, in single precision.</summary>
-internal static class MathF {
-    public const float PI = 3.14159265f;
-
-    public static float Sqrt(float x) => (float) Math.Sqrt(x);
-    public static float Atan2(float y, float x) => (float) Math.Atan2(y, x);
-    public static float Sin(float x) => (float) Math.Sin(x);
-    public static float Cos(float x) => (float) Math.Cos(x);
-    public static float Abs(float x) => Math.Abs(x);
-}
-
-}
-
 namespace System.Numerics {
 
 internal static class BitOperations {
@@ -253,17 +236,6 @@ namespace System.Security.Cryptography {
 
 internal static class CryptographicOperations {
     public static void ZeroMemory(Span<byte> buffer) => buffer.Clear();
-
-    public static bool FixedTimeEquals(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right) {
-        if (left.Length != right.Length) {
-            return false;
-        }
-        int difference = 0;
-        for (int i = 0; i < left.Length; i++) {
-            difference |= left[i] ^ right[i];
-        }
-        return difference == 0;
-    }
 }
 
 }

@@ -401,27 +401,8 @@ internal sealed class Decryptor {
         }
     }
 
-    // Tells if the dictionary the token at i is in is a signature dictionary: of
-    // /Type /Sig or /DocTimeStamp, or with a /ByteRange, which only a signature
-    // dictionary has.
-    private static bool IsSignatureDict(List<String> dict, int i) {
-        // The start of the dictionary
-        int start = i;
-        for (int level = 0; start >= 0; start--) {
-            if (dict[start].Equals(">>")) {
-                level++;
-            } else if (dict[start].Equals("<<")) {
-                if (level == 0) {
-                    break;
-                }
-                level--;
-            }
-        }
-        return IsSignatureDictFrom(dict, start);
-    }
-
     // The index of the << of the dictionary each token is in, the innermost,
-    // or -1 for one in none, as IsSignatureDict finds it, in one pass
+    // or -1 for one in none, found for every token in one pass
     internal static int[] DictionaryStarts(List<String> dict) {
         int[] starts = new int[dict.Count];
         int[] open = new int[dict.Count];
@@ -438,7 +419,9 @@ internal sealed class Decryptor {
         return starts;
     }
 
-    // Tells if the dictionary whose << is at start is a signature dictionary
+    // Tells if the dictionary whose << is at start is a signature dictionary:
+    // of /Type /Sig or /DocTimeStamp, or with a /ByteRange, which only a
+    // signature dictionary has.
     internal static bool IsSignatureDictFrom(List<String> dict, int start) {
         // Its entries, not those of the dictionaries in it
         int depth = 0;
