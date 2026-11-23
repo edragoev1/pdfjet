@@ -91,10 +91,7 @@ public class Form : Drawable {
         if labelColor == Color.transparent {
             return self
         }
-        let r = Float((labelColor >> 16) & 0xff)/255.0
-        let g = Float((labelColor >>  8) & 0xff)/255.0
-        let b = Float((labelColor)       & 0xff)/255.0
-        return setLabelColor([r, g, b])
+        return setLabelColor(Util.rgb(labelColor))
     }
 
     /// Sets the color of the values from an array of red, green and blue values.
@@ -111,10 +108,7 @@ public class Form : Drawable {
         if valueColor == Color.transparent {
             return self
         }
-        let r = Float((valueColor >> 16) & 0xff)/255.0
-        let g = Float((valueColor >>  8) & 0xff)/255.0
-        let b = Float((valueColor)       & 0xff)/255.0
-        return setValueColor([r, g, b])
+        return setValueColor(Util.rgb(valueColor))
     }
 
     /**

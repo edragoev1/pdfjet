@@ -188,10 +188,7 @@ public class Point : Drawable {
         if fillColor == Color.transparent {
             return self
         }
-        let r = Float((fillColor >> 16) & 0xff)/255.0
-        let g = Float((fillColor >>  8) & 0xff)/255.0
-        let b = Float((fillColor)       & 0xff)/255.0
-        return setFillColor([r, g, b])
+        return setFillColor(Util.rgb(fillColor))
     }
 
     ///
@@ -221,10 +218,7 @@ public class Point : Drawable {
         if strokeColor == Color.transparent {
             return self
         }
-        let r = Float((strokeColor >> 16) & 0xff)/255.0
-        let g = Float((strokeColor >>  8) & 0xff)/255.0
-        let b = Float((strokeColor)       & 0xff)/255.0
-        return setStrokeColor([r, g, b])
+        return setStrokeColor(Util.rgb(strokeColor))
     }
 
     ///
@@ -369,9 +363,9 @@ public class Point : Drawable {
         page.addEMC()
         if !uri.isEmpty {
             page.endLink(link)
-            page.addAnnotation(Annotation(
-                    Annotation.Link, x - r, y - r, x + r, y + r,
-                    nil, nil, 0.0, nil, nil, uri, nil, nil, nil, description).joining(link))
+            page.addAnnotation(Annotation.link(
+                    x - r, y - r, x + r, y + r,
+                    uri, nil, nil, nil, description).joining(link))
         }
         return [self.x + self.r, self.y + self.r]
     }

@@ -39,6 +39,13 @@ class Util {
         if color == shortColor {
             return []
         }
+        return rgb(color)
+    }
+
+    // The red, green and blue components of a 0xRRGGBB color, whatever its
+    // value: the setters that take one, which toRGB's shortColor is not
+    // meant for.
+    static func rgb(_ color: Int32) -> [Float] {
         return [Float((color >> 16) & 0xff)/255.0, Float((color >> 8) & 0xff)/255.0, Float(color & 0xff)/255.0]
     }
 

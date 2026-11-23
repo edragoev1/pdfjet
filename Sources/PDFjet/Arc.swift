@@ -141,10 +141,7 @@ public class Arc : Drawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float((color >> 16) & 0xff)/255.0
-        let g = Float((color >>  8) & 0xff)/255.0
-        let b = Float((color)       & 0xff)/255.0
-        self.strokeColor = [r, g, b]
+        self.strokeColor = Util.rgb(color)
         return self
     }
 
@@ -162,10 +159,7 @@ public class Arc : Drawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float((color >> 16) & 0xff)/255.0
-        let g = Float((color >>  8) & 0xff)/255.0
-        let b = Float((color)       & 0xff)/255.0
-        self.fillColor = [r, g, b]
+        self.fillColor = Util.rgb(color)
         return self
     }
 

@@ -1537,13 +1537,11 @@ public class Page {
             pdf.fail(Page.RGB_COUNT)
             return self
         }
-        let r = Float((color >> 16) & 0xff)/255.0
-        let g = Float((color >>  8) & 0xff)/255.0
-        let b = Float((color)       & 0xff)/255.0
-        if penColorWritten && penColor[0] == r && penColor[1] == g && penColor[2] == b {
+        let rgb = Util.rgb(color)
+        if penColorWritten && penColor[0] == rgb[0] && penColor[1] == rgb[1] && penColor[2] == rgb[2] {
             return self     // The content is drawn with this color already
         }
-        return setPenColor([r, g, b])
+        return setPenColor(rgb)
     }
 
     ///
@@ -1559,27 +1557,7 @@ public class Page {
         guard let rgbColor = rgbColor else {
             return self
         }
-        if rgbColor.count < 3 {
-            pdf.fail(Page.RGB_COUNT)
-            return self
-        }
-        if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
-                rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
-                rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
-            FileHandle.standardError.write(Data("Warning: RGB color values must be between 0f and 1f. Ignoring request.\n".utf8))
-            return self
-        }
-        if penColorWritten && penColor[0] == rgbColor[0] && penColor[1] == rgbColor[1] && penColor[2] == rgbColor[2] {
-            return self     // The content is drawn with this color already
-        }
-        penColor = rgbColor
-        penColorWritten = true
-        append(rgbColor[0])
-        append(Token.space)
-        append(rgbColor[1])
-        append(Token.space)
-        append(rgbColor[2])
-        append(" RG\n")
+        writeColor(rgbColor, &penColor, &penColorWritten, " RG\n")
         return self
     }
 
@@ -1599,13 +1577,11 @@ public class Page {
             pdf.fail(Page.RGB_COUNT)
             return self
         }
-        let r = Float((color >> 16) & 0xff)/255.0
-        let g = Float((color >>  8) & 0xff)/255.0
-        let b = Float((color)       & 0xff)/255.0
-        if brushColorWritten && brushColor[0] == r && brushColor[1] == g && brushColor[2] == b {
+        let rgb = Util.rgb(color)
+        if brushColorWritten && brushColor[0] == rgb[0] && brushColor[1] == rgb[1] && brushColor[2] == rgb[2] {
             return self     // The content is drawn with this color already
         }
-        return setBrushColor([r, g, b])
+        return setBrushColor(rgb)
     }
 
     ///
@@ -1620,28 +1596,38 @@ public class Page {
         guard let rgbColor = rgbColor else {
             return self
         }
+        writeColor(rgbColor, &brushColor, &brushColorWritten, " rg\n")
+        return self
+    }
+
+    // Writes the color with its operator, " RG\n" for the pen or " rg\n" for
+    // the brush, as the pen's or the brush's, color and written, unless it
+    // has fewer than three values, which fails the document, or one out of
+    // range, which is ignored with a warning, or the content is drawn with it
+    // already.
+    private func writeColor(_ rgbColor: [Float], _ color: inout [Float], _ written: inout Bool,
+            _ op: String) {
         if rgbColor.count < 3 {
             pdf.fail(Page.RGB_COUNT)
-            return self
+            return
         }
         if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
                 rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
                 rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
             FileHandle.standardError.write(Data("Warning: RGB color values must be between 0f and 1f. Ignoring request.\n".utf8))
-            return self
+            return
         }
-        if brushColorWritten && brushColor[0] == rgbColor[0] && brushColor[1] == rgbColor[1] && brushColor[2] == rgbColor[2] {
-            return self     // The content is drawn with this color already
+        if written && color[0] == rgbColor[0] && color[1] == rgbColor[1] && color[2] == rgbColor[2] {
+            return      // The content is drawn with this color already
         }
-        brushColor = rgbColor
-        brushColorWritten = true
+        color = rgbColor
+        written = true
         append(rgbColor[0])
         append(Token.space)
         append(rgbColor[1])
         append(Token.space)
         append(rgbColor[2])
-        append(" rg\n")
-        return self
+        append(op)
     }
 
     /// Returns the brush color as red, green and blue values between 0.0 and 1.0.
