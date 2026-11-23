@@ -1539,17 +1539,7 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendString(annot.fileAttachment.icon)
 		pdf.appendString("\n")
 
-		if annot.fileAttachment.title != "" {
-			pdf.appendString("/T ")
-			pdf.appendTextString(annot.fileAttachment.title)
-			pdf.appendString("\n")
-		}
-
-		if annot.fileAttachment.contents != "" {
-			pdf.appendString("/Contents ")
-			pdf.appendTextString(annot.fileAttachment.contents)
-			pdf.appendString("\n")
-		}
+		pdf.appendTitleAndContents(annot.fileAttachment.title, annot.fileAttachment.contents)
 	} else if annot.annotationType == annotationLink {
 		// PDF/UA requires a link to carry an alternate description in its
 		// Contents key.
@@ -1563,11 +1553,7 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		if description == "" {
 			description = annot.key
 		}
-		if description != "" {
-			pdf.appendString("/Contents ")
-			pdf.appendTextString(description)
-			pdf.appendString("\n")
-		}
+		pdf.appendTitleAndContents("", description)
 		if uriAction > 0 {
 			pdf.appendString("/A ")
 			pdf.appendInteger(uriAction)
@@ -1600,72 +1586,16 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		}
 		pdf.appendString("]\n")
 
-		pdf.appendString("/IC [")
-		pdf.appendFloat32(annot.fillColor[0])
-		pdf.appendString(" ")
-		pdf.appendFloat32(annot.fillColor[1])
-		pdf.appendString(" ")
-		pdf.appendFloat32(annot.fillColor[2])
-		pdf.appendString("]\n")
-
-		if !pdf.isPDFA1() {
-			pdf.appendString("/CA ")
-			pdf.appendFloat32(annot.opacity)
-			pdf.appendString("\n")
-		}
-
-		if annot.title != "" {
-			pdf.appendString("/T ")
-			pdf.appendTextString(annot.title)
-			pdf.appendString("\n")
-		}
-
-		if annot.contents != "" {
-			pdf.appendString("/Contents ")
-			pdf.appendTextString(annot.contents)
-			pdf.appendString("\n")
-		}
+		pdf.appendFillAndOpacity(annot)
+		pdf.appendTitleAndContents(annot.title, annot.contents)
 	} else if annot.annotationType == annotationSquare ||
 		annot.annotationType == annotationCircle {
-		pdf.appendString("/IC [")
-		pdf.appendFloat32(annot.fillColor[0])
-		pdf.appendString(" ")
-		pdf.appendFloat32(annot.fillColor[1])
-		pdf.appendString(" ")
-		pdf.appendFloat32(annot.fillColor[2])
-		pdf.appendString("]\n")
-
-		if !pdf.isPDFA1() {
-			pdf.appendString("/CA ")
-			pdf.appendFloat32(annot.opacity)
-			pdf.appendString("\n")
-		}
-
-		if annot.title != "" {
-			pdf.appendString("/T ")
-			pdf.appendTextString(annot.title)
-			pdf.appendString("\n")
-		}
-
-		if annot.contents != "" {
-			pdf.appendString("/Contents ")
-			pdf.appendTextString(annot.contents)
-			pdf.appendString("\n")
-		}
+		pdf.appendFillAndOpacity(annot)
+		pdf.appendTitleAndContents(annot.title, annot.contents)
 	} else if annot.annotationType == annotationText {
 		pdf.appendString("/Name /Comment\n")
 
-		if annot.title != "" {
-			pdf.appendString("/T ")
-			pdf.appendTextString(annot.title)
-			pdf.appendString("\n")
-		}
-
-		if annot.contents != "" {
-			pdf.appendString("/Contents ")
-			pdf.appendTextString(annot.contents)
-			pdf.appendString("\n")
-		}
+		pdf.appendTitleAndContents(annot.title, annot.contents)
 	}
 
 	if index != -1 {
@@ -1678,6 +1608,38 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 	pdf.endObj()
 
 	return index
+}
+
+// appendFillAndOpacity writes the fill color of a shape annotation and its
+// opacity, which PDF/A-1, without transparency, does not have.
+func (pdf *PDF) appendFillAndOpacity(annot *annotationObject) {
+	pdf.appendString("/IC [")
+	pdf.appendFloat32(annot.fillColor[0])
+	pdf.appendString(" ")
+	pdf.appendFloat32(annot.fillColor[1])
+	pdf.appendString(" ")
+	pdf.appendFloat32(annot.fillColor[2])
+	pdf.appendString("]\n")
+	if !pdf.isPDFA1() {
+		pdf.appendString("/CA ")
+		pdf.appendFloat32(annot.opacity)
+		pdf.appendString("\n")
+	}
+}
+
+// appendTitleAndContents writes the title and the text of an annotation,
+// each when it has one.
+func (pdf *PDF) appendTitleAndContents(title, contents string) {
+	if title != "" {
+		pdf.appendString("/T ")
+		pdf.appendTextString(title)
+		pdf.appendString("\n")
+	}
+	if contents != "" {
+		pdf.appendString("/Contents ")
+		pdf.appendTextString(contents)
+		pdf.appendString("\n")
+	}
 }
 
 // addAppearanceObject writes the appearance of an annotation that is not a
