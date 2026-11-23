@@ -426,38 +426,59 @@ public class Barcode : Drawable {
             // outside the guard bars, not centered under them together with
             // the rest of the label. The two groups of 5 digits are each
             // centered under their own bar section.
-            let firstDigit = String(fullScalars[0])
-            var group1 = ""
-            for k in 1..<6 {
-                group1 += String(fullScalars[k])
-            }
-            var group2 = ""
-            for k in 6..<11 {
-                group2 += String(fullScalars[k])
-            }
-            let lastDigit = String(fullScalars[11])
-
-            let fontSize = font!.getSize()
-            font!.setSize(10.0)
-            let yText = y1 + h + font!.getBodyHeight(font!.getSize())
-            let gap = font!.stringWidth(font!.getSize(), " ")
-
-            left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
-            drawText(page, bars, firstDigit, left, yText)
-            drawText(page, bars, group1,
-                    xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font!.stringWidth(font!.getSize(), group1))/2,
-                    yText)
-            drawText(page, bars, group2,
-                    xRightGroupStart + ((xGroup2End - xRightGroupStart) - font!.stringWidth(font!.getSize(), group2))/2,
-                    yText)
-            let xy = drawText(page, bars, lastDigit, x + gap, yText)
+            let (textLeft, xy) = drawDigits(page, bars, fullScalars, 1..<6, xGroup1Start, xLeftGroupEnd,
+                    6..<11, xRightGroupStart, xGroup2End, x, x1, y1 + h)
+            left = textLeft
             right = xy[0]
             bottom = max(bottom, xy[1])
-
-            font!.setSize(fontSize)
         }
 
         return Extent(bars: bars, left: left, right: right, bottom: bottom)
+    }
+
+    // Draws the digits of an EAN-13 or a UPC-A barcode under its bars, which
+    // end at y, in 10 point type: the first in the quiet zone left of x1, the
+    // two groups each centered under its own bars, and the last digit, of a
+    // UPC-A barcode, in the quiet zone right of lastX. Returns where the first
+    // digit starts and the end of the last text drawn.
+    private func drawDigits(
+            _ page: Page?,
+            _ bars: Bars,
+            _ digits: [Unicode.Scalar],
+            _ group1: Range<Int>, _ start1: Float, _ end1: Float,
+            _ group2: Range<Int>, _ start2: Float, _ end2: Float,
+            _ lastX: Float?,
+            _ x1: Float,
+            _ y: Float) -> (Float, [Float]) {
+        let firstDigit = String(digits[0])
+        var text1 = ""
+        for k in group1 {
+            text1 += String(digits[k])
+        }
+        var text2 = ""
+        for k in group2 {
+            text2 += String(digits[k])
+        }
+
+        let fontSize = font!.getSize()
+        font!.setSize(10.0)
+        let yText = y + font!.getBodyHeight(font!.getSize())
+        let gap = font!.stringWidth(font!.getSize(), " ")
+
+        let left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
+        drawText(page, bars, firstDigit, left, yText)
+        drawText(page, bars, text1,
+                start1 + ((end1 - start1) - font!.stringWidth(font!.getSize(), text1))/2,
+                yText)
+        var xy = drawText(page, bars, text2,
+                start2 + ((end2 - start2) - font!.stringWidth(font!.getSize(), text2))/2,
+                yText)
+        if let lastX = lastX {
+            xy = drawText(page, bars, String(digits[group2.upperBound]), lastX + gap, yText)
+        }
+
+        font!.setSize(fontSize)
+        return (left, xy)
     }
 
     // How far the guard bars of EAN-13 and UPC-A reach below the other bars, in
@@ -958,33 +979,11 @@ public class Barcode : Drawable {
             // two groups of 6 digits are each centered under their own bar
             // section (left group / right group), not under the barcode as
             // a whole.
-            let firstDigit = String(fullScalars[0])
-            var leftGroup = ""
-            for k in 1..<7 {
-                leftGroup += String(fullScalars[k])
-            }
-            var rightGroup = ""
-            for k in 7..<13 {
-                rightGroup += String(fullScalars[k])
-            }
-
-            let fontSize = font!.getSize()
-            font!.setSize(10.0)
-            let yText = y1 + h + font!.getBodyHeight(font!.getSize())
-            let gap = font!.stringWidth(font!.getSize(), " ")
-
-            left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
-            drawText(page, bars, firstDigit, left, yText)
-            drawText(page, bars, leftGroup,
-                    xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font!.stringWidth(font!.getSize(), leftGroup))/2,
-                    yText)
-            let xy = drawText(page, bars, rightGroup,
-                    xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font!.stringWidth(font!.getSize(), rightGroup))/2,
-                    yText)
+            let (textLeft, xy) = drawDigits(page, bars, fullScalars, 1..<7, xLeftGroupStart, xLeftGroupEnd,
+                    7..<13, xRightGroupStart, xRightGroupEnd, nil, x1, y1 + h)
+            left = textLeft
             right = max(right, xy[0])
             bottom = max(bottom, xy[1])
-
-            font!.setSize(fontSize)
         }
 
         return Extent(bars: bars, left: left, right: right, bottom: bottom)
