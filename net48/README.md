@@ -37,8 +37,9 @@ System.Numerics.Vectors and System.Runtime.CompilerServices.Unsafe.
   `Encoding.Latin1` and `Convert.ToHexString` as C# 14 extension members,
   which compile into calls of these methods and need nothing of the runtime;
   the newer overloads of `string`, `Stream`, `Encoding` and `Aes`; and classes
-  of the names .NET Framework lacks, `MathF`, `BitOperations` and
-  `CryptographicOperations`, in their namespaces.
+  of the names .NET Framework lacks, `BitOperations` and
+  `CryptographicOperations`, in their namespaces (`MathF`, no longer used by
+  the library, was taken out on 23 November 2026).
 - `Compat/UnicodeCategories.cs` is the general category of every code point
   as .NET 8 has it, Unicode 15.0, where .NET Framework's data is of Unicode
   8.0, so that a mark newer than that, as the Arabic U+08D4, is laid out as a
@@ -68,6 +69,5 @@ What it cannot show on Linux: the examples run on .NET Framework, on Windows.
 Framework 4.8 against this PDFjet.dll, and what they read; run in it, it
 makes the PDFs there and writes net48-results.txt.
 
-Floating point of `MathF` in double precision, and the compression of .NET
-Framework's own zlib, can make the bytes of a PDF differ from those of the
-net8.0 build; the pages are to be the same.
+The compression of .NET Framework's own zlib can make the bytes of a PDF
+differ from those of the net8.0 build; the pages are to be the same.
