@@ -201,8 +201,9 @@ func FuzzTextBlockLayout(f *testing.F) {
 }
 
 // A TextFrame of paragraphs of any text, drawn frame after frame: it ends,
-// within a page for each 30 lines it could need, every word within the
-// frame, the document complete with no error.
+// within a page for each character, as a frame holds at least one line and
+// a line at least one character, every word within the frame, the document
+// complete with no error.
 func FuzzTextFrameLayout(f *testing.F) {
 	f.Add([]byte{0, 4, 9, 4, 20, 4, 24, 4, 31}, uint16(200), uint8(12))
 	f.Add([]byte{9, 4, 9, 4, 9, 4, 9, 4, 9, 4, 9}, uint16(40), uint8(10))
@@ -229,7 +230,10 @@ func FuzzTextFrameLayout(f *testing.F) {
 		w := float32(width%500) + 1
 		frame := NewTextFrameFromParagraphs(paragraphs).SetWidth(w)
 		frame.SetHeight(300)
-		limit := 2 + len(data)
+		// A frame of a point wide at size 36 holds 6 lines of one character
+		// each, fewer than the 8 of the piece "WhatsApp": a page for each byte
+		// of data ended a frame that ends (fuzzing, 23 November 2026)
+		limit := 2 + utf8.RuneCountInString(text)
 		for pages := 0; ; pages++ {
 			if pages > limit {
 				t.Fatalf("%d pages and more text: the frame does not end", pages)
