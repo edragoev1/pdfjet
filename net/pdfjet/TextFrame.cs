@@ -869,7 +869,7 @@ public class TextFrame : IDrawable {
         Paragraph paragraph = row[0].paragraph;
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT;
         RowPart last = row[row.Count - 1];
-        float rowWidth = last.x + Width(last.textLine, TrimTrailingSpaces(last.text)) - x;
+        float rowWidth = last.x + Width(last.textLine, Util.TrimTrailingSpaces(last.text)) - x;
 
         if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
             DrawJustifiedRow(page, endSpace);
@@ -1025,14 +1025,6 @@ public class TextFrame : IDrawable {
             }
         }
         return false;
-    }
-
-    private static String TrimTrailingSpaces(String text) {
-        int end = text.Length;
-        while (end > 0 && text[end - 1] == ' ') {
-            end--;
-        }
-        return text.Substring(0, end);
     }
 
     private static float Width(TextLine textLine, String text) {

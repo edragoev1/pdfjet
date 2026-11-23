@@ -394,7 +394,7 @@ public class Markup {
                         spaceEnd = i;
                     }
                 } else if ((entity = Entity(i, end)) != null) {
-                    AppendCodePoint(buf, entity[0]);
+                    buf.AppendCodePoint(entity[0]);
                     i = entity[1];
                 } else if (ch == '\\' && i + 1 < end && IsASCIIPunctuation(text[i + 1])) {
                     buf.Append(text[i + 1]);
@@ -591,7 +591,7 @@ public class Markup {
             while (i < end) {
                 int[] entity = Entity(i, end);
                 if (entity != null) {
-                    AppendCodePoint(buf, entity[0]);
+                    buf.AppendCodePoint(entity[0]);
                     i = entity[1];
                 } else {
                     buf.Append(text[i]);
@@ -604,25 +604,10 @@ public class Markup {
         // The value of an ASCII digit, of 0 to 9, or of a to f and A to F in
         // hexadecimal, or -1.
         private static int AsciiDigit(char ch, bool hex) {
-            if (ch >= '0' && ch <= '9') {
-                return ch - '0';
+            if (hex) {
+                return Decompressor.HexValue(ch);
             }
-            if (hex && ch >= 'a' && ch <= 'f') {
-                return ch - 'a' + 10;
-            }
-            if (hex && ch >= 'A' && ch <= 'F') {
-                return ch - 'A' + 10;
-            }
-            return -1;
-        }
-
-        // Appends the code point, as its surrogate pair above U+FFFF.
-        private static void AppendCodePoint(StringBuilder buf, int codePoint) {
-            if (codePoint > 0xFFFF) {
-                buf.Append(Char.ConvertFromUtf32(codePoint));
-            } else {
-                buf.Append((char) codePoint);
-            }
+            return (ch >= '0' && ch <= '9') ? ch - '0' : -1;
         }
 
         // A [ starts a link when its ] is before the end, a ( follows the ]

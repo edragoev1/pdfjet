@@ -299,7 +299,7 @@ public class TextColumn : IDrawable {
                     TextLine before = list[list.Count - 1];
                     list.RemoveAt(list.Count - 1);
                     runLength -= before.GetWidth();
-                    before = before.CopyWithText(TrimTrailingSpaces(before.text));
+                    before = before.CopyWithText(Util.TrimTrailingSpaces(before.text));
                     list.Add(before);
                     runLength += before.GetWidth();
                     if ((runLength + Width(text, token)) <= this.w) {
@@ -423,7 +423,7 @@ public class TextColumn : IDrawable {
         for (int i = 0; i < list.Count; i++) {
             TextLine textLine = list[i];
             runLength += (i == (list.Count - 1))
-                    ? Width(textLine, TrimTrailingSpaces(textLine.text))
+                    ? Width(textLine, Util.TrimTrailingSpaces(textLine.text))
                     : textLine.GetWidth();
         }
         return runLength;
@@ -431,14 +431,6 @@ public class TextColumn : IDrawable {
 
     private static float Width(TextLine textLine, String text) {
         return textLine.WidthOf(text);   // Of its glyphs, for text such as Hindi
-    }
-
-    private static String TrimTrailingSpaces(String text) {
-        int end = text.Length;
-        while (end > 0 && text[end - 1] == ' ') {
-            end--;
-        }
-        return text.Substring(0, end);
     }
 
     private float[] MoveToNextLine(float lineHeight) {

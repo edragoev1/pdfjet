@@ -439,6 +439,26 @@ internal class Util {
     /// Returns the code point at the index, like Java's String.codePointAt: the
     /// supplementary code point of a surrogate pair, or the char itself.
     /// </summary>
+    // Returns the number of characters of the text, a surrogate pair one.
+    internal static int CodePointCount(String str) {
+        int count = 0;
+        for (int i = 0; i < str.Length; i++) {
+            if (!(Char.IsLowSurrogate(str[i]) && i > 0 && Char.IsHighSurrogate(str[i - 1]))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // Returns the text without the spaces at its end.
+    internal static String TrimTrailingSpaces(String text) {
+        int end = text.Length;
+        while (end > 0 && text[end - 1] == ' ') {
+            end--;
+        }
+        return text.Substring(0, end);
+    }
+
     internal static int CodePointAt(String str, int i) {
         return Char.IsSurrogatePair(str, i) ? Char.ConvertToUtf32(str, i) : str[i];
     }

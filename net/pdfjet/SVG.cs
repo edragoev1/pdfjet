@@ -51,18 +51,6 @@ namespace PDFjet.NET {
             return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
         }
 
-        // Returns true when the number so far ends with the e of an exponent, so
-        // that the sign of the exponent belongs to it: the numbers of path data
-        // are written as SVG 1.1 section 8.3.9 gives them, sign, digits, point
-        // and exponent.
-        private static bool AfterExponent(StringBuilder buf) {
-            if (buf.Length == 0) {
-                return false;
-            }
-            char last = buf[buf.Length - 1];
-            return last == 'e' || last == 'E';
-        }
-
         // Returns true when the next argument of the operation is one of the two
         // flags of an elliptical arc. SVG 1.1 section 8.3.9 writes a flag as a
         // single character, which needs no separator from what follows, so that
@@ -100,7 +88,7 @@ namespace PDFjet.NET {
                 } else if (ch == '-' || ch == '+') {
                     // The sign starts a number, unless it is the sign of an
                     // exponent: 1e-3 is one number, and 10-3 is two.
-                    if (token && !AfterExponent(buf)) {
+                    if (token && !SVGState.AfterExponent(buf)) {
                         op.args.Add(buf.ToString());
                         buf.Length = 0;
                     }

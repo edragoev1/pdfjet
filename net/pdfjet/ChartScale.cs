@@ -396,7 +396,7 @@ internal static class ChartScale {
         }
         // The longest start of the text that fits with the ellipsis, found by
         // halving the number of code points it keeps
-        int count = CodePointCount(text);
+        int count = Util.CodePointCount(text);
         String best = "\u2026";
         int lo = 0;
         int hi = count - 1;
@@ -411,18 +411,6 @@ internal static class ChartScale {
             }
         }
         return best;
-    }
-
-    // The number of code points of the text, a surrogate pair one.
-    private static int CodePointCount(String text) {
-        int count = 0;
-        for (int i = 0; i < text.Length; i++) {
-            if (Char.IsHighSurrogate(text[i]) && i + 1 < text.Length && Char.IsLowSurrogate(text[i + 1])) {
-                i++;
-            }
-            count++;
-        }
-        return count;
     }
 
     // The first code points of the text, its trailing spaces left out, and an

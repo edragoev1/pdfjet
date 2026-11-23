@@ -25,7 +25,9 @@ internal static class SASLprep {
     // to left with left to right.
     internal static String Prepare(String password) {
         List<int> mapped = new List<int>(password.Length);
-        foreach (int c in CodePoints(password)) {
+        // A surrogate pair is one code point; a lone surrogate is a code point
+        // of its own, which SASLprep prohibits.
+        foreach (int c in DictionaryBreaks.CodePoints(password)) {
             if (InRanges(SASLprepTables.space, c)) {
                 mapped.Add(' ');
             } else if (!InRanges(SASLprepTables.nothing, c)) {
@@ -54,7 +56,7 @@ internal static class SASLprep {
         }
         StringBuilder buf = new StringBuilder(prepared.Count);
         foreach (int c in prepared) {
-            AppendCodePoint(buf, c);
+            buf.AppendCodePoint(c);
         }
         return buf.ToString();
     }
@@ -73,27 +75,6 @@ internal static class SASLprep {
             Array.Resize(ref bytes, 127);
         }
         return bytes;
-    }
-
-    // Returns the code points of the string, a surrogate pair as one; a lone
-    // surrogate is a code point of its own, which SASLprep prohibits.
-    private static IEnumerable<int> CodePoints(String s) {
-        for (int i = 0; i < s.Length; i++) {
-            if (Char.IsHighSurrogate(s[i]) && i + 1 < s.Length && Char.IsLowSurrogate(s[i + 1])) {
-                yield return Char.ConvertToUtf32(s[i], s[i + 1]);
-                i++;
-            } else {
-                yield return s[i];
-            }
-        }
-    }
-
-    private static void AppendCodePoint(StringBuilder buf, int c) {
-        if (c >= 0x10000) {
-            buf.Append(Char.ConvertFromUtf32(c));
-        } else {
-            buf.Append((char) c);
-        }
     }
 
     // Returns true if the character is in one of the ranges, first and last,
