@@ -63,9 +63,7 @@ public class EmbeddedFile {
             buf = Compressor.Deflate(buf);
         }
 
-        if (pdf.encryption != null) {
-            buf = AES256.Encrypt(buf, pdf.encryption.GetKey());
-        }
+        buf = pdf.Encrypted(buf);
 
         pdf.NewObj();
         pdf.Append(Token.BeginDictionary);
@@ -87,14 +85,7 @@ public class EmbeddedFile {
         if (compress) {
             pdf.Append("/Filter /FlateDecode\n");
         }
-        pdf.Append(Token.Length);
-        pdf.Append(buf.Length);
-        pdf.Append(Token.Newline);
-        pdf.Append(Token.EndDictionary);
-        pdf.Append(Token.Stream);
-        pdf.Append(buf);
-        pdf.Append(Token.EndStream);
-        pdf.EndObj();
+        pdf.AppendStreamBody(buf);
 
         pdf.NewObj();
         pdf.Append(Token.BeginDictionary);

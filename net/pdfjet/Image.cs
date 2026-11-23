@@ -429,18 +429,8 @@ public class Image : IDrawable {
             pdf.Append(" 0 R\n");
         }
         pdf.AppendCopiedValue("/Mask", maskArray);
-        byte[] stream = obj.stream;
-        if (pdf.encryption != null) {
-            stream = AES256.Encrypt(stream, pdf.encryption.GetKey());
-        }
-        pdf.Append("/Length ");
-        pdf.Append(stream.Length);
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(stream, 0, stream.Length);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        byte[] stream = pdf.Encrypted(obj.stream);
+        pdf.AppendStreamBody(stream);
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -770,18 +760,8 @@ public class Image : IDrawable {
         pdf.Append(bitsPerComponent);
         pdf.Append('\n');
 
-        byte[] buf = data;
-        if (pdf.encryption != null) {
-            buf = AES256.Encrypt(data, pdf.encryption.GetKey());
-        }
-        pdf.Append("/Length ");
-        pdf.Append(buf.Length);
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(buf);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        byte[] buf = pdf.Encrypted(data);
+        pdf.AppendStreamBody(buf);
         objNumber = pdf.GetObjNumber();
     }
 
@@ -828,10 +808,7 @@ public class Image : IDrawable {
         pdf.Append(pixelHeight);
         pdf.Append('\n');
         if (palette != null) {
-            byte[] colors = palette;
-            if (pdf.encryption != null) {
-                colors = AES256.Encrypt(colors, pdf.encryption.GetKey());
-            }
+            byte[] colors = pdf.Encrypted(palette);
             pdf.Append("/ColorSpace [/Indexed /DeviceRGB ");
             pdf.Append(palette.Length / 3 - 1);
             pdf.Append(" <");
@@ -860,18 +837,8 @@ public class Image : IDrawable {
             pdf.Append(">>\n");
         }
 
-        byte[] buf = data;
-        if (pdf.encryption != null) {
-            buf = AES256.Encrypt(data, pdf.encryption.GetKey());
-        }
-        pdf.Append("/Length ");
-        pdf.Append(buf.Length);
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(buf);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        byte[] buf = pdf.Encrypted(data);
+        pdf.AppendStreamBody(buf);
         pdf.images.Add(this);
         objNumber = pdf.GetObjNumber();
     }

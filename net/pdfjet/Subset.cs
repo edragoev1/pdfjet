@@ -262,9 +262,7 @@ class Subset {
         int length = data.Length;
 
         int metadataObjNumber = pdf.AddMetadataObject(font.info, true);
-        if (pdf.encryption != null) {
-            compressed = AES256.Encrypt(compressed, pdf.encryption.GetKey());
-        }
+        compressed = pdf.Encrypted(compressed);
         pdf.NewObj();
         pdf.Append("<<\n");
         if (program.cff) {
@@ -281,14 +279,7 @@ class Subset {
             pdf.Append(metadataObjNumber);
             pdf.Append(" 0 R\n");
         }
-        pdf.Append("/Length ");
-        pdf.Append(compressed.Length);
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(compressed);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        pdf.AppendStreamBody(compressed);
         font.fileObjNumber = pdf.GetObjNumber();
         return font.kept;
     }

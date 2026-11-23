@@ -377,6 +377,26 @@ public sealed class PDF {
         Append(Token.EndObj);
     }
 
+    // Returns the bytes encrypted when the document is encrypted, as each of
+    // its strings and streams is, or the bytes themselves when it is not.
+    internal byte[] Encrypted(byte[] bytes) {
+        return encryption != null ? AES256.Encrypt(bytes, encryption.GetKey()) : bytes;
+    }
+
+    // Writes the tail of a stream object from its /Length on: the length of
+    // the bytes, the end of the dictionary, the bytes as the stream, and the
+    // end of the object. The caller encrypts the bytes first, if it should.
+    internal void AppendStreamBody(byte[] bytes) {
+        Append(Token.Length);
+        Append(bytes.Length);
+        Append(Token.Newline);
+        Append(Token.EndDictionary);
+        Append(Token.Stream);
+        Append(bytes);
+        Append(Token.EndStream);
+        EndObj();
+    }
+
     internal int GetObjNumber() {
         return objOffset.Count;
     }
@@ -548,24 +568,14 @@ public sealed class PDF {
         // The metadata is encrypted like every other stream, and the
         // encryption dictionary says so with /EncryptMetadata true. Readers do
         // not agree on which metadata streams to leave alone when it is false.
-        byte[] xml = (new System.Text.UTF8Encoding()).GetBytes(sb.ToString());
-        if (encryption != null) {
-            xml = AES256.Encrypt(xml, encryption.GetKey());
-        }
+        byte[] xml = Encrypted((new System.Text.UTF8Encoding()).GetBytes(sb.ToString()));
 
         // This is the metadata object
         NewObj();
         Append(Token.BeginDictionary);
         Append("/Type /Metadata\n");
         Append("/Subtype /XML\n");
-        Append("/Length ");
-        Append(xml.Length);
-        Append(Token.Newline);
-        Append(Token.EndDictionary);
-        Append(Token.Stream);
-        Append(xml, 0, xml.Length);
-        Append(Token.EndStream);
-        EndObj();
+        AppendStreamBody(xml);
 
         return GetObjNumber();
     }
@@ -619,10 +629,7 @@ public sealed class PDF {
     }
 
     private int AddOutputIntentObject() {
-        byte[] profile = ICCBlackScaled.profile;
-        if (encryption != null) {
-            profile = AES256.Encrypt(profile, encryption.GetKey());
-        }
+        byte[] profile = Encrypted(ICCBlackScaled.profile);
 
         NewObj();
         Append(Token.BeginDictionary);
@@ -639,10 +646,7 @@ public sealed class PDF {
         Append(Token.EndStream);
         EndObj();
 
-        byte[] identifierBytes = Encoding.UTF8.GetBytes("sRGB IEC61966-2.1");
-        if (encryption != null) {
-            identifierBytes = AES256.Encrypt(identifierBytes, encryption.GetKey());
-        }
+        byte[] identifierBytes = Encrypted(Encoding.UTF8.GetBytes("sRGB IEC61966-2.1"));
         // OutputIntent object
         NewObj();
         Append(Token.BeginDictionary);
@@ -1021,10 +1025,7 @@ public sealed class PDF {
             }
 
             if (!String.IsNullOrEmpty(language)) {
-                byte[] languageBytes = Encoding.UTF8.GetBytes(language);
-                if (encryption != null) {
-                    languageBytes = AES256.Encrypt(languageBytes, encryption.GetKey());
-                }
+                byte[] languageBytes = Encrypted(Encoding.UTF8.GetBytes(language));
                 Append("/Lang <");
                 Append(Util.ToHexString(languageBytes));
                 Append(">\n");
@@ -1133,13 +1134,7 @@ public sealed class PDF {
     /// UTF-8 bytes would show as two or three wrong characters each.
     /// </summary>
     internal void AppendTextString(String text) {
-        byte[] bytes = Encoding.BigEndianUnicode.GetBytes("\uFEFF" + text);
-        if (encryption != null) {
-            bytes = AES256.Encrypt(bytes, encryption.GetKey());
-        }
-        Append('<');
-        Append(Util.ToHexString(bytes));
-        Append('>');
+        AppendByteString(Encoding.BigEndianUnicode.GetBytes("\uFEFF" + text));
     }
 
     // Appends an entry of the information dictionary with the bytes of a
@@ -1154,9 +1149,7 @@ public sealed class PDF {
     // Appends a string of bytes, like a date, in hexadecimal, encrypted if the
     // document is encrypted.
     internal void AppendByteString(byte[] bytes) {
-        if (encryption != null) {
-            bytes = AES256.Encrypt(bytes, encryption.GetKey());
-        }
+        bytes = Encrypted(bytes);
         Append('<');
         Append(Util.ToHexString(bytes));
         Append('>');
@@ -1203,10 +1196,7 @@ public sealed class PDF {
         Append("/Type /Catalog\n");
 
         if (compliance != Compliance.PDF_1_7 || languageSet) {
-            byte[] languageBytes = Encoding.UTF8.GetBytes(this.language);
-            if (encryption != null) {
-                languageBytes = AES256.Encrypt(languageBytes, encryption.GetKey());
-            }
+            byte[] languageBytes = Encrypted(Encoding.UTF8.GetBytes(this.language));
             Append("/Lang <");
             Append(Util.ToHexString(languageBytes));
             Append(">\n");
@@ -1448,45 +1438,19 @@ public sealed class PDF {
 
     private void AddPageContent(Page page) {
         page.CheckBalanced();
+        // Compressed, without a copy of the content, or not compressed, which
+        // is for diagnostics
+        byte[] buf = Encrypted(contentStreamsCompression ?
+                Compressor.Deflate(page.buf.GetBuffer(), 0, (int) page.buf.Length) : page.buf.ToArray());
+        page.buf = new Page.WrittenContent(this);  // Release the page content memory!
+
+        NewObj();
+        Append(Token.BeginDictionary);
         if (contentStreamsCompression) {
-            // The content, without a copy of it
-            byte[] buf = Compressor.Deflate(page.buf.GetBuffer(), 0, (int) page.buf.Length);
-            if (encryption != null) {
-                buf = AES256.Encrypt(buf, encryption.GetKey());
-            }
-            page.buf = new Page.WrittenContent(this);  // Release the page content memory!
-
-            NewObj();
-            Append(Token.BeginDictionary);
             Append("/Filter /FlateDecode\n");
-            Append("/Length ");
-            Append(buf.Length);
-            Append(Token.Newline);
-            Append(Token.EndDictionary);
-            Append(Token.Stream);
-            Append(buf);
-            Append(Token.EndStream);
-            EndObj();
-            page.contents.Add(GetObjNumber());
-        } else {    // No compression. Used for diagnostics
-            byte[] buf = page.buf.ToArray();
-            if (encryption != null) {
-                buf = AES256.Encrypt(buf, encryption.GetKey());
-            }
-            page.buf = new Page.WrittenContent(this);  // Release the page content memory!
-
-            NewObj();
-            Append(Token.BeginDictionary);
-            Append("/Length ");
-            Append(buf.Length);
-            Append(Token.Newline);
-            Append(Token.EndDictionary);
-            Append(Token.Stream);
-            Append(buf);
-            Append(Token.EndStream);
-            EndObj();
-            page.contents.Add(GetObjNumber());
         }
+        AppendStreamBody(buf);
+        page.contents.Add(GetObjNumber());
         AddPageStructElements(page);
     }
 
@@ -1558,10 +1522,7 @@ public sealed class PDF {
             AppendAscii(buf, icon);
             AppendAscii(buf, "Q\n");
         }
-        byte[] content = buf.ToArray();
-        if (encryption != null) {
-            content = AES256.Encrypt(content, encryption.GetKey());
-        }
+        byte[] content = Encrypted(buf.ToArray());
 
         NewObj();
         Append(Token.BeginDictionary);
@@ -1583,14 +1544,7 @@ public sealed class PDF {
             Append(opacity);
             Append(">>>>>>\n");
         }
-        Append("/Length ");
-        Append(content.Length);
-        Append(Token.Newline);
-        Append(Token.EndDictionary);
-        Append("stream\n");
-        Append(content);
-        Append("\nendstream\n");
-        EndObj();
+        AppendStreamBody(content);
         return GetObjNumber();
     }
 
@@ -1624,10 +1578,7 @@ public sealed class PDF {
         if (uriActions.TryGetValue(uri, out int number)) {
             return number;
         }
-        byte[] bytes = Encoding.UTF8.GetBytes(uri);
-        if (encryption != null) {
-            bytes = AES256.Encrypt(bytes, encryption.GetKey());
-        }
+        byte[] bytes = Encrypted(Encoding.UTF8.GetBytes(uri));
         NewObj();
         Append(Token.BeginDictionary);
         Append("/S /URI\n");
@@ -1714,17 +1665,7 @@ public sealed class PDF {
             Append(annot.fileAttachment.icon);
             Append("\n");
 
-            if (!String.IsNullOrEmpty(annot.fileAttachment.title)) {
-                Append("/T ");
-                AppendTextString(annot.fileAttachment.title);
-                Append("\n");
-            }
-
-            if (!String.IsNullOrEmpty(annot.fileAttachment.contents)) {
-                Append("/Contents ");
-                AppendTextString(annot.fileAttachment.contents);
-                Append("\n");
-            }
+            AppendTitleAndContents(annot.fileAttachment.title, annot.fileAttachment.contents);
         } else if (annot.annotationType.Equals(Annotation.Link)) {
             // PDF/UA requires a link to carry an alternate description in its
             // Contents key.
@@ -1775,72 +1716,16 @@ public sealed class PDF {
             }
             Append("]\n");
 
-            Append("/IC [");
-            Append(annot.fillColor[0]);
-            Append(' ');
-            Append(annot.fillColor[1]);
-            Append(' ');
-            Append(annot.fillColor[2]);
-            Append("]\n");
-
-            if (!IsPDFA1()) {
-                Append("/CA ");
-                Append(annot.opacity);
-                Append("\n");
-            }
-
-            if (!String.IsNullOrEmpty(annot.title)) {
-                Append("/T ");
-                AppendTextString(annot.title);
-                Append("\n");
-            }
-
-            if (!String.IsNullOrEmpty(annot.contents)) {
-                Append("/Contents ");
-                AppendTextString(annot.contents);
-                Append("\n");
-            }
+            AppendFillColorAndOpacity(annot);
+            AppendTitleAndContents(annot.title, annot.contents);
         } else if (annot.annotationType.Equals(Annotation.Square) ||
                 annot.annotationType.Equals(Annotation.Circle)) {
-            Append("/IC [");
-            Append(annot.fillColor[0]);
-            Append(' ');
-            Append(annot.fillColor[1]);
-            Append(' ');
-            Append(annot.fillColor[2]);
-            Append("]\n");
-
-            if (!IsPDFA1()) {
-                Append("/CA ");
-                Append(annot.opacity);
-                Append("\n");
-            }
-
-            if (!String.IsNullOrEmpty(annot.title)) {
-                Append("/T ");
-                AppendTextString(annot.title);
-                Append("\n");
-            }
-
-            if (!String.IsNullOrEmpty(annot.contents)) {
-                Append("/Contents ");
-                AppendTextString(annot.contents);
-                Append("\n");
-            }
+            AppendFillColorAndOpacity(annot);
+            AppendTitleAndContents(annot.title, annot.contents);
         } else if (annot.annotationType.Equals(Annotation.Text)) {
             Append("/Name /Comment\n");
 
-            if (!String.IsNullOrEmpty(annot.title)) {
-                Append("/T ");
-                AppendTextString(annot.title);
-                Append("\n");
-            }
-
-            if (!String.IsNullOrEmpty(annot.contents)) {
-                Append("/Contents ");
-                AppendTextString(annot.contents);
-                Append("\n");
-            }
+            AppendTitleAndContents(annot.title, annot.contents);
         }
 
         if (index != -1) {
@@ -1852,6 +1737,37 @@ public sealed class PDF {
         EndObj();
 
         return index;
+    }
+
+    // Appends the interior color of a polygon, a square or a circle
+    // annotation, and its opacity, which PDF/A-1 does not have.
+    private void AppendFillColorAndOpacity(Annotation annot) {
+        Append("/IC [");
+        Append(annot.fillColor[0]);
+        Append(' ');
+        Append(annot.fillColor[1]);
+        Append(' ');
+        Append(annot.fillColor[2]);
+        Append("]\n");
+        if (!IsPDFA1()) {
+            Append("/CA ");
+            Append(annot.opacity);
+            Append("\n");
+        }
+    }
+
+    // Appends the title and the contents of an annotation, each when it has one.
+    private void AppendTitleAndContents(String title, String contents) {
+        if (!String.IsNullOrEmpty(title)) {
+            Append("/T ");
+            AppendTextString(title);
+            Append("\n");
+        }
+        if (!String.IsNullOrEmpty(contents)) {
+            Append("/Contents ");
+            AppendTextString(contents);
+            Append("\n");
+        }
     }
 
     private void AddAnnotDictionaries() {
@@ -2416,7 +2332,7 @@ public sealed class PDF {
                 i += 2;
             } else if (encryption != null
                     && (token.StartsWith("(", StringComparison.Ordinal) || (token.StartsWith("<", StringComparison.Ordinal) && !token.Equals("<<")))) {
-                result.Add("<" + Util.ToHexString(AES256.Encrypt(Decryptor.ToBytes(token), encryption.GetKey())) + ">");
+                result.Add("<" + Util.ToHexString(Encrypted(Decryptor.ToBytes(token))) + ">");
             } else {
                 result.Add(token);
             }
@@ -2427,7 +2343,7 @@ public sealed class PDF {
     private void AddMergedObject(PDFobj obj, int number, List<String> value) {
         byte[] stream = obj.stream;
         if (stream != null && encryption != null) {
-            stream = AES256.Encrypt(stream, encryption.GetKey());
+            stream = Encrypted(stream);
             SetEntry(value, "/Length", new List<String> { stream.Length.ToString(CultureInfo.InvariantCulture) });
         }
         SetObjOffset(number, byteCount);
@@ -3152,7 +3068,7 @@ public sealed class PDF {
 
     private bool Process(
             PDFobj obj, StringBuilder sb1, byte[] buf, int off) {
-        String str = TrimToken(sb1.ToString());
+        String str = Util.Trim(sb1.ToString());
         if (!str.Equals("")) {
             obj.dict.Add(str);
         }
@@ -3173,21 +3089,6 @@ public sealed class PDF {
             return true;
         }
         return false;
-    }
-
-    // Removes the characters up to the space at both ends, like trim() in Java.
-    // Trim() also removes Unicode spaces like the no-break space, which is the
-    // byte 0xA0, so it could remove a byte at the end of a name.
-    private static String TrimToken(String str) {
-        int start = 0;
-        int end = str.Length;
-        while (start < end && str[start] <= ' ') {
-            start++;
-        }
-        while (end > start && str[end - 1] <= ' ') {
-            end--;
-        }
-        return str.Substring(start, end - start);
     }
 
     internal PDFobj GetObject(byte[] buf, int off) {
