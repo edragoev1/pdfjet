@@ -701,28 +701,7 @@ public class BigTable {
     // artifact, which is what the header rows that repeat on the next pages
     // are.
     private void drawFieldsAndLine(String[] fields, Font font, StructElem cellStructure, boolean header) {
-        // The shading carries no meaning of its own.
-        float[] shading = null;
-        if (header && headerColor != null) {
-            shading = headerColor;
-            this.highlightRow = false;
-        } else if (this.highlightRow) {
-            shading = shadingColor;
-            this.highlightRow = false;
-        } else {
-            this.highlightRow = true;
-        }
-        if (shading != null) {
-            page.addArtifactBMC();
-            highlightRow(page, font, shading);
-            page.addEMC();
-        }
-        // The line above the text, stroked with the page's other lines, but
-        // above the header when setTopLine leaves it out
-        if (borderColor != null && (topLine || !header)) {
-            addRowLine(this.yText - font.ascent - verticalPadding);
-        }
-        page.setBrushColor(Color.black);
+        drawShadingAndTopLine(font, header, 0f);
 
         boolean tagged = structElement != null && cellStructure != null;
         StructElement parent = page.structParent;
@@ -781,12 +760,32 @@ public class BigTable {
         return (cellStructure == StructElem.TH) ? "<</O /Table /Scope /Column>>" : null;
     }
 
-    private void highlightRow(Page page, Font font, float[] color) {
-        float[] original = page.getBrushColor();
-        page.setBrushColor(color);
-        page.fillRectBetween(vertLines[0], this.yText - font.ascent - verticalPadding,
-                vertLines[this.numberOfColumns], this.yText + font.descent + verticalPadding);
-        page.setBrushColor(original);
+    // Shades the row, extra taller than one line, when it is the header or
+    // every other row; adds the line above it; and leaves the text black.
+    // drawFieldsAndLine and drawWrappedFields begin their rows with it.
+    private void drawShadingAndTopLine(Font font, boolean header, float extra) {
+        // The shading carries no meaning of its own.
+        float[] shading = null;
+        if (header && headerColor != null) {
+            shading = headerColor;
+            this.highlightRow = false;
+        } else if (this.highlightRow) {
+            shading = shadingColor;
+            this.highlightRow = false;
+        } else {
+            this.highlightRow = true;
+        }
+        if (shading != null) {
+            page.addArtifactBMC();
+            highlightRows(page, font, shading, extra);
+            page.addEMC();
+        }
+        // The line above the text, stroked with the page's other lines, but
+        // above the header when setTopLine leaves it out
+        if (borderColor != null && (topLine || !header)) {
+            addRowLine(this.yText - font.ascent - verticalPadding);
+        }
+        page.setBrushColor(Color.black);
     }
 
     // Keeps the line above a row, for drawTheVerticalLines.
@@ -1477,28 +1476,7 @@ public class BigTable {
         if (count > 1) {
             extra = (float) (count - 1) * lineHeight;
         }
-        // The shading carries no meaning of its own.
-        float[] shading = null;
-        if (header && headerColor != null) {
-            shading = headerColor;
-            this.highlightRow = false;
-        } else if (this.highlightRow) {
-            shading = shadingColor;
-            this.highlightRow = false;
-        } else {
-            this.highlightRow = true;
-        }
-        if (shading != null) {
-            page.addArtifactBMC();
-            highlightRows(page, font, shading, extra);
-            page.addEMC();
-        }
-        // The line above the text, stroked with the page's other lines, but
-        // above the header when setTopLine leaves it out
-        if (borderColor != null && (topLine || !header)) {
-            addRowLine(this.yText - font.ascent - verticalPadding);
-        }
-        page.setBrushColor(Color.black);
+        drawShadingAndTopLine(font, header, extra);
 
         boolean tagged = structElement != null && cellStructure != null;
         StructElement parent = page.structParent;
