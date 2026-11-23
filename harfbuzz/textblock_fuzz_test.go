@@ -75,7 +75,9 @@ func FuzzHarfBuzzTextBlock(f *testing.F) {
 		frame.SetHeight(2000)
 		frame.SetLocation(20, 20)
 		frame.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
-		if err := pdf.Complete(); err != nil {
+		// A document fails only where go-text cannot shape, as a mark after
+		// no letter, and says so; it never panics
+		if err := pdf.Complete(); err != nil && !strings.Contains(err.Error(), "could not shape the text") {
 			t.Fatalf("%q: %v", text, err)
 		}
 	})

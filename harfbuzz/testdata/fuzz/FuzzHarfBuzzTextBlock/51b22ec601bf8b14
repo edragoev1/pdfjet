@@ -1,0 +1,4 @@
+go test fuzz v1
+[]byte("09!!000000")
+uint16(20)
+byte('l')

@@ -152,3 +152,22 @@ func TestHebrewInAParagraphIsShapedLeftToRight(t *testing.T) {
 		}
 	}
 }
+
+// go-text v0.3.5 panics on a virama and a vowel sign after an emoji, where
+// HarfBuzz draws a dotted circle: the document fails, saying so, and the
+// program goes on (found by FuzzHarfBuzzTextBlock)
+func TestAPanicOfGoTextIsAnError(t *testing.T) {
+	t.Chdir("..")
+	data, err := os.ReadFile(languages[0].font)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdf := pdfjet.NewPDF(bufio.NewWriter(&bytes.Buffer{}))
+	font := pdfjet.NewFontFromBytes(pdf, data)
+	line := pdfjet.NewTextLine(font, "\U0001F600\u094D\u093F\u093F") // The least that panics
+	line.SetLocation(50, 50)
+	line.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
+	if err := pdf.Complete(); err == nil || !strings.Contains(err.Error(), "could not shape the text") {
+		t.Fatalf("not the error of go-text: %v", err)
+	}
+}

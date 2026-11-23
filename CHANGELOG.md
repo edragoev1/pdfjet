@@ -126,6 +126,10 @@ Each is described in detail below.
   `HarfBuzzGlyph`, `NewHarfBuzzShaper` and `SetDefaultShaper`; in .NET
   `IHarfBuzz`, `HarfBuzzGlyph`, `HarfBuzzShaper` and
   `TextBlock.SetDefaultShaper`. Example_52 uses them.
+  In Go, a panic of go-text is an error: v0.3.5, its latest, panics on
+  a virama and vowel signs after an emoji ("😀्िि"), where HarfBuzz draws
+  a dotted circle; the document fails saying so, and the program goes on
+  (found by fuzzing, FuzzHarfBuzzTextBlock).
 - **A TextBlock or TextLine given no shaper, in .NET and Go,** which have
   no text engine of their own: the shaper of `SetDefaultShaper`, else PDFjet's
   HarfBuzz where the program has it; `HBShape`, HarfBuzz's program

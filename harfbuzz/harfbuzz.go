@@ -18,6 +18,7 @@ package harfbuzz
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"sync"
 
@@ -96,8 +97,17 @@ func scriptOf(runes []rune) language.Script {
 }
 
 // ShapeRuns shapes each run in the font at a size of a pixel a font unit, so
-// that its glyphs are in font units, as hb-shape gives them.
-func (g *goText) ShapeRuns(file []byte, runs []string, lang string) ([][]pdfjet.HarfBuzzGlyph, error) {
+// that its glyphs are in font units, as hb-shape gives them. A panic of
+// go-text is an error: v0.3.5's Indic reordering panics on a virama and a
+// vowel sign after an emoji, where HarfBuzz draws a dotted circle (found by
+// FuzzHarfBuzzTextBlock), and the program must not end for it.
+func (g *goText) ShapeRuns(file []byte, runs []string, lang string) (shaped [][]pdfjet.HarfBuzzGlyph, err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			shaped, err = nil, harfBuzzError(fmt.Sprintf(
+				"PDFjet's HarfBuzz (go-text) could not shape the text, as with a mark after no letter: %v", p))
+		}
+	}()
 	if len(file) == 0 {
 		return nil, errEmptyFont
 	}
@@ -107,7 +117,7 @@ func (g *goText) ShapeRuns(file []byte, runs []string, lang string) ([][]pdfjet.
 	}
 	upem := int(face.Upem())
 	var shaper shaping.HarfbuzzShaper // One for each call: it is not for two goroutines at once
-	shaped := make([][]pdfjet.HarfBuzzGlyph, len(runs))
+	shaped = make([][]pdfjet.HarfBuzzGlyph, len(runs))
 	for i, run := range runs {
 		runes := []rune(run)
 		output := shaper.Shape(shaping.Input{
