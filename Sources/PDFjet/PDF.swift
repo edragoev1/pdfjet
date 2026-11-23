@@ -2728,7 +2728,7 @@ public final class PDF {
                     token.append(c2)
                     p = 1
                 }
-            } else if isWhiteSpace(c2) {
+            } else if PDFobj.isWhiteSpace(c2) {
                 done = process(obj, &token, buf, offset)
             } else if c2 == 0x2F {          // "/"
                 done = process(obj, &token, buf, offset)
@@ -2745,7 +2745,7 @@ public final class PDF {
                         // A hexadecimal string is one token, without its white space.
                         token.append(c2)
                         while offset < len && buf[offset] != 0x3E {
-                            if !isWhiteSpace(buf[offset]) {
+                            if !PDFobj.isWhiteSpace(buf[offset]) {
                                 token.append(buf[offset])
                             }
                             offset += 1
@@ -2820,11 +2820,11 @@ public final class PDF {
         header.reserveCapacity(max(0, min(count, 1024)))
         var i = 0
         while i < length && header.count < count {
-            while i < length && isWhiteSpace(data[i]) {
+            while i < length && PDFobj.isWhiteSpace(data[i]) {
                 i += 1
             }
             let start = i
-            while i < length && !isWhiteSpace(data[i]) {
+            while i < length && !PDFobj.isWhiteSpace(data[i]) {
                 i += 1
             }
             // A token of more than 20 bytes is no number of a header, and only its
@@ -2838,15 +2838,6 @@ public final class PDF {
             }
         }
         return header
-    }
-
-    private func isWhiteSpace(_ c: UInt8) -> Bool {
-        return c == 0x00            // Null
-            || c == 0x09            // Horizontal Tab
-            || c == 0x0A            // Line Feed (LF)
-            || c == 0x0C            // Form Feed
-            || c == 0x0D            // Carriage Return (CR)
-            || c == 0x20            // Space
     }
 
     ///
@@ -3158,7 +3149,7 @@ public final class PDF {
                         continue
                     }
                 }
-            } else if startsWith(buf, i, trailerKeyword) {
+            } else if Util.startsWith(buf, i, trailerKeyword) {
                 trailerOffset = i
             }
             i += 1
@@ -3231,22 +3222,12 @@ public final class PDF {
                 buf[m] == 0x6F && buf[m + 1] == 0x62 && buf[m + 2] == 0x6A     // "obj"
     }
 
-    private func startsWith(_ buf: [UInt8], _ off: Int, _ str: [UInt8]) -> Bool {
-        if off < 0 || off + str.count > buf.count {
-            return false
-        }
-        for i in 0..<str.count where buf[off + i] != str[i] {
-            return false
-        }
-        return true
-    }
-
     // Returns the offset of the first str from the offset from on that ends by
     // the offset to, or -1.
     private func indexOf(_ buf: [UInt8], _ str: [UInt8], _ from: Int, _ to: Int) -> Int {
         var i = max(from, 0)
         while i + str.count <= min(to, buf.count) {
-            if startsWith(buf, i, str) {
+            if Util.startsWith(buf, i, str) {
                 return i
             }
             i += 1
@@ -3259,9 +3240,9 @@ public final class PDF {
         let keyword = Array("startxref".utf8)
         var i = buf.count - keyword.count
         while i >= 0 {
-            if startsWith(buf, i, keyword) {
+            if Util.startsWith(buf, i, keyword) {
                 var j = i + keyword.count
-                while j < buf.count && isWhiteSpace(buf[j]) {
+                while j < buf.count && PDFobj.isWhiteSpace(buf[j]) {
                     j += 1
                 }
                 var offset = 0

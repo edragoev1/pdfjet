@@ -134,7 +134,7 @@ class Util {
                 quoted = true
                 i += 1
             } else {
-                while i < bytes.count && !Util.startsWith(bytes, separator, i) {
+                while i < bytes.count && !Util.startsWith(bytes, i, separator) {
                     i += 1
                 }
                 if i == bytes.count {
@@ -207,13 +207,13 @@ class Util {
                 // The text between the quotes, where every quote is doubled.
                 let field = String(decoding: bytes[start..<(i - 1)], as: UTF8.self)
                 fields.append(field.replacingOccurrences(of: "\"\"", with: "\"", options: .literal))
-                if i < bytes.count && !Util.startsWith(bytes, separator, i) {
+                if i < bytes.count && !Util.startsWith(bytes, i, separator) {
                     throw PDFjetError(message: "A quoted field is followed by text on this line of the data file: "
                             + Util.excerpt(line))
                 }
             } else {
                 var end = i
-                while end < bytes.count && !Util.startsWith(bytes, separator, end) {
+                while end < bytes.count && !Util.startsWith(bytes, end, separator) {
                     end += 1
                 }
                 fields.append(String(decoding: bytes[i..<end], as: UTF8.self))
@@ -242,11 +242,13 @@ class Util {
         return nil
     }
 
-    private static func startsWith(_ bytes: [UInt8], _ separator: [UInt8], _ at: Int) -> Bool {
-        if at + separator.count > bytes.count {
+    // Tells if the bytes from off on start with str: false for an offset
+    // before them, or one too near their end.
+    static func startsWith(_ buf: [UInt8], _ off: Int, _ str: [UInt8]) -> Bool {
+        if off < 0 || off + str.count > buf.count {
             return false
         }
-        for k in 0..<separator.count where bytes[at + k] != separator[k] {
+        for i in 0..<str.count where buf[off + i] != str[i] {
             return false
         }
         return true

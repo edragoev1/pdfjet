@@ -224,7 +224,7 @@ public final class PDFobj {
         var found = endstreamOf(buf, offset, end)
         if found == -1 {
             found = offset
-            while found + keyword.count <= end && !startsWith(buf, found, keyword) {
+            while found + keyword.count <= end && !Util.startsWith(buf, found, keyword) {
                 found += 1
             }
         }
@@ -257,8 +257,8 @@ public final class PDFobj {
         var i = max(from, 0)
         while i < to {
             let c = buf[i]
-            if c == 0x73 && i + 6 <= to && startsWith(buf, i, stream) {   // s
-                if i - 3 >= from && startsWith(buf, i - 3, end) {
+            if c == 0x73 && i + 6 <= to && Util.startsWith(buf, i, stream) {   // s
+                if i - 3 >= from && Util.startsWith(buf, i - 3, end) {
                     if streams == 0 {
                         return (objects == 0) ? i - 3 : -1
                     }
@@ -266,7 +266,7 @@ public final class PDFobj {
                 } else if opensStream(buf, i) {
                     streams += 1
                 }
-            } else if c == 0x65 && startsWith(buf, i, endobj) {             // e
+            } else if c == 0x65 && Util.startsWith(buf, i, endobj) {             // e
                 if objects > 0 {
                     objects -= 1
                 }
@@ -303,7 +303,7 @@ public final class PDFobj {
         while i < buf.count && isWhiteSpace(buf[i]) {
             i += 1
         }
-        return startsWith(buf, i, Array("endobj".utf8)) ? i + 6 : -1
+        return Util.startsWith(buf, i, Array("endobj".utf8)) ? i + 6 : -1
     }
 
     // Returns the offset of the endstream keyword that follows the /Length of
@@ -320,21 +320,13 @@ public final class PDFobj {
             i += 1
         }
         budget.readLeft -= i - (offset + length)
-        return startsWith(buf, i, Array("endstream".utf8)) ? i : -1
+        return Util.startsWith(buf, i, Array("endstream".utf8)) ? i : -1
     }
 
+    // Tells if the byte is white space in PDF: null, tab, line feed, form
+    // feed, carriage return or space.
     static func isWhiteSpace(_ c: UInt8) -> Bool {
         return c == 0x00 || c == 0x09 || c == 0x0A || c == 0x0C || c == 0x0D || c == 0x20
-    }
-
-    private static func startsWith(_ buf: [UInt8], _ off: Int, _ str: [UInt8]) -> Bool {
-        if off < 0 || off > buf.count - str.count {
-            return false
-        }
-        for i in 0..<str.count where buf[off + i] != str[i] {
-            return false
-        }
-        return true
     }
 
     // Sets the /Length of the stream, replacing a reference to the length, and
