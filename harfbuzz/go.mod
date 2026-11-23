@@ -9,7 +9,7 @@ module github.com/edragoev1/pdfjet/harfbuzz/v9
 go 1.26.0
 
 require (
-	github.com/edragoev1/pdfjet/v9 v9.1.9
+	github.com/edragoev1/pdfjet/v9 v9.2.1
 	github.com/go-text/typesetting v0.3.5
 	golang.org/x/image v0.23.0
 )
