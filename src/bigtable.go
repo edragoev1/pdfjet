@@ -620,25 +620,7 @@ func (bt *BigTable) drawTextAndLine(fields []string) {
 // are.
 func (bt *BigTable) drawFieldsAndLine(
 	fields []string, font *Font, cellStructure structelem.StructElem, header bool) {
-	// The shading carries no meaning of its own.
-	if shading, ok := bt.shadingOf(header); ok {
-		bt.page.AddArtifactBMC()
-		bt.highlightRow(bt.page, font, shading)
-		bt.page.AddEMC()
-	}
-	// The line above the text, stroked with the page's other lines, but
-	// above the header when SetTopLine leaves it out
-	if bt.hasBorder && (!bt.noTopLine || !header) {
-		bt.rowLines = append(bt.rowLines, bt.yText-font.ascent-bt.verticalPadding)
-	}
-	bt.page.SetBrushColor(color.Black)
-
-	tagged := bt.structElement != nil && cellStructure != ""
-	parent := bt.page.structParent
-	var rowElement *structElement
-	if tagged {
-		rowElement = bt.page.addStructElement(bt.structElement, structelem.TR, "")
-	}
+	tagged, parent, rowElement := bt.beginRow(font, cellStructure, header, 0.0)
 	for i := 0; i < bt.numberOfColumns; i++ {
 		text := fields[bt.columns[i]]
 		if bt.checkLineBreaks && hasLineBreak(text) {
@@ -683,6 +665,34 @@ func (bt *BigTable) drawFieldsAndLine(
 	bt.page.structParent = parent
 }
 
+// beginRow draws the shading of a row, extra taller than one line, and keeps
+// the line above it, and returns whether its cells are tagged, the structure
+// parent of the page, which the row gives back when it is drawn, and the TR
+// element of the row when its cells are tagged.
+func (bt *BigTable) beginRow(font *Font, cellStructure structelem.StructElem, header bool, extra float32) (
+	bool, *structElement, *structElement) {
+	// The shading carries no meaning of its own.
+	if shading, ok := bt.shadingOf(header); ok {
+		bt.page.AddArtifactBMC()
+		bt.highlightRows(bt.page, font, shading, extra)
+		bt.page.AddEMC()
+	}
+	// The line above the text, stroked with the page's other lines, but
+	// above the header when SetTopLine leaves it out
+	if bt.hasBorder && (!bt.noTopLine || !header) {
+		bt.rowLines = append(bt.rowLines, bt.yText-font.ascent-bt.verticalPadding)
+	}
+	bt.page.SetBrushColor(color.Black)
+
+	tagged := bt.structElement != nil && cellStructure != ""
+	parent := bt.page.structParent
+	var rowElement *structElement
+	if tagged {
+		rowElement = bt.page.addStructElement(bt.structElement, structelem.TR, "")
+	}
+	return tagged, parent, rowElement
+}
+
 // shadingOf returns the color of the row being drawn, and false when it is
 // not shaded: the header's color for the header, if it has one, and the
 // shading of every other row.
@@ -717,14 +727,6 @@ func bigTableCellAttributes(cellStructure structelem.StructElem) string {
 		return "<</O /Table /Scope /Column>>"
 	}
 	return ""
-}
-
-func (bt *BigTable) highlightRow(page *Page, font *Font, rgb [3]float32) {
-	original := page.GetBrushColor()
-	page.SetBrushColorRGB(rgb)
-	page.fillRectBetween(bt.vertLines[0], bt.yText-font.ascent-bt.verticalPadding,
-		bt.vertLines[bt.numberOfColumns], bt.yText+font.descent+bt.verticalPadding)
-	page.SetBrushColorRGB(original)
 }
 
 // drawTheVerticalLines draws the lines of the page when it is done, as one
@@ -1350,25 +1352,7 @@ func (bt *BigTable) drawWrappedFields(
 	if count > 1 {
 		extra = float32(float32(count-1) * lineHeight)
 	}
-	// The shading carries no meaning of its own.
-	if shading, ok := bt.shadingOf(header); ok {
-		bt.page.AddArtifactBMC()
-		bt.highlightRows(bt.page, font, shading, extra)
-		bt.page.AddEMC()
-	}
-	// The line above the text, stroked with the page's other lines, but
-	// above the header when SetTopLine leaves it out
-	if bt.hasBorder && (!bt.noTopLine || !header) {
-		bt.rowLines = append(bt.rowLines, bt.yText-font.ascent-bt.verticalPadding)
-	}
-	bt.page.SetBrushColor(color.Black)
-
-	tagged := bt.structElement != nil && cellStructure != ""
-	parent := bt.page.structParent
-	var rowElement *structElement
-	if tagged {
-		rowElement = bt.page.addStructElement(bt.structElement, structelem.TR, "")
-	}
+	tagged, parent, rowElement := bt.beginRow(font, cellStructure, header, extra)
 	for i := 0; i < bt.numberOfColumns; i++ {
 		if tagged {
 			bt.page.structParent = rowElement
