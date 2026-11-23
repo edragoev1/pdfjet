@@ -649,59 +649,15 @@ public class Image : Drawable {
         page.saveGraphicsState()
 
         if degrees == 0 {
-            page.append(w!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(h!)
-            page.append(Token.space)
-            page.append(x)
-            page.append(Token.space)
-            page.append(page.height - (y + h!))
-            page.append(" cm\n")
+            appendMatrix(page, w!, h!, x, page.height - (y + h!))
         } else if degrees == 90 {
-            page.append(h!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(w!)
-            page.append(Token.space)
-            page.append(x)
-            page.append(Token.space)
-            page.append(page.height - y)
-            page.append(" cm\n")
+            appendMatrix(page, h!, w!, x, page.height - y)
             page.append("0 -1 1 0 0 0 cm\n")
         } else if degrees == 180 {
-            page.append(w!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(h!)
-            page.append(Token.space)
-            page.append(x + w!)
-            page.append(Token.space)
-            page.append(page.height - y)
-            page.append(" cm\n")
+            appendMatrix(page, w!, h!, x + w!, page.height - y)
             page.append("-1 0 0 -1 0 0 cm\n")
         } else if degrees == 270 {
-            page.append(h!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(w!)
-            page.append(Token.space)
-            page.append(x + h!)
-            page.append(Token.space)
-            page.append(page.height - (y + w!))
-            page.append(" cm\n")
+            appendMatrix(page, h!, w!, x + h!, page.height - (y + w!))
             page.append("0 1 -1 0 0 0 cm\n")
         }
 
@@ -749,6 +705,23 @@ public class Image : Drawable {
         }
 
         return corner
+    }
+
+    // Writes the matrix that scales the image to sx by sy and moves it to
+    // tx, ty: "sx 0 0 sy tx ty cm".
+    private func appendMatrix(_ page: Page, _ sx: Float, _ sy: Float, _ tx: Float, _ ty: Float) {
+        page.append(sx)
+        page.append(Token.space)
+        page.append(Float(0.0))
+        page.append(Token.space)
+        page.append(Float(0.0))
+        page.append(Token.space)
+        page.append(sy)
+        page.append(Token.space)
+        page.append(tx)
+        page.append(Token.space)
+        page.append(ty)
+        page.append(" cm\n")
     }
 
     ///
