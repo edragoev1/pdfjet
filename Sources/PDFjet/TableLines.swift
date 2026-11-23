@@ -92,10 +92,7 @@ final class TableLines {
     func addBorders(_ page: Page, _ properties: UInt32, _ color: Int32, _ width: Float,
             _ x: Float, _ y: Float, _ cellW: Float, _ cellH: Float) {
         // As setPenColor(Int32) makes the color
-        let r = Float((color >> 16) & 0xff)/255.0
-        let g = Float((color >>  8) & 0xff)/255.0
-        let b = Float((color)       & 0xff)/255.0
-        cellPenColor = [r, g, b]
+        cellPenColor = Util.rgb(color)
         cellPenWidth = width
         hasCellPen = true
         penChangesAtCell = page.penChanges

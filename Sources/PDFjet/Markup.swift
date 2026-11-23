@@ -260,8 +260,8 @@ public class Markup {
     }
 
     // True when the code units are all U+0020 or below, so that String.trim in
-    // Java would leave nothing of them.
-    fileprivate static func isBlank(_ units: ArraySlice<UInt16>) -> Bool {
+    // Java would leave nothing of them. Markdown and its parser use it too.
+    static func isBlank<C: Collection>(_ units: C) -> Bool where C.Element == UInt16 {
         for unit in units where unit > 0x20 {
             return false
         }
@@ -269,8 +269,8 @@ public class Markup {
     }
 
     // Character.isWhitespace in Java, of a UTF-16 code unit: a surrogate is
-    // not whitespace.
-    fileprivate static func isWhitespace(_ unit: UInt16) -> Bool {
+    // not whitespace. The Markdown parser uses it too.
+    static func isWhitespace(_ unit: UInt16) -> Bool {
         guard let scalar = Unicode.Scalar(unit) else {
             return false
         }

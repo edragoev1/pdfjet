@@ -213,10 +213,7 @@ public class TextBlock : Drawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.textColor = [r, g, b]
+        self.textColor = Util.rgb(color)
         return self
     }
 
@@ -239,10 +236,7 @@ public class TextBlock : Drawable {
             self.fillColor = nil
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.fillColor = [r, g, b]
+        self.fillColor = Util.rgb(color)
         return self
     }
 
@@ -265,10 +259,7 @@ public class TextBlock : Drawable {
             self.borderColor = nil
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.borderColor = [r, g, b]
+        self.borderColor = Util.rgb(color)
         return self
     }
 
@@ -1166,22 +1157,9 @@ public class TextBlock : Drawable {
         page!.restoreGraphicsState()
 
         if !(uri ?? "").isEmpty {
-            page!.addAnnotation(Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + width,
-                    y + blockHeight,
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    nil,    // The destination name
-                    nil,
-                    nil,
-                    nil))
+            page!.addAnnotation(Annotation.link(
+                    x, y, x + width, y + blockHeight,
+                    uri, nil, nil, nil, nil))
         }
 
         return [x + width, y + blockHeight]

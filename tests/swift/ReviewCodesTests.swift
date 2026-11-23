@@ -177,11 +177,13 @@ import Testing
                     "7 0 obj << /ByteRange [ 0 10 20 30 ] /Contents <0123> >> endobj",
                     "7 0 obj << /FT /Sig /V << /Type /Sig /Contents <0123> >> /T (Signature1) >> endobj"] {
             let dict = raw.components(separatedBy: " ")
-            #expect(Decryptor.isSignatureDict(dict, dict.firstIndex(of: "<0123>")!), "\(raw)")
+            let i = dict.firstIndex(of: "<0123>")!
+            #expect(Decryptor.isSignatureDictFrom(dict, Decryptor.dictionaryStarts(dict)[i]), "\(raw)")
         }
         // The /Contents of another dictionary is decrypted
         let dict = "7 0 obj << /Type /Annot /Contents (Note) >> endobj".components(separatedBy: " ")
-        #expect(!Decryptor.isSignatureDict(dict, dict.firstIndex(of: "(Note)")!))
+        let i = dict.firstIndex(of: "(Note)")!
+        #expect(!Decryptor.isSignatureDictFrom(dict, Decryptor.dictionaryStarts(dict)[i]))
     }
 
     @Test func encryptionThePermissionsOfTheCallerAreNotChanged() throws {

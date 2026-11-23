@@ -164,18 +164,7 @@ public class Stamp : Drawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float((color >> 16) & 0xff) / 255.0
-        let g = Float((color >> 8) & 0xff) / 255.0
-        let b = Float(color & 0xff) / 255.0
-
-        append(r)
-        append(" ")
-        append(g)
-        append(" ")
-        append(b)
-        append(" rg\n")
-
-        return self
+        return setFillColor(Util.rgb(color))
     }
 
     /// Sets the stroke color for the content drawn after it, from an array of red, green and blue values.
@@ -197,18 +186,7 @@ public class Stamp : Drawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float((color >> 16) & 0xff) / 255.0
-        let g = Float((color >> 8) & 0xff) / 255.0
-        let b = Float(color & 0xff) / 255.0
-
-        append(r)
-        append(" ")
-        append(g)
-        append(" ")
-        append(b)
-        append(" RG\n")
-
-        return self
+        return setStrokeColor(Util.rgb(color))
     }
 
     /// Sets the stroke width for the content drawn after it.
@@ -426,13 +404,7 @@ public class Stamp : Drawable {
         // Encrypted as every other stream of an encrypted document, which the
         // stamp's was not: a reader decrypted its plain bytes, and the stamp
         // was lost (review of 11 October 2026, #1)
-        let content = pdf.encrypted(buf)
-        pdf.append("/Length \(content.count)\n")
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(content)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(pdf.encrypted(buf))
 
         pdf.stamps.append(self)
         objNumber = pdf.getObjNumber()

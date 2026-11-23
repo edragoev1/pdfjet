@@ -125,20 +125,7 @@ public class Font {
     public init(_ pdf: PDF, _ coreFont: Int) throws {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance
-        let font = try CoreFont(coreFont)
-        self.isCoreFont = true
-        self.name = font.name!
-        self.bBoxLLx = font.bBoxLLx!
-        self.bBoxLLy = font.bBoxLLy!
-        self.bBoxURx = font.bBoxURx!
-        self.bBoxURy = font.bBoxURy!
-        self.metrics = font.metrics
-        self.symbolic = font.name == "Symbol" || font.name == "ZapfDingbats"
-        self.fontUnderlinePosition = Int16(font.underlinePosition!)
-        self.fontUnderlineThickness = Int16(font.underlineThickness!)
-        self.fontAscent = Int16(font.bBoxURy!)
-        self.fontDescent = Int16(font.bBoxLLy!)
-        setSize(size)
+        try setCoreFont(coreFont)
 
         pdf.newObj()
         pdf.append("<<\n")
@@ -159,6 +146,12 @@ public class Font {
 
     // Used by PDFobj
     init(_ coreFont: Int) throws {
+        try setCoreFont(coreFont)
+    }
+
+    // Takes the name, the box, the metrics and the other measures of the
+    // core font, as both of its initializers do.
+    private func setCoreFont(_ coreFont: Int) throws {
         let font = try CoreFont(coreFont)
         self.isCoreFont = true
         self.name = font.name!

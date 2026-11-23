@@ -1104,6 +1104,16 @@ public class Table : Drawable {
         if let page = page, refused(page.pdf) {
             return [x1, y1]
         }
+        prepareToDraw()
+        defer { columnSums = nil }
+        let xy = drawPage(page, 0)
+        return [x1 + getWidth(), xy[1]]
+    }
+
+    // Wraps the text of the cells, spans the rows, closes the borders of the
+    // last column and the last row, and measures the rows, as both drawOn
+    // methods do before they draw; the sums of the columns start empty.
+    private func prepareToDraw() {
         wrapAroundCellText()
         applyRowSpans()
         setRightBorderOnLastColumn()
@@ -1111,9 +1121,6 @@ public class Table : Drawable {
         heights = getRowHeights()
         striped = getStripedRows()
         columnSums = [:]
-        defer { columnSums = nil }
-        let xy = drawPage(page, 0)
-        return [x1 + getWidth(), xy[1]]
     }
 
     ///
@@ -1152,13 +1159,7 @@ public class Table : Drawable {
         if refused(pdf) {
             return [x1, y1]
         }
-        wrapAroundCellText()
-        applyRowSpans()
-        setRightBorderOnLastColumn()
-        setBottomBorderOnLastRow()
-        heights = getRowHeights()
-        striped = getStripedRows()
-        columnSums = [:]
+        prepareToDraw()
         defer { columnSums = nil }
         // A table with no rows left to draw needs no page, and ends where it starts.
         var xy: [Float] = [x1, y1]

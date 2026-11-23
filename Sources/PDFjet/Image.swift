@@ -317,15 +317,7 @@ public class Image : Drawable {
             pdf.append(" 0 R\n")
         }
         appendCopiedValue(pdf, "/Mask", maskArray)
-        let stream = pdf.encrypted(obj.stream ?? [])
-        pdf.append("/Length ")
-        pdf.append(stream.count)
-        pdf.append("\n")
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(stream, 0, stream.count)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(pdf.encrypted(obj.stream ?? []))
     }
 
     // Appends the key and the tokens of its value, read from another PDF, if
@@ -657,59 +649,15 @@ public class Image : Drawable {
         page.saveGraphicsState()
 
         if degrees == 0 {
-            page.append(w!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(h!)
-            page.append(Token.space)
-            page.append(x)
-            page.append(Token.space)
-            page.append(page.height - (y + h!))
-            page.append(" cm\n")
+            appendMatrix(page, w!, h!, x, page.height - (y + h!))
         } else if degrees == 90 {
-            page.append(h!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(w!)
-            page.append(Token.space)
-            page.append(x)
-            page.append(Token.space)
-            page.append(page.height - y)
-            page.append(" cm\n")
+            appendMatrix(page, h!, w!, x, page.height - y)
             page.append("0 -1 1 0 0 0 cm\n")
         } else if degrees == 180 {
-            page.append(w!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(h!)
-            page.append(Token.space)
-            page.append(x + w!)
-            page.append(Token.space)
-            page.append(page.height - y)
-            page.append(" cm\n")
+            appendMatrix(page, w!, h!, x + w!, page.height - y)
             page.append("-1 0 0 -1 0 0 cm\n")
         } else if degrees == 270 {
-            page.append(h!)
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(Float(0.0))
-            page.append(Token.space)
-            page.append(w!)
-            page.append(Token.space)
-            page.append(x + h!)
-            page.append(Token.space)
-            page.append(page.height - (y + w!))
-            page.append(" cm\n")
+            appendMatrix(page, h!, w!, x + h!, page.height - (y + w!))
             page.append("0 1 -1 0 0 0 cm\n")
         }
 
@@ -738,25 +686,29 @@ public class Image : Drawable {
         if uri != nil || key != nil {
             // The link covers the image as it is drawn, turned or not.
             let turned = degrees == 90 || degrees == 270
-            page.addAnnotation(Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + (turned ? h! : w!),
-                    y + (turned ? w! : h!),
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription).joining(link))
+            page.addAnnotation(Annotation.link(
+                    x, y, x + (turned ? h! : w!), y + (turned ? w! : h!),
+                    uri, key, language, actualText, altDescription).joining(link))
         }
 
         return corner
+    }
+
+    // Writes the matrix that scales the image to sx by sy and moves it to
+    // tx, ty: "sx 0 0 sy tx ty cm".
+    private func appendMatrix(_ page: Page, _ sx: Float, _ sy: Float, _ tx: Float, _ ty: Float) {
+        page.append(sx)
+        page.append(Token.space)
+        page.append(Float(0.0))
+        page.append(Token.space)
+        page.append(Float(0.0))
+        page.append(Token.space)
+        page.append(sy)
+        page.append(Token.space)
+        page.append(tx)
+        page.append(Token.space)
+        page.append(ty)
+        page.append(" cm\n")
     }
 
     ///
@@ -803,15 +755,7 @@ public class Image : Drawable {
         pdf.append("/BitsPerComponent ")
         pdf.append(bitsPerComponent)
         pdf.append(Token.newline)
-        let buf = pdf.encrypted(alpha)
-        pdf.append("/Length ")
-        pdf.append(buf.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(buf, 0, buf.count)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(pdf.encrypted(alpha))
         objNumber = pdf.getObjNumber()
     }
 
@@ -879,15 +823,7 @@ public class Image : Drawable {
             pdf.append(pixelWidth)
             pdf.append(">>\n")
         }
-        let buf = pdf.encrypted(data)
-        pdf.append("/Length ")
-        pdf.append(buf.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(buf, 0, buf.count)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(pdf.encrypted(data))
         pdf.images.append(self)
         self.objNumber = pdf.getObjNumber()
     }

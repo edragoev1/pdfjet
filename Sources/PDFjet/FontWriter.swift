@@ -207,14 +207,7 @@ class FontWriter {
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Filter /FlateDecode\n")
-        pdf.append("/Length ")
-        pdf.append(compressed.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(compressed)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(compressed)
     }
 
     // Writes the CID font with the name given, which is the font's own, or

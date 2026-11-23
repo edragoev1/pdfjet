@@ -129,7 +129,7 @@ final class MarkdownParser {
         var i = 0
         while i < lines.count {
             let line = lines[i]
-            if isBlank(line) {
+            if Markup.isBlank(line) {
                 i += 1
                 continue
             }
@@ -187,9 +187,9 @@ final class MarkdownParser {
     private static func parseIndentedCode(_ lines: [Line], _ i: Int, _ blocks: inout [Block]) -> Int {
         var code = [Line]()
         var j = i
-        while j < lines.count && (isBlank(lines[j]) || indent(lines[j]) >= 4) {
+        while j < lines.count && (Markup.isBlank(lines[j]) || indent(lines[j]) >= 4) {
             let line = lines[j]
-            code.append(isBlank(line) ? Line() : Line(line[4...]))
+            code.append(Markup.isBlank(line) ? Line() : Line(line[4...]))
             j += 1
         }
         while !code.isEmpty && code[code.count - 1].isEmpty {
@@ -210,7 +210,7 @@ final class MarkdownParser {
             let line = lines[j]
             if isQuote(line) {
                 quoted.append(stripQuote(line))
-            } else if !isBlank(line) && !quoted.isEmpty && !isBlank(quoted[quoted.count - 1])
+            } else if !Markup.isBlank(line) && !quoted.isEmpty && !Markup.isBlank(quoted[quoted.count - 1])
                     && !interrupts(line) {
                 quoted.append(line)
             } else {
@@ -246,11 +246,11 @@ final class MarkdownParser {
             while j < lines.count {
                 let next = lines[j]
                 let last = itemLines[itemLines.count - 1]
-                if isBlank(next) {
+                if Markup.isBlank(next) {
                     itemLines.append(Line())
                 } else if indent(next) >= column {
                     itemLines.append(Line(next[column...]))
-                } else if !isBlank(last) && !interrupts(next) && listMarker(next) == nil {
+                } else if !Markup.isBlank(last) && !interrupts(next) && listMarker(next) == nil {
                     itemLines.append(next)
                 } else {
                     break
@@ -285,7 +285,7 @@ final class MarkdownParser {
             return (.NONE, line)
         }
         let text = Line(line[4...])
-        if isBlank(text) {
+        if Markup.isBlank(text) {
             return (.NONE, line)
         }
         switch line[1] {
@@ -327,7 +327,7 @@ final class MarkdownParser {
         table.cells = header.count
         count.cells += header.count
         var j = i + 2
-        while j < lines.count && !isBlank(lines[j]) && lines[j].contains(pipe)
+        while j < lines.count && !Markup.isBlank(lines[j]) && lines[j].contains(pipe)
                 && !interrupts(lines[j]) {
             table.cells += header.count
             count.cells += header.count
@@ -446,7 +446,7 @@ final class MarkdownParser {
     private static func parseParagraph(_ lines: [Line], _ i: Int, _ blocks: inout [Block]) -> Int {
         var text = [Line]()
         var j = i
-        while j < lines.count && !isBlank(lines[j]) {
+        while j < lines.count && !Markup.isBlank(lines[j]) {
             let line = lines[j]
             if j > i {
                 let level = setextLevel(line)
@@ -503,7 +503,7 @@ final class MarkdownParser {
             return nil
         }
         for ch in source {
-            if isWhitespace(ch) || ch == openParen || ch == closeParen {
+            if Markup.isWhitespace(ch) || ch == openParen || ch == closeParen {
                 return nil
             }
         }
@@ -523,17 +523,8 @@ final class MarkdownParser {
         guard let marker = listMarker(line) else {
             return false
         }
-        return !isBlank(line[min(marker[2], line.count)...])
+        return !Markup.isBlank(line[min(marker[2], line.count)...])
                 && (marker[1] >= 0 || marker[3] == 1)
-    }
-
-    // True when the code units are all U+0020 or below, so that String.trim in
-    // Java would leave nothing of them.
-    private static func isBlank<C: Collection>(_ line: C) -> Bool where C.Element == UInt16 {
-        for unit in line where unit > space {
-            return false
-        }
-        return true
     }
 
     // The line without the code units of U+0020 or below at its start and at
@@ -548,15 +539,6 @@ final class MarkdownParser {
             end -= 1
         }
         return (start == 0 && end == line.count) ? line : Line(line[start..<end])
-    }
-
-    // Character.isWhitespace in Java, of a UTF-16 code unit: a surrogate is
-    // not whitespace.
-    private static func isWhitespace(_ unit: UInt16) -> Bool {
-        guard let scalar = Unicode.Scalar(unit) else {
-            return false
-        }
-        return String.isJavaWhitespace(scalar)
     }
 
     // The index of the first code unit that is ch, at or after from, or -1.
@@ -609,7 +591,7 @@ final class MarkdownParser {
         while n + count < line.count && Int(line[n + count]) == fence[0] {
             count += 1
         }
-        return count >= fence[1] && isBlank(line[(n + count)...])
+        return count >= fence[1] && Markup.isBlank(line[(n + count)...])
     }
 
     // The level of a heading of # to ######, or 0.

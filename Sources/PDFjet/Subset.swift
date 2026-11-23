@@ -251,14 +251,7 @@ class Subset {
             pdf.append(metadataObjNumber)
             pdf.append(" 0 R\n")
         }
-        pdf.append("/Length ")
-        pdf.append(encrypted.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(encrypted)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(encrypted)
         font.fileObjNumber = pdf.getObjNumber()
         return font.kept
     }
@@ -318,7 +311,9 @@ class Subset {
         return tag
     }
 
-    private static func u16(_ ttf: [UInt8], _ at: Int) throws -> Int {
+    // The 16 bits at the offset, big-endian, or NotSubset thrown past the end;
+    // GlyphOutline reads with it too.
+    static func u16(_ ttf: [UInt8], _ at: Int) throws -> Int {
         if at < 0 || at + 2 > ttf.count {
             throw NotSubset()
         }
@@ -327,7 +322,7 @@ class Subset {
 
     // A value past 2^31 - 1 is refused, as an Int of 32 bits could not hold
     // it (the review of 9 October 2026), in the four ports alike.
-    private static func u32(_ ttf: [UInt8], _ at: Int) throws -> Int {
+    static func u32(_ ttf: [UInt8], _ at: Int) throws -> Int {
         if at < 0 || at + 4 > ttf.count {
             throw NotSubset()
         }

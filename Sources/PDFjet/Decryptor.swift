@@ -385,29 +385,8 @@ final class Decryptor {
         }
     }
 
-    // Tells if the dictionary the token at i is in is a signature dictionary:
-    // of /Type /Sig or /DocTimeStamp, or with a /ByteRange, which only a
-    // signature dictionary has.
-    static func isSignatureDict(_ dict: [String], _ i: Int) -> Bool {
-        // The start of the dictionary
-        var start = i
-        var level = 0
-        while start >= 0 {
-            if dict[start] == ">>" {
-                level += 1
-            } else if dict[start] == "<<" {
-                if level == 0 {
-                    break
-                }
-                level -= 1
-            }
-            start -= 1
-        }
-        return isSignatureDictFrom(dict, start)
-    }
-
     // The index of the << of the dictionary each token is in, the innermost,
-    // or -1 for one in none, as isSignatureDict finds it, in one pass
+    // or -1 for one in none, in one pass
     static func dictionaryStarts(_ dict: [String]) -> [Int] {
         var starts = [Int](repeating: -1, count: dict.count)
         var open = [Int]()
@@ -424,7 +403,9 @@ final class Decryptor {
         return starts
     }
 
-    // Tells if the dictionary whose << is at start is a signature dictionary
+    // Tells if the dictionary whose << is at start is a signature dictionary:
+    // of /Type /Sig or /DocTimeStamp, or with a /ByteRange, which only a
+    // signature dictionary has.
     static func isSignatureDictFrom(_ dict: [String], _ start: Int) -> Bool {
         // Its entries, not those of the dictionaries in it
         var level = 0

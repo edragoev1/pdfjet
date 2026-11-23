@@ -346,7 +346,9 @@ class JPGImage {
     // extension among them, is passed over. The resolution an Exif segment
     // holds is not read: it is a TIFF image file directory, which is a format
     // of its own, and a JFIF segment is what the density of a JPEG is.
-    private func readAPP0(_ buffer: inout [UInt8]) throws {
+    // Reads the length of the segment at the index and returns the index of
+    // its end, which is in the buffer.
+    private func segmentEnd(_ buffer: inout [UInt8]) throws -> Int {
         let length = try getUInt16(&buffer)
         if length < 2 {
             throw JPGImageError.invalidSegmentLength
@@ -355,6 +357,11 @@ class JPGImage {
         guard end <= buffer.count else {
             throw JPGImageError.unexpectedEndOfJPEGData
         }
+        return end
+    }
+
+    private func readAPP0(_ buffer: inout [UInt8]) throws {
+        let end = try segmentEnd(&buffer)
         if end - index >= 12 &&
                 buffer[index..<(index + 5)].elementsEqual([0x4A, 0x46, 0x49, 0x46, 0x00]) {
             densityUnit = buffer[index + 7]
@@ -373,14 +380,7 @@ class JPGImage {
     // kind, XMP among them, is passed over. The first orientation read is the
     // image's.
     private func readAPP1(_ buffer: inout [UInt8]) throws {
-        let length = try getUInt16(&buffer)
-        if length < 2 {
-            throw JPGImageError.invalidSegmentLength
-        }
-        let end = index + Int(length) - 2
-        guard end <= buffer.count else {
-            throw JPGImageError.unexpectedEndOfJPEGData
-        }
+        let end = try segmentEnd(&buffer)
         if orientation == 0 {
             orientation = JPGImage.exifOrientation(Array(buffer[index..<end]))
         }
@@ -465,14 +465,7 @@ class JPGImage {
     }
 
     private func readAPP14(_ buffer: inout [UInt8]) throws {
-        let length = try getUInt16(&buffer)
-        if length < 2 {
-            throw JPGImageError.invalidSegmentLength
-        }
-        let end = index + Int(length) - 2
-        guard end <= buffer.count else {
-            throw JPGImageError.unexpectedEndOfJPEGData
-        }
+        let end = try segmentEnd(&buffer)
         // Adobe's segment is twelve bytes: "Adobe", the version, two flags and
         // the color transform. A shorter one is not Adobe's, as in libjpeg. An
         // APP14 segment of another kind after it does not unmark the image.

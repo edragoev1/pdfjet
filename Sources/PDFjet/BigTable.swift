@@ -43,9 +43,9 @@ public class BigTable {
     // In a PDF/UA document the table is a Table element that the rows of
     // every page go on adding to; see drawFieldsAndLine.
     private var structElement: StructElement?
-    private var shadingColor: [Float]? = BigTable.rgb(0xF0F0F0)   // nil for no shading
+    private var shadingColor: [Float]? = Util.rgb(0xF0F0F0)   // nil for no shading
     private var headerColor: [Float]?                           // nil for the shading of every other row
-    private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
+    private var borderColor: [Float]? = Util.rgb(0xB0B0B0)    // nil for no lines
     private var borderWidth: Float = 0.5                           // The width of the lines, 0.5 points unless set
     // The y of the line above each row of the page being drawn, stroked with
     // the vertical lines and the line under the last row, one path for the
@@ -276,7 +276,7 @@ public class BigTable {
     /// Color.transparent turns the shading off.
     @discardableResult
     public func setShadingColor(_ color: Int32) -> BigTable {
-        self.shadingColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        self.shadingColor = (color == Color.transparent) ? nil : Util.rgb(color)
         return self
     }
 
@@ -301,7 +301,7 @@ public class BigTable {
     /// 0xRRGGBB value. Color.transparent leaves the lines out.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> BigTable {
-        self.borderColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        self.borderColor = (color == Color.transparent) ? nil : Util.rgb(color)
         return self
     }
 
@@ -362,7 +362,7 @@ public class BigTable {
     /// Color.transparent goes back to that.
     @discardableResult
     public func setHeaderColor(_ color: Int32) -> BigTable {
-        self.headerColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        self.headerColor = (color == Color.transparent) ? nil : Util.rgb(color)
         return self
     }
 
@@ -565,14 +565,8 @@ public class BigTable {
         if wrap {
             return countWrappedPages()
         }
-        var pageHeight = pageSize.getHeight()
         let yTop = firstRowY(self.y)
-        var yPos = yTop
-        if startsOnFirstPage() {
-            // The first page can be of another size than the next ones.
-            pageHeight = firstPage!.height
-            yPos = firstRowY(firstPageY)
-        }
+        var (pageHeight, yPos) = firstPageOfCount(yTop)
         var count = 1
         var isNewPage = false
         for _ in 0..<self.dataRows {
@@ -588,6 +582,19 @@ public class BigTable {
             }
         }
         return count
+    }
+
+    // The height of the first page the rows are counted on and the y of its
+    // first row, which on a page of its own is yTop, that of the next pages.
+    private func firstPageOfCount(_ yTop: Float) -> (Float, Float) {
+        var pageHeight = pageSize.getHeight()
+        var yPos = yTop
+        if startsOnFirstPage() {
+            // The first page can be of another size than the next ones.
+            pageHeight = firstPage!.height
+            yPos = firstRowY(firstPageY)
+        }
+        return (pageHeight, yPos)
     }
 
     private func drawTextAndLine(fields: [String]) {
@@ -615,25 +622,7 @@ public class BigTable {
     // are.
     private func drawFieldsAndLine(
             fields: [String], font: Font, cellStructure: StructElem?, header: Bool) {
-        // The shading carries no meaning of its own.
-        if let shading = shadingOf(header) {
-            page!.addArtifactBMC()
-            highlightRow(page: page!, font: font, color: shading)
-            page!.addEMC()
-        }
-        // The line above the text, stroked with the page's other lines, but
-        // above the header when setTopLine leaves it out
-        if borderColor != nil && (topLine || !header) {
-            rowLines.append(self.yText - font.ascent - verticalPadding)
-        }
-        page!.setBrushColor(Color.black)
-
-        let tagged = structElement != nil && cellStructure != nil
-        let parent = page!.structParent
-        var rowElement: StructElement?
-        if tagged {
-            rowElement = page!.addStructElement(structElement, StructElem.TR, nil)
-        }
+        let (tagged, parent, rowElement) = beginRow(font, cellStructure, header, 0.0)
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
             // A column the page was too narrow for holds as much of the text
@@ -694,12 +683,32 @@ public class BigTable {
         return (cellStructure == StructElem.TH) ? "<</O /Table /Scope /Column>>" : nil
     }
 
-    private func highlightRow(page: Page, font: Font, color: [Float]) {
-        let original = page.getBrushColor()
-        page.setBrushColor(color)
-        page.fillRectBetween(vertLines[0], self.yText - font.ascent - verticalPadding,
-                vertLines[numberOfColumns], self.yText + font.descent + verticalPadding)
-        page.setBrushColor(original)
+    // Begins a row, extra taller than one line: shades it, records the line
+    // above it, and in a tagged document begins its TR element. Returns
+    // whether the row is tagged, the parent element to restore after it, and
+    // its row element.
+    private func beginRow(_ font: Font, _ cellStructure: StructElem?, _ header: Bool,
+            _ extra: Float) -> (Bool, StructElement?, StructElement?) {
+        // The shading carries no meaning of its own.
+        if let shading = shadingOf(header) {
+            page!.addArtifactBMC()
+            highlightRows(page: page!, font: font, color: shading, extra: extra)
+            page!.addEMC()
+        }
+        // The line above the text, stroked with the page's other lines, but
+        // above the header when setTopLine leaves it out
+        if borderColor != nil && (topLine || !header) {
+            rowLines.append(self.yText - font.ascent - verticalPadding)
+        }
+        page!.setBrushColor(Color.black)
+
+        let tagged = structElement != nil && cellStructure != nil
+        let parent = page!.structParent
+        var rowElement: StructElement?
+        if tagged {
+            rowElement = page!.addStructElement(structElement, StructElem.TR, nil)
+        }
+        return (tagged, parent, rowElement)
     }
 
     // Draws the lines of the page when it is done, as one path: the line
@@ -734,10 +743,6 @@ public class BigTable {
         page!.strokePath()
         page!.setPenColor(original)
         page!.addEMC()
-    }
-
-    private static func rgb(_ color: Int32) -> [Float] {
-        return [Float((color >> 16) & 0xff)/255.0, Float((color >> 8) & 0xff)/255.0, Float(color & 0xff)/255.0]
     }
 
     // A number is right-aligned, as Table.rightAlignNumbers aligns it.
@@ -1283,25 +1288,7 @@ public class BigTable {
         if count > 1 {
             extra = Float(count - 1) * lineHeight
         }
-        // The shading carries no meaning of its own.
-        if let shading = shadingOf(header) {
-            page!.addArtifactBMC()
-            highlightRows(page: page!, font: font, color: shading, extra: extra)
-            page!.addEMC()
-        }
-        // The line above the text, stroked with the page's other lines, but
-        // above the header when setTopLine leaves it out
-        if borderColor != nil && (topLine || !header) {
-            rowLines.append(self.yText - font.ascent - verticalPadding)
-        }
-        page!.setBrushColor(Color.black)
-
-        let tagged = structElement != nil && cellStructure != nil
-        let parent = page!.structParent
-        var rowElement: StructElement?
-        if tagged {
-            rowElement = page!.addStructElement(structElement, StructElem.TR, nil)
-        }
+        let (tagged, parent, rowElement) = beginRow(font, cellStructure, header, extra)
         for i in 0..<numberOfColumns {
             if tagged {
                 page!.structParent = rowElement
@@ -1351,13 +1338,8 @@ public class BigTable {
     private func countWrappedPages() -> Int {
         let font = f2
         let lineHeight = font.ascent + font.descent
-        var pageHeight = pageSize.getHeight()
         let yTop = firstRowY(self.y)
-        var yPos = yTop
-        if startsOnFirstPage() {
-            pageHeight = firstPage!.height
-            yPos = firstRowY(firstPageY)
-        }
+        var (pageHeight, yPos) = firstPageOfCount(yTop)
         var count = 1
         var isNewPage = false
         var first = true

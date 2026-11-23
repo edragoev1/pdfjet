@@ -90,10 +90,7 @@ public class Rect : Drawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.fillColor = [r, g, b]
+        self.fillColor = Util.rgb(color)
         return self
     }
 
@@ -104,10 +101,7 @@ public class Rect : Drawable {
             self.borderColor = nil
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.borderColor = [r, g, b]
+        self.borderColor = Util.rgb(color)
         return self
     }
 
@@ -312,22 +306,9 @@ public class Rect : Drawable {
         page.addEMC()
 
         if self.uri != nil || self.key != nil {
-            page.addAnnotation(Annotation(
-                    Annotation.Link,
-                    self.x,
-                    self.y,
-                    self.x + self.width,
-                    self.y + self.height,
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    self.uri,
-                    self.key,
-                    self.language,
-                    self.actualText,
-                    self.altDescription))
+            page.addAnnotation(Annotation.link(
+                    self.x, self.y, self.x + self.width, self.y + self.height,
+                    self.uri, self.key, self.language, self.actualText, self.altDescription))
         }
 
         return [self.x + self.width, self.y + self.height]

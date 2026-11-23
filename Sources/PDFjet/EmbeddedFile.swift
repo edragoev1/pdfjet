@@ -110,14 +110,7 @@ public class EmbeddedFile {
         if compress {
             pdf.append("/Filter /FlateDecode\n")
         }
-        pdf.append(Token.length)
-        pdf.append(buf.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(buf)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        pdf.appendStreamBody(buf)
 
         pdf.newObj()
         pdf.append(Token.beginDictionary)

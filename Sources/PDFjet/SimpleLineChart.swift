@@ -330,29 +330,9 @@ public class SimpleLineChart : Drawable {
         return self
     }
 
-    // The space around the chart's content, a size of its numbers.
-    private func pad() -> Float {
-        return f2.getSize()
-    }
-
-    // The size of the subtitle.
-    private func subtitleSize() -> Float {
-        return 0.8 * f2.getSize()
-    }
-
     // The height above the plot: the padding, the title and the subtitle.
     private func top() -> Float {
-        var top = pad()
-        if !title.isEmpty {
-            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize())
-        }
-        if !subtitle.isEmpty {
-            top += 1.4 * subtitleSize()
-        }
-        if !title.isEmpty || !subtitle.isEmpty {
-            top += f2.getSize()
-        }
-        return top
+        return ChartScale.chartTitleTop(f1, f2, title, subtitle)
     }
 
     // The number of categories the chart draws: the categories set, or the
@@ -524,7 +504,7 @@ public class SimpleLineChart : Drawable {
             restore()
         }
         let size = f2.getSize()
-        let pad = pad()
+        let pad = ChartScale.chartPad(f2)
         let ascent = f2.getAscent(size)
 
         if !yRangeSet && !ChartScale.spanFits(all) {
@@ -561,21 +541,7 @@ public class SimpleLineChart : Drawable {
             right = Swift.min(right, x + w - pad / 2.0 - f2.stringWidth(size, category(n - 1)) / 2.0)
         }
         let top = y + self.top() + ascent / 2.0     // Room for the top number
-        var bottom = y + h - pad - 1.4 * size
-        if !xAxisTitle.isEmpty {
-            bottom -= 1.4 * size
-        }
-        // Room for the note, a row of its own under the rest; a chart that has
-        // not the room keeps its plot, and its description says the number
-        var note = outsideNote()
-        if !note.isEmpty {
-            let above = bottom - 1.4 * subtitleSize()
-            if above > top {
-                bottom = above
-            } else {
-                note = ""
-            }
-        }
+        let (bottom, note) = ChartScale.plotBottom(f2, xAxisTitle, outsideNote(), top, y + h)
         if right <= left || bottom <= top {
             page.pdf.fail(ChartScale.noRoom("A SimpleLineChart", w, h))
             return [x + w, y + h]
@@ -600,21 +566,7 @@ public class SimpleLineChart : Drawable {
         page.saveGraphicsState()
         page.setDefaultStrokeDashPattern()      // Not the caller's, which dashed the lines
 
-        if panelColor >= 0 {
-            page.setBrushColor(panelColor)
-            page.fillRect(x, y, w, h)
-        }
-        var baseline = y + pad
-        if !title.isEmpty {
-            baseline += f1.getAscent(f1.getSize())
-            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2.0 * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), nil)
-            baseline += f1.getDescent(f1.getSize())
-        }
-        if !subtitle.isEmpty {
-            baseline += 1.4 * subtitleSize()
-            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2.0 * pad),
-                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
-        }
+        ChartScale.drawChartTitles(page, f1, f2, title, subtitle, panelColor, x, y, w, h)
 
         // The horizontal grid and its numbers, and the categories under the
         // plot, each where it leaves the one before it room
@@ -652,24 +604,7 @@ public class SimpleLineChart : Drawable {
                     ChartScale.placed(centers[i], widths[i], x + pad / 2.0, x + w - pad / 2.0),
                     plotBottom + 1.4 * size, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
-        // The axis titles, shortened to the width and the height of the plot:
-        // a long one ran past the chart (the review of 28 October 2026)
-        if !xAxisTitle.isEmpty {
-            let xTitle = ChartScale.shorten(f2, size, xAxisTitle, right - plotLeft)
-            page.drawString(f2, size, xTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xTitle)) / 2.0,
-                    plotBottom + 2.8 * size, Util.toRGB(SimpleBarChart.INK), nil)
-        }
-        if !yAxisTitle.isEmpty {
-            let yTitle = ChartScale.shorten(f2, size, yAxisTitle, plotBottom - top)
-            page.setTextRotation(-90)
-            page.drawString(f2, size, yTitle, x + pad + ascent,
-                    plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2.0,
-                    Util.toRGB(SimpleBarChart.INK), nil)
-            page.setTextRotation(0)
-        }
-        if !note.isEmpty {
-            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad)
-        }
+        ChartScale.drawAxisTitles(page, f2, xAxisTitle, yAxisTitle, note, plotLeft, right, top, plotBottom, x, y, w, h)
 
         // The lines, the highlighted one last, over the others, broken where a
         // value is missing
@@ -759,7 +694,7 @@ public class SimpleLineChart : Drawable {
         // and after one on a fall; but those outside the axis and the last of
         // each line, which its label at the end has
         if valueLabels {
-            let small = subtitleSize()
+            let small = ChartScale.chartSubtitleSize(f2)
             let gap = 0.5 * size
             for i in order {
                 let line = lines[i]

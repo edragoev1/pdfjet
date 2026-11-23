@@ -402,8 +402,11 @@ public class SVGImage : Drawable {
         marker = nil
         if name == "svg" && root {
             root = false
-            w = SVGImage.parseLength(values["width"] ?? "")
-            h = SVGImage.parseLength(values["height"] ?? "")
+            // The width and the height in points, and 0 for a length that
+            // PDFjet cannot read, a percentage among them, which leaves the
+            // size to the viewBox.
+            w = SVGState.parseLength(values["width"] ?? "") ?? 0.0
+            h = SVGState.parseLength(values["height"] ?? "") ?? 0.0
             // viewbox in lower case when there is no viewBox, as an
             // HTML page's parser reads an inline svg, whose files keep it
             viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
@@ -1446,23 +1449,6 @@ public class SVGImage : Drawable {
         return units.contains { $0.0 != "px" && SVGState.hasSuffix(text, $0.0) }
     }
 
-    // Returns the width or the height of the svg element in points, and 0 for
-    // a length that PDFjet cannot read, a percentage among them, which leaves
-    // the size to the viewBox.
-    private static func parseLength(_ value: String) -> Float {
-        var text = SVGState.trimSpace(value)
-        var scale: Float = 1.0
-        for (suffix, points) in units where SVGState.hasSuffix(text, suffix) {
-            text = SVGState.trimSpace(SVGState.string(text.unicodeScalars.dropLast(suffix.count)))
-            scale = points
-            break
-        }
-        guard let number = SVGState.parseFloat(text), number.isFinite else {
-            return 0.0
-        }
-        return number*scale
-    }
-
     // Parses a numeric attribute value, treating an empty value as 0 —
     // consistent with how an omitted attribute is handled. Returns nil for a
     // value that is not a number.
@@ -1797,18 +1783,7 @@ public class SVGImage : Drawable {
             let strokePass = (pass == 0) == path.strokeFirst
             if !strokePass && fill {
                 page.setBrushColor(path.fill)
-                for op in path.operations {
-                    if op.cmd == "M" {
-                        page.moveTo(op.x + x, op.y + y)
-                    } else if op.cmd == "L" {
-                        page.lineTo(op.x + x, op.y + y)
-                    } else if op.cmd == "C" {
-                        page.curveTo(
-                            op.x1 + x, op.y1 + y,
-                            op.x2 + x, op.y2 + y,
-                            op.x + x, op.y + y)
-                    }
-                }
+                appendOperations(path.operations, page, false)
                 if path.evenOdd {
                     page.append("f*\n")
                 } else {
@@ -1821,26 +1796,30 @@ public class SVGImage : Drawable {
                 page.setPenWidth(path.strokeWidth)
                 // Z closes a subpath, and the path is stroked once, all of its
                 // subpaths together, as SVG strokes it.
-                for op in path.operations {
-                    if op.cmd == "M" {
-                        page.moveTo(op.x + x, op.y + y)
-                    } else if op.cmd == "L" {
-                        page.lineTo(op.x + x, op.y + y)
-                    } else if op.cmd == "C" {
-                        page.curveTo(
-                            op.x1 + x, op.y1 + y,
-                            op.x2 + x, op.y2 + y,
-                            op.x + x, op.y + y)
-                    } else if op.cmd == "Z" {
-                        page.append("h\n")
-                    }
-                }
+                appendOperations(path.operations, page, true)
                 page.strokePath()
             }
         }
 
         if state {
             page.restoreGraphicsState()
+        }
+    }
+
+    // Writes the moves, the lines and the curves of the path where the image
+    // is, and with close true its Z as h, which closes a subpath; a fill
+    // needs no h, as it closes every subpath.
+    private func appendOperations(_ operations: [PathOp], _ page: Page, _ close: Bool) {
+        for op in operations {
+            if op.cmd == "M" {
+                page.moveTo(op.x + x, op.y + y)
+            } else if op.cmd == "L" {
+                page.lineTo(op.x + x, op.y + y)
+            } else if op.cmd == "C" {
+                page.curveTo(op.x1 + x, op.y1 + y, op.x2 + x, op.y2 + y, op.x + x, op.y + y)
+            } else if close && op.cmd == "Z" {
+                page.append("h\n")
+            }
         }
     }
 
@@ -1922,17 +1901,7 @@ public class SVGImage : Drawable {
                 clipToText(clip, page)
                 continue
             }
-            for op in clip.operations {
-                if op.cmd == "M" {
-                    page.moveTo(op.x + x, op.y + y)
-                } else if op.cmd == "L" {
-                    page.lineTo(op.x + x, op.y + y)
-                } else if op.cmd == "C" {
-                    page.curveTo(op.x1 + x, op.y1 + y, op.x2 + x, op.y2 + y, op.x + x, op.y + y)
-                } else if op.cmd == "Z" {
-                    page.append("h\n")
-                }
-            }
+            appendOperations(clip.operations, page, true)
             if clip.evenOdd {
                 page.append("W*\nn\n")
             } else {
@@ -2163,22 +2132,9 @@ public class SVGImage : Drawable {
         page.addEMC()
         page.endLink(link)
         if (uri != nil || key != nil) {
-            page.addAnnotation(Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + w,
-                    y + h,
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription).joining(link))
+            page.addAnnotation(Annotation.link(
+                    x, y, x + w, y + h,
+                    uri, key, language, actualText, altDescription).joining(link))
         }
         return [self.x + self.w, self.y + self.h]
     }

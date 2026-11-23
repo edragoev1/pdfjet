@@ -197,10 +197,7 @@ public class TextLine : BaselineDrawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.textColor = [r, g, b]
+        self.textColor = Util.rgb(color)
         return self
     }
 
@@ -222,10 +219,7 @@ public class TextLine : BaselineDrawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.decorationColor = [r, g, b]
+        self.decorationColor = Util.rgb(color)
         return self
     }
 
@@ -738,22 +732,9 @@ public class TextLine : BaselineDrawable {
 
         if !(uri ?? "").isEmpty || !(key ?? "").isEmpty {
             let box = getLinkBox(verticalOffset)
-            page!.addAnnotation(Annotation(
-                    Annotation.Link,
-                    box[0],
-                    box[1],
-                    box[2],
-                    box[3],
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    key,    // The destination name
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription).joining(link))
+            page!.addAnnotation(Annotation.link(
+                    box[0], box[1], box[2], box[3],
+                    uri, key, uriLanguage, uriActualText, uriAltDescription).joining(link))
         }
         page!.setTextRotation(0)
 

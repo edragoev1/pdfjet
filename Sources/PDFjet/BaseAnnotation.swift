@@ -71,10 +71,7 @@ public class BaseAnnotation: Drawable {
         if color == Color.transparent {
             return self
         }
-        let r = Float((color >> 16) & 0xff) / 255.0
-        let g = Float((color >> 8) & 0xff) / 255.0
-        let b = Float(color & 0xff) / 255.0
-        setFillColor([r, g, b])
+        setFillColor(Util.rgb(color))
         return self
     }
 

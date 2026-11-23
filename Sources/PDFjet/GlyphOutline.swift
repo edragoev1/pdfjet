@@ -733,21 +733,11 @@ final class GlyphOutline {
     }
 
     private func u16(_ at: Int) throws -> Int {
-        if at < 0 || at > data.count - 2 {
-            throw Subset.NotSubset()
-        }
-        return Int(data[at]) << 8 | Int(data[at + 1])
+        return try Subset.u16(data, at)
     }
 
     private func u32(_ at: Int) throws -> Int {
-        if at < 0 || at > data.count - 4 {
-            throw Subset.NotSubset()
-        }
-        let value = Int(data[at]) << 24 | Int(data[at + 1]) << 16 | Int(data[at + 2]) << 8 | Int(data[at + 3])
-        if value > Int(Int32.max) {
-            throw Subset.NotSubset()
-        }
-        return value
+        return try Subset.u32(data, at)
     }
 
     // ------------------------------------------------------------------

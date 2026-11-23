@@ -245,34 +245,7 @@ public final class DataMatrix : Drawable {
         let rows = modules.count
         let cols = modules[0].count
         if let page = page {
-            // Described, the barcode is a figure of a tagged document; not
-            // described, its modules, which carry no text, are decoration.
-            if let altDescription = altDescription, !altDescription.isEmpty {
-                page.addBDC(StructElem.FIGURE, nil, nil, altDescription)
-            } else {
-                page.addArtifactBMC()
-            }
-            page.saveGraphicsState()
-            page.setBrushColor(color)
-            for row in 0..<rows {
-                var col = 0
-                while col < cols {
-                    if !modules[row][col] {
-                        col += 1
-                        continue
-                    }
-                    let start = col
-                    while col < cols && modules[row][col] {
-                        col += 1
-                    }
-                    page.fillRect(x + Float(start)*m1, y + Float(row)*m1, Float(col - start)*m1, m1)
-                }
-            }
-            page.restoreGraphicsState()
-            if let altDescription = altDescription, !altDescription.isEmpty {
-                page.setFigureBoundingBox(x, y, Float(cols)*m1, Float(rows)*m1)
-            }
-            page.addEMC()
+            Modules.draw(page, modules, x, y, m1, color, altDescription, Float(cols)*m1, Float(rows)*m1)
         }
         return [x + Float(cols)*m1, y + Float(rows)*m1]
     }

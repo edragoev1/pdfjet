@@ -844,22 +844,9 @@ public class Cell {
                 return
             }
             if !(point!.getURIAction() ?? "").isEmpty {
-                page.addAnnotation(Annotation(
-                        Annotation.Link,
-                        point!.x - point!.r,
-                        point!.y - point!.r,
-                        point!.x + point!.r,
-                        point!.y + point!.r,
-                        nil,    // Vertices
-                        nil,    // Fill Color
-                        0.0,    // Opacity
-                        nil,    // Title
-                        nil,    // Contents
-                        point!.getURIAction(),
-                        nil,
-                        nil,
-                        nil,
-                        nil))
+                page.addAnnotation(Annotation.link(
+                        point!.x - point!.r, point!.y - point!.r, point!.x + point!.r, point!.y + point!.r,
+                        point!.getURIAction(), nil, nil, nil, nil))
             }
             page.addArtifactBMC()
             page.drawPoint(point!)
@@ -878,22 +865,9 @@ public class Cell {
         page.setFigureBoundingBox(point.x - point.r, point.y - point.r, 2 * point.r, 2 * point.r)
         page.addEMC()
         page.endLink(link)
-        page.addAnnotation(Annotation(
-                Annotation.Link,
-                point.x - point.r,
-                point.y - point.r,
-                point.x + point.r,
-                point.y + point.r,
-                nil,    // Vertices
-                nil,    // Fill Color
-                0.0,    // Opacity
-                nil,    // Title
-                nil,    // Contents
-                point.getURIAction(),
-                nil,
-                nil,
-                nil,
-                description).joining(link))
+        page.addAnnotation(Annotation.link(
+                point.x - point.r, point.y - point.r, point.x + point.r, point.y + point.r,
+                point.getURIAction(), nil, nil, nil, description).joining(link))
     }
 
     // Writes the lines that the table being drawn kept, when it keeps them,
@@ -1027,22 +1001,9 @@ public class Cell {
         }
 
         if !(uri ?? "").isEmpty {
-            page.addAnnotation(Annotation(
-                    Annotation.Link,
-                    xText,
-                    yText - ascent,
-                    xText + getTextWidth(),
-                    yText + descentOfCell(),
-                    nil,    // Vertices
-                    nil,    // Fill Color
-                    0.0,    // Opacity
-                    nil,    // Title
-                    nil,    // Contents
-                    uri,
-                    nil,
-                    nil,
-                    nil,
-                    nil).joining(link))
+            page.addAnnotation(Annotation.link(
+                    xText, yText - ascent, xText + getTextWidth(), yText + descentOfCell(),
+                    uri, nil, nil, nil, nil).joining(link))
         }
     }
 

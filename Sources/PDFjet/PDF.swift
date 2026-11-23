@@ -427,6 +427,20 @@ public final class PDF {
         append(Token.endObj)
     }
 
+    // Writes the rest of a stream object from its /Length on: the length, the
+    // end of the dictionary, the stream and the end of the object. The caller
+    // encrypts the bytes first, as every stream of an encrypted document is.
+    func appendStreamBody(_ bytes: [UInt8]) {
+        append(Token.length)
+        append(bytes.count)
+        append(Token.newline)
+        append(Token.endDictionary)
+        append(Token.stream)
+        append(bytes)
+        append(Token.endStream)
+        endObj()
+    }
+
     func getObjNumber() -> Int {
         return objOffset.count
     }
@@ -599,14 +613,7 @@ public final class PDF {
         append(Token.beginDictionary)
         append("/Type /Metadata\n")
         append("/Subtype /XML\n")
-        append(Token.length)
-        append(buf.count)
-        append(Token.newline)
-        append(Token.endDictionary)
-        append(Token.stream)
-        append(buf)
-        append(Token.endStream)
-        endObj()
+        appendStreamBody(buf)
 
         return self.getObjNumber()
     }
@@ -1410,42 +1417,24 @@ public final class PDF {
 
     private func addPageContent(_ page: Page) {
         page.checkBalanced()
+        var buffer: [UInt8]
         if contentStreamsCompression {
-            var buffer = [UInt8]()
+            buffer = [UInt8]()
             FlateEncode(&buffer, page.buf, flateMemory)
-            page.buf.removeAll()   // Release the page content memory!
-            page.written = true
-            buffer = encrypted(buffer)
-
-            newObj()
-            append(Token.beginDictionary)
-            append("/Filter /FlateDecode\n")
-            append(Token.length)
-            append(buffer.count)
-            append(Token.newline)
-            append(Token.endDictionary)
-            append(Token.stream)
-            append(buffer)
-            append(Token.endStream)
-            endObj()
-            page.contents.append(getObjNumber())
         } else {    // No compression. Used for diagnostics
-            let buffer = encrypted(page.buf)
-            page.buf.removeAll()   // Release the page content memory!
-            page.written = true
-
-            newObj()
-            append(Token.beginDictionary)
-            append(Token.length)
-            append(buffer.count)
-            append(Token.newline)
-            append(Token.endDictionary)
-            append(Token.stream)
-            append(buffer)
-            append(Token.endStream)
-            endObj()
-            page.contents.append(getObjNumber())
+            buffer = page.buf
         }
+        page.buf.removeAll()   // Release the page content memory!
+        page.written = true
+        buffer = encrypted(buffer)
+
+        newObj()
+        append(Token.beginDictionary)
+        if contentStreamsCompression {
+            append("/Filter /FlateDecode\n")
+        }
+        appendStreamBody(buffer)
+        page.contents.append(getObjNumber())
         addPageStructElements(page)
     }
 
@@ -1671,18 +1660,7 @@ public final class PDF {
             append(annot.fileAttachment!.icon)
             append("\n")
 
-            let title = annot.fileAttachment!.title
-            if !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-            let contents = annot.fileAttachment!.contents
-            if !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendTitleAndContents(annot.fileAttachment!.title, annot.fileAttachment!.contents)
         } else if annot.annotationType == Annotation.Link {
             // PDF/UA requires a link to carry an alternate description in its
             // Contents key.
@@ -1735,71 +1713,15 @@ public final class PDF {
             }
             append("]\n")
 
-            append("/IC [")
-            append(annot.fillColor![0])
-            append(" ")
-            append(annot.fillColor![1])
-            append(" ")
-            append(annot.fillColor![2])
-            append("]\n")
-
-            if !isPDFA1() {
-                append("/CA ")
-                append(annot.opacity)
-                append("\n")
-            }
-
-            if let title = annot.title, !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-
-            if let contents = annot.contents, !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendFillAndOpacity(annot)
+            appendTitleAndContents(annot.title, annot.contents)
         } else if annot.annotationType == Annotation.Square ||
                   annot.annotationType == Annotation.Circle {
-            append("/IC [")
-            append(annot.fillColor![0])
-            append(" ")
-            append(annot.fillColor![1])
-            append(" ")
-            append(annot.fillColor![2])
-            append("]\n")
-
-            if !isPDFA1() {
-                append("/CA ")
-                append(annot.opacity)
-                append("\n")
-            }
-
-            if let title = annot.title, !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-
-            if let contents = annot.contents, !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendFillAndOpacity(annot)
+            appendTitleAndContents(annot.title, annot.contents)
         } else if annot.annotationType == Annotation.Text {
             append("/Name /Comment\n")
-            if let title = annot.title, !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-
-            if let contents = annot.contents, !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendTitleAndContents(annot.title, annot.contents)
         }
 
         if index != -1 {
@@ -1813,6 +1735,38 @@ public final class PDF {
         endObj()
 
         return index
+    }
+
+    // Writes the interior color of a square, a circle or a polygon, and its
+    // opacity, which PDF/A-1 has no /CA for.
+    private func appendFillAndOpacity(_ annot: Annotation) {
+        append("/IC [")
+        append(annot.fillColor![0])
+        append(" ")
+        append(annot.fillColor![1])
+        append(" ")
+        append(annot.fillColor![2])
+        append("]\n")
+        if !isPDFA1() {
+            append("/CA ")
+            append(annot.opacity)
+            append("\n")
+        }
+    }
+
+    // Writes the /T and the /Contents of an annotation, each only when it is
+    // set and not empty.
+    private func appendTitleAndContents(_ title: String?, _ contents: String?) {
+        if let title = title, !title.isEmpty {
+            append("/T <")
+            append(textString(title))
+            append(">\n")
+        }
+        if let contents = contents, !contents.isEmpty {
+            append("/Contents <")
+            append(textString(contents))
+            append(">\n")
+        }
     }
 
     private func addAnnotDictionaries() {
@@ -2774,7 +2728,7 @@ public final class PDF {
                     token.append(c2)
                     p = 1
                 }
-            } else if isWhiteSpace(c2) {
+            } else if PDFobj.isWhiteSpace(c2) {
                 done = process(obj, &token, buf, offset)
             } else if c2 == 0x2F {          // "/"
                 done = process(obj, &token, buf, offset)
@@ -2791,7 +2745,7 @@ public final class PDF {
                         // A hexadecimal string is one token, without its white space.
                         token.append(c2)
                         while offset < len && buf[offset] != 0x3E {
-                            if !isWhiteSpace(buf[offset]) {
+                            if !PDFobj.isWhiteSpace(buf[offset]) {
                                 token.append(buf[offset])
                             }
                             offset += 1
@@ -2866,11 +2820,11 @@ public final class PDF {
         header.reserveCapacity(max(0, min(count, 1024)))
         var i = 0
         while i < length && header.count < count {
-            while i < length && isWhiteSpace(data[i]) {
+            while i < length && PDFobj.isWhiteSpace(data[i]) {
                 i += 1
             }
             let start = i
-            while i < length && !isWhiteSpace(data[i]) {
+            while i < length && !PDFobj.isWhiteSpace(data[i]) {
                 i += 1
             }
             // A token of more than 20 bytes is no number of a header, and only its
@@ -2884,15 +2838,6 @@ public final class PDF {
             }
         }
         return header
-    }
-
-    private func isWhiteSpace(_ c: UInt8) -> Bool {
-        return c == 0x00            // Null
-            || c == 0x09            // Horizontal Tab
-            || c == 0x0A            // Line Feed (LF)
-            || c == 0x0C            // Form Feed
-            || c == 0x0D            // Carriage Return (CR)
-            || c == 0x20            // Space
     }
 
     ///
@@ -3204,7 +3149,7 @@ public final class PDF {
                         continue
                     }
                 }
-            } else if startsWith(buf, i, trailerKeyword) {
+            } else if Util.startsWith(buf, i, trailerKeyword) {
                 trailerOffset = i
             }
             i += 1
@@ -3277,22 +3222,12 @@ public final class PDF {
                 buf[m] == 0x6F && buf[m + 1] == 0x62 && buf[m + 2] == 0x6A     // "obj"
     }
 
-    private func startsWith(_ buf: [UInt8], _ off: Int, _ str: [UInt8]) -> Bool {
-        if off < 0 || off + str.count > buf.count {
-            return false
-        }
-        for i in 0..<str.count where buf[off + i] != str[i] {
-            return false
-        }
-        return true
-    }
-
     // Returns the offset of the first str from the offset from on that ends by
     // the offset to, or -1.
     private func indexOf(_ buf: [UInt8], _ str: [UInt8], _ from: Int, _ to: Int) -> Int {
         var i = max(from, 0)
         while i + str.count <= min(to, buf.count) {
-            if startsWith(buf, i, str) {
+            if Util.startsWith(buf, i, str) {
                 return i
             }
             i += 1
@@ -3305,9 +3240,9 @@ public final class PDF {
         let keyword = Array("startxref".utf8)
         var i = buf.count - keyword.count
         while i >= 0 {
-            if startsWith(buf, i, keyword) {
+            if Util.startsWith(buf, i, keyword) {
                 var j = i + keyword.count
-                while j < buf.count && isWhiteSpace(buf[j]) {
+                while j < buf.count && PDFobj.isWhiteSpace(buf[j]) {
                     j += 1
                 }
                 var offset = 0

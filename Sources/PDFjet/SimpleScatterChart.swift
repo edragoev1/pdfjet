@@ -370,28 +370,9 @@ public class SimpleScatterChart : Drawable {
         return self
     }
 
-    // The space around the chart's content, a size of its numbers.
-    private func pad() -> Float {
-        return f2.getSize()
-    }
-
-    // The size of the subtitle.
-    private func subtitleSize() -> Float {
-        return 0.8 * f2.getSize()
-    }
-
     // The height above the plot: the padding, the title and the subtitle.
     private func top() -> Float {
-        var top = pad()
-        if !title.isEmpty {
-            top += f1.getAscent(f1.getSize()) + f1.getDescent(f1.getSize())
-        }
-        if !subtitle.isEmpty {
-            top += 1.4 * subtitleSize()
-        }
-        if !title.isEmpty || !subtitle.isEmpty {
-            top += f2.getSize()
-        }
+        let top = ChartScale.chartTitleTop(f1, f2, title, subtitle)
         // The legend, and half a size of the numbers under it, so that the
         // top number of the axis is not against its last row
         let rows = drawLegend(nil, 0.0)
@@ -425,7 +406,7 @@ public class SimpleScatterChart : Drawable {
             return 0
         }
         let size = f2.getSize()
-        let pad = pad()
+        let pad = ChartScale.chartPad(f2)
         let r = 0.35 * size
         let gap = size / 2.0
         let left = x + pad
@@ -655,7 +636,7 @@ public class SimpleScatterChart : Drawable {
             restore()
         }
         let size = f2.getSize()
-        let pad = pad()
+        let pad = ChartScale.chartPad(f2)
         let ascent = f2.getAscent(size)
 
         let xs = points.map { $0.x }
@@ -685,21 +666,7 @@ public class SimpleScatterChart : Drawable {
         left = Swift.max(left, x + pad / 2.0 + firstWidth / 2.0)
         let right = Swift.min(x + w - pad, x + w - pad / 2.0 - lastWidth / 2.0)
         let top = y + self.top() + ascent / 2.0     // Room for the top number
-        var bottom = y + h - pad - 1.4 * size
-        if !xAxisTitle.isEmpty {
-            bottom -= 1.4 * size
-        }
-        // Room for the note, a row of its own under the rest; a chart that has
-        // not the room keeps its plot, and its description says the number
-        var note = outsideNote()
-        if !note.isEmpty {
-            let above = bottom - 1.4 * subtitleSize()
-            if above > top {
-                bottom = above
-            } else {
-                note = ""
-            }
-        }
+        let (bottom, note) = ChartScale.plotBottom(f2, xAxisTitle, outsideNote(), top, y + h)
         if right <= left || bottom <= top {
             page.pdf.fail(ChartScale.noRoom("A SimpleScatterChart", w, h))
             return [x + w, y + h]
@@ -734,21 +701,7 @@ public class SimpleScatterChart : Drawable {
         page.saveGraphicsState()
         page.setDefaultStrokeDashPattern()      // Not the caller's, which dashed the lines
 
-        if panelColor >= 0 {
-            page.setBrushColor(panelColor)
-            page.fillRect(x, y, w, h)
-        }
-        var baseline = y + pad
-        if !title.isEmpty {
-            baseline += f1.getAscent(f1.getSize())
-            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2.0 * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), nil)
-            baseline += f1.getDescent(f1.getSize())
-        }
-        if !subtitle.isEmpty {
-            baseline += 1.4 * subtitleSize()
-            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2.0 * pad),
-                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
-        }
+        var baseline = ChartScale.drawChartTitles(page, f1, f2, title, subtitle, panelColor, x, y, w, h)
         if !series.isEmpty {
             if !title.isEmpty || !subtitle.isEmpty {
                 baseline += f2.getSize()
@@ -790,24 +743,7 @@ public class SimpleScatterChart : Drawable {
             page.drawString(f2, size, label, ChartScale.placed(centers[i], widths[i], x + pad / 2.0, x + w - pad / 2.0),
                     plotBottom + 1.4 * size, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
-        // The axis titles, shortened to the width and the height of the plot:
-        // a long one ran past the chart (the review of 28 October 2026)
-        if !xAxisTitle.isEmpty {
-            let xTitle = ChartScale.shorten(f2, size, xAxisTitle, right - plotLeft)
-            page.drawString(f2, size, xTitle, plotLeft + (right - plotLeft - f2.stringWidth(size, xTitle)) / 2.0,
-                    plotBottom + 2.8 * size, Util.toRGB(SimpleBarChart.INK), nil)
-        }
-        if !yAxisTitle.isEmpty {
-            let yTitle = ChartScale.shorten(f2, size, yAxisTitle, plotBottom - top)
-            page.setTextRotation(-90)
-            page.drawString(f2, size, yTitle, x + pad + ascent,
-                    plotBottom - (plotBottom - top - f2.stringWidth(size, yTitle)) / 2.0,
-                    Util.toRGB(SimpleBarChart.INK), nil)
-            page.setTextRotation(0)
-        }
-        if !note.isEmpty {
-            ChartScale.drawOutsideNote(page, f2, subtitleSize(), note, right, x + pad, x + w - pad, y + h - pad)
-        }
+        ChartScale.drawAxisTitles(page, f2, xAxisTitle, yAxisTitle, note, plotLeft, right, top, plotBottom, x, y, w, h)
 
         // The trend line, from the left of the plot to its right, within its
         // height
@@ -826,13 +762,13 @@ public class SimpleScatterChart : Drawable {
             // The label over the end of the line, lifted by as much as a
             // falling line rises under it
             let label = "trend"
-            let width = f2.stringWidth(subtitleSize(), label)
+            let width = f2.stringWidth(ChartScale.chartSubtitleSize(f2), label)
             var lift = size / 3.0
             if x2 > x1 && y2 > y1 {
                 lift += width * ((y2 - y1) / (x2 - x1))
             }
             // Not left of the plot, where a short steep line put it
-            page.drawString(f2, subtitleSize(), label, Swift.max(plotLeft, x2 - width), y2 - lift,
+            page.drawString(f2, ChartScale.chartSubtitleSize(f2), label, Swift.max(plotLeft, x2 - width), y2 - lift,
                     Util.toRGB(SimpleScatterChart.TREND), nil)
         }
 
@@ -991,22 +927,9 @@ public class SimpleScatterChart : Drawable {
     // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static func linkOf(_ p: Point, _ box: [Float]) -> Annotation {
-        let annotation = Annotation(
-                Annotation.Link,
-                box[0],
-                box[1],
-                box[0] + box[2],
-                box[1] + box[3],
-                nil,    // Vertices
-                nil,    // Fill Color
-                0.0,    // Opacity
-                nil,    // Title
-                nil,    // Contents
-                p.uri,
-                nil,
-                nil,
-                nil,
-                p.name)
+        let annotation = Annotation.link(
+                box[0], box[1], box[0] + box[2], box[1] + box[3],
+                p.uri, nil, nil, nil, p.name)
         annotation.hitSize = p.dot ? HIT_SIZE : 0.0
         return annotation
     }

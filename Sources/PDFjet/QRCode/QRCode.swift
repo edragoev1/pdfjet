@@ -191,34 +191,7 @@ public class QRCode : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         let size = m1*Float(moduleCount)
         if let page = page {
-            // Described, the QR code is a figure of a tagged document; not
-            // described, its modules, which carry no text, are decoration.
-            if let altDescription = altDescription, !altDescription.isEmpty {
-                page.addBDC(StructElem.FIGURE, nil, nil, altDescription)
-            } else {
-                page.addArtifactBMC()
-            }
-            page.saveGraphicsState()
-            page.setBrushColor(self.color)
-            for row in 0..<moduleCount {
-                var col = 0
-                while col < moduleCount {
-                    if !modules[row][col] {
-                        col += 1
-                        continue
-                    }
-                    let start = col
-                    while col < moduleCount && modules[row][col] {
-                        col += 1
-                    }
-                    page.fillRect(x + Float(start)*m1, y + Float(row)*m1, Float(col - start)*m1, m1)
-                }
-            }
-            page.restoreGraphicsState()
-            if let altDescription = altDescription, !altDescription.isEmpty {
-                page.setFigureBoundingBox(x, y, size, size)
-            }
-            page.addEMC()
+            Modules.draw(page, modules, x, y, m1, color, altDescription, size, size)
         }
         return [self.x + size, self.y + size]
     }
