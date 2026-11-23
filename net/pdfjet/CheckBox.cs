@@ -188,15 +188,7 @@ public class CheckBox : IDrawable {
             return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
         }
 
-        StructElement link = null;
-        if (!String.IsNullOrEmpty(uri)) {
-            link = page.AddLinkBDC(StructElem.P, language, actualText, altDescription);
-        } else if (String.IsNullOrEmpty(label)) {
-            // A box with no label, nor a description, has nothing to read.
-            page.AddShapeBDC(language, actualText, altDescription);
-        } else {
-            page.AddBDC(StructElem.P, language, actualText, altDescription);
-        }
+        StructElement link = BeginControl(page, uri, label, language, actualText, altDescription);
         // The pen of the box is its own, and the page is left with the one it had.
         page.SaveGraphicsState();
 
@@ -225,36 +217,46 @@ public class CheckBox : IDrawable {
             }
         }
 
-        // A linked label is blue.
+        EndControl(page, font, fontSize, label, x + 3f*w/2f, y, uri, language, actualText, altDescription, link);
+
+        return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
+    }
+
+    // Begins the marked content of a check box or a radio button: the Link
+    // its annotation joins, which it returns, when it is a link; a shape when
+    // it has no label, which has nothing to read, nor a description; and a
+    // paragraph otherwise.
+    internal static StructElement BeginControl(Page page, String uri, String label,
+            String language, String actualText, String altDescription) {
+        if (!String.IsNullOrEmpty(uri)) {
+            return page.AddLinkBDC(StructElem.P, language, actualText, altDescription);
+        }
+        if (String.IsNullOrEmpty(label)) {
+            page.AddShapeBDC(language, actualText, altDescription);
+        } else {
+            page.AddBDC(StructElem.P, language, actualText, altDescription);
+        }
+        return null;
+    }
+
+    // Draws the label of a check box or a radio button at x, its top at y,
+    // blue when it is a link, puts back the graphics state saved for the
+    // control, ends its marked content, and adds its link annotation, which
+    // joins the Link of link, over the label.
+    internal static void EndControl(Page page, Font font, float fontSize, String label, float x, float y,
+            String uri, String language, String actualText, String altDescription, StructElement link) {
         float[] textColor = !String.IsNullOrEmpty(uri) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
-        page.DrawString(font, fontSize, label, x + 3f*w/2f, y + font.GetAscent(fontSize), textColor, null);
+        page.DrawString(font, fontSize, label, x, y + font.GetAscent(fontSize), textColor, null);
         page.RestoreGraphicsState();
 
         page.AddEMC();
 
         if (!String.IsNullOrEmpty(uri)) {
             // The link is a structure element of its own, see Page.AddAnnotation.
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x + 3f*w/2f,
-                    y,
-                    x + 3f*w/2f + font.StringWidth(fontSize, label),
-                    y + font.GetBodyHeight(fontSize),
-                    null,       // Vertices
-                    null,       // Fill Color
-                    0f,         // Opacity
-                    null,       // Title
-                    null,       // Contents
-                    uri,
-                    null,
-                    language,
-                    actualText,
-                    altDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x, y, x + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize),
+                    uri, null, language, actualText, altDescription, link));
         }
-
-        return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
     }
 }   // End of CheckBox.cs
 }   // End of namespace PDFjet.NET

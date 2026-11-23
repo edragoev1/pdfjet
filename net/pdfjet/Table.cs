@@ -984,13 +984,7 @@ public class Table : IDrawable {
         if (tableData.Count == 0) {
             return new float[] {x1, y1};    // An empty table draws nothing.
         }
-        WrapAroundCellText();
-        ApplyRowSpans();
-        SetRightBorderOnLastColumn();
-        SetBottomBorderOnLastRow();
-        heights = GetRowHeights();
-        striped = GetStripedRows();
-        columnSums = new Dictionary<long, ColumnSums>();
+        PrepareToDraw();
         try {
             float[] xy = DrawPage(page, 0);
             return new float[] {x1 + GetWidth(), xy[1]};
@@ -1026,13 +1020,7 @@ public class Table : IDrawable {
         if (tableData.Count == 0) {
             return new float[] {x1, y1};    // An empty table needs no page.
         }
-        WrapAroundCellText();
-        ApplyRowSpans();
-        SetRightBorderOnLastColumn();
-        SetBottomBorderOnLastRow();
-        heights = GetRowHeights();
-        striped = GetStripedRows();
-        columnSums = new Dictionary<long, ColumnSums>();
+        PrepareToDraw();
         try {
             // A table with no rows left to draw needs no page, and ends where it starts.
             float[] xy = new float[] {x1, y1};
@@ -1050,6 +1038,19 @@ public class Table : IDrawable {
         } finally {
             columnSums = null;
         }
+    }
+
+    // Makes the cells ready to be drawn: the text wrapped, the row spans
+    // applied, the borders of the last column and row set, the heights and
+    // the stripes of the rows found, and the sums of the columns started.
+    private void PrepareToDraw() {
+        WrapAroundCellText();
+        ApplyRowSpans();
+        SetRightBorderOnLastColumn();
+        SetBottomBorderOnLastRow();
+        heights = GetRowHeights();
+        striped = GetStripedRows();
+        columnSums = new Dictionary<long, ColumnSums>();
     }
 
     // Draws the header rows and the rows that fit on the page under them. The

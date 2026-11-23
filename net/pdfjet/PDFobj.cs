@@ -1264,14 +1264,19 @@ public class PDFobj {
         return new float[] {Math.Min(box[0], box[2]), Math.Min(box[1], box[3])};
     }
 
-    /// <summary>Adds a content stream to this page.</summary>
-    public void AddContent(byte[] content, List<PDFobj> objects) {
+    // Adds a stream object of the content to the objects, numbered after the
+    // last of them, and returns its number.
+    private static String AddContentObject(byte[] content, List<PDFobj> objects) {
         PDFobj obj = new PDFobj();
         obj.SetNumber(objects.Count + 1);
         obj.SetStream(content);
         objects.Add(obj);
+        return obj.number.ToString(CultureInfo.InvariantCulture);
+    }
 
-        String objNumber = obj.number.ToString(CultureInfo.InvariantCulture);
+    /// <summary>Adds a content stream to this page.</summary>
+    public void AddContent(byte[] content, List<PDFobj> objects) {
+        String objNumber = AddContentObject(content, objects);
         // The page's own /Contents, not an annotation's in it
         for (int i = EntryIndexOf("/Contents"); i >= 0 && i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
@@ -1325,12 +1330,7 @@ public class PDFobj {
     /// Additional code to handle PDFs with indirect array of stream objects was written by EDragoev.
     /// </summary>
     public void AddPrefixContent(byte[] content, List<PDFobj> objects) {
-        PDFobj obj = new PDFobj();
-        obj.SetNumber(objects.Count + 1);
-        obj.SetStream(content);
-        objects.Add(obj);
-
-        String objNumber = obj.number.ToString(CultureInfo.InvariantCulture);
+        String objNumber = AddContentObject(content, objects);
         // The page's own /Contents, not an annotation's in it
         for (int i = EntryIndexOf("/Contents"); i >= 0 && i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {

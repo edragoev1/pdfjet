@@ -116,23 +116,8 @@ public class Font {
     /// </summary>
     /// <param name="pdf">the PDF to add this font to.</param>
     /// <param name="coreFont">the core font. Must be one the names defined in the CoreFont class.</param>
-    public Font(PDF pdf, int coreFont) {
+    public Font(PDF pdf, int coreFont) : this(coreFont) {
         this.pdf = pdf;
-        CoreFont font = new CoreFont(coreFont);
-        this.isCoreFont = true;
-        this.name = font.name;
-        this.bBoxLLx = font.bBoxLLx;
-        this.bBoxLLy = font.bBoxLLy;
-        this.bBoxURx = font.bBoxURx;
-        this.bBoxURy = font.bBoxURy;
-        this.metrics = font.metrics;
-        this.symbolic = font.name.Equals("Symbol") || font.name.Equals("ZapfDingbats");
-        this.fontUnderlinePosition = font.underlinePosition;
-        this.fontUnderlineThickness = font.underlineThickness;
-        this.fontAscent = font.bBoxURy;
-        this.fontDescent = font.bBoxLLy;
-        SetSize(size);
-
         pdf.NewObj();
         pdf.Append("<<\n");
         pdf.Append("/Type /Font\n");
@@ -150,7 +135,7 @@ public class Font {
         pdf.fonts.Add(this);
     }
 
-    // Used by PDFobj
+    // Used by PDFobj, and by the constructor of a core font of a PDF
     internal Font(int coreFont) {
         CoreFont font = new CoreFont(coreFont);
         this.isCoreFont = true;

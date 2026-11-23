@@ -71,10 +71,7 @@ public abstract class BaseAnnotation : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        SetFillColor(new float[] {r, g, b});
+        SetFillColor(Util.ToRGB(color));
         return this;
     }
 

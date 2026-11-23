@@ -154,7 +154,7 @@ public sealed class HarfBuzzShaper : IShaper {
                     list.Add(run);
                     StringBuilder runText = new StringBuilder();
                     for (int i = run[0]; i < run[1]; i++) {
-                        DictionaryBreaks.AppendCodePoint(runText, cps[i]);
+                        runText.AppendCodePoint(cps[i]);
                     }
                     texts.Add(runText.ToString());
                 }

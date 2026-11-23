@@ -91,21 +91,11 @@ class FontWriter {
 
     // Writes a stream object of the data, compressed.
     internal static void AddCompressedStream(PDF pdf, byte[] data) {
-        byte[] compressed = Compressor.Deflate(data);
-        if (pdf.encryption != null) {
-            compressed = AES256.Encrypt(compressed, pdf.encryption.GetKey());
-        }
+        byte[] compressed = pdf.Encrypted(Compressor.Deflate(data));
         pdf.NewObj();
         pdf.Append("<<\n");
         pdf.Append("/Filter /FlateDecode\n");
-        pdf.Append("/Length ");
-        pdf.Append(compressed.Length);
-        pdf.Append("\n");
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(compressed);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        pdf.AppendStreamBody(compressed);
     }
 
     // Writes the CID font with the name given, which is the font's own, or
@@ -156,12 +146,8 @@ class FontWriter {
         pdf.Append(baseFont);
         pdf.Append('\n');
 
-        byte[] registry = Encoding.UTF8.GetBytes("Adobe");
-        byte[] ordering = Encoding.UTF8.GetBytes("Identity");
-        if (pdf.encryption != null) {
-            registry = AES256.Encrypt(registry, pdf.encryption.GetKey());
-            ordering = AES256.Encrypt(ordering, pdf.encryption.GetKey());
-        }
+        byte[] registry = pdf.Encrypted(Encoding.UTF8.GetBytes("Adobe"));
+        byte[] ordering = pdf.Encrypted(Encoding.UTF8.GetBytes("Identity"));
         pdf.Append("/CIDSystemInfo <</Registry <");
         pdf.Append(Util.ToHexString(registry));
         pdf.Append("> /Ordering <");

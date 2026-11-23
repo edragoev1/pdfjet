@@ -53,9 +53,6 @@ internal class PNGImage {
     private float physicalWidth;
     private float physicalHeight;
 
-    // A metre is 72/0.0254 points.
-    private const double POINTS_PER_METER = 72.0/0.0254;
-
     /// <summary>
     /// Used to embed PNG images in the PDF document.
     /// </summary>
@@ -516,14 +513,11 @@ internal class PNGImage {
         }
         int pixelsPerMeterX = (int) ToUInt32(data, 0);
         int pixelsPerMeterY = (int) ToUInt32(data, 4);
-        if (pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0) {
-            return;     // Also for a count above 2^31, which reads negative.
-        }
-        float width = (float) (this.w*POINTS_PER_METER/pixelsPerMeterX);
-        float height = (float) (this.h*POINTS_PER_METER/pixelsPerMeterY);
-        if (FastFloat.IsWritable(width) && FastFloat.IsWritable(height)) {
-            this.physicalWidth = width;
-            this.physicalHeight = height;
+        // None for a count above 2^31, which reads negative
+        float[] size = BMPImage.PhysicalSize(w, h, pixelsPerMeterX, pixelsPerMeterY);
+        if (size != null) {
+            this.physicalWidth = size[0];
+            this.physicalHeight = size[1];
         }
     }
 

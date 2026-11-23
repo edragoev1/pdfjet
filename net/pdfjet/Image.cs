@@ -75,41 +75,8 @@ public class Image : IDrawable {
     /// <param name="bytes">the bytes of the image file.</param>
     public Image(PDF pdf, byte[] bytes) {
         this.pdf = pdf;
-        ImageType imageType = TypeOf(bytes);
-        Stream inputStream = new MemoryStream(bytes);
-        byte[] data;
-        if (imageType == ImageType.JPG) {
-            JPGImage jpg = new JPGImage(bytes);
-            data = jpg.GetData();
-            SetPixels(jpg.GetWidth(), jpg.GetHeight());
-            if (jpg.GetColorComponents() == 1) {
-                AddImage(pdf, data, null, imageType, "DeviceGray", 8);
-            } else if (jpg.GetColorComponents() == 3) {
-                AddImage(pdf, data, null, imageType, "DeviceRGB", 8);
-            } else if (jpg.GetColorComponents() == 4) {
-                invertedInks = jpg.IsAdobe();
-                AddImage(pdf, data, null, imageType, "DeviceCMYK", 8);
-            }
-            SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
-            SetOrientation(jpg.orientation);
-        } else if (imageType == ImageType.PNG) {
-            PNGImage png = new PNGImage(inputStream);
-            SetPixels(png.GetWidth(), png.GetHeight());
-            colorKeyMask = png.GetColorKeyMask();
-            decodeColors = png.decodeColors;
-            palette = png.palette;
-            String colorSpace = png.GetColorSpace(out int bitsPerComponent);
-            AddImage(pdf, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent);
-            SetPhysicalSize(png.GetPhysicalWidth(), png.GetPhysicalHeight());
-        } else if (imageType == ImageType.BMP) {
-            BMPImage bmp = new BMPImage(inputStream);
-            data = bmp.GetData();
-            SetPixels(bmp.GetWidth(), bmp.GetHeight());
-            AddImage(pdf, data, bmp.GetAlpha(), imageType, "DeviceRGB", 8);
-            SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
-        }
-
-        inputStream.Dispose();
+        Decode(bytes, (data, alpha, imageType, colorSpace, bitsPerComponent) =>
+                AddImage(pdf, data, alpha, imageType, colorSpace, bitsPerComponent));
     }
 
     /// <summary>
@@ -121,6 +88,14 @@ public class Image : IDrawable {
     }
 
     private Image(List<PDFobj> objects, byte[] bytes) {
+        Decode(bytes, (data, alpha, imageType, colorSpace, bitsPerComponent) =>
+                AddImageToObjects(objects, data, alpha, imageType, colorSpace, bitsPerComponent));
+    }
+
+    // Reads the JPEG, PNG or BMP image of the bytes, and hands its data, its
+    // alpha, its type, its color space and its bits per component to add,
+    // which writes them to the PDF or to the objects of an existing one.
+    private void Decode(byte[] bytes, Action<byte[], byte[], ImageType, String, int> add) {
         ImageType imageType = TypeOf(bytes);
         Stream inputStream = new MemoryStream(bytes);
         byte[] data;
@@ -129,12 +104,12 @@ public class Image : IDrawable {
             data = jpg.GetData();
             SetPixels(jpg.GetWidth(), jpg.GetHeight());
             if (jpg.GetColorComponents() == 1) {
-                AddImageToObjects(objects, data, null, imageType, "DeviceGray", 8);
+                add(data, null, imageType, "DeviceGray", 8);
             } else if (jpg.GetColorComponents() == 3) {
-                AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
+                add(data, null, imageType, "DeviceRGB", 8);
             } else if (jpg.GetColorComponents() == 4) {
                 invertedInks = jpg.IsAdobe();
-                AddImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
+                add(data, null, imageType, "DeviceCMYK", 8);
             }
             SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
             SetOrientation(jpg.orientation);
@@ -145,16 +120,16 @@ public class Image : IDrawable {
             decodeColors = png.decodeColors;
             palette = png.palette;
             String colorSpace = png.GetColorSpace(out int bitsPerComponent);
-            AddImageToObjects(objects, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent);
+            add(png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent);
             SetPhysicalSize(png.GetPhysicalWidth(), png.GetPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
             SetPixels(bmp.GetWidth(), bmp.GetHeight());
-            AddImageToObjects(objects, data, bmp.GetAlpha(), imageType, "DeviceRGB", 8);
+            add(data, bmp.GetAlpha(), imageType, "DeviceRGB", 8);
             SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
         }
-        inputStream.Close();
+        inputStream.Dispose();
     }
 
     // Returns the number of pixels of the value as Java's (int) takes it: 0
@@ -454,18 +429,8 @@ public class Image : IDrawable {
             pdf.Append(" 0 R\n");
         }
         pdf.AppendCopiedValue("/Mask", maskArray);
-        byte[] stream = obj.stream;
-        if (pdf.encryption != null) {
-            stream = AES256.Encrypt(stream, pdf.encryption.GetKey());
-        }
-        pdf.Append("/Length ");
-        pdf.Append(stream.Length);
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(stream, 0, stream.Length);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        byte[] stream = pdf.Encrypted(obj.stream);
+        pdf.AppendStreamBody(stream);
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -661,59 +626,15 @@ public class Image : IDrawable {
         page.SaveGraphicsState();
 
         if (degrees == 0) {
-            page.Append(w);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(h);
-            page.Append(' ');
-            page.Append(x);
-            page.Append(' ');
-            page.Append(page.height - (y + h));
-            page.Append(" cm\n");
+            AppendCm(page, w, h, x, page.height - (y + h));
         } else if (degrees == 90) {
-            page.Append(h);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(w);
-            page.Append(' ');
-            page.Append(x);
-            page.Append(' ');
-            page.Append(page.height - y);
-            page.Append(" cm\n");
+            AppendCm(page, h, w, x, page.height - y);
             page.Append("0 -1 1 0 0 0 cm\n");
         } else if (degrees == 180) {
-            page.Append(w);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(h);
-            page.Append(' ');
-            page.Append(x + w);
-            page.Append(' ');
-            page.Append(page.height - y);
-            page.Append(" cm\n");
+            AppendCm(page, w, h, x + w, page.height - y);
             page.Append("-1 0 0 -1 0 0 cm\n");
         } else if (degrees == 270) {
-            page.Append(h);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(0f);
-            page.Append(' ');
-            page.Append(w);
-            page.Append(' ');
-            page.Append(x + h);
-            page.Append(' ');
-            page.Append(page.height - (y + w));
-            page.Append(" cm\n");
+            AppendCm(page, h, w, x + h, page.height - (y + w));
             page.Append("0 1 -1 0 0 0 cm\n");
         }
 
@@ -743,27 +664,29 @@ public class Image : IDrawable {
             // The link covers the image as it is drawn, turned or not.
             float linkW = (degrees == 90 || degrees == 270) ? h : w;
             float linkH = (degrees == 90 || degrees == 270) ? w : h;
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + linkW,
-                    y + linkH,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x, y, x + linkW, y + linkH,
+                    uri, key, language, actualText, altDescription, link));
         }
 
         return corner;
+    }
+
+    // Writes the matrix a 0 0 d e f, which scales by a and d and moves by e
+    // and f, as the operands of cm.
+    private static void AppendCm(Page page, float a, float d, float e, float f) {
+        page.Append(a);
+        page.Append(' ');
+        page.Append(0f);
+        page.Append(' ');
+        page.Append(0f);
+        page.Append(' ');
+        page.Append(d);
+        page.Append(' ');
+        page.Append(e);
+        page.Append(' ');
+        page.Append(f);
+        page.Append(" cm\n");
     }
 
     /// <summary>
@@ -837,18 +760,8 @@ public class Image : IDrawable {
         pdf.Append(bitsPerComponent);
         pdf.Append('\n');
 
-        byte[] buf = data;
-        if (pdf.encryption != null) {
-            buf = AES256.Encrypt(data, pdf.encryption.GetKey());
-        }
-        pdf.Append("/Length ");
-        pdf.Append(buf.Length);
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(buf);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        byte[] buf = pdf.Encrypted(data);
+        pdf.AppendStreamBody(buf);
         objNumber = pdf.GetObjNumber();
     }
 
@@ -895,10 +808,7 @@ public class Image : IDrawable {
         pdf.Append(pixelHeight);
         pdf.Append('\n');
         if (palette != null) {
-            byte[] colors = palette;
-            if (pdf.encryption != null) {
-                colors = AES256.Encrypt(colors, pdf.encryption.GetKey());
-            }
+            byte[] colors = pdf.Encrypted(palette);
             pdf.Append("/ColorSpace [/Indexed /DeviceRGB ");
             pdf.Append(palette.Length / 3 - 1);
             pdf.Append(" <");
@@ -927,18 +837,8 @@ public class Image : IDrawable {
             pdf.Append(">>\n");
         }
 
-        byte[] buf = data;
-        if (pdf.encryption != null) {
-            buf = AES256.Encrypt(data, pdf.encryption.GetKey());
-        }
-        pdf.Append("/Length ");
-        pdf.Append(buf.Length);
-        pdf.Append('\n');
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(buf);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        byte[] buf = pdf.Encrypted(data);
+        pdf.AppendStreamBody(buf);
         pdf.images.Add(this);
         objNumber = pdf.GetObjNumber();
     }

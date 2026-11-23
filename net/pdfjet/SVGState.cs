@@ -666,7 +666,7 @@ internal class SVGState {
     private static bool ParseHex(String hex, out int number) {
         number = 0;
         for (int i = (hex[0] == '+' || hex[0] == '-') ? 1 : 0; i < hex.Length; i++) {
-            int digit = HexDigit(hex[i]);
+            int digit = Decompressor.HexValue(hex[i]);
             if (digit < 0) {
                 return false;
             }
@@ -676,19 +676,6 @@ internal class SVGState {
             number = -number;
         }
         return true;
-    }
-
-    private static int HexDigit(char ch) {
-        if (ch >= '0' && ch <= '9') {
-            return ch - '0';
-        }
-        if (ch >= 'a' && ch <= 'f') {
-            return ch - 'a' + 10;
-        }
-        if (ch >= 'A' && ch <= 'F') {
-            return ch - 'A' + 10;
-        }
-        return -1;
     }
 
     // Reads an opacity, a number or a percentage, and returns it between 0 and 1.
@@ -911,7 +898,11 @@ internal class SVGState {
         return numbers;
     }
 
-    private static bool AfterExponent(StringBuilder buf) {
+    // Returns true when the number so far ends with the e of an exponent, so
+    // that the sign of the exponent belongs to it: the numbers of path data
+    // are written as SVG 1.1 section 8.3.9 gives them, sign, digits, point
+    // and exponent.
+    internal static bool AfterExponent(StringBuilder buf) {
         if (buf.Length == 0) {
             return false;
         }

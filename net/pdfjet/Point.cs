@@ -161,10 +161,7 @@ public class Point : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
+        this.fillColor = Util.ToRGB(color);
         return this;
     }
 
@@ -184,10 +181,7 @@ public class Point : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.strokeColor = new float[] {r, g, b};
+        this.strokeColor = Util.ToRGB(color);
         return this;
     }
 
@@ -324,11 +318,8 @@ public class Point : IDrawable {
         page.AddEMC();
         if (!String.IsNullOrEmpty(uri)) {
             page.EndLink(link);
-            Annotation annotation = new Annotation(
-                    Annotation.Link, x - r, y - r, x + r, y + r,
-                    null, null, 0f, null, null, uri, null, null, null, description);
-            annotation.linkElement = link;
-            page.AddAnnotation(annotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x - r, y - r, x + r, y + r, uri, null, null, null, description, link));
         }
 
         return new float[] {x + r, y + r};

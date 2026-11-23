@@ -113,15 +113,7 @@ public class RadioButton : IDrawable {
             return new float[] { x + 6*r1 + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
         }
 
-        StructElement link = null;
-        if (!String.IsNullOrEmpty(uri)) {
-            link = page.AddLinkBDC(StructElem.P, language, actualText, altDescription);
-        } else if (String.IsNullOrEmpty(label)) {
-            // A button with no label, nor a description, has nothing to read.
-            page.AddShapeBDC(language, actualText, altDescription);
-        } else {
-            page.AddBDC(StructElem.P, language, actualText, altDescription);
-        }
+        StructElement link = CheckBox.BeginControl(page, uri, label, language, actualText, altDescription);
         // The pen of the button is its own, and the page is left with the one it had.
         page.SaveGraphicsState();
 
@@ -136,33 +128,7 @@ public class RadioButton : IDrawable {
             page.FillCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2);
         }
 
-        // A linked label is blue.
-        float[] textColor = !String.IsNullOrEmpty(uri) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
-        page.DrawString(font, fontSize, label, x + 3*r1, y + font.GetAscent(fontSize), textColor, null);
-        page.RestoreGraphicsState();
-
-        page.AddEMC();
-
-        if (!String.IsNullOrEmpty(uri)) {
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x + 3*r1,
-                    y,
-                    x + 3*r1 + font.StringWidth(fontSize, label),
-                    y + font.GetBodyHeight(fontSize),
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    null,
-                    language,
-                    actualText,
-                    altDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
-        }
+        CheckBox.EndControl(page, font, fontSize, label, x + 3*r1, y, uri, language, actualText, altDescription, link);
 
         return new float[] { x + 6*r1 + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
     }

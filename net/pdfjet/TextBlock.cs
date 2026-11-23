@@ -6,7 +6,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Globalization;
 using System.Text;
 
@@ -217,10 +216,7 @@ public class TextBlock : IDrawable {
             this.fillColor = null;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
+        this.fillColor = Util.ToRGB(color);
         return this;
     }
 
@@ -236,10 +232,7 @@ public class TextBlock : IDrawable {
             this.borderColor = null;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.borderColor = new float[] {r, g, b};
+        this.borderColor = Util.ToRGB(color);
         return this;
     }
 
@@ -274,10 +267,7 @@ public class TextBlock : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
+        this.textColor = Util.ToRGB(color);
         return this;
     }
 
@@ -1135,22 +1125,9 @@ public class TextBlock : IDrawable {
         page.RestoreGraphicsState();
 
         if (!String.IsNullOrEmpty(uri)) {
-            page.AddAnnotation(new Annotation(
-                    Annotation.Link,
-                    this.x,
-                    this.y,
-                    this.x + this.width,
-                    this.y + blockHeight,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    null,   // The destination name
-                    null,   // Language
-                    null,   // Actual text
-                    null)); // Alt description
+            page.AddAnnotation(Annotation.NewLink(
+                    this.x, this.y, this.x + this.width, this.y + blockHeight,
+                    uri, null, null, null, null, null));
         }
 
         return new float[] {this.x + this.width, this.y + blockHeight};

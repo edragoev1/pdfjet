@@ -312,6 +312,18 @@ public class Barcode : IDrawable {
         }
     }
 
+    // The check digit of GS1 of the first count digits of the text, of a
+    // UPC-A or an ITF-14 barcode: the digits weighed 3, 1, 3, 1 and so on
+    // from the first, and the digit that makes their sum a multiple of 10.
+    private int CheckDigit(int count) {
+        int sum = 0;
+        for (int i = 0; i < count; i++) {
+            int digit = text[i] - '0';
+            sum += (i % 2 == 0) ? 3 * digit : digit;
+        }
+        return (10 - sum % 10) % 10;
+    }
+
     private Extent DrawCodeUPC(Page page, float x1, float y1) {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
@@ -319,18 +331,7 @@ public class Barcode : IDrawable {
         // printed outside the bars, reach 5 modules below the others.
         float longBar = h + GUARD_BAR_EXTENSION * m1;
 
-        int sum = 0;
-        for (int i = 0; i < 11; i += 2) {   // even digits
-            sum += (text[i] - '0') * 3;
-        }
-        for (int i = 1; i < 11; i += 2) {   // odd digits
-            sum += (text[i] - '0');
-        }
-        int checkDigit = 0;
-        int remainder = sum % 10;
-        if (remainder > 0) {
-            checkDigit = (10 - remainder);
-        }
+        int checkDigit = CheckDigit(11);
         // Use a local variable instead of mutating the text field - DrawOn()
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
@@ -669,12 +670,7 @@ public class Barcode : IDrawable {
         float quiet = 10f * m;
         float h = m * barHeightFactor;  // The height of the bars when drawn horizontally
 
-        int sum = 0;
-        for (int i = 0; i < 13; i++) {
-            int digit = text[i] - '0';
-            sum += (i % 2 == 0) ? 3 * digit : digit;
-        }
-        String fullText = text + ((10 - sum % 10) % 10);
+        String fullText = text + CheckDigit(13);
 
         // The widths of the bars and the spaces in turn, a bar first
         StringBuilder widths = new StringBuilder("nnnn");

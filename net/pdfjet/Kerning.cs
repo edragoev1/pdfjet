@@ -316,17 +316,25 @@ internal class Kerning {
         return size;
     }
 
+    // Reads what both formats of a PairPos subtable start with: the first
+    // glyphs its coverage table covers, which it returns, the place of the x
+    // advance in the first value record, -1 for none, and the sizes of the two
+    // value records of a pair.
+    private int[] PairPosStart(int subTable, out int xAdvance, out int size1, out int size2) {
+        GPOS g = gpos;
+        int[] firstGlyphs = g.Coverage(subTable + g.GetUInt16(subTable + 2));
+        size1 = ValueSize(g.GetUInt16(subTable + 4), out xAdvance);
+        size2 = ValueSize(g.GetUInt16(subTable + 6), out _);
+        return firstGlyphs;
+    }
+
     // Reads a PairPos subtable of format 1: for each first glyph it covers, a
     // set of second glyphs, each with how far it moves, put in order, the first
     // record of a pair kept, as it is the one applied. A glyph past the glyphs
     // of the font is left out.
     private PairSubtable PairsSubtable(int subTable) {
         GPOS g = gpos;
-        int[] firstGlyphs = g.Coverage(subTable + g.GetUInt16(subTable + 2));
-        int xAdvance;
-        int size1 = ValueSize(g.GetUInt16(subTable + 4), out xAdvance);
-        int unused;
-        int size2 = ValueSize(g.GetUInt16(subTable + 6), out unused);
+        int[] firstGlyphs = PairPosStart(subTable, out int xAdvance, out int size1, out int size2);
         int pairSetCount = g.GetUInt16(subTable + 8);
         PairSubtable s = new PairSubtable();
         s.pairSets = new int[0];
@@ -394,11 +402,7 @@ internal class Kerning {
     // moves the second glyph. A glyph past the glyphs of the font is left out.
     private PairSubtable ClassesSubtable(int subTable) {
         GPOS g = gpos;
-        int[] firstGlyphs = g.Coverage(subTable + g.GetUInt16(subTable + 2));
-        int xAdvance;
-        int size1 = ValueSize(g.GetUInt16(subTable + 4), out xAdvance);
-        int unused;
-        int size2 = ValueSize(g.GetUInt16(subTable + 6), out unused);
+        int[] firstGlyphs = PairPosStart(subTable, out int xAdvance, out int size1, out int size2);
         int firstClasses = g.GetUInt16(subTable + 12);
         int secondClasses = g.GetUInt16(subTable + 14);
         PairSubtable s = new PairSubtable();

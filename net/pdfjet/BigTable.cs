@@ -53,9 +53,9 @@ namespace PDFjet.NET {
         // In a PDF/UA document the table is a Table element that the rows of
         // every page go on adding to; see DrawFieldsAndLine.
         private StructElement structElement = null;
-        private float[] shadingColor = Rgb(0xF0F0F0);   // null for no shading
+        private float[] shadingColor = Util.ToRGB(0xF0F0F0);   // null for no shading
         private float[] headerColor = null;             // null for the shading of every other row
-        private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
+        private float[] borderColor = Util.ToRGB(0xB0B0B0);    // null for no lines
         private float borderWidth = 0.5f;               // The width of the lines, 0.5 points unless set
         // The y of the line above each row of the page being drawn, stroked
         // with the vertical lines and the line under the last row, one path
@@ -293,7 +293,7 @@ namespace PDFjet.NET {
         /// <param name="color">the color as a 0xRRGGBB value, for example Color.lightgray.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetShadingColor(int color) {
-            this.shadingColor = (color == Color.transparent) ? null : Rgb(color);
+            this.shadingColor = (color == Color.transparent) ? null : Util.ToRGB(color);
             return this;
         }
 
@@ -327,7 +327,7 @@ namespace PDFjet.NET {
         /// <param name="color">the color as a 0xRRGGBB value, for example Color.gray.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetBorderColor(int color) {
-            this.borderColor = (color == Color.transparent) ? null : Rgb(color);
+            this.borderColor = (color == Color.transparent) ? null : Util.ToRGB(color);
             return this;
         }
 
@@ -401,7 +401,7 @@ namespace PDFjet.NET {
         /// <param name="color">the color as a 0xRRGGBB value, for example 0xE6E6E6.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetHeaderColor(int color) {
-            this.headerColor = (color == Color.transparent) ? null : Rgb(color);
+            this.headerColor = (color == Color.transparent) ? null : Util.ToRGB(color);
             return this;
         }
 
@@ -617,6 +617,18 @@ namespace PDFjet.NET {
             return y;
         }
 
+        // The y of the first row, where the pages are counted from, and the
+        // height of its page: the first page can be of another size than the
+        // next ones.
+        private float FirstCountedRow(out float pageHeight) {
+            if (StartsOnFirstPage()) {
+                pageHeight = firstPage.GetHeight();
+                return FirstRowY(firstPageY);
+            }
+            pageHeight = pageSize.GetHeight();
+            return FirstRowY(this.y);
+        }
+
         // Counts the pages the rows take, as DrawTextAndLine breaks them, so that
         // the "Page i of N" footer of a page can be drawn before the next page is
         // created. The location and the bottom margin are set after SetTableData,
@@ -625,14 +637,8 @@ namespace PDFjet.NET {
             if (wrap) {
                 return CountWrappedPages();
             }
-            float pageHeight = pageSize.GetHeight();
             float yTop = FirstRowY(this.y);
-            float yPos = yTop;
-            if (StartsOnFirstPage()) {
-                // The first page can be of another size than the next ones.
-                pageHeight = firstPage.GetHeight();
-                yPos = FirstRowY(firstPageY);
-            }
+            float yPos = FirstCountedRow(out float pageHeight);
             int count = 1;
             bool newPage = false;
             for (int i = 0; i < this.dataRows; i++) {
@@ -656,19 +662,7 @@ namespace PDFjet.NET {
         // an artifact, which is what the header rows that repeat on the next
         // pages are.
         private void DrawFieldsAndLine(string[] fields, Font font, StructElem? cellStructure, bool header) {
-            // The shading carries no meaning of its own.
-            float[] shading = ShadingOf(header);
-            if (shading != null) {
-                page.AddArtifactBMC();
-                HighlightRow(page, font, shading);
-                page.AddEMC();
-            }
-            // The line above the text, stroked with the page's other lines,
-            // but above the header when SetTopLine leaves it out
-            if (borderColor != null && (topLine || !header)) {
-                rowLines.Add(this.yText - font.ascent - verticalPadding);
-            }
-            page.SetBrushColor(Color.black);
+            BeginRow(font, header, 0f);
 
             bool tagged = structElement != null && cellStructure != null;
             StructElement parent = page.structParent;
@@ -715,6 +709,24 @@ namespace PDFjet.NET {
             page.structParent = parent;
         }
 
+        // Begins a row, extra taller than one line: its shading, and the line
+        // above it, which is stroked with the page's other lines.
+        private void BeginRow(Font font, bool header, float extra) {
+            // The shading carries no meaning of its own.
+            float[] shading = ShadingOf(header);
+            if (shading != null) {
+                page.AddArtifactBMC();
+                HighlightRows(page, font, shading, extra);
+                page.AddEMC();
+            }
+            // The line above the text, but above the header when SetTopLine
+            // leaves it out
+            if (borderColor != null && (topLine || !header)) {
+                rowLines.Add(this.yText - font.ascent - verticalPadding);
+            }
+            page.SetBrushColor(Color.black);
+        }
+
         // Returns the color of the row being drawn, or null when it is not
         // shaded: the header's color for the header, if it has one, and the
         // shading of every other row.
@@ -744,14 +756,6 @@ namespace PDFjet.NET {
         // The attributes of a cell element: a header cell heads the column it is in.
         private static String CellAttributes(StructElem cellStructure) {
             return (cellStructure == StructElem.TH) ? "<</O /Table /Scope /Column>>" : null;
-        }
-
-        private void HighlightRow(Page page, Font font, float[] color) {
-            float[] original = page.GetBrushColor();
-            page.SetBrushColor(color);
-            page.FillRectBetween(vertLines[0], this.yText - font.ascent - verticalPadding,
-                    vertLines[this.numberOfColumns], this.yText + font.descent + verticalPadding);
-            page.SetBrushColor(original);
         }
 
         // Draws the lines of the page when it is done, as one path: the line
@@ -786,11 +790,6 @@ namespace PDFjet.NET {
             page.StrokePath();
             page.SetPenColor(original);
             page.AddEMC();
-        }
-
-        private static float[] Rgb(int color) {
-            return new float[] {
-                ((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
         }
 
         // A number is right-aligned, as Table.RightAlignNumbers aligns it.
@@ -1340,19 +1339,7 @@ namespace PDFjet.NET {
             if (count > 1) {
                 extra = (float) ((float) (count - 1) * lineHeight);
             }
-            // The shading carries no meaning of its own.
-            float[] shading = ShadingOf(header);
-            if (shading != null) {
-                page.AddArtifactBMC();
-                HighlightRows(page, font, shading, extra);
-                page.AddEMC();
-            }
-            // The line above the text, stroked with the page's other lines,
-            // but above the header when SetTopLine leaves it out
-            if (borderColor != null && (topLine || !header)) {
-                rowLines.Add(this.yText - font.ascent - verticalPadding);
-            }
-            page.SetBrushColor(Color.black);
+            BeginRow(font, header, extra);
 
             bool tagged = structElement != null && cellStructure != null;
             StructElement parent = page.structParent;
@@ -1410,13 +1397,8 @@ namespace PDFjet.NET {
         private int CountWrappedPages() {
             Font font = f2;
             float lineHeight = font.ascent + font.descent;
-            float pageHeight = pageSize.GetHeight();
             float yTop = FirstRowY(this.y);
-            float yPos = yTop;
-            if (StartsOnFirstPage()) {
-                pageHeight = firstPage.GetHeight();
-                yPos = FirstRowY(firstPageY);
-            }
+            float yPos = FirstCountedRow(out float pageHeight);
             int count = 1;
             bool newPage = false;
             bool first = true;

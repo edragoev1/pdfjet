@@ -183,16 +183,7 @@ public class Stamp : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        Append(r);
-        Append(" ");
-        Append(g);
-        Append(" ");
-        Append(b);
-        Append(" rg\n");
-        return this;
+        return SetFillColor(Util.ToRGB(color));
     }
 
     /// <summary>Sets the stroke color for the content drawn after it, from an array of red, green and blue values.</summary>
@@ -211,16 +202,7 @@ public class Stamp : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        Append(r);
-        Append(" ");
-        Append(g);
-        Append(" ");
-        Append(b);
-        Append(" RG\n");
-        return this;
+        return SetStrokeColor(Util.ToRGB(color));
     }
 
     /// <summary>Sets the stroke width for the content drawn after it.</summary>
@@ -408,18 +390,8 @@ public class Stamp : IDrawable {
         // Encrypted as every other stream of an encrypted document, which the
         // stamp's was not: a reader decrypted its plain bytes, and the stamp
         // was lost (review of 11 October 2026, #1)
-        byte[] content = buf.ToArray();
-        if (pdf.encryption != null) {
-            content = AES256.Encrypt(content, pdf.encryption.GetKey());
-        }
-        pdf.Append("/Length ");
-        pdf.Append(content.Length);
-        pdf.Append(Token.Newline);
-        pdf.Append(Token.EndDictionary);    // End of XObject dictionary
-        pdf.Append(Token.Stream);
-        pdf.Append(content);
-        pdf.Append(Token.EndStream);
-        pdf.EndObj();
+        byte[] content = pdf.Encrypted(buf.ToArray());
+        pdf.AppendStreamBody(content);
         pdf.stamps.Add(this);
         objNumber = pdf.GetObjNumber();
     }
@@ -434,10 +406,8 @@ public class Stamp : IDrawable {
         stamp.completed = true;
         stamp.width = (float) (path.xMax - path.xMin);
         stamp.height = (float) (path.yMax - path.yMin);
-        byte[] content = Compressor.Deflate(System.Text.Encoding.UTF8.GetBytes(path.operators + "f\n"));
-        if (pdf.encryption != null) {
-            content = AES256.Encrypt(content, pdf.encryption.GetKey());
-        }
+        byte[] content = pdf.Encrypted(Compressor.Deflate(
+                System.Text.Encoding.UTF8.GetBytes(path.operators + "f\n")));
         pdf.NewObj();
         pdf.Append("<<\n/Subtype /Form\n/BBox [");
         pdf.Append(GlyphOutline.Decimals(Math.Floor(path.xMin), 0));
@@ -447,12 +417,8 @@ public class Stamp : IDrawable {
         pdf.Append(GlyphOutline.Decimals(Math.Ceiling(path.xMax), 0));
         pdf.Append(' ');
         pdf.Append(GlyphOutline.Decimals(Math.Ceiling(path.yMax), 0));
-        pdf.Append("]\n/Filter /FlateDecode\n/Length ");
-        pdf.Append(content.Length);
-        pdf.Append("\n>>\nstream\n");
-        pdf.Append(content);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
+        pdf.Append("]\n/Filter /FlateDecode\n");
+        pdf.AppendStreamBody(content);
         pdf.stamps.Add(stamp);
         stamp.objNumber = pdf.GetObjNumber();
         return stamp;

@@ -759,22 +759,9 @@ public class Cell {
                 return;
             }
             if (!String.IsNullOrEmpty(point.GetURIAction())) {
-                page.AddAnnotation(new Annotation(
-                        Annotation.Link,
-                        point.x - point.r,
-                        point.y - point.r,
-                        point.x + point.r,
-                        point.y + point.r,
-                        null,   // Vertices
-                        null,   // Fill Color
-                        0f,     // Opacity
-                        null,   // Title
-                        null,   // Contents
-                        point.GetURIAction(),
-                        null,
-                        null,
-                        null,
-                        null));
+                page.AddAnnotation(Annotation.NewLink(
+                        point.x - point.r, point.y - point.r, point.x + point.r, point.y + point.r,
+                        point.GetURIAction(), null, null, null, null, null));
             }
             page.AddArtifactBMC();
             page.DrawPoint(point);
@@ -797,24 +784,9 @@ public class Cell {
         page.SetFigureBoundingBox(point.x - point.r, point.y - point.r, 2*point.r, 2*point.r);
         page.AddEMC();
         page.EndLink(link);
-        Annotation annotation = new Annotation(
-                Annotation.Link,
-                point.x - point.r,
-                point.y - point.r,
-                point.x + point.r,
-                point.y + point.r,
-                null,   // Vertices
-                null,   // Fill Color
-                0f,     // Opacity
-                null,   // Title
-                null,   // Contents
-                point.GetURIAction(),
-                null,
-                null,
-                null,
-                description);
-        annotation.linkElement = link;
-        page.AddAnnotation(annotation);
+        page.AddAnnotation(Annotation.NewLink(
+                point.x - point.r, point.y - point.r, point.x + point.r, point.y + point.r,
+                point.GetURIAction(), null, null, null, description, link));
     }
 
     // Returns the width and the height of the drawable: its corner when it is
@@ -995,24 +967,9 @@ public class Cell {
         }
 
         if (!String.IsNullOrEmpty(uri)) {
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    xText,
-                    yText - ascent,
-                    xText + GetTextWidth(),
-                    yText + Descent(),
-                    null,       // Vertices
-                    null,       // Fill Color
-                    0f,         // Opacity
-                    null,       // Title
-                    null,       // Contents
-                    uri,
-                    null,
-                    null,
-                    null,
-                    null);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    xText, yText - ascent, xText + GetTextWidth(), yText + Descent(),
+                    uri, null, null, null, null, link));
         }
     }
 

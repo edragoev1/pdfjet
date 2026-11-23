@@ -113,5 +113,25 @@ internal class Annotation {
         this.actualText = String.IsNullOrEmpty(actualText) ? fallback : actualText;
         this.altDescription = String.IsNullOrEmpty(altDescription) ? fallback : altDescription;
     }
+
+    // A link annotation over the rectangle from x1, y1 to x2, y2, to the uri
+    // or to the destination named key, which joins the Link element of the
+    // content it is drawn over: null for content that is not tagged.
+    internal static Annotation NewLink(
+            float x1, float y1, float x2, float y2,
+            String uri, String key,
+            String language, String actualText, String altDescription,
+            StructElement linkElement) {
+        Annotation annotation = new Annotation(
+                Link, x1, y1, x2, y2,
+                null,   // Vertices
+                null,   // Fill Color
+                0f,     // Opacity
+                null,   // Title
+                null,   // Contents
+                uri, key, language, actualText, altDescription);
+        annotation.linkElement = linkElement;
+        return annotation;
+    }
 }
 }   // End of namespace PDFjet.NET

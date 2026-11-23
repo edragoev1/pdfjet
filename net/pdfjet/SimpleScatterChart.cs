@@ -350,28 +350,10 @@ public class SimpleScatterChart : IDrawable {
         return this;
     }
 
-    // The space around the chart's content, a size of its numbers.
-    private float Pad() {
-        return f2.GetSize();
-    }
-
-    // The size of the subtitle.
-    private float SubtitleSize() {
-        return 0.8f * f2.GetSize();
-    }
-
-    // The height above the plot: the padding, the title and the subtitle.
+    // The height above the plot: the padding, the title, the subtitle and
+    // the legend.
     private float Top() {
-        float top = Pad();
-        if (title.Length > 0) {
-            top += f1.GetAscent(f1.GetSize()) + f1.GetDescent(f1.GetSize());
-        }
-        if (subtitle.Length > 0) {
-            top += 1.4f * SubtitleSize();
-        }
-        if (title.Length > 0 || subtitle.Length > 0) {
-            top += f2.GetSize();
-        }
+        float top = ChartScale.ChartTitleTop(f1, f2, title, subtitle);
         // The legend, and half a size of the numbers under it, so that the
         // top number of the axis is not against its last row
         int rows = DrawLegend(null, 0f);
@@ -403,7 +385,7 @@ public class SimpleScatterChart : IDrawable {
             return 0;
         }
         float size = f2.GetSize();
-        float pad = Pad();
+        float pad = ChartScale.ChartPad(f2);
         float r = 0.35f*size;
         float gap = size/2f;
         float left = x + pad;
@@ -644,16 +626,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
     public float[] DrawOn(Page page) {
-        if (page == null) {
-            return DrawChart(null);
-        }
-        // The text unturned and filled, whatever the page was left with
-        Action restore = page.PlainText();
-        try {
-            return DrawChart(page);
-        } finally {
-            restore();
-        }
+        return ChartScale.DrawWithPlainText(page, DrawChart);
     }
 
     private float[] DrawChart(Page page) {
@@ -662,7 +635,7 @@ public class SimpleScatterChart : IDrawable {
             return new float[] {x + w, y + h};
         }
         float size = f2.GetSize();
-        float pad = Pad();
+        float pad = ChartScale.ChartPad(f2);
         float ascent = f2.GetAscent(size);
 
         float[] xs = new float[points.Count];
@@ -698,21 +671,9 @@ public class SimpleScatterChart : IDrawable {
         left = Math.Max(left, x + pad / 2f + firstWidth / 2f);
         float right = Math.Min(x + w - pad, x + w - pad / 2f - lastWidth / 2f);
         float top = y + Top() + ascent / 2f;     // Room for the top number
-        float bottom = y + h - pad - 1.4f * size;
-        if (xAxisTitle.Length > 0) {
-            bottom -= 1.4f * size;
-        }
-        // Room for the note, a row of its own under the rest; a chart that has
-        // not the room keeps its plot, and its description says the number
+        // Room for the note, a row of its own under the rest
         String note = OutsideNote();
-        if (note.Length > 0) {
-            float above = bottom - 1.4f * SubtitleSize();
-            if (above > top) {
-                bottom = above;
-            } else {
-                note = "";
-            }
-        }
+        float bottom = ChartScale.PlotBottom(y + h - pad, f2, xAxisTitle.Length > 0, top, ref note);
         if (right <= left || bottom <= top) {
             page.pdf.Fail(new ArgumentException(ChartScale.NoRoom("A SimpleScatterChart", w, h)));
         }
@@ -742,21 +703,7 @@ public class SimpleScatterChart : IDrawable {
         page.SaveGraphicsState();
         page.SetDefaultStrokeDashPattern();     // Not the caller's, which dashed the lines
 
-        if (panelColor >= 0) {
-            page.SetBrushColor(panelColor);
-            page.FillRect(x, y, w, h);
-        }
-        float baseline = y + pad;
-        if (title.Length > 0) {
-            baseline += f1.GetAscent(f1.GetSize());
-            page.DrawString(f1, f1.GetSize(), ChartScale.Shorten(f1, f1.GetSize(), title, w - 2f * pad), x + pad, baseline, Util.ToRGB(SimpleBarChart.INK), null);
-            baseline += f1.GetDescent(f1.GetSize());
-        }
-        if (subtitle.Length > 0) {
-            baseline += 1.4f * SubtitleSize();
-            page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
-                    x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
-        }
+        float baseline = ChartScale.DrawChartTitles(page, f1, f2, panelColor, x, y, w, h, title, subtitle);
         if (series.Count > 0) {
             if (title.Length > 0 || subtitle.Length > 0) {
                 baseline += f2.GetSize();
@@ -813,7 +760,7 @@ public class SimpleScatterChart : IDrawable {
             page.SetTextRotation(0);
         }
         if (note.Length > 0) {
-            ChartScale.DrawOutsideNote(page, f2, SubtitleSize(), note, right, x + pad, x + w - pad, y + h - pad);
+            ChartScale.DrawOutsideNote(page, f2, ChartScale.ChartSubtitleSize(f2), note, right, x + pad, x + w - pad, y + h - pad);
         }
 
         // The trend line, from the left of the plot to its right, within its
@@ -834,13 +781,13 @@ public class SimpleScatterChart : IDrawable {
             // The label over the end of the line, lifted by as much as a
             // falling line rises under it
             String label = "trend";
-            float width = f2.StringWidth(SubtitleSize(), label);
+            float width = f2.StringWidth(ChartScale.ChartSubtitleSize(f2), label);
             float lift = size / 3f;
             if (x2 > x1 && y2 > y1) {
                 lift += width * ((y2 - y1) / (x2 - x1));
             }
             // Not left of the plot, where a short steep line put it
-            page.DrawString(f2, SubtitleSize(), label, Math.Max(plotLeft, x2 - width), y2 - lift,
+            page.DrawString(f2, ChartScale.ChartSubtitleSize(f2), label, Math.Max(plotLeft, x2 - width), y2 - lift,
                     Util.ToRGB(TREND), null);
         }
 
@@ -1025,22 +972,9 @@ public class SimpleScatterChart : IDrawable {
     // The link annotation of a point, over the box of what it draws,
     // described by its name.
     private static Annotation LinkOf(Point p, float[] box) {
-        Annotation annotation = new Annotation(
-                Annotation.Link,
-                box[0],
-                box[1],
-                box[0] + box[2],
-                box[1] + box[3],
-                null,   // Vertices
-                null,   // Fill Color
-                0f,     // Opacity
-                null,   // Title
-                null,   // Contents
-                p.uri,
-                null,
-                null,
-                null,
-                p.name);
+        Annotation annotation = Annotation.NewLink(
+                box[0], box[1], box[0] + box[2], box[1] + box[3],
+                p.uri, null, null, null, p.name, null);
         annotation.hitSize = p.dot ? HIT_SIZE : 0f;
         return annotation;
     }

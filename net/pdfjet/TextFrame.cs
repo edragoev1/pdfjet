@@ -244,10 +244,7 @@ public class TextFrame : IDrawable {
             this.border = false;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        return SetBorderColor(new float[] {r, g, b});
+        return SetBorderColor(Util.ToRGB(color));
     }
 
     /// <summary>Sets the border color from an array of red, green and blue values and draws a border around this text frame.</summary>
@@ -872,7 +869,7 @@ public class TextFrame : IDrawable {
         Paragraph paragraph = row[0].paragraph;
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT;
         RowPart last = row[row.Count - 1];
-        float rowWidth = last.x + Width(last.textLine, TrimTrailingSpaces(last.text)) - x;
+        float rowWidth = last.x + Width(last.textLine, Util.TrimTrailingSpaces(last.text)) - x;
 
         if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
             DrawJustifiedRow(page, endSpace);
@@ -1028,14 +1025,6 @@ public class TextFrame : IDrawable {
             }
         }
         return false;
-    }
-
-    private static String TrimTrailingSpaces(String text) {
-        int end = text.Length;
-        while (end > 0 && text[end - 1] == ' ') {
-            end--;
-        }
-        return text.Substring(0, end);
     }
 
     private static float Width(TextLine textLine, String text) {

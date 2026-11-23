@@ -29,7 +29,6 @@ internal class OTF {
     internal int indexToLocFormat;
     internal FontTable loca;
     internal FontTable glyf;
-    internal long postVersion;
     internal long italicAngle;
     internal short underlinePosition;
     internal short underlineThickness;
@@ -80,7 +79,7 @@ internal class OTF {
             }
             FontTable table = new FontTable();
             table.name     = new String(name);
-            table.checkSum = ReadUInt32();
+            ReadUInt32();   // The checksum, not checked
             table.offset = (int) ReadUInt32();
             table.length = (int) ReadUInt32();
 
@@ -450,7 +449,7 @@ internal class OTF {
 
     private void Post(FontTable table) {
         index = table.offset;
-        postVersion = ReadUInt32();
+        ReadUInt32();   // The version, not needed
         italicAngle = ReadUInt32();
         underlinePosition  = (short) ReadUInt16();
         underlineThickness = (short) ReadUInt16();
@@ -533,7 +532,6 @@ internal class OTF {
 
 class FontTable {
     internal String name;
-    internal UInt32 checkSum;
     internal int offset;
     internal int length;
 }

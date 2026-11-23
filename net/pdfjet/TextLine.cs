@@ -6,7 +6,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -182,10 +181,7 @@ public class TextLine : IBaselineDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
+        this.textColor = Util.ToRGB(color);
         return this;
     }
 
@@ -207,10 +203,7 @@ public class TextLine : IBaselineDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.decorationColor = new float[] {r, g, b};
+        this.decorationColor = Util.ToRGB(color);
         return this;
     }
 
@@ -688,24 +681,9 @@ public class TextLine : IBaselineDrawable {
 
         if (!String.IsNullOrEmpty(uri) || !String.IsNullOrEmpty(key)) {
             float[] box = GetLinkBox(verticalOffset);
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    box[0],
-                    box[1],
-                    box[2],
-                    box[3],
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    uriLanguage,
-                    uriActualText,
-                    uriAltDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    box[0], box[1], box[2], box[3],
+                    uri, key, uriLanguage, uriActualText, uriAltDescription, link));
         }
         page.SetTextRotation(0);
 

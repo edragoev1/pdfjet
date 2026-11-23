@@ -128,10 +128,7 @@ public class Form : IDrawable {
         if (labelColor == Color.transparent) {
             return this;
         }
-        float r = ((labelColor >> 16) & 0xff)/255f;
-        float g = ((labelColor >>  8) & 0xff)/255f;
-        float b = ((labelColor)       & 0xff)/255f;
-        this.labelColor = new float[] {r, g, b};
+        this.labelColor = Util.ToRGB(labelColor);
         return this;
     }
 
@@ -155,10 +152,7 @@ public class Form : IDrawable {
         if (valueColor == Color.transparent) {
             return this;
         }
-        float r = ((valueColor >> 16) & 0xff)/255f;
-        float g = ((valueColor >>  8) & 0xff)/255f;
-        float b = ((valueColor)       & 0xff)/255f;
-        this.valueColor = new float[] {r, g, b};
+        this.valueColor = Util.ToRGB(valueColor);
         return this;
     }
 

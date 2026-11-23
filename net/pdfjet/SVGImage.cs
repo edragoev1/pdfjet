@@ -330,26 +330,15 @@ public class SVGImage : IDrawable {
         foreach (KeyValuePair<String, String> attribute in node.GetAttributes()) {
             if (attribute.Key == "d" || attribute.Key == "points") {
                 // Path data: a quarter of its characters
-                attributeText += CodePointCount(attribute.Value) / 4;
+                attributeText += Util.CodePointCount(attribute.Value) / 4;
                 continue;
             }
-            attributeText += 4 + CodePointCount(attribute.Key) + CodePointCount(attribute.Value);
+            attributeText += 4 + Util.CodePointCount(attribute.Key) + Util.CodePointCount(attribute.Value);
         }
         if (attributeText > MAX_ATTRIBUTE_TEXT) {
             throw new ArgumentException("The SVG reads more than " + MAX_ATTRIBUTE_TEXT
                     + " characters of attributes again, with use elements, markers or clip paths.");
         }
-    }
-
-    // Returns the number of characters of the text, a surrogate pair one.
-    private static int CodePointCount(String str) {
-        int count = 0;
-        for (int i = 0; i < str.Length; i++) {
-            if (!(Char.IsLowSurrogate(str[i]) && i > 0 && Char.IsHighSurrogate(str[i - 1]))) {
-                count++;
-            }
-        }
-        return count;
     }
 
     // Returns the operations written for the clip paths of one path, and of
@@ -2325,24 +2314,9 @@ public class SVGImage : IDrawable {
         page.AddEMC();
         page.EndLink(link);
         if (uri != null || key != null) {
-            Annotation linkAnnotation = new Annotation(
-                    Annotation.Link,
-                    x,
-                    y,
-                    x + w,
-                    y + h,
-                    null,   // Vertices
-                    null,   // Fill Color
-                    0f,     // Opacity
-                    null,   // Title
-                    null,   // Contents
-                    uri,
-                    key,    // The destination name
-                    language,
-                    actualText,
-                    altDescription);
-            linkAnnotation.linkElement = link;
-            page.AddAnnotation(linkAnnotation);
+            page.AddAnnotation(Annotation.NewLink(
+                    x, y, x + w, y + h,
+                    uri, key, language, actualText, altDescription, link));
         }
         return new float[] {x + w, y + h};
     }
