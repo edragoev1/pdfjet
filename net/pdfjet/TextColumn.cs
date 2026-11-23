@@ -315,9 +315,7 @@ public class TextColumn : IDrawable {
                         if (first.text.StartsWith(Single.space, StringComparison.Ordinal)) {
                             word[0] = first.CopyWithText(first.text.Substring(1));
                         }
-                        DrawLineOfText(page, list, alignment);
-                        MoveToNextLine(lineHeight);
-                        list.Clear();
+                        DrawLineAndBreak(page, list, alignment, lineHeight);
                         list.AddRange(word);
                         list.Add(text);
                         wordStart = 0;
@@ -355,9 +353,7 @@ public class TextColumn : IDrawable {
                         if (broken || list.Count == 0 || Width(line, token) <= this.w) {
                             break;
                         }
-                        DrawLineOfText(page, list, alignment);
-                        MoveToNextLine(lineHeight);
-                        list.Clear();
+                        DrawLineAndBreak(page, list, alignment, lineHeight);
                         wordStart = 0;
                         runLength = 0f;
                         prefix = "";
@@ -365,9 +361,7 @@ public class TextColumn : IDrawable {
                         continue;
                     }
                     list.Add(line.CopyWithText(head));
-                    DrawLineOfText(page, list, alignment);
-                    MoveToNextLine(lineHeight);
-                    list.Clear();
+                    DrawLineAndBreak(page, list, alignment, lineHeight);
                     wordStart = 0;
                     runLength = 0f;
                     prefix = "";
@@ -379,9 +373,7 @@ public class TextColumn : IDrawable {
                     }
                 }
                 if (!broken && list.Count > 0) {
-                    DrawLineOfText(page, list, alignment);
-                    MoveToNextLine(lineHeight);
-                    list.Clear();
+                    DrawLineAndBreak(page, list, alignment, lineHeight);
                     wordStart = 0;
                     if (leading) {
                         text = line.CopyWithText(token + after);
@@ -431,6 +423,14 @@ public class TextColumn : IDrawable {
 
     private static float Width(TextLine textLine, String text) {
         return textLine.WidthOf(text);   // Of its glyphs, for text such as Hindi
+    }
+
+    // Draws the text lines of the list as a line of text, moves to the next
+    // line, and empties the list for it.
+    private void DrawLineAndBreak(Page page, List<TextLine> list, Alignment alignment, float lineHeight) {
+        DrawLineOfText(page, list, alignment);
+        MoveToNextLine(lineHeight);
+        list.Clear();
     }
 
     private float[] MoveToNextLine(float lineHeight) {
