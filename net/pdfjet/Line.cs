@@ -153,10 +153,7 @@ public class Line : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.color = new float[] {r, g, b};
+        this.color = Util.ToRGB(color);
         return this;
     }
 

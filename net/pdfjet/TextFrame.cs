@@ -244,10 +244,7 @@ public class TextFrame : IDrawable {
             this.border = false;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        return SetBorderColor(new float[] {r, g, b});
+        return SetBorderColor(Util.ToRGB(color));
     }
 
     /// <summary>Sets the border color from an array of red, green and blue values and draws a border around this text frame.</summary>

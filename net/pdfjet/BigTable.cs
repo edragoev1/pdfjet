@@ -53,9 +53,9 @@ namespace PDFjet.NET {
         // In a PDF/UA document the table is a Table element that the rows of
         // every page go on adding to; see DrawFieldsAndLine.
         private StructElement structElement = null;
-        private float[] shadingColor = Rgb(0xF0F0F0);   // null for no shading
+        private float[] shadingColor = Util.ToRGB(0xF0F0F0);   // null for no shading
         private float[] headerColor = null;             // null for the shading of every other row
-        private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
+        private float[] borderColor = Util.ToRGB(0xB0B0B0);    // null for no lines
         private float borderWidth = 0.5f;               // The width of the lines, 0.5 points unless set
         // The y of the line above each row of the page being drawn, stroked
         // with the vertical lines and the line under the last row, one path
@@ -293,7 +293,7 @@ namespace PDFjet.NET {
         /// <param name="color">the color as a 0xRRGGBB value, for example Color.lightgray.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetShadingColor(int color) {
-            this.shadingColor = (color == Color.transparent) ? null : Rgb(color);
+            this.shadingColor = (color == Color.transparent) ? null : Util.ToRGB(color);
             return this;
         }
 
@@ -327,7 +327,7 @@ namespace PDFjet.NET {
         /// <param name="color">the color as a 0xRRGGBB value, for example Color.gray.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetBorderColor(int color) {
-            this.borderColor = (color == Color.transparent) ? null : Rgb(color);
+            this.borderColor = (color == Color.transparent) ? null : Util.ToRGB(color);
             return this;
         }
 
@@ -401,7 +401,7 @@ namespace PDFjet.NET {
         /// <param name="color">the color as a 0xRRGGBB value, for example 0xE6E6E6.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetHeaderColor(int color) {
-            this.headerColor = (color == Color.transparent) ? null : Rgb(color);
+            this.headerColor = (color == Color.transparent) ? null : Util.ToRGB(color);
             return this;
         }
 
@@ -786,11 +786,6 @@ namespace PDFjet.NET {
             page.StrokePath();
             page.SetPenColor(original);
             page.AddEMC();
-        }
-
-        private static float[] Rgb(int color) {
-            return new float[] {
-                ((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
         }
 
         // A number is right-aligned, as Table.RightAlignNumbers aligns it.

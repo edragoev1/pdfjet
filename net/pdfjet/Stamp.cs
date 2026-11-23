@@ -183,16 +183,7 @@ public class Stamp : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        Append(r);
-        Append(" ");
-        Append(g);
-        Append(" ");
-        Append(b);
-        Append(" rg\n");
-        return this;
+        return SetFillColor(Util.ToRGB(color));
     }
 
     /// <summary>Sets the stroke color for the content drawn after it, from an array of red, green and blue values.</summary>
@@ -211,16 +202,7 @@ public class Stamp : IDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        Append(r);
-        Append(" ");
-        Append(g);
-        Append(" ");
-        Append(b);
-        Append(" RG\n");
-        return this;
+        return SetStrokeColor(Util.ToRGB(color));
     }
 
     /// <summary>Sets the stroke width for the content drawn after it.</summary>
