@@ -133,28 +133,28 @@ Each is described in detail below.
   engine.
 - **New: `HBShape`, a shaper that runs HarfBuzz's `hb-shape`** (the four
   ports; in Swift on macOS and Linux): Hindi, Khmer and the other scripts
-  TextBlock shapes, shaped by HarfBuzz, the text engine of Chrome
-  and Android, on any server, with nothing linked into the program: `hb-shape`
-  is installed on the server (HarfBuzz 15 or newer: `apt install
-  libharfbuzz-bin`, `brew install harfbuzz`, or HarfBuzz's Windows zip).
-  It talks with `hb-shape` through files, not pipes, the same on every
-  system; each run of one font is shaped in that font, a mark in the font of
-  its character; lines break at spaces and, in Lao, Khmer, Burmese and Thai,
+  TextBlock shapes, shaped by HarfBuzz, the text engine of Chrome and Android,
+  on any server, with nothing linked into the program: `hb-shape` is installed
+  on the server (HarfBuzz 15 or newer: `apt install libharfbuzz-bin`, `brew
+  install harfbuzz`, or HarfBuzz's Windows zip). `new HBShape(path)` (Go:
+  `HBShape.Program`) runs an `hb-shape` that is not on the PATH, as the
+  Windows zip's, and `getVersion()` (Go: `Version()`) gives its version. It
+  talks with `hb-shape` through files, not pipes, the same on every system;
+  each run of one font is shaped in that font, a mark in the font of its
+  character; lines break at spaces and, in Lao, Khmer, Burmese and Thai,
   between words, by ICU's dictionaries. HarfBuzz 8.3.0 and 15.0.0 shape the
   UDHR of 15 of these languages identically (147,777 glyphs). Tests, skipped
-  where `hb-shape` is not installed: its glyphs hb-shape's own; the Khmer
-  UDHR broken only between words; Hindi with an English word, and Khmer,
-  drawn.
-  After an ultra review (22 November 2026): `hb-shape` shapes left to
-  right, as TextBlock draws, not guessed, so that an Arabic or Hebrew
-  run of a fallback font breaks no line; it is given only a language of a
-  BCP 47 tag's letters, digits and hyphens, and, in .NET, each argument
-  escaped as the command line reads it back; its temporary files are in a
-  folder of the user's alone, in .NET and Swift as in Go and Java; and a
-  Thai line with half of an emoji is drawn, in .NET, where it failed the
-  document. PDFjet's HarfBuzz keeps the fonts of the last documents only,
-  and shapes left to right too. TextBlock runs Thai's dictionary only on a
-  line it breaks.
+  where `hb-shape` is not installed: its glyphs hb-shape's own; the Khmer UDHR
+  broken only between words; Hindi with an English word, and Khmer, drawn.
+  After an ultra review (22 November 2026): `hb-shape` shapes left to right,
+  as TextBlock draws, not guessed, so that an Arabic or Hebrew run of a
+  fallback font breaks no line; it is given only a language of a BCP 47 tag's
+  letters, digits and hyphens, and, in .NET, each argument escaped as the
+  command line reads it back; its temporary files are in a folder of the
+  user's alone, in .NET and Swift as in Go and Java; and a Thai line with half
+  of an emoji is drawn, in .NET, where it failed the document. PDFjet's
+  HarfBuzz keeps the fonts of the last documents only, and shapes left to
+  right too. TextBlock runs Thai's dictionary only on a line it breaks.
 - **Thai lines break between words, by ICU's dictionary** (the four
   ports): `TextBlock` puts a zero width space at each end
   of a word in Thai text that has none, where ICU's Thai dictionary finds
