@@ -13,8 +13,8 @@ dotnet add package PDFjet.Fonts.World
 Or in the project file:
 
 ```xml
-<PackageReference Include="PDFjet" Version="9.1.9" />
-<PackageReference Include="PDFjet.Fonts.World" Version="9.1.9" />
+<PackageReference Include="PDFjet" Version="9.2.1" />
+<PackageReference Include="PDFjet.Fonts.World" Version="9.2.1" />
 ```
 
 Then the constants of `IBMPlexSansJP`, `IBMPlexSansKR`, `IBMPlexSansSC`,
