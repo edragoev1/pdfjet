@@ -96,19 +96,19 @@ public class Encryption {
         pdf.append("/StrF /StdCF\n")
 
         pdf.append("/U <")              // User key
-        pdf.append(Encryption.toHex(u))
+        pdf.append(pdf.toHex(u))
         pdf.append(">\n")
 
         pdf.append("/O <")              // Owner key
-        pdf.append(Encryption.toHex(o))
+        pdf.append(pdf.toHex(o))
         pdf.append(">\n")
 
         pdf.append("/UE <")             // User encryption key
-        pdf.append(Encryption.toHex(ue))
+        pdf.append(pdf.toHex(ue))
         pdf.append(">\n")
 
         pdf.append("/OE <")             // Owner encryption key
-        pdf.append(Encryption.toHex(oe))
+        pdf.append(pdf.toHex(oe))
         pdf.append(">\n")
 
         pdf.append("/EncryptMetadata true\n")
@@ -119,7 +119,7 @@ public class Encryption {
         pdf.append("\n")
 
         pdf.append("/Perms <")
-        pdf.append(Encryption.toHex(encryptedPerms))
+        pdf.append(pdf.toHex(encryptedPerms))
         pdf.append(">\n")
 
         pdf.append(Token.endDictionary)
@@ -161,16 +161,5 @@ public class Encryption {
             pdf.fail((error as? PDFjetError)?.message ?? String(describing: error))
             return []
         }
-    }
-
-    private static func toHex(_ bytes: [UInt8]) -> String {
-        let digits = Array("0123456789abcdef".utf8)
-        var hex = [UInt8]()
-        hex.reserveCapacity(2 * bytes.count)
-        for byte in bytes {
-            hex.append(digits[Int(byte >> 4)])
-            hex.append(digits[Int(byte & 0xF)])
-        }
-        return String(decoding: hex, as: UTF8.self)
     }
 }   // End of Encryption.swift
