@@ -1610,18 +1610,8 @@ public class Page {
     /// <param name="rgbColor">the color.</param>
     /// <returns>this Page object.</returns>
     public Page SetBrushColor(float[] rgbColor) {
-        if (rgbColor == null) {
-            return this; // Early exit if null
-        }
-        if (rgbColor.Length < 3) {
-            pdf.Fail(new ArgumentException(RGB_COUNT));
-        }
-
-        if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
-            rgbColor[1] < 0f || rgbColor[1] > 1f ||
-            rgbColor[2] < 0f || rgbColor[2] > 1f) {
-            Console.Error.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return this; // Early exit if out of range
+        if (!IsRGB(rgbColor)) {
+            return this;
         }
 
         // Now set the brush color, to a copy that the caller cannot change
@@ -1684,18 +1674,8 @@ public class Page {
     /// </remarks>
     public Page SetPenColor(float[] rgbColor) {
         penChanges++;
-        if (rgbColor == null) {
-            return this; // Early exit if null
-        }
-        if (rgbColor.Length < 3) {
-            pdf.Fail(new ArgumentException(RGB_COUNT));
-        }
-
-        if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
-            rgbColor[1] < 0f || rgbColor[1] > 1f ||
-            rgbColor[2] < 0f || rgbColor[2] > 1f) {
-            Console.Error.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
-            return this; // Early exit if out of range
+        if (!IsRGB(rgbColor)) {
+            return this;
         }
 
         // Now set the pen color, to a copy that the caller cannot change
@@ -1735,15 +1715,7 @@ public class Page {
     /// <param name="k">the black component is float value from 0.0f to 1.0f.</param>
     /// <returns>this Page object.</returns>
     public Page SetBrushColorCMYK(float c, float m, float y, float k) {
-        CheckCMYK();
-        Append(c);
-        Append(' ');
-        Append(m);
-        Append(' ');
-        Append(y);
-        Append(' ');
-        Append(k);
-        Append(" k\n");
+        AppendCMYK(c, m, y, k, " k\n");
         brushColor = CmykToRGB(c, m, y, k);
         brushColorWritten = false;
         return this;
@@ -1760,6 +1732,15 @@ public class Page {
     /// <returns>this Page object.</returns>
     public Page SetPenColorCMYK(float c, float m, float y, float k) {
         penChanges++;
+        AppendCMYK(c, m, y, k, " K\n");
+        penColor = CmykToRGB(c, m, y, k);
+        penColorWritten = false;
+        return this;
+    }
+
+    // Writes the color of c, m, y and k with the operator op, after
+    // CheckCMYK.
+    private void AppendCMYK(float c, float m, float y, float k, String op) {
         CheckCMYK();
         Append(c);
         Append(' ');
@@ -1768,10 +1749,27 @@ public class Page {
         Append(y);
         Append(' ');
         Append(k);
-        Append(" K\n");
-        penColor = CmykToRGB(c, m, y, k);
-        penColorWritten = false;
-        return this;
+        Append(op);
+    }
+
+    // Returns true for a color of red, green and blue values from 0 to 1;
+    // false, which leaves the color as it was, for null, and for a value out
+    // of range, of which it warns; and fails the document for fewer than
+    // three values.
+    private bool IsRGB(float[] rgbColor) {
+        if (rgbColor == null) {
+            return false;
+        }
+        if (rgbColor.Length < 3) {
+            pdf.Fail(new ArgumentException(RGB_COUNT));
+        }
+        if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
+            rgbColor[1] < 0f || rgbColor[1] > 1f ||
+            rgbColor[2] < 0f || rgbColor[2] > 1f) {
+            Console.Error.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
+            return false;
+        }
+        return true;
     }
 
     // Fails the document when it cannot use a CMYK color. The output intent of
