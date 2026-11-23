@@ -775,6 +775,56 @@ jobs:
             - name: Compile for 32-bit armv7
               run: ./check-swift-32bit.sh
 
+    # The Swift library, its examples and the booklet's snippets built for
+    # WebAssembly, wasm32-unknown-wasip1, as the Swift Package Index builds
+    # every release: 9.1.9 failed there, found only after the tag. With the
+    # Swift SDK for WebAssembly of the toolchain's version, its signature
+    # checked against the same Swift release key as the toolchain's. Run by
+    # hand on 23 November 2026, the 85 examples also ran under Node's WASI
+    # and made the PDFs of Linux, but the dates three of them format with
+    # DateFormatter ("M11" for November: no locale data on WASI).
+    swift-wasm:
+        name: swift (wasm32)
+        runs-on: ubuntu-24.04
+        env:
+            WASM_SDK_URL: https://download.swift.org/swift-6.4.1-release/wasm-sdk/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE_wasm.artifactbundle.tar.gz
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            - uses: ./.github/actions/install-swift
+
+            - name: Restore the Swift SDK for WebAssembly download
+              id: restore-wasm
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: ~/swift-wasm-download
+                  key: swift-wasm-sdk-${{ env.WASM_SDK_URL }}
+
+            - name: Check and install the Swift SDK for WebAssembly
+              run: |
+                  mkdir -p ~/swift-wasm-download
+                  cd ~/swift-wasm-download
+                  if [ ! -f sdk.tar.gz ] || [ ! -f sdk.tar.gz.sig ]; then
+                      curl -fsSL --retry 3 --retry-all-errors \
+                          "$WASM_SDK_URL" -o sdk.tar.gz "$WASM_SDK_URL.sig" -o sdk.tar.gz.sig
+                  fi
+                  export GNUPGHOME="$(mktemp -d)"
+                  gpg --batch --quiet --import "$GITHUB_WORKSPACE/.github/actions/install-swift/swift-release-key.asc"
+                  gpg --batch --verify sdk.tar.gz.sig sdk.tar.gz
+                  rm -rf "$GNUPGHOME"
+                  swift sdk install "$PWD/sdk.tar.gz"
+                  swift sdk list
+
+            - name: Save the Swift SDK for WebAssembly download
+              if: steps.restore-wasm.outputs.cache-hit != 'true'
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: ~/swift-wasm-download
+                  key: swift-wasm-sdk-${{ env.WASM_SDK_URL }}
+
+            - name: Build for wasm32
+              run: swift build --swift-sdk swift-6.4.1-RELEASE_wasm -Xswiftc -warnings-as-errors
+
     # The Go port tested with Go 1.26, the oldest that go.mod asks for, as
     # the other jobs build with the toolchain of go.mod, 1.27: GOTOOLCHAIN
     # local keeps Go from switching to it. Go 1.26 deflates no bytes in 11
@@ -817,6 +867,22 @@ jobs:
 
             - name: Build the library and the examples
               run: swift build -c release -Xswiftc -warnings-as-errors
+
+            # The library for watchOS, whose Apple Watch builds include the
+            # 32-bit arm64_32, and for iOS, as the Swift Package Index builds
+            # every release: 9.1.9's 0xFFFF_FFFF in Page.swift did not compile
+            # for watchOS, found only after the tag. A platform the runner's
+            # Xcode does not have yet is downloaded first.
+            - name: Build the library for watchOS and iOS
+              run: |
+                  for platform in watchOS iOS; do
+                      if ! xcodebuild -showsdks | grep -qi "$platform"; then
+                          sudo xcodebuild -downloadPlatform "$platform"
+                      fi
+                      xcodebuild build -quiet -scheme PDFjet \
+                          -destination "generic/platform=$platform" \
+                          SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+                  done
 
             # Example_52 needs Core Text, so it runs only here: Hindi and
             # Khmer shaped by Core Text and drawn as outlines; its PDF is kept
