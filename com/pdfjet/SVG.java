@@ -142,8 +142,10 @@ class SVG {
     private static float number(String arg) {
         // A number of SVG's grammar, and no other that the parser of the language
         // reads, as 0x1p3, 1f or 1d, so that the four ports read the same numbers
-        // (the review of 9 October 2026)
-        if (!isSVGNumber(arg)) {
+        // (the review of 9 October 2026). SVG's grammar of a number is the
+        // decimal one of Util.isDecimalNumber: a sign or none, digits with a
+        // fraction or a fraction alone, and an exponent or none.
+        if (!Util.isDecimalNumber(arg)) {
             throw new IllegalArgumentException("Invalid path data: " + arg);
         }
         float value;
@@ -158,43 +160,6 @@ class SVG {
             throw new IllegalArgumentException("Invalid path data: " + arg);
         }
         return value;
-    }
-
-    // Returns whether the text is a number as SVG writes one: a sign or none,
-    // digits with a fraction or a fraction alone, and an exponent or none.
-    static boolean isSVGNumber(String text) {
-        int i = 0;
-        int n = text.length();
-        if (i < n && (text.charAt(i) == '+' || text.charAt(i) == '-')) {
-            i++;
-        }
-        int digits = 0;
-        for (; i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9'; i++) {
-            digits++;
-        }
-        if (i < n && text.charAt(i) == '.') {
-            i++;
-            for (; i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9'; i++) {
-                digits++;
-            }
-        }
-        if (digits == 0) {
-            return false;
-        }
-        if (i < n && (text.charAt(i) == 'e' || text.charAt(i) == 'E')) {
-            i++;
-            if (i < n && (text.charAt(i) == '+' || text.charAt(i) == '-')) {
-                i++;
-            }
-            int exponent = 0;
-            for (; i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9'; i++) {
-                exponent++;
-            }
-            if (exponent == 0) {
-                return false;
-            }
-        }
-        return i == n;
     }
 
     /**
