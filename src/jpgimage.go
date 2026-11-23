@@ -398,8 +398,23 @@ func (image *jpgImage) nextMarker(buffer []byte) (uint8, error) {
 	}
 }
 
-// readAPP14 reads an APP14 segment, which Adobe software writes starting with
-// "Adobe".
+// segmentEnd reads the length of the segment at the index, which counts its
+// own two bytes, and returns the index of the end of the segment.
+func (image *jpgImage) segmentEnd(buffer []byte) (int, error) {
+	length, err := image.getUint16(buffer)
+	if err != nil {
+		return 0, err
+	}
+	if length < 2 {
+		return 0, errors.New("Error: Length includes itself, so must be at least 2.")
+	}
+	end := image.index + int(length) - 2
+	if end > len(buffer) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	return end, nil
+}
+
 // readAPP0 reads the pixel density of a JFIF segment, which is the first
 // segment of a JFIF file: "JFIF", a zero byte, the version, the unit of the
 // density and the density of each axis. A segment of another kind, the JFXX
@@ -407,16 +422,9 @@ func (image *jpgImage) nextMarker(buffer []byte) (uint8, error) {
 // is not read: it is a TIFF image file directory, which is a format of its
 // own, and a JFIF segment is what the density of a JPEG is.
 func (image *jpgImage) readAPP0(buffer []byte) error {
-	length, err := image.getUint16(buffer)
+	end, err := image.segmentEnd(buffer)
 	if err != nil {
 		return err
-	}
-	if length < 2 {
-		return errors.New("Error: Length includes itself, so must be at least 2.")
-	}
-	end := image.index + int(length) - 2
-	if end > len(buffer) {
-		return io.ErrUnexpectedEOF
 	}
 	if end-image.index >= 12 && string(buffer[image.index:image.index+5]) == "JFIF\x00" {
 		image.densityUnit = buffer[image.index+7]
@@ -436,16 +444,9 @@ func (image *jpgImage) readAPP0(buffer []byte) error {
 // another kind, XMP among them, is passed over. The first orientation read
 // is the image's.
 func (image *jpgImage) readAPP1(buffer []byte) error {
-	length, err := image.getUint16(buffer)
+	end, err := image.segmentEnd(buffer)
 	if err != nil {
 		return err
-	}
-	if length < 2 {
-		return errors.New("Error: Length includes itself, so must be at least 2.")
-	}
-	end := image.index + int(length) - 2
-	if end > len(buffer) {
-		return io.ErrUnexpectedEOF
 	}
 	if image.orientation == 0 {
 		image.orientation = exifOrientation(buffer[image.index:end])
@@ -541,17 +542,12 @@ func (image *jpgImage) physicalSize(pixels, density uint16) float32 {
 	return size
 }
 
+// readAPP14 reads an APP14 segment, which Adobe software writes starting with
+// "Adobe".
 func (image *jpgImage) readAPP14(buffer []byte) error {
-	length, err := image.getUint16(buffer)
+	end, err := image.segmentEnd(buffer)
 	if err != nil {
 		return err
-	}
-	if length < 2 {
-		return errors.New("Error: Length includes itself, so must be at least 2.")
-	}
-	end := image.index + int(length) - 2
-	if end > len(buffer) {
-		return io.ErrUnexpectedEOF
 	}
 	// Adobe's segment is twelve bytes: "Adobe", the version, two flags and
 	// the color transform. A shorter one is not Adobe's, as in libjpeg. An
