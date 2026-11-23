@@ -402,7 +402,7 @@ import Testing
         let memory = MemoryPDF()
         _ = Page(memory.pdf, Letter.PORTRAIT)
         try memory.pdf.complete()
-        #expect(TestSupport.latin1(memory.bytes).contains("/Producer <" + memory.pdf.textString("PDFjet v9.2.1") + ">"))
+        #expect(TestSupport.latin1(memory.bytes).contains("/Producer <" + memory.pdf.textString("PDFjet v9.2.2") + ">"))
     }
 
     @Test func aNumberIsWrittenWithItsSign() throws {

@@ -9,22 +9,22 @@ new features go to PDFjet Pro.
 
 ## The numbers
 
-Releases are odd: 9.1.5, 9.1.7, 9.1.9, then 9.2.1. PDFjet Pro is released
+Releases are odd: 9.1.5, 9.1.7, 9.1.9, 9.2.1, then 9.2.3. PDFjet Pro is released
 with the library, the same day, with the same number.
 
 After each release, main is the next even number, for customer builds: after
-9.1.9, main is 9.2.0. Faults found after a release are fixed there, with
+9.2.1, main is 9.2.2. Faults found after a release are fixed there, with
 their tests.
 
 1. A customer build is never public: no tag of the even number (Go and
    SwiftPM take versions from tags), nothing uploaded to NuGet or Maven
    Central, no GitHub release. The producer string says the even number,
    so a PDF tells it was made by a customer build. README.md's install
-   lines name the last release; CHANGELOG.md has "## v9.2.0 — customer
+   lines name the last release; CHANGELOG.md has "## v9.2.2 — customer
    builds, not released" over the changes.
 2. The even number is released as the next odd one: its CHANGELOG section
-   becomes "v9.2.1 — the date", the version moves to 9.2.1, and the release
-   goes out as any release does; then main becomes 9.2.2.
+   becomes "v9.2.3 — the date", the version moves to 9.2.3, and the release
+   goes out as any release does; then main becomes 9.2.4.
 
 ## Checks before each release
 
@@ -36,8 +36,9 @@ their tests.
   tag vX of the library is pushed, `harfbuzz/go.mod` requires it
   (`cd harfbuzz && go mod edit -require=github.com/edragoev1/pdfjet/v9@vX
   && go mod tidy`, the replace kept for working in the repository),
-  committed, and that commit tagged `harfbuzz/vX`, as Go finds a module of
-  a folder by the folder's tag. .NET: `package-nuget.sh X` makes
+  committed with `go mod tidy` in `src/examples/example52` (which requires
+  both modules; else `go vet` fails there), and that commit tagged
+  `harfbuzz/vX`, as Go finds a module of a folder by the folder's tag. .NET: `package-nuget.sh X` makes
   `PDFjet.HarfBuzz.X.nupkg` beside `PDFjet` and `PDFjet.Fonts.World`, and
   checks it draws Khmer without hb-shape; the three are uploaded together.
 - **The four ports agree.** `./check-examples.sh` builds and runs the
