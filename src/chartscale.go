@@ -14,7 +14,8 @@ package pdfjet
 // What the charts share, BarChart, DonutChart, SimpleBarChart, SimpleLineChart
 // and SimpleScatterChart: the numbers of their labels, the rounding of an axis to
 // steps, the spacing of the labels of an axis, the place of a value on a plot,
-// the shortening of a long name, and the test of a value to draw.
+// the shortening of a long name, the test of a value to draw, and the titles,
+// the plot and the axis titles of the simple charts.
 
 import (
 	"fmt"
@@ -22,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // roundedRange is the range of an axis and its number of grid lines.
@@ -392,6 +395,127 @@ func withNote(description, note string) string {
 		return description
 	}
 	return description + punctuationAfter(description, ".") + " " + note + "."
+}
+
+// chartPad is the space around a chart's content, a size of the text of its
+// numbers, the font f2.
+func chartPad(f2 *Font) float32 {
+	return f2.size
+}
+
+// chartSubtitleSize is the size of a chart's subtitle, in the font f2.
+func chartSubtitleSize(f2 *Font) float32 {
+	return float32(0.8 * f2.size)
+}
+
+// chartTitleTop is the height of the top of a chart: the padding, the title
+// in f1, the subtitle in f2, and under them a size of f2 when it has either.
+func chartTitleTop(f1, f2 *Font, title, subtitle string) float32 {
+	top := chartPad(f2)
+	if title != "" {
+		top += f1.GetAscent(f1.size) + f1.GetDescent(f1.size)
+	}
+	if subtitle != "" {
+		top += float32(1.4 * chartSubtitleSize(f2))
+	}
+	if title != "" || subtitle != "" {
+		top += f2.size
+	}
+	return top
+}
+
+// drawChartTitles draws the title and the subtitle of the chart at x, y, w
+// wide, each shortened to its width, and returns the baseline of the last
+// one, or the top of the chart's content when it has neither.
+func drawChartTitles(page *Page, f1, f2 *Font, title, subtitle string, x, y, w float32) float32 {
+	pad := chartPad(f2)
+	baseline := y + pad
+	if title != "" {
+		baseline += f1.GetAscent(f1.size)
+		page.drawString(f1, f1.size, shorten(f1, f1.size, title, w-float32(2.0*pad)), x+pad, baseline,
+			colorToRGB(simpleBarInk), nil)
+		baseline += f1.GetDescent(f1.size)
+	}
+	if subtitle != "" {
+		size := chartSubtitleSize(f2)
+		baseline += float32(1.4 * size)
+		page.drawString(f2, size, shorten(f2, size, subtitle, w-float32(2.0*pad)),
+			x+pad, baseline, colorToRGB(simpleBarMuted), nil)
+	}
+	return baseline
+}
+
+// beginPlotFigure begins the figure of a line or a scatter chart at x, y, w
+// by h, in a graphics state of its own, and fills its panel when it has a
+// color.
+func beginPlotFigure(page *Page, altDescription string, panelColor int32, x, y, w, h float32) {
+	page.AddBDC(structelem.Figure, "", "", altDescription)
+	page.SaveGraphicsState()
+	page.SetDefaultStrokeDashPattern() // Not the caller's, which dashed the lines
+
+	if panelColor >= 0 {
+		page.SetBrushColor(panelColor)
+		page.FillRect(x, y, w, h)
+	}
+}
+
+// plotLeft is the left of the plot of a line or a scatter chart at x: right
+// of the widest number of the y axis, and of its title when it has one.
+func plotLeft(f2 *Font, x, widest float32, yAxisTitle string) float32 {
+	size := f2.size
+	left := x + chartPad(f2) + widest + float32(size/2.0)
+	if yAxisTitle != "" {
+		left += float32(1.8 * size) // The title, as far from the numbers as the x title is
+	}
+	return left
+}
+
+// plotTopAndBottom returns the top and the bottom of the plot of a line or a
+// scatter chart at y, h high, whose titles take titleTop, and the note on
+// the values outside it, "" when the chart has not the room for it.
+func plotTopAndBottom(f2 *Font, y, h, titleTop float32, xAxisTitle, note string) (float32, float32, string) {
+	size := f2.size
+	top := y + titleTop + float32(f2.GetAscent(size)/2.0) // Room for the top number
+	bottom := y + h - chartPad(f2) - float32(1.4*size)
+	if xAxisTitle != "" {
+		bottom -= float32(1.4 * size)
+	}
+	// Room for the note, a row of its own under the rest; a chart that has
+	// not the room keeps its plot, and its description says the number
+	if note != "" {
+		if above := bottom - float32(1.4*chartSubtitleSize(f2)); above > top {
+			bottom = above
+		} else {
+			note = ""
+		}
+	}
+	return top, bottom, note
+}
+
+// drawAxisTitles draws the axis titles of the plot from left to right and
+// from top to bottom of a line or a scatter chart at x, y, w by h, and the
+// note on the values outside it, when there is one.
+func drawAxisTitles(page *Page, f2 *Font, xAxisTitle, yAxisTitle, note string, left, right, top, bottom,
+	x, y, w, h float32) {
+	size := f2.size
+	pad := chartPad(f2)
+	// The axis titles, shortened to the width and the height of the plot: a
+	// long one ran past the chart (the review of 28 October 2026)
+	if xAxisTitle != "" {
+		title := shorten(f2, size, xAxisTitle, right-left)
+		page.drawString(f2, size, title, left+float32((right-left-f2.StringWidth(size, title))/2.0),
+			bottom+float32(2.8*size), colorToRGB(simpleBarInk), nil)
+	}
+	if yAxisTitle != "" {
+		title := shorten(f2, size, yAxisTitle, bottom-top)
+		page.SetTextRotation(-90)
+		page.drawString(f2, size, title, x+pad+f2.GetAscent(size),
+			bottom-float32((bottom-top-f2.StringWidth(size, title))/2.0), colorToRGB(simpleBarInk), nil)
+		page.SetTextRotation(0)
+	}
+	if note != "" {
+		drawOutsideNote(page, f2, chartSubtitleSize(f2), note, right, x+pad, x+w-pad, y+h-pad)
+	}
 }
 
 // drawOutsideNote draws the note, small and in the gray of the numbers, on the

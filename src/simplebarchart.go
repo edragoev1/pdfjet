@@ -244,7 +244,7 @@ func (chart *SimpleBarChart) GetHeight() float32 {
 
 // The space around the chart's content, a size of the text of the bars.
 func (chart *SimpleBarChart) pad() float32 {
-	return chart.f2.size
+	return chartPad(chart.f2)
 }
 
 // The height of a row, a bar and the space under it.
@@ -254,21 +254,12 @@ func (chart *SimpleBarChart) rowHeight() float32 {
 
 // The size of the subtitle.
 func (chart *SimpleBarChart) subtitleSize() float32 {
-	return float32(0.8 * chart.f2.size)
+	return chartSubtitleSize(chart.f2)
 }
 
 // The height above the first row: the padding, the title and the subtitle.
 func (chart *SimpleBarChart) top() float32 {
-	top := chart.pad()
-	if chart.title != "" {
-		top += chart.f1.GetAscent(chart.f1.size) + chart.f1.GetDescent(chart.f1.size)
-	}
-	if chart.subtitle != "" {
-		top += float32(1.4 * chart.subtitleSize())
-	}
-	if chart.title != "" || chart.subtitle != "" {
-		top += chart.f2.size
-	}
+	top := chartTitleTop(chart.f1, chart.f2, chart.title, chart.subtitle)
 	return top
 }
 
@@ -400,18 +391,7 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 		page.SetBrushColor(chart.panelColor)
 		page.FillRect(chart.x, chart.y, chart.w, h)
 	}
-	baseline := chart.y + pad
-	if chart.title != "" {
-		baseline += f1.GetAscent(f1.size)
-		page.drawString(f1, f1.size, shorten(f1, f1.size, chart.title, chart.w-float32(2.0*pad)), chart.x+pad, baseline,
-			colorToRGB(simpleBarInk), nil)
-		baseline += f1.GetDescent(f1.size)
-	}
-	if chart.subtitle != "" {
-		baseline += float32(1.4 * chart.subtitleSize())
-		page.drawString(f2, chart.subtitleSize(), shorten(f2, chart.subtitleSize(), chart.subtitle, chart.w-float32(2.0*pad)),
-			chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
-	}
+	drawChartTitles(page, f1, f2, chart.title, chart.subtitle, chart.x, chart.y, chart.w)
 
 	rowTop := chart.y + chart.top()
 	barHeight := float32(1.6 * size)

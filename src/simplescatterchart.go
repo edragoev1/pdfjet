@@ -252,26 +252,17 @@ func (chart *SimpleScatterChart) SetSize(w, h float32) *SimpleScatterChart {
 
 // The space around the chart's content, a size of its numbers.
 func (chart *SimpleScatterChart) pad() float32 {
-	return chart.f2.size
+	return chartPad(chart.f2)
 }
 
 // The size of the subtitle.
 func (chart *SimpleScatterChart) subtitleSize() float32 {
-	return float32(0.8 * chart.f2.size)
+	return chartSubtitleSize(chart.f2)
 }
 
 // The height above the plot: the padding, the title and the subtitle.
 func (chart *SimpleScatterChart) top() float32 {
-	top := chart.pad()
-	if chart.title != "" {
-		top += chart.f1.GetAscent(chart.f1.size) + chart.f1.GetDescent(chart.f1.size)
-	}
-	if chart.subtitle != "" {
-		top += float32(1.4 * chart.subtitleSize())
-	}
-	if chart.title != "" || chart.subtitle != "" {
-		top += chart.f2.size
-	}
+	top := chartTitleTop(chart.f1, chart.f2, chart.title, chart.subtitle)
 	// The legend, and half a size of the numbers under it, so that the top
 	// number of the axis is not against its last row
 	rows := chart.drawLegend(nil, 0.0)
@@ -598,31 +589,14 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	for i := 0; i <= yAxis.lines; i++ {
 		widest = max(widest, f2.StringWidth(size, chart.label(yAxis.min+float32(yStep*float32(i)), yStep)))
 	}
-	left := chart.x + pad + widest + float32(size/2.0)
-	if chart.yAxisTitle != "" {
-		left += float32(1.8 * size) // The title, as far from the numbers as the x title is
-	}
+	left := plotLeft(f2, chart.x, widest, chart.yAxisTitle)
 	// Room for the halves of the first and the last number under the plot,
 	// centered on its edges: the last, "1,000,000", went past the chart
 	firstWidth := f2.StringWidth(size, chart.label(xAxis.min, xStep))
 	lastWidth := f2.StringWidth(size, chart.label(xAxis.min+float32(xStep*float32(xAxis.lines)), xStep))
 	left = max(left, chart.x+float32(pad/2.0)+float32(firstWidth/2.0))
 	right := min(chart.x+chart.w-pad, chart.x+chart.w-float32(pad/2.0)-float32(lastWidth/2.0))
-	top := chart.y + chart.top() + float32(ascent/2.0) // Room for the top number
-	bottom := chart.y + chart.h - pad - float32(1.4*size)
-	if chart.xAxisTitle != "" {
-		bottom -= float32(1.4 * size)
-	}
-	// Room for the note, a row of its own under the rest; a chart that has
-	// not the room keeps its plot, and its description says the number
-	note := chart.outsideNote()
-	if note != "" {
-		if above := bottom - float32(1.4*chart.subtitleSize()); above > top {
-			bottom = above
-		} else {
-			note = ""
-		}
-	}
+	top, bottom, note := plotTopAndBottom(f2, chart.y, chart.h, chart.top(), chart.xAxisTitle, chart.outsideNote())
 	if right <= left || bottom <= top {
 		page.pdf.fail(noRoomMessage("A SimpleScatterChart", chart.w, chart.h))
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
@@ -655,26 +629,8 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		return linksApart && p.linkedDot()
 	}
 
-	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
-	page.SaveGraphicsState()
-	page.SetDefaultStrokeDashPattern() // Not the caller's, which dashed the lines
-
-	if chart.panelColor >= 0 {
-		page.SetBrushColor(chart.panelColor)
-		page.FillRect(chart.x, chart.y, chart.w, chart.h)
-	}
-	baseline := chart.y + pad
-	if chart.title != "" {
-		baseline += f1.GetAscent(f1.size)
-		page.drawString(f1, f1.size, shorten(f1, f1.size, chart.title, chart.w-float32(2.0*pad)), chart.x+pad, baseline,
-			colorToRGB(simpleBarInk), nil)
-		baseline += f1.GetDescent(f1.size)
-	}
-	if chart.subtitle != "" {
-		baseline += float32(1.4 * chart.subtitleSize())
-		page.drawString(f2, chart.subtitleSize(), shorten(f2, chart.subtitleSize(), chart.subtitle, chart.w-float32(2.0*pad)),
-			chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
-	}
+	beginPlotFigure(page, chart.getAltDescription(), chart.panelColor, chart.x, chart.y, chart.w, chart.h)
+	baseline := drawChartTitles(page, f1, f2, chart.title, chart.subtitle, chart.x, chart.y, chart.w)
 	if len(chart.series) > 0 {
 		if chart.title != "" || chart.subtitle != "" {
 			baseline += f2.size
@@ -719,24 +675,8 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		page.drawString(f2, size, label, placed(centers[i], widths[i], lo, hi),
 			bottom+float32(1.4*size), colorToRGB(simpleBarMuted), nil)
 	}
-	// The axis titles, shortened to the width and the height of the plot: a
-	// long one ran past the chart (the review of 28 October 2026)
-	if chart.xAxisTitle != "" {
-		title := shorten(f2, size, chart.xAxisTitle, right-left)
-		page.drawString(f2, size, title, left+float32((right-left-f2.StringWidth(size, title))/2.0),
-			bottom+float32(2.8*size), colorToRGB(simpleBarInk), nil)
-	}
-	if chart.yAxisTitle != "" {
-		title := shorten(f2, size, chart.yAxisTitle, bottom-top)
-		page.SetTextRotation(-90)
-		page.drawString(f2, size, title, chart.x+pad+ascent,
-			bottom-float32((bottom-top-f2.StringWidth(size, title))/2.0), colorToRGB(simpleBarInk), nil)
-		page.SetTextRotation(0)
-	}
-	if note != "" {
-		drawOutsideNote(page, f2, chart.subtitleSize(), note, right, chart.x+pad, chart.x+chart.w-pad,
-			chart.y+chart.h-pad)
-	}
+	drawAxisTitles(page, f2, chart.xAxisTitle, chart.yAxisTitle, note, left, right, top, bottom,
+		chart.x, chart.y, chart.w, chart.h)
 
 	// The trend line, from the left of the plot to its right, within its
 	// height
