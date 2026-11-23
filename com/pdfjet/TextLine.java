@@ -367,9 +367,16 @@ public class TextLine implements BaselineDrawable {
     // shaped is measured as text; drawOn says why it cannot be drawn.
     float widthOf(String text) {
         try {
-            ShapedText glyphs = shapeOf(text);
+            // A shaper's width leaves out the spaces at the end of the line,
+            // which a TextFrame's word is measured with: they are measured in
+            // the font
+            int end = text.length();
+            while (end > 0 && text.charAt(end - 1) == ' ') {
+                end--;
+            }
+            ShapedText glyphs = shapeOf(text.substring(0, end));
             if (glyphs != null) {
-                return glyphs.line.getWidth();
+                return glyphs.line.getWidth() + font.stringWidth(fallbackFont, fontSize, text.substring(end));
             }
         } catch (Exception e) {
             // Measured as text

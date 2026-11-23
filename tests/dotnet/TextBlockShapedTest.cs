@@ -60,7 +60,7 @@ public class TextBlockShapedTest {
     // A shaper that gives each paragraph as many lines as its letters, one
     // glyph of the letter each
     private class LetterShaper : IShaper {
-        private readonly Font font;
+        internal readonly Font font;
 
         internal LetterShaper(Font font) {
             this.font = font;
@@ -270,7 +270,21 @@ public class TextBlockShapedTest {
         public List<ShapedLine> Shape(ShapingRequest request) {
             calls++;
             files = request.FontFiles;
-            return letters.Shape(request);
+            // A space as wide as the font's, and the spaces at the end no
+            // width, as a real shaper leaves the white space at the end of a
+            // line out of its width
+            string text = request.Text;
+            List<ShapedLine> lines = new List<ShapedLine>();
+            foreach (ShapedLine line in letters.Shape(request)) {
+                float width = line.Width;
+                if (text.Substring(line.Start).Trim().Length == 0) {
+                    width = 0f;
+                } else if (text.Substring(line.Start, line.End - line.Start) == " ") {
+                    width = letters.font.StringWidth(request.FontSize, " ");
+                }
+                lines.Add(new ShapedLine(line.Start, line.End, line.FontIndexes, line.Glyphs, line.Positions, width));
+            }
+            return lines;
         }
     }
 
@@ -294,10 +308,29 @@ public class TextBlockShapedTest {
             foreach (float[] place in Places(TestSupport.Content(page))) {
                 xs.Add(place[1]);
             }
-            // Each word drawn with the space after it, shaped with it: the
-            // test's shaper gives a space 7 points, as every letter
-            Assert.Equal(new List<float> {10f, 17f, 31f, 38f, 52f, 59f}, xs);
+            // Each word 14 points, and the space after it the font's
+            float space = font.StringWidth(10f, " ");
+            float[] want = {10f, 17f, 24f + space, 31f + space, 38f + 2 * space, 45f + 2 * space};
+            Assert.Equal(want.Length, xs.Count);
+            for (int i = 0; i < want.Length; i++) {
+                Assert.Equal(want[i], xs[i], 2);
+            }
             Assert.True(shaper.calls <= 8, "shaped " + shaper.calls + " times");
+            // In a frame 43 points wide, two words and their space, 30.6
+            // points, fit, and the third goes to the next row: measured with
+            // the spaces as none, all three fitted, drawn past the frame
+            TextFrame narrow = new TextFrame(new List<Paragraph> {new Paragraph().Add(new TextLine(font, "कख गघ ङच"))});
+            narrow.SetLocation(10f, 10f);
+            narrow.SetWidth(43f);
+            narrow.SetHeight(500f);
+            Page other = new Page(pdf, Letter.PORTRAIT);
+            narrow.DrawOn(other);
+            HashSet<float> rows = new HashSet<float>();
+            foreach (float[] place in Places(TestSupport.Content(other))) {
+                rows.Add(place[2]);
+                Assert.True(place[1] + 7f <= 53.01f, "a glyph at " + place[1] + ", past the frame");
+            }
+            Assert.Equal(2, rows.Count);
             pdf.Complete();
         } finally {
             TextBlock.SetDefaultShaper(null);

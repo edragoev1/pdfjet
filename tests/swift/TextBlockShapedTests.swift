@@ -314,7 +314,19 @@ import Testing
         func shape(_ request: ShapingRequest) throws -> [ShapedLine] {
             calls += 1
             files = request.fontFiles
-            return try letters.shape(request)
+            // A space as wide as the font's, and the spaces at the end no
+            // width, as a real shaper leaves the white space at the end of a
+            // line out of its width
+            let units = Array(request.text.utf16)
+            return try letters.shape(request).map { line in
+                var width = line.width
+                if units[line.start...].allSatisfy({ $0 == 0x20 }) {
+                    width = 0
+                } else if units[line.start..<line.end] == [0x20] {
+                    width = letters.font.stringWidth(request.fontSize, " ")
+                }
+                return ShapedLine(line.start, line.end, line.fontIndexes, line.glyphs, line.positions, width)
+            }
         }
     }
 
@@ -333,10 +345,29 @@ import Testing
         frame.setHeight(500)
         let page = Page(memory.pdf, Letter.PORTRAIT)
         frame.drawOn(page)
-        // Each word drawn with the space after it, shaped with it: the test's
-        // shaper gives a space 7 points, as every letter
-        #expect(places(TestSupport.content(page)).map { $0[1] } == [10, 17, 31, 38, 52, 59])
+        // Each word 14 points, and the space after it the font's
+        let space = font.stringWidth(10, " ")
+        let want: [Float] = [10, 17, 24 + space, 31 + space, 38 + 2 * space, 45 + 2 * space]
+        let xs = places(TestSupport.content(page)).map { $0[1] }
+        #expect(xs.count == want.count)
+        for (x, w) in zip(xs, want) {
+            #expect(abs(x - w) < 0.01, "\(xs)")
+        }
         #expect(shaper.calls <= 8, "shaped \(shaper.calls) times")
+        // In a frame 43 points wide, two words and their space, 30.6 points,
+        // fit, and the third goes to the next row: measured with the spaces as
+        // none, all three fitted, drawn past the frame
+        let narrow = TextFrame([Paragraph().add(TextLine(font, "कख गघ ङच"))])
+        narrow.setLocation(10, 10)
+        narrow.setWidth(43)
+        narrow.setHeight(500)
+        let other = Page(memory.pdf, Letter.PORTRAIT)
+        narrow.drawOn(other)
+        let placed = places(TestSupport.content(other))
+        #expect(Set(placed.map { $0[2] }).count == 2, "\(placed)")
+        for place in placed {
+            #expect(place[1] + 7 <= 53.01, "a glyph at \(place[1]), past the frame")
+        }
         try memory.pdf.complete()
     }
 

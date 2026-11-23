@@ -73,7 +73,7 @@ class TextBlockShapedTest {
     // A shaper that gives each paragraph as many lines as its letters, one
     // glyph of the letter each
     private static final class LetterShaper implements Shaper {
-        private final Font font;
+        final Font font;
 
         LetterShaper(Font font) {
             this.font = font;
@@ -371,7 +371,22 @@ class TextBlockShapedTest {
         public List<ShapedLine> shape(ShapingRequest request) {
             calls++;
             files = request.getFontFiles();
-            return letters.shape(request);
+            // A space as wide as the font's, and the spaces at the end no
+            // width, as a real shaper leaves the white space at the end of a
+            // line out of its width
+            String text = request.getText();
+            List<ShapedLine> lines = new ArrayList<>();
+            for (ShapedLine line : letters.shape(request)) {
+                float width = line.getWidth();
+                if (text.substring(line.getStart()).trim().isEmpty()) {
+                    width = 0f;
+                } else if (text.substring(line.getStart(), line.getEnd()).equals(" ")) {
+                    width = letters.font.stringWidth(request.getFontSize(), " ");
+                }
+                lines.add(new ShapedLine(line.getStart(), line.getEnd(), line.getFontIndexes(), line.getGlyphs(),
+                        line.getPositions(), width));
+            }
+            return lines;
         }
     }
 
@@ -395,10 +410,29 @@ class TextBlockShapedTest {
             for (float[] place : places(TestSupport.content(page))) {
                 xs.add(place[1]);
             }
-            // Each word drawn with the space after it, shaped with it: the test's
-            // shaper gives a space 7 points, as every letter
-            assertEquals(Arrays.asList(10f, 17f, 31f, 38f, 52f, 59f), xs, TestSupport.content(page));
+            // Each word 14 points, and the space after it the font's
+            float space = font.stringWidth(10f, " ");
+            float[] want = {10f, 17f, 24f + space, 31f + space, 38f + 2 * space, 45f + 2 * space};
+            assertEquals(want.length, xs.size(), TestSupport.content(page));
+            for (int i = 0; i < want.length; i++) {
+                assertEquals(want[i], xs.get(i), 0.01f);
+            }
             assertTrue(shaper.calls <= 8, "shaped " + shaper.calls + " times");
+            // In a frame 43 points wide, two words and their space, 30.6
+            // points, fit, and the third goes to the next row: measured with
+            // the spaces as none, all three fitted, drawn past the frame
+            TextFrame narrow = new TextFrame(Arrays.asList(new Paragraph().add(new TextLine(font, "कख गघ ङच"))));
+            narrow.setLocation(10f, 10f);
+            narrow.setWidth(43f);
+            narrow.setHeight(500f);
+            Page other = new Page(pdf, Letter.PORTRAIT);
+            narrow.drawOn(other);
+            java.util.Set<Float> rows = new java.util.HashSet<>();
+            for (float[] place : places(TestSupport.content(other))) {
+                rows.add(place[2]);
+                assertTrue(place[1] + 7f <= 53.01f, "a glyph at " + place[1] + ", past the frame");
+            }
+            assertEquals(2, rows.size(), TestSupport.content(other));
             pdf.complete();
         } finally {
             Shaping.defaultShaperSet = null;

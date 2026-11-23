@@ -266,8 +266,12 @@ func (textLine *TextLine) shapeOf(text string) (*shapedLine, error) {
 // for text such as Hindi a shaper shapes, else of its characters. What
 // cannot be shaped is measured as text; DrawOn says why it cannot be drawn.
 func (textLine *TextLine) widthOf(text string) float32 {
-	if shaped, err := textLine.shapeOf(text); err == nil && shaped != nil {
-		return shaped.line.Width
+	// A shaper's width leaves out the spaces at the end of the line, which a
+	// TextFrame's word is measured with: they are measured in the font
+	core := strings.TrimRight(text, " ")
+	if shaped, err := textLine.shapeOf(core); err == nil && shaped != nil {
+		return shaped.line.Width +
+			textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text[len(core):])
 	}
 	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
 }

@@ -380,7 +380,17 @@ type testCountingShaper struct {
 func (shaper *testCountingShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 	shaper.calls++
 	shaper.files = request.FontFiles
-	return shaper.testLetterShaper.Shape(request)
+	lines, err := shaper.testLetterShaper.Shape(request)
+	// A space as wide as the font's, and the spaces at the end no width, as a
+	// real shaper leaves the white space at the end of a line out of its width
+	for i := range lines {
+		if strings.TrimSpace(request.Text[lines[i].Start:]) == "" {
+			lines[i].Width = 0
+		} else if request.Text[lines[i].Start:lines[i].End] == " " {
+			lines[i].Width = shaper.font.StringWidth(request.FontSize, " ")
+		}
+	}
+	return lines, err
 }
 
 // A TextFrame of Hindi words places them by their shaped widths, the
@@ -405,14 +415,33 @@ func TestTextFrameMeasuresShapedWords(t *testing.T) {
 	if len(xs) != 6 {
 		t.Fatalf("%d glyphs: %v\n%s", len(xs), xs, testContent(page))
 	}
-	// Each word drawn with the space after it, shaped with it: the test's
-	// shaper gives a space 7 points, as every letter
-	want := []float32{10, 17, 31, 38, 52, 59}
+	// Each word 14 points, and the space after it the font's
+	space := font.StringWidth(10, " ")
+	want := []float32{10, 17, 24 + space, 31 + space, 38 + 2*space, 45 + 2*space}
 	for i := range want {
 		testNear(t, "a glyph's x", want[i], xs[i], 0.01)
 	}
 	if shaper.calls > 8 {
 		t.Errorf("shaped %d times: each word once, and the pieces drawn", shaper.calls)
+	}
+	// In a frame 43 points wide, two words and their space, 30.6 points,
+	// fit, and the third goes to the next row: measured with the spaces as
+	// none, all three fitted, 47.2 points drawn past the frame
+	narrow := NewTextFrameFromParagraphs([]*Paragraph{NewParagraph().Add(NewTextLine(font, "कख गघ ङच"))})
+	narrow.SetWidth(43)
+	narrow.SetLocation(10, 10)
+	narrow.SetHeight(500)
+	page = NewPage(doc.pdf, letter.Portrait())
+	narrow.DrawOn(page)
+	rows := map[string]bool{}
+	for _, m := range regexp.MustCompile(`q \S+ 0 0 \S+ (\S+) (\S+) cm /Fm`).FindAllStringSubmatch(testContent(page), -1) {
+		rows[m[2]] = true
+		if testNumber(t, m[1])+7 > 53.01 {
+			t.Errorf("a glyph at %s, past the frame:\n%s", m[1], testContent(page))
+		}
+	}
+	if len(rows) != 2 {
+		t.Errorf("%d rows, not 2:\n%s", len(rows), testContent(page))
 	}
 	doc.complete()
 }

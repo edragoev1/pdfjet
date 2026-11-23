@@ -294,9 +294,13 @@ public class TextLine : IBaselineDrawable {
     // shaped is measured as text; DrawOn says why it cannot be drawn.
     internal float WidthOf(String text) {
         try {
-            ShapedText glyphs = ShapeOf(text);
+            // A shaper's width leaves out the spaces at the end of the line,
+            // which a TextFrame's word is measured with: they are measured in
+            // the font
+            String core = text.TrimEnd(' ');
+            ShapedText glyphs = ShapeOf(core);
             if (glyphs != null) {
-                return glyphs.line.Width;
+                return glyphs.line.Width + font.StringWidth(fallbackFont, fontSize, text.Substring(core.Length));
             }
         } catch (Exception) {
             // Measured as text

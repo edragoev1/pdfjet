@@ -293,8 +293,14 @@ public class TextLine : BaselineDrawable {
     // such as Hindi a shaper shapes, else of its characters. What cannot be
     // shaped is measured as text; drawOn says why it cannot be drawn.
     func widthOf(_ text: String) -> Float {
-        if let glyphs = try? shapeOf(text) {
-            return glyphs.line.width
+        // A shaper's width leaves out the spaces at the end of the line, which
+        // a TextFrame's word is measured with: they are measured in the font
+        var core = text
+        while core.hasSuffix(" ") {
+            core.removeLast()
+        }
+        if let glyphs = try? shapeOf(core) {
+            return glyphs.line.width + font!.stringWidth(fallbackFont, fontSize, String(text.dropFirst(core.count)))
         }
         return font!.stringWidth(fallbackFont, fontSize, text)
     }
