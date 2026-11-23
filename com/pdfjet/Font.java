@@ -171,21 +171,9 @@ final public class Font {
      * @throws Exception If an input or output exception occurred
      */
     public Font(PDF pdf, int coreFont) throws Exception {
+        // The metrics, as for a core font of PDFobj, then the object
+        this(coreFont);
         this.pdf = pdf;
-        CoreFont font = new CoreFont(coreFont);
-        this.isCoreFont = true;
-        this.name = font.name;
-        this.bBoxLLx = font.bBoxLLx;
-        this.bBoxLLy = font.bBoxLLy;
-        this.bBoxURx = font.bBoxURx;
-        this.bBoxURy = font.bBoxURy;
-        this.metrics = font.metrics;
-        this.symbolic = font.name.equals("Symbol") || font.name.equals("ZapfDingbats");
-        this.fontUnderlinePosition = font.underlinePosition;
-        this.fontUnderlineThickness = font.underlineThickness;
-        this.fontAscent = font.bBoxURy;
-        this.fontDescent = font.bBoxLLy;
-        setSize(size);
 
         pdf.newObj();
         pdf.append("<<\n");
