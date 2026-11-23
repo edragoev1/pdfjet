@@ -94,14 +94,12 @@ their tests.
   breaks a line, counts the Hangul jamo (U+1100 to U+11FF) but not the
   11,172 syllables (U+AC00 to U+D7A3), in the four ports. So Korean breaks
   at its spaces, as English does: keep-all, which Korean documents mostly
-  use, but by chance. Its upper bound, U+9FD5, leaves out the newer CJK
-  characters and the extensions (𨋢, U+282E2), and a line is CJK only when
-  more than half of it is, so a long run of Chinese in a line mostly
-  English is cut without the kinsoku rules, and a Latin word in a line
-  mostly Chinese is broken between letters ("電郵或 W" / "hatsApp 交回").
-  To do once a Korean reader has confirmed keep-all: Korean named on
-  purpose, the Chinese ranges brought up to date, a test of each case, and
-  the PDF the same for every text drawn well today.
+  use, but by chance. A line is CJK only when more than half of it is, so a
+  long run of Chinese with no spaces in a line mostly English is cut where
+  it does not fit, without the kinsoku rules. (A Latin word in a line of
+  Chinese is no longer cut, and the Chinese ranges are up to date, since 1
+  November 2026, 718a8ae05 and b37e2bbee.) To do once a Korean reader has
+  confirmed keep-all: Korean named on purpose, and a test of each case.
 
 - **Large documents.** Two parts:
   1. Smaller tagged documents. Each cell of a PDF/UA table costs 280 to 415
