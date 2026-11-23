@@ -1671,18 +1671,7 @@ public final class PDF {
             append(annot.fileAttachment!.icon)
             append("\n")
 
-            let title = annot.fileAttachment!.title
-            if !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-            let contents = annot.fileAttachment!.contents
-            if !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendTitleAndContents(annot.fileAttachment!.title, annot.fileAttachment!.contents)
         } else if annot.annotationType == Annotation.Link {
             // PDF/UA requires a link to carry an alternate description in its
             // Contents key.
@@ -1735,71 +1724,15 @@ public final class PDF {
             }
             append("]\n")
 
-            append("/IC [")
-            append(annot.fillColor![0])
-            append(" ")
-            append(annot.fillColor![1])
-            append(" ")
-            append(annot.fillColor![2])
-            append("]\n")
-
-            if !isPDFA1() {
-                append("/CA ")
-                append(annot.opacity)
-                append("\n")
-            }
-
-            if let title = annot.title, !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-
-            if let contents = annot.contents, !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendFillAndOpacity(annot)
+            appendTitleAndContents(annot.title, annot.contents)
         } else if annot.annotationType == Annotation.Square ||
                   annot.annotationType == Annotation.Circle {
-            append("/IC [")
-            append(annot.fillColor![0])
-            append(" ")
-            append(annot.fillColor![1])
-            append(" ")
-            append(annot.fillColor![2])
-            append("]\n")
-
-            if !isPDFA1() {
-                append("/CA ")
-                append(annot.opacity)
-                append("\n")
-            }
-
-            if let title = annot.title, !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-
-            if let contents = annot.contents, !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendFillAndOpacity(annot)
+            appendTitleAndContents(annot.title, annot.contents)
         } else if annot.annotationType == Annotation.Text {
             append("/Name /Comment\n")
-            if let title = annot.title, !title.isEmpty {
-                append("/T <")
-                append(textString(title))
-                append(">\n")
-            }
-
-            if let contents = annot.contents, !contents.isEmpty {
-                append("/Contents <")
-                append(textString(contents))
-                append(">\n")
-            }
+            appendTitleAndContents(annot.title, annot.contents)
         }
 
         if index != -1 {
@@ -1813,6 +1746,38 @@ public final class PDF {
         endObj()
 
         return index
+    }
+
+    // Writes the interior color of a square, a circle or a polygon, and its
+    // opacity, which PDF/A-1 has no /CA for.
+    private func appendFillAndOpacity(_ annot: Annotation) {
+        append("/IC [")
+        append(annot.fillColor![0])
+        append(" ")
+        append(annot.fillColor![1])
+        append(" ")
+        append(annot.fillColor![2])
+        append("]\n")
+        if !isPDFA1() {
+            append("/CA ")
+            append(annot.opacity)
+            append("\n")
+        }
+    }
+
+    // Writes the /T and the /Contents of an annotation, each only when it is
+    // set and not empty.
+    private func appendTitleAndContents(_ title: String?, _ contents: String?) {
+        if let title = title, !title.isEmpty {
+            append("/T <")
+            append(textString(title))
+            append(">\n")
+        }
+        if let contents = contents, !contents.isEmpty {
+            append("/Contents <")
+            append(textString(contents))
+            append(">\n")
+        }
     }
 
     private func addAnnotDictionaries() {
