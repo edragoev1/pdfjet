@@ -43,9 +43,9 @@ public class BigTable {
     // In a PDF/UA document the table is a Table element that the rows of
     // every page go on adding to; see drawFieldsAndLine.
     private var structElement: StructElement?
-    private var shadingColor: [Float]? = BigTable.rgb(0xF0F0F0)   // nil for no shading
+    private var shadingColor: [Float]? = Util.rgb(0xF0F0F0)   // nil for no shading
     private var headerColor: [Float]?                           // nil for the shading of every other row
-    private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
+    private var borderColor: [Float]? = Util.rgb(0xB0B0B0)    // nil for no lines
     private var borderWidth: Float = 0.5                           // The width of the lines, 0.5 points unless set
     // The y of the line above each row of the page being drawn, stroked with
     // the vertical lines and the line under the last row, one path for the
@@ -276,7 +276,7 @@ public class BigTable {
     /// Color.transparent turns the shading off.
     @discardableResult
     public func setShadingColor(_ color: Int32) -> BigTable {
-        self.shadingColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        self.shadingColor = (color == Color.transparent) ? nil : Util.rgb(color)
         return self
     }
 
@@ -301,7 +301,7 @@ public class BigTable {
     /// 0xRRGGBB value. Color.transparent leaves the lines out.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> BigTable {
-        self.borderColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        self.borderColor = (color == Color.transparent) ? nil : Util.rgb(color)
         return self
     }
 
@@ -362,7 +362,7 @@ public class BigTable {
     /// Color.transparent goes back to that.
     @discardableResult
     public func setHeaderColor(_ color: Int32) -> BigTable {
-        self.headerColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        self.headerColor = (color == Color.transparent) ? nil : Util.rgb(color)
         return self
     }
 
@@ -743,10 +743,6 @@ public class BigTable {
         page!.strokePath()
         page!.setPenColor(original)
         page!.addEMC()
-    }
-
-    private static func rgb(_ color: Int32) -> [Float] {
-        return [Float((color >> 16) & 0xff)/255.0, Float((color >> 8) & 0xff)/255.0, Float(color & 0xff)/255.0]
     }
 
     // A number is right-aligned, as Table.rightAlignNumbers aligns it.
