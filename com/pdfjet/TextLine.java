@@ -217,10 +217,7 @@ public class TextLine implements BaselineDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
+        this.textColor = Util.toRGB(color);
         return this;
     }
 
@@ -257,10 +254,7 @@ public class TextLine implements BaselineDrawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.decorationColor = new float[] {r, g, b};
+        this.decorationColor = Util.toRGB(color);
         return this;
     }
 

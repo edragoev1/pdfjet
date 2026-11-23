@@ -55,9 +55,9 @@ public class BigTable {
     // In a PDF/UA document the table is a Table element that the rows of
     // every page go on adding to; see drawFieldsAndLine.
     private StructElement structElement = null;
-    private float[] shadingColor = rgb(0xF0F0F0);   // null for no shading
+    private float[] shadingColor = Util.toRGB(0xF0F0F0);   // null for no shading
     private float[] headerColor = null;             // null for the shading of every other row
-    private float[] borderColor = rgb(0xB0B0B0);    // null for no lines
+    private float[] borderColor = Util.toRGB(0xB0B0B0);    // null for no lines
     private float borderWidth = 0.5f;               // The width of the lines, 0.5 points unless set
     // The y of the line above each row of the page being drawn, stroked with
     // the vertical lines and the line under the last row, one path for the
@@ -314,7 +314,7 @@ public class BigTable {
      * @return this BigTable object.
      */
     public BigTable setShadingColor(int color) {
-        this.shadingColor = (color == Color.transparent) ? null : rgb(color);
+        this.shadingColor = (color == Color.transparent) ? null : Util.toRGB(color);
         return this;
     }
 
@@ -351,7 +351,7 @@ public class BigTable {
      * @return this BigTable object.
      */
     public BigTable setBorderColor(int color) {
-        this.borderColor = (color == Color.transparent) ? null : rgb(color);
+        this.borderColor = (color == Color.transparent) ? null : Util.toRGB(color);
         return this;
     }
 
@@ -431,7 +431,7 @@ public class BigTable {
      * @return this BigTable object.
      */
     public BigTable setHeaderColor(int color) {
-        this.headerColor = (color == Color.transparent) ? null : rgb(color);
+        this.headerColor = (color == Color.transparent) ? null : Util.toRGB(color);
         return this;
     }
 
@@ -829,11 +829,6 @@ public class BigTable {
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();
-    }
-
-    private static float[] rgb(int color) {
-        return new float[] {
-                ((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
     }
 
     // A number is right-aligned, as Table.rightAlignNumbers aligns it.

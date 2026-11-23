@@ -94,10 +94,7 @@ final class TableLines {
     void addBorders(Page page, int properties, int color, float width,
             float x, float y, float cellW, float cellH) {
         // As setPenColor(int) makes the color
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        cellPenColor = new float[] {r, g, b};
+        cellPenColor = Util.toRGB(color);
         cellPenWidth = width;
         hasCellPen = true;
         penChangesAtCell = page.penChanges;

@@ -172,10 +172,7 @@ public class Point implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
+        this.fillColor = Util.toRGB(color);
         return this;
     }
 
@@ -210,10 +207,7 @@ public class Point implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.strokeColor = new float[] {r, g, b};
+        this.strokeColor = Util.toRGB(color);
         return this;
     }
 

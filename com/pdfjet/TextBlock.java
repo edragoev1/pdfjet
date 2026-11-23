@@ -309,10 +309,7 @@ public class TextBlock implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
+        this.textColor = Util.toRGB(color);
         return this;
     }
 
@@ -350,10 +347,7 @@ public class TextBlock implements Drawable {
             this.borderColor = null;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.borderColor = new float[] {r, g, b};
+        this.borderColor = Util.toRGB(color);
         return this;
     }
 
@@ -399,10 +393,7 @@ public class TextBlock implements Drawable {
             this.fillColor = null;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
+        this.fillColor = Util.toRGB(color);
         return this;
     }
 

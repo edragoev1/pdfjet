@@ -89,10 +89,7 @@ public class Rect implements Drawable {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
+        this.fillColor = Util.toRGB(color);
         return this;
     }
 
@@ -131,10 +128,7 @@ public class Rect implements Drawable {
             this.borderColor = null;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.borderColor = new float[] {r, g, b};
+        this.borderColor = Util.toRGB(color);
         return this;
     }
 
