@@ -76,21 +76,24 @@ go run ./src/examples/example24 $EV                                # Go: 7 times
 
 Each prints the time of the document in milliseconds; the PDF is checked
 too: 2,546 pages, the last footer "Page 2546 of 2546". The figures of
-28 October 2026, for 9.1.5 at 53565d6f0, and of v9.1.1 run again from its
-tag the same hour, on the machine of the results below, with nothing else
-running:
+23 November 2026, for 9.2.1 at 8f38d79bd and v9.1.9 from its tag, run the
+same hour on the machine of the results below with nothing else running,
+the two alternated run by run (Java: the median of 7 runs of each in turn):
 
-| Port | v9.1.1 | 9.1.5 |
-|---|---|---|
-| Go | 896 ms | 918 ms |
-| Java | 1,691 ms | 1,270 ms |
-| C# | 2,273 ms | 2,244 ms |
-| Swift | 2,624 ms | 2,309 ms |
+| Port | v9.1.9 | 9.2.1 | |
+|---|---|---|---|
+| Go | 891 ms | 905 ms | +1.6% |
+| Java | 1,229 ms | 1,220 ms | −0.7% |
+| C# | 2,135 ms | 2,170 ms | +1.6% |
+| Swift | 2,236 ms | 2,292 ms | +2.5% |
 
-Go is 2.5% slower, within the 5%; Java is faster by its compression at
-level 5 (26 October 2026), for a PDF 6.5% larger, 12.2 MB where it was
-11.4 MB; Swift by the ToUnicode map of f511f9768. The figures of v9.1.1 on
-15 October, at d040076b, were 905, 1,694, 2,296 and 2,672 ms.
+Every port within the 5%. Swift's 2.5% is steady (9.1.9's slowest run
+2,241 ms, 9.2.1's fastest 2,268), within the rule and not looked into
+further; the PDF is the same, 12,098,286 bytes in Java. The figures of
+28 October 2026, for 9.1.5 at 53565d6f0 and v9.1.1 from its tag: Go 918 and
+896 ms, Java 1,270 and 1,691, C# 2,244 and 2,273, Swift 2,309 and 2,624
+(Java faster by its compression at level 5, 26 October 2026, for a PDF
+6.5% larger; Swift by the ToUnicode map of f511f9768).
 
 The figures of another machine are not compared with these: the release
 before is run on it as well, from its tag in a worktree.
