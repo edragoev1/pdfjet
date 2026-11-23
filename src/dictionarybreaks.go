@@ -455,7 +455,16 @@ func dictionaryWordEndsOf(runes []rune, only *dictionaryScript) []int {
 			ends = append(ends, divideUpDictionaryRange(script, d, t, start, i)...)
 		}
 	}
-	return ends
+	// The ends before a mark left out, as ICU's rules never break a letter
+	// from its marks: a mark after a sign that takes none, as ฯ then ุ, ended
+	// a word before it (found by FuzzDictionaryWordEnds)
+	kept := ends[:0]
+	for _, end := range ends {
+		if end >= len(runes) || !unicode.In(runes[end], unicode.Mn, unicode.Mc, unicode.Me) {
+			kept = append(kept, end)
+		}
+	}
+	return kept
 }
 
 // thaiWordBreaks returns the line with a zero width space at each end of a

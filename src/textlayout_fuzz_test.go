@@ -72,10 +72,11 @@ func fuzzFont(t *testing.T, pdf *PDF, path string) *Font {
 }
 
 // fuzzShaper shapes as a real shaper does, roughly: each character a glyph
-// of the first font, 6 points wide, a space the font's own space, the
-// spaces at the end no width; lines broken at spaces to the width
+// of the font, or of the fallback when the font has none, as wide as that
+// font has it; the spaces at the end of a line no width; lines broken at
+// spaces to the width
 type fuzzShaper struct {
-	font *Font
+	font, fallback *Font
 }
 
 func (shaper *fuzzShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
@@ -89,17 +90,23 @@ func (shaper *fuzzShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 			line.End = i + 1
 			continue
 		}
-		if x+spaces+6 > request.Width && len(line.Glyphs) > 0 && spaces > 0 {
+		index, font := 0, shaper.font
+		if font.unicodeToGID.get(r) == 0 && shaper.fallback != nil && len(request.FontFiles) > 1 &&
+			shaper.fallback.unicodeToGID.get(r) != 0 {
+			index, font = 1, shaper.fallback
+		}
+		advance := font.StringWidth(request.FontSize, string(r))
+		if x+spaces+advance > request.Width && len(line.Glyphs) > 0 && spaces > 0 {
 			lines = append(lines, line)
 			line = ShapedLine{Start: i}
 			x, spaces = 0, 0
 		}
 		x += spaces
 		spaces = 0
-		line.FontIndexes = append(line.FontIndexes, 0)
-		line.Glyphs = append(line.Glyphs, shaper.font.unicodeToGID.get(r))
+		line.FontIndexes = append(line.FontIndexes, index)
+		line.Glyphs = append(line.Glyphs, font.unicodeToGID.get(r))
 		line.Positions = append(line.Positions, x, 0)
-		x += 6
+		x += advance
 		line.Width = x
 		line.End = i + utf8.RuneLen(r)
 	}
@@ -110,8 +117,10 @@ func (shaper *fuzzShaper) Shape(request ShapingRequest) ([]ShapedLine, error) {
 var fuzzPlaces = regexp.MustCompile(`(?m)^1 0 0 1 (\S+) \S+ Tm$|q \S+ \S+ \S+ \S+ (\S+) \S+ cm /Fm`)
 
 // fuzzCheckPlaces fails when the page draws text or a glyph to the left of
-// the block or past its right side by more than a character
-func fuzzCheckPlaces(t *testing.T, content string, left, right float32) {
+// the block, or past its right side by more than the slack: a character,
+// in a TextFrame, which breaks a word too long for it; anything in a
+// TextBlock, where a word a shaper cannot break overflows to the right
+func fuzzCheckPlaces(t *testing.T, content string, left, right, slack float32) {
 	t.Helper()
 	for _, m := range fuzzPlaces.FindAllStringSubmatch(content, -1) {
 		v := m[1] + m[2]
@@ -119,7 +128,7 @@ func fuzzCheckPlaces(t *testing.T, content string, left, right float32) {
 		if err != nil || math.IsNaN(x) {
 			t.Fatalf("a place of %q:\n%s", v, content)
 		}
-		if float32(x) < left-0.01 || float32(x) > right+12 {
+		if float32(x) < left-0.01 || float32(x) > right+slack {
 			t.Fatalf("drawn at %v, outside %v to %v:\n%s", x, left, right, content)
 		}
 	}
@@ -143,7 +152,7 @@ func FuzzTextBlockLayout(f *testing.F) {
 		fallback := fuzzFont(t, doc.pdf, testPlexOTF)
 		w := float32(width%600) + 1
 		block := NewTextBlock(font, text).SetFallbackFont(fallback).SetFontSize(float32(size%48) + 1).
-			SetShaper(&fuzzShaper{font}).
+			SetShaper(&fuzzShaper{font, fallback}).
 			SetTextAlignment([]alignment.Alignment{alignment.Left, alignment.Center, alignment.Right, alignment.Left}[align%4])
 		block.SetWidth(w)
 		block.SetLocation(20, 20)
@@ -156,7 +165,7 @@ func FuzzTextBlockLayout(f *testing.F) {
 		if doc.pdf.err != nil {
 			t.Fatalf("the document failed: %v", doc.pdf.err)
 		}
-		fuzzCheckPlaces(t, testContent(page), 20, 20+w)
+		fuzzCheckPlaces(t, testContent(page), 20, 20+w, float32(math.Inf(1)))
 		doc.complete()
 	})
 }
@@ -177,7 +186,7 @@ func FuzzTextFrameLayout(f *testing.F) {
 		fallback := fuzzFont(t, doc.pdf, testPlexOTF)
 		font.SetSize(float32(size%36) + 1)
 		fallback.SetSize(font.size)
-		SetDefaultShaper(&fuzzShaper{font})
+		SetDefaultShaper(&fuzzShaper{font, fallback})
 		defer SetDefaultShaper(nil)
 		var paragraphs []*Paragraph
 		for _, part := range strings.Split(fuzzText(data), "\n") {
@@ -199,7 +208,7 @@ func FuzzTextFrameLayout(f *testing.F) {
 			if doc.pdf.err != nil {
 				t.Fatalf("the document failed: %v", doc.pdf.err)
 			}
-			fuzzCheckPlaces(t, testContent(page), 20, 20+w)
+			fuzzCheckPlaces(t, testContent(page), 20, 20+w, 1.5*font.size)
 			if !frame.HasMoreText() {
 				break
 			}

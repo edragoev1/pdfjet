@@ -70,5 +70,12 @@ public class DictionaryBreaksTest {
         }
         Assert.Equal(w.Length, g.Length);
     }
+
+    // No word ends before a mark, as after ฯ, which takes none: the mark
+    // stays with the letter before it (found by FuzzDictionaryWordEnds)
+    [Fact]
+    public void NoWordEndsBeforeAMark() {
+        Assert.DoesNotContain(4, DictionaryBreaks.WordEnds(DictionaryBreaks.CodePoints("ภาษฯ\u0E38")));
+    }
 }
 }

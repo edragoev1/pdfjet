@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -137,5 +138,13 @@ class DictionaryBreaksTest {
             assertEquals(w[i], g[i], "line " + (i + 1));
         }
         assertEquals(w.length, g.length, "lines");
+    }
+
+    // No word ends before a mark, as after ฯ, which takes none: the mark
+    // stays with the letter before it (found by FuzzDictionaryWordEnds)
+    @Test
+    void noWordEndsBeforeAMark() {
+        int[] cps = "ภาษฯ\u0E38".codePoints().toArray();
+        assertFalse(DictionaryBreaks.wordEnds(cps).contains(4));
     }
 }

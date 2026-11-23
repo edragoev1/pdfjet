@@ -492,7 +492,19 @@ final class DictionaryBreaks {
                 divideUpDictionaryRange(script, d, t, start, i, ends);
             }
         }
+        // The ends before a mark left out, as ICU's rules never break a letter
+        // from its marks: a mark after a sign that takes none, as ฯ then ุ, ended
+        // a word before it (found by FuzzDictionaryWordEnds)
+        ends.removeIf(end -> end < cps.length && isMark(cps[end]));
         return ends;
+    }
+
+    // A nonspacing, spacing or enclosing mark, which stays with the letter
+    // before it
+    private static boolean isMark(int cp) {
+        int type = Character.getType(cp);
+        return type == Character.NON_SPACING_MARK || type == Character.COMBINING_SPACING_MARK
+                || type == Character.ENCLOSING_MARK;
     }
 
     /**

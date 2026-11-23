@@ -485,7 +485,20 @@ enum DictionaryBreaks {
                 divideUpDictionaryRange(script, d, t, start, i, &ends)
             }
         }
-        return ends
+        // The ends before a mark left out, as ICU's rules never break a letter
+        // from its marks: a mark after a sign that takes none, as ฯ then ุ, ended
+        // a word before it (found by FuzzDictionaryWordEnds)
+        return ends.filter { end in
+            guard end < cps.count, let scalar = Unicode.Scalar(UInt32(cps[end])) else {
+                return true
+            }
+            switch scalar.properties.generalCategory {
+            case .nonspacingMark, .spacingMark, .enclosingMark:
+                return false
+            default:
+                return true
+            }
+        }
     }
 
     ///

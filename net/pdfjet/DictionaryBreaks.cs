@@ -489,7 +489,22 @@ internal static class DictionaryBreaks {
                 DivideUpDictionaryRange(script, d, t, start, i, ends);
             }
         }
+        // The ends before a mark left out, as ICU's rules never break a letter
+        // from its marks: a mark after a sign that takes none, as ฯ then ุ, ended
+        // a word before it (found by FuzzDictionaryWordEnds)
+        ends.RemoveAll(end => end < cps.Length && IsMark(cps[end]));
         return ends;
+    }
+
+    // A nonspacing, spacing or enclosing mark, which stays with the letter
+    // before it
+    private static bool IsMark(int cp) {
+        if (cp < 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
+            return false;
+        }
+        UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(Char.ConvertFromUtf32(cp), 0);
+        return category == UnicodeCategory.NonSpacingMark || category == UnicodeCategory.SpacingCombiningMark
+                || category == UnicodeCategory.EnclosingMark;
     }
 
     /// <summary>

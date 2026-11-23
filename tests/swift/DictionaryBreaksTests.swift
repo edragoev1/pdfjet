@@ -71,4 +71,10 @@ import Testing
         }
         #expect(got.count == want.count)
     }
+
+    // No word ends before a mark, as after ฯ, which takes none: the mark
+    // stays with the letter before it (found by FuzzDictionaryWordEnds)
+    @Test func noWordEndsBeforeAMark() {
+        #expect(!DictionaryBreaks.wordEnds(DictionaryBreaks.codePoints("ภาษฯ\u{0E38}")).contains(4))
+    }
 }

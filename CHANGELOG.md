@@ -181,6 +181,10 @@ Each is described in detail below.
   LineBreakMeasurer is now given the JDK's breaks and ICU's word ends.
   Behavior change for those scripts in Java; tested on the Khmer UDHR, no
   break inside a word.
+  A word end is never placed before a mark, which stays with the letter
+  before it, as ICU's rules have it: a mark after a sign that takes none,
+  as ฯ then ุ, ended a word before it (found by fuzzing,
+  FuzzDictionaryWordEnds).
 - **The Swift package from pdfjet-swift**: Swift apps take PDFjet from
   `https://github.com/edragoev1/pdfjet-swift`, the same library as a
   download a fraction of the size, where SwiftPM cloned the 1 GB pdfjet
