@@ -284,16 +284,8 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 	if point.uri != "" {
 		page.endLink(link)
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             point.x - point.r,
-			y1:             point.y - point.r,
-			x2:             point.x + point.r,
-			y2:             point.y + point.r,
-			uri:            point.uri,
-			altDescription: description,
-			linkElement:    link,
-		})
+		page.addAnnotation(newLinkAnnotation(point.x-point.r, point.y-point.r, point.x+point.r, point.y+point.r,
+			point.uri, "", "", "", description, link))
 	}
 
 	return [2]float32{point.x + point.r, point.y + point.r}

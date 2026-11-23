@@ -145,23 +145,11 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if radioButton.uri != "" || radioButton.key != "" {
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             radioButton.x + float32(3*radioButton.r1),
-			y1:             radioButton.y,
-			x2:             radioButton.x + float32(3*radioButton.r1) + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
-			y2:             radioButton.y + radioButton.font.GetBodyHeight(radioButton.fontSize),
-			vertices:       nil,
-			opacity:        0.0,
-			title:          "",
-			contents:       "",
-			uri:            radioButton.uri,
-			key:            "",
-			language:       radioButton.language,
-			actualText:     radioButton.actualText,
-			altDescription: radioButton.altDescription,
-			linkElement:    link,
-		})
+		x1 := radioButton.x + float32(3*radioButton.r1)
+		x2 := x1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label)
+		y2 := radioButton.y + radioButton.font.GetBodyHeight(radioButton.fontSize)
+		page.addAnnotation(newLinkAnnotation(x1, radioButton.y, x2, y2, radioButton.uri, "",
+			radioButton.language, radioButton.actualText, radioButton.altDescription, link))
 	}
 
 	return radioButton.corner()

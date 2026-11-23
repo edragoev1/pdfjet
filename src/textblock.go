@@ -1211,22 +1211,8 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	page.RestoreGraphicsState()
 
 	if textBlock.uri != "" {
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             textBlock.x,
-			y1:             textBlock.y,
-			x2:             textBlock.x + textBlock.width,
-			y2:             textBlock.y + blockHeight,
-			vertices:       nil,
-			opacity:        0.0,
-			title:          "",
-			contents:       "",
-			uri:            textBlock.uri,
-			key:            "",
-			language:       "",
-			actualText:     "",
-			altDescription: "",
-		})
+		page.addAnnotation(newLinkAnnotation(textBlock.x, textBlock.y, textBlock.x+textBlock.width, textBlock.y+blockHeight,
+			textBlock.uri, "", "", "", "", nil))
 	}
 
 	return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}

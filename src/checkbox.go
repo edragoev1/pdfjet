@@ -227,23 +227,11 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 	if checkBox.uri != "" || checkBox.key != "" {
 		// The link is a structure element of its own, see Page.AddAnnotation.
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             checkBox.x + float32(float32(3.0*checkBox.w)/2.0),
-			y1:             checkBox.y,
-			x2:             checkBox.x + float32(float32(3.0*checkBox.w)/2.0) + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
-			y2:             checkBox.y + checkBox.font.GetBodyHeight(checkBox.fontSize),
-			vertices:       nil,
-			opacity:        0.0,
-			title:          "",
-			contents:       "",
-			uri:            checkBox.uri,
-			key:            "",
-			language:       checkBox.language,
-			actualText:     checkBox.actualText,
-			altDescription: checkBox.altDescription,
-			linkElement:    link,
-		})
+		x1 := checkBox.x + float32(float32(3.0*checkBox.w)/2.0)
+		x2 := x1 + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label)
+		y2 := checkBox.y + checkBox.font.GetBodyHeight(checkBox.fontSize)
+		page.addAnnotation(newLinkAnnotation(x1, checkBox.y, x2, y2, checkBox.uri, "",
+			checkBox.language, checkBox.actualText, checkBox.altDescription, link))
 	}
 
 	return checkBox.corner()

@@ -642,23 +642,8 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	if textLine.uri != "" || textLine.key != "" {
 		x1, y1, x2, y2 := textLine.linkBox(verticalOffset)
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             x1,
-			y1:             y1,
-			x2:             x2,
-			y2:             y2,
-			vertices:       nil,
-			opacity:        0.0,
-			title:          "",
-			contents:       "",
-			uri:            textLine.uri,
-			key:            textLine.key, // The destination name
-			language:       textLine.uriLanguage,
-			actualText:     textLine.uriActualText,
-			altDescription: textLine.uriAltDescription,
-			linkElement:    link,
-		})
+		page.addAnnotation(newLinkAnnotation(x1, y1, x2, y2,
+			textLine.uri, textLine.key, textLine.uriLanguage, textLine.uriActualText, textLine.uriAltDescription, link))
 	}
 
 	page.SetTextRotation(0)

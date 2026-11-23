@@ -859,16 +859,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	// addLink adds the annotation of a point over the box of what it draws,
 	// described by its name, in the Link element if it has one
 	addLink := func(p scatterPoint, box [4]float32, link *structElement) {
-		annotation := &annotationObject{
-			annotationType: annotationLink,
-			x1:             box[0],
-			y1:             box[1],
-			x2:             box[0] + box[2],
-			y2:             box[1] + box[3],
-			uri:            p.uri,
-			altDescription: p.name,
-			linkElement:    link,
-		}
+		annotation := newLinkAnnotation(box[0], box[1], box[0]+box[2], box[1]+box[3], p.uri, "", "", "", p.name, link)
 		if p.dot {
 			annotation.hitSize = scatterHitSize
 		}

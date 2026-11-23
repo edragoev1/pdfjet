@@ -2407,23 +2407,8 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 	page.endLink(link)
 	if image.uri != "" || image.key != "" {
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             image.x,
-			y1:             image.y,
-			x2:             image.x + image.w,
-			y2:             image.y + image.h,
-			vertices:       nil,
-			opacity:        0.0,
-			title:          "",
-			contents:       "",
-			uri:            image.uri,
-			key:            image.key, // The destination name
-			language:       image.language,
-			actualText:     image.actualText,
-			altDescription: image.altDescription,
-			linkElement:    link,
-		})
+		page.addAnnotation(newLinkAnnotation(image.x, image.y, image.x+image.w, image.y+image.h,
+			image.uri, image.key, image.language, image.actualText, image.altDescription, link))
 	}
 	return [2]float32{image.x + image.w, image.y + image.h}
 }

@@ -77,3 +77,23 @@ func (annotation *annotationObject) setDescriptionFallback() {
 		annotation.altDescription = fallback
 	}
 }
+
+// newLinkAnnotation returns a link over the box from (x1, y1) to (x2, y2) to
+// the uri, or to the destination of the name key, in the Link element of the
+// content it is drawn on, or nil for none.
+func newLinkAnnotation(x1, y1, x2, y2 float32, uri, key, language, actualText, altDescription string,
+	link *structElement) *annotationObject {
+	return &annotationObject{
+		annotationType: annotationLink,
+		x1:             x1,
+		y1:             y1,
+		x2:             x2,
+		y2:             y2,
+		uri:            uri,
+		key:            key,
+		language:       language,
+		actualText:     actualText,
+		altDescription: altDescription,
+		linkElement:    link,
+	}
+}

@@ -274,22 +274,8 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if rect.uri != "" || rect.key != "" {
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             rect.x,
-			y1:             rect.y,
-			x2:             rect.x + rect.width,
-			y2:             rect.y + rect.height,
-			vertices:       nil,
-			opacity:        0.0,
-			title:          "",
-			contents:       "",
-			uri:            rect.uri,
-			key:            rect.key, // The destination name
-			language:       rect.language,
-			actualText:     rect.actualText,
-			altDescription: rect.altDescription,
-		})
+		page.addAnnotation(newLinkAnnotation(rect.x, rect.y, rect.x+rect.width, rect.y+rect.height,
+			rect.uri, rect.key, rect.language, rect.actualText, rect.altDescription, nil))
 	}
 
 	return [2]float32{rect.x + rect.width, rect.y + rect.height}

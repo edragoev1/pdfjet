@@ -769,15 +769,8 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 			return
 		}
 		if cell.point.uri != "" {
-			page.addAnnotation(&annotationObject{
-				annotationType: annotationLink,
-				x1:             cell.point.x - cell.point.r,
-				y1:             cell.point.y - cell.point.r,
-				x2:             cell.point.x + cell.point.r,
-				y2:             cell.point.y + cell.point.r,
-				vertices:       nil,
-				uri:            cell.point.uri,
-			})
+			p := cell.point
+			page.addAnnotation(newLinkAnnotation(p.x-p.r, p.y-p.r, p.x+p.r, p.y+p.r, p.uri, "", "", "", "", nil))
 		}
 		page.AddArtifactBMC()
 		page.DrawPoint(cell.point)
@@ -808,16 +801,8 @@ func (cell *Cell) drawLinkedPoint(page *Page) {
 	page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, float32(2*point.r), float32(2*point.r))
 	page.AddEMC()
 	page.endLink(link)
-	page.addAnnotation(&annotationObject{
-		annotationType: annotationLink,
-		x1:             point.x - point.r,
-		y1:             point.y - point.r,
-		x2:             point.x + point.r,
-		y2:             point.y + point.r,
-		uri:            point.uri,
-		altDescription: description,
-		linkElement:    link,
-	})
+	page.addAnnotation(newLinkAnnotation(point.x-point.r, point.y-point.r, point.x+point.r, point.y+point.r,
+		point.uri, "", "", "", description, link))
 }
 
 func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
@@ -937,16 +922,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	}
 
 	if cell.uri != "" {
-		page.addAnnotation(&annotationObject{
-			annotationType: annotationLink,
-			x1:             xText,
-			y1:             yText - ascent,
-			x2:             xText + cell.getTextWidth(),
-			y2:             yText + cell.descent(),
-			vertices:       nil,
-			uri:            cell.uri,
-			linkElement:    link,
-		})
+		page.addAnnotation(newLinkAnnotation(xText, yText-ascent, xText+cell.getTextWidth(), yText+cell.descent(),
+			cell.uri, "", "", "", "", link))
 	}
 }
 
