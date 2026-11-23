@@ -124,25 +124,8 @@ const (
 //	  - pdf: the PDF to add this font to.
 //	  - coreFont: the core font, for example corefont.Helvetica().
 func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
-	font := new(Font)
+	font := newCoreFontForPDFobj(coreFont)
 	font.pdf = pdf
-	font.isCoreFont = true
-	font.name = coreFont.Name
-	font.size = defaultFontSize
-	font.unitsPerEm = 1000
-	font.firstChar = 32
-	font.lastChar = 255
-	font.bBoxLLx = coreFont.BBoxLLx
-	font.bBoxLLy = coreFont.BBoxLLy
-	font.bBoxURx = coreFont.BBoxURx
-	font.bBoxURy = coreFont.BBoxURy
-	font.metrics = coreFont.Metrics
-	font.symbolic = coreFont.Name == "Symbol" || coreFont.Name == "ZapfDingbats"
-	font.fontUnderlinePosition = coreFont.UnderlinePosition
-	font.fontUnderlineThickness = coreFont.UnderlineThickness
-	font.fontAscent = coreFont.BBoxURy
-	font.fontDescent = coreFont.BBoxLLy
-	font.SetSize(font.size)
 
 	pdf.newObj()
 	pdf.appendString("<<\n")
@@ -164,7 +147,7 @@ func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 }
 
 // newCoreFontForPDFobj creates a core font that is not added to a PDF, for
-// PDFobj.AddCoreFontResource.
+// PDFobj.AddCoreFontResource, and the font NewCoreFont adds.
 func newCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 	font := new(Font)
 	font.isCoreFont = true
@@ -351,6 +334,7 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	}
 	font := new(Font)
 	font.pdf = pdf
+	// It reads the font before it adds anything to the PDF
 	registerOpenTypeFont(pdf, font, buf)
 	font.fontPath = filePath
 	font.SetSize(defaultFontSize)
@@ -396,22 +380,12 @@ func (font *Font) shapingFile() ([]byte, error) {
 // returns no error, panics with it. Nothing is added to the PDF for a font
 // refused.
 func ReadFontFromFile(pdf *PDF, filePath string) (font *Font, err error) {
-	buf, err := readFontFile(filePath)
-	if err != nil {
-		return nil, err
-	}
 	defer func() {
 		if r := recover(); r != nil {
 			font, err = nil, panicError(r)
 		}
 	}()
-	font = new(Font)
-	font.pdf = pdf
-	// It reads the font before it adds anything to the PDF
-	registerOpenTypeFont(pdf, font, buf)
-	font.fontPath = filePath
-	font.SetSize(defaultFontSize)
-	return font, nil
+	return NewFontFromFile(pdf, filePath), nil
 }
 
 // NewFontFromFileForObjects creates a font from the .otf or .ttf file at the
