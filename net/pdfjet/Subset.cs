@@ -486,16 +486,8 @@ class Subset {
                     keep[component] = true;
                     stack[top++] = component;
                 }
-                at += 4;
-                at += (flags & 0x0001) != 0 ? 4 : 2;     // ARG_1_AND_2_ARE_WORDS
-                if ((flags & 0x0008) != 0) {            // WE_HAVE_A_SCALE
-                    at += 2;
-                } else if ((flags & 0x0040) != 0) {     // WE_HAVE_AN_X_AND_Y_SCALE
-                    at += 4;
-                } else if ((flags & 0x0080) != 0) {     // WE_HAVE_A_TWO_BY_TWO
-                    at += 8;
-                }
-                if ((flags & 0x0020) == 0) {            // MORE_COMPONENTS
+                at = NextComponent(at, flags);
+                if (at < 0) {
                     break;
                 }
             }
@@ -683,19 +675,27 @@ class Subset {
                 throw new NotSubset();
             }
             PutShort(glyf, at + 2, newGid[component]);
-            at += 4;
-            at += (flags & 0x0001) != 0 ? 4 : 2;     // ARG_1_AND_2_ARE_WORDS
-            if ((flags & 0x0008) != 0) {            // WE_HAVE_A_SCALE
-                at += 2;
-            } else if ((flags & 0x0040) != 0) {     // WE_HAVE_AN_X_AND_Y_SCALE
-                at += 4;
-            } else if ((flags & 0x0080) != 0) {     // WE_HAVE_A_TWO_BY_TWO
-                at += 8;
-            }
-            if ((flags & 0x0020) == 0) {            // MORE_COMPONENTS
+            at = NextComponent(at, flags);
+            if (at < 0) {
                 break;
             }
         }
+    }
+
+    // The offset of the component after the one of a composite glyph at at,
+    // whose flags are flags, past its glyph, its arguments and its scale; or
+    // -1 when it is the last.
+    private static int NextComponent(int at, int flags) {
+        at += 4;
+        at += (flags & 0x0001) != 0 ? 4 : 2;     // ARG_1_AND_2_ARE_WORDS
+        if ((flags & 0x0008) != 0) {            // WE_HAVE_A_SCALE
+            at += 2;
+        } else if ((flags & 0x0040) != 0) {     // WE_HAVE_AN_X_AND_Y_SCALE
+            at += 4;
+        } else if ((flags & 0x0080) != 0) {     // WE_HAVE_A_TWO_BY_TWO
+            at += 8;
+        }
+        return (flags & 0x0020) != 0 ? at : -1; // MORE_COMPONENTS
     }
 
     private static void PutShort(byte[] buf, int at, int value) {
