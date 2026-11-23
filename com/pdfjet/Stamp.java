@@ -8,7 +8,6 @@ package com.pdfjet;
 
 import java.io.*;
 import java.util.*;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Content that is drawn once with the path and text methods of this class,
