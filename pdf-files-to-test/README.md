@@ -17,16 +17,17 @@ on 29 September 2026, and were left out until 9.1.9; now two pages each
 (Example_52 the Hindi and Khmer drawn with drawGlyphs since 14 November
 2026), both pass PAC (16 November 2026) and go in.
 
-**PAC in Wine crashes on any large tagged PDF, whoever made it.** Measured
-25 November 2026 with tables of the pdfjet-worker Worker (Go PDFjet's
-output, byte for byte), all passing veraPDF as PDF/UA-1: a table of one
-short column passed PAC at 20, 30 and 40 pages and crashed at 60; one of
-four columns of wrapped text passed at 5 and 25 pages and crashed at 39
-and 51. A table of one column exported as PDF/UA by LibreOffice, 113
-pages, crashed PAC too. Kerning is not the cause (one page passes with and
-without it). The crash is in .NET's runtime under PAC.exe, not a finding
-of PAC's. So a PDF that crashes PAC is checked by veraPDF, and a smaller
-one tagged the same way goes to PAC.
+**PAC needs WineHQ, not Ubuntu's Wine.** Under Ubuntu's Wine 9.0 (which
+had replaced WineHQ unnoticed), PAC crashed on any large tagged PDF,
+whoever made it: tables of the pdfjet-worker Worker (Go PDFjet's output,
+all passing veraPDF as PDF/UA-1) passed at up to 40 pages and crashed at
+60, those of wrapped text crashed from 39, and a LibreOffice PDF/UA table
+of 113 pages crashed too; PAC 2026.1.2 crashed the same. With WineHQ 11.0
+(`sudo apt install --install-recommends winehq-stable`) the 60-page table
+passes PAC (25 November 2026). If PAC crashes, check `wine --version`
+first. PAC 2026.1.2 installs per user, in
+`~/.wine-pac/drive_c/users/$USER/AppData/Local/PAC/PAC.exe`, which
+`~/Projects/pac.sh` starts.
 
 **Only files that embed all their fonts go here.** PDF/UA asks for every font
 to be embedded (Matterhorn 31-001), so a file with one that is not fails for
