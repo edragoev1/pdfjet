@@ -17,6 +17,17 @@ on 29 September 2026, and were left out until 9.1.9; now two pages each
 (Example_52 the Hindi and Khmer drawn with drawGlyphs since 14 November
 2026), both pass PAC (16 November 2026) and go in.
 
+**PAC in Wine crashes on any large tagged PDF, whoever made it.** Measured
+25 November 2026 with tables of the pdfjet-worker Worker (Go PDFjet's
+output, byte for byte), all passing veraPDF as PDF/UA-1: a table of one
+short column passed PAC at 20, 30 and 40 pages and crashed at 60; one of
+four columns of wrapped text passed at 5 and 25 pages and crashed at 39
+and 51. A table of one column exported as PDF/UA by LibreOffice, 113
+pages, crashed PAC too. Kerning is not the cause (one page passes with and
+without it). The crash is in .NET's runtime under PAC.exe, not a finding
+of PAC's. So a PDF that crashes PAC is checked by veraPDF, and a smaller
+one tagged the same way goes to PAC.
+
 **Only files that embed all their fonts go here.** PDF/UA asks for every font
 to be embedded (Matterhorn 31-001), so a file with one that is not fails for
 that alone, and says nothing about its tagging. Leave out such files, such as
