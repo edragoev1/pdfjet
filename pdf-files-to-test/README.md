@@ -24,7 +24,8 @@ all passing veraPDF as PDF/UA-1) passed at up to 40 pages and crashed at
 60, those of wrapped text crashed from 39, and a LibreOffice PDF/UA table
 of 113 pages crashed too; PAC 2026.1.2 crashed the same. With WineHQ 11.0
 (`sudo apt install --install-recommends winehq-stable`) the 60-page table
-passes PAC (25 November 2026). If PAC crashes, check `wine --version`
+passes PAC, and so does the 642-page one of 25,000 cells, after a long
+run with about 1.8 GB of memory (25 November 2026). If PAC crashes, check `wine --version`
 first. PAC 2026.1.2 installs per user, in
 `~/.wine-pac/drive_c/users/$USER/AppData/Local/PAC/PAC.exe`, which
 `~/Projects/pac.sh` starts.
