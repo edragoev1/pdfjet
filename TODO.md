@@ -159,6 +159,14 @@ their tests.
   files, to show beside it, both on the tag of the release, the machine
   otherwise idle.
 
+- **Later, optional: Go with TinyGo.** TinyGo 0.44 (WebAssembly, WASI)
+  built Example_51 unchanged on 25 November 2026, the same PDF as standard
+  Go once uncompressed. Build and run every Go example with TinyGo and
+  compare each PDF with standard Go's (images, SVG, barcodes, encryption,
+  PDF/A included). If all match, one line in the Go README: "Builds with
+  TinyGo (tested with TinyGo 0.44, WebAssembly/WASI): every example makes
+  the same PDF as standard Go." If some fail, fix them or say nothing.
+
 ## Known and accepted (document, do not fix)
 
 - Only Arabic and Persian letters are shaped by PDFjet itself. The Indic
