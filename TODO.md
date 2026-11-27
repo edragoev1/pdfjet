@@ -159,6 +159,18 @@ their tests.
   files, to show beside it, both on the tag of the release, the machine
   otherwise idle.
 
+- **Later, maybe: SVG gradients.** SVGImage draws a linearGradient or a
+  radialGradient in one flat color, the mean of its stops, so a logo built
+  on one (Instagram's, Firefox's, Messenger's, Kotlin's) comes out muddy.
+  PDF draws them itself: an axial or radial shading (types 2 and 3), its
+  stops as a stitching function (type 3) of exponential ones, under the
+  gradient's transform and gradientUnits, clipped to the shape; spreadMethod
+  pad as Extend, reflect and repeat by more stops. Stop opacity needs a
+  soft mask, which PDF/A-2 and later allow. In the four ports, the same
+  PDFs, an example and check-examples.sh. Only if users ask: PDFjet Forms
+  refuses such a logo today and asks for a PNG. Shadows and blurs stay out:
+  PDF has no blur, so they could only be pixels.
+
 - **Later, optional: Go with TinyGo.** TinyGo 0.44 (WebAssembly, WASI)
   built Example_51 unchanged on 25 November 2026, the same PDF as standard
   Go once uncompressed. Build and run every Go example with TinyGo and
